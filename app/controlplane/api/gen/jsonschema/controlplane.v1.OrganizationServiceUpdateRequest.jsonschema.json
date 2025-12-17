@@ -18,6 +18,10 @@
       "description": "prevent workflows and projects from being created implicitly during attestation init",
       "type": "boolean"
     },
+    "^(restrict_contract_creation_to_org_admins)$": {
+      "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
+      "type": "boolean"
+    },
     "^(update_policies_allowed_hostnames)$": {
       "description": "flag that allows us to detect if the value is explicitly set\n since repeated fields can not be optional",
       "type": "boolean"
@@ -41,6 +45,10 @@
     },
     "preventImplicitWorkflowCreation": {
       "description": "prevent workflows and projects from being created implicitly during attestation init",
+      "type": "boolean"
+    },
+    "restrictContractCreationToOrgAdmins": {
+      "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
       "type": "boolean"
     },
     "updatePoliciesAllowedHostnames": {

@@ -114,6 +114,20 @@ func (oc *OrganizationCreate) SetNillablePreventImplicitWorkflowCreation(b *bool
 	return oc
 }
 
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (oc *OrganizationCreate) SetRestrictContractCreationToOrgAdmins(b bool) *OrganizationCreate {
+	oc.mutation.SetRestrictContractCreationToOrgAdmins(b)
+	return oc
+}
+
+// SetNillableRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableRestrictContractCreationToOrgAdmins(b *bool) *OrganizationCreate {
+	if b != nil {
+		oc.SetRestrictContractCreationToOrgAdmins(*b)
+	}
+	return oc
+}
+
 // SetID sets the "id" field.
 func (oc *OrganizationCreate) SetID(u uuid.UUID) *OrganizationCreate {
 	oc.mutation.SetID(u)
@@ -299,6 +313,10 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultPreventImplicitWorkflowCreation
 		oc.mutation.SetPreventImplicitWorkflowCreation(v)
 	}
+	if _, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); !ok {
+		v := organization.DefaultRestrictContractCreationToOrgAdmins
+		oc.mutation.SetRestrictContractCreationToOrgAdmins(v)
+	}
 	if _, ok := oc.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		oc.mutation.SetID(v)
@@ -321,6 +339,9 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.PreventImplicitWorkflowCreation(); !ok {
 		return &ValidationError{Name: "prevent_implicit_workflow_creation", err: errors.New(`ent: missing required field "Organization.prevent_implicit_workflow_creation"`)}
+	}
+	if _, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); !ok {
+		return &ValidationError{Name: "restrict_contract_creation_to_org_admins", err: errors.New(`ent: missing required field "Organization.restrict_contract_creation_to_org_admins"`)}
 	}
 	return nil
 }
@@ -385,6 +406,10 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := oc.mutation.PreventImplicitWorkflowCreation(); ok {
 		_spec.SetField(organization.FieldPreventImplicitWorkflowCreation, field.TypeBool, value)
 		_node.PreventImplicitWorkflowCreation = value
+	}
+	if value, ok := oc.mutation.RestrictContractCreationToOrgAdmins(); ok {
+		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
+		_node.RestrictContractCreationToOrgAdmins = value
 	}
 	if nodes := oc.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -650,6 +675,18 @@ func (u *OrganizationUpsert) UpdatePreventImplicitWorkflowCreation() *Organizati
 	return u
 }
 
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (u *OrganizationUpsert) SetRestrictContractCreationToOrgAdmins(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldRestrictContractCreationToOrgAdmins, v)
+	return u
+}
+
+// UpdateRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldRestrictContractCreationToOrgAdmins)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -796,6 +833,20 @@ func (u *OrganizationUpsertOne) SetPreventImplicitWorkflowCreation(v bool) *Orga
 func (u *OrganizationUpsertOne) UpdatePreventImplicitWorkflowCreation() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdatePreventImplicitWorkflowCreation()
+	})
+}
+
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (u *OrganizationUpsertOne) SetRestrictContractCreationToOrgAdmins(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetRestrictContractCreationToOrgAdmins(v)
+	})
+}
+
+// UpdateRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateRestrictContractCreationToOrgAdmins()
 	})
 }
 
@@ -1112,6 +1163,20 @@ func (u *OrganizationUpsertBulk) SetPreventImplicitWorkflowCreation(v bool) *Org
 func (u *OrganizationUpsertBulk) UpdatePreventImplicitWorkflowCreation() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdatePreventImplicitWorkflowCreation()
+	})
+}
+
+// SetRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field.
+func (u *OrganizationUpsertBulk) SetRestrictContractCreationToOrgAdmins(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetRestrictContractCreationToOrgAdmins(v)
+	})
+}
+
+// UpdateRestrictContractCreationToOrgAdmins sets the "restrict_contract_creation_to_org_admins" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateRestrictContractCreationToOrgAdmins()
 	})
 }
 

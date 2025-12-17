@@ -187,7 +187,7 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 
 	// Enable implicit workflow creation prevention for testing
 	orgID, _ := uuid.Parse(s.org.ID)
-	_, err = s.Repos.OrganizationRepo.Update(ctx, orgID, nil, nil, toPtrBool(true))
+	_, err = s.Repos.OrganizationRepo.Update(ctx, orgID, nil, nil, toPtrBool(true), nil)
 	s.Require().NoError(err)
 
 	for _, tc := range testCases {

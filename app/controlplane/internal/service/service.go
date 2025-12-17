@@ -329,6 +329,12 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	return projects
 }
 
+// isUserOrgAdmin checks if the current user is an org admin or owner
+func isUserOrgAdmin(ctx context.Context) bool {
+	userRole := usercontext.CurrentAuthzSubject(ctx)
+	return authz.Role(userRole).IsAdmin()
+}
+
 // initializePaginationOpts initializes the pagination options with the provided request pagination options.
 func initializePaginationOpts(reqPagination *pb.OffsetPaginationRequest) (*pagination.OffsetPaginationOpts, error) {
 	// Initialize the pagination options, with default values

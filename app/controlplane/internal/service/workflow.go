@@ -42,14 +42,18 @@ type WorkflowService struct {
 	useCase         *biz.WorkflowUseCase
 	projectsUseCase *biz.ProjectUseCase
 	contractUC      *biz.WorkflowContractUseCase
+	orgUseCase      *biz.OrganizationUseCase
+	userUseCase     *biz.UserUseCase
 }
 
-func NewWorkflowService(uc *biz.WorkflowUseCase, wfuc *biz.WorkflowContractUseCase, projectUseCase *biz.ProjectUseCase, opts ...NewOpt) *WorkflowService {
+func NewWorkflowService(uc *biz.WorkflowUseCase, wfuc *biz.WorkflowContractUseCase, projectUseCase *biz.ProjectUseCase, orgUC *biz.OrganizationUseCase, userUC *biz.UserUseCase, opts ...NewOpt) *WorkflowService {
 	return &WorkflowService{
 		service:         newService(opts...),
 		useCase:         uc,
 		contractUC:      wfuc,
 		projectsUseCase: projectUseCase,
+		orgUseCase:      orgUC,
+		userUseCase:     userUC,
 	}
 }
 
@@ -57,6 +61,12 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Get organization
+	org, err := s.orgUseCase.FindByID(ctx, currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	if _, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, &pb.IdentityReference{Name: &req.ProjectName}, authz.PolicyWorkflowCreate); err != nil {
@@ -71,14 +81,15 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	}
 
 	createOpts := &biz.WorkflowCreateOpts{
-		OrgID:         currentOrg.ID,
-		Name:          req.GetName(),
-		Project:       req.GetProjectName(),
-		Team:          req.GetTeam(),
-		ContractName:  req.GetContractName(),
-		ContractBytes: req.GetContractBytes(),
-		Description:   req.GetDescription(),
-		Public:        req.GetPublic(),
+		OrgID:                               currentOrg.ID,
+		Name:                                req.GetName(),
+		Project:                             req.GetProjectName(),
+		Team:                                req.GetTeam(),
+		ContractName:                        req.GetContractName(),
+		ContractBytes:                       req.GetContractBytes(),
+		Description:                         req.GetDescription(),
+		Public:                              req.GetPublic(),
+		OrgRestrictContractCreationToAdmins: org.RestrictContractCreationToOrgAdmins,
 	}
 
 	// add current user as the owner of the project in case it needs to be created
@@ -89,6 +100,9 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 			return nil, handleUseCaseErr(err, s.log)
 		}
 		createOpts.Owner = &userID
+
+		// Check if user is an org admin
+		createOpts.UserIsOrgAdmin = isUserOrgAdmin(ctx)
 	}
 
 	p, err := s.useCase.Create(ctx, createOpts)
