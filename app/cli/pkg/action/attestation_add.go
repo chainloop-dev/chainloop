@@ -24,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
-	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"google.golang.org/grpc"
 )
 
@@ -98,40 +97,15 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 	// Define CASbackend information based on the API response
 	if !crafter.CraftingState.GetDryRun() {
-		// Get upload creds and CASbackend for the current attestation and set up CAS client
 		client := pb.NewAttestationServiceClient(action.CPConnection)
-		creds, err := client.GetUploadCreds(ctx,
-			&pb.AttestationServiceGetUploadCredsRequest{
-				WorkflowRunId: crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId(),
-			},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("getting upload creds: %w", err)
+		workflowRunID := crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId()
+		connectionCloserFn, getCASBackendErr := getCASBackend(ctx, client, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
+		if getCASBackendErr != nil {
+			return nil, fmt.Errorf("failed to get CAS backend: %w", getCASBackendErr)
 		}
-		b := creds.GetResult().GetBackend()
-		if b == nil {
-			return nil, fmt.Errorf("no backend found in upload creds")
-		}
-		casBackend.Name = b.Provider
-		casBackend.MaxSize = b.GetLimits().MaxBytes
-		// Some CASBackends will actually upload information to the CAS server
-		// in such case we need to set up a connection
-		if !b.IsInline && creds.Result.Token != "" {
-			var opts = []grpcconn.Option{
-				grpcconn.WithInsecure(action.connectionInsecure),
-			}
-
-			if action.casCAPath != "" {
-				opts = append(opts, grpcconn.WithCAFile(action.casCAPath))
-			}
-
-			artifactCASConn, err := grpcconn.New(action.casURI, creds.Result.Token, opts...)
-			if err != nil {
-				return nil, fmt.Errorf("creating CAS connection: %w", err)
-			}
-			defer artifactCASConn.Close()
-
-			casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(action.Logger))
+		if connectionCloserFn != nil {
+			// nolint: errcheck
+			defer connectionCloserFn()
 		}
 	}
 
@@ -199,11 +173,7 @@ func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestat
 		return nil, err
 	}
 
-	policyEvaluations, _, err := getPolicyEvaluations(crafter)
-
-	if err != nil {
-		return nil, fmt.Errorf("getting policy evaluations: %w", err)
-	}
+	policyEvaluations, _ := getPolicyEvaluations(crafter)
 
 	return policyEvaluations, nil
 }

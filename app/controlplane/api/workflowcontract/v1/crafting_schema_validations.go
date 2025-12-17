@@ -273,17 +273,7 @@ func (contract *CraftingSchemaV2) ToV1() *CraftingSchema {
 		Runner:        spec.GetRunner(),
 		Policies:      spec.GetPolicies(),
 		PolicyGroups:  spec.GetPolicyGroups(),
-	}
-
-	// Extract annotations from metadata if present
-	// Convert map[string]string to []*Annotation
-	if metadata := contract.GetMetadata(); metadata != nil {
-		for name, value := range metadata.GetAnnotations() {
-			v1.Annotations = append(v1.Annotations, &Annotation{
-				Name:  name,
-				Value: value,
-			})
-		}
+		Annotations:   spec.GetAnnotations(),
 	}
 
 	return v1

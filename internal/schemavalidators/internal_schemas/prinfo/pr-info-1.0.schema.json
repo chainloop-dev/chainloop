@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json",
+  "properties": {
+    "platform": {
+      "type": "string",
+      "enum": [
+        "github",
+        "gitlab"
+      ],
+      "description": "The CI/CD platform"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "pull_request",
+        "merge_request"
+      ],
+      "description": "The type of change request"
+    },
+    "number": {
+      "type": "string",
+      "description": "The PR/MR number or identifier"
+    },
+    "title": {
+      "type": "string",
+      "description": "The PR/MR title"
+    },
+    "description": {
+      "type": "string",
+      "description": "The PR/MR description or body"
+    },
+    "source_branch": {
+      "type": "string",
+      "description": "The source branch name"
+    },
+    "target_branch": {
+      "type": "string",
+      "description": "The target branch name"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Direct URL to the PR/MR"
+    },
+    "author": {
+      "type": "string",
+      "description": "Username of the PR/MR author"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "platform",
+    "type",
+    "number",
+    "url"
+  ],
+  "title": "Pull Request / Merge Request Information",
+  "description": "Schema for Pull Request or Merge Request metadata collected during attestation"
+}

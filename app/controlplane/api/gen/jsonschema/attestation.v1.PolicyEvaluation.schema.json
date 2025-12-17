@@ -53,6 +53,10 @@
     "description": {
       "type": "string"
     },
+    "gate": {
+      "description": "Whether the policy evaluation result should block the attestation (inherited from the policy attachment)",
+      "type": "boolean"
+    },
     "group_reference": {
       "$ref": "attestation.v1.PolicyEvaluation.Reference.schema.json"
     },
@@ -135,7 +139,8 @@
             "GHAS_DEPENDENCY_SCAN",
             "JACOCO_XML",
             "SLSA_PROVENANCE",
-            "CHAINLOOP_RUNNER_CONTEXT"
+            "CHAINLOOP_RUNNER_CONTEXT",
+            "CHAINLOOP_PR_INFO"
           ],
           "title": "Material Type",
           "type": "string"

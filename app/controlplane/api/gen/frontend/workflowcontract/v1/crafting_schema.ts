@@ -200,6 +200,8 @@ export enum CraftingSchema_Material_MaterialType {
   SLSA_PROVENANCE = 24,
   /** CHAINLOOP_RUNNER_CONTEXT - The Chainloop CLI plugin for runner context */
   CHAINLOOP_RUNNER_CONTEXT = 25,
+  /** CHAINLOOP_PR_INFO - Pull Request / Merge Request metadata collected automatically during attestation */
+  CHAINLOOP_PR_INFO = 26,
   UNRECOGNIZED = -1,
 }
 
@@ -283,6 +285,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 25:
     case "CHAINLOOP_RUNNER_CONTEXT":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT;
+    case 26:
+    case "CHAINLOOP_PR_INFO":
+      return CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -344,6 +349,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "SLSA_PROVENANCE";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_RUNNER_CONTEXT:
       return "CHAINLOOP_RUNNER_CONTEXT";
+    case CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO:
+      return "CHAINLOOP_PR_INFO";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -372,6 +379,12 @@ export interface CraftingSchemaV2Spec {
   policies?: Policies;
   /** Policy groups to apply to this contract */
   policyGroups: PolicyGroupAttachment[];
+  /**
+   * List of annotations that can be used to add metadata to the attestation
+   * this metadata can be used later on by the integrations engine to filter and interpolate data
+   * It works in addition to the annotations defined in the materials and the runner
+   */
+  annotations: Annotation[];
 }
 
 export interface Annotation {
@@ -418,6 +431,8 @@ export interface PolicyAttachment {
   with: { [key: string]: string };
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
+  /** If true, the policy will act as a gate, returning an error code if the policy fails */
+  gate: boolean;
 }
 
 export interface PolicyAttachment_WithEntry {
@@ -1012,7 +1027,7 @@ export const CraftingSchemaV2 = {
 };
 
 function createBaseCraftingSchemaV2Spec(): CraftingSchemaV2Spec {
-  return { materials: [], envAllowList: [], runner: undefined, policies: undefined, policyGroups: [] };
+  return { materials: [], envAllowList: [], runner: undefined, policies: undefined, policyGroups: [], annotations: [] };
 }
 
 export const CraftingSchemaV2Spec = {
@@ -1031,6 +1046,9 @@ export const CraftingSchemaV2Spec = {
     }
     for (const v of message.policyGroups) {
       PolicyGroupAttachment.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.annotations) {
+      Annotation.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1077,6 +1095,13 @@ export const CraftingSchemaV2Spec = {
 
           message.policyGroups.push(PolicyGroupAttachment.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.annotations.push(Annotation.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1097,6 +1122,7 @@ export const CraftingSchemaV2Spec = {
       policyGroups: Array.isArray(object?.policyGroups)
         ? object.policyGroups.map((e: any) => PolicyGroupAttachment.fromJSON(e))
         : [],
+      annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
     };
   },
 
@@ -1120,6 +1146,11 @@ export const CraftingSchemaV2Spec = {
     } else {
       obj.policyGroups = [];
     }
+    if (message.annotations) {
+      obj.annotations = message.annotations.map((e) => e ? Annotation.toJSON(e) : undefined);
+    } else {
+      obj.annotations = [];
+    }
     return obj;
   },
 
@@ -1138,6 +1169,7 @@ export const CraftingSchemaV2Spec = {
       ? Policies.fromPartial(object.policies)
       : undefined;
     message.policyGroups = object.policyGroups?.map((e) => PolicyGroupAttachment.fromPartial(e)) || [];
+    message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1295,7 +1327,15 @@ export const Policies = {
 };
 
 function createBasePolicyAttachment(): PolicyAttachment {
-  return { ref: undefined, embedded: undefined, selector: undefined, disabled: false, with: {}, requirements: [] };
+  return {
+    ref: undefined,
+    embedded: undefined,
+    selector: undefined,
+    disabled: false,
+    with: {},
+    requirements: [],
+    gate: false,
+  };
 }
 
 export const PolicyAttachment = {
@@ -1317,6 +1357,9 @@ export const PolicyAttachment = {
     });
     for (const v of message.requirements) {
       writer.uint32(50).string(v!);
+    }
+    if (message.gate === true) {
+      writer.uint32(56).bool(message.gate);
     }
     return writer;
   },
@@ -1373,6 +1416,13 @@ export const PolicyAttachment = {
 
           message.requirements.push(reader.string());
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.gate = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1395,6 +1445,7 @@ export const PolicyAttachment = {
         }, {})
         : {},
       requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
+      gate: isSet(object.gate) ? Boolean(object.gate) : false,
     };
   },
 
@@ -1416,6 +1467,7 @@ export const PolicyAttachment = {
     } else {
       obj.requirements = [];
     }
+    message.gate !== undefined && (obj.gate = message.gate);
     return obj;
   },
 
@@ -1440,6 +1492,7 @@ export const PolicyAttachment = {
       return acc;
     }, {});
     message.requirements = object.requirements?.map((e) => e) || [];
+    message.gate = object.gate ?? false;
     return message;
   },
 };

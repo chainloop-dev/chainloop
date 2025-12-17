@@ -144,6 +144,8 @@ message CraftingSchema {
       SLSA_PROVENANCE = 24;
       // The Chainloop CLI plugin for runner context
       CHAINLOOP_RUNNER_CONTEXT = 25;
+      // Pull Request / Merge Request metadata collected automatically during attestation
+      CHAINLOOP_PR_INFO = 26;
     }
   }
 }
@@ -169,6 +171,10 @@ message CraftingSchemaV2Spec {
   Policies policies = 4;
   // Policy groups to apply to this contract
   repeated PolicyGroupAttachment policy_groups = 5;
+  // List of annotations that can be used to add metadata to the attestation
+  // this metadata can be used later on by the integrations engine to filter and interpolate data
+  // It works in addition to the annotations defined in the materials and the runner
+  repeated Annotation annotations = 6;
 }
 
 message Annotation {
@@ -226,6 +232,9 @@ message PolicyAttachment {
       pattern: "^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$"
     }
   }];
+
+  // If true, the policy will act as a gate, returning an error code if the policy fails
+  bool gate = 7;
 
   message MaterialSelector {
     // material name

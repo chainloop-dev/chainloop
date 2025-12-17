@@ -38,6 +38,7 @@ type TrustedRoot struct {
 }
 
 var ErrMissingVerificationMaterial = errors.New("missing material")
+var ErrInvalidBundle = errors.New("invalid bundle")
 
 func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) error {
 	if bundleBytes == nil {
@@ -47,7 +48,7 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	bundle := new(protobundle.Bundle)
 	// unmarshal and validate
 	if err := protojson.Unmarshal(bundleBytes, bundle); err != nil {
-		return fmt.Errorf("invalid bundle: %w", err)
+		return fmt.Errorf("%w: %w", err, ErrInvalidBundle)
 	}
 
 	// fix for old attestations

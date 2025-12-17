@@ -194,10 +194,10 @@ func TestCraftingStateGetAnnotations(t *testing.T) {
 			state: &CraftingState{
 				Schema: &CraftingState_SchemaV2{
 					SchemaV2: &workflowcontract.CraftingSchemaV2{
-						Metadata: &workflowcontract.Metadata{
-							Annotations: map[string]string{
-								"environment": "production",
-								"service":     "api",
+						Spec: &workflowcontract.CraftingSchemaV2Spec{
+							Annotations: []*workflowcontract.Annotation{
+								{Name: "environment", Value: "production"},
+								{Name: "service", Value: "api"},
 							},
 						},
 					},
@@ -213,8 +213,8 @@ func TestCraftingStateGetAnnotations(t *testing.T) {
 			state: &CraftingState{
 				Schema: &CraftingState_SchemaV2{
 					SchemaV2: &workflowcontract.CraftingSchemaV2{
-						Metadata: &workflowcontract.Metadata{
-							Annotations: map[string]string{},
+						Spec: &workflowcontract.CraftingSchemaV2Spec{
+							Annotations: []*workflowcontract.Annotation{},
 						},
 					},
 				},

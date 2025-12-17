@@ -252,9 +252,9 @@ func TestParseContractV2(t *testing.T) {
 				assert.Greater(t, len(spec.GetEnvAllowList()), 0, "Should have env allow list")
 				assert.NotNil(t, spec.GetRunner(), "Should have runner config")
 
-				// Verify annotations in metadata
-				annotations := result.GetMetadata().GetAnnotations()
-				assert.NotEmpty(t, annotations, "Should have metadata annotations")
+				// Verify annotations in spec
+				annotations := spec.GetAnnotations()
+				assert.NotEmpty(t, annotations, "Should have annotations")
 			} else {
 				assert.Nil(t, result, "Expected V2 schema parsing to fail")
 			}
