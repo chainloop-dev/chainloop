@@ -144,7 +144,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo, authzUseCase, membershipUseCase)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, authzUseCase)
 	v5 := serviceOpts(logger, authzUseCase, projectUseCase, groupUseCase)
-	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, v5...)
+	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, organizationUseCase, userUseCase, v5...)
 	confServer := bootstrap.Server
 	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
 	if err != nil {
@@ -202,10 +202,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ProjectUC:          projectUseCase,
 		ProjectVersionUC:   projectVersionUseCase,
 		SigningUseCase:     signingUseCase,
+		UserUC:             userUseCase,
 		Opts:               v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
-	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, v5...)
+	workflowContractService := service.NewWorkflowSchemaService(workflowContractUseCase, organizationUseCase, userUseCase, v5...)
 	contextService := service.NewContextService(casBackendUseCase, userUseCase, v5...)
 	casCredentialsService := service.NewCASCredentialsService(casCredentialsUseCase, casMappingUseCase, casBackendUseCase, authzUseCase, v5...)
 	orgMetricsService := service.NewOrgMetricsService(orgMetricsUseCase, v5...)

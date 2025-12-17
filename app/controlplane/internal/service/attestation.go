@@ -59,6 +59,7 @@ type AttestationService struct {
 	projectVersionUseCase   *biz.ProjectVersionUseCase
 	projectUseCase          *biz.ProjectUseCase
 	signingUseCase          *biz.SigningUseCase
+	userUseCase             *biz.UserUseCase
 }
 
 type NewAttestationServiceOpts struct {
@@ -78,6 +79,7 @@ type NewAttestationServiceOpts struct {
 	ProjectUC          *biz.ProjectUseCase
 	ProjectVersionUC   *biz.ProjectVersionUseCase
 	SigningUseCase     *biz.SigningUseCase
+	UserUC             *biz.UserUseCase
 	Opts               []NewOpt
 }
 
@@ -100,6 +102,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		projectUseCase:          opts.ProjectUC,
 		projectVersionUseCase:   opts.ProjectVersionUC,
 		signingUseCase:          opts.SigningUseCase,
+		userUseCase:             opts.UserUC,
 	}
 }
 
@@ -748,14 +751,21 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
 	}
 
+	// Get organization
+	org, err := s.orgUseCase.FindByID(ctx, apiToken.OrgID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	// the workflow does not exist, let's create it alongside its project and contract
 	createOpts := &biz.WorkflowCreateOpts{
-		OrgID:            apiToken.OrgID,
-		Name:             req.GetWorkflowName(),
-		Project:          req.GetProjectName(),
-		ContractName:     req.GetContractName(),
-		ContractBytes:    req.GetContractBytes(),
-		ImplicitCreation: true, // Mark as implicit creation from attestation init
+		OrgID:                               apiToken.OrgID,
+		Name:                                req.GetWorkflowName(),
+		Project:                             req.GetProjectName(),
+		ContractName:                        req.GetContractName(),
+		ContractBytes:                       req.GetContractBytes(),
+		ImplicitCreation:                    true, // Mark as implicit creation from attestation init
+		OrgRestrictContractCreationToAdmins: org.RestrictContractCreationToOrgAdmins,
 	}
 
 	// set project owner if RBAC is enabled
@@ -766,6 +776,9 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 			return nil, handleUseCaseErr(err, s.log)
 		}
 		createOpts.Owner = &userID
+
+		// Check if user is an org admin
+		createOpts.UserIsOrgAdmin = isUserOrgAdmin(ctx)
 	}
 
 	wf, err := s.workflowUseCase.Create(ctx, createOpts)

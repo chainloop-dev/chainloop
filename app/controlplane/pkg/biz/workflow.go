@@ -81,6 +81,10 @@ type WorkflowCreateOpts struct {
 	Owner *uuid.UUID
 	// ImplicitCreation indicates whether this workflow is being created implicitly via attestation init
 	ImplicitCreation bool
+	// UserIsOrgAdmin indicates whether the current user is an organization admin
+	UserIsOrgAdmin bool
+	// OrgRestrictContractCreationToAdmins is the organization's setting for restricting contract creation
+	OrgRestrictContractCreationToAdmins bool
 }
 
 type WorkflowUpdateOpts struct {
