@@ -181,18 +181,32 @@ func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestat
 // PushIncompleteAttestation pushes an attestation to the control plane
 // Note: All required materials must be present for the push to succeed.
 func (action *AttestationAdd) PushIncompleteAttestation(ctx context.Context, attestationID string) error {
+	// Check if keyless signing is available
+	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
+	if err != nil {
+		return fmt.Errorf("loading crafter: %w", err)
+	}
+
+	if err := crafter.LoadCraftingState(ctx, attestationID); err != nil {
+		return fmt.Errorf("loading existing attestation: %w", err)
+	}
+
+	if crafter.CraftingState.GetAttestation().GetSigningOptions().GetSigningCa() == "" {
+		return fmt.Errorf("keyless signing not configured")
+	}
+
 	pushAction, err := NewAttestationPush(&AttestationPushOpts{
 		ActionsOpts:    action.ActionsOpts,
 		KeyPath:        "", // Keyless mode only
 		LocalStatePath: action.localStatePath,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create push action: %w", err)
+		return fmt.Errorf("creating push action: %w", err)
 	}
 
 	_, err = pushAction.Run(ctx, attestationID, nil, false)
 	if err != nil {
-		return fmt.Errorf("failed to auto-push attestation: %w", err)
+		return fmt.Errorf("pushing attestation: %w", err)
 	}
 
 	return nil
