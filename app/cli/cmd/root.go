@@ -153,7 +153,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
 			if shouldAskForConfirmation(cmd) && isUserToken && !flagYes {
-				logger.Warn().Msgf("You are running in user-attended mode. For automated workflows, use an API token instead.")
+logger.Warn().Msg("User-attended mode detected. This is intended for local testing only. For CI/CD or automated workflows, please use an API token.")
 				if !confirmationPrompt(fmt.Sprintf("This command will run against the organization %q", orgName)) {
 					return errors.New("command canceled by user")
 				}
