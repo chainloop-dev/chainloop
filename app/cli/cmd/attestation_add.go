@@ -137,8 +137,8 @@ func newAttestationAddCmd() *cobra.Command {
 									if err := a.PushIncompleteAttestation(cmd.Context(), attestationID); err != nil {
 										logger.Warn().Msgf("failed to push attestation: %v", err)
 									}
+									return NewGateError(eval.Name)
 								}
-								return NewGateError(eval.Name)
 							}
 						}
 					}
