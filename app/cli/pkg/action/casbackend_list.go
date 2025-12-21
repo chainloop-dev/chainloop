@@ -33,6 +33,7 @@ type CASBackendItem struct {
 	Description      string            `json:"description"`
 	Provider         string            `json:"provider"`
 	Default          bool              `json:"default"`
+	Fallback         bool              `json:"fallback"`
 	Inline           bool              `json:"inline"`
 	Limits           *CASBackendLimits `json:"limits"`
 	ValidationStatus ValidationStatus  `json:"validationStatus"`
@@ -85,6 +86,7 @@ func pbCASBackendItemToAction(in *pb.CASBackendItem) *CASBackendItem {
 		Description: in.Description,
 		Provider:    in.Provider,
 		Default:     in.Default,
+		Fallback:    in.Fallback,
 		CreatedAt:   toTimePtr(in.CreatedAt.AsTime()),
 		ValidatedAt: toTimePtr(in.ValidatedAt.AsTime()),
 		Inline:      in.IsInline,
