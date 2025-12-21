@@ -179,7 +179,8 @@ func (action *AttestationAdd) GetPolicyEvaluations(ctx context.Context, attestat
 }
 
 // PushIncompleteAttestation pushes an attestation to the control plane
-// Note: All required materials must be present for the push to succeed.
+// Note: All required materials must be present for the push to succeed and only keyless signing is supported
+
 func (action *AttestationAdd) PushIncompleteAttestation(ctx context.Context, attestationID string) error {
 	// Check if keyless signing is available
 	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
@@ -197,7 +198,6 @@ func (action *AttestationAdd) PushIncompleteAttestation(ctx context.Context, att
 
 	pushAction, err := NewAttestationPush(&AttestationPushOpts{
 		ActionsOpts:    action.ActionsOpts,
-		KeyPath:        "", // Keyless mode only
 		LocalStatePath: action.localStatePath,
 	})
 	if err != nil {
