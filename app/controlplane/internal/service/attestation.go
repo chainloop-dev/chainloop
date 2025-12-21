@@ -182,9 +182,33 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "default CAS backend not found")
 	}
 
-	// Check the status of the backend
+	// Check the status of the backend, try fallback if invalid
 	if backend.ValidationStatus != biz.CASBackendValidationOK {
-		return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+		s.log.Warnw("msg", "default CAS backend validation failed, attempting fallback",
+			"backend", backend.Name, "status", backend.ValidationStatus)
+
+		// Try to find fallback backend
+		fallbackBackend, err := s.casUC.FindFallbackBackend(context.Background(), robotAccount.OrgID)
+		if err != nil && !biz.IsNotFound(err) {
+			return nil, fmt.Errorf("failed to find fallback CAS backend: %w", err)
+		}
+
+		if fallbackBackend == nil {
+			// No fallback configured
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(
+				"default CAS backend is unreachable and no fallback backend is configured")
+		}
+
+		// Check fallback backend validation status
+		if fallbackBackend.ValidationStatus != biz.CASBackendValidationOK {
+			// Both backends are down
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(
+				"both default and fallback CAS backends are unreachable")
+		}
+
+		// Use fallback backend
+		s.log.Infow("msg", "using fallback CAS backend", "backend", fallbackBackend.Name)
+		backend = fallbackBackend
 	}
 
 	// Create workflowRun

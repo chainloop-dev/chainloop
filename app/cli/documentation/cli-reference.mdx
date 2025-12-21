@@ -640,6 +640,7 @@ Options
 ```
 --default              set the backend as default in your organization
 --description string   descriptive information for this registration
+--fallback             set the backend as fallback in your organization
 -h, --help                 help for add
 --max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string          CAS backend name
@@ -691,6 +692,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -731,6 +733,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -770,6 +773,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -807,6 +811,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -915,13 +920,14 @@ Options inherited from parent commands
 
 ### chainloop cas-backend update
 
-Update a CAS backend description, credentials, default status, or max bytes
+Update a CAS backend description, credentials, default status, fallback status, or max bytes
 
 Options
 
 ```
 --default              set the backend as default in your organization
 --description string   descriptive information for this registration
+--fallback             set the backend as fallback in your organization
 -h, --help                 help for update
 --max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --name string          CAS backend name
@@ -972,6 +978,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
@@ -1009,6 +1016,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
@@ -1047,6 +1055,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --name string               CAS backend name
@@ -1058,7 +1067,7 @@ Options inherited from parent commands
 
 #### chainloop cas-backend update inline
 
-Update the Inline, fallback CAS Backend description or default status
+Update the Inline CAS Backend description, default status, or fallback status
 
 ```
 chainloop cas-backend update inline [flags]
@@ -1082,6 +1091,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
@@ -1118,6 +1128,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
