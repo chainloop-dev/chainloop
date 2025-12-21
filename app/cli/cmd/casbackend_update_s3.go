@@ -53,6 +53,7 @@ func newCASBackendUpdateAWSS3Cmd() *cobra.Command {
 					"region":          region,
 				},
 				Default:  isDefaultCASBackendUpdateOption,
+				Fallback: isFallbackCASBackendUpdateOption,
 				MaxBytes: parsedMaxBytes,
 			}
 

@@ -31,6 +31,10 @@
       "description": "Descriptive name",
       "type": "string"
     },
+    "fallback": {
+      "description": "Set as fallback in your organization",
+      "type": "boolean"
+    },
     "location": {
       "description": "Location, e.g. bucket name, OCI bucket name, ...",
       "minLength": 1,

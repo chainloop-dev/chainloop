@@ -180,6 +180,8 @@ type CASBackendServiceCreateRequest struct {
 	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	// Set as default in your organization
 	Default bool `protobuf:"varint,4,opt,name=default,proto3" json:"default,omitempty"`
+	// Set as fallback in your organization
+	Fallback bool `protobuf:"varint,8,opt,name=fallback,proto3" json:"fallback,omitempty"`
 	// Arbitrary configuration for the integration
 	Credentials *structpb.Struct `protobuf:"bytes,5,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	Name        string           `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"`
@@ -244,6 +246,13 @@ func (x *CASBackendServiceCreateRequest) GetDescription() string {
 func (x *CASBackendServiceCreateRequest) GetDefault() bool {
 	if x != nil {
 		return x.Default
+	}
+	return false
+}
+
+func (x *CASBackendServiceCreateRequest) GetFallback() bool {
+	if x != nil {
+		return x.Fallback
 	}
 	return false
 }
@@ -325,6 +334,8 @@ type CASBackendServiceUpdateRequest struct {
 	Description *string `protobuf:"bytes,2,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	// Set as default in your organization
 	Default *bool `protobuf:"varint,3,opt,name=default,proto3,oneof" json:"default,omitempty"`
+	// Set as fallback in your organization
+	Fallback *bool `protobuf:"varint,6,opt,name=fallback,proto3,oneof" json:"fallback,omitempty"`
 	// Credentials, useful for rotation
 	Credentials *structpb.Struct `protobuf:"bytes,4,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	// Maximum size in bytes for each blob stored in this backend.
@@ -380,6 +391,13 @@ func (x *CASBackendServiceUpdateRequest) GetDescription() string {
 func (x *CASBackendServiceUpdateRequest) GetDefault() bool {
 	if x != nil && x.Default != nil {
 		return *x.Default
+	}
+	return false
+}
+
+func (x *CASBackendServiceUpdateRequest) GetFallback() bool {
+	if x != nil && x.Fallback != nil {
+		return *x.Fallback
 	}
 	return false
 }
@@ -609,29 +627,32 @@ const file_controlplane_v1_cas_backends_proto_rawDesc = "" +
 	"\"controlplane/v1/cas_backends.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a'controlplane/v1/response_messages.proto\x1a\x13errors/errors.proto\x1a\x1cgoogle/protobuf/struct.proto\"\x1e\n" +
 	"\x1cCASBackendServiceListRequest\"X\n" +
 	"\x1dCASBackendServiceListResponse\x127\n" +
-	"\x06result\x18\x01 \x03(\v2\x1f.controlplane.v1.CASBackendItemR\x06result\"\xb6\x02\n" +
+	"\x06result\x18\x01 \x03(\v2\x1f.controlplane.v1.CASBackendItemR\x06result\"\xd2\x02\n" +
 	"\x1eCASBackendServiceCreateRequest\x12#\n" +
 	"\blocation\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\blocation\x12#\n" +
 	"\bprovider\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\bprovider\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x18\n" +
-	"\adefault\x18\x04 \x01(\bR\adefault\x12A\n" +
+	"\adefault\x18\x04 \x01(\bR\adefault\x12\x1a\n" +
+	"\bfallback\x18\b \x01(\bR\bfallback\x12A\n" +
 	"\vcredentials\x18\x05 \x01(\v2\x17.google.protobuf.StructB\x06\xbaH\x03\xc8\x01\x01R\vcredentials\x12\x1b\n" +
 	"\x04name\x18\x06 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12 \n" +
 	"\tmax_bytes\x18\a \x01(\x03H\x00R\bmaxBytes\x88\x01\x01B\f\n" +
 	"\n" +
 	"_max_bytes\"Z\n" +
 	"\x1fCASBackendServiceCreateResponse\x127\n" +
-	"\x06result\x18\x01 \x01(\v2\x1f.controlplane.v1.CASBackendItemR\x06result\"\x87\x03\n" +
+	"\x06result\x18\x01 \x01(\v2\x1f.controlplane.v1.CASBackendItemR\x06result\"\xb5\x03\n" +
 	"\x1eCASBackendServiceUpdateRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12%\n" +
 	"\vdescription\x18\x02 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1d\n" +
-	"\adefault\x18\x03 \x01(\bH\x01R\adefault\x88\x01\x01\x129\n" +
+	"\adefault\x18\x03 \x01(\bH\x01R\adefault\x88\x01\x01\x12\x1f\n" +
+	"\bfallback\x18\x06 \x01(\bH\x02R\bfallback\x88\x01\x01\x129\n" +
 	"\vcredentials\x18\x04 \x01(\v2\x17.google.protobuf.StructR\vcredentials\x12 \n" +
-	"\tmax_bytes\x18\x05 \x01(\x03H\x02R\bmaxBytes\x88\x01\x01B\x0e\n" +
+	"\tmax_bytes\x18\x05 \x01(\x03H\x03R\bmaxBytes\x88\x01\x01B\x0e\n" +
 	"\f_descriptionB\n" +
 	"\n" +
-	"\b_defaultB\f\n" +
+	"\b_defaultB\v\n" +
+	"\t_fallbackB\f\n" +
 	"\n" +
 	"_max_bytes\"Z\n" +
 	"\x1fCASBackendServiceUpdateResponse\x127\n" +

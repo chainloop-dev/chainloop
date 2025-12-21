@@ -47,6 +47,8 @@ message CASBackendServiceCreateRequest {
   string description = 3;
   // Set as default in your organization
   bool default = 4;
+  // Set as fallback in your organization
+  bool fallback = 8;
   // Arbitrary configuration for the integration
   google.protobuf.Struct credentials = 5 [(buf.validate.field).required = true];
   string name = 6 [(buf.validate.field).string.min_len = 1];
@@ -77,6 +79,8 @@ message CASBackendServiceUpdateRequest {
   optional string description = 2;
   // Set as default in your organization
   optional bool default = 3;
+  // Set as fallback in your organization
+  optional bool fallback = 6;
   // Credentials, useful for rotation
   google.protobuf.Struct credentials = 4;
   // Maximum size in bytes for each blob stored in this backend.

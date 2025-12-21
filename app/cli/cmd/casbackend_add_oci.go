@@ -36,6 +36,9 @@ func newCASBackendAddOCICmd() *cobra.Command {
 			isDefault, err := cmd.Flags().GetBool("default")
 			cobra.CheckErr(err)
 
+			isFallback, err := cmd.Flags().GetBool("fallback")
+			cobra.CheckErr(err)
+
 			name, err := cmd.Flags().GetString("name")
 			cobra.CheckErr(err)
 
@@ -60,6 +63,7 @@ func newCASBackendAddOCICmd() *cobra.Command {
 					"password": password,
 				},
 				Default:  isDefault,
+				Fallback: isFallback,
 				MaxBytes: parsedMaxBytes,
 			}
 

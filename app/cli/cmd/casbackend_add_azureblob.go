@@ -39,6 +39,9 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 			isDefault, err := cmd.Flags().GetBool("default")
 			cobra.CheckErr(err)
 
+			isFallback, err := cmd.Flags().GetBool("fallback")
+			cobra.CheckErr(err)
+
 			name, err := cmd.Flags().GetString("name")
 			cobra.CheckErr(err)
 
@@ -70,6 +73,7 @@ func newCASBackendAddAzureBlobStorageCmd() *cobra.Command {
 					"clientSecret": clientSecret,
 				},
 				Default:  isDefault,
+				Fallback: isFallback,
 				MaxBytes: parsedMaxBytes,
 			}
 

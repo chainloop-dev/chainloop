@@ -52,6 +52,7 @@ func newCASBackendUpdateOCICmd() *cobra.Command {
 					"password": password,
 				},
 				Default:  isDefaultCASBackendUpdateOption,
+				Fallback: isFallbackCASBackendUpdateOption,
 				MaxBytes: parsedMaxBytes,
 			}
 

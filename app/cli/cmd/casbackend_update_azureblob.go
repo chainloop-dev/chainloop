@@ -53,6 +53,7 @@ func newCASBackendUpdateAzureBlobCmd() *cobra.Command {
 					"clientSecret": clientSecret,
 				},
 				Default:  isDefaultCASBackendUpdateOption,
+				Fallback: isFallbackCASBackendUpdateOption,
 				MaxBytes: parsedMaxBytes,
 			}
 
