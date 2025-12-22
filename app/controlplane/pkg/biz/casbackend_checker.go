@@ -39,7 +39,7 @@ type CASBackendChecker struct {
 
 type CASBackendCheckerOpts struct {
 	// Whether to check only default backends or all backends
-	OnlyDefaults *bool
+	OnlyDefaultsOrFallbacks *bool
 	// Interval between checks, defaults to 30 minutes
 	CheckInterval time.Duration
 	// Timeout for each individual backend validation, defaults to 10 seconds
@@ -66,9 +66,9 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 		interval = opts.CheckInterval
 	}
 
-	onlyDefaults := true
-	if opts != nil && opts.OnlyDefaults != nil {
-		onlyDefaults = *opts.OnlyDefaults
+	onlyDefaultsOrFallbacks := true
+	if opts != nil && opts.OnlyDefaultsOrFallbacks != nil {
+		onlyDefaultsOrFallbacks = *opts.OnlyDefaultsOrFallbacks
 	}
 
 	// Apply validation timeout from options if provided
@@ -82,7 +82,7 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 		initialDelay = opts.InitialDelay
 	}
 
-	c.logger.Infow("msg", "CAS backend checker configured", "initialDelay", initialDelay, "interval", interval, "allBackends", !onlyDefaults, "timeout", c.validationTimeout)
+	c.logger.Infow("msg", "CAS backend checker configured", "initialDelay", initialDelay, "interval", interval, "allBackends", !onlyDefaultsOrFallbacks, "timeout", c.validationTimeout)
 
 	select {
 	case <-ctx.Done():
@@ -93,7 +93,7 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 	}
 
 	// Run first check
-	if err := c.checkBackends(ctx, onlyDefaults); err != nil {
+	if err := c.checkBackends(ctx, onlyDefaultsOrFallbacks); err != nil {
 		c.logger.Errorf("initial CAS backend check failed: %v", err)
 	}
 
@@ -107,7 +107,7 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 			c.logger.Info("CAS backend checker stopping due to context cancellation")
 			return
 		case <-ticker.C:
-			if err := c.checkBackends(ctx, onlyDefaults); err != nil {
+			if err := c.checkBackends(ctx, onlyDefaultsOrFallbacks); err != nil {
 				c.logger.Errorf("periodic CAS backend check failed: %v", err)
 			}
 		}
