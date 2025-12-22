@@ -180,7 +180,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", "default CAS backend not found")
 		} else if biz.IsErrValidation(err) {
-			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(err.Error())
+			return nil, err
 		}
 		return nil, fmt.Errorf("failed to find CAS backend: %w", err)
 	}
