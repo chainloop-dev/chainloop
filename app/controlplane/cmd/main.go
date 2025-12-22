@@ -171,7 +171,7 @@ func main() {
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
 			CheckInterval: 30 * time.Minute,
 			InitialDelay:  initialDelay,
-			OnlyDefaults:  toPtr(true),
+			OnlyDefaultsOrFallbacks:  toPtr(true),
 		})
 
 		// Start the background CAS Backend checker for ALL backends (every 24 hours)
@@ -179,7 +179,7 @@ func main() {
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
 			CheckInterval: 24 * time.Hour,
 			InitialDelay:  (24 * time.Hour) + jitter,
-			OnlyDefaults:  toPtr(false),
+			OnlyDefaultsOrFallbacks:  toPtr(false),
 		})
 	}
 
