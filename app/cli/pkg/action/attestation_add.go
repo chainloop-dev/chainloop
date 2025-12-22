@@ -99,7 +99,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	if !crafter.CraftingState.GetDryRun() {
 		client := pb.NewAttestationServiceClient(action.CPConnection)
 		workflowRunID := crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId()
-		connectionCloserFn, getCASBackendErr := getCASBackend(ctx, client, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
+		connectionCloserFn, getCASBackendErr := getCASBackend(ctx, client, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend, nil)
 		if getCASBackendErr != nil {
 			return nil, fmt.Errorf("failed to get CAS backend: %w", getCASBackendErr)
 		}

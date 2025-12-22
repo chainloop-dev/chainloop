@@ -24,6 +24,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/filesystem"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/remote"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -100,7 +101,7 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 }
 
 // getCASBackend tries to get CAS upload credentials and set up a CAS client
-func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend) (func() error, error) {
+func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend, casBackendInfo **clientAPI.Attestation_CASBackend) (func() error, error) {
 	credsResp, err := client.GetUploadCreds(ctx, &pb.AttestationServiceGetUploadCredsRequest{
 		WorkflowRunId: workflowRunID,
 	})
@@ -120,6 +121,14 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 	if backend == nil {
 		logger.Debug().Msg("no backend info in upload creds, will store inline")
 		return nil, fmt.Errorf("no backend found in upload creds")
+	}
+
+	if casBackendInfo != nil {
+		*casBackendInfo = &clientAPI.Attestation_CASBackend{
+			CasBackendId:   backend.Id,
+			CasBackendName: backend.Name,
+			Fallback:       backend.Fallback,
+		}
 	}
 
 	casBackend.Name = backend.Provider

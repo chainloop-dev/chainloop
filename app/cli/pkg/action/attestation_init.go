@@ -231,8 +231,9 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	// Get CAS credentials for PR metadata upload
 	var casBackend = &casclient.CASBackend{Name: "not-set"}
+	var casBackendInfo *clientAPI.Attestation_CASBackend
 	if !action.dryRun && attestationID != "" {
-		connectionCloserFn, err := getCASBackend(ctx, client, attestationID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
+		connectionCloserFn, err := getCASBackend(ctx, client, attestationID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend, &casBackendInfo)
 		if err != nil {
 			// We don't want to fail the attestation initialization if CAS setup fails, it's a best-effort feature for PR/MR metadata
 			action.Logger.Warn().Err(err).Msg("unexpected error getting CAS backend")
@@ -275,7 +276,8 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,
 		},
-		Auth: authInfo,
+		Auth:       authInfo,
+		CASBackend: casBackendInfo,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {
