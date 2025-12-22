@@ -102,26 +102,17 @@ func BlockIfCASBackendNotValid(uc biz.CASBackendReader) middleware.Middleware {
 				return nil, errors.New("organization not found")
 			}
 
-			// 1 - Figure out main repository for this organization
-			repo, err := uc.FindDefaultBackend(ctx, org.ID)
-			if err != nil && !biz.IsNotFound(err) {
-				return nil, fmt.Errorf("checking for CAS backends in the org: %w", err)
-			} else if repo == nil {
-				return nil, v1.ErrorCasBackendErrorReasonRequired("your organization does not have a CAS Backend configured yet")
-			}
-
-			// 2 - compare the status
-			if repo.ValidationStatus != biz.CASBackendValidationOK {
-				// 3 - Check if there's a fallback backend available
-				fallbackRepo, err := uc.FindFallbackBackend(ctx, org.ID)
-				if err != nil && !biz.IsNotFound(err) {
-					return nil, fmt.Errorf("checking for fallback CAS backend: %w", err)
-				}
-
-				if fallbackRepo == nil || fallbackRepo.ValidationStatus != biz.CASBackendValidationOK {
+			// Check if there's a valid CAS backend (default or fallback)
+			_, err := uc.FindDefaultOrFallbackBackend(ctx, org.ID)
+			if err != nil {
+				if biz.IsNotFound(err) {
+					return nil, v1.ErrorCasBackendErrorReasonRequired("your organization does not have a CAS Backend configured yet")
+				} else if biz.IsErrValidation(err) {
 					return nil, v1.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
 				}
+				return nil, fmt.Errorf("checking for CAS backends in the org: %w", err)
 			}
+
 			return handler(ctx, req)
 		}
 	}

@@ -122,6 +122,7 @@ type CASBackendRepo interface {
 type CASBackendReader interface {
 	FindDefaultBackend(ctx context.Context, orgID string) (*CASBackend, error)
 	FindFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error)
+	FindDefaultOrFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error)
 	FindByIDInOrg(ctx context.Context, OrgID, ID string) (*CASBackend, error)
 	PerformValidation(ctx context.Context, ID string) error
 }
@@ -233,6 +234,41 @@ func (uc *CASBackendUseCase) FindFallbackBackend(ctx context.Context, orgID stri
 	}
 
 	return backend, nil
+}
+
+// FindDefaultOrFallbackBackend finds a valid CAS backend for the organization.
+// Attempts to use the default backend first, if invalid it uses the fallback backend.
+func (uc *CASBackendUseCase) FindDefaultOrFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	// Find the default backend
+	defaultBackend, err := uc.FindDefaultBackend(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if default backend is valid
+	if defaultBackend.ValidationStatus == CASBackendValidationOK {
+		return defaultBackend, nil
+	}
+
+	// Default backend is invalid, try fallback
+	uc.logger.Infow("msg", "default CAS backend validation failed, attempting fallback",
+		"backend", defaultBackend.Name, "status", defaultBackend.ValidationStatus, "orgID", orgID)
+
+	fallbackBackend, err := uc.FindFallbackBackend(ctx, orgID)
+	if err != nil {
+		if IsNotFound(err) {
+			return nil, NewErrValidationStr("default CAS backend is unreachable and no fallback backend is configured")
+		}
+		return nil, err
+	}
+
+	// Check if fallback backend is valid
+	if fallbackBackend.ValidationStatus != CASBackendValidationOK {
+		return nil, NewErrValidationStr("both default and fallback CAS backends are unreachable")
+	}
+
+	uc.logger.Infow("msg", "using fallback CAS backend", "backend", fallbackBackend.Name, "orgID", orgID)
+	return fallbackBackend, nil
 }
 
 func (uc *CASBackendUseCase) CreateInlineBackend(ctx context.Context, orgID string) (*CASBackend, error) {

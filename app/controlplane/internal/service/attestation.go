@@ -174,41 +174,15 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	// find the default CAS backend to associate the workflow
-	backend, err := s.casUC.FindDefaultBackend(context.Background(), robotAccount.OrgID)
-	if err != nil && !biz.IsNotFound(err) {
-		return nil, fmt.Errorf("failed to find default CAS backend: %w", err)
-	} else if err != nil {
-		return nil, errors.NotFound("not found", "default CAS backend not found")
-	}
-
-	// Check the status of the backend, try fallback if invalid
-	if backend.ValidationStatus != biz.CASBackendValidationOK {
-		s.log.Warnw("msg", "default CAS backend validation failed, attempting fallback",
-			"backend", backend.Name, "status", backend.ValidationStatus)
-
-		// Try to find fallback backend
-		fallbackBackend, err := s.casUC.FindFallbackBackend(context.Background(), robotAccount.OrgID)
-		if err != nil && !biz.IsNotFound(err) {
-			return nil, fmt.Errorf("failed to find fallback CAS backend: %w", err)
+	// Find the default or fallback CAS backend to associate the workflow
+	backend, err := s.casUC.FindDefaultOrFallbackBackend(context.Background(), robotAccount.OrgID)
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, errors.NotFound("not found", "default CAS backend not found")
+		} else if biz.IsErrValidation(err) {
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(err.Error())
 		}
-
-		if fallbackBackend == nil {
-			// No fallback configured
-			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(
-				"default CAS backend is unreachable and no fallback backend is configured")
-		}
-
-		// Check fallback backend validation status
-		if fallbackBackend.ValidationStatus != biz.CASBackendValidationOK {
-			// Both backends are down
-			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(
-				"both default and fallback CAS backends are unreachable")
-		}
-
-		// Use fallback backend
-		s.log.Infow("msg", "using fallback CAS backend", "backend", fallbackBackend.Name)
-		backend = fallbackBackend
+		return nil, fmt.Errorf("failed to find CAS backend: %w", err)
 	}
 
 	// Create workflowRun
