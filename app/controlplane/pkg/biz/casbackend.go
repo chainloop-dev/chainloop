@@ -121,6 +121,7 @@ type CASBackendRepo interface {
 
 type CASBackendReader interface {
 	FindDefaultBackend(ctx context.Context, orgID string) (*CASBackend, error)
+	FindFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error)
 	FindByIDInOrg(ctx context.Context, OrgID, ID string) (*CASBackend, error)
 	PerformValidation(ctx context.Context, ID string) error
 }
@@ -234,7 +235,7 @@ func (uc *CASBackendUseCase) FindFallbackBackend(ctx context.Context, orgID stri
 	return backend, nil
 }
 
-func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+func (uc *CASBackendUseCase) CreateInlineBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

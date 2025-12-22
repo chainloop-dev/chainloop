@@ -62,7 +62,7 @@ func ValidateCASBackend(uc biz.CASBackendReader) middleware.Middleware {
 	}
 }
 
-// validateRepoIfNeeded will re-run a validation and return the updated repository
+// validateCASBackend will re-run a validation and return the updated repository
 func validateCASBackend(ctx context.Context, uc biz.CASBackendReader, repo *biz.CASBackend) (*biz.CASBackend, error) {
 	// re-run the validation
 	if err := uc.PerformValidation(ctx, repo.ID.String()); err != nil {
@@ -112,7 +112,15 @@ func BlockIfCASBackendNotValid(uc biz.CASBackendReader) middleware.Middleware {
 
 			// 2 - compare the status
 			if repo.ValidationStatus != biz.CASBackendValidationOK {
-				return nil, v1.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+				// 3 - Check if there's a fallback backend available
+				fallbackRepo, err := uc.FindFallbackBackend(ctx, org.ID)
+				if err != nil && !biz.IsNotFound(err) {
+					return nil, fmt.Errorf("checking for fallback CAS backend: %w", err)
+				}
+
+				if fallbackRepo == nil || fallbackRepo.ValidationStatus != biz.CASBackendValidationOK {
+					return nil, v1.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+				}
 			}
 			return handler(ctx, req)
 		}

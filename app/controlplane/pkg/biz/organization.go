@@ -172,8 +172,8 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 
 	if options.createInlineBackend {
 		// Create inline CAS-backend
-		if _, err := uc.casBackendUseCase.CreateInlineFallbackBackend(ctx, org.ID); err != nil {
-			return nil, fmt.Errorf("failed to create fallback backend: %w", err)
+		if _, err := uc.casBackendUseCase.CreateInlineBackend(ctx, org.ID); err != nil {
+			return nil, fmt.Errorf("failed to create inline backend: %w", err)
 		}
 	}
 
