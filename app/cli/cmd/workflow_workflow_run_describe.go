@@ -162,8 +162,10 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	}
 
 	gt.AppendRow(table.Row{"Policies violation strategy", att.PolicyEvaluationStatus.Strategy})
-	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
+	if att.PolicyEvaluationStatus.Blocked {
 		gt.AppendRow(table.Row{"Run Blocked", att.PolicyEvaluationStatus.Blocked})
+	}
+	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
 		gt.AppendRow(table.Row{"Policy enforcement bypassed", att.PolicyEvaluationStatus.Bypassed})
 	}
 

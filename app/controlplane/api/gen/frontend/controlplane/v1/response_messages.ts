@@ -441,6 +441,7 @@ export interface PolicyEvaluation {
   skipReasons: string[];
   requirements: string[];
   groupReference?: PolicyReference;
+  gate: boolean;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -2203,6 +2204,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     skipReasons: [],
     requirements: [],
     groupReference: undefined,
+    gate: false,
   };
 }
 
@@ -2249,6 +2251,9 @@ export const PolicyEvaluation = {
     }
     if (message.groupReference !== undefined) {
       PolicyReference.encode(message.groupReference, writer.uint32(122).fork()).ldelim();
+    }
+    if (message.gate === true) {
+      writer.uint32(128).bool(message.gate);
     }
     return writer;
   },
@@ -2364,6 +2369,13 @@ export const PolicyEvaluation = {
 
           message.groupReference = PolicyReference.decode(reader, reader.uint32());
           continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.gate = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2401,6 +2413,7 @@ export const PolicyEvaluation = {
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
       requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
       groupReference: isSet(object.groupReference) ? PolicyReference.fromJSON(object.groupReference) : undefined,
+      gate: isSet(object.gate) ? Boolean(object.gate) : false,
     };
   },
 
@@ -2448,6 +2461,7 @@ export const PolicyEvaluation = {
     }
     message.groupReference !== undefined &&
       (obj.groupReference = message.groupReference ? PolicyReference.toJSON(message.groupReference) : undefined);
+    message.gate !== undefined && (obj.gate = message.gate);
     return obj;
   },
 
@@ -2488,6 +2502,7 @@ export const PolicyEvaluation = {
     message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
       ? PolicyReference.fromPartial(object.groupReference)
       : undefined;
+    message.gate = object.gate ?? false;
     return message;
   },
 };

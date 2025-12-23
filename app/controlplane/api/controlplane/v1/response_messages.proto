@@ -161,6 +161,7 @@ message PolicyEvaluation {
   repeated string skip_reasons = 13;
   repeated string requirements = 14;
   PolicyReference group_reference = 15;
+  bool gate = 16;
 }
 
 message PolicyViolation {
