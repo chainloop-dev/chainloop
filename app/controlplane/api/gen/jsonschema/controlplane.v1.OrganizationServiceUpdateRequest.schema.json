@@ -7,6 +7,10 @@
       "description": "\"optional\" allow us to detect if the value is explicitly set",
       "type": "boolean"
     },
+    "^(disableRequirementsAutoMatching)$": {
+      "description": "disable_requirements_auto_matching disables automatic matching of policies to requirements",
+      "type": "boolean"
+    },
     "^(policiesAllowedHostnames)$": {
       "description": "array of hostnames that are allowed to be used in the policies",
       "items": {
@@ -30,6 +34,10 @@
   "properties": {
     "block_on_policy_violation": {
       "description": "\"optional\" allow us to detect if the value is explicitly set",
+      "type": "boolean"
+    },
+    "disable_requirements_auto_matching": {
+      "description": "disable_requirements_auto_matching disables automatic matching of policies to requirements",
       "type": "boolean"
     },
     "name": {

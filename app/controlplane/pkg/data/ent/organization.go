@@ -35,6 +35,8 @@ type Organization struct {
 	PreventImplicitWorkflowCreation bool `json:"prevent_implicit_workflow_creation,omitempty"`
 	// RestrictContractCreationToOrgAdmins holds the value of the "restrict_contract_creation_to_org_admins" field.
 	RestrictContractCreationToOrgAdmins bool `json:"restrict_contract_creation_to_org_admins,omitempty"`
+	// DisableRequirementsAutoMatching holds the value of the "disable_requirements_auto_matching" field.
+	DisableRequirementsAutoMatching bool `json:"disable_requirements_auto_matching,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
 	Edges        OrganizationEdges `json:"edges"`
@@ -143,7 +145,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case organization.FieldPoliciesAllowedHostnames:
 			values[i] = new([]byte)
-		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins:
+		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins, organization.FieldDisableRequirementsAutoMatching:
 			values[i] = new(sql.NullBool)
 		case organization.FieldName:
 			values[i] = new(sql.NullString)
@@ -221,6 +223,12 @@ func (_m *Organization) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field restrict_contract_creation_to_org_admins", values[i])
 			} else if value.Valid {
 				_m.RestrictContractCreationToOrgAdmins = value.Bool
+			}
+		case organization.FieldDisableRequirementsAutoMatching:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field disable_requirements_auto_matching", values[i])
+			} else if value.Valid {
+				_m.DisableRequirementsAutoMatching = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -321,6 +329,9 @@ func (_m *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("restrict_contract_creation_to_org_admins=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RestrictContractCreationToOrgAdmins))
+	builder.WriteString(", ")
+	builder.WriteString("disable_requirements_auto_matching=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DisableRequirementsAutoMatching))
 	builder.WriteByte(')')
 	return builder.String()
 }

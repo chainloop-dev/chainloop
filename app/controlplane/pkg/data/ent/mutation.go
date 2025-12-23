@@ -8708,6 +8708,7 @@ type OrganizationMutation struct {
 	appendpolicies_allowed_hostnames         []string
 	prevent_implicit_workflow_creation       *bool
 	restrict_contract_creation_to_org_admins *bool
+	disable_requirements_auto_matching       *bool
 	clearedFields                            map[string]struct{}
 	memberships                              map[uuid.UUID]struct{}
 	removedmemberships                       map[uuid.UUID]struct{}
@@ -9170,6 +9171,42 @@ func (m *OrganizationMutation) OldRestrictContractCreationToOrgAdmins(ctx contex
 // ResetRestrictContractCreationToOrgAdmins resets all changes to the "restrict_contract_creation_to_org_admins" field.
 func (m *OrganizationMutation) ResetRestrictContractCreationToOrgAdmins() {
 	m.restrict_contract_creation_to_org_admins = nil
+}
+
+// SetDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field.
+func (m *OrganizationMutation) SetDisableRequirementsAutoMatching(b bool) {
+	m.disable_requirements_auto_matching = &b
+}
+
+// DisableRequirementsAutoMatching returns the value of the "disable_requirements_auto_matching" field in the mutation.
+func (m *OrganizationMutation) DisableRequirementsAutoMatching() (r bool, exists bool) {
+	v := m.disable_requirements_auto_matching
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisableRequirementsAutoMatching returns the old "disable_requirements_auto_matching" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldDisableRequirementsAutoMatching(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisableRequirementsAutoMatching is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisableRequirementsAutoMatching requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisableRequirementsAutoMatching: %w", err)
+	}
+	return oldValue.DisableRequirementsAutoMatching, nil
+}
+
+// ResetDisableRequirementsAutoMatching resets all changes to the "disable_requirements_auto_matching" field.
+func (m *OrganizationMutation) ResetDisableRequirementsAutoMatching() {
+	m.disable_requirements_auto_matching = nil
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -9638,7 +9675,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9662,6 +9699,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.restrict_contract_creation_to_org_admins != nil {
 		fields = append(fields, organization.FieldRestrictContractCreationToOrgAdmins)
+	}
+	if m.disable_requirements_auto_matching != nil {
+		fields = append(fields, organization.FieldDisableRequirementsAutoMatching)
 	}
 	return fields
 }
@@ -9687,6 +9727,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.PreventImplicitWorkflowCreation()
 	case organization.FieldRestrictContractCreationToOrgAdmins:
 		return m.RestrictContractCreationToOrgAdmins()
+	case organization.FieldDisableRequirementsAutoMatching:
+		return m.DisableRequirementsAutoMatching()
 	}
 	return nil, false
 }
@@ -9712,6 +9754,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldPreventImplicitWorkflowCreation(ctx)
 	case organization.FieldRestrictContractCreationToOrgAdmins:
 		return m.OldRestrictContractCreationToOrgAdmins(ctx)
+	case organization.FieldDisableRequirementsAutoMatching:
+		return m.OldDisableRequirementsAutoMatching(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9776,6 +9820,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRestrictContractCreationToOrgAdmins(v)
+		return nil
+	case organization.FieldDisableRequirementsAutoMatching:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisableRequirementsAutoMatching(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -9864,6 +9915,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldRestrictContractCreationToOrgAdmins:
 		m.ResetRestrictContractCreationToOrgAdmins()
+		return nil
+	case organization.FieldDisableRequirementsAutoMatching:
+		m.ResetDisableRequirementsAutoMatching()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ func (Organization) Fields() []ent.Field {
 		field.Bool("prevent_implicit_workflow_creation").Default(false),
 		// restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins
 		field.Bool("restrict_contract_creation_to_org_admins").Default(false),
+		// disable_requirements_auto_matching disables automatic matching of policies to requirements
+		field.Bool("disable_requirements_auto_matching").Default(false),
 	}
 }
 

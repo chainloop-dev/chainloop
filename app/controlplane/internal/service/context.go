@@ -123,6 +123,7 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 		PolicyAllowedHostnames:              m.PoliciesAllowedHostnames,
 		PreventImplicitWorkflowCreation:     m.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: m.RestrictContractCreationToOrgAdmins,
+		DisableRequirementsAutoMatching:     m.DisableRequirementsAutoMatching,
 	}
 }
 

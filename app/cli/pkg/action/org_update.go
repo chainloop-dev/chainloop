@@ -33,6 +33,7 @@ type NewOrgUpdateOpts struct {
 	BlockOnPolicyViolation          *bool
 	PoliciesAllowedHostnames        *[]string
 	PreventImplicitWorkflowCreation *bool
+	DisableRequirementsAutoMatching *bool
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -42,6 +43,7 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 		Name:                            name,
 		BlockOnPolicyViolation:          opts.BlockOnPolicyViolation,
 		PreventImplicitWorkflowCreation: opts.PreventImplicitWorkflowCreation,
+		DisableRequirementsAutoMatching: opts.DisableRequirementsAutoMatching,
 	}
 
 	if opts.PoliciesAllowedHostnames != nil {

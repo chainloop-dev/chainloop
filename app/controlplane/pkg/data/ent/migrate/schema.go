@@ -424,6 +424,7 @@ var (
 		{Name: "policies_allowed_hostnames", Type: field.TypeJSON, Nullable: true},
 		{Name: "prevent_implicit_workflow_creation", Type: field.TypeBool, Default: false},
 		{Name: "restrict_contract_creation_to_org_admins", Type: field.TypeBool, Default: false},
+		{Name: "disable_requirements_auto_matching", Type: field.TypeBool, Default: false},
 	}
 	// OrganizationsTable holds the schema information for the "organizations" table.
 	OrganizationsTable = &schema.Table{

@@ -610,6 +610,8 @@ export interface OrgItem {
   preventImplicitWorkflowCreation: boolean;
   /** restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles) */
   restrictContractCreationToOrgAdmins: boolean;
+  /** disable_requirements_auto_matching disables automatic matching of policies to requirements */
+  disableRequirementsAutoMatching: boolean;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -3759,6 +3761,7 @@ function createBaseOrgItem(): OrgItem {
     policyAllowedHostnames: [],
     preventImplicitWorkflowCreation: false,
     restrictContractCreationToOrgAdmins: false,
+    disableRequirementsAutoMatching: false,
   };
 }
 
@@ -3787,6 +3790,9 @@ export const OrgItem = {
     }
     if (message.restrictContractCreationToOrgAdmins === true) {
       writer.uint32(64).bool(message.restrictContractCreationToOrgAdmins);
+    }
+    if (message.disableRequirementsAutoMatching === true) {
+      writer.uint32(72).bool(message.disableRequirementsAutoMatching);
     }
     return writer;
   },
@@ -3854,6 +3860,13 @@ export const OrgItem = {
 
           message.restrictContractCreationToOrgAdmins = reader.bool();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.disableRequirementsAutoMatching = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3881,6 +3894,9 @@ export const OrgItem = {
       restrictContractCreationToOrgAdmins: isSet(object.restrictContractCreationToOrgAdmins)
         ? Boolean(object.restrictContractCreationToOrgAdmins)
         : false,
+      disableRequirementsAutoMatching: isSet(object.disableRequirementsAutoMatching)
+        ? Boolean(object.disableRequirementsAutoMatching)
+        : false,
     };
   },
 
@@ -3903,6 +3919,8 @@ export const OrgItem = {
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     message.restrictContractCreationToOrgAdmins !== undefined &&
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
+    message.disableRequirementsAutoMatching !== undefined &&
+      (obj.disableRequirementsAutoMatching = message.disableRequirementsAutoMatching);
     return obj;
   },
 
@@ -3920,6 +3938,7 @@ export const OrgItem = {
     message.policyAllowedHostnames = object.policyAllowedHostnames?.map((e) => e) || [];
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? false;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? false;
+    message.disableRequirementsAutoMatching = object.disableRequirementsAutoMatching ?? false;
     return message;
   },
 };

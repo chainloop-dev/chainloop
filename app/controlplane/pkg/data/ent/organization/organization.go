@@ -31,6 +31,8 @@ const (
 	FieldPreventImplicitWorkflowCreation = "prevent_implicit_workflow_creation"
 	// FieldRestrictContractCreationToOrgAdmins holds the string denoting the restrict_contract_creation_to_org_admins field in the database.
 	FieldRestrictContractCreationToOrgAdmins = "restrict_contract_creation_to_org_admins"
+	// FieldDisableRequirementsAutoMatching holds the string denoting the disable_requirements_auto_matching field in the database.
+	FieldDisableRequirementsAutoMatching = "disable_requirements_auto_matching"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// EdgeWorkflowContracts holds the string denoting the workflow_contracts edge name in mutations.
@@ -118,6 +120,7 @@ var Columns = []string{
 	FieldPoliciesAllowedHostnames,
 	FieldPreventImplicitWorkflowCreation,
 	FieldRestrictContractCreationToOrgAdmins,
+	FieldDisableRequirementsAutoMatching,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -141,6 +144,8 @@ var (
 	DefaultPreventImplicitWorkflowCreation bool
 	// DefaultRestrictContractCreationToOrgAdmins holds the default value on creation for the "restrict_contract_creation_to_org_admins" field.
 	DefaultRestrictContractCreationToOrgAdmins bool
+	// DefaultDisableRequirementsAutoMatching holds the default value on creation for the "disable_requirements_auto_matching" field.
+	DefaultDisableRequirementsAutoMatching bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -186,6 +191,11 @@ func ByPreventImplicitWorkflowCreation(opts ...sql.OrderTermOption) OrderOption 
 // ByRestrictContractCreationToOrgAdmins orders the results by the restrict_contract_creation_to_org_admins field.
 func ByRestrictContractCreationToOrgAdmins(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRestrictContractCreationToOrgAdmins, opts...).ToFunc()
+}
+
+// ByDisableRequirementsAutoMatching orders the results by the disable_requirements_auto_matching field.
+func ByDisableRequirementsAutoMatching(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisableRequirementsAutoMatching, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.

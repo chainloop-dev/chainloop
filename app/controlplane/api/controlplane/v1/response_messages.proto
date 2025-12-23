@@ -283,6 +283,8 @@ message OrgItem {
   bool prevent_implicit_workflow_creation = 7;
   // restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
   bool restrict_contract_creation_to_org_admins = 8;
+  // disable_requirements_auto_matching disables automatic matching of policies to requirements
+  bool disable_requirements_auto_matching = 9;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;

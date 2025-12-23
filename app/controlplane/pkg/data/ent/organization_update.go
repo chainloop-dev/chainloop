@@ -147,6 +147,20 @@ func (_u *OrganizationUpdate) SetNillableRestrictContractCreationToOrgAdmins(v *
 	return _u
 }
 
+// SetDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field.
+func (_u *OrganizationUpdate) SetDisableRequirementsAutoMatching(v bool) *OrganizationUpdate {
+	_u.mutation.SetDisableRequirementsAutoMatching(v)
+	return _u
+}
+
+// SetNillableDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field if the given value is not nil.
+func (_u *OrganizationUpdate) SetNillableDisableRequirementsAutoMatching(v *bool) *OrganizationUpdate {
+	if v != nil {
+		_u.SetDisableRequirementsAutoMatching(*v)
+	}
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -513,6 +527,9 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.RestrictContractCreationToOrgAdmins(); ok {
 		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DisableRequirementsAutoMatching(); ok {
+		_spec.SetField(organization.FieldDisableRequirementsAutoMatching, field.TypeBool, value)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1004,6 +1021,20 @@ func (_u *OrganizationUpdateOne) SetNillableRestrictContractCreationToOrgAdmins(
 	return _u
 }
 
+// SetDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field.
+func (_u *OrganizationUpdateOne) SetDisableRequirementsAutoMatching(v bool) *OrganizationUpdateOne {
+	_u.mutation.SetDisableRequirementsAutoMatching(v)
+	return _u
+}
+
+// SetNillableDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field if the given value is not nil.
+func (_u *OrganizationUpdateOne) SetNillableDisableRequirementsAutoMatching(v *bool) *OrganizationUpdateOne {
+	if v != nil {
+		_u.SetDisableRequirementsAutoMatching(*v)
+	}
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -1400,6 +1431,9 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 	}
 	if value, ok := _u.mutation.RestrictContractCreationToOrgAdmins(); ok {
 		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DisableRequirementsAutoMatching(); ok {
+		_spec.SetField(organization.FieldDisableRequirementsAutoMatching, field.TypeBool, value)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

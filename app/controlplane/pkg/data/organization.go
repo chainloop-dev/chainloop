@@ -77,12 +77,13 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	return entOrgToBizOrg(org), nil
 }
 
-func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool) (*biz.Organization, error) {
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, disableRequirementsAutoMatching *bool) (*biz.Organization, error) {
 	opts := r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
 		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).
 		SetNillablePreventImplicitWorkflowCreation(preventImplicitWorkflowCreation).
 		SetNillableRestrictContractCreationToOrgAdmins(restrictContractCreationToOrgAdmins).
+		SetNillableDisableRequirementsAutoMatching(disableRequirementsAutoMatching).
 		SetUpdatedAt(time.Now())
 
 	if policiesAllowedHostnames != nil {
@@ -115,5 +116,6 @@ func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 		PoliciesAllowedHostnames:            eu.PoliciesAllowedHostnames,
 		PreventImplicitWorkflowCreation:     eu.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: eu.RestrictContractCreationToOrgAdmins,
+		DisableRequirementsAutoMatching:     eu.DisableRequirementsAutoMatching,
 	}
 }

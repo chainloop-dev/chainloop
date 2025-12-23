@@ -448,8 +448,10 @@ type OrganizationServiceUpdateRequest struct {
 	PreventImplicitWorkflowCreation *bool `protobuf:"varint,5,opt,name=prevent_implicit_workflow_creation,json=preventImplicitWorkflowCreation,proto3,oneof" json:"prevent_implicit_workflow_creation,omitempty"`
 	// restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
 	RestrictContractCreationToOrgAdmins *bool `protobuf:"varint,6,opt,name=restrict_contract_creation_to_org_admins,json=restrictContractCreationToOrgAdmins,proto3,oneof" json:"restrict_contract_creation_to_org_admins,omitempty"`
-	unknownFields                       protoimpl.UnknownFields
-	sizeCache                           protoimpl.SizeCache
+	// disable_requirements_auto_matching disables automatic matching of policies to requirements
+	DisableRequirementsAutoMatching *bool `protobuf:"varint,7,opt,name=disable_requirements_auto_matching,json=disableRequirementsAutoMatching,proto3,oneof" json:"disable_requirements_auto_matching,omitempty"`
+	unknownFields                   protoimpl.UnknownFields
+	sizeCache                       protoimpl.SizeCache
 }
 
 func (x *OrganizationServiceUpdateRequest) Reset() {
@@ -520,6 +522,13 @@ func (x *OrganizationServiceUpdateRequest) GetPreventImplicitWorkflowCreation() 
 func (x *OrganizationServiceUpdateRequest) GetRestrictContractCreationToOrgAdmins() bool {
 	if x != nil && x.RestrictContractCreationToOrgAdmins != nil {
 		return *x.RestrictContractCreationToOrgAdmins
+	}
+	return false
+}
+
+func (x *OrganizationServiceUpdateRequest) GetDisableRequirementsAutoMatching() bool {
+	if x != nil && x.DisableRequirementsAutoMatching != nil {
+		return *x.DisableRequirementsAutoMatching
 	}
 	return false
 }
@@ -682,17 +691,19 @@ const file_controlplane_v1_organization_proto_rawDesc = "" +
 	" OrganizationServiceCreateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"U\n" +
 	"!OrganizationServiceCreateResponse\x120\n" +
-	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\xa8\x04\n" +
+	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\xa1\x05\n" +
 	" OrganizationServiceUpdateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12>\n" +
 	"\x19block_on_policy_violation\x18\x02 \x01(\bH\x00R\x16blockOnPolicyViolation\x88\x01\x01\x12<\n" +
 	"\x1apolicies_allowed_hostnames\x18\x03 \x03(\tR\x18policiesAllowedHostnames\x12I\n" +
 	"!update_policies_allowed_hostnames\x18\x04 \x01(\bR\x1eupdatePoliciesAllowedHostnames\x12P\n" +
 	"\"prevent_implicit_workflow_creation\x18\x05 \x01(\bH\x01R\x1fpreventImplicitWorkflowCreation\x88\x01\x01\x12Z\n" +
-	"(restrict_contract_creation_to_org_admins\x18\x06 \x01(\bH\x02R#restrictContractCreationToOrgAdmins\x88\x01\x01B\x1c\n" +
+	"(restrict_contract_creation_to_org_admins\x18\x06 \x01(\bH\x02R#restrictContractCreationToOrgAdmins\x88\x01\x01\x12P\n" +
+	"\"disable_requirements_auto_matching\x18\a \x01(\bH\x03R\x1fdisableRequirementsAutoMatching\x88\x01\x01B\x1c\n" +
 	"\x1a_block_on_policy_violationB%\n" +
 	"#_prevent_implicit_workflow_creationB+\n" +
-	")_restrict_contract_creation_to_org_admins\"U\n" +
+	")_restrict_contract_creation_to_org_adminsB%\n" +
+	"#_disable_requirements_auto_matching\"U\n" +
 	"!OrganizationServiceUpdateResponse\x120\n" +
 	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"?\n" +
 	" OrganizationServiceDeleteRequest\x12\x1b\n" +

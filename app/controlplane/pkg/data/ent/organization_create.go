@@ -128,6 +128,20 @@ func (_c *OrganizationCreate) SetNillableRestrictContractCreationToOrgAdmins(v *
 	return _c
 }
 
+// SetDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field.
+func (_c *OrganizationCreate) SetDisableRequirementsAutoMatching(v bool) *OrganizationCreate {
+	_c.mutation.SetDisableRequirementsAutoMatching(v)
+	return _c
+}
+
+// SetNillableDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field if the given value is not nil.
+func (_c *OrganizationCreate) SetNillableDisableRequirementsAutoMatching(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetDisableRequirementsAutoMatching(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *OrganizationCreate) SetID(v uuid.UUID) *OrganizationCreate {
 	_c.mutation.SetID(v)
@@ -317,6 +331,10 @@ func (_c *OrganizationCreate) defaults() {
 		v := organization.DefaultRestrictContractCreationToOrgAdmins
 		_c.mutation.SetRestrictContractCreationToOrgAdmins(v)
 	}
+	if _, ok := _c.mutation.DisableRequirementsAutoMatching(); !ok {
+		v := organization.DefaultDisableRequirementsAutoMatching
+		_c.mutation.SetDisableRequirementsAutoMatching(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		_c.mutation.SetID(v)
@@ -342,6 +360,9 @@ func (_c *OrganizationCreate) check() error {
 	}
 	if _, ok := _c.mutation.RestrictContractCreationToOrgAdmins(); !ok {
 		return &ValidationError{Name: "restrict_contract_creation_to_org_admins", err: errors.New(`ent: missing required field "Organization.restrict_contract_creation_to_org_admins"`)}
+	}
+	if _, ok := _c.mutation.DisableRequirementsAutoMatching(); !ok {
+		return &ValidationError{Name: "disable_requirements_auto_matching", err: errors.New(`ent: missing required field "Organization.disable_requirements_auto_matching"`)}
 	}
 	return nil
 }
@@ -410,6 +431,10 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.RestrictContractCreationToOrgAdmins(); ok {
 		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
 		_node.RestrictContractCreationToOrgAdmins = value
+	}
+	if value, ok := _c.mutation.DisableRequirementsAutoMatching(); ok {
+		_spec.SetField(organization.FieldDisableRequirementsAutoMatching, field.TypeBool, value)
+		_node.DisableRequirementsAutoMatching = value
 	}
 	if nodes := _c.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -687,6 +712,18 @@ func (u *OrganizationUpsert) UpdateRestrictContractCreationToOrgAdmins() *Organi
 	return u
 }
 
+// SetDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field.
+func (u *OrganizationUpsert) SetDisableRequirementsAutoMatching(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldDisableRequirementsAutoMatching, v)
+	return u
+}
+
+// UpdateDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateDisableRequirementsAutoMatching() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldDisableRequirementsAutoMatching)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -847,6 +884,20 @@ func (u *OrganizationUpsertOne) SetRestrictContractCreationToOrgAdmins(v bool) *
 func (u *OrganizationUpsertOne) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateRestrictContractCreationToOrgAdmins()
+	})
+}
+
+// SetDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field.
+func (u *OrganizationUpsertOne) SetDisableRequirementsAutoMatching(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetDisableRequirementsAutoMatching(v)
+	})
+}
+
+// UpdateDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateDisableRequirementsAutoMatching() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateDisableRequirementsAutoMatching()
 	})
 }
 
@@ -1177,6 +1228,20 @@ func (u *OrganizationUpsertBulk) SetRestrictContractCreationToOrgAdmins(v bool) 
 func (u *OrganizationUpsertBulk) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateRestrictContractCreationToOrgAdmins()
+	})
+}
+
+// SetDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field.
+func (u *OrganizationUpsertBulk) SetDisableRequirementsAutoMatching(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetDisableRequirementsAutoMatching(v)
+	})
+}
+
+// UpdateDisableRequirementsAutoMatching sets the "disable_requirements_auto_matching" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateDisableRequirementsAutoMatching() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateDisableRequirementsAutoMatching()
 	})
 }
 

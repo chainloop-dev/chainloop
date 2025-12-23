@@ -81,7 +81,11 @@ export interface OrganizationServiceUpdateRequest {
     | boolean
     | undefined;
   /** restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles) */
-  restrictContractCreationToOrgAdmins?: boolean | undefined;
+  restrictContractCreationToOrgAdmins?:
+    | boolean
+    | undefined;
+  /** disable_requirements_auto_matching disables automatic matching of policies to requirements */
+  disableRequirementsAutoMatching?: boolean | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -671,6 +675,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     updatePoliciesAllowedHostnames: false,
     preventImplicitWorkflowCreation: undefined,
     restrictContractCreationToOrgAdmins: undefined,
+    disableRequirementsAutoMatching: undefined,
   };
 }
 
@@ -693,6 +698,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.restrictContractCreationToOrgAdmins !== undefined) {
       writer.uint32(48).bool(message.restrictContractCreationToOrgAdmins);
+    }
+    if (message.disableRequirementsAutoMatching !== undefined) {
+      writer.uint32(56).bool(message.disableRequirementsAutoMatching);
     }
     return writer;
   },
@@ -746,6 +754,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.restrictContractCreationToOrgAdmins = reader.bool();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.disableRequirementsAutoMatching = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -771,6 +786,9 @@ export const OrganizationServiceUpdateRequest = {
       restrictContractCreationToOrgAdmins: isSet(object.restrictContractCreationToOrgAdmins)
         ? Boolean(object.restrictContractCreationToOrgAdmins)
         : undefined,
+      disableRequirementsAutoMatching: isSet(object.disableRequirementsAutoMatching)
+        ? Boolean(object.disableRequirementsAutoMatching)
+        : undefined,
     };
   },
 
@@ -789,6 +807,8 @@ export const OrganizationServiceUpdateRequest = {
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     message.restrictContractCreationToOrgAdmins !== undefined &&
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
+    message.disableRequirementsAutoMatching !== undefined &&
+      (obj.disableRequirementsAutoMatching = message.disableRequirementsAutoMatching);
     return obj;
   },
 
@@ -808,6 +828,7 @@ export const OrganizationServiceUpdateRequest = {
     message.updatePoliciesAllowedHostnames = object.updatePoliciesAllowedHostnames ?? false;
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? undefined;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? undefined;
+    message.disableRequirementsAutoMatching = object.disableRequirementsAutoMatching ?? undefined;
     return message;
   },
 };

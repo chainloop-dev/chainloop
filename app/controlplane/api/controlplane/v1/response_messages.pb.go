@@ -1888,8 +1888,10 @@ type OrgItem struct {
 	PreventImplicitWorkflowCreation bool `protobuf:"varint,7,opt,name=prevent_implicit_workflow_creation,json=preventImplicitWorkflowCreation,proto3" json:"prevent_implicit_workflow_creation,omitempty"`
 	// restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
 	RestrictContractCreationToOrgAdmins bool `protobuf:"varint,8,opt,name=restrict_contract_creation_to_org_admins,json=restrictContractCreationToOrgAdmins,proto3" json:"restrict_contract_creation_to_org_admins,omitempty"`
-	unknownFields                       protoimpl.UnknownFields
-	sizeCache                           protoimpl.SizeCache
+	// disable_requirements_auto_matching disables automatic matching of policies to requirements
+	DisableRequirementsAutoMatching bool `protobuf:"varint,9,opt,name=disable_requirements_auto_matching,json=disableRequirementsAutoMatching,proto3" json:"disable_requirements_auto_matching,omitempty"`
+	unknownFields                   protoimpl.UnknownFields
+	sizeCache                       protoimpl.SizeCache
 }
 
 func (x *OrgItem) Reset() {
@@ -1974,6 +1976,13 @@ func (x *OrgItem) GetPreventImplicitWorkflowCreation() bool {
 func (x *OrgItem) GetRestrictContractCreationToOrgAdmins() bool {
 	if x != nil {
 		return x.RestrictContractCreationToOrgAdmins
+	}
+	return false
+}
+
+func (x *OrgItem) GetDisableRequirementsAutoMatching() bool {
+	if x != nil {
+		return x.DisableRequirementsAutoMatching
 	}
 	return false
 }
@@ -2762,7 +2771,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x123\n" +
-	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xbe\x05\n" +
+	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\x8b\x06\n" +
 	"\aOrgItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
@@ -2773,7 +2782,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"!default_policy_violation_strategy\x18\x04 \x01(\x0e28.controlplane.v1.OrgItem.PolicyViolationBlockingStrategyR\x1edefaultPolicyViolationStrategy\x128\n" +
 	"\x18policy_allowed_hostnames\x18\x05 \x03(\tR\x16policyAllowedHostnames\x12K\n" +
 	"\"prevent_implicit_workflow_creation\x18\a \x01(\bR\x1fpreventImplicitWorkflowCreation\x12U\n" +
-	"(restrict_contract_creation_to_org_admins\x18\b \x01(\bR#restrictContractCreationToOrgAdmins\"\xb4\x01\n" +
+	"(restrict_contract_creation_to_org_admins\x18\b \x01(\bR#restrictContractCreationToOrgAdmins\x12K\n" +
+	"\"disable_requirements_auto_matching\x18\t \x01(\bR\x1fdisableRequirementsAutoMatching\"\xb4\x01\n" +
 	"\x1fPolicyViolationBlockingStrategy\x122\n" +
 	".POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED\x10\x00\x12,\n" +
 	"(POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK\x10\x01\x12/\n" +

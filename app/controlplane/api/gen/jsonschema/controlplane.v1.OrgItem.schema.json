@@ -24,6 +24,10 @@
         }
       ]
     },
+    "^(disableRequirementsAutoMatching)$": {
+      "description": "disable_requirements_auto_matching disables automatic matching of policies to requirements",
+      "type": "boolean"
+    },
     "^(policyAllowedHostnames)$": {
       "items": {
         "type": "string"
@@ -63,6 +67,10 @@
           "type": "integer"
         }
       ]
+    },
+    "disable_requirements_auto_matching": {
+      "description": "disable_requirements_auto_matching disables automatic matching of policies to requirements",
+      "type": "boolean"
     },
     "id": {
       "type": "string"

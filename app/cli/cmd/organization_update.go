@@ -26,6 +26,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		blockOnPolicyViolation          bool
 		policiesAllowedHostnames        []string
 		preventImplicitWorkflowCreation bool
+		disableRequirementsAutoMatching bool
 	)
 
 	cmd := &cobra.Command{
@@ -45,6 +46,10 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.PreventImplicitWorkflowCreation = &preventImplicitWorkflowCreation
 			}
 
+			if cmd.Flags().Changed("disable-requirements-auto-matching") {
+				opts.DisableRequirementsAutoMatching = &disableRequirementsAutoMatching
+			}
+
 			_, err := action.NewOrgUpdate(ActionOpts).Run(cmd.Context(), orgName, opts)
 			if err != nil {
 				return err
@@ -62,5 +67,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&blockOnPolicyViolation, "block", false, "set the default policy violation blocking strategy")
 	cmd.Flags().StringSliceVar(&policiesAllowedHostnames, "policies-allowed-hostnames", []string{}, "set the allowed hostnames for the policy engine")
 	cmd.Flags().BoolVar(&preventImplicitWorkflowCreation, "prevent-implicit-workflow-creation", false, "prevent workflows and projects from being created implicitly during attestation init")
+	cmd.Flags().BoolVar(&disableRequirementsAutoMatching, "disable-requirements-auto-matching", false, "disable automatic matching of policies to requirements based on parameters. When enabled, only explicit requirement references are used")
 	return cmd
 }
