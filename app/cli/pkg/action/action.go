@@ -101,34 +101,32 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 }
 
 // getCASBackend tries to get CAS upload credentials and set up a CAS client
-func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend, casBackendInfo **clientAPI.Attestation_CASBackend) (func() error, error) {
+func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend) (*clientAPI.Attestation_CASBackend, func() error, error) {
 	credsResp, err := client.GetUploadCreds(ctx, &pb.AttestationServiceGetUploadCredsRequest{
 		WorkflowRunId: workflowRunID,
 	})
 	if err != nil {
 		// Log warning but don't fail - will fall back to inline storage
 		logger.Warn().Err(err).Msg("failed to get CAS credentials for PR metadata, will store inline")
-		return nil, fmt.Errorf("getting upload creds: %w", err)
+		return nil, nil, fmt.Errorf("getting upload creds: %w", err)
 	}
 
 	if credsResp == nil || credsResp.GetResult() == nil {
 		logger.Debug().Msg("no upload creds result, will store inline")
-		return nil, fmt.Errorf("getting upload creds: %w", err)
+		return nil, nil, fmt.Errorf("getting upload creds: %w", err)
 	}
 
 	result := credsResp.GetResult()
 	backend := result.GetBackend()
 	if backend == nil {
 		logger.Debug().Msg("no backend info in upload creds, will store inline")
-		return nil, fmt.Errorf("no backend found in upload creds")
+		return nil, nil, fmt.Errorf("no backend found in upload creds")
 	}
 
-	if casBackendInfo != nil {
-		*casBackendInfo = &clientAPI.Attestation_CASBackend{
-			CasBackendId:   backend.Id,
-			CasBackendName: backend.Name,
-			Fallback:       backend.Fallback,
-		}
+	casBackendInfo := &clientAPI.Attestation_CASBackend{
+		CasBackendId:   backend.Id,
+		CasBackendName: backend.Name,
+		Fallback:       backend.Fallback,
 	}
 
 	casBackend.Name = backend.Provider
@@ -138,7 +136,7 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 
 	// Only attempt to create a CAS connection when not inline and token is present
 	if backend.IsInline || result.Token == "" {
-		return nil, nil
+		return casBackendInfo, nil, nil
 	}
 
 	opts := []grpcconn.Option{grpcconn.WithInsecure(casConnectionInsecure)}
@@ -149,9 +147,9 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 	artifactCASConn, err := grpcconn.New(casURI, result.Token, opts...)
 	if err != nil {
 		logger.Warn().Err(err).Msg("failed to create CAS connection, will store inline")
-		return nil, fmt.Errorf("creating CAS connection: %w", err)
+		return nil, nil, fmt.Errorf("creating CAS connection: %w", err)
 	}
 
 	casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(logger))
-	return artifactCASConn.Close, nil
+	return casBackendInfo, artifactCASConn.Close, nil
 }
