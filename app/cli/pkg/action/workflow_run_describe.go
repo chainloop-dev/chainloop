@@ -296,6 +296,7 @@ func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
 		Violations:      violations,
 		Skipped:         in.Skipped,
 		SkipReasons:     in.SkipReasons,
+		Gate:            in.Gate,
 	}
 }
 

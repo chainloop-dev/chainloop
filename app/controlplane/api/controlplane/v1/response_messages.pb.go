@@ -1079,6 +1079,7 @@ type PolicyEvaluation struct {
 	SkipReasons     []string           `protobuf:"bytes,13,rep,name=skip_reasons,json=skipReasons,proto3" json:"skip_reasons,omitempty"`
 	Requirements    []string           `protobuf:"bytes,14,rep,name=requirements,proto3" json:"requirements,omitempty"`
 	GroupReference  *PolicyReference   `protobuf:"bytes,15,opt,name=group_reference,json=groupReference,proto3" json:"group_reference,omitempty"`
+	Gate            bool               `protobuf:"varint,16,opt,name=gate,proto3" json:"gate,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1210,6 +1211,13 @@ func (x *PolicyEvaluation) GetGroupReference() *PolicyReference {
 		return x.GroupReference
 	}
 	return nil
+}
+
+func (x *PolicyEvaluation) GetGate() bool {
+	if x != nil {
+		return x.Gate
+	}
+	return false
 }
 
 type PolicyViolation struct {
@@ -2664,7 +2672,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
 	"\x11PolicyEvaluations\x12C\n" +
-	"\vevaluations\x18\x01 \x03(\v2!.controlplane.v1.PolicyEvaluationR\vevaluations\"\xfe\x05\n" +
+	"\vevaluations\x18\x01 \x03(\v2!.controlplane.v1.PolicyEvaluationR\vevaluations\"\x92\x06\n" +
 	"\x10PolicyEvaluation\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\rmaterial_name\x18\x02 \x01(\tR\fmaterialName\x12\x16\n" +
@@ -2682,7 +2690,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\askipped\x18\f \x01(\bR\askipped\x12!\n" +
 	"\fskip_reasons\x18\r \x03(\tR\vskipReasons\x12\"\n" +
 	"\frequirements\x18\x0e \x03(\tR\frequirements\x12I\n" +
-	"\x0fgroup_reference\x18\x0f \x01(\v2 .controlplane.v1.PolicyReferenceR\x0egroupReference\x1a>\n" +
+	"\x0fgroup_reference\x18\x0f \x01(\v2 .controlplane.v1.PolicyReferenceR\x0egroupReference\x12\x12\n" +
+	"\x04gate\x18\x10 \x01(\bR\x04gate\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +

@@ -86,6 +86,7 @@ type PolicyEvaluation struct {
 	SkipReasons             []string                   `json:"skipReasons,omitempty"`
 	GroupReference          *intoto.ResourceDescriptor `json:"groupReference,omitempty"`
 	Requirements            []string                   `json:"requirements,omitempty"`
+	Gate                    bool                       `json:"gate,omitempty"`
 }
 
 type PolicyViolation struct {
@@ -221,6 +222,20 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		policyCheckBlockingStrategy = PolicyViolationBlockingStrategyEnforced
 	}
 
+	// Determine if the attestation is blocked
+	// An attestation is blocked when:
+	// - any of the policies marked as gate has violations
+	// - or if there are any policy violations and the attestation is configured to be blocked on violations
+	// In all cases, if the bypass flag is set, the attestation is not blocked
+	gated := false
+	for _, eval := range r.att.PolicyEvaluations {
+		if len(eval.Violations) > 0 && eval.Gate {
+			gated = true
+			break
+		}
+	}
+	blocked := !r.att.GetBypassPolicyCheck() && (gated || hasViolations && r.att.GetBlockOnPolicyViolation())
+
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon:   predicateCommon(r.builder, r.att),
 		Materials:                   normalizedMaterials,
@@ -228,7 +243,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		PolicyHasViolations:         hasViolations,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
 		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
-		PolicyAttBlocked:            hasViolations && r.att.GetBlockOnPolicyViolation() && !r.att.GetBypassPolicyCheck(),
+		PolicyAttBlocked:            blocked,
 		SigningCA:                   r.att.GetSigningOptions().GetSigningCa(),
 		SigningTSA:                  r.att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
@@ -310,6 +325,7 @@ func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
 		Skipped:         ev.Skipped,
 		GroupReference:  groupRef,
 		Requirements:    ev.Requirements,
+		Gate:            ev.Gate,
 	}, nil
 }
 
