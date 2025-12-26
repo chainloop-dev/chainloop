@@ -43,6 +43,8 @@ export interface Attestation {
   auth?: Attestation_Auth;
   /** array of hostnames that are allowed to be used in the policies */
   policiesAllowedHostnames: string[];
+  /** CAS backend information used during attestation */
+  casBackend?: Attestation_CASBackend;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -214,6 +216,15 @@ export function attestation_Auth_AuthTypeToJSON(object: Attestation_Auth_AuthTyp
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface Attestation_CASBackend {
+  /** UUID of the CAS backend */
+  casBackendId: string;
+  /** Name of the CAS backend */
+  casBackendName: string;
+  /** Whether this is a fallback backend */
+  fallback: boolean;
 }
 
 export interface Attestation_SigningOptions {
@@ -415,6 +426,7 @@ function createBaseAttestation(): Attestation {
     runnerEnvironment: undefined,
     auth: undefined,
     policiesAllowedHostnames: [],
+    casBackend: undefined,
   };
 }
 
@@ -467,6 +479,9 @@ export const Attestation = {
     }
     for (const v of message.policiesAllowedHostnames) {
       writer.uint32(146).string(v!);
+    }
+    if (message.casBackend !== undefined) {
+      Attestation_CASBackend.encode(message.casBackend, writer.uint32(154).fork()).ldelim();
     }
     return writer;
   },
@@ -599,6 +614,13 @@ export const Attestation = {
 
           message.policiesAllowedHostnames.push(reader.string());
           continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.casBackend = Attestation_CASBackend.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -649,6 +671,7 @@ export const Attestation = {
       policiesAllowedHostnames: Array.isArray(object?.policiesAllowedHostnames)
         ? object.policiesAllowedHostnames.map((e: any) => String(e))
         : [],
+      casBackend: isSet(object.casBackend) ? Attestation_CASBackend.fromJSON(object.casBackend) : undefined,
     };
   },
 
@@ -698,6 +721,8 @@ export const Attestation = {
     } else {
       obj.policiesAllowedHostnames = [];
     }
+    message.casBackend !== undefined &&
+      (obj.casBackend = message.casBackend ? Attestation_CASBackend.toJSON(message.casBackend) : undefined);
     return obj;
   },
 
@@ -752,6 +777,9 @@ export const Attestation = {
       ? Attestation_Auth.fromPartial(object.auth)
       : undefined;
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
+    message.casBackend = (object.casBackend !== undefined && object.casBackend !== null)
+      ? Attestation_CASBackend.fromPartial(object.casBackend)
+      : undefined;
     return message;
   },
 };
@@ -1906,6 +1934,90 @@ export const Attestation_Auth = {
     const message = createBaseAttestation_Auth();
     message.type = object.type ?? 0;
     message.id = object.id ?? "";
+    return message;
+  },
+};
+
+function createBaseAttestation_CASBackend(): Attestation_CASBackend {
+  return { casBackendId: "", casBackendName: "", fallback: false };
+}
+
+export const Attestation_CASBackend = {
+  encode(message: Attestation_CASBackend, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.casBackendId !== "") {
+      writer.uint32(10).string(message.casBackendId);
+    }
+    if (message.casBackendName !== "") {
+      writer.uint32(18).string(message.casBackendName);
+    }
+    if (message.fallback === true) {
+      writer.uint32(24).bool(message.fallback);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Attestation_CASBackend {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestation_CASBackend();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.casBackendId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.casBackendName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.fallback = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Attestation_CASBackend {
+    return {
+      casBackendId: isSet(object.casBackendId) ? String(object.casBackendId) : "",
+      casBackendName: isSet(object.casBackendName) ? String(object.casBackendName) : "",
+      fallback: isSet(object.fallback) ? Boolean(object.fallback) : false,
+    };
+  },
+
+  toJSON(message: Attestation_CASBackend): unknown {
+    const obj: any = {};
+    message.casBackendId !== undefined && (obj.casBackendId = message.casBackendId);
+    message.casBackendName !== undefined && (obj.casBackendName = message.casBackendName);
+    message.fallback !== undefined && (obj.fallback = message.fallback);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Attestation_CASBackend>, I>>(base?: I): Attestation_CASBackend {
+    return Attestation_CASBackend.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Attestation_CASBackend>, I>>(object: I): Attestation_CASBackend {
+    const message = createBaseAttestation_CASBackend();
+    message.casBackendId = object.casBackendId ?? "";
+    message.casBackendName = object.casBackendName ?? "";
+    message.fallback = object.fallback ?? false;
     return message;
   },
 };

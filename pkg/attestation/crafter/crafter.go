@@ -166,6 +166,8 @@ type InitOpts struct {
 	Auth *api.Attestation_Auth
 	// array of hostnames that are allowed to be used in the policies
 	PoliciesAllowedHostnames []string
+	// CAS backend information
+	CASBackend *api.Attestation_CASBackend
 }
 
 type SigningOpts struct {
@@ -400,6 +402,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			},
 			Auth:                     opts.Auth,
 			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
+			CasBackend:               opts.CASBackend,
 		},
 		DryRun: opts.DryRun,
 	}

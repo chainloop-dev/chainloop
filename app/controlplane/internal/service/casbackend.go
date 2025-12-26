@@ -202,6 +202,7 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 		Provider:    string(in.Provider),
 		Default:     in.Default,
 		IsInline:    in.Inline,
+		Fallback:    in.Fallback,
 	}
 
 	if in.Limits != nil {
