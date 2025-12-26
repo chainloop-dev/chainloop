@@ -155,6 +155,20 @@ func (_u *CASBackendUpdate) ClearDeletedAt() *CASBackendUpdate {
 	return _u
 }
 
+// SetFallback sets the "fallback" field.
+func (_u *CASBackendUpdate) SetFallback(v bool) *CASBackendUpdate {
+	_u.mutation.SetFallback(v)
+	return _u
+}
+
+// SetNillableFallback sets the "fallback" field if the given value is not nil.
+func (_u *CASBackendUpdate) SetNillableFallback(v *bool) *CASBackendUpdate {
+	if v != nil {
+		_u.SetFallback(*v)
+	}
+	return _u
+}
+
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
 func (_u *CASBackendUpdate) SetMaxBlobSizeBytes(v int64) *CASBackendUpdate {
 	_u.mutation.ResetMaxBlobSizeBytes()
@@ -333,6 +347,9 @@ func (_u *CASBackendUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Fallback(); ok {
+		_spec.SetField(casbackend.FieldFallback, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.MaxBlobSizeBytes(); ok {
 		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
@@ -558,6 +575,20 @@ func (_u *CASBackendUpdateOne) ClearDeletedAt() *CASBackendUpdateOne {
 	return _u
 }
 
+// SetFallback sets the "fallback" field.
+func (_u *CASBackendUpdateOne) SetFallback(v bool) *CASBackendUpdateOne {
+	_u.mutation.SetFallback(v)
+	return _u
+}
+
+// SetNillableFallback sets the "fallback" field if the given value is not nil.
+func (_u *CASBackendUpdateOne) SetNillableFallback(v *bool) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetFallback(*v)
+	}
+	return _u
+}
+
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
 func (_u *CASBackendUpdateOne) SetMaxBlobSizeBytes(v int64) *CASBackendUpdateOne {
 	_u.mutation.ResetMaxBlobSizeBytes()
@@ -766,6 +797,9 @@ func (_u *CASBackendUpdateOne) sqlSave(ctx context.Context) (_node *CASBackend, 
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(casbackend.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Fallback(); ok {
+		_spec.SetField(casbackend.FieldFallback, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.MaxBlobSizeBytes(); ok {
 		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ type NewCASBackendAddOpts struct {
 	Provider    string
 	Description string
 	Default     bool
+	Fallback    bool
 	Credentials map[string]any
 	MaxBytes    *int64
 }
@@ -55,6 +56,7 @@ func (action *CASBackendAdd) Run(opts *NewCASBackendAddOpts) (*CASBackendItem, e
 		Provider:    opts.Provider,
 		Description: opts.Description,
 		Default:     opts.Default,
+		Fallback:    opts.Fallback,
 		Credentials: credentials,
 		MaxBytes:    opts.MaxBytes,
 	})

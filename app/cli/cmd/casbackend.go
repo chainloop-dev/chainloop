@@ -25,6 +25,7 @@ import (
 
 var (
 	isDefaultCASBackendUpdateOption   *bool
+	isFallbackCASBackendUpdateOption  *bool
 	descriptionCASBackendUpdateOption *string
 	maxBytesCASBackendOption          string
 	parsedMaxBytes                    *int64
@@ -47,6 +48,7 @@ func newCASBackendAddCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
+	cmd.PersistentFlags().Bool("fallback", false, "set the backend as fallback in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 	cmd.PersistentFlags().String("name", "", "CAS backend name")
 	cmd.PersistentFlags().StringVar(&maxBytesCASBackendOption, "max-bytes", "", "Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)")
@@ -60,10 +62,11 @@ func newCASBackendAddCmd() *cobra.Command {
 func newCASBackendUpdateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "Update a CAS backend description, credentials, default status, or max bytes",
+		Short: "Update a CAS backend description, credentials, default status, fallback status, or max bytes",
 	}
 
 	cmd.PersistentFlags().Bool("default", false, "set the backend as default in your organization")
+	cmd.PersistentFlags().Bool("fallback", false, "set the backend as fallback in your organization")
 	cmd.PersistentFlags().String("description", "", "descriptive information for this registration")
 	cmd.PersistentFlags().String("name", "", "CAS backend name")
 	cmd.PersistentFlags().StringVar(&maxBytesCASBackendOption, "max-bytes", "", "Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.")
@@ -148,7 +151,7 @@ func parseMaxBytesOption() error {
 	return nil
 }
 
-// captureUpdateFlags reads the --default and --description flags only when explicitly set and
+// captureUpdateFlags reads the --default, --fallback, and --description flags only when explicitly set and
 // stores their values in the package-level pointer options. This avoids treating their zero
 // values as an intention to update.
 func captureUpdateFlags(cmd *cobra.Command) error {
@@ -158,6 +161,14 @@ func captureUpdateFlags(cmd *cobra.Command) error {
 			return err
 		}
 		isDefaultCASBackendUpdateOption = &v
+	}
+
+	if f := cmd.Flags().Lookup("fallback"); f != nil && f.Changed {
+		v, err := cmd.Flags().GetBool("fallback")
+		if err != nil {
+			return err
+		}
+		isFallbackCASBackendUpdateOption = &v
 	}
 
 	if f := cmd.Flags().Lookup("description"); f != nil && f.Changed {

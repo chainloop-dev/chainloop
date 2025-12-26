@@ -627,6 +627,18 @@ func (u *CASBackendUpsert) ClearDeletedAt() *CASBackendUpsert {
 	return u
 }
 
+// SetFallback sets the "fallback" field.
+func (u *CASBackendUpsert) SetFallback(v bool) *CASBackendUpsert {
+	u.Set(casbackend.FieldFallback, v)
+	return u
+}
+
+// UpdateFallback sets the "fallback" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateFallback() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldFallback)
+	return u
+}
+
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
 func (u *CASBackendUpsert) SetMaxBlobSizeBytes(v int64) *CASBackendUpsert {
 	u.Set(casbackend.FieldMaxBlobSizeBytes, v)
@@ -673,9 +685,6 @@ func (u *CASBackendUpsertOne) UpdateNewValues() *CASBackendUpsertOne {
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(casbackend.FieldCreatedAt)
-		}
-		if _, exists := u.create.mutation.Fallback(); exists {
-			s.SetIgnore(casbackend.FieldFallback)
 		}
 	}))
 	return u
@@ -838,6 +847,20 @@ func (u *CASBackendUpsertOne) UpdateDeletedAt() *CASBackendUpsertOne {
 func (u *CASBackendUpsertOne) ClearDeletedAt() *CASBackendUpsertOne {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.ClearDeletedAt()
+	})
+}
+
+// SetFallback sets the "fallback" field.
+func (u *CASBackendUpsertOne) SetFallback(v bool) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetFallback(v)
+	})
+}
+
+// UpdateFallback sets the "fallback" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateFallback() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateFallback()
 	})
 }
 
@@ -1057,9 +1080,6 @@ func (u *CASBackendUpsertBulk) UpdateNewValues() *CASBackendUpsertBulk {
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(casbackend.FieldCreatedAt)
 			}
-			if _, exists := b.mutation.Fallback(); exists {
-				s.SetIgnore(casbackend.FieldFallback)
-			}
 		}
 	}))
 	return u
@@ -1222,6 +1242,20 @@ func (u *CASBackendUpsertBulk) UpdateDeletedAt() *CASBackendUpsertBulk {
 func (u *CASBackendUpsertBulk) ClearDeletedAt() *CASBackendUpsertBulk {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.ClearDeletedAt()
+	})
+}
+
+// SetFallback sets the "fallback" field.
+func (u *CASBackendUpsertBulk) SetFallback(v bool) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetFallback(v)
+	})
+}
+
+// UpdateFallback sets the "fallback" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateFallback() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateFallback()
 	})
 }
 
