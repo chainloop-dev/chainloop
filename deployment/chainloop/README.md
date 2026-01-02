@@ -671,6 +671,14 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.ingressAPI.extraTls`                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `controlplane.ingressAPI.secrets`                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `controlplane.ingressAPI.extraRules`               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| `controlplane.httpRoute.enabled`                   | Enable HTTPRoute generation for controlplane                                                                                     | `false`                  |
+| `controlplane.httpRoute.annotations`               | Additional annotations for the HTTPRoute resource                                                                                | `{}`                     |
+| `controlplane.httpRoute.labels`                    | Additional labels for the HTTPRoute resource                                                                                     | `{}`                     |
+| `controlplane.httpRoute.parentRefs`                | Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.       | `[]`                     |
+| `controlplane.httpRoute.hostnames`                 | List of hostnames matching HTTP header                                                                                           | `[]`                     |
+| `controlplane.httpRoute.matches`                   | List of match rules applied to the HTTPRoute for the default svc backend reference                                               | `[]`                     |
+| `controlplane.httpRoute.filters`                   | List of filter rules applied to the HTTPRoute for the default svc backend reference                                              | `[]`                     |
+| `controlplane.httpRoute.extraRules`                | List of extra rules applied to the HTTPRoute                                                                                     | `[]`                     |
 
 ### Controlplane Misc
 
@@ -847,6 +855,14 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.ingressAPI.extraTls`                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `cas.ingressAPI.secrets`                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `cas.ingressAPI.extraRules`               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| `cas.httpRoute.enabled`                   | Enable HTTPRoute generation for CAS                                                                                              | `false`                  |
+| `cas.httpRoute.annotations`               | Additional annotations for the HTTPRoute resource                                                                                | `{}`                     |
+| `cas.httpRoute.labels`                    | Additional labels for the HTTPRoute resource                                                                                     | `{}`                     |
+| `cas.httpRoute.parentRefs`                | Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.       | `[]`                     |
+| `cas.httpRoute.hostnames`                 | List of hostnames matching HTTP header                                                                                           | `[]`                     |
+| `cas.httpRoute.matches`                   | List of match rules applied to the HTTPRoute for the default svc backend reference                                               | `[]`                     |
+| `cas.httpRoute.filters`                   | List of filter rules applied to the HTTPRoute for the default svc backend reference                                              | `[]`                     |
+| `cas.httpRoute.extraRules`                | List of extra rules applied to the HTTPRoute                                                                                     | `[]`                     |
 
 ### CAS Misc
 
@@ -928,23 +944,22 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 
 ### Dependencies
 
-| Name                                 | Description                                                                                            | Value                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `postgresql.enabled`                 | Switch to enable or disable the PostgreSQL helm chart                                                  | `true`                                                                                   |
-| `postgresql.auth.enablePostgresUser` | Assign a password to the "postgres" admin user. Otherwise, remote access will be blocked for this user | `false`                                                                                  |
-| `postgresql.auth.username`           | Name for a custom user to create                                                                       | `chainloop`                                                                              |
-| `postgresql.auth.password`           | Password for the custom user to create                                                                 | `chainlooppwd`                                                                           |
-| `postgresql.auth.database`           | Name for a custom database to create                                                                   | `chainloop-cp`                                                                           |
-| `postgresql.auth.existingSecret`     | Name of existing secret to use for PostgreSQL credentials                                              | `""`                                                                                     |
-| `vault.server.args`                  | Arguments to pass to the vault server. This is useful for setting the server in development mode       | `["server","-dev"]`                                                                      |
-| `vault.server.config`                | Configuration for the vault server. Small override of default Bitnami configuration                    | `storage "inmem" {}
-disable_mlock = true
-ui = true
-service_registration "kubernetes" {}` |
-| `vault.server.extraEnvVars[0].name`  | Root token for the vault server                                                                        | `VAULT_DEV_ROOT_TOKEN_ID`                                                                |
-| `vault.server.extraEnvVars[0].value` | The value of the root token. Default: notasecret                                                       | `notasecret`                                                                             |
-| `vault.server.extraEnvVars[1].name`  | Address to listen on development mode                                                                  | `VAULT_DEV_LISTEN_ADDRESS`                                                               |
-| `vault.server.extraEnvVars[1].value` | The address to listen on. Default: [::]:8200                                                           | `[::]:8200`                                                                              |
+| Name                                                 | Description                                                                                            | Value                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| `postgresql.enabled`                                 | Switch to enable or disable the PostgreSQL helm chart                                                  | `true`                                         |
+| `postgresql.auth.enablePostgresUser`                 | Assign a password to the "postgres" admin user. Otherwise, remote access will be blocked for this user | `false`                                        |
+| `postgresql.auth.username`                           | Name for a custom user to create                                                                       | `chainloop`                                    |
+| `postgresql.auth.password`                           | Password for the custom user to create                                                                 | `chainlooppwd`                                 |
+| `postgresql.auth.database`                           | Name for a custom database to create                                                                   | `chainloop-cp`                                 |
+| `postgresql.auth.existingSecret`                     | Name of existing secret to use for PostgreSQL credentials                                              | `""`                                           |
+| `vault.server.command`                               | Override default container command                                                                     | `["/vault-init.sh"]`                           |
+| `vault.server.args`                                  | Override default container args                                                                        | `[""]`                                         |
+| `vault.server.extraVolumes[0].name`                  | Name of the extra volume                                                                               | `vault-init`                                   |
+| `vault.server.extraVolumes[0].configMap.name`        | Name of the ConfigMap to mount                                                                         | `{{ include "vault.server.fullname" . }}-init` |
+| `vault.server.extraVolumes[0].configMap.defaultMode` | Default mode for the ConfigMap files                                                                   | `755`                                          |
+| `vault.server.extraVolumeMounts[0].name`             | Name of the volume to mount                                                                            | `vault-init`                                   |
+| `vault.server.extraVolumeMounts[0].mountPath`        | Path where the volume should be mounted                                                                | `/vault-init.sh`                               |
+| `vault.server.extraVolumeMounts[0].subPath`          | Subpath within the volume to mount                                                                     | `vault-init.sh`                                |
 
 ## License
 
