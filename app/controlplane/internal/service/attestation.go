@@ -178,9 +178,9 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	backend, err := s.casUC.FindDefaultOrFallbackBackend(context.Background(), robotAccount.OrgID)
 	if err != nil {
 		if biz.IsNotFound(err) {
-			return nil, cpAPI.ErrorCasBackendErrorReasonRequired(err.Error())
+			return nil, cpAPI.ErrorCasBackendErrorReasonRequired("no CAS backend configured for organization")
 		} else if biz.IsErrValidation(err) {
-			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(err.Error())
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("CAS backend is unreachable or misconfigured: %s", err.Error())
 		}
 		return nil, handleUseCaseErr(err, s.log)
 	}
