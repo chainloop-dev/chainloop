@@ -159,6 +159,9 @@ message Attestation {
   // array of hostnames that are allowed to be used in the policies
   repeated string policies_allowed_hostnames = 18;
 
+  // CAS backend information used during attestation
+  CASBackend cas_backend = 19;
+
   message Auth {
     AuthType type = 1 [(buf.validate.field).enum = {
       not_in: [0]
@@ -172,6 +175,15 @@ message Attestation {
       AUTH_TYPE_API_TOKEN = 2;
       AUTH_TYPE_FEDERATED = 3;
     }
+  }
+
+  message CASBackend {
+    // UUID of the CAS backend
+    string cas_backend_id = 1 [(buf.validate.field).string.uuid = true];
+    // Name of the CAS backend
+    string cas_backend_name = 2 [(buf.validate.field).string = {min_len: 1}];
+    // Whether this is a fallback backend
+    bool fallback = 3;
   }
 
   message SigningOptions {

@@ -11,6 +11,10 @@
       "description": "bypass policy check",
       "type": "boolean"
     },
+    "^(cas_backend)$": {
+      "$ref": "attestation.v1.Attestation.CASBackend.jsonschema.json",
+      "description": "CAS backend information used during attestation"
+    },
     "^(env_vars)$": {
       "additionalProperties": {
         "type": "string"
@@ -99,6 +103,10 @@
     "bypassPolicyCheck": {
       "description": "bypass policy check",
       "type": "boolean"
+    },
+    "casBackend": {
+      "$ref": "attestation.v1.Attestation.CASBackend.jsonschema.json",
+      "description": "CAS backend information used during attestation"
     },
     "envVars": {
       "additionalProperties": {

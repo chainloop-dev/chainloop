@@ -2008,8 +2008,10 @@ type CASBackendItem struct {
 	// Error message if validation failed
 	ValidationError *string                `protobuf:"bytes,12,opt,name=validation_error,json=validationError,proto3,oneof" json:"validation_error,omitempty"`
 	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Wether it's the fallback backend in the organization
+	Fallback      bool `protobuf:"varint,14,opt,name=fallback,proto3" json:"fallback,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CASBackendItem) Reset() {
@@ -2131,6 +2133,13 @@ func (x *CASBackendItem) GetUpdatedAt() *timestamppb.Timestamp {
 		return x.UpdatedAt
 	}
 	return nil
+}
+
+func (x *CASBackendItem) GetFallback() bool {
+	if x != nil {
+		return x.Fallback
+	}
+	return false
 }
 
 type APITokenItem struct {
@@ -2786,7 +2795,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x1fPolicyViolationBlockingStrategy\x122\n" +
 	".POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED\x10\x00\x12,\n" +
 	"(POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK\x10\x01\x12/\n" +
-	"+POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY\x10\x02\"\xf5\x05\n" +
+	"+POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY\x10\x02\"\x91\x06\n" +
 	"\x0eCASBackendItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x1a\n" +
@@ -2803,7 +2812,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	" \x01(\bR\bisInline\x12.\n" +
 	"\x10validation_error\x18\f \x01(\tH\x00R\x0fvalidationError\x88\x01\x01\x129\n" +
 	"\n" +
-	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x1a%\n" +
+	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
+	"\bfallback\x18\x0e \x01(\bR\bfallback\x1a%\n" +
 	"\x06Limits\x12\x1b\n" +
 	"\tmax_bytes\x18\x01 \x01(\x03R\bmaxBytes\"n\n" +
 	"\x10ValidationStatus\x12!\n" +

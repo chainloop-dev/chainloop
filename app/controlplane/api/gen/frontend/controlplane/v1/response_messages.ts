@@ -675,6 +675,8 @@ export interface CASBackendItem {
   /** Error message if validation failed */
   validationError?: string | undefined;
   updatedAt?: Date;
+  /** Wether it's the fallback backend in the organization */
+  fallback: boolean;
 }
 
 export enum CASBackendItem_ValidationStatus {
@@ -3954,6 +3956,7 @@ function createBaseCASBackendItem(): CASBackendItem {
     isInline: false,
     validationError: undefined,
     updatedAt: undefined,
+    fallback: false,
   };
 }
 
@@ -3997,6 +4000,9 @@ export const CASBackendItem = {
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(106).fork()).ldelim();
+    }
+    if (message.fallback === true) {
+      writer.uint32(112).bool(message.fallback);
     }
     return writer;
   },
@@ -4099,6 +4105,13 @@ export const CASBackendItem = {
 
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 14:
+          if (tag !== 112) {
+            break;
+          }
+
+          message.fallback = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4125,6 +4138,7 @@ export const CASBackendItem = {
       isInline: isSet(object.isInline) ? Boolean(object.isInline) : false,
       validationError: isSet(object.validationError) ? String(object.validationError) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      fallback: isSet(object.fallback) ? Boolean(object.fallback) : false,
     };
   },
 
@@ -4145,6 +4159,7 @@ export const CASBackendItem = {
     message.isInline !== undefined && (obj.isInline = message.isInline);
     message.validationError !== undefined && (obj.validationError = message.validationError);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.fallback !== undefined && (obj.fallback = message.fallback);
     return obj;
   },
 
@@ -4169,6 +4184,7 @@ export const CASBackendItem = {
     message.isInline = object.isInline ?? false;
     message.validationError = object.validationError ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.fallback = object.fallback ?? false;
     return message;
   },
 };

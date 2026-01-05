@@ -1,0 +1,35 @@
+{
+  "$id": "attestation.v1.Attestation.CASBackend.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(casBackendId)$": {
+      "description": "UUID of the CAS backend",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "^(casBackendName)$": {
+      "description": "Name of the CAS backend",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "properties": {
+    "cas_backend_id": {
+      "description": "UUID of the CAS backend",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "cas_backend_name": {
+      "description": "Name of the CAS backend",
+      "minLength": 1,
+      "type": "string"
+    },
+    "fallback": {
+      "description": "Whether this is a fallback backend",
+      "type": "boolean"
+    }
+  },
+  "title": "CAS Backend",
+  "type": "object"
+}
