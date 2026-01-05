@@ -138,7 +138,7 @@ type Auth struct {
 }
 
 type CASBackend struct {
-	CASBackendID   string `json:"casBackendId"`
+	CASBackendID   string `json:"casBackendID"`
 	CASBackendName string `json:"casBackendName"`
 	Fallback       bool   `json:"fallback"`
 }
