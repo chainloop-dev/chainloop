@@ -203,7 +203,6 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 		Default:     in.Default,
 		Fallback:    in.Fallback,
 		IsInline:    in.Inline,
-		Fallback:    in.Fallback,
 	}
 
 	if in.Limits != nil {
