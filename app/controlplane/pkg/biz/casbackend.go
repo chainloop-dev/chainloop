@@ -245,6 +245,10 @@ func (uc *CASBackendUseCase) FindDefaultOrFallbackBackend(ctx context.Context, o
 		return nil, err
 	}
 
+	if defaultBackend == nil {
+		return nil, NewErrNotFound("default CAS Backend")
+	}
+
 	// Check if default backend is valid
 	if defaultBackend.ValidationStatus == CASBackendValidationOK {
 		return defaultBackend, nil

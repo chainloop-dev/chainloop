@@ -178,11 +178,11 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	backend, err := s.casUC.FindDefaultOrFallbackBackend(context.Background(), robotAccount.OrgID)
 	if err != nil {
 		if biz.IsNotFound(err) {
-			return nil, errors.NotFound("not found", "default CAS backend not found")
+			return nil, cpAPI.ErrorCasBackendErrorReasonRequired(err.Error())
 		} else if biz.IsErrValidation(err) {
-			return nil, err
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid(err.Error())
 		}
-		return nil, fmt.Errorf("failed to find CAS backend: %w", err)
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Create workflowRun
