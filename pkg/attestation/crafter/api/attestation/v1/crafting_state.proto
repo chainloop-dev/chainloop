@@ -179,7 +179,7 @@ message Attestation {
 
   message CASBackend {
     // UUID of the CAS backend
-    string cas_backend_id = 1 [(buf.validate.field).string = {min_len: 1}];
+    string cas_backend_id = 1 [(buf.validate.field).string.uuid = true];
     // Name of the CAS backend
     string cas_backend_name = 2 [(buf.validate.field).string = {min_len: 1}];
     // Whether this is a fallback backend

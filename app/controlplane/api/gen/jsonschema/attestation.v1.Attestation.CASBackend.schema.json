@@ -5,7 +5,7 @@
   "patternProperties": {
     "^(casBackendId)$": {
       "description": "UUID of the CAS backend",
-      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "type": "string"
     },
     "^(casBackendName)$": {
@@ -17,7 +17,7 @@
   "properties": {
     "cas_backend_id": {
       "description": "UUID of the CAS backend",
-      "minLength": 1,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "type": "string"
     },
     "cas_backend_name": {

@@ -2014,7 +2014,7 @@ var File_attestation_v1_crafting_state_proto protoreflect.FileDescriptor
 
 const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\n" +
-	"#attestation/v1/crafting_state.proto\x12\x0eattestation.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xdd\x1b\n" +
+	"#attestation/v1/crafting_state.proto\x12\x0eattestation.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xde\x1b\n" +
 	"\vAttestation\x12I\n" +
 	"\x0einitialized_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\rinitializedAt\x12;\n" +
 	"\vfinished_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -2102,10 +2102,10 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eAUTH_TYPE_USER\x10\x01\x12\x17\n" +
 	"\x13AUTH_TYPE_API_TOKEN\x10\x02\x12\x17\n" +
-	"\x13AUTH_TYPE_FEDERATED\x10\x03\x1a\x8a\x01\n" +
+	"\x13AUTH_TYPE_FEDERATED\x10\x03\x1a\x8b\x01\n" +
 	"\n" +
-	"CASBackend\x12-\n" +
-	"\x0ecas_backend_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\fcasBackendId\x121\n" +
+	"CASBackend\x12.\n" +
+	"\x0ecas_backend_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\fcasBackendId\x121\n" +
 	"\x10cas_backend_name\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x0ecasBackendName\x12\x1a\n" +
 	"\bfallback\x18\x03 \x01(\bR\bfallback\x1ag\n" +
 	"\x0eSigningOptions\x126\n" +
