@@ -63,6 +63,7 @@ message CraftingSchema {
       CIRCLECI_BUILD = 5;
       DAGGER_PIPELINE = 6;
       TEAMCITY_PIPELINE = 7;
+      TEKTON_PIPELINE = 8;
     }
   }
 

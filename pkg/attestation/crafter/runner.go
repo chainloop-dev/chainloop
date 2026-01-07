@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -84,6 +84,9 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 	},
 	schemaapi.CraftingSchema_Runner_TEAMCITY_PIPELINE: func(_ string, _ *zerolog.Logger) SupportedRunner {
 		return runners.NewTeamCityPipeline()
+	},
+	schemaapi.CraftingSchema_Runner_TEKTON_PIPELINE: func(_ string, _ *zerolog.Logger) SupportedRunner {
+		return runners.NewTektonPipeline()
 	},
 }
 

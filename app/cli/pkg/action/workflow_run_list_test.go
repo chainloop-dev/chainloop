@@ -65,6 +65,10 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 			testInput:      v1.CraftingSchema_Runner_TEAMCITY_PIPELINE,
 			expectedOutput: "TeamCity Pipeline",
 		}, {
+			name:           "tekton runner",
+			testInput:      v1.CraftingSchema_Runner_TEKTON_PIPELINE,
+			expectedOutput: "Tekton Pipeline",
+		}, {
 			name:           "unknown runner",
 			testInput:      -34,
 			expectedOutput: "Unknown",
