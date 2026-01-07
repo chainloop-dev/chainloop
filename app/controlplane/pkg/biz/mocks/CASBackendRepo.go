@@ -653,8 +653,8 @@ func (_c *CASBackendRepo_List_Call) RunAndReturn(run func(ctx context.Context, o
 }
 
 // ListBackends provides a mock function for the type CASBackendRepo
-func (_mock *CASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool) ([]*biz.CASBackend, error) {
-	ret := _mock.Called(ctx, onlyDefaults)
+func (_mock *CASBackendRepo) ListBackends(ctx context.Context, defaultsOrFallbacks bool) ([]*biz.CASBackend, error) {
+	ret := _mock.Called(ctx, defaultsOrFallbacks)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListBackends")
@@ -663,17 +663,17 @@ func (_mock *CASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool
 	var r0 []*biz.CASBackend
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, bool) ([]*biz.CASBackend, error)); ok {
-		return returnFunc(ctx, onlyDefaults)
+		return returnFunc(ctx, defaultsOrFallbacks)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, bool) []*biz.CASBackend); ok {
-		r0 = returnFunc(ctx, onlyDefaults)
+		r0 = returnFunc(ctx, defaultsOrFallbacks)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*biz.CASBackend)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, bool) error); ok {
-		r1 = returnFunc(ctx, onlyDefaults)
+		r1 = returnFunc(ctx, defaultsOrFallbacks)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -687,12 +687,12 @@ type CASBackendRepo_ListBackends_Call struct {
 
 // ListBackends is a helper method to define mock.On call
 //   - ctx context.Context
-//   - onlyDefaults bool
-func (_e *CASBackendRepo_Expecter) ListBackends(ctx interface{}, onlyDefaults interface{}) *CASBackendRepo_ListBackends_Call {
-	return &CASBackendRepo_ListBackends_Call{Call: _e.mock.On("ListBackends", ctx, onlyDefaults)}
+//   - defaultsOrFallbacks bool
+func (_e *CASBackendRepo_Expecter) ListBackends(ctx interface{}, defaultsOrFallbacks interface{}) *CASBackendRepo_ListBackends_Call {
+	return &CASBackendRepo_ListBackends_Call{Call: _e.mock.On("ListBackends", ctx, defaultsOrFallbacks)}
 }
 
-func (_c *CASBackendRepo_ListBackends_Call) Run(run func(ctx context.Context, onlyDefaults bool)) *CASBackendRepo_ListBackends_Call {
+func (_c *CASBackendRepo_ListBackends_Call) Run(run func(ctx context.Context, defaultsOrFallbacks bool)) *CASBackendRepo_ListBackends_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -715,7 +715,7 @@ func (_c *CASBackendRepo_ListBackends_Call) Return(cASBackends []*biz.CASBackend
 	return _c
 }
 
-func (_c *CASBackendRepo_ListBackends_Call) RunAndReturn(run func(ctx context.Context, onlyDefaults bool) ([]*biz.CASBackend, error)) *CASBackendRepo_ListBackends_Call {
+func (_c *CASBackendRepo_ListBackends_Call) RunAndReturn(run func(ctx context.Context, defaultsOrFallbacks bool) ([]*biz.CASBackend, error)) *CASBackendRepo_ListBackends_Call {
 	_c.Call.Return(run)
 	return _c
 }

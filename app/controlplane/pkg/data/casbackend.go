@@ -306,8 +306,8 @@ func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUI
 }
 
 // ListBackends returns CAS backends across all organizations. Only not inline backends are returned
-// If onlyDefaults is true, only default and fallback backends are returned
-func (r *CASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool) ([]*biz.CASBackend, error) {
+// If defaultsOrFallbacks is true, only default and fallback backends are returned
+func (r *CASBackendRepo) ListBackends(ctx context.Context, defaultsOrFallbacks bool) ([]*biz.CASBackend, error) {
 	query := r.data.DB.CASBackend.Query().
 		WithOrganization().
 		Where(casbackend.DeletedAtIsNil(),
@@ -317,7 +317,7 @@ func (r *CASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool) ([
 			),
 		)
 
-	if onlyDefaults {
+	if defaultsOrFallbacks {
 		query = query.Where(casbackend.Or(
 			casbackend.Default(true),
 			casbackend.Fallback(true),

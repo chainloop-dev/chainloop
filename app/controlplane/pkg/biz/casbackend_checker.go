@@ -114,12 +114,12 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 	}
 }
 
-// checkBackends validates all CAS backends (or just default ones based on configuration)
+// checkBackends validates all CAS backends (or just default and fallback ones based on configuration)
 // using a worker pool for parallel processing with timeouts
-func (c *CASBackendChecker) checkBackends(ctx context.Context, onlyDefaults bool) error {
+func (c *CASBackendChecker) checkBackends(ctx context.Context, defaultsOrFallbacks bool) error {
 	c.logger.Debug("starting CAS backend validation check")
 
-	backends, err := c.casBackendRepo.ListBackends(ctx, onlyDefaults)
+	backends, err := c.casBackendRepo.ListBackends(ctx, defaultsOrFallbacks)
 	if err != nil {
 		return fmt.Errorf("failed to list CAS backends: %w", err)
 	}
