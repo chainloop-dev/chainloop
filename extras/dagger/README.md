@@ -166,6 +166,130 @@ dagger call -m github.com/chainloop-dev/chainloop \
   mark-canceled --reason "nothing to see here"
 ```
 
+## PR/MR Auto-Detection in Parent CI
+
+When running Chainloop via Dagger inside Github Actions or Gitlab CI, you can enable automatic PR/MR metadata collection by passing the parent CI environment context to the `init` command. This allows Chainloop to automatically detect and include pull request or merge request information in your attestations.
+
+### Github Actions Example (SDK)
+
+When using the Dagger SDK in Github Actions, you can pass PR context as individual parameters. The event file would need to be provided as a File parameter from your module's calling context:
+
+```go
+attestation, err := dag.Chainloop().Init(
+  ctx,
+  dag.SetSecret("chainloop-token", os.Getenv("CHAINLOOP_TOKEN")),
+  dagger.ChainloopInitOpts{
+    WorkflowName: "build",
+    ProjectName: "my-project",
+    Repository: dag.CurrentModule().Source(),
+    GithubEventName: os.Getenv("GITHUB_EVENT_NAME"),
+    GithubHeadRef: os.Getenv("GITHUB_HEAD_REF"),
+    GithubBaseRef: os.Getenv("GITHUB_BASE_REF"),
+    // GithubEventFile would be passed from caller if available
+    // GithubEventFile: eventFile,
+  },
+)
+if err != nil {
+  return err
+}
+```
+
+> **Note**: For full Github PR detection with event file parsing, using the **Dagger CLI** (see below) is recommended as it can directly mount the event file from `$GITHUB_EVENT_PATH`.
+
+**Required Environment Variables**:
+- `GITHUB_EVENT_NAME` - Must be "pull_request" or "pull_request_target"
+- `GITHUB_HEAD_REF` - Source branch name
+- `GITHUB_BASE_REF` - Target branch name
+- `GITHUB_EVENT_PATH` - Path to event JSON file (for CLI usage)
+
+### Gitlab CI Example (SDK)
+
+Gitlab MR detection from the Dagger SDK:
+
+```go
+attestation, err := dag.Chainloop().Init(
+  ctx,
+  dag.SetSecret("chainloop-token", os.Getenv("CHAINLOOP_TOKEN")),
+  dagger.ChainloopInitOpts{
+    WorkflowName: "build",
+    ProjectName: "my-project",
+    Repository: dag.CurrentModule().Source(),
+    GitlabPipelineSource: os.Getenv("CI_PIPELINE_SOURCE"),
+    GitlabMRIID: os.Getenv("CI_MERGE_REQUEST_IID"),
+    GitlabMRTitle: os.Getenv("CI_MERGE_REQUEST_TITLE"),
+    GitlabMRDescription: os.Getenv("CI_MERGE_REQUEST_DESCRIPTION"),
+    GitlabMRSourceBranch: os.Getenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"),
+    GitlabMRTargetBranch: os.Getenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME"),
+    GitlabMRProjectURL: os.Getenv("CI_MERGE_REQUEST_PROJECT_URL"),
+    GitlabUserLogin: os.Getenv("GITLAB_USER_LOGIN"),
+  },
+)
+if err != nil {
+  return err
+}
+```
+
+**Required Environment Variables**:
+- `CI_PIPELINE_SOURCE` - Must be "merge_request_event"
+- `CI_MERGE_REQUEST_IID` - MR number
+- `CI_MERGE_REQUEST_TITLE` - MR title
+- `CI_MERGE_REQUEST_DESCRIPTION` - MR description
+- `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` - Source branch
+- `CI_MERGE_REQUEST_TARGET_BRANCH_NAME` - Target branch
+- `CI_MERGE_REQUEST_PROJECT_URL` - Project URL
+- `GITLAB_USER_LOGIN` - User login
+
+### Dagger CLI Usage (from Github Actions)
+
+When calling the Dagger module directly from the Dagger CLI in a Github Actions workflow:
+
+```sh
+dagger call -m github.com/chainloop-dev/chainloop \
+  init \
+  --token env:CHAINLOOP_TOKEN \
+  --workflow-name build \
+  --project-name my-project \
+  --github-event-file=$GITHUB_EVENT_PATH \
+  --github-event-name=$GITHUB_EVENT_NAME \
+  --github-head-ref=$GITHUB_HEAD_REF \
+  --github-base-ref=$GITHUB_BASE_REF \
+  add-raw-evidence \
+  --name evidence \
+  --value data \
+  push \
+  --key env:SIGNING_KEY
+```
+
+> **Note**: All Github PR parameters are passed as individual flags. The event file is automatically mounted by Dagger CLI.
+
+### Dagger CLI Usage (from Gitlab CI)
+
+```sh
+dagger call -m github.com/chainloop-dev/chainloop \
+  init \
+  --token env:CHAINLOOP_TOKEN \
+  --workflow-name build \
+  --project-name my-project \
+  --gitlab-pipeline-source=$CI_PIPELINE_SOURCE \
+  --gitlab-mriid=$CI_MERGE_REQUEST_IID \
+  --gitlab-mrtitle=$CI_MERGE_REQUEST_TITLE \
+  --gitlab-mrdescription=$CI_MERGE_REQUEST_DESCRIPTION \
+  --gitlab-mrsource-branch=$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME \
+  --gitlab-mrtarget-branch=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME \
+  --gitlab-mrproject-url=$CI_MERGE_REQUEST_PROJECT_URL \
+  --gitlab-user-login=$GITLAB_USER_LOGIN \
+  add-raw-evidence \
+  --name evidence \
+  --value data \
+  push \
+  --key env:SIGNING_KEY
+```
+
+### Notes
+
+- All PR/MR parameters are optional - if not provided, attestations work normally without PR metadata
+- PR detection will fail gracefully if required env vars are missing or invalid - the attestation will continue without PR metadata
+
 ## CLI operations
 
 This module also provides access to the underlying Chainloop CLI by exposing some of its commands
@@ -202,6 +326,6 @@ To learn more, please visit the Chainloop project's documentation website, https
 
 Chainloop is developed in the open and is constantly improved by our users, contributors and maintainers. Got a question, comment, or idea? Please don't hesitate to reach out via:
 
-- GitHub [Issues](https://github.com/chainloop-dev/chainloop/issues)
+- Github [Issues](https://github.com/chainloop-dev/chainloop/issues)
 - [Slack](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ)
 - Youtube [Channel](https://www.youtube.com/channel/UCISrWrPyR_AFjIQYmxAyKdg)
