@@ -166,9 +166,10 @@ dagger call -m github.com/chainloop-dev/chainloop \
   mark-canceled --reason "nothing to see here"
 ```
 
-## PR/MR Auto-Detection in Parent CI
+## Attestation in a GitHub/GitLab PR/MR
 
 When running Chainloop via Dagger inside GitHub Actions or GitLab CI, you can enable automatic PR/MR metadata collection by passing the parent CI environment context to the `init` command. This allows Chainloop to automatically detect and include pull request or merge request information in your attestations.
+More information about the feature can be found in the [official documentation](https://docs.chainloop.dev/guides/pr-policies-control-gate) where we give a broader context on how Chainloop can help to build Control Gates in your GitHub and GitLab repositories.
 
 ### GitHub Actions Example (SDK)
 
