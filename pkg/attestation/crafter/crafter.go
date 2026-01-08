@@ -479,6 +479,14 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 
 // AutoCollectPRMetadata automatically collects PR/MR metadata if running in a PR/MR context
 func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID string, runner SupportedRunner, casBackend *casclient.CASBackend) error {
+	if err := c.requireStateLoaded(); err != nil {
+		return fmt.Errorf("crafting state not loaded before inspecting PR/MR metadata: %w", err)
+	}
+
+	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to reload crafting state")
+	}
+
 	// Detect if we're in a PR/MR context
 	isPR, metadata, err := DetectPRContext(runner)
 	if err != nil {
