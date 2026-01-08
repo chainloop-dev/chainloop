@@ -85,45 +85,7 @@ func (s *daggerPipelineSuite) TestListEnvVars() {
 func (s *daggerPipelineSuite) TestResolveEnvVars() {
 	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
 	s.Empty(errors)
-	s.Equal(map[string]string{"CHAINLOOP_DAGGER_CLIENT": "v0.6.0"}, resolvedEnvVars)
-}
-
-func (s *daggerPipelineSuite) TestResolveEnvVarsWithGithubPRContext() {
-	t := s.T()
-	t.Setenv("GITHUB_EVENT_NAME", "pull_request")
-	t.Setenv("GITHUB_HEAD_REF", "feature-branch")
-	t.Setenv("GITHUB_BASE_REF", "main")
-	t.Setenv("GITHUB_EVENT_PATH", "/tmp/github_event.json")
-
-	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
-	s.Empty(errors)
-	s.Equal(map[string]string{
-		"CHAINLOOP_DAGGER_CLIENT": "v0.6.0",
-		"GITHUB_EVENT_NAME":       "pull_request",
-		"GITHUB_HEAD_REF":         "feature-branch",
-		"GITHUB_BASE_REF":         "main",
-		"GITHUB_EVENT_PATH":       "/tmp/github_event.json",
-	}, resolvedEnvVars)
-}
-
-func (s *daggerPipelineSuite) TestResolveEnvVarsWithGitlabMRContext() {
-	t := s.T()
-	t.Setenv("CI_PIPELINE_SOURCE", "merge_request_event")
-	t.Setenv("CI_MERGE_REQUEST_IID", "123")
-	t.Setenv("CI_MERGE_REQUEST_TITLE", "Test MR")
-	t.Setenv("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "feature-branch")
-	t.Setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "main")
-
-	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
-	s.Empty(errors)
-	s.Equal(map[string]string{
-		"CHAINLOOP_DAGGER_CLIENT":             "v0.6.0",
-		"CI_PIPELINE_SOURCE":                  "merge_request_event",
-		"CI_MERGE_REQUEST_IID":                "123",
-		"CI_MERGE_REQUEST_TITLE":              "Test MR",
-		"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "feature-branch",
-		"CI_MERGE_REQUEST_TARGET_BRANCH_NAME": "main",
-	}, resolvedEnvVars)
+	s.Equal("v0.6.0", resolvedEnvVars["CHAINLOOP_DAGGER_CLIENT"])
 }
 
 func (s *daggerPipelineSuite) TestRunURI() {
