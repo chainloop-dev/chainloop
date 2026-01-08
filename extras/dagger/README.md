@@ -168,11 +168,11 @@ dagger call -m github.com/chainloop-dev/chainloop \
 
 ## PR/MR Auto-Detection in Parent CI
 
-When running Chainloop via Dagger inside Github Actions or Gitlab CI, you can enable automatic PR/MR metadata collection by passing the parent CI environment context to the `init` command. This allows Chainloop to automatically detect and include pull request or merge request information in your attestations.
+When running Chainloop via Dagger inside GitHub Actions or GitLab CI, you can enable automatic PR/MR metadata collection by passing the parent CI environment context to the `init` command. This allows Chainloop to automatically detect and include pull request or merge request information in your attestations.
 
-### Github Actions Example (SDK)
+### GitHub Actions Example (SDK)
 
-When using the Dagger SDK in Github Actions, you can pass PR context as individual parameters. The event file would need to be provided as a File parameter from your module's calling context:
+When using the Dagger SDK in GitHub Actions, you can pass PR context as individual parameters. The event file would need to be provided as a File parameter from your module's calling context:
 
 ```go
 attestation, err := dag.Chainloop().Init(
@@ -186,7 +186,7 @@ attestation, err := dag.Chainloop().Init(
     GithubHeadRef: os.Getenv("GITHUB_HEAD_REF"),
     GithubBaseRef: os.Getenv("GITHUB_BASE_REF"),
     // GithubEventFile would be passed from caller if available
-    // GithubEventFile: eventFile,
+    GithubEventFile: eventFile,
   },
 )
 if err != nil {
@@ -194,7 +194,7 @@ if err != nil {
 }
 ```
 
-> **Note**: For full Github PR detection with event file parsing, using the **Dagger CLI** (see below) is recommended as it can directly mount the event file from `$GITHUB_EVENT_PATH`.
+> **Note**: For full GitHub PR detection with event file parsing, using the **Dagger CLI** (see below) is recommended as it can directly mount the event file from `$GITHUB_EVENT_PATH`.
 
 **Required Environment Variables**:
 - `GITHUB_EVENT_NAME` - Must be "pull_request" or "pull_request_target"
@@ -202,9 +202,9 @@ if err != nil {
 - `GITHUB_BASE_REF` - Target branch name
 - `GITHUB_EVENT_PATH` - Path to event JSON file (for CLI usage)
 
-### Gitlab CI Example (SDK)
+### GitLab CI Example (SDK)
 
-Gitlab MR detection from the Dagger SDK:
+GitLab MR detection from the Dagger SDK:
 
 ```go
 attestation, err := dag.Chainloop().Init(
@@ -239,9 +239,9 @@ if err != nil {
 - `CI_MERGE_REQUEST_PROJECT_URL` - Project URL
 - `GITLAB_USER_LOGIN` - User login
 
-### Dagger CLI Usage (from Github Actions)
+### Dagger CLI Usage (from GitHub Actions)
 
-When calling the Dagger module directly from the Dagger CLI in a Github Actions workflow:
+When calling the Dagger module directly from the Dagger CLI in a GitHub Actions workflow:
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop \
@@ -260,9 +260,9 @@ dagger call -m github.com/chainloop-dev/chainloop \
   --key env:SIGNING_KEY
 ```
 
-> **Note**: All Github PR parameters are passed as individual flags. The event file is automatically mounted by Dagger CLI.
+> **Note**: All GitHub PR parameters are passed as individual flags. The event file is automatically mounted by Dagger CLI.
 
-### Dagger CLI Usage (from Gitlab CI)
+### Dagger CLI Usage (from GitLab CI)
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop \
