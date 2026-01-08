@@ -81,6 +81,18 @@ func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUI
 	return entCASBackendToBiz(backend), nil
 }
 
+// FindInlineBackend finds the inline CAS backend for the given organization
+func (r *CASBackendRepo) FindInlineBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
+		Where(casbackend.ProviderEQ(biz.CASBackendInline), casbackend.DeletedAtIsNil()).
+		Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entCASBackendToBiz(backend), nil
+}
+
 // Create creates a new CAS backend in the given organization
 // If it's set as default, it will unset the previous default backend
 func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
@@ -89,6 +101,11 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 		err     error
 	)
 	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		// 0 - Prevent setting a backend as both default and fallback
+		if opts.Default != nil && *opts.Default && opts.Fallback != nil && *opts.Fallback {
+			return fmt.Errorf("a backend cannot be both default and fallback")
+		}
+
 		// 1 - unset default backend for all the other backends in the org
 		if opts.Default != nil && *opts.Default {
 			if err := tx.CASBackend.Update().
@@ -100,13 +117,24 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 			}
 		}
 
-		// 2 - create the new backend and set it as default if needed
+		// 2 - unset fallback backend for all the other backends in the org
+		if opts.Fallback != nil && *opts.Fallback {
+			if err := tx.CASBackend.Update().
+				Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
+				Where(casbackend.Fallback(true)).
+				SetFallback(false).
+				Exec(ctx); err != nil {
+				return fmt.Errorf("failed to clear previous fallback backend: %w", err)
+			}
+		}
+
+		// 3 - create the new backend and set it as default/fallback if needed
 		backend, err = tx.CASBackend.Create().
 			SetName(opts.Name).
 			SetOrganizationID(opts.OrgID).
 			SetLocation(opts.Location).
 			SetNillableDescription(opts.Description).
-			SetFallback(opts.Fallback).
+			SetNillableFallback(opts.Fallback).
 			SetProvider(opts.Provider).
 			SetNillableDefault(opts.Default).
 			SetSecretName(opts.SecretName).
@@ -145,13 +173,38 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 			}
 		}
 
-		// 2 - Chain the list of updates
+		// 2 - unset fallback backend for all the other backends in the org
+		if opts.Fallback != nil && *opts.Fallback {
+			if err := tx.CASBackend.Update().
+				Where(casbackend.HasOrganizationWith(organization.ID(opts.OrgID))).
+				Where(casbackend.Fallback(true)).
+				SetFallback(false).
+				Exec(ctx); err != nil {
+				return fmt.Errorf("failed to clear previous fallback backend: %w", err)
+			}
+		}
+
+		// 3 - Chain the list of updates
 		// TODO: allow setting values as empty, currently it's not possible.
 		// We do it in other models by providing pointers to string + setNillableX methods
 		updateChain := tx.CASBackend.UpdateOneID(opts.ID).
-			SetNillableDefault(opts.Default).
 			SetNillableDescription(opts.Description).
 			SetUpdatedAt(time.Now())
+
+		// Make default and fallback mutually exclusive
+		if opts.Default != nil {
+			updateChain = updateChain.SetDefault(*opts.Default)
+			if *opts.Default {
+				updateChain = updateChain.SetFallback(false)
+			}
+		}
+
+		if opts.Fallback != nil {
+			updateChain = updateChain.SetFallback(*opts.Fallback)
+			if *opts.Fallback {
+				updateChain = updateChain.SetDefault(false)
+			}
+		}
 
 		// If secretName is provided we set it
 		if opts.SecretName != "" {
@@ -253,8 +306,8 @@ func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUI
 }
 
 // ListBackends returns CAS backends across all organizations. Only not inline backends are returned
-// If onlyDefaults is true, only default backends are returned
-func (r *CASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool) ([]*biz.CASBackend, error) {
+// If defaultsOrFallbacks is true, only default and fallback backends are returned
+func (r *CASBackendRepo) ListBackends(ctx context.Context, defaultsOrFallbacks bool) ([]*biz.CASBackend, error) {
 	query := r.data.DB.CASBackend.Query().
 		WithOrganization().
 		Where(casbackend.DeletedAtIsNil(),
@@ -264,8 +317,11 @@ func (r *CASBackendRepo) ListBackends(ctx context.Context, onlyDefaults bool) ([
 			),
 		)
 
-	if onlyDefaults {
-		query = query.Where(casbackend.Default(true))
+	if defaultsOrFallbacks {
+		query = query.Where(casbackend.Or(
+			casbackend.Default(true),
+			casbackend.Fallback(true),
+		))
 	}
 
 	backends, err := query.All(ctx)

@@ -58,7 +58,7 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 	}
 
 	t := output.NewTableWriter()
-	header := table.Row{"Name", "Location", "Provider", "Description", "Limits", "Default", "Status"}
+	header := table.Row{"Name", "Location", "Provider", "Description", "Limits", "Default", "Fallback", "Status"}
 	if full {
 		header = append(header, "Created At", "Validated At")
 	}
@@ -75,7 +75,7 @@ func casBackendListTableOutput(backends []*action.CASBackendItem) error {
 			validationStatus = strings.Join([]string{validationStatus, wrap.String(*b.ValidationError, 50)}, "\n")
 		}
 
-		r := table.Row{b.Name, wrap.String(b.Location, 35), b.Provider, wrap.String(b.Description, 35), limits, b.Default, validationStatus}
+		r := table.Row{b.Name, wrap.String(b.Location, 35), b.Provider, wrap.String(b.Description, 35), limits, b.Default, b.Fallback, validationStatus}
 		if full {
 			r = append(r, b.CreatedAt.Format(time.RFC822), b.ValidatedAt.Format(time.RFC822))
 		}

@@ -174,17 +174,15 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	// find the default CAS backend to associate the workflow
-	backend, err := s.casUC.FindDefaultBackend(context.Background(), robotAccount.OrgID)
-	if err != nil && !biz.IsNotFound(err) {
-		return nil, fmt.Errorf("failed to find default CAS backend: %w", err)
-	} else if err != nil {
-		return nil, errors.NotFound("not found", "default CAS backend not found")
-	}
-
-	// Check the status of the backend
-	if backend.ValidationStatus != biz.CASBackendValidationOK {
-		return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+	// Find the default or fallback CAS backend to associate the workflow
+	backend, err := s.casUC.FindDefaultOrFallbackBackend(context.Background(), robotAccount.OrgID)
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, cpAPI.ErrorCasBackendErrorReasonRequired("no CAS backend configured for organization")
+		} else if biz.IsErrValidation(err) {
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("CAS backend is unreachable or misconfigured: %s", err.Error())
+		}
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Create workflowRun
