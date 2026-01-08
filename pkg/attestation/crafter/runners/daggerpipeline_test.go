@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,13 +62,30 @@ func (s *daggerPipelineSuite) TestCheckEnv() {
 }
 
 func (s *daggerPipelineSuite) TestListEnvVars() {
-	assert.Equal(s.T(), []*EnvVarDefinition{{"CHAINLOOP_DAGGER_CLIENT", false}}, s.runner.ListEnvVars())
+	expected := []*EnvVarDefinition{
+		{"CHAINLOOP_DAGGER_CLIENT", false},
+		// Github Actions PR-specific variables
+		{"GITHUB_EVENT_NAME", true},
+		{"GITHUB_HEAD_REF", true},
+		{"GITHUB_BASE_REF", true},
+		{"GITHUB_EVENT_PATH", true},
+		// Gitlab CI MR-specific variables
+		{"CI_PIPELINE_SOURCE", true},
+		{"CI_MERGE_REQUEST_IID", true},
+		{"CI_MERGE_REQUEST_TITLE", true},
+		{"CI_MERGE_REQUEST_DESCRIPTION", true},
+		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", true},
+		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", true},
+		{"CI_MERGE_REQUEST_PROJECT_URL", true},
+		{"GITLAB_USER_LOGIN", true},
+	}
+	assert.Equal(s.T(), expected, s.runner.ListEnvVars())
 }
 
 func (s *daggerPipelineSuite) TestResolveEnvVars() {
 	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
 	s.Empty(errors)
-	s.Equal(map[string]string{"CHAINLOOP_DAGGER_CLIENT": "v0.6.0"}, resolvedEnvVars)
+	s.Equal("v0.6.0", resolvedEnvVars["CHAINLOOP_DAGGER_CLIENT"])
 }
 
 func (s *daggerPipelineSuite) TestRunURI() {
