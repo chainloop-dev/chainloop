@@ -48,6 +48,7 @@ const (
 	CraftingSchema_Runner_CIRCLECI_BUILD          CraftingSchema_Runner_RunnerType = 5
 	CraftingSchema_Runner_DAGGER_PIPELINE         CraftingSchema_Runner_RunnerType = 6
 	CraftingSchema_Runner_TEAMCITY_PIPELINE       CraftingSchema_Runner_RunnerType = 7
+	CraftingSchema_Runner_TEKTON_PIPELINE         CraftingSchema_Runner_RunnerType = 8
 )
 
 // Enum value maps for CraftingSchema_Runner_RunnerType.
@@ -61,6 +62,7 @@ var (
 		5: "CIRCLECI_BUILD",
 		6: "DAGGER_PIPELINE",
 		7: "TEAMCITY_PIPELINE",
+		8: "TEKTON_PIPELINE",
 	}
 	CraftingSchema_Runner_RunnerType_value = map[string]int32{
 		"RUNNER_TYPE_UNSPECIFIED": 0,
@@ -71,6 +73,7 @@ var (
 		"CIRCLECI_BUILD":          5,
 		"DAGGER_PIPELINE":         6,
 		"TEAMCITY_PIPELINE":       7,
+		"TEKTON_PIPELINE":         8,
 	}
 )
 
@@ -1789,7 +1792,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\x82\x0e\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\x97\x0e\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -1798,9 +1801,9 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06runner\x18\x04 \x01(\v2*.workflowcontract.v1.CraftingSchema.RunnerB\x02\x18\x01R\x06runner\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12=\n" +
 	"\bpolicies\x18\x06 \x01(\v2\x1d.workflowcontract.v1.PoliciesB\x02\x18\x01R\bpolicies\x12S\n" +
-	"\rpolicy_groups\x18\a \x03(\v2*.workflowcontract.v1.PolicyGroupAttachmentB\x02\x18\x01R\fpolicyGroups\x1a\x9e\x02\n" +
+	"\rpolicy_groups\x18\a \x03(\v2*.workflowcontract.v1.PolicyGroupAttachmentB\x02\x18\x01R\fpolicyGroups\x1a\xb3\x02\n" +
 	"\x06Runner\x12W\n" +
-	"\x04type\x18\x01 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\"\xb6\x01\n" +
+	"\x04type\x18\x01 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\"\xcb\x01\n" +
 	"\n" +
 	"RunnerType\x12\x1b\n" +
 	"\x17RUNNER_TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
@@ -1810,7 +1813,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\vJENKINS_JOB\x10\x04\x12\x12\n" +
 	"\x0eCIRCLECI_BUILD\x10\x05\x12\x13\n" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
-	"\x11TEAMCITY_PIPELINE\x10\a:\x02\x18\x01\x1a\xf9\a\n" +
+	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
+	"\x0fTEKTON_PIPELINE\x10\b:\x02\x18\x01\x1a\xf9\a\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
