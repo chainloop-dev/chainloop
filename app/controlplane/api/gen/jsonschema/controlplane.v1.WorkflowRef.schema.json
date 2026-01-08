@@ -19,6 +19,9 @@
     "project_name": {
       "minLength": 1,
       "type": "string"
+    },
+    "team": {
+      "type": "string"
     }
   },
   "title": "Workflow Ref",

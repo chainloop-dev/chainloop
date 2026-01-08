@@ -1533,6 +1533,7 @@ type WorkflowRef struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	ProjectName   string                 `protobuf:"bytes,3,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	Team          string                 `protobuf:"bytes,4,opt,name=team,proto3" json:"team,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1584,6 +1585,13 @@ func (x *WorkflowRef) GetName() string {
 func (x *WorkflowRef) GetProjectName() string {
 	if x != nil {
 		return x.ProjectName
+	}
+	return ""
+}
+
+func (x *WorkflowRef) GetTeam() string {
+	if x != nil {
+		return x.Team
 	}
 	return ""
 }
@@ -2735,12 +2743,13 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\fScopedEntity\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\"\xed\x01\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\"\x81\x02\n" +
 	"\vWorkflowRef\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\x12\x97\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname-dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12*\n" +
-	"\fproject_name\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vprojectName\"\xbe\x04\n" +
+	"\fproject_name\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vprojectName\x12\x12\n" +
+	"\x04team\x18\x04 \x01(\tR\x04team\"\xbe\x04\n" +
 	"\x1bWorkflowContractVersionItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\brevision\x18\x02 \x01(\x05R\brevision\x129\n" +

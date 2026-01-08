@@ -508,6 +508,7 @@ export interface WorkflowRef {
   id: string;
   name: string;
   projectName: string;
+  team: string;
 }
 
 export interface WorkflowContractVersionItem {
@@ -3190,7 +3191,7 @@ export const ScopedEntity = {
 };
 
 function createBaseWorkflowRef(): WorkflowRef {
-  return { id: "", name: "", projectName: "" };
+  return { id: "", name: "", projectName: "", team: "" };
 }
 
 export const WorkflowRef = {
@@ -3203,6 +3204,9 @@ export const WorkflowRef = {
     }
     if (message.projectName !== "") {
       writer.uint32(26).string(message.projectName);
+    }
+    if (message.team !== "") {
+      writer.uint32(34).string(message.team);
     }
     return writer;
   },
@@ -3235,6 +3239,13 @@ export const WorkflowRef = {
 
           message.projectName = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.team = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3249,6 +3260,7 @@ export const WorkflowRef = {
       id: isSet(object.id) ? String(object.id) : "",
       name: isSet(object.name) ? String(object.name) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      team: isSet(object.team) ? String(object.team) : "",
     };
   },
 
@@ -3257,6 +3269,7 @@ export const WorkflowRef = {
     message.id !== undefined && (obj.id = message.id);
     message.name !== undefined && (obj.name = message.name);
     message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.team !== undefined && (obj.team = message.team);
     return obj;
   },
 
@@ -3269,6 +3282,7 @@ export const WorkflowRef = {
     message.id = object.id ?? "";
     message.name = object.name ?? "";
     message.projectName = object.projectName ?? "";
+    message.team = object.team ?? "";
     return message;
   },
 };
