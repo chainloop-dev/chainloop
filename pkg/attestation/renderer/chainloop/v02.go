@@ -148,6 +148,7 @@ func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
 	if c.GetPlatformVerification() != nil {
 		pv := c.GetPlatformVerification()
 		annotationsRaw[subjectGitAnnotationAuthorVerified] = pv.GetStatus()
+		annotationsRaw[subjectGitAnnotationSignatureAlgorithm] = pv.GetSignatureAlgorithm()
 	}
 
 	if remotes := c.GetRemotes(); len(remotes) > 0 {
