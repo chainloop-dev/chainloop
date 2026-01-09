@@ -77,11 +77,12 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 			logger.Debug().Int("status", resp.StatusCode).Str("commit", commitHash).Msg("GitHub API returned non-OK status")
 		}
 		var reason string
-		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		switch resp.StatusCode {
+		case http.StatusUnauthorized, http.StatusForbidden:
 			reason = "GitHub API authentication failed"
-		} else if resp.StatusCode == http.StatusNotFound {
+		case http.StatusNotFound:
 			reason = "Commit not found"
-		} else {
+		default:
 			reason = fmt.Sprintf("GitHub API error: HTTP %d", resp.StatusCode)
 		}
 		return &api.Commit_CommitVerification{
