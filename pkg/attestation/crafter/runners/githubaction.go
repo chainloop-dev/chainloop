@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,14 +19,18 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 	"github.com/rs/zerolog"
 )
 
 type GitHubAction struct {
 	githubToken *oidc.Token
+	logger      *zerolog.Logger
 }
 
 func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction {
@@ -40,6 +44,7 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 		logger.Debug().Err(err).Msg("failed creating GitHub OIDC client")
 		return &GitHubAction{
 			githubToken: nil,
+			logger:      logger,
 		}
 	}
 
@@ -48,6 +53,7 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 		logger.Debug().Err(err).Msg("failed to get github token")
 		return &GitHubAction{
 			githubToken: nil,
+			logger:      logger,
 		}
 	}
 
@@ -56,11 +62,13 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 		logger.Debug().Err(err).Msg("failed casting to OIDC token")
 		return &GitHubAction{
 			githubToken: nil,
+			logger:      logger,
 		}
 	}
 
 	return &GitHubAction{
 		githubToken: ghToken,
+		logger:      logger,
 	}
 }
 
@@ -133,4 +141,29 @@ func (r *GitHubAction) WorkflowFilePath() string {
 
 func (r *GitHubAction) IsAuthenticated() bool {
 	return r.githubToken != nil
+}
+
+// VerifyCommitSignature checks if a commit's signature is verified by GitHub
+func (r *GitHubAction) VerifyCommitSignature(ctx context.Context, commitHash string) *api.Commit_CommitVerification {
+	// Extract owner/repo from GITHUB_REPOSITORY env var
+	repo := os.Getenv("GITHUB_REPOSITORY") // e.g., "owner/repo"
+	if repo == "" {
+		r.logger.Debug().Msg("GITHUB_REPOSITORY not set, cannot verify commit")
+		return nil
+	}
+
+	parts := strings.Split(repo, "/")
+	if len(parts) != 2 {
+		r.logger.Debug().Str("repo", repo).Msg("invalid GITHUB_REPOSITORY format")
+		return nil
+	}
+
+	// Get GITHUB_TOKEN for API access
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		r.logger.Debug().Msg("GITHUB_TOKEN not set, API calls may be rate limited")
+	}
+
+	// Call GitHub API to verify commit
+	return commitverification.VerifyGitHubCommit(ctx, parts[0], parts[1], commitHash, token, r.logger)
 }

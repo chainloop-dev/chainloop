@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -168,6 +168,8 @@ type InitOpts struct {
 	PoliciesAllowedHostnames []string
 	// CAS backend information
 	CASBackend *api.Attestation_CASBackend
+	// Logger for verification logging
+	Logger *zerolog.Logger
 }
 
 type SigningOpts struct {
@@ -248,6 +250,8 @@ type HeadCommit struct {
 	Message   string
 	Remotes   []*CommitRemote
 	Signature string
+	// Platform verification (if available)
+	PlatformVerification *api.Commit_CommitVerification
 }
 
 type CommitRemote struct {
@@ -357,13 +361,22 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 
 	var headCommitP *api.Commit
 	if headCommit != nil {
+		// Attempt platform verification
+		if opts.Runner != nil {
+			headCommit.PlatformVerification = verifyCommitWithPlatform(
+				headCommit,
+				opts.Runner,
+			)
+		}
+
 		headCommitP = &api.Commit{
-			Hash:        headCommit.Hash,
-			AuthorEmail: headCommit.AuthorEmail,
-			AuthorName:  headCommit.AuthorName,
-			Date:        timestamppb.New(headCommit.Date),
-			Message:     headCommit.Message,
-			Signature:   headCommit.Signature,
+			Hash:                 headCommit.Hash,
+			AuthorEmail:          headCommit.AuthorEmail,
+			AuthorName:           headCommit.AuthorName,
+			Date:                 timestamppb.New(headCommit.Date),
+			Message:              headCommit.Message,
+			Signature:            headCommit.Signature,
+			PlatformVerification: headCommit.PlatformVerification,
 		}
 
 		for _, r := range headCommit.Remotes {
@@ -805,4 +818,15 @@ func (c *Crafter) requireStateLoaded() error {
 	}
 
 	return nil
+}
+
+// verifyCommitWithPlatform attempts to verify commit signature using platform APIs
+// Returns nil if verification is not available or not applicable
+func verifyCommitWithPlatform(commit *HeadCommit, runner SupportedRunner) *api.Commit_CommitVerification {
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Call runner's verification method directly
+	return runner.VerifyCommitSignature(ctx, commit.Hash)
 }

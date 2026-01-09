@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 package runners
 
 import (
+	"context"
 	"os"
+
+	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
@@ -74,4 +77,8 @@ func (r *CircleCIBuild) IsAuthenticated() bool {
 
 func (r *CircleCIBuild) Environment() RunnerEnvironment {
 	return Unknown
+}
+
+func (r *CircleCIBuild) VerifyCommitSignature(_ context.Context, _ string) *api.Commit_CommitVerification {
+	return nil // Not supported for this runner
 }
