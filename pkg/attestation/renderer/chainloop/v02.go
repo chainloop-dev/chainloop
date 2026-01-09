@@ -144,6 +144,12 @@ func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
 		annotationsRaw[subjectGitAnnotationSignature] = c.GetSignature()
 	}
 
+	// add author verification only if exists
+	if c.GetPlatformVerification() != nil {
+		pv := c.GetPlatformVerification()
+		annotationsRaw[subjectGitAnnotationAuthorVerified] = pv.GetStatus()
+	}
+
 	if remotes := c.GetRemotes(); len(remotes) > 0 {
 		remotesRaw := []interface{}{}
 		for _, r := range remotes {
