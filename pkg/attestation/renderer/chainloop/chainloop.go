@@ -342,5 +342,5 @@ const (
 	subjectGitAnnotationMessage            = "message"
 	subjectGitAnnotationRemotes            = "remotes"
 	subjectGitAnnotationSignature          = "signature"
-	subjectGitAnnotationSignatureAlgorithm = "signature_algorithm"
+	subjectGitAnnotationSignatureAlgorithm = "signature.algorithm"
 )

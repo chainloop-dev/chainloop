@@ -363,10 +363,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 	if headCommit != nil {
 		// Attempt platform verification
 		if opts.Runner != nil {
-			headCommit.PlatformVerification = verifyCommitWithPlatform(
-				headCommit,
-				opts.Runner,
-			)
+			headCommit.PlatformVerification = verifyCommitWithPlatform(headCommit, opts.Runner)
 		}
 
 		headCommitP = &api.Commit{
