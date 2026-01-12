@@ -32,14 +32,14 @@
 //	chainloop policy develop eval \
 //	  --policy policy.yaml \
 //	  --material /tmp/test-message.json \
-//	  --kind STRING
+//	  --kind EVIDENCE
 package main
 
 import (
 	"fmt"
 	"strings"
 
-	chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
+	chainlooppolicy "github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go"
 )
 
 // Input represents the expected input structure.
