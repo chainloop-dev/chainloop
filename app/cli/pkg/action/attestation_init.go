@@ -279,6 +279,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		},
 		Auth:       authInfo,
 		CASBackend: casBackendInfo,
+		Logger:     &action.Logger,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {

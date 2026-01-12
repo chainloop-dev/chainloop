@@ -68,7 +68,7 @@ type InstanceInfo struct {
 }
 
 // ParentCIContext holds environment variables from a parent CI system (Github Actions, Gitlab CI)
-// to enable PR/MR auto-detection when running Chainloop via Dagger inside those CI systems
+// to enable PR/MR auto-detection and commit verification when running Chainloop via Dagger inside those CI systems
 type ParentCIContext struct {
 	// Github Actions PR context
 	// Event name (e.g., "pull_request", "pull_request_target")
@@ -77,6 +77,8 @@ type ParentCIContext struct {
 	GithubHeadRef string
 	// Target branch name
 	GithubBaseRef string
+	// Github token for API access and commit verification
+	GithubToken *dagger.Secret
 
 	// Gitlab CI MR context
 	// Pipeline source (should be "merge_request_event" for MRs)
@@ -95,6 +97,8 @@ type ParentCIContext struct {
 	GitlabMRProjectURL string
 	// User login
 	GitlabUserLogin string
+	// Gitlab job token for API access and commit verification
+	GitlabJobToken *dagger.Secret
 }
 
 // Initialize a new attestation
@@ -133,6 +137,9 @@ func (m *Chainloop) Init(
 	// Github target branch name
 	// +optional
 	githubBaseRef string,
+	// Github token for API access and commit verification (when running in Github Actions)
+	// +optional
+	githubToken *dagger.Secret,
 	// Gitlab pipeline source (should be "merge_request_event" for MRs)
 	// +optional
 	gitlabPipelineSource string,
@@ -157,6 +164,9 @@ func (m *Chainloop) Init(
 	// Gitlab user login
 	// +optional
 	gitlabUserLogin string,
+	// Gitlab job token for API access and commit verification (when running in Gitlab CI)
+	// +optional
+	gitlabJobToken *dagger.Secret,
 ) (*Attestation, error) {
 	// Construct ParentCIContext from individual parameters
 	var parentCIContext *ParentCIContext
@@ -168,6 +178,7 @@ func (m *Chainloop) Init(
 			GithubEventName:      githubEventName,
 			GithubHeadRef:        githubHeadRef,
 			GithubBaseRef:        githubBaseRef,
+			GithubToken:          githubToken,
 			GitlabPipelineSource: gitlabPipelineSource,
 			GitlabMRIID:          gitlabMRIID,
 			GitlabMRTitle:        gitlabMRTitle,
@@ -176,6 +187,7 @@ func (m *Chainloop) Init(
 			GitlabMRTargetBranch: gitlabMRTargetBranch,
 			GitlabMRProjectURL:   gitlabMRProjectURL,
 			GitlabUserLogin:      gitlabUserLogin,
+			GitlabJobToken:       gitlabJobToken,
 		}
 	}
 
@@ -458,6 +470,9 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 		if parentCI.GithubBaseRef != "" {
 			ctr = ctr.WithEnvVariable("GITHUB_BASE_REF", parentCI.GithubBaseRef)
 		}
+		if parentCI.GithubToken != nil {
+			ctr = ctr.WithSecretVariable("GITHUB_TOKEN", parentCI.GithubToken)
+		}
 
 		// Handle Github event file (passed as separate parameter for CLI convenience)
 		if githubEventFile != nil {
@@ -489,6 +504,9 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 		}
 		if parentCI.GitlabUserLogin != "" {
 			ctr = ctr.WithEnvVariable("GITLAB_USER_LOGIN", parentCI.GitlabUserLogin)
+		}
+		if parentCI.GitlabJobToken != nil {
+			ctr = ctr.WithSecretVariable("CI_JOB_TOKEN", parentCI.GitlabJobToken)
 		}
 	}
 

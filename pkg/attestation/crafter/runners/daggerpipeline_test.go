@@ -19,6 +19,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -98,7 +99,8 @@ func (s *daggerPipelineSuite) TestRunnerName() {
 
 // Run before each test
 func (s *daggerPipelineSuite) SetupTest() {
-	s.runner = NewDaggerPipeline()
+	logger := zerolog.Nop()
+	s.runner = NewDaggerPipeline("", &logger)
 	t := s.T()
 	t.Setenv("CHAINLOOP_DAGGER_CLIENT", "v0.6.0")
 }

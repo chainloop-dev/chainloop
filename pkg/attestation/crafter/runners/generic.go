@@ -16,7 +16,10 @@
 package runners
 
 import (
+	"context"
+
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
 type Generic struct{}
@@ -57,4 +60,8 @@ func (r *Generic) IsAuthenticated() bool {
 
 func (r *Generic) Environment() RunnerEnvironment {
 	return Unknown
+}
+
+func (r *Generic) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
+	return nil // Not supported for this runner
 }

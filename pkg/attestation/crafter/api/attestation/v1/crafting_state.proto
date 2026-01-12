@@ -307,10 +307,42 @@ message Commit {
   google.protobuf.Timestamp date = 5;
   repeated Remote remotes = 6;
   string signature = 7;
+  // Platform verification information (GitHub/GitLab signature verification)
+  optional CommitVerification platform_verification = 8;
 
   message Remote {
     string name = 1 [(buf.validate.field).string.min_len = 1];
     string url = 2 [(buf.validate.field).string.min_len = 1];
+  }
+
+  message CommitVerification {
+    // Whether verification was attempted
+    bool attempted = 1;
+    // Verification status
+    VerificationStatus status = 2;
+    // Human-readable reason for the status
+    string reason = 3;
+    // Platform that performed the verification (e.g., "github", "gitlab")
+    string platform = 4;
+    // Optional: The signing key ID if verified
+    string key_id = 5;
+    // Optional: The signature algorithm used
+    string signature_algorithm = 6;
+
+    // buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+    // buf:lint:ignore ENUM_VALUE_PREFIX
+    // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+    enum VerificationStatus {
+      unspecified = 0;
+      // Successfully verified by platform
+      verified = 1;
+      // Platform checked but signature is invalid/unverified
+      unverified = 2;
+      // Verification could not be performed (no API access, network error, etc.)
+      unavailable = 3;
+      // Platform doesn't support verification or no commit signature present
+      not_applicable = 4;
+    }
   }
 }
 

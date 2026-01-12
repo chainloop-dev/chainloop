@@ -334,11 +334,13 @@ func (p *ProvenancePredicateCommon) GetMetadata() *Metadata {
 
 const (
 	// Subject names
-	SubjectGitHead                  = "git.head"
-	subjectGitAnnotationAuthorEmail = "author.email"
-	subjectGitAnnotationAuthorName  = "author.name"
-	subjectGitAnnotationWhen        = "date"
-	subjectGitAnnotationMessage     = "message"
-	subjectGitAnnotationRemotes     = "remotes"
-	subjectGitAnnotationSignature   = "signature"
+	SubjectGitHead                               = "git.head"
+	subjectGitAnnotationAuthorEmail              = "author.email"
+	subjectGitAnnotationAuthorName               = "author.name"
+	subjectGitAnnotationAuthorVerificationStatus = "author.verification_status"
+	subjectGitAnnotationWhen                     = "date"
+	subjectGitAnnotationMessage                  = "message"
+	subjectGitAnnotationRemotes                  = "remotes"
+	subjectGitAnnotationSignature                = "signature"
+	subjectGitAnnotationSignatureAlgorithm       = "signature.algorithm"
 )

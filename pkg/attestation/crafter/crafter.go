@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/prinfo"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-git/go-git/v5"
@@ -168,6 +169,8 @@ type InitOpts struct {
 	PoliciesAllowedHostnames []string
 	// CAS backend information
 	CASBackend *api.Attestation_CASBackend
+	// Logger for verification logging
+	Logger *zerolog.Logger
 }
 
 type SigningOpts struct {
@@ -248,6 +251,8 @@ type HeadCommit struct {
 	Message   string
 	Remotes   []*CommitRemote
 	Signature string
+	// Platform verification (if available)
+	PlatformVerification *api.Commit_CommitVerification
 }
 
 type CommitRemote struct {
@@ -357,13 +362,19 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 
 	var headCommitP *api.Commit
 	if headCommit != nil {
+		// Attempt platform verification
+		if opts.Runner != nil {
+			headCommit.PlatformVerification = verifyCommitWithPlatform(headCommit, opts.Runner)
+		}
+
 		headCommitP = &api.Commit{
-			Hash:        headCommit.Hash,
-			AuthorEmail: headCommit.AuthorEmail,
-			AuthorName:  headCommit.AuthorName,
-			Date:        timestamppb.New(headCommit.Date),
-			Message:     headCommit.Message,
-			Signature:   headCommit.Signature,
+			Hash:                 headCommit.Hash,
+			AuthorEmail:          headCommit.AuthorEmail,
+			AuthorName:           headCommit.AuthorName,
+			Date:                 timestamppb.New(headCommit.Date),
+			Message:              headCommit.Message,
+			Signature:            headCommit.Signature,
+			PlatformVerification: headCommit.PlatformVerification,
 		}
 
 		for _, r := range headCommit.Remotes {
@@ -805,4 +816,52 @@ func (c *Crafter) requireStateLoaded() error {
 	}
 
 	return nil
+}
+
+// verifyCommitWithPlatform attempts to verify commit signature using platform APIs
+// Returns nil if verification is not available or not applicable
+func verifyCommitWithPlatform(commit *HeadCommit, runner SupportedRunner) *api.Commit_CommitVerification {
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Call runner's verification method directly
+	verification := runner.VerifyCommitSignature(ctx, commit.Hash)
+	if verification == nil {
+		return nil
+	}
+
+	// Convert from commitverification type to protobuf type
+	return convertCommitVerification(verification)
+}
+
+// convertCommitVerification converts from commitverification.CommitVerification to protobuf type
+func convertCommitVerification(v *commitverification.CommitVerification) *api.Commit_CommitVerification {
+	if v == nil {
+		return nil
+	}
+
+	// Convert status enum
+	var status api.Commit_CommitVerification_VerificationStatus
+	switch v.Status {
+	case commitverification.VerificationStatusVerified:
+		status = api.Commit_CommitVerification_verified
+	case commitverification.VerificationStatusUnverified:
+		status = api.Commit_CommitVerification_unverified
+	case commitverification.VerificationStatusUnavailable:
+		status = api.Commit_CommitVerification_unavailable
+	case commitverification.VerificationStatusNotApplicable:
+		status = api.Commit_CommitVerification_not_applicable
+	default:
+		status = api.Commit_CommitVerification_unspecified
+	}
+
+	return &api.Commit_CommitVerification{
+		Attempted:          v.Attempted,
+		Status:             status,
+		Reason:             v.Reason,
+		Platform:           v.Platform,
+		KeyId:              v.KeyID,
+		SignatureAlgorithm: v.SignatureAlgorithm,
+	}
 }

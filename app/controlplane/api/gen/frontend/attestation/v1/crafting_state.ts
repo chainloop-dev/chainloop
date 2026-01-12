@@ -336,11 +336,92 @@ export interface Commit {
   date?: Date;
   remotes: Commit_Remote[];
   signature: string;
+  /** Platform verification information (GitHub/GitLab signature verification) */
+  platformVerification?: Commit_CommitVerification | undefined;
 }
 
 export interface Commit_Remote {
   name: string;
   url: string;
+}
+
+export interface Commit_CommitVerification {
+  /** Whether verification was attempted */
+  attempted: boolean;
+  /** Verification status */
+  status: Commit_CommitVerification_VerificationStatus;
+  /** Human-readable reason for the status */
+  reason: string;
+  /** Platform that performed the verification (e.g., "github", "gitlab") */
+  platform: string;
+  /** Optional: The signing key ID if verified */
+  keyId: string;
+  /** Optional: The signature algorithm used */
+  signatureAlgorithm: string;
+}
+
+/**
+ * buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+ * buf:lint:ignore ENUM_VALUE_PREFIX
+ * buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+ */
+export enum Commit_CommitVerification_VerificationStatus {
+  unspecified = 0,
+  /** verified - Successfully verified by platform */
+  verified = 1,
+  /** unverified - Platform checked but signature is invalid/unverified */
+  unverified = 2,
+  /** unavailable - Verification could not be performed (no API access, network error, etc.) */
+  unavailable = 3,
+  /** not_applicable - Platform doesn't support verification or no commit signature present */
+  not_applicable = 4,
+  UNRECOGNIZED = -1,
+}
+
+export function commit_CommitVerification_VerificationStatusFromJSON(
+  object: any,
+): Commit_CommitVerification_VerificationStatus {
+  switch (object) {
+    case 0:
+    case "unspecified":
+      return Commit_CommitVerification_VerificationStatus.unspecified;
+    case 1:
+    case "verified":
+      return Commit_CommitVerification_VerificationStatus.verified;
+    case 2:
+    case "unverified":
+      return Commit_CommitVerification_VerificationStatus.unverified;
+    case 3:
+    case "unavailable":
+      return Commit_CommitVerification_VerificationStatus.unavailable;
+    case 4:
+    case "not_applicable":
+      return Commit_CommitVerification_VerificationStatus.not_applicable;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Commit_CommitVerification_VerificationStatus.UNRECOGNIZED;
+  }
+}
+
+export function commit_CommitVerification_VerificationStatusToJSON(
+  object: Commit_CommitVerification_VerificationStatus,
+): string {
+  switch (object) {
+    case Commit_CommitVerification_VerificationStatus.unspecified:
+      return "unspecified";
+    case Commit_CommitVerification_VerificationStatus.verified:
+      return "verified";
+    case Commit_CommitVerification_VerificationStatus.unverified:
+      return "unverified";
+    case Commit_CommitVerification_VerificationStatus.unavailable:
+      return "unavailable";
+    case Commit_CommitVerification_VerificationStatus.not_applicable:
+      return "not_applicable";
+    case Commit_CommitVerification_VerificationStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 /** Intermediate information that will get stored in the system while the run is being executed */
@@ -2960,7 +3041,16 @@ export const PolicyEvaluation_RawResult = {
 };
 
 function createBaseCommit(): Commit {
-  return { hash: "", authorEmail: "", authorName: "", message: "", date: undefined, remotes: [], signature: "" };
+  return {
+    hash: "",
+    authorEmail: "",
+    authorName: "",
+    message: "",
+    date: undefined,
+    remotes: [],
+    signature: "",
+    platformVerification: undefined,
+  };
 }
 
 export const Commit = {
@@ -2985,6 +3075,9 @@ export const Commit = {
     }
     if (message.signature !== "") {
       writer.uint32(58).string(message.signature);
+    }
+    if (message.platformVerification !== undefined) {
+      Commit_CommitVerification.encode(message.platformVerification, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -3045,6 +3138,13 @@ export const Commit = {
 
           message.signature = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.platformVerification = Commit_CommitVerification.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3063,6 +3163,9 @@ export const Commit = {
       date: isSet(object.date) ? fromJsonTimestamp(object.date) : undefined,
       remotes: Array.isArray(object?.remotes) ? object.remotes.map((e: any) => Commit_Remote.fromJSON(e)) : [],
       signature: isSet(object.signature) ? String(object.signature) : "",
+      platformVerification: isSet(object.platformVerification)
+        ? Commit_CommitVerification.fromJSON(object.platformVerification)
+        : undefined,
     };
   },
 
@@ -3079,6 +3182,9 @@ export const Commit = {
       obj.remotes = [];
     }
     message.signature !== undefined && (obj.signature = message.signature);
+    message.platformVerification !== undefined && (obj.platformVerification = message.platformVerification
+      ? Commit_CommitVerification.toJSON(message.platformVerification)
+      : undefined);
     return obj;
   },
 
@@ -3095,6 +3201,9 @@ export const Commit = {
     message.date = object.date ?? undefined;
     message.remotes = object.remotes?.map((e) => Commit_Remote.fromPartial(e)) || [];
     message.signature = object.signature ?? "";
+    message.platformVerification = (object.platformVerification !== undefined && object.platformVerification !== null)
+      ? Commit_CommitVerification.fromPartial(object.platformVerification)
+      : undefined;
     return message;
   },
 };
@@ -3163,6 +3272,129 @@ export const Commit_Remote = {
     const message = createBaseCommit_Remote();
     message.name = object.name ?? "";
     message.url = object.url ?? "";
+    return message;
+  },
+};
+
+function createBaseCommit_CommitVerification(): Commit_CommitVerification {
+  return { attempted: false, status: 0, reason: "", platform: "", keyId: "", signatureAlgorithm: "" };
+}
+
+export const Commit_CommitVerification = {
+  encode(message: Commit_CommitVerification, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.attempted === true) {
+      writer.uint32(8).bool(message.attempted);
+    }
+    if (message.status !== 0) {
+      writer.uint32(16).int32(message.status);
+    }
+    if (message.reason !== "") {
+      writer.uint32(26).string(message.reason);
+    }
+    if (message.platform !== "") {
+      writer.uint32(34).string(message.platform);
+    }
+    if (message.keyId !== "") {
+      writer.uint32(42).string(message.keyId);
+    }
+    if (message.signatureAlgorithm !== "") {
+      writer.uint32(50).string(message.signatureAlgorithm);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Commit_CommitVerification {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCommit_CommitVerification();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.attempted = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.platform = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.keyId = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.signatureAlgorithm = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Commit_CommitVerification {
+    return {
+      attempted: isSet(object.attempted) ? Boolean(object.attempted) : false,
+      status: isSet(object.status) ? commit_CommitVerification_VerificationStatusFromJSON(object.status) : 0,
+      reason: isSet(object.reason) ? String(object.reason) : "",
+      platform: isSet(object.platform) ? String(object.platform) : "",
+      keyId: isSet(object.keyId) ? String(object.keyId) : "",
+      signatureAlgorithm: isSet(object.signatureAlgorithm) ? String(object.signatureAlgorithm) : "",
+    };
+  },
+
+  toJSON(message: Commit_CommitVerification): unknown {
+    const obj: any = {};
+    message.attempted !== undefined && (obj.attempted = message.attempted);
+    message.status !== undefined && (obj.status = commit_CommitVerification_VerificationStatusToJSON(message.status));
+    message.reason !== undefined && (obj.reason = message.reason);
+    message.platform !== undefined && (obj.platform = message.platform);
+    message.keyId !== undefined && (obj.keyId = message.keyId);
+    message.signatureAlgorithm !== undefined && (obj.signatureAlgorithm = message.signatureAlgorithm);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<Commit_CommitVerification>, I>>(base?: I): Commit_CommitVerification {
+    return Commit_CommitVerification.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<Commit_CommitVerification>, I>>(object: I): Commit_CommitVerification {
+    const message = createBaseCommit_CommitVerification();
+    message.attempted = object.attempted ?? false;
+    message.status = object.status ?? 0;
+    message.reason = object.reason ?? "";
+    message.platform = object.platform ?? "";
+    message.keyId = object.keyId ?? "";
+    message.signatureAlgorithm = object.signatureAlgorithm ?? "";
     return message;
   },
 };

@@ -106,6 +106,9 @@ modules:
       except:
         - FIELD_NOT_REQUIRED
         - PACKAGE_NO_IMPORT_CYCLE
+        - ENUM_VALUE_UPPER_SNAKE_CASE
+        - ENUM_VALUE_PREFIX
+        - ENUM_ZERO_VALUE_SUFFIX
       disallow_comment_ignores: true
     breaking:
       use:
