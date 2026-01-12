@@ -1,10 +1,9 @@
 # Container image built by go-releaser that's used to run migrations against the database during deployment
 # See https://atlasgo.io/guides/deploying/image
-# NOTE: Updated to canary since there is a vulnerability in the latest stable release
-# from: arigaio/atlas:latest
-# docker run arigaio/atlas@sha256:ea3f647b96cf61010deff910c97f8c092deda1db2be3b2b8f20780668bfcf32c version
-# atlas version v0.38.1-ce311d2-canary
-FROM arigaio/atlas@sha256:ea3f647b96cf61010deff910c97f8c092deda1db2be3b2b8f20780668bfcf32c as base
+# from: arigaio/atlas:1.0.0
+# docker run arigaio/atlas@sha256:0c5585e0768aeb500c1322e056caafe8a01c6cfc7cf2e5430ec26a6fc9541c09 version
+# atlas version v1.0.0
+FROM arigaio/atlas@sha256:0c5585e0768aeb500c1322e056caafe8a01c6cfc7cf2e5430ec26a6fc9541c09 as base
 
 FROM scratch
 # Update permissions to make it readable by the user
