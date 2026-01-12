@@ -5,5 +5,5 @@ metadata:
   description: Simple string validation policy demonstrating basic SDK usage
 spec:
   policies:
-    - kind: STRING
+    - kind: EVIDENCE
       path: policy.wasm

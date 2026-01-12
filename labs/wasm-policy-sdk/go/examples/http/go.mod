@@ -1,4 +1,4 @@
-module chainloop-policy-simple
+module chainloop-policy-http
 
 go 1.25
 

@@ -41,7 +41,7 @@ echo '{"message": "hello world"}' > /tmp/test-data.json
 chainloop policy develop eval \
   --policy policy.yaml \
   --material /tmp/test-data.json \
-  --kind STRING
+  --kind EVIDENCE
 ```
 
 Expected: **PASS** (no violations)
@@ -54,7 +54,7 @@ echo '{"message": ""}' > /tmp/test-data.json
 chainloop policy develop eval \
   --policy policy.yaml \
   --material /tmp/test-data.json \
-  --kind STRING
+  --kind EVIDENCE
 ```
 
 Expected: **FAIL** with violation "message cannot be empty"
@@ -67,7 +67,7 @@ echo '{"message": "this is forbidden content"}' > /tmp/test-data.json
 chainloop policy develop eval \
   --policy policy.yaml \
   --material /tmp/test-data.json \
-  --kind STRING
+  --kind EVIDENCE
 ```
 
 Expected: **FAIL** with violation "message contains forbidden word: forbidden"
@@ -80,7 +80,7 @@ echo '{"message": "This is a very long message that exceeds the maximum allowed 
 chainloop policy develop eval \
   --policy policy.yaml \
   --material /tmp/test-data.json \
-  --kind STRING
+  --kind EVIDENCE
 ```
 
 Expected: **FAIL** with violation "message too long: 151 characters (max 100)"
@@ -93,7 +93,7 @@ echo '{"message": "short"}' > /tmp/test-data.json
 chainloop policy develop eval \
   --policy policy.yaml \
   --material /tmp/test-data.json \
-  --kind STRING \
+  --kind EVIDENCE \
   --input max_length=3
 ```
 
@@ -107,7 +107,7 @@ echo '{"data": "something"}' > /tmp/test-data.json
 chainloop policy develop eval \
   --policy policy.yaml \
   --material /tmp/test-data.json \
-  --kind STRING
+  --kind EVIDENCE
 ```
 
 Expected: **SKIP** with reason "Material missing 'message' field"
@@ -120,7 +120,7 @@ Run with `--debug` to see detailed logs:
 chainloop policy develop eval \
   --policy policy.yaml \
   --material test-data.json \
-  --kind STRING \
+  --kind EVIDENCE \
   --debug
 ```
 

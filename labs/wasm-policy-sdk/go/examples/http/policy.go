@@ -43,7 +43,7 @@
 package main
 
 import (
-	chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+	chainlooppolicy "github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go"
 )
 
 type Input struct {

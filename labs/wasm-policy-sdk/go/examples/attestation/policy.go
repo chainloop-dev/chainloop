@@ -36,7 +36,7 @@ package main
 import (
 	"strings"
 
-	chainlooppolicy "github.com/chainloop-dev/chainloop/sdks/go"
+	chainlooppolicy "github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go"
 )
 
 // Attestation represents an in-toto attestation.

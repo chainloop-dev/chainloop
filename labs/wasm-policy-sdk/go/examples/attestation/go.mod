@@ -1,4 +1,4 @@
-module chainloop-policy-simple
+module chainloop-policy-attestation
 
 go 1.25
 

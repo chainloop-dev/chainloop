@@ -11,6 +11,13 @@ A Go SDK for writing Chainloop policies that compile to WebAssembly with TinyGo.
 - Logging support
 - Tested with real-world examples
 
+## Documentation
+
+**Official Documentation:**
+- [WASM Policies Overview](https://docs.chainloop.dev/guides/wasm-policies/overview)
+- [Go SDK Guide](https://docs.chainloop.dev/guides/wasm-policies/go-sdk)
+- [JavaScript SDK Guide](https://docs.chainloop.dev/guides/wasm-policies/javascript-sdk)
+
 ## Quick Start
 
 ### 1. Create a Policy
@@ -19,7 +26,7 @@ A Go SDK for writing Chainloop policies that compile to WebAssembly with TinyGo.
 package main
 
 import (
-    chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
+    chainlooppolicy "github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go"
 )
 
 type Input struct {
@@ -540,11 +547,11 @@ module myorganization.com/chainloop-policies/my-policy
 go 1.25
 
 require (
-    github.com/chainloop-dev/chainloop/sdks/go v0.0.0
+    github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go v0.0.0
     github.com/extism/go-pdk v1.1.3
 )
 
-replace github.com/chainloop-dev/chainloop/sdks/go => /path/to/chainloop/sdk/go
+replace github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go => /path/to/chainloop/labs/wasm-policy-sdk/go
 ```
 
 ### policy.yaml
