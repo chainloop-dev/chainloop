@@ -147,7 +147,7 @@ func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
 	// add author verification only if exists
 	if c.GetPlatformVerification() != nil {
 		pv := c.GetPlatformVerification()
-		annotationsRaw[subjectGitAnnotationAuthorVerified] = pv.GetStatus()
+		annotationsRaw[subjectGitAnnotationAuthorVerified] = pv.GetStatus().String()
 		annotationsRaw[subjectGitAnnotationSignatureAlgorithm] = pv.GetSignatureAlgorithm()
 	}
 
