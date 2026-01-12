@@ -23,12 +23,11 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/rs/zerolog"
 )
 
 // VerifyGitHubCommit verifies a commit signature using the GitHub API
-func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token string, logger *zerolog.Logger) *api.Commit_CommitVerification {
+func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token string, logger *zerolog.Logger) *CommitVerification {
 	// Build API URL
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits/%s", owner, repo, commitHash)
 
@@ -41,9 +40,9 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 		if logger != nil {
 			logger.Debug().Err(err).Msg("failed to create GitHub API request")
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    fmt.Sprintf("Failed to create request: %v", err),
 			Platform:  "github",
 		}
@@ -62,9 +61,9 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 		if logger != nil {
 			logger.Debug().Err(err).Str("commit", commitHash).Msg("failed to fetch commit from GitHub")
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    fmt.Sprintf("GitHub API error: %v", err),
 			Platform:  "github",
 		}
@@ -85,9 +84,9 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 		default:
 			reason = fmt.Sprintf("GitHub API error: HTTP %d", resp.StatusCode)
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    reason,
 			Platform:  "github",
 		}
@@ -99,9 +98,9 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 		if logger != nil {
 			logger.Debug().Err(err).Msg("failed to decode GitHub API response")
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    fmt.Sprintf("Failed to parse response: %v", err),
 			Platform:  "github",
 		}
@@ -109,9 +108,9 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 
 	// Check if verification info is available
 	if commitResponse.Commit.Verification == nil {
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_NOT_APPLICABLE,
+			Status:    VerificationStatusNotApplicable,
 			Reason:    "No signature verification data available",
 			Platform:  "github",
 		}
@@ -120,21 +119,21 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 	verification := commitResponse.Commit.Verification
 
 	// Parse GitHub verification status
-	var status api.Commit_CommitVerification_VerificationStatus
+	var status VerificationStatus
 	if verification.Verified {
-		status = api.Commit_CommitVerification_VERIFICATION_STATUS_VERIFIED
+		status = VerificationStatusVerified
 	} else {
-		status = api.Commit_CommitVerification_VERIFICATION_STATUS_UNVERIFIED
+		status = VerificationStatusUnverified
 	}
 
 	// Detect signature type from the signature content
 	signatureAlgorithm := detectSignatureType(verification.Signature)
 
 	if logger != nil {
-		logger.Debug().Str("status", status.String()).Str("reason", verification.Reason).Bool("verified", verification.Verified).Str("signature_type", signatureAlgorithm).Msg("GitHub commit verification completed")
+		logger.Debug().Int("status", int(status)).Str("reason", verification.Reason).Bool("verified", verification.Verified).Str("signature_type", signatureAlgorithm).Msg("GitHub commit verification completed")
 	}
 
-	return &api.Commit_CommitVerification{
+	return &CommitVerification{
 		Attempted:          true,
 		Status:             status,
 		Reason:             verification.Reason,

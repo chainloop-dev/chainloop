@@ -23,12 +23,11 @@ import (
 	"net/url"
 	"time"
 
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/rs/zerolog"
 )
 
 // VerifyGitLabCommit verifies a commit signature using the GitLab API
-func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, token string, logger *zerolog.Logger) *api.Commit_CommitVerification {
+func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, token string, logger *zerolog.Logger) *CommitVerification {
 	// URL encode the project path (e.g., "group/project" -> "group%2Fproject")
 	encodedProject := url.PathEscape(projectPath)
 
@@ -44,9 +43,9 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 		if logger != nil {
 			logger.Debug().Err(err).Msg("failed to create GitLab API request")
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    fmt.Sprintf("Failed to create request: %v", err),
 			Platform:  "gitlab",
 		}
@@ -63,9 +62,9 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 		if logger != nil {
 			logger.Debug().Err(err).Str("commit", commitHash).Msg("failed to fetch commit from GitLab")
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    fmt.Sprintf("GitLab API error: %v", err),
 			Platform:  "gitlab",
 		}
@@ -80,9 +79,9 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 
 		// 404 means the commit is unsigned (no signature data available)
 		if resp.StatusCode == http.StatusNotFound {
-			return &api.Commit_CommitVerification{
+			return &CommitVerification{
 				Attempted: true,
-				Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_NOT_APPLICABLE,
+				Status:    VerificationStatusNotApplicable,
 				Reason:    "Commit is not signed",
 				Platform:  "gitlab",
 			}
@@ -94,9 +93,9 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 		} else {
 			reason = fmt.Sprintf("GitLab API error: HTTP %d", resp.StatusCode)
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    reason,
 			Platform:  "gitlab",
 		}
@@ -108,22 +107,22 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 		if logger != nil {
 			logger.Debug().Err(err).Msg("failed to decode GitLab API response")
 		}
-		return &api.Commit_CommitVerification{
+		return &CommitVerification{
 			Attempted: true,
-			Status:    api.Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE,
+			Status:    VerificationStatusUnavailable,
 			Reason:    fmt.Sprintf("Failed to parse response: %v", err),
 			Platform:  "gitlab",
 		}
 	}
 
 	// Parse GitLab verification status
-	var status api.Commit_CommitVerification_VerificationStatus
+	var status VerificationStatus
 	var reason string
 	var keyID string
 	var signatureAlgorithm string
 
 	if signatureResponse.VerificationStatus == "verified" {
-		status = api.Commit_CommitVerification_VERIFICATION_STATUS_VERIFIED
+		status = VerificationStatusVerified
 		reason = "Commit signed and verified"
 		if signatureResponse.GPGKeyID != 0 {
 			keyID = fmt.Sprintf("%d", signatureResponse.GPGKeyID)
@@ -132,7 +131,7 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 		}
 		signatureAlgorithm = signatureResponse.SignatureType
 	} else {
-		status = api.Commit_CommitVerification_VERIFICATION_STATUS_UNVERIFIED
+		status = VerificationStatusUnverified
 		reason = fmt.Sprintf("Signature not verified: %s", signatureResponse.VerificationStatus)
 		if signatureResponse.GPGKeyID != 0 {
 			keyID = fmt.Sprintf("%d", signatureResponse.GPGKeyID)
@@ -141,15 +140,15 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 	}
 
 	if logger != nil {
-		logger.Debug().Str("status", status.String()).Str("reason", reason).Str("verification_status", signatureResponse.VerificationStatus).Msg("GitLab commit verification completed")
+		logger.Debug().Int("status", int(status)).Str("reason", reason).Str("verification_status", signatureResponse.VerificationStatus).Msg("GitLab commit verification completed")
 	}
 
-	return &api.Commit_CommitVerification{
+	return &CommitVerification{
 		Attempted:          true,
 		Status:             status,
 		Reason:             reason,
 		Platform:           "gitlab",
-		KeyId:              keyID,
+		KeyID:              keyID,
 		SignatureAlgorithm: signatureAlgorithm,
 	}
 }

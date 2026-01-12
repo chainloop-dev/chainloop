@@ -329,16 +329,19 @@ message Commit {
     // Optional: The signature algorithm used
     string signature_algorithm = 6;
 
+    // buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+    // buf:lint:ignore ENUM_VALUE_PREFIX
+    // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
     enum VerificationStatus {
-      VERIFICATION_STATUS_UNSPECIFIED = 0;
+      unspecified = 0;
       // Successfully verified by platform
-      VERIFICATION_STATUS_VERIFIED = 1;
+      verified = 1;
       // Platform checked but signature is invalid/unverified
-      VERIFICATION_STATUS_UNVERIFIED = 2;
+      unverified = 2;
       // Verification could not be performed (no API access, network error, etc.)
-      VERIFICATION_STATUS_UNAVAILABLE = 3;
+      unavailable = 3;
       // Platform doesn't support verification or no commit signature present
-      VERIFICATION_STATUS_NOT_APPLICABLE = 4;
+      not_applicable = 4;
     }
   }
 }

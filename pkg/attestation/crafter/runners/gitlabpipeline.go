@@ -20,7 +20,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 	"github.com/rs/zerolog"
@@ -120,7 +119,7 @@ func (r *GitlabPipeline) Environment() RunnerEnvironment {
 }
 
 // VerifyCommitSignature checks if a commit's signature is verified by GitLab
-func (r *GitlabPipeline) VerifyCommitSignature(ctx context.Context, commitHash string) *api.Commit_CommitVerification {
+func (r *GitlabPipeline) VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification {
 	// Extract base URL and project path from env vars
 	baseURL := os.Getenv("CI_SERVER_URL")
 	projectPath := os.Getenv("CI_PROJECT_PATH")

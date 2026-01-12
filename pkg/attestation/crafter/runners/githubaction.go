@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 	"github.com/rs/zerolog"
@@ -144,7 +143,7 @@ func (r *GitHubAction) IsAuthenticated() bool {
 }
 
 // VerifyCommitSignature checks if a commit's signature is verified by GitHub
-func (r *GitHubAction) VerifyCommitSignature(ctx context.Context, commitHash string) *api.Commit_CommitVerification {
+func (r *GitHubAction) VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification {
 	// Extract owner/repo from GITHUB_REPOSITORY env var
 	repo := os.Getenv("GITHUB_REPOSITORY") // e.g., "owner/repo"
 	if repo == "" {

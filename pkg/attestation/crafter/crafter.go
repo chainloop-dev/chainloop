@@ -34,6 +34,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/prinfo"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-git/go-git/v5"
@@ -825,5 +826,42 @@ func verifyCommitWithPlatform(commit *HeadCommit, runner SupportedRunner) *api.C
 	defer cancel()
 
 	// Call runner's verification method directly
-	return runner.VerifyCommitSignature(ctx, commit.Hash)
+	verification := runner.VerifyCommitSignature(ctx, commit.Hash)
+	if verification == nil {
+		return nil
+	}
+
+	// Convert from commitverification type to protobuf type
+	return convertCommitVerification(verification)
+}
+
+// convertCommitVerification converts from commitverification.CommitVerification to protobuf type
+func convertCommitVerification(v *commitverification.CommitVerification) *api.Commit_CommitVerification {
+	if v == nil {
+		return nil
+	}
+
+	// Convert status enum
+	var status api.Commit_CommitVerification_VerificationStatus
+	switch v.Status {
+	case commitverification.VerificationStatusVerified:
+		status = api.Commit_CommitVerification_verified
+	case commitverification.VerificationStatusUnverified:
+		status = api.Commit_CommitVerification_unverified
+	case commitverification.VerificationStatusUnavailable:
+		status = api.Commit_CommitVerification_unavailable
+	case commitverification.VerificationStatusNotApplicable:
+		status = api.Commit_CommitVerification_not_applicable
+	default:
+		status = api.Commit_CommitVerification_unspecified
+	}
+
+	return &api.Commit_CommitVerification{
+		Attempted:          v.Attempted,
+		Status:             status,
+		Reason:             v.Reason,
+		Platform:           v.Platform,
+		KeyId:              v.KeyID,
+		SignatureAlgorithm: v.SignatureAlgorithm,
+	}
 }

@@ -360,16 +360,21 @@ export interface Commit_CommitVerification {
   signatureAlgorithm: string;
 }
 
+/**
+ * buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+ * buf:lint:ignore ENUM_VALUE_PREFIX
+ * buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+ */
 export enum Commit_CommitVerification_VerificationStatus {
-  VERIFICATION_STATUS_UNSPECIFIED = 0,
-  /** VERIFICATION_STATUS_VERIFIED - Successfully verified by platform */
-  VERIFICATION_STATUS_VERIFIED = 1,
-  /** VERIFICATION_STATUS_UNVERIFIED - Platform checked but signature is invalid/unverified */
-  VERIFICATION_STATUS_UNVERIFIED = 2,
-  /** VERIFICATION_STATUS_UNAVAILABLE - Verification could not be performed (no API access, network error, etc.) */
-  VERIFICATION_STATUS_UNAVAILABLE = 3,
-  /** VERIFICATION_STATUS_NOT_APPLICABLE - Platform doesn't support verification or no commit signature present */
-  VERIFICATION_STATUS_NOT_APPLICABLE = 4,
+  unspecified = 0,
+  /** verified - Successfully verified by platform */
+  verified = 1,
+  /** unverified - Platform checked but signature is invalid/unverified */
+  unverified = 2,
+  /** unavailable - Verification could not be performed (no API access, network error, etc.) */
+  unavailable = 3,
+  /** not_applicable - Platform doesn't support verification or no commit signature present */
+  not_applicable = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -378,20 +383,20 @@ export function commit_CommitVerification_VerificationStatusFromJSON(
 ): Commit_CommitVerification_VerificationStatus {
   switch (object) {
     case 0:
-    case "VERIFICATION_STATUS_UNSPECIFIED":
-      return Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_UNSPECIFIED;
+    case "unspecified":
+      return Commit_CommitVerification_VerificationStatus.unspecified;
     case 1:
-    case "VERIFICATION_STATUS_VERIFIED":
-      return Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_VERIFIED;
+    case "verified":
+      return Commit_CommitVerification_VerificationStatus.verified;
     case 2:
-    case "VERIFICATION_STATUS_UNVERIFIED":
-      return Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_UNVERIFIED;
+    case "unverified":
+      return Commit_CommitVerification_VerificationStatus.unverified;
     case 3:
-    case "VERIFICATION_STATUS_UNAVAILABLE":
-      return Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_UNAVAILABLE;
+    case "unavailable":
+      return Commit_CommitVerification_VerificationStatus.unavailable;
     case 4:
-    case "VERIFICATION_STATUS_NOT_APPLICABLE":
-      return Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_NOT_APPLICABLE;
+    case "not_applicable":
+      return Commit_CommitVerification_VerificationStatus.not_applicable;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -403,16 +408,16 @@ export function commit_CommitVerification_VerificationStatusToJSON(
   object: Commit_CommitVerification_VerificationStatus,
 ): string {
   switch (object) {
-    case Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_UNSPECIFIED:
-      return "VERIFICATION_STATUS_UNSPECIFIED";
-    case Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_VERIFIED:
-      return "VERIFICATION_STATUS_VERIFIED";
-    case Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_UNVERIFIED:
-      return "VERIFICATION_STATUS_UNVERIFIED";
-    case Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_UNAVAILABLE:
-      return "VERIFICATION_STATUS_UNAVAILABLE";
-    case Commit_CommitVerification_VerificationStatus.VERIFICATION_STATUS_NOT_APPLICABLE:
-      return "VERIFICATION_STATUS_NOT_APPLICABLE";
+    case Commit_CommitVerification_VerificationStatus.unspecified:
+      return "unspecified";
+    case Commit_CommitVerification_VerificationStatus.verified:
+      return "verified";
+    case Commit_CommitVerification_VerificationStatus.unverified:
+      return "unverified";
+    case Commit_CommitVerification_VerificationStatus.unavailable:
+      return "unavailable";
+    case Commit_CommitVerification_VerificationStatus.not_applicable:
+      return "not_applicable";
     case Commit_CommitVerification_VerificationStatus.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

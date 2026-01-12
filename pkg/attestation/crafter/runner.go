@@ -22,8 +22,8 @@ import (
 	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/rs/zerolog"
 )
 
@@ -57,7 +57,7 @@ type SupportedRunner interface {
 	// VerifyCommitSignature checks if a commit's signature is verified by the platform.
 	// Returns nil if verification is not supported or not applicable for this runner.
 	// Non-blocking: errors are logged and returned as unavailable status.
-	VerifyCommitSignature(ctx context.Context, commitHash string) *api.Commit_CommitVerification
+	VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner

@@ -20,7 +20,6 @@ import (
 	"os"
 	"strings"
 
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
@@ -93,7 +92,7 @@ func (r *DaggerPipeline) Environment() RunnerEnvironment {
 	return Unknown
 }
 
-func (r *DaggerPipeline) VerifyCommitSignature(ctx context.Context, commitHash string) *api.Commit_CommitVerification {
+func (r *DaggerPipeline) VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification {
 	// Dagger can run in different CI environments. Detect which one we're in.
 
 	// Check if running in GitHub Actions
@@ -132,7 +131,7 @@ func (r *DaggerPipeline) isGitLabCIEnvironment() bool {
 }
 
 // verifyCommitViaGitHub performs GitHub commit verification
-func (r *DaggerPipeline) verifyCommitViaGitHub(ctx context.Context, commitHash string) *api.Commit_CommitVerification {
+func (r *DaggerPipeline) verifyCommitViaGitHub(ctx context.Context, commitHash string) *commitverification.CommitVerification {
 	// Extract owner/repo from GITHUB_REPOSITORY env var
 	repo := os.Getenv("GITHUB_REPOSITORY")
 	if repo == "" {
@@ -161,7 +160,7 @@ func (r *DaggerPipeline) verifyCommitViaGitHub(ctx context.Context, commitHash s
 }
 
 // verifyCommitViaGitLab performs GitLab commit verification
-func (r *DaggerPipeline) verifyCommitViaGitLab(ctx context.Context, commitHash string) *api.Commit_CommitVerification {
+func (r *DaggerPipeline) verifyCommitViaGitLab(ctx context.Context, commitHash string) *commitverification.CommitVerification {
 	// Extract base URL and project path from env vars
 	baseURL := os.Getenv("CI_SERVER_URL")
 	projectPath := os.Getenv("CI_PROJECT_PATH")

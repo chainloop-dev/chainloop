@@ -19,9 +19,8 @@ import (
 	"context"
 	"os"
 
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
 type TeamCityPipeline struct{}
@@ -72,6 +71,6 @@ func (r *TeamCityPipeline) Environment() RunnerEnvironment {
 	return Unknown
 }
 
-func (r *TeamCityPipeline) VerifyCommitSignature(_ context.Context, _ string) *api.Commit_CommitVerification {
+func (r *TeamCityPipeline) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
 	return nil // Not supported for this runner
 }

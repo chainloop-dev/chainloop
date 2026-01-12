@@ -37,11 +37,11 @@
       "anyOf": [
         {
           "enum": [
-            "VERIFICATION_STATUS_UNSPECIFIED",
-            "VERIFICATION_STATUS_VERIFIED",
-            "VERIFICATION_STATUS_UNVERIFIED",
-            "VERIFICATION_STATUS_UNAVAILABLE",
-            "VERIFICATION_STATUS_NOT_APPLICABLE"
+            "unspecified",
+            "verified",
+            "unverified",
+            "unavailable",
+            "not_applicable"
           ],
           "title": "Verification Status",
           "type": "string"

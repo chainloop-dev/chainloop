@@ -19,9 +19,8 @@ import (
 	"context"
 	"os"
 
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
 type CircleCIBuild struct{}
@@ -79,6 +78,6 @@ func (r *CircleCIBuild) Environment() RunnerEnvironment {
 	return Unknown
 }
 
-func (r *CircleCIBuild) VerifyCommitSignature(_ context.Context, _ string) *api.Commit_CommitVerification {
+func (r *CircleCIBuild) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
 	return nil // Not supported for this runner
 }

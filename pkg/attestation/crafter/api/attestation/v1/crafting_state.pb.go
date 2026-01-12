@@ -93,35 +93,38 @@ func (Attestation_Auth_AuthType) EnumDescriptor() ([]byte, []int) {
 	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{0, 4, 0}
 }
 
+// buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE
+// buf:lint:ignore ENUM_VALUE_PREFIX
+// buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
 type Commit_CommitVerification_VerificationStatus int32
 
 const (
-	Commit_CommitVerification_VERIFICATION_STATUS_UNSPECIFIED Commit_CommitVerification_VerificationStatus = 0
+	Commit_CommitVerification_unspecified Commit_CommitVerification_VerificationStatus = 0
 	// Successfully verified by platform
-	Commit_CommitVerification_VERIFICATION_STATUS_VERIFIED Commit_CommitVerification_VerificationStatus = 1
+	Commit_CommitVerification_verified Commit_CommitVerification_VerificationStatus = 1
 	// Platform checked but signature is invalid/unverified
-	Commit_CommitVerification_VERIFICATION_STATUS_UNVERIFIED Commit_CommitVerification_VerificationStatus = 2
+	Commit_CommitVerification_unverified Commit_CommitVerification_VerificationStatus = 2
 	// Verification could not be performed (no API access, network error, etc.)
-	Commit_CommitVerification_VERIFICATION_STATUS_UNAVAILABLE Commit_CommitVerification_VerificationStatus = 3
+	Commit_CommitVerification_unavailable Commit_CommitVerification_VerificationStatus = 3
 	// Platform doesn't support verification or no commit signature present
-	Commit_CommitVerification_VERIFICATION_STATUS_NOT_APPLICABLE Commit_CommitVerification_VerificationStatus = 4
+	Commit_CommitVerification_not_applicable Commit_CommitVerification_VerificationStatus = 4
 )
 
 // Enum value maps for Commit_CommitVerification_VerificationStatus.
 var (
 	Commit_CommitVerification_VerificationStatus_name = map[int32]string{
-		0: "VERIFICATION_STATUS_UNSPECIFIED",
-		1: "VERIFICATION_STATUS_VERIFIED",
-		2: "VERIFICATION_STATUS_UNVERIFIED",
-		3: "VERIFICATION_STATUS_UNAVAILABLE",
-		4: "VERIFICATION_STATUS_NOT_APPLICABLE",
+		0: "unspecified",
+		1: "verified",
+		2: "unverified",
+		3: "unavailable",
+		4: "not_applicable",
 	}
 	Commit_CommitVerification_VerificationStatus_value = map[string]int32{
-		"VERIFICATION_STATUS_UNSPECIFIED":    0,
-		"VERIFICATION_STATUS_VERIFIED":       1,
-		"VERIFICATION_STATUS_UNVERIFIED":     2,
-		"VERIFICATION_STATUS_UNAVAILABLE":    3,
-		"VERIFICATION_STATUS_NOT_APPLICABLE": 4,
+		"unspecified":    0,
+		"verified":       1,
+		"unverified":     2,
+		"unavailable":    3,
+		"not_applicable": 4,
 	}
 )
 
@@ -2137,7 +2140,7 @@ func (x *Commit_CommitVerification) GetStatus() Commit_CommitVerification_Verifi
 	if x != nil {
 		return x.Status
 	}
-	return Commit_CommitVerification_VERIFICATION_STATUS_UNSPECIFIED
+	return Commit_CommitVerification_unspecified
 }
 
 func (x *Commit_CommitVerification) GetReason() string {
@@ -2317,7 +2320,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\borg_name\x18\x04 \x01(\tR\aorgName\x1a9\n" +
 	"\tRawResult\x12\x14\n" +
 	"\x05input\x18\x01 \x01(\fR\x05input\x12\x16\n" +
-	"\x06output\x18\x02 \x01(\fR\x06output\"\xb3\a\n" +
+	"\x06output\x18\x02 \x01(\fR\x06output\"\xce\x06\n" +
 	"\x06Commit\x12\x1b\n" +
 	"\x04hash\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04hash\x12!\n" +
 	"\fauthor_email\x18\x02 \x01(\tR\vauthorEmail\x12(\n" +
@@ -2330,20 +2333,21 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x15platform_verification\x18\b \x01(\v2).attestation.v1.Commit.CommitVerificationH\x00R\x14platformVerification\x88\x01\x01\x1a@\n" +
 	"\x06Remote\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x19\n" +
-	"\x03url\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03url\x1a\xd3\x03\n" +
+	"\x03url\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03url\x1a\xee\x02\n" +
 	"\x12CommitVerification\x12\x1c\n" +
 	"\tattempted\x18\x01 \x01(\bR\tattempted\x12T\n" +
 	"\x06status\x18\x02 \x01(\x0e2<.attestation.v1.Commit.CommitVerification.VerificationStatusR\x06status\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\x12\x1a\n" +
 	"\bplatform\x18\x04 \x01(\tR\bplatform\x12\x15\n" +
 	"\x06key_id\x18\x05 \x01(\tR\x05keyId\x12/\n" +
-	"\x13signature_algorithm\x18\x06 \x01(\tR\x12signatureAlgorithm\"\xcc\x01\n" +
-	"\x12VerificationStatus\x12#\n" +
-	"\x1fVERIFICATION_STATUS_UNSPECIFIED\x10\x00\x12 \n" +
-	"\x1cVERIFICATION_STATUS_VERIFIED\x10\x01\x12\"\n" +
-	"\x1eVERIFICATION_STATUS_UNVERIFIED\x10\x02\x12#\n" +
-	"\x1fVERIFICATION_STATUS_UNAVAILABLE\x10\x03\x12&\n" +
-	"\"VERIFICATION_STATUS_NOT_APPLICABLE\x10\x04B\x18\n" +
+	"\x13signature_algorithm\x18\x06 \x01(\tR\x12signatureAlgorithm\"h\n" +
+	"\x12VerificationStatus\x12\x0f\n" +
+	"\vunspecified\x10\x00\x12\f\n" +
+	"\bverified\x10\x01\x12\x0e\n" +
+	"\n" +
+	"unverified\x10\x02\x12\x0f\n" +
+	"\vunavailable\x10\x03\x12\x12\n" +
+	"\x0enot_applicable\x10\x04B\x18\n" +
 	"\x16_platform_verification\"\x81\x02\n" +
 	"\rCraftingState\x12H\n" +
 	"\finput_schema\x18\x01 \x01(\v2#.workflowcontract.v1.CraftingSchemaH\x00R\vinputSchema\x12D\n" +
