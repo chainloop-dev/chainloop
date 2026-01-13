@@ -64,10 +64,11 @@ type WorkflowRunAttestationItem struct {
 }
 
 type PolicyEvaluationStatus struct {
-	Strategy      string `json:"strategy"`
-	Bypassed      bool   `json:"bypassed"`
-	Blocked       bool   `json:"blocked"`
-	HasViolations bool   `json:"has_violations"`
+	Strategy           string `json:"strategy"`
+	Bypassed           bool   `json:"bypassed"`
+	Blocked            bool   `json:"blocked"`
+	HasViolations      bool   `json:"has_violations"`
+	HasGatedViolations bool   `json:"has_gated_violations"`
 }
 
 type Material struct {
@@ -236,10 +237,11 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		Digest:            att.DigestInCasBackend,
 		PolicyEvaluations: evaluations,
 		PolicyEvaluationStatus: &PolicyEvaluationStatus{
-			Strategy:      policyEvaluationStatus.Strategy,
-			Bypassed:      policyEvaluationStatus.Bypassed,
-			Blocked:       policyEvaluationStatus.Blocked,
-			HasViolations: policyEvaluationStatus.HasViolations,
+			Strategy:           policyEvaluationStatus.Strategy,
+			Bypassed:           policyEvaluationStatus.Bypassed,
+			Blocked:            policyEvaluationStatus.Blocked,
+			HasViolations:      policyEvaluationStatus.HasViolations,
+			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
 		},
 	}
 

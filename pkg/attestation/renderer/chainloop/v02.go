@@ -48,6 +48,8 @@ type ProvenancePredicateV02 struct {
 
 	// Whether the attestation has policy violations
 	PolicyHasViolations bool `json:"policyHasViolations"`
+	// Whether the attestation has policy violations in gated policies
+	PolicyHasGatedViolations bool `json:"policyHasGatedViolations,omitempty"`
 	// Whether we want to block the attestation on policy violations
 	PolicyCheckBlockingStrategy PolicyViolationBlockingStrategy `json:"policyCheckBlockingStrategy"`
 	// Whether the policy check was bypassed
@@ -248,6 +250,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		Materials:                   normalizedMaterials,
 		PolicyEvaluations:           policies,
 		PolicyHasViolations:         hasViolations,
+		PolicyHasGatedViolations:    gated,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
 		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
 		PolicyAttBlocked:            blocked,
@@ -413,10 +416,11 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEval
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationStatus {
 	return &PolicyEvaluationStatus{
-		Strategy:      p.PolicyCheckBlockingStrategy,
-		Bypassed:      p.PolicyBlockBypassEnabled,
-		Blocked:       p.PolicyAttBlocked,
-		HasViolations: p.PolicyHasViolations,
+		Strategy:           p.PolicyCheckBlockingStrategy,
+		Bypassed:           p.PolicyBlockBypassEnabled,
+		Blocked:            p.PolicyAttBlocked,
+		HasViolations:      p.PolicyHasViolations,
+		HasGatedViolations: p.PolicyHasGatedViolations,
 	}
 }
 

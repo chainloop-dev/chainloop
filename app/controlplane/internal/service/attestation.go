@@ -553,10 +553,11 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		Annotations:        predicate.GetAnnotations(),
 		PolicyEvaluations:  extractPolicyEvaluations(predicate.GetPolicyEvaluations()),
 		PolicyEvaluationStatus: &cpAPI.AttestationItem_PolicyEvaluationStatus{
-			Strategy:      string(policyEvaluationStatus.Strategy),
-			Bypassed:      policyEvaluationStatus.Bypassed,
-			Blocked:       policyEvaluationStatus.Blocked,
-			HasViolations: policyEvaluationStatus.HasViolations,
+			Strategy:           string(policyEvaluationStatus.Strategy),
+			Bypassed:           policyEvaluationStatus.Bypassed,
+			Blocked:            policyEvaluationStatus.Blocked,
+			HasViolations:      policyEvaluationStatus.HasViolations,
+			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
 		},
 		Bundle: att.Bundle,
 	}, nil

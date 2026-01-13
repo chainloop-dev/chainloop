@@ -103,6 +103,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 						"project":                  "foo",
 						"projectVersion":           "",
 						"projectVersionPrerelease": "false",
+						"hasGatedPolicyViolations": "false",
 						"hasPolicyViolations":      "false",
 					},
 					Annotations: map[string]string{
@@ -157,6 +158,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 						"project":                  "bar",
 						"projectVersion":           "",
 						"projectVersionPrerelease": "false",
+						"hasGatedPolicyViolations": "false",
 						"hasPolicyViolations":      "false",
 					},
 					Annotations: map[string]string{
@@ -193,6 +195,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 						"project":                  "foo",
 						"projectVersion":           "",
 						"projectVersionPrerelease": "false",
+						"hasGatedPolicyViolations": "false",
 						"hasPolicyViolations":      "false",
 					},
 					Annotations: map[string]string{
@@ -257,6 +260,7 @@ func (s *referrerTestSuite) TestExtractReferrers() {
 						"project":                  "test",
 						"projectVersion":           "",
 						"projectVersionPrerelease": "false",
+						"hasGatedPolicyViolations": "false",
 						"hasPolicyViolations":      "false",
 					},
 					References: []*Referrer{
