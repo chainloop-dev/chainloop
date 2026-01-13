@@ -109,6 +109,14 @@ func (_c *APITokenCreate) SetOrganizationID(v uuid.UUID) *APITokenCreate {
 	return _c
 }
 
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_c *APITokenCreate) SetNillableOrganizationID(v *uuid.UUID) *APITokenCreate {
+	if v != nil {
+		_c.SetOrganizationID(*v)
+	}
+	return _c
+}
+
 // SetProjectID sets the "project_id" field.
 func (_c *APITokenCreate) SetProjectID(v uuid.UUID) *APITokenCreate {
 	_c.mutation.SetProjectID(v)
@@ -205,12 +213,6 @@ func (_c *APITokenCreate) check() error {
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "APIToken.created_at"`)}
-	}
-	if _, ok := _c.mutation.OrganizationID(); !ok {
-		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "APIToken.organization_id"`)}
-	}
-	if len(_c.mutation.OrganizationIDs()) == 0 {
-		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "APIToken.organization"`)}
 	}
 	return nil
 }
@@ -446,6 +448,12 @@ func (u *APITokenUpsert) UpdateOrganizationID() *APITokenUpsert {
 	return u
 }
 
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (u *APITokenUpsert) ClearOrganizationID() *APITokenUpsert {
+	u.SetNull(apitoken.FieldOrganizationID)
+	return u
+}
+
 // SetProjectID sets the "project_id" field.
 func (u *APITokenUpsert) SetProjectID(v uuid.UUID) *APITokenUpsert {
 	u.Set(apitoken.FieldProjectID, v)
@@ -631,6 +639,13 @@ func (u *APITokenUpsertOne) SetOrganizationID(v uuid.UUID) *APITokenUpsertOne {
 func (u *APITokenUpsertOne) UpdateOrganizationID() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.UpdateOrganizationID()
+	})
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (u *APITokenUpsertOne) ClearOrganizationID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearOrganizationID()
 	})
 }
 
@@ -992,6 +1007,13 @@ func (u *APITokenUpsertBulk) SetOrganizationID(v uuid.UUID) *APITokenUpsertBulk 
 func (u *APITokenUpsertBulk) UpdateOrganizationID() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.UpdateOrganizationID()
+	})
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (u *APITokenUpsertBulk) ClearOrganizationID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearOrganizationID()
 	})
 }
 

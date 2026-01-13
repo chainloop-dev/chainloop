@@ -497,9 +497,22 @@ func (m *APITokenMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, 
 	return oldValue.OrganizationID, nil
 }
 
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (m *APITokenMutation) ClearOrganizationID() {
+	m.organization = nil
+	m.clearedFields[apitoken.FieldOrganizationID] = struct{}{}
+}
+
+// OrganizationIDCleared returns if the "organization_id" field was cleared in this mutation.
+func (m *APITokenMutation) OrganizationIDCleared() bool {
+	_, ok := m.clearedFields[apitoken.FieldOrganizationID]
+	return ok
+}
+
 // ResetOrganizationID resets all changes to the "organization_id" field.
 func (m *APITokenMutation) ResetOrganizationID() {
 	m.organization = nil
+	delete(m.clearedFields, apitoken.FieldOrganizationID)
 }
 
 // SetProjectID sets the "project_id" field.
@@ -624,7 +637,7 @@ func (m *APITokenMutation) ClearOrganization() {
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
 func (m *APITokenMutation) OrganizationCleared() bool {
-	return m.clearedorganization
+	return m.OrganizationIDCleared() || m.clearedorganization
 }
 
 // OrganizationIDs returns the "organization" edge IDs in the mutation.
@@ -899,6 +912,9 @@ func (m *APITokenMutation) ClearedFields() []string {
 	if m.FieldCleared(apitoken.FieldLastUsedAt) {
 		fields = append(fields, apitoken.FieldLastUsedAt)
 	}
+	if m.FieldCleared(apitoken.FieldOrganizationID) {
+		fields = append(fields, apitoken.FieldOrganizationID)
+	}
 	if m.FieldCleared(apitoken.FieldProjectID) {
 		fields = append(fields, apitoken.FieldProjectID)
 	}
@@ -930,6 +946,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 		return nil
 	case apitoken.FieldLastUsedAt:
 		m.ClearLastUsedAt()
+		return nil
+	case apitoken.FieldOrganizationID:
+		m.ClearOrganizationID()
 		return nil
 	case apitoken.FieldProjectID:
 		m.ClearProjectID()

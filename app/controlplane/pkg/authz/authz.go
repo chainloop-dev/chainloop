@@ -97,6 +97,9 @@ const (
 	// Product roles
 	RoleProductViewer Role = "role:product:viewer"
 	RoleProductAdmin  Role = "role:product:admin"
+
+	// Scope for instance admin tokens
+	ScopeInstanceAdmin = "INSTANCE_ADMIN"
 )
 
 var (
