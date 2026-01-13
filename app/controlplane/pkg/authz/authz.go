@@ -155,9 +155,9 @@ var (
 	PolicyOrganizationList   = &Policy{Organization, ActionList}
 	PolicyOrganizationRead   = &Policy{Organization, ActionRead}
 	// Organization Memberships
-	PolicyOrganizationListMemberships   = &Policy{OrganizationMemberships, ActionList}
-	PolicyOrganizationMembershipDelete  = &Policy{OrganizationMemberships, ActionDelete}
-	PolicyOrganizationMembershipUpdate  = &Policy{OrganizationMemberships, ActionUpdate}
+	PolicyOrganizationListMemberships  = &Policy{OrganizationMemberships, ActionList}
+	PolicyOrganizationMembershipDelete = &Policy{OrganizationMemberships, ActionDelete}
+	PolicyOrganizationMembershipUpdate = &Policy{OrganizationMemberships, ActionUpdate}
 
 	// Group Memberships
 	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
@@ -402,7 +402,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	// user can explicitly set the org they want to delete and might not be the current one
 	"/controlplane.v1.OrganizationService/Delete": {},
 	// Organization memberships
-	"/controlplane.v1.OrganizationService/ListMemberships":   {PolicyOrganizationListMemberships},
+	"/controlplane.v1.OrganizationService/ListMemberships":  {PolicyOrganizationListMemberships},
 	"/controlplane.v1.OrganizationService/DeleteMembership": {PolicyOrganizationMembershipDelete},
 	"/controlplane.v1.OrganizationService/UpdateMembership": {PolicyOrganizationMembershipUpdate},
 	// Organization invitations
