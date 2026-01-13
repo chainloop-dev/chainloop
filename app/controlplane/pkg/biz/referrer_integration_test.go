@@ -257,6 +257,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 			"project":                  "test",
 			"team":                     "my-team",
 			"organization":             "my-org",
+			"hasGatedPolicyViolations": "false",
 			"hasPolicyViolations":      "false",
 			"projectVersion":           "",
 			"projectVersionPrerelease": "false",
