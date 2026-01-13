@@ -352,12 +352,16 @@ func (uc *APITokenUseCase) List(ctx context.Context, orgID string, opts ...APITo
 		return nil, NewErrValidationStr(fmt.Sprintf("invalid scope %q, please chose one of: %v", filters.FilterByScope, availableAPITokenScopes))
 	}
 
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
+	var orgUUID *uuid.UUID
+	if orgID != "" {
+		parsed, err := uuid.Parse(orgID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+		orgUUID = &parsed
 	}
 
-	return uc.apiTokenRepo.List(ctx, &orgUUID, filters)
+	return uc.apiTokenRepo.List(ctx, orgUUID, filters)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
