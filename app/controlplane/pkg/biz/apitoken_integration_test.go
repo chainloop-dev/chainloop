@@ -38,14 +38,14 @@ func randomName() string {
 func (s *apiTokenTestSuite) TestCreate() {
 	ctx := context.Background()
 	s.Run("invalid org ID", func() {
-		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, "deadbeef")
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, toPtrS("deadbeef"))
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 		s.Nil(token)
 	})
 
 	s.Run("happy path without expiration nor description", func() {
-		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
 		s.NoError(err)
 		s.NotNil(token.ID)
 		s.Equal(s.org.ID, token.OrganizationID.String())
@@ -56,7 +56,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 	})
 
 	s.Run("happy path with description and expiration", func() {
-		token, err := s.APIToken.Create(ctx, randomName(), toPtrS("tokenStr"), toPtrDuration(24*time.Hour), s.org.ID)
+		token, err := s.APIToken.Create(ctx, randomName(), toPtrS("tokenStr"), toPtrDuration(24*time.Hour), &s.org.ID)
 		s.NoError(err)
 		s.Equal(s.org.ID, token.OrganizationID.String())
 		s.Equal("tokenStr", token.Description)
@@ -65,7 +65,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 	})
 
 	s.Run("happy path with project", func() {
-		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
 		s.NoError(err)
 		s.Equal(s.org.ID, token.OrganizationID.String())
 		s.Equal(s.p1.ID, *token.ProjectID)
@@ -128,7 +128,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 					opts = append(opts, biz.APITokenWithProject(tc.project))
 				}
 
-				token, err := s.APIToken.Create(ctx, tc.tokenName, nil, nil, s.org.ID, opts...)
+				token, err := s.APIToken.Create(ctx, tc.tokenName, nil, nil, &s.org.ID, opts...)
 				if tc.wantErrMsg != "" {
 					s.Error(err)
 					s.Contains(err.Error(), tc.wantErrMsg)
@@ -145,7 +145,7 @@ func (s *apiTokenTestSuite) TestCreate() {
 
 func (s *apiTokenTestSuite) TestAuthzPolicies() {
 	// a new token has a new set of policies associated
-	token, err := s.APIToken.Create(context.Background(), randomName(), nil, nil, s.org.ID)
+	token, err := s.APIToken.Create(context.Background(), randomName(), nil, nil, &s.org.ID)
 	require.NoError(s.T(), err)
 
 	// With the new architecture, API token policies are stored in the database, not in Casbin
@@ -308,7 +308,7 @@ func (s *apiTokenTestSuite) TestList() {
 }
 
 func (s *apiTokenTestSuite) TestGeneratedJWT() {
-	token, err := s.APIToken.Create(context.Background(), randomName(), nil, toPtrDuration(24*time.Hour), s.org.ID)
+	token, err := s.APIToken.Create(context.Background(), randomName(), nil, toPtrDuration(24*time.Hour), &s.org.ID)
 	s.NoError(err)
 	require.NotNil(s.T(), token)
 
@@ -358,22 +358,22 @@ func (s *apiTokenTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 
 	// Create 2 tokens for org 1
-	s.t1, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
+	s.t1, err = s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
 	require.NoError(s.T(), err)
-	s.t2, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
+	s.t2, err = s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
 	require.NoError(s.T(), err)
 	// and 1 token for org 2
-	s.t3, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org2.ID)
+	s.t3, err = s.APIToken.Create(ctx, randomName(), nil, nil, &s.org2.ID)
 	require.NoError(s.T(), err)
 
 	// Create 2 tokens for project 1
-	s.t4, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
+	s.t4, err = s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
 	require.NoError(s.T(), err)
-	s.t5, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p1))
+	s.t5, err = s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
 	require.NoError(s.T(), err)
 
 	// Create 1 token for project 2
-	s.t6, err = s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID, biz.APITokenWithProject(s.p2))
+	s.t6, err = s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p2))
 	require.NoError(s.T(), err)
 }
 
@@ -381,7 +381,7 @@ func (s *apiTokenTestSuite) TestUpdateLastUsedAt() {
 	ctx := context.Background()
 
 	s.Run("update last used at", func() {
-		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
 		s.NoError(err)
 		s.Nil(token.LastUsedAt)
 
@@ -407,7 +407,7 @@ func (s *apiTokenTestSuite) TestUpdateLastUsedAt() {
 	})
 
 	s.Run("token is revoked", func() {
-		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, s.org.ID)
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
 		s.NoError(err)
 		err = s.APIToken.Revoke(ctx, s.org.ID, token.ID.String())
 		s.NoError(err)
