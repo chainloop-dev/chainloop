@@ -71,6 +71,10 @@ type InstanceInfo struct {
 // to enable PR/MR auto-detection and commit verification when running Chainloop via Dagger inside those CI systems
 type ParentCIContext struct {
 	// Github Actions PR context
+	// Repository name (owner/repo)
+	GithubRepository string
+	// Run ID for the workflow run
+	GithubRunID string
 	// Event name (e.g., "pull_request", "pull_request_target")
 	GithubEventName string
 	// Source branch name
@@ -81,6 +85,14 @@ type ParentCIContext struct {
 	GithubToken *dagger.Secret
 
 	// Gitlab CI MR context
+	// CI indicator (always "true" in Gitlab CI)
+	GitlabCI string
+	// Server URL (e.g., "https://gitlab.com")
+	GitlabServerURL string
+	// Project path (e.g., "group/project")
+	GitlabProjectPath string
+	// Job URL
+	GitlabJobURL string
 	// Pipeline source (should be "merge_request_event" for MRs)
 	GitlabPipelineSource string
 	// Merge request internal ID
@@ -128,6 +140,12 @@ func (m *Chainloop) Init(
 	// Github event file for PR detection (when running in Github Actions)
 	// +optional
 	githubEventFile *dagger.File,
+	// Github repository name (owner/repo)
+	// +optional
+	githubRepository string,
+	// Github run ID for the workflow run
+	// +optional
+	githubRunID string,
 	// Github event name (e.g., "pull_request", "pull_request_target")
 	// +optional
 	githubEventName string,
@@ -140,6 +158,18 @@ func (m *Chainloop) Init(
 	// Github token for API access and commit verification (when running in Github Actions)
 	// +optional
 	githubToken *dagger.Secret,
+	// Gitlab CI indicator (should be "true" when running in Gitlab CI)
+	// +optional
+	gitlabCI string,
+	// Gitlab server URL (e.g., "https://gitlab.com")
+	// +optional
+	gitlabServerURL string,
+	// Gitlab project path (e.g., "group/project")
+	// +optional
+	gitlabProjectPath string,
+	// Gitlab job URL
+	// +optional
+	gitlabJobURL string,
 	// Gitlab pipeline source (should be "merge_request_event" for MRs)
 	// +optional
 	gitlabPipelineSource string,
@@ -170,15 +200,22 @@ func (m *Chainloop) Init(
 ) (*Attestation, error) {
 	// Construct ParentCIContext from individual parameters
 	var parentCIContext *ParentCIContext
-	if githubEventName != "" || githubHeadRef != "" || githubBaseRef != "" ||
+	if githubRepository != "" || githubRunID != "" || githubEventName != "" || githubHeadRef != "" || githubBaseRef != "" ||
+		gitlabCI != "" || gitlabServerURL != "" || gitlabProjectPath != "" || gitlabJobURL != "" ||
 		gitlabPipelineSource != "" || gitlabMRIID != "" || gitlabMRTitle != "" ||
 		gitlabMRDescription != "" || gitlabMRSourceBranch != "" || gitlabMRTargetBranch != "" ||
 		gitlabMRProjectURL != "" || gitlabUserLogin != "" {
 		parentCIContext = &ParentCIContext{
+			GithubRepository:     githubRepository,
+			GithubRunID:          githubRunID,
 			GithubEventName:      githubEventName,
 			GithubHeadRef:        githubHeadRef,
 			GithubBaseRef:        githubBaseRef,
 			GithubToken:          githubToken,
+			GitlabCI:             gitlabCI,
+			GitlabServerURL:      gitlabServerURL,
+			GitlabProjectPath:    gitlabProjectPath,
+			GitlabJobURL:         gitlabJobURL,
 			GitlabPipelineSource: gitlabPipelineSource,
 			GitlabMRIID:          gitlabMRIID,
 			GitlabMRTitle:        gitlabMRTitle,
@@ -461,6 +498,12 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 	// Inject parent CI context if provided
 	if parentCI != nil {
 		// Github Actions context
+		if parentCI.GithubRepository != "" {
+			ctr = ctr.WithEnvVariable("GITHUB_REPOSITORY", parentCI.GithubRepository)
+		}
+		if parentCI.GithubRunID != "" {
+			ctr = ctr.WithEnvVariable("GITHUB_RUN_ID", parentCI.GithubRunID)
+		}
 		if parentCI.GithubEventName != "" {
 			ctr = ctr.WithEnvVariable("GITHUB_EVENT_NAME", parentCI.GithubEventName)
 		}
@@ -481,6 +524,18 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 		}
 
 		// Gitlab CI context
+		if parentCI.GitlabCI != "" {
+			ctr = ctr.WithEnvVariable("GITLAB_CI", parentCI.GitlabCI)
+		}
+		if parentCI.GitlabServerURL != "" {
+			ctr = ctr.WithEnvVariable("CI_SERVER_URL", parentCI.GitlabServerURL)
+		}
+		if parentCI.GitlabProjectPath != "" {
+			ctr = ctr.WithEnvVariable("CI_PROJECT_PATH", parentCI.GitlabProjectPath)
+		}
+		if parentCI.GitlabJobURL != "" {
+			ctr = ctr.WithEnvVariable("CI_JOB_URL", parentCI.GitlabJobURL)
+		}
 		if parentCI.GitlabPipelineSource != "" {
 			ctr = ctr.WithEnvVariable("CI_PIPELINE_SOURCE", parentCI.GitlabPipelineSource)
 		}
