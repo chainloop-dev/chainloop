@@ -116,6 +116,7 @@ message AttestationItem {
     bool bypassed = 2;
     bool blocked = 3;
     bool has_violations = 4;
+    bool has_gated_violations = 5;
   }
 
   message EnvVariable {

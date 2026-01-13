@@ -165,6 +165,9 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	if att.PolicyEvaluationStatus.Blocked {
 		gt.AppendRow(table.Row{"Run Blocked", att.PolicyEvaluationStatus.Blocked})
 	}
+	if att.PolicyEvaluationStatus.HasGatedViolations {
+		gt.AppendRow(table.Row{"Run Gated", text.Colors{text.FgHiRed}.Sprint(att.PolicyEvaluationStatus.HasGatedViolations)})
+	}
 	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
 		gt.AppendRow(table.Row{"Policy enforcement bypassed", att.PolicyEvaluationStatus.Bypassed})
 	}

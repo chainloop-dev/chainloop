@@ -2260,13 +2260,14 @@ func (x *APITokenItem) GetLastUsedAt() *timestamppb.Timestamp {
 }
 
 type AttestationItem_PolicyEvaluationStatus struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Strategy      string                 `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Bypassed      bool                   `protobuf:"varint,2,opt,name=bypassed,proto3" json:"bypassed,omitempty"`
-	Blocked       bool                   `protobuf:"varint,3,opt,name=blocked,proto3" json:"blocked,omitempty"`
-	HasViolations bool                   `protobuf:"varint,4,opt,name=has_violations,json=hasViolations,proto3" json:"has_violations,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Strategy           string                 `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	Bypassed           bool                   `protobuf:"varint,2,opt,name=bypassed,proto3" json:"bypassed,omitempty"`
+	Blocked            bool                   `protobuf:"varint,3,opt,name=blocked,proto3" json:"blocked,omitempty"`
+	HasViolations      bool                   `protobuf:"varint,4,opt,name=has_violations,json=hasViolations,proto3" json:"has_violations,omitempty"`
+	HasGatedViolations bool                   `protobuf:"varint,5,opt,name=has_gated_violations,json=hasGatedViolations,proto3" json:"has_gated_violations,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *AttestationItem_PolicyEvaluationStatus) Reset() {
@@ -2323,6 +2324,13 @@ func (x *AttestationItem_PolicyEvaluationStatus) GetBlocked() bool {
 func (x *AttestationItem_PolicyEvaluationStatus) GetHasViolations() bool {
 	if x != nil {
 		return x.HasViolations
+	}
+	return false
+}
+
+func (x *AttestationItem_PolicyEvaluationStatus) GetHasGatedViolations() bool {
+	if x != nil {
+		return x.HasGatedViolations
 	}
 	return false
 }
@@ -2641,7 +2649,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12;\n" +
 	"\vreleased_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"releasedAt\"\xb1\n" +
+	"releasedAt\"\xe3\n" +
 	"\n" +
 	"\x0fAttestationItem\x12\x1e\n" +
 	"\benvelope\x18\x03 \x01(\fB\x02\x18\x01R\benvelope\x12\x16\n" +
@@ -2658,12 +2666,13 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1ah\n" +
 	"\x16PolicyEvaluationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x128\n" +
-	"\x05value\x18\x02 \x01(\v2\".controlplane.v1.PolicyEvaluationsR\x05value:\x028\x01\x1a\x91\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\".controlplane.v1.PolicyEvaluationsR\x05value:\x028\x01\x1a\xc3\x01\n" +
 	"\x16PolicyEvaluationStatus\x12\x1a\n" +
 	"\bstrategy\x18\x01 \x01(\tR\bstrategy\x12\x1a\n" +
 	"\bbypassed\x18\x02 \x01(\bR\bbypassed\x12\x18\n" +
 	"\ablocked\x18\x03 \x01(\bR\ablocked\x12%\n" +
-	"\x0ehas_violations\x18\x04 \x01(\bR\rhasViolations\x1a7\n" +
+	"\x0ehas_violations\x18\x04 \x01(\bR\rhasViolations\x120\n" +
+	"\x14has_gated_violations\x18\x05 \x01(\bR\x12hasGatedViolations\x1a7\n" +
 	"\vEnvVariable\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\x1a\xf9\x02\n" +

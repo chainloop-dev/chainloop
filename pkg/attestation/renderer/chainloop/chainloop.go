@@ -54,6 +54,8 @@ type PolicyEvaluationStatus struct {
 	Blocked bool
 	// Whether the attestation has policy violations
 	HasViolations bool
+	// Whether the attestation has gated policy violations
+	HasGatedViolations bool
 }
 
 type NormalizedMaterial struct {

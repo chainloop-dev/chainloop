@@ -391,6 +391,7 @@ export interface AttestationItem_PolicyEvaluationStatus {
   bypassed: boolean;
   blocked: boolean;
   hasViolations: boolean;
+  hasGatedViolations: boolean;
 }
 
 export interface AttestationItem_EnvVariable {
@@ -1690,7 +1691,7 @@ export const AttestationItem_PolicyEvaluationsEntry = {
 };
 
 function createBaseAttestationItem_PolicyEvaluationStatus(): AttestationItem_PolicyEvaluationStatus {
-  return { strategy: "", bypassed: false, blocked: false, hasViolations: false };
+  return { strategy: "", bypassed: false, blocked: false, hasViolations: false, hasGatedViolations: false };
 }
 
 export const AttestationItem_PolicyEvaluationStatus = {
@@ -1706,6 +1707,9 @@ export const AttestationItem_PolicyEvaluationStatus = {
     }
     if (message.hasViolations === true) {
       writer.uint32(32).bool(message.hasViolations);
+    }
+    if (message.hasGatedViolations === true) {
+      writer.uint32(40).bool(message.hasGatedViolations);
     }
     return writer;
   },
@@ -1745,6 +1749,13 @@ export const AttestationItem_PolicyEvaluationStatus = {
 
           message.hasViolations = reader.bool();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.hasGatedViolations = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1760,6 +1771,7 @@ export const AttestationItem_PolicyEvaluationStatus = {
       bypassed: isSet(object.bypassed) ? Boolean(object.bypassed) : false,
       blocked: isSet(object.blocked) ? Boolean(object.blocked) : false,
       hasViolations: isSet(object.hasViolations) ? Boolean(object.hasViolations) : false,
+      hasGatedViolations: isSet(object.hasGatedViolations) ? Boolean(object.hasGatedViolations) : false,
     };
   },
 
@@ -1769,6 +1781,7 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.bypassed !== undefined && (obj.bypassed = message.bypassed);
     message.blocked !== undefined && (obj.blocked = message.blocked);
     message.hasViolations !== undefined && (obj.hasViolations = message.hasViolations);
+    message.hasGatedViolations !== undefined && (obj.hasGatedViolations = message.hasGatedViolations);
     return obj;
   },
 
@@ -1786,6 +1799,7 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.bypassed = object.bypassed ?? false;
     message.blocked = object.blocked ?? false;
     message.hasViolations = object.hasViolations ?? false;
+    message.hasGatedViolations = object.hasGatedViolations ?? false;
     return message;
   },
 };
