@@ -148,5 +148,13 @@ func (r *GitlabPipeline) Report(tableOutput []byte) error {
 		return fmt.Errorf("failed to write attestation report: %w", err)
 	}
 
+	// Log instruction for GitLab CI configuration
+	r.logger.Info().Msgf("Attestation report written to %s", artifactFile)
+	r.logger.Info().Msg("To view in GitLab CI, add this to your job configuration:")
+	r.logger.Info().Msg("artifacts:")
+	r.logger.Info().Msg("  paths:")
+	r.logger.Info().Msgf("    - %s", artifactFile)
+	r.logger.Info().Msg("  expire_in: 30 days")
+
 	return nil
 }
