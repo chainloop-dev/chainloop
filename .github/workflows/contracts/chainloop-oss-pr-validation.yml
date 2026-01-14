@@ -1,0 +1,26 @@
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: chainloop-oss-pr-validation
+  description: Contract for Chainloop Open Source PR Validation Workflow
+spec:
+  policies:
+    attestation:
+      - ref: source-commit
+#        gate: true
+        with:
+          check_signature: yes
+          check_author_verified: yes
+    materials:
+      - ref: pr-description-required
+#        gate: true
+        with:
+          min_length: "10"
+      - ref: pr-user-story-linked
+#        gate: true
+        with:
+          #        - #[0-9]+ - Standard GitHub issue: #123
+          #        - gh-[0-9]+ - GitHub explicit: gh-123
+          #        - [ a-zA-Z0-9_- ]+/[a-zA-Z0-9_-]+#[0-9]+ - Cross-repo: owner/repo#123
+          #        - (ENG|eng|PFM|pfm|EXT|ext|COM|com|SEC|sec)-[0-9]+ - Linear custom prefixes
+          patterns: "#[0-9]+,gh-[0-9]+,[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+#[0-9]+,(ENG|eng|PFM|pfm|EXT|ext|COM|com|SEC|sec)-[0-9]+"

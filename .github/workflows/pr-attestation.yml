@@ -1,0 +1,77 @@
+name: PR Attestation
+
+on:
+  pull_request_target:
+    # Trigger on the following PR events:
+    # - opened: when PR is created
+    # - synchronize: when new commits are pushed to the PR
+    # - reopened: when a closed PR is reopened
+    # - edited: when PR title/description is updated
+    # - closed: when PR is closed or merged
+    types: [opened, synchronize, reopened, edited, closed]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+  id-token: write # Required for SLSA attestation
+
+jobs:
+  # First, register this workflow with Chainloop if it doesn't exist yet
+  onboard_workflow:
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.user.login != 'github-actions[bot]' && github.event.pull_request.draft == false }}
+    name: Onboard Chainloop Workflow
+    uses: chainloop-dev/labs/.github/workflows/chainloop_onboard.yml@6bbd1c2b3022e48ae60afa0c2b90f3b6d31bcf11
+    with:
+      project: "chainloop"
+      workflow_name: "pr-validation"
+    secrets:
+      api_token: ${{ secrets.CHAINLOOP_TOKEN }}
+
+  # Create and push a Chainloop attestation for this PR event
+  attestation:
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.user.login != 'github-actions[bot]' && github.event.pull_request.draft == false }}
+    name: Perform PR Validation
+    runs-on: ubuntu-latest
+    needs: onboard_workflow
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+      CHAINLOOP_WORKFLOW_NAME: ${{ needs.onboard_workflow.outputs.workflow_name }}
+      CHAINLOOP_PROJECT_NAME: ${{ needs.onboard_workflow.outputs.project_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Install Chainloop Enterprise Edition CLI
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
+
+      # Initialize a new attestation for this PR event
+      - name: Initialize Attestation
+        run: |
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME}
+        env:
+          # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Push the attestation to Chainloop if all steps succeeded
+      - name: Finish and Push Attestation
+        if: ${{ success() }}
+        run: |
+          chainloop attestation push
+
+      # Mark attestation as failed if any step failed
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        run: |
+          chainloop attestation reset
+
+      # Mark attestation as cancelled if workflow was cancelled
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        run: |
+          chainloop attestation reset --trigger cancellation
