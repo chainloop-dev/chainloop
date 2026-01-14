@@ -68,27 +68,20 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 }
 
 type GenerateJWTOptions struct {
-	OrgID       uuid.UUID
-	OrgName     string
+	OrgID       *uuid.UUID
+	OrgName     *string
 	KeyID       uuid.UUID
 	KeyName     string
 	ProjectID   *uuid.UUID
 	ProjectName *string
 	ExpiresAt   *time.Time
+	Scope       *string
 }
 
 // GenerateJWT creates a new JWT token for the given organization and keyID
 func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 	if opts == nil {
 		return "", errors.New("options are required")
-	}
-
-	if opts.OrgID == uuid.Nil {
-		return "", errors.New("orgID is required")
-	}
-
-	if opts.OrgName == "" {
-		return "", errors.New("orgName is required")
 	}
 
 	if opts.KeyID == uuid.Nil {
@@ -100,8 +93,6 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 	}
 
 	claims := CustomClaims{
-		OrgID:   opts.OrgID.String(),
-		OrgName: opts.OrgName,
 		KeyName: opts.KeyName,
 		RegisteredClaims: jwt.RegisteredClaims{
 			// Key identifier so we can check its revocation status
@@ -109,6 +100,15 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 			Issuer:   ra.issuer,
 			Audience: jwt.ClaimStrings{Audience},
 		},
+	}
+
+	if opts.OrgID != nil {
+		claims.OrgID = opts.OrgID.String()
+		claims.OrgName = *opts.OrgName
+	}
+
+	if opts.Scope != nil {
+		claims.Scope = *opts.Scope
 	}
 
 	if opts.ProjectID != nil {
@@ -131,5 +131,6 @@ type CustomClaims struct {
 	KeyName     string `json:"token_name"`
 	ProjectID   string `json:"project_id,omitempty"`
 	ProjectName string `json:"project_name,omitempty"`
+	Scope       string `json:"scope,omitempty"`
 	jwt.RegisteredClaims
 }

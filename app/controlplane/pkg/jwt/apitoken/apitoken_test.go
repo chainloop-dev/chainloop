@@ -78,8 +78,8 @@ func TestGenerateJWT(t *testing.T) {
 		{
 			name: "no project",
 			opts: &GenerateJWTOptions{
-				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				OrgName:   "org-name",
+				OrgID:     toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				OrgName:   toPtr("org-name"),
 				KeyName:   "key-name",
 				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
@@ -88,8 +88,8 @@ func TestGenerateJWT(t *testing.T) {
 		{
 			name: "no expiration",
 			opts: &GenerateJWTOptions{
-				OrgID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				OrgName: "org-name",
+				OrgID:   toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				OrgName: toPtr("org-name"),
 				KeyName: "key-name",
 				KeyID:   uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 			},
@@ -97,8 +97,8 @@ func TestGenerateJWT(t *testing.T) {
 		{
 			name: "with project",
 			opts: &GenerateJWTOptions{
-				OrgID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				OrgName:     "org-name",
+				OrgID:       toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				OrgName:     toPtr("org-name"),
 				KeyName:     "key-name",
 				KeyID:       uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 				ProjectID:   toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
@@ -107,30 +107,19 @@ func TestGenerateJWT(t *testing.T) {
 			},
 		},
 		{
-			name: "missing orgID",
+			name: "instance token - no orgID or orgName",
 			opts: &GenerateJWTOptions{
-				OrgName:   "org-name",
 				KeyName:   "key-name",
 				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+				Scope:     toPtr("INSTANCE_ADMIN"),
 			},
-			wantErr: true,
-		},
-		{
-			name: "missing orgName",
-			opts: &GenerateJWTOptions{
-				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				KeyName:   "key-name",
-				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
-			},
-			wantErr: true,
 		},
 		{
 			name: "missing keyID",
 			opts: &GenerateJWTOptions{
-				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				OrgName:   "org-name",
+				OrgID:     toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				OrgName:   toPtr("org-name"),
 				KeyName:   "key-name",
 				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
 			},
@@ -139,8 +128,8 @@ func TestGenerateJWT(t *testing.T) {
 		{
 			name: "missing keyName",
 			opts: &GenerateJWTOptions{
-				OrgID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
-				OrgName:   "org-name",
+				OrgID:     toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				OrgName:   toPtr("org-name"),
 				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
 			},
@@ -169,8 +158,18 @@ func TestGenerateJWT(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.True(t, tokenInfo.Valid)
-			assert.Equal(t, tc.opts.OrgID.String(), claims.OrgID)
-			assert.Equal(t, tc.opts.OrgName, claims.OrgName)
+
+			if tc.opts.OrgID != nil {
+				assert.Equal(t, tc.opts.OrgID.String(), claims.OrgID)
+			} else {
+				assert.Empty(t, claims.OrgID)
+			}
+			if tc.opts.OrgName != nil {
+				assert.Equal(t, *tc.opts.OrgName, claims.OrgName)
+			} else {
+				assert.Empty(t, claims.OrgName)
+			}
+
 			assert.Equal(t, tc.opts.KeyID.String(), claims.ID)
 			assert.Equal(t, tc.opts.KeyName, claims.KeyName)
 
@@ -180,6 +179,12 @@ func TestGenerateJWT(t *testing.T) {
 			} else {
 				assert.Empty(t, claims.ProjectID)
 				assert.Empty(t, claims.ProjectName)
+			}
+
+			if tc.opts.Scope != nil {
+				assert.Equal(t, *tc.opts.Scope, claims.Scope)
+			} else {
+				assert.Empty(t, claims.Scope)
 			}
 
 			if tc.opts.ExpiresAt != nil {

@@ -20,7 +20,7 @@ var (
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
 		{Name: "policies", Type: field.TypeJSON, Nullable: true},
 		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "organization_id", Type: field.TypeUUID},
+		{Name: "organization_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// APITokensTable holds the schema information for the "api_tokens" table.
 	APITokensTable = &schema.Table{
@@ -56,6 +56,14 @@ var (
 				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
+				},
+			},
+			{
+				Name:    "apitoken_name",
+				Unique:  true,
+				Columns: []*schema.Column{APITokensColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "revoked_at IS NULL AND organization_id IS NULL",
 				},
 			},
 		},
