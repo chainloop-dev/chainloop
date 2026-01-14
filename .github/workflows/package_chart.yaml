@@ -90,6 +90,8 @@ jobs:
         env:
           COSIGN_PRIVATE_KEY: ${{secrets.COSIGN_KEY}}
           COSIGN_PASSWORD: ${{secrets.COSIGN_PASSWORD}}
+          # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Finish and Record Attestation
         if: ${{ success() }}
