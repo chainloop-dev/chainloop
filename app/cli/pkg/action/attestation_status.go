@@ -66,6 +66,7 @@ type AttestationStatusResult struct {
 type AttestationResultRunnerContext struct {
 	EnvVars            map[string]string
 	JobURL, RunnerType string
+	RawRunner          crafter.SupportedRunner
 }
 
 type AttestationStatusWorkflowMeta struct {
@@ -202,6 +203,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		EnvVars:    runnerEnvVars,
 		RunnerType: att.RunnerType.String(),
 		JobURL:     att.RunnerUrl,
+		RawRunner:  c.Runner,
 	}
 
 	return res, nil

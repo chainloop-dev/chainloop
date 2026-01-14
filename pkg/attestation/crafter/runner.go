@@ -58,6 +58,10 @@ type SupportedRunner interface {
 	// Returns nil if verification is not supported or not applicable for this runner.
 	// Non-blocking: errors are logged and returned as unavailable status.
 	VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification
+
+	// Report writes attestation table output to platform-specific location.
+	// Returns nil if platform doesn't support reporting.
+	Report(tableOutput []byte) error
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
