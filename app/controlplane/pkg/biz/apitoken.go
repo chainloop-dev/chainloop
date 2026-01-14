@@ -237,16 +237,14 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Dispatch the event to the auditor to notify the creation of the token
-	if orgUUID != nil {
-		uc.auditorUC.Dispatch(ctx, &events.APITokenCreated{
-			APITokenBase: &events.APITokenBase{
-				APITokenID:   &token.ID,
-				APITokenName: name,
-			},
-			APITokenDescription: description,
-			ExpiresAt:           expiresAt,
-		}, orgUUID)
-	}
+	uc.auditorUC.Dispatch(ctx, &events.APITokenCreated{
+		APITokenBase: &events.APITokenBase{
+			APITokenID:   &token.ID,
+			APITokenName: name,
+		},
+		APITokenDescription: description,
+		ExpiresAt:           expiresAt,
+	}, orgUUID)
 
 	return token, nil
 }
@@ -389,14 +387,12 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 	}
 
 	// Dispatch the event to the auditor to notify the revocation of the token
-	if orgUUID != nil {
-		uc.auditorUC.Dispatch(ctx, &events.APITokenRevoked{
-			APITokenBase: &events.APITokenBase{
-				APITokenID:   &tokenUUID,
-				APITokenName: token.Name,
-			},
-		}, orgUUID)
-	}
+	uc.auditorUC.Dispatch(ctx, &events.APITokenRevoked{
+		APITokenBase: &events.APITokenBase{
+			APITokenID:   &tokenUUID,
+			APITokenName: token.Name,
+		},
+	}, orgUUID)
 
 	return nil
 }
