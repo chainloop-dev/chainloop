@@ -109,7 +109,6 @@ var (
 	PolicyArtifactDownload = &Policy{ResourceCASArtifact, ActionRead}
 	PolicyArtifactUpload   = &Policy{ResourceCASArtifact, ActionCreate}
 	// CAS backend
-	PolicyCASBackendCreate = &Policy{ResourceCASBackend, ActionCreate}
 	PolicyCASBackendList   = &Policy{ResourceCASBackend, ActionList}
 	PolicyCASBackendUpdate = &Policy{ResourceCASBackend, ActionUpdate}
 	// Available integrations
@@ -150,14 +149,10 @@ var (
 
 	// Organization
 	PolicyOrganizationCreate = &Policy{Organization, ActionCreate}
-	PolicyOrganizationUpdate = &Policy{Organization, ActionUpdate}
 	PolicyOrganizationDelete = &Policy{Organization, ActionDelete}
-	PolicyOrganizationList   = &Policy{Organization, ActionList}
-	PolicyOrganizationRead   = &Policy{Organization, ActionRead}
-	// Organization Memberships
-	PolicyOrganizationListMemberships  = &Policy{OrganizationMemberships, ActionList}
-	PolicyOrganizationMembershipDelete = &Policy{OrganizationMemberships, ActionDelete}
-	PolicyOrganizationMembershipUpdate = &Policy{OrganizationMemberships, ActionUpdate}
+	// User Membership
+	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
+	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
 
 	// Group Memberships
 	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
@@ -177,8 +172,6 @@ var (
 	PolicyProjectRemoveMemberships = &Policy{ResourceProjectMembership, ActionDelete}
 	// Organization Invitations
 	PolicyOrganizationInvitationsCreate = &Policy{ResourceOrganizationInvitations, ActionCreate}
-	PolicyOrganizationInvitationsList   = &Policy{ResourceOrganizationInvitations, ActionList}
-	PolicyOrganizationInvitationsRevoke = &Policy{ResourceOrganizationInvitations, ActionDelete}
 )
 
 // RolesMap The default list of policies for each role
@@ -356,10 +349,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.CASRedirectService/DownloadRedirect": {PolicyArtifactDownload},
 	// Or to retrieve a download url
 	"/controlplane.v1.CASRedirectService/GetDownloadURL": {PolicyArtifactDownload},
-	// CAS Backend
-	"/controlplane.v1.CASBackendService/Create":     {PolicyCASBackendCreate},
+	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List":       {PolicyCASBackendList},
-	"/controlplane.v1.CASBackendService/Update":     {PolicyCASBackendUpdate},
 	"/controlplane.v1.CASBackendService/Revalidate": {PolicyCASBackendUpdate},
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
@@ -397,18 +388,12 @@ var ServerOperationsMap = map[string][]*Policy{
 	// since all the permissions here are in the context of an organization
 	// Create new organization
 	"/controlplane.v1.OrganizationService/Create": {},
-	"/controlplane.v1.OrganizationService/Update": {PolicyOrganizationUpdate},
 	// Delete an organization makes checks at the service level since the
 	// user can explicitly set the org they want to delete and might not be the current one
 	"/controlplane.v1.OrganizationService/Delete": {},
-	// Organization memberships
-	"/controlplane.v1.OrganizationService/ListMemberships":  {PolicyOrganizationListMemberships},
-	"/controlplane.v1.OrganizationService/DeleteMembership": {PolicyOrganizationMembershipDelete},
-	"/controlplane.v1.OrganizationService/UpdateMembership": {PolicyOrganizationMembershipUpdate},
-	// Organization invitations
-	"/controlplane.v1.OrgInvitationService/Create":   {PolicyOrganizationInvitationsCreate},
-	"/controlplane.v1.OrgInvitationService/ListSent": {PolicyOrganizationInvitationsList},
-	"/controlplane.v1.OrgInvitationService/Revoke":   {PolicyOrganizationInvitationsRevoke},
+
+	// List global memberships
+	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
 
 	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
 	"/controlplane.v1.UserService/ListMemberships": {},
