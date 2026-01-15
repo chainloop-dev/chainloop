@@ -70,3 +70,7 @@ func (r *TektonPipeline) Environment() RunnerEnvironment {
 func (r *TektonPipeline) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
 	return nil // Not supported for this runner
 }
+
+func (r *TektonPipeline) Report(_ []byte) error {
+	return nil
+}

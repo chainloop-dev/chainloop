@@ -101,3 +101,7 @@ func (r *AzurePipeline) Environment() RunnerEnvironment {
 func (r *AzurePipeline) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
 	return nil // Not supported for this runner
 }
+
+func (r *AzurePipeline) Report(_ []byte) error {
+	return nil
+}

@@ -17,6 +17,7 @@ package runners
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -137,4 +138,23 @@ func (r *GitlabPipeline) VerifyCommitSignature(ctx context.Context, commitHash s
 
 	// Call GitLab API to verify commit
 	return commitverification.VerifyGitLabCommit(ctx, baseURL, projectPath, commitHash, token, r.logger)
+}
+
+// Report writes attestation table output as text artifact
+func (r *GitlabPipeline) Report(tableOutput []byte) error {
+	artifactFile := "chainloop-attestation-report.txt"
+
+	if err := os.WriteFile(artifactFile, tableOutput, 0600); err != nil {
+		return fmt.Errorf("failed to write attestation report: %w", err)
+	}
+
+	// Log instruction for GitLab CI configuration
+	r.logger.Info().Msgf("Attestation report written to %s", artifactFile)
+	r.logger.Info().Msg("To view in GitLab CI, add this to your job configuration:")
+	r.logger.Info().Msg("artifacts:")
+	r.logger.Info().Msg("  paths:")
+	r.logger.Info().Msgf("    - %s", artifactFile)
+	r.logger.Info().Msg("  expire_in: 30 days")
+
+	return nil
 }

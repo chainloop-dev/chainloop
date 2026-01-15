@@ -88,3 +88,7 @@ func (r *JenkinsJob) Environment() RunnerEnvironment {
 func (r *JenkinsJob) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
 	return nil // Not supported for this runner
 }
+
+func (r *JenkinsJob) Report(_ []byte) error {
+	return nil
+}

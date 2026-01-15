@@ -81,3 +81,7 @@ func (r *CircleCIBuild) Environment() RunnerEnvironment {
 func (r *CircleCIBuild) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
 	return nil // Not supported for this runner
 }
+
+func (r *CircleCIBuild) Report(_ []byte) error {
+	return nil
+}

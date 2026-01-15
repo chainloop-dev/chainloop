@@ -74,3 +74,7 @@ func (r *TeamCityPipeline) Environment() RunnerEnvironment {
 func (r *TeamCityPipeline) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
 	return nil // Not supported for this runner
 }
+
+func (r *TeamCityPipeline) Report(_ []byte) error {
+	return nil
+}
