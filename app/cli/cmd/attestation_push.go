@@ -118,7 +118,9 @@ func newAttestationPushCmd() *cobra.Command {
 
 			// Report to CI/CD platform if supported and not disabled
 			if !deactivateCIReport && !res.Status.DryRun && res.Status.RunnerContext != nil {
-				if err := res.Status.RunnerContext.RawRunner.Report(res.Status.TerminalOutput); err != nil {
+				// Clean up possible ANSI characters from the output
+				sanitizedOutput := removeAnsiCharactersFromBytes(res.Status.TerminalOutput)
+				if err := res.Status.RunnerContext.RawRunner.Report(sanitizedOutput); err != nil {
 					logger.Warn().Err(err).Msg("failed to write CI/CD platform report")
 				} else {
 					// Log success message based on runner type
