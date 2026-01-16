@@ -102,6 +102,9 @@ message Bootstrap {
       string token = 2 [(buf.validate.field).string.min_len = 1];
     }
   }
+
+  // External URL of the platform UI, if available
+  string ui_dashboard_url = 19;
 }
 
 message FederatedAuthentication {

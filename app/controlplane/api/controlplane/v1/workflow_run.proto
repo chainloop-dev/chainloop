@@ -139,6 +139,8 @@ message AttestationServiceInitResponse {
     SigningOptions signing_options = 5;
     // array of hostnames that are allowed to be used in the policies
     repeated string policies_allowed_hostnames = 6;
+    // URL pointing to the web dashboard. It might be empty if not available
+    string ui_dashboard_url = 7;
   }
 
   message SigningOptions {

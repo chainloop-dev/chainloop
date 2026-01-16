@@ -190,6 +190,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		policiesAllowedHostnames []string
 		// Timestamp Authority URL for new attestations
 		timestampAuthorityURL, signingCAName string
+		uiDashboardURL                       string
 	)
 
 	// Init in the control plane if needed including the runner context
@@ -220,6 +221,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		signingOpts := result.GetSigningOptions()
 		timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
 		signingCAName = signingOpts.GetSigningCa()
+		uiDashboardURL = result.GetUiDashboardUrl()
 
 		if v := workflowMeta.Version; v != nil && workflowRun.GetVersion() != nil {
 			v.Prerelease = workflowRun.GetVersion().GetPrerelease()
@@ -277,9 +279,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,
 		},
-		Auth:       authInfo,
-		CASBackend: casBackendInfo,
-		Logger:     &action.Logger,
+		Auth:           authInfo,
+		CASBackend:     casBackendInfo,
+		Logger:         &action.Logger,
+		UIDashboardURL: uiDashboardURL,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {

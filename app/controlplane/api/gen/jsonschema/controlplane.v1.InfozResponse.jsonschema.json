@@ -13,6 +13,10 @@
     "^(restricted_org_creation)$": {
       "description": "Whether organization creation is restricted to admins",
       "type": "boolean"
+    },
+    "^(ui_dashboard_url)$": {
+      "description": "Link to the platform UI, if available",
+      "type": "string"
     }
   },
   "properties": {
@@ -26,6 +30,10 @@
     "restrictedOrgCreation": {
       "description": "Whether organization creation is restricted to admins",
       "type": "boolean"
+    },
+    "uiDashboardUrl": {
+      "description": "Link to the platform UI, if available",
+      "type": "string"
     },
     "version": {
       "type": "string"

@@ -737,11 +737,13 @@ type CraftingState struct {
 	//
 	//	*CraftingState_InputSchema
 	//	*CraftingState_SchemaV2
-	Schema        isCraftingState_Schema `protobuf_oneof:"schema"`
-	Attestation   *Attestation           `protobuf:"bytes,2,opt,name=attestation,proto3" json:"attestation,omitempty"`
-	DryRun        bool                   `protobuf:"varint,3,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Schema      isCraftingState_Schema `protobuf_oneof:"schema"`
+	Attestation *Attestation           `protobuf:"bytes,2,opt,name=attestation,proto3" json:"attestation,omitempty"`
+	DryRun      bool                   `protobuf:"varint,3,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	// External URL of the platform UI, if available
+	UiDashboardUrl string `protobuf:"bytes,5,opt,name=ui_dashboard_url,json=uiDashboardUrl,proto3" json:"ui_dashboard_url,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CraftingState) Reset() {
@@ -811,6 +813,13 @@ func (x *CraftingState) GetDryRun() bool {
 		return x.DryRun
 	}
 	return false
+}
+
+func (x *CraftingState) GetUiDashboardUrl() string {
+	if x != nil {
+		return x.UiDashboardUrl
+	}
+	return ""
 }
 
 type isCraftingState_Schema interface {
@@ -2348,12 +2357,13 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"unverified\x10\x02\x12\x0f\n" +
 	"\vunavailable\x10\x03\x12\x12\n" +
 	"\x0enot_applicable\x10\x04B\x18\n" +
-	"\x16_platform_verification\"\x81\x02\n" +
+	"\x16_platform_verification\"\xab\x02\n" +
 	"\rCraftingState\x12H\n" +
 	"\finput_schema\x18\x01 \x01(\v2#.workflowcontract.v1.CraftingSchemaH\x00R\vinputSchema\x12D\n" +
 	"\tschema_v2\x18\x04 \x01(\v2%.workflowcontract.v1.CraftingSchemaV2H\x00R\bschemaV2\x12=\n" +
 	"\vattestation\x18\x02 \x01(\v2\x1b.attestation.v1.AttestationR\vattestation\x12\x17\n" +
-	"\adry_run\x18\x03 \x01(\bR\x06dryRunB\b\n" +
+	"\adry_run\x18\x03 \x01(\bR\x06dryRun\x12(\n" +
+	"\x10ui_dashboard_url\x18\x05 \x01(\tR\x0euiDashboardUrlB\b\n" +
 	"\x06schema\"\xa3\x03\n" +
 	"\x10WorkflowMetadata\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x18\n" +

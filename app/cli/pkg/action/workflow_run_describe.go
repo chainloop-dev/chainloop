@@ -61,6 +61,8 @@ type WorkflowRunAttestationItem struct {
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 	// Policy evaluation status
 	PolicyEvaluationStatus *PolicyEvaluationStatus `json:"policy_evaluation_status,omitempty"`
+	// URL to view the attestation in the UI
+	AttestationViewURL string `json:"attestation_view_url"`
 }
 
 type PolicyEvaluationStatus struct {
@@ -227,6 +229,12 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 
 	policyEvaluationStatus := att.GetPolicyEvaluationStatus()
 
+	var attestationViewURL string
+	baseUIDashboardURL := fetchUIDashboardURL(ctx, action.cfg.CPConnection)
+	if baseUIDashboardURL != "" {
+		attestationViewURL = buildAttestationViewURL(baseUIDashboardURL, att.DigestInCasBackend)
+	}
+
 	item.Attestation = &WorkflowRunAttestationItem{
 		Envelope:          envelope,
 		Bundle:            att.GetBundle(),
@@ -243,6 +251,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 			HasViolations:      policyEvaluationStatus.HasViolations,
 			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
 		},
+		AttestationViewURL: attestationViewURL,
 	}
 
 	return item, nil

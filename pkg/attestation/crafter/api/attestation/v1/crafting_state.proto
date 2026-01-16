@@ -354,6 +354,8 @@ message CraftingState {
   }
   Attestation attestation = 2;
   bool dry_run = 3;
+  // External URL of the platform UI, if available
+  string ui_dashboard_url = 5;
 }
 
 message WorkflowMetadata {

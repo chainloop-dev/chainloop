@@ -203,6 +203,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ProjectVersionUC:   projectVersionUseCase,
 		SigningUseCase:     signingUseCase,
 		UserUC:             userUseCase,
+		BootstrapConfig:    bootstrap,
 		Opts:               v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)

@@ -177,6 +177,11 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		gt.AppendRow(table.Row{"Policies", "------"})
 		policiesTable(evs, gt)
 	}
+
+	if run.Attestation.AttestationViewURL != "" {
+		gt.AppendRow(table.Row{"Attestation View URL", run.Attestation.AttestationViewURL})
+	}
+
 	gt.Render()
 
 	predicateV1Table(att)
