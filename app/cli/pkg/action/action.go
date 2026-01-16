@@ -155,9 +155,9 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 	return casBackendInfo, artifactCASConn.Close, nil
 }
 
-// fetchUiDashboardURL retrieves the UI Dashboard URL from the control plane
+// fetchUIDashboardURL retrieves the UI Dashboard URL from the control plane
 // Returns empty string if not configured or if fetch fails
-func fetchUiDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) string {
+func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) string {
 	if cpConnection == nil {
 		return ""
 	}
@@ -176,12 +176,12 @@ func fetchUiDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) str
 
 // buildAttestationViewURL constructs the attestation view URL
 // Returns empty string if platformURL is not configured
-func buildAttestationViewURL(uiDashboardUrl, digest string) string {
-	if uiDashboardUrl == "" || digest == "" {
+func buildAttestationViewURL(uiDashboardURL, digest string) string {
+	if uiDashboardURL == "" || digest == "" {
 		return ""
 	}
 
 	// Trim trailing slash from platform URL if present
-	uiDashboardUrl = strings.TrimRight(uiDashboardUrl, "/")
-	return fmt.Sprintf("%s/attestation/%s?tab=summary", uiDashboardUrl, digest)
+	uiDashboardURL = strings.TrimRight(uiDashboardURL, "/")
+	return fmt.Sprintf("%s/attestation/%s?tab=summary", uiDashboardURL, digest)
 }

@@ -178,8 +178,8 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		policiesTable(evs, gt)
 	}
 
-	if run.Attestation.AttestationViewUrl != "" {
-		gt.AppendRow(table.Row{"Attestation View URL", run.Attestation.AttestationViewUrl})
+	if run.Attestation.AttestationViewURL != "" {
+		gt.AppendRow(table.Row{"Attestation View URL", run.Attestation.AttestationViewURL})
 	}
 
 	gt.Render()
