@@ -229,10 +229,10 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 
 	policyEvaluationStatus := att.GetPolicyEvaluationStatus()
 
-	var attestationViewUrl string
+	var attestationViewURL string
 	baseUIDashboardURL := fetchUIDashboardURL(ctx, action.cfg.CPConnection)
 	if baseUIDashboardURL != "" {
-		attestationViewUrl = buildAttestationViewURL(baseUIDashboardURL, att.DigestInCasBackend)
+		attestationViewURL = buildAttestationViewURL(baseUIDashboardURL, att.DigestInCasBackend)
 	}
 
 	item.Attestation = &WorkflowRunAttestationItem{
@@ -251,7 +251,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 			HasViolations:      policyEvaluationStatus.HasViolations,
 			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
 		},
-		AttestationViewURL: attestationViewUrl,
+		AttestationViewURL: attestationViewURL,
 	}
 
 	return item, nil
