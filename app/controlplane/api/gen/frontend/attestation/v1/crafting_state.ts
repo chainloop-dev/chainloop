@@ -430,6 +430,8 @@ export interface CraftingState {
   schemaV2?: CraftingSchemaV2 | undefined;
   attestation?: Attestation;
   dryRun: boolean;
+  /** External URL of the platform UI, if available */
+  uiDashboardUrl: string;
 }
 
 export interface WorkflowMetadata {
@@ -3400,7 +3402,7 @@ export const Commit_CommitVerification = {
 };
 
 function createBaseCraftingState(): CraftingState {
-  return { inputSchema: undefined, schemaV2: undefined, attestation: undefined, dryRun: false };
+  return { inputSchema: undefined, schemaV2: undefined, attestation: undefined, dryRun: false, uiDashboardUrl: "" };
 }
 
 export const CraftingState = {
@@ -3416,6 +3418,9 @@ export const CraftingState = {
     }
     if (message.dryRun === true) {
       writer.uint32(24).bool(message.dryRun);
+    }
+    if (message.uiDashboardUrl !== "") {
+      writer.uint32(42).string(message.uiDashboardUrl);
     }
     return writer;
   },
@@ -3455,6 +3460,13 @@ export const CraftingState = {
 
           message.dryRun = reader.bool();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.uiDashboardUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3470,6 +3482,7 @@ export const CraftingState = {
       schemaV2: isSet(object.schemaV2) ? CraftingSchemaV2.fromJSON(object.schemaV2) : undefined,
       attestation: isSet(object.attestation) ? Attestation.fromJSON(object.attestation) : undefined,
       dryRun: isSet(object.dryRun) ? Boolean(object.dryRun) : false,
+      uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
     };
   },
 
@@ -3482,6 +3495,7 @@ export const CraftingState = {
     message.attestation !== undefined &&
       (obj.attestation = message.attestation ? Attestation.toJSON(message.attestation) : undefined);
     message.dryRun !== undefined && (obj.dryRun = message.dryRun);
+    message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
     return obj;
   },
 
@@ -3501,6 +3515,7 @@ export const CraftingState = {
       ? Attestation.fromPartial(object.attestation)
       : undefined;
     message.dryRun = object.dryRun ?? false;
+    message.uiDashboardUrl = object.uiDashboardUrl ?? "";
     return message;
   },
 };

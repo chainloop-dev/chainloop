@@ -169,6 +169,8 @@ type InitOpts struct {
 	PoliciesAllowedHostnames []string
 	// CAS backend information
 	CASBackend *api.Attestation_CASBackend
+	// UiDashboardUrl is the base URL to build the attestation view link
+	UiDashboardUrl string
 	// Logger for verification logging
 	Logger *zerolog.Logger
 }
@@ -415,7 +417,8 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
 			CasBackend:               opts.CASBackend,
 		},
-		DryRun: opts.DryRun,
+		DryRun:         opts.DryRun,
+		UiDashboardUrl: opts.UiDashboardUrl,
 	}
 
 	// Set the appropriate schema

@@ -78,8 +78,10 @@ type Bootstrap struct {
 	FederatedAuthentication *FederatedAuthentication `protobuf:"bytes,16,opt,name=federated_authentication,json=federatedAuthentication,proto3" json:"federated_authentication,omitempty"`
 	// Restrict organization creation to admins
 	RestrictOrgCreation bool `protobuf:"varint,18,opt,name=restrict_org_creation,json=restrictOrgCreation,proto3" json:"restrict_org_creation,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// External URL of the platform UI, if available
+	UiDashboardUrl string `protobuf:"bytes,19,opt,name=ui_dashboard_url,json=uiDashboardUrl,proto3" json:"ui_dashboard_url,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Bootstrap) Reset() {
@@ -237,6 +239,13 @@ func (x *Bootstrap) GetRestrictOrgCreation() bool {
 		return x.RestrictOrgCreation
 	}
 	return false
+}
+
+func (x *Bootstrap) GetUiDashboardUrl() string {
+	if x != nil {
+		return x.UiDashboardUrl
+	}
+	return ""
 }
 
 type FederatedAuthentication struct {
@@ -1556,7 +1565,7 @@ var File_controlplane_config_v1_conf_proto protoreflect.FileDescriptor
 
 const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\n" +
-	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xf2\r\n" +
+	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x9c\x0e\n" +
 	"\tBootstrap\x126\n" +
 	"\x06server\x18\x01 \x01(\v2\x1e.controlplane.config.v1.ServerR\x06server\x120\n" +
 	"\x04data\x18\x02 \x01(\v2\x1c.controlplane.config.v1.DataR\x04data\x120\n" +
@@ -1581,7 +1590,8 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\vnats_server\x18\x0e \x01(\v2,.controlplane.config.v1.Bootstrap.NatsServerR\n" +
 	"natsServer\x12j\n" +
 	"\x18federated_authentication\x18\x10 \x01(\v2/.controlplane.config.v1.FederatedAuthenticationR\x17federatedAuthentication\x122\n" +
-	"\x15restrict_org_creation\x18\x12 \x01(\bR\x13restrictOrgCreation\x1a\x9d\x01\n" +
+	"\x15restrict_org_creation\x18\x12 \x01(\bR\x13restrictOrgCreation\x12(\n" +
+	"\x10ui_dashboard_url\x18\x13 \x01(\tR\x0euiDashboardUrl\x1a\x9d\x01\n" +
 	"\rObservability\x12N\n" +
 	"\x06sentry\x18\x01 \x01(\v26.controlplane.config.v1.Bootstrap.Observability.SentryR\x06sentry\x1a<\n" +
 	"\x06Sentry\x12\x10\n" +

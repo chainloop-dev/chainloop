@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -152,4 +153,35 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 
 	casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(logger))
 	return casBackendInfo, artifactCASConn.Close, nil
+}
+
+// fetchUiDashboardURL retrieves the UI Dashboard URL from the control plane
+// Returns empty string if not configured or if fetch fails
+func fetchUiDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) string {
+	if cpConnection == nil {
+		return ""
+	}
+
+	tmoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	client := pb.NewStatusServiceClient(cpConnection)
+	resp, err := client.Infoz(tmoutCtx, &pb.InfozRequest{})
+	if err != nil {
+		return ""
+	}
+
+	return resp.UiDashboardUrl
+}
+
+// buildAttestationViewURL constructs the attestation view URL
+// Returns empty string if platformURL is not configured
+func buildAttestationViewURL(uiDashboardUrl, digest string) string {
+	if uiDashboardUrl == "" || digest == "" {
+		return ""
+	}
+
+	// Trim trailing slash from platform URL if present
+	uiDashboardUrl = strings.TrimRight(uiDashboardUrl, "/")
+	return fmt.Sprintf("%s/attestation/%s?tab=summary", uiDashboardUrl, digest)
 }

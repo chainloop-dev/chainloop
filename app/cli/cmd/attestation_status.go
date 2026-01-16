@@ -140,6 +140,12 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.W
 		gt.AppendRow(table.Row{"Policies", "------"})
 		policiesTable(evs, gt)
 	}
+
+	// Add the Attestation View URL if available
+	if status.AttestationViewURL != "" {
+		gt.AppendRow(table.Row{"Attestation View URL", status.AttestationViewURL})
+	}
+
 	gt.Render()
 
 	if err := materialsTable(status, w, full); err != nil {

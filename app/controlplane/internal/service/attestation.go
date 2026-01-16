@@ -24,6 +24,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
@@ -60,6 +61,7 @@ type AttestationService struct {
 	projectUseCase          *biz.ProjectUseCase
 	signingUseCase          *biz.SigningUseCase
 	userUseCase             *biz.UserUseCase
+	bootstrapConfig         *conf.Bootstrap
 }
 
 type NewAttestationServiceOpts struct {
@@ -80,6 +82,7 @@ type NewAttestationServiceOpts struct {
 	ProjectVersionUC   *biz.ProjectVersionUseCase
 	SigningUseCase     *biz.SigningUseCase
 	UserUC             *biz.UserUseCase
+	BootstrapConfig    *conf.Bootstrap
 	Opts               []NewOpt
 }
 
@@ -103,6 +106,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		projectVersionUseCase:   opts.ProjectVersionUC,
 		signingUseCase:          opts.SigningUseCase,
 		userUseCase:             opts.UserUC,
+		bootstrapConfig:         opts.BootstrapConfig,
 	}
 }
 
@@ -208,6 +212,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		Organization:             org.Name,
 		BlockOnPolicyViolation:   org.BlockOnPolicyViolation,
 		PoliciesAllowedHostnames: org.PoliciesAllowedHostnames,
+		UiDashboardUrl:           s.bootstrapConfig.UiDashboardUrl,
 	}
 
 	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}

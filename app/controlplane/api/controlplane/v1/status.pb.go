@@ -128,8 +128,10 @@ type InfozResponse struct {
 	ChartVersion string `protobuf:"bytes,3,opt,name=chart_version,json=chartVersion,proto3" json:"chart_version,omitempty"`
 	// Whether organization creation is restricted to admins
 	RestrictedOrgCreation bool `protobuf:"varint,4,opt,name=restricted_org_creation,json=restrictedOrgCreation,proto3" json:"restricted_org_creation,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Link to the platform UI, if available
+	UiDashboardUrl string `protobuf:"bytes,5,opt,name=ui_dashboard_url,json=uiDashboardUrl,proto3" json:"ui_dashboard_url,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *InfozResponse) Reset() {
@@ -190,6 +192,13 @@ func (x *InfozResponse) GetRestrictedOrgCreation() bool {
 	return false
 }
 
+func (x *InfozResponse) GetUiDashboardUrl() string {
+	if x != nil {
+		return x.UiDashboardUrl
+	}
+	return ""
+}
+
 type StatuszResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -233,12 +242,13 @@ const file_controlplane_v1_status_proto_rawDesc = "" +
 	"\x1ccontrolplane/v1/status.proto\x12\x0fcontrolplane.v1\x1a\x1cgoogle/api/annotations.proto\"\x0e\n" +
 	"\fInfozRequest\".\n" +
 	"\x0eStatuszRequest\x12\x1c\n" +
-	"\treadiness\x18\x01 \x01(\bR\treadiness\"\xa3\x01\n" +
+	"\treadiness\x18\x01 \x01(\bR\treadiness\"\xcd\x01\n" +
 	"\rInfozResponse\x12\x1b\n" +
 	"\tlogin_url\x18\x01 \x01(\tR\bloginURL\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12#\n" +
 	"\rchart_version\x18\x03 \x01(\tR\fchartVersion\x126\n" +
-	"\x17restricted_org_creation\x18\x04 \x01(\bR\x15restrictedOrgCreation\"\x11\n" +
+	"\x17restricted_org_creation\x18\x04 \x01(\bR\x15restrictedOrgCreation\x12(\n" +
+	"\x10ui_dashboard_url\x18\x05 \x01(\tR\x0euiDashboardUrl\"\x11\n" +
 	"\x0fStatuszResponse2\xc7\x01\n" +
 	"\rStatusService\x12V\n" +
 	"\x05Infoz\x12\x1d.controlplane.v1.InfozRequest\x1a\x1e.controlplane.v1.InfozResponse\"\x0e\x82\xd3\xe4\x93\x02\b\x12\x06/infoz\x12^\n" +

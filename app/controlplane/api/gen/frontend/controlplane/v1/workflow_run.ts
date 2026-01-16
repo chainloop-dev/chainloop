@@ -115,6 +115,8 @@ export interface AttestationServiceInitResponse_Result {
   signingOptions?: AttestationServiceInitResponse_SigningOptions;
   /** array of hostnames that are allowed to be used in the policies */
   policiesAllowedHostnames: string[];
+  /** URL pointing to the web dashboard. It might be empty if not available */
+  uiDashboardUrl: string;
 }
 
 export interface AttestationServiceInitResponse_SigningOptions {
@@ -1281,6 +1283,7 @@ function createBaseAttestationServiceInitResponse_Result(): AttestationServiceIn
     blockOnPolicyViolation: false,
     signingOptions: undefined,
     policiesAllowedHostnames: [],
+    uiDashboardUrl: "",
   };
 }
 
@@ -1300,6 +1303,9 @@ export const AttestationServiceInitResponse_Result = {
     }
     for (const v of message.policiesAllowedHostnames) {
       writer.uint32(50).string(v!);
+    }
+    if (message.uiDashboardUrl !== "") {
+      writer.uint32(58).string(message.uiDashboardUrl);
     }
     return writer;
   },
@@ -1346,6 +1352,13 @@ export const AttestationServiceInitResponse_Result = {
 
           message.policiesAllowedHostnames.push(reader.string());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.uiDashboardUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1366,6 +1379,7 @@ export const AttestationServiceInitResponse_Result = {
       policiesAllowedHostnames: Array.isArray(object?.policiesAllowedHostnames)
         ? object.policiesAllowedHostnames.map((e: any) => String(e))
         : [],
+      uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
     };
   },
 
@@ -1383,6 +1397,7 @@ export const AttestationServiceInitResponse_Result = {
     } else {
       obj.policiesAllowedHostnames = [];
     }
+    message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
     return obj;
   },
 
@@ -1405,6 +1420,7 @@ export const AttestationServiceInitResponse_Result = {
       ? AttestationServiceInitResponse_SigningOptions.fromPartial(object.signingOptions)
       : undefined;
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
+    message.uiDashboardUrl = object.uiDashboardUrl ?? "";
     return message;
   },
 };

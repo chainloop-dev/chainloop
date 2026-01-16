@@ -226,6 +226,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
 
+	// Build attestation view URL
+	attestationResult.Status.AttestationViewURL = buildAttestationViewURL(crafter.CraftingState.UiDashboardUrl, attestationResult.Digest)
+
 	action.Logger.Info().Msg("push completed")
 
 	// Save bundle to disk

@@ -179,7 +179,10 @@ controlplane:
   
   ## @skip controlplane.restrictOrgCreation Restrict organization creation to instance admins
   restrictOrgCreation: false
-  
+
+  ## @param controlplane.uiDashboardURL Optional external URL for the dashboard UI. If set, CLI will display attestation view links after push
+  uiDashboardURL: ""
+
   ## @extra controlplane.nats optional NATS configuration for events publishing.
   ## @param controlplane.nats.enabled Enable events publishing through a Nats stream
   ## @param controlplane.nats.host NATS Host
