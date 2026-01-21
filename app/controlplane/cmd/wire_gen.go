@@ -167,6 +167,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
 		WorkflowContractUC: workflowContractUseCase,
+		ProjectUC:          projectUseCase,
 		CredsReader:        readerWriter,
 		Opts:               v5,
 	}
