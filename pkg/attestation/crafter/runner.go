@@ -60,8 +60,9 @@ type SupportedRunner interface {
 	VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification
 
 	// Report writes attestation table output to platform-specific location.
+	// attestationViewURL is an optional URL to view the attestation details.
 	// Returns nil if platform doesn't support reporting.
-	Report(tableOutput []byte) error
+	Report(tableOutput []byte, attestationViewURL string) error
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner

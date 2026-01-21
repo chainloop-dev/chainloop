@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ func newAttestationPushCmd() *cobra.Command {
 			if !deactivateCIReport && !res.Status.DryRun && res.Status.RunnerContext != nil {
 				// Clean up possible ANSI characters from the output
 				sanitizedOutput := removeAnsiCharactersFromBytes(res.Status.TerminalOutput)
-				if err := res.Status.RunnerContext.RawRunner.Report(sanitizedOutput); err != nil {
+				if err := res.Status.RunnerContext.RawRunner.Report(sanitizedOutput, res.Status.AttestationViewURL); err != nil {
 					logger.Warn().Err(err).Msg("failed to write CI/CD platform report")
 				} else {
 					// Log success message based on runner type

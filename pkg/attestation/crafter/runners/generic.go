@@ -66,6 +66,6 @@ func (r *Generic) VerifyCommitSignature(_ context.Context, _ string) *commitveri
 	return nil // Not supported for this runner
 }
 
-func (r *Generic) Report(_ []byte) error {
+func (r *Generic) Report(_ []byte, _ string) error {
 	return nil
 }

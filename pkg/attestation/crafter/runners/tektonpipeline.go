@@ -71,6 +71,6 @@ func (r *TektonPipeline) VerifyCommitSignature(_ context.Context, _ string) *com
 	return nil // Not supported for this runner
 }
 
-func (r *TektonPipeline) Report(_ []byte) error {
+func (r *TektonPipeline) Report(_ []byte, _ string) error {
 	return nil
 }

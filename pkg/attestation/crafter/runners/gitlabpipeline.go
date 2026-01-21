@@ -141,10 +141,18 @@ func (r *GitlabPipeline) VerifyCommitSignature(ctx context.Context, commitHash s
 }
 
 // Report writes attestation table output as text artifact
-func (r *GitlabPipeline) Report(tableOutput []byte) error {
+func (r *GitlabPipeline) Report(tableOutput []byte, attestationViewURL string) error {
 	artifactFile := "chainloop-attestation-report.txt"
 
-	if err := os.WriteFile(artifactFile, tableOutput, 0600); err != nil {
+	// Build the content with optional clickable link
+	content := fmt.Sprintf("# Chainloop Attestation Report\n\n%s", tableOutput)
+
+	// Add clickable markdown link after the table if URL is provided
+	if attestationViewURL != "" {
+		content += fmt.Sprintf("\n\n[View Attestation Details](%s)\n", attestationViewURL)
+	}
+
+	if err := os.WriteFile(artifactFile, []byte(content), 0600); err != nil {
 		return fmt.Errorf("failed to write attestation report: %w", err)
 	}
 

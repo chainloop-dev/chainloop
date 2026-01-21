@@ -102,6 +102,6 @@ func (r *AzurePipeline) VerifyCommitSignature(_ context.Context, _ string) *comm
 	return nil // Not supported for this runner
 }
 
-func (r *AzurePipeline) Report(_ []byte) error {
+func (r *AzurePipeline) Report(_ []byte, _ string) error {
 	return nil
 }

@@ -75,6 +75,6 @@ func (r *TeamCityPipeline) VerifyCommitSignature(_ context.Context, _ string) *c
 	return nil // Not supported for this runner
 }
 
-func (r *TeamCityPipeline) Report(_ []byte) error {
+func (r *TeamCityPipeline) Report(_ []byte, _ string) error {
 	return nil
 }
