@@ -41,6 +41,7 @@ spec:
       targetPort: {{ .Values.controlplane.containerPorts.grpc }}
       {{- end }}
       protocol: TCP
+      appProtocol: kubernetes.io/h2c
       {{- if and (or (eq .Values.controlplane.serviceAPI.type "NodePort") (eq .Values.controlplane.serviceAPI.type "LoadBalancer")) (not (empty .Values.controlplane.serviceAPI.nodePorts.http)) }}
       nodePort: {{ .Values.controlplane.serviceAPI.nodePorts.http }}
       {{- else if eq .Values.controlplane.serviceAPI.type "ClusterIP" }}

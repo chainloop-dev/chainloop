@@ -5,19 +5,6 @@ APP VERSION: {{ .Chart.AppVersion  }}
 ** Please be patient while the chart is being deployed **
 
 ###########################################################################
-  CONFIGURE CLI
-###########################################################################
-
-Configure the CLI to point to this instance, for example
-
-  chainloop --insecure config save \
-    --control-plane my-controlplane.acme.com:80 \
-    --artifact-cas cas.acme.com:80
-
-Refer to this link for more information
-https://docs.chainloop.dev/get-started/setup
-
-###########################################################################
   USEFUL LINKS
 ###########################################################################
 
@@ -30,3 +17,19 @@ https://docs.chainloop.dev/get-started/setup
 {{- include "common.warnings.rollingTag" .Values.controlplane.migration.image }}
 {{- include "chainloop.validateValues" . }}
 {{- include "common.warnings.modifiedImages" (dict "images" (list .Values.controlplane.image .Values.cas.image .Values.controlplane.migration.image) "context" $) }}
+
+###########################################################################
+  CONFIGURE CLI
+###########################################################################
+
+Configure the CLI to point to this instance, for example:
+
+  chainloop{{ ternary "" " --insecure" ( or .Values.controlplane.ingressAPI.tls .Values.controlplane.httpRoute.tls )  }} config save \
+    --control-plane {{ include "chainloop.controlplane.external_hostname" . }}:{{ ternary "443" "80" ( or .Values.controlplane.ingressAPI.tls .Values.controlplane.httpRoute.tls )  }} \
+    --artifact-cas {{ include "chainloop.cas.external_hostname" . }}:{{ ternary "443" "80" ( or .Values.cas.ingressAPI.tls .Values.cas.httpRoute.tls )  }} \
+
+Refer to this link for more information
+https://docs.chainloop.dev/getting-started/installation#configure-cli-optional
+
+Refer to this link for more information
+https://docs.chainloop.dev/get-started/setup

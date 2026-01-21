@@ -43,13 +43,16 @@ Figure out the external URL for Dex service
 {{- define "chainloop.dex.external_url" -}}
 {{- $service := .Values.dex.service }}
 {{- $ingress := .Values.dex.ingress }}
+{{- $httpRoute := .Values.dex.httpRoute }}
 
 {{- if (and $ingress $ingress.enabled $ingress.hostname) }}
 {{- printf "%s://%s/dex" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
+{{- else if (and $httpRoute $httpRoute.enabled $httpRoute.hostnames ) }}
+{{- printf "%s://%s/dex" (ternary "https" "http" $httpRoute.tls ) (index $httpRoute.hostnames 0) }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
 {{- else -}}
-{{- printf "http://%s-dex:%d/dex" ( include "chainloop.dex.fullname" . ) ( int $service.ports.http ) }}
+{{- printf "http://%s:%d/dex" ( include "chainloop.dex.fullname" . ) ( int $service.ports.http ) }}
 {{- end -}}
 {{- end -}}
 

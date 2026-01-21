@@ -40,6 +40,7 @@ spec:
       {{- if not (eq $port .Values.cas.containerPorts.grpc) }}
       targetPort: {{ .Values.cas.containerPorts.grpc }}
       {{- end }}
+      appProtocol: kubernetes.io/h2c
       protocol: TCP
       {{- if and (or (eq .Values.cas.serviceAPI.type "NodePort") (eq .Values.cas.serviceAPI.type "LoadBalancer")) (not (empty .Values.cas.serviceAPI.nodePorts.http)) }}
       nodePort: {{ .Values.cas.serviceAPI.nodePorts.http }}
