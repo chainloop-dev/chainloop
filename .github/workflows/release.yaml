@@ -172,6 +172,7 @@ jobs:
       - name: Promote Chainloop Project Version
         env:
           CHAINLOOP_PROJECT_NAME: "chainloop"
+          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
         run: |
           current_version="$(cat .chainloop.yml | awk '/^projectVersion:/ {print $2}')"
           # Rename the existing pre-release into the actual release name
