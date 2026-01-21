@@ -151,12 +151,6 @@ func newAttestationPushCmd() *cobra.Command {
 				}
 			}
 
-			if flagOutputFormat == output.FormatTable {
-				if res.Status.AttestationViewURL != "" {
-					logger.Info().Msg(res.Status.AttestationViewURL)
-				}
-			}
-
 			// Do a final check in case the operator has configured the attestation to be blocked on any policy violation
 			if res.Status.MustBlockOnPolicyViolations {
 				if bypassPolicyCheck {
