@@ -244,6 +244,7 @@ message WorkflowRunServiceViewResponse {
   Result result = 1;
 
   message Result {
+    string org_name = 5;
     WorkflowRunItem workflow_run = 1;
     AttestationItem attestation = 2;
     // It will be nil if the verification is not possible (old or non-keyless attestations)

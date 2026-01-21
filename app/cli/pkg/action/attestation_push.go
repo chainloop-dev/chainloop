@@ -227,7 +227,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	// Build attestation view URL
-	attestationResult.Status.AttestationViewURL = buildAttestationViewURL(crafter.CraftingState.UiDashboardUrl, attestationResult.Digest)
+	attestationResult.Status.AttestationViewURL = buildAttestationViewURL(crafter.CraftingState.UiDashboardUrl, workflow.GetOrganization(), attestationResult.Digest)
 
 	action.Logger.Info().Msg("push completed")
 
