@@ -82,6 +82,6 @@ func (r *CircleCIBuild) VerifyCommitSignature(_ context.Context, _ string) *comm
 	return nil // Not supported for this runner
 }
 
-func (r *CircleCIBuild) Report(_ []byte) error {
+func (r *CircleCIBuild) Report(_ []byte, _ string) error {
 	return nil
 }

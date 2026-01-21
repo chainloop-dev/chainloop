@@ -176,12 +176,12 @@ func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) str
 
 // buildAttestationViewURL constructs the attestation view URL
 // Returns empty string if platformURL is not configured
-func buildAttestationViewURL(uiDashboardURL, digest string) string {
+func buildAttestationViewURL(uiDashboardURL, orgName, digest string) string {
 	if uiDashboardURL == "" || digest == "" {
 		return ""
 	}
 
 	// Trim trailing slash from platform URL if present
 	uiDashboardURL = strings.TrimRight(uiDashboardURL, "/")
-	return fmt.Sprintf("%s/attestation/%s?tab=summary", uiDashboardURL, digest)
+	return fmt.Sprintf("%s/u/%s/workflow-runs/%s", uiDashboardURL, orgName, digest)
 }

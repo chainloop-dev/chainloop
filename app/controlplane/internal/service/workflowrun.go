@@ -186,6 +186,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	wr.ContractVersion = bizWorkFlowContractVersionToPb(contractAndVersion.Version, contractAndVersion.Contract)
 	wr.ContractVersion.ContractName = contractAndVersion.Contract.Name
 	res := &pb.WorkflowRunServiceViewResponse_Result{
+		OrgName:      currentOrg.Name,
 		WorkflowRun:  wr,
 		Attestation:  attestation,
 		Verification: verificationResult,

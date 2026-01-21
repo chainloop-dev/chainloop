@@ -232,7 +232,7 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 	var attestationViewURL string
 	baseUIDashboardURL := fetchUIDashboardURL(ctx, action.cfg.CPConnection)
 	if baseUIDashboardURL != "" {
-		attestationViewURL = buildAttestationViewURL(baseUIDashboardURL, att.DigestInCasBackend)
+		attestationViewURL = buildAttestationViewURL(baseUIDashboardURL, resp.GetResult().GetOrgName(), att.DigestInCasBackend)
 	}
 
 	item.Attestation = &WorkflowRunAttestationItem{

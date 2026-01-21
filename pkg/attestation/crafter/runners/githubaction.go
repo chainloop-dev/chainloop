@@ -168,18 +168,19 @@ func (r *GitHubAction) VerifyCommitSignature(ctx context.Context, commitHash str
 }
 
 // Report writes attestation table output to GitHub Step Summary
-func (r *GitHubAction) Report(tableOutput []byte) error {
+func (r *GitHubAction) Report(tableOutput []byte, attestationViewURL string) error {
 	summaryFile := os.Getenv("GITHUB_STEP_SUMMARY")
 	if summaryFile == "" {
 		return fmt.Errorf("GITHUB_STEP_SUMMARY environment variable not set")
 	}
 
-	// Wrap table output in markdown code block
-	var content strings.Builder
-	content.WriteString("## Chainloop Attestation Report\n\n")
-	content.WriteString("```\n")
-	content.Write(tableOutput)
-	content.WriteString("```\n")
+	// Build the markdown content
+	content := fmt.Sprintf("## Chainloop Attestation Report\n\n```\n%s```\n", tableOutput)
+
+	// Add clickable markdown link after the table if URL is provided
+	if attestationViewURL != "" {
+		content += fmt.Sprintf("\n[View Attestation Details](%s)\n", attestationViewURL)
+	}
 
 	// Append to GITHUB_STEP_SUMMARY file
 	f, err := os.OpenFile(summaryFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -188,7 +189,7 @@ func (r *GitHubAction) Report(tableOutput []byte) error {
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString(content.String()); err != nil {
+	if _, err := f.WriteString(content); err != nil {
 		return fmt.Errorf("failed to write to GITHUB_STEP_SUMMARY: %w", err)
 	}
 

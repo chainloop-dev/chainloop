@@ -1563,6 +1563,7 @@ func (x *AttestationServiceStoreResponse_Result) GetDigest() string {
 
 type WorkflowRunServiceViewResponse_Result struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
+	OrgName     string                 `protobuf:"bytes,5,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
 	WorkflowRun *WorkflowRunItem       `protobuf:"bytes,1,opt,name=workflow_run,json=workflowRun,proto3" json:"workflow_run,omitempty"`
 	Attestation *AttestationItem       `protobuf:"bytes,2,opt,name=attestation,proto3" json:"attestation,omitempty"`
 	// It will be nil if the verification is not possible (old or non-keyless attestations)
@@ -1599,6 +1600,13 @@ func (x *WorkflowRunServiceViewResponse_Result) ProtoReflect() protoreflect.Mess
 // Deprecated: Use WorkflowRunServiceViewResponse_Result.ProtoReflect.Descriptor instead.
 func (*WorkflowRunServiceViewResponse_Result) Descriptor() ([]byte, []int) {
 	return file_controlplane_v1_workflow_run_proto_rawDescGZIP(), []int{18, 0}
+}
+
+func (x *WorkflowRunServiceViewResponse_Result) GetOrgName() string {
+	if x != nil {
+		return x.OrgName
+	}
+	return ""
 }
 
 func (x *WorkflowRunServiceViewResponse_Result) GetWorkflowRun() *WorkflowRunItem {
@@ -1829,10 +1837,11 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\x02id\x12!\n" +
 	"\x06digest\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x06digest\x12\x16\n" +
 	"\x06verify\x18\x03 \x01(\bR\x06verifyB\f\n" +
-	"\x03ref\x12\x05\xbaH\x02\b\x01\"\xc5\x03\n" +
+	"\x03ref\x12\x05\xbaH\x02\b\x01\"\xe0\x03\n" +
 	"\x1eWorkflowRunServiceViewResponse\x12N\n" +
-	"\x06result\x18\x01 \x01(\v26.controlplane.v1.WorkflowRunServiceViewResponse.ResultR\x06result\x1a\xf9\x01\n" +
-	"\x06Result\x12C\n" +
+	"\x06result\x18\x01 \x01(\v26.controlplane.v1.WorkflowRunServiceViewResponse.ResultR\x06result\x1a\x94\x02\n" +
+	"\x06Result\x12\x19\n" +
+	"\borg_name\x18\x05 \x01(\tR\aorgName\x12C\n" +
 	"\fworkflow_run\x18\x01 \x01(\v2 .controlplane.v1.WorkflowRunItemR\vworkflowRun\x12B\n" +
 	"\vattestation\x18\x02 \x01(\v2 .controlplane.v1.AttestationItemR\vattestation\x12f\n" +
 	"\fverification\x18\x03 \x01(\v2B.controlplane.v1.WorkflowRunServiceViewResponse.VerificationResultR\fverification\x1aW\n" +

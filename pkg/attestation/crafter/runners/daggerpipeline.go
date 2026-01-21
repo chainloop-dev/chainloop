@@ -182,6 +182,6 @@ func (r *DaggerPipeline) verifyCommitViaGitLab(ctx context.Context, commitHash s
 	return commitverification.VerifyGitLabCommit(ctx, baseURL, projectPath, commitHash, token, r.logger)
 }
 
-func (r *DaggerPipeline) Report(_ []byte) error {
+func (r *DaggerPipeline) Report(_ []byte, _ string) error {
 	return nil
 }

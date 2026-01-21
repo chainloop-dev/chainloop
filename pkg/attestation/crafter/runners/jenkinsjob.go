@@ -89,6 +89,6 @@ func (r *JenkinsJob) VerifyCommitSignature(_ context.Context, _ string) *commitv
 	return nil // Not supported for this runner
 }
 
-func (r *JenkinsJob) Report(_ []byte) error {
+func (r *JenkinsJob) Report(_ []byte, _ string) error {
 	return nil
 }
