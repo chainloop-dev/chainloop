@@ -18,6 +18,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -37,6 +38,7 @@ type WorkflowRunService struct {
 	wrUseCase               *biz.WorkflowRunUseCase
 	workflowUseCase         *biz.WorkflowUseCase
 	workflowContractUseCase *biz.WorkflowContractUseCase
+	projectUseCase          *biz.ProjectUseCase
 	credsReader             credentials.Reader
 }
 
@@ -44,6 +46,7 @@ type NewWorkflowRunServiceOpts struct {
 	WorkflowRunUC      *biz.WorkflowRunUseCase
 	WorkflowUC         *biz.WorkflowUseCase
 	WorkflowContractUC *biz.WorkflowContractUseCase
+	ProjectUC          *biz.ProjectUseCase
 	CredsReader        credentials.Reader
 	Opts               []NewOpt
 }
@@ -54,6 +57,7 @@ func NewWorkflowRunService(opts *NewWorkflowRunServiceOpts) *WorkflowRunService 
 		wrUseCase:               opts.WorkflowRunUC,
 		workflowUseCase:         opts.WorkflowUC,
 		workflowContractUseCase: opts.WorkflowContractUC,
+		projectUseCase:          opts.ProjectUC,
 		credsReader:             opts.CredsReader,
 	}
 }
@@ -68,9 +72,10 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	filters := &biz.RunListFilters{}
 
 	// Apply RBAC if needed
-	filters.ProjectIDs = s.visibleProjects(ctx)
+	visibleProjectIDs := s.visibleProjects(ctx)
+	filters.ProjectIDs = visibleProjectIDs
 
-	// by workflow
+	// by workflow and project name
 	if req.GetWorkflowName() != "" && req.GetProjectName() != "" {
 		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetProjectName(), req.GetWorkflowName())
 		if err != nil {
@@ -80,6 +85,15 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		}
 
 		filters.WorkflowID = &wf.ID
+	} else if req.GetProjectName() != "" {
+		// by project name only
+		projectID, err := s.validateAndGetProjectID(ctx, currentOrg.ID, req.GetProjectName(), visibleProjectIDs)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		// Override the filter to only include this specific project
+		filters.ProjectIDs = []uuid.UUID{projectID}
 	}
 
 	if req.GetProjectVersion() != "" {
@@ -287,4 +301,22 @@ func bizWorkflowRunStatusToPb(st biz.WorkflowRunStatus) pb.RunStatus {
 	}
 
 	return m[st]
+}
+
+// validateAndGetProjectID finds a project by name and verifies it's in the visible projects list
+func (s *WorkflowRunService) validateAndGetProjectID(ctx context.Context, orgID, projectName string, visibleProjectIDs []uuid.UUID) (uuid.UUID, error) {
+	project, err := s.projectUseCase.FindProjectByReference(ctx, orgID, &biz.IdentityReference{Name: &projectName})
+	if err != nil {
+		return uuid.Nil, err
+	} else if project == nil {
+		return uuid.Nil, biz.NewErrNotFound("project")
+	}
+
+	// Check if the project is in the visible projects list (RBAC)
+	// nil means all projects are visible
+	if visibleProjectIDs != nil && !slices.Contains(visibleProjectIDs, project.ID) {
+		return uuid.Nil, biz.NewErrNotFound("project")
+	}
+
+	return project.ID, nil
 }
