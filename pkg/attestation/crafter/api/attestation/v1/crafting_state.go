@@ -94,7 +94,9 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	}
 
 	if artifact != nil {
-		if m.InlineCas {
+		if m.InlineCas &&
+			m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
+			m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML {
 			rawMaterial = artifact.GetContent()
 		} else if value == "" {
 			return nil, errors.New("artifact path required")
