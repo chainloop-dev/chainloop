@@ -529,37 +529,43 @@ func getValue(values []string) any {
 	return lines[0]
 }
 
+// splitArgs splits a comma-separated string into a slice of trimmed values.
+//
+// It treats \, (backslash-comma) as an escaped comma, preserving it as a literal comma
+// in the output rather than using it as a delimiter. All other backslashes are preserved
+// as-is, which allows regex patterns and other escape sequences to pass through unchanged.
+//
+// Empty values (including those with only whitespace) are filtered out from the result.
+//
+// The function uses a temporary placeholder strategy to handle escaped commas:
+//  1. Replace all \, with a unique placeholder
+//  2. Split on unescaped commas
+//  3. Restore placeholders back to commas
+//  4. Trim whitespace and filter empty strings
+//
+// Examples:
+//   - "a,b,c" -> ["a", "b", "c"]
+//   - "a\\,b,c" -> ["a,b", "c"]  (escaped comma becomes literal comma)
+//   - "\\d+,\\s+" -> ["\\d+", "\\s+"]  (regex patterns preserved)
+//   - ",a,,b," -> ["a", "b"]  (empty values filtered out)
+//   - "a\\,b\\,c" -> ["a,b,c"]  (multiple escaped commas)
 func splitArgs(s string) []string {
-	var result []string
-	var current strings.Builder
-	escaped := false
+	// Use a placeholder that's unlikely to appear in normal input
+	const placeholder = "$=$$ESCAPED_COMMA$$=$"
 
-	for i := 0; i < len(s); i++ {
-		c := s[i]
+	// Replace escaped commas with placeholder
+	s = strings.ReplaceAll(s, `\,`, placeholder)
 
-		if escaped {
-			current.WriteByte(c)
-			escaped = false
-			continue
+	// Split by unescaped commas
+	parts := strings.Split(s, ",")
+
+	// Restore escaped commas and trim spaces
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(strings.ReplaceAll(part, placeholder, ","))
+		if trimmed != "" {
+			result = append(result, trimmed)
 		}
-
-		if c == '\\' {
-			escaped = true
-			continue
-		}
-
-		if c == ',' {
-			// Unescaped comma: split here
-			result = append(result, strings.TrimSpace(current.String()))
-			current.Reset()
-		} else {
-			current.WriteByte(c)
-		}
-	}
-
-	// Add the final part
-	if current.Len() > 0 {
-		result = append(result, strings.TrimSpace(current.String()))
 	}
 
 	return result
