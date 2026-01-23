@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -652,10 +653,16 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 			Type:           m.Type,
 			Filename:       m.Filename,
 			Annotations:    m.Annotations,
-			Value:          m.Value,
 			UploadedToCas:  m.UploadedToCAS,
 			EmbeddedInline: m.EmbeddedInline,
 			Tag:            m.Tag,
+		}
+
+		if m.Type == "HELM_CHART" {
+			// Base64 encoding for binary content
+			materialItem.Value = base64.StdEncoding.EncodeToString([]byte(m.Value))
+		} else {
+			materialItem.Value = m.Value
 		}
 
 		if m.Hash != nil {
