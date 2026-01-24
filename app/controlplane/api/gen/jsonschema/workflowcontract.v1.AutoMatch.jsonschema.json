@@ -9,7 +9,11 @@
       "type": "string"
     },
     "path": {
-      "description": "path to a policy script. It might consist of a URI reference",
+      "description": "path to a policy script. It might consist of a URI reference\n deprecated: use ref instead",
+      "type": "string"
+    },
+    "ref": {
+      "description": "generic reference for file:// and http(s):// schemes",
       "type": "string"
     }
   },

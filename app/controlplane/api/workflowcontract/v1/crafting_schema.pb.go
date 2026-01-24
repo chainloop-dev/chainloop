@@ -1113,9 +1113,10 @@ type PolicySpecV2 struct {
 	//
 	//	*PolicySpecV2_Path
 	//	*PolicySpecV2_Embedded
+	//	*PolicySpecV2_Ref
 	Source isPolicySpecV2_Source `protobuf_oneof:"source"`
 	// if set, it will match any material supported by Chainloop
-	Kind          CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
+	Kind          CraftingSchema_Material_MaterialType `protobuf:"varint,4,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1157,6 +1158,7 @@ func (x *PolicySpecV2) GetSource() isPolicySpecV2_Source {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 func (x *PolicySpecV2) GetPath() string {
 	if x != nil {
 		if x, ok := x.Source.(*PolicySpecV2_Path); ok {
@@ -1175,6 +1177,15 @@ func (x *PolicySpecV2) GetEmbedded() string {
 	return ""
 }
 
+func (x *PolicySpecV2) GetRef() string {
+	if x != nil {
+		if x, ok := x.Source.(*PolicySpecV2_Ref); ok {
+			return x.Ref
+		}
+	}
+	return ""
+}
+
 func (x *PolicySpecV2) GetKind() CraftingSchema_Material_MaterialType {
 	if x != nil {
 		return x.Kind
@@ -1188,6 +1199,9 @@ type isPolicySpecV2_Source interface {
 
 type PolicySpecV2_Path struct {
 	// path to a policy script. It might consist of a URI reference
+	// deprecated: use ref instead
+	//
+	// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3,oneof"`
 }
 
@@ -1196,9 +1210,16 @@ type PolicySpecV2_Embedded struct {
 	Embedded string `protobuf:"bytes,2,opt,name=embedded,proto3,oneof"`
 }
 
+type PolicySpecV2_Ref struct {
+	// generic reference for file:// and http(s):// schemes
+	Ref string `protobuf:"bytes,3,opt,name=ref,proto3,oneof"`
+}
+
 func (*PolicySpecV2_Path) isPolicySpecV2_Source() {}
 
 func (*PolicySpecV2_Embedded) isPolicySpecV2_Source() {}
+
+func (*PolicySpecV2_Ref) isPolicySpecV2_Source() {}
 
 // Auto-matching policy specification
 type AutoMatch struct {
@@ -1207,6 +1228,7 @@ type AutoMatch struct {
 	//
 	//	*AutoMatch_Path
 	//	*AutoMatch_Embedded
+	//	*AutoMatch_Ref
 	Source        isAutoMatch_Source `protobuf_oneof:"source"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1249,6 +1271,7 @@ func (x *AutoMatch) GetSource() isAutoMatch_Source {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 func (x *AutoMatch) GetPath() string {
 	if x != nil {
 		if x, ok := x.Source.(*AutoMatch_Path); ok {
@@ -1267,12 +1290,24 @@ func (x *AutoMatch) GetEmbedded() string {
 	return ""
 }
 
+func (x *AutoMatch) GetRef() string {
+	if x != nil {
+		if x, ok := x.Source.(*AutoMatch_Ref); ok {
+			return x.Ref
+		}
+	}
+	return ""
+}
+
 type isAutoMatch_Source interface {
 	isAutoMatch_Source()
 }
 
 type AutoMatch_Path struct {
 	// path to a policy script. It might consist of a URI reference
+	// deprecated: use ref instead
+	//
+	// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3,oneof"`
 }
 
@@ -1281,9 +1316,16 @@ type AutoMatch_Embedded struct {
 	Embedded string `protobuf:"bytes,2,opt,name=embedded,proto3,oneof"`
 }
 
+type AutoMatch_Ref struct {
+	// generic reference for file:// and http(s):// schemes
+	Ref string `protobuf:"bytes,3,opt,name=ref,proto3,oneof"`
+}
+
 func (*AutoMatch_Path) isAutoMatch_Source() {}
 
 func (*AutoMatch_Embedded) isAutoMatch_Source() {}
+
+func (*AutoMatch_Ref) isAutoMatch_Source() {}
 
 // Represents a group attachment in a contract
 type PolicyGroupAttachment struct {
@@ -1929,15 +1971,17 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x14name.go_map_variable\x12:must contain only lowercase letters, numbers, and hyphens.\x1a'this.matches('^[a-zA-Z][a-zA-Z0-9_]*$')R\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
 	"\brequired\x18\x03 \x01(\bR\brequired\x12\x18\n" +
-	"\adefault\x18\x04 \x01(\tR\adefault\"\xac\x01\n" +
-	"\fPolicySpecV2\x12\x14\n" +
-	"\x04path\x18\x01 \x01(\tH\x00R\x04path\x12\x1c\n" +
-	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12W\n" +
-	"\x04kind\x18\x03 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kindB\x0f\n" +
-	"\x06source\x12\x05\xbaH\x02\b\x01\"P\n" +
-	"\tAutoMatch\x12\x14\n" +
-	"\x04path\x18\x01 \x01(\tH\x00R\x04path\x12\x1c\n" +
-	"\bembedded\x18\x02 \x01(\tH\x00R\bembeddedB\x0f\n" +
+	"\adefault\x18\x04 \x01(\tR\adefault\"\xc4\x01\n" +
+	"\fPolicySpecV2\x12\x18\n" +
+	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
+	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
+	"\x03ref\x18\x03 \x01(\tH\x00R\x03ref\x12W\n" +
+	"\x04kind\x18\x04 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kindB\x0f\n" +
+	"\x06source\x12\x05\xbaH\x02\b\x01\"h\n" +
+	"\tAutoMatch\x12\x18\n" +
+	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
+	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
+	"\x03ref\x18\x03 \x01(\tH\x00R\x03refB\x0f\n" +
 	"\x06source\x12\x05\xbaH\x02\b\x01\"\xc9\x01\n" +
 	"\x15PolicyGroupAttachment\x12\x19\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03ref\x12H\n" +
@@ -2070,10 +2114,12 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 	file_workflowcontract_v1_crafting_schema_proto_msgTypes[10].OneofWrappers = []any{
 		(*PolicySpecV2_Path)(nil),
 		(*PolicySpecV2_Embedded)(nil),
+		(*PolicySpecV2_Ref)(nil),
 	}
 	file_workflowcontract_v1_crafting_schema_proto_msgTypes[11].OneofWrappers = []any{
 		(*AutoMatch_Path)(nil),
 		(*AutoMatch_Embedded)(nil),
+		(*AutoMatch_Ref)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

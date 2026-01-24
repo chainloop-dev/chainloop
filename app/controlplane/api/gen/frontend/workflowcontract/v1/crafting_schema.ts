@@ -511,12 +511,21 @@ export interface PolicyInput {
 }
 
 export interface PolicySpecV2 {
-  /** path to a policy script. It might consist of a URI reference */
+  /**
+   * path to a policy script. It might consist of a URI reference
+   * deprecated: use ref instead
+   *
+   * @deprecated
+   */
   path?:
     | string
     | undefined;
   /** embedded source code (only Rego supported currently) */
   embedded?:
+    | string
+    | undefined;
+  /** generic reference for file:// and http(s):// schemes */
+  ref?:
     | string
     | undefined;
   /** if set, it will match any material supported by Chainloop */
@@ -525,12 +534,21 @@ export interface PolicySpecV2 {
 
 /** Auto-matching policy specification */
 export interface AutoMatch {
-  /** path to a policy script. It might consist of a URI reference */
+  /**
+   * path to a policy script. It might consist of a URI reference
+   * deprecated: use ref instead
+   *
+   * @deprecated
+   */
   path?:
     | string
     | undefined;
   /** embedded source code (only Rego supported currently) */
-  embedded?: string | undefined;
+  embedded?:
+    | string
+    | undefined;
+  /** generic reference for file:// and http(s):// schemes */
+  ref?: string | undefined;
 }
 
 /** Represents a group attachment in a contract */
@@ -2150,7 +2168,7 @@ export const PolicyInput = {
 };
 
 function createBasePolicySpecV2(): PolicySpecV2 {
-  return { path: undefined, embedded: undefined, kind: 0 };
+  return { path: undefined, embedded: undefined, ref: undefined, kind: 0 };
 }
 
 export const PolicySpecV2 = {
@@ -2161,8 +2179,11 @@ export const PolicySpecV2 = {
     if (message.embedded !== undefined) {
       writer.uint32(18).string(message.embedded);
     }
+    if (message.ref !== undefined) {
+      writer.uint32(26).string(message.ref);
+    }
     if (message.kind !== 0) {
-      writer.uint32(24).int32(message.kind);
+      writer.uint32(32).int32(message.kind);
     }
     return writer;
   },
@@ -2189,7 +2210,14 @@ export const PolicySpecV2 = {
           message.embedded = reader.string();
           continue;
         case 3:
-          if (tag !== 24) {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.ref = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -2208,6 +2236,7 @@ export const PolicySpecV2 = {
     return {
       path: isSet(object.path) ? String(object.path) : undefined,
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
+      ref: isSet(object.ref) ? String(object.ref) : undefined,
       kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
     };
   },
@@ -2216,6 +2245,7 @@ export const PolicySpecV2 = {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.embedded !== undefined && (obj.embedded = message.embedded);
+    message.ref !== undefined && (obj.ref = message.ref);
     message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
     return obj;
   },
@@ -2228,13 +2258,14 @@ export const PolicySpecV2 = {
     const message = createBasePolicySpecV2();
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
+    message.ref = object.ref ?? undefined;
     message.kind = object.kind ?? 0;
     return message;
   },
 };
 
 function createBaseAutoMatch(): AutoMatch {
-  return { path: undefined, embedded: undefined };
+  return { path: undefined, embedded: undefined, ref: undefined };
 }
 
 export const AutoMatch = {
@@ -2244,6 +2275,9 @@ export const AutoMatch = {
     }
     if (message.embedded !== undefined) {
       writer.uint32(18).string(message.embedded);
+    }
+    if (message.ref !== undefined) {
+      writer.uint32(26).string(message.ref);
     }
     return writer;
   },
@@ -2269,6 +2303,13 @@ export const AutoMatch = {
 
           message.embedded = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.ref = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2282,6 +2323,7 @@ export const AutoMatch = {
     return {
       path: isSet(object.path) ? String(object.path) : undefined,
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
+      ref: isSet(object.ref) ? String(object.ref) : undefined,
     };
   },
 
@@ -2289,6 +2331,7 @@ export const AutoMatch = {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.embedded !== undefined && (obj.embedded = message.embedded);
+    message.ref !== undefined && (obj.ref = message.ref);
     return obj;
   },
 
@@ -2300,6 +2343,7 @@ export const AutoMatch = {
     const message = createBaseAutoMatch();
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
+    message.ref = object.ref ?? undefined;
     return message;
   },
 };
