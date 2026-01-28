@@ -1316,7 +1316,7 @@ csiProvider:
 injector:
   ## @param injector.enabled Enable Vault Kubernetes Injector
   ##
-  enabled: true
+  enabled: false
   ## Bitnami Vault Kubernetes Injector image
   ## ref: https://hub.docker.com/r/bitnami/vault-k8s/tags/
   ## @param injector.image.registry [default: REGISTRY_NAME] Vault Kubernetes Injector image registry
