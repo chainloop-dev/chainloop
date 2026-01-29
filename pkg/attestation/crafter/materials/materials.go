@@ -271,6 +271,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewRunnerContextCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO:
 		crafter, err = NewChainloopPRInfoCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_GITLEAKS_REPORT:
+		crafter, err = NewGitleaksReportCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
