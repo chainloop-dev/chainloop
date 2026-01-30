@@ -153,8 +153,8 @@ const (
 	CraftingSchema_Material_CHAINLOOP_RUNNER_CONTEXT CraftingSchema_Material_MaterialType = 25
 	// Pull Request / Merge Request metadata collected automatically during attestation
 	CraftingSchema_Material_CHAINLOOP_PR_INFO CraftingSchema_Material_MaterialType = 26
-	// Gitleaks report json https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting
-	CraftingSchema_Material_GITLEAKS_REPORT CraftingSchema_Material_MaterialType = 27
+	// Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting
+	CraftingSchema_Material_GITLEAKS_JSON CraftingSchema_Material_MaterialType = 27
 )
 
 // Enum value maps for CraftingSchema_Material_MaterialType.
@@ -187,7 +187,7 @@ var (
 		24: "SLSA_PROVENANCE",
 		25: "CHAINLOOP_RUNNER_CONTEXT",
 		26: "CHAINLOOP_PR_INFO",
-		27: "GITLEAKS_REPORT",
+		27: "GITLEAKS_JSON",
 	}
 	CraftingSchema_Material_MaterialType_value = map[string]int32{
 		"MATERIAL_TYPE_UNSPECIFIED":       0,
@@ -217,7 +217,7 @@ var (
 		"SLSA_PROVENANCE":                 24,
 		"CHAINLOOP_RUNNER_CONTEXT":        25,
 		"CHAINLOOP_PR_INFO":               26,
-		"GITLEAKS_REPORT":                 27,
+		"GITLEAKS_JSON":                   27,
 	}
 )
 
@@ -1796,7 +1796,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xac\x0e\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xaa\x0e\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -1818,7 +1818,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0eCIRCLECI_BUILD\x10\x05\x12\x13\n" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
 	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
-	"\x0fTEKTON_PIPELINE\x10\b:\x02\x18\x01\x1a\x8e\b\n" +
+	"\x0fTEKTON_PIPELINE\x10\b:\x02\x18\x01\x1a\x8c\b\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
@@ -1827,7 +1827,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\bB\x02\x18\x01R\x06output\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12\x1f\n" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
-	"skipUpload\"\xe0\x04\n" +
+	"skipUpload\"\xde\x04\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -1859,8 +1859,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"JACOCO_XML\x10\x17\x12\x13\n" +
 	"\x0fSLSA_PROVENANCE\x10\x18\x12\x1c\n" +
 	"\x18CHAINLOOP_RUNNER_CONTEXT\x10\x19\x12\x15\n" +
-	"\x11CHAINLOOP_PR_INFO\x10\x1a\x12\x13\n" +
-	"\x0fGITLEAKS_REPORT\x10\x1b:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
+	"\x11CHAINLOOP_PR_INFO\x10\x1a\x12\x11\n" +
+	"\rGITLEAKS_JSON\x10\x1b:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
 	"\x10CraftingSchemaV2\x128\n" +
 	"\vapi_version\x18\x01 \x01(\tB\x17\xbaH\x14r\x12\n" +
 	"\x10chainloop.dev/v1R\n" +

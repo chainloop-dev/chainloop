@@ -25,6 +25,7 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
+	"github.com/zricethezav/gitleaks/v8/report"
 )
 
 type GitleaksReportCrafter struct {
@@ -32,19 +33,8 @@ type GitleaksReportCrafter struct {
 	backend *casclient.CASBackend
 }
 
-// GitleaksFinding represents a single finding in the gitleaks JSON report
-type GitleaksFinding struct {
-	RuleID      string `json:"RuleID"`
-	Description string `json:"Description"`
-	StartLine   int    `json:"StartLine"`
-	EndLine     int    `json:"EndLine"`
-	File        string `json:"File"`
-	Secret      string `json:"Secret"`
-	Match       string `json:"Match"`
-}
-
 func NewGitleaksReportCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*GitleaksReportCrafter, error) {
-	if schema.Type != schemaapi.CraftingSchema_Material_GITLEAKS_REPORT {
+	if schema.Type != schemaapi.CraftingSchema_Material_GITLEAKS_JSON {
 		return nil, fmt.Errorf("material type is not a Gitleaks Report")
 	}
 	craftCommon := &crafterCommon{logger: l, input: schema}
@@ -52,36 +42,30 @@ func NewGitleaksReportCrafter(schema *schemaapi.CraftingSchema_Material, backend
 }
 
 func (i *GitleaksReportCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+	var findings []report.Finding
+
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
-	var findings []GitleaksFinding
 	if err = json.Unmarshal(data, &findings); err != nil {
-		return nil, fmt.Errorf("error unmarshalling gitleaks report: %w", err)
+		return nil, fmt.Errorf("invalid gitleaks report file: %w", ErrInvalidMaterialType)
 	}
 
-	// Validate structure - must be an array
-	// Empty array is valid (clean scan with no secrets found)
-	if findings == nil {
-		return nil, fmt.Errorf("invalid gitleaks report: expected JSON array")
-	}
-
-	// If there are findings, validate that at least one has the required fields
-	if len(findings) > 0 {
-		hasValidStructure := false
-		for _, finding := range findings {
-			if finding.RuleID != "" && finding.File != "" {
-				hasValidStructure = true
-				break
-			}
-		}
-		if !hasValidStructure {
-			return nil, fmt.Errorf("invalid gitleaks report: missing required fields (RuleID, File)")
+	// if list is empty. It's ambiguous, but we accept it
+	if len(findings) == 0 {
+		i.logger.Debug().Msg("Accepting an empty report. Make sure it's a valid Gitleaks report")
+	} else {
+		finding := findings[0]
+		// All gitleaks findings have a Fingerprint field. If this doesn't have it, it's not a gitleaks report
+		// Fingerprint format is: <file>:<ruleID>:<line>
+		if finding.Fingerprint == "" {
+			return nil, fmt.Errorf("'Fingerprint' field not found in gitleaks report: %w", ErrInvalidMaterialType)
 		}
 	}
 
+	// Call uploadAndCraft with the path of the JSON report file
 	m, err := uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 	if err != nil {
 		return nil, err

@@ -37,7 +37,7 @@ func TestNewGitleaksReportCrafter(t *testing.T) {
 		{
 			name: "happy path",
 			input: &contractAPI.CraftingSchema_Material{
-				Type: contractAPI.CraftingSchema_Material_GITLEAKS_REPORT,
+				Type: contractAPI.CraftingSchema_Material_GITLEAKS_JSON,
 			},
 		},
 		{
@@ -102,7 +102,7 @@ func TestGitleaksReportCrafter_Craft(t *testing.T) {
 
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_GITLEAKS_REPORT,
+		Type: contractAPI.CraftingSchema_Material_GITLEAKS_JSON,
 	}
 
 	l := zerolog.Nop()
@@ -126,7 +126,7 @@ func TestGitleaksReportCrafter_Craft(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, contractAPI.CraftingSchema_Material_GITLEAKS_REPORT.String(), got.MaterialType.String())
+			assert.Equal(t, contractAPI.CraftingSchema_Material_GITLEAKS_JSON.String(), got.MaterialType.String())
 			assert.True(t, got.UploadedToCas)
 
 			if tc.annotations != nil {
