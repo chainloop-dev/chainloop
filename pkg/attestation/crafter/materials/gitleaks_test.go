@@ -77,12 +77,12 @@ func TestGitleaksReportCrafter_Craft(t *testing.T) {
 		{
 			name:     "empty file",
 			filePath: "./testdata/empty.txt",
-			wantErr:  "unexpected end of JSON input",
+			wantErr:  "invalid gitleaks report file",
 		},
 		{
 			name:     "wrong content",
 			filePath: "./testdata/sbom-spdx.json",
-			wantErr:  "error unmarshalling gitleaks report",
+			wantErr:  "invalid gitleaks report file",
 		},
 		{
 			name:     "clean report (no secrets)",
