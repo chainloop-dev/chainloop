@@ -140,7 +140,8 @@
             "JACOCO_XML",
             "SLSA_PROVENANCE",
             "CHAINLOOP_RUNNER_CONTEXT",
-            "CHAINLOOP_PR_INFO"
+            "CHAINLOOP_PR_INFO",
+            "GITLEAKS_JSON"
           ],
           "title": "Material Type",
           "type": "string"

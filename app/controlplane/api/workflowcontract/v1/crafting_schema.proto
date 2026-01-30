@@ -147,6 +147,8 @@ message CraftingSchema {
       CHAINLOOP_RUNNER_CONTEXT = 25;
       // Pull Request / Merge Request metadata collected automatically during attestation
       CHAINLOOP_PR_INFO = 26;
+      // Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting
+      GITLEAKS_JSON = 27;
     }
   }
 }

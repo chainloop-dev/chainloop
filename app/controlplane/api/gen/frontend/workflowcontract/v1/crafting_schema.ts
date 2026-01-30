@@ -208,6 +208,8 @@ export enum CraftingSchema_Material_MaterialType {
   CHAINLOOP_RUNNER_CONTEXT = 25,
   /** CHAINLOOP_PR_INFO - Pull Request / Merge Request metadata collected automatically during attestation */
   CHAINLOOP_PR_INFO = 26,
+  /** GITLEAKS_JSON - Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting */
+  GITLEAKS_JSON = 27,
   UNRECOGNIZED = -1,
 }
 
@@ -294,6 +296,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 26:
     case "CHAINLOOP_PR_INFO":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO;
+    case 27:
+    case "GITLEAKS_JSON":
+      return CraftingSchema_Material_MaterialType.GITLEAKS_JSON;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -357,6 +362,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "CHAINLOOP_RUNNER_CONTEXT";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO:
       return "CHAINLOOP_PR_INFO";
+    case CraftingSchema_Material_MaterialType.GITLEAKS_JSON:
+      return "GITLEAKS_JSON";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -200,7 +200,7 @@ Options
 --annotation strings         additional annotation in the format of key=value
 --attestation-id string      Unique identifier of the in-progress attestation
 -h, --help                       help for add
---kind string                kind of the material to be recorded: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
+--kind string                kind of the material to be recorded: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
 --name string                name of the material as shown in the contract
 --registry-password string   registry password, ($CHAINLOOP_REGISTRY_PASSWORD)
 --registry-server string     OCI repository server, ($CHAINLOOP_REGISTRY_SERVER)
@@ -2884,7 +2884,7 @@ Options
 --annotation strings          Key-value pairs of material annotations (key=value)
 -h, --help                        help for eval
 --input stringArray           Key-value pairs of policy inputs (key=value)
---kind string                 Kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
+--kind string                 Kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
 --material string             Path to material or attestation file
 -p, --policy string               Policy reference (./my-policy.yaml, https://my-domain.com/my-policy.yaml, chainloop://my-stored-policy) (default "policy.yaml")
 ```
