@@ -55,7 +55,7 @@ func (i *GitleaksReportCrafter) Craft(ctx context.Context, filePath string) (*ap
 
 	// if list is empty. It's ambiguous, but we accept it
 	if len(findings) == 0 {
-		i.logger.Debug().Msg("Accepting an empty report. Make sure it's a valid Gitleaks report")
+		i.logger.Debug().Msg("Accepting an empty report.")
 	} else {
 		finding := findings[0]
 		// All gitleaks findings have a Fingerprint field. If this doesn't have it, it's not a gitleaks report
@@ -78,9 +78,9 @@ func (i *GitleaksReportCrafter) Craft(ctx context.Context, filePath string) (*ap
 
 func (i *GitleaksReportCrafter) injectAnnotations(m *api.Attestation_Material) {
 	// Gitleaks doesn't include version information in the JSON output
-	// Set the tool name annotation
+	// Set the tool name annotation https://github.com/gitleaks/gitleaks/blob/master/report/constants.go#L4
 	if m.Annotations == nil {
 		m.Annotations = make(map[string]string)
 	}
-	m.Annotations[AnnotationToolNameKey] = "Gitleaks"
+	m.Annotations[AnnotationToolNameKey] = "gitleaks"
 }
