@@ -39,7 +39,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rs/zerolog v1.33.0
-	github.com/secure-systems-lab/go-securesystemslib v0.9.1
+	github.com/secure-systems-lab/go-securesystemslib v0.10.0
 	github.com/sigstore/sigstore v1.10.4
 	github.com/spdx/tools-golang v0.5.5
 	github.com/spf13/cobra v1.10.2
@@ -273,7 +273,7 @@ require (
 	github.com/tetratelabs/wabin v0.0.0-20230304001439-f6f874872834 // indirect
 	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
-	github.com/theupdateframework/go-tuf/v2 v2.3.0 // indirect
+	github.com/theupdateframework/go-tuf/v2 v2.4.1 // indirect
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.9.0 // indirect
