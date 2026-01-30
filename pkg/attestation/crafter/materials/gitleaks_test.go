@@ -88,14 +88,14 @@ func TestGitleaksReportCrafter_Craft(t *testing.T) {
 			name:     "clean report (no secrets)",
 			filePath: "./testdata/gitleaks-report-clean.json",
 			annotations: map[string]string{
-				"chainloop.material.tool.name": "Gitleaks",
+				"chainloop.material.tool.name": "gitleaks",
 			},
 		},
 		{
 			name:     "report with violations",
 			filePath: "./testdata/gitleaks-report-violations.json",
 			annotations: map[string]string{
-				"chainloop.material.tool.name": "Gitleaks",
+				"chainloop.material.tool.name": "gitleaks",
 			},
 		},
 	}
