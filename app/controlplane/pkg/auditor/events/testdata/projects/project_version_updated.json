@@ -1,0 +1,19 @@
+{
+  "ActionType": "ProjectVersionUpdated",
+  "TargetType": "Project",
+  "TargetID": "3089bb36-e27b-428b-8009-d015c8737c56",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor has renamed version 'v1.0.0' to 'v1.0.1' for project 'test-project'",
+  "Info": {
+    "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+    "project_name": "test-project",
+    "version_id": "5089bb36-e27b-428b-8009-d015c8737c58",
+    "version": "v1.0.0",
+    "new_version": "v1.0.1"
+  },
+  "Digest": "sha256:f86470cccd6d88b274433350b0ff3958b9f081a12bffcbcd20b6648d28182c1f"
+}
