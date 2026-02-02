@@ -83,7 +83,7 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 		public, err := r.IsPublic(ctx, r.data.DB, m.WorkflowRunID)
 		if err != nil {
 			if ent.IsNotFound(err) {
-				return nil, nil
+				continue
 			}
 
 			return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
