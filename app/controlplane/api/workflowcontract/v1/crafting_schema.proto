@@ -323,16 +323,20 @@ message PolicyInput {
 message PolicySpecV2 {
   oneof source {
     // path to a policy script. It might consist of a URI reference
-    string path = 1;
+    // deprecated: use ref instead
+    string path = 1 [deprecated = true];
 
     // embedded source code (only Rego supported currently)
     string embedded = 2;
+
+    // generic reference for file:// and http(s):// schemes
+    string ref = 3;
 
     option (buf.validate.oneof).required = true;
   }
 
   // if set, it will match any material supported by Chainloop
-  CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
+  CraftingSchema.Material.MaterialType kind = 4 [(buf.validate.field).enum = {
     not_in: [3]
   }];
 }
@@ -341,10 +345,14 @@ message PolicySpecV2 {
 message AutoMatch {
   oneof source {
     // path to a policy script. It might consist of a URI reference
-    string path = 1;
+    // deprecated: use ref instead
+    string path = 1 [deprecated = true];
 
     // embedded source code (only Rego supported currently)
     string embedded = 2;
+
+    // generic reference for file:// and http(s):// schemes
+    string ref = 3;
 
     option (buf.validate.oneof).required = true;
   }

@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -729,13 +730,65 @@ func isURLPath(path string) bool {
 	return scheme == httpScheme || scheme == httpsScheme
 }
 
+// resolveReference resolves a reference (which may be relative) against a base path
+// If ref is absolute (has a scheme), it returns ref as-is
+// If basePath is a file:// path, it uses filepath.Join for resolution
+// If basePath is an http(s):// URL, it uses URL parsing for resolution
+func resolveReference(ref, basePath string) (string, error) {
+	// Check if ref is already absolute (has a scheme)
+	refScheme, _ := RefParts(ref)
+	if refScheme != "" {
+		// Already absolute, return as-is
+		return ref, nil
+	}
+
+	// Get the scheme of basePath
+	baseScheme, baseLoc := RefParts(basePath)
+
+	switch baseScheme {
+	case fileScheme:
+		// File path resolution
+		return filepath.Join(filepath.Dir(baseLoc), ref), nil
+	case httpScheme, httpsScheme:
+		// HTTP(S) URL resolution
+		baseURL, err := url.Parse(basePath)
+		if err != nil {
+			return "", fmt.Errorf("invalid base URL %q: %w", basePath, err)
+		}
+
+		// Parse the reference relative to the base URL
+		resolvedURL, err := baseURL.Parse(ref)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve reference %q against base %q: %w", ref, basePath, err)
+		}
+
+		return resolvedURL.String(), nil
+	case "":
+		// No scheme in basePath, treat as file path
+		return filepath.Join(filepath.Dir(basePath), ref), nil
+	default:
+		return "", fmt.Errorf("unsupported base path scheme: %s", baseScheme)
+	}
+}
+
 func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	var content []byte
 	var err error
 	switch source := spec.GetSource().(type) {
 	case *v1.PolicySpecV2_Embedded:
 		content = []byte(source.Embedded)
+	case *v1.PolicySpecV2_Ref:
+		// New ref field with relative URL resolution
+		scriptPath, err := resolveReference(source.Ref, basePath)
+		if err != nil {
+			return nil, fmt.Errorf("resolving policy reference: %w", err)
+		}
+		content, err = blob.LoadFileOrURL(scriptPath)
+		if err != nil {
+			return nil, fmt.Errorf("loading policy content: %w", err)
+		}
 	case *v1.PolicySpecV2_Path:
+		// Deprecated: kept for backward compatibility
 		var scriptPath string
 		// If the path is a URL, use it directly. Otherwise, resolve it relative to basePath
 		if isURLPath(source.Path) {
