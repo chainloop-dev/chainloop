@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMa
 	public, err := r.IsPublic(ctx, r.data.DB, backend.WorkflowRunID)
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return nil, nil
+			return nil, biz.NewErrNotFound("cas mapping")
 		}
 
 		return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
