@@ -164,7 +164,6 @@ type ProjectVersionUpdated struct {
 	VersionID  *uuid.UUID `json:"version_id,omitempty"`
 	Version    string     `json:"version,omitempty"`
 	NewVersion *string    `json:"new_version,omitempty"`
-	Prerelease *bool      `json:"prerelease,omitempty"`
 }
 
 func (p *ProjectVersionUpdated) ActionType() string {
