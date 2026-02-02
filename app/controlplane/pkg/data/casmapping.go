@@ -82,7 +82,7 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 	for _, m := range mappings {
 		public, err := r.IsPublic(ctx, r.data.DB, m.WorkflowRunID)
 		if err != nil {
-			if biz.IsNotFound(err) {
+			if ent.IsNotFound(err) {
 				return nil, nil
 			}
 
@@ -112,7 +112,7 @@ func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMa
 
 	public, err := r.IsPublic(ctx, r.data.DB, backend.WorkflowRunID)
 	if err != nil {
-		if biz.IsNotFound(err) {
+		if ent.IsNotFound(err) {
 			return nil, nil
 		}
 
@@ -132,15 +132,11 @@ func (r *CASMappingRepo) IsPublic(ctx context.Context, client *ent.Client, runID
 	wr, err := client.WorkflowRun.Query().Where(workflowrun.ID(runID)).Select(workflowrun.FieldWorkflowID).First(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get workflow run: %w", err)
-	} else if wr == nil {
-		return false, nil
 	}
 
 	workflow, err := client.Workflow.Query().Where(workflow.ID(wr.WorkflowID)).Select(workflow.FieldPublic).First(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get workflow: %w", err)
-	} else if workflow == nil {
-		return false, nil
 	}
 
 	return workflow.Public, nil
