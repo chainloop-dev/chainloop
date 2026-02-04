@@ -22,9 +22,41 @@ spec:
     - ref: sbom-quality
       with:
         bannedLicenses: GPL, AGPL
-        # sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2 = Apache-2.0 pkg:golang/github.com/cyberphone/json-canonicalization
-        # sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71 = MIT, BSD-3-Clause pkg:golang/github.com/theupdateframework/go-tuf
-        allowedCustomLicenses: Apache 2.0, sha256:b9a6d9320b8f2693e8d41e496ce56caadacaddcca9be2a64a61749278f425cf2, sha256:cd65721176ce5fdbb05773c0b1349f993b94ce77a51062cfa7a78b34cc82fc71
+        licenseExceptions: >
+          purl_type::pkg:golang::sha*NOTICE(Apache-2.0),
+          purl_type::pkg:golang::sha*license.go(Apache-2.0),
+          purl_type::pkg:golang::sha*license_test.go(Apache-2.0),
+          name::dario.cat/mergo::sha*license.json(BSD-3-Clause),
+          name::github.com/aws/aws-sdk-go::sha*NOTICE.txt(Apache-2.0),
+          name::github.com/aws/aws-sdk-go-v2::sha*NOTICE.txt(Apache-2.0),
+          name::github.com/aws/aws-sdk-go-v2::sha*license-check.yml(Apache-2.0),
+          name::github.com/briandowns/spinner::sha*NOTICE.txt(Apache-2.0),
+          name::github.com/cyberphone/json-canonicalization::sha*LICENSE.PSF(Apache-2.0),
+          name::gitlab.com/gitlab-org/api/client-go::sha*license_templates.go(Apache-2.0),
+          name::gitlab.com/gitlab-org/api/client-go::sha*license_test.go(Apache-2.0),
+          name::gitlab.com/gitlab-org/api/client-go::sha*license_mock.go(Apache-2.0),
+          name::gitlab.com/gitlab-org/api/client-go::sha*license_templates_test.go(Apache-2.0),
+          name::gitlab.com/gitlab-org/api/client-go::sha*license.go(Apache-2.0),
+          name::gitlab.com/gitlab-org/api/client-go::sha*license_templates_mock.go(Apache-2.0),
+          name::github.com/google/go-github/v66::sha*licenses.go(BSD-3-Clause),
+          name::github.com/google/go-github/v66::sha*licenses_test.go(BSD-3-Clause),
+          name::github.com/google/go-github/v73::sha*licenses.go(BSD-3-Clause),
+          name::github.com/google/go-github/v73::sha*licenses_test.go(BSD-3-Clause),
+          name::github.com/imdario/mergo::sha*license.yml(BSD-3-Clause),
+          name::github.com/jackc/pgx/v5::sha*notice_response.go(MIT),
+          name::github.com/lib/pq::sha*notice.go(MIT),
+          name::github.com/lib/pq::sha*notice_example_test.go(MIT),
+          name::github.com/lib/pq::sha*notice_test.go(MIT),
+          name::github.com/open-policy-agent/opa::sha*NOTICE.txt(Apache-2.0),
+          name::github.com/sigstore/rekor-tiles/v2::sha*license_check.yml(Apache-2.0),
+          name::github.com/spdx/tools-golang::GPL-2.0-only(Apache-2.0),
+          name::github.com/spdx/tools-golang::sha*licensediff_test.go(Apache-2.0),
+          name::github.com/spdx/tools-golang::sha*licensediff.go(Apache-2.0),
+          name::github.com/spdx/tools-golang::sha*license_utils.go(Apache-2.0),
+          name::github.com/spdx/tools-golang::sha*license_utils_test.go(Apache-2.0),
+          name::github.com/spdx/tools-golang::sha*licensediff-assumptions.md(CC-BY-4.0),
+          name::github.com/theupdateframework/go-tuf::sha*LICENSE.txt(BSD-3-Clause)
+        allowedCustomLicenses: Apache 2.0
         skippedTypes: file, container
         bannedComponents: log4j@2.14.1
     - ref: slsa-checks
