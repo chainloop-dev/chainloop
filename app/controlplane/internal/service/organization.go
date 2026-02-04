@@ -215,8 +215,11 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 
 func (s *OrganizationService) canCreateOrganization(ctx context.Context) (bool, error) {
 	// Restricted org creation is disabled, allow creation only to users
-	if !s.authz.RestrictOrgCreation && entities.CurrentMembership(ctx) != nil {
-		return true, nil
+	if !s.authz.RestrictOrgCreation {
+		if entities.CurrentMembership(ctx) != nil {
+			return true, nil
+		}
+		return false, nil
 	}
 
 	// otherwise, check for permissions
