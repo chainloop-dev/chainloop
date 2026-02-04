@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2026 The Chainloop Authors.
+// Copyright 2023 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,10 +89,10 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 		// Iterate on the items it refer to (references)
 		var references []uuid.UUID
 		for _, ref := range parentRef.References {
-			// and find it in the DB
+			// amd find it in the DB
 			storedReference, ok := storedMap[ref.MapID()]
 			if !ok {
-				return fmt.Errorf("an artifact or piece of evidence with digest %s (kind: %s) can't be found", ref.Digest, ref.Kind)
+				return fmt.Errorf("referrer %v not found", ref)
 			}
 
 			references = append(references, storedReference)
