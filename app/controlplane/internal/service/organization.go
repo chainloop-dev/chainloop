@@ -43,9 +43,9 @@ func NewOrganizationService(muc *biz.MembershipUseCase, ouc *biz.OrganizationUse
 	}
 }
 
-// Create persists an organization with a given name and associate it to the current user.
+// Create persists an organization with a given name and associates it with the current user.
 func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationServiceCreateRequest) (*pb.OrganizationServiceCreateResponse, error) {
-	currentUser, err := requireCurrentUser(ctx)
+	currentUser, _, err := requireCurrentUserOrAPIToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,11 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+	// Add membership if invoker is a user
+	if currentUser != nil {
+		if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership()); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
 	}
 
 	return &pb.OrganizationServiceCreateResponse{Result: bizOrgToPb(org)}, nil
@@ -211,25 +214,15 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 }
 
 func (s *OrganizationService) canCreateOrganization(ctx context.Context) (bool, error) {
-	// Restricted org creation is disabled, allow creation
-	if !s.authz.RestrictOrgCreation {
+	// Restricted org creation is disabled, allow creation only to users
+	if !s.authz.RestrictOrgCreation && entities.CurrentMembership(ctx) != nil {
 		return true, nil
 	}
 
-	m := entities.CurrentMembership(ctx)
-	for _, rm := range m.Resources {
-		if rm.ResourceType != authz.ResourceTypeInstance {
-			continue
-		}
-
-		pass, err := s.authz.Enforce(ctx, string(rm.Role), authz.PolicyOrganizationCreate)
-		if err != nil {
-			return false, handleUseCaseErr(err, s.log)
-		}
-		if pass {
-			return true, nil
-		}
+	// otherwise, check for permissions
+	if err := s.checkPolicy(ctx, authz.PolicyOrganizationCreate); err != nil {
+		return false, err
 	}
 
-	return false, nil
+	return true, nil
 }
