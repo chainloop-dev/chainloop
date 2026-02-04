@@ -1120,7 +1120,7 @@ type PolicySpecV2 struct {
 	//	*PolicySpecV2_Ref
 	Source isPolicySpecV2_Source `protobuf_oneof:"source"`
 	// if set, it will match any material supported by Chainloop
-	Kind          CraftingSchema_Material_MaterialType `protobuf:"varint,4,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
+	Kind          CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1216,7 +1216,7 @@ type PolicySpecV2_Embedded struct {
 
 type PolicySpecV2_Ref struct {
 	// generic reference for file:// and http(s):// schemes
-	Ref string `protobuf:"bytes,3,opt,name=ref,proto3,oneof"`
+	Ref string `protobuf:"bytes,4,opt,name=ref,proto3,oneof"`
 }
 
 func (*PolicySpecV2_Path) isPolicySpecV2_Source() {}
@@ -1980,8 +1980,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\fPolicySpecV2\x12\x18\n" +
 	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
 	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
-	"\x03ref\x18\x03 \x01(\tH\x00R\x03ref\x12W\n" +
-	"\x04kind\x18\x04 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kindB\x0f\n" +
+	"\x03ref\x18\x04 \x01(\tH\x00R\x03ref\x12W\n" +
+	"\x04kind\x18\x03 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kindB\x0f\n" +
 	"\x06source\x12\x05\xbaH\x02\b\x01\"h\n" +
 	"\tAutoMatch\x12\x18\n" +
 	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
