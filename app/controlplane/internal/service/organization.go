@@ -214,15 +214,12 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 }
 
 func (s *OrganizationService) canCreateOrganization(ctx context.Context) (bool, error) {
-	// Restricted org creation is disabled, allow creation only to users
-	if !s.authz.RestrictOrgCreation {
-		if entities.CurrentMembership(ctx) != nil {
-			return true, nil
-		}
-		return false, nil
+	// if org creation restriction is disabled, allow creation to all users
+	if !s.authz.RestrictOrgCreation && entities.CurrentUser(ctx) != nil {
+		return true, nil
 	}
 
-	// otherwise, check for permissions
+	// otherwise, check for permissions (both users and API tokens)
 	if err := s.checkPolicy(ctx, authz.PolicyOrganizationCreate); err != nil {
 		return false, err
 	}

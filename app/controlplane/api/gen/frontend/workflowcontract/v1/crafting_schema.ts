@@ -2187,10 +2187,10 @@ export const PolicySpecV2 = {
       writer.uint32(18).string(message.embedded);
     }
     if (message.ref !== undefined) {
-      writer.uint32(26).string(message.ref);
+      writer.uint32(34).string(message.ref);
     }
     if (message.kind !== 0) {
-      writer.uint32(32).int32(message.kind);
+      writer.uint32(24).int32(message.kind);
     }
     return writer;
   },
@@ -2216,15 +2216,15 @@ export const PolicySpecV2 = {
 
           message.embedded = reader.string();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 4:
+          if (tag !== 34) {
             break;
           }
 
           message.ref = reader.string();
           continue;
-        case 4:
-          if (tag !== 32) {
+        case 3:
+          if (tag !== 24) {
             break;
           }
 

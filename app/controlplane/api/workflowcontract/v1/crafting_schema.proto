@@ -330,13 +330,13 @@ message PolicySpecV2 {
     string embedded = 2;
 
     // generic reference for file:// and http(s):// schemes
-    string ref = 3;
+    string ref = 4;
 
     option (buf.validate.oneof).required = true;
   }
 
   // if set, it will match any material supported by Chainloop
-  CraftingSchema.Material.MaterialType kind = 4 [(buf.validate.field).enum = {
+  CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
     not_in: [3]
   }];
 }
