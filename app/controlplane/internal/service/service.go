@@ -331,22 +331,19 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 
 // checkPolicy Checks a policy against a user or a token
 func (s *service) checkPolicy(ctx context.Context, policy *authz.Policy) error {
-	_, token, err := requireCurrentUserOrAPIToken(ctx)
-	if err != nil {
-		return err
-	}
-
 	// Token case
-	if token != nil {
-		for _, p := range token.Policies {
-			if p.Resource == policy.Resource && p.Action == policy.Action {
-				return nil
-			}
+	sub := usercontext.CurrentAuthzSubject(ctx)
+	if sub != "" {
+		ok, err := s.authz.Enforce(ctx, sub, policy)
+		if err != nil {
+			return handleUseCaseErr(err, s.log)
 		}
-		return errors.Forbidden("forbidden", "not allowed")
+		if ok {
+			return nil
+		}
 	}
 
-	// user case
+	// Other cases
 	m := entities.CurrentMembership(ctx)
 	if m == nil {
 		return errors.Forbidden("forbidden", "not allowed")
