@@ -180,7 +180,10 @@ var (
 var RolesMap = map[Role][]*Policy{
 	// Organizations in chainloop might be restricted to instance admins
 	RoleInstanceAdmin: {
+		// Instance admins can create new organizations
 		PolicyOrganizationCreate,
+		// Instance admins can invite users to organizations
+		PolicyOrganizationInvitationsCreate,
 	},
 	RoleOwner: {
 		PolicyOrganizationDelete,
@@ -429,6 +432,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.APITokenService/List":   {PolicyAPITokenList},
 	"/controlplane.v1.APITokenService/Create": {PolicyAPITokenCreate},
 	"/controlplane.v1.APITokenService/Revoke": {PolicyAPITokenRevoke},
+
+	// Org invitations
+	"/controlplane.v1.OrgInvitationService/Create": {PolicyOrganizationInvitationsCreate},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

@@ -399,7 +399,7 @@ var (
 		{Name: "role", Type: field.TypeEnum, Nullable: true, Enums: []string{"role:instance:admin", "role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer", "role:product:admin", "role:product:viewer"}},
 		{Name: "context", Type: field.TypeJSON, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID},
-		{Name: "sender_id", Type: field.TypeUUID},
+		{Name: "sender_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// OrgInvitationsTable holds the schema information for the "org_invitations" table.
 	OrgInvitationsTable = &schema.Table{

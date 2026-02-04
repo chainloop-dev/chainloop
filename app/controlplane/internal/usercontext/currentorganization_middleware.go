@@ -62,6 +62,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
 			u := entities.CurrentUser(ctx)
 			if u == nil {
+				// For API tokens, the organization is already set in WithCurrentAPITokenAndOrgMiddleware
 				return handler(ctx, req)
 			}
 
