@@ -316,13 +316,34 @@ NOTE: Load balancer service type is not supported
 {{- define "chainloop.controlplane.external_url" -}}
 {{- $service := .Values.controlplane.service }}
 {{- $ingress := .Values.controlplane.ingress }}
+{{- $httpRoute := .Values.controlplane.httpRoute }}
 
 {{- if .Values.controlplane.auth.oidc.externalURL }}
 {{- .Values.controlplane.auth.oidc.externalURL }}
 {{- else if (and $ingress $ingress.enabled $ingress.hostname) }}
-{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
+{{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostnames }}
+{{- else if (and $httpRoute $httpRoute.enabled $httpRoute.hostnames ) }}
+{{- printf "%s://%s" (ternary "https" "http" $httpRoute.tls ) ( index $httpRoute.hostnames 0) }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
+{{- else -}}
+null
+{{- end -}}
+{{- end -}}
+
+{{- define "chainloop.controlplane.external_hostname" -}}
+{{- $service := .Values.controlplane.service }}
+{{- $ingress := .Values.controlplane.ingress }}
+{{- $httpRoute := .Values.controlplane.httpRoute }}
+
+{{- if .Values.controlplane.auth.oidc.externalURL }}
+{{- .Values.controlplane.auth.oidc.externalURL }}
+{{- else if (and $ingress $ingress.enabled $ingress.hostname) }}
+{{- printf "%s" $ingress.hostnames }}
+{{- else if (and $httpRoute $httpRoute.enabled $httpRoute.hostnames ) }}
+{{- printf "%s" ( index $httpRoute.hostnames 0) }}
+{{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
+{{- printf "localhost:%s" $service.nodePorts.http }}
 {{- else -}}
 null
 {{- end -}}
@@ -407,13 +428,32 @@ NOTE: Load balancer service type is not supported
 {{- define "chainloop.cas.external_url" -}}
 {{- $service := .Values.cas.service }}
 {{- $ingress := .Values.cas.ingress }}
+{{- $httpRoute := .Values.cas.httpRoute }}
 
 {{- if .Values.cas.externalURL }}
 {{- .Values.cas.externalURL }}
 {{- else if (and $ingress $ingress.enabled $ingress.hostname) }}
 {{- printf "%s://%s" (ternary "https" "http" $ingress.tls ) $ingress.hostname }}
+{{- else if (and $httpRoute $httpRoute.enabled $httpRoute.hostnames) }}
+{{- printf "%s://%s" (ternary "https" "http" $httpRoute.tls ) (index $httpRoute.hostnames 0) }}
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
+{{- end -}}
+{{- end -}}
+
+{{- define "chainloop.cas.external_hostname" -}}
+{{- $service := .Values.cas.service }}
+{{- $ingress := .Values.cas.ingress }}
+{{- $httpRoute := .Values.cas.httpRoute }}
+
+{{- if .Values.cas.externalURL }}
+{{- .Values.cas.externalURL }}
+{{- else if (and $ingress $ingress.enabled $ingress.hostname) }}
+{{- printf "%s" $ingress.hostname }}
+{{- else if (and $httpRoute $httpRoute.enabled $httpRoute.hostnames) }}
+{{- printf "%s" (index $httpRoute.hostnames 0) }}
+{{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
+{{- printf "localhost:%s" $service.nodePorts.http }}
 {{- end -}}
 {{- end -}}
 
@@ -435,6 +475,23 @@ Compile all warning messages into a single one
 {{- $messages := without $messages "" -}}
 {{- $message := join "\n" $messages -}}
 
+{{- if and (or (.Values.controlplane.ingress.enabled | default false)  (.Values.controlplane.ingressAPI.enabled | default false))  (.Values.controlplane.httpRoute.enabled | default false) -}}
+{{- fail "Invalid values: controlplane.ingress.enabled or controlplane.ingressAPI.enabled and controlplane.httpRoute.enabled cannot both be true." -}}
+{{- end -}}
+
+{{- if and (or (.Values.cas.ingress.enabled | default false)  (.Values.cas.ingressAPI.enabled | default false))  (.Values.cas.httpRoute.enabled | default false) -}}
+{{- fail "Invalid values: cas.ingress.enabled or cas.ingressAPI.enabled and cas.httpRoute.enabled cannot both be true." -}}
+{{- end -}}
+
+
+{{- if and (.Values.cas.httpRoute.enabled | default false)  ( gt (len .Values.cas.httpRoute.hostnames) 1 ) -}}
+{{- fail "Invalid values: .Values.cas.httpRoute.hostnames can only have one hostname" -}}
+{{- end -}}
+
+{{- if and (.Values.controlplane.httpRoute.enabled | default false)  ( gt (len .Values.controlplane.httpRoute.hostnames) 1 ) -}}
+{{- fail "Invalid values: .Values.controlplane.httpRoute.hostnames can only have one hostname" -}}
+{{- end -}}
+
 {{- if $message -}}
 {{-   printf "\n\nVALUES VALIDATION:\n%s" $message -}}
 {{- end -}}
@@ -449,4 +506,3 @@ Return the Nats connection string
 {{- $port := required "nats server port not set" .Values.controlplane.nats.port }}
 {{- printf "nats://%s:%d" $host ($port | int) }}
 {{- end -}}
-

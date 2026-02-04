@@ -1,0 +1,40 @@
+{{- if or .Values.dex.httpRoute.enabled}}
+{{- /*
+Copyright Chainloop, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+{{- $fullName := include "chainloop.dex.fullname" . -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "chainloop.dex.labels" . | nindent 4 }}
+  {{- if or .Values.dex.httpRoute.annotations }}
+  annotations:
+    {{- include "common.tplvalues.render" ( dict "value" .Values.dex.httpRoute.annotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+  {{- if .Values.dex.httpRoute.parentRefs }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.dex.httpRoute.parentRefs "context" .) | nindent 4 }}
+  {{- else }}
+    - name: gateway
+      namespace: {{ include "common.names.namespace" . | quote }}
+  {{- end }}
+  hostnames: {{- include "common.tplvalues.render" (dict "value" .Values.dex.httpRoute.hostnames "context" .) | nindent 4 }}
+  rules:
+    {{- $port := coalesce .Values.dex.service.port .Values.dex.service.ports.http }}
+    - backendRefs:
+        - name: {{ include "chainloop.dex.fullname" . }}
+          port: {{ $port }}
+      {{- if .Values.dex.httpRoute.matches }}
+      matches: {{- include "common.tplvalues.render" (dict "value" .Values.dex.httpRoute.matches "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.dex.httpRoute.filters }}
+      filters: {{- include "common.tplvalues.render" (dict "value" .Values.dex.httpRoute.filters "context" .) | nindent 8 }}
+      {{- end }}
+  {{- if .Values.dex.httpRoute.extraRules }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.dex.httpRoute.extraRules "context" .) | nindent 4 }}
+  {{- end }}
+{{- end }}
