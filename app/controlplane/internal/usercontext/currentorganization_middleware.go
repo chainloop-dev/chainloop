@@ -152,19 +152,11 @@ func setCurrentMembershipFromOrgName(ctx context.Context, user *entities.User, o
 	var role authz.Role
 	if membership == nil {
 		// if not found, check if the user is instance admin
-		m := entities.CurrentMembership(ctx)
-		if m != nil {
-			if slices.ContainsFunc(m.Resources, func(r *entities.ResourceMembership) bool {
-				return r.Role == authz.RoleInstanceAdmin && r.ResourceType == authz.ResourceTypeInstance
-			}) {
-				org, err := orgUC.FindByName(ctx, orgName)
-				if err != nil {
-					return nil, fmt.Errorf("failed to find organization: %w", err)
-				}
-				role = authz.RoleInstanceAdmin
-				ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
-			}
+		ctx, err = setMembershipIfInstanceAdmin(ctx, orgName, orgUC)
+		if err != nil {
+			return nil, err
 		}
+		role = authz.RoleInstanceAdmin
 	} else {
 		role = membership.Role
 		ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
@@ -172,6 +164,28 @@ func setCurrentMembershipFromOrgName(ctx context.Context, user *entities.User, o
 
 	// Set the authorization subject that will be used to check the policies
 	return WithAuthzSubject(ctx, string(role)), nil
+}
+
+// sets membership to any organization if the user is an instance admin
+func setMembershipIfInstanceAdmin(ctx context.Context, orgName string, orgUC *biz.OrganizationUseCase) (context.Context, error) {
+	// look for user membership with instance admin role
+	m := entities.CurrentMembership(ctx)
+	if m != nil {
+		if slices.ContainsFunc(m.Resources, func(r *entities.ResourceMembership) bool {
+			return r.Role == authz.RoleInstanceAdmin && r.ResourceType == authz.ResourceTypeInstance
+		}) {
+			org, err := orgUC.FindByName(ctx, orgName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to find organization: %w", err)
+			}
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+		}
+	} else {
+		// if no membership and no instance admin, return error
+		return nil, errors.New("user membership not found")
+	}
+
+	return ctx, nil
 }
 
 // Find the current membership of the user and sets it on the context
