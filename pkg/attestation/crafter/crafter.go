@@ -535,7 +535,8 @@ func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID strin
 	}
 
 	// Create a temporary file for the metadata
-	tmpFile, err := os.CreateTemp("", "pr-metadata-*.json")
+	materialName := fmt.Sprintf("pr-metadata-%s", metadata.Number)
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s.json", materialName)
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
@@ -549,7 +550,7 @@ func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID strin
 	tmpFile.Close()
 
 	// Add the material using the crafter with explicit CHAINLOOP_PR_INFO type
-	if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), "pr-metadata", tmpFile.Name(), casBackend, nil); err != nil {
+	if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile.Name(), casBackend, nil); err != nil {
 		return fmt.Errorf("failed to add PR/MR metadata material: %w", err)
 	}
 
