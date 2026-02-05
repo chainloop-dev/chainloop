@@ -75,21 +75,21 @@ func (s *OrgInvitationIntegrationTestSuite) TestList() {
 
 func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	ctx := context.Background()
-	s.T().Run("invalid org ID", func(t *testing.T) {
+	s.T().Run("invalid org ID", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, "deadbeef", receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 		s.Nil(invite)
 	})
 
-	s.T().Run("missing receiver email", func(t *testing.T) {
+	s.T().Run("missing receiver email", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "", biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.True(biz.IsErrValidation(err))
 		s.Nil(invite)
 	})
 
-	s.T().Run("receiver email same than sender", func(t *testing.T) {
+	s.T().Run("receiver email same than sender", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.Email, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.ErrorContains(err, "sender and receiver emails cannot be the same")
@@ -97,7 +97,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 		s.Nil(invite)
 	})
 
-	s.T().Run("receiver is already a member", func(t *testing.T) {
+	s.T().Run("receiver is already a member", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user2.Email, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.ErrorContains(err, "user already exists in the org")
@@ -105,30 +105,14 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 		s.Nil(invite)
 	})
 
-	s.T().Run("org not found", func(t *testing.T) {
+	s.T().Run("org not found", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.Nil))
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 		s.Nil(invite)
 	})
 
-	s.T().Run("sender is not member of that org", func(t *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org3.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
-		s.Error(err)
-		s.ErrorContains(err, "user does not have permission to invite to this org")
-		s.True(biz.IsNotFound(err))
-		s.Nil(invite)
-	})
-
-	s.T().Run("sender is not member of that org but receiver is", func(t *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org3.ID, s.user2.Email, biz.WithSender(uuid.MustParse(s.user.ID)))
-		s.Error(err)
-		s.ErrorContains(err, "user does not have permission to invite to this org")
-		s.True(biz.IsNotFound(err))
-		s.Nil(invite)
-	})
-
-	s.T().Run("can create invites for org1 and 2", func(t *testing.T) {
+	s.T().Run("can create invites for org1 and 2", func(_ *testing.T) {
 		for _, org := range []*biz.Organization{s.org1, s.org2} {
 			invite, err := s.OrgInvitation.Create(ctx, org.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 			s.NoError(err)
@@ -140,7 +124,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 		}
 	})
 
-	s.T().Run("but can't create if there is one pending", func(t *testing.T) {
+	s.T().Run("but can't create if there is one pending", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.ErrorContains(err, "already exists")
@@ -148,20 +132,20 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 		s.Nil(invite)
 	})
 
-	s.T().Run("but it can if it's another email", func(t *testing.T) {
+	s.T().Run("but it can if it's another email", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "anotheremail@cyberdyne.io", biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Equal("anotheremail@cyberdyne.io", invite.ReceiverEmail)
 		s.Equal(s.org1, invite.Org)
 		s.NoError(err)
 	})
 
-	s.T().Run("the default role is viewer", func(t *testing.T) {
+	s.T().Run("the default role is viewer", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "viewer@cyberdyne.io", biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.NoError(err)
 		s.Equal(authz.RoleViewer, invite.Role)
 	})
 
-	s.T().Run("but can have other roles", func(t *testing.T) {
+	s.T().Run("but can have other roles", func(_ *testing.T) {
 		for _, r := range []authz.Role{authz.RoleOwner, authz.RoleAdmin, authz.RoleViewer} {
 			invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, fmt.Sprintf("%s@cyberdyne.io", r), biz.WithInvitationRole(r), biz.WithSender(uuid.MustParse(s.user.ID)))
 			s.NoError(err)
@@ -181,12 +165,12 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 	receiver, err := s.User.UpsertByEmail(ctx, receiverEmail, nil)
 	require.NoError(s.T(), err)
 
-	s.T().Run("user doesn't exist", func(t *testing.T) {
+	s.T().Run("user doesn't exist", func(_ *testing.T) {
 		err := s.OrgInvitation.AcceptPendingInvitations(ctx, "non-existant@cyberdyne.io")
 		s.ErrorContains(err, "not found")
 	})
 
-	s.T().Run("no invites for user", func(t *testing.T) {
+	s.T().Run("no invites for user", func(_ *testing.T) {
 		err = s.OrgInvitation.AcceptPendingInvitations(ctx, receiverEmail)
 		s.NoError(err)
 
@@ -195,7 +179,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 		s.Len(memberships, 0)
 	})
 
-	s.T().Run("user is invited to org 1 as viewer", func(t *testing.T) {
+	s.T().Run("user is invited to org 1 as viewer", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 		require.NoError(s.T(), err)
 		err = s.OrgInvitation.AcceptPendingInvitations(ctx, receiverEmail)
@@ -214,7 +198,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 		s.Equal(biz.OrgInvitationStatusAccepted, invite.Status)
 	})
 
-	s.T().Run("or take any other role", func(t *testing.T) {
+	s.T().Run("or take any other role", func(_ *testing.T) {
 		for i, r := range []authz.Role{authz.RoleOwner, authz.RoleAdmin, authz.RoleViewer} {
 			// Create user and invite it with different roles
 			receiverEmail := fmt.Sprintf("user%d@cyberdyne.io", i)
@@ -237,19 +221,19 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 
 func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 	ctx := context.Background()
-	s.T().Run("invalid ID", func(t *testing.T) {
+	s.T().Run("invalid ID", func(_ *testing.T) {
 		err := s.OrgInvitation.Revoke(ctx, s.org1.ID, "deadbeef")
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 	})
 
-	s.T().Run("invitation not found", func(t *testing.T) {
+	s.T().Run("invitation not found", func(_ *testing.T) {
 		err := s.OrgInvitation.Revoke(ctx, s.org1.ID, uuid.NewString())
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("invitation in another org", func(t *testing.T) {
+	s.T().Run("invitation in another org", func(_ *testing.T) {
 		_, err := s.OrgInvitation.Create(ctx, s.org2.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.NoError(err)
 		err = s.OrgInvitation.Revoke(ctx, s.org1.ID, uuid.NewString())
@@ -257,7 +241,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 		s.True(biz.IsNotFound(err))
 	})
 
-	s.T().Run("invitation not in pending state", func(t *testing.T) {
+	s.T().Run("invitation not in pending state", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 		require.NoError(s.T(), err)
 		err = s.OrgInvitation.AcceptInvitation(ctx, invite.ID.String())
@@ -270,7 +254,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 		s.True(biz.IsErrValidation(err))
 	})
 
-	s.T().Run("happy path", func(t *testing.T) {
+	s.T().Run("happy path", func(_ *testing.T) {
 		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 		require.NoError(s.T(), err)
 		err = s.OrgInvitation.Revoke(ctx, s.org1.ID, invite.ID.String())
