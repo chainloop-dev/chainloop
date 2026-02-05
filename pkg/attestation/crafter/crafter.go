@@ -536,7 +536,7 @@ func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID strin
 
 	// Create a temporary file for the metadata
 	materialName := fmt.Sprintf("pr-metadata-%s", metadata.Number)
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s.json", materialName)
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s.json", materialName))
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
