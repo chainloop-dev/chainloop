@@ -63,7 +63,6 @@ const (
 	ResourceAPIToken                = "api_token"
 	ResourceProjectMembership       = "project_membership"
 	ResourceOrganizationInvitations = "organization_invitations"
-	ResourceGroupProjects           = "group_projects"
 
 	// Top level instance admin role
 	// this is used to know if an user is a super admin of the chainloop instance
@@ -111,6 +110,7 @@ var (
 	// CAS backend
 	PolicyCASBackendList   = &Policy{ResourceCASBackend, ActionList}
 	PolicyCASBackendUpdate = &Policy{ResourceCASBackend, ActionUpdate}
+	PolicyCASBackendCreate = &Policy{ResourceCASBackend, ActionCreate}
 	// Available integrations
 	PolicyAvailableIntegrationList = &Policy{ResourceAvailableIntegration, ActionList}
 	PolicyAvailableIntegrationRead = &Policy{ResourceAvailableIntegration, ActionRead}
@@ -184,6 +184,8 @@ var RolesMap = map[Role][]*Policy{
 		PolicyOrganizationCreate,
 		// Instance admins can invite users to organizations
 		PolicyOrganizationInvitationsCreate,
+		// Instance admins can configure CAS Backends in all organizations
+		PolicyCASBackendCreate,
 	},
 	RoleOwner: {
 		PolicyOrganizationDelete,
@@ -355,6 +357,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List":       {PolicyCASBackendList},
 	"/controlplane.v1.CASBackendService/Revalidate": {PolicyCASBackendUpdate},
+	"/controlplane.v1.CASBackendService/Create":     {PolicyCASBackendCreate},
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
 	// Registered integrations
