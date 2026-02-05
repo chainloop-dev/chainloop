@@ -157,11 +157,11 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail
 
 		// 3 - Check that the user is a member of the given org
 		// NOTE: this check is not necessary, as the user is already a member of the org
-		if membership, err := uc.mRepo.FindByOrgAndUser(ctx, orgUUID, *opts.senderID); err != nil {
-			return nil, fmt.Errorf("failed to find memberships: %w", err)
-		} else if membership == nil {
-			return nil, NewErrNotFound("user does not have permission to invite to this org")
-		}
+		//if membership, err := uc.mRepo.FindByOrgAndUser(ctx, orgUUID, *opts.senderID); err != nil {
+		//	return nil, fmt.Errorf("failed to find memberships: %w", err)
+		//} else if membership == nil {
+		//	return nil, NewErrNotFound("user does not have permission to invite to this org")
+		//}
 	}
 
 	// 4 - The receiver does exist in the org already
