@@ -185,6 +185,7 @@ var RolesMap = map[Role][]*Policy{
 		// Instance admins can invite users to organizations
 		PolicyOrganizationInvitationsCreate,
 		// Instance admins can configure CAS Backends in all organizations
+		PolicyCASBackendList,
 		PolicyCASBackendCreate,
 	},
 	RoleOwner: {
