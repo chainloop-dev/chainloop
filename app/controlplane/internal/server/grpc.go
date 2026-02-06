@@ -193,14 +193,14 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAPITokenUsageUpdater(opts.APITokenUseCase, logHelper),
 			// 2.c - Set its user
 			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
+			// Store all memberships in the context
+			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
 			selector.Server(
 				// 2.d- Set its organization
-				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, logHelper),
+				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, opts.OrganizationUseCase, logHelper),
 				// 3 - Check user/token authorization
 				authzMiddleware.WithAuthzMiddleware(opts.AuthzUseCase, logHelper),
 			).Match(requireAllButOrganizationOperationsMatcher()).Build(),
-			// Store all memberships in the context
-			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
 			// 4 - Make sure the account is fully functional
 			selector.Server(
 				usercontext.CheckUserHasAccess(opts.AuthConfig.AllowList, opts.UserUseCase),
@@ -232,7 +232,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 2.b - Set its API token and Robot Account as alternative to the user
 			usercontext.WithAttestationContextFromAPIToken(opts.APITokenUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.c - Set Attestation context from user token
-			usercontext.WithAttestationContextFromUser(opts.UserUseCase, logHelper),
+			usercontext.WithAttestationContextFromUser(opts.UserUseCase, opts.OrganizationUseCase, logHelper),
 			// 2.d - Set its robot account from federated delegation
 			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
 			// Store all memberships in the context

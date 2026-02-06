@@ -20,10 +20,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/go-kratos/kratos/v2/log"
@@ -56,12 +58,13 @@ func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC) middlewa
 	}
 }
 
-func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
+func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, orgUC *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
 			u := entities.CurrentUser(ctx)
 			if u == nil {
+				// For API tokens, the organization is already set in WithCurrentAPITokenAndOrgMiddleware
 				return handler(ctx, req)
 			}
 
@@ -78,7 +81,7 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, logger *lo
 			}
 
 			if orgName != "" {
-				ctx, err = setCurrentMembershipFromOrgName(ctx, u, orgName, userUseCase)
+				ctx, err = setCurrentMembershipFromOrgName(ctx, u, orgName, userUseCase, orgUC)
 				if err != nil {
 					return nil, v1.ErrorUserNotMemberOfOrgErrorNotInOrg("user is not a member of organization %s", orgName)
 				}
@@ -140,15 +143,49 @@ func ResetMembershipsCache() {
 	membershipsCache.Purge()
 }
 
-func setCurrentMembershipFromOrgName(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder) (context.Context, error) {
+func setCurrentMembershipFromOrgName(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder, orgUC *biz.OrganizationUseCase) (context.Context, error) {
 	membership, err := userUC.MembershipInOrg(ctx, user.ID, orgName)
-	if err != nil {
+	if err != nil && !biz.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to find membership: %w", err)
 	}
 
-	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
+	var role authz.Role
+	if membership == nil {
+		// if not found, check if the user is instance admin
+		ctx, err = setMembershipIfInstanceAdmin(ctx, orgName, orgUC)
+		if err != nil {
+			return nil, err
+		}
+		role = authz.RoleInstanceAdmin
+	} else {
+		role = membership.Role
+		ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
+	}
+
 	// Set the authorization subject that will be used to check the policies
-	return WithAuthzSubject(ctx, string(membership.Role)), nil
+	return WithAuthzSubject(ctx, string(role)), nil
+}
+
+// sets membership to any organization if the user is an instance admin
+func setMembershipIfInstanceAdmin(ctx context.Context, orgName string, orgUC *biz.OrganizationUseCase) (context.Context, error) {
+	// look for user membership with instance admin role
+	m := entities.CurrentMembership(ctx)
+	if m != nil {
+		if slices.ContainsFunc(m.Resources, func(r *entities.ResourceMembership) bool {
+			return r.Role == authz.RoleInstanceAdmin && r.ResourceType == authz.ResourceTypeInstance
+		}) {
+			org, err := orgUC.FindByName(ctx, orgName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to find organization: %w", err)
+			}
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+		}
+	} else {
+		// if no membership and no instance admin, return error
+		return nil, errors.New("user membership not found")
+	}
+
+	return ctx, nil
 }
 
 // Find the current membership of the user and sets it on the context

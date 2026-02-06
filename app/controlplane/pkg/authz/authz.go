@@ -63,7 +63,6 @@ const (
 	ResourceAPIToken                = "api_token"
 	ResourceProjectMembership       = "project_membership"
 	ResourceOrganizationInvitations = "organization_invitations"
-	ResourceGroupProjects           = "group_projects"
 
 	// Top level instance admin role
 	// this is used to know if an user is a super admin of the chainloop instance
@@ -111,6 +110,7 @@ var (
 	// CAS backend
 	PolicyCASBackendList   = &Policy{ResourceCASBackend, ActionList}
 	PolicyCASBackendUpdate = &Policy{ResourceCASBackend, ActionUpdate}
+	PolicyCASBackendCreate = &Policy{ResourceCASBackend, ActionCreate}
 	// Available integrations
 	PolicyAvailableIntegrationList = &Policy{ResourceAvailableIntegration, ActionList}
 	PolicyAvailableIntegrationRead = &Policy{ResourceAvailableIntegration, ActionRead}
@@ -180,7 +180,13 @@ var (
 var RolesMap = map[Role][]*Policy{
 	// Organizations in chainloop might be restricted to instance admins
 	RoleInstanceAdmin: {
+		// Instance admins can create new organizations
 		PolicyOrganizationCreate,
+		// Instance admins can invite users to organizations
+		PolicyOrganizationInvitationsCreate,
+		// Instance admins can configure CAS Backends in all organizations
+		PolicyCASBackendList,
+		PolicyCASBackendCreate,
 	},
 	RoleOwner: {
 		PolicyOrganizationDelete,
@@ -352,6 +358,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List":       {PolicyCASBackendList},
 	"/controlplane.v1.CASBackendService/Revalidate": {PolicyCASBackendUpdate},
+	"/controlplane.v1.CASBackendService/Create":     {PolicyCASBackendCreate},
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
 	// Registered integrations
@@ -429,6 +436,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.APITokenService/List":   {PolicyAPITokenList},
 	"/controlplane.v1.APITokenService/Create": {PolicyAPITokenCreate},
 	"/controlplane.v1.APITokenService/Revoke": {PolicyAPITokenRevoke},
+
+	// Org invitations
+	"/controlplane.v1.OrgInvitationService/Create": {PolicyOrganizationInvitationsCreate},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

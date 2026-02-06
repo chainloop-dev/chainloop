@@ -127,6 +127,9 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 }
 
 func bizUserToPb(u *biz.User) *pb.User {
+	if u == nil {
+		return nil
+	}
 	return &pb.User{Id: u.ID, Email: u.Email,
 		CreatedAt: timestamppb.New(*u.CreatedAt), FirstName: u.FirstName, LastName: u.LastName,
 		UpdatedAt: timestamppb.New(*u.UpdatedAt),

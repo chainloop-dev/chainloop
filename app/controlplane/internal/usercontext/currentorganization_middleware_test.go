@@ -80,7 +80,7 @@ func TestWithCurrentOrganizationMiddleware(t *testing.T) {
 				usecase.On("CurrentMembership", ctx, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
-			m := WithCurrentOrganizationMiddleware(usecase, logger)
+			m := WithCurrentOrganizationMiddleware(usecase, nil, logger)
 			_, err := m(
 				func(ctx context.Context, _ interface{}) (interface{}, error) {
 					if tc.wantErr {

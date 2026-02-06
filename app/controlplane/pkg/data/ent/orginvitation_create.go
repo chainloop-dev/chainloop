@@ -88,6 +88,14 @@ func (_c *OrgInvitationCreate) SetSenderID(v uuid.UUID) *OrgInvitationCreate {
 	return _c
 }
 
+// SetNillableSenderID sets the "sender_id" field if the given value is not nil.
+func (_c *OrgInvitationCreate) SetNillableSenderID(v *uuid.UUID) *OrgInvitationCreate {
+	if v != nil {
+		_c.SetSenderID(*v)
+	}
+	return _c
+}
+
 // SetRole sets the "role" field.
 func (_c *OrgInvitationCreate) SetRole(v authz.Role) *OrgInvitationCreate {
 	_c.mutation.SetRole(v)
@@ -208,9 +216,6 @@ func (_c *OrgInvitationCreate) check() error {
 	if _, ok := _c.mutation.OrganizationID(); !ok {
 		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "OrgInvitation.organization_id"`)}
 	}
-	if _, ok := _c.mutation.SenderID(); !ok {
-		return &ValidationError{Name: "sender_id", err: errors.New(`ent: missing required field "OrgInvitation.sender_id"`)}
-	}
 	if v, ok := _c.mutation.Role(); ok {
 		if err := orginvitation.RoleValidator(v); err != nil {
 			return &ValidationError{Name: "role", err: fmt.Errorf(`ent: validator failed for field "OrgInvitation.role": %w`, err)}
@@ -218,9 +223,6 @@ func (_c *OrgInvitationCreate) check() error {
 	}
 	if len(_c.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "OrgInvitation.organization"`)}
-	}
-	if len(_c.mutation.SenderIDs()) == 0 {
-		return &ValidationError{Name: "sender", err: errors.New(`ent: missing required edge "OrgInvitation.sender"`)}
 	}
 	return nil
 }
@@ -422,6 +424,12 @@ func (u *OrgInvitationUpsert) UpdateSenderID() *OrgInvitationUpsert {
 	return u
 }
 
+// ClearSenderID clears the value of the "sender_id" field.
+func (u *OrgInvitationUpsert) ClearSenderID() *OrgInvitationUpsert {
+	u.SetNull(orginvitation.FieldSenderID)
+	return u
+}
+
 // SetRole sets the "role" field.
 func (u *OrgInvitationUpsert) SetRole(v authz.Role) *OrgInvitationUpsert {
 	u.Set(orginvitation.FieldRole, v)
@@ -572,6 +580,13 @@ func (u *OrgInvitationUpsertOne) SetSenderID(v uuid.UUID) *OrgInvitationUpsertOn
 func (u *OrgInvitationUpsertOne) UpdateSenderID() *OrgInvitationUpsertOne {
 	return u.Update(func(s *OrgInvitationUpsert) {
 		s.UpdateSenderID()
+	})
+}
+
+// ClearSenderID clears the value of the "sender_id" field.
+func (u *OrgInvitationUpsertOne) ClearSenderID() *OrgInvitationUpsertOne {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearSenderID()
 	})
 }
 
@@ -898,6 +913,13 @@ func (u *OrgInvitationUpsertBulk) SetSenderID(v uuid.UUID) *OrgInvitationUpsertB
 func (u *OrgInvitationUpsertBulk) UpdateSenderID() *OrgInvitationUpsertBulk {
 	return u.Update(func(s *OrgInvitationUpsert) {
 		s.UpdateSenderID()
+	})
+}
+
+// ClearSenderID clears the value of the "sender_id" field.
+func (u *OrgInvitationUpsertBulk) ClearSenderID() *OrgInvitationUpsertBulk {
+	return u.Update(func(s *OrgInvitationUpsert) {
+		s.ClearSenderID()
 	})
 }
 
