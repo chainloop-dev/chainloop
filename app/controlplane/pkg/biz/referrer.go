@@ -213,7 +213,7 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 
 		return nil, fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
-		return nil, NewErrNotFound("referrer")
+		return nil, NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
 	}
 
 	return ref, nil
@@ -251,7 +251,7 @@ func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, di
 
 		return nil, fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
-		return nil, NewErrNotFound("referrer")
+		return nil, NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
 	}
 
 	return ref, nil
