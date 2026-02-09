@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,4 +93,31 @@ func TestGenerateJWT(t *testing.T) {
 	assert.Equal(t, "my-issuer", claims.Issuer)
 	assert.Contains(t, claims.Audience, Audience)
 	assert.WithinDuration(t, time.Now(), claims.ExpiresAt.Time, 10*time.Second)
+}
+
+func TestGenerateJWTWithCustomAudience(t *testing.T) {
+	const hmacSecret = "my-secret"
+	const customAudience = "mcp-user-auth.chainloop"
+
+	b, err := NewBuilder(
+		WithIssuer("my-issuer"),
+		WithKeySecret(hmacSecret),
+		WithExpiration(10*time.Second),
+		WithAudience(customAudience),
+	)
+	require.NoError(t, err)
+
+	token, err := b.GenerateJWT("user-id")
+	require.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	claims := &CustomClaims{}
+	tokenInfo, err := jwt.ParseWithClaims(token, claims, func(_ *jwt.Token) (interface{}, error) {
+		return []byte(hmacSecret), nil
+	}, jwt.WithValidMethods([]string{SigningMethod.Alg()}))
+
+	require.NoError(t, err)
+	assert.True(t, tokenInfo.Valid)
+	assert.Equal(t, "user-id", claims.UserID)
+	assert.Equal(t, jwt.ClaimStrings{customAudience}, claims.Audience)
 }
