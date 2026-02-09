@@ -139,6 +139,8 @@ jobs:
               syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
 
               # Add missing known licenses
+              # https://github.com/ariga/atlas/blob/master/LICENSE
+              ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "ariga.io/atlas" "Apache-2.0" type="library"
               ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "ariga.io/atlas/cmd/atlas" "Apache-2.0" type="library"
               ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "github.com/ariga/language-tools/packages/language-server-go" "Apache-2.0" type="library"
 
