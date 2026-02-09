@@ -28,10 +28,6 @@ certificate_authorities:
       cert_path: ${FILE_CA_CERT_PATH:../../devel/devkeys/ca.pub}
       key_path: ${FILE_CA_KEY_PATH:../../devel/devkeys/ca.pem}
       key_pass: chainloop
-  - file_ca:
-      cert_path: ${FILE_CA_CERT_PATH:../../tmp/expired.crt}
-      key_path: ${FILE_CA_KEY_PATH:../../tmp/expired.key}
-      key_pass: NUJ6iTzxRMOrn7
 #  - ejbca_ca:
 #      server_url: "https://localhost/ejbca"
 #      key_path: "../../devel/devkeys/superadmin.key"
