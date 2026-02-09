@@ -16,13 +16,20 @@
 package fileca
 
 import (
+	"bytes"
 	"context"
+	"crypto"
 	"crypto/x509"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
-	fulciofileca "github.com/sigstore/fulcio/pkg/ca/fileca"
+	"github.com/sigstore/fulcio/pkg/ca/baseca"
 	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"go.step.sm/crypto/pemutil"
 )
 
 const CAName = "fileCA"
@@ -31,14 +38,55 @@ type FileCA struct {
 	ca fulcioca.CertificateAuthority
 }
 
-func New(certPath, keyPath, keyPass string, watch bool) (*FileCA, error) {
-	wrappedCa, err := fulciofileca.NewFileCA(certPath, keyPath, keyPass, watch)
+func New(certPath, keyPath, keyPass string, signer bool) (*FileCA, error) {
+	var err error
+	baseCA := &baseca.BaseCA{}
+	baseCA.SignerWithChain, err = loadKeyPair(certPath, keyPath, keyPass)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create file CA: %w", err)
+		return nil, err
 	}
+
+	if signer {
+		// if the CA is a signer, verify the chain
+		chain, signer := baseCA.GetSignerWithChain()
+		if err := fulcioca.VerifyCertChain(chain, signer); err != nil {
+			return nil, err
+		}
+	}
+
 	return &FileCA{
-		ca: wrappedCa,
+		ca: baseCA,
 	}, nil
+}
+
+func loadKeyPair(certPath, keyPath, keyPass string) (*fulcioca.SignerCerts, error) {
+	var (
+		certs []*x509.Certificate
+		err   error
+		key   crypto.Signer
+	)
+
+	data, err := os.ReadFile(filepath.Clean(certPath))
+	if err != nil {
+		return nil, err
+	}
+	certs, err = cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+
+	opaqueKey, err := pemutil.Read(keyPath, pemutil.WithPassword([]byte(keyPass)))
+	if err != nil {
+		return nil, err
+	}
+
+	var ok bool
+	key, ok = opaqueKey.(crypto.Signer)
+	if !ok {
+		return nil, errors.New(`fileca: loaded private key can't be used to sign`)
+	}
+
+	return &fulcioca.SignerCerts{Certs: certs, Signer: key}, nil
 }
 
 func (f FileCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
