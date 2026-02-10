@@ -36,6 +36,8 @@ type AttestationAddOpts struct {
 	// OCI registry credentials used for CONTAINER_IMAGE material type
 	RegistryServer, RegistryUsername, RegistryPassword string
 	LocalStatePath                                     string
+	// NoStrictValidation skips strict schema validation
+	NoStrictValidation bool
 }
 
 type newCrafterOpts struct {
@@ -58,6 +60,9 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 	if cfg.RegistryServer != "" && cfg.RegistryUsername != "" && cfg.RegistryPassword != "" {
 		cfg.Logger.Debug().Str("server", cfg.RegistryServer).Str("username", cfg.RegistryUsername).Msg("using OCI registry credentials")
 		opts = append(opts, crafter.WithOCIAuth(cfg.RegistryServer, cfg.RegistryUsername, cfg.RegistryPassword))
+	}
+	if cfg.NoStrictValidation {
+		opts = append(opts, crafter.WithNoStrictValidation(cfg.NoStrictValidation))
 	}
 
 	return &AttestationAdd{

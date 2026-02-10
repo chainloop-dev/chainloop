@@ -38,6 +38,7 @@ func newAttestationAddCmd() *cobra.Command {
 	var name, value, kind string
 	var artifactCASConn *grpc.ClientConn
 	var annotationsFlag []string
+	var noStrictValidation bool
 
 	// OCI registry credentials can be passed as flags or environment variables
 	var registryServer, registryUsername, registryPassword string
@@ -76,6 +77,7 @@ func newAttestationAddCmd() *cobra.Command {
 					RegistryUsername:   registryUsername,
 					RegistryPassword:   registryPassword,
 					LocalStatePath:     attestationLocalStatePath,
+					NoStrictValidation: noStrictValidation,
 				},
 			)
 			if err != nil {
@@ -142,6 +144,7 @@ func newAttestationAddCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
+	cmd.Flags().BoolVar(&noStrictValidation, "no-strict-validation", false, "skip strict schema validation for SBOM files (CycloneDX/SPDX)")
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
