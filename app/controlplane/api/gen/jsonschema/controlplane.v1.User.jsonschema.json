@@ -9,6 +9,9 @@
     "^(first_name)$": {
       "type": "string"
     },
+    "^(instance_admin)$": {
+      "type": "boolean"
+    },
     "^(last_name)$": {
       "type": "string"
     },
@@ -28,6 +31,9 @@
     },
     "id": {
       "type": "string"
+    },
+    "instanceAdmin": {
+      "type": "boolean"
     },
     "lastName": {
       "type": "string"

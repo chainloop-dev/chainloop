@@ -37,11 +37,12 @@ type ConfigContextItem struct {
 }
 
 type UserItem struct {
-	ID        string     `json:"id"`
-	Email     string     `json:"email"`
-	FirstName string     `json:"firstName"`
-	LastName  string     `json:"lastName"`
-	CreatedAt *time.Time `json:"createdAt"`
+	ID            string     `json:"id"`
+	Email         string     `json:"email"`
+	FirstName     string     `json:"firstName"`
+	LastName      string     `json:"lastName"`
+	CreatedAt     *time.Time `json:"createdAt"`
+	InstanceAdmin bool       `json:"instanceAdmin,omitempty"`
 }
 
 // PrintUserProfileWithEmail formats the user's profile with their email.
@@ -87,10 +88,11 @@ func pbUserItemToAction(in *pb.User) *UserItem {
 	}
 
 	return &UserItem{
-		ID:        in.Id,
-		Email:     in.Email,
-		FirstName: in.FirstName,
-		LastName:  in.LastName,
-		CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
+		ID:            in.Id,
+		Email:         in.Email,
+		FirstName:     in.FirstName,
+		LastName:      in.LastName,
+		CreatedAt:     toTimePtr(in.CreatedAt.AsTime()),
+		InstanceAdmin: in.InstanceAdmin,
 	}
 }
