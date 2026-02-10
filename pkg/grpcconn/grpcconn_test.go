@@ -196,3 +196,87 @@ func TestWithCAContent(t *testing.T) {
 	WithCAContent(testContent)(opt)
 	assert.Equal(t, testContent, opt.caContent)
 }
+
+func TestBackwardCompatibility_StoredFilePath(t *testing.T) {
+	// This test verifies that if a user has an old config with a stored file path,
+	// the new code will still load it correctly via the file path method.
+
+	// Check if the file exists, skip test if not
+	if _, err := os.Stat(caPath); os.IsNotExist(err) {
+		t.Skip("Test CA file not found, skipping test")
+	}
+
+	// Simulate an old config with a stored file path
+	storedValue := caPath
+
+	// Verify IsFilePath detects it as a file path
+	assert.True(t, IsFilePath(storedValue), "stored file path should be detected as a file path")
+
+	// Verify it can be loaded using the file path method
+	certsPool, err := x509.SystemCertPool()
+	require.NoError(t, err)
+
+	err = appendCAFromFile(storedValue, certsPool)
+	assert.NoError(t, err, "should successfully load CA from stored file path")
+}
+
+func TestBackwardCompatibility_NewClientOldConfig(t *testing.T) {
+	// This test verifies the complete flow: new client reading old config with file path
+
+	// Check if the file exists, skip test if not
+	if _, err := os.Stat(caPath); os.IsNotExist(err) {
+		t.Skip("Test CA file not found, skipping test")
+	}
+
+	// Simulate config value (could be file path or content)
+	oldConfigValue := caPath
+
+	// New client logic: detect and load appropriately
+	var opts []Option
+	if IsFilePath(oldConfigValue) {
+		opts = append(opts, WithCAFile(oldConfigValue))
+	} else {
+		opts = append(opts, WithCAContent(oldConfigValue))
+	}
+
+	// Verify the correct option was chosen
+	require.Len(t, opts, 1)
+
+	// Apply the option and verify it set caFilePath (not caContent)
+	optArg := &newOptionalArg{}
+	opts[0](optArg)
+	assert.Equal(t, caPath, optArg.caFilePath, "should use file path method for old config")
+	assert.Empty(t, optArg.caContent, "should not use content method for old config")
+}
+
+func TestBackwardCompatibility_OldClientNewConfig(t *testing.T) {
+	// This test verifies that if a path is stored in config, both old and new
+	// clients can load it. Old clients would directly use WithCAFile, new clients
+	// would detect it via IsFilePath and use WithCAFile.
+
+	// Check if the file exists, skip test if not
+	if _, err := os.Stat(caPath); os.IsNotExist(err) {
+		t.Skip("Test CA file not found, skipping test")
+	}
+
+	// Stored config value (file path)
+	configValue := caPath
+
+	certsPool1, err := x509.SystemCertPool()
+	require.NoError(t, err)
+
+	certsPool2, err := x509.SystemCertPool()
+	require.NoError(t, err)
+
+	// Old client behavior: directly use file path
+	err = appendCAFromFile(configValue, certsPool1)
+	assert.NoError(t, err, "old client should load file path")
+
+	// New client behavior: detect then use file path
+	if IsFilePath(configValue) {
+		err = appendCAFromFile(configValue, certsPool2)
+	} else {
+		err = appendCAFromContent(configValue, certsPool2)
+	}
+	assert.NoError(t, err, "new client should load file path via detection")
+}
