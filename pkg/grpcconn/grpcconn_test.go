@@ -27,6 +27,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const caPath = "../../devel/devkeys/selfsigned/rootCA.crt"
+
 func TestGetRequestMetadata(t *testing.T) {
 	const wantOrg = "org-1"
 	want := map[string]string{"authorization": "Bearer token", "Chainloop-Organization": wantOrg}
@@ -115,9 +117,6 @@ func TestIsFilePath(t *testing.T) {
 }
 
 func TestAppendCAFromFile(t *testing.T) {
-	// Use the test CA certificate from the devkeys
-	caPath := "../../devel/devkeys/selfsigned/rootCA.crt"
-
 	// Check if the file exists, skip test if not
 	if _, err := os.Stat(caPath); os.IsNotExist(err) {
 		t.Skip("Test CA file not found, skipping test")
@@ -139,9 +138,6 @@ func TestAppendCAFromFile_NonExistent(t *testing.T) {
 }
 
 func TestAppendCAFromContent_PEM(t *testing.T) {
-	// Use the test CA certificate from the devkeys
-	caPath := "../../devel/devkeys/selfsigned/rootCA.crt"
-
 	// Check if the file exists, skip test if not
 	if _, err := os.Stat(caPath); os.IsNotExist(err) {
 		t.Skip("Test CA file not found, skipping test")
@@ -160,9 +156,6 @@ func TestAppendCAFromContent_PEM(t *testing.T) {
 }
 
 func TestAppendCAFromContent_Base64(t *testing.T) {
-	// Use the test CA certificate from the devkeys
-	caPath := "../../devel/devkeys/selfsigned/rootCA.crt"
-
 	// Check if the file exists, skip test if not
 	if _, err := os.Stat(caPath); os.IsNotExist(err) {
 		t.Skip("Test CA file not found, skipping test")
