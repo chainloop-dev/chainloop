@@ -227,34 +227,34 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 
 func TestCycloneDXJSONCraftNoStrictValidation(t *testing.T) {
 	testCases := []struct {
-		name                 string
-		filePath             string
+		name               string
+		filePath           string
 		noStrictValidation bool
-		wantErr              string
+		wantErr            string
 	}{
 		{
-			name:                 "invalid schema without skip flag fails",
-			filePath:             "./testdata/sbom.cyclonedx-invalid-schema.json",
+			name:               "invalid schema without skip flag fails",
+			filePath:           "./testdata/sbom.cyclonedx-invalid-schema.json",
 			noStrictValidation: false,
-			wantErr:              "invalid cyclonedx sbom file",
+			wantErr:            "invalid cyclonedx sbom file",
 		},
 		{
-			name:                 "invalid schema with skip flag succeeds",
-			filePath:             "./testdata/sbom.cyclonedx-invalid-schema.json",
+			name:               "invalid schema with skip flag succeeds",
+			filePath:           "./testdata/sbom.cyclonedx-invalid-schema.json",
 			noStrictValidation: true,
-			wantErr:              "",
+			wantErr:            "",
 		},
 		{
-			name:                 "non-cyclonedx file fails even with skip flag",
-			filePath:             "./testdata/random.json",
+			name:               "non-cyclonedx file fails even with skip flag",
+			filePath:           "./testdata/random.json",
 			noStrictValidation: true,
-			wantErr:              "invalid cyclonedx sbom file",
+			wantErr:            "invalid cyclonedx sbom file",
 		},
 		{
-			name:                 "valid file works without skip flag",
-			filePath:             "./testdata/sbom.cyclonedx.json",
+			name:               "valid file works without skip flag",
+			filePath:           "./testdata/sbom.cyclonedx.json",
 			noStrictValidation: false,
-			wantErr:              "",
+			wantErr:            "",
 		},
 	}
 

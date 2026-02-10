@@ -210,6 +210,7 @@ type CraftingOpts struct {
 	NoStrictValidation bool
 }
 
+//nolint:gocyclo
 func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger, opts *CraftingOpts) (*api.Attestation_Material, error) {
 	var crafter Craftable
 	var err error
