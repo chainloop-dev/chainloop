@@ -121,9 +121,9 @@ func WithOCIAuth(server, username, password string) NewOpt {
 	}
 }
 
-func WithNoStrictValidation(noStrict bool) NewOpt {
+func WithNoStrictValidation(noStrictValidation bool) NewOpt {
 	return func(c *Crafter) error {
-		c.noStrictValidation = noStrict
+		c.noStrictValidation = noStrictValidation
 		return nil
 	}
 }
