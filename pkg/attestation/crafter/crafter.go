@@ -73,6 +73,9 @@ type Crafter struct {
 
 	// attestation client is used to load chainloop policies
 	attClient v1.AttestationServiceClient
+
+	// noStrictValidation skips strict schema validation
+	noStrictValidation bool
 }
 
 type VersionedCraftingState struct {
@@ -114,6 +117,13 @@ func WithOCIAuth(server, username, password string) NewOpt {
 		}
 
 		c.ociRegistryAuth = k
+		return nil
+	}
+}
+
+func WithNoStrictValidation(noStrictValidation bool) NewOpt {
+	return func(c *Crafter) error {
+		c.noStrictValidation = noStrictValidation
 		return nil
 	}
 }
@@ -671,7 +681,9 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 // addMaterials adds the incoming material m to the crafting state
 func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
 	// 3- Craft resulting material
-	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger)
+	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger, &materials.CraftingOpts{
+		NoStrictValidation: c.noStrictValidation,
+	})
 	if err != nil {
 		return nil, err
 	}
