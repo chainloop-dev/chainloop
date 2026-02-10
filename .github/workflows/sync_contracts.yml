@@ -1,13 +1,9 @@
-# This workflow uses actions that are not certified by GitHub. They are provided
-# by a third-party and are governed by separate terms of service, privacy
-# policy, and support documentation.
-
 name: Sync Chainloop Workflow contracts
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - '.github/workflows/contracts/**'
+      - ".github/workflows/contracts/**"
   schedule:
     - cron: "0 0 * * *" # daily at midnight
 
@@ -16,7 +12,18 @@ permissions: read-all
 
 jobs:
   chainloop_contract_sync:
-    name: Chainloop Contract Sync
-    uses: chainloop-dev/labs/.github/workflows/chainloop_contract_sync.yml@5344787a72876bd22e199b94c09a86532521b4b3
-    secrets:
-      api_token: ${{ secrets.CHAINLOOP_TOKEN }}
+    name: "[chainloop] Chainloop Contract Sync"
+    runs-on: ubuntu-latest
+    env:
+      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
+      - name: Update contract definitions
+        run: |
+          for file in .github/workflows/contracts/*.yaml; do
+            chainloop wf contract apply -f $file
+          done
