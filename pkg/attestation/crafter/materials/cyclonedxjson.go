@@ -142,6 +142,7 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 			i.logger.Warn().Err(err).Msg("error decoding file, strict validation disabled, continuing")
 		} else {
 			i.logger.Debug().Err(err).Msg("error decoding file")
+			i.logger.Info().Msg("you can disable strict validation to skip schema validation")
 			return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
 		}
 	}
