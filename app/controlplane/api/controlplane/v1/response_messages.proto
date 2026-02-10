@@ -253,6 +253,7 @@ message User {
   google.protobuf.Timestamp updated_at = 6;
   string first_name = 4;
   string last_name = 5;
+  bool instance_admin = 7;
 }
 
 message OrgMembershipItem {
