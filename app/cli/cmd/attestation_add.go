@@ -144,7 +144,7 @@ func newAttestationAddCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&annotationsFlag, "annotation", nil, "additional annotation in the format of key=value")
 	flagAttestationID(cmd)
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
-	cmd.Flags().BoolVar(&noStrictValidation, "no-strict-validation", false, "skip strict schema validation for CycloneDX SBOM files")
+	cmd.Flags().BoolVar(&noStrictValidation, "no-strict-validation", false, "skip strict schema validation for SBOM_CYCLONEDX_JSON materials")
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
