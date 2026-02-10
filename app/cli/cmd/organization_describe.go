@@ -47,11 +47,7 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 	gt := output.NewTableWriter()
 	gt.SetTitle("Current Context")
 
-	userInfo := config.CurrentUser.PrintUserProfileWithEmail()
-	if config.CurrentUser.InstanceAdmin {
-		userInfo += "\nInstance admin=true"
-	}
-	gt.AppendRow(table.Row{"Logged in as", userInfo})
+	gt.AppendRow(table.Row{"Logged in as", config.CurrentUser.PrintUserProfileWithEmail()})
 	gt.AppendSeparator()
 
 	if m := config.CurrentMembership; m != nil {

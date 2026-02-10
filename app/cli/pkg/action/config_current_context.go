@@ -59,11 +59,19 @@ func (u *UserItem) PrintUserProfileWithEmail() string {
 		name = u.LastName
 	}
 
+	var result string
 	// If we have a name, format with email, otherwise just return email
 	if name != "" {
-		return name + " <" + u.Email + ">"
+		result = name + " <" + u.Email + ">"
+	} else {
+		result = u.Email
 	}
-	return u.Email
+
+	if u.InstanceAdmin {
+		result += " (Instance admin)"
+	}
+
+	return result
 }
 
 func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
