@@ -18,8 +18,10 @@ package grpcconn
 import (
 	"context"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"os"
+	"strings"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
@@ -29,6 +31,7 @@ import (
 
 type newOptionalArg struct {
 	caFilePath string
+	caContent  string
 	insecure   bool
 	orgName    string
 }
@@ -38,6 +41,13 @@ type Option func(*newOptionalArg)
 func WithCAFile(caFilePath string) Option {
 	return func(opt *newOptionalArg) {
 		opt.caFilePath = caFilePath
+	}
+}
+
+// WithCAContent sets the CA certificate content (PEM format or base64-encoded)
+func WithCAContent(content string) Option {
+	return func(opt *newOptionalArg) {
+		opt.caContent = content
 	}
 }
 
@@ -83,7 +93,13 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 			return nil, err
 		}
 
-		if optionalArgs.caFilePath != "" {
+		// Load CA from content if provided (takes precedence)
+		if optionalArgs.caContent != "" {
+			if err = appendCAFromContent(optionalArgs.caContent, certsPool); err != nil {
+				return nil, fmt.Errorf("failed to load CA from content: %w", err)
+			}
+		} else if optionalArgs.caFilePath != "" {
+			// Fallback to file path for backward compatibility
 			if err = appendCAFromFile(optionalArgs.caFilePath, certsPool); err != nil {
 				return nil, fmt.Errorf("failed to load CA cert: %w", err)
 			}
@@ -116,6 +132,27 @@ func appendCAFromFile(path string, certsPool *x509.CertPool) error {
 	return nil
 }
 
+func appendCAFromContent(content string, certsPool *x509.CertPool) error {
+	var pemContent []byte
+
+	// Try to decode as base64 first
+	decoded, err := base64.StdEncoding.DecodeString(content)
+	if err == nil && len(decoded) > 0 {
+		// Successfully decoded as base64
+		pemContent = decoded
+	} else {
+		// Not base64, assume it's PEM content directly
+		pemContent = []byte(content)
+	}
+
+	// Append to cert pool
+	if ok := certsPool.AppendCertsFromPEM(pemContent); !ok {
+		return fmt.Errorf("failed to append CA cert to pool")
+	}
+
+	return nil
+}
+
 type tokenAuth struct {
 	token    string
 	insecure bool
@@ -139,4 +176,31 @@ func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[strin
 
 func (t tokenAuth) RequireTransportSecurity() bool {
 	return !t.insecure
+}
+
+// IsFilePath checks if a value looks like a file path (vs base64/PEM content).
+// It returns true if the value appears to be a file path, false if it appears to be content.
+func IsFilePath(value string) bool {
+	// Check if value looks like a file path
+	// If it starts with /, ./, ../, or ~/, it's a path
+	// If it contains a newline, it's likely PEM content
+	// If it's valid base64 without path separators, assume it's content
+
+	if strings.HasPrefix(value, "/") ||
+		strings.HasPrefix(value, "./") ||
+		strings.HasPrefix(value, "../") ||
+		strings.HasPrefix(value, "~/") {
+		return true
+	}
+
+	if strings.Contains(value, "\n") {
+		return false // PEM content
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(value); err == nil {
+		return true
+	}
+
+	return false
 }

@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -123,8 +124,13 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				grpcconn.WithInsecure(apiInsecure()),
 			}
 
-			if caFilePath := viper.GetString(confOptions.controlplaneCA.viperKey); caFilePath != "" {
-				opts = append(opts, grpcconn.WithCAFile(caFilePath))
+			if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
+				// Check if it's a file path or base64/PEM content
+				if grpcconn.IsFilePath(caValue) {
+					opts = append(opts, grpcconn.WithCAFile(caValue))
+				} else {
+					opts = append(opts, grpcconn.WithCAContent(caValue))
+				}
 			}
 
 			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
@@ -494,4 +500,26 @@ func isAPITokenPreferred(cmd *cobra.Command) bool {
 
 func getConfigDir(appName string) string {
 	return filepath.Join(xdg.ConfigHome, appName)
+}
+
+// processCAFlag reads CA file content and encodes it to base64 if value is a file path
+func processCAFlag(opt *confOpt) {
+	value := viper.GetString(opt.viperKey)
+	if value == "" {
+		return
+	}
+
+	// If it's a file path, read and encode
+	if grpcconn.IsFilePath(value) {
+		content, err := os.ReadFile(value)
+		if err != nil {
+			// Log warning but don't fail
+			logger.Warn().Err(err).Str("file", value).Msg("Failed to read CA file")
+			return
+		}
+
+		// Store base64-encoded content in viper (will be persisted by config save)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		viper.Set(opt.viperKey, encoded)
+	}
 }

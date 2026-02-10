@@ -29,6 +29,9 @@ func newConfigSaveCmd() *cobra.Command {
 			skipActionOptsInit: trueString,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Process CA flags - read file contents and encode to base64 if needed
+			processCAFlag(confOptions.controlplaneCA)
+			processCAFlag(confOptions.CASCA)
 			return viper.WriteConfig()
 		},
 	}

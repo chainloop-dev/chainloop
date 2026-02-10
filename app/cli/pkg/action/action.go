@@ -142,7 +142,12 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 
 	opts := []grpcconn.Option{grpcconn.WithInsecure(casConnectionInsecure)}
 	if casCAPath != "" {
-		opts = append(opts, grpcconn.WithCAFile(casCAPath))
+		// Check if it's a file path or base64/PEM content
+		if grpcconn.IsFilePath(casCAPath) {
+			opts = append(opts, grpcconn.WithCAFile(casCAPath))
+		} else {
+			opts = append(opts, grpcconn.WithCAContent(casCAPath))
+		}
 	}
 
 	artifactCASConn, err := grpcconn.New(casURI, result.Token, opts...)
