@@ -12,6 +12,13 @@ A JavaScript/TypeScript SDK for writing Chainloop policies that compile to WebAs
 - Module-based architecture with esbuild bundling
 - Tested with real-world examples
 
+## Documentation
+
+**Official Documentation:**
+- [WASM Policies Overview](https://docs.chainloop.dev/guides/wasm-policies/overview)
+- [JavaScript SDK Guide](https://docs.chainloop.dev/guides/wasm-policies/javascript-sdk)
+- [Go SDK Guide](https://docs.chainloop.dev/guides/wasm-policies/go-sdk)
+
 ## Quick Start
 
 ### 1. Create a Policy

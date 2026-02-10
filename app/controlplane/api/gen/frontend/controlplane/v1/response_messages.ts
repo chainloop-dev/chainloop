@@ -391,6 +391,7 @@ export interface AttestationItem_PolicyEvaluationStatus {
   bypassed: boolean;
   blocked: boolean;
   hasViolations: boolean;
+  hasGatedViolations: boolean;
 }
 
 export interface AttestationItem_EnvVariable {
@@ -441,6 +442,7 @@ export interface PolicyEvaluation {
   skipReasons: string[];
   requirements: string[];
   groupReference?: PolicyReference;
+  gate: boolean;
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -587,6 +589,7 @@ export interface User {
   updatedAt?: Date;
   firstName: string;
   lastName: string;
+  instanceAdmin: boolean;
 }
 
 export interface OrgMembershipItem {
@@ -674,6 +677,8 @@ export interface CASBackendItem {
   /** Error message if validation failed */
   validationError?: string | undefined;
   updatedAt?: Date;
+  /** Wether it's the fallback backend in the organization */
+  fallback: boolean;
 }
 
 export enum CASBackendItem_ValidationStatus {
@@ -1687,7 +1692,7 @@ export const AttestationItem_PolicyEvaluationsEntry = {
 };
 
 function createBaseAttestationItem_PolicyEvaluationStatus(): AttestationItem_PolicyEvaluationStatus {
-  return { strategy: "", bypassed: false, blocked: false, hasViolations: false };
+  return { strategy: "", bypassed: false, blocked: false, hasViolations: false, hasGatedViolations: false };
 }
 
 export const AttestationItem_PolicyEvaluationStatus = {
@@ -1703,6 +1708,9 @@ export const AttestationItem_PolicyEvaluationStatus = {
     }
     if (message.hasViolations === true) {
       writer.uint32(32).bool(message.hasViolations);
+    }
+    if (message.hasGatedViolations === true) {
+      writer.uint32(40).bool(message.hasGatedViolations);
     }
     return writer;
   },
@@ -1742,6 +1750,13 @@ export const AttestationItem_PolicyEvaluationStatus = {
 
           message.hasViolations = reader.bool();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.hasGatedViolations = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1757,6 +1772,7 @@ export const AttestationItem_PolicyEvaluationStatus = {
       bypassed: isSet(object.bypassed) ? Boolean(object.bypassed) : false,
       blocked: isSet(object.blocked) ? Boolean(object.blocked) : false,
       hasViolations: isSet(object.hasViolations) ? Boolean(object.hasViolations) : false,
+      hasGatedViolations: isSet(object.hasGatedViolations) ? Boolean(object.hasGatedViolations) : false,
     };
   },
 
@@ -1766,6 +1782,7 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.bypassed !== undefined && (obj.bypassed = message.bypassed);
     message.blocked !== undefined && (obj.blocked = message.blocked);
     message.hasViolations !== undefined && (obj.hasViolations = message.hasViolations);
+    message.hasGatedViolations !== undefined && (obj.hasGatedViolations = message.hasGatedViolations);
     return obj;
   },
 
@@ -1783,6 +1800,7 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.bypassed = object.bypassed ?? false;
     message.blocked = object.blocked ?? false;
     message.hasViolations = object.hasViolations ?? false;
+    message.hasGatedViolations = object.hasGatedViolations ?? false;
     return message;
   },
 };
@@ -2203,6 +2221,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     skipReasons: [],
     requirements: [],
     groupReference: undefined,
+    gate: false,
   };
 }
 
@@ -2249,6 +2268,9 @@ export const PolicyEvaluation = {
     }
     if (message.groupReference !== undefined) {
       PolicyReference.encode(message.groupReference, writer.uint32(122).fork()).ldelim();
+    }
+    if (message.gate === true) {
+      writer.uint32(128).bool(message.gate);
     }
     return writer;
   },
@@ -2364,6 +2386,13 @@ export const PolicyEvaluation = {
 
           message.groupReference = PolicyReference.decode(reader, reader.uint32());
           continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.gate = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2401,6 +2430,7 @@ export const PolicyEvaluation = {
       skipReasons: Array.isArray(object?.skipReasons) ? object.skipReasons.map((e: any) => String(e)) : [],
       requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
       groupReference: isSet(object.groupReference) ? PolicyReference.fromJSON(object.groupReference) : undefined,
+      gate: isSet(object.gate) ? Boolean(object.gate) : false,
     };
   },
 
@@ -2448,6 +2478,7 @@ export const PolicyEvaluation = {
     }
     message.groupReference !== undefined &&
       (obj.groupReference = message.groupReference ? PolicyReference.toJSON(message.groupReference) : undefined);
+    message.gate !== undefined && (obj.gate = message.gate);
     return obj;
   },
 
@@ -2488,6 +2519,7 @@ export const PolicyEvaluation = {
     message.groupReference = (object.groupReference !== undefined && object.groupReference !== null)
       ? PolicyReference.fromPartial(object.groupReference)
       : undefined;
+    message.gate = object.gate ?? false;
     return message;
   },
 };
@@ -3483,7 +3515,15 @@ export const WorkflowContractVersionItem_RawBody = {
 };
 
 function createBaseUser(): User {
-  return { id: "", email: "", createdAt: undefined, updatedAt: undefined, firstName: "", lastName: "" };
+  return {
+    id: "",
+    email: "",
+    createdAt: undefined,
+    updatedAt: undefined,
+    firstName: "",
+    lastName: "",
+    instanceAdmin: false,
+  };
 }
 
 export const User = {
@@ -3505,6 +3545,9 @@ export const User = {
     }
     if (message.lastName !== "") {
       writer.uint32(42).string(message.lastName);
+    }
+    if (message.instanceAdmin === true) {
+      writer.uint32(56).bool(message.instanceAdmin);
     }
     return writer;
   },
@@ -3558,6 +3601,13 @@ export const User = {
 
           message.lastName = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.instanceAdmin = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3575,6 +3625,7 @@ export const User = {
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
       firstName: isSet(object.firstName) ? String(object.firstName) : "",
       lastName: isSet(object.lastName) ? String(object.lastName) : "",
+      instanceAdmin: isSet(object.instanceAdmin) ? Boolean(object.instanceAdmin) : false,
     };
   },
 
@@ -3586,6 +3637,7 @@ export const User = {
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     message.firstName !== undefined && (obj.firstName = message.firstName);
     message.lastName !== undefined && (obj.lastName = message.lastName);
+    message.instanceAdmin !== undefined && (obj.instanceAdmin = message.instanceAdmin);
     return obj;
   },
 
@@ -3601,6 +3653,7 @@ export const User = {
     message.updatedAt = object.updatedAt ?? undefined;
     message.firstName = object.firstName ?? "";
     message.lastName = object.lastName ?? "";
+    message.instanceAdmin = object.instanceAdmin ?? false;
     return message;
   },
 };
@@ -3939,6 +3992,7 @@ function createBaseCASBackendItem(): CASBackendItem {
     isInline: false,
     validationError: undefined,
     updatedAt: undefined,
+    fallback: false,
   };
 }
 
@@ -3982,6 +4036,9 @@ export const CASBackendItem = {
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(106).fork()).ldelim();
+    }
+    if (message.fallback === true) {
+      writer.uint32(112).bool(message.fallback);
     }
     return writer;
   },
@@ -4084,6 +4141,13 @@ export const CASBackendItem = {
 
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 14:
+          if (tag !== 112) {
+            break;
+          }
+
+          message.fallback = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4110,6 +4174,7 @@ export const CASBackendItem = {
       isInline: isSet(object.isInline) ? Boolean(object.isInline) : false,
       validationError: isSet(object.validationError) ? String(object.validationError) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      fallback: isSet(object.fallback) ? Boolean(object.fallback) : false,
     };
   },
 
@@ -4130,6 +4195,7 @@ export const CASBackendItem = {
     message.isInline !== undefined && (obj.isInline = message.isInline);
     message.validationError !== undefined && (obj.validationError = message.validationError);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.fallback !== undefined && (obj.fallback = message.fallback);
     return obj;
   },
 
@@ -4154,6 +4220,7 @@ export const CASBackendItem = {
     message.isInline = object.isInline ?? false;
     message.validationError = object.validationError ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.fallback = object.fallback ?? false;
     return message;
   },
 };

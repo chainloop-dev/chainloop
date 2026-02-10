@@ -44,7 +44,8 @@ func (APIToken) Fields() []ent.Field {
 		// the token can be manually revoked
 		field.Time("revoked_at").Optional(),
 		field.Time("last_used_at").Optional(),
-		field.UUID("organization_id", uuid.UUID{}),
+		// if this value is not set, the token is an instance-level token
+		field.UUID("organization_id", uuid.UUID{}).Optional(),
 		// Tokens can be associated with a project
 		// if this value is not set, the token is an organization level token
 		field.UUID("project_id", uuid.UUID{}).Optional(),
@@ -56,7 +57,7 @@ func (APIToken) Fields() []ent.Field {
 
 func (APIToken) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("organization", Organization.Type).Field("organization_id").Ref("api_tokens").Unique().Required(),
+		edge.From("organization", Organization.Type).Field("organization_id").Ref("api_tokens").Unique(),
 		edge.To("project", Project.Type).Field("project_id").Unique(),
 	}
 }
@@ -72,6 +73,11 @@ func (APIToken) Indexes() []ent.Index {
 		// for project level tokens, we scope the uniqueness to the organization and project
 		index.Fields("name").Edges("project").Unique().Annotations(
 			entsql.IndexWhere("revoked_at IS NULL AND project_id IS NOT NULL"),
+		),
+
+		// for instance-level tokens, names must be unique across all instance tokens
+		index.Fields("name").Unique().Annotations(
+			entsql.IndexWhere("revoked_at IS NULL AND organization_id IS NULL"),
 		),
 	}
 }

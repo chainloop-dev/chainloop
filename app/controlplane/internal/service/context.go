@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@ package service
 
 import (
 	"context"
+	"slices"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -67,7 +69,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		}
 	} else if currentUser != nil {
 		res.CurrentUser = &pb.User{
-			Id: currentUser.ID, Email: currentUser.Email, FirstName: currentUser.FirstName, LastName: currentUser.LastName, CreatedAt: timestamppb.New(*currentUser.CreatedAt),
+			Id: currentUser.ID, Email: currentUser.Email, FirstName: currentUser.FirstName, LastName: currentUser.LastName, CreatedAt: timestamppb.New(*currentUser.CreatedAt), InstanceAdmin: isInstanceAdmin(ctx),
 		}
 
 		// For regular users, we need to load the membership manually
@@ -127,6 +129,9 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 }
 
 func bizUserToPb(u *biz.User) *pb.User {
+	if u == nil {
+		return nil
+	}
 	return &pb.User{Id: u.ID, Email: u.Email,
 		CreatedAt: timestamppb.New(*u.CreatedAt), FirstName: u.FirstName, LastName: u.LastName,
 		UpdatedAt: timestamppb.New(*u.UpdatedAt),
@@ -139,4 +144,16 @@ func bizPolicyViolationBlockingStrategyToPb(blockOnPolicyViolation bool) pb.OrgI
 	}
 
 	return pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY
+}
+
+// isInstanceAdmin checks if the current user has instance admin role
+func isInstanceAdmin(ctx context.Context) bool {
+	m := entities.CurrentMembership(ctx)
+	if m == nil {
+		return false
+	}
+
+	return slices.ContainsFunc(m.Resources, func(r *entities.ResourceMembership) bool {
+		return r.Role == authz.RoleInstanceAdmin && r.ResourceType == authz.ResourceTypeInstance
+	})
 }

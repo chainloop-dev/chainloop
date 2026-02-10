@@ -162,8 +162,13 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	}
 
 	gt.AppendRow(table.Row{"Policies violation strategy", att.PolicyEvaluationStatus.Strategy})
-	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
+	if att.PolicyEvaluationStatus.Blocked {
 		gt.AppendRow(table.Row{"Run Blocked", att.PolicyEvaluationStatus.Blocked})
+	}
+	if att.PolicyEvaluationStatus.HasGatedViolations {
+		gt.AppendRow(table.Row{"Run Gated", text.Colors{text.FgHiRed}.Sprint(att.PolicyEvaluationStatus.HasGatedViolations)})
+	}
+	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
 		gt.AppendRow(table.Row{"Policy enforcement bypassed", att.PolicyEvaluationStatus.Bypassed})
 	}
 
@@ -172,6 +177,11 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		gt.AppendRow(table.Row{"Policies", "------"})
 		policiesTable(evs, gt)
 	}
+
+	if run.Attestation.AttestationViewURL != "" {
+		gt.AppendRow(table.Row{"Attestation View URL", run.Attestation.AttestationViewURL})
+	}
+
 	gt.Render()
 
 	predicateV1Table(att)

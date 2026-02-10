@@ -190,6 +190,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		policiesAllowedHostnames []string
 		// Timestamp Authority URL for new attestations
 		timestampAuthorityURL, signingCAName string
+		uiDashboardURL                       string
 	)
 
 	// Init in the control plane if needed including the runner context
@@ -220,6 +221,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		signingOpts := result.GetSigningOptions()
 		timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
 		signingCAName = signingOpts.GetSigningCa()
+		uiDashboardURL = result.GetUiDashboardUrl()
 
 		if v := workflowMeta.Version; v != nil && workflowRun.GetVersion() != nil {
 			v.Prerelease = workflowRun.GetVersion().GetPrerelease()
@@ -231,8 +233,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	// Get CAS credentials for PR metadata upload
 	var casBackend = &casclient.CASBackend{Name: "not-set"}
+	var casBackendInfo *clientAPI.Attestation_CASBackend
 	if !action.dryRun && attestationID != "" {
-		connectionCloserFn, err := getCASBackend(ctx, client, attestationID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
+		var connectionCloserFn func() error
+		casBackendInfo, connectionCloserFn, err = getCASBackend(ctx, client, attestationID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
 		if err != nil {
 			// We don't want to fail the attestation initialization if CAS setup fails, it's a best-effort feature for PR/MR metadata
 			action.Logger.Warn().Err(err).Msg("unexpected error getting CAS backend")
@@ -275,7 +279,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,
 		},
-		Auth: authInfo,
+		Auth:           authInfo,
+		CASBackend:     casBackendInfo,
+		Logger:         &action.Logger,
+		UIDashboardURL: uiDashboardURL,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {

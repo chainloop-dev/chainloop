@@ -24,6 +24,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
@@ -60,6 +61,7 @@ type AttestationService struct {
 	projectUseCase          *biz.ProjectUseCase
 	signingUseCase          *biz.SigningUseCase
 	userUseCase             *biz.UserUseCase
+	bootstrapConfig         *conf.Bootstrap
 }
 
 type NewAttestationServiceOpts struct {
@@ -80,6 +82,7 @@ type NewAttestationServiceOpts struct {
 	ProjectVersionUC   *biz.ProjectVersionUseCase
 	SigningUseCase     *biz.SigningUseCase
 	UserUC             *biz.UserUseCase
+	BootstrapConfig    *conf.Bootstrap
 	Opts               []NewOpt
 }
 
@@ -103,6 +106,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		projectVersionUseCase:   opts.ProjectVersionUC,
 		signingUseCase:          opts.SigningUseCase,
 		userUseCase:             opts.UserUC,
+		bootstrapConfig:         opts.BootstrapConfig,
 	}
 }
 
@@ -174,17 +178,15 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	// find the default CAS backend to associate the workflow
-	backend, err := s.casUC.FindDefaultBackend(context.Background(), robotAccount.OrgID)
-	if err != nil && !biz.IsNotFound(err) {
-		return nil, fmt.Errorf("failed to find default CAS backend: %w", err)
-	} else if err != nil {
-		return nil, errors.NotFound("not found", "default CAS backend not found")
-	}
-
-	// Check the status of the backend
-	if backend.ValidationStatus != biz.CASBackendValidationOK {
-		return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+	// Find the default or fallback CAS backend to associate the workflow
+	backend, err := s.casUC.FindDefaultOrFallbackBackend(context.Background(), robotAccount.OrgID)
+	if err != nil {
+		if biz.IsNotFound(err) {
+			return nil, cpAPI.ErrorCasBackendErrorReasonRequired("no CAS backend configured for organization")
+		} else if biz.IsErrValidation(err) {
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("CAS backend is unreachable or misconfigured: %s", err.Error())
+		}
+		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	// Create workflowRun
@@ -210,6 +212,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		Organization:             org.Name,
 		BlockOnPolicyViolation:   org.BlockOnPolicyViolation,
 		PoliciesAllowedHostnames: org.PoliciesAllowedHostnames,
+		UiDashboardUrl:           s.bootstrapConfig.UiDashboardUrl,
 	}
 
 	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}
@@ -555,10 +558,11 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 		Annotations:        predicate.GetAnnotations(),
 		PolicyEvaluations:  extractPolicyEvaluations(predicate.GetPolicyEvaluations()),
 		PolicyEvaluationStatus: &cpAPI.AttestationItem_PolicyEvaluationStatus{
-			Strategy:      string(policyEvaluationStatus.Strategy),
-			Bypassed:      policyEvaluationStatus.Bypassed,
-			Blocked:       policyEvaluationStatus.Blocked,
-			HasViolations: policyEvaluationStatus.HasViolations,
+			Strategy:           string(policyEvaluationStatus.Strategy),
+			Bypassed:           policyEvaluationStatus.Bypassed,
+			Blocked:            policyEvaluationStatus.Blocked,
+			HasViolations:      policyEvaluationStatus.HasViolations,
+			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
 		},
 		Bundle: att.Bundle,
 	}, nil
@@ -592,6 +596,7 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 				Skipped:      ev.Skipped,
 				SkipReasons:  ev.SkipReasons,
 				Requirements: ev.Requirements,
+				Gate:         ev.Gate,
 			}
 
 			if ev.PolicyReference != nil {

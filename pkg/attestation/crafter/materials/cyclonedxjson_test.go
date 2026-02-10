@@ -225,6 +225,72 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 	}
 }
 
+func TestCycloneDXJSONCraftNoStrictValidation(t *testing.T) {
+	testCases := []struct {
+		name               string
+		filePath           string
+		noStrictValidation bool
+		wantErr            string
+	}{
+		{
+			name:               "invalid schema without skip flag fails",
+			filePath:           "./testdata/sbom.cyclonedx-invalid-schema.json",
+			noStrictValidation: false,
+			wantErr:            "invalid cyclonedx sbom file",
+		},
+		{
+			name:               "invalid schema with skip flag succeeds",
+			filePath:           "./testdata/sbom.cyclonedx-invalid-schema.json",
+			noStrictValidation: true,
+			wantErr:            "",
+		},
+		{
+			name:               "non-cyclonedx file fails even with skip flag",
+			filePath:           "./testdata/random.json",
+			noStrictValidation: true,
+			wantErr:            "invalid cyclonedx sbom file",
+		},
+		{
+			name:               "valid file works without skip flag",
+			filePath:           "./testdata/sbom.cyclonedx.json",
+			noStrictValidation: false,
+			wantErr:            "",
+		},
+	}
+
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
+	}
+	l := zerolog.Nop()
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ast := assert.New(t)
+			// Mock uploader
+			uploader := mUploader.NewUploader(t)
+			if tc.wantErr == "" {
+				uploader.On("UploadFile", context.TODO(), tc.filePath).
+					Return(&casclient.UpDownStatus{}, nil)
+			}
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewCyclonedxJSONCrafter(schema, backend, &l,
+				materials.WithCycloneDXNoStrictValidation(tc.noStrictValidation))
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			if tc.wantErr != "" {
+				ast.ErrorContains(err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			ast.Equal(contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String(), got.MaterialType.String())
+		})
+	}
+}
+
 func TestCycloneDXJSONCraft_SkipUpload(t *testing.T) {
 	testCases := []struct {
 		name       string

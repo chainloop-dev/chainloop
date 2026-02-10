@@ -24,6 +24,8 @@ export interface InfozResponse {
   chartVersion: string;
   /** Whether organization creation is restricted to admins */
   restrictedOrgCreation: boolean;
+  /** Link to the platform UI, if available */
+  uiDashboardUrl: string;
 }
 
 export interface StatuszResponse {
@@ -130,7 +132,7 @@ export const StatuszRequest = {
 };
 
 function createBaseInfozResponse(): InfozResponse {
-  return { loginUrl: "", version: "", chartVersion: "", restrictedOrgCreation: false };
+  return { loginUrl: "", version: "", chartVersion: "", restrictedOrgCreation: false, uiDashboardUrl: "" };
 }
 
 export const InfozResponse = {
@@ -146,6 +148,9 @@ export const InfozResponse = {
     }
     if (message.restrictedOrgCreation === true) {
       writer.uint32(32).bool(message.restrictedOrgCreation);
+    }
+    if (message.uiDashboardUrl !== "") {
+      writer.uint32(42).string(message.uiDashboardUrl);
     }
     return writer;
   },
@@ -185,6 +190,13 @@ export const InfozResponse = {
 
           message.restrictedOrgCreation = reader.bool();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.uiDashboardUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -200,6 +212,7 @@ export const InfozResponse = {
       version: isSet(object.version) ? String(object.version) : "",
       chartVersion: isSet(object.chartVersion) ? String(object.chartVersion) : "",
       restrictedOrgCreation: isSet(object.restrictedOrgCreation) ? Boolean(object.restrictedOrgCreation) : false,
+      uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
     };
   },
 
@@ -209,6 +222,7 @@ export const InfozResponse = {
     message.version !== undefined && (obj.version = message.version);
     message.chartVersion !== undefined && (obj.chartVersion = message.chartVersion);
     message.restrictedOrgCreation !== undefined && (obj.restrictedOrgCreation = message.restrictedOrgCreation);
+    message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
     return obj;
   },
 
@@ -222,6 +236,7 @@ export const InfozResponse = {
     message.version = object.version ?? "";
     message.chartVersion = object.chartVersion ?? "";
     message.restrictedOrgCreation = object.restrictedOrgCreation ?? false;
+    message.uiDashboardUrl = object.uiDashboardUrl ?? "";
     return message;
   },
 };

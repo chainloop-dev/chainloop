@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	chainloopVersion = "v1.64.0"
+	chainloopVersion = "v1.75.0"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
@@ -36,6 +36,11 @@ type Attestation struct {
 	// +private
 	RegistryAuth RegistryAuth
 	Client       *Chainloop
+
+	// +private
+	parentCIContext *ParentCIContext
+	// +private
+	githubEventFile *dagger.File
 }
 
 // Configuration for a container registry client
@@ -62,6 +67,52 @@ type InstanceInfo struct {
 	Insecure bool
 }
 
+// ParentCIContext holds environment variables from a parent CI system (Github Actions, Gitlab CI)
+// to enable PR/MR auto-detection and commit verification when running Chainloop via Dagger inside those CI systems
+type ParentCIContext struct {
+	// Github Actions PR context
+	// Repository name (owner/repo)
+	GithubRepository string
+	// Run ID for the workflow run
+	GithubRunID string
+	// Event name (e.g., "pull_request", "pull_request_target")
+	GithubEventName string
+	// Source branch name
+	GithubHeadRef string
+	// Target branch name
+	GithubBaseRef string
+	// Github token for API access and commit verification
+	GithubToken *dagger.Secret
+
+	// Gitlab CI MR context
+	// CI indicator (always "true" in Gitlab CI)
+	GitlabCI string
+	// Server URL (e.g., "https://gitlab.com")
+	GitlabServerURL string
+	// Project path (e.g., "group/project")
+	GitlabProjectPath string
+	// Job URL
+	GitlabJobURL string
+	// Pipeline source (should be "merge_request_event" for MRs)
+	GitlabPipelineSource string
+	// Merge request internal ID
+	GitlabMRIID string
+	// Merge request title
+	GitlabMRTitle string
+	// Merge request description
+	GitlabMRDescription string
+	// Source branch name
+	GitlabMRSourceBranch string
+	// Target branch name
+	GitlabMRTargetBranch string
+	// Project URL
+	GitlabMRProjectURL string
+	// User login
+	GitlabUserLogin string
+	// Gitlab job token for API access and commit verification
+	GitlabJobToken *dagger.Secret
+}
+
 // Initialize a new attestation
 func (m *Chainloop) Init(
 	ctx context.Context,
@@ -86,11 +137,103 @@ func (m *Chainloop) Init(
 	// mark the version as release
 	// +optional
 	release bool,
+	// Github event file for PR detection (when running in Github Actions)
+	// +optional
+	githubEventFile *dagger.File,
+	// Github repository name (owner/repo)
+	// +optional
+	githubRepository string,
+	// Github run ID for the workflow run
+	// +optional
+	githubRunID string,
+	// Github event name (e.g., "pull_request", "pull_request_target")
+	// +optional
+	githubEventName string,
+	// Github source branch name
+	// +optional
+	githubHeadRef string,
+	// Github target branch name
+	// +optional
+	githubBaseRef string,
+	// Github token for API access and commit verification (when running in Github Actions)
+	// +optional
+	githubToken *dagger.Secret,
+	// Gitlab CI indicator (should be "true" when running in Gitlab CI)
+	// +optional
+	gitlabCI string,
+	// Gitlab server URL (e.g., "https://gitlab.com")
+	// +optional
+	gitlabServerURL string,
+	// Gitlab project path (e.g., "group/project")
+	// +optional
+	gitlabProjectPath string,
+	// Gitlab job URL
+	// +optional
+	gitlabJobURL string,
+	// Gitlab pipeline source (should be "merge_request_event" for MRs)
+	// +optional
+	gitlabPipelineSource string,
+	// Gitlab merge request internal ID
+	// +optional
+	gitlabMRIID string,
+	// Gitlab merge request title
+	// +optional
+	gitlabMRTitle string,
+	// Gitlab merge request description
+	// +optional
+	gitlabMRDescription string,
+	// Gitlab source branch name
+	// +optional
+	gitlabMRSourceBranch string,
+	// Gitlab target branch name
+	// +optional
+	gitlabMRTargetBranch string,
+	// Gitlab project URL
+	// +optional
+	gitlabMRProjectURL string,
+	// Gitlab user login
+	// +optional
+	gitlabUserLogin string,
+	// Gitlab job token for API access and commit verification (when running in Gitlab CI)
+	// +optional
+	gitlabJobToken *dagger.Secret,
 ) (*Attestation, error) {
+	// Construct ParentCIContext from individual parameters
+	var parentCIContext *ParentCIContext
+	if githubRepository != "" || githubRunID != "" || githubEventName != "" || githubHeadRef != "" || githubBaseRef != "" ||
+		gitlabCI != "" || gitlabServerURL != "" || gitlabProjectPath != "" || gitlabJobURL != "" ||
+		gitlabPipelineSource != "" || gitlabMRIID != "" || gitlabMRTitle != "" ||
+		gitlabMRDescription != "" || gitlabMRSourceBranch != "" || gitlabMRTargetBranch != "" ||
+		gitlabMRProjectURL != "" || gitlabUserLogin != "" {
+		parentCIContext = &ParentCIContext{
+			GithubRepository:     githubRepository,
+			GithubRunID:          githubRunID,
+			GithubEventName:      githubEventName,
+			GithubHeadRef:        githubHeadRef,
+			GithubBaseRef:        githubBaseRef,
+			GithubToken:          githubToken,
+			GitlabCI:             gitlabCI,
+			GitlabServerURL:      gitlabServerURL,
+			GitlabProjectPath:    gitlabProjectPath,
+			GitlabJobURL:         gitlabJobURL,
+			GitlabPipelineSource: gitlabPipelineSource,
+			GitlabMRIID:          gitlabMRIID,
+			GitlabMRTitle:        gitlabMRTitle,
+			GitlabMRDescription:  gitlabMRDescription,
+			GitlabMRSourceBranch: gitlabMRSourceBranch,
+			GitlabMRTargetBranch: gitlabMRTargetBranch,
+			GitlabMRProjectURL:   gitlabMRProjectURL,
+			GitlabUserLogin:      gitlabUserLogin,
+			GitlabJobToken:       gitlabJobToken,
+		}
+	}
+
 	att := &Attestation{
-		Token:      token,
-		repository: repository,
-		Client:     m,
+		Token:           token,
+		repository:      repository,
+		Client:          m,
+		parentCIContext: parentCIContext,
+		githubEventFile: githubEventFile,
 	}
 	// Append the contract revision to the args if provided
 	args := []string{
@@ -344,13 +487,83 @@ func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
 
-func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo) *dagger.Container {
+func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI *ParentCIContext, githubEventFile *dagger.File) *dagger.Container {
 	ctr := dag.Container().
 		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
 		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
 		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).
 		WithUser("").                                                                                     // Our images come with pre-defined user set, so we need to reset it
 		WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String()) // Cache TTL
+
+	// Inject parent CI context if provided
+	if parentCI != nil {
+		// Github Actions context
+		if parentCI.GithubRepository != "" {
+			ctr = ctr.WithEnvVariable("GITHUB_REPOSITORY", parentCI.GithubRepository)
+		}
+		if parentCI.GithubRunID != "" {
+			ctr = ctr.WithEnvVariable("GITHUB_RUN_ID", parentCI.GithubRunID)
+		}
+		if parentCI.GithubEventName != "" {
+			ctr = ctr.WithEnvVariable("GITHUB_EVENT_NAME", parentCI.GithubEventName)
+		}
+		if parentCI.GithubHeadRef != "" {
+			ctr = ctr.WithEnvVariable("GITHUB_HEAD_REF", parentCI.GithubHeadRef)
+		}
+		if parentCI.GithubBaseRef != "" {
+			ctr = ctr.WithEnvVariable("GITHUB_BASE_REF", parentCI.GithubBaseRef)
+		}
+		if parentCI.GithubToken != nil {
+			ctr = ctr.WithSecretVariable("GITHUB_TOKEN", parentCI.GithubToken)
+		}
+
+		// Handle Github event file (passed as separate parameter for CLI convenience)
+		if githubEventFile != nil {
+			ctr = ctr.WithFile("/tmp/github_event.json", githubEventFile).
+				WithEnvVariable("GITHUB_EVENT_PATH", "/tmp/github_event.json")
+		}
+
+		// Gitlab CI context
+		if parentCI.GitlabCI != "" {
+			ctr = ctr.WithEnvVariable("GITLAB_CI", parentCI.GitlabCI)
+		}
+		if parentCI.GitlabServerURL != "" {
+			ctr = ctr.WithEnvVariable("CI_SERVER_URL", parentCI.GitlabServerURL)
+		}
+		if parentCI.GitlabProjectPath != "" {
+			ctr = ctr.WithEnvVariable("CI_PROJECT_PATH", parentCI.GitlabProjectPath)
+		}
+		if parentCI.GitlabJobURL != "" {
+			ctr = ctr.WithEnvVariable("CI_JOB_URL", parentCI.GitlabJobURL)
+		}
+		if parentCI.GitlabPipelineSource != "" {
+			ctr = ctr.WithEnvVariable("CI_PIPELINE_SOURCE", parentCI.GitlabPipelineSource)
+		}
+		if parentCI.GitlabMRIID != "" {
+			ctr = ctr.WithEnvVariable("CI_MERGE_REQUEST_IID", parentCI.GitlabMRIID)
+		}
+		if parentCI.GitlabMRTitle != "" {
+			ctr = ctr.WithEnvVariable("CI_MERGE_REQUEST_TITLE", parentCI.GitlabMRTitle)
+		}
+		if parentCI.GitlabMRDescription != "" {
+			ctr = ctr.WithEnvVariable("CI_MERGE_REQUEST_DESCRIPTION", parentCI.GitlabMRDescription)
+		}
+		if parentCI.GitlabMRSourceBranch != "" {
+			ctr = ctr.WithEnvVariable("CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", parentCI.GitlabMRSourceBranch)
+		}
+		if parentCI.GitlabMRTargetBranch != "" {
+			ctr = ctr.WithEnvVariable("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", parentCI.GitlabMRTargetBranch)
+		}
+		if parentCI.GitlabMRProjectURL != "" {
+			ctr = ctr.WithEnvVariable("CI_MERGE_REQUEST_PROJECT_URL", parentCI.GitlabMRProjectURL)
+		}
+		if parentCI.GitlabUserLogin != "" {
+			ctr = ctr.WithEnvVariable("GITLAB_USER_LOGIN", parentCI.GitlabUserLogin)
+		}
+		if parentCI.GitlabJobToken != nil {
+			ctr = ctr.WithSecretVariable("CI_JOB_TOKEN", parentCI.GitlabJobToken)
+		}
+	}
 
 	if token != nil {
 		ctr = ctr.WithSecretVariable("CHAINLOOP_TOKEN", token)
@@ -390,7 +603,7 @@ func (att *Attestation) Container(
 	// +default=0
 	ttl int,
 ) *dagger.Container {
-	ctr := cliContainer(ttl, att.Token, att.Client.Instance)
+	ctr := cliContainer(ttl, att.Token, att.Client.Instance, att.parentCIContext, att.githubEventFile)
 	if att.repository != nil {
 		ctr = ctr.WithDirectory(".", att.repository)
 	}
@@ -537,7 +750,7 @@ func (m *Chainloop) WorkflowCreate(
 	// +optional
 	skipIfExists bool,
 ) (string, error) {
-	return cliContainer(0, token, m.Instance).
+	return cliContainer(0, token, m.Instance, nil, nil).
 		WithExec([]string{
 			"workflow", "create",
 			"--name", name,

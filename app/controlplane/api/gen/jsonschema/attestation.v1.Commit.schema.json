@@ -10,6 +10,10 @@
     "^(authorName)$": {
       "minLength": 1,
       "type": "string"
+    },
+    "^(platformVerification)$": {
+      "$ref": "attestation.v1.Commit.CommitVerification.schema.json",
+      "description": "Platform verification information (GitHub/GitLab signature verification)"
     }
   },
   "properties": {
@@ -31,6 +35,10 @@
     "message": {
       "minLength": 1,
       "type": "string"
+    },
+    "platform_verification": {
+      "$ref": "attestation.v1.Commit.CommitVerification.schema.json",
+      "description": "Platform verification information (GitHub/GitLab signature verification)"
     },
     "remotes": {
       "items": {

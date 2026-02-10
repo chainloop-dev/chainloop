@@ -446,6 +446,16 @@ func OrganizationIDNotIn(vs ...uuid.UUID) predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotIn(FieldOrganizationID, vs...))
 }
 
+// OrganizationIDIsNil applies the IsNil predicate on the "organization_id" field.
+func OrganizationIDIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldOrganizationID))
+}
+
+// OrganizationIDNotNil applies the NotNil predicate on the "organization_id" field.
+func OrganizationIDNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldOrganizationID))
+}
+
 // ProjectIDEQ applies the EQ predicate on the "project_id" field.
 func ProjectIDEQ(v uuid.UUID) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldProjectID, v))

@@ -139,6 +139,8 @@ message AttestationServiceInitResponse {
     SigningOptions signing_options = 5;
     // array of hostnames that are allowed to be used in the policies
     repeated string policies_allowed_hostnames = 6;
+    // URL pointing to the web dashboard. It might be empty if not available
+    string ui_dashboard_url = 7;
   }
 
   message SigningOptions {
@@ -242,6 +244,7 @@ message WorkflowRunServiceViewResponse {
   Result result = 1;
 
   message Result {
+    string org_name = 5;
     WorkflowRunItem workflow_run = 1;
     AttestationItem attestation = 2;
     // It will be nil if the verification is not possible (old or non-keyless attestations)

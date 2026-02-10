@@ -1,0 +1,7 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "version": 1,
+  "invalidField": "this field is not valid according to the schema",
+  "components": "should be an array but is a string"
+}

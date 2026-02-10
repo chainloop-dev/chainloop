@@ -116,6 +116,7 @@ message AttestationItem {
     bool bypassed = 2;
     bool blocked = 3;
     bool has_violations = 4;
+    bool has_gated_violations = 5;
   }
 
   message EnvVariable {
@@ -161,6 +162,7 @@ message PolicyEvaluation {
   repeated string skip_reasons = 13;
   repeated string requirements = 14;
   PolicyReference group_reference = 15;
+  bool gate = 16;
 }
 
 message PolicyViolation {
@@ -251,6 +253,7 @@ message User {
   google.protobuf.Timestamp updated_at = 6;
   string first_name = 4;
   string last_name = 5;
+  bool instance_admin = 7;
 }
 
 message OrgMembershipItem {
@@ -312,6 +315,8 @@ message CASBackendItem {
   // Error message if validation failed
   optional string validation_error = 12;
   google.protobuf.Timestamp updated_at = 13;
+  // Wether it's the fallback backend in the organization
+  bool fallback = 14;
 
   message Limits {
     // Max number of bytes allowed to be stored in this backend

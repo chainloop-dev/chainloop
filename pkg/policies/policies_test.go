@@ -807,6 +807,31 @@ func (s *testSuite) TestGetInputArguments() {
 			inputs:   map[string]string{"foo": "bar1,bar2,bar3", "bar": "baz", "foos": "bar1\nbar2\nbar3\n"},
 			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}, "bar": "baz", "foos": []string{"bar1", "bar2", "bar3"}},
 		},
+		{
+			name:     "regex with escaped parameters",
+			inputs:   map[string]string{"pattern": "[A-Z][A-Z0-9_]+-\\d+"},
+			expected: map[string]any{"pattern": `[A-Z][A-Z0-9_]+-\d+`},
+		},
+		{
+			name:     "regex with multiple backslashes",
+			inputs:   map[string]string{"pattern": "\\d+\\s+\\w+"},
+			expected: map[string]any{"pattern": `\d+\s+\w+`},
+		},
+		{
+			name:     "mixed escaped comma and regex",
+			inputs:   map[string]string{"patterns": "\\d+\\,test,\\w+"},
+			expected: map[string]any{"patterns": []string{`\d+,test`, `\w+`}},
+		},
+		{
+			name:     "backslash at end",
+			inputs:   map[string]string{"foo": "bar\\"},
+			expected: map[string]any{"foo": `bar\`},
+		},
+		{
+			name:     "double backslash",
+			inputs:   map[string]string{"foo": "bar\\\\baz"},
+			expected: map[string]any{"foo": `bar\\baz`},
+		},
 	}
 
 	for _, tc := range cases {

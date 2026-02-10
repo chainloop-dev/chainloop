@@ -300,12 +300,14 @@ func extractReferrers(att *dsse.Envelope, digest cr_v1.Hash, repo ReferrerRepo) 
 	// We add both annotations and workflow metadata
 	attestationReferrer.Annotations = predicate.GetAnnotations()
 	hasViolations := predicate.GetPolicyEvaluationStatus().HasViolations
+	hasGatedViolations := predicate.GetPolicyEvaluationStatus().HasGatedViolations
 	attestationReferrer.Metadata = map[string]string{
 		// workflow name, team and project
 		"name":                     predicate.GetMetadata().Name,
 		"team":                     predicate.GetMetadata().Team,
 		"project":                  predicate.GetMetadata().Project,
 		"hasPolicyViolations":      fmt.Sprintf("%t", hasViolations),
+		"hasGatedPolicyViolations": fmt.Sprintf("%t", hasGatedViolations),
 		"projectVersion":           predicate.GetMetadata().ProjectVersion,
 		"projectVersionPrerelease": fmt.Sprintf("%t", predicate.GetMetadata().ProjectVersionPrerelease),
 		"organization":             predicate.GetMetadata().Organization,

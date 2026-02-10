@@ -40,15 +40,18 @@ func NewOrgInvitation(data *Data, logger log.Logger) biz.OrgInvitationRepo {
 	}
 }
 
-func (r *OrgInvitation) Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role, invCtx *biz.OrgInvitationContext) (*biz.OrgInvitation, error) {
-	invite, err := r.data.DB.OrgInvitation.Create().
+func (r *OrgInvitation) Create(ctx context.Context, orgID uuid.UUID, senderID *uuid.UUID, receiverEmail string, role authz.Role, invCtx *biz.OrgInvitationContext) (*biz.OrgInvitation, error) {
+	update := r.data.DB.OrgInvitation.Create().
 		SetOrganizationID(orgID).
-		SetSenderID(senderID).
 		SetRole(role).
 		SetReceiverEmail(receiverEmail).
-		SetNillableContext(invCtx).
-		Save(ctx)
+		SetNillableContext(invCtx)
 
+	if senderID != nil {
+		update.SetSenderID(*senderID)
+	}
+
+	invite, err := update.Save(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ func (s *CASBackendIntegrationTestSuite) TestUniqueNameDuringCreate() {
 				orgID = tc.opts.OrgID.String()
 			}
 
-			got, err := s.CASBackend.Create(context.Background(), orgID, tc.opts.Name, location, description, backendType, nil, true, nil)
+			got, err := s.CASBackend.Create(context.Background(), orgID, tc.opts.Name, location, description, backendType, nil, true, false, nil)
 			if tc.wantErrMsg != "" {
 				s.ErrorContains(err, tc.wantErrMsg)
 				return
@@ -100,13 +100,13 @@ func (s *CASBackendIntegrationTestSuite) TestCreate() {
 
 	s.Run("non-existing org", func() {
 		_, err := s.CASBackend.Create(
-			context.TODO(), uuid.NewString(), randomName(), location, description, backendType, nil, true, nil,
+			context.TODO(), uuid.NewString(), randomName(), location, description, backendType, nil, true, false, nil,
 		)
 		assert.Error(err)
 	})
 
 	s.Run("create default", func() {
-		b, err := s.CASBackend.Create(context.TODO(), orgID, "my-name", location, description, backendType, nil, true, nil)
+		b, err := s.CASBackend.Create(context.TODO(), orgID, "my-name", location, description, backendType, nil, true, false, nil)
 		assert.NoError(err)
 
 		if diff := cmp.Diff(&biz.CASBackend{
@@ -128,8 +128,8 @@ func (s *CASBackendIntegrationTestSuite) TestCreate() {
 		}
 	})
 
-	s.Run("create fallback", func() {
-		b, err := s.CASBackend.CreateInlineFallbackBackend(context.TODO(), orgID)
+	s.Run("create inline backend", func() {
+		b, err := s.CASBackend.CreateInlineBackend(context.TODO(), orgID)
 		assert.NoError(err)
 
 		if diff := cmp.Diff(&biz.CASBackend{
@@ -138,7 +138,7 @@ func (s *CASBackendIntegrationTestSuite) TestCreate() {
 			Name:             "default-inline",
 			Default:          true,
 			Inline:           true,
-			Fallback:         true,
+			Fallback:         false,
 			ValidationStatus: "OK",
 			Limits: &biz.CASBackendLimits{
 				MaxBytes: 512000,
@@ -149,31 +149,81 @@ func (s *CASBackendIntegrationTestSuite) TestCreate() {
 			assert.Failf("mismatch (-want +got):\n%s", diff)
 		}
 	})
+
+	s.Run("create fallback backend", func() {
+		b, err := s.CASBackend.Create(context.TODO(), orgID, "my-fallback", location, description, backendType, nil, false, true, nil)
+		assert.NoError(err)
+
+		if diff := cmp.Diff(&biz.CASBackend{
+			Location:         location,
+			Name:             "my-fallback",
+			Description:      description,
+			SecretName:       "stored-OCI-secret",
+			Provider:         backendType,
+			ValidationStatus: "OK",
+			Default:          false,
+			Fallback:         true,
+			Inline:           false,
+			Limits: &biz.CASBackendLimits{
+				MaxBytes: 104857600,
+			},
+		}, b,
+			cmpopts.IgnoreFields(biz.CASBackend{}, "CreatedAt", "ID", "ValidatedAt", "UpdatedAt", "OrganizationID"),
+		); diff != "" {
+			assert.Failf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	s.Run("cannot create backend as both default and fallback", func() {
+		_, err := s.CASBackend.Create(context.TODO(), orgID, "both-flags", location, description, backendType, nil, true, true, nil)
+		assert.Error(err)
+		assert.Contains(err.Error(), "cannot be both default and fallback")
+	})
 }
 func (s *CASBackendIntegrationTestSuite) TestCreateOverride() {
 	assert := assert.New(s.T())
 
-	// When a new default backend is created, the previous default should be overridden
-	b1, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, nil)
-	assert.NoError(err)
-	assert.True(b1.Default)
-	b2, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), "another-location", description, backendType, nil, true, nil)
-	assert.NoError(err)
-	assert.True(b2.Default)
+	s.Run("override default backend", func() {
+		// When a new default backend is created, the previous default should be overridden
+		b1, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
+		assert.NoError(err)
+		assert.True(b1.Default)
+		b2, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), "another-location", description, backendType, nil, true, false, nil)
+		assert.NoError(err)
+		assert.True(b2.Default)
 
-	// Check that the first one is no longer default
-	b1, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, b1.ID.String())
-	assert.NoError(err)
-	assert.False(b1.Default)
+		// Check that the first one is no longer default
+		b1, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, b1.ID.String())
+		assert.NoError(err)
+		assert.False(b1.Default)
+	})
+
+	s.Run("override fallback backend", func() {
+		// When a new fallback backend is created, the previous fallback should be overridden
+		f1, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, false, true, nil)
+		assert.NoError(err)
+		assert.True(f1.Fallback)
+		assert.False(f1.Default)
+
+		f2, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), "another-location", description, backendType, nil, false, true, nil)
+		assert.NoError(err)
+		assert.True(f2.Fallback)
+		assert.False(f2.Default)
+
+		// Check that the first one is no longer fallback
+		f1, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, f1.ID.String())
+		assert.NoError(err)
+		assert.False(f1.Fallback)
+	})
 }
 
 func (s *CASBackendIntegrationTestSuite) TestFindByNameInOrg() {
 	name1 := randomName()
 	name2 := randomName()
-	b1, err := s.CASBackend.Create(context.TODO(), s.orgOne.ID, name1, location, description, backendType, nil, true, nil)
+	b1, err := s.CASBackend.Create(context.TODO(), s.orgOne.ID, name1, location, description, backendType, nil, true, false, nil)
 	s.NoError(err)
 	s.True(b1.Default)
-	b2, err := s.CASBackend.Create(context.TODO(), s.orgTwo.ID, name2, "another-location", description, backendType, nil, true, nil)
+	b2, err := s.CASBackend.Create(context.TODO(), s.orgTwo.ID, name2, "another-location", description, backendType, nil, true, false, nil)
 	s.NoError(err)
 
 	testCases := []struct {
@@ -236,15 +286,15 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 
 	s.Run("overrides previous backends", func() {
 		// When a new default backend is set, the previous default should be overridden
-		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, nil)
+		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
 		assert.NoError(err)
 		assert.True(defaultB.Default)
-		nonDefaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), "another-location", description, backendType, nil, false, nil)
+		nonDefaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), "another-location", description, backendType, nil, false, false, nil)
 		assert.NoError(err)
 		assert.False(nonDefaultB.Default)
 
 		// Update the non-default to be default
-		nonDefaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, nonDefaultB.ID.String(), toPtrS(""), nil, toPtrBool(true), nil)
+		nonDefaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, nonDefaultB.ID.String(), toPtrS(""), nil, toPtrBool(true), nil, nil)
 		assert.NoError(err)
 		assert.True(nonDefaultB.Default)
 
@@ -256,12 +306,12 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 
 	s.Run("can update only the description", func() {
 		// When a new default backend is set, the previous default should be overridden
-		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, nil)
+		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 
 		// Update the description
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS("updated desc"), nil, toPtrBool(true), nil)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS("updated desc"), nil, toPtrBool(true), nil, nil)
 		assert.NoError(err)
 		assert.Equal("updated desc", defaultB.Description)
 		assert.True(defaultB.Default)
@@ -269,49 +319,90 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 
 	s.Run("can update only the status", func() {
 		// When a new default backend is set, the previous default should be overridden
-		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, nil)
+		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 
 		// update the status
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), nil, toPtrBool(false), nil)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), nil, toPtrBool(false), nil, nil)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 		assert.False(defaultB.Default)
 	})
 
-	s.Run("the fallback backend will be set if default true => false", func() {
-		// When a new default backend is set, the previous default should be overridden
-		fallbackB, err := s.CASBackend.CreateInlineFallbackBackend(context.TODO(), s.orgNoBackend.ID)
+	s.Run("the inline backend will be promoted if default is unset and no fallback exists", func() {
+		// Create an inline backend
+		inlineB, err := s.CASBackend.CreateInlineBackend(context.TODO(), s.orgNoBackend.ID)
 		assert.NoError(err)
-		assert.True(fallbackB.Fallback)
-		assert.True(fallbackB.Default)
+		assert.False(inlineB.Fallback)
+		assert.True(inlineB.Default)
 
 		// Create a new default backend
-		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, nil)
+		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
 		assert.NoError(err)
 		assert.False(defaultB.Fallback) // it's not fallback
 		assert.True(defaultB.Default)
 
-		// The fallback now is no longer the default
-		fallbackB, err = s.CASBackend.FindFallbackBackend(context.TODO(), s.orgNoBackend.ID)
+		// The inline is no longer the default
+		inlineB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, inlineB.ID.String())
 		assert.NoError(err)
-		assert.False(fallbackB.Default)
+		assert.False(inlineB.Default)
 
 		// update the status
-		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), nil, toPtrBool(false), nil)
+		defaultB, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), nil, toPtrBool(false), nil, nil)
 		assert.NoError(err)
 		assert.False(defaultB.Default)
 
-		// The fallback is now the default
-		fallbackB, err = s.CASBackend.FindFallbackBackend(context.TODO(), s.orgNoBackend.ID)
+		// The inline is now the default
+		inlineB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, inlineB.ID.String())
 		assert.NoError(err)
-		assert.True(fallbackB.Default)
+		assert.True(inlineB.Default)
+	})
+
+	s.Run("can update backend to fallback", func() {
+		// Create a non-fallback backend
+		b, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, false, false, nil)
+		assert.NoError(err)
+		assert.False(b.Fallback)
+
+		// Update it to be fallback
+		b, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, b.ID.String(), toPtrS(description), nil, nil, toPtrBool(true), nil)
+		assert.NoError(err)
+		assert.True(b.Fallback)
+		assert.False(b.Default)
+	})
+
+	s.Run("updating to default unsets fallback", func() {
+		// Create a fallback backend
+		b, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, false, true, nil)
+		assert.NoError(err)
+		assert.True(b.Fallback)
+		assert.False(b.Default)
+
+		// Update it to be default
+		b, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, b.ID.String(), toPtrS(description), nil, toPtrBool(true), nil, nil)
+		assert.NoError(err)
+		assert.True(b.Default)
+		assert.False(b.Fallback)
+	})
+
+	s.Run("updating to fallback unsets default", func() {
+		// Create a default backend
+		b, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
+		assert.NoError(err)
+		assert.True(b.Default)
+		assert.False(b.Fallback)
+
+		// Update it to be fallback
+		b, err = s.CASBackend.Update(context.TODO(), s.orgNoBackend.ID, b.ID.String(), toPtrS(description), nil, nil, toPtrBool(true), nil)
+		assert.NoError(err)
+		assert.False(b.Default)
+		assert.True(b.Fallback)
 	})
 
 	s.Run("can rotate credentials", func() {
 		// When a new default backend is set, the previous default should be overridden
-		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, nil)
+		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 
@@ -322,7 +413,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		s.credsWriter.On("SaveCredentials", ctx, s.orgNoBackend.ID, creds).Return("new-secret", nil)
 		s.credsWriter.On("ReadCredentials", ctx, "new-secret", mock.Anything).Return(nil)
 		s.backendProvider.On("ValidateAndExtractCredentials", location, mock.Anything).Return(nil, nil)
-		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), creds, nil, nil)
+		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), creds, nil, nil, nil)
 		assert.NoError(err)
 		assert.Equal(description, defaultB.Description)
 		assert.Equal("new-secret", defaultB.SecretName)
@@ -334,60 +425,102 @@ func (s *CASBackendIntegrationTestSuite) TestSoftDelete() {
 	assert := assert.New(s.T())
 	ctx := context.TODO()
 
-	backends, err := s.CASBackend.List(ctx, s.orgTwo.ID)
-	assert.NoError(err)
-	// There are two backends
-	require.Len(s.T(), backends, 2)
+	s.Run("delete default backend", func() {
+		backends, err := s.CASBackend.List(ctx, s.orgTwo.ID)
+		assert.NoError(err)
+		// There are two backends
+		require.Len(s.T(), backends, 2)
 
-	// We are going to delete the default one
-	toDelete := backends[1].ID
-	assert.True(backends[1].Default)
+		// We are going to delete the default one
+		toDelete := backends[1].ID
+		assert.True(backends[1].Default)
 
-	// Delete it
-	err = s.CASBackend.SoftDelete(ctx, s.orgTwo.ID, toDelete.String())
-	assert.NoError(err)
+		// Delete it
+		err = s.CASBackend.SoftDelete(ctx, s.orgTwo.ID, toDelete.String())
+		assert.NoError(err)
 
-	// there is one left
-	backends, err = s.CASBackend.List(ctx, s.orgTwo.ID)
-	assert.NoError(err)
-	// There is one backend
-	require.Len(s.T(), backends, 1)
-	assert.Equal(backends[0].ID, s.casBackend3.ID)
+		// there is one left
+		backends, err = s.CASBackend.List(ctx, s.orgTwo.ID)
+		assert.NoError(err)
+		// There is one backend
+		require.Len(s.T(), backends, 1)
+		assert.Equal(backends[0].ID, s.casBackend3.ID)
 
-	// the deleted one can not be found by ID either
-	_, err = s.CASBackend.FindByIDInOrg(ctx, s.orgTwo.ID, toDelete.String())
-	assert.ErrorAs(err, &biz.ErrNotFound{})
+		// the deleted one can not be found by ID either
+		_, err = s.CASBackend.FindByIDInOrg(ctx, s.orgTwo.ID, toDelete.String())
+		assert.ErrorAs(err, &biz.ErrNotFound{})
 
-	// the deleted one can not be found by as default
-	_, err = s.CASBackend.FindDefaultBackend(ctx, s.orgTwo.ID)
-	assert.ErrorAs(err, &biz.ErrNotFound{})
+		// the deleted one can not be found by as default
+		_, err = s.CASBackend.FindDefaultBackend(ctx, s.orgTwo.ID)
+		assert.ErrorAs(err, &biz.ErrNotFound{})
+	})
+
+	s.Run("delete fallback backend", func() {
+		// Create a fallback backend
+		fallbackB, err := s.CASBackend.Create(ctx, s.orgNoBackend.ID, randomName(), location, description, backendType, nil, false, true, nil)
+		assert.NoError(err)
+		assert.True(fallbackB.Fallback)
+
+		// Try to delete it
+		err = s.CASBackend.SoftDelete(ctx, s.orgNoBackend.ID, fallbackB.ID.String())
+		assert.NoError(err)
+
+		// Verify it's deleted
+		_, err = s.CASBackend.FindByIDInOrg(ctx, s.orgNoBackend.ID, fallbackB.ID.String())
+		assert.Error(err)
+	})
 }
 
-func (s *CASBackendIntegrationTestSuite) TestSoftDeleteFallbackOverride() {
+func (s *CASBackendIntegrationTestSuite) TestSoftDeleteFallbackPromotion() {
 	assert := assert.New(s.T())
-	// We have two backends, one is fallback and another is default
-	fallbackB, err := s.CASBackend.CreateInlineFallbackBackend(context.TODO(), s.orgNoBackend.ID)
-	assert.NoError(err)
-	assert.True(fallbackB.Default)
 
-	// When a new default backend is set, the previous default should be overridden
-	b, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, nil)
-	assert.NoError(err)
+	s.Run("fallback promoted when default is deleted", func() {
+		// Create a default backend
+		defaultB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
+		assert.NoError(err)
+		assert.True(defaultB.Default)
 
-	// The fallback is not the default anymore
-	fallbackB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, fallbackB.ID.String())
-	assert.NoError(err)
-	assert.False(fallbackB.Default)
+		// Create a fallback backend
+		fallbackB, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), "another-location", description, backendType, nil, false, true, nil)
+		assert.NoError(err)
+		assert.True(fallbackB.Fallback)
+		assert.False(fallbackB.Default)
 
-	// Once we delete the default, the fallback should be the default again
-	// Delete it
-	err = s.CASBackend.SoftDelete(context.TODO(), s.orgNoBackend.ID, b.ID.String())
-	assert.NoError(err)
+		// Delete the default
+		err = s.CASBackend.SoftDelete(context.TODO(), s.orgNoBackend.ID, defaultB.ID.String())
+		assert.NoError(err)
 
-	// The fallback is NOW THE DEFAULT
-	fallbackB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, fallbackB.ID.String())
-	assert.NoError(err)
-	assert.True(fallbackB.Default)
+		// The fallback should now be promoted to default
+		fallbackB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, fallbackB.ID.String())
+		assert.NoError(err)
+		assert.True(fallbackB.Default)
+	})
+
+	s.Run("inline promoted when default is deleted and no fallback", func() {
+		// We have two backends, one is inline and another is default
+		inlineB, err := s.CASBackend.CreateInlineBackend(context.TODO(), s.orgNoBackend.ID)
+		assert.NoError(err)
+		assert.True(inlineB.Default)
+
+		// When a new default backend is set, the previous default should be overridden
+		b, err := s.CASBackend.Create(context.TODO(), s.orgNoBackend.ID, randomName(), location, description, backendType, nil, true, false, nil)
+		assert.NoError(err)
+
+		// The inline is not the default anymore
+		inlineB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, inlineB.ID.String())
+		assert.NoError(err)
+		assert.False(inlineB.Default)
+
+		// Once we delete the default, the inline should be the default again
+		// Delete it
+		err = s.CASBackend.SoftDelete(context.TODO(), s.orgNoBackend.ID, b.ID.String())
+		assert.NoError(err)
+
+		// The inline is NOW THE DEFAULT
+		inlineB, err = s.CASBackend.FindByIDInOrg(context.TODO(), s.orgNoBackend.ID, inlineB.ID.String())
+		assert.NoError(err)
+		assert.True(inlineB.Default)
+	})
 }
 
 func (s *CASBackendIntegrationTestSuite) TestList() {
@@ -460,11 +593,11 @@ func (s *CASBackendIntegrationTestSuite) SetupTest() {
 	s.orgNoBackend, err = s.Organization.Create(ctx, "testing-org-3-no-backends")
 	assert.NoError(err)
 
-	s.casBackend1, err = s.CASBackend.Create(ctx, s.orgOne.ID, randomName(), "my-location", "backend 1 description", backendType, nil, true, nil)
+	s.casBackend1, err = s.CASBackend.Create(ctx, s.orgOne.ID, randomName(), "my-location", "backend 1 description", backendType, nil, true, false, nil)
 	assert.NoError(err)
-	s.casBackend2, err = s.CASBackend.Create(ctx, s.orgTwo.ID, randomName(), "my-location 2", "backend 2 description", backendType, nil, true, nil)
+	s.casBackend2, err = s.CASBackend.Create(ctx, s.orgTwo.ID, randomName(), "my-location 2", "backend 2 description", backendType, nil, true, false, nil)
 	assert.NoError(err)
-	s.casBackend3, err = s.CASBackend.Create(ctx, s.orgTwo.ID, randomName(), "my-location 3", "backend 3 description", backendType, nil, false, nil)
+	s.casBackend3, err = s.CASBackend.Create(ctx, s.orgTwo.ID, randomName(), "my-location 3", "backend 3 description", backendType, nil, false, false, nil)
 	assert.NoError(err)
 }
 

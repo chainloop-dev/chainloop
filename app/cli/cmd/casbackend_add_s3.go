@@ -37,6 +37,9 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 			isDefault, err := cmd.Flags().GetBool("default")
 			cobra.CheckErr(err)
 
+			isFallback, err := cmd.Flags().GetBool("fallback")
+			cobra.CheckErr(err)
+
 			name, err := cmd.Flags().GetString("name")
 			cobra.CheckErr(err)
 
@@ -69,6 +72,7 @@ func newCASBackendAddAWSS3Cmd() *cobra.Command {
 					"region":          region,
 				},
 				Default:  isDefault,
+				Fallback: isFallback,
 				MaxBytes: parsedMaxBytes,
 			}
 

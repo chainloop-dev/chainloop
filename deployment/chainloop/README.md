@@ -406,17 +406,19 @@ Then you can configure your deployment values with:
 controlplane:
   keylessSigning:
     enabled: true
-    backends: 
-      - fileCA:
+    backends:
+      - issuer: true
+        type: fileCA
+        fileCA:
           cert: |
             -----BEGIN CERTIFICATE-----
             ...
             -----END CERTIFICATE-----
           key: |
-            -----BEGIN ENCRYPTED PRIVATE KEY-----    
+            -----BEGIN ENCRYPTED PRIVATE KEY-----
             ...
             -----END ENCRYPTED PRIVATE KEY-----
-          keyPass: "REDACTED"  
+          keyPass: "REDACTED"
 ```
 
 ### Configure a Timestamp Authority for attestation timestamping
@@ -489,7 +491,7 @@ chainloop config save \
   --artifact-cas cas.acme.com:443
 ```
 
-### Use the built-in Dex Instance in development mode 
+### Use the built-in Dex Instance in development mode
 
 In development mode, a Dex instance is deployed by default, to use it, you need configure it in the `values.yaml` file like this:
 

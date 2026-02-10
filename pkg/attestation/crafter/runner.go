@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,22 +23,23 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/rs/zerolog"
 )
 
 var ErrRunnerContextNotFound = errors.New("the runner environment doesn't match the required runner type")
 
 type SupportedRunner interface {
-	// Whether the attestation is happening in this environment
+	// CheckEnv whether the attestation is happening in this environment
 	CheckEnv() bool
 
-	// List the env variables registered
+	// ListEnvVars lists the env variables registered
 	ListEnvVars() []*runners.EnvVarDefinition
 
-	// Return the list of env vars associated with this runner already resolved
+	// ResolveEnvVars return the list of env vars associated with this runner already resolved
 	ResolveEnvVars() (map[string]string, []*error)
 
-	// uri to the running job/workload
+	// RunURI to the running job/workload
 	RunURI() string
 
 	// ID returns the runner type
@@ -50,8 +51,18 @@ type SupportedRunner interface {
 	// IsAuthenticated returns whether the runner is authenticated or not
 	IsAuthenticated() bool
 
-	// RunnerEnvironment returns the runner environment
+	// Environment returns the runner environment
 	Environment() runners.RunnerEnvironment
+
+	// VerifyCommitSignature checks if a commit's signature is verified by the platform.
+	// Returns nil if verification is not supported or not applicable for this runner.
+	// Non-blocking: errors are logged and returned as unavailable status.
+	VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification
+
+	// Report writes attestation table output to platform-specific location.
+	// attestationViewURL is an optional URL to view the attestation details.
+	// Returns nil if platform doesn't support reporting.
+	Report(tableOutput []byte, attestationViewURL string) error
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
@@ -79,11 +90,14 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 	schemaapi.CraftingSchema_Runner_CIRCLECI_BUILD: func(_ string, _ *zerolog.Logger) SupportedRunner {
 		return runners.NewCircleCIBuild()
 	},
-	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: func(_ string, _ *zerolog.Logger) SupportedRunner {
-		return runners.NewDaggerPipeline()
+	schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE: func(authToken string, logger *zerolog.Logger) SupportedRunner {
+		return runners.NewDaggerPipeline(authToken, logger)
 	},
 	schemaapi.CraftingSchema_Runner_TEAMCITY_PIPELINE: func(_ string, _ *zerolog.Logger) SupportedRunner {
 		return runners.NewTeamCityPipeline()
+	},
+	schemaapi.CraftingSchema_Runner_TEKTON_PIPELINE: func(_ string, _ *zerolog.Logger) SupportedRunner {
+		return runners.NewTektonPipeline()
 	},
 }
 

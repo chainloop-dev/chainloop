@@ -1,0 +1,26 @@
+[
+  {
+    "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+    "StartLine": 7,
+    "EndLine": 7,
+    "StartColumn": 14,
+    "EndColumn": 46,
+    "Match": "api_key = \"7a6bc1e3207144b38e9066861e1de0ff\"",
+    "Secret": "7a6bc1e3207144b38e9066861e1de0ff",
+    "File": "config/secrets.env",
+    "RuleID": "generic-api-key",
+    "Fingerprint": "config/secrets.env:generic-api-key:7"
+  },
+  {
+    "Description": "Identified a pattern that may indicate AWS credentials, risking unauthorized cloud resource access and data breaches on AWS platforms.",
+    "StartLine": 12,
+    "EndLine": 12,
+    "StartColumn": 19,
+    "EndColumn": 39,
+    "Match": "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
+    "Secret": "AKIAIOSFODNN7EXAMPLE",
+    "File": "config/secrets.env",
+    "RuleID": "aws-access-key",
+    "Fingerprint": "config/secrets.env:aws-access-key:12"
+  }
+]

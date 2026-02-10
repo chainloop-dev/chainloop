@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/prinfo"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-git/go-git/v5"
@@ -72,6 +73,9 @@ type Crafter struct {
 
 	// attestation client is used to load chainloop policies
 	attClient v1.AttestationServiceClient
+
+	// noStrictValidation skips strict schema validation
+	noStrictValidation bool
 }
 
 type VersionedCraftingState struct {
@@ -113,6 +117,13 @@ func WithOCIAuth(server, username, password string) NewOpt {
 		}
 
 		c.ociRegistryAuth = k
+		return nil
+	}
+}
+
+func WithNoStrictValidation(noStrictValidation bool) NewOpt {
+	return func(c *Crafter) error {
+		c.noStrictValidation = noStrictValidation
 		return nil
 	}
 }
@@ -166,6 +177,12 @@ type InitOpts struct {
 	Auth *api.Attestation_Auth
 	// array of hostnames that are allowed to be used in the policies
 	PoliciesAllowedHostnames []string
+	// CAS backend information
+	CASBackend *api.Attestation_CASBackend
+	// UIDashboardURL is the base URL to build the attestation view link
+	UIDashboardURL string
+	// Logger for verification logging
+	Logger *zerolog.Logger
 }
 
 type SigningOpts struct {
@@ -246,6 +263,8 @@ type HeadCommit struct {
 	Message   string
 	Remotes   []*CommitRemote
 	Signature string
+	// Platform verification (if available)
+	PlatformVerification *api.Commit_CommitVerification
 }
 
 type CommitRemote struct {
@@ -355,13 +374,19 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 
 	var headCommitP *api.Commit
 	if headCommit != nil {
+		// Attempt platform verification
+		if opts.Runner != nil {
+			headCommit.PlatformVerification = verifyCommitWithPlatform(headCommit, opts.Runner)
+		}
+
 		headCommitP = &api.Commit{
-			Hash:        headCommit.Hash,
-			AuthorEmail: headCommit.AuthorEmail,
-			AuthorName:  headCommit.AuthorName,
-			Date:        timestamppb.New(headCommit.Date),
-			Message:     headCommit.Message,
-			Signature:   headCommit.Signature,
+			Hash:                 headCommit.Hash,
+			AuthorEmail:          headCommit.AuthorEmail,
+			AuthorName:           headCommit.AuthorName,
+			Date:                 timestamppb.New(headCommit.Date),
+			Message:              headCommit.Message,
+			Signature:            headCommit.Signature,
+			PlatformVerification: headCommit.PlatformVerification,
 		}
 
 		for _, r := range headCommit.Remotes {
@@ -400,8 +425,10 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			},
 			Auth:                     opts.Auth,
 			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
+			CasBackend:               opts.CASBackend,
 		},
-		DryRun: opts.DryRun,
+		DryRun:         opts.DryRun,
+		UiDashboardUrl: opts.UIDashboardURL,
 	}
 
 	// Set the appropriate schema
@@ -476,6 +503,14 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 
 // AutoCollectPRMetadata automatically collects PR/MR metadata if running in a PR/MR context
 func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID string, runner SupportedRunner, casBackend *casclient.CASBackend) error {
+	if err := c.requireStateLoaded(); err != nil {
+		return fmt.Errorf("crafting state not loaded before inspecting PR/MR metadata: %w", err)
+	}
+
+	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to reload crafting state")
+	}
+
 	// Detect if we're in a PR/MR context
 	isPR, metadata, err := DetectPRContext(runner)
 	if err != nil {
@@ -510,7 +545,8 @@ func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID strin
 	}
 
 	// Create a temporary file for the metadata
-	tmpFile, err := os.CreateTemp("", "pr-metadata-*.json")
+	materialName := fmt.Sprintf("pr-metadata-%s", metadata.Number)
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s.json", materialName))
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
@@ -524,7 +560,7 @@ func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID strin
 	tmpFile.Close()
 
 	// Add the material using the crafter with explicit CHAINLOOP_PR_INFO type
-	if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), "pr-metadata", tmpFile.Name(), casBackend, nil); err != nil {
+	if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile.Name(), casBackend, nil); err != nil {
 		return fmt.Errorf("failed to add PR/MR metadata material: %w", err)
 	}
 
@@ -645,7 +681,9 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 // addMaterials adds the incoming material m to the crafting state
 func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
 	// 3- Craft resulting material
-	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger)
+	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger, &materials.CraftingOpts{
+		NoStrictValidation: c.noStrictValidation,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -794,4 +832,52 @@ func (c *Crafter) requireStateLoaded() error {
 	}
 
 	return nil
+}
+
+// verifyCommitWithPlatform attempts to verify commit signature using platform APIs
+// Returns nil if verification is not available or not applicable
+func verifyCommitWithPlatform(commit *HeadCommit, runner SupportedRunner) *api.Commit_CommitVerification {
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Call runner's verification method directly
+	verification := runner.VerifyCommitSignature(ctx, commit.Hash)
+	if verification == nil {
+		return nil
+	}
+
+	// Convert from commitverification type to protobuf type
+	return convertCommitVerification(verification)
+}
+
+// convertCommitVerification converts from commitverification.CommitVerification to protobuf type
+func convertCommitVerification(v *commitverification.CommitVerification) *api.Commit_CommitVerification {
+	if v == nil {
+		return nil
+	}
+
+	// Convert status enum
+	var status api.Commit_CommitVerification_VerificationStatus
+	switch v.Status {
+	case commitverification.VerificationStatusVerified:
+		status = api.Commit_CommitVerification_verified
+	case commitverification.VerificationStatusUnverified:
+		status = api.Commit_CommitVerification_unverified
+	case commitverification.VerificationStatusUnavailable:
+		status = api.Commit_CommitVerification_unavailable
+	case commitverification.VerificationStatusNotApplicable:
+		status = api.Commit_CommitVerification_not_applicable
+	default:
+		status = api.Commit_CommitVerification_unspecified
+	}
+
+	return &api.Commit_CommitVerification{
+		Attempted:          v.Attempted,
+		Status:             status,
+		Reason:             v.Reason,
+		Platform:           v.Platform,
+		KeyId:              v.KeyID,
+		SignatureAlgorithm: v.SignatureAlgorithm,
+	}
 }

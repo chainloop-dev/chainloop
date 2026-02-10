@@ -53,6 +53,7 @@ func (s *StatusService) Statusz(ctx context.Context, r *pb.StatuszRequest) (*pb.
 func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozResponse, error) {
 	return &pb.InfozResponse{
 		LoginUrl:              s.loginURL,
+		UiDashboardUrl:        s.bootstrap.UiDashboardUrl,
 		Version:               s.version,
 		ChartVersion:          os.Getenv("CHART_VERSION"),
 		RestrictedOrgCreation: s.bootstrap.RestrictOrgCreation,

@@ -56,6 +56,17 @@ func DetectPRContext(runner SupportedRunner) (bool, *PRMetadata, error) {
 		return extractGitHubPRMetadata(envVars)
 	case schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE:
 		return extractGitLabMRMetadata(envVars)
+	case schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE:
+		// When running in Dagger, check for parent CI context passed through as env vars
+		// Try Github first
+		if envVars["GITHUB_EVENT_NAME"] != "" {
+			return extractGitHubPRMetadata(envVars)
+		}
+		// Then try Gitlab
+		if envVars["CI_PIPELINE_SOURCE"] != "" {
+			return extractGitLabMRMetadata(envVars)
+		}
+		return false, nil, nil
 	default:
 		return false, nil, nil
 	}

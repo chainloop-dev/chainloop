@@ -26,6 +26,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		blockOnPolicyViolation          bool
 		policiesAllowedHostnames        []string
 		preventImplicitWorkflowCreation bool
+		restrictContractCreation        bool
 	)
 
 	cmd := &cobra.Command{
@@ -45,6 +46,10 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.PreventImplicitWorkflowCreation = &preventImplicitWorkflowCreation
 			}
 
+			if cmd.Flags().Changed("restrict-contract-creation") {
+				opts.RestrictContractCreation = &restrictContractCreation
+			}
+
 			_, err := action.NewOrgUpdate(ActionOpts).Run(cmd.Context(), orgName, opts)
 			if err != nil {
 				return err
@@ -62,5 +67,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&blockOnPolicyViolation, "block", false, "set the default policy violation blocking strategy")
 	cmd.Flags().StringSliceVar(&policiesAllowedHostnames, "policies-allowed-hostnames", []string{}, "set the allowed hostnames for the policy engine")
 	cmd.Flags().BoolVar(&preventImplicitWorkflowCreation, "prevent-implicit-workflow-creation", false, "prevent workflows and projects from being created implicitly during attestation init")
+	cmd.Flags().BoolVar(&restrictContractCreation, "restrict-contract-creation", false, "restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)")
 	return cmd
 }

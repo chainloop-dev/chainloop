@@ -67,6 +67,8 @@ export interface CASBackendServiceCreateRequest {
   description: string;
   /** Set as default in your organization */
   default: boolean;
+  /** Set as fallback in your organization */
+  fallback: boolean;
   /** Arbitrary configuration for the integration */
   credentials?: { [key: string]: any };
   name: string;
@@ -96,6 +98,10 @@ export interface CASBackendServiceUpdateRequest {
     | undefined;
   /** Set as default in your organization */
   default?:
+    | boolean
+    | undefined;
+  /** Set as fallback in your organization */
+  fallback?:
     | boolean
     | undefined;
   /** Credentials, useful for rotation */
@@ -234,6 +240,7 @@ function createBaseCASBackendServiceCreateRequest(): CASBackendServiceCreateRequ
     provider: "",
     description: "",
     default: false,
+    fallback: false,
     credentials: undefined,
     name: "",
     maxBytes: undefined,
@@ -253,6 +260,9 @@ export const CASBackendServiceCreateRequest = {
     }
     if (message.default === true) {
       writer.uint32(32).bool(message.default);
+    }
+    if (message.fallback === true) {
+      writer.uint32(64).bool(message.fallback);
     }
     if (message.credentials !== undefined) {
       Struct.encode(Struct.wrap(message.credentials), writer.uint32(42).fork()).ldelim();
@@ -301,6 +311,13 @@ export const CASBackendServiceCreateRequest = {
 
           message.default = reader.bool();
           continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.fallback = reader.bool();
+          continue;
         case 5:
           if (tag !== 42) {
             break;
@@ -337,6 +354,7 @@ export const CASBackendServiceCreateRequest = {
       provider: isSet(object.provider) ? String(object.provider) : "",
       description: isSet(object.description) ? String(object.description) : "",
       default: isSet(object.default) ? Boolean(object.default) : false,
+      fallback: isSet(object.fallback) ? Boolean(object.fallback) : false,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
       name: isSet(object.name) ? String(object.name) : "",
       maxBytes: isSet(object.maxBytes) ? Number(object.maxBytes) : undefined,
@@ -349,6 +367,7 @@ export const CASBackendServiceCreateRequest = {
     message.provider !== undefined && (obj.provider = message.provider);
     message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
+    message.fallback !== undefined && (obj.fallback = message.fallback);
     message.credentials !== undefined && (obj.credentials = message.credentials);
     message.name !== undefined && (obj.name = message.name);
     message.maxBytes !== undefined && (obj.maxBytes = Math.round(message.maxBytes));
@@ -367,6 +386,7 @@ export const CASBackendServiceCreateRequest = {
     message.provider = object.provider ?? "";
     message.description = object.description ?? "";
     message.default = object.default ?? false;
+    message.fallback = object.fallback ?? false;
     message.credentials = object.credentials ?? undefined;
     message.name = object.name ?? "";
     message.maxBytes = object.maxBytes ?? undefined;
@@ -435,7 +455,14 @@ export const CASBackendServiceCreateResponse = {
 };
 
 function createBaseCASBackendServiceUpdateRequest(): CASBackendServiceUpdateRequest {
-  return { name: "", description: undefined, default: undefined, credentials: undefined, maxBytes: undefined };
+  return {
+    name: "",
+    description: undefined,
+    default: undefined,
+    fallback: undefined,
+    credentials: undefined,
+    maxBytes: undefined,
+  };
 }
 
 export const CASBackendServiceUpdateRequest = {
@@ -448,6 +475,9 @@ export const CASBackendServiceUpdateRequest = {
     }
     if (message.default !== undefined) {
       writer.uint32(24).bool(message.default);
+    }
+    if (message.fallback !== undefined) {
+      writer.uint32(48).bool(message.fallback);
     }
     if (message.credentials !== undefined) {
       Struct.encode(Struct.wrap(message.credentials), writer.uint32(34).fork()).ldelim();
@@ -486,6 +516,13 @@ export const CASBackendServiceUpdateRequest = {
 
           message.default = reader.bool();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.fallback = reader.bool();
+          continue;
         case 4:
           if (tag !== 34) {
             break;
@@ -514,6 +551,7 @@ export const CASBackendServiceUpdateRequest = {
       name: isSet(object.name) ? String(object.name) : "",
       description: isSet(object.description) ? String(object.description) : undefined,
       default: isSet(object.default) ? Boolean(object.default) : undefined,
+      fallback: isSet(object.fallback) ? Boolean(object.fallback) : undefined,
       credentials: isObject(object.credentials) ? object.credentials : undefined,
       maxBytes: isSet(object.maxBytes) ? Number(object.maxBytes) : undefined,
     };
@@ -524,6 +562,7 @@ export const CASBackendServiceUpdateRequest = {
     message.name !== undefined && (obj.name = message.name);
     message.description !== undefined && (obj.description = message.description);
     message.default !== undefined && (obj.default = message.default);
+    message.fallback !== undefined && (obj.fallback = message.fallback);
     message.credentials !== undefined && (obj.credentials = message.credentials);
     message.maxBytes !== undefined && (obj.maxBytes = Math.round(message.maxBytes));
     return obj;
@@ -540,6 +579,7 @@ export const CASBackendServiceUpdateRequest = {
     message.name = object.name ?? "";
     message.description = object.description ?? undefined;
     message.default = object.default ?? undefined;
+    message.fallback = object.fallback ?? undefined;
     message.credentials = object.credentials ?? undefined;
     message.maxBytes = object.maxBytes ?? undefined;
     return message;

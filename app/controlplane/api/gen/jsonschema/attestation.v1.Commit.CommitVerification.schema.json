@@ -1,0 +1,60 @@
+{
+  "$id": "attestation.v1.Commit.CommitVerification.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(keyId)$": {
+      "description": "Optional: The signing key ID if verified",
+      "type": "string"
+    },
+    "^(signatureAlgorithm)$": {
+      "description": "Optional: The signature algorithm used",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "attempted": {
+      "description": "Whether verification was attempted",
+      "type": "boolean"
+    },
+    "key_id": {
+      "description": "Optional: The signing key ID if verified",
+      "type": "string"
+    },
+    "platform": {
+      "description": "Platform that performed the verification (e.g., \"github\", \"gitlab\")",
+      "type": "string"
+    },
+    "reason": {
+      "description": "Human-readable reason for the status",
+      "type": "string"
+    },
+    "signature_algorithm": {
+      "description": "Optional: The signature algorithm used",
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "unspecified",
+            "verified",
+            "unverified",
+            "unavailable",
+            "not_applicable"
+          ],
+          "title": "Verification Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Verification status"
+    }
+  },
+  "title": "Commit Verification",
+  "type": "object"
+}

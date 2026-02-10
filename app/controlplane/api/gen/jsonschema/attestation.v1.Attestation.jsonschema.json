@@ -11,6 +11,10 @@
       "description": "bypass policy check",
       "type": "boolean"
     },
+    "^(cas_backend)$": {
+      "$ref": "attestation.v1.Attestation.CASBackend.jsonschema.json",
+      "description": "CAS backend information used during attestation"
+    },
     "^(env_vars)$": {
       "additionalProperties": {
         "type": "string"
@@ -56,7 +60,8 @@
             "JENKINS_JOB",
             "CIRCLECI_BUILD",
             "DAGGER_PIPELINE",
-            "TEAMCITY_PIPELINE"
+            "TEAMCITY_PIPELINE",
+            "TEKTON_PIPELINE"
           ],
           "title": "Runner Type",
           "type": "string"
@@ -99,6 +104,10 @@
     "bypassPolicyCheck": {
       "description": "bypass policy check",
       "type": "boolean"
+    },
+    "casBackend": {
+      "$ref": "attestation.v1.Attestation.CASBackend.jsonschema.json",
+      "description": "CAS backend information used during attestation"
     },
     "envVars": {
       "additionalProperties": {
@@ -158,7 +167,8 @@
             "JENKINS_JOB",
             "CIRCLECI_BUILD",
             "DAGGER_PIPELINE",
-            "TEAMCITY_PIPELINE"
+            "TEAMCITY_PIPELINE",
+            "TEKTON_PIPELINE"
           ],
           "title": "Runner Type",
           "type": "string"

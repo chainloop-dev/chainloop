@@ -200,8 +200,9 @@ Options
 --annotation strings         additional annotation in the format of key=value
 --attestation-id string      Unique identifier of the in-progress attestation
 -h, --help                       help for add
---kind string                kind of the material to be recorded: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
+--kind string                kind of the material to be recorded: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
 --name string                name of the material as shown in the contract
+--no-strict-validation       skip strict schema validation for SBOM_CYCLONEDX_JSON materials
 --registry-password string   registry password, ($CHAINLOOP_REGISTRY_PASSWORD)
 --registry-server string     OCI repository server, ($CHAINLOOP_REGISTRY_SERVER)
 --registry-username string   registry username, ($CHAINLOOP_REGISTRY_USERNAME)
@@ -341,6 +342,7 @@ Options
 --annotation strings              additional annotation in the format of key=value
 --attestation-id string           Unique identifier of the in-progress attestation
 --bundle string                   output a Sigstore bundle to the provided path
+--deactivate-ci-report            deactivate automatic attestation report to CI/CD platform
 --exception-bypass-policy-check   do not fail this command on policy violations enforcement
 -h, --help                            help for push
 -k, --key string                      reference (path or env variable name) to the cosign or KMS key that will be used to sign the attestation
@@ -640,6 +642,7 @@ Options
 ```
 --default              set the backend as default in your organization
 --description string   descriptive information for this registration
+--fallback             set the backend as fallback in your organization
 -h, --help                 help for add
 --max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string          CAS backend name
@@ -691,6 +694,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -731,6 +735,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -770,6 +775,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -807,6 +813,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --name string               CAS backend name
@@ -915,13 +922,14 @@ Options inherited from parent commands
 
 ### chainloop cas-backend update
 
-Update a CAS backend description, credentials, default status, or max bytes
+Update a CAS backend description, credentials, default status, fallback status, or max bytes
 
 Options
 
 ```
 --default              set the backend as default in your organization
 --description string   descriptive information for this registration
+--fallback             set the backend as fallback in your organization
 -h, --help                 help for update
 --max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --name string          CAS backend name
@@ -972,6 +980,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
@@ -1009,6 +1018,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
@@ -1047,6 +1057,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --name string               CAS backend name
@@ -1058,7 +1069,7 @@ Options inherited from parent commands
 
 #### chainloop cas-backend update inline
 
-Update the Inline, fallback CAS Backend description or default status
+Update the Inline CAS Backend description, default status, or fallback status
 
 ```
 chainloop cas-backend update inline [flags]
@@ -1082,6 +1093,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
@@ -1118,6 +1130,7 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
 --description string        descriptive information for this registration
+--fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 -n, --org string                organization name
@@ -2767,6 +2780,7 @@ Options
 --name string                          organization name
 --policies-allowed-hostnames strings   set the allowed hostnames for the policy engine
 --prevent-implicit-workflow-creation   prevent workflows and projects from being created implicitly during attestation init
+--restrict-contract-creation           restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)
 ```
 
 Options inherited from parent commands
@@ -2871,7 +2885,7 @@ Options
 --annotation strings          Key-value pairs of material annotations (key=value)
 -h, --help                        help for eval
 --input stringArray           Key-value pairs of policy inputs (key=value)
---kind string                 Kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
+--kind string                 Kind of the material: ["ARTIFACT" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENVEX" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "TWISTCLI_SCAN_JSON" "ZAP_DAST_ZIP"]
 --material string             Path to material or attestation file
 -p, --policy string               Policy reference (./my-policy.yaml, https://my-domain.com/my-policy.yaml, chainloop://my-stored-policy) (default "policy.yaml")
 ```

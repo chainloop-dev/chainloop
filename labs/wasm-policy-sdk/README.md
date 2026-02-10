@@ -6,6 +6,13 @@ Official SDKs for writing [Chainloop](https://chainloop.dev) policies that compi
 
 Chainloop policies are validation rules that run automatically when artifacts (SBOMs, attestations, evidence files) are uploaded to Chainloop. These SDKs make it easy to write policies in your preferred language that compile to WASM and execute securely.
 
+## Documentation
+
+**Official Documentation:**
+- [WASM Policies Overview](https://docs.chainloop.dev/guides/wasm-policies/overview) - Introduction to WASM policies
+- [Go SDK Guide](https://docs.chainloop.dev/guides/wasm-policies/go-sdk) - Complete Go SDK documentation
+- [JavaScript SDK Guide](https://docs.chainloop.dev/guides/wasm-policies/javascript-sdk) - Complete JavaScript SDK documentation
+
 ## Available SDKs
 
 ### Go SDK
@@ -17,7 +24,7 @@ Write policies in Go that compile to WASM using TinyGo.
 - **Documentation:** [go/README.md](./go/README.md)
 
 ```go
-import chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
+import chainlooppolicy "github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go"
 
 //export Execute
 func Execute() int32 {

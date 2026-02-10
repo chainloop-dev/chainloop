@@ -128,6 +128,12 @@ func (_u *APITokenUpdate) SetNillableOrganizationID(v *uuid.UUID) *APITokenUpdat
 	return _u
 }
 
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (_u *APITokenUpdate) ClearOrganizationID() *APITokenUpdate {
+	_u.mutation.ClearOrganizationID()
+	return _u
+}
+
 // SetProjectID sets the "project_id" field.
 func (_u *APITokenUpdate) SetProjectID(v uuid.UUID) *APITokenUpdate {
 	_u.mutation.SetProjectID(v)
@@ -220,14 +226,6 @@ func (_u *APITokenUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (_u *APITokenUpdate) check() error {
-	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "APIToken.organization"`)
-	}
-	return nil
-}
-
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *APITokenUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITokenUpdate {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -235,9 +233,6 @@ func (_u *APITokenUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITo
 }
 
 func (_u *APITokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
-	if err := _u.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(apitoken.Table, apitoken.Columns, sqlgraph.NewFieldSpec(apitoken.FieldID, field.TypeUUID))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -455,6 +450,12 @@ func (_u *APITokenUpdateOne) SetNillableOrganizationID(v *uuid.UUID) *APITokenUp
 	return _u
 }
 
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (_u *APITokenUpdateOne) ClearOrganizationID() *APITokenUpdateOne {
+	_u.mutation.ClearOrganizationID()
+	return _u
+}
+
 // SetProjectID sets the "project_id" field.
 func (_u *APITokenUpdateOne) SetProjectID(v uuid.UUID) *APITokenUpdateOne {
 	_u.mutation.SetProjectID(v)
@@ -560,14 +561,6 @@ func (_u *APITokenUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (_u *APITokenUpdateOne) check() error {
-	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "APIToken.organization"`)
-	}
-	return nil
-}
-
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *APITokenUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITokenUpdateOne {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -575,9 +568,6 @@ func (_u *APITokenUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AP
 }
 
 func (_u *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err error) {
-	if err := _u.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(apitoken.Table, apitoken.Columns, sqlgraph.NewFieldSpec(apitoken.FieldID, field.TypeUUID))
 	id, ok := _u.mutation.ID()
 	if !ok {

@@ -61,13 +61,16 @@ type WorkflowRunAttestationItem struct {
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 	// Policy evaluation status
 	PolicyEvaluationStatus *PolicyEvaluationStatus `json:"policy_evaluation_status,omitempty"`
+	// URL to view the attestation in the UI
+	AttestationViewURL string `json:"attestation_view_url"`
 }
 
 type PolicyEvaluationStatus struct {
-	Strategy      string `json:"strategy"`
-	Bypassed      bool   `json:"bypassed"`
-	Blocked       bool   `json:"blocked"`
-	HasViolations bool   `json:"has_violations"`
+	Strategy           string `json:"strategy"`
+	Bypassed           bool   `json:"bypassed"`
+	Blocked            bool   `json:"blocked"`
+	HasViolations      bool   `json:"has_violations"`
+	HasGatedViolations bool   `json:"has_gated_violations"`
 }
 
 type Material struct {
@@ -226,6 +229,12 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 
 	policyEvaluationStatus := att.GetPolicyEvaluationStatus()
 
+	var attestationViewURL string
+	baseUIDashboardURL := fetchUIDashboardURL(ctx, action.cfg.CPConnection)
+	if baseUIDashboardURL != "" {
+		attestationViewURL = buildAttestationViewURL(baseUIDashboardURL, resp.GetResult().GetOrgName(), att.DigestInCasBackend)
+	}
+
 	item.Attestation = &WorkflowRunAttestationItem{
 		Envelope:          envelope,
 		Bundle:            att.GetBundle(),
@@ -236,11 +245,13 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 		Digest:            att.DigestInCasBackend,
 		PolicyEvaluations: evaluations,
 		PolicyEvaluationStatus: &PolicyEvaluationStatus{
-			Strategy:      policyEvaluationStatus.Strategy,
-			Bypassed:      policyEvaluationStatus.Bypassed,
-			Blocked:       policyEvaluationStatus.Blocked,
-			HasViolations: policyEvaluationStatus.HasViolations,
+			Strategy:           policyEvaluationStatus.Strategy,
+			Bypassed:           policyEvaluationStatus.Bypassed,
+			Blocked:            policyEvaluationStatus.Blocked,
+			HasViolations:      policyEvaluationStatus.HasViolations,
+			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
 		},
+		AttestationViewURL: attestationViewURL,
 	}
 
 	return item, nil
@@ -296,6 +307,7 @@ func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
 		Violations:      violations,
 		Skipped:         in.Skipped,
 		SkipReasons:     in.SkipReasons,
+		Gate:            in.Gate,
 	}
 }
 

@@ -129,7 +129,7 @@ npm run build
 chainloop policy develop eval \
   --policy attestation/policy.yaml \
   --material attestation/attestation.json \
-  --kind EVIDENCE
+  --kind ATTESTATION
 ```
 
 ## Common Build Steps

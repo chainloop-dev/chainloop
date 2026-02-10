@@ -1816,7 +1816,7 @@ func (s *projectMembersIntegrationTestSuite) TestAddNonExistingMemberToProject()
 		alreadyInvitedEmail := "already-invited@example.com"
 
 		// First create an invitation
-		_, err := s.OrgInvitation.Create(ctx, s.org.ID, s.user.ID, alreadyInvitedEmail)
+		_, err := s.OrgInvitation.Create(ctx, s.org.ID, alreadyInvitedEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.NoError(err)
 
 		// Now try to add the same email to a project
