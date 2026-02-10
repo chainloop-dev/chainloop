@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -142,8 +142,8 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 
 	opts := []grpcconn.Option{grpcconn.WithInsecure(casConnectionInsecure)}
 	if casCAPath != "" {
-		// Check if it's a file path or base64/PEM content
-		if grpcconn.IsFilePath(casCAPath) {
+		// Check if it's a file path or content. If it's a file path, it should exist. If not, treat it as content.
+		if _, err := os.Stat(casCAPath); err == nil {
 			opts = append(opts, grpcconn.WithCAFile(casCAPath))
 		} else {
 			opts = append(opts, grpcconn.WithCAContent(casCAPath))

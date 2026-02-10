@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -125,8 +125,8 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
-				// Check if it's a file path or base64/PEM content
-				if grpcconn.IsFilePath(caValue) {
+				// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
+				if _, err := os.Stat(caValue); err == nil {
 					opts = append(opts, grpcconn.WithCAFile(caValue))
 				} else {
 					opts = append(opts, grpcconn.WithCAContent(caValue))
@@ -503,23 +503,23 @@ func getConfigDir(appName string) string {
 }
 
 // processCAFlag reads CA file content and encodes it to base64 if value is a file path
-func processCAFlag(opt *confOpt) {
+func processCAFlag(opt *confOpt) error {
 	value := viper.GetString(opt.viperKey)
 	if value == "" {
-		return
+		return nil
 	}
 
 	// If it's a file path, read and encode
-	if grpcconn.IsFilePath(value) {
+	if _, err := os.Stat(value); err == nil {
 		content, err := os.ReadFile(value)
 		if err != nil {
-			// Log warning but don't fail
-			logger.Warn().Err(err).Str("file", value).Msg("Failed to read CA file")
-			return
+			return fmt.Errorf("failed to read CA file %s: %w", value, err)
 		}
 
 		// Store base64-encoded content in viper (will be persisted by config save)
 		encoded := base64.StdEncoding.EncodeToString(content)
 		viper.Set(opt.viperKey, encoded)
 	}
+
+	return nil
 }

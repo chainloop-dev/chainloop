@@ -20,7 +20,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,68 +50,6 @@ func TestRequireTransportSecurity(t *testing.T) {
 	for _, tc := range testCases {
 		auth := newTokenAuth("token", tc.insecure, "org-1")
 		assert.Equal(t, tc.want, auth.RequireTransportSecurity())
-	}
-}
-
-func TestIsFilePath(t *testing.T) {
-	// Create a temporary file for testing
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "test.pem")
-	err := os.WriteFile(tmpFile, []byte("test content"), 0600)
-	require.NoError(t, err)
-
-	testCases := []struct {
-		name  string
-		value string
-		want  bool
-	}{
-		{
-			name:  "absolute path",
-			value: "/path/to/ca.pem",
-			want:  true,
-		},
-		{
-			name:  "relative path with ./",
-			value: "./ca.pem",
-			want:  true,
-		},
-		{
-			name:  "relative path with ../",
-			value: "../ca.pem",
-			want:  true,
-		},
-		{
-			name:  "home directory path",
-			value: "~/ca.pem",
-			want:  true,
-		},
-		{
-			name:  "existing file",
-			value: tmpFile,
-			want:  true,
-		},
-		{
-			name:  "PEM content with newlines",
-			value: "-----BEGIN CERTIFICATE-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A\n-----END CERTIFICATE-----",
-			want:  false,
-		},
-		{
-			name:  "base64 encoded content",
-			value: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0=",
-			want:  false,
-		},
-		{
-			name:  "non-existent file without path prefix",
-			value: "nonexistent.pem",
-			want:  false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := IsFilePath(tc.value)
-			assert.Equal(t, tc.want, got, "IsFilePath(%q) = %v, want %v", tc.value, got, tc.want)
-		})
 	}
 }
 
@@ -210,7 +147,8 @@ func TestBackwardCompatibility_StoredFilePath(t *testing.T) {
 	storedValue := caPath
 
 	// Verify IsFilePath detects it as a file path
-	assert.True(t, IsFilePath(storedValue), "stored file path should be detected as a file path")
+	_, err := os.Stat(storedValue)
+	assert.Nil(t, err, "stored file path should be detected as a file path")
 
 	// Verify it can be loaded using the file path method
 	certsPool, err := x509.SystemCertPool()
@@ -233,7 +171,7 @@ func TestBackwardCompatibility_NewClientOldConfig(t *testing.T) {
 
 	// New client logic: detect and load appropriately
 	var opts []Option
-	if IsFilePath(oldConfigValue) {
+	if _, err := os.Stat(oldConfigValue); err == nil {
 		opts = append(opts, WithCAFile(oldConfigValue))
 	} else {
 		opts = append(opts, WithCAContent(oldConfigValue))
@@ -273,7 +211,7 @@ func TestBackwardCompatibility_OldClientNewConfig(t *testing.T) {
 	assert.NoError(t, err, "old client should load file path")
 
 	// New client behavior: detect then use file path
-	if IsFilePath(configValue) {
+	if _, statErr := os.Stat(configValue); statErr == nil {
 		err = appendCAFromFile(configValue, certsPool2)
 	} else {
 		err = appendCAFromContent(configValue, certsPool2)

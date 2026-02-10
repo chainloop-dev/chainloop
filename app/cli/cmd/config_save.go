@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,8 +30,12 @@ func newConfigSaveCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Process CA flags - read file contents and encode to base64 if needed
-			processCAFlag(confOptions.controlplaneCA)
-			processCAFlag(confOptions.CASCA)
+			if err := processCAFlag(confOptions.controlplaneCA); err != nil {
+				return err
+			}
+			if err := processCAFlag(confOptions.CASCA); err != nil {
+				return err
+			}
 			return viper.WriteConfig()
 		},
 	}

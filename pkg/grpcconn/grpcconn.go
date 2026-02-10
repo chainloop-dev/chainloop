@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	"strings"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
@@ -176,31 +175,4 @@ func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[strin
 
 func (t tokenAuth) RequireTransportSecurity() bool {
 	return !t.insecure
-}
-
-// IsFilePath checks if a value looks like a file path (vs base64/PEM content).
-// It returns true if the value appears to be a file path, false if it appears to be content.
-func IsFilePath(value string) bool {
-	// Check if value looks like a file path
-	// If it starts with /, ./, ../, or ~/, it's a path
-	// If it contains a newline, it's likely PEM content
-	// If it's valid base64 without path separators, assume it's content
-
-	if strings.HasPrefix(value, "/") ||
-		strings.HasPrefix(value, "./") ||
-		strings.HasPrefix(value, "../") ||
-		strings.HasPrefix(value, "~/") {
-		return true
-	}
-
-	if strings.Contains(value, "\n") {
-		return false // PEM content
-	}
-
-	// Check if file exists
-	if _, err := os.Stat(value); err == nil {
-		return true
-	}
-
-	return false
 }
