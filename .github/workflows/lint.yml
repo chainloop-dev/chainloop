@@ -24,11 +24,12 @@ jobs:
           - artifact-cas
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
-        with:
-          go-version: "1.26.0"
-
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: 'go.mod'
 
       - name: Lint main module
         uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
@@ -65,11 +66,12 @@ jobs:
           cd ~/.local
           curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.19.3  sh
 
-      - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
-        with:
-          go-version: "1.26.0"
-
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: 'go.mod'
 
       - name: Initialize module
         run: |

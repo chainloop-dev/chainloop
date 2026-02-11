@@ -39,9 +39,9 @@ jobs:
           chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT_NAME
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
-          go-version: "1.26.0"
+          go-version-file: 'go.mod'
 
       # Generate SBOM using syft in cycloneDX format
       - uses: anchore/sbom-action@v0
