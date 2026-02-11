@@ -24,25 +24,26 @@ jobs:
           - artifact-cas
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
-        with:
-          go-version: "1.25.6"
-
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: 'go.mod'
+
       - name: Lint main module
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # 9.2.0
         if: ${{ matrix.app == 'main-module' }}
         with:
-          version: v2.4.0
+          version: v2.9.0
           only-new-issues: 'true'
 
       - name: Lint ${{ matrix.app }}
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # 9.2.0
         if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
-          version: v2.4.0
+          version: v2.9.0
           only-new-issues: 'true'
 
   lint-protos:
@@ -65,19 +66,20 @@ jobs:
           cd ~/.local
           curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.19.3  sh
 
-      - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
-        with:
-          go-version: "1.25.6"
-
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: 'go.mod'
 
       - name: Initialize module
         run: |
           make -C extras/dagger module-init
 
       - name: Lint
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # 9.2.0
         with:
           working-directory: extras/dagger
-          version: v2.4.0
+          version: v2.9.0
           only-new-issues: 'true'
