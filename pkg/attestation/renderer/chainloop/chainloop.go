@@ -54,6 +54,8 @@ type PolicyEvaluationStatus struct {
 	Blocked bool
 	// Whether the attestation has policy violations
 	HasViolations bool
+	// Whether the attestation has gated policy violations
+	HasGatedViolations bool
 }
 
 type NormalizedMaterial struct {
@@ -104,10 +106,11 @@ type ProvenancePredicateCommon struct {
 	// Custom annotations
 	Annotations map[string]string `json:"annotations,omitempty"`
 	// Additional properties related to runner
-	RunnerEnvironment      string `json:"runnerEnvironment,omitempty"`
-	RunnerAuthenticated    bool   `json:"runnerAuthenticated,omitempty"`
-	RunnerWorkflowFilePath string `json:"runnerWorkflowFilePath,omitempty"`
-	Auth                   *Auth  `json:"auth,omitempty"`
+	RunnerEnvironment      string      `json:"runnerEnvironment,omitempty"`
+	RunnerAuthenticated    bool        `json:"runnerAuthenticated,omitempty"`
+	RunnerWorkflowFilePath string      `json:"runnerWorkflowFilePath,omitempty"`
+	Auth                   *Auth       `json:"auth,omitempty"`
+	CASBackend             *CASBackend `json:"casBackend,omitempty"`
 }
 
 type Metadata struct {
@@ -136,6 +139,12 @@ type Auth struct {
 	Type string `json:"type"`
 }
 
+type CASBackend struct {
+	CASBackendID   string `json:"casBackendID"`
+	CASBackendName string `json:"casBackendName"`
+	Fallback       bool   `json:"fallback"`
+}
+
 type builderInfo struct {
 	version, digest string
 }
@@ -156,6 +165,7 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		authenticated    bool
 		workflowFilePath string
 		auth             *Auth
+		casBackend       *CASBackend
 	)
 
 	if att.RunnerEnvironment != nil {
@@ -171,6 +181,14 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		}
 	}
 
+	if att.CasBackend != nil {
+		casBackend = &CASBackend{
+			CASBackendID:   att.CasBackend.CasBackendId,
+			CASBackendName: att.CasBackend.CasBackendName,
+			Fallback:       att.CasBackend.Fallback,
+		}
+	}
+
 	return &ProvenancePredicateCommon{
 		BuildType:              chainloopBuildType,
 		Builder:                &builder{ID: fmt.Sprintf(builderIDFmt, builderInfo.version, builderInfo.digest)},
@@ -183,6 +201,7 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 		RunnerAuthenticated:    authenticated,
 		RunnerWorkflowFilePath: workflowFilePath,
 		Auth:                   auth,
+		CASBackend:             casBackend,
 	}
 }
 
@@ -317,11 +336,13 @@ func (p *ProvenancePredicateCommon) GetMetadata() *Metadata {
 
 const (
 	// Subject names
-	SubjectGitHead                  = "git.head"
-	subjectGitAnnotationAuthorEmail = "author.email"
-	subjectGitAnnotationAuthorName  = "author.name"
-	subjectGitAnnotationWhen        = "date"
-	subjectGitAnnotationMessage     = "message"
-	subjectGitAnnotationRemotes     = "remotes"
-	subjectGitAnnotationSignature   = "signature"
+	SubjectGitHead                               = "git.head"
+	subjectGitAnnotationAuthorEmail              = "author.email"
+	subjectGitAnnotationAuthorName               = "author.name"
+	subjectGitAnnotationAuthorVerificationStatus = "author.verification_status"
+	subjectGitAnnotationWhen                     = "date"
+	subjectGitAnnotationMessage                  = "message"
+	subjectGitAnnotationRemotes                  = "remotes"
+	subjectGitAnnotationSignature                = "signature"
+	subjectGitAnnotationSignatureAlgorithm       = "signature.algorithm"
 )

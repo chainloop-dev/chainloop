@@ -67,7 +67,7 @@ type CASBackend struct {
 	Default bool
 	// it's a inline backend, the artifacts are embedded in the attestation
 	Inline bool
-	// It's a fallback backend, it cannot be deleted
+	// It's a fallback backend, used when the default backend is unreachable
 	Fallback bool
 
 	Limits *CASBackendLimits
@@ -84,6 +84,7 @@ type CASBackendOpts struct {
 	Description          *string
 	Provider             CASBackendProvider
 	Default              *bool
+	Fallback             *bool
 	ValidationStatus     CASBackendValidationStatus
 	ValidationError      *string
 }
@@ -91,7 +92,6 @@ type CASBackendOpts struct {
 type CASBackendCreateOpts struct {
 	*CASBackendOpts
 	Name     string
-	Fallback bool
 	MaxBytes int64
 }
 
@@ -104,14 +104,15 @@ type CASBackendUpdateOpts struct {
 type CASBackendRepo interface {
 	FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
+	FindInlineBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
 	FindByIDInOrg(ctx context.Context, OrgID, ID uuid.UUID) (*CASBackend, error)
 	FindByNameInOrg(ctx context.Context, OrgID uuid.UUID, name string) (*CASBackend, error)
 	List(ctx context.Context, orgID uuid.UUID) ([]*CASBackend, error)
 	UpdateValidationStatus(ctx context.Context, ID uuid.UUID, status CASBackendValidationStatus, validationError *string) error
 	// ListBackends returns CAS backends across all organizations
-	// If onlyDefaults is true, only default backends are returned
-	ListBackends(ctx context.Context, onlyDefaults bool) ([]*CASBackend, error)
+	// If defaultsOrFallbacks is true, only default and fallback backends are returned
+	ListBackends(ctx context.Context, defaultsOrFallbacks bool) ([]*CASBackend, error)
 	Create(context.Context, *CASBackendCreateOpts) (*CASBackend, error)
 	Update(context.Context, *CASBackendUpdateOpts) (*CASBackend, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
@@ -120,6 +121,8 @@ type CASBackendRepo interface {
 
 type CASBackendReader interface {
 	FindDefaultBackend(ctx context.Context, orgID string) (*CASBackend, error)
+	FindFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error)
+	FindDefaultOrFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error)
 	FindByIDInOrg(ctx context.Context, OrgID, ID string) (*CASBackend, error)
 	PerformValidation(ctx context.Context, ID string) error
 }
@@ -233,7 +236,49 @@ func (uc *CASBackendUseCase) FindFallbackBackend(ctx context.Context, orgID stri
 	return backend, nil
 }
 
-func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+// FindDefaultOrFallbackBackend finds a valid CAS backend for the organization.
+// Attempts to use the default backend first, if invalid it uses the fallback backend.
+func (uc *CASBackendUseCase) FindDefaultOrFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	// Find the default backend
+	defaultBackend, err := uc.FindDefaultBackend(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	if defaultBackend == nil {
+		// Should never happen
+		return nil, NewErrNotFound("default CAS Backend")
+	}
+
+	// Check if default backend is valid
+	if defaultBackend.ValidationStatus == CASBackendValidationOK {
+		return defaultBackend, nil
+	}
+
+	// Default backend is invalid, try fallback
+	uc.logger.Infow("msg", "default CAS backend validation failed, attempting fallback",
+		"backend", defaultBackend.Name, "status", defaultBackend.ValidationStatus, "orgID", orgID)
+
+	fallbackBackend, err := uc.FindFallbackBackend(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	if fallbackBackend == nil {
+		// Should never happen
+		return nil, NewErrNotFound("fallback CAS Backend")
+	}
+
+	// Check if fallback backend is valid
+	if fallbackBackend.ValidationStatus != CASBackendValidationOK {
+		return nil, NewErrValidationStr("both default and fallback CAS backends are unreachable")
+	}
+
+	uc.logger.Infow("msg", "using fallback CAS backend", "backend", fallbackBackend.Name, "orgID", orgID)
+	return fallbackBackend, nil
+}
+
+func (uc *CASBackendUseCase) CreateInlineBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -241,18 +286,19 @@ func (uc *CASBackendUseCase) CreateInlineFallbackBackend(ctx context.Context, or
 
 	return uc.repo.Create(ctx, &CASBackendCreateOpts{
 		Name:     "default-inline",
-		Fallback: true,
 		MaxBytes: CASBackendInlineDefaultMaxBytes,
 		CASBackendOpts: &CASBackendOpts{
-			Provider: CASBackendInline, Default: ToPtr(true),
+			Provider:    CASBackendInline,
+			Default:     ToPtr(true),
 			Description: &CASBackendInlineDescription,
 			OrgID:       orgUUID,
 		},
 	})
 }
 
-// Set fallback backend as default
-func (uc *CASBackendUseCase) defaultFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+// promoteNextAvailableBackend promotes the next available backend to default.
+// Promotion priority: try fallback backend first, then inline backend if no fallback exists.
+func (uc *CASBackendUseCase) promoteNextAvailableBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -261,17 +307,30 @@ func (uc *CASBackendUseCase) defaultFallbackBackend(ctx context.Context, orgID s
 	backend, err := uc.repo.FindFallbackBackend(ctx, orgUUID)
 	if err != nil {
 		return nil, err
-	} else if backend == nil {
-		// If there is no fallback backend, we skip the update
-		return nil, nil
+	}
+
+	if backend == nil {
+		// If there is no fallback backend, try to find and use inline backend
+		backend, err = uc.repo.FindInlineBackend(ctx, orgUUID)
+		if err != nil {
+			return nil, err
+		}
+		if backend == nil {
+			return nil, nil
+		}
 	}
 
 	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: backend.ID, CASBackendOpts: &CASBackendOpts{Default: ToPtr(true)}})
 }
 
-func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool, maxBytes *int64) (*CASBackend, error) {
+func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool, fallbackB bool, maxBytes *int64) (*CASBackend, error) {
 	if orgID == "" || name == "" {
 		return nil, NewErrValidationStr("organization and name are required")
+	}
+
+	// Backend cannot be both default and fallback
+	if defaultB && fallbackB {
+		return nil, NewErrValidationStr("a backend cannot be both default and fallback")
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
@@ -302,7 +361,7 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 		MaxBytes: finalMaxBytes,
 		Name:     name,
 		CASBackendOpts: &CASBackendOpts{
-			Location: location, SecretName: secretName, Provider: provider, Default: ToPtr(defaultB),
+			Location: location, SecretName: secretName, Provider: provider, Default: ToPtr(defaultB), Fallback: ToPtr(fallbackB),
 			Description: &description,
 			OrgID:       orgUUID,
 		},
@@ -332,8 +391,8 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 	return backend, nil
 }
 
-// Update will update credentials, description, default status, or max bytes
-func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, description *string, creds any, defaultB *bool, maxBytes *int64) (*CASBackend, error) {
+// Update will update credentials, description, default status, fallback status, or max bytes
+func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, description *string, creds any, defaultB *bool, fallbackB *bool, maxBytes *int64) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -349,6 +408,11 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 		return nil, err
 	} else if before == nil {
 		return nil, NewErrNotFound("CAS Backend")
+	}
+
+	// Backend cannot be both default and fallback
+	if defaultB != nil && *defaultB && fallbackB != nil && *fallbackB {
+		return nil, NewErrValidationStr("a backend cannot be both default and fallback")
 	}
 
 	// Inline backends cannot have their max_bytes updated
@@ -380,6 +444,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 		CASBackendOpts: &CASBackendOpts{
 			SecretName:  secretName,
 			Default:     defaultB,
+			Fallback:    fallbackB,
 			Description: description,
 			OrgID:       orgUUID,
 		},
@@ -412,10 +477,10 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 		}
 	}
 
-	// If we just updated the backend from default=true => default=false, we need to set up the fallback as default
+	// If we just updated the backend from default=true => default=false, we need to promote the next available backend
 	if before.Default && !after.Default {
-		if _, err := uc.defaultFallbackBackend(ctx, orgID); err != nil {
-			return nil, fmt.Errorf("setting the fallback backend as default: %w", err)
+		if _, err := uc.promoteNextAvailableBackend(ctx, orgID); err != nil {
+			return nil, fmt.Errorf("promoting next available backend to default: %w", err)
 		}
 	}
 
@@ -502,18 +567,19 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 		return NewErrNotFound("CAS Backend")
 	}
 
-	if backend.Fallback {
-		return NewErrValidation(errors.New("can't delete the fallback CAS backend"))
+	// Prevent deletion of inline backend
+	if backend.Provider == CASBackendInline {
+		return NewErrValidation(errors.New("can't delete the inline CAS backend"))
 	}
 
 	if err := uc.repo.SoftDelete(ctx, backendUUID); err != nil {
 		return err
 	}
 
-	// If we just deleted the default backend, we need to set up the fallback as default
+	// If we just deleted the default backend, we need to promote the next available backend
 	if backend.Default {
-		if _, err := uc.defaultFallbackBackend(ctx, orgID); err != nil {
-			return fmt.Errorf("setting the fallback backend as default: %w", err)
+		if _, err := uc.promoteNextAvailableBackend(ctx, orgID); err != nil {
+			return fmt.Errorf("promoting next available backend to default: %w", err)
 		}
 	}
 

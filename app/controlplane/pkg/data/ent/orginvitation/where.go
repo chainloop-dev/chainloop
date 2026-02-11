@@ -308,6 +308,16 @@ func SenderIDNotIn(vs ...uuid.UUID) predicate.OrgInvitation {
 	return predicate.OrgInvitation(sql.FieldNotIn(FieldSenderID, vs...))
 }
 
+// SenderIDIsNil applies the IsNil predicate on the "sender_id" field.
+func SenderIDIsNil() predicate.OrgInvitation {
+	return predicate.OrgInvitation(sql.FieldIsNull(FieldSenderID))
+}
+
+// SenderIDNotNil applies the NotNil predicate on the "sender_id" field.
+func SenderIDNotNil() predicate.OrgInvitation {
+	return predicate.OrgInvitation(sql.FieldNotNull(FieldSenderID))
+}
+
 // RoleEQ applies the EQ predicate on the "role" field.
 func RoleEQ(v authz.Role) predicate.OrgInvitation {
 	vc := v

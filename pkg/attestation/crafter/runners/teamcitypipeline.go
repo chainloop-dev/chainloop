@@ -16,9 +16,11 @@
 package runners
 
 import (
+	"context"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
 type TeamCityPipeline struct{}
@@ -67,4 +69,12 @@ func (r *TeamCityPipeline) IsAuthenticated() bool {
 
 func (r *TeamCityPipeline) Environment() RunnerEnvironment {
 	return Unknown
+}
+
+func (r *TeamCityPipeline) VerifyCommitSignature(_ context.Context, _ string) *commitverification.CommitVerification {
+	return nil // Not supported for this runner
+}
+
+func (r *TeamCityPipeline) Report(_ []byte, _ string) error {
+	return nil
 }

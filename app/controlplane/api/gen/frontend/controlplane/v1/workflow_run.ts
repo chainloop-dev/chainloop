@@ -115,6 +115,8 @@ export interface AttestationServiceInitResponse_Result {
   signingOptions?: AttestationServiceInitResponse_SigningOptions;
   /** array of hostnames that are allowed to be used in the policies */
   policiesAllowedHostnames: string[];
+  /** URL pointing to the web dashboard. It might be empty if not available */
+  uiDashboardUrl: string;
 }
 
 export interface AttestationServiceInitResponse_SigningOptions {
@@ -242,6 +244,7 @@ export interface WorkflowRunServiceViewResponse {
 }
 
 export interface WorkflowRunServiceViewResponse_Result {
+  orgName: string;
   workflowRun?: WorkflowRunItem;
   attestation?: AttestationItem;
   /** It will be nil if the verification is not possible (old or non-keyless attestations) */
@@ -1281,6 +1284,7 @@ function createBaseAttestationServiceInitResponse_Result(): AttestationServiceIn
     blockOnPolicyViolation: false,
     signingOptions: undefined,
     policiesAllowedHostnames: [],
+    uiDashboardUrl: "",
   };
 }
 
@@ -1300,6 +1304,9 @@ export const AttestationServiceInitResponse_Result = {
     }
     for (const v of message.policiesAllowedHostnames) {
       writer.uint32(50).string(v!);
+    }
+    if (message.uiDashboardUrl !== "") {
+      writer.uint32(58).string(message.uiDashboardUrl);
     }
     return writer;
   },
@@ -1346,6 +1353,13 @@ export const AttestationServiceInitResponse_Result = {
 
           message.policiesAllowedHostnames.push(reader.string());
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.uiDashboardUrl = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1366,6 +1380,7 @@ export const AttestationServiceInitResponse_Result = {
       policiesAllowedHostnames: Array.isArray(object?.policiesAllowedHostnames)
         ? object.policiesAllowedHostnames.map((e: any) => String(e))
         : [],
+      uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
     };
   },
 
@@ -1383,6 +1398,7 @@ export const AttestationServiceInitResponse_Result = {
     } else {
       obj.policiesAllowedHostnames = [];
     }
+    message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
     return obj;
   },
 
@@ -1405,6 +1421,7 @@ export const AttestationServiceInitResponse_Result = {
       ? AttestationServiceInitResponse_SigningOptions.fromPartial(object.signingOptions)
       : undefined;
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
+    message.uiDashboardUrl = object.uiDashboardUrl ?? "";
     return message;
   },
 };
@@ -2230,11 +2247,14 @@ export const WorkflowRunServiceViewResponse = {
 };
 
 function createBaseWorkflowRunServiceViewResponse_Result(): WorkflowRunServiceViewResponse_Result {
-  return { workflowRun: undefined, attestation: undefined, verification: undefined };
+  return { orgName: "", workflowRun: undefined, attestation: undefined, verification: undefined };
 }
 
 export const WorkflowRunServiceViewResponse_Result = {
   encode(message: WorkflowRunServiceViewResponse_Result, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.orgName !== "") {
+      writer.uint32(42).string(message.orgName);
+    }
     if (message.workflowRun !== undefined) {
       WorkflowRunItem.encode(message.workflowRun, writer.uint32(10).fork()).ldelim();
     }
@@ -2254,6 +2274,13 @@ export const WorkflowRunServiceViewResponse_Result = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.orgName = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -2286,6 +2313,7 @@ export const WorkflowRunServiceViewResponse_Result = {
 
   fromJSON(object: any): WorkflowRunServiceViewResponse_Result {
     return {
+      orgName: isSet(object.orgName) ? String(object.orgName) : "",
       workflowRun: isSet(object.workflowRun) ? WorkflowRunItem.fromJSON(object.workflowRun) : undefined,
       attestation: isSet(object.attestation) ? AttestationItem.fromJSON(object.attestation) : undefined,
       verification: isSet(object.verification)
@@ -2296,6 +2324,7 @@ export const WorkflowRunServiceViewResponse_Result = {
 
   toJSON(message: WorkflowRunServiceViewResponse_Result): unknown {
     const obj: any = {};
+    message.orgName !== undefined && (obj.orgName = message.orgName);
     message.workflowRun !== undefined &&
       (obj.workflowRun = message.workflowRun ? WorkflowRunItem.toJSON(message.workflowRun) : undefined);
     message.attestation !== undefined &&
@@ -2316,6 +2345,7 @@ export const WorkflowRunServiceViewResponse_Result = {
     object: I,
   ): WorkflowRunServiceViewResponse_Result {
     const message = createBaseWorkflowRunServiceViewResponse_Result();
+    message.orgName = object.orgName ?? "";
     message.workflowRun = (object.workflowRun !== undefined && object.workflowRun !== null)
       ? WorkflowRunItem.fromPartial(object.workflowRun)
       : undefined;

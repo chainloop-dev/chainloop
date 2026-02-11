@@ -33,15 +33,17 @@ type NewOrgUpdateOpts struct {
 	BlockOnPolicyViolation          *bool
 	PoliciesAllowedHostnames        *[]string
 	PreventImplicitWorkflowCreation *bool
+	RestrictContractCreation        *bool
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
 	client := pb.NewOrganizationServiceClient(action.cfg.CPConnection)
 
 	payload := &pb.OrganizationServiceUpdateRequest{
-		Name:                            name,
-		BlockOnPolicyViolation:          opts.BlockOnPolicyViolation,
-		PreventImplicitWorkflowCreation: opts.PreventImplicitWorkflowCreation,
+		Name:                                name,
+		BlockOnPolicyViolation:              opts.BlockOnPolicyViolation,
+		PreventImplicitWorkflowCreation:     opts.PreventImplicitWorkflowCreation,
+		RestrictContractCreationToOrgAdmins: opts.RestrictContractCreation,
 	}
 
 	if opts.PoliciesAllowedHostnames != nil {

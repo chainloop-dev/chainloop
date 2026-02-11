@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -225,6 +225,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
+
+	// Build attestation view URL
+	attestationResult.Status.AttestationViewURL = buildAttestationViewURL(crafter.CraftingState.UiDashboardUrl, workflow.GetOrganization(), attestationResult.Digest)
 
 	action.Logger.Info().Msg("push completed")
 

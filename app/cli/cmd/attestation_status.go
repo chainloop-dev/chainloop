@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -137,8 +138,14 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.W
 	evs := status.PolicyEvaluations[chainloop.AttPolicyEvaluation]
 	if len(evs) > 0 {
 		gt.AppendRow(table.Row{"Policies", "------"})
-		policiesTable(evs, gt)
+		policiesTable(evs, gt, flagDebug)
 	}
+
+	// Add the Attestation View URL if available
+	if status.AttestationViewURL != "" {
+		gt.AppendRow(table.Row{"Attestation View URL", status.AttestationViewURL})
+	}
+
 	gt.Render()
 
 	if err := materialsTable(status, w, full); err != nil {
@@ -235,7 +242,7 @@ func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bo
 		evs := status.PolicyEvaluations[m.Name]
 		if len(evs) > 0 {
 			mt.AppendRow(table.Row{"Policies", "------"})
-			policiesTable(evs, mt)
+			policiesTable(evs, mt, flagDebug)
 		}
 
 		mt.AppendSeparator()
@@ -301,4 +308,12 @@ func versionStringAttFinal(p *action.ProjectVersion) string {
 	}
 
 	return p.Version
+}
+
+// removeAnsiCharactersFromBytes removes ANSI escape codes from bytes slices.
+// Credits to: https://github.com/acarl005/stripansi
+func removeAnsiCharactersFromBytes(input []byte) []byte {
+	const ansiPattern = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+	re := regexp.MustCompile(ansiPattern)
+	return re.ReplaceAll(input, []byte(""))
 }

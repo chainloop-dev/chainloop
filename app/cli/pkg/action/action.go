@@ -20,10 +20,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/filesystem"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/remote"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -100,26 +102,32 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 }
 
 // getCASBackend tries to get CAS upload credentials and set up a CAS client
-func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend) (func() error, error) {
+func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend) (*clientAPI.Attestation_CASBackend, func() error, error) {
 	credsResp, err := client.GetUploadCreds(ctx, &pb.AttestationServiceGetUploadCredsRequest{
 		WorkflowRunId: workflowRunID,
 	})
 	if err != nil {
 		// Log warning but don't fail - will fall back to inline storage
 		logger.Warn().Err(err).Msg("failed to get CAS credentials for PR metadata, will store inline")
-		return nil, fmt.Errorf("getting upload creds: %w", err)
+		return nil, nil, fmt.Errorf("getting upload creds: %w", err)
 	}
 
 	if credsResp == nil || credsResp.GetResult() == nil {
 		logger.Debug().Msg("no upload creds result, will store inline")
-		return nil, fmt.Errorf("getting upload creds: %w", err)
+		return nil, nil, fmt.Errorf("getting upload creds: %w", err)
 	}
 
 	result := credsResp.GetResult()
 	backend := result.GetBackend()
 	if backend == nil {
 		logger.Debug().Msg("no backend info in upload creds, will store inline")
-		return nil, fmt.Errorf("no backend found in upload creds")
+		return nil, nil, fmt.Errorf("no backend found in upload creds")
+	}
+
+	casBackendInfo := &clientAPI.Attestation_CASBackend{
+		CasBackendId:   backend.Id,
+		CasBackendName: backend.Name,
+		Fallback:       backend.Fallback,
 	}
 
 	casBackend.Name = backend.Provider
@@ -129,7 +137,7 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 
 	// Only attempt to create a CAS connection when not inline and token is present
 	if backend.IsInline || result.Token == "" {
-		return nil, nil
+		return casBackendInfo, nil, nil
 	}
 
 	opts := []grpcconn.Option{grpcconn.WithInsecure(casConnectionInsecure)}
@@ -140,9 +148,40 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 	artifactCASConn, err := grpcconn.New(casURI, result.Token, opts...)
 	if err != nil {
 		logger.Warn().Err(err).Msg("failed to create CAS connection, will store inline")
-		return nil, fmt.Errorf("creating CAS connection: %w", err)
+		return nil, nil, fmt.Errorf("creating CAS connection: %w", err)
 	}
 
 	casBackend.Uploader = casclient.New(artifactCASConn, casclient.WithLogger(logger))
-	return artifactCASConn.Close, nil
+	return casBackendInfo, artifactCASConn.Close, nil
+}
+
+// fetchUIDashboardURL retrieves the UI Dashboard URL from the control plane
+// Returns empty string if not configured or if fetch fails
+func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) string {
+	if cpConnection == nil {
+		return ""
+	}
+
+	tmoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	client := pb.NewStatusServiceClient(cpConnection)
+	resp, err := client.Infoz(tmoutCtx, &pb.InfozRequest{})
+	if err != nil {
+		return ""
+	}
+
+	return resp.UiDashboardUrl
+}
+
+// buildAttestationViewURL constructs the attestation view URL
+// Returns empty string if platformURL is not configured
+func buildAttestationViewURL(uiDashboardURL, orgName, digest string) string {
+	if uiDashboardURL == "" || digest == "" {
+		return ""
+	}
+
+	// Trim trailing slash from platform URL if present
+	uiDashboardURL = strings.TrimRight(uiDashboardURL, "/")
+	return fmt.Sprintf("%s/u/%s/workflow-runs/%s", uiDashboardURL, orgName, digest)
 }

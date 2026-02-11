@@ -29,6 +29,7 @@ import (
 var (
 	_ auditor.LogEntry = (*ProjectCreated)(nil)
 	_ auditor.LogEntry = (*ProjectVersionCreated)(nil)
+	_ auditor.LogEntry = (*ProjectVersionUpdated)(nil)
 	_ auditor.LogEntry = (*ProjectVersionDeleted)(nil)
 	_ auditor.LogEntry = (*ProjectMembershipAdded)(nil)
 	_ auditor.LogEntry = (*ProjectMembershipRemoved)(nil)
@@ -39,6 +40,7 @@ const (
 	ProjectType                        auditor.TargetType = "Project"
 	ProjectCreatedActionType           string             = "ProjectCreated"
 	ProjectVersionCreatedActionType    string             = "ProjectVersionCreated"
+	ProjectVersionUpdatedActionType    string             = "ProjectVersionUpdated"
 	ProjectVersionDeletedActionType    string             = "ProjectVersionDeleted"
 	ProjectMembershipAddedActionType   string             = "ProjectMembershipAdded"
 	ProjectMembershipRemovedActionType string             = "ProjectMembershipRemoved"
@@ -154,6 +156,42 @@ func (p *ProjectVersionDeleted) Description() string {
 		releaseType = "prerelease"
 	}
 	return fmt.Sprintf("%s has deleted %s version '%s' for project '%s'", auditor.GetActorIdentifier(), releaseType, p.Version, p.ProjectName)
+}
+
+// ProjectVersionUpdated represents the update of a project version
+type ProjectVersionUpdated struct {
+	*ProjectBase
+	VersionID  *uuid.UUID `json:"version_id,omitempty"`
+	Version    string     `json:"version,omitempty"`
+	NewVersion *string    `json:"new_version,omitempty"`
+}
+
+func (p *ProjectVersionUpdated) ActionType() string {
+	return ProjectVersionUpdatedActionType
+}
+
+func (p *ProjectVersionUpdated) ActionInfo() (json.RawMessage, error) {
+	if _, err := p.ProjectBase.ActionInfo(); err != nil {
+		return nil, err
+	}
+
+	if p.VersionID == nil || p.Version == "" {
+		return nil, errors.New("version id and version are required")
+	}
+
+	return json.Marshal(&p)
+}
+
+func (p *ProjectVersionUpdated) Description() string {
+	desc := fmt.Sprintf("%s has updated version '%s' for project '%s'",
+		auditor.GetActorIdentifier(), p.Version, p.ProjectName)
+
+	if p.NewVersion != nil {
+		desc = fmt.Sprintf("%s has renamed version '%s' to '%s' for project '%s'",
+			auditor.GetActorIdentifier(), p.Version, *p.NewVersion, p.ProjectName)
+	}
+
+	return desc
 }
 
 // Helper function to make role names more user-friendly

@@ -40,7 +40,7 @@ package main
 import (
 	"fmt"
 
-	chainlooppolicy "github.com/chainloop-dev/chainloop/policies/go"
+	chainlooppolicy "github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go"
 )
 
 // ContainerImage represents the container image material structure.

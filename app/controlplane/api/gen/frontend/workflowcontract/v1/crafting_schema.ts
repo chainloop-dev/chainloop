@@ -59,6 +59,7 @@ export enum CraftingSchema_Runner_RunnerType {
   CIRCLECI_BUILD = 5,
   DAGGER_PIPELINE = 6,
   TEAMCITY_PIPELINE = 7,
+  TEKTON_PIPELINE = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -88,6 +89,9 @@ export function craftingSchema_Runner_RunnerTypeFromJSON(object: any): CraftingS
     case 7:
     case "TEAMCITY_PIPELINE":
       return CraftingSchema_Runner_RunnerType.TEAMCITY_PIPELINE;
+    case 8:
+    case "TEKTON_PIPELINE":
+      return CraftingSchema_Runner_RunnerType.TEKTON_PIPELINE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -113,6 +117,8 @@ export function craftingSchema_Runner_RunnerTypeToJSON(object: CraftingSchema_Ru
       return "DAGGER_PIPELINE";
     case CraftingSchema_Runner_RunnerType.TEAMCITY_PIPELINE:
       return "TEAMCITY_PIPELINE";
+    case CraftingSchema_Runner_RunnerType.TEKTON_PIPELINE:
+      return "TEKTON_PIPELINE";
     case CraftingSchema_Runner_RunnerType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -202,6 +208,8 @@ export enum CraftingSchema_Material_MaterialType {
   CHAINLOOP_RUNNER_CONTEXT = 25,
   /** CHAINLOOP_PR_INFO - Pull Request / Merge Request metadata collected automatically during attestation */
   CHAINLOOP_PR_INFO = 26,
+  /** GITLEAKS_JSON - Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting */
+  GITLEAKS_JSON = 27,
   UNRECOGNIZED = -1,
 }
 
@@ -288,6 +296,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 26:
     case "CHAINLOOP_PR_INFO":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO;
+    case 27:
+    case "GITLEAKS_JSON":
+      return CraftingSchema_Material_MaterialType.GITLEAKS_JSON;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -351,6 +362,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "CHAINLOOP_RUNNER_CONTEXT";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_PR_INFO:
       return "CHAINLOOP_PR_INFO";
+    case CraftingSchema_Material_MaterialType.GITLEAKS_JSON:
+      return "GITLEAKS_JSON";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -505,12 +518,21 @@ export interface PolicyInput {
 }
 
 export interface PolicySpecV2 {
-  /** path to a policy script. It might consist of a URI reference */
+  /**
+   * path to a policy script. It might consist of a URI reference
+   * deprecated: use ref instead
+   *
+   * @deprecated
+   */
   path?:
     | string
     | undefined;
   /** embedded source code (only Rego supported currently) */
   embedded?:
+    | string
+    | undefined;
+  /** generic reference for file:// and http(s):// schemes */
+  ref?:
     | string
     | undefined;
   /** if set, it will match any material supported by Chainloop */
@@ -519,12 +541,21 @@ export interface PolicySpecV2 {
 
 /** Auto-matching policy specification */
 export interface AutoMatch {
-  /** path to a policy script. It might consist of a URI reference */
+  /**
+   * path to a policy script. It might consist of a URI reference
+   * deprecated: use ref instead
+   *
+   * @deprecated
+   */
   path?:
     | string
     | undefined;
   /** embedded source code (only Rego supported currently) */
-  embedded?: string | undefined;
+  embedded?:
+    | string
+    | undefined;
+  /** generic reference for file:// and http(s):// schemes */
+  ref?: string | undefined;
 }
 
 /** Represents a group attachment in a contract */
@@ -2144,7 +2175,7 @@ export const PolicyInput = {
 };
 
 function createBasePolicySpecV2(): PolicySpecV2 {
-  return { path: undefined, embedded: undefined, kind: 0 };
+  return { path: undefined, embedded: undefined, ref: undefined, kind: 0 };
 }
 
 export const PolicySpecV2 = {
@@ -2154,6 +2185,9 @@ export const PolicySpecV2 = {
     }
     if (message.embedded !== undefined) {
       writer.uint32(18).string(message.embedded);
+    }
+    if (message.ref !== undefined) {
+      writer.uint32(34).string(message.ref);
     }
     if (message.kind !== 0) {
       writer.uint32(24).int32(message.kind);
@@ -2182,6 +2216,13 @@ export const PolicySpecV2 = {
 
           message.embedded = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.ref = reader.string();
+          continue;
         case 3:
           if (tag !== 24) {
             break;
@@ -2202,6 +2243,7 @@ export const PolicySpecV2 = {
     return {
       path: isSet(object.path) ? String(object.path) : undefined,
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
+      ref: isSet(object.ref) ? String(object.ref) : undefined,
       kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
     };
   },
@@ -2210,6 +2252,7 @@ export const PolicySpecV2 = {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.embedded !== undefined && (obj.embedded = message.embedded);
+    message.ref !== undefined && (obj.ref = message.ref);
     message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
     return obj;
   },
@@ -2222,13 +2265,14 @@ export const PolicySpecV2 = {
     const message = createBasePolicySpecV2();
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
+    message.ref = object.ref ?? undefined;
     message.kind = object.kind ?? 0;
     return message;
   },
 };
 
 function createBaseAutoMatch(): AutoMatch {
-  return { path: undefined, embedded: undefined };
+  return { path: undefined, embedded: undefined, ref: undefined };
 }
 
 export const AutoMatch = {
@@ -2238,6 +2282,9 @@ export const AutoMatch = {
     }
     if (message.embedded !== undefined) {
       writer.uint32(18).string(message.embedded);
+    }
+    if (message.ref !== undefined) {
+      writer.uint32(26).string(message.ref);
     }
     return writer;
   },
@@ -2263,6 +2310,13 @@ export const AutoMatch = {
 
           message.embedded = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.ref = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2276,6 +2330,7 @@ export const AutoMatch = {
     return {
       path: isSet(object.path) ? String(object.path) : undefined,
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
+      ref: isSet(object.ref) ? String(object.ref) : undefined,
     };
   },
 
@@ -2283,6 +2338,7 @@ export const AutoMatch = {
     const obj: any = {};
     message.path !== undefined && (obj.path = message.path);
     message.embedded !== undefined && (obj.embedded = message.embedded);
+    message.ref !== undefined && (obj.ref = message.ref);
     return obj;
   },
 
@@ -2294,6 +2350,7 @@ export const AutoMatch = {
     const message = createBaseAutoMatch();
     message.path = object.path ?? undefined;
     message.embedded = object.embedded ?? undefined;
+    message.ref = object.ref ?? undefined;
     return message;
   },
 };

@@ -74,7 +74,10 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 				// Project ID is optional
 				projectID, _ := genericClaims["project_id"].(string)
 
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID)
+				// Scope is optional
+				scope, _ := genericClaims["scope"].(string)
+
+				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, scope)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
@@ -123,7 +126,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID)
+			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.Scope)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
@@ -160,7 +163,7 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 }
 
 // Set the current organization and API-Token in the context
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim string) (context.Context, error) {
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, scope string) (context.Context, error) {
 	if tokenID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
@@ -184,16 +187,35 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		return nil, errors.New("API token revoked")
 	}
 
-	// Find the associated organization
-	org, err := orgUC.FindByID(ctx, token.OrganizationID.String())
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving the organization: %w", err)
-	} else if org == nil {
-		return nil, errors.New("organization not found")
-	}
+	// Handle instance admin tokens
+	if scope == authz.ScopeInstanceAdmin {
+		// Check if org name provided in header
+		orgName, _ := entities.GetOrganizationNameFromHeader(ctx)
+		if orgName != "" {
+			// Load organization from header
+			org, err := orgUC.FindByName(ctx, orgName)
+			if err != nil {
+				return nil, fmt.Errorf("error retrieving the organization: %w", err)
+			} else if org == nil {
+				return nil, errors.New("organization not found")
+			}
 
-	// Set the current organization and API-Token in the context
-	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+		}
+		// If no org header, org context remains unset, operations will either:
+		// 1. Work without org context
+		// 2. Fail appropriately if they require org context
+	} else {
+		org, err := orgUC.FindByID(ctx, token.OrganizationID.String())
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving the organization: %w", err)
+		} else if org == nil {
+			return nil, errors.New("organization not found")
+		}
+
+		// Set the current organization in the context
+		ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+	}
 
 	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
 		ID:          token.ID.String(),
@@ -203,6 +225,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		ProjectID:   token.ProjectID,
 		ProjectName: token.ProjectName,
 		Policies:    token.Policies,
+		Scope:       scope,
 	})
 
 	// Set the authorization subject that will be used to check the policies

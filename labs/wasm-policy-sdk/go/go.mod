@@ -1,4 +1,4 @@
-module github.com/chainloop-dev/chainloop/sdks/go
+module github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go
 
 go 1.25
 

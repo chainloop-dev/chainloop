@@ -32,6 +32,10 @@
       "description": "Description",
       "type": "string"
     },
+    "fallback": {
+      "description": "Set as fallback in your organization",
+      "type": "boolean"
+    },
     "max_bytes": {
       "anyOf": [
         {

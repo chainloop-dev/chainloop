@@ -199,7 +199,7 @@ func craft(materialPath string, kind v1.CraftingSchema_Material_MaterialType, na
 		Name: name,
 	}
 
-	m, err := materials.Craft(context.Background(), materialSchema, materialPath, backend, nil, logger)
+	m, err := materials.Craft(context.Background(), materialSchema, materialPath, backend, nil, logger, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to craft material (kind=%s): %w", kind.String(), err)
 	}

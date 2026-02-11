@@ -63,7 +63,6 @@ const (
 	ResourceAPIToken                = "api_token"
 	ResourceProjectMembership       = "project_membership"
 	ResourceOrganizationInvitations = "organization_invitations"
-	ResourceGroupProjects           = "group_projects"
 
 	// Top level instance admin role
 	// this is used to know if an user is a super admin of the chainloop instance
@@ -97,6 +96,9 @@ const (
 	// Product roles
 	RoleProductViewer Role = "role:product:viewer"
 	RoleProductAdmin  Role = "role:product:admin"
+
+	// Scope for instance admin tokens
+	ScopeInstanceAdmin = "INSTANCE_ADMIN"
 )
 
 var (
@@ -108,6 +110,7 @@ var (
 	// CAS backend
 	PolicyCASBackendList   = &Policy{ResourceCASBackend, ActionList}
 	PolicyCASBackendUpdate = &Policy{ResourceCASBackend, ActionUpdate}
+	PolicyCASBackendCreate = &Policy{ResourceCASBackend, ActionCreate}
 	// Available integrations
 	PolicyAvailableIntegrationList = &Policy{ResourceAvailableIntegration, ActionList}
 	PolicyAvailableIntegrationRead = &Policy{ResourceAvailableIntegration, ActionRead}
@@ -177,7 +180,13 @@ var (
 var RolesMap = map[Role][]*Policy{
 	// Organizations in chainloop might be restricted to instance admins
 	RoleInstanceAdmin: {
+		// Instance admins can create new organizations
 		PolicyOrganizationCreate,
+		// Instance admins can invite users to organizations
+		PolicyOrganizationInvitationsCreate,
+		// Instance admins can configure CAS Backends in all organizations
+		PolicyCASBackendList,
+		PolicyCASBackendCreate,
 	},
 	RoleOwner: {
 		PolicyOrganizationDelete,
@@ -349,6 +358,7 @@ var ServerOperationsMap = map[string][]*Policy{
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List":       {PolicyCASBackendList},
 	"/controlplane.v1.CASBackendService/Revalidate": {PolicyCASBackendUpdate},
+	"/controlplane.v1.CASBackendService/Create":     {PolicyCASBackendCreate},
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
 	// Registered integrations
@@ -383,7 +393,8 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead},
 	// Listing, create or selecting an organization does not have any required permissions,
 	// since all the permissions here are in the context of an organization
-	// Create new organization
+	// Create new organization. No user required at middleware level. The endpoint will handle
+	// it based on diverse conditions
 	"/controlplane.v1.OrganizationService/Create": {},
 	// Delete an organization makes checks at the service level since the
 	// user can explicitly set the org they want to delete and might not be the current one
@@ -425,6 +436,9 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.APITokenService/List":   {PolicyAPITokenList},
 	"/controlplane.v1.APITokenService/Create": {PolicyAPITokenCreate},
 	"/controlplane.v1.APITokenService/Revoke": {PolicyAPITokenRevoke},
+
+	// Org invitations
+	"/controlplane.v1.OrgInvitationService/Create": {PolicyOrganizationInvitationsCreate},
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

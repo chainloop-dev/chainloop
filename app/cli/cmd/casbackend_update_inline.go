@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 	var backendName string
 	cmd := &cobra.Command{
 		Use:   "inline",
-		Short: "Update the Inline, fallback CAS Backend description or default status",
+		Short: "Update the Inline CAS Backend description, default status, or fallback status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// capture flags only when explicitly set
 			if err := captureUpdateFlags(cmd); err != nil {
@@ -45,6 +45,7 @@ func newCASBackendUpdateInlineCmd() *cobra.Command {
 				Name:        backendName,
 				Description: descriptionCASBackendUpdateOption,
 				Default:     isDefaultCASBackendUpdateOption,
+				Fallback:    isFallbackCASBackendUpdateOption,
 			}
 
 			res, err := action.NewCASBackendUpdate(ActionOpts).Run(opts)

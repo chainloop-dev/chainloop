@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -529,37 +530,43 @@ func getValue(values []string) any {
 	return lines[0]
 }
 
+// splitArgs splits a comma-separated string into a slice of trimmed values.
+//
+// It treats \, (backslash-comma) as an escaped comma, preserving it as a literal comma
+// in the output rather than using it as a delimiter. All other backslashes are preserved
+// as-is, which allows regex patterns and other escape sequences to pass through unchanged.
+//
+// Empty values (including those with only whitespace) are filtered out from the result.
+//
+// The function uses a temporary placeholder strategy to handle escaped commas:
+//  1. Replace all \, with a unique placeholder
+//  2. Split on unescaped commas
+//  3. Restore placeholders back to commas
+//  4. Trim whitespace and filter empty strings
+//
+// Examples:
+//   - "a,b,c" -> ["a", "b", "c"]
+//   - "a\\,b,c" -> ["a,b", "c"]  (escaped comma becomes literal comma)
+//   - "\\d+,\\s+" -> ["\\d+", "\\s+"]  (regex patterns preserved)
+//   - ",a,,b," -> ["a", "b"]  (empty values filtered out)
+//   - "a\\,b\\,c" -> ["a,b,c"]  (multiple escaped commas)
 func splitArgs(s string) []string {
-	var result []string
-	var current strings.Builder
-	escaped := false
+	// Use a placeholder that's unlikely to appear in normal input
+	const placeholder = "$=$$ESCAPED_COMMA$$=$"
 
-	for i := 0; i < len(s); i++ {
-		c := s[i]
+	// Replace escaped commas with placeholder
+	s = strings.ReplaceAll(s, `\,`, placeholder)
 
-		if escaped {
-			current.WriteByte(c)
-			escaped = false
-			continue
+	// Split by unescaped commas
+	parts := strings.Split(s, ",")
+
+	// Restore escaped commas and trim spaces
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(strings.ReplaceAll(part, placeholder, ","))
+		if trimmed != "" {
+			result = append(result, trimmed)
 		}
-
-		if c == '\\' {
-			escaped = true
-			continue
-		}
-
-		if c == ',' {
-			// Unescaped comma: split here
-			result = append(result, strings.TrimSpace(current.String()))
-			current.Reset()
-		} else {
-			current.WriteByte(c)
-		}
-	}
-
-	// Add the final part
-	if current.Len() > 0 {
-		result = append(result, strings.TrimSpace(current.String()))
 	}
 
 	return result
@@ -723,13 +730,65 @@ func isURLPath(path string) bool {
 	return scheme == httpScheme || scheme == httpsScheme
 }
 
+// resolveReference resolves a reference (which may be relative) against a base path
+// If ref is absolute (has a scheme), it returns ref as-is
+// If basePath is a file:// path, it uses filepath.Join for resolution
+// If basePath is an http(s):// URL, it uses URL parsing for resolution
+func resolveReference(ref, basePath string) (string, error) {
+	// Check if ref is already absolute (has a scheme)
+	refScheme, _ := RefParts(ref)
+	if refScheme != "" {
+		// Already absolute, return as-is
+		return ref, nil
+	}
+
+	// Get the scheme of basePath
+	baseScheme, baseLoc := RefParts(basePath)
+
+	switch baseScheme {
+	case fileScheme:
+		// File path resolution
+		return filepath.Join(filepath.Dir(baseLoc), ref), nil
+	case httpScheme, httpsScheme:
+		// HTTP(S) URL resolution
+		baseURL, err := url.Parse(basePath)
+		if err != nil {
+			return "", fmt.Errorf("invalid base URL %q: %w", basePath, err)
+		}
+
+		// Parse the reference relative to the base URL
+		resolvedURL, err := baseURL.Parse(ref)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve reference %q against base %q: %w", ref, basePath, err)
+		}
+
+		return resolvedURL.String(), nil
+	case "":
+		// No scheme in basePath, treat as file path
+		return filepath.Join(filepath.Dir(basePath), ref), nil
+	default:
+		return "", fmt.Errorf("unsupported base path scheme: %s", baseScheme)
+	}
+}
+
 func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
 	var content []byte
 	var err error
 	switch source := spec.GetSource().(type) {
 	case *v1.PolicySpecV2_Embedded:
 		content = []byte(source.Embedded)
+	case *v1.PolicySpecV2_Ref:
+		// New ref field with relative URL resolution
+		scriptPath, err := resolveReference(source.Ref, basePath)
+		if err != nil {
+			return nil, fmt.Errorf("resolving policy reference: %w", err)
+		}
+		content, err = blob.LoadFileOrURL(scriptPath)
+		if err != nil {
+			return nil, fmt.Errorf("loading policy content: %w", err)
+		}
 	case *v1.PolicySpecV2_Path:
+		// Deprecated: kept for backward compatibility
 		var scriptPath string
 		// If the path is a URL, use it directly. Otherwise, resolve it relative to basePath
 		if isURLPath(source.Path) {

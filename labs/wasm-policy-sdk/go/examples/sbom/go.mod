@@ -2,9 +2,8 @@ module chainloop-policy-sbom
 
 go 1.25
 
-require (
-	github.com/chainloop-dev/chainloop/sdks/go v0.0.0
-	github.com/extism/go-pdk v1.1.3
-)
+require github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go v0.0.0
 
-replace github.com/chainloop-dev/chainloop/sdks/go => ../../
+require github.com/extism/go-pdk v1.1.3 // indirect
+
+replace github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go => ../../

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ type Builder struct {
 	issuer     string
 	hmacSecret string
 	expiration time.Duration
+	audience   string
 }
 
 type NewOpt func(b *Builder)
@@ -47,6 +48,12 @@ func WithKeySecret(hmacSecret string) NewOpt {
 func WithExpiration(d time.Duration) NewOpt {
 	return func(b *Builder) {
 		b.expiration = d
+	}
+}
+
+func WithAudience(aud string) NewOpt {
+	return func(b *Builder) {
+		b.audience = aud
 	}
 }
 
@@ -74,11 +81,16 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 }
 
 func (ra *Builder) GenerateJWT(userID string) (string, error) {
+	aud := Audience
+	if ra.audience != "" {
+		aud = ra.audience
+	}
+
 	claims := CustomClaims{
 		userID,
 		jwt.RegisteredClaims{
 			Issuer:    ra.issuer,
-			Audience:  jwt.ClaimStrings{Audience},
+			Audience:  jwt.ClaimStrings{aud},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ra.expiration)),
 		},
 	}

@@ -35,6 +35,9 @@
     "description": {
       "type": "string"
     },
+    "gate": {
+      "type": "boolean"
+    },
     "groupReference": {
       "$ref": "controlplane.v1.PolicyReference.jsonschema.json"
     },

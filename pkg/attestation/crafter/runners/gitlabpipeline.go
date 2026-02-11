@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,15 +17,18 @@ package runners
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 	"github.com/rs/zerolog"
 )
 
 type GitlabPipeline struct {
 	gitlabToken *oidc.GitlabToken
+	logger      *zerolog.Logger
 }
 
 // authtoken is a possible oidc token that could be used to authenticate the runner
@@ -35,11 +38,13 @@ func NewGitlabPipeline(ctx context.Context, authToken string, logger *zerolog.Lo
 		logger.Debug().Err(err).Msgf("failed to create Gitlab OIDC client: %v", err)
 		return &GitlabPipeline{
 			gitlabToken: nil,
+			logger:      logger,
 		}
 	}
 
 	return &GitlabPipeline{
 		gitlabToken: client.Token,
+		logger:      logger,
 	}
 }
 
@@ -112,4 +117,52 @@ func (r *GitlabPipeline) Environment() RunnerEnvironment {
 		}
 	}
 	return Unknown
+}
+
+// VerifyCommitSignature checks if a commit's signature is verified by GitLab
+func (r *GitlabPipeline) VerifyCommitSignature(ctx context.Context, commitHash string) *commitverification.CommitVerification {
+	// Extract base URL and project path from env vars
+	baseURL := os.Getenv("CI_SERVER_URL")
+	projectPath := os.Getenv("CI_PROJECT_PATH")
+
+	if baseURL == "" || projectPath == "" {
+		r.logger.Debug().Msg("CI_SERVER_URL or CI_PROJECT_PATH not set, cannot verify commit")
+		return nil
+	}
+
+	// Get CI_JOB_TOKEN for API access
+	token := os.Getenv("CI_JOB_TOKEN")
+	if token == "" {
+		r.logger.Debug().Msg("CI_JOB_TOKEN not set, using unauthenticated requests")
+	}
+
+	// Call GitLab API to verify commit
+	return commitverification.VerifyGitLabCommit(ctx, baseURL, projectPath, commitHash, token, r.logger)
+}
+
+// Report writes attestation table output as text artifact
+func (r *GitlabPipeline) Report(tableOutput []byte, attestationViewURL string) error {
+	artifactFile := "chainloop-attestation-report.txt"
+
+	// Build the content with optional clickable link
+	content := fmt.Sprintf("# Chainloop Attestation Report\n\n%s", tableOutput)
+
+	// Add clickable markdown link after the table if URL is provided
+	if attestationViewURL != "" {
+		content += fmt.Sprintf("\n\n[View Attestation Details](%s)\n", attestationViewURL)
+	}
+
+	if err := os.WriteFile(artifactFile, []byte(content), 0600); err != nil {
+		return fmt.Errorf("failed to write attestation report: %w", err)
+	}
+
+	// Log instruction for GitLab CI configuration
+	r.logger.Info().Msgf("Attestation report written to %s", artifactFile)
+	r.logger.Info().Msg("To view in GitLab CI, add this to your job configuration:")
+	r.logger.Info().Msg("artifacts:")
+	r.logger.Info().Msg("  paths:")
+	r.logger.Info().Msgf("    - %s", artifactFile)
+	r.logger.Info().Msg("  expire_in: 30 days")
+
+	return nil
 }
