@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
         with:
-          go-version: "1.25.6"
+          go-version: "1.26.0"
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -67,7 +67,7 @@ jobs:
 
       - uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
         with:
-          go-version: "1.25.6"
+          go-version: "1.26.0"
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
