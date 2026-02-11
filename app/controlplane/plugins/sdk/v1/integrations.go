@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ type IntegrationBase struct {
 	Description string
 	// kinds of integration (e.g. "notification", "task-manager", "fanout", etc.)
 	Kinds []string
+	// Whether only one registration per organization is allowed
+	Singleton bool
 
 	// Rendered schema definitions
 	// Generated from the schema definitions using https://github.com/invopop/jsonschema
@@ -73,6 +75,8 @@ type IntegrationBaseOptions struct {
 	Description string
 	Kinds       []string
 	Schema      *InputSchema
+	// Whether only one registration per organization is allowed
+	Singleton bool
 }
 
 // NewIntegrationBase helper to create a new IntegrationBase
@@ -119,6 +123,7 @@ func NewIntegrationBase(opts *IntegrationBaseOptions) (*IntegrationBase, error) 
 		Version:                opts.Version,
 		Description:            opts.Description,
 		Kinds:                  opts.Kinds,
+		Singleton:              opts.Singleton,
 		registrationJSONSchema: registrationJSONSchema,
 		attachmentJSONSchema:   attachmentJSONSchema,
 	}, nil
@@ -131,6 +136,7 @@ func (i *IntegrationBase) Describe() *IntegrationInfo {
 		Version:                i.Version,
 		Description:            i.Description,
 		Kinds:                  i.Kinds,
+		Singleton:              i.Singleton,
 		RegistrationJSONSchema: i.registrationJSONSchema,
 		AttachmentJSONSchema:   i.attachmentJSONSchema,
 	}
@@ -147,6 +153,8 @@ type IntegrationInfo struct {
 	Description string
 	// Kinds of integration (e.g. "notification", "task-manager", "fanout", etc.)
 	Kinds []string
+	// Whether only one registration per organization is allowed
+	Singleton bool
 	// Schemas in JSON schema format
 	RegistrationJSONSchema, AttachmentJSONSchema []byte
 }
