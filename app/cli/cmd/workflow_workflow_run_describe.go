@@ -175,7 +175,7 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]
 	if len(evs) > 0 {
 		gt.AppendRow(table.Row{"Policies", "------"})
-		policiesTable(evs, gt)
+		policiesTable(evs, gt, flagDebug)
 	}
 
 	if run.Attestation.AttestationViewURL != "" {
@@ -227,7 +227,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 			evs := att.PolicyEvaluations[m.Name]
 			if len(evs) > 0 {
 				mt.AppendRow(table.Row{"Policies", "------"})
-				policiesTable(evs, mt)
+				policiesTable(evs, mt, flagDebug)
 			}
 			mt.AppendSeparator()
 		}
@@ -249,13 +249,21 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 	}
 }
 
-func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer) {
+func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bool) {
 	for _, ev := range evs {
 		msg := ""
 
 		switch {
 		case ev.Skipped:
-			msg = text.Colors{text.FgHiYellow}.Sprintf("skipped - %s", strings.Join(ev.SkipReasons, ", "))
+			switch {
+			case len(ev.SkipReasons) == 1:
+				msg = text.Colors{text.FgHiYellow}.Sprintf("skipped - %s", ev.SkipReasons[0])
+			case debugMode:
+				msg = text.Colors{text.FgHiYellow}.Sprintf("skipped - multiple reasons:\n  - %s",
+					strings.Join(ev.SkipReasons, "\n  - "))
+			default:
+				msg = text.Colors{text.FgHiYellow}.Sprint("the policy was skipped in all execution paths")
+			}
 		case len(ev.Violations) == 0:
 			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
 		case len(ev.Violations) > 0:
