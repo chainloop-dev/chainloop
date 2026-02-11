@@ -138,7 +138,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.W
 	evs := status.PolicyEvaluations[chainloop.AttPolicyEvaluation]
 	if len(evs) > 0 {
 		gt.AppendRow(table.Row{"Policies", "------"})
-		policiesTable(evs, gt)
+		policiesTable(evs, gt, flagDebug)
 	}
 
 	// Add the Attestation View URL if available
@@ -242,7 +242,7 @@ func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bo
 		evs := status.PolicyEvaluations[m.Name]
 		if len(evs) > 0 {
 			mt.AppendRow(table.Row{"Policies", "------"})
-			policiesTable(evs, mt)
+			policiesTable(evs, mt, flagDebug)
 		}
 
 		mt.AppendSeparator()
