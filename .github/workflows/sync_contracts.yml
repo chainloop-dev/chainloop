@@ -12,7 +12,7 @@ permissions: read-all
 
 jobs:
   chainloop_contract_sync:
-    name: "[chainloop] Chainloop Contract Sync"
+    name: "Chainloop Contract Sync"
     runs-on: ubuntu-latest
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Chainloop
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
       - name: Update contract definitions
         run: |
           for file in .github/workflows/contracts/*.yaml; do
