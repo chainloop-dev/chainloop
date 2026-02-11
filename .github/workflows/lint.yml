@@ -32,18 +32,18 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Lint main module
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # 9.2.0
         if: ${{ matrix.app == 'main-module' }}
         with:
-          version: v2.4.0
+          version: v2.9.0
           only-new-issues: 'true'
 
       - name: Lint ${{ matrix.app }}
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # 9.2.0
         if: ${{ matrix.app != 'main-module' }}
         with:
           working-directory: app/${{ matrix.app }}
-          version: v2.4.0
+          version: v2.9.0
           only-new-issues: 'true'
 
   lint-protos:
@@ -78,8 +78,8 @@ jobs:
           make -C extras/dagger module-init
 
       - name: Lint
-        uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # 7.0.0
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # 9.2.0
         with:
           working-directory: extras/dagger
-          version: v2.4.0
+          version: v2.9.0
           only-new-issues: 'true'
