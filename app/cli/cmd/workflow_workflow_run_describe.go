@@ -261,7 +261,7 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 				msg = text.Colors{text.FgHiYellow}.Sprintf("skipped - multiple reasons:\n  - %s",
 					strings.Join(ev.SkipReasons, "\n  - "))
 			} else {
-				msg = text.Colors{text.FgHiYellow}.Sprint("WARN: the policy was skipped in all execution paths")
+				msg = text.Colors{text.FgHiYellow}.Sprint("the policy was skipped in all execution paths")
 			}
 		case len(ev.Violations) == 0:
 			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
