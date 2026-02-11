@@ -18,7 +18,6 @@ package cmd
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -502,23 +501,22 @@ func getConfigDir(appName string) string {
 	return filepath.Join(xdg.ConfigHome, appName)
 }
 
-// processCAFlag reads CA file content and encodes it to base64 if value is a file path
+// processCAFlag reads CA file content and stores it as PEM if value is a file path
 func processCAFlag(opt *confOpt) error {
 	value := viper.GetString(opt.viperKey)
 	if value == "" {
 		return nil
 	}
 
-	// If it's a file path, read and encode
+	// If it's a file path, read and store PEM content directly
 	if _, err := os.Stat(value); err == nil {
 		content, err := os.ReadFile(value)
 		if err != nil {
 			return fmt.Errorf("failed to read CA file %s: %w", value, err)
 		}
 
-		// Store base64-encoded content in viper (will be persisted by config save)
-		encoded := base64.StdEncoding.EncodeToString(content)
-		viper.Set(opt.viperKey, encoded)
+		// Store PEM content directly
+		viper.Set(opt.viperKey, string(content))
 	}
 
 	return nil
