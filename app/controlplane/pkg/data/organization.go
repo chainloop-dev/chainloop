@@ -77,7 +77,7 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	return entOrgToBizOrg(org), nil
 }
 
-func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool) (*biz.Organization, error) {
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*biz.Organization, error) {
 	opts := r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
 		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).
@@ -89,12 +89,39 @@ func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPoli
 		opts.SetPoliciesAllowedHostnames(policiesAllowedHostnames)
 	}
 
+	if apiTokenInactivityThresholdDays != nil {
+		if *apiTokenInactivityThresholdDays == 0 {
+			opts.ClearAPITokenInactivityThresholdDays()
+		} else {
+			opts.SetAPITokenInactivityThresholdDays(*apiTokenInactivityThresholdDays)
+		}
+	}
+
 	org, err := opts.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
 
 	return r.FindByID(ctx, org.ID)
+}
+
+// FindWithTokenInactivityThreshold returns organizations that have the api_token_inactivity_threshold_days set.
+func (r *OrganizationRepo) FindWithTokenInactivityThreshold(ctx context.Context) ([]*biz.Organization, error) {
+	orgs, err := r.data.DB.Organization.Query().
+		Where(
+			organization.APITokenInactivityThresholdDaysNotNil(),
+			organization.DeletedAtIsNil(),
+		).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query organizations with token inactivity threshold: %w", err)
+	}
+
+	result := make([]*biz.Organization, 0, len(orgs))
+	for _, org := range orgs {
+		result = append(result, entOrgToBizOrg(org))
+	}
+
+	return result, nil
 }
 
 // Delete soft-deletes an organization by ID.
@@ -115,5 +142,6 @@ func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 		PoliciesAllowedHostnames:            eu.PoliciesAllowedHostnames,
 		PreventImplicitWorkflowCreation:     eu.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: eu.RestrictContractCreationToOrgAdmins,
+		APITokenInactivityThresholdDays:     eu.APITokenInactivityThresholdDays,
 	}
 }

@@ -65,7 +65,8 @@ func init() {
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
 	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins,
-	userAccessSyncer *biz.UserAccessSyncerUseCase, casBackendChecker *biz.CASBackendChecker, cfg *conf.Bootstrap) *app {
+	userAccessSyncer *biz.UserAccessSyncerUseCase, casBackendChecker *biz.CASBackendChecker,
+	apiTokenStaleRevoker *biz.APITokenStaleRevoker, cfg *conf.Bootstrap) *app {
 	servers := []transport.Server{gs, hs, ms}
 	if cfg.EnableProfiler {
 		servers = append(servers, profilerSvc)
@@ -79,7 +80,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(servers...),
-		), expirer, plugins, userAccessSyncer, casBackendChecker}
+		), expirer, plugins, userAccessSyncer, casBackendChecker, apiTokenStaleRevoker}
 }
 
 func main() {
@@ -159,14 +160,21 @@ func main() {
 		}
 	}()
 
+	// Calculate initial delay: 1 minute base + 0-5 minutes jitter
+	// This protects boot phase and spreads validation across pods
+	baseDelay := 1 * time.Minute
+	// #nosec G404 - using math/rand for jitter is acceptable, cryptographic randomness not required
+	jitter := time.Duration(rand.Intn(5*60)) * time.Second
+	initialDelay := baseDelay + jitter
+
+	// Start the background API token stale revoker (every hour)
+	go app.apiTokenStaleRevoker.Start(ctx, &biz.APITokenStaleRevokerOpts{
+		CheckInterval: 1 * time.Hour,
+		InitialDelay:  initialDelay,
+	})
+
 	// Start the background CAS Backend checker for DEFAULT backends (every 30 minutes)
 	if app.casBackendChecker != nil {
-		// Calculate initial delay: 1 minute base + 0-5 minutes jitter
-		// This protects boot phase and spreads validation across pods
-		baseDelay := 1 * time.Minute
-		// #nosec G404 - using math/rand for jitter is acceptable, cryptographic randomness not required
-		jitter := time.Duration(rand.Intn(5*60)) * time.Second
-		initialDelay := baseDelay + jitter
 
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
 			CheckInterval: 30 * time.Minute,
@@ -201,6 +209,8 @@ type app struct {
 	userAccessSyncer *biz.UserAccessSyncerUseCase
 	// Background checker for CAS backends
 	casBackendChecker *biz.CASBackendChecker
+	// Background sweeper that auto-revokes stale API tokens
+	apiTokenStaleRevoker *biz.APITokenStaleRevoker
 }
 
 // Connection to nats is optional, if not configured, pubsub will be disabled

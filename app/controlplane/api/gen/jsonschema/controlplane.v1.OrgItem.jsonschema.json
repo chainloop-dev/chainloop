@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(api_token_inactivity_threshold)$": {
+      "$ref": "google.protobuf.Duration.jsonschema.json",
+      "description": "Duration after which inactive API tokens are auto-revoked. Absent if disabled."
+    },
     "^(created_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },
@@ -43,6 +47,10 @@
     }
   },
   "properties": {
+    "apiTokenInactivityThreshold": {
+      "$ref": "google.protobuf.Duration.jsonschema.json",
+      "description": "Duration after which inactive API tokens are auto-revoked. Absent if disabled."
+    },
     "createdAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     },

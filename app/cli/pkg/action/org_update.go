@@ -17,8 +17,10 @@ package action
 
 import (
 	"context"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type OrgUpdate struct {
@@ -33,6 +35,7 @@ type NewOrgUpdateOpts struct {
 	BlockOnPolicyViolation          *bool
 	PoliciesAllowedHostnames        *[]string
 	PreventImplicitWorkflowCreation *bool
+	APITokenInactivityThreshold     *time.Duration
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -47,6 +50,10 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 	if opts.PoliciesAllowedHostnames != nil {
 		payload.PoliciesAllowedHostnames = *opts.PoliciesAllowedHostnames
 		payload.UpdatePoliciesAllowedHostnames = true
+	}
+
+	if opts.APITokenInactivityThreshold != nil {
+		payload.ApiTokenInactivityThreshold = durationpb.New(*opts.APITokenInactivityThreshold)
 	}
 
 	resp, err := client.Update(ctx, payload)

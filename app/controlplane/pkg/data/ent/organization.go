@@ -35,6 +35,8 @@ type Organization struct {
 	PreventImplicitWorkflowCreation bool `json:"prevent_implicit_workflow_creation,omitempty"`
 	// RestrictContractCreationToOrgAdmins holds the value of the "restrict_contract_creation_to_org_admins" field.
 	RestrictContractCreationToOrgAdmins bool `json:"restrict_contract_creation_to_org_admins,omitempty"`
+	// APITokenInactivityThresholdDays holds the value of the "api_token_inactivity_threshold_days" field.
+	APITokenInactivityThresholdDays *int `json:"api_token_inactivity_threshold_days,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
 	Edges        OrganizationEdges `json:"edges"`
@@ -145,6 +147,8 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins:
 			values[i] = new(sql.NullBool)
+		case organization.FieldAPITokenInactivityThresholdDays:
+			values[i] = new(sql.NullInt64)
 		case organization.FieldName:
 			values[i] = new(sql.NullString)
 		case organization.FieldCreatedAt, organization.FieldUpdatedAt, organization.FieldDeletedAt:
@@ -221,6 +225,13 @@ func (_m *Organization) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field restrict_contract_creation_to_org_admins", values[i])
 			} else if value.Valid {
 				_m.RestrictContractCreationToOrgAdmins = value.Bool
+			}
+		case organization.FieldAPITokenInactivityThresholdDays:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field api_token_inactivity_threshold_days", values[i])
+			} else if value.Valid {
+				_m.APITokenInactivityThresholdDays = new(int)
+				*_m.APITokenInactivityThresholdDays = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -321,6 +332,11 @@ func (_m *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("restrict_contract_creation_to_org_admins=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RestrictContractCreationToOrgAdmins))
+	builder.WriteString(", ")
+	if v := _m.APITokenInactivityThresholdDays; v != nil {
+		builder.WriteString("api_token_inactivity_threshold_days=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

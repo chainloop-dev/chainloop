@@ -2,6 +2,7 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
+import { Duration } from "../../google/protobuf/duration";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import {
   MembershipRole,
@@ -81,7 +82,11 @@ export interface OrganizationServiceUpdateRequest {
     | boolean
     | undefined;
   /** restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles) */
-  restrictContractCreationToOrgAdmins?: boolean | undefined;
+  restrictContractCreationToOrgAdmins?:
+    | boolean
+    | undefined;
+  /** Auto-revoke API tokens inactive for this duration. Set to 0s to disable. */
+  apiTokenInactivityThreshold?: Duration | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -671,6 +676,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     updatePoliciesAllowedHostnames: false,
     preventImplicitWorkflowCreation: undefined,
     restrictContractCreationToOrgAdmins: undefined,
+    apiTokenInactivityThreshold: undefined,
   };
 }
 
@@ -693,6 +699,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.restrictContractCreationToOrgAdmins !== undefined) {
       writer.uint32(48).bool(message.restrictContractCreationToOrgAdmins);
+    }
+    if (message.apiTokenInactivityThreshold !== undefined) {
+      Duration.encode(message.apiTokenInactivityThreshold, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -746,6 +755,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.restrictContractCreationToOrgAdmins = reader.bool();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.apiTokenInactivityThreshold = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -771,6 +787,9 @@ export const OrganizationServiceUpdateRequest = {
       restrictContractCreationToOrgAdmins: isSet(object.restrictContractCreationToOrgAdmins)
         ? Boolean(object.restrictContractCreationToOrgAdmins)
         : undefined,
+      apiTokenInactivityThreshold: isSet(object.apiTokenInactivityThreshold)
+        ? Duration.fromJSON(object.apiTokenInactivityThreshold)
+        : undefined,
     };
   },
 
@@ -789,6 +808,10 @@ export const OrganizationServiceUpdateRequest = {
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     message.restrictContractCreationToOrgAdmins !== undefined &&
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
+    message.apiTokenInactivityThreshold !== undefined &&
+      (obj.apiTokenInactivityThreshold = message.apiTokenInactivityThreshold
+        ? Duration.toJSON(message.apiTokenInactivityThreshold)
+        : undefined);
     return obj;
   },
 
@@ -808,6 +831,10 @@ export const OrganizationServiceUpdateRequest = {
     message.updatePoliciesAllowedHostnames = object.updatePoliciesAllowedHostnames ?? false;
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? undefined;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? undefined;
+    message.apiTokenInactivityThreshold =
+      (object.apiTokenInactivityThreshold !== undefined && object.apiTokenInactivityThreshold !== null)
+        ? Duration.fromPartial(object.apiTokenInactivityThreshold)
+        : undefined;
     return message;
   },
 };

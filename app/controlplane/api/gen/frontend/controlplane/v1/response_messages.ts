@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Duration } from "../../google/protobuf/duration";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import {
   CraftingSchema,
@@ -610,6 +611,8 @@ export interface OrgItem {
   preventImplicitWorkflowCreation: boolean;
   /** restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles) */
   restrictContractCreationToOrgAdmins: boolean;
+  /** Duration after which inactive API tokens are auto-revoked. Absent if disabled. */
+  apiTokenInactivityThreshold?: Duration | undefined;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -3759,6 +3762,7 @@ function createBaseOrgItem(): OrgItem {
     policyAllowedHostnames: [],
     preventImplicitWorkflowCreation: false,
     restrictContractCreationToOrgAdmins: false,
+    apiTokenInactivityThreshold: undefined,
   };
 }
 
@@ -3787,6 +3791,9 @@ export const OrgItem = {
     }
     if (message.restrictContractCreationToOrgAdmins === true) {
       writer.uint32(64).bool(message.restrictContractCreationToOrgAdmins);
+    }
+    if (message.apiTokenInactivityThreshold !== undefined) {
+      Duration.encode(message.apiTokenInactivityThreshold, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -3854,6 +3861,13 @@ export const OrgItem = {
 
           message.restrictContractCreationToOrgAdmins = reader.bool();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.apiTokenInactivityThreshold = Duration.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3881,6 +3895,9 @@ export const OrgItem = {
       restrictContractCreationToOrgAdmins: isSet(object.restrictContractCreationToOrgAdmins)
         ? Boolean(object.restrictContractCreationToOrgAdmins)
         : false,
+      apiTokenInactivityThreshold: isSet(object.apiTokenInactivityThreshold)
+        ? Duration.fromJSON(object.apiTokenInactivityThreshold)
+        : undefined,
     };
   },
 
@@ -3903,6 +3920,10 @@ export const OrgItem = {
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     message.restrictContractCreationToOrgAdmins !== undefined &&
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
+    message.apiTokenInactivityThreshold !== undefined &&
+      (obj.apiTokenInactivityThreshold = message.apiTokenInactivityThreshold
+        ? Duration.toJSON(message.apiTokenInactivityThreshold)
+        : undefined);
     return obj;
   },
 
@@ -3920,6 +3941,10 @@ export const OrgItem = {
     message.policyAllowedHostnames = object.policyAllowedHostnames?.map((e) => e) || [];
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? false;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? false;
+    message.apiTokenInactivityThreshold =
+      (object.apiTokenInactivityThreshold !== undefined && object.apiTokenInactivityThreshold !== null)
+        ? Duration.fromPartial(object.apiTokenInactivityThreshold)
+        : undefined;
     return message;
   },
 };

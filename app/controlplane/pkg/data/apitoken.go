@@ -154,6 +154,56 @@ func (r *APITokenRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
 	return nil
 }
 
+// RevokeInactive bulk-revokes tokens that have been inactive since the given cutoff.
+func (r *APITokenRepo) RevokeInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error) {
+	now := time.Now()
+
+	// Find matching tokens: not revoked, and inactive since the cutoff
+	// A token is inactive if last_used_at < inactiveSince (when used before),
+	// or created_at < inactiveSince (when never used).
+	tokens, err := r.data.DB.APIToken.Query().
+		Where(
+			apitoken.OrganizationIDEQ(orgID),
+			apitoken.RevokedAtIsNil(),
+			apitoken.Or(
+				apitoken.And(apitoken.LastUsedAtNotNil(), apitoken.LastUsedAtLT(inactiveSince)),
+				apitoken.And(apitoken.LastUsedAtIsNil(), apitoken.CreatedAtLT(inactiveSince)),
+			),
+		).
+		WithOrganization().
+		WithProject().
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying inactive tokens: %w", err)
+	}
+
+	if len(tokens) == 0 {
+		return nil, nil
+	}
+
+	// Collect IDs for bulk update
+	ids := make([]uuid.UUID, 0, len(tokens))
+	for _, t := range tokens {
+		ids = append(ids, t.ID)
+	}
+
+	// Bulk revoke
+	if err := r.data.DB.APIToken.Update().
+		Where(apitoken.IDIn(ids...)).
+		SetRevokedAt(now).
+		Exec(ctx); err != nil {
+		return nil, fmt.Errorf("bulk revoking inactive tokens: %w", err)
+	}
+
+	// Return the revoked tokens
+	result := make([]*biz.APIToken, 0, len(tokens))
+	for _, t := range tokens {
+		result = append(result, entAPITokenToBiz(t))
+	}
+
+	return result, nil
+}
+
 func (r *APITokenRepo) UpdateExpiration(ctx context.Context, id uuid.UUID, expiresAt time.Time) error {
 	err := r.data.DB.APIToken.UpdateOneID(id).SetExpiresAt(expiresAt).Exec(ctx)
 	if err != nil {

@@ -147,6 +147,33 @@ func (_u *OrganizationUpdate) SetNillableRestrictContractCreationToOrgAdmins(v *
 	return _u
 }
 
+// SetAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field.
+func (_u *OrganizationUpdate) SetAPITokenInactivityThresholdDays(v int) *OrganizationUpdate {
+	_u.mutation.ResetAPITokenInactivityThresholdDays()
+	_u.mutation.SetAPITokenInactivityThresholdDays(v)
+	return _u
+}
+
+// SetNillableAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field if the given value is not nil.
+func (_u *OrganizationUpdate) SetNillableAPITokenInactivityThresholdDays(v *int) *OrganizationUpdate {
+	if v != nil {
+		_u.SetAPITokenInactivityThresholdDays(*v)
+	}
+	return _u
+}
+
+// AddAPITokenInactivityThresholdDays adds value to the "api_token_inactivity_threshold_days" field.
+func (_u *OrganizationUpdate) AddAPITokenInactivityThresholdDays(v int) *OrganizationUpdate {
+	_u.mutation.AddAPITokenInactivityThresholdDays(v)
+	return _u
+}
+
+// ClearAPITokenInactivityThresholdDays clears the value of the "api_token_inactivity_threshold_days" field.
+func (_u *OrganizationUpdate) ClearAPITokenInactivityThresholdDays() *OrganizationUpdate {
+	_u.mutation.ClearAPITokenInactivityThresholdDays()
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -513,6 +540,15 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.RestrictContractCreationToOrgAdmins(); ok {
 		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.APITokenInactivityThresholdDays(); ok {
+		_spec.SetField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAPITokenInactivityThresholdDays(); ok {
+		_spec.AddField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt, value)
+	}
+	if _u.mutation.APITokenInactivityThresholdDaysCleared() {
+		_spec.ClearField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1004,6 +1040,33 @@ func (_u *OrganizationUpdateOne) SetNillableRestrictContractCreationToOrgAdmins(
 	return _u
 }
 
+// SetAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field.
+func (_u *OrganizationUpdateOne) SetAPITokenInactivityThresholdDays(v int) *OrganizationUpdateOne {
+	_u.mutation.ResetAPITokenInactivityThresholdDays()
+	_u.mutation.SetAPITokenInactivityThresholdDays(v)
+	return _u
+}
+
+// SetNillableAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field if the given value is not nil.
+func (_u *OrganizationUpdateOne) SetNillableAPITokenInactivityThresholdDays(v *int) *OrganizationUpdateOne {
+	if v != nil {
+		_u.SetAPITokenInactivityThresholdDays(*v)
+	}
+	return _u
+}
+
+// AddAPITokenInactivityThresholdDays adds value to the "api_token_inactivity_threshold_days" field.
+func (_u *OrganizationUpdateOne) AddAPITokenInactivityThresholdDays(v int) *OrganizationUpdateOne {
+	_u.mutation.AddAPITokenInactivityThresholdDays(v)
+	return _u
+}
+
+// ClearAPITokenInactivityThresholdDays clears the value of the "api_token_inactivity_threshold_days" field.
+func (_u *OrganizationUpdateOne) ClearAPITokenInactivityThresholdDays() *OrganizationUpdateOne {
+	_u.mutation.ClearAPITokenInactivityThresholdDays()
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -1400,6 +1463,15 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 	}
 	if value, ok := _u.mutation.RestrictContractCreationToOrgAdmins(); ok {
 		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.APITokenInactivityThresholdDays(); ok {
+		_spec.SetField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAPITokenInactivityThresholdDays(); ok {
+		_spec.AddField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt, value)
+	}
+	if _u.mutation.APITokenInactivityThresholdDaysCleared() {
+		_spec.ClearField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

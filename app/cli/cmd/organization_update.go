@@ -16,6 +16,9 @@
 package cmd
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +29,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		blockOnPolicyViolation          bool
 		policiesAllowedHostnames        []string
 		preventImplicitWorkflowCreation bool
+		apiTokenInactivityThreshold     string
 	)
 
 	cmd := &cobra.Command{
@@ -45,6 +49,23 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.PreventImplicitWorkflowCreation = &preventImplicitWorkflowCreation
 			}
 
+			if cmd.Flags().Changed("api-token-inactivity-threshold") {
+				if apiTokenInactivityThreshold == "0" {
+					// Disable by setting duration to zero
+					d := time.Duration(0)
+					opts.APITokenInactivityThreshold = &d
+				} else {
+					d, err := time.ParseDuration(apiTokenInactivityThreshold)
+					if err != nil {
+						return fmt.Errorf("invalid duration %q: %w", apiTokenInactivityThreshold, err)
+					}
+					if d < 24*time.Hour {
+						return fmt.Errorf("api-token-inactivity-threshold must be at least 24h (1 day)")
+					}
+					opts.APITokenInactivityThreshold = &d
+				}
+			}
+
 			_, err := action.NewOrgUpdate(ActionOpts).Run(cmd.Context(), orgName, opts)
 			if err != nil {
 				return err
@@ -62,5 +83,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&blockOnPolicyViolation, "block", false, "set the default policy violation blocking strategy")
 	cmd.Flags().StringSliceVar(&policiesAllowedHostnames, "policies-allowed-hostnames", []string{}, "set the allowed hostnames for the policy engine")
 	cmd.Flags().BoolVar(&preventImplicitWorkflowCreation, "prevent-implicit-workflow-creation", false, "prevent workflows and projects from being created implicitly during attestation init")
+	cmd.Flags().StringVar(&apiTokenInactivityThreshold, "api-token-inactivity-threshold", "", "auto-revoke API tokens inactive for this duration (e.g. '720h' for 30 days, '0' to disable)")
 	return cmd
 }

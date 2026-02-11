@@ -128,6 +128,20 @@ func (_c *OrganizationCreate) SetNillableRestrictContractCreationToOrgAdmins(v *
 	return _c
 }
 
+// SetAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field.
+func (_c *OrganizationCreate) SetAPITokenInactivityThresholdDays(v int) *OrganizationCreate {
+	_c.mutation.SetAPITokenInactivityThresholdDays(v)
+	return _c
+}
+
+// SetNillableAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field if the given value is not nil.
+func (_c *OrganizationCreate) SetNillableAPITokenInactivityThresholdDays(v *int) *OrganizationCreate {
+	if v != nil {
+		_c.SetAPITokenInactivityThresholdDays(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *OrganizationCreate) SetID(v uuid.UUID) *OrganizationCreate {
 	_c.mutation.SetID(v)
@@ -317,6 +331,10 @@ func (_c *OrganizationCreate) defaults() {
 		v := organization.DefaultRestrictContractCreationToOrgAdmins
 		_c.mutation.SetRestrictContractCreationToOrgAdmins(v)
 	}
+	if _, ok := _c.mutation.APITokenInactivityThresholdDays(); !ok {
+		v := organization.DefaultAPITokenInactivityThresholdDays
+		_c.mutation.SetAPITokenInactivityThresholdDays(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		_c.mutation.SetID(v)
@@ -410,6 +428,10 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.RestrictContractCreationToOrgAdmins(); ok {
 		_spec.SetField(organization.FieldRestrictContractCreationToOrgAdmins, field.TypeBool, value)
 		_node.RestrictContractCreationToOrgAdmins = value
+	}
+	if value, ok := _c.mutation.APITokenInactivityThresholdDays(); ok {
+		_spec.SetField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt, value)
+		_node.APITokenInactivityThresholdDays = &value
 	}
 	if nodes := _c.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -687,6 +709,30 @@ func (u *OrganizationUpsert) UpdateRestrictContractCreationToOrgAdmins() *Organi
 	return u
 }
 
+// SetAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsert) SetAPITokenInactivityThresholdDays(v int) *OrganizationUpsert {
+	u.Set(organization.FieldAPITokenInactivityThresholdDays, v)
+	return u
+}
+
+// UpdateAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateAPITokenInactivityThresholdDays() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldAPITokenInactivityThresholdDays)
+	return u
+}
+
+// AddAPITokenInactivityThresholdDays adds v to the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsert) AddAPITokenInactivityThresholdDays(v int) *OrganizationUpsert {
+	u.Add(organization.FieldAPITokenInactivityThresholdDays, v)
+	return u
+}
+
+// ClearAPITokenInactivityThresholdDays clears the value of the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsert) ClearAPITokenInactivityThresholdDays() *OrganizationUpsert {
+	u.SetNull(organization.FieldAPITokenInactivityThresholdDays)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -847,6 +893,34 @@ func (u *OrganizationUpsertOne) SetRestrictContractCreationToOrgAdmins(v bool) *
 func (u *OrganizationUpsertOne) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateRestrictContractCreationToOrgAdmins()
+	})
+}
+
+// SetAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsertOne) SetAPITokenInactivityThresholdDays(v int) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetAPITokenInactivityThresholdDays(v)
+	})
+}
+
+// AddAPITokenInactivityThresholdDays adds v to the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsertOne) AddAPITokenInactivityThresholdDays(v int) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.AddAPITokenInactivityThresholdDays(v)
+	})
+}
+
+// UpdateAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateAPITokenInactivityThresholdDays() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateAPITokenInactivityThresholdDays()
+	})
+}
+
+// ClearAPITokenInactivityThresholdDays clears the value of the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsertOne) ClearAPITokenInactivityThresholdDays() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearAPITokenInactivityThresholdDays()
 	})
 }
 
@@ -1177,6 +1251,34 @@ func (u *OrganizationUpsertBulk) SetRestrictContractCreationToOrgAdmins(v bool) 
 func (u *OrganizationUpsertBulk) UpdateRestrictContractCreationToOrgAdmins() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateRestrictContractCreationToOrgAdmins()
+	})
+}
+
+// SetAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsertBulk) SetAPITokenInactivityThresholdDays(v int) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetAPITokenInactivityThresholdDays(v)
+	})
+}
+
+// AddAPITokenInactivityThresholdDays adds v to the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsertBulk) AddAPITokenInactivityThresholdDays(v int) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.AddAPITokenInactivityThresholdDays(v)
+	})
+}
+
+// UpdateAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateAPITokenInactivityThresholdDays() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateAPITokenInactivityThresholdDays()
+	})
+}
+
+// ClearAPITokenInactivityThresholdDays clears the value of the "api_token_inactivity_threshold_days" field.
+func (u *OrganizationUpsertBulk) ClearAPITokenInactivityThresholdDays() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearAPITokenInactivityThresholdDays()
 	})
 }
 

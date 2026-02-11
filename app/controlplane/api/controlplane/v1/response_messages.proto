@@ -19,6 +19,7 @@ package controlplane.v1;
 
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "workflowcontract/v1/crafting_schema.proto";
 
@@ -283,6 +284,8 @@ message OrgItem {
   bool prevent_implicit_workflow_creation = 7;
   // restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
   bool restrict_contract_creation_to_org_admins = 8;
+  // Duration after which inactive API tokens are auto-revoked. Absent if disabled.
+  optional google.protobuf.Duration api_token_inactivity_threshold = 9;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;
