@@ -11,6 +11,7 @@ staticClients:
     redirectURIs:
       - "http://0.0.0.0:8000/auth/callback"
       - "http://localhost:8000/auth/callback"
+      - "http://localhost:9876/auth/callback"
     name: "Chainloop Dev"
     secret: ZXhhbXBsZS1hcHAtc2VjcmV0
 

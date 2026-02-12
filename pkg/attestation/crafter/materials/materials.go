@@ -205,7 +205,13 @@ type Craftable interface {
 	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
 }
 
-func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger) (*api.Attestation_Material, error) {
+// CraftingOpts contains options for crafting materials
+type CraftingOpts struct {
+	NoStrictValidation bool
+}
+
+//nolint:gocyclo
+func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger, opts *CraftingOpts) (*api.Attestation_Material, error) {
 	var crafter Craftable
 	var err error
 
@@ -218,6 +224,10 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		return nil, fmt.Errorf("validating material: %w", err)
 	}
 
+	if opts == nil {
+		opts = &CraftingOpts{}
+	}
+
 	switch materialSchema.Type {
 	case schemaapi.CraftingSchema_Material_STRING:
 		crafter, err = NewStringCrafter(materialSchema)
@@ -226,7 +236,7 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	case schemaapi.CraftingSchema_Material_ARTIFACT:
 		crafter, err = NewArtifactCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON:
-		crafter, err = NewCyclonedxJSONCrafter(materialSchema, casBackend, logger)
+		crafter, err = NewCyclonedxJSONCrafter(materialSchema, casBackend, logger, WithCycloneDXNoStrictValidation(opts.NoStrictValidation))
 	case schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON:
 		crafter, err = NewSPDXJSONCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_JUNIT_XML:

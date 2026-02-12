@@ -1,6 +1,6 @@
 module github.com/chainloop-dev/chainloop
 
-go 1.25.6
+go 1.26.0
 
 require (
 	cloud.google.com/go/secretmanager v1.16.0
@@ -349,7 +349,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fsouza/fake-gcs-server v1.47.6
-	github.com/go-git/go-git/v5 v5.16.0
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/go-kratos/aegis v0.2.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
