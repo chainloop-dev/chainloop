@@ -52,7 +52,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 			opts, err := parseAndValidateOpts(options, item.Registration)
 			if err != nil {
 				// Show schema table if validation fails
-				if err := renderSchemaTable("Available options", item.Registration.Properties); err != nil {
+				if err := RenderSchemaTable("Available options", item.Registration.Properties); err != nil {
 					return err
 				}
 				return err

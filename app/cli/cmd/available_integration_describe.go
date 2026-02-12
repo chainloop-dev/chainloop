@@ -69,22 +69,22 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 	}
 
 	// Schema information
-	if err := renderSchemaTable("Registration inputs", i.Registration.Properties); err != nil {
+	if err := RenderSchemaTable("Registration inputs", i.Registration.Properties); err != nil {
 		return err
 	}
 
 	if full {
-		if err := renderSchemaRaw("Registration JSON schema", i.Registration.Raw); err != nil {
+		if err := RenderSchemaRaw("Registration JSON schema", i.Registration.Raw); err != nil {
 			return err
 		}
 	}
 
-	if err := renderSchemaTable("Attachment inputs", i.Attachment.Properties); err != nil {
+	if err := RenderSchemaTable("Attachment inputs", i.Attachment.Properties); err != nil {
 		return err
 	}
 
 	if full {
-		if err := renderSchemaRaw("Attachment JSON schema", i.Attachment.Raw); err != nil {
+		if err := RenderSchemaRaw("Attachment JSON schema", i.Attachment.Raw); err != nil {
 			return err
 		}
 	}
@@ -93,7 +93,7 @@ func availableIntegrationDescribeTableOutput(items []*action.AvailableIntegratio
 }
 
 // render de-normalized schema format
-func renderSchemaTable(tableTitle string, properties sdk.SchemaPropertiesMap) error {
+func RenderSchemaTable(tableTitle string, properties sdk.SchemaPropertiesMap) error {
 	if len(properties) == 0 {
 		return nil
 	}
@@ -137,7 +137,7 @@ func renderSchemaTable(tableTitle string, properties sdk.SchemaPropertiesMap) er
 }
 
 // render raw JSON schema document
-func renderSchemaRaw(tableTitle string, s string) error {
+func RenderSchemaRaw(tableTitle string, s string) error {
 	var prettyAttachmentJSON bytes.Buffer
 	err := json.Indent(&prettyAttachmentJSON, []byte(s), "", "  ")
 	if err != nil {
