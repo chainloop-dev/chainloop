@@ -37,18 +37,18 @@ func newRegisteredIntegrationListCmd() *cobra.Command {
 				return err
 			}
 
-			return output.EncodeOutput(flagOutputFormat, res, registeredIntegrationListTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, RegisteredIntegrationListTableOutput)
 		},
 	}
 
 	return cmd
 }
 
-func registeredIntegrationItemTableOutput(item *action.RegisteredIntegrationItem) error {
-	return registeredIntegrationListTableOutput([]*action.RegisteredIntegrationItem{item})
+func RegisteredIntegrationItemTableOutput(item *action.RegisteredIntegrationItem) error {
+	return RegisteredIntegrationListTableOutput([]*action.RegisteredIntegrationItem{item})
 }
 
-func registeredIntegrationListTableOutput(items []*action.RegisteredIntegrationItem) error {
+func RegisteredIntegrationListTableOutput(items []*action.RegisteredIntegrationItem) error {
 	switch n := len(items); {
 	case n == 0:
 		fmt.Println("there are no third party integrations configured in your organization yet")

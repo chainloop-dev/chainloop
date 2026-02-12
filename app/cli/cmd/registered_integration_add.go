@@ -49,7 +49,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 			}
 
 			// Parse and validate options
-			opts, err := parseAndValidateOpts(options, item.Registration)
+			opts, err := ParseAndValidateOpts(options, item.Registration)
 			if err != nil {
 				// Show schema table if validation fails
 				if err := RenderSchemaTable("Available options", item.Registration.Properties); err != nil {
@@ -63,7 +63,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 				return err
 			}
 
-			return output.EncodeOutput(flagOutputFormat, res, registeredIntegrationItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, RegisteredIntegrationItemTableOutput)
 		},
 	}
 
@@ -79,9 +79,9 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 	return cmd
 }
 
-func parseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]any, error) {
+func ParseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]any, error) {
 	// Parse
-	res, err := parseKeyValOpts(opts, schema.Properties)
+	res, err := ParseKeyValOpts(opts, schema.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse options: %w", err)
 	}
@@ -101,10 +101,10 @@ func parseAndValidateOpts(opts []string, schema *action.JSONSchema) (map[string]
 	return res, nil
 }
 
-// parseKeyValOpts performs two steps
+// ParseKeyValOpts performs two steps
 // 1 - Split the options into key/value pairs
 // 2 - Cast the values to the expected type defined in the schema
-func parseKeyValOpts(opts []string, propertiesMap sdk.SchemaPropertiesMap) (map[string]any, error) {
+func ParseKeyValOpts(opts []string, propertiesMap sdk.SchemaPropertiesMap) (map[string]any, error) {
 	// 1 - Split the options into key/value pairs
 	var options = make(map[string]any)
 	for _, opt := range opts {
