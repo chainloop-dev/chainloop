@@ -38,7 +38,7 @@ type FileCA struct {
 	ca fulcioca.CertificateAuthority
 }
 
-func New(certPath, keyPath, keyPass string, signer bool) (*FileCA, error) {
+func New(certPath, keyPath, keyPass string, verify bool) (*FileCA, error) {
 	var err error
 	baseCA := &baseca.BaseCA{}
 	baseCA.SignerWithChain, err = loadKeyPair(certPath, keyPath, keyPass)
@@ -46,7 +46,7 @@ func New(certPath, keyPath, keyPass string, signer bool) (*FileCA, error) {
 		return nil, err
 	}
 
-	if signer {
+	if verify {
 		// if the CA is a signer, verify the chain
 		chain, signer := baseCA.GetSignerWithChain()
 		if err := fulcioca.VerifyCertChain(chain, signer); err != nil {
