@@ -146,10 +146,8 @@ func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 		i.PolicyViolationBlockingStrategy = PolicyViolationBlockingStrategyAdvisory
 	}
 
-	if in.ApiTokenInactivityThreshold != nil {
-		d := in.ApiTokenInactivityThreshold.AsDuration()
-		days := int(d.Hours() / 24)
-		s := fmt.Sprintf("%d", days)
+	if in.ApiTokenMaxDaysInactive != nil {
+		s := fmt.Sprintf("%d", in.GetApiTokenMaxDaysInactive())
 		i.APITokenMaxDaysInactive = &s
 	}
 

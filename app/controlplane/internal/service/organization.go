@@ -92,19 +92,16 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		}
 	}
 
-	// Convert the optional duration to days
-	var apiTokenInactivityThresholdDays *int
-	if req.ApiTokenInactivityThreshold != nil {
-		threshold := req.GetApiTokenInactivityThreshold()
-		days := int(threshold.AsDuration().Hours() / 24)
+	var apiTokenMaxDaysInactive *int
+	if req.ApiTokenMaxDaysInactive != nil {
+		days := int(req.GetApiTokenMaxDaysInactive())
 		if days < 0 {
-			return nil, errors.BadRequest("invalid", "api_token_inactivity_threshold must be non-negative")
+			return nil, errors.BadRequest("invalid", "api_token_max_days_inactive must be non-negative")
 		}
-		// 0 means disable (clear)
-		apiTokenInactivityThresholdDays = &days
+		apiTokenMaxDaysInactive = &days
 	}
 
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames, req.PreventImplicitWorkflowCreation, req.RestrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
+	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames, req.PreventImplicitWorkflowCreation, req.RestrictContractCreationToOrgAdmins, apiTokenMaxDaysInactive)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

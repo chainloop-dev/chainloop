@@ -18,14 +18,12 @@ package service
 import (
 	"context"
 	"slices"
-	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -130,7 +128,8 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 	}
 
 	if m.APITokenInactivityThresholdDays != nil {
-		item.ApiTokenInactivityThreshold = durationpb.New(time.Duration(*m.APITokenInactivityThresholdDays) * 24 * time.Hour)
+		days := int32(*m.APITokenInactivityThresholdDays)
+		item.ApiTokenMaxDaysInactive = &days
 	}
 
 	return item

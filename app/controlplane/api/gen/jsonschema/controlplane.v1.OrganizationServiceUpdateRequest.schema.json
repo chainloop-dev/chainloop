@@ -3,9 +3,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
-    "^(apiTokenInactivityThreshold)$": {
-      "$ref": "google.protobuf.Duration.schema.json",
-      "description": "Auto-revoke API tokens inactive for this duration. Set to 0s to disable."
+    "^(apiTokenMaxDaysInactive)$": {
+      "description": "Maximum days of inactivity before API tokens are auto-revoked. Set to 0 to disable.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
     },
     "^(blockOnPolicyViolation)$": {
       "description": "\"optional\" allow us to detect if the value is explicitly set",
@@ -32,9 +34,11 @@
     }
   },
   "properties": {
-    "api_token_inactivity_threshold": {
-      "$ref": "google.protobuf.Duration.schema.json",
-      "description": "Auto-revoke API tokens inactive for this duration. Set to 0s to disable."
+    "api_token_max_days_inactive": {
+      "description": "Maximum days of inactivity before API tokens are auto-revoked. Set to 0 to disable.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
     },
     "block_on_policy_violation": {
       "description": "\"optional\" allow us to detect if the value is explicitly set",

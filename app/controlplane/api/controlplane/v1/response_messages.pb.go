@@ -27,7 +27,6 @@ import (
 	_ "github.com/go-kratos/kratos/v2/errors"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -1905,10 +1904,10 @@ type OrgItem struct {
 	PreventImplicitWorkflowCreation bool `protobuf:"varint,7,opt,name=prevent_implicit_workflow_creation,json=preventImplicitWorkflowCreation,proto3" json:"prevent_implicit_workflow_creation,omitempty"`
 	// restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
 	RestrictContractCreationToOrgAdmins bool `protobuf:"varint,8,opt,name=restrict_contract_creation_to_org_admins,json=restrictContractCreationToOrgAdmins,proto3" json:"restrict_contract_creation_to_org_admins,omitempty"`
-	// Duration after which inactive API tokens are auto-revoked. Absent if disabled.
-	ApiTokenInactivityThreshold *durationpb.Duration `protobuf:"bytes,9,opt,name=api_token_inactivity_threshold,json=apiTokenInactivityThreshold,proto3,oneof" json:"api_token_inactivity_threshold,omitempty"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	// Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled.
+	ApiTokenMaxDaysInactive *int32 `protobuf:"varint,9,opt,name=api_token_max_days_inactive,json=apiTokenMaxDaysInactive,proto3,oneof" json:"api_token_max_days_inactive,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *OrgItem) Reset() {
@@ -1997,11 +1996,11 @@ func (x *OrgItem) GetRestrictContractCreationToOrgAdmins() bool {
 	return false
 }
 
-func (x *OrgItem) GetApiTokenInactivityThreshold() *durationpb.Duration {
-	if x != nil {
-		return x.ApiTokenInactivityThreshold
+func (x *OrgItem) GetApiTokenMaxDaysInactive() int32 {
+	if x != nil && x.ApiTokenMaxDaysInactive != nil {
+		return *x.ApiTokenMaxDaysInactive
 	}
-	return nil
+	return 0
 }
 
 type CASBackendItem struct {
@@ -2620,7 +2619,7 @@ var File_controlplane_v1_response_messages_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
-	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xb9\x03\n" +
+	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xb9\x03\n" +
 	"\fWorkflowItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -2808,7 +2807,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x123\n" +
-	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xc6\x06\n" +
+	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xa1\x06\n" +
 	"\aOrgItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
@@ -2819,13 +2818,13 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"!default_policy_violation_strategy\x18\x04 \x01(\x0e28.controlplane.v1.OrgItem.PolicyViolationBlockingStrategyR\x1edefaultPolicyViolationStrategy\x128\n" +
 	"\x18policy_allowed_hostnames\x18\x05 \x03(\tR\x16policyAllowedHostnames\x12K\n" +
 	"\"prevent_implicit_workflow_creation\x18\a \x01(\bR\x1fpreventImplicitWorkflowCreation\x12U\n" +
-	"(restrict_contract_creation_to_org_admins\x18\b \x01(\bR#restrictContractCreationToOrgAdmins\x12c\n" +
-	"\x1eapi_token_inactivity_threshold\x18\t \x01(\v2\x19.google.protobuf.DurationH\x00R\x1bapiTokenInactivityThreshold\x88\x01\x01\"\xb4\x01\n" +
+	"(restrict_contract_creation_to_org_admins\x18\b \x01(\bR#restrictContractCreationToOrgAdmins\x12A\n" +
+	"\x1bapi_token_max_days_inactive\x18\t \x01(\x05H\x00R\x17apiTokenMaxDaysInactive\x88\x01\x01\"\xb4\x01\n" +
 	"\x1fPolicyViolationBlockingStrategy\x122\n" +
 	".POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED\x10\x00\x12,\n" +
 	"(POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK\x10\x01\x12/\n" +
-	"+POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY\x10\x02B!\n" +
-	"\x1f_api_token_inactivity_threshold\"\x91\x06\n" +
+	"+POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY\x10\x02B\x1e\n" +
+	"\x1c_api_token_max_days_inactive\"\x91\x06\n" +
 	"\x0eCASBackendItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x1a\n" +
@@ -2954,7 +2953,6 @@ var file_controlplane_v1_response_messages_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),                   // 38: google.protobuf.Timestamp
 	(v1.CraftingSchema_Runner_RunnerType)(0),        // 39: workflowcontract.v1.CraftingSchema.Runner.RunnerType
 	(*v1.CraftingSchema)(nil),                       // 40: workflowcontract.v1.CraftingSchema
-	(*durationpb.Duration)(nil),                     // 41: google.protobuf.Duration
 }
 var file_controlplane_v1_response_messages_proto_depIdxs = []int32{
 	38, // 0: controlplane.v1.WorkflowItem.created_at:type_name -> google.protobuf.Timestamp
@@ -2998,25 +2996,24 @@ var file_controlplane_v1_response_messages_proto_depIdxs = []int32{
 	38, // 38: controlplane.v1.OrgItem.created_at:type_name -> google.protobuf.Timestamp
 	38, // 39: controlplane.v1.OrgItem.updated_at:type_name -> google.protobuf.Timestamp
 	8,  // 40: controlplane.v1.OrgItem.default_policy_violation_strategy:type_name -> controlplane.v1.OrgItem.PolicyViolationBlockingStrategy
-	41, // 41: controlplane.v1.OrgItem.api_token_inactivity_threshold:type_name -> google.protobuf.Duration
-	38, // 42: controlplane.v1.CASBackendItem.created_at:type_name -> google.protobuf.Timestamp
-	38, // 43: controlplane.v1.CASBackendItem.validated_at:type_name -> google.protobuf.Timestamp
-	9,  // 44: controlplane.v1.CASBackendItem.validation_status:type_name -> controlplane.v1.CASBackendItem.ValidationStatus
-	37, // 45: controlplane.v1.CASBackendItem.limits:type_name -> controlplane.v1.CASBackendItem.Limits
-	38, // 46: controlplane.v1.CASBackendItem.updated_at:type_name -> google.protobuf.Timestamp
-	19, // 47: controlplane.v1.APITokenItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
-	38, // 48: controlplane.v1.APITokenItem.created_at:type_name -> google.protobuf.Timestamp
-	38, // 49: controlplane.v1.APITokenItem.revoked_at:type_name -> google.protobuf.Timestamp
-	38, // 50: controlplane.v1.APITokenItem.expires_at:type_name -> google.protobuf.Timestamp
-	38, // 51: controlplane.v1.APITokenItem.last_used_at:type_name -> google.protobuf.Timestamp
-	14, // 52: controlplane.v1.AttestationItem.PolicyEvaluationsEntry.value:type_name -> controlplane.v1.PolicyEvaluations
-	32, // 53: controlplane.v1.AttestationItem.Material.annotations:type_name -> controlplane.v1.AttestationItem.Material.AnnotationsEntry
-	7,  // 54: controlplane.v1.WorkflowContractVersionItem.RawBody.format:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody.Format
-	55, // [55:55] is the sub-list for method output_type
-	55, // [55:55] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	38, // 41: controlplane.v1.CASBackendItem.created_at:type_name -> google.protobuf.Timestamp
+	38, // 42: controlplane.v1.CASBackendItem.validated_at:type_name -> google.protobuf.Timestamp
+	9,  // 43: controlplane.v1.CASBackendItem.validation_status:type_name -> controlplane.v1.CASBackendItem.ValidationStatus
+	37, // 44: controlplane.v1.CASBackendItem.limits:type_name -> controlplane.v1.CASBackendItem.Limits
+	38, // 45: controlplane.v1.CASBackendItem.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 46: controlplane.v1.APITokenItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
+	38, // 47: controlplane.v1.APITokenItem.created_at:type_name -> google.protobuf.Timestamp
+	38, // 48: controlplane.v1.APITokenItem.revoked_at:type_name -> google.protobuf.Timestamp
+	38, // 49: controlplane.v1.APITokenItem.expires_at:type_name -> google.protobuf.Timestamp
+	38, // 50: controlplane.v1.APITokenItem.last_used_at:type_name -> google.protobuf.Timestamp
+	14, // 51: controlplane.v1.AttestationItem.PolicyEvaluationsEntry.value:type_name -> controlplane.v1.PolicyEvaluations
+	32, // 52: controlplane.v1.AttestationItem.Material.annotations:type_name -> controlplane.v1.AttestationItem.Material.AnnotationsEntry
+	7,  // 53: controlplane.v1.WorkflowContractVersionItem.RawBody.format:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody.Format
+	54, // [54:54] is the sub-list for method output_type
+	54, // [54:54] is the sub-list for method input_type
+	54, // [54:54] is the sub-list for extension type_name
+	54, // [54:54] is the sub-list for extension extendee
+	0,  // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_response_messages_proto_init() }

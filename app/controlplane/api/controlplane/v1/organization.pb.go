@@ -25,7 +25,6 @@ import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -449,10 +448,10 @@ type OrganizationServiceUpdateRequest struct {
 	PreventImplicitWorkflowCreation *bool `protobuf:"varint,5,opt,name=prevent_implicit_workflow_creation,json=preventImplicitWorkflowCreation,proto3,oneof" json:"prevent_implicit_workflow_creation,omitempty"`
 	// restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
 	RestrictContractCreationToOrgAdmins *bool `protobuf:"varint,6,opt,name=restrict_contract_creation_to_org_admins,json=restrictContractCreationToOrgAdmins,proto3,oneof" json:"restrict_contract_creation_to_org_admins,omitempty"`
-	// Auto-revoke API tokens inactive for this duration. Set to 0s to disable.
-	ApiTokenInactivityThreshold *durationpb.Duration `protobuf:"bytes,7,opt,name=api_token_inactivity_threshold,json=apiTokenInactivityThreshold,proto3,oneof" json:"api_token_inactivity_threshold,omitempty"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	// Maximum days of inactivity before API tokens are auto-revoked. Set to 0 to disable.
+	ApiTokenMaxDaysInactive *int32 `protobuf:"varint,7,opt,name=api_token_max_days_inactive,json=apiTokenMaxDaysInactive,proto3,oneof" json:"api_token_max_days_inactive,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *OrganizationServiceUpdateRequest) Reset() {
@@ -527,11 +526,11 @@ func (x *OrganizationServiceUpdateRequest) GetRestrictContractCreationToOrgAdmin
 	return false
 }
 
-func (x *OrganizationServiceUpdateRequest) GetApiTokenInactivityThreshold() *durationpb.Duration {
-	if x != nil {
-		return x.ApiTokenInactivityThreshold
+func (x *OrganizationServiceUpdateRequest) GetApiTokenMaxDaysInactive() int32 {
+	if x != nil && x.ApiTokenMaxDaysInactive != nil {
+		return *x.ApiTokenMaxDaysInactive
 	}
-	return nil
+	return 0
 }
 
 type OrganizationServiceUpdateResponse struct {
@@ -662,7 +661,7 @@ var File_controlplane_v1_organization_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_organization_proto_rawDesc = "" +
 	"\n" +
-	"\"controlplane/v1/organization.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\x1a\x1egoogle/protobuf/duration.proto\"\xd1\x02\n" +
+	"\"controlplane/v1/organization.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\"\xd1\x02\n" +
 	")OrganizationServiceListMembershipsRequest\x122\n" +
 	"\rmembership_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\fmembershipId\x88\x01\x01\x12\x17\n" +
 	"\x04name\x18\x02 \x01(\tH\x01R\x04name\x88\x01\x01\x12\x19\n" +
@@ -692,19 +691,19 @@ const file_controlplane_v1_organization_proto_rawDesc = "" +
 	" OrganizationServiceCreateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"U\n" +
 	"!OrganizationServiceCreateResponse\x120\n" +
-	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\xb0\x05\n" +
+	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\x8b\x05\n" +
 	" OrganizationServiceUpdateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12>\n" +
 	"\x19block_on_policy_violation\x18\x02 \x01(\bH\x00R\x16blockOnPolicyViolation\x88\x01\x01\x12<\n" +
 	"\x1apolicies_allowed_hostnames\x18\x03 \x03(\tR\x18policiesAllowedHostnames\x12I\n" +
 	"!update_policies_allowed_hostnames\x18\x04 \x01(\bR\x1eupdatePoliciesAllowedHostnames\x12P\n" +
 	"\"prevent_implicit_workflow_creation\x18\x05 \x01(\bH\x01R\x1fpreventImplicitWorkflowCreation\x88\x01\x01\x12Z\n" +
-	"(restrict_contract_creation_to_org_admins\x18\x06 \x01(\bH\x02R#restrictContractCreationToOrgAdmins\x88\x01\x01\x12c\n" +
-	"\x1eapi_token_inactivity_threshold\x18\a \x01(\v2\x19.google.protobuf.DurationH\x03R\x1bapiTokenInactivityThreshold\x88\x01\x01B\x1c\n" +
+	"(restrict_contract_creation_to_org_admins\x18\x06 \x01(\bH\x02R#restrictContractCreationToOrgAdmins\x88\x01\x01\x12A\n" +
+	"\x1bapi_token_max_days_inactive\x18\a \x01(\x05H\x03R\x17apiTokenMaxDaysInactive\x88\x01\x01B\x1c\n" +
 	"\x1a_block_on_policy_violationB%\n" +
 	"#_prevent_implicit_workflow_creationB+\n" +
-	")_restrict_contract_creation_to_org_adminsB!\n" +
-	"\x1f_api_token_inactivity_threshold\"U\n" +
+	")_restrict_contract_creation_to_org_adminsB\x1e\n" +
+	"\x1c_api_token_max_days_inactive\"U\n" +
 	"!OrganizationServiceUpdateResponse\x120\n" +
 	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"?\n" +
 	" OrganizationServiceDeleteRequest\x12\x1b\n" +
@@ -749,7 +748,6 @@ var file_controlplane_v1_organization_proto_goTypes = []any{
 	(*OrgMembershipItem)(nil),                           // 14: controlplane.v1.OrgMembershipItem
 	(*OffsetPaginationResponse)(nil),                    // 15: controlplane.v1.OffsetPaginationResponse
 	(*OrgItem)(nil),                                     // 16: controlplane.v1.OrgItem
-	(*durationpb.Duration)(nil),                         // 17: google.protobuf.Duration
 }
 var file_controlplane_v1_organization_proto_depIdxs = []int32{
 	12, // 0: controlplane.v1.OrganizationServiceListMembershipsRequest.role:type_name -> controlplane.v1.MembershipRole
@@ -759,25 +757,24 @@ var file_controlplane_v1_organization_proto_depIdxs = []int32{
 	12, // 4: controlplane.v1.OrganizationServiceUpdateMembershipRequest.role:type_name -> controlplane.v1.MembershipRole
 	14, // 5: controlplane.v1.OrganizationServiceUpdateMembershipResponse.result:type_name -> controlplane.v1.OrgMembershipItem
 	16, // 6: controlplane.v1.OrganizationServiceCreateResponse.result:type_name -> controlplane.v1.OrgItem
-	17, // 7: controlplane.v1.OrganizationServiceUpdateRequest.api_token_inactivity_threshold:type_name -> google.protobuf.Duration
-	16, // 8: controlplane.v1.OrganizationServiceUpdateResponse.result:type_name -> controlplane.v1.OrgItem
-	6,  // 9: controlplane.v1.OrganizationService.Create:input_type -> controlplane.v1.OrganizationServiceCreateRequest
-	8,  // 10: controlplane.v1.OrganizationService.Update:input_type -> controlplane.v1.OrganizationServiceUpdateRequest
-	10, // 11: controlplane.v1.OrganizationService.Delete:input_type -> controlplane.v1.OrganizationServiceDeleteRequest
-	0,  // 12: controlplane.v1.OrganizationService.ListMemberships:input_type -> controlplane.v1.OrganizationServiceListMembershipsRequest
-	2,  // 13: controlplane.v1.OrganizationService.DeleteMembership:input_type -> controlplane.v1.OrganizationServiceDeleteMembershipRequest
-	4,  // 14: controlplane.v1.OrganizationService.UpdateMembership:input_type -> controlplane.v1.OrganizationServiceUpdateMembershipRequest
-	7,  // 15: controlplane.v1.OrganizationService.Create:output_type -> controlplane.v1.OrganizationServiceCreateResponse
-	9,  // 16: controlplane.v1.OrganizationService.Update:output_type -> controlplane.v1.OrganizationServiceUpdateResponse
-	11, // 17: controlplane.v1.OrganizationService.Delete:output_type -> controlplane.v1.OrganizationServiceDeleteResponse
-	1,  // 18: controlplane.v1.OrganizationService.ListMemberships:output_type -> controlplane.v1.OrganizationServiceListMembershipsResponse
-	3,  // 19: controlplane.v1.OrganizationService.DeleteMembership:output_type -> controlplane.v1.OrganizationServiceDeleteMembershipResponse
-	5,  // 20: controlplane.v1.OrganizationService.UpdateMembership:output_type -> controlplane.v1.OrganizationServiceUpdateMembershipResponse
-	15, // [15:21] is the sub-list for method output_type
-	9,  // [9:15] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	16, // 7: controlplane.v1.OrganizationServiceUpdateResponse.result:type_name -> controlplane.v1.OrgItem
+	6,  // 8: controlplane.v1.OrganizationService.Create:input_type -> controlplane.v1.OrganizationServiceCreateRequest
+	8,  // 9: controlplane.v1.OrganizationService.Update:input_type -> controlplane.v1.OrganizationServiceUpdateRequest
+	10, // 10: controlplane.v1.OrganizationService.Delete:input_type -> controlplane.v1.OrganizationServiceDeleteRequest
+	0,  // 11: controlplane.v1.OrganizationService.ListMemberships:input_type -> controlplane.v1.OrganizationServiceListMembershipsRequest
+	2,  // 12: controlplane.v1.OrganizationService.DeleteMembership:input_type -> controlplane.v1.OrganizationServiceDeleteMembershipRequest
+	4,  // 13: controlplane.v1.OrganizationService.UpdateMembership:input_type -> controlplane.v1.OrganizationServiceUpdateMembershipRequest
+	7,  // 14: controlplane.v1.OrganizationService.Create:output_type -> controlplane.v1.OrganizationServiceCreateResponse
+	9,  // 15: controlplane.v1.OrganizationService.Update:output_type -> controlplane.v1.OrganizationServiceUpdateResponse
+	11, // 16: controlplane.v1.OrganizationService.Delete:output_type -> controlplane.v1.OrganizationServiceDeleteResponse
+	1,  // 17: controlplane.v1.OrganizationService.ListMemberships:output_type -> controlplane.v1.OrganizationServiceListMembershipsResponse
+	3,  // 18: controlplane.v1.OrganizationService.DeleteMembership:output_type -> controlplane.v1.OrganizationServiceDeleteMembershipResponse
+	5,  // 19: controlplane.v1.OrganizationService.UpdateMembership:output_type -> controlplane.v1.OrganizationServiceUpdateMembershipResponse
+	14, // [14:20] is the sub-list for method output_type
+	8,  // [8:14] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_organization_proto_init() }

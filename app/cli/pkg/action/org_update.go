@@ -17,10 +17,8 @@ package action
 
 import (
 	"context"
-	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type OrgUpdate struct {
@@ -57,8 +55,8 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 	}
 
 	if opts.APITokenMaxDaysInactive != nil {
-		d := time.Duration(*opts.APITokenMaxDaysInactive) * 24 * time.Hour
-		payload.ApiTokenInactivityThreshold = durationpb.New(d)
+		days := int32(*opts.APITokenMaxDaysInactive)
+		payload.ApiTokenMaxDaysInactive = &days
 	}
 
 	resp, err := client.Update(ctx, payload)

@@ -2,7 +2,6 @@
 import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
-import { Duration } from "../../google/protobuf/duration";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import {
   MembershipRole,
@@ -85,8 +84,8 @@ export interface OrganizationServiceUpdateRequest {
   restrictContractCreationToOrgAdmins?:
     | boolean
     | undefined;
-  /** Auto-revoke API tokens inactive for this duration. Set to 0s to disable. */
-  apiTokenInactivityThreshold?: Duration | undefined;
+  /** Maximum days of inactivity before API tokens are auto-revoked. Set to 0 to disable. */
+  apiTokenMaxDaysInactive?: number | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -676,7 +675,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     updatePoliciesAllowedHostnames: false,
     preventImplicitWorkflowCreation: undefined,
     restrictContractCreationToOrgAdmins: undefined,
-    apiTokenInactivityThreshold: undefined,
+    apiTokenMaxDaysInactive: undefined,
   };
 }
 
@@ -700,8 +699,8 @@ export const OrganizationServiceUpdateRequest = {
     if (message.restrictContractCreationToOrgAdmins !== undefined) {
       writer.uint32(48).bool(message.restrictContractCreationToOrgAdmins);
     }
-    if (message.apiTokenInactivityThreshold !== undefined) {
-      Duration.encode(message.apiTokenInactivityThreshold, writer.uint32(58).fork()).ldelim();
+    if (message.apiTokenMaxDaysInactive !== undefined) {
+      writer.uint32(56).int32(message.apiTokenMaxDaysInactive);
     }
     return writer;
   },
@@ -756,11 +755,11 @@ export const OrganizationServiceUpdateRequest = {
           message.restrictContractCreationToOrgAdmins = reader.bool();
           continue;
         case 7:
-          if (tag !== 58) {
+          if (tag !== 56) {
             break;
           }
 
-          message.apiTokenInactivityThreshold = Duration.decode(reader, reader.uint32());
+          message.apiTokenMaxDaysInactive = reader.int32();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -787,8 +786,8 @@ export const OrganizationServiceUpdateRequest = {
       restrictContractCreationToOrgAdmins: isSet(object.restrictContractCreationToOrgAdmins)
         ? Boolean(object.restrictContractCreationToOrgAdmins)
         : undefined,
-      apiTokenInactivityThreshold: isSet(object.apiTokenInactivityThreshold)
-        ? Duration.fromJSON(object.apiTokenInactivityThreshold)
+      apiTokenMaxDaysInactive: isSet(object.apiTokenMaxDaysInactive)
+        ? Number(object.apiTokenMaxDaysInactive)
         : undefined,
     };
   },
@@ -808,10 +807,8 @@ export const OrganizationServiceUpdateRequest = {
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     message.restrictContractCreationToOrgAdmins !== undefined &&
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
-    message.apiTokenInactivityThreshold !== undefined &&
-      (obj.apiTokenInactivityThreshold = message.apiTokenInactivityThreshold
-        ? Duration.toJSON(message.apiTokenInactivityThreshold)
-        : undefined);
+    message.apiTokenMaxDaysInactive !== undefined &&
+      (obj.apiTokenMaxDaysInactive = Math.round(message.apiTokenMaxDaysInactive));
     return obj;
   },
 
@@ -831,10 +828,7 @@ export const OrganizationServiceUpdateRequest = {
     message.updatePoliciesAllowedHostnames = object.updatePoliciesAllowedHostnames ?? false;
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? undefined;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? undefined;
-    message.apiTokenInactivityThreshold =
-      (object.apiTokenInactivityThreshold !== undefined && object.apiTokenInactivityThreshold !== null)
-        ? Duration.fromPartial(object.apiTokenInactivityThreshold)
-        : undefined;
+    message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
     return message;
   },
 };
