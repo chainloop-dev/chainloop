@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"fmt"
-	"time"
+	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
@@ -30,7 +30,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		policiesAllowedHostnames        []string
 		preventImplicitWorkflowCreation bool
 		restrictContractCreation        bool
-		apiTokenInactivityThreshold     string
+		apiTokenMaxDaysInactive         string
 	)
 
 	cmd := &cobra.Command{
@@ -54,21 +54,15 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.RestrictContractCreation = &restrictContractCreation
 			}
 
-			if cmd.Flags().Changed("api-token-inactivity-threshold") {
-				if apiTokenInactivityThreshold == "0" {
-					// Disable by setting duration to zero
-					d := time.Duration(0)
-					opts.APITokenInactivityThreshold = &d
-				} else {
-					d, err := time.ParseDuration(apiTokenInactivityThreshold)
-					if err != nil {
-						return fmt.Errorf("invalid duration %q: %w", apiTokenInactivityThreshold, err)
-					}
-					if d < 24*time.Hour {
-						return fmt.Errorf("api-token-inactivity-threshold must be at least 24h (1 day)")
-					}
-					opts.APITokenInactivityThreshold = &d
+			if cmd.Flags().Changed("api-token-max-days-inactive") {
+				days, err := strconv.Atoi(apiTokenMaxDaysInactive)
+				if err != nil {
+					return fmt.Errorf("invalid value %q: must be a number of days (0 to disable)", apiTokenMaxDaysInactive)
 				}
+				if days < 0 {
+					return fmt.Errorf("api-token-max-days-inactive must be 0 (disabled) or a positive number of days")
+				}
+				opts.APITokenMaxDaysInactive = &days
 			}
 
 			_, err := action.NewOrgUpdate(ActionOpts).Run(cmd.Context(), orgName, opts)
@@ -89,6 +83,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().StringSliceVar(&policiesAllowedHostnames, "policies-allowed-hostnames", []string{}, "set the allowed hostnames for the policy engine")
 	cmd.Flags().BoolVar(&preventImplicitWorkflowCreation, "prevent-implicit-workflow-creation", false, "prevent workflows and projects from being created implicitly during attestation init")
 	cmd.Flags().BoolVar(&restrictContractCreation, "restrict-contract-creation", false, "restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)")
-	cmd.Flags().StringVar(&apiTokenInactivityThreshold, "api-token-inactivity-threshold", "", "auto-revoke API tokens inactive for this duration (e.g. '2160h' for 90 days, '0' to disable)")
+	cmd.Flags().StringVar(&apiTokenMaxDaysInactive, "api-token-max-days-inactive", "", "maximum days of inactivity before API tokens are auto-revoked (e.g. '90', '0' to disable)")
 	return cmd
 }

@@ -36,7 +36,9 @@ type NewOrgUpdateOpts struct {
 	PoliciesAllowedHostnames        *[]string
 	PreventImplicitWorkflowCreation *bool
 	RestrictContractCreation        *bool
-	APITokenInactivityThreshold     *time.Duration
+	// APITokenMaxDaysInactive is the maximum number of days a token can be inactive before auto-revocation.
+	// 0 means disabled.
+	APITokenMaxDaysInactive *int
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -54,8 +56,9 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 		payload.UpdatePoliciesAllowedHostnames = true
 	}
 
-	if opts.APITokenInactivityThreshold != nil {
-		payload.ApiTokenInactivityThreshold = durationpb.New(*opts.APITokenInactivityThreshold)
+	if opts.APITokenMaxDaysInactive != nil {
+		d := time.Duration(*opts.APITokenMaxDaysInactive) * 24 * time.Hour
+		payload.ApiTokenInactivityThreshold = durationpb.New(d)
 	}
 
 	resp, err := client.Update(ctx, payload)

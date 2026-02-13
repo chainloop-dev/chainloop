@@ -35,7 +35,7 @@ type OrgItem struct {
 	PolicyViolationBlockingStrategy string     `json:"policyViolationBlockingStrategy"`
 	PolicyAllowedHostnames          []string   `json:"policyAllowedHostnames,omitempty"`
 	PreventImplicitWorkflowCreation bool       `json:"preventImplicitWorkflowCreation"`
-	APITokenInactivityThreshold     *string    `json:"apiTokenInactivityThreshold,omitempty"`
+	APITokenMaxDaysInactive         *string    `json:"apiTokenMaxDaysInactive,omitempty"`
 }
 
 type MembershipItem struct {
@@ -149,8 +149,8 @@ func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 	if in.ApiTokenInactivityThreshold != nil {
 		d := in.ApiTokenInactivityThreshold.AsDuration()
 		days := int(d.Hours() / 24)
-		s := fmt.Sprintf("%d days", days)
-		i.APITokenInactivityThreshold = &s
+		s := fmt.Sprintf("%d", days)
+		i.APITokenMaxDaysInactive = &s
 	}
 
 	return i
