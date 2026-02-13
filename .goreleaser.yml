@@ -102,6 +102,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/amd64"
+      - "--provenance=false"
   - dockerfile: app/controlplane/Dockerfile.goreleaser
     ids:
       - control-plane
@@ -114,6 +115,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/arm64"
+      - "--provenance=false"
 
   # migrations: Container image meant to perform migrations on the database at deployment time
   - dockerfile: app/controlplane/Dockerfile.migrations
@@ -125,6 +127,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/amd64"
+      - "--provenance=false"
   - dockerfile: app/controlplane/Dockerfile.migrations
     extra_files:
       - app/controlplane/pkg/data/ent/migrate/migrations
@@ -134,6 +137,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/arm64"
+      - "--provenance=false"
 
   # cas
   - dockerfile: app/artifact-cas/Dockerfile.goreleaser
@@ -145,6 +149,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/amd64"
+      - "--provenance=false"
   - dockerfile: app/artifact-cas/Dockerfile.goreleaser
     ids:
       - artifact-cas
@@ -154,6 +159,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/arm64"
+      - "--provenance=false"
 
   # CLI
   - dockerfile: app/cli/Dockerfile.goreleaser
@@ -165,6 +171,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/amd64"
+      - "--provenance=false"
   - dockerfile: app/cli/Dockerfile.goreleaser
     ids:
       - cli
@@ -174,6 +181,7 @@ dockers:
     build_flag_templates:
       - "--pull"
       - "--platform=linux/arm64"
+      - "--provenance=false"
 
 docker_manifests:
   # control-plane
