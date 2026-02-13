@@ -63,7 +63,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 				return err
 			}
 
-			return output.EncodeOutput(flagOutputFormat, res, RegisteredIntegrationItemTableOutput)
+			return output.EncodeOutput(flagOutputFormat, res, registeredIntegrationItemTableOutput)
 		},
 	}
 
