@@ -110,31 +110,64 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 		}
 
 		// We do not have an explicit contract
-		// 1 - try to find it with the default name
-		// 2 - if not found, create it with the default name
 		if contractUUID == uuid.Nil {
-			defaultContractName := fmt.Sprintf("%s-%s", opts.Project, opts.Name)
-			// Try to find the one with the default name or create it
-			contract, err := contractInOrg(ctx, r.data.DB, orgUUID, nil, &defaultContractName)
-			if err != nil {
-				if ent.IsNotFound(err) {
-					// Check if contract creation is restricted to org admins
-					if opts.OrgRestrictContractCreationToAdmins && !opts.UserIsOrgAdmin {
-						return biz.NewErrUnauthorizedStr("contract creation is restricted to organization administrators. Please use existing contracts or contact your administrator")
-					}
+			var contract *ent.WorkflowContract
 
-					// Create a new contract associated with the workflow
-					contract, _, err = r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
-						OrgID:     orgUUID,
-						Name:      defaultContractName,
-						Contract:  opts.DetectedContract,
-						ProjectID: &projectID,
-					})
-					if err != nil {
-						return fmt.Errorf("creating contract: %w", err)
+			// Try contract schema v2
+			var metadataContractName string
+			if opts.ContractBytes != nil && opts.DetectedContract != nil && opts.DetectedContract.Schemav2 != nil {
+				metadataContractName = opts.DetectedContract.Schemav2.GetMetadata().GetName()
+			}
+
+			if metadataContractName != "" {
+				// Contract must not exist with the same name in the org, otherwise we might be linking to an existing contract that doesn't match the detected one
+				_, err := contractInOrg(ctx, r.data.DB, orgUUID, nil, &metadataContractName)
+				if err == nil {
+					return biz.NewErrAlreadyExistsStr(fmt.Sprintf("contract %q already exists", metadataContractName))
+				}
+				if !ent.IsNotFound(err) {
+					return fmt.Errorf("failed to check contract: %w", err)
+				}
+
+				// Check if contract creation is restricted to org admins
+				if opts.OrgRestrictContractCreationToAdmins && !opts.UserIsOrgAdmin {
+					return biz.NewErrUnauthorizedStr("contract creation is restricted to organization administrators. Please use existing contracts or contact your administrator")
+				}
+
+				// Create the contract
+				contract, _, err = r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
+					OrgID:     orgUUID,
+					Name:      metadataContractName,
+					Contract:  opts.DetectedContract,
+					ProjectID: &projectID,
+				})
+				if err != nil {
+					return fmt.Errorf("creating contract: %w", err)
+				}
+			} else {
+				// Try to find the one with the default name or create it
+				defaultContractName := fmt.Sprintf("%s-%s", opts.Project, opts.Name)
+				contract, err = contractInOrg(ctx, r.data.DB, orgUUID, nil, &defaultContractName)
+				if err != nil {
+					if ent.IsNotFound(err) {
+						// Check if contract creation is restricted to org admins
+						if opts.OrgRestrictContractCreationToAdmins && !opts.UserIsOrgAdmin {
+							return biz.NewErrUnauthorizedStr("contract creation is restricted to organization administrators. Please use existing contracts or contact your administrator")
+						}
+
+						// Create a new contract associated with the workflow
+						contract, _, err = r.contractRepo.addCreateToTx(ctx, tx, &biz.ContractCreateOpts{
+							OrgID:     orgUUID,
+							Name:      defaultContractName,
+							Contract:  opts.DetectedContract,
+							ProjectID: &projectID,
+						})
+						if err != nil {
+							return fmt.Errorf("creating contract: %w", err)
+						}
+					} else {
+						return fmt.Errorf("failed to find contract: %w", err)
 					}
-				} else {
-					return fmt.Errorf("failed to find contract: %w", err)
 				}
 			}
 
