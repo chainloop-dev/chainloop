@@ -115,7 +115,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 
 			// Try contract schema v2
 			var metadataContractName string
-			if opts.DetectedContract != nil && opts.DetectedContract.Schemav2 != nil {
+			if opts.ContractBytes != nil && opts.DetectedContract != nil && opts.DetectedContract.Schemav2 != nil {
 				metadataContractName = opts.DetectedContract.Schemav2.GetMetadata().GetName()
 			}
 
