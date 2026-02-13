@@ -117,20 +117,23 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 				projectIDs[orgID] = []uuid.UUID{*currentAPIToken.ProjectID}
 			}
 			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, projectIDs)
-		}
-
-		if err != nil && !biz.IsNotFound(err) {
-			if biz.IsErrValidation(err) {
-				return nil, errors.BadRequest("invalid", err.Error())
+			if err != nil && !biz.IsNotFound(err) {
+				if biz.IsErrValidation(err) {
+					return nil, errors.BadRequest("invalid", err.Error())
+				}
+				return nil, handleUseCaseErr(err, s.log)
 			}
-			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		if mapping != nil {
 			backend = mapping.CASBackend
-		} else if authz.Role(currentAuthzSubject).IsAdmin() {
-			// fallback to default mapping for admins
-			backend = defaultBackend
+		} else {
+			// fallback to default backend if the user or the token is allowed to
+			if ok, err := s.authzUC.Enforce(ctx, currentAuthzSubject, authz.PolicyDefaultBackendArtifactRead); err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			} else if ok {
+				backend = defaultBackend
+			}
 		}
 	case casJWT.Uploader:
 		backend = defaultBackend
