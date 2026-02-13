@@ -53,8 +53,9 @@ func NewCertificateAuthoritiesFromConfig(configCAs []*conf.CA, logger *log.Helpe
 		var authority CertificateAuthority
 		if configCA.GetFileCa() != nil {
 			fileCa := configCA.GetFileCa()
-			logger.Log(log.LevelInfo, "msg", "Keyless: File CA configured")
-			authority, err = fileca.New(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), false)
+			logger.Log(log.LevelInfo, "msg", fmt.Sprintf("Keyless: File CA configured (issuer = %v)", configCA.Issuer))
+			// load the CA and verify it if it's configured as an issuer CA
+			authority, err = fileca.New(fileCa.GetCertPath(), fileCa.GetKeyPath(), fileCa.GetKeyPass(), configCA.Issuer)
 		}
 
 		if configCA.GetEjbcaCa() != nil {
