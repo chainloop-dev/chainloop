@@ -24,7 +24,7 @@ import (
 
 	"github.com/digitorus/timestamp"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
-	"github.com/sigstore/timestamp-authority/pkg/verification"
+	"github.com/sigstore/timestamp-authority/v2/pkg/verification"
 )
 
 func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {

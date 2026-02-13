@@ -18,6 +18,10 @@
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.jsonschema.json",
       "description": "Signing options"
     },
+    "^(ui_dashboard_url)$": {
+      "description": "URL pointing to the web dashboard. It might be empty if not available",
+      "type": "string"
+    },
     "^(workflow_run)$": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"
     }
@@ -41,6 +45,10 @@
     "signingOptions": {
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.jsonschema.json",
       "description": "Signing options"
+    },
+    "uiDashboardUrl": {
+      "description": "URL pointing to the web dashboard. It might be empty if not available",
+      "type": "string"
     },
     "workflowRun": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"

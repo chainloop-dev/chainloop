@@ -329,6 +329,38 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	return projects
 }
 
+// checkPolicy Checks a policy against a user or a token
+func (s *service) checkPolicy(ctx context.Context, policy *authz.Policy) error {
+	// Token case
+	sub := usercontext.CurrentAuthzSubject(ctx)
+	if sub != "" {
+		ok, err := s.authz.Enforce(ctx, sub, policy)
+		if err != nil {
+			return handleUseCaseErr(err, s.log)
+		}
+		if ok {
+			return nil
+		}
+	}
+
+	// Other cases
+	m := entities.CurrentMembership(ctx)
+	if m == nil {
+		return errors.Forbidden("forbidden", "not allowed")
+	}
+	for _, rm := range m.Resources {
+		pass, err := s.authz.Enforce(ctx, string(rm.Role), authz.PolicyOrganizationCreate)
+		if err != nil {
+			return handleUseCaseErr(err, s.log)
+		}
+		if pass {
+			return nil
+		}
+	}
+
+	return errors.Forbidden("forbidden", "not allowed")
+}
+
 // isUserOrgAdmin checks if the current user is an org admin or owner
 func isUserOrgAdmin(ctx context.Context) bool {
 	userRole := usercontext.CurrentAuthzSubject(ctx)

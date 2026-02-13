@@ -48,6 +48,7 @@ const (
 	CraftingSchema_Runner_CIRCLECI_BUILD          CraftingSchema_Runner_RunnerType = 5
 	CraftingSchema_Runner_DAGGER_PIPELINE         CraftingSchema_Runner_RunnerType = 6
 	CraftingSchema_Runner_TEAMCITY_PIPELINE       CraftingSchema_Runner_RunnerType = 7
+	CraftingSchema_Runner_TEKTON_PIPELINE         CraftingSchema_Runner_RunnerType = 8
 )
 
 // Enum value maps for CraftingSchema_Runner_RunnerType.
@@ -61,6 +62,7 @@ var (
 		5: "CIRCLECI_BUILD",
 		6: "DAGGER_PIPELINE",
 		7: "TEAMCITY_PIPELINE",
+		8: "TEKTON_PIPELINE",
 	}
 	CraftingSchema_Runner_RunnerType_value = map[string]int32{
 		"RUNNER_TYPE_UNSPECIFIED": 0,
@@ -71,6 +73,7 @@ var (
 		"CIRCLECI_BUILD":          5,
 		"DAGGER_PIPELINE":         6,
 		"TEAMCITY_PIPELINE":       7,
+		"TEKTON_PIPELINE":         8,
 	}
 )
 
@@ -150,6 +153,8 @@ const (
 	CraftingSchema_Material_CHAINLOOP_RUNNER_CONTEXT CraftingSchema_Material_MaterialType = 25
 	// Pull Request / Merge Request metadata collected automatically during attestation
 	CraftingSchema_Material_CHAINLOOP_PR_INFO CraftingSchema_Material_MaterialType = 26
+	// Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting
+	CraftingSchema_Material_GITLEAKS_JSON CraftingSchema_Material_MaterialType = 27
 )
 
 // Enum value maps for CraftingSchema_Material_MaterialType.
@@ -182,6 +187,7 @@ var (
 		24: "SLSA_PROVENANCE",
 		25: "CHAINLOOP_RUNNER_CONTEXT",
 		26: "CHAINLOOP_PR_INFO",
+		27: "GITLEAKS_JSON",
 	}
 	CraftingSchema_Material_MaterialType_value = map[string]int32{
 		"MATERIAL_TYPE_UNSPECIFIED":       0,
@@ -211,6 +217,7 @@ var (
 		"SLSA_PROVENANCE":                 24,
 		"CHAINLOOP_RUNNER_CONTEXT":        25,
 		"CHAINLOOP_PR_INFO":               26,
+		"GITLEAKS_JSON":                   27,
 	}
 )
 
@@ -1110,6 +1117,7 @@ type PolicySpecV2 struct {
 	//
 	//	*PolicySpecV2_Path
 	//	*PolicySpecV2_Embedded
+	//	*PolicySpecV2_Ref
 	Source isPolicySpecV2_Source `protobuf_oneof:"source"`
 	// if set, it will match any material supported by Chainloop
 	Kind          CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
@@ -1154,6 +1162,7 @@ func (x *PolicySpecV2) GetSource() isPolicySpecV2_Source {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 func (x *PolicySpecV2) GetPath() string {
 	if x != nil {
 		if x, ok := x.Source.(*PolicySpecV2_Path); ok {
@@ -1172,6 +1181,15 @@ func (x *PolicySpecV2) GetEmbedded() string {
 	return ""
 }
 
+func (x *PolicySpecV2) GetRef() string {
+	if x != nil {
+		if x, ok := x.Source.(*PolicySpecV2_Ref); ok {
+			return x.Ref
+		}
+	}
+	return ""
+}
+
 func (x *PolicySpecV2) GetKind() CraftingSchema_Material_MaterialType {
 	if x != nil {
 		return x.Kind
@@ -1185,6 +1203,9 @@ type isPolicySpecV2_Source interface {
 
 type PolicySpecV2_Path struct {
 	// path to a policy script. It might consist of a URI reference
+	// deprecated: use ref instead
+	//
+	// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3,oneof"`
 }
 
@@ -1193,9 +1214,16 @@ type PolicySpecV2_Embedded struct {
 	Embedded string `protobuf:"bytes,2,opt,name=embedded,proto3,oneof"`
 }
 
+type PolicySpecV2_Ref struct {
+	// generic reference for file:// and http(s):// schemes
+	Ref string `protobuf:"bytes,4,opt,name=ref,proto3,oneof"`
+}
+
 func (*PolicySpecV2_Path) isPolicySpecV2_Source() {}
 
 func (*PolicySpecV2_Embedded) isPolicySpecV2_Source() {}
+
+func (*PolicySpecV2_Ref) isPolicySpecV2_Source() {}
 
 // Auto-matching policy specification
 type AutoMatch struct {
@@ -1204,6 +1232,7 @@ type AutoMatch struct {
 	//
 	//	*AutoMatch_Path
 	//	*AutoMatch_Embedded
+	//	*AutoMatch_Ref
 	Source        isAutoMatch_Source `protobuf_oneof:"source"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1246,6 +1275,7 @@ func (x *AutoMatch) GetSource() isAutoMatch_Source {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 func (x *AutoMatch) GetPath() string {
 	if x != nil {
 		if x, ok := x.Source.(*AutoMatch_Path); ok {
@@ -1264,12 +1294,24 @@ func (x *AutoMatch) GetEmbedded() string {
 	return ""
 }
 
+func (x *AutoMatch) GetRef() string {
+	if x != nil {
+		if x, ok := x.Source.(*AutoMatch_Ref); ok {
+			return x.Ref
+		}
+	}
+	return ""
+}
+
 type isAutoMatch_Source interface {
 	isAutoMatch_Source()
 }
 
 type AutoMatch_Path struct {
 	// path to a policy script. It might consist of a URI reference
+	// deprecated: use ref instead
+	//
+	// Deprecated: Marked as deprecated in workflowcontract/v1/crafting_schema.proto.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3,oneof"`
 }
 
@@ -1278,9 +1320,16 @@ type AutoMatch_Embedded struct {
 	Embedded string `protobuf:"bytes,2,opt,name=embedded,proto3,oneof"`
 }
 
+type AutoMatch_Ref struct {
+	// generic reference for file:// and http(s):// schemes
+	Ref string `protobuf:"bytes,3,opt,name=ref,proto3,oneof"`
+}
+
 func (*AutoMatch_Path) isAutoMatch_Source() {}
 
 func (*AutoMatch_Embedded) isAutoMatch_Source() {}
+
+func (*AutoMatch_Ref) isAutoMatch_Source() {}
 
 // Represents a group attachment in a contract
 type PolicyGroupAttachment struct {
@@ -1789,7 +1838,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\x82\x0e\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xaa\x0e\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -1798,9 +1847,9 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06runner\x18\x04 \x01(\v2*.workflowcontract.v1.CraftingSchema.RunnerB\x02\x18\x01R\x06runner\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12=\n" +
 	"\bpolicies\x18\x06 \x01(\v2\x1d.workflowcontract.v1.PoliciesB\x02\x18\x01R\bpolicies\x12S\n" +
-	"\rpolicy_groups\x18\a \x03(\v2*.workflowcontract.v1.PolicyGroupAttachmentB\x02\x18\x01R\fpolicyGroups\x1a\x9e\x02\n" +
+	"\rpolicy_groups\x18\a \x03(\v2*.workflowcontract.v1.PolicyGroupAttachmentB\x02\x18\x01R\fpolicyGroups\x1a\xb3\x02\n" +
 	"\x06Runner\x12W\n" +
-	"\x04type\x18\x01 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\"\xb6\x01\n" +
+	"\x04type\x18\x01 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\"\xcb\x01\n" +
 	"\n" +
 	"RunnerType\x12\x1b\n" +
 	"\x17RUNNER_TYPE_UNSPECIFIED\x10\x00\x12\x11\n" +
@@ -1810,7 +1859,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\vJENKINS_JOB\x10\x04\x12\x12\n" +
 	"\x0eCIRCLECI_BUILD\x10\x05\x12\x13\n" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
-	"\x11TEAMCITY_PIPELINE\x10\a:\x02\x18\x01\x1a\xf9\a\n" +
+	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
+	"\x0fTEKTON_PIPELINE\x10\b:\x02\x18\x01\x1a\x8c\b\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
@@ -1819,7 +1869,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\bB\x02\x18\x01R\x06output\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12\x1f\n" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
-	"skipUpload\"\xcb\x04\n" +
+	"skipUpload\"\xde\x04\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -1851,7 +1901,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"JACOCO_XML\x10\x17\x12\x13\n" +
 	"\x0fSLSA_PROVENANCE\x10\x18\x12\x1c\n" +
 	"\x18CHAINLOOP_RUNNER_CONTEXT\x10\x19\x12\x15\n" +
-	"\x11CHAINLOOP_PR_INFO\x10\x1a:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
+	"\x11CHAINLOOP_PR_INFO\x10\x1a\x12\x11\n" +
+	"\rGITLEAKS_JSON\x10\x1b:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
 	"\x10CraftingSchemaV2\x128\n" +
 	"\vapi_version\x18\x01 \x01(\tB\x17\xbaH\x14r\x12\n" +
 	"\x10chainloop.dev/v1R\n" +
@@ -1925,15 +1976,17 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x14name.go_map_variable\x12:must contain only lowercase letters, numbers, and hyphens.\x1a'this.matches('^[a-zA-Z][a-zA-Z0-9_]*$')R\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
 	"\brequired\x18\x03 \x01(\bR\brequired\x12\x18\n" +
-	"\adefault\x18\x04 \x01(\tR\adefault\"\xac\x01\n" +
-	"\fPolicySpecV2\x12\x14\n" +
-	"\x04path\x18\x01 \x01(\tH\x00R\x04path\x12\x1c\n" +
-	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12W\n" +
+	"\adefault\x18\x04 \x01(\tR\adefault\"\xc4\x01\n" +
+	"\fPolicySpecV2\x12\x18\n" +
+	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
+	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
+	"\x03ref\x18\x04 \x01(\tH\x00R\x03ref\x12W\n" +
 	"\x04kind\x18\x03 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kindB\x0f\n" +
-	"\x06source\x12\x05\xbaH\x02\b\x01\"P\n" +
-	"\tAutoMatch\x12\x14\n" +
-	"\x04path\x18\x01 \x01(\tH\x00R\x04path\x12\x1c\n" +
-	"\bembedded\x18\x02 \x01(\tH\x00R\bembeddedB\x0f\n" +
+	"\x06source\x12\x05\xbaH\x02\b\x01\"h\n" +
+	"\tAutoMatch\x12\x18\n" +
+	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
+	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
+	"\x03ref\x18\x03 \x01(\tH\x00R\x03refB\x0f\n" +
 	"\x06source\x12\x05\xbaH\x02\b\x01\"\xc9\x01\n" +
 	"\x15PolicyGroupAttachment\x12\x19\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03ref\x12H\n" +
@@ -2066,10 +2119,12 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 	file_workflowcontract_v1_crafting_schema_proto_msgTypes[10].OneofWrappers = []any{
 		(*PolicySpecV2_Path)(nil),
 		(*PolicySpecV2_Embedded)(nil),
+		(*PolicySpecV2_Ref)(nil),
 	}
 	file_workflowcontract_v1_crafting_schema_proto_msgTypes[11].OneofWrappers = []any{
 		(*AutoMatch_Path)(nil),
 		(*AutoMatch_Embedded)(nil),
+		(*AutoMatch_Ref)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

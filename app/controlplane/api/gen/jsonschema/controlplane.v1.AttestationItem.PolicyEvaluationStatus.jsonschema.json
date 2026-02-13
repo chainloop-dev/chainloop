@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(has_gated_violations)$": {
+      "type": "boolean"
+    },
     "^(has_violations)$": {
       "type": "boolean"
     }
@@ -12,6 +15,9 @@
       "type": "boolean"
     },
     "bypassed": {
+      "type": "boolean"
+    },
+    "hasGatedViolations": {
       "type": "boolean"
     },
     "hasViolations": {

@@ -19,44 +19,44 @@ tinygo build -target=wasi -buildmode=c-shared -o policy.wasm policy.go
 
 ### Valid input:
 ```bash
-echo '{"message": "hello world"}' | \
-  chainloop policy develop eval \
+echo '{"message": "hello world"}' > /tmp/test-message.json
+chainloop policy develop eval \
   --policy policy.yaml \
-  --material - \
-  --kind ATTESTATION
+  --material /tmp/test-message.json \
+  --kind EVIDENCE
 ```
 
 Expected: No violations
 
 ### Invalid input (empty message):
 ```bash
-echo '{"message": ""}' | \
-  chainloop policy develop eval \
+echo '{"message": ""}' > /tmp/test-empty.json
+chainloop policy develop eval \
   --policy policy.yaml \
-  --material - \
-  --kind ATTESTATION
+  --material /tmp/test-empty.json \
+  --kind EVIDENCE
 ```
 
 Expected: Violation: "message cannot be empty"
 
 ### Invalid input (forbidden word):
 ```bash
-echo '{"message": "this is forbidden"}' | \
-  chainloop policy develop eval \
+echo '{"message": "this is forbidden"}' > /tmp/test-forbidden.json
+chainloop policy develop eval \
   --policy policy.yaml \
-  --material - \
-  --kind ATTESTATION
+  --material /tmp/test-forbidden.json \
+  --kind EVIDENCE
 ```
 
 Expected: Violation: "message contains forbidden word: forbidden"
 
 ### Invalid input (too long):
 ```bash
-echo '{"message": "'"$(python3 -c "print('a' * 101)")"'"}' | \
-  chainloop policy develop eval \
+echo '{"message": "'"$(python3 -c "print('a' * 101)")"'"}' > /tmp/test-long.json
+chainloop policy develop eval \
   --policy policy.yaml \
-  --material - \
-  --kind ATTESTATION
+  --material /tmp/test-long.json \
+  --kind EVIDENCE
 ```
 
 Expected: Violation: "message too long: 101 characters (max 100)"

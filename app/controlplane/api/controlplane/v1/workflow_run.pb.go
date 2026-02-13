@@ -1384,8 +1384,10 @@ type AttestationServiceInitResponse_Result struct {
 	SigningOptions *AttestationServiceInitResponse_SigningOptions `protobuf:"bytes,5,opt,name=signing_options,json=signingOptions,proto3" json:"signing_options,omitempty"`
 	// array of hostnames that are allowed to be used in the policies
 	PoliciesAllowedHostnames []string `protobuf:"bytes,6,rep,name=policies_allowed_hostnames,json=policiesAllowedHostnames,proto3" json:"policies_allowed_hostnames,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// URL pointing to the web dashboard. It might be empty if not available
+	UiDashboardUrl string `protobuf:"bytes,7,opt,name=ui_dashboard_url,json=uiDashboardUrl,proto3" json:"ui_dashboard_url,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AttestationServiceInitResponse_Result) Reset() {
@@ -1451,6 +1453,13 @@ func (x *AttestationServiceInitResponse_Result) GetPoliciesAllowedHostnames() []
 		return x.PoliciesAllowedHostnames
 	}
 	return nil
+}
+
+func (x *AttestationServiceInitResponse_Result) GetUiDashboardUrl() string {
+	if x != nil {
+		return x.UiDashboardUrl
+	}
+	return ""
 }
 
 type AttestationServiceInitResponse_SigningOptions struct {
@@ -1554,6 +1563,7 @@ func (x *AttestationServiceStoreResponse_Result) GetDigest() string {
 
 type WorkflowRunServiceViewResponse_Result struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
+	OrgName     string                 `protobuf:"bytes,5,opt,name=org_name,json=orgName,proto3" json:"org_name,omitempty"`
 	WorkflowRun *WorkflowRunItem       `protobuf:"bytes,1,opt,name=workflow_run,json=workflowRun,proto3" json:"workflow_run,omitempty"`
 	Attestation *AttestationItem       `protobuf:"bytes,2,opt,name=attestation,proto3" json:"attestation,omitempty"`
 	// It will be nil if the verification is not possible (old or non-keyless attestations)
@@ -1590,6 +1600,13 @@ func (x *WorkflowRunServiceViewResponse_Result) ProtoReflect() protoreflect.Mess
 // Deprecated: Use WorkflowRunServiceViewResponse_Result.ProtoReflect.Descriptor instead.
 func (*WorkflowRunServiceViewResponse_Result) Descriptor() ([]byte, []int) {
 	return file_controlplane_v1_workflow_run_proto_rawDescGZIP(), []int{18, 0}
+}
+
+func (x *WorkflowRunServiceViewResponse_Result) GetOrgName() string {
+	if x != nil {
+		return x.OrgName
+	}
+	return ""
 }
 
 func (x *WorkflowRunServiceViewResponse_Result) GetWorkflowRun() *WorkflowRunItem {
@@ -1766,15 +1783,16 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\rworkflow_name\x18\x04 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\fworkflowName\x12*\n" +
 	"\fproject_name\x18\x05 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vprojectName\x12'\n" +
 	"\x0fproject_version\x18\x06 \x01(\tR\x0eprojectVersion\x128\n" +
-	"\x18require_existing_version\x18\a \x01(\bR\x16requireExistingVersion\"\xaf\x04\n" +
+	"\x18require_existing_version\x18\a \x01(\bR\x16requireExistingVersion\"\xd9\x04\n" +
 	"\x1eAttestationServiceInitResponse\x12N\n" +
-	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xd3\x02\n" +
+	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xfd\x02\n" +
 	"\x06Result\x12C\n" +
 	"\fworkflow_run\x18\x02 \x01(\v2 .controlplane.v1.WorkflowRunItemR\vworkflowRun\x12\"\n" +
 	"\forganization\x18\x03 \x01(\tR\forganization\x129\n" +
 	"\x19block_on_policy_violation\x18\x04 \x01(\bR\x16blockOnPolicyViolation\x12g\n" +
 	"\x0fsigning_options\x18\x05 \x01(\v2>.controlplane.v1.AttestationServiceInitResponse.SigningOptionsR\x0esigningOptions\x12<\n" +
-	"\x1apolicies_allowed_hostnames\x18\x06 \x03(\tR\x18policiesAllowedHostnames\x1ag\n" +
+	"\x1apolicies_allowed_hostnames\x18\x06 \x03(\tR\x18policiesAllowedHostnames\x12(\n" +
+	"\x10ui_dashboard_url\x18\a \x01(\tR\x0euiDashboardUrl\x1ag\n" +
 	"\x0eSigningOptions\x126\n" +
 	"\x17timestamp_authority_url\x18\x01 \x01(\tR\x15timestampAuthorityUrl\x12\x1d\n" +
 	"\n" +
@@ -1819,10 +1837,11 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\x02id\x12!\n" +
 	"\x06digest\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x06digest\x12\x16\n" +
 	"\x06verify\x18\x03 \x01(\bR\x06verifyB\f\n" +
-	"\x03ref\x12\x05\xbaH\x02\b\x01\"\xc5\x03\n" +
+	"\x03ref\x12\x05\xbaH\x02\b\x01\"\xe0\x03\n" +
 	"\x1eWorkflowRunServiceViewResponse\x12N\n" +
-	"\x06result\x18\x01 \x01(\v26.controlplane.v1.WorkflowRunServiceViewResponse.ResultR\x06result\x1a\xf9\x01\n" +
-	"\x06Result\x12C\n" +
+	"\x06result\x18\x01 \x01(\v26.controlplane.v1.WorkflowRunServiceViewResponse.ResultR\x06result\x1a\x94\x02\n" +
+	"\x06Result\x12\x19\n" +
+	"\borg_name\x18\x05 \x01(\tR\aorgName\x12C\n" +
 	"\fworkflow_run\x18\x01 \x01(\v2 .controlplane.v1.WorkflowRunItemR\vworkflowRun\x12B\n" +
 	"\vattestation\x18\x02 \x01(\v2 .controlplane.v1.AttestationItemR\vattestation\x12f\n" +
 	"\fverification\x18\x03 \x01(\v2B.controlplane.v1.WorkflowRunServiceViewResponse.VerificationResultR\fverification\x1aW\n" +

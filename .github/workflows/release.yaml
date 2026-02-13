@@ -37,6 +37,8 @@ jobs:
           CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
           CHAINLOOP_WORKFLOW_NAME: "release"
           CHAINLOOP_PROJECT_NAME: "chainloop"
+          # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     name: Release CLI and control-plane/artifact-cas container images
@@ -79,7 +81,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@be3c94b385c4f180051c996d336f57a34c397495 # v3.6.1
         with:
-          go-version: "1.25.5"
+          go-version: "1.25.6"
 
       # install qemu binaries for multiarch builds (needed by goreleaser/buildx)
       - name: Setup qemu
@@ -137,6 +139,8 @@ jobs:
               syft -o cyclonedx-json=/tmp/sbom-$material_name.cyclonedx.json $entry
 
               # Add missing known licenses
+              # https://github.com/ariga/atlas/blob/master/LICENSE
+              ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "ariga.io/atlas" "Apache-2.0" type="library"
               ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "ariga.io/atlas/cmd/atlas" "Apache-2.0" type="library"
               ${{ github.workspace }}/.github/workflows/utils/add-license-to-sbom.sh /tmp/sbom-$material_name.cyclonedx.json "github.com/ariga/language-tools/packages/language-server-go" "Apache-2.0" type="library"
 
@@ -170,6 +174,7 @@ jobs:
       - name: Promote Chainloop Project Version
         env:
           CHAINLOOP_PROJECT_NAME: "chainloop"
+          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
         run: |
           current_version="$(cat .chainloop.yml | awk '/^projectVersion:/ {print $2}')"
           # Rename the existing pre-release into the actual release name

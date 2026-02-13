@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,8 +82,8 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 	for _, m := range mappings {
 		public, err := r.IsPublic(ctx, r.data.DB, m.WorkflowRunID)
 		if err != nil {
-			if biz.IsNotFound(err) {
-				return nil, nil
+			if ent.IsNotFound(err) {
+				continue
 			}
 
 			return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
@@ -112,8 +112,8 @@ func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMa
 
 	public, err := r.IsPublic(ctx, r.data.DB, backend.WorkflowRunID)
 	if err != nil {
-		if biz.IsNotFound(err) {
-			return nil, nil
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("cas mapping")
 		}
 
 		return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
@@ -132,15 +132,11 @@ func (r *CASMappingRepo) IsPublic(ctx context.Context, client *ent.Client, runID
 	wr, err := client.WorkflowRun.Query().Where(workflowrun.ID(runID)).Select(workflowrun.FieldWorkflowID).First(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get workflow run: %w", err)
-	} else if wr == nil {
-		return false, nil
 	}
 
 	workflow, err := client.Workflow.Query().Where(workflow.ID(wr.WorkflowID)).Select(workflow.FieldPublic).First(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to get workflow: %w", err)
-	} else if workflow == nil {
-		return false, nil
 	}
 
 	return workflow.Public, nil

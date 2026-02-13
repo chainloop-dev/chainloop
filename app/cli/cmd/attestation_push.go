@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,6 +38,7 @@ func newAttestationPushCmd() *cobra.Command {
 		signServerAuthCertPath string
 		signServerAuthCertPass string
 		bypassPolicyCheck      bool
+		deactivateCIReport     bool
 	)
 
 	cmd := &cobra.Command{
@@ -106,15 +108,29 @@ func newAttestationPushCmd() *cobra.Command {
 
 			res.Status.Digest = res.Digest
 
-			// If we are returning the json format, we also want to render the attestation table as one property so it can also be consumed
-			if flagOutputFormat == output.FormatJSON {
-				// Render the attestation status to a string
-				buf := &bytes.Buffer{}
-				if err := fullStatusTableWithWriter(res.Status, buf); err != nil {
-					return fmt.Errorf("failed to render output: %w", err)
-				}
+			// Render the attestation status to a string
+			buf := &bytes.Buffer{}
+			if err := fullStatusTableWithWriter(res.Status, buf); err != nil {
+				return fmt.Errorf("failed to render output: %w", err)
+			}
 
-				res.Status.TerminalOutput = buf.Bytes()
+			res.Status.TerminalOutput = buf.Bytes()
+
+			// Report to CI/CD platform if supported and not disabled
+			if !deactivateCIReport && !res.Status.DryRun && res.Status.RunnerContext != nil {
+				// Clean up possible ANSI characters from the output
+				sanitizedOutput := removeAnsiCharactersFromBytes(res.Status.TerminalOutput)
+				if err := res.Status.RunnerContext.RawRunner.Report(sanitizedOutput, res.Status.AttestationViewURL); err != nil {
+					logger.Warn().Err(err).Msg("failed to write CI/CD platform report")
+				} else {
+					// Log success message based on runner type
+					switch res.Status.RunnerContext.RawRunner.ID() {
+					case schemaapi.CraftingSchema_Runner_GITHUB_ACTION:
+						logger.Info().Msg("attestation report written to GitHub step summary")
+					case schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE:
+						logger.Info().Msg("attestation report written to chainloop-attestation-report.txt artifact")
+					}
+				}
 			}
 
 			// In TABLE format, we render the attestation status
@@ -160,6 +176,7 @@ func newAttestationPushCmd() *cobra.Command {
 	cmd.Flags().StringVar(&signServerAuthCertPath, "signserver-client-cert", "", "path to client certificate in PEM format for authenticated SignServer TLS connection")
 	cmd.Flags().StringVar(&signServerAuthCertPass, "signserver-client-pass", "", "certificate passphrase for authenticated SignServer TLS connection")
 	cmd.Flags().BoolVar(&bypassPolicyCheck, exceptionFlagName, false, "do not fail this command on policy violations enforcement")
+	cmd.Flags().BoolVar(&deactivateCIReport, "deactivate-ci-report", false, "deactivate automatic attestation report to CI/CD platform")
 
 	return cmd
 }

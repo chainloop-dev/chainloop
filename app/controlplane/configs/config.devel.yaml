@@ -107,3 +107,5 @@ enable_profiler: true
 # federated_authentication:
 #   enabled: true
 #   url: http://localhost:8002/machine-identity/verify-token
+
+ui_dashboard_url: http://localhost:3000

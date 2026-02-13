@@ -96,6 +96,12 @@ func (_u *OrgInvitationUpdate) SetNillableSenderID(v *uuid.UUID) *OrgInvitationU
 	return _u
 }
 
+// ClearSenderID clears the value of the "sender_id" field.
+func (_u *OrgInvitationUpdate) ClearSenderID() *OrgInvitationUpdate {
+	_u.mutation.ClearSenderID()
+	return _u
+}
+
 // SetRole sets the "role" field.
 func (_u *OrgInvitationUpdate) SetRole(v authz.Role) *OrgInvitationUpdate {
 	_u.mutation.SetRole(v)
@@ -204,9 +210,6 @@ func (_u *OrgInvitationUpdate) check() error {
 	}
 	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
-	}
-	if _u.mutation.SenderCleared() && len(_u.mutation.SenderIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "OrgInvitation.sender"`)
 	}
 	return nil
 }
@@ -392,6 +395,12 @@ func (_u *OrgInvitationUpdateOne) SetNillableSenderID(v *uuid.UUID) *OrgInvitati
 	return _u
 }
 
+// ClearSenderID clears the value of the "sender_id" field.
+func (_u *OrgInvitationUpdateOne) ClearSenderID() *OrgInvitationUpdateOne {
+	_u.mutation.ClearSenderID()
+	return _u
+}
+
 // SetRole sets the "role" field.
 func (_u *OrgInvitationUpdateOne) SetRole(v authz.Role) *OrgInvitationUpdateOne {
 	_u.mutation.SetRole(v)
@@ -513,9 +522,6 @@ func (_u *OrgInvitationUpdateOne) check() error {
 	}
 	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OrgInvitation.organization"`)
-	}
-	if _u.mutation.SenderCleared() && len(_u.mutation.SenderIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "OrgInvitation.sender"`)
 	}
 	return nil
 }

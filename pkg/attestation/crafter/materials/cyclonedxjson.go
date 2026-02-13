@@ -39,8 +39,26 @@ const (
 )
 
 type CyclonedxJSONCrafter struct {
-	backend *casclient.CASBackend
+	backend            *casclient.CASBackend
+	noStrictValidation bool
 	*crafterCommon
+}
+
+// CycloneDXCraftOpt is a functional option for CyclonedxJSONCrafter
+type CycloneDXCraftOpt func(*CyclonedxJSONCrafter)
+
+// WithCycloneDXNoStrictValidation sets the noStrictValidation option
+func WithCycloneDXNoStrictValidation(noStrict bool) CycloneDXCraftOpt {
+	return func(c *CyclonedxJSONCrafter) {
+		c.noStrictValidation = noStrict
+	}
+}
+
+// cyclonedxRequiredFields checks the three required top-level fields per CycloneDX spec
+type cyclonedxRequiredFields struct {
+	BOMFormat   string `json:"bomFormat"`
+	SpecVersion string `json:"specVersion"`
+	Version     int    `json:"version"`
 }
 
 // cyclonedxDoc internal struct to unmarshall the incoming CycloneDX JSON
@@ -78,21 +96,38 @@ type cyclonedxMetadataV15 struct {
 	Component cyclonedxComponent `json:"component"`
 }
 
-func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CyclonedxJSONCrafter, error) {
+func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger, opts ...CycloneDXCraftOpt) (*CyclonedxJSONCrafter, error) {
 	if materialSchema.Type != schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON {
 		return nil, fmt.Errorf("material type is not cyclonedx json")
 	}
 
-	return &CyclonedxJSONCrafter{
+	c := &CyclonedxJSONCrafter{
 		backend:       backend,
 		crafterCommon: &crafterCommon{logger: l, input: materialSchema},
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c, nil
 }
 
 func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
 	f, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
+	}
+
+	var required cyclonedxRequiredFields
+	if err := json.Unmarshal(f, &required); err != nil {
+		i.logger.Debug().Err(err).Msg("error decoding file")
+		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
+	}
+
+	if required.BOMFormat != "CycloneDX" || required.SpecVersion == "" || required.Version < 1 {
+		i.logger.Debug().Str("bomFormat", required.BOMFormat).Str("specVersion", required.SpecVersion).Int("version", required.Version).Msg("missing required CycloneDX fields")
+		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
 	}
 
 	var v interface{}
@@ -102,10 +137,14 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 	}
 
 	// Setting the version to empty string to validate against the latest version of the schema
-	err = schemavalidators.ValidateCycloneDX(v, "")
-	if err != nil {
-		i.logger.Debug().Err(err).Msgf("error decoding file: %#v", err)
-		return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
+	if err := schemavalidators.ValidateCycloneDX(v, ""); err != nil {
+		if i.noStrictValidation {
+			i.logger.Warn().Err(err).Msg("error decoding file, strict validation disabled, continuing")
+		} else {
+			i.logger.Debug().Err(err).Msg("error decoding file")
+			i.logger.Info().Msg("you can disable strict validation to skip schema validation")
+			return nil, fmt.Errorf("invalid cyclonedx sbom file: %w", ErrInvalidMaterialType)
+		}
 	}
 
 	m, err := uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)

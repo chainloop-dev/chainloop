@@ -20,6 +20,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -38,7 +39,7 @@ func NewOrgInvitationService(uc *biz.OrgInvitationUseCase, opts ...NewOpt) *OrgI
 }
 
 func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitationServiceCreateRequest) (*pb.OrgInvitationServiceCreateResponse, error) {
-	user, err := requireCurrentUser(ctx)
+	user, _, err := requireCurrentUserOrAPIToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +49,17 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 		return nil, err
 	}
 
-	// Validations and rbac checks are done in the biz layer
-	i, err := s.useCase.Create(ctx, org.ID, user.ID, req.ReceiverEmail, biz.WithInvitationRole(biz.PbRoleToBiz(req.Role)))
+	opts := []biz.InvitationCreateOpt{biz.WithInvitationRole(biz.PbRoleToBiz(req.Role))}
+	if user != nil {
+		userID, err := uuid.Parse(user.ID)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+		opts = append(opts, biz.WithSender(userID))
+	}
+
+	// Validations are done in the biz layer
+	i, err := s.useCase.Create(ctx, org.ID, req.ReceiverEmail, opts...)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

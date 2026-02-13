@@ -50,6 +50,10 @@
     "description": {
       "type": "string"
     },
+    "fallback": {
+      "description": "Wether it's the fallback backend in the organization",
+      "type": "boolean"
+    },
     "id": {
       "type": "string"
     },

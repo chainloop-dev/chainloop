@@ -71,7 +71,7 @@ type OrgInvitationContext struct {
 }
 
 type OrgInvitationRepo interface {
-	Create(ctx context.Context, orgID, senderID uuid.UUID, receiverEmail string, role authz.Role, invCtx *OrgInvitationContext) (*OrgInvitation, error)
+	Create(ctx context.Context, orgID uuid.UUID, senderID *uuid.UUID, receiverEmail string, role authz.Role, invCtx *OrgInvitationContext) (*OrgInvitation, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*OrgInvitation, error)
 	PendingInvitation(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*OrgInvitation, error)
 	PendingInvitations(ctx context.Context, receiverEmail string) ([]*OrgInvitation, error)
@@ -88,8 +88,9 @@ func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo Us
 }
 
 type invitationCreateOpts struct {
-	role authz.Role
-	ctx  *OrgInvitationContext
+	role     authz.Role
+	ctx      *OrgInvitationContext
+	senderID *uuid.UUID
 }
 
 type InvitationCreateOpt func(*invitationCreateOpts)
@@ -108,7 +109,13 @@ func WithInvitationContext(ctx *OrgInvitationContext) InvitationCreateOpt {
 	}
 }
 
-func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, receiverEmail string, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
+func WithSender(senderID uuid.UUID) InvitationCreateOpt {
+	return func(o *invitationCreateOpts) {
+		o.senderID = &senderID
+	}
+}
+
+func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail string, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
 	receiverEmail = strings.ToLower(receiverEmail)
 
 	// 1 - Static Validation
@@ -135,29 +142,18 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	senderUUID, err := uuid.Parse(senderID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
 	// 2 - the sender exists and it's not the same than the receiver of the invitation
-	sender, err := uc.userRepo.FindByID(ctx, senderUUID)
-	if err != nil {
-		return nil, fmt.Errorf("error finding sender %s: %w", senderUUID.String(), err)
-	} else if sender == nil {
-		return nil, NewErrNotFound("sender")
-	}
+	if opts.senderID != nil {
+		sender, err := uc.userRepo.FindByID(ctx, *opts.senderID)
+		if err != nil {
+			return nil, fmt.Errorf("error finding sender %s: %w", opts.senderID.String(), err)
+		} else if sender == nil {
+			return nil, NewErrNotFound("sender")
+		}
 
-	if sender.Email == receiverEmail {
-		return nil, NewErrValidationStr("sender and receiver emails cannot be the same")
-	}
-
-	// 3 - Check that the user is a member of the given org
-	// NOTE: this check is not necessary, as the user is already a member of the org
-	if membership, err := uc.mRepo.FindByOrgAndUser(ctx, orgUUID, senderUUID); err != nil {
-		return nil, fmt.Errorf("failed to find memberships: %w", err)
-	} else if membership == nil {
-		return nil, NewErrNotFound("user does not have permission to invite to this org")
+		if sender.Email == receiverEmail {
+			return nil, NewErrValidationStr("sender and receiver emails cannot be the same")
+		}
 	}
 
 	// 4 - The receiver does exist in the org already
@@ -165,7 +161,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 		Email: &receiverEmail,
 	}, pagination.NewDefaultOffsetPaginationOpts())
 	if err != nil {
-		return nil, fmt.Errorf("error finding memberships for user %s: %w", senderUUID.String(), err)
+		return nil, fmt.Errorf("error finding memberships for user %s: %w", receiverEmail, err)
 	}
 
 	if membershipCount > 0 {
@@ -183,7 +179,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, senderID, rec
 	}
 
 	// 6 - Create the invitation
-	invitation, err := uc.repo.Create(ctx, orgUUID, senderUUID, receiverEmail, opts.role, opts.ctx)
+	invitation, err := uc.repo.Create(ctx, orgUUID, opts.senderID, receiverEmail, opts.role, opts.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error creating invitation: %w", err)
 	}

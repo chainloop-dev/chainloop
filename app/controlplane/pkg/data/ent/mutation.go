@@ -497,9 +497,22 @@ func (m *APITokenMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, 
 	return oldValue.OrganizationID, nil
 }
 
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (m *APITokenMutation) ClearOrganizationID() {
+	m.organization = nil
+	m.clearedFields[apitoken.FieldOrganizationID] = struct{}{}
+}
+
+// OrganizationIDCleared returns if the "organization_id" field was cleared in this mutation.
+func (m *APITokenMutation) OrganizationIDCleared() bool {
+	_, ok := m.clearedFields[apitoken.FieldOrganizationID]
+	return ok
+}
+
 // ResetOrganizationID resets all changes to the "organization_id" field.
 func (m *APITokenMutation) ResetOrganizationID() {
 	m.organization = nil
+	delete(m.clearedFields, apitoken.FieldOrganizationID)
 }
 
 // SetProjectID sets the "project_id" field.
@@ -624,7 +637,7 @@ func (m *APITokenMutation) ClearOrganization() {
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
 func (m *APITokenMutation) OrganizationCleared() bool {
-	return m.clearedorganization
+	return m.OrganizationIDCleared() || m.clearedorganization
 }
 
 // OrganizationIDs returns the "organization" edge IDs in the mutation.
@@ -899,6 +912,9 @@ func (m *APITokenMutation) ClearedFields() []string {
 	if m.FieldCleared(apitoken.FieldLastUsedAt) {
 		fields = append(fields, apitoken.FieldLastUsedAt)
 	}
+	if m.FieldCleared(apitoken.FieldOrganizationID) {
+		fields = append(fields, apitoken.FieldOrganizationID)
+	}
 	if m.FieldCleared(apitoken.FieldProjectID) {
 		fields = append(fields, apitoken.FieldProjectID)
 	}
@@ -930,6 +946,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 		return nil
 	case apitoken.FieldLastUsedAt:
 		m.ClearLastUsedAt()
+		return nil
+	case apitoken.FieldOrganizationID:
+		m.ClearOrganizationID()
 		return nil
 	case apitoken.FieldProjectID:
 		m.ClearProjectID()
@@ -8173,9 +8192,22 @@ func (m *OrgInvitationMutation) OldSenderID(ctx context.Context) (v uuid.UUID, e
 	return oldValue.SenderID, nil
 }
 
+// ClearSenderID clears the value of the "sender_id" field.
+func (m *OrgInvitationMutation) ClearSenderID() {
+	m.sender = nil
+	m.clearedFields[orginvitation.FieldSenderID] = struct{}{}
+}
+
+// SenderIDCleared returns if the "sender_id" field was cleared in this mutation.
+func (m *OrgInvitationMutation) SenderIDCleared() bool {
+	_, ok := m.clearedFields[orginvitation.FieldSenderID]
+	return ok
+}
+
 // ResetSenderID resets all changes to the "sender_id" field.
 func (m *OrgInvitationMutation) ResetSenderID() {
 	m.sender = nil
+	delete(m.clearedFields, orginvitation.FieldSenderID)
 }
 
 // SetRole sets the "role" field.
@@ -8311,7 +8343,7 @@ func (m *OrgInvitationMutation) ClearSender() {
 
 // SenderCleared reports if the "sender" edge to the User entity was cleared.
 func (m *OrgInvitationMutation) SenderCleared() bool {
-	return m.clearedsender
+	return m.SenderIDCleared() || m.clearedsender
 }
 
 // SenderIDs returns the "sender" edge IDs in the mutation.
@@ -8536,6 +8568,9 @@ func (m *OrgInvitationMutation) ClearedFields() []string {
 	if m.FieldCleared(orginvitation.FieldDeletedAt) {
 		fields = append(fields, orginvitation.FieldDeletedAt)
 	}
+	if m.FieldCleared(orginvitation.FieldSenderID) {
+		fields = append(fields, orginvitation.FieldSenderID)
+	}
 	if m.FieldCleared(orginvitation.FieldRole) {
 		fields = append(fields, orginvitation.FieldRole)
 	}
@@ -8558,6 +8593,9 @@ func (m *OrgInvitationMutation) ClearField(name string) error {
 	switch name {
 	case orginvitation.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case orginvitation.FieldSenderID:
+		m.ClearSenderID()
 		return nil
 	case orginvitation.FieldRole:
 		m.ClearRole()

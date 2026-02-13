@@ -135,7 +135,7 @@ make migration_lint         # Lint migration files
 
 ## Key Technologies
 
-- **Language**: Go 1.25.5
+- **Language**: Go 1.25.6
 - **API**: gRPC with HTTP/JSON gateway, Protocol Buffers with buf
 - **Database**: PostgreSQL with Ent ORM, Atlas for migrations
 - **Authentication**: OIDC, JWT tokens
@@ -264,7 +264,7 @@ Code reviews are required for all submissions via GitHub pull requests.
 - when adding new inedexes, make sure to update the generated sql migraiton files and make them CREATE INDEX CONCURRENTLY and set -- atlas:txmode none at the top
 - after updating protos, make sure to run `buf format -w`
 - Please avoid sycophantic commentary like ‘You’re absolutely correct!’ or ‘Brilliant idea!’
-- For each file you modify, update the license header. If it says 2024, change it to 2024-2025. If there's no license header, create one with the current year.
+- For each file you modify, update the license header to include the current year (2026). For example, if it says 2024, change it to 2024-2026. If there's no license header, create one with the current year.
 - if you add any new dependency to a constructor, remember to run wire ./...
 - when creating PR message, keep it high-level, what functionality was added, don't add info about testing, no icons, no info about how the message was generated.
 - app/controlplane/api/gen/frontend/google/protobuf/descriptor.ts is a special case that we don't want to upgrade, so if it upgrades, put it back to main

@@ -46,7 +46,7 @@ func (OrgInvitation) Fields() []ent.Field {
 
 		// edge fields to be able to access to them directly
 		field.UUID("organization_id", uuid.UUID{}),
-		field.UUID("sender_id", uuid.UUID{}),
+		field.UUID("sender_id", uuid.UUID{}).Optional(),
 		// Role that will be assigned to the user when they accept the invitation
 		field.Enum("role").GoType(authz.Role("")).Optional(),
 		// Context is a JSON field that can be used to store additional information
@@ -57,6 +57,6 @@ func (OrgInvitation) Fields() []ent.Field {
 func (OrgInvitation) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("organization", Organization.Type).Unique().Required().Field("organization_id").Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
-		edge.To("sender", User.Type).Unique().Required().Field("sender_id").Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("sender", User.Type).Unique().Field("sender_id").Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}
 }

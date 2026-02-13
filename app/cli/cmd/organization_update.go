@@ -29,6 +29,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		blockOnPolicyViolation          bool
 		policiesAllowedHostnames        []string
 		preventImplicitWorkflowCreation bool
+		restrictContractCreation        bool
 		apiTokenInactivityThreshold     string
 	)
 
@@ -47,6 +48,10 @@ func newOrganizationUpdateCmd() *cobra.Command {
 
 			if cmd.Flags().Changed("prevent-implicit-workflow-creation") {
 				opts.PreventImplicitWorkflowCreation = &preventImplicitWorkflowCreation
+			}
+
+			if cmd.Flags().Changed("restrict-contract-creation") {
+				opts.RestrictContractCreation = &restrictContractCreation
 			}
 
 			if cmd.Flags().Changed("api-token-inactivity-threshold") {
@@ -83,6 +88,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&blockOnPolicyViolation, "block", false, "set the default policy violation blocking strategy")
 	cmd.Flags().StringSliceVar(&policiesAllowedHostnames, "policies-allowed-hostnames", []string{}, "set the allowed hostnames for the policy engine")
 	cmd.Flags().BoolVar(&preventImplicitWorkflowCreation, "prevent-implicit-workflow-creation", false, "prevent workflows and projects from being created implicitly during attestation init")
-	cmd.Flags().StringVar(&apiTokenInactivityThreshold, "api-token-inactivity-threshold", "", "auto-revoke API tokens inactive for this duration (e.g. '720h' for 30 days, '0' to disable)")
+	cmd.Flags().BoolVar(&restrictContractCreation, "restrict-contract-creation", false, "restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)")
+	cmd.Flags().StringVar(&apiTokenInactivityThreshold, "api-token-inactivity-threshold", "", "auto-revoke API tokens inactive for this duration (e.g. '2160h' for 90 days, '0' to disable)")
 	return cmd
 }

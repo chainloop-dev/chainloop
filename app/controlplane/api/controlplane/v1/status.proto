@@ -46,6 +46,8 @@ message InfozResponse {
   string chart_version = 3;
   // Whether organization creation is restricted to admins
   bool restricted_org_creation = 4;
+  // Link to the platform UI, if available
+  string ui_dashboard_url = 5;
 }
 
 message StatuszResponse {}

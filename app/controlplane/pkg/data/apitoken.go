@@ -42,12 +42,12 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*biz.APIToken, error) {
 	token, err := r.data.DB.APIToken.Create().
 		SetName(name).
 		SetNillableDescription(description).
 		SetNillableExpiresAt(expiresAt).
-		SetOrganizationID(organizationID).
+		SetNillableOrganizationID(organizationID).
 		SetNillableProjectID(projectID).
 		SetPolicies(policies).
 		Save(ctx)
@@ -119,6 +119,8 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 		query = query.Where(apitoken.ProjectIDNotNil())
 	case biz.APITokenScopeGlobal:
 		query = query.Where(apitoken.ProjectIDIsNil())
+	case biz.APITokenScopeInstance:
+		query = query.Where(apitoken.OrganizationIDIsNil())
 	}
 
 	if !filters.IncludeRevoked {
@@ -138,11 +140,18 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	return result, nil
 }
 
-func (r *APITokenRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
+func (r *APITokenRepo) Revoke(ctx context.Context, orgID *uuid.UUID, id uuid.UUID) error {
 	// Update a token with id = id that has not been revoked yet and its orgID = orgID
-	err := r.data.DB.APIToken.UpdateOneID(id).
-		Where(apitoken.OrganizationIDEQ(orgID), apitoken.RevokedAtIsNil()).
-		SetRevokedAt(time.Now()).Exec(ctx)
+	update := r.data.DB.APIToken.UpdateOneID(id).
+		Where(apitoken.RevokedAtIsNil())
+
+	if orgID != nil {
+		update = update.Where(apitoken.OrganizationIDEQ(*orgID))
+	} else {
+		update = update.Where(apitoken.OrganizationIDIsNil())
+	}
+
+	err := update.SetRevokedAt(time.Now()).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return biz.NewErrNotFound("API token")

@@ -63,6 +63,7 @@ message CraftingSchema {
       CIRCLECI_BUILD = 5;
       DAGGER_PIPELINE = 6;
       TEAMCITY_PIPELINE = 7;
+      TEKTON_PIPELINE = 8;
     }
   }
 
@@ -146,6 +147,8 @@ message CraftingSchema {
       CHAINLOOP_RUNNER_CONTEXT = 25;
       // Pull Request / Merge Request metadata collected automatically during attestation
       CHAINLOOP_PR_INFO = 26;
+      // Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting
+      GITLEAKS_JSON = 27;
     }
   }
 }
@@ -320,10 +323,14 @@ message PolicyInput {
 message PolicySpecV2 {
   oneof source {
     // path to a policy script. It might consist of a URI reference
-    string path = 1;
+    // deprecated: use ref instead
+    string path = 1 [deprecated = true];
 
     // embedded source code (only Rego supported currently)
     string embedded = 2;
+
+    // generic reference for file:// and http(s):// schemes
+    string ref = 4;
 
     option (buf.validate.oneof).required = true;
   }
@@ -338,10 +345,14 @@ message PolicySpecV2 {
 message AutoMatch {
   oneof source {
     // path to a policy script. It might consist of a URI reference
-    string path = 1;
+    // deprecated: use ref instead
+    string path = 1 [deprecated = true];
 
     // embedded source code (only Rego supported currently)
     string embedded = 2;
+
+    // generic reference for file:// and http(s):// schemes
+    string ref = 3;
 
     option (buf.validate.oneof).required = true;
   }

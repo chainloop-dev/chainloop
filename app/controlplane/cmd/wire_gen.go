@@ -167,6 +167,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
 		WorkflowContractUC: workflowContractUseCase,
+		ProjectUC:          projectUseCase,
 		CredsReader:        readerWriter,
 		Opts:               v5,
 	}
@@ -203,6 +204,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		ProjectVersionUC:   projectVersionUseCase,
 		SigningUseCase:     signingUseCase,
 		UserUC:             userUseCase,
+		BootstrapConfig:    bootstrap,
 		Opts:               v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)

@@ -81,6 +81,7 @@ func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer E
 	}
 
 	// For users, use role-based enforcement via Casbin
+	// For tokens, check for specific policies in the database
 	for _, p := range policies {
 		ok, err := enforcer.Enforce(ctx, subject, p)
 		if err != nil {

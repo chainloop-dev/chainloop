@@ -12,6 +12,10 @@
     },
     "^(schemaV2)$": {
       "$ref": "workflowcontract.v1.CraftingSchemaV2.schema.json"
+    },
+    "^(uiDashboardUrl)$": {
+      "description": "External URL of the platform UI, if available",
+      "type": "string"
     }
   },
   "properties": {
@@ -26,6 +30,10 @@
     },
     "schema_v2": {
       "$ref": "workflowcontract.v1.CraftingSchemaV2.schema.json"
+    },
+    "ui_dashboard_url": {
+      "description": "External URL of the platform UI, if available",
+      "type": "string"
     }
   },
   "title": "Crafting State",

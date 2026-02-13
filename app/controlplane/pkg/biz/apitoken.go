@@ -59,9 +59,9 @@ type APIToken struct {
 }
 
 type APITokenRepo interface {
-	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*APIToken, error)
+	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*APIToken, error)
 	List(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error)
-	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
+	Revoke(ctx context.Context, orgID *uuid.UUID, ID uuid.UUID) error
 	// RevokeInactive bulk-revokes tokens in an organization that have been inactive since the given cutoff time.
 	// A token is considered inactive if its last_used_at (or created_at, if never used) is before inactiveSince.
 	// Returns the list of tokens that were revoked.
@@ -135,6 +135,7 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig,
 type apiTokenOptions struct {
 	project              *Project
 	showOnlySystemTokens bool
+	policies             []*authz.Policy
 }
 
 type APITokenCreateOpt func(*apiTokenOptions)
@@ -145,16 +146,34 @@ func APITokenWithProject(project *Project) APITokenCreateOpt {
 	}
 }
 
+func APITokenWithPolicies(policies []*authz.Policy) APITokenCreateOpt {
+	return func(o *apiTokenOptions) {
+		o.policies = policies
+	}
+}
+
 // expires in is a string that can be parsed by time.ParseDuration
-func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID string, opts ...APITokenCreateOpt) (*APIToken, error) {
+func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID *string, opts ...APITokenCreateOpt) (*APIToken, error) {
 	options := &apiTokenOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
 
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
+	// Parse organization ID if provided
+	var orgUUID *uuid.UUID
+	var org *Organization
+	if orgID != nil && *orgID != "" {
+		parsed, err := uuid.Parse(*orgID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+		orgUUID = &parsed
+
+		// Retrieve the organization
+		org, err = uc.orgUseCase.FindByID(ctx, *orgID)
+		if err != nil {
+			return nil, fmt.Errorf("finding organization: %w", err)
+		}
 	}
 
 	if name == "" {
@@ -174,22 +193,21 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		*expiresAt = time.Now().Add(*expiresIn)
 	}
 
-	// Retrieve the organization
-	org, err := uc.orgUseCase.FindByID(ctx, orgID)
-	if err != nil {
-		return nil, fmt.Errorf("finding organization: %w", err)
-	}
-
 	// If a project is provided, we store it in the token
 	var projectID *uuid.UUID
 	if options.project != nil {
 		projectID = ToPtr(options.project.ID)
 	}
 
+	// Use provided policies if present, otherwise use defaults
+	policies := options.policies
+	if policies == nil {
+		policies = uc.DefaultAuthzPolicies
+	}
+
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	// Pass default policies to be stored with the token
-	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID, uc.DefaultAuthzPolicies)
+	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID, policies)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr("name already taken")
@@ -198,11 +216,17 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	generationOpts := &apitoken.GenerateJWTOptions{
-		OrgID:     token.OrganizationID,
-		OrgName:   org.Name,
 		KeyID:     token.ID,
 		KeyName:   name,
 		ExpiresAt: expiresAt,
+	}
+
+	// Set org info if available or instance-level token scope
+	if org != nil {
+		generationOpts.OrgID = &token.OrganizationID
+		generationOpts.OrgName = &org.Name
+	} else {
+		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
 	if projectID != nil {
@@ -212,7 +236,6 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 
 	// generate the JWT
 	token.JWT, err = uc.jwtBuilder.GenerateJWT(generationOpts)
-
 	if err != nil {
 		return nil, fmt.Errorf("generating jwt: %w", err)
 	}
@@ -225,7 +248,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		},
 		APITokenDescription: description,
 		ExpiresAt:           expiresAt,
-	}, &orgUUID)
+	}, orgUUID)
 
 	return token, nil
 }
@@ -243,17 +266,24 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 		return nil, fmt.Errorf("finding token: %w", err)
 	}
 
-	org, err := uc.orgUseCase.FindByID(ctx, token.OrganizationID.String())
-	if err != nil {
-		return nil, fmt.Errorf("finding organization: %w", err)
-	}
-
 	generationOpts := &apitoken.GenerateJWTOptions{
-		OrgID:     token.OrganizationID,
-		OrgName:   org.Name,
 		KeyID:     token.ID,
 		KeyName:   token.Name,
 		ExpiresAt: &expiresAt,
+	}
+
+	// Check if this is an org-scoped or instance-level token
+	if token.OrganizationID != uuid.Nil {
+		// Org-scoped token
+		org, err := uc.orgUseCase.FindByID(ctx, token.OrganizationID.String())
+		if err != nil {
+			return nil, fmt.Errorf("finding organization: %w", err)
+		}
+		generationOpts.OrgID = &token.OrganizationID
+		generationOpts.OrgName = &org.Name
+	} else {
+		// Instance-level token
+		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
 	// generate the JWT
@@ -293,13 +323,15 @@ func WithAPITokenScope(scope APITokenScope) APITokenListOpt {
 type APITokenScope string
 
 const (
-	APITokenScopeProject APITokenScope = "project"
-	APITokenScopeGlobal  APITokenScope = "global"
+	APITokenScopeProject  APITokenScope = "project"
+	APITokenScopeGlobal   APITokenScope = "global"
+	APITokenScopeInstance APITokenScope = "instance"
 )
 
 var availableAPITokenScopes = []APITokenScope{
 	APITokenScopeProject,
 	APITokenScopeGlobal,
+	APITokenScopeInstance,
 }
 
 type APITokenListFilters struct {
@@ -322,18 +354,26 @@ func (uc *APITokenUseCase) List(ctx context.Context, orgID string, opts ...APITo
 		return nil, NewErrValidationStr(fmt.Sprintf("invalid scope %q, please chose one of: %v", filters.FilterByScope, availableAPITokenScopes))
 	}
 
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
+	var orgUUID *uuid.UUID
+	if orgID != "" {
+		parsed, err := uuid.Parse(orgID)
+		if err != nil {
+			return nil, NewErrInvalidUUID(err)
+		}
+		orgUUID = &parsed
 	}
 
-	return uc.apiTokenRepo.List(ctx, &orgUUID, filters)
+	return uc.apiTokenRepo.List(ctx, orgUUID, filters)
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
+	var orgUUID *uuid.UUID
+	if orgID != "" {
+		parsed, err := uuid.Parse(orgID)
+		if err != nil {
+			return NewErrInvalidUUID(err)
+		}
+		orgUUID = &parsed
 	}
 
 	tokenUUID, err := uuid.Parse(id)
@@ -356,7 +396,7 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 			APITokenID:   &tokenUUID,
 			APITokenName: token.Name,
 		},
-	}, &orgUUID)
+	}, orgUUID)
 
 	return nil
 }

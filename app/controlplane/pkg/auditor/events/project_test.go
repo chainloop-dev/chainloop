@@ -79,6 +79,21 @@ func TestProjectEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
+			name: "ProjectVersionUpdated",
+			event: &events.ProjectVersionUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+				VersionID:  &versionUUID,
+				Version:    "v1.0.0",
+				NewVersion: stringPtr("v1.0.1"),
+			},
+			expected: "testdata/projects/project_version_updated.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
 			name: "ProjectMembershipAdded",
 			event: &events.ProjectMembershipAdded{
 				ProjectBase: &events.ProjectBase{
@@ -352,4 +367,8 @@ func TestProjectEventsFailed(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.expectedErr)
 		})
 	}
+}
+
+func stringPtr(s string) *string {
+	return &s
 }

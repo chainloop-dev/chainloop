@@ -1080,6 +1080,7 @@ type PolicyEvaluation struct {
 	SkipReasons     []string           `protobuf:"bytes,13,rep,name=skip_reasons,json=skipReasons,proto3" json:"skip_reasons,omitempty"`
 	Requirements    []string           `protobuf:"bytes,14,rep,name=requirements,proto3" json:"requirements,omitempty"`
 	GroupReference  *PolicyReference   `protobuf:"bytes,15,opt,name=group_reference,json=groupReference,proto3" json:"group_reference,omitempty"`
+	Gate            bool               `protobuf:"varint,16,opt,name=gate,proto3" json:"gate,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1211,6 +1212,13 @@ func (x *PolicyEvaluation) GetGroupReference() *PolicyReference {
 		return x.GroupReference
 	}
 	return nil
+}
+
+func (x *PolicyEvaluation) GetGate() bool {
+	if x != nil {
+		return x.Gate
+	}
+	return false
 }
 
 type PolicyViolation struct {
@@ -1709,6 +1717,7 @@ type User struct {
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	FirstName     string                 `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName      string                 `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	InstanceAdmin bool                   `protobuf:"varint,7,opt,name=instance_admin,json=instanceAdmin,proto3" json:"instance_admin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1783,6 +1792,13 @@ func (x *User) GetLastName() string {
 		return x.LastName
 	}
 	return ""
+}
+
+func (x *User) GetInstanceAdmin() bool {
+	if x != nil {
+		return x.InstanceAdmin
+	}
+	return false
 }
 
 type OrgMembershipItem struct {
@@ -2010,8 +2026,10 @@ type CASBackendItem struct {
 	// Error message if validation failed
 	ValidationError *string                `protobuf:"bytes,12,opt,name=validation_error,json=validationError,proto3,oneof" json:"validation_error,omitempty"`
 	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Wether it's the fallback backend in the organization
+	Fallback      bool `protobuf:"varint,14,opt,name=fallback,proto3" json:"fallback,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CASBackendItem) Reset() {
@@ -2135,6 +2153,13 @@ func (x *CASBackendItem) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *CASBackendItem) GetFallback() bool {
+	if x != nil {
+		return x.Fallback
+	}
+	return false
+}
+
 type APITokenItem struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2253,13 +2278,14 @@ func (x *APITokenItem) GetLastUsedAt() *timestamppb.Timestamp {
 }
 
 type AttestationItem_PolicyEvaluationStatus struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Strategy      string                 `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Bypassed      bool                   `protobuf:"varint,2,opt,name=bypassed,proto3" json:"bypassed,omitempty"`
-	Blocked       bool                   `protobuf:"varint,3,opt,name=blocked,proto3" json:"blocked,omitempty"`
-	HasViolations bool                   `protobuf:"varint,4,opt,name=has_violations,json=hasViolations,proto3" json:"has_violations,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Strategy           string                 `protobuf:"bytes,1,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	Bypassed           bool                   `protobuf:"varint,2,opt,name=bypassed,proto3" json:"bypassed,omitempty"`
+	Blocked            bool                   `protobuf:"varint,3,opt,name=blocked,proto3" json:"blocked,omitempty"`
+	HasViolations      bool                   `protobuf:"varint,4,opt,name=has_violations,json=hasViolations,proto3" json:"has_violations,omitempty"`
+	HasGatedViolations bool                   `protobuf:"varint,5,opt,name=has_gated_violations,json=hasGatedViolations,proto3" json:"has_gated_violations,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *AttestationItem_PolicyEvaluationStatus) Reset() {
@@ -2316,6 +2342,13 @@ func (x *AttestationItem_PolicyEvaluationStatus) GetBlocked() bool {
 func (x *AttestationItem_PolicyEvaluationStatus) GetHasViolations() bool {
 	if x != nil {
 		return x.HasViolations
+	}
+	return false
+}
+
+func (x *AttestationItem_PolicyEvaluationStatus) GetHasGatedViolations() bool {
+	if x != nil {
+		return x.HasGatedViolations
 	}
 	return false
 }
@@ -2634,7 +2667,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12;\n" +
 	"\vreleased_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"releasedAt\"\xb1\n" +
+	"releasedAt\"\xe3\n" +
 	"\n" +
 	"\x0fAttestationItem\x12\x1e\n" +
 	"\benvelope\x18\x03 \x01(\fB\x02\x18\x01R\benvelope\x12\x16\n" +
@@ -2651,12 +2684,13 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1ah\n" +
 	"\x16PolicyEvaluationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x128\n" +
-	"\x05value\x18\x02 \x01(\v2\".controlplane.v1.PolicyEvaluationsR\x05value:\x028\x01\x1a\x91\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\".controlplane.v1.PolicyEvaluationsR\x05value:\x028\x01\x1a\xc3\x01\n" +
 	"\x16PolicyEvaluationStatus\x12\x1a\n" +
 	"\bstrategy\x18\x01 \x01(\tR\bstrategy\x12\x1a\n" +
 	"\bbypassed\x18\x02 \x01(\bR\bbypassed\x12\x18\n" +
 	"\ablocked\x18\x03 \x01(\bR\ablocked\x12%\n" +
-	"\x0ehas_violations\x18\x04 \x01(\bR\rhasViolations\x1a7\n" +
+	"\x0ehas_violations\x18\x04 \x01(\bR\rhasViolations\x120\n" +
+	"\x14has_gated_violations\x18\x05 \x01(\bR\x12hasGatedViolations\x1a7\n" +
 	"\vEnvVariable\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\x1a\xf9\x02\n" +
@@ -2674,7 +2708,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
 	"\x11PolicyEvaluations\x12C\n" +
-	"\vevaluations\x18\x01 \x03(\v2!.controlplane.v1.PolicyEvaluationR\vevaluations\"\xfe\x05\n" +
+	"\vevaluations\x18\x01 \x03(\v2!.controlplane.v1.PolicyEvaluationR\vevaluations\"\x92\x06\n" +
 	"\x10PolicyEvaluation\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\rmaterial_name\x18\x02 \x01(\tR\fmaterialName\x12\x16\n" +
@@ -2692,7 +2726,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\askipped\x18\f \x01(\bR\askipped\x12!\n" +
 	"\fskip_reasons\x18\r \x03(\tR\vskipReasons\x12\"\n" +
 	"\frequirements\x18\x0e \x03(\tR\frequirements\x12I\n" +
-	"\x0fgroup_reference\x18\x0f \x01(\v2 .controlplane.v1.PolicyReferenceR\x0egroupReference\x1a>\n" +
+	"\x0fgroup_reference\x18\x0f \x01(\v2 .controlplane.v1.PolicyReferenceR\x0egroupReference\x12\x12\n" +
+	"\x04gate\x18\x10 \x01(\bR\x04gate\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
@@ -2752,7 +2787,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
 	"FORMAT_CUE\x10\x03B\n" +
 	"\n" +
-	"\bcontract\"\xde\x01\n" +
+	"\bcontract\"\x85\x02\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x129\n" +
@@ -2762,7 +2797,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x04 \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\x05 \x01(\tR\blastName\"\xbf\x02\n" +
+	"\tlast_name\x18\x05 \x01(\tR\blastName\x12%\n" +
+	"\x0einstance_admin\x18\a \x01(\bR\rinstanceAdmin\"\xbf\x02\n" +
 	"\x11OrgMembershipItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\x03org\x18\x02 \x01(\v2\x18.controlplane.v1.OrgItemR\x03org\x12)\n" +
@@ -2789,7 +2825,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	".POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED\x10\x00\x12,\n" +
 	"(POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK\x10\x01\x12/\n" +
 	"+POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY\x10\x02B!\n" +
-	"\x1f_api_token_inactivity_threshold\"\xf5\x05\n" +
+	"\x1f_api_token_inactivity_threshold\"\x91\x06\n" +
 	"\x0eCASBackendItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x1a\n" +
@@ -2806,7 +2842,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	" \x01(\bR\bisInline\x12.\n" +
 	"\x10validation_error\x18\f \x01(\tH\x00R\x0fvalidationError\x88\x01\x01\x129\n" +
 	"\n" +
-	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x1a%\n" +
+	"updated_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
+	"\bfallback\x18\x0e \x01(\bR\bfallback\x1a%\n" +
 	"\x06Limits\x12\x1b\n" +
 	"\tmax_bytes\x18\x01 \x01(\x03R\bmaxBytes\"n\n" +
 	"\x10ValidationStatus\x12!\n" +

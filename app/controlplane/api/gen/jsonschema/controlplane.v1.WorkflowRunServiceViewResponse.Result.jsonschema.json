@@ -3,6 +3,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(org_name)$": {
+      "type": "string"
+    },
     "^(workflow_run)$": {
       "$ref": "controlplane.v1.WorkflowRunItem.jsonschema.json"
     }
@@ -10,6 +13,9 @@
   "properties": {
     "attestation": {
       "$ref": "controlplane.v1.AttestationItem.jsonschema.json"
+    },
+    "orgName": {
+      "type": "string"
     },
     "verification": {
       "$ref": "controlplane.v1.WorkflowRunServiceViewResponse.VerificationResult.jsonschema.json",

@@ -33,6 +33,7 @@ type APIToken struct {
 	ProjectName *string
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
+	Scope    string
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {
