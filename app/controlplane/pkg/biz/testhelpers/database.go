@@ -90,6 +90,7 @@ type TestingRepos struct {
 	OrganizationRepo  biz.OrganizationRepo
 	GroupRepo         biz.GroupRepo
 	OrgInvitationRepo biz.OrgInvitationRepo
+	APITokenRepo      biz.APITokenRepo
 }
 
 type newTestingOpts struct {
