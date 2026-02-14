@@ -56,6 +56,10 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 			orgInfo += fmt.Sprintf("\nPolicy allowed hostnames: %v", strings.Join(m.Org.PolicyAllowedHostnames, ", "))
 		}
 
+		if m.Org.APITokenMaxDaysInactive != nil {
+			orgInfo += fmt.Sprintf("\nAPI token auto-revoke after: %s days inactive", *m.Org.APITokenMaxDaysInactive)
+		}
+
 		gt.AppendRow(table.Row{"Organization", orgInfo})
 	}
 
