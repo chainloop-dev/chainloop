@@ -331,10 +331,6 @@ func (_c *OrganizationCreate) defaults() {
 		v := organization.DefaultRestrictContractCreationToOrgAdmins
 		_c.mutation.SetRestrictContractCreationToOrgAdmins(v)
 	}
-	if _, ok := _c.mutation.APITokenInactivityThresholdDays(); !ok {
-		v := organization.DefaultAPITokenInactivityThresholdDays
-		_c.mutation.SetAPITokenInactivityThresholdDays(v)
-	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		_c.mutation.SetID(v)

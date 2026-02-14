@@ -144,8 +144,6 @@ var (
 	DefaultPreventImplicitWorkflowCreation bool
 	// DefaultRestrictContractCreationToOrgAdmins holds the default value on creation for the "restrict_contract_creation_to_org_admins" field.
 	DefaultRestrictContractCreationToOrgAdmins bool
-	// DefaultAPITokenInactivityThresholdDays holds the default value on creation for the "api_token_inactivity_threshold_days" field.
-	DefaultAPITokenInactivityThresholdDays int
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
