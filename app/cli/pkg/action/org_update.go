@@ -18,7 +18,6 @@ package action
 import (
 	"context"
 	"fmt"
-	"math"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
@@ -58,8 +57,8 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 
 	if opts.APITokenMaxDaysInactive != nil {
 		v := *opts.APITokenMaxDaysInactive
-		if v < 0 || v > math.MaxInt32 {
-			return nil, fmt.Errorf("api_token_max_days_inactive must be between 0 and %d", math.MaxInt32)
+		if v < 0 || v > 365 {
+			return nil, fmt.Errorf("api_token_max_days_inactive must be between 0 and 365")
 		}
 		days := int32(v)
 		payload.ApiTokenMaxDaysInactive = &days

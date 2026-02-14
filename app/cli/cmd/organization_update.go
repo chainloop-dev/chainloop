@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -60,8 +59,8 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("invalid value %q: must be a number of days (0 to disable)", apiTokenMaxDaysInactive)
 				}
-				if days < 0 || days > math.MaxInt32 {
-					return fmt.Errorf("api-token-max-days-inactive must be between 0 (disabled) and %d", math.MaxInt32)
+				if days < 0 || days > 365 {
+					return fmt.Errorf("api-token-max-days-inactive must be between 0 (disabled) and 365")
 				}
 				opts.APITokenMaxDaysInactive = &days
 			}

@@ -95,8 +95,8 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 	var apiTokenMaxDaysInactive *int
 	if req.ApiTokenMaxDaysInactive != nil {
 		days := int(req.GetApiTokenMaxDaysInactive())
-		if days < 0 {
-			return nil, errors.BadRequest("invalid", "api_token_max_days_inactive must be non-negative")
+		if days < 0 || days > 365 {
+			return nil, errors.BadRequest("invalid", "api_token_max_days_inactive must be between 0 and 365")
 		}
 		apiTokenMaxDaysInactive = &days
 	}
