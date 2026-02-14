@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package action
 
 import (
 	"context"
+	"fmt"
+	"math"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
@@ -55,7 +57,11 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 	}
 
 	if opts.APITokenMaxDaysInactive != nil {
-		days := int32(*opts.APITokenMaxDaysInactive)
+		v := *opts.APITokenMaxDaysInactive
+		if v < 0 || v > math.MaxInt32 {
+			return nil, fmt.Errorf("api_token_max_days_inactive must be between 0 and %d", math.MaxInt32)
+		}
+		days := int32(v)
 		payload.ApiTokenMaxDaysInactive = &days
 	}
 

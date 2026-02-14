@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -59,8 +60,8 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("invalid value %q: must be a number of days (0 to disable)", apiTokenMaxDaysInactive)
 				}
-				if days < 0 {
-					return fmt.Errorf("api-token-max-days-inactive must be 0 (disabled) or a positive number of days")
+				if days < 0 || days > math.MaxInt32 {
+					return fmt.Errorf("api-token-max-days-inactive must be between 0 (disabled) and %d", math.MaxInt32)
 				}
 				opts.APITokenMaxDaysInactive = &days
 			}
