@@ -345,7 +345,9 @@ func (_c *OrganizationRepo_FindWithTokenInactivityThreshold_Call) Run(run func(c
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		run(arg0)
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
