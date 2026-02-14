@@ -1,6 +1,6 @@
 module github.com/chainloop-dev/chainloop
 
-go 1.25.6
+go 1.26.0
 
 require (
 	cloud.google.com/go/secretmanager v1.16.0
@@ -99,6 +99,7 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	github.com/zricethezav/gitleaks/v8 v8.30.0
 	gitlab.com/gitlab-org/security-products/analyzers/report/v5 v5.3.0
+	go.step.sm/crypto v0.75.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20251222181119-0a764e51fe1b
 )
@@ -302,7 +303,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
-	go.step.sm/crypto v0.75.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
@@ -349,7 +349,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fsouza/fake-gcs-server v1.47.6
-	github.com/go-git/go-git/v5 v5.16.0
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/go-kratos/aegis v0.2.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

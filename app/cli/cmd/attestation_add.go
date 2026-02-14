@@ -209,7 +209,7 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 		mt.AppendRow(table.Row{"Policy evaluations", "------"})
 	}
 
-	policiesTable(policyEvaluations, mt)
+	policiesTable(policyEvaluations, mt, flagDebug)
 	mt.SetStyle(table.StyleLight)
 	mt.Style().Options.SeparateRows = true
 	mt.Render()

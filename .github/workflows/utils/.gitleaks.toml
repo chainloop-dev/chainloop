@@ -1,0 +1,11 @@
+title = "Gitleaks config"
+
+[extend]
+useDefault = true
+
+# Ignore test files and test directories
+[[allowlists]]
+paths = [
+  '''.*_test\..*''',                    # Test files
+  '''(^|/)testdata/.*''',               # Testdata directories
+]

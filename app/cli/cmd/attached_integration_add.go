@@ -48,10 +48,10 @@ func newAttachedIntegrationAttachCmd() *cobra.Command {
 			}
 
 			// Parse and validate options
-			opts, err := parseAndValidateOpts(options, item.Attachment)
+			opts, err := ParseAndValidateOpts(options, item.Attachment)
 			if err != nil {
 				// Show schema table if validation fails
-				if err := renderSchemaTable("Available options", item.Attachment.Properties); err != nil {
+				if err := RenderSchemaTable("Available options", item.Attachment.Properties); err != nil {
 					return err
 				}
 				return err

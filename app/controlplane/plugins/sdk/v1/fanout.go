@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -138,7 +138,12 @@ type NewParams struct {
 func NewFanOut(p *NewParams, opts ...NewOpt) (*FanOutIntegration, error) {
 	base, err := NewIntegrationBase(
 		&IntegrationBaseOptions{
-			p.ID, p.Name, p.Version, p.Description, []string{IntegrationKindFanOut}, p.InputSchema,
+			ID:          p.ID,
+			Name:        p.Name,
+			Version:     p.Version,
+			Description: p.Description,
+			Kinds:       []string{IntegrationKindFanOut},
+			Schema:      p.InputSchema,
 		},
 	)
 	if err != nil {
