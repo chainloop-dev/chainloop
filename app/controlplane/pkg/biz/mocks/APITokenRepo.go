@@ -355,6 +355,80 @@ func (_c *APITokenRepo_FindByNameInOrg_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
+// FindInactive provides a mock function for the type APITokenRepo
+func (_mock *APITokenRepo) FindInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error) {
+	ret := _mock.Called(ctx, orgID, inactiveSince)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindInactive")
+	}
+
+	var r0 []*biz.APIToken
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, time.Time) ([]*biz.APIToken, error)); ok {
+		return returnFunc(ctx, orgID, inactiveSince)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, time.Time) []*biz.APIToken); ok {
+		r0 = returnFunc(ctx, orgID, inactiveSince)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*biz.APIToken)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, time.Time) error); ok {
+		r1 = returnFunc(ctx, orgID, inactiveSince)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// APITokenRepo_FindInactive_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindInactive'
+type APITokenRepo_FindInactive_Call struct {
+	*mock.Call
+}
+
+// FindInactive is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID uuid.UUID
+//   - inactiveSince time.Time
+func (_e *APITokenRepo_Expecter) FindInactive(ctx interface{}, orgID interface{}, inactiveSince interface{}) *APITokenRepo_FindInactive_Call {
+	return &APITokenRepo_FindInactive_Call{Call: _e.mock.On("FindInactive", ctx, orgID, inactiveSince)}
+}
+
+func (_c *APITokenRepo_FindInactive_Call) Run(run func(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time)) *APITokenRepo_FindInactive_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 time.Time
+		if args[2] != nil {
+			arg2 = args[2].(time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *APITokenRepo_FindInactive_Call) Return(aPITokens []*biz.APIToken, err error) *APITokenRepo_FindInactive_Call {
+	_c.Call.Return(aPITokens, err)
+	return _c
+}
+
+func (_c *APITokenRepo_FindInactive_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error)) *APITokenRepo_FindInactive_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // List provides a mock function for the type APITokenRepo
 func (_mock *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.APITokenListFilters) ([]*biz.APIToken, error) {
 	ret := _mock.Called(ctx, orgID, filters)
@@ -488,80 +562,6 @@ func (_c *APITokenRepo_Revoke_Call) Return(err error) *APITokenRepo_Revoke_Call 
 }
 
 func (_c *APITokenRepo_Revoke_Call) RunAndReturn(run func(ctx context.Context, orgID *uuid.UUID, ID uuid.UUID) error) *APITokenRepo_Revoke_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// RevokeInactive provides a mock function for the type APITokenRepo
-func (_mock *APITokenRepo) RevokeInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error) {
-	ret := _mock.Called(ctx, orgID, inactiveSince)
-
-	if len(ret) == 0 {
-		panic("no return value specified for RevokeInactive")
-	}
-
-	var r0 []*biz.APIToken
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, time.Time) ([]*biz.APIToken, error)); ok {
-		return returnFunc(ctx, orgID, inactiveSince)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, time.Time) []*biz.APIToken); ok {
-		r0 = returnFunc(ctx, orgID, inactiveSince)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*biz.APIToken)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, time.Time) error); ok {
-		r1 = returnFunc(ctx, orgID, inactiveSince)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// APITokenRepo_RevokeInactive_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RevokeInactive'
-type APITokenRepo_RevokeInactive_Call struct {
-	*mock.Call
-}
-
-// RevokeInactive is a helper method to define mock.On call
-//   - ctx context.Context
-//   - orgID uuid.UUID
-//   - inactiveSince time.Time
-func (_e *APITokenRepo_Expecter) RevokeInactive(ctx interface{}, orgID interface{}, inactiveSince interface{}) *APITokenRepo_RevokeInactive_Call {
-	return &APITokenRepo_RevokeInactive_Call{Call: _e.mock.On("RevokeInactive", ctx, orgID, inactiveSince)}
-}
-
-func (_c *APITokenRepo_RevokeInactive_Call) Run(run func(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time)) *APITokenRepo_RevokeInactive_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 uuid.UUID
-		if args[1] != nil {
-			arg1 = args[1].(uuid.UUID)
-		}
-		var arg2 time.Time
-		if args[2] != nil {
-			arg2 = args[2].(time.Time)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *APITokenRepo_RevokeInactive_Call) Return(aPITokens []*biz.APIToken, err error) *APITokenRepo_RevokeInactive_Call {
-	_c.Call.Return(aPITokens, err)
-	return _c
-}
-
-func (_c *APITokenRepo_RevokeInactive_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error)) *APITokenRepo_RevokeInactive_Call {
 	_c.Call.Return(run)
 	return _c
 }

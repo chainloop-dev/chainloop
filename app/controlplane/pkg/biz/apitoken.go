@@ -62,10 +62,9 @@ type APITokenRepo interface {
 	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*APIToken, error)
 	List(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID *uuid.UUID, ID uuid.UUID) error
-	// RevokeInactive bulk-revokes tokens in an organization that have been inactive since the given cutoff time.
+	// FindInactive returns tokens in an organization that have been inactive since the given cutoff time.
 	// A token is considered inactive if its last_used_at (or created_at, if never used) is before inactiveSince.
-	// Returns the list of tokens that were revoked.
-	RevokeInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*APIToken, error)
+	FindInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*APIToken, error)
 	UpdateExpiration(ctx context.Context, ID uuid.UUID, expiresAt time.Time) error
 	UpdateLastUsedAt(ctx context.Context, ID uuid.UUID, lastUsedAt time.Time) error
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)

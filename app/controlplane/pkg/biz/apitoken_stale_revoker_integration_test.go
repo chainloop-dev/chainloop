@@ -46,7 +46,7 @@ func (s *staleRevokerTestSuite) SetupTest() {
 	ctx := context.Background()
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t)
-	s.revoker = biz.NewAPITokenStaleRevoker(s.Repos.OrganizationRepo, s.Repos.APITokenRepo, s.L)
+	s.revoker = biz.NewAPITokenStaleRevoker(s.Repos.OrganizationRepo, s.Repos.APITokenRepo, s.APIToken, s.L)
 
 	var err error
 	s.user, err = s.User.UpsertByEmail(ctx, "revoker-test@test.com", nil)

@@ -32,6 +32,7 @@ type APITokenStaleRevoker struct {
 	logger    *log.Helper
 	orgRepo   OrganizationRepo
 	tokenRepo APITokenRepo
+	tokenUC   *APITokenUseCase
 }
 
 // APITokenStaleRevokerOpts configures the sweeper's behavior.
@@ -43,11 +44,12 @@ type APITokenStaleRevokerOpts struct {
 }
 
 // NewAPITokenStaleRevoker creates a new stale token revoker.
-func NewAPITokenStaleRevoker(orgRepo OrganizationRepo, tokenRepo APITokenRepo, logger log.Logger) *APITokenStaleRevoker {
+func NewAPITokenStaleRevoker(orgRepo OrganizationRepo, tokenRepo APITokenRepo, tokenUC *APITokenUseCase, logger log.Logger) *APITokenStaleRevoker {
 	return &APITokenStaleRevoker{
 		logger:    log.NewHelper(log.With(logger, "component", "biz/APITokenStaleRevoker")),
 		orgRepo:   orgRepo,
 		tokenRepo: tokenRepo,
+		tokenUC:   tokenUC,
 	}
 }
 
@@ -122,16 +124,25 @@ func (r *APITokenStaleRevoker) Sweep(ctx context.Context) error {
 		}
 
 		cutoff := now.Add(-time.Duration(*org.APITokenInactivityThresholdDays) * 24 * time.Hour)
-		revoked, err := r.tokenRepo.RevokeInactive(ctx, orgID, cutoff)
+		staleTokens, err := r.tokenRepo.FindInactive(ctx, orgID, cutoff)
 		if err != nil {
-			r.logger.Errorf("revoking stale tokens for org %s (%s): %v", org.Name, org.ID, err)
+			r.logger.Errorf("finding stale tokens for org %s (%s): %v", org.Name, org.ID, err)
 			continue
 		}
 
-		if len(revoked) > 0 {
+		var revokedCount int
+		for _, token := range staleTokens {
+			if err := r.tokenUC.Revoke(ctx, org.ID, token.ID.String()); err != nil {
+				r.logger.Errorf("revoking token %s in org %s: %v", token.ID, org.ID, err)
+				continue
+			}
+			revokedCount++
+		}
+
+		if revokedCount > 0 {
 			r.logger.Infow("msg", "revoked stale API tokens",
 				"org", org.Name, "orgID", org.ID,
-				"count", len(revoked),
+				"count", revokedCount,
 				"thresholdDays", *org.APITokenInactivityThresholdDays,
 			)
 		}

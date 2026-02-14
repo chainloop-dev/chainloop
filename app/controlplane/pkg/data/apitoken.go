@@ -163,11 +163,8 @@ func (r *APITokenRepo) Revoke(ctx context.Context, orgID *uuid.UUID, id uuid.UUI
 	return nil
 }
 
-// RevokeInactive bulk-revokes tokens that have been inactive since the given cutoff.
-func (r *APITokenRepo) RevokeInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error) {
-	now := time.Now()
-
-	// Find matching tokens: not revoked, and inactive since the cutoff
+// FindInactive returns tokens that have been inactive since the given cutoff.
+func (r *APITokenRepo) FindInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error) {
 	// A token is inactive if last_used_at < inactiveSince (when used before),
 	// or created_at < inactiveSince (when never used).
 	tokens, err := r.data.DB.APIToken.Query().
@@ -186,25 +183,6 @@ func (r *APITokenRepo) RevokeInactive(ctx context.Context, orgID uuid.UUID, inac
 		return nil, fmt.Errorf("querying inactive tokens: %w", err)
 	}
 
-	if len(tokens) == 0 {
-		return nil, nil
-	}
-
-	// Collect IDs for bulk update
-	ids := make([]uuid.UUID, 0, len(tokens))
-	for _, t := range tokens {
-		ids = append(ids, t.ID)
-	}
-
-	// Bulk revoke
-	if err := r.data.DB.APIToken.Update().
-		Where(apitoken.IDIn(ids...)).
-		SetRevokedAt(now).
-		Exec(ctx); err != nil {
-		return nil, fmt.Errorf("bulk revoking inactive tokens: %w", err)
-	}
-
-	// Return the revoked tokens
 	result := make([]*biz.APIToken, 0, len(tokens))
 	for _, t := range tokens {
 		result = append(result, entAPITokenToBiz(t))
