@@ -132,6 +132,6 @@ modules:
         - FIELD_SAME_DEFAULT
 deps:
   - buf.build/bufbuild/protovalidate:v1.1.0
-  - buf.build/googleapis/googleapis:4ed3bc159a8b4ac68fe253218760d035
+  - buf.build/googleapis/googleapis:4ed3bc159a8b4ac68fe253218760d035 # gitleaks:allow
   - buf.build/grpc-ecosystem/grpc-gateway:v2.26.3
   - buf.build/kratos-go/kratos:e1d52e944e3845c6862a566db322432d
