@@ -415,7 +415,7 @@ var (
 	// It can be overridden by the user if they want to use their own instance of Posthog or deactivated by setting
 	// DO_NOT_TRACK=1 more information that can be found at: https://github.com/chainloop-dev/chainloop/blob/main/docs/docs/reference/operator/cli-telemetry.mdx
 	// nolint:gosec
-	posthogAPIKey   = "phc_TWWW19kEiD6sEejlHKWcICQ5Vc06vZUTYia8WdPB0A0"
+	posthogAPIKey   = "phc_TWWW19kEiD6sEejlHKWcICQ5Vc06vZUTYia8WdPB0A0" // gitleaks:allow
 	posthogEndpoint = "https://crb.chainloop.dev"
 )
 
