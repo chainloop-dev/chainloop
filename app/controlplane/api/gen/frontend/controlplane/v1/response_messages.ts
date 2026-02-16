@@ -589,6 +589,7 @@ export interface User {
   updatedAt?: Date;
   firstName: string;
   lastName: string;
+  instanceAdmin: boolean;
 }
 
 export interface OrgMembershipItem {
@@ -3514,7 +3515,15 @@ export const WorkflowContractVersionItem_RawBody = {
 };
 
 function createBaseUser(): User {
-  return { id: "", email: "", createdAt: undefined, updatedAt: undefined, firstName: "", lastName: "" };
+  return {
+    id: "",
+    email: "",
+    createdAt: undefined,
+    updatedAt: undefined,
+    firstName: "",
+    lastName: "",
+    instanceAdmin: false,
+  };
 }
 
 export const User = {
@@ -3536,6 +3545,9 @@ export const User = {
     }
     if (message.lastName !== "") {
       writer.uint32(42).string(message.lastName);
+    }
+    if (message.instanceAdmin === true) {
+      writer.uint32(56).bool(message.instanceAdmin);
     }
     return writer;
   },
@@ -3589,6 +3601,13 @@ export const User = {
 
           message.lastName = reader.string();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.instanceAdmin = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3606,6 +3625,7 @@ export const User = {
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
       firstName: isSet(object.firstName) ? String(object.firstName) : "",
       lastName: isSet(object.lastName) ? String(object.lastName) : "",
+      instanceAdmin: isSet(object.instanceAdmin) ? Boolean(object.instanceAdmin) : false,
     };
   },
 
@@ -3617,6 +3637,7 @@ export const User = {
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     message.firstName !== undefined && (obj.firstName = message.firstName);
     message.lastName !== undefined && (obj.lastName = message.lastName);
+    message.instanceAdmin !== undefined && (obj.instanceAdmin = message.instanceAdmin);
     return obj;
   },
 
@@ -3632,6 +3653,7 @@ export const User = {
     message.updatedAt = object.updatedAt ?? undefined;
     message.firstName = object.firstName ?? "";
     message.lastName = object.lastName ?? "";
+    message.instanceAdmin = object.instanceAdmin ?? false;
     return message;
   },
 };

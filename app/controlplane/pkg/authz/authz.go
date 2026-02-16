@@ -63,6 +63,7 @@ const (
 	ResourceAPIToken                = "api_token"
 	ResourceProjectMembership       = "project_membership"
 	ResourceOrganizationInvitations = "organization_invitations"
+	ResourceDefaultBackend          = "default_backend"
 
 	// Top level instance admin role
 	// this is used to know if an user is a super admin of the chainloop instance
@@ -107,6 +108,8 @@ var (
 	// Artifact
 	PolicyArtifactDownload = &Policy{ResourceCASArtifact, ActionRead}
 	PolicyArtifactUpload   = &Policy{ResourceCASArtifact, ActionCreate}
+	// Being able to read from the default backend
+	PolicyDefaultBackendArtifactRead = &Policy{ResourceDefaultBackend, ActionRead}
 	// CAS backend
 	PolicyCASBackendList   = &Policy{ResourceCASBackend, ActionList}
 	PolicyCASBackendUpdate = &Policy{ResourceCASBackend, ActionUpdate}
@@ -198,6 +201,8 @@ var RolesMap = map[Role][]*Policy{
 		PolicyArtifactUpload,
 		// We manually check this policy to be able to know if the user can invite users to the system
 		PolicyOrganizationInvitationsCreate,
+		// Being able to read from the default backend
+		PolicyDefaultBackendArtifactRead,
 		// + all the policies from the viewer role inherited automatically
 	},
 	// RoleViewer is an org-scoped role that provides read-only access to all resources

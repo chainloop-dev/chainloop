@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,11 +37,12 @@ type ConfigContextItem struct {
 }
 
 type UserItem struct {
-	ID        string     `json:"id"`
-	Email     string     `json:"email"`
-	FirstName string     `json:"firstName"`
-	LastName  string     `json:"lastName"`
-	CreatedAt *time.Time `json:"createdAt"`
+	ID            string     `json:"id"`
+	Email         string     `json:"email"`
+	FirstName     string     `json:"firstName"`
+	LastName      string     `json:"lastName"`
+	CreatedAt     *time.Time `json:"createdAt"`
+	InstanceAdmin bool       `json:"instanceAdmin,omitempty"`
 }
 
 // PrintUserProfileWithEmail formats the user's profile with their email.
@@ -58,11 +59,19 @@ func (u *UserItem) PrintUserProfileWithEmail() string {
 		name = u.LastName
 	}
 
+	var result string
 	// If we have a name, format with email, otherwise just return email
 	if name != "" {
-		return name + " <" + u.Email + ">"
+		result = name + " <" + u.Email + ">"
+	} else {
+		result = u.Email
 	}
-	return u.Email
+
+	if u.InstanceAdmin {
+		result += " (Instance admin)"
+	}
+
+	return result
 }
 
 func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
@@ -87,10 +96,11 @@ func pbUserItemToAction(in *pb.User) *UserItem {
 	}
 
 	return &UserItem{
-		ID:        in.Id,
-		Email:     in.Email,
-		FirstName: in.FirstName,
-		LastName:  in.LastName,
-		CreatedAt: toTimePtr(in.CreatedAt.AsTime()),
+		ID:            in.Id,
+		Email:         in.Email,
+		FirstName:     in.FirstName,
+		LastName:      in.LastName,
+		CreatedAt:     toTimePtr(in.CreatedAt.AsTime()),
+		InstanceAdmin: in.InstanceAdmin,
 	}
 }

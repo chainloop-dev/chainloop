@@ -1716,6 +1716,7 @@ type User struct {
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	FirstName     string                 `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName      string                 `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	InstanceAdmin bool                   `protobuf:"varint,7,opt,name=instance_admin,json=instanceAdmin,proto3" json:"instance_admin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1790,6 +1791,13 @@ func (x *User) GetLastName() string {
 		return x.LastName
 	}
 	return ""
+}
+
+func (x *User) GetInstanceAdmin() bool {
+	if x != nil {
+		return x.InstanceAdmin
+	}
+	return false
 }
 
 type OrgMembershipItem struct {
@@ -2769,7 +2777,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
 	"FORMAT_CUE\x10\x03B\n" +
 	"\n" +
-	"\bcontract\"\xde\x01\n" +
+	"\bcontract\"\x85\x02\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x129\n" +
@@ -2779,7 +2787,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x04 \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\x05 \x01(\tR\blastName\"\xbf\x02\n" +
+	"\tlast_name\x18\x05 \x01(\tR\blastName\x12%\n" +
+	"\x0einstance_admin\x18\a \x01(\bR\rinstanceAdmin\"\xbf\x02\n" +
 	"\x11OrgMembershipItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12*\n" +
 	"\x03org\x18\x02 \x01(\v2\x18.controlplane.v1.OrgItemR\x03org\x12)\n" +

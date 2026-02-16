@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -123,8 +123,13 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				grpcconn.WithInsecure(apiInsecure()),
 			}
 
-			if caFilePath := viper.GetString(confOptions.controlplaneCA.viperKey); caFilePath != "" {
-				opts = append(opts, grpcconn.WithCAFile(caFilePath))
+			if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
+				// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
+				if _, err := os.Stat(caValue); err == nil {
+					opts = append(opts, grpcconn.WithCAFile(caValue))
+				} else {
+					opts = append(opts, grpcconn.WithCAContent(caValue))
+				}
 			}
 
 			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
@@ -410,7 +415,7 @@ var (
 	// It can be overridden by the user if they want to use their own instance of Posthog or deactivated by setting
 	// DO_NOT_TRACK=1 more information that can be found at: https://github.com/chainloop-dev/chainloop/blob/main/docs/docs/reference/operator/cli-telemetry.mdx
 	// nolint:gosec
-	posthogAPIKey   = "phc_TWWW19kEiD6sEejlHKWcICQ5Vc06vZUTYia8WdPB0A0"
+	posthogAPIKey   = "phc_TWWW19kEiD6sEejlHKWcICQ5Vc06vZUTYia8WdPB0A0" // gitleaks:allow
 	posthogEndpoint = "https://crb.chainloop.dev"
 )
 
@@ -494,4 +499,25 @@ func isAPITokenPreferred(cmd *cobra.Command) bool {
 
 func getConfigDir(appName string) string {
 	return filepath.Join(xdg.ConfigHome, appName)
+}
+
+// processCAFlag reads CA file content and stores it as PEM if value is a file path
+func processCAFlag(opt *confOpt) error {
+	value := viper.GetString(opt.viperKey)
+	if value == "" {
+		return nil
+	}
+
+	// If it's a file path, read and store PEM content directly
+	if _, err := os.Stat(value); err == nil {
+		content, err := os.ReadFile(value)
+		if err != nil {
+			return fmt.Errorf("failed to read CA file %s: %w", value, err)
+		}
+
+		// Store PEM content directly
+		viper.Set(opt.viperKey, string(content))
+	}
+
+	return nil
 }

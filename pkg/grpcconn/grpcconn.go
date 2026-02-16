@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package grpcconn
 import (
 	"context"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"os"
 
@@ -29,6 +30,7 @@ import (
 
 type newOptionalArg struct {
 	caFilePath string
+	caContent  string
 	insecure   bool
 	orgName    string
 }
@@ -38,6 +40,13 @@ type Option func(*newOptionalArg)
 func WithCAFile(caFilePath string) Option {
 	return func(opt *newOptionalArg) {
 		opt.caFilePath = caFilePath
+	}
+}
+
+// WithCAContent sets the CA certificate content (PEM format or base64-encoded)
+func WithCAContent(content string) Option {
+	return func(opt *newOptionalArg) {
+		opt.caContent = content
 	}
 }
 
@@ -83,7 +92,13 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 			return nil, err
 		}
 
-		if optionalArgs.caFilePath != "" {
+		// Load CA from content if provided (takes precedence)
+		if optionalArgs.caContent != "" {
+			if err = appendCAFromContent(optionalArgs.caContent, certsPool); err != nil {
+				return nil, fmt.Errorf("failed to load CA from content: %w", err)
+			}
+		} else if optionalArgs.caFilePath != "" {
+			// Fallback to file path for backward compatibility
 			if err = appendCAFromFile(optionalArgs.caFilePath, certsPool); err != nil {
 				return nil, fmt.Errorf("failed to load CA cert: %w", err)
 			}
@@ -110,6 +125,27 @@ func appendCAFromFile(path string, certsPool *x509.CertPool) error {
 	}
 
 	if ok := certsPool.AppendCertsFromPEM(caCert); !ok {
+		return fmt.Errorf("failed to append CA cert to pool")
+	}
+
+	return nil
+}
+
+func appendCAFromContent(content string, certsPool *x509.CertPool) error {
+	var pemContent []byte
+
+	// Try to decode as base64 first
+	decoded, err := base64.StdEncoding.DecodeString(content)
+	if err == nil && len(decoded) > 0 {
+		// Successfully decoded as base64
+		pemContent = decoded
+	} else {
+		// Not base64, assume it's PEM content directly
+		pemContent = []byte(content)
+	}
+
+	// Append to cert pool
+	if ok := certsPool.AppendCertsFromPEM(pemContent); !ok {
 		return fmt.Errorf("failed to append CA cert to pool")
 	}
 

@@ -1,0 +1,15 @@
+title = "Gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+paths = [
+  '''.*_test\..*''',                    # Test files
+  '''(^|/)testdata/.*''',               # Testdata directories
+  '''devel/devkeys/.*''',               # Development keys
+  '''devel/README\.md''',               # Development docs with example tokens
+  '''deployment/chainloop/.*README\.md''',  # Helm chart documentation
+  '''deployment/chainloop/values\.yaml''',  # Helm values with example keys
+  '''deployment/chainloop/templates/_helpers\.tpl''',  # Helm template helpers
+]
