@@ -35,11 +35,18 @@ export interface APITokenServiceRevokeResponse {
 }
 
 export interface APITokenServiceListRequest {
+  /**
+   * Deprecated: use status_filter instead.
+   *
+   * @deprecated
+   */
   includeRevoked: boolean;
   /** optional project reference to filter by */
   project?: IdentityReference;
   /** filter by the scope of the token */
   scope: APITokenServiceListRequest_Scope;
+  /** Filter tokens by their revocation status. Defaults to STATUS_FILTER_ACTIVE. */
+  statusFilter: APITokenServiceListRequest_StatusFilter;
 }
 
 export enum APITokenServiceListRequest_Scope {
@@ -76,6 +83,48 @@ export function aPITokenServiceListRequest_ScopeToJSON(object: APITokenServiceLi
     case APITokenServiceListRequest_Scope.SCOPE_GLOBAL:
       return "SCOPE_GLOBAL";
     case APITokenServiceListRequest_Scope.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum APITokenServiceListRequest_StatusFilter {
+  /** STATUS_FILTER_ACTIVE - Only active (non-revoked) tokens. This is the default. */
+  STATUS_FILTER_ACTIVE = 0,
+  /** STATUS_FILTER_REVOKED - Only revoked tokens. */
+  STATUS_FILTER_REVOKED = 1,
+  /** STATUS_FILTER_ALL - All tokens regardless of revocation status. */
+  STATUS_FILTER_ALL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function aPITokenServiceListRequest_StatusFilterFromJSON(object: any): APITokenServiceListRequest_StatusFilter {
+  switch (object) {
+    case 0:
+    case "STATUS_FILTER_ACTIVE":
+      return APITokenServiceListRequest_StatusFilter.STATUS_FILTER_ACTIVE;
+    case 1:
+    case "STATUS_FILTER_REVOKED":
+      return APITokenServiceListRequest_StatusFilter.STATUS_FILTER_REVOKED;
+    case 2:
+    case "STATUS_FILTER_ALL":
+      return APITokenServiceListRequest_StatusFilter.STATUS_FILTER_ALL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return APITokenServiceListRequest_StatusFilter.UNRECOGNIZED;
+  }
+}
+
+export function aPITokenServiceListRequest_StatusFilterToJSON(object: APITokenServiceListRequest_StatusFilter): string {
+  switch (object) {
+    case APITokenServiceListRequest_StatusFilter.STATUS_FILTER_ACTIVE:
+      return "STATUS_FILTER_ACTIVE";
+    case APITokenServiceListRequest_StatusFilter.STATUS_FILTER_REVOKED:
+      return "STATUS_FILTER_REVOKED";
+    case APITokenServiceListRequest_StatusFilter.STATUS_FILTER_ALL:
+      return "STATUS_FILTER_ALL";
+    case APITokenServiceListRequest_StatusFilter.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -433,7 +482,7 @@ export const APITokenServiceRevokeResponse = {
 };
 
 function createBaseAPITokenServiceListRequest(): APITokenServiceListRequest {
-  return { includeRevoked: false, project: undefined, scope: 0 };
+  return { includeRevoked: false, project: undefined, scope: 0, statusFilter: 0 };
 }
 
 export const APITokenServiceListRequest = {
@@ -446,6 +495,9 @@ export const APITokenServiceListRequest = {
     }
     if (message.scope !== 0) {
       writer.uint32(16).int32(message.scope);
+    }
+    if (message.statusFilter !== 0) {
+      writer.uint32(40).int32(message.statusFilter);
     }
     return writer;
   },
@@ -478,6 +530,13 @@ export const APITokenServiceListRequest = {
 
           message.scope = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.statusFilter = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -492,6 +551,9 @@ export const APITokenServiceListRequest = {
       includeRevoked: isSet(object.includeRevoked) ? Boolean(object.includeRevoked) : false,
       project: isSet(object.project) ? IdentityReference.fromJSON(object.project) : undefined,
       scope: isSet(object.scope) ? aPITokenServiceListRequest_ScopeFromJSON(object.scope) : 0,
+      statusFilter: isSet(object.statusFilter)
+        ? aPITokenServiceListRequest_StatusFilterFromJSON(object.statusFilter)
+        : 0,
     };
   },
 
@@ -501,6 +563,8 @@ export const APITokenServiceListRequest = {
     message.project !== undefined &&
       (obj.project = message.project ? IdentityReference.toJSON(message.project) : undefined);
     message.scope !== undefined && (obj.scope = aPITokenServiceListRequest_ScopeToJSON(message.scope));
+    message.statusFilter !== undefined &&
+      (obj.statusFilter = aPITokenServiceListRequest_StatusFilterToJSON(message.statusFilter));
     return obj;
   },
 
@@ -515,6 +579,7 @@ export const APITokenServiceListRequest = {
       ? IdentityReference.fromPartial(object.project)
       : undefined;
     message.scope = object.scope ?? 0;
+    message.statusFilter = object.statusFilter ?? 0;
     return message;
   },
 };

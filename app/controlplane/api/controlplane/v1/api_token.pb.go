@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,6 +85,58 @@ func (x APITokenServiceListRequest_Scope) Number() protoreflect.EnumNumber {
 // Deprecated: Use APITokenServiceListRequest_Scope.Descriptor instead.
 func (APITokenServiceListRequest_Scope) EnumDescriptor() ([]byte, []int) {
 	return file_controlplane_v1_api_token_proto_rawDescGZIP(), []int{4, 0}
+}
+
+type APITokenServiceListRequest_StatusFilter int32
+
+const (
+	// Only active (non-revoked) tokens. This is the default.
+	APITokenServiceListRequest_STATUS_FILTER_ACTIVE APITokenServiceListRequest_StatusFilter = 0
+	// Only revoked tokens.
+	APITokenServiceListRequest_STATUS_FILTER_REVOKED APITokenServiceListRequest_StatusFilter = 1
+	// All tokens regardless of revocation status.
+	APITokenServiceListRequest_STATUS_FILTER_ALL APITokenServiceListRequest_StatusFilter = 2
+)
+
+// Enum value maps for APITokenServiceListRequest_StatusFilter.
+var (
+	APITokenServiceListRequest_StatusFilter_name = map[int32]string{
+		0: "STATUS_FILTER_ACTIVE",
+		1: "STATUS_FILTER_REVOKED",
+		2: "STATUS_FILTER_ALL",
+	}
+	APITokenServiceListRequest_StatusFilter_value = map[string]int32{
+		"STATUS_FILTER_ACTIVE":  0,
+		"STATUS_FILTER_REVOKED": 1,
+		"STATUS_FILTER_ALL":     2,
+	}
+)
+
+func (x APITokenServiceListRequest_StatusFilter) Enum() *APITokenServiceListRequest_StatusFilter {
+	p := new(APITokenServiceListRequest_StatusFilter)
+	*p = x
+	return p
+}
+
+func (x APITokenServiceListRequest_StatusFilter) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (APITokenServiceListRequest_StatusFilter) Descriptor() protoreflect.EnumDescriptor {
+	return file_controlplane_v1_api_token_proto_enumTypes[1].Descriptor()
+}
+
+func (APITokenServiceListRequest_StatusFilter) Type() protoreflect.EnumType {
+	return &file_controlplane_v1_api_token_proto_enumTypes[1]
+}
+
+func (x APITokenServiceListRequest_StatusFilter) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use APITokenServiceListRequest_StatusFilter.Descriptor instead.
+func (APITokenServiceListRequest_StatusFilter) EnumDescriptor() ([]byte, []int) {
+	return file_controlplane_v1_api_token_proto_rawDescGZIP(), []int{4, 1}
 }
 
 type APITokenServiceCreateRequest struct {
@@ -281,12 +333,17 @@ func (*APITokenServiceRevokeResponse) Descriptor() ([]byte, []int) {
 }
 
 type APITokenServiceListRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	IncludeRevoked bool                   `protobuf:"varint,1,opt,name=include_revoked,json=includeRevoked,proto3" json:"include_revoked,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Deprecated: use status_filter instead.
+	//
+	// Deprecated: Marked as deprecated in controlplane/v1/api_token.proto.
+	IncludeRevoked bool `protobuf:"varint,1,opt,name=include_revoked,json=includeRevoked,proto3" json:"include_revoked,omitempty"`
 	// optional project reference to filter by
 	Project *IdentityReference `protobuf:"bytes,4,opt,name=project,proto3" json:"project,omitempty"`
 	// filter by the scope of the token
-	Scope         APITokenServiceListRequest_Scope `protobuf:"varint,2,opt,name=scope,proto3,enum=controlplane.v1.APITokenServiceListRequest_Scope" json:"scope,omitempty"`
+	Scope APITokenServiceListRequest_Scope `protobuf:"varint,2,opt,name=scope,proto3,enum=controlplane.v1.APITokenServiceListRequest_Scope" json:"scope,omitempty"`
+	// Filter tokens by their revocation status. Defaults to STATUS_FILTER_ACTIVE.
+	StatusFilter  APITokenServiceListRequest_StatusFilter `protobuf:"varint,5,opt,name=status_filter,json=statusFilter,proto3,enum=controlplane.v1.APITokenServiceListRequest_StatusFilter" json:"status_filter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -321,6 +378,7 @@ func (*APITokenServiceListRequest) Descriptor() ([]byte, []int) {
 	return file_controlplane_v1_api_token_proto_rawDescGZIP(), []int{4}
 }
 
+// Deprecated: Marked as deprecated in controlplane/v1/api_token.proto.
 func (x *APITokenServiceListRequest) GetIncludeRevoked() bool {
 	if x != nil {
 		return x.IncludeRevoked
@@ -340,6 +398,13 @@ func (x *APITokenServiceListRequest) GetScope() APITokenServiceListRequest_Scope
 		return x.Scope
 	}
 	return APITokenServiceListRequest_SCOPE_UNSPECIFIED
+}
+
+func (x *APITokenServiceListRequest) GetStatusFilter() APITokenServiceListRequest_StatusFilter {
+	if x != nil {
+		return x.StatusFilter
+	}
+	return APITokenServiceListRequest_STATUS_FILTER_ACTIVE
 }
 
 type APITokenServiceListResponse struct {
@@ -458,15 +523,20 @@ const file_controlplane_v1_api_token_proto_rawDesc = "" +
 	"\x03jwt\x18\x02 \x01(\tR\x03jwt\"8\n" +
 	"\x1cAPITokenServiceRevokeRequest\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"\x1f\n" +
-	"\x1dAPITokenServiceRevokeResponse\"\x91\x02\n" +
-	"\x1aAPITokenServiceListRequest\x12'\n" +
-	"\x0finclude_revoked\x18\x01 \x01(\bR\x0eincludeRevoked\x12<\n" +
+	"\x1dAPITokenServiceRevokeResponse\"\xd0\x03\n" +
+	"\x1aAPITokenServiceListRequest\x12+\n" +
+	"\x0finclude_revoked\x18\x01 \x01(\bB\x02\x18\x01R\x0eincludeRevoked\x12<\n" +
 	"\aproject\x18\x04 \x01(\v2\".controlplane.v1.IdentityReferenceR\aproject\x12G\n" +
-	"\x05scope\x18\x02 \x01(\x0e21.controlplane.v1.APITokenServiceListRequest.ScopeR\x05scope\"C\n" +
+	"\x05scope\x18\x02 \x01(\x0e21.controlplane.v1.APITokenServiceListRequest.ScopeR\x05scope\x12]\n" +
+	"\rstatus_filter\x18\x05 \x01(\x0e28.controlplane.v1.APITokenServiceListRequest.StatusFilterR\fstatusFilter\"C\n" +
 	"\x05Scope\x12\x15\n" +
 	"\x11SCOPE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rSCOPE_PROJECT\x10\x01\x12\x10\n" +
-	"\fSCOPE_GLOBAL\x10\x02\"T\n" +
+	"\fSCOPE_GLOBAL\x10\x02\"Z\n" +
+	"\fStatusFilter\x12\x18\n" +
+	"\x14STATUS_FILTER_ACTIVE\x10\x00\x12\x19\n" +
+	"\x15STATUS_FILTER_REVOKED\x10\x01\x12\x15\n" +
+	"\x11STATUS_FILTER_ALL\x10\x02\"T\n" +
 	"\x1bAPITokenServiceListResponse\x125\n" +
 	"\x06result\x18\x01 \x03(\v2\x1d.controlplane.v1.APITokenItemR\x06result2\xc6\x02\n" +
 	"\x0fAPITokenService\x12g\n" +
@@ -486,40 +556,42 @@ func file_controlplane_v1_api_token_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_api_token_proto_rawDescData
 }
 
-var file_controlplane_v1_api_token_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_controlplane_v1_api_token_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_controlplane_v1_api_token_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_controlplane_v1_api_token_proto_goTypes = []any{
 	(APITokenServiceListRequest_Scope)(0),              // 0: controlplane.v1.APITokenServiceListRequest.Scope
-	(*APITokenServiceCreateRequest)(nil),               // 1: controlplane.v1.APITokenServiceCreateRequest
-	(*APITokenServiceCreateResponse)(nil),              // 2: controlplane.v1.APITokenServiceCreateResponse
-	(*APITokenServiceRevokeRequest)(nil),               // 3: controlplane.v1.APITokenServiceRevokeRequest
-	(*APITokenServiceRevokeResponse)(nil),              // 4: controlplane.v1.APITokenServiceRevokeResponse
-	(*APITokenServiceListRequest)(nil),                 // 5: controlplane.v1.APITokenServiceListRequest
-	(*APITokenServiceListResponse)(nil),                // 6: controlplane.v1.APITokenServiceListResponse
-	(*APITokenServiceCreateResponse_APITokenFull)(nil), // 7: controlplane.v1.APITokenServiceCreateResponse.APITokenFull
-	(*IdentityReference)(nil),                          // 8: controlplane.v1.IdentityReference
-	(*durationpb.Duration)(nil),                        // 9: google.protobuf.Duration
-	(*APITokenItem)(nil),                               // 10: controlplane.v1.APITokenItem
+	(APITokenServiceListRequest_StatusFilter)(0),       // 1: controlplane.v1.APITokenServiceListRequest.StatusFilter
+	(*APITokenServiceCreateRequest)(nil),               // 2: controlplane.v1.APITokenServiceCreateRequest
+	(*APITokenServiceCreateResponse)(nil),              // 3: controlplane.v1.APITokenServiceCreateResponse
+	(*APITokenServiceRevokeRequest)(nil),               // 4: controlplane.v1.APITokenServiceRevokeRequest
+	(*APITokenServiceRevokeResponse)(nil),              // 5: controlplane.v1.APITokenServiceRevokeResponse
+	(*APITokenServiceListRequest)(nil),                 // 6: controlplane.v1.APITokenServiceListRequest
+	(*APITokenServiceListResponse)(nil),                // 7: controlplane.v1.APITokenServiceListResponse
+	(*APITokenServiceCreateResponse_APITokenFull)(nil), // 8: controlplane.v1.APITokenServiceCreateResponse.APITokenFull
+	(*IdentityReference)(nil),                          // 9: controlplane.v1.IdentityReference
+	(*durationpb.Duration)(nil),                        // 10: google.protobuf.Duration
+	(*APITokenItem)(nil),                               // 11: controlplane.v1.APITokenItem
 }
 var file_controlplane_v1_api_token_proto_depIdxs = []int32{
-	8,  // 0: controlplane.v1.APITokenServiceCreateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	9,  // 1: controlplane.v1.APITokenServiceCreateRequest.expires_in:type_name -> google.protobuf.Duration
-	7,  // 2: controlplane.v1.APITokenServiceCreateResponse.result:type_name -> controlplane.v1.APITokenServiceCreateResponse.APITokenFull
-	8,  // 3: controlplane.v1.APITokenServiceListRequest.project:type_name -> controlplane.v1.IdentityReference
+	9,  // 0: controlplane.v1.APITokenServiceCreateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	10, // 1: controlplane.v1.APITokenServiceCreateRequest.expires_in:type_name -> google.protobuf.Duration
+	8,  // 2: controlplane.v1.APITokenServiceCreateResponse.result:type_name -> controlplane.v1.APITokenServiceCreateResponse.APITokenFull
+	9,  // 3: controlplane.v1.APITokenServiceListRequest.project:type_name -> controlplane.v1.IdentityReference
 	0,  // 4: controlplane.v1.APITokenServiceListRequest.scope:type_name -> controlplane.v1.APITokenServiceListRequest.Scope
-	10, // 5: controlplane.v1.APITokenServiceListResponse.result:type_name -> controlplane.v1.APITokenItem
-	10, // 6: controlplane.v1.APITokenServiceCreateResponse.APITokenFull.item:type_name -> controlplane.v1.APITokenItem
-	1,  // 7: controlplane.v1.APITokenService.Create:input_type -> controlplane.v1.APITokenServiceCreateRequest
-	5,  // 8: controlplane.v1.APITokenService.List:input_type -> controlplane.v1.APITokenServiceListRequest
-	3,  // 9: controlplane.v1.APITokenService.Revoke:input_type -> controlplane.v1.APITokenServiceRevokeRequest
-	2,  // 10: controlplane.v1.APITokenService.Create:output_type -> controlplane.v1.APITokenServiceCreateResponse
-	6,  // 11: controlplane.v1.APITokenService.List:output_type -> controlplane.v1.APITokenServiceListResponse
-	4,  // 12: controlplane.v1.APITokenService.Revoke:output_type -> controlplane.v1.APITokenServiceRevokeResponse
-	10, // [10:13] is the sub-list for method output_type
-	7,  // [7:10] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	1,  // 5: controlplane.v1.APITokenServiceListRequest.status_filter:type_name -> controlplane.v1.APITokenServiceListRequest.StatusFilter
+	11, // 6: controlplane.v1.APITokenServiceListResponse.result:type_name -> controlplane.v1.APITokenItem
+	11, // 7: controlplane.v1.APITokenServiceCreateResponse.APITokenFull.item:type_name -> controlplane.v1.APITokenItem
+	2,  // 8: controlplane.v1.APITokenService.Create:input_type -> controlplane.v1.APITokenServiceCreateRequest
+	6,  // 9: controlplane.v1.APITokenService.List:input_type -> controlplane.v1.APITokenServiceListRequest
+	4,  // 10: controlplane.v1.APITokenService.Revoke:input_type -> controlplane.v1.APITokenServiceRevokeRequest
+	3,  // 11: controlplane.v1.APITokenService.Create:output_type -> controlplane.v1.APITokenServiceCreateResponse
+	7,  // 12: controlplane.v1.APITokenService.List:output_type -> controlplane.v1.APITokenServiceListResponse
+	5,  // 13: controlplane.v1.APITokenService.Revoke:output_type -> controlplane.v1.APITokenServiceRevokeResponse
+	11, // [11:14] is the sub-list for method output_type
+	8,  // [8:11] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_api_token_proto_init() }
@@ -535,7 +607,7 @@ func file_controlplane_v1_api_token_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_api_token_proto_rawDesc), len(file_controlplane_v1_api_token_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -123,7 +123,12 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 		query = query.Where(apitoken.OrganizationIDIsNil())
 	}
 
-	if !filters.IncludeRevoked {
+	switch filters.StatusFilter {
+	case biz.APITokenStatusFilterRevoked:
+		query = query.Where(apitoken.RevokedAtNotNil())
+	case biz.APITokenStatusFilterAll:
+		// no filter — return all tokens
+	default: // APITokenStatusFilterActive
 		query = query.Where(apitoken.RevokedAtIsNil())
 	}
 

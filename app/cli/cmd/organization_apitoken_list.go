@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 func newAPITokenListCmd() *cobra.Command {
 	var (
 		includeRevoked bool
+		statusFilter   string
 		project        string
 		scope          string
 	)
@@ -35,6 +36,12 @@ func newAPITokenListCmd() *cobra.Command {
 	var availableScopes = []string{
 		"project",
 		"global",
+	}
+
+	var availableStatusFilters = []string{
+		"active",
+		"revoked",
+		"all",
 	}
 
 	cmd := &cobra.Command{
@@ -46,10 +53,22 @@ func newAPITokenListCmd() *cobra.Command {
 				return fmt.Errorf("invalid scope %q, please chose one of: %v", scope, availableScopes)
 			}
 
+			if statusFilter != "" && !slices.Contains(availableStatusFilters, statusFilter) {
+				return fmt.Errorf("invalid status %q, please choose one of: %v", statusFilter, availableStatusFilters)
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewAPITokenList(ActionOpts).Run(context.Background(), includeRevoked, project, scope)
+			// --all is deprecated: map it to --status all
+			if includeRevoked {
+				cmd.PrintErr("Warning: --all is deprecated, use --status all instead\n")
+				if statusFilter == "" {
+					statusFilter = "all"
+				}
+			}
+
+			res, err := action.NewAPITokenList(ActionOpts).Run(context.Background(), statusFilter, project, scope)
 			if err != nil {
 				return fmt.Errorf("listing API tokens: %w", err)
 			}
@@ -58,7 +77,11 @@ func newAPITokenListCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVarP(&includeRevoked, "all", "a", false, "show all API tokens including revoked ones")
+	cmd.Flags().BoolVarP(&includeRevoked, "all", "a", false, "Deprecated: use --status all instead")
+	if err := cmd.Flags().MarkDeprecated("all", "use --status all instead"); err != nil {
+		panic(err)
+	}
+	cmd.Flags().StringVar(&statusFilter, "status", "", fmt.Sprintf("filter by token status, available values: %v", availableStatusFilters))
 	cmd.Flags().StringVarP(&project, "project", "p", "", "filter by project name")
 	cmd.Flags().StringVarP(&scope, "scope", "s", "", fmt.Sprintf("filter by scope, available scopes: %v", availableScopes))
 	return cmd

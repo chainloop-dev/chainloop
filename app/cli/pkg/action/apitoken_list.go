@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,10 +30,10 @@ func NewAPITokenList(cfg *ActionsOpts) *APITokenList {
 	return &APITokenList{cfg}
 }
 
-func (action *APITokenList) Run(ctx context.Context, includeRevoked bool, project string, scope string) ([]*APITokenItem, error) {
+func (action *APITokenList) Run(ctx context.Context, statusFilter string, project string, scope string) ([]*APITokenItem, error) {
 	client := pb.NewAPITokenServiceClient(action.cfg.CPConnection)
 
-	req := &pb.APITokenServiceListRequest{IncludeRevoked: includeRevoked}
+	req := &pb.APITokenServiceListRequest{StatusFilter: mapStatusFilter(statusFilter)}
 	if project != "" {
 		req.Project = &pb.IdentityReference{Name: &project}
 	}
@@ -63,5 +63,16 @@ func mapScope(scope string) pb.APITokenServiceListRequest_Scope {
 		return pb.APITokenServiceListRequest_SCOPE_GLOBAL
 	default:
 		return pb.APITokenServiceListRequest_SCOPE_UNSPECIFIED
+	}
+}
+
+func mapStatusFilter(status string) pb.APITokenServiceListRequest_StatusFilter {
+	switch status {
+	case "revoked":
+		return pb.APITokenServiceListRequest_STATUS_FILTER_REVOKED
+	case "all":
+		return pb.APITokenServiceListRequest_STATUS_FILTER_ALL
+	default:
+		return pb.APITokenServiceListRequest_STATUS_FILTER_ACTIVE
 	}
 }

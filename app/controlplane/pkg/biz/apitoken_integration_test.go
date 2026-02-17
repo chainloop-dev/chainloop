@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -190,7 +190,7 @@ func (s *apiTokenTestSuite) TestRevoke() {
 	s.Run("token can be revoked once", func() {
 		err := s.APIToken.Revoke(ctx, s.org.ID, s.t1.ID.String())
 		s.NoError(err)
-		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenRevoked(true))
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenStatusFilter(biz.APITokenStatusFilterAll))
 		s.NoError(err)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		// It's revoked
@@ -298,12 +298,29 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Equal(s.t2.ID, tokens[0].ID)
 	})
 
-	s.Run("doesn't return revoked unless requested", func() {
-		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenRevoked(true))
+	s.Run("status filter all returns revoked and active tokens", func() {
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenStatusFilter(biz.APITokenStatusFilterAll))
 		s.NoError(err)
 		require.Len(s.T(), tokens, 5)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		s.Equal(s.t2.ID, tokens[1].ID)
+	})
+
+	s.Run("status filter active returns only active tokens", func() {
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenStatusFilter(biz.APITokenStatusFilterActive))
+		s.NoError(err)
+		require.Len(s.T(), tokens, 4)
+		for _, t := range tokens {
+			s.Nil(t.RevokedAt)
+		}
+	})
+
+	s.Run("status filter revoked returns only revoked tokens", func() {
+		tokens, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenStatusFilter(biz.APITokenStatusFilterRevoked))
+		s.NoError(err)
+		require.Len(s.T(), tokens, 1)
+		s.Equal(s.t1.ID, tokens[0].ID)
+		s.NotNil(tokens[0].RevokedAt)
 	})
 }
 
