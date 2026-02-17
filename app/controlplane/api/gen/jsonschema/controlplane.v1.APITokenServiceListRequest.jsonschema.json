@@ -4,11 +4,32 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(include_revoked)$": {
+      "description": "Deprecated: use status_filter instead.",
       "type": "boolean"
+    },
+    "^(status_filter)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "STATUS_FILTER_ACTIVE",
+            "STATUS_FILTER_REVOKED",
+            "STATUS_FILTER_ALL"
+          ],
+          "title": "Status Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Filter tokens by their revocation status. Defaults to STATUS_FILTER_ACTIVE."
     }
   },
   "properties": {
     "includeRevoked": {
+      "description": "Deprecated: use status_filter instead.",
       "type": "boolean"
     },
     "project": {
@@ -33,6 +54,25 @@
         }
       ],
       "description": "filter by the scope of the token"
+    },
+    "statusFilter": {
+      "anyOf": [
+        {
+          "enum": [
+            "STATUS_FILTER_ACTIVE",
+            "STATUS_FILTER_REVOKED",
+            "STATUS_FILTER_ALL"
+          ],
+          "title": "Status Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Filter tokens by their revocation status. Defaults to STATUS_FILTER_ACTIVE."
     }
   },
   "title": "API Token Service List Request",

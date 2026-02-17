@@ -123,7 +123,12 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 		query = query.Where(apitoken.OrganizationIDIsNil())
 	}
 
-	if !filters.IncludeRevoked {
+	switch filters.StatusFilter {
+	case biz.APITokenStatusFilterRevoked:
+		query = query.Where(apitoken.RevokedAtNotNil())
+	case biz.APITokenStatusFilterAll:
+		// no filter — return all tokens
+	default: // APITokenStatusFilterActive
 		query = query.Where(apitoken.RevokedAtIsNil())
 	}
 

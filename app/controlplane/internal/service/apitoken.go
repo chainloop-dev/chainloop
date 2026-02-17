@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -100,8 +100,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		defaultProjectFilter = []uuid.UUID{project.ID}
 	}
 
-	// Only expose system tokens
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenRevoked(req.IncludeRevoked), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(mapTokenScope(req.Scope)))
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenStatusFilter(mapTokenStatusFilter(req.GetStatusFilter())), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(mapTokenScope(req.Scope)))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -123,6 +122,17 @@ func mapTokenScope(scope pb.APITokenServiceListRequest_Scope) biz.APITokenScope 
 	}
 
 	return ""
+}
+
+func mapTokenStatusFilter(f pb.APITokenServiceListRequest_StatusFilter) biz.APITokenStatusFilter {
+	switch f {
+	case pb.APITokenServiceListRequest_STATUS_FILTER_REVOKED:
+		return biz.APITokenStatusFilterRevoked
+	case pb.APITokenServiceListRequest_STATUS_FILTER_ALL:
+		return biz.APITokenStatusFilterAll
+	default:
+		return biz.APITokenStatusFilterActive
+	}
 }
 
 func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRevokeRequest) (*pb.APITokenServiceRevokeResponse, error) {

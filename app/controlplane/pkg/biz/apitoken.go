@@ -307,9 +307,9 @@ func WithAPITokenProjectFilter(projectIDs []uuid.UUID) APITokenListOpt {
 	}
 }
 
-func WithAPITokenRevoked(includeRevoked bool) APITokenListOpt {
+func WithAPITokenStatusFilter(filter APITokenStatusFilter) APITokenListOpt {
 	return func(opts *APITokenListFilters) {
-		opts.IncludeRevoked = includeRevoked
+		opts.StatusFilter = filter
 	}
 }
 
@@ -333,12 +333,25 @@ var availableAPITokenScopes = []APITokenScope{
 	APITokenScopeInstance,
 }
 
+// APITokenStatusFilter controls which tokens are returned based on their revocation status.
+type APITokenStatusFilter int
+
+const (
+	// APITokenStatusFilterActive returns only active (non-revoked) tokens. This is the default.
+	APITokenStatusFilterActive APITokenStatusFilter = iota
+	// APITokenStatusFilterRevoked returns only revoked tokens.
+	APITokenStatusFilterRevoked
+	// APITokenStatusFilterAll returns all tokens regardless of revocation status.
+	APITokenStatusFilterAll
+)
+
 type APITokenListFilters struct {
 	// FilterByProjects is used to filter the result by a project list
 	// If it's empty, no filter will be applied
 	FilterByProjects []uuid.UUID
-	// IncludeRevoked is used to include revoked tokens in the result
-	IncludeRevoked bool
+	// StatusFilter controls which tokens are returned based on revocation status.
+	// Defaults to APITokenStatusFilterActive.
+	StatusFilter APITokenStatusFilter
 	// FilterByScope is used to filter the result by the scope of the token
 	FilterByScope APITokenScope
 }
