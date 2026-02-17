@@ -7,6 +7,10 @@ metadata:
 spec:
   policies:
     attestation:
+      - ref: check-compliance-requirement
+        with:
+          requirement_name: sbom-compliance
+        gate: true
       - ref: source-commit
         with:
           check_signature: yes
