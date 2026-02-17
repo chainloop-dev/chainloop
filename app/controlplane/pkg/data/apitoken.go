@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -161,6 +161,34 @@ func (r *APITokenRepo) Revoke(ctx context.Context, orgID *uuid.UUID, id uuid.UUI
 	}
 
 	return nil
+}
+
+// FindInactive returns tokens that have been inactive since the given cutoff.
+func (r *APITokenRepo) FindInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error) {
+	// A token is inactive if last_used_at < inactiveSince (when used before),
+	// or created_at < inactiveSince (when never used).
+	tokens, err := r.data.DB.APIToken.Query().
+		Where(
+			apitoken.OrganizationIDEQ(orgID),
+			apitoken.RevokedAtIsNil(),
+			apitoken.Or(
+				apitoken.And(apitoken.LastUsedAtNotNil(), apitoken.LastUsedAtLT(inactiveSince)),
+				apitoken.And(apitoken.LastUsedAtIsNil(), apitoken.CreatedAtLT(inactiveSince)),
+			),
+		).
+		WithOrganization().
+		WithProject().
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("querying inactive tokens: %w", err)
+	}
+
+	result := make([]*biz.APIToken, 0, len(tokens))
+	for _, t := range tokens {
+		result = append(result, entAPITokenToBiz(t))
+	}
+
+	return result, nil
 }
 
 func (r *APITokenRepo) UpdateExpiration(ctx context.Context, id uuid.UUID, expiresAt time.Time) error {

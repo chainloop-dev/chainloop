@@ -613,6 +613,8 @@ export interface OrgItem {
   preventImplicitWorkflowCreation: boolean;
   /** restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles) */
   restrictContractCreationToOrgAdmins: boolean;
+  /** Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled. */
+  apiTokenMaxDaysInactive?: number | undefined;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -3812,6 +3814,7 @@ function createBaseOrgItem(): OrgItem {
     policyAllowedHostnames: [],
     preventImplicitWorkflowCreation: false,
     restrictContractCreationToOrgAdmins: false,
+    apiTokenMaxDaysInactive: undefined,
   };
 }
 
@@ -3840,6 +3843,9 @@ export const OrgItem = {
     }
     if (message.restrictContractCreationToOrgAdmins === true) {
       writer.uint32(64).bool(message.restrictContractCreationToOrgAdmins);
+    }
+    if (message.apiTokenMaxDaysInactive !== undefined) {
+      writer.uint32(72).int32(message.apiTokenMaxDaysInactive);
     }
     return writer;
   },
@@ -3907,6 +3913,13 @@ export const OrgItem = {
 
           message.restrictContractCreationToOrgAdmins = reader.bool();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.apiTokenMaxDaysInactive = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3934,6 +3947,9 @@ export const OrgItem = {
       restrictContractCreationToOrgAdmins: isSet(object.restrictContractCreationToOrgAdmins)
         ? Boolean(object.restrictContractCreationToOrgAdmins)
         : false,
+      apiTokenMaxDaysInactive: isSet(object.apiTokenMaxDaysInactive)
+        ? Number(object.apiTokenMaxDaysInactive)
+        : undefined,
     };
   },
 
@@ -3956,6 +3972,8 @@ export const OrgItem = {
       (obj.preventImplicitWorkflowCreation = message.preventImplicitWorkflowCreation);
     message.restrictContractCreationToOrgAdmins !== undefined &&
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
+    message.apiTokenMaxDaysInactive !== undefined &&
+      (obj.apiTokenMaxDaysInactive = Math.round(message.apiTokenMaxDaysInactive));
     return obj;
   },
 
@@ -3973,6 +3991,7 @@ export const OrgItem = {
     message.policyAllowedHostnames = object.policyAllowedHostnames?.map((e) => e) || [];
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? false;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? false;
+    message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
     return message;
   },
 };

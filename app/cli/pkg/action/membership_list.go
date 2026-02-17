@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ type OrgItem struct {
 	PolicyViolationBlockingStrategy string     `json:"policyViolationBlockingStrategy"`
 	PolicyAllowedHostnames          []string   `json:"policyAllowedHostnames,omitempty"`
 	PreventImplicitWorkflowCreation bool       `json:"preventImplicitWorkflowCreation"`
+	APITokenMaxDaysInactive         *string    `json:"apiTokenMaxDaysInactive,omitempty"`
 }
 
 type MembershipItem struct {
@@ -143,6 +144,11 @@ func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 		i.PolicyViolationBlockingStrategy = PolicyViolationBlockingStrategyEnforced
 	} else {
 		i.PolicyViolationBlockingStrategy = PolicyViolationBlockingStrategyAdvisory
+	}
+
+	if in.ApiTokenMaxDaysInactive != nil {
+		s := fmt.Sprintf("%d", in.GetApiTokenMaxDaysInactive())
+		i.APITokenMaxDaysInactive = &s
 	}
 
 	return i

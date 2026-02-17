@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,6 +99,9 @@ message OrganizationServiceUpdateRequest {
 
   // restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
   optional bool restrict_contract_creation_to_org_admins = 6;
+
+  // Maximum days of inactivity before API tokens are auto-revoked. Set to 0 to disable.
+  optional int32 api_token_max_days_inactive = 7;
 }
 
 message OrganizationServiceUpdateResponse {

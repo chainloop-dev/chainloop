@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -92,7 +92,16 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		}
 	}
 
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames, req.PreventImplicitWorkflowCreation, req.RestrictContractCreationToOrgAdmins)
+	var apiTokenMaxDaysInactive *int
+	if req.ApiTokenMaxDaysInactive != nil {
+		days := int(req.GetApiTokenMaxDaysInactive())
+		if days < 0 || days > 365 {
+			return nil, errors.BadRequest("invalid", "api_token_max_days_inactive must be between 0 and 365")
+		}
+		apiTokenMaxDaysInactive = &days
+	}
+
+	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames, req.PreventImplicitWorkflowCreation, req.RestrictContractCreationToOrgAdmins, apiTokenMaxDaysInactive)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

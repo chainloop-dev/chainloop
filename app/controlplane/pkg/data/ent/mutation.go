@@ -8746,6 +8746,8 @@ type OrganizationMutation struct {
 	appendpolicies_allowed_hostnames         []string
 	prevent_implicit_workflow_creation       *bool
 	restrict_contract_creation_to_org_admins *bool
+	api_token_inactivity_threshold_days      *int
+	addapi_token_inactivity_threshold_days   *int
 	clearedFields                            map[string]struct{}
 	memberships                              map[uuid.UUID]struct{}
 	removedmemberships                       map[uuid.UUID]struct{}
@@ -9208,6 +9210,76 @@ func (m *OrganizationMutation) OldRestrictContractCreationToOrgAdmins(ctx contex
 // ResetRestrictContractCreationToOrgAdmins resets all changes to the "restrict_contract_creation_to_org_admins" field.
 func (m *OrganizationMutation) ResetRestrictContractCreationToOrgAdmins() {
 	m.restrict_contract_creation_to_org_admins = nil
+}
+
+// SetAPITokenInactivityThresholdDays sets the "api_token_inactivity_threshold_days" field.
+func (m *OrganizationMutation) SetAPITokenInactivityThresholdDays(i int) {
+	m.api_token_inactivity_threshold_days = &i
+	m.addapi_token_inactivity_threshold_days = nil
+}
+
+// APITokenInactivityThresholdDays returns the value of the "api_token_inactivity_threshold_days" field in the mutation.
+func (m *OrganizationMutation) APITokenInactivityThresholdDays() (r int, exists bool) {
+	v := m.api_token_inactivity_threshold_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAPITokenInactivityThresholdDays returns the old "api_token_inactivity_threshold_days" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldAPITokenInactivityThresholdDays(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAPITokenInactivityThresholdDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAPITokenInactivityThresholdDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAPITokenInactivityThresholdDays: %w", err)
+	}
+	return oldValue.APITokenInactivityThresholdDays, nil
+}
+
+// AddAPITokenInactivityThresholdDays adds i to the "api_token_inactivity_threshold_days" field.
+func (m *OrganizationMutation) AddAPITokenInactivityThresholdDays(i int) {
+	if m.addapi_token_inactivity_threshold_days != nil {
+		*m.addapi_token_inactivity_threshold_days += i
+	} else {
+		m.addapi_token_inactivity_threshold_days = &i
+	}
+}
+
+// AddedAPITokenInactivityThresholdDays returns the value that was added to the "api_token_inactivity_threshold_days" field in this mutation.
+func (m *OrganizationMutation) AddedAPITokenInactivityThresholdDays() (r int, exists bool) {
+	v := m.addapi_token_inactivity_threshold_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAPITokenInactivityThresholdDays clears the value of the "api_token_inactivity_threshold_days" field.
+func (m *OrganizationMutation) ClearAPITokenInactivityThresholdDays() {
+	m.api_token_inactivity_threshold_days = nil
+	m.addapi_token_inactivity_threshold_days = nil
+	m.clearedFields[organization.FieldAPITokenInactivityThresholdDays] = struct{}{}
+}
+
+// APITokenInactivityThresholdDaysCleared returns if the "api_token_inactivity_threshold_days" field was cleared in this mutation.
+func (m *OrganizationMutation) APITokenInactivityThresholdDaysCleared() bool {
+	_, ok := m.clearedFields[organization.FieldAPITokenInactivityThresholdDays]
+	return ok
+}
+
+// ResetAPITokenInactivityThresholdDays resets all changes to the "api_token_inactivity_threshold_days" field.
+func (m *OrganizationMutation) ResetAPITokenInactivityThresholdDays() {
+	m.api_token_inactivity_threshold_days = nil
+	m.addapi_token_inactivity_threshold_days = nil
+	delete(m.clearedFields, organization.FieldAPITokenInactivityThresholdDays)
 }
 
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
@@ -9676,7 +9748,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9700,6 +9772,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.restrict_contract_creation_to_org_admins != nil {
 		fields = append(fields, organization.FieldRestrictContractCreationToOrgAdmins)
+	}
+	if m.api_token_inactivity_threshold_days != nil {
+		fields = append(fields, organization.FieldAPITokenInactivityThresholdDays)
 	}
 	return fields
 }
@@ -9725,6 +9800,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.PreventImplicitWorkflowCreation()
 	case organization.FieldRestrictContractCreationToOrgAdmins:
 		return m.RestrictContractCreationToOrgAdmins()
+	case organization.FieldAPITokenInactivityThresholdDays:
+		return m.APITokenInactivityThresholdDays()
 	}
 	return nil, false
 }
@@ -9750,6 +9827,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldPreventImplicitWorkflowCreation(ctx)
 	case organization.FieldRestrictContractCreationToOrgAdmins:
 		return m.OldRestrictContractCreationToOrgAdmins(ctx)
+	case organization.FieldAPITokenInactivityThresholdDays:
+		return m.OldAPITokenInactivityThresholdDays(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9815,6 +9894,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRestrictContractCreationToOrgAdmins(v)
 		return nil
+	case organization.FieldAPITokenInactivityThresholdDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAPITokenInactivityThresholdDays(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9822,13 +9908,21 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *OrganizationMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addapi_token_inactivity_threshold_days != nil {
+		fields = append(fields, organization.FieldAPITokenInactivityThresholdDays)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *OrganizationMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case organization.FieldAPITokenInactivityThresholdDays:
+		return m.AddedAPITokenInactivityThresholdDays()
+	}
 	return nil, false
 }
 
@@ -9837,6 +9931,13 @@ func (m *OrganizationMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *OrganizationMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case organization.FieldAPITokenInactivityThresholdDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAPITokenInactivityThresholdDays(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Organization numeric field %s", name)
 }
@@ -9850,6 +9951,9 @@ func (m *OrganizationMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(organization.FieldPoliciesAllowedHostnames) {
 		fields = append(fields, organization.FieldPoliciesAllowedHostnames)
+	}
+	if m.FieldCleared(organization.FieldAPITokenInactivityThresholdDays) {
+		fields = append(fields, organization.FieldAPITokenInactivityThresholdDays)
 	}
 	return fields
 }
@@ -9870,6 +9974,9 @@ func (m *OrganizationMutation) ClearField(name string) error {
 		return nil
 	case organization.FieldPoliciesAllowedHostnames:
 		m.ClearPoliciesAllowedHostnames()
+		return nil
+	case organization.FieldAPITokenInactivityThresholdDays:
+		m.ClearAPITokenInactivityThresholdDays()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization nullable field %s", name)
@@ -9902,6 +10009,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldRestrictContractCreationToOrgAdmins:
 		m.ResetRestrictContractCreationToOrgAdmins()
+		return nil
+	case organization.FieldAPITokenInactivityThresholdDays:
+		m.ResetAPITokenInactivityThresholdDays()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -286,6 +286,8 @@ message OrgItem {
   bool prevent_implicit_workflow_creation = 7;
   // restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
   bool restrict_contract_creation_to_org_admins = 8;
+  // Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled.
+  optional int32 api_token_max_days_inactive = 9;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;

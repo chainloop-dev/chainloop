@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package action
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 )
@@ -34,6 +35,9 @@ type NewOrgUpdateOpts struct {
 	PoliciesAllowedHostnames        *[]string
 	PreventImplicitWorkflowCreation *bool
 	RestrictContractCreation        *bool
+	// APITokenMaxDaysInactive is the maximum number of days a token can be inactive before auto-revocation.
+	// 0 means disabled.
+	APITokenMaxDaysInactive *int
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -49,6 +53,15 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 	if opts.PoliciesAllowedHostnames != nil {
 		payload.PoliciesAllowedHostnames = *opts.PoliciesAllowedHostnames
 		payload.UpdatePoliciesAllowedHostnames = true
+	}
+
+	if opts.APITokenMaxDaysInactive != nil {
+		v := *opts.APITokenMaxDaysInactive
+		if v < 0 || v > 365 {
+			return nil, fmt.Errorf("api_token_max_days_inactive must be between 0 and 365")
+		}
+		days := int32(v)
+		payload.ApiTokenMaxDaysInactive = &days
 	}
 
 	resp, err := client.Update(ctx, payload)

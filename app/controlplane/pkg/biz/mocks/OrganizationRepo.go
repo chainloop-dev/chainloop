@@ -300,9 +300,71 @@ func (_c *OrganizationRepo_FindByName_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// FindWithTokenInactivityThreshold provides a mock function for the type OrganizationRepo
+func (_mock *OrganizationRepo) FindWithTokenInactivityThreshold(ctx context.Context) ([]*biz.Organization, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindWithTokenInactivityThreshold")
+	}
+
+	var r0 []*biz.Organization
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*biz.Organization, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []*biz.Organization); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*biz.Organization)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// OrganizationRepo_FindWithTokenInactivityThreshold_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindWithTokenInactivityThreshold'
+type OrganizationRepo_FindWithTokenInactivityThreshold_Call struct {
+	*mock.Call
+}
+
+// FindWithTokenInactivityThreshold is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *OrganizationRepo_Expecter) FindWithTokenInactivityThreshold(ctx interface{}) *OrganizationRepo_FindWithTokenInactivityThreshold_Call {
+	return &OrganizationRepo_FindWithTokenInactivityThreshold_Call{Call: _e.mock.On("FindWithTokenInactivityThreshold", ctx)}
+}
+
+func (_c *OrganizationRepo_FindWithTokenInactivityThreshold_Call) Run(run func(ctx context.Context)) *OrganizationRepo_FindWithTokenInactivityThreshold_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *OrganizationRepo_FindWithTokenInactivityThreshold_Call) Return(organizations []*biz.Organization, err error) *OrganizationRepo_FindWithTokenInactivityThreshold_Call {
+	_c.Call.Return(organizations, err)
+	return _c
+}
+
+func (_c *OrganizationRepo_FindWithTokenInactivityThreshold_Call) RunAndReturn(run func(ctx context.Context) ([]*biz.Organization, error)) *OrganizationRepo_FindWithTokenInactivityThreshold_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function for the type OrganizationRepo
-func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool) (*biz.Organization, error) {
-	ret := _mock.Called(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins)
+func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*biz.Organization, error) {
+	ret := _mock.Called(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -310,18 +372,18 @@ func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOn
 
 	var r0 *biz.Organization
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool) (*biz.Organization, error)); ok {
-		return returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool, *int) (*biz.Organization, error)); ok {
+		return returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool) *biz.Organization); ok {
-		r0 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool, *int) *biz.Organization); ok {
+		r0 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.Organization)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool) error); ok {
-		r1 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool, *int) error); ok {
+		r1 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -340,11 +402,12 @@ type OrganizationRepo_Update_Call struct {
 //   - policiesAllowedHostnames []string
 //   - preventImplicitWorkflowCreation *bool
 //   - restrictContractCreationToOrgAdmins *bool
-func (_e *OrganizationRepo_Expecter) Update(ctx interface{}, id interface{}, blockOnPolicyViolation interface{}, policiesAllowedHostnames interface{}, preventImplicitWorkflowCreation interface{}, restrictContractCreationToOrgAdmins interface{}) *OrganizationRepo_Update_Call {
-	return &OrganizationRepo_Update_Call{Call: _e.mock.On("Update", ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins)}
+//   - apiTokenInactivityThresholdDays *int
+func (_e *OrganizationRepo_Expecter) Update(ctx interface{}, id interface{}, blockOnPolicyViolation interface{}, policiesAllowedHostnames interface{}, preventImplicitWorkflowCreation interface{}, restrictContractCreationToOrgAdmins interface{}, apiTokenInactivityThresholdDays interface{}) *OrganizationRepo_Update_Call {
+	return &OrganizationRepo_Update_Call{Call: _e.mock.On("Update", ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)}
 }
 
-func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool)) *OrganizationRepo_Update_Call {
+func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int)) *OrganizationRepo_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -370,6 +433,10 @@ func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uui
 		if args[5] != nil {
 			arg5 = args[5].(*bool)
 		}
+		var arg6 *int
+		if args[6] != nil {
+			arg6 = args[6].(*int)
+		}
 		run(
 			arg0,
 			arg1,
@@ -377,6 +444,7 @@ func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uui
 			arg3,
 			arg4,
 			arg5,
+			arg6,
 		)
 	})
 	return _c
@@ -387,7 +455,7 @@ func (_c *OrganizationRepo_Update_Call) Return(organization *biz.Organization, e
 	return _c
 }
 
-func (_c *OrganizationRepo_Update_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool) (*biz.Organization, error)) *OrganizationRepo_Update_Call {
+func (_c *OrganizationRepo_Update_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*biz.Organization, error)) *OrganizationRepo_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

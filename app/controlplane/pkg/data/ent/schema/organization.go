@@ -55,6 +55,9 @@ func (Organization) Fields() []ent.Field {
 		field.Bool("prevent_implicit_workflow_creation").Default(false),
 		// restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins
 		field.Bool("restrict_contract_creation_to_org_admins").Default(false),
+		// api_token_inactivity_threshold_days is the number of days after which inactive API tokens are auto-revoked.
+		// nil = disabled, any positive int = threshold in days
+		field.Int("api_token_inactivity_threshold_days").Optional().Nillable(),
 	}
 }
 

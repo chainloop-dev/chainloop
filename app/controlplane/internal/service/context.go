@@ -119,13 +119,20 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 }
 
 func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
-	return &pb.OrgItem{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt),
+	item := &pb.OrgItem{Id: m.ID, Name: m.Name, CreatedAt: timestamppb.New(*m.CreatedAt),
 		UpdatedAt:                           timestamppb.New(*m.UpdatedAt),
 		DefaultPolicyViolationStrategy:      bizPolicyViolationBlockingStrategyToPb(m.BlockOnPolicyViolation),
 		PolicyAllowedHostnames:              m.PoliciesAllowedHostnames,
 		PreventImplicitWorkflowCreation:     m.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: m.RestrictContractCreationToOrgAdmins,
 	}
+
+	if m.APITokenInactivityThresholdDays != nil {
+		days := int32(*m.APITokenInactivityThresholdDays)
+		item.ApiTokenMaxDaysInactive = &days
+	}
+
+	return item
 }
 
 func bizUserToPb(u *biz.User) *pb.User {

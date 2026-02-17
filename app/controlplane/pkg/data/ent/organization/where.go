@@ -91,6 +91,11 @@ func RestrictContractCreationToOrgAdmins(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldRestrictContractCreationToOrgAdmins, v))
 }
 
+// APITokenInactivityThresholdDays applies equality check predicate on the "api_token_inactivity_threshold_days" field. It's identical to APITokenInactivityThresholdDaysEQ.
+func APITokenInactivityThresholdDays(v int) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldAPITokenInactivityThresholdDays, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldName, v))
@@ -324,6 +329,56 @@ func RestrictContractCreationToOrgAdminsEQ(v bool) predicate.Organization {
 // RestrictContractCreationToOrgAdminsNEQ applies the NEQ predicate on the "restrict_contract_creation_to_org_admins" field.
 func RestrictContractCreationToOrgAdminsNEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldNEQ(FieldRestrictContractCreationToOrgAdmins, v))
+}
+
+// APITokenInactivityThresholdDaysEQ applies the EQ predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysEQ(v int) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldAPITokenInactivityThresholdDays, v))
+}
+
+// APITokenInactivityThresholdDaysNEQ applies the NEQ predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysNEQ(v int) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldAPITokenInactivityThresholdDays, v))
+}
+
+// APITokenInactivityThresholdDaysIn applies the In predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysIn(vs ...int) predicate.Organization {
+	return predicate.Organization(sql.FieldIn(FieldAPITokenInactivityThresholdDays, vs...))
+}
+
+// APITokenInactivityThresholdDaysNotIn applies the NotIn predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysNotIn(vs ...int) predicate.Organization {
+	return predicate.Organization(sql.FieldNotIn(FieldAPITokenInactivityThresholdDays, vs...))
+}
+
+// APITokenInactivityThresholdDaysGT applies the GT predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysGT(v int) predicate.Organization {
+	return predicate.Organization(sql.FieldGT(FieldAPITokenInactivityThresholdDays, v))
+}
+
+// APITokenInactivityThresholdDaysGTE applies the GTE predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysGTE(v int) predicate.Organization {
+	return predicate.Organization(sql.FieldGTE(FieldAPITokenInactivityThresholdDays, v))
+}
+
+// APITokenInactivityThresholdDaysLT applies the LT predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysLT(v int) predicate.Organization {
+	return predicate.Organization(sql.FieldLT(FieldAPITokenInactivityThresholdDays, v))
+}
+
+// APITokenInactivityThresholdDaysLTE applies the LTE predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysLTE(v int) predicate.Organization {
+	return predicate.Organization(sql.FieldLTE(FieldAPITokenInactivityThresholdDays, v))
+}
+
+// APITokenInactivityThresholdDaysIsNil applies the IsNil predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysIsNil() predicate.Organization {
+	return predicate.Organization(sql.FieldIsNull(FieldAPITokenInactivityThresholdDays))
+}
+
+// APITokenInactivityThresholdDaysNotNil applies the NotNil predicate on the "api_token_inactivity_threshold_days" field.
+func APITokenInactivityThresholdDaysNotNil() predicate.Organization {
+	return predicate.Organization(sql.FieldNotNull(FieldAPITokenInactivityThresholdDays))
 }
 
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.

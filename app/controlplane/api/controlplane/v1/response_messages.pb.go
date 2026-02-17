@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1904,8 +1904,10 @@ type OrgItem struct {
 	PreventImplicitWorkflowCreation bool `protobuf:"varint,7,opt,name=prevent_implicit_workflow_creation,json=preventImplicitWorkflowCreation,proto3" json:"prevent_implicit_workflow_creation,omitempty"`
 	// restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)
 	RestrictContractCreationToOrgAdmins bool `protobuf:"varint,8,opt,name=restrict_contract_creation_to_org_admins,json=restrictContractCreationToOrgAdmins,proto3" json:"restrict_contract_creation_to_org_admins,omitempty"`
-	unknownFields                       protoimpl.UnknownFields
-	sizeCache                           protoimpl.SizeCache
+	// Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled.
+	ApiTokenMaxDaysInactive *int32 `protobuf:"varint,9,opt,name=api_token_max_days_inactive,json=apiTokenMaxDaysInactive,proto3,oneof" json:"api_token_max_days_inactive,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *OrgItem) Reset() {
@@ -1992,6 +1994,13 @@ func (x *OrgItem) GetRestrictContractCreationToOrgAdmins() bool {
 		return x.RestrictContractCreationToOrgAdmins
 	}
 	return false
+}
+
+func (x *OrgItem) GetApiTokenMaxDaysInactive() int32 {
+	if x != nil && x.ApiTokenMaxDaysInactive != nil {
+		return *x.ApiTokenMaxDaysInactive
+	}
+	return 0
 }
 
 type CASBackendItem struct {
@@ -2798,7 +2807,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x123\n" +
-	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xbe\x05\n" +
+	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xa1\x06\n" +
 	"\aOrgItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
@@ -2809,11 +2818,13 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"!default_policy_violation_strategy\x18\x04 \x01(\x0e28.controlplane.v1.OrgItem.PolicyViolationBlockingStrategyR\x1edefaultPolicyViolationStrategy\x128\n" +
 	"\x18policy_allowed_hostnames\x18\x05 \x03(\tR\x16policyAllowedHostnames\x12K\n" +
 	"\"prevent_implicit_workflow_creation\x18\a \x01(\bR\x1fpreventImplicitWorkflowCreation\x12U\n" +
-	"(restrict_contract_creation_to_org_admins\x18\b \x01(\bR#restrictContractCreationToOrgAdmins\"\xb4\x01\n" +
+	"(restrict_contract_creation_to_org_admins\x18\b \x01(\bR#restrictContractCreationToOrgAdmins\x12A\n" +
+	"\x1bapi_token_max_days_inactive\x18\t \x01(\x05H\x00R\x17apiTokenMaxDaysInactive\x88\x01\x01\"\xb4\x01\n" +
 	"\x1fPolicyViolationBlockingStrategy\x122\n" +
 	".POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED\x10\x00\x12,\n" +
 	"(POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK\x10\x01\x12/\n" +
-	"+POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY\x10\x02\"\x91\x06\n" +
+	"+POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY\x10\x02B\x1e\n" +
+	"\x1c_api_token_max_days_inactive\"\x91\x06\n" +
 	"\x0eCASBackendItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\v \x01(\tR\x04name\x12\x1a\n" +
@@ -3014,6 +3025,7 @@ func file_controlplane_v1_response_messages_proto_init() {
 	file_controlplane_v1_response_messages_proto_msgTypes[11].OneofWrappers = []any{
 		(*WorkflowContractVersionItem_V1)(nil),
 	}
+	file_controlplane_v1_response_messages_proto_msgTypes[14].OneofWrappers = []any{}
 	file_controlplane_v1_response_messages_proto_msgTypes[15].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

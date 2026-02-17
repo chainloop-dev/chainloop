@@ -170,6 +170,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		OrganizationRepo:  organizationRepo,
 		GroupRepo:         groupRepo,
 		OrgInvitationRepo: orgInvitationRepo,
+		APITokenRepo:      apiTokenRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
