@@ -88,6 +88,11 @@ export function aPITokenServiceListRequest_ScopeToJSON(object: APITokenServiceLi
   }
 }
 
+/**
+ * buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+ * STATUS_FILTER_ACTIVE = 0 is intentional: active tokens are the default,
+ * matching proto3 zero-value semantics and preserving backward compatibility.
+ */
 export enum APITokenServiceListRequest_StatusFilter {
   /** STATUS_FILTER_ACTIVE - Only active (non-revoked) tokens. This is the default. */
   STATUS_FILTER_ACTIVE = 0,

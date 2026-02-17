@@ -87,6 +87,9 @@ func (APITokenServiceListRequest_Scope) EnumDescriptor() ([]byte, []int) {
 	return file_controlplane_v1_api_token_proto_rawDescGZIP(), []int{4, 0}
 }
 
+// buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+// STATUS_FILTER_ACTIVE = 0 is intentional: active tokens are the default,
+// matching proto3 zero-value semantics and preserving backward compatibility.
 type APITokenServiceListRequest_StatusFilter int32
 
 const (
