@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: Install Chainloop
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0

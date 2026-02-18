@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Chainloop
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
       - name: Update contract definitions
         run: |
           for file in .github/workflows/contracts/*.yaml; do
