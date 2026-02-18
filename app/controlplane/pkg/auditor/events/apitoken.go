@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,6 +93,12 @@ func (a *APITokenCreated) Description() string {
 
 type APITokenRevoked struct {
 	*APITokenBase
+}
+
+// RequiresActor returns false because revocations can be system-generated
+// (e.g. auto-revoked due to inactivity by APITokenStaleRevoker).
+func (a *APITokenRevoked) RequiresActor() bool {
+	return false
 }
 
 func (a *APITokenRevoked) ActionType() string {

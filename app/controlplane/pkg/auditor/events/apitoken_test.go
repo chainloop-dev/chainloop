@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -100,6 +100,18 @@ func TestAPITokenEvents(t *testing.T) {
 			actor:    auditor.ActorTypeAPIToken,
 			actorID:  apiTokenUUID,
 		},
+		{
+			name: "API Token auto-revoked by system",
+			event: &events.APITokenRevoked{
+				APITokenBase: &events.APITokenBase{
+					APITokenID:   uuidPtr(apiTokenUUID),
+					APITokenName: apiTokenName,
+				},
+			},
+			expected: "testdata/apitokens/api_token_revoked_by_system.json",
+			actor:    auditor.ActorTypeSystem,
+			actorID:  uuid.Nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -107,9 +119,12 @@ func TestAPITokenEvents(t *testing.T) {
 			opts := []auditor.GeneratorOption{
 				auditor.WithOrgID(orgUUID),
 			}
-			if tt.actor == auditor.ActorTypeAPIToken {
+			switch tt.actor {
+			case auditor.ActorTypeAPIToken:
 				opts = append(opts, auditor.WithActor(auditor.ActorTypeAPIToken, tt.actorID, "", testAPITokenName))
-			} else {
+			case auditor.ActorTypeSystem:
+				opts = append(opts, auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, "", ""))
+			default:
 				opts = append(opts, auditor.WithActor(auditor.ActorTypeUser, tt.actorID, testEmail, testName))
 			}
 

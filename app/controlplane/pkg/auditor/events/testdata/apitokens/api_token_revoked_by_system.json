@@ -1,0 +1,16 @@
+{
+  "ActionType": "APITokenRevoked",
+  "TargetType": "APIToken",
+  "TargetID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorType": "SYSTEM",
+  "ActorID": null,
+  "ActorEmail": "",
+  "ActorName": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "system@chainloop.dev has revoked the API token test-token",
+  "Info": {
+    "api_token_id": "2089bb36-e27b-428b-8009-d015c8737c55",
+    "api_token_name": "test-token"
+  },
+  "Digest": "sha256:f867390a401bccbb15270dd2b54bf325dc56918925da9179af10f12787f0af24"
+}
