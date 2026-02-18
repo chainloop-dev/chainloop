@@ -215,6 +215,67 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 	}
 }
 
+// TestCreateWithProjectScopedContract verifies that a project-scoped contract can be used
+// when creating a workflow in the same project, and is rejected for different projects.
+func (s *workflowIntegrationTestSuite) TestCreateWithProjectScopedContract() {
+	ctx := context.Background()
+	const projectName = "scoped-project"
+
+	// Create the project by creating a workflow in it first
+	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+		OrgID: s.org.ID, Name: "initial-wf", Project: projectName,
+	})
+	s.Require().NoError(err)
+
+	// Create a contract scoped to this project
+	contract, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{
+		OrgID:     s.org.ID,
+		Name:      "scoped-contract",
+		ProjectID: &wf.ProjectID,
+	})
+	s.Require().NoError(err)
+	s.Require().NotNil(contract)
+
+	s.Run("succeeds when project name matches the contract scope", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID:        s.org.ID,
+			Name:         "new-wf",
+			Project:      projectName,
+			ContractName: contract.Name,
+		})
+		s.NoError(err)
+	})
+
+	s.Run("fails when creating workflow in a different project", func() {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID:        s.org.ID,
+			Name:         "other-wf",
+			Project:      "other-project",
+			ContractName: contract.Name,
+		})
+		s.ErrorContains(err, "scoped to a different project")
+	})
+
+	s.Run("succeeds after the original project is soft-deleted and a new one with the same name is created", func() {
+		// Simulate the bug: soft-delete the original project so the next workflow creation
+		// creates a new project with the same name but a different UUID.
+		err := s.Data.DB.Project.UpdateOneID(wf.ProjectID).SetDeletedAt(time.Now()).Exec(ctx)
+		s.Require().NoError(err)
+
+		// Creating the workflow triggers a project upsert that creates a new project (new UUID)
+		// because the old one is soft-deleted and doesn't conflict on the partial index.
+		// The contract still references the old project UUID, so the scope check must compare
+		// by name to allow this.
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID:        s.org.ID,
+			Name:         "recovered-wf",
+			Project:      projectName,
+			ContractName: contract.Name,
+		})
+		s.NoError(err)
+	})
+}
+
 func (s *workflowIntegrationTestSuite) TestUpdate() {
 	ctx := context.Background()
 	const (

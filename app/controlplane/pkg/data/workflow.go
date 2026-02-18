@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -179,9 +179,18 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 				return err
 			}
 
-			// Fail if it's scoped to a different project
-			if existingContract.ScopedResourceID != uuid.Nil && existingContract.ScopedResourceID != projectID && existingContract.ScopedResourceType == biz.ContractScopeProject {
-				return biz.NewErrUnauthorizedStr(fmt.Sprintf("contract %q is scoped to a different project", opts.ContractName))
+			// Fail if it's scoped to a different project.
+			// We resolve the scoped project by UUID (including soft-deleted ones) to read its name,
+			// then compare that name against the target project. This handles the case where the
+			// original project was soft-deleted and recreated with the same name but a new UUID —
+			// the contract is still valid for a project with that name.
+			if existingContract.ScopedResourceID != uuid.Nil && existingContract.ScopedResourceType == biz.ContractScopeProject {
+				scopedProject, err := tx.Project.Query().
+					Where(project.ID(existingContract.ScopedResourceID)).
+					Only(ctx)
+				if err != nil || scopedProject.Name != opts.Project {
+					return biz.NewErrUnauthorizedStr(fmt.Sprintf("contract %q is scoped to a different project", opts.ContractName))
+				}
 			}
 		}
 
