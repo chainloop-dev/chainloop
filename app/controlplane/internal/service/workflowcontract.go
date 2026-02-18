@@ -121,8 +121,8 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 
 	// If setting is enabled, only org admins can create contracts (org-level or project-level)
 	if org.RestrictContractCreationToOrgAdmins {
-		if !isUserOrgAdmin(ctx) {
-			return nil, errors.Forbidden("forbidden", "contract creation is restricted to organization administrators. Please contact your administrator")
+		if !canCreateContractsInRestrictedMode(ctx) {
+			return nil, errors.Forbidden("forbidden", "contract creation is restricted to organization administrators and service accounts. Please contact your administrator")
 		}
 	}
 
@@ -168,6 +168,17 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	return &pb.WorkflowContractServiceCreateResponse{Result: bizWorkFlowContractToPb(schema)}, nil
+}
+
+func canCreateContractsInRestrictedMode(ctx context.Context) bool {
+	// it's an org-scoped API token
+	token := entities.CurrentAPIToken(ctx)
+	if token != nil {
+		return token.ProjectID == nil
+	}
+
+	// or it's an admin user
+	return isUserOrgAdmin(ctx)
 }
 
 func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowContractServiceUpdateRequest) (*pb.WorkflowContractServiceUpdateResponse, error) {
