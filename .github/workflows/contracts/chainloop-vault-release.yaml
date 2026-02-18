@@ -62,7 +62,6 @@ spec:
           name::github.com/theupdateframework/go-tuf::sha*LICENSE.txt(BSD-3-Clause)
         allowedCustomLicenses: Apache 2.0
         skippedTypes: file, container
-        bannedComponents: log4j@2.14.1
     - ref: slsa-checks
       with:
         runner: GITHUB_ACTION
