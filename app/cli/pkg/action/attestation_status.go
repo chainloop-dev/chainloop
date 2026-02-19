@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -159,9 +159,11 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
 			return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 		}
-
-		res.PolicyEvaluations, res.HasPolicyViolations = getPolicyEvaluations(c)
 	}
+
+	// Always read existing policy evaluations from crafting state,
+	// even when skipping re-evaluation (e.g. material-level evaluations from add)
+	res.PolicyEvaluations, res.HasPolicyViolations = GetPolicyEvaluations(c)
 
 	if v := workflowMeta.GetVersion(); v != nil {
 		res.WorkflowMeta.ProjectVersion = &ProjectVersion{
@@ -210,8 +212,9 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 	return res, nil
 }
 
-// getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations
-func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool) {
+// GetPolicyEvaluations retrieves both material-level and attestation-level policy evaluations from the crafting state
+// and returns whether any violations exist.
+func GetPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool) {
 	// grouped by material name
 	evaluations := make(map[string][]*PolicyEvaluation)
 	var hasViolations bool

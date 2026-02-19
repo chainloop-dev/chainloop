@@ -200,6 +200,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 	}
 
+	// Update the status result with the evaluated policies
+	attestationStatus.PolicyEvaluations, attestationStatus.HasPolicyViolations = GetPolicyEvaluations(crafter)
+
 	// render final attestation with all the evaluated policies inside
 	envelope, bundle, err := renderer.Render(ctx)
 	if err != nil {
