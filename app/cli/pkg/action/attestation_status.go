@@ -93,6 +93,9 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 	}, nil
 }
 
+// WithSkipPolicyEvaluation skips re-evaluating policies against the attestation statement.
+// Existing policy evaluations already stored in the crafting state (e.g. from material additions)
+// will still be included in the result.
 func WithSkipPolicyEvaluation() func(*AttestationStatus) {
 	return func(opts *AttestationStatus) {
 		opts.skipPolicyEvaluation = true
