@@ -163,7 +163,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 
 	// Always read existing policy evaluations from crafting state,
 	// even when skipping re-evaluation (e.g. material-level evaluations from add)
-	res.PolicyEvaluations, res.HasPolicyViolations = GetPolicyEvaluations(c)
+	res.PolicyEvaluations, res.HasPolicyViolations = getPolicyEvaluations(c)
 
 	if v := workflowMeta.GetVersion(); v != nil {
 		res.WorkflowMeta.ProjectVersion = &ProjectVersion{
@@ -212,9 +212,9 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 	return res, nil
 }
 
-// GetPolicyEvaluations retrieves both material-level and attestation-level policy evaluations from the crafting state
+// getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations from the crafting state
 // and returns whether any violations exist.
-func GetPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool) {
+func getPolicyEvaluations(c *crafter.Crafter) (map[string][]*PolicyEvaluation, bool) {
 	// grouped by material name
 	evaluations := make(map[string][]*PolicyEvaluation)
 	var hasViolations bool

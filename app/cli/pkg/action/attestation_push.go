@@ -201,7 +201,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	// Update the status result with the evaluated policies
-	attestationStatus.PolicyEvaluations, attestationStatus.HasPolicyViolations = GetPolicyEvaluations(crafter)
+	attestationStatus.PolicyEvaluations, attestationStatus.HasPolicyViolations = getPolicyEvaluations(crafter)
 
 	// render final attestation with all the evaluated policies inside
 	envelope, bundle, err := renderer.Render(ctx)
