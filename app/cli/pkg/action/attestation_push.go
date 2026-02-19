@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err != nil {
 		return nil, fmt.Errorf("creating status action: %w", err)
 	}
-	attestationStatus, err := statusAction.Run(ctx, attestationID)
+	attestationStatus, err := statusAction.Run(ctx, attestationID, WithSkipPolicyEvaluation())
 	if err != nil {
 		return nil, fmt.Errorf("creating running status action: %w", err)
 	}
