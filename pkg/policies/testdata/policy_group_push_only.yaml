@@ -1,0 +1,9 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: PolicyGroup
+metadata:
+  name: push-only-group
+  description: Group with a push-only attestation policy
+spec:
+  policies:
+    attestation:
+      - ref: file://testdata/workflow_push_only.yaml

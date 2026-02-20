@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -611,4 +611,39 @@ func (s *groupsTestSuite) TestSkipBothMaterialAndAttestationPolicies() {
 	attestationEvs, err := verifier.VerifyStatement(context.Background(), statement)
 	s.Require().NoError(err)
 	s.Len(attestationEvs, 0, "attestation policy should be skipped")
+}
+
+func (s *groupsTestSuite) TestAttestationPhaseFilteringInGroups() {
+	cases := []struct {
+		name      string
+		phase     EvalPhase
+		npolicies int
+	}{
+		{
+			name:      "push-only group policy runs at push",
+			phase:     EvalPhasePush,
+			npolicies: 1,
+		},
+		{
+			name:      "push-only group policy skipped at init",
+			phase:     EvalPhaseInit,
+			npolicies: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v1.CraftingSchema{
+				PolicyGroups: []*v1.PolicyGroupAttachment{
+					{Ref: "file://testdata/policy_group_push_only.yaml"},
+				},
+			}
+			verifier := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger, WithEvalPhase(tc.phase))
+			statement := loadStatement("testdata/statement.json", &s.Suite)
+
+			res, err := verifier.VerifyStatement(context.TODO(), statement)
+			s.Require().NoError(err)
+			s.Len(res, tc.npolicies)
+		})
+	}
 }

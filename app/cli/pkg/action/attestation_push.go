@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"google.golang.org/grpc"
@@ -100,6 +101,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err != nil {
 		return nil, fmt.Errorf("creating status action: %w", err)
 	}
+
 	attestationStatus, err := statusAction.Run(ctx, attestationID)
 	if err != nil {
 		return nil, fmt.Errorf("creating running status action: %w", err)
@@ -196,9 +198,12 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	// Add attestation-level policy evaluations
-	if err := crafter.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
+	if err := crafter.EvaluateAttestationPolicies(ctx, attestationID, statement, policies.EvalPhasePush); err != nil {
 		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 	}
+
+	// Update the status result with the definitive push-phase evaluation against the final statement
+	attestationStatus.PolicyEvaluations, attestationStatus.HasPolicyViolations = getPolicyEvaluations(crafter)
 
 	// render final attestation with all the evaluated policies inside
 	envelope, bundle, err := renderer.Render(ctx)

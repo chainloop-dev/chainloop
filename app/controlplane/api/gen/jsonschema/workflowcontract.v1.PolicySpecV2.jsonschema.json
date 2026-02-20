@@ -2,7 +2,53 @@
   "$id": "workflowcontract.v1.PolicySpecV2.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(attestation_phases)$": {
+      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.\n Only applicable when kind is ATTESTATION.",
+      "items": {
+        "anyOf": [
+          {
+            "enum": [
+              "ATTESTATION_PHASE_UNSPECIFIED",
+              "INIT",
+              "PUSH"
+            ],
+            "title": "Attestation Phase",
+            "type": "string"
+          },
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          }
+        ]
+      },
+      "type": "array"
+    }
+  },
   "properties": {
+    "attestationPhases": {
+      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.\n Only applicable when kind is ATTESTATION.",
+      "items": {
+        "anyOf": [
+          {
+            "enum": [
+              "ATTESTATION_PHASE_UNSPECIFIED",
+              "INIT",
+              "PUSH"
+            ],
+            "title": "Attestation Phase",
+            "type": "string"
+          },
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          }
+        ]
+      },
+      "type": "array"
+    },
     "embedded": {
       "description": "embedded source code (only Rego supported currently)",
       "type": "string"

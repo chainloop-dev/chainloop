@@ -766,16 +766,23 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	return mt, nil
 }
 
-// EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state
-func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement) error {
+// EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state.
+// The phase parameter controls which policies are evaluated based on their attestation_phases spec field.
+func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement, phase policies.EvalPhase) error {
 	// evaluate attestation-level policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger,
+		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
+		policies.WithEvalPhase(phase),
+	)
 	policyEvaluations, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return fmt.Errorf("evaluating policies in statement: %w", err)
 	}
 
-	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.GetPolicyGroups(), c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.GetPolicyGroups(), c.CraftingState.GetPolicies(), c.attClient, c.Logger,
+		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
+		policies.WithEvalPhase(phase),
+	)
 	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
 	if err != nil {
 		return fmt.Errorf("evaluating policy groups in statement: %w", err)
@@ -801,10 +808,25 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 
 	policyEvaluations = filteredPolicyEvaluations
 
-	// Since we are going to override the state, we want to keep the existing material-type policy evaluations
+	// Preserve existing evaluations that were not re-evaluated in this phase:
+	// - Material-level evaluations are always kept
+	// - Attestation-level evaluations are kept if they weren't re-evaluated (e.g., from a different phase)
 	for _, ev := range c.CraftingState.Attestation.PolicyEvaluations {
-		// We can not use kind = ATTESTATION since that's a valid material kind
 		if ev.MaterialName != "" {
+			policyEvaluations = append(policyEvaluations, ev)
+			continue
+		}
+
+		// Check if this attestation-level evaluation was re-evaluated in the current phase
+		var reEvaluated bool
+		for _, newEv := range policyEvaluations {
+			if proto.Equal(newEv.PolicyReference, ev.PolicyReference) && reflect.DeepEqual(newEv.With, ev.With) {
+				reEvaluated = true
+				break
+			}
+		}
+
+		if !reEvaluated {
 			policyEvaluations = append(policyEvaluations, ev)
 		}
 	}

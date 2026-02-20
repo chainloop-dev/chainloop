@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1246,6 +1246,116 @@ func (s *testSuite) TestMultiKindAWithIgnore() {
 			if len(res[0].SkipReasons) > 0 {
 				s.Equal(tc.expectReasons, res[0].SkipReasons)
 			}
+		})
+	}
+}
+
+func (s *testSuite) TestAttestationPhaseFiltering() {
+	cases := []struct {
+		name      string
+		policyRef string
+		phase     EvalPhase
+		npolicies int
+	}{
+		{
+			name:      "no phases specified, runs at push",
+			policyRef: "file://testdata/workflow.yaml",
+			phase:     EvalPhasePush,
+			npolicies: 1,
+		},
+		{
+			name:      "no phases specified, runs with unspecified phase",
+			policyRef: "file://testdata/workflow.yaml",
+			phase:     EvalPhaseUnspecified,
+			npolicies: 1,
+		},
+		{
+			name:      "push-only policy, runs at push",
+			policyRef: "file://testdata/workflow_push_only.yaml",
+			phase:     EvalPhasePush,
+			npolicies: 1,
+		},
+		{
+			name:      "push-only policy, skipped at init",
+			policyRef: "file://testdata/workflow_push_only.yaml",
+			phase:     EvalPhaseInit,
+			npolicies: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v12.CraftingSchema{
+				Policies: &v12.Policies{
+					Attestation: []*v12.PolicyAttachment{
+						{Policy: &v12.PolicyAttachment_Ref{Ref: tc.policyRef}},
+					},
+				},
+			}
+			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger, WithEvalPhase(tc.phase))
+			statement := loadStatement("testdata/statement.json", &s.Suite)
+
+			res, err := verifier.VerifyStatement(context.TODO(), statement)
+			s.Require().NoError(err)
+			s.Len(res, tc.npolicies)
+		})
+	}
+}
+
+func (s *testSuite) TestShouldEvaluateAtPhase() {
+	cases := []struct {
+		name   string
+		phases []v12.AttestationPhase
+		phase  EvalPhase
+		want   bool
+	}{
+		{
+			name:   "empty phases, unspecified phase",
+			phases: nil,
+			phase:  EvalPhaseUnspecified,
+			want:   true,
+		},
+		{
+			name:   "empty phases, push phase",
+			phases: nil,
+			phase:  EvalPhasePush,
+			want:   true,
+		},
+		{
+			name:   "push only, matches push",
+			phases: []v12.AttestationPhase{v12.AttestationPhase_PUSH},
+			phase:  EvalPhasePush,
+			want:   true,
+		},
+		{
+			name:   "push only, does not match init",
+			phases: []v12.AttestationPhase{v12.AttestationPhase_PUSH},
+			phase:  EvalPhaseInit,
+			want:   false,
+		},
+		{
+			name:   "both phases, matches init",
+			phases: []v12.AttestationPhase{v12.AttestationPhase_INIT, v12.AttestationPhase_PUSH},
+			phase:  EvalPhaseInit,
+			want:   true,
+		},
+		{
+			name:   "both phases, matches push",
+			phases: []v12.AttestationPhase{v12.AttestationPhase_INIT, v12.AttestationPhase_PUSH},
+			phase:  EvalPhasePush,
+			want:   true,
+		},
+		{
+			name:   "with phases specified, unspecified phase always matches",
+			phases: []v12.AttestationPhase{v12.AttestationPhase_PUSH},
+			phase:  EvalPhaseUnspecified,
+			want:   true,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			s.Equal(tc.want, shouldEvaluateAtPhase(tc.phases, tc.phase))
 		})
 	}
 }

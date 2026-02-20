@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,57 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// Lifecycle phases that control when an attestation policy is evaluated.
+// Only applicable to policies with kind ATTESTATION in PolicySpecV2.
+type AttestationPhase int32
+
+const (
+	AttestationPhase_ATTESTATION_PHASE_UNSPECIFIED AttestationPhase = 0
+	AttestationPhase_INIT                          AttestationPhase = 1
+	AttestationPhase_PUSH                          AttestationPhase = 3
+)
+
+// Enum value maps for AttestationPhase.
+var (
+	AttestationPhase_name = map[int32]string{
+		0: "ATTESTATION_PHASE_UNSPECIFIED",
+		1: "INIT",
+		3: "PUSH",
+	}
+	AttestationPhase_value = map[string]int32{
+		"ATTESTATION_PHASE_UNSPECIFIED": 0,
+		"INIT":                          1,
+		"PUSH":                          3,
+	}
+)
+
+func (x AttestationPhase) Enum() *AttestationPhase {
+	p := new(AttestationPhase)
+	*p = x
+	return p
+}
+
+func (x AttestationPhase) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AttestationPhase) Descriptor() protoreflect.EnumDescriptor {
+	return file_workflowcontract_v1_crafting_schema_proto_enumTypes[0].Descriptor()
+}
+
+func (AttestationPhase) Type() protoreflect.EnumType {
+	return &file_workflowcontract_v1_crafting_schema_proto_enumTypes[0]
+}
+
+func (x AttestationPhase) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AttestationPhase.Descriptor instead.
+func (AttestationPhase) EnumDescriptor() ([]byte, []int) {
+	return file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP(), []int{0}
+}
 
 type CraftingSchema_Runner_RunnerType int32
 
@@ -88,11 +139,11 @@ func (x CraftingSchema_Runner_RunnerType) String() string {
 }
 
 func (CraftingSchema_Runner_RunnerType) Descriptor() protoreflect.EnumDescriptor {
-	return file_workflowcontract_v1_crafting_schema_proto_enumTypes[0].Descriptor()
+	return file_workflowcontract_v1_crafting_schema_proto_enumTypes[1].Descriptor()
 }
 
 func (CraftingSchema_Runner_RunnerType) Type() protoreflect.EnumType {
-	return &file_workflowcontract_v1_crafting_schema_proto_enumTypes[0]
+	return &file_workflowcontract_v1_crafting_schema_proto_enumTypes[1]
 }
 
 func (x CraftingSchema_Runner_RunnerType) Number() protoreflect.EnumNumber {
@@ -232,11 +283,11 @@ func (x CraftingSchema_Material_MaterialType) String() string {
 }
 
 func (CraftingSchema_Material_MaterialType) Descriptor() protoreflect.EnumDescriptor {
-	return file_workflowcontract_v1_crafting_schema_proto_enumTypes[1].Descriptor()
+	return file_workflowcontract_v1_crafting_schema_proto_enumTypes[2].Descriptor()
 }
 
 func (CraftingSchema_Material_MaterialType) Type() protoreflect.EnumType {
-	return &file_workflowcontract_v1_crafting_schema_proto_enumTypes[1]
+	return &file_workflowcontract_v1_crafting_schema_proto_enumTypes[2]
 }
 
 func (x CraftingSchema_Material_MaterialType) Number() protoreflect.EnumNumber {
@@ -1120,9 +1171,13 @@ type PolicySpecV2 struct {
 	//	*PolicySpecV2_Ref
 	Source isPolicySpecV2_Source `protobuf_oneof:"source"`
 	// if set, it will match any material supported by Chainloop
-	Kind          CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Kind CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
+	// Controls at which attestation phases this policy is evaluated.
+	// Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
+	// Only applicable when kind is ATTESTATION.
+	AttestationPhases []AttestationPhase `protobuf:"varint,5,rep,packed,name=attestation_phases,json=attestationPhases,proto3,enum=workflowcontract.v1.AttestationPhase" json:"attestation_phases,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PolicySpecV2) Reset() {
@@ -1195,6 +1250,13 @@ func (x *PolicySpecV2) GetKind() CraftingSchema_Material_MaterialType {
 		return x.Kind
 	}
 	return CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED
+}
+
+func (x *PolicySpecV2) GetAttestationPhases() []AttestationPhase {
+	if x != nil {
+		return x.AttestationPhases
+	}
+	return nil
 }
 
 type isPolicySpecV2_Source interface {
@@ -1976,12 +2038,13 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x14name.go_map_variable\x12:must contain only lowercase letters, numbers, and hyphens.\x1a'this.matches('^[a-zA-Z][a-zA-Z0-9_]*$')R\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
 	"\brequired\x18\x03 \x01(\bR\brequired\x12\x18\n" +
-	"\adefault\x18\x04 \x01(\tR\adefault\"\xc4\x01\n" +
+	"\adefault\x18\x04 \x01(\tR\adefault\"\x9a\x02\n" +
 	"\fPolicySpecV2\x12\x18\n" +
 	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
 	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
 	"\x03ref\x18\x04 \x01(\tH\x00R\x03ref\x12W\n" +
-	"\x04kind\x18\x03 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kindB\x0f\n" +
+	"\x04kind\x18\x03 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kind\x12T\n" +
+	"\x12attestation_phases\x18\x05 \x03(\x0e2%.workflowcontract.v1.AttestationPhaseR\x11attestationPhasesB\x0f\n" +
 	"\x06source\x12\x05\xbaH\x02\b\x01\"h\n" +
 	"\tAutoMatch\x12\x18\n" +
 	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
@@ -2014,7 +2077,11 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
 	"\boptional\x18\x03 \x01(\bR\boptional\x12A\n" +
 	"\bpolicies\x18\x06 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\bpolicies:\x7f\xbaH|\x1az\n" +
-	"\x0egroup_material\x123if name is provided, type should have a valid value\x1a3!has(this.name) || has(this.name) && this.type != 0BMZKgithub.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1b\x06proto3"
+	"\x0egroup_material\x123if name is provided, type should have a valid value\x1a3!has(this.name) || has(this.name) && this.type != 0*I\n" +
+	"\x10AttestationPhase\x12!\n" +
+	"\x1dATTESTATION_PHASE_UNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04INIT\x10\x01\x12\b\n" +
+	"\x04PUSH\x10\x03BMZKgithub.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1b\x06proto3"
 
 var (
 	file_workflowcontract_v1_crafting_schema_proto_rawDescOnce sync.Once
@@ -2028,78 +2095,80 @@ func file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP() []byte {
 	return file_workflowcontract_v1_crafting_schema_proto_rawDescData
 }
 
-var file_workflowcontract_v1_crafting_schema_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_workflowcontract_v1_crafting_schema_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_workflowcontract_v1_crafting_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_workflowcontract_v1_crafting_schema_proto_goTypes = []any{
-	(CraftingSchema_Runner_RunnerType)(0),     // 0: workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	(CraftingSchema_Material_MaterialType)(0), // 1: workflowcontract.v1.CraftingSchema.Material.MaterialType
-	(*CraftingSchema)(nil),                    // 2: workflowcontract.v1.CraftingSchema
-	(*CraftingSchemaV2)(nil),                  // 3: workflowcontract.v1.CraftingSchemaV2
-	(*CraftingSchemaV2Spec)(nil),              // 4: workflowcontract.v1.CraftingSchemaV2Spec
-	(*Annotation)(nil),                        // 5: workflowcontract.v1.Annotation
-	(*Policies)(nil),                          // 6: workflowcontract.v1.Policies
-	(*PolicyAttachment)(nil),                  // 7: workflowcontract.v1.PolicyAttachment
-	(*Policy)(nil),                            // 8: workflowcontract.v1.Policy
-	(*Metadata)(nil),                          // 9: workflowcontract.v1.Metadata
-	(*PolicySpec)(nil),                        // 10: workflowcontract.v1.PolicySpec
-	(*PolicyInput)(nil),                       // 11: workflowcontract.v1.PolicyInput
-	(*PolicySpecV2)(nil),                      // 12: workflowcontract.v1.PolicySpecV2
-	(*AutoMatch)(nil),                         // 13: workflowcontract.v1.AutoMatch
-	(*PolicyGroupAttachment)(nil),             // 14: workflowcontract.v1.PolicyGroupAttachment
-	(*PolicyGroup)(nil),                       // 15: workflowcontract.v1.PolicyGroup
-	(*CraftingSchema_Runner)(nil),             // 16: workflowcontract.v1.CraftingSchema.Runner
-	(*CraftingSchema_Material)(nil),           // 17: workflowcontract.v1.CraftingSchema.Material
-	nil,                                       // 18: workflowcontract.v1.PolicyAttachment.WithEntry
-	(*PolicyAttachment_MaterialSelector)(nil), // 19: workflowcontract.v1.PolicyAttachment.MaterialSelector
-	nil,                                     // 20: workflowcontract.v1.Metadata.AnnotationsEntry
-	nil,                                     // 21: workflowcontract.v1.PolicyGroupAttachment.WithEntry
-	(*PolicyGroup_PolicyGroupSpec)(nil),     // 22: workflowcontract.v1.PolicyGroup.PolicyGroupSpec
-	(*PolicyGroup_PolicyGroupPolicies)(nil), // 23: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies
-	(*PolicyGroup_Material)(nil),            // 24: workflowcontract.v1.PolicyGroup.Material
+	(AttestationPhase)(0),                     // 0: workflowcontract.v1.AttestationPhase
+	(CraftingSchema_Runner_RunnerType)(0),     // 1: workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	(CraftingSchema_Material_MaterialType)(0), // 2: workflowcontract.v1.CraftingSchema.Material.MaterialType
+	(*CraftingSchema)(nil),                    // 3: workflowcontract.v1.CraftingSchema
+	(*CraftingSchemaV2)(nil),                  // 4: workflowcontract.v1.CraftingSchemaV2
+	(*CraftingSchemaV2Spec)(nil),              // 5: workflowcontract.v1.CraftingSchemaV2Spec
+	(*Annotation)(nil),                        // 6: workflowcontract.v1.Annotation
+	(*Policies)(nil),                          // 7: workflowcontract.v1.Policies
+	(*PolicyAttachment)(nil),                  // 8: workflowcontract.v1.PolicyAttachment
+	(*Policy)(nil),                            // 9: workflowcontract.v1.Policy
+	(*Metadata)(nil),                          // 10: workflowcontract.v1.Metadata
+	(*PolicySpec)(nil),                        // 11: workflowcontract.v1.PolicySpec
+	(*PolicyInput)(nil),                       // 12: workflowcontract.v1.PolicyInput
+	(*PolicySpecV2)(nil),                      // 13: workflowcontract.v1.PolicySpecV2
+	(*AutoMatch)(nil),                         // 14: workflowcontract.v1.AutoMatch
+	(*PolicyGroupAttachment)(nil),             // 15: workflowcontract.v1.PolicyGroupAttachment
+	(*PolicyGroup)(nil),                       // 16: workflowcontract.v1.PolicyGroup
+	(*CraftingSchema_Runner)(nil),             // 17: workflowcontract.v1.CraftingSchema.Runner
+	(*CraftingSchema_Material)(nil),           // 18: workflowcontract.v1.CraftingSchema.Material
+	nil,                                       // 19: workflowcontract.v1.PolicyAttachment.WithEntry
+	(*PolicyAttachment_MaterialSelector)(nil), // 20: workflowcontract.v1.PolicyAttachment.MaterialSelector
+	nil,                                     // 21: workflowcontract.v1.Metadata.AnnotationsEntry
+	nil,                                     // 22: workflowcontract.v1.PolicyGroupAttachment.WithEntry
+	(*PolicyGroup_PolicyGroupSpec)(nil),     // 23: workflowcontract.v1.PolicyGroup.PolicyGroupSpec
+	(*PolicyGroup_PolicyGroupPolicies)(nil), // 24: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies
+	(*PolicyGroup_Material)(nil),            // 25: workflowcontract.v1.PolicyGroup.Material
 }
 var file_workflowcontract_v1_crafting_schema_proto_depIdxs = []int32{
-	17, // 0: workflowcontract.v1.CraftingSchema.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
-	16, // 1: workflowcontract.v1.CraftingSchema.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
-	5,  // 2: workflowcontract.v1.CraftingSchema.annotations:type_name -> workflowcontract.v1.Annotation
-	6,  // 3: workflowcontract.v1.CraftingSchema.policies:type_name -> workflowcontract.v1.Policies
-	14, // 4: workflowcontract.v1.CraftingSchema.policy_groups:type_name -> workflowcontract.v1.PolicyGroupAttachment
-	9,  // 5: workflowcontract.v1.CraftingSchemaV2.metadata:type_name -> workflowcontract.v1.Metadata
-	4,  // 6: workflowcontract.v1.CraftingSchemaV2.spec:type_name -> workflowcontract.v1.CraftingSchemaV2Spec
-	17, // 7: workflowcontract.v1.CraftingSchemaV2Spec.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
-	16, // 8: workflowcontract.v1.CraftingSchemaV2Spec.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
-	6,  // 9: workflowcontract.v1.CraftingSchemaV2Spec.policies:type_name -> workflowcontract.v1.Policies
-	14, // 10: workflowcontract.v1.CraftingSchemaV2Spec.policy_groups:type_name -> workflowcontract.v1.PolicyGroupAttachment
-	5,  // 11: workflowcontract.v1.CraftingSchemaV2Spec.annotations:type_name -> workflowcontract.v1.Annotation
-	7,  // 12: workflowcontract.v1.Policies.materials:type_name -> workflowcontract.v1.PolicyAttachment
-	7,  // 13: workflowcontract.v1.Policies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
-	8,  // 14: workflowcontract.v1.PolicyAttachment.embedded:type_name -> workflowcontract.v1.Policy
-	19, // 15: workflowcontract.v1.PolicyAttachment.selector:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector
-	18, // 16: workflowcontract.v1.PolicyAttachment.with:type_name -> workflowcontract.v1.PolicyAttachment.WithEntry
-	9,  // 17: workflowcontract.v1.Policy.metadata:type_name -> workflowcontract.v1.Metadata
-	10, // 18: workflowcontract.v1.Policy.spec:type_name -> workflowcontract.v1.PolicySpec
-	20, // 19: workflowcontract.v1.Metadata.annotations:type_name -> workflowcontract.v1.Metadata.AnnotationsEntry
-	1,  // 20: workflowcontract.v1.PolicySpec.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	12, // 21: workflowcontract.v1.PolicySpec.policies:type_name -> workflowcontract.v1.PolicySpecV2
-	11, // 22: workflowcontract.v1.PolicySpec.inputs:type_name -> workflowcontract.v1.PolicyInput
-	13, // 23: workflowcontract.v1.PolicySpec.auto_match:type_name -> workflowcontract.v1.AutoMatch
-	1,  // 24: workflowcontract.v1.PolicySpecV2.kind:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	21, // 25: workflowcontract.v1.PolicyGroupAttachment.with:type_name -> workflowcontract.v1.PolicyGroupAttachment.WithEntry
-	9,  // 26: workflowcontract.v1.PolicyGroup.metadata:type_name -> workflowcontract.v1.Metadata
-	22, // 27: workflowcontract.v1.PolicyGroup.spec:type_name -> workflowcontract.v1.PolicyGroup.PolicyGroupSpec
-	0,  // 28: workflowcontract.v1.CraftingSchema.Runner.type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	1,  // 29: workflowcontract.v1.CraftingSchema.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	5,  // 30: workflowcontract.v1.CraftingSchema.Material.annotations:type_name -> workflowcontract.v1.Annotation
-	23, // 31: workflowcontract.v1.PolicyGroup.PolicyGroupSpec.policies:type_name -> workflowcontract.v1.PolicyGroup.PolicyGroupPolicies
-	11, // 32: workflowcontract.v1.PolicyGroup.PolicyGroupSpec.inputs:type_name -> workflowcontract.v1.PolicyInput
-	24, // 33: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.materials:type_name -> workflowcontract.v1.PolicyGroup.Material
-	7,  // 34: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
-	1,  // 35: workflowcontract.v1.PolicyGroup.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	7,  // 36: workflowcontract.v1.PolicyGroup.Material.policies:type_name -> workflowcontract.v1.PolicyAttachment
-	37, // [37:37] is the sub-list for method output_type
-	37, // [37:37] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	18, // 0: workflowcontract.v1.CraftingSchema.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
+	17, // 1: workflowcontract.v1.CraftingSchema.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
+	6,  // 2: workflowcontract.v1.CraftingSchema.annotations:type_name -> workflowcontract.v1.Annotation
+	7,  // 3: workflowcontract.v1.CraftingSchema.policies:type_name -> workflowcontract.v1.Policies
+	15, // 4: workflowcontract.v1.CraftingSchema.policy_groups:type_name -> workflowcontract.v1.PolicyGroupAttachment
+	10, // 5: workflowcontract.v1.CraftingSchemaV2.metadata:type_name -> workflowcontract.v1.Metadata
+	5,  // 6: workflowcontract.v1.CraftingSchemaV2.spec:type_name -> workflowcontract.v1.CraftingSchemaV2Spec
+	18, // 7: workflowcontract.v1.CraftingSchemaV2Spec.materials:type_name -> workflowcontract.v1.CraftingSchema.Material
+	17, // 8: workflowcontract.v1.CraftingSchemaV2Spec.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner
+	7,  // 9: workflowcontract.v1.CraftingSchemaV2Spec.policies:type_name -> workflowcontract.v1.Policies
+	15, // 10: workflowcontract.v1.CraftingSchemaV2Spec.policy_groups:type_name -> workflowcontract.v1.PolicyGroupAttachment
+	6,  // 11: workflowcontract.v1.CraftingSchemaV2Spec.annotations:type_name -> workflowcontract.v1.Annotation
+	8,  // 12: workflowcontract.v1.Policies.materials:type_name -> workflowcontract.v1.PolicyAttachment
+	8,  // 13: workflowcontract.v1.Policies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
+	9,  // 14: workflowcontract.v1.PolicyAttachment.embedded:type_name -> workflowcontract.v1.Policy
+	20, // 15: workflowcontract.v1.PolicyAttachment.selector:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector
+	19, // 16: workflowcontract.v1.PolicyAttachment.with:type_name -> workflowcontract.v1.PolicyAttachment.WithEntry
+	10, // 17: workflowcontract.v1.Policy.metadata:type_name -> workflowcontract.v1.Metadata
+	11, // 18: workflowcontract.v1.Policy.spec:type_name -> workflowcontract.v1.PolicySpec
+	21, // 19: workflowcontract.v1.Metadata.annotations:type_name -> workflowcontract.v1.Metadata.AnnotationsEntry
+	2,  // 20: workflowcontract.v1.PolicySpec.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	13, // 21: workflowcontract.v1.PolicySpec.policies:type_name -> workflowcontract.v1.PolicySpecV2
+	12, // 22: workflowcontract.v1.PolicySpec.inputs:type_name -> workflowcontract.v1.PolicyInput
+	14, // 23: workflowcontract.v1.PolicySpec.auto_match:type_name -> workflowcontract.v1.AutoMatch
+	2,  // 24: workflowcontract.v1.PolicySpecV2.kind:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	0,  // 25: workflowcontract.v1.PolicySpecV2.attestation_phases:type_name -> workflowcontract.v1.AttestationPhase
+	22, // 26: workflowcontract.v1.PolicyGroupAttachment.with:type_name -> workflowcontract.v1.PolicyGroupAttachment.WithEntry
+	10, // 27: workflowcontract.v1.PolicyGroup.metadata:type_name -> workflowcontract.v1.Metadata
+	23, // 28: workflowcontract.v1.PolicyGroup.spec:type_name -> workflowcontract.v1.PolicyGroup.PolicyGroupSpec
+	1,  // 29: workflowcontract.v1.CraftingSchema.Runner.type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	2,  // 30: workflowcontract.v1.CraftingSchema.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	6,  // 31: workflowcontract.v1.CraftingSchema.Material.annotations:type_name -> workflowcontract.v1.Annotation
+	24, // 32: workflowcontract.v1.PolicyGroup.PolicyGroupSpec.policies:type_name -> workflowcontract.v1.PolicyGroup.PolicyGroupPolicies
+	12, // 33: workflowcontract.v1.PolicyGroup.PolicyGroupSpec.inputs:type_name -> workflowcontract.v1.PolicyInput
+	25, // 34: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.materials:type_name -> workflowcontract.v1.PolicyGroup.Material
+	8,  // 35: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
+	2,  // 36: workflowcontract.v1.PolicyGroup.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	8,  // 37: workflowcontract.v1.PolicyGroup.Material.policies:type_name -> workflowcontract.v1.PolicyAttachment
+	38, // [38:38] is the sub-list for method output_type
+	38, // [38:38] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_workflowcontract_v1_crafting_schema_proto_init() }
@@ -2131,7 +2200,7 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_workflowcontract_v1_crafting_schema_proto_rawDesc), len(file_workflowcontract_v1_crafting_schema_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
