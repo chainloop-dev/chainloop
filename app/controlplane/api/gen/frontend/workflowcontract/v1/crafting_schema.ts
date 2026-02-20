@@ -10,7 +10,6 @@ export const protobufPackage = "workflowcontract.v1";
 export enum AttestationPhase {
   ATTESTATION_PHASE_UNSPECIFIED = 0,
   INIT = 1,
-  STATUS = 2,
   PUSH = 3,
   UNRECOGNIZED = -1,
 }
@@ -23,9 +22,6 @@ export function attestationPhaseFromJSON(object: any): AttestationPhase {
     case 1:
     case "INIT":
       return AttestationPhase.INIT;
-    case 2:
-    case "STATUS":
-      return AttestationPhase.STATUS;
     case 3:
     case "PUSH":
       return AttestationPhase.PUSH;
@@ -42,8 +38,6 @@ export function attestationPhaseToJSON(object: AttestationPhase): string {
       return "ATTESTATION_PHASE_UNSPECIFIED";
     case AttestationPhase.INIT:
       return "INIT";
-    case AttestationPhase.STATUS:
-      return "STATUS";
     case AttestationPhase.PUSH:
       return "PUSH";
     case AttestationPhase.UNRECOGNIZED:
@@ -588,7 +582,7 @@ export interface PolicySpecV2 {
   kind: CraftingSchema_Material_MaterialType;
   /**
    * Controls at which attestation phases this policy is evaluated.
-   * Empty means evaluate at all phases (INIT, STATUS, and PUSH) for backwards compatibility.
+   * Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
    * Only applicable when kind is ATTESTATION.
    */
   attestationPhases: AttestationPhase[];

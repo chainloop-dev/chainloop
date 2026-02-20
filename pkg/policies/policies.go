@@ -69,7 +69,6 @@ type EvalPhase int
 const (
 	EvalPhaseUnspecified EvalPhase = iota
 	EvalPhaseInit
-	EvalPhaseStatus
 	EvalPhasePush
 )
 
@@ -198,8 +197,6 @@ func shouldEvaluateAtPhase(phases []v1.AttestationPhase, phase EvalPhase) bool {
 	switch phase {
 	case EvalPhaseInit:
 		target = v1.AttestationPhase_INIT
-	case EvalPhaseStatus:
-		target = v1.AttestationPhase_STATUS
 	case EvalPhasePush:
 		target = v1.AttestationPhase_PUSH
 	default:

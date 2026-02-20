@@ -311,7 +311,6 @@ message PolicySpec {
 enum AttestationPhase {
   ATTESTATION_PHASE_UNSPECIFIED = 0;
   INIT = 1;
-  STATUS = 2;
   PUSH = 3;
 }
 
@@ -350,7 +349,7 @@ message PolicySpecV2 {
   }];
 
   // Controls at which attestation phases this policy is evaluated.
-  // Empty means evaluate at all phases (INIT, STATUS, and PUSH) for backwards compatibility.
+  // Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
   // Only applicable when kind is ATTESTATION.
   repeated AttestationPhase attestation_phases = 5;
 }

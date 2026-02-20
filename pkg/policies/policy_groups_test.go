@@ -625,8 +625,8 @@ func (s *groupsTestSuite) TestAttestationPhaseFilteringInGroups() {
 			npolicies: 1,
 		},
 		{
-			name:      "push-only group policy skipped at status",
-			phase:     EvalPhaseStatus,
+			name:      "push-only group policy skipped at init",
+			phase:     EvalPhaseInit,
 			npolicies: 0,
 		},
 	}

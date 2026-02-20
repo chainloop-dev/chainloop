@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
@@ -303,6 +304,22 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	if err := action.c.AutoCollectPRMetadata(ctx, attestationID, discoveredRunner, casBackend); err != nil {
 		action.Logger.Warn().Err(err).Msg("failed to auto-collect PR/MR metadata")
 		// Don't fail the init - this is best-effort
+	}
+
+	// Evaluate attestation-level policies at init phase
+	attClient := pb.NewAttestationServiceClient(action.CPConnection)
+	r, err := renderer.NewAttestationRenderer(action.c.CraftingState, attClient, "", "", nil, renderer.WithLogger(action.Logger))
+	if err != nil {
+		return "", fmt.Errorf("creating attestation renderer: %w", err)
+	}
+
+	statement, err := r.RenderStatement(ctx)
+	if err != nil {
+		return "", fmt.Errorf("rendering statement: %w", err)
+	}
+
+	if err := action.c.EvaluateAttestationPolicies(ctx, attestationID, statement, policies.EvalPhaseInit); err != nil {
+		return "", fmt.Errorf("evaluating attestation policies: %w", err)
 	}
 
 	return attestationID, nil

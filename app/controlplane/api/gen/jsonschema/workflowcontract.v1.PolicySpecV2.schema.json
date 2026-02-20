@@ -4,14 +4,13 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(attestationPhases)$": {
-      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT, STATUS, and PUSH) for backwards compatibility.\n Only applicable when kind is ATTESTATION.",
+      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.\n Only applicable when kind is ATTESTATION.",
       "items": {
         "anyOf": [
           {
             "enum": [
               "ATTESTATION_PHASE_UNSPECIFIED",
               "INIT",
-              "STATUS",
               "PUSH"
             ],
             "title": "Attestation Phase",
@@ -29,14 +28,13 @@
   },
   "properties": {
     "attestation_phases": {
-      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT, STATUS, and PUSH) for backwards compatibility.\n Only applicable when kind is ATTESTATION.",
+      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.\n Only applicable when kind is ATTESTATION.",
       "items": {
         "anyOf": [
           {
             "enum": [
               "ATTESTATION_PHASE_UNSPECIFIED",
               "INIT",
-              "STATUS",
               "PUSH"
             ],
             "title": "Attestation Phase",

@@ -1258,12 +1258,6 @@ func (s *testSuite) TestAttestationPhaseFiltering() {
 		npolicies int
 	}{
 		{
-			name:      "no phases specified, runs at status",
-			policyRef: "file://testdata/workflow.yaml",
-			phase:     EvalPhaseStatus,
-			npolicies: 1,
-		},
-		{
 			name:      "no phases specified, runs at push",
 			policyRef: "file://testdata/workflow.yaml",
 			phase:     EvalPhasePush,
@@ -1282,21 +1276,9 @@ func (s *testSuite) TestAttestationPhaseFiltering() {
 			npolicies: 1,
 		},
 		{
-			name:      "push-only policy, skipped at status",
+			name:      "push-only policy, skipped at init",
 			policyRef: "file://testdata/workflow_push_only.yaml",
-			phase:     EvalPhaseStatus,
-			npolicies: 0,
-		},
-		{
-			name:      "status-only policy, runs at status",
-			policyRef: "file://testdata/workflow_status_only.yaml",
-			phase:     EvalPhaseStatus,
-			npolicies: 1,
-		},
-		{
-			name:      "status-only policy, skipped at push",
-			policyRef: "file://testdata/workflow_status_only.yaml",
-			phase:     EvalPhasePush,
+			phase:     EvalPhaseInit,
 			npolicies: 0,
 		},
 	}
@@ -1334,28 +1316,10 @@ func (s *testSuite) TestShouldEvaluateAtPhase() {
 			want:   true,
 		},
 		{
-			name:   "empty phases, status phase",
-			phases: nil,
-			phase:  EvalPhaseStatus,
-			want:   true,
-		},
-		{
 			name:   "empty phases, push phase",
 			phases: nil,
 			phase:  EvalPhasePush,
 			want:   true,
-		},
-		{
-			name:   "status only, matches status",
-			phases: []v12.AttestationPhase{v12.AttestationPhase_STATUS},
-			phase:  EvalPhaseStatus,
-			want:   true,
-		},
-		{
-			name:   "status only, does not match push",
-			phases: []v12.AttestationPhase{v12.AttestationPhase_STATUS},
-			phase:  EvalPhasePush,
-			want:   false,
 		},
 		{
 			name:   "push only, matches push",
@@ -1364,20 +1328,20 @@ func (s *testSuite) TestShouldEvaluateAtPhase() {
 			want:   true,
 		},
 		{
-			name:   "push only, does not match status",
+			name:   "push only, does not match init",
 			phases: []v12.AttestationPhase{v12.AttestationPhase_PUSH},
-			phase:  EvalPhaseStatus,
+			phase:  EvalPhaseInit,
 			want:   false,
 		},
 		{
-			name:   "both phases, matches status",
-			phases: []v12.AttestationPhase{v12.AttestationPhase_STATUS, v12.AttestationPhase_PUSH},
-			phase:  EvalPhaseStatus,
+			name:   "both phases, matches init",
+			phases: []v12.AttestationPhase{v12.AttestationPhase_INIT, v12.AttestationPhase_PUSH},
+			phase:  EvalPhaseInit,
 			want:   true,
 		},
 		{
 			name:   "both phases, matches push",
-			phases: []v12.AttestationPhase{v12.AttestationPhase_STATUS, v12.AttestationPhase_PUSH},
+			phases: []v12.AttestationPhase{v12.AttestationPhase_INIT, v12.AttestationPhase_PUSH},
 			phase:  EvalPhasePush,
 			want:   true,
 		},

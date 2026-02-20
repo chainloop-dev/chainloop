@@ -102,8 +102,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		return nil, fmt.Errorf("creating status action: %w", err)
 	}
 
-	// we do not want to evaluate policies here since we do it manually later on
-	attestationStatus, err := statusAction.Run(ctx, attestationID, WithSkipPolicyEvaluation())
+	attestationStatus, err := statusAction.Run(ctx, attestationID)
 	if err != nil {
 		return nil, fmt.Errorf("creating running status action: %w", err)
 	}

@@ -44,7 +44,6 @@ type AttestationPhase int32
 const (
 	AttestationPhase_ATTESTATION_PHASE_UNSPECIFIED AttestationPhase = 0
 	AttestationPhase_INIT                          AttestationPhase = 1
-	AttestationPhase_STATUS                        AttestationPhase = 2
 	AttestationPhase_PUSH                          AttestationPhase = 3
 )
 
@@ -53,13 +52,11 @@ var (
 	AttestationPhase_name = map[int32]string{
 		0: "ATTESTATION_PHASE_UNSPECIFIED",
 		1: "INIT",
-		2: "STATUS",
 		3: "PUSH",
 	}
 	AttestationPhase_value = map[string]int32{
 		"ATTESTATION_PHASE_UNSPECIFIED": 0,
 		"INIT":                          1,
-		"STATUS":                        2,
 		"PUSH":                          3,
 	}
 )
@@ -1176,7 +1173,7 @@ type PolicySpecV2 struct {
 	// if set, it will match any material supported by Chainloop
 	Kind CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
 	// Controls at which attestation phases this policy is evaluated.
-	// Empty means evaluate at all phases (INIT, STATUS, and PUSH) for backwards compatibility.
+	// Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
 	// Only applicable when kind is ATTESTATION.
 	AttestationPhases []AttestationPhase `protobuf:"varint,5,rep,packed,name=attestation_phases,json=attestationPhases,proto3,enum=workflowcontract.v1.AttestationPhase" json:"attestation_phases,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -2080,12 +2077,10 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
 	"\boptional\x18\x03 \x01(\bR\boptional\x12A\n" +
 	"\bpolicies\x18\x06 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\bpolicies:\x7f\xbaH|\x1az\n" +
-	"\x0egroup_material\x123if name is provided, type should have a valid value\x1a3!has(this.name) || has(this.name) && this.type != 0*U\n" +
+	"\x0egroup_material\x123if name is provided, type should have a valid value\x1a3!has(this.name) || has(this.name) && this.type != 0*I\n" +
 	"\x10AttestationPhase\x12!\n" +
 	"\x1dATTESTATION_PHASE_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04INIT\x10\x01\x12\n" +
-	"\n" +
-	"\x06STATUS\x10\x02\x12\b\n" +
+	"\x04INIT\x10\x01\x12\b\n" +
 	"\x04PUSH\x10\x03BMZKgithub.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1b\x06proto3"
 
 var (
