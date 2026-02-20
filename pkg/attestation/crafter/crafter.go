@@ -808,10 +808,25 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 
 	policyEvaluations = filteredPolicyEvaluations
 
-	// Since we are going to override the state, we want to keep the existing material-type policy evaluations
+	// Preserve existing evaluations that were not re-evaluated in this phase:
+	// - Material-level evaluations are always kept
+	// - Attestation-level evaluations are kept if they weren't re-evaluated (e.g., from a different phase)
 	for _, ev := range c.CraftingState.Attestation.PolicyEvaluations {
-		// We can not use kind = ATTESTATION since that's a valid material kind
 		if ev.MaterialName != "" {
+			policyEvaluations = append(policyEvaluations, ev)
+			continue
+		}
+
+		// Check if this attestation-level evaluation was re-evaluated in the current phase
+		var reEvaluated bool
+		for _, newEv := range policyEvaluations {
+			if proto.Equal(newEv.PolicyReference, ev.PolicyReference) && reflect.DeepEqual(newEv.With, ev.With) {
+				reEvaluated = true
+				break
+			}
+		}
+
+		if !reEvaluated {
 			policyEvaluations = append(policyEvaluations, ev)
 		}
 	}

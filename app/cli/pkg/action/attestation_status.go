@@ -40,9 +40,8 @@ type AttestationStatus struct {
 	*ActionsOpts
 	c *crafter.Crafter
 	// Do not show information about the project version release status
-	isPushed             bool
-	skipPolicyEvaluation bool
-	evalPhase            policies.EvalPhase
+	isPushed  bool
+	evalPhase policies.EvalPhase
 }
 
 type AttestationStatusResult struct {
@@ -96,12 +95,6 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 	}, nil
 }
 
-func WithSkipPolicyEvaluation() func(*AttestationStatus) {
-	return func(opts *AttestationStatus) {
-		opts.skipPolicyEvaluation = true
-	}
-}
-
 func WithStatusEvalPhase(phase policies.EvalPhase) func(*AttestationStatus) {
 	return func(opts *AttestationStatus) {
 		opts.evalPhase = phase
@@ -150,27 +143,24 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		TimestampAuthority:          att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
 
-	if !action.skipPolicyEvaluation {
-		// We need to render the statement to get the policy evaluations
-		attClient := pb.NewAttestationServiceClient(action.CPConnection)
-		renderer, err := renderer.NewAttestationRenderer(c.CraftingState, attClient, "", "", nil, renderer.WithLogger(action.Logger))
-		if err != nil {
-			return nil, fmt.Errorf("rendering statement: %w", err)
-		}
-
-		// We do not want to evaluate policies here during render since we want to do it in a separate step
-		statement, err := renderer.RenderStatement(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("rendering statement: %w", err)
-		}
-
-		// Add attestation-level policy evaluations
-		if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement, action.evalPhase); err != nil {
-			return nil, fmt.Errorf("evaluating attestation policies: %w", err)
-		}
-
-		res.PolicyEvaluations, res.HasPolicyViolations = getPolicyEvaluations(c)
+	// Render the statement and evaluate attestation-level policies using the configured phase
+	attClient := pb.NewAttestationServiceClient(action.CPConnection)
+	r, err := renderer.NewAttestationRenderer(c.CraftingState, attClient, "", "", nil, renderer.WithLogger(action.Logger))
+	if err != nil {
+		return nil, fmt.Errorf("creating attestation renderer: %w", err)
 	}
+
+	statement, err := r.RenderStatement(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("rendering statement: %w", err)
+	}
+
+	if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement, action.evalPhase); err != nil {
+		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
+	}
+
+	// Always read policy evaluations from crafting state
+	res.PolicyEvaluations, res.HasPolicyViolations = getPolicyEvaluations(c)
 
 	if v := workflowMeta.GetVersion(); v != nil {
 		res.WorkflowMeta.ProjectVersion = &ProjectVersion{
