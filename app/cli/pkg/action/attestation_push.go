@@ -101,7 +101,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err != nil {
 		return nil, fmt.Errorf("creating status action: %w", err)
 	}
-	attestationStatus, err := statusAction.Run(ctx, attestationID)
+
+	// we do not want to evaluate policies here since we do it manually later on
+	attestationStatus, err := statusAction.Run(ctx, attestationID, WithSkipPolicyEvaluation())
 	if err != nil {
 		return nil, fmt.Errorf("creating running status action: %w", err)
 	}
@@ -200,6 +202,9 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if err := crafter.EvaluateAttestationPolicies(ctx, attestationID, statement, policies.EvalPhasePush); err != nil {
 		return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 	}
+
+	// Update the status result with the definitive push-phase evaluation against the final statement
+	attestationStatus.PolicyEvaluations, attestationStatus.HasPolicyViolations = getPolicyEvaluations(crafter)
 
 	// render final attestation with all the evaluated policies inside
 	envelope, bundle, err := renderer.Render(ctx)
