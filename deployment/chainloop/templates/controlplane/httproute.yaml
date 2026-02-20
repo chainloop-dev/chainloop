@@ -1,0 +1,50 @@
+{{- if or .Values.controlplane.httpRoute.enabled}}
+{{- /*
+Copyright Chainloop, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+{{- $fullName := include "chainloop.controlplane.fullname" . -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullName }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "chainloop.controlplane.labels" . | nindent 4 }}
+  {{- if or .Values.controlplane.httpRoute.annotations }}
+  annotations:
+    {{- include "common.tplvalues.render" ( dict "value" .Values.controlplane.httpRoute.annotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+  {{- if .Values.controlplane.httpRoute.parentRefs }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.httpRoute.parentRefs "context" .) | nindent 4 }}
+  {{- else }}
+    - name: gateway
+      namespace: {{ include "common.names.namespace" . | quote }}
+  {{- end }}
+  hostnames: {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.httpRoute.hostnames "context" .) | nindent 4 }}
+  rules:
+    {{- $port := coalesce .Values.controlplane.service.port .Values.controlplane.service.ports.http }}
+    - backendRefs:
+        - name: {{ include "chainloop.controlplane.fullname" . }}
+          port: {{ $port }}
+      {{- if .Values.controlplane.httpRoute.matches }}
+      matches: {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.httpRoute.matches "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.controlplane.httpRoute.filters }}
+      filters: {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.httpRoute.filters "context" .) | nindent 8 }}
+      {{- end }}
+    - matches:
+        - headers:
+            - name: content-type
+              value: application/grpc
+      {{- $portAPI := coalesce .Values.controlplane.serviceAPI.port .Values.controlplane.serviceAPI.ports.http }}
+      backendRefs:
+        - name:  {{ include "chainloop.controlplane.fullname" . }}-api
+          kind: Service
+          namespace: {{ include "common.names.namespace" . | quote }}
+          port: {{ $portAPI }}
+  {{- if .Values.controlplane.httpRoute.extraRules }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.httpRoute.extraRules "context" .) | nindent 4 }}
+  {{- end }}
+{{- end }}

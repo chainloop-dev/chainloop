@@ -675,3 +675,60 @@ dex:
     ##             name: http
     ##
     extraRules: []
+  ## Gateway API HTTP routing parameters
+  ## ref: https://gateway-api.sigs.k8s.io/guides/http-routing/
+  ##
+  httpRoute:
+    ## @param dex.httpRoute.enabled Enable HTTPRoute generation for dex
+    ##
+    enabled: false
+    ## @param controlplane.httpRoute.tls Indicate if tls is active for this route
+    ##
+    tls: false
+    ## @param dex.httpRoute.annotations Additional annotations for the HTTPRoute resource
+    ##
+    annotations: {}
+    ## @param dex.httpRoute.labels Additional labels for the HTTPRoute resource
+    ##
+    labels: {}
+    ## @param dex.httpRoute.parentRefs Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.
+    ## e.g:
+    ## parentRefs:
+    ##   - name: my-gateway
+    ##     sectionName: http
+    ##     namespace: default
+    ##
+    parentRefs: []
+    ## @param dex.httpRoute.hostnames [array] List of hostnames matching HTTP header
+    ##
+    hostnames:
+      - dex.dev.local
+    ## @param dex.httpRoute.matches [array] List of match rules applied to the HTTPRoute for the default svc backend reference
+    ##
+    matches:
+      - path:
+          type: PathPrefix
+          value: /
+    ## @param dex.httpRoute.filters List of filter rules applied to the HTTPRoute for the default svc backend reference
+    ##
+    filters: []
+    ## @param dex.httpRoute.extraRules List of extra rules applied to the HTTPRoute
+    ## e.g:
+    ## extraRules:
+    ##   - matches:
+    ##       - path:
+    ##           type: PathPrefix
+    ##           value: /login
+    ##     filters:
+    ##       - type: RequestHeaderModifier
+    ##         requestHeaderModifier:
+    ##           set:
+    ##             - name: My-Overwrite-Header
+    ##               value: this-is-the-only-value
+    ##           remove:
+    ##             - User-Agent
+    ##     backendRefs:
+    ##       - name: chainloop-dex
+    ##         port: 80
+    ##
+    extraRules: []
