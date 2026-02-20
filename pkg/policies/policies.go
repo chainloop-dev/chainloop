@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -63,6 +63,16 @@ type Verifier interface {
 	VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error)
 }
 
+// EvalPhase represents the phase of the attestation lifecycle where evaluation is happening.
+type EvalPhase int
+
+const (
+	EvalPhaseUnspecified EvalPhase = iota
+	EvalPhaseInit
+	EvalPhaseStatus
+	EvalPhasePush
+)
+
 type PolicyVerifier struct {
 	policies         *v1.Policies
 	logger           *zerolog.Logger
@@ -71,6 +81,7 @@ type PolicyVerifier struct {
 	allowedHostnames []string
 	includeRawData   bool
 	enablePrint      bool
+	evalPhase        EvalPhase
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
@@ -80,6 +91,7 @@ type PolicyVerifierOptions struct {
 	IncludeRawData   bool
 	EnablePrint      bool
 	GRPCConn         *grpc.ClientConn
+	EvalPhase        EvalPhase
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -108,6 +120,12 @@ func WithGRPCConn(conn *grpc.ClientConn) PolicyVerifierOption {
 	}
 }
 
+func WithEvalPhase(phase EvalPhase) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.EvalPhase = phase
+	}
+}
+
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
@@ -122,6 +140,7 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		allowedHostnames: options.AllowedHostnames,
 		includeRawData:   options.IncludeRawData,
 		enablePrint:      options.EnablePrint,
+		evalPhase:        options.EvalPhase,
 	}
 }
 
@@ -167,11 +186,61 @@ type evalOpts struct {
 	bindings map[string]string
 }
 
+// shouldEvaluateAtPhase checks if a policy should be evaluated at the given phase.
+// If no phases are specified, the policy runs at all phases (backwards compatible).
+// If phase is EvalPhaseUnspecified (e.g. material evaluation), the policy always runs.
+func shouldEvaluateAtPhase(phases []v1.AttestationPhase, phase EvalPhase) bool {
+	if len(phases) == 0 || phase == EvalPhaseUnspecified {
+		return true
+	}
+
+	var target v1.AttestationPhase
+	switch phase {
+	case EvalPhaseInit:
+		target = v1.AttestationPhase_INIT
+	case EvalPhaseStatus:
+		target = v1.AttestationPhase_STATUS
+	case EvalPhasePush:
+		target = v1.AttestationPhase_PUSH
+	default:
+		return true
+	}
+
+	return slices.Contains(phases, target)
+}
+
+// attestationPhasesForKind returns the aggregated attestation phases from
+// PolicySpecV2 entries that match the given kind. For legacy policies (using
+// spec.type + spec.path), returns nil (evaluate at all phases).
+func attestationPhasesForKind(spec *v1.PolicySpec, kind v1.CraftingSchema_Material_MaterialType) []v1.AttestationPhase {
+	// Legacy single-kind policies don't have per-kind phase config
+	if spec.GetSource() != nil {
+		return nil
+	}
+
+	var phases []v1.AttestationPhase
+	for _, s := range spec.GetPolicies() {
+		if s.GetKind() == v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED || s.GetKind() == kind {
+			phases = append(phases, s.GetAttestationPhases()...)
+		}
+	}
+
+	return phases
+}
+
 func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, opts *evalOpts) (*v12.PolicyEvaluation, error) {
 	// load the policy policy
 	policy, ref, err := pv.loadPolicySpec(ctx, attachment)
 	if err != nil {
 		return nil, NewPolicyError(err)
+	}
+
+	// Skip policies not configured for the current attestation phase.
+	// Phases are defined per-kind in PolicySpecV2 entries.
+	phases := attestationPhasesForKind(policy.GetSpec(), opts.kind)
+	if !shouldEvaluateAtPhase(phases, pv.evalPhase) {
+		pv.logger.Debug().Str("policy", policy.GetMetadata().GetName()).Msg("skipping policy not configured for current attestation phase")
+		return nil, nil
 	}
 
 	var basePath string

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 )
 
 type AttestationStatusOpts struct {
@@ -41,6 +42,7 @@ type AttestationStatus struct {
 	// Do not show information about the project version release status
 	isPushed             bool
 	skipPolicyEvaluation bool
+	evalPhase            policies.EvalPhase
 }
 
 type AttestationStatusResult struct {
@@ -90,12 +92,19 @@ func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error
 		ActionsOpts: cfg.ActionsOpts,
 		c:           c,
 		isPushed:    cfg.isPushed,
+		evalPhase:   policies.EvalPhaseStatus,
 	}, nil
 }
 
 func WithSkipPolicyEvaluation() func(*AttestationStatus) {
 	return func(opts *AttestationStatus) {
 		opts.skipPolicyEvaluation = true
+	}
+}
+
+func WithStatusEvalPhase(phase policies.EvalPhase) func(*AttestationStatus) {
+	return func(opts *AttestationStatus) {
+		opts.evalPhase = phase
 	}
 }
 
@@ -156,7 +165,7 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string, 
 		}
 
 		// Add attestation-level policy evaluations
-		if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement); err != nil {
+		if err := c.EvaluateAttestationPolicies(ctx, attestationID, statement, action.evalPhase); err != nil {
 			return nil, fmt.Errorf("evaluating attestation policies: %w", err)
 		}
 

@@ -1,0 +1,10 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: workflow-status-only
+spec:
+  policies:
+    - kind: ATTESTATION
+      path: workflow.rego
+      attestation_phases:
+        - STATUS

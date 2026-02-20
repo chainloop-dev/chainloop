@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -306,6 +306,15 @@ message PolicySpec {
   };
 }
 
+// Lifecycle phases that control when an attestation policy is evaluated.
+// Only applicable to policies with kind ATTESTATION in PolicySpecV2.
+enum AttestationPhase {
+  ATTESTATION_PHASE_UNSPECIFIED = 0;
+  INIT = 1;
+  STATUS = 2;
+  PUSH = 3;
+}
+
 message PolicyInput {
   string name = 1 [(buf.validate.field) = {
     // NOTE: validations can not be shared yet https://github.com/bufbuild/protovalidate/issues/51
@@ -339,6 +348,11 @@ message PolicySpecV2 {
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
     not_in: [3]
   }];
+
+  // Controls at which attestation phases this policy is evaluated.
+  // Empty means evaluate at all phases (INIT, STATUS, and PUSH) for backwards compatibility.
+  // Only applicable when kind is ATTESTATION.
+  repeated AttestationPhase attestation_phases = 5;
 }
 
 // Auto-matching policy specification
