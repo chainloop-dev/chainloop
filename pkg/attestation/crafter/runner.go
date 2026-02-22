@@ -96,8 +96,8 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 	schemaapi.CraftingSchema_Runner_TEAMCITY_PIPELINE: func(_ string, _ *zerolog.Logger) SupportedRunner {
 		return runners.NewTeamCityPipeline()
 	},
-	schemaapi.CraftingSchema_Runner_TEKTON_PIPELINE: func(_ string, _ *zerolog.Logger) SupportedRunner {
-		return runners.NewTektonPipeline()
+	schemaapi.CraftingSchema_Runner_TEKTON_PIPELINE: func(_ string, logger *zerolog.Logger) SupportedRunner {
+		return runners.NewTektonPipeline(logger)
 	},
 }
 
