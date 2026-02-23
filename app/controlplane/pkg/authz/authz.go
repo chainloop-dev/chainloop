@@ -36,11 +36,12 @@ func (r Role) IsAdmin() bool {
 const (
 	// Actions
 
-	ActionRead   = "read"
-	ActionList   = "list"
-	ActionCreate = "create"
-	ActionUpdate = "update"
-	ActionDelete = "delete"
+	ActionRead         = "read"
+	ActionList         = "list"
+	ActionCreate       = "create"
+	ActionUpdate       = "update"
+	ActionDelete       = "delete"
+	ActionManageOwners = "manage_owners"
 
 	// Resources
 
@@ -177,7 +178,7 @@ var (
 	PolicyOrganizationInvitationsCreate = &Policy{ResourceOrganizationInvitations, ActionCreate}
 
 	// Manage owners (promote to/demote from owner, remove owners)
-	PolicyOrganizationManageOwners = &Policy{OrganizationMemberships, "manage_owners"}
+	PolicyOrganizationManageOwners = &Policy{OrganizationMemberships, ActionManageOwners}
 )
 
 // RolesMap The default list of policies for each role
