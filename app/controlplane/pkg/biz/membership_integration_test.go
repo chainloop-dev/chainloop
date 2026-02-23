@@ -321,7 +321,7 @@ func (s *membershipIntegrationTestSuite) TestOwnerGuards() {
 	s.Run("admin cannot promote user to owner", func() {
 		_, err := s.Membership.UpdateRole(ctx, org.ID, admin.ID, mTarget.ID.String(), authz.RoleOwner, authz.RoleAdmin)
 		s.Error(err)
-		s.True(biz.IsErrValidation(err))
+		s.True(biz.IsErrUnauthorized(err))
 		s.Contains(err.Error(), "only organization owners can manage owner memberships")
 	})
 
@@ -334,7 +334,7 @@ func (s *membershipIntegrationTestSuite) TestOwnerGuards() {
 	s.Run("admin cannot demote an owner", func() {
 		_, err := s.Membership.UpdateRole(ctx, org.ID, admin.ID, mTarget.ID.String(), authz.RoleAdmin, authz.RoleAdmin)
 		s.Error(err)
-		s.True(biz.IsErrValidation(err))
+		s.True(biz.IsErrUnauthorized(err))
 		s.Contains(err.Error(), "only organization owners can manage owner memberships")
 	})
 
@@ -351,7 +351,7 @@ func (s *membershipIntegrationTestSuite) TestOwnerGuards() {
 
 		err = s.Membership.DeleteOther(ctx, org.ID, admin.ID, mTarget.ID.String(), authz.RoleAdmin)
 		s.Error(err)
-		s.True(biz.IsErrValidation(err))
+		s.True(biz.IsErrUnauthorized(err))
 		s.Contains(err.Error(), "only organization owners can manage owner memberships")
 	})
 
