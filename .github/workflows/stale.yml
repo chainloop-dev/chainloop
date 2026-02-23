@@ -9,6 +9,8 @@ jobs:
   close-issues:
     runs-on: ubuntu-latest
     permissions:
+      actions: write
+      contents: write # only for delete-branch option
       issues: write
       pull-requests: write
     steps:
