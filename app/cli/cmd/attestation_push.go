@@ -138,29 +138,8 @@ func newAttestationPushCmd() *cobra.Command {
 				return fmt.Errorf("failed to render output: %w", err)
 			}
 
-			// Block if any of the policies has been configured as a gate
-			for _, evaluations := range res.Status.PolicyEvaluations {
-				for _, eval := range evaluations {
-					if len(eval.Violations) > 0 && eval.Gate {
-						if bypassPolicyCheck {
-							logger.Warn().Msg(exceptionBypassPolicyCheck)
-							continue
-						}
-						return NewGateError(eval.Name)
-					}
-				}
-			}
-
-			// Do a final check in case the operator has configured the attestation to be blocked on any policy violation
-			if res.Status.MustBlockOnPolicyViolations {
-				if bypassPolicyCheck {
-					logger.Warn().Msg(exceptionBypassPolicyCheck)
-					return nil
-				}
-
-				if res.Status.HasPolicyViolations {
-					return ErrBlockedByPolicyViolation
-				}
+			if err := validatePolicyEnforcement(res.Status, bypassPolicyCheck); err != nil {
+				return err
 			}
 
 			return nil
@@ -198,4 +177,35 @@ func NewGateError(policyName string) error {
 
 func (e *GateError) Error() string {
 	return fmt.Sprintf("the policy %q is configured as a gate and has violations", e.PolicyName)
+}
+
+func validatePolicyEnforcement(status *action.AttestationStatusResult, bypassPolicyCheck bool) error {
+	// Block if any of the policies has been configured as a gate.
+	for _, evaluations := range status.PolicyEvaluations {
+		for _, eval := range evaluations {
+			if len(eval.Violations) > 0 && eval.Gate {
+				if bypassPolicyCheck {
+					logger.Warn().Msg(exceptionBypassPolicyCheck)
+					continue
+				}
+
+				return NewGateError(eval.Name)
+			}
+		}
+	}
+
+	// Do a final check in case the operator has configured the attestation
+	// to be blocked on any policy violation.
+	if status.MustBlockOnPolicyViolations {
+		if bypassPolicyCheck {
+			logger.Warn().Msg(exceptionBypassPolicyCheck)
+			return nil
+		}
+
+		if status.HasPolicyViolations {
+			return ErrBlockedByPolicyViolation
+		}
+	}
+
+	return nil
 }
