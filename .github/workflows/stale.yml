@@ -1,37 +1,29 @@
-name: Stale Issues and PRs
+name: Close inactive issues
 
 on:
   schedule:
     - cron: '30 1 * * *'
   workflow_dispatch:
 
-permissions:
-  issues: write
-  pull-requests: write
-
 jobs:
-  stale:
+  close-issues:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
         with:
-          days-before-stale: 90
-          days-before-close: 14
+          days-before-issue-stale: 90
+          days-before-issue-close: 14
           stale-issue-label: stale
-          stale-pr-label: stale
-          exempt-issue-labels: pinned,security
-          exempt-pr-labels: pinned,security
           stale-issue-message: >
-            This issue has been automatically marked as stale because it has not had
-            recent activity. It will be closed in 14 days if no further activity occurs.
-            If this issue is still relevant, please leave a comment or remove the stale label.
-          stale-pr-message: >
-            This pull request has been automatically marked as stale because it has not had
-            recent activity. It will be closed in 14 days if no further activity occurs.
-            If this pull request is still relevant, please leave a comment or remove the stale label.
+            This issue is stale because it has been open for 90 days with no activity.
+            It will be closed in 14 days if no further activity occurs.
           close-issue-message: >
-            This issue was closed because it has been inactive for more than 3 months.
+            This issue was closed because it has been inactive for 14 days since being marked as stale.
             Feel free to reopen if it is still relevant.
-          close-pr-message: >
-            This pull request was closed because it has been inactive for more than 3 months.
-            Feel free to reopen if it is still relevant.
+          days-before-pr-stale: -1
+          days-before-pr-close: -1
+          exempt-issue-labels: pinned,security
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
