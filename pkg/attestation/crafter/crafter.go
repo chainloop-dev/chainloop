@@ -728,7 +728,14 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return i.MaterialName == m.Name
 	})
 
-	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.GetPolicyGroups(), c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pgv := policies.NewPolicyGroupVerifier(
+		c.CraftingState.GetPolicyGroups(),
+		c.CraftingState.GetPolicies(),
+		c.attClient,
+		c.Logger,
+		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
+		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+	)
 	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policy groups to material: %w", err)
@@ -739,7 +746,13 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	policies.LogPolicyEvaluations(policyGroupResults, c.Logger)
 
 	// Validate policies
-	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger, policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...))
+	pv := policies.NewPolicyVerifier(
+		c.CraftingState.GetPolicies(),
+		c.attClient,
+		c.Logger,
+		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
+		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+	)
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policies to material: %w", err)
@@ -772,6 +785,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 	// evaluate attestation-level policies
 	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
+		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithEvalPhase(phase),
 	)
 	policyEvaluations, err := pv.VerifyStatement(ctx, statement)
@@ -781,6 +795,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 
 	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.GetPolicyGroups(), c.CraftingState.GetPolicies(), c.attClient, c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
+		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithEvalPhase(phase),
 	)
 	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)

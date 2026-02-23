@@ -1434,3 +1434,57 @@ func (s *testSuite) TestIsURLPath() {
 		})
 	}
 }
+
+func (s *testSuite) TestPolicyAttachmentGate() {
+	trueGate := true
+	falseGate := false
+
+	cases := []struct {
+		name         string
+		attachment   *v12.PolicyAttachment
+		defaultGate  bool
+		expectedGate bool
+	}{
+		{
+			name:         "nil attachment falls back to default true",
+			attachment:   nil,
+			defaultGate:  true,
+			expectedGate: true,
+		},
+		{
+			name:         "unset gate inherits default false",
+			attachment:   &v12.PolicyAttachment{},
+			defaultGate:  false,
+			expectedGate: false,
+		},
+		{
+			name:         "unset gate inherits default true",
+			attachment:   &v12.PolicyAttachment{},
+			defaultGate:  true,
+			expectedGate: true,
+		},
+		{
+			name: "explicit gate false overrides default true",
+			attachment: &v12.PolicyAttachment{
+				Gate: &falseGate,
+			},
+			defaultGate:  true,
+			expectedGate: false,
+		},
+		{
+			name: "explicit gate true overrides default false",
+			attachment: &v12.PolicyAttachment{
+				Gate: &trueGate,
+			},
+			defaultGate:  false,
+			expectedGate: true,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			got := policyAttachmentGate(tc.attachment, tc.defaultGate)
+			s.Equal(tc.expectedGate, got)
+		})
+	}
+}

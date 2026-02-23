@@ -487,8 +487,13 @@ export interface PolicyAttachment {
   with: { [key: string]: string };
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
-  /** If true, the policy will act as a gate, returning an error code if the policy fails */
-  gate: boolean;
+  /**
+   * If set, controls whether this policy acts as a gate.
+   * - true: policy violations are blocking for this policy
+   * - false: policy violations are non-blocking for this policy
+   * - unset: inherit organization-level default behavior
+   */
+  gate?: boolean | undefined;
 }
 
 export interface PolicyAttachment_WithEntry {
@@ -1414,7 +1419,7 @@ function createBasePolicyAttachment(): PolicyAttachment {
     disabled: false,
     with: {},
     requirements: [],
-    gate: false,
+    gate: undefined,
   };
 }
 
@@ -1438,7 +1443,7 @@ export const PolicyAttachment = {
     for (const v of message.requirements) {
       writer.uint32(50).string(v!);
     }
-    if (message.gate === true) {
+    if (message.gate !== undefined) {
       writer.uint32(56).bool(message.gate);
     }
     return writer;
@@ -1525,7 +1530,7 @@ export const PolicyAttachment = {
         }, {})
         : {},
       requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
-      gate: isSet(object.gate) ? Boolean(object.gate) : false,
+      gate: isSet(object.gate) ? Boolean(object.gate) : undefined,
     };
   },
 
@@ -1572,7 +1577,7 @@ export const PolicyAttachment = {
       return acc;
     }, {});
     message.requirements = object.requirements?.map((e) => e) || [];
-    message.gate = object.gate ?? false;
+    message.gate = object.gate ?? undefined;
     return message;
   },
 };
