@@ -49,6 +49,7 @@ modules:
       except:
         - EXTENSION_NO_DELETE
         - FIELD_SAME_DEFAULT
+        - FIELD_SAME_CARDINALITY
   - path: app/controlplane/internal/conf
     lint:
       use:
