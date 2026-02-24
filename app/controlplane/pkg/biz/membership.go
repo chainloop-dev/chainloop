@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,15 +90,17 @@ type MembershipUseCase struct {
 	// Use Cases
 	orgUseCase *OrganizationUseCase
 	auditor    *AuditorUseCase
+	authzUC    *AuthzUseCase
 }
 
-func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, userRepo UserRepo, logger log.Logger) *MembershipUseCase {
-	return &MembershipUseCase{repo: repo, orgUseCase: orgUC, logger: log.NewHelper(logger), userRepo: userRepo, auditor: auditor}
+func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, auditor *AuditorUseCase, userRepo UserRepo, authzUC *AuthzUseCase, logger log.Logger) *MembershipUseCase {
+	return &MembershipUseCase{repo: repo, orgUseCase: orgUC, logger: log.NewHelper(logger), userRepo: userRepo, auditor: auditor, authzUC: authzUC}
 }
 
 // DeleteOther just deletes a membership from the database
-// but ensures that the user is not deleting itself from the org
-func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, membershipID string) error {
+// but ensures that the user is not deleting itself from the org.
+// callerRole is the authorization subject of the caller (e.g. their org role).
+func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, membershipID string, callerRole authz.Role) error {
 	membershipUUID, err := uuid.Parse(membershipID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -120,6 +122,13 @@ func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, mem
 		return NewErrValidationStr("cannot delete yourself from the org")
 	}
 
+	// Only owners can remove other owners
+	if m.Role == authz.RoleOwner {
+		if err := uc.enforceManageOwners(ctx, callerRole); err != nil {
+			return err
+		}
+	}
+
 	uc.logger.Infow("msg", "Deleting membership", "org_id", orgID, "membership_id", m.ID.String())
 
 	// Delete the main membership - this will also remove the user from all groups in the org
@@ -131,7 +140,7 @@ func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, mem
 	return nil
 }
 
-func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, membershipID string, role authz.Role) (*Membership, error) {
+func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, membershipID string, role authz.Role, callerRole authz.Role) (*Membership, error) {
 	// If it has ben overrode by the user, validate it
 	if role == "" {
 		return nil, NewErrValidationStr("role is required")
@@ -160,6 +169,13 @@ func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, memb
 		return nil, NewErrValidationStr("cannot update yourself")
 	}
 
+	// Only owners can modify owner memberships or promote users to owner
+	if m.Role == authz.RoleOwner || role == authz.RoleOwner {
+		if err := uc.enforceManageOwners(ctx, callerRole); err != nil {
+			return nil, err
+		}
+	}
+
 	userUUID, err := uuid.Parse(m.User.ID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -185,6 +201,20 @@ func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, memb
 	}, &m.OrganizationID)
 
 	return updatedMembership, nil
+}
+
+// enforceManageOwners checks that the caller has the manage_owners policy.
+func (uc *MembershipUseCase) enforceManageOwners(ctx context.Context, callerRole authz.Role) error {
+	ok, err := uc.authzUC.Enforce(ctx, string(callerRole), authz.PolicyOrganizationManageOwners)
+	if err != nil {
+		return fmt.Errorf("failed to enforce manage owners policy: %w", err)
+	}
+
+	if !ok {
+		return NewErrUnauthorizedStr("only organization owners can manage owner memberships")
+	}
+
+	return nil
 }
 
 type membershipCreateOpts struct {

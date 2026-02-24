@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -229,12 +229,12 @@ func (s *membershipIntegrationTestSuite) TestDeleteOther() {
 	s.NoError(err)
 
 	s.T().Run("I can not delete my own membership", func(t *testing.T) {
-		err := s.Membership.DeleteOther(ctx, sharedOrg.ID, user2.ID, mUser2SharedOrg.ID.String())
+		err := s.Membership.DeleteOther(ctx, sharedOrg.ID, user2.ID, mUser2SharedOrg.ID.String(), authz.RoleOwner)
 		s.ErrorContains(err, "cannot delete yourself from the org")
 	})
 
 	s.T().Run("I can't find the membership", func(t *testing.T) {
-		err := s.Membership.DeleteOther(ctx, otherOrg.ID, user2.ID, mUser2SharedOrg.ID.String())
+		err := s.Membership.DeleteOther(ctx, otherOrg.ID, user2.ID, mUser2SharedOrg.ID.String(), authz.RoleOwner)
 		s.True(biz.IsNotFound(err))
 	})
 
@@ -244,7 +244,7 @@ func (s *membershipIntegrationTestSuite) TestDeleteOther() {
 		s.Len(memberships, 1)
 		s.Equal(1, count)
 
-		err = s.Membership.DeleteOther(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String())
+		err = s.Membership.DeleteOther(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleOwner)
 		s.NoError(err)
 
 		memberships, count, err = s.Membership.ByOrg(ctx, sharedOrg.ID, &biz.ListByOrgOpts{}, nil)
@@ -270,17 +270,17 @@ func (s *membershipIntegrationTestSuite) TestUpdateRole() {
 
 	// empty role
 	s.T().Run("a role is required", func(t *testing.T) {
-		_, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), "")
+		_, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), "", authz.RoleOwner)
 		s.ErrorContains(err, "role is required")
 	})
 
 	s.T().Run("I can not update my own membership", func(t *testing.T) {
-		_, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user2.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin)
+		_, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user2.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin, authz.RoleOwner)
 		s.ErrorContains(err, "cannot update yourself")
 	})
 
 	s.T().Run("I can't find the membership in another org", func(t *testing.T) {
-		_, err := s.Membership.UpdateRole(ctx, otherOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin)
+		_, err := s.Membership.UpdateRole(ctx, otherOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin, authz.RoleOwner)
 		s.True(biz.IsNotFound(err))
 	})
 
@@ -291,9 +291,78 @@ func (s *membershipIntegrationTestSuite) TestUpdateRole() {
 		s.Equal(1, count)
 		s.Equal(authz.RoleViewer, memberships[0].Role)
 
-		got, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin)
+		got, err := s.Membership.UpdateRole(ctx, sharedOrg.ID, user.ID, mUser2SharedOrg.ID.String(), authz.RoleAdmin, authz.RoleOwner)
 		s.NoError(err)
 		s.Equal(authz.RoleAdmin, got.Role)
+	})
+}
+
+func (s *membershipIntegrationTestSuite) TestOwnerGuards() {
+	ctx := context.Background()
+
+	owner, err := s.User.UpsertByEmail(ctx, "owner@test.com", nil)
+	s.NoError(err)
+	admin, err := s.User.UpsertByEmail(ctx, "admin@test.com", nil)
+	s.NoError(err)
+	target, err := s.User.UpsertByEmail(ctx, "target@test.com", nil)
+	s.NoError(err)
+
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	// owner is org owner, admin is org admin, target starts as viewer
+	_, err = s.Membership.Create(ctx, org.ID, owner.ID, biz.WithMembershipRole(authz.RoleOwner))
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, admin.ID, biz.WithMembershipRole(authz.RoleAdmin))
+	s.NoError(err)
+	mTarget, err := s.Membership.Create(ctx, org.ID, target.ID, biz.WithMembershipRole(authz.RoleViewer))
+	s.NoError(err)
+
+	s.Run("admin cannot promote user to owner", func() {
+		_, err := s.Membership.UpdateRole(ctx, org.ID, admin.ID, mTarget.ID.String(), authz.RoleOwner, authz.RoleAdmin)
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+		s.Contains(err.Error(), "only organization owners can manage owner memberships")
+	})
+
+	s.Run("owner can promote user to owner", func() {
+		got, err := s.Membership.UpdateRole(ctx, org.ID, owner.ID, mTarget.ID.String(), authz.RoleOwner, authz.RoleOwner)
+		s.NoError(err)
+		s.Equal(authz.RoleOwner, got.Role)
+	})
+
+	s.Run("admin cannot demote an owner", func() {
+		_, err := s.Membership.UpdateRole(ctx, org.ID, admin.ID, mTarget.ID.String(), authz.RoleAdmin, authz.RoleAdmin)
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+		s.Contains(err.Error(), "only organization owners can manage owner memberships")
+	})
+
+	s.Run("owner can demote another owner", func() {
+		got, err := s.Membership.UpdateRole(ctx, org.ID, owner.ID, mTarget.ID.String(), authz.RoleAdmin, authz.RoleOwner)
+		s.NoError(err)
+		s.Equal(authz.RoleAdmin, got.Role)
+	})
+
+	s.Run("admin cannot delete an owner membership", func() {
+		// First promote target back to owner
+		_, err := s.Membership.UpdateRole(ctx, org.ID, owner.ID, mTarget.ID.String(), authz.RoleOwner, authz.RoleOwner)
+		s.NoError(err)
+
+		err = s.Membership.DeleteOther(ctx, org.ID, admin.ID, mTarget.ID.String(), authz.RoleAdmin)
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+		s.Contains(err.Error(), "only organization owners can manage owner memberships")
+	})
+
+	s.Run("owner can delete another owner membership", func() {
+		err := s.Membership.DeleteOther(ctx, org.ID, owner.ID, mTarget.ID.String(), authz.RoleOwner)
+		s.NoError(err)
+
+		memberships, count, err := s.Membership.ByOrg(ctx, org.ID, &biz.ListByOrgOpts{}, nil)
+		s.NoError(err)
+		s.Equal(2, count) // only owner and admin remain
+		s.Len(memberships, 2)
 	})
 }
 

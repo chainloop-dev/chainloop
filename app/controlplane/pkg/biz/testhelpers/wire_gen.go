@@ -72,7 +72,16 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	integrationUseCase := biz.NewIntegrationUseCase(newIntegrationUseCaseOpts)
 	organizationUseCase := biz.NewOrganizationUseCase(organizationRepo, casBackendUseCase, auditorUseCase, integrationUseCase, membershipRepo, arg, logger)
 	userRepo := data.NewUserRepo(dataData, logger)
-	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, userRepo, logger)
+	config := authzConfig()
+	casbinEnforcer, err := authz.NewCasbinEnforcer(config)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
+	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, casbinEnforcer, apiTokenRepo, logger)
+	authzUseCase := biz.NewAuthzUseCase(bizAuthzUseCaseConfig)
+	membershipUseCase := biz.NewMembershipUseCase(membershipRepo, organizationUseCase, auditorUseCase, userRepo, authzUseCase, logger)
 	workflowContractRepo := data.NewWorkflowContractRepo(dataData, logger)
 	v := NewPolicyProviderConfig(bootstrap)
 	registry, err := policies.NewRegistry(logger, v...)
@@ -136,16 +145,7 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 		cleanup()
 		return nil, nil, err
 	}
-	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
 	apiTokenJWTConfig := newJWTConfig(auth)
-	config := authzConfig()
-	casbinEnforcer, err := authz.NewCasbinEnforcer(config)
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	bizAuthzUseCaseConfig := authzUseCaseConfig(bootstrap, casbinEnforcer, apiTokenRepo, logger)
-	authzUseCase := biz.NewAuthzUseCase(bizAuthzUseCaseConfig)
 	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, authzUseCase, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
 		cleanup()

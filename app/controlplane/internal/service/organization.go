@@ -19,6 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -196,7 +197,8 @@ func (s *OrganizationService) DeleteMembership(ctx context.Context, req *pb.Orga
 		return nil, err
 	}
 
-	if err := s.membershipUC.DeleteOther(ctx, currentOrg.ID, currentUser.ID, req.MembershipId); err != nil {
+	callerRole := authz.Role(usercontext.CurrentAuthzSubject(ctx))
+	if err := s.membershipUC.DeleteOther(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, callerRole); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
@@ -214,7 +216,8 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 		return nil, err
 	}
 
-	m, err := s.membershipUC.UpdateRole(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, biz.PbRoleToBiz(req.Role))
+	callerRole := authz.Role(usercontext.CurrentAuthzSubject(ctx))
+	m, err := s.membershipUC.UpdateRole(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, biz.PbRoleToBiz(req.Role), callerRole)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

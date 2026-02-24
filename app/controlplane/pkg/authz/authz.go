@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,11 +36,12 @@ func (r Role) IsAdmin() bool {
 const (
 	// Actions
 
-	ActionRead   = "read"
-	ActionList   = "list"
-	ActionCreate = "create"
-	ActionUpdate = "update"
-	ActionDelete = "delete"
+	ActionRead         = "read"
+	ActionList         = "list"
+	ActionCreate       = "create"
+	ActionUpdate       = "update"
+	ActionDelete       = "delete"
+	ActionManageOwners = "manage_owners"
 
 	// Resources
 
@@ -175,6 +176,9 @@ var (
 	PolicyProjectRemoveMemberships = &Policy{ResourceProjectMembership, ActionDelete}
 	// Organization Invitations
 	PolicyOrganizationInvitationsCreate = &Policy{ResourceOrganizationInvitations, ActionCreate}
+
+	// Manage owners (promote to/demote from owner, remove owners)
+	PolicyOrganizationManageOwners = &Policy{OrganizationMemberships, ActionManageOwners}
 )
 
 // RolesMap The default list of policies for each role
@@ -193,6 +197,7 @@ var RolesMap = map[Role][]*Policy{
 	},
 	RoleOwner: {
 		PolicyOrganizationDelete,
+		PolicyOrganizationManageOwners,
 	},
 	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
