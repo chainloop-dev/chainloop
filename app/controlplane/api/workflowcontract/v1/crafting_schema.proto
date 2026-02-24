@@ -240,7 +240,7 @@ message PolicyAttachment {
   // - true: policy violations are blocking for this policy
   // - false: policy violations are non-blocking for this policy
   // - unset: inherit organization-level default behavior
-  // buf:breaking:ignore FIELD_SAME_CARDINALIT
+  // buf:breaking:ignore FIELD_SAME_CARDINALITY
   optional bool gate = 7;
 
   message MaterialSelector {
