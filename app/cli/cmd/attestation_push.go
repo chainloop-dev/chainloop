@@ -64,7 +64,7 @@ func newAttestationPushCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useAPIToken: "true",
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			info, err := executableInfo()
 			if err != nil {
 				return fmt.Errorf("getting executable information: %w", err)
@@ -180,13 +180,10 @@ func (e *GateError) Error() string {
 }
 
 func validatePolicyEnforcement(status *action.AttestationStatusResult, bypassPolicyCheck bool) error {
-	hasGatedViolations := false
-
 	// Block if any of the policies has been configured as a gate.
 	for _, evaluations := range status.PolicyEvaluations {
 		for _, eval := range evaluations {
 			if len(eval.Violations) > 0 && eval.Gate {
-				hasGatedViolations = true
 				if bypassPolicyCheck {
 					logger.Warn().Msg(exceptionBypassPolicyCheck)
 					continue
@@ -208,7 +205,7 @@ func validatePolicyEnforcement(status *action.AttestationStatusResult, bypassPol
 		// Effective gate semantics are already resolved in policy evaluations.
 		// For backwards compatibility, fall back to aggregate status only if
 		// no evaluations are available.
-		if hasGatedViolations || (len(status.PolicyEvaluations) == 0 && status.HasPolicyViolations) {
+		if len(status.PolicyEvaluations) == 0 && status.HasPolicyViolations {
 			return ErrBlockedByPolicyViolation
 		}
 	}
