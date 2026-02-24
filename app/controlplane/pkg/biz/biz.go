@@ -64,6 +64,11 @@ var ProviderSet = wire.NewSet(
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )
 
+var (
+	// versionRegexp allows alphanumeric, dots, hyphens, underscores, plus signs, and build metadata
+	versionRegexp = regexp.MustCompile(`^[a-zA-Z0-9.\-_+]+(?:\+[a-zA-Z0-9.\-_]+)?$`)
+)
+
 // IdentityReference represents a reference to an identity, which can be any entity in the system.
 type IdentityReference struct {
 	// ID is the unique identifier of the identity
@@ -111,9 +116,7 @@ func ValidateIsDNS1123(name string) error {
 // The version string must match the following regular expression: ^[a-zA-Z0-9.\-]+$
 // This ensures the version only contains alphanumeric characters, dots, and hyphens.
 func ValidateVersion(version string) error {
-	// Basic regex check (example: allow alphanumeric, dots, hyphens, underscores, plus signs, and build metadata)
-	regex := regexp.MustCompile(`^[a-zA-Z0-9.\-_+]+(?:\+[a-zA-Z0-9.\-_]+)?$`)
-	if !regex.MatchString(version) {
+	if !versionRegexp.MatchString(version) {
 		return NewErrValidationStr(fmt.Sprintf("invalid version format: %s. Valid examples: '1.0.0', 'v2.1-alpha', '3.0.0+build.123', '2024.3.12', 'v1.0_beta'", version))
 	}
 
