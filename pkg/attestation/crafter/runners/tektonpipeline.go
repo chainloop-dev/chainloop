@@ -185,10 +185,10 @@ func (r *TektonPipeline) RunURI() string {
 
 	// Fallback: construct a non-HTTP identifier URI for traceability
 	if pipelineRunName != "" && r.namespace != "" {
-		return fmt.Sprintf("tekton-pipeline://%s/pipelineruns/%s", r.namespace, pipelineRunName)
+		return fmt.Sprintf("tekton://%s/pipelineruns/%s", r.namespace, pipelineRunName)
 	}
 	if taskRunName != "" && r.namespace != "" {
-		return fmt.Sprintf("tekton-pipeline://%s/taskruns/%s", r.namespace, taskRunName)
+		return fmt.Sprintf("tekton://%s/taskruns/%s", r.namespace, taskRunName)
 	}
 
 	return ""

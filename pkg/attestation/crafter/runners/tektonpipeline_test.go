@@ -383,7 +383,7 @@ func (s *tektonPipelineSuite) TestRunURIWithDashboardTaskRunOnly() {
 }
 
 // TestRunURINoDashboardWithLabels tests RunURI without dashboard URL but with labels.
-// Should return tekton-pipeline:// identifier URI with PipelineRun preferred.
+// Should return tekton:// identifier URI with PipelineRun preferred.
 func (s *tektonPipelineSuite) TestRunURINoDashboardWithLabels() {
 	t := s.T()
 	t.Setenv("TEKTON_DASHBOARD_URL", "")
@@ -397,11 +397,11 @@ func (s *tektonPipelineSuite) TestRunURINoDashboardWithLabels() {
 		},
 	}
 
-	s.Equal("tekton-pipeline://ci/pipelineruns/pr1", r.RunURI())
+	s.Equal("tekton://ci/pipelineruns/pr1", r.RunURI())
 }
 
 // TestRunURINoDashboardTaskRunOnly tests RunURI without dashboard URL and no PipelineRun.
-// Should return tekton-pipeline:// URI with TaskRun.
+// Should return tekton:// URI with TaskRun.
 func (s *tektonPipelineSuite) TestRunURINoDashboardTaskRunOnly() {
 	t := s.T()
 	t.Setenv("TEKTON_DASHBOARD_URL", "")
@@ -414,7 +414,7 @@ func (s *tektonPipelineSuite) TestRunURINoDashboardTaskRunOnly() {
 		},
 	}
 
-	s.Equal("tekton-pipeline://ci/taskruns/tr1", r.RunURI())
+	s.Equal("tekton://ci/taskruns/tr1", r.RunURI())
 }
 
 // TestRunURIFallbackToHostname tests RunURI with no labels -- derives TaskRun name from HOSTNAME.
@@ -429,7 +429,7 @@ func (s *tektonPipelineSuite) TestRunURIFallbackToHostname() {
 		labels:    make(map[string]string),
 	}
 
-	s.Equal("tekton-pipeline://default/taskruns/my-taskrun", r.RunURI())
+	s.Equal("tekton://default/taskruns/my-taskrun", r.RunURI())
 }
 
 // TestRunURIEmpty tests RunURI when no labels, no parseable hostname, and no namespace.
