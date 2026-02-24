@@ -488,7 +488,7 @@ export interface PolicyAttachment {
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
   /**
-   * If set, controls whether this policy acts as a gate.
+   * Controls whether policy violations act as a gate.
    * - true: policy violations are blocking for this policy
    * - false: policy violations are non-blocking for this policy
    * - unset: inherit organization-level default behavior

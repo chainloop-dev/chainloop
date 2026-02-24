@@ -13,7 +13,7 @@
       "description": "meant to be used to embed the policy in the contract"
     },
     "gate": {
-      "description": "If set, controls whether this policy acts as a gate.\n - true: policy violations are blocking for this policy\n - false: policy violations are non-blocking for this policy\n - unset: inherit organization-level default behavior",
+      "description": "Controls whether policy violations act as a gate.\n - true: policy violations are blocking for this policy\n - false: policy violations are non-blocking for this policy\n - unset: inherit organization-level default behavior",
       "type": "boolean"
     },
     "ref": {

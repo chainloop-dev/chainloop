@@ -713,7 +713,7 @@ type PolicyAttachment struct {
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// List of requirements this policy contributes to satisfy
 	Requirements []string `protobuf:"bytes,6,rep,name=requirements,proto3" json:"requirements,omitempty"`
-	// If set, controls whether this policy acts as a gate.
+	// Controls whether policy violations act as a gate.
 	// - true: policy violations are blocking for this policy
 	// - false: policy violations are non-blocking for this policy
 	// - unset: inherit organization-level default behavior
