@@ -52,7 +52,7 @@ Dependabot PR titles follow the pattern: `Bump <package> from <old-version> to <
 
 ### 2b. Check CI / Check Status
 
-Use `mcp__github__get_pull_request` to get details for each PR. Check the `mergeable_state` and status checks.
+Use `mcp__github__get_pull_request_status` to retrieve the CI check status for each PR. A PR is considered CI-passing only if all checks have concluded with a success state.
 
 ### 2c. Inspect the Diff
 
