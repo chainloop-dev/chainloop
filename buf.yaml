@@ -83,7 +83,7 @@ modules:
   - path: app/controlplane/plugins/sdk/v1/plugin/api
     lint:
       use:
-        - DEFAULT
+        - STANDARD
       except:
         - FIELD_NOT_REQUIRED
         - PACKAGE_NO_IMPORT_CYCLE
@@ -102,7 +102,7 @@ modules:
   - path: pkg/attestation/crafter/api
     lint:
       use:
-        - DEFAULT
+        - STANDARD
       except:
         - FIELD_NOT_REQUIRED
         - PACKAGE_NO_IMPORT_CYCLE
@@ -119,7 +119,7 @@ modules:
   - path: pkg/credentials/api
     lint:
       use:
-        - DEFAULT
+        - STANDARD
       except:
         - FIELD_NOT_REQUIRED
         - PACKAGE_NO_IMPORT_CYCLE
