@@ -179,7 +179,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	}
 
 	// Find the default or fallback CAS backend to associate the workflow
-	backend, err := s.casUC.FindDefaultOrFallbackBackend(context.Background(), robotAccount.OrgID)
+	backend, err := s.casUC.FindDefaultOrFallbackBackend(ctx, robotAccount.OrgID)
 	if err != nil {
 		if biz.IsNotFound(err) {
 			return nil, cpAPI.ErrorCasBackendErrorReasonRequired("no CAS backend configured for organization")
