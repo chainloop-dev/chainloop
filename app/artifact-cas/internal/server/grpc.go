@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -142,22 +142,22 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 	return srv, nil
 }
 
+var (
+	statusServiceOperationRegexp = regexp.MustCompile("(cas.v1.StatusService/.*)")
+	reflectionServiceRegexp      = regexp.MustCompile("(grpc.reflection.*)")
+)
+
 func requireAuthentication() selector.MatchFunc {
 	// Skip authentication on the status grpc service
-	const skipRegexp = "(cas.v1.StatusService/.*)"
-
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(skipRegexp)
-		return !r.MatchString(operation)
+		return !statusServiceOperationRegexp.MatchString(operation)
 	}
 }
 
 // Reflection API is called by clients like grpcurl to list services
 // and without this selector check it would require authentication
 func allButReflectionAPI(_ context.Context, callMeta interceptors.CallMeta) bool {
-	const skipRegexp = "(grpc.reflection.*)"
-	r := regexp.MustCompile(skipRegexp)
-	return !r.MatchString(callMeta.Service)
+	return !reflectionServiceRegexp.MatchString(callMeta.Service)
 }
 
 // load key for verification
