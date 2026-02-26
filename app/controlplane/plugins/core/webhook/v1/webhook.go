@@ -54,7 +54,7 @@ type attachmentState struct {
 
 // registrationState defines the state stored after registration
 type registrationState struct {
-	// No additional state needed for webhook besides the URL stored in credentials
+	WebhookURL string `json:"url,omitempty"`
 }
 
 // webhookPayload defines the JSON schema for the webhook payload
@@ -69,7 +69,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "webhook",
-			Version:     "1.0",
+			Version:     "1.1",
 			Description: "Send Attestation and SBOMs to a generic POST webhook URL",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -119,8 +119,8 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 		URL: regReq.URL, // Storing the URL in the URL field
 	}
 
-	// No additional state needed
-	rawConfig, err := sdk.ToConfig(&registrationState{})
+	// Store a masked version of the URL as non-secret config so it can be displayed for identification
+	rawConfig, err := sdk.ToConfig(&registrationState{WebhookURL: sdk.MaskURL(regReq.URL)})
 	if err != nil {
 		i.Logger.Errorw("failed to marshal registration state", "error", err)
 		return nil, fmt.Errorf("marshalling configuration: %w", err)
