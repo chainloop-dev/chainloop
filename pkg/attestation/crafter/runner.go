@@ -97,7 +97,7 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 		return runners.NewTeamCityPipeline()
 	},
 	schemaapi.CraftingSchema_Runner_TEKTON_PIPELINE: func(_ string, logger *zerolog.Logger) SupportedRunner {
-		return runners.NewTektonPipeline(logger)
+		return runners.NewTektonPipeline(timeoutCtx, logger)
 	},
 }
 

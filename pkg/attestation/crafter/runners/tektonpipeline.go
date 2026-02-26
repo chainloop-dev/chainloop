@@ -60,6 +60,7 @@ type podMetadata struct {
 //   - Tier 1: HOSTNAME env var and SA namespace file (always available in K8s pods)
 //   - Tier 2: K8s API pod labels for rich tekton.dev/* metadata (best-effort)
 type TektonPipeline struct {
+	ctx        context.Context
 	logger     *zerolog.Logger
 	podName    string            // from HOSTNAME env var
 	namespace  string            // from /var/run/secrets/kubernetes.io/serviceaccount/namespace
@@ -104,10 +105,16 @@ func WithResultsDir(dir string) TektonPipelineOption {
 }
 
 // NewTektonPipeline creates a new TektonPipeline runner with two-tier native metadata discovery.
+// ctx is used for K8s API calls; if nil, context.Background() is used as a safety fallback.
 // The logger is required for debug-level logging of discovery failures.
 // Functional options allow injecting test dependencies.
-func NewTektonPipeline(logger *zerolog.Logger, opts ...TektonPipelineOption) *TektonPipeline {
+func NewTektonPipeline(ctx context.Context, logger *zerolog.Logger, opts ...TektonPipelineOption) *TektonPipeline {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	r := &TektonPipeline{
+		ctx:             ctx,
 		logger:          logger,
 		labels:          make(map[string]string),
 		saTokenPath:     defaultSATokenPath,
@@ -151,11 +158,18 @@ func (r *TektonPipeline) CheckEnv() bool {
 }
 
 func (r *TektonPipeline) ListEnvVars() []*EnvVarDefinition {
-	// Tekton does not inject CI-specific env vars natively.
-	// All metadata is discovered from K8s API labels and filesystem.
-	// Return HOSTNAME as the only env var we consume (for traceability in attestation).
+	// Tekton metadata is discovered natively from K8s API labels and filesystem.
+	// These vars are "promoted" -- exposed to the attestation system even though the
+	// values come from K8s API discovery, not from actual container env vars.
+	// This follows the Dagger runner pattern of promoting encapsulated platform vars.
 	return []*EnvVarDefinition{
-		{"HOSTNAME", true},
+		{"HOSTNAME", true},                  // optional (best-effort from env)
+		{"TEKTON_TASKRUN_NAME", false},      // required (always in any TaskRun)
+		{"TEKTON_TASK_NAME", false},         // required (always in any TaskRun)
+		{"TEKTON_NAMESPACE", false},         // required (always in any TaskRun)
+		{"TEKTON_PIPELINE_NAME", true},      // optional (only Pipeline TaskRuns)
+		{"TEKTON_PIPELINERUN_NAME", true},   // optional (only Pipeline TaskRuns)
+		{"TEKTON_PIPELINE_TASK_NAME", true}, // optional (only Pipeline TaskRuns)
 	}
 }
 
@@ -199,34 +213,47 @@ func (r *TektonPipeline) RunURI() string {
 // because the real metadata comes from K8s API labels and filesystem, not from env vars.
 // The returned keys (TEKTON_TASKRUN_NAME, etc.) are synthesized from discovered labels --
 // they are NOT actual environment variables in the container.
+//
+// Required vars (TEKTON_TASKRUN_NAME, TEKTON_TASK_NAME, TEKTON_NAMESPACE) return errors
+// if not resolved, blocking attestation. This forces proper RBAC configuration for pod get
+// permissions. Optional vars (HOSTNAME, pipeline-specific labels) are silently skipped if empty.
 func (r *TektonPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	resolved := make(map[string]string)
+	var errors []*error
 
-	if hostname := os.Getenv("HOSTNAME"); hostname != "" {
-		resolved["HOSTNAME"] = hostname
-	}
-
-	// Populate from discovered labels (these appear in attestation's EnvVars for traceability)
-	if taskRun := r.labels["tekton.dev/taskRun"]; taskRun != "" {
-		resolved["TEKTON_TASKRUN_NAME"] = taskRun
-	}
-	if pipeline := r.labels["tekton.dev/pipeline"]; pipeline != "" {
-		resolved["TEKTON_PIPELINE_NAME"] = pipeline
-	}
-	if pipelineRun := r.labels["tekton.dev/pipelineRun"]; pipelineRun != "" {
-		resolved["TEKTON_PIPELINERUN_NAME"] = pipelineRun
-	}
-	if task := r.labels["tekton.dev/task"]; task != "" {
-		resolved["TEKTON_TASK_NAME"] = task
-	}
-	if pipelineTask := r.labels["tekton.dev/pipelineTask"]; pipelineTask != "" {
-		resolved["TEKTON_PIPELINE_TASK_NAME"] = pipelineTask
-	}
-	if r.namespace != "" {
-		resolved["TEKTON_NAMESPACE"] = r.namespace
+	// requireVar adds the value to resolved if non-empty, or appends an error with RBAC hint.
+	requireVar := func(key, value string) {
+		if value != "" {
+			resolved[key] = value
+		} else {
+			err := fmt.Errorf("required var %s not resolved -- ensure the ServiceAccount has pod get RBAC permissions", key)
+			errors = append(errors, &err)
+		}
 	}
 
-	// No errors -- all fields are optional/best-effort
+	// optionalVar adds the value to resolved if non-empty, silently skips otherwise.
+	optionalVar := func(key, value string) {
+		if value != "" {
+			resolved[key] = value
+		}
+	}
+
+	// HOSTNAME -- optional (best-effort from environment)
+	optionalVar("HOSTNAME", os.Getenv("HOSTNAME"))
+
+	// Required: always available in any TaskRun (needs RBAC for pod get)
+	requireVar("TEKTON_TASKRUN_NAME", r.labels["tekton.dev/taskRun"])
+	requireVar("TEKTON_TASK_NAME", r.labels["tekton.dev/task"])
+	requireVar("TEKTON_NAMESPACE", r.namespace)
+
+	// Optional: only present in Pipeline-orchestrated TaskRuns
+	optionalVar("TEKTON_PIPELINE_NAME", r.labels["tekton.dev/pipeline"])
+	optionalVar("TEKTON_PIPELINERUN_NAME", r.labels["tekton.dev/pipelineRun"])
+	optionalVar("TEKTON_PIPELINE_TASK_NAME", r.labels["tekton.dev/pipelineTask"])
+
+	if len(errors) > 0 {
+		return nil, errors
+	}
 	return resolved, nil
 }
 
@@ -372,7 +399,11 @@ func (r *TektonPipeline) discoverLabelsFromKubeAPI() {
 	url := fmt.Sprintf("https://%s:%s/api/v1/namespaces/%s/pods/%s",
 		apiHost, apiPort, r.namespace, r.podName)
 
-	req, err := http.NewRequest("GET", url, nil)
+	// Add 10-second timeout for the K8s API call on top of parent context
+	callCtx, cancel := context.WithTimeout(r.ctx, 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(callCtx, "GET", url, nil)
 	if err != nil {
 		r.logger.Debug().Err(err).Msg("failed to create K8s API request")
 		return
