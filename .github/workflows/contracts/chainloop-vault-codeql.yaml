@@ -19,8 +19,11 @@ spec:
           check_author_verified: yes
         requirements:
           - chainloop-best-practices/commit-signed
+    materials:
+      - ref: owasp-top10-2025
   policyGroups:
     - ref: slsa-checks
       with:
         runner: GITHUB_ACTION
     - ref: sast
+    - ref: cwes
