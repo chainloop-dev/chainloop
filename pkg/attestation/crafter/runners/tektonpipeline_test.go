@@ -16,6 +16,7 @@
 package runners
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -122,6 +123,7 @@ func (s *tektonPipelineSuite) TestDiscoverLabelsSuccess() {
 
 	// Create runner with injected httpClient (bypasses TLS verification against our self-signed cert)
 	r := NewTektonPipeline(
+		context.Background(),
 		newTestLogger(),
 		WithHTTPClient(server.Client()),
 		WithSATokenPath(tokenPath),
@@ -173,6 +175,7 @@ func (s *tektonPipelineSuite) TestDiscoverLabelsRBACDenied() {
 	caCertPath := writeTempFile(t, tmpDir, "ca.crt", string(caCertPEM))
 
 	r := NewTektonPipeline(
+		context.Background(),
 		newTestLogger(),
 		WithHTTPClient(server.Client()),
 		WithSATokenPath(tokenPath),
@@ -205,6 +208,7 @@ func (s *tektonPipelineSuite) TestDiscoverWithoutSAToken() {
 	nonExistentTokenPath := filepath.Join(tmpDir, "nonexistent-token")
 
 	r := NewTektonPipeline(
+		context.Background(),
 		newTestLogger(),
 		WithSATokenPath(nonExistentTokenPath),
 		WithNamespacePath(nsPath),
@@ -233,6 +237,7 @@ func (s *tektonPipelineSuite) TestDiscoverWithoutNamespaceFile() {
 	nonExistentNSPath := filepath.Join(tmpDir, "nonexistent-namespace")
 
 	r := NewTektonPipeline(
+		context.Background(),
 		newTestLogger(),
 		WithNamespacePath(nonExistentNSPath),
 		// SA token also non-existent, so K8s API will be skipped
@@ -260,6 +265,7 @@ func (s *tektonPipelineSuite) TestCheckEnvTektonPresent() {
 	tmpDir := t.TempDir()
 
 	r := NewTektonPipeline(
+		context.Background(),
 		newTestLogger(),
 		WithSATokenPath(filepath.Join(tmpDir, "nonexistent-token")),
 		WithNamespacePath(filepath.Join(tmpDir, "nonexistent-namespace")),
@@ -282,6 +288,7 @@ func (s *tektonPipelineSuite) TestRunnerID() {
 	tmpDir := t.TempDir()
 
 	r := NewTektonPipeline(
+		context.Background(),
 		newTestLogger(),
 		WithSATokenPath(filepath.Join(tmpDir, "nonexistent-token")),
 		WithNamespacePath(filepath.Join(tmpDir, "nonexistent-namespace")),
@@ -290,22 +297,45 @@ func (s *tektonPipelineSuite) TestRunnerID() {
 	s.Equal("TEKTON_PIPELINE", r.ID().String())
 }
 
-// TestListEnvVars verifies that ListEnvVars returns minimal list with HOSTNAME only.
-// HOSTNAME is marked optional because discovery is best-effort.
+// TestListEnvVars verifies that ListEnvVars returns 7 entries (HOSTNAME + 6 TEKTON_*)
+// with correct required/optional flags matching Tekton's two execution modes.
 func (s *tektonPipelineSuite) TestListEnvVars() {
 	t := s.T()
 	tmpDir := t.TempDir()
 
 	r := NewTektonPipeline(
+		context.Background(),
 		newTestLogger(),
 		WithSATokenPath(filepath.Join(tmpDir, "nonexistent-token")),
 		WithNamespacePath(filepath.Join(tmpDir, "nonexistent-namespace")),
 	)
 
 	envVars := r.ListEnvVars()
-	s.Require().Len(envVars, 1, "ListEnvVars should return exactly 1 entry")
-	s.Equal("HOSTNAME", envVars[0].Name)
-	s.True(envVars[0].Optional, "HOSTNAME should be optional")
+	s.Require().Len(envVars, 7, "ListEnvVars should return 7 entries (HOSTNAME + 6 TEKTON_*)")
+
+	// Build a map for easy lookup: name -> optional
+	varMap := make(map[string]bool)
+	for _, v := range envVars {
+		varMap[v.Name] = v.Optional
+	}
+
+	// Required vars (Optional=false) -- always available in any TaskRun
+	s.Contains(varMap, "TEKTON_TASKRUN_NAME")
+	s.False(varMap["TEKTON_TASKRUN_NAME"], "TEKTON_TASKRUN_NAME should be required")
+	s.Contains(varMap, "TEKTON_TASK_NAME")
+	s.False(varMap["TEKTON_TASK_NAME"], "TEKTON_TASK_NAME should be required")
+	s.Contains(varMap, "TEKTON_NAMESPACE")
+	s.False(varMap["TEKTON_NAMESPACE"], "TEKTON_NAMESPACE should be required")
+
+	// Optional vars (Optional=true) -- HOSTNAME is best-effort, pipeline-specific labels only in Pipeline TaskRuns
+	s.Contains(varMap, "HOSTNAME")
+	s.True(varMap["HOSTNAME"], "HOSTNAME should be optional")
+	s.Contains(varMap, "TEKTON_PIPELINE_NAME")
+	s.True(varMap["TEKTON_PIPELINE_NAME"], "TEKTON_PIPELINE_NAME should be optional")
+	s.Contains(varMap, "TEKTON_PIPELINERUN_NAME")
+	s.True(varMap["TEKTON_PIPELINERUN_NAME"], "TEKTON_PIPELINERUN_NAME should be optional")
+	s.Contains(varMap, "TEKTON_PIPELINE_TASK_NAME")
+	s.True(varMap["TEKTON_PIPELINE_TASK_NAME"], "TEKTON_PIPELINE_TASK_NAME should be optional")
 }
 
 // ============================================================================
@@ -314,8 +344,6 @@ func (s *tektonPipelineSuite) TestListEnvVars() {
 
 // TestTaskRunNameFromHostname tests hostname-to-taskrun-name derivation with a table-driven approach.
 func (s *tektonPipelineSuite) TestTaskRunNameFromHostname() {
-	t := s.T()
-
 	tests := []struct {
 		hostname string
 		expected string
@@ -331,13 +359,11 @@ func (s *tektonPipelineSuite) TestTaskRunNameFromHostname() {
 
 	for _, tt := range tests {
 		s.Run(tt.desc, func() {
-			tmpDir := t.TempDir()
 			r := &TektonPipeline{
 				logger:  newTestLogger(),
 				podName: tt.hostname,
 				labels:  make(map[string]string),
 			}
-			_ = tmpDir // just to avoid unused warning
 			s.Equal(tt.expected, r.taskRunNameFromHostname(), tt.desc)
 		})
 	}
@@ -629,9 +655,9 @@ func (s *tektonPipelineSuite) TestResolveEnvVarsWithLabels() {
 	s.Len(resolved, 7, "should have 7 entries with full label set")
 }
 
-// TestResolveEnvVarsMinimal tests ResolveEnvVars with no labels (Tier 1 only).
-// Only HOSTNAME and TEKTON_NAMESPACE should be present.
-func (s *tektonPipelineSuite) TestResolveEnvVarsMinimal() {
+// TestResolveEnvVarsWithRequiredVars tests ResolveEnvVars when required vars are satisfied
+// but optional pipeline-specific vars are missing (standalone TaskRun scenario).
+func (s *tektonPipelineSuite) TestResolveEnvVarsWithRequiredVars() {
 	t := s.T()
 	t.Setenv("HOSTNAME", "my-taskrun-pod")
 
@@ -639,12 +665,163 @@ func (s *tektonPipelineSuite) TestResolveEnvVarsMinimal() {
 		logger:    newTestLogger(),
 		podName:   "my-taskrun-pod",
 		namespace: "default",
-		labels:    make(map[string]string),
+		labels: map[string]string{
+			"tekton.dev/taskRun": "my-taskrun",
+			"tekton.dev/task":    "my-task",
+		},
 	}
 
 	resolved, errs := r.ResolveEnvVars()
-	s.Nil(errs, "ResolveEnvVars should not return errors")
+	s.Nil(errs, "ResolveEnvVars should not return errors when required vars are satisfied")
 	s.Equal("my-taskrun-pod", resolved["HOSTNAME"])
+	s.Equal("my-taskrun", resolved["TEKTON_TASKRUN_NAME"])
+	s.Equal("my-task", resolved["TEKTON_TASK_NAME"])
 	s.Equal("default", resolved["TEKTON_NAMESPACE"])
-	s.Len(resolved, 2, "should have 2 entries with minimal data")
+	s.Len(resolved, 4, "should have 4 entries (HOSTNAME + 3 required, no optional pipeline vars)")
+}
+
+// TestResolveEnvVarsErrorOnMissingRequired tests that ResolveEnvVars returns errors
+// when required vars (TEKTON_TASKRUN_NAME, TEKTON_TASK_NAME, TEKTON_NAMESPACE)
+// cannot be resolved due to empty labels and missing namespace.
+func (s *tektonPipelineSuite) TestResolveEnvVarsErrorOnMissingRequired() {
+	t := s.T()
+	t.Setenv("HOSTNAME", "my-taskrun-pod")
+
+	r := &TektonPipeline{
+		logger:    newTestLogger(),
+		podName:   "my-taskrun-pod",
+		namespace: "", // no namespace -- will fail TEKTON_NAMESPACE
+		labels:    make(map[string]string), // empty labels -- will fail TEKTON_TASKRUN_NAME, TEKTON_TASK_NAME
+	}
+
+	resolved, errs := r.ResolveEnvVars()
+	s.Nil(resolved, "ResolveEnvVars should return nil map when required vars are missing")
+	s.Require().Len(errs, 3, "ResolveEnvVars should return 3 errors (one per missing required var)")
+
+	// Verify each error contains the RBAC hint and the var name
+	errorMessages := make([]string, len(errs))
+	for i, e := range errs {
+		errorMessages[i] = (*e).Error()
+	}
+
+	allErrors := strings.Join(errorMessages, " | ")
+	s.Contains(allErrors, "TEKTON_TASKRUN_NAME", "errors should mention TEKTON_TASKRUN_NAME")
+	s.Contains(allErrors, "TEKTON_TASK_NAME", "errors should mention TEKTON_TASK_NAME")
+	s.Contains(allErrors, "TEKTON_NAMESPACE", "errors should mention TEKTON_NAMESPACE")
+	s.Contains(allErrors, "RBAC", "errors should contain RBAC hint")
+	s.Contains(allErrors, "required var", "errors should contain 'required var'")
+}
+
+// ============================================================================
+// Context propagation tests
+// ============================================================================
+
+// TestContextPropagation verifies that context passed to NewTektonPipeline reaches the
+// K8s API call in discoverLabelsFromKubeAPI. Uses a mock TLS server to capture whether
+// a request was received (proving context propagated through to http.NewRequestWithContext).
+func (s *tektonPipelineSuite) TestContextPropagation() {
+	t := s.T()
+
+	requestReceived := false
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestReceived = true
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"labels": map[string]string{
+					"tekton.dev/taskRun": "ctx-test-taskrun",
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	s.Require().NoError(err)
+
+	t.Setenv("HOSTNAME", "ctx-test-pod")
+	t.Setenv("KUBERNETES_SERVICE_HOST", serverURL.Hostname())
+	t.Setenv("KUBERNETES_SERVICE_PORT", serverURL.Port())
+
+	tmpDir := t.TempDir()
+	tokenPath := writeTempFile(t, tmpDir, "token", "test-sa-token")
+	nsPath := writeTempFile(t, tmpDir, "namespace", "test-ns")
+	caCertPEM := extractCACertPEM(server)
+	caCertPath := writeTempFile(t, tmpDir, "ca.crt", string(caCertPEM))
+
+	// Use a real context (not cancelled) -- should complete the K8s API call
+	testCtx := context.Background()
+
+	r := NewTektonPipeline(
+		testCtx,
+		newTestLogger(),
+		WithHTTPClient(server.Client()),
+		WithSATokenPath(tokenPath),
+		WithNamespacePath(nsPath),
+		WithCACertPath(caCertPath),
+	)
+
+	// Verify the mock server received the request (context was propagated through)
+	s.True(requestReceived, "K8s API mock server should have received a request")
+	// Verify label was discovered (proving the full context->request->response path worked)
+	s.Equal("ctx-test-taskrun", r.labels["tekton.dev/taskRun"])
+}
+
+// TestContextPropagationCancelled verifies that a cancelled context prevents the K8s API call
+// from completing, proving context is threaded through to the HTTP request.
+func (s *tektonPipelineSuite) TestContextPropagationCancelled() {
+	t := s.T()
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	s.Require().NoError(err)
+
+	t.Setenv("HOSTNAME", "cancel-test-pod")
+	t.Setenv("KUBERNETES_SERVICE_HOST", serverURL.Hostname())
+	t.Setenv("KUBERNETES_SERVICE_PORT", serverURL.Port())
+
+	tmpDir := t.TempDir()
+	tokenPath := writeTempFile(t, tmpDir, "token", "test-sa-token")
+	nsPath := writeTempFile(t, tmpDir, "namespace", "test-ns")
+	caCertPEM := extractCACertPEM(server)
+	caCertPath := writeTempFile(t, tmpDir, "ca.crt", string(caCertPEM))
+
+	// Cancel context before creating runner -- should cause K8s API call to fail
+	cancelCtx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	r := NewTektonPipeline(
+		cancelCtx,
+		newTestLogger(),
+		WithHTTPClient(server.Client()),
+		WithSATokenPath(tokenPath),
+		WithNamespacePath(nsPath),
+		WithCACertPath(caCertPath),
+	)
+
+	// Runner should still be created (no panic) with empty labels
+	s.NotNil(r)
+	s.Empty(r.labels, "labels should be empty when context is cancelled")
+}
+
+// TestNilContextFallback verifies that passing nil as context does not panic
+// and falls back to context.Background().
+func (s *tektonPipelineSuite) TestNilContextFallback() {
+	t := s.T()
+	tmpDir := t.TempDir()
+
+	// Should not panic with nil context
+	r := NewTektonPipeline(
+		nil, // nil context -- should fall back to context.Background()
+		newTestLogger(),
+		WithSATokenPath(filepath.Join(tmpDir, "nonexistent-token")),
+		WithNamespacePath(filepath.Join(tmpDir, "nonexistent-namespace")),
+	)
+
+	s.NotNil(r, "runner should not be nil")
+	s.NotNil(r.ctx, "context should not be nil (should be context.Background())")
 }
