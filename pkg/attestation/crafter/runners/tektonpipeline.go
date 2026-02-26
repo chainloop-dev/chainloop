@@ -165,7 +165,7 @@ func (r *TektonPipeline) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
 		{"HOSTNAME", true},                  // optional (best-effort from env)
 		{"TEKTON_TASKRUN_NAME", false},      // required (always in any TaskRun)
-		{"TEKTON_TASK_NAME", false},         // required (always in any TaskRun)
+		{"TEKTON_TASK_NAME", true},          // optional (absent with inline taskSpec)
 		{"TEKTON_NAMESPACE", false},         // required (always in any TaskRun)
 		{"TEKTON_PIPELINE_NAME", true},      // optional (only Pipeline TaskRuns)
 		{"TEKTON_PIPELINERUN_NAME", true},   // optional (only Pipeline TaskRuns)
@@ -214,9 +214,11 @@ func (r *TektonPipeline) RunURI() string {
 // The returned keys (TEKTON_TASKRUN_NAME, etc.) are synthesized from discovered labels --
 // they are NOT actual environment variables in the container.
 //
-// Required vars (TEKTON_TASKRUN_NAME, TEKTON_TASK_NAME, TEKTON_NAMESPACE) return errors
-// if not resolved, blocking attestation. This forces proper RBAC configuration for pod get
-// permissions. Optional vars (HOSTNAME, pipeline-specific labels) are silently skipped if empty.
+// Required vars (TEKTON_TASKRUN_NAME, TEKTON_NAMESPACE) return errors if not resolved,
+// blocking attestation. This forces proper RBAC configuration for pod get permissions.
+// Optional vars (HOSTNAME, TEKTON_TASK_NAME, pipeline-specific labels) are silently skipped
+// if empty. TEKTON_TASK_NAME is optional because inline taskSpec pipelines lack the
+// tekton.dev/task pod label.
 func (r *TektonPipeline) ResolveEnvVars() (map[string]string, []*error) {
 	resolved := make(map[string]string)
 	var errors []*error
@@ -243,8 +245,10 @@ func (r *TektonPipeline) ResolveEnvVars() (map[string]string, []*error) {
 
 	// Required: always available in any TaskRun (needs RBAC for pod get)
 	requireVar("TEKTON_TASKRUN_NAME", r.labels["tekton.dev/taskRun"])
-	requireVar("TEKTON_TASK_NAME", r.labels["tekton.dev/task"])
 	requireVar("TEKTON_NAMESPACE", r.namespace)
+
+	// Optional: tekton.dev/task label is absent when Pipeline uses inline taskSpec
+	optionalVar("TEKTON_TASK_NAME", r.labels["tekton.dev/task"])
 
 	// Optional: only present in Pipeline-orchestrated TaskRuns
 	optionalVar("TEKTON_PIPELINE_NAME", r.labels["tekton.dev/pipeline"])

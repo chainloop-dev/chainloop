@@ -322,14 +322,15 @@ func (s *tektonPipelineSuite) TestListEnvVars() {
 	// Required vars (Optional=false) -- always available in any TaskRun
 	s.Contains(varMap, "TEKTON_TASKRUN_NAME")
 	s.False(varMap["TEKTON_TASKRUN_NAME"], "TEKTON_TASKRUN_NAME should be required")
-	s.Contains(varMap, "TEKTON_TASK_NAME")
-	s.False(varMap["TEKTON_TASK_NAME"], "TEKTON_TASK_NAME should be required")
 	s.Contains(varMap, "TEKTON_NAMESPACE")
 	s.False(varMap["TEKTON_NAMESPACE"], "TEKTON_NAMESPACE should be required")
 
-	// Optional vars (Optional=true) -- HOSTNAME is best-effort, pipeline-specific labels only in Pipeline TaskRuns
+	// Optional vars (Optional=true) -- HOSTNAME is best-effort, TEKTON_TASK_NAME absent with inline taskSpec,
+	// pipeline-specific labels only in Pipeline TaskRuns
 	s.Contains(varMap, "HOSTNAME")
 	s.True(varMap["HOSTNAME"], "HOSTNAME should be optional")
+	s.Contains(varMap, "TEKTON_TASK_NAME")
+	s.True(varMap["TEKTON_TASK_NAME"], "TEKTON_TASK_NAME should be optional (absent with inline taskSpec)")
 	s.Contains(varMap, "TEKTON_PIPELINE_NAME")
 	s.True(varMap["TEKTON_PIPELINE_NAME"], "TEKTON_PIPELINE_NAME should be optional")
 	s.Contains(varMap, "TEKTON_PIPELINERUN_NAME")
@@ -656,7 +657,7 @@ func (s *tektonPipelineSuite) TestResolveEnvVarsWithLabels() {
 }
 
 // TestResolveEnvVarsWithRequiredVars tests ResolveEnvVars when required vars are satisfied
-// but optional pipeline-specific vars are missing (standalone TaskRun scenario).
+// and optional TEKTON_TASK_NAME is present (standalone TaskRun with taskRef scenario).
 func (s *tektonPipelineSuite) TestResolveEnvVarsWithRequiredVars() {
 	t := s.T()
 	t.Setenv("HOSTNAME", "my-taskrun-pod")
@@ -677,12 +678,45 @@ func (s *tektonPipelineSuite) TestResolveEnvVarsWithRequiredVars() {
 	s.Equal("my-taskrun", resolved["TEKTON_TASKRUN_NAME"])
 	s.Equal("my-task", resolved["TEKTON_TASK_NAME"])
 	s.Equal("default", resolved["TEKTON_NAMESPACE"])
-	s.Len(resolved, 4, "should have 4 entries (HOSTNAME + 3 required, no optional pipeline vars)")
+	s.Len(resolved, 4, "should have 4 entries (HOSTNAME + 2 required + 1 optional TEKTON_TASK_NAME)")
+}
+
+// TestResolveEnvVarsInlineTaskSpec tests ResolveEnvVars when the Pipeline uses inline taskSpec.
+// The tekton.dev/task label is absent, so TEKTON_TASK_NAME should be silently skipped.
+func (s *tektonPipelineSuite) TestResolveEnvVarsInlineTaskSpec() {
+	t := s.T()
+	t.Setenv("HOSTNAME", "my-taskrun-pod")
+
+	r := &TektonPipeline{
+		logger:    newTestLogger(),
+		podName:   "my-taskrun-pod",
+		namespace: "default",
+		labels: map[string]string{
+			"tekton.dev/taskRun":      "my-taskrun",
+			"tekton.dev/pipeline":     "my-pipeline",
+			"tekton.dev/pipelineRun":  "my-pipelinerun",
+			"tekton.dev/pipelineTask": "build",
+			// NOTE: no "tekton.dev/task" -- inline taskSpec
+		},
+	}
+
+	resolved, errs := r.ResolveEnvVars()
+	s.Nil(errs, "ResolveEnvVars should not return errors with inline taskSpec (TEKTON_TASK_NAME is optional)")
+	s.Equal("my-taskrun-pod", resolved["HOSTNAME"])
+	s.Equal("my-taskrun", resolved["TEKTON_TASKRUN_NAME"])
+	s.Equal("default", resolved["TEKTON_NAMESPACE"])
+	s.Equal("my-pipeline", resolved["TEKTON_PIPELINE_NAME"])
+	s.Equal("my-pipelinerun", resolved["TEKTON_PIPELINERUN_NAME"])
+	s.Equal("build", resolved["TEKTON_PIPELINE_TASK_NAME"])
+	_, hasTaskName := resolved["TEKTON_TASK_NAME"]
+	s.False(hasTaskName, "TEKTON_TASK_NAME should be absent with inline taskSpec")
+	s.Len(resolved, 6, "should have 6 entries (no TEKTON_TASK_NAME with inline taskSpec)")
 }
 
 // TestResolveEnvVarsErrorOnMissingRequired tests that ResolveEnvVars returns errors
-// when required vars (TEKTON_TASKRUN_NAME, TEKTON_TASK_NAME, TEKTON_NAMESPACE)
-// cannot be resolved due to empty labels and missing namespace.
+// when required vars (TEKTON_TASKRUN_NAME, TEKTON_NAMESPACE) cannot be resolved
+// due to empty labels and missing namespace. TEKTON_TASK_NAME is optional (absent
+// with inline taskSpec) so it does NOT produce an error.
 func (s *tektonPipelineSuite) TestResolveEnvVarsErrorOnMissingRequired() {
 	t := s.T()
 	t.Setenv("HOSTNAME", "my-taskrun-pod")
@@ -691,12 +725,12 @@ func (s *tektonPipelineSuite) TestResolveEnvVarsErrorOnMissingRequired() {
 		logger:    newTestLogger(),
 		podName:   "my-taskrun-pod",
 		namespace: "", // no namespace -- will fail TEKTON_NAMESPACE
-		labels:    make(map[string]string), // empty labels -- will fail TEKTON_TASKRUN_NAME, TEKTON_TASK_NAME
+		labels:    make(map[string]string), // empty labels -- will fail TEKTON_TASKRUN_NAME
 	}
 
 	resolved, errs := r.ResolveEnvVars()
 	s.Nil(resolved, "ResolveEnvVars should return nil map when required vars are missing")
-	s.Require().Len(errs, 3, "ResolveEnvVars should return 3 errors (one per missing required var)")
+	s.Require().Len(errs, 2, "ResolveEnvVars should return 2 errors (TEKTON_TASKRUN_NAME + TEKTON_NAMESPACE)")
 
 	// Verify each error contains the RBAC hint and the var name
 	errorMessages := make([]string, len(errs))
@@ -706,8 +740,8 @@ func (s *tektonPipelineSuite) TestResolveEnvVarsErrorOnMissingRequired() {
 
 	allErrors := strings.Join(errorMessages, " | ")
 	s.Contains(allErrors, "TEKTON_TASKRUN_NAME", "errors should mention TEKTON_TASKRUN_NAME")
-	s.Contains(allErrors, "TEKTON_TASK_NAME", "errors should mention TEKTON_TASK_NAME")
 	s.Contains(allErrors, "TEKTON_NAMESPACE", "errors should mention TEKTON_NAMESPACE")
+	s.NotContains(allErrors, "TEKTON_TASK_NAME", "TEKTON_TASK_NAME is optional and should not produce an error")
 	s.Contains(allErrors, "RBAC", "errors should contain RBAC hint")
 	s.Contains(allErrors, "required var", "errors should contain 'required var'")
 }
