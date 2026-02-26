@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,6 +93,15 @@ type Opts struct {
 	Credentials     credentials.ReaderWriter
 	Validator       protovalidate.Validator
 }
+
+var (
+	currentUserSkipRegexp                  = regexp.MustCompile("(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService|controlplane.v1.SigningService)")
+	fullyConfiguredOrgSkipRegexp           = regexp.MustCompile("controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*|controlplane.v1.SigningService/.*")
+	fullyConfiguredCASBackendRequireRegexp = regexp.MustCompile("/controlplane.v1.AttestationService.GetUploadCreds|/controlplane.v1.AttestationService.Init|/controlplane.v1.AttestationService.Store|/controlplane.v1.CASCredentialsService.Get")
+	allowListSkipRegexp                    = regexp.MustCompile("controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount")
+	robotAccountRequireRegexp              = regexp.MustCompile("controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/GenerateSigningCert")
+	allButOrganizationOperationsSkipRegexp = regexp.MustCompile("/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount")
+)
 
 // NewGRPCServer new a gRPC server.
 func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
@@ -255,53 +264,38 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 
 // If we should load the user
 func requireCurrentUserMatcher() selector.MatchFunc {
-	// Skip authentication on the status grpc service
-	const skipRegexp = "(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService|controlplane.v1.SigningService)"
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(skipRegexp)
-		return !r.MatchString(operation)
+		return !currentUserSkipRegexp.MatchString(operation)
 	}
 }
 
 func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
-	// We do not need to remove other endpoints since this matcher is called once the requireCurrentUserMatcher one has passed
-	const skipRegexp = "controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*|controlplane.v1.SigningService/.*"
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(skipRegexp)
-		return !r.MatchString(operation)
+		return !fullyConfiguredOrgSkipRegexp.MatchString(operation)
 	}
 }
 
 func requireFullyConfiguredCASBackendMatcher() selector.MatchFunc {
-	const requireMatcher = "/controlplane.v1.AttestationService.GetUploadCreds|/controlplane.v1.AttestationService.Init|/controlplane.v1.AttestationService.Store|/controlplane.v1.CASCredentialsService.Get"
 	return func(_ context.Context, operation string) bool {
-		r := regexp.MustCompile(requireMatcher)
-		return r.MatchString(operation)
+		return fullyConfiguredCASBackendRequireRegexp.MatchString(operation)
 	}
 }
 
 func allowListEnabled() selector.MatchFunc {
-	// the allow list should not affect the ability to know who you are and delete your account
-	const skipRegexp = "controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(skipRegexp)
-		return !r.MatchString(operation)
+		return !allowListSkipRegexp.MatchString(operation)
 	}
 }
 
 func requireRobotAccountMatcher() selector.MatchFunc {
-	const requireMatcher = "controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/GenerateSigningCert"
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(requireMatcher)
-		return r.MatchString(operation)
+		return robotAccountRequireRegexp.MatchString(operation)
 	}
 }
 
 // Matches all operations that require to have a current organization
 func requireAllButOrganizationOperationsMatcher() selector.MatchFunc {
-	const skipRegexp = "/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount"
 	return func(ctx context.Context, operation string) bool {
-		r := regexp.MustCompile(skipRegexp)
-		return !r.MatchString(operation)
+		return !allButOrganizationOperationsSkipRegexp.MatchString(operation)
 	}
 }
