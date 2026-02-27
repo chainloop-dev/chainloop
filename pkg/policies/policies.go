@@ -78,6 +78,7 @@ type PolicyVerifier struct {
 	client           v13.AttestationServiceClient
 	grpcConn         *grpc.ClientConn
 	allowedHostnames []string
+	defaultGate      bool
 	includeRawData   bool
 	enablePrint      bool
 	evalPhase        EvalPhase
@@ -87,6 +88,7 @@ var _ Verifier = (*PolicyVerifier)(nil)
 
 type PolicyVerifierOptions struct {
 	AllowedHostnames []string
+	DefaultGate      bool
 	IncludeRawData   bool
 	EnablePrint      bool
 	GRPCConn         *grpc.ClientConn
@@ -98,6 +100,12 @@ type PolicyVerifierOption func(*PolicyVerifierOptions)
 func WithAllowedHostnames(hostnames ...string) PolicyVerifierOption {
 	return func(o *PolicyVerifierOptions) {
 		o.AllowedHostnames = hostnames
+	}
+}
+
+func WithDefaultGate(defaultGate bool) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.DefaultGate = defaultGate
 	}
 }
 
@@ -137,6 +145,7 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		logger:           logger,
 		grpcConn:         options.GRPCConn,
 		allowedHostnames: options.AllowedHostnames,
+		defaultGate:      options.DefaultGate,
 		includeRawData:   options.IncludeRawData,
 		enablePrint:      options.EnablePrint,
 		evalPhase:        options.EvalPhase,
@@ -336,8 +345,20 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		SkipReasons:  reasons,
 		Requirements: attachment.Requirements,
 		RawResults:   engineRawResultsToAPIRawResults(rawResults),
-		Gate:         attachment.GetGate(),
+		Gate:         policyAttachmentGate(attachment, pv.defaultGate),
 	}, nil
+}
+
+func policyAttachmentGate(attachment *v1.PolicyAttachment, defaultGate bool) bool {
+	if attachment == nil {
+		return defaultGate
+	}
+
+	if attachment.Gate != nil {
+		return attachment.GetGate()
+	}
+
+	return defaultGate
 }
 
 // ComputeArguments takes a list of arguments, and matches it against the expected inputs. It also applies a set of interpolations if needed.

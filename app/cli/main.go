@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -100,9 +100,6 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 			logger.Debug().Msg("GracefulErrorExit enabled (exitCode 0). If you want to disable it set --graceful-exit=false")
 			exitCode = 0
 		}
-	case errors.Is(err, cmd.ErrBlockedByPolicyViolation):
-		// default exit code for policy violations
-		exitCode = 3
 	case errors.As(err, &gateErr):
 		// exit code for gate errors
 		exitCode = 4

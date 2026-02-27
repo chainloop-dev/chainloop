@@ -236,8 +236,11 @@ message PolicyAttachment {
     }
   }];
 
-  // If true, the policy will act as a gate, returning an error code if the policy fails
-  bool gate = 7;
+  // Controls whether policy violations act as a gate.
+  // - true: policy violations are blocking for this policy
+  // - false: policy violations are non-blocking for this policy
+  // - unset: inherit organization-level default behavior
+  optional bool gate = 7;
 
   message MaterialSelector {
     // material name
