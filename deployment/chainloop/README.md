@@ -17,6 +17,10 @@ Compatibility with the following Ingress Controllers has been verified, other co
 - [Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
 - [Traefik](https://doc.traefik.io/traefik/providers/kubernetes-ingress/)
 
+Compatibility with the following Gateway API Controllers has been verified, other controllers might or might not work.
+- [Envoy Gateway](https://gateway.envoyproxy.io/)
+
+
 ## TL;DR
 
 Deploy Chainloop in [development mode](#development) by running
@@ -306,6 +310,151 @@ cas:
 
 Remember, once you have set up your domain, make sure you use the [CLI pointing](#configure-chainloop-cli-to-point-to-your-instance) to it instead of the defaults.
 
+### Use Gateway Api
+When using Gateway Api we do not need to set another ingress for controlplane and cas API, below configuration is sufficient as GRPC and HTTP traffic is handled by HTTPRoute.
+HttpRoute object provides possibility to have more hostnames but chainloop application is developed to work with only one domain per service so we have to configure accordingly.
+
+```yaml
+controlplane:
+  enabled: true
+  tls: false
+  parentRefs:
+      - name: chainloop-gw
+        sectionName: cp
+        namespace: chainloop
+  ## Please do not use more than one hostname. 
+  hostnames:
+    - cp.chainloop.dev
+cas:
+  enabled: true
+  tls: false
+  parentRefs:
+      - name: chainloop-gw
+        sectionName: cas
+        namespace: chainloop
+  ## Please do not use more than one hostname. 
+  hostnames:
+    - cas.chainloop.dev
+```
+
+Example Gateway resource can look like this:
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: chainloop-gw
+spec:
+  gatewayClassName: envoy-gateway-class
+  listeners:
+  - hostname: '*.chainloop.dev'
+    name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+```
+
+### Use Gateway Api with TLS
+```yaml
+controlplane:
+  enabled: true
+  # Change here to true to indicate that https traffic is enabled
+  tls: true
+  parentRefs:
+      - name: chainloop-gw
+        sectionName: cp
+        namespace: chainloop
+  ## Please do not use more than one hostname. 
+  hostnames:
+    - cp.chainloop.dev
+cas:
+  enabled: true
+  # Change here to true to indicate that https traffic is enabled
+  tls: true
+  parentRefs:
+      - name: chainloop-gw
+        sectionName: cas
+        namespace: chainloop
+  ## Please do not use more than one hostname. 
+  hostnames:
+    - cas.chainloop.dev
+```
+
+Example Gateway handling those request can look like this:
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: chainloop-gw
+  annotations:
+  # We are using letsencrypt cluster issuer to generate certificates
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+# In this example we use envoy-controller
+  gatewayClassName: envoy-gateway-class
+  listeners:
+  - hostname: '*.chainloop.dev'
+    name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: All
+  - hostname: 'cp.chainloop.dev'
+    name: cp-tls
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: cp-chainloop-dev-tls
+    allowedRoutes:
+      namespaces:
+        from: All
+  - hostname: 'cas.chainloop.dev'
+    name: cas-tls
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: cas-chainloop-dev-tls
+    allowedRoutes:
+      namespaces:
+        from: All
+## Add this if you want to expose DEX service for development mode
+  - hostname: 'dex.chainloop.dev'
+    name: dex-tls
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: dex-chainloop-dev-tls
+    allowedRoutes:
+      namespaces:
+        from: All
+```
+
+Add a http to https redirect httproute:
+
+```yaml
+kind: HTTPRoute
+apiVersion: gateway.networking.k8s.io/v1beta1
+metadata:
+  name: redirect-http-to-https
+spec:
+  parentRefs:
+  - namespace: chainloop
+    name: chainloop-gw
+    sectionName: http
+  rules:
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+```
 ### Connect to an external PostgreSQL database
 
 ```yaml
@@ -510,6 +659,24 @@ dex:
       hostname: [your dex hostname]
 ```
 
+If you want to use Dex with Gateway API, configuration can look like this. Please see [Use gateway api](#use-gateway-api) section for reference
+
+```yaml
+dex:
+  dex:
+    # Point to the [controlplane http ingress]/auth/callback
+    redirectURL: https://[your controlplane hostname]/auth/callback
+    httpRoute:
+      enabled: true
+      tls: true
+      hostnames:
+        - [your dex hostname]
+      parentRefs:
+          - name: chainloop-gw
+            sectionName: dex-tls
+            namespace: chainloop
+```
+
 Once done, you can access with [two predefined users](https://github.com/chainloop-dev/chainloop/blob/0b165fa27d1973be55422065bd25efee95c5db9b/deployment/chainloop/charts/dex/values.yaml#L48), but is highly recommended to change those users to your own.
 
 ## Parameters
@@ -673,6 +840,15 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.ingressAPI.extraTls`                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `controlplane.ingressAPI.secrets`                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `controlplane.ingressAPI.extraRules`               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| `controlplane.httpRoute.enabled`                   | Enable HTTPRoute generation for controlplane                                                                                     | `false`                  |
+| `controlplane.httpRoute.annotations`               | Additional annotations for the HTTPRoute resource                                                                                | `{}`                     |
+| `controlplane.httpRoute.tls`                       | Indicate if tls is active for this route                                                                                         | `false`                  |
+| `controlplane.httpRoute.labels`                    | Additional labels for the HTTPRoute resource                                                                                     | `{}`                     |
+| `controlplane.httpRoute.parentRefs`                | Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.       | `[]`                     |
+| `controlplane.httpRoute.hostnames`                 | List of hostnames matching HTTP header                                                                                           | `[]`                     |
+| `controlplane.httpRoute.matches`                   | List of match rules applied to the HTTPRoute for the default svc backend reference                                               | `[]`                     |
+| `controlplane.httpRoute.filters`                   | List of filter rules applied to the HTTPRoute for the default svc backend reference                                              | `[]`                     |
+| `controlplane.httpRoute.extraRules`                | List of extra rules applied to the HTTPRoute                                                                                     | `[]`                     |
 
 ### Controlplane Misc
 
@@ -849,6 +1025,15 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.ingressAPI.extraTls`                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `cas.ingressAPI.secrets`                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `cas.ingressAPI.extraRules`               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| `cas.httpRoute.enabled`                   | Enable HTTPRoute generation for CAS                                                                                              | `false`                  |
+| `cas.httpRoute.tls`                       | Indicate if tls is active for this route                                                                                         | `false`                  |
+| `cas.httpRoute.annotations`               | Additional annotations for the HTTPRoute resource                                                                                | `{}`                     |
+| `cas.httpRoute.labels`                    | Additional labels for the HTTPRoute resource                                                                                     | `{}`                     |
+| `cas.httpRoute.parentRefs`                | Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.       | `[]`                     |
+| `cas.httpRoute.hostnames`                 | List of hostnames matching HTTP header                                                                                           | `[]`                     |
+| `cas.httpRoute.matches`                   | List of match rules applied to the HTTPRoute for the default svc backend reference                                               | `[]`                     |
+| `cas.httpRoute.filters`                   | List of filter rules applied to the HTTPRoute for the default svc backend reference                                              | `[]`                     |
+| `cas.httpRoute.extraRules`                | List of extra rules applied to the HTTPRoute                                                                                     | `[]`                     |
 
 ### CAS Misc
 
@@ -930,23 +1115,31 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 
 ### Dependencies
 
-| Name                                 | Description                                                                                            | Value                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `postgresql.enabled`                 | Switch to enable or disable the PostgreSQL helm chart                                                  | `true`                                                                                   |
-| `postgresql.auth.enablePostgresUser` | Assign a password to the "postgres" admin user. Otherwise, remote access will be blocked for this user | `false`                                                                                  |
-| `postgresql.auth.username`           | Name for a custom user to create                                                                       | `chainloop`                                                                              |
-| `postgresql.auth.password`           | Password for the custom user to create                                                                 | `chainlooppwd`                                                                           |
-| `postgresql.auth.database`           | Name for a custom database to create                                                                   | `chainloop-cp`                                                                           |
-| `postgresql.auth.existingSecret`     | Name of existing secret to use for PostgreSQL credentials                                              | `""`                                                                                     |
-| `vault.server.args`                  | Arguments to pass to the vault server. This is useful for setting the server in development mode       | `["server","-dev"]`                                                                      |
-| `vault.server.config`                | Configuration for the vault server. Small override of default Bitnami configuration                    | `storage "inmem" {}
-disable_mlock = true
-ui = true
-service_registration "kubernetes" {}` |
-| `vault.server.extraEnvVars[0].name`  | Root token for the vault server                                                                        | `VAULT_DEV_ROOT_TOKEN_ID`                                                                |
-| `vault.server.extraEnvVars[0].value` | The value of the root token. Default: notasecret                                                       | `notasecret`                                                                             |
-| `vault.server.extraEnvVars[1].name`  | Address to listen on development mode                                                                  | `VAULT_DEV_LISTEN_ADDRESS`                                                               |
-| `vault.server.extraEnvVars[1].value` | The address to listen on. Default: [::]:8200                                                           | `[::]:8200`                                                                              |
+| Name                                                 | Description                                                                                                                | Value                                                 |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `postgresql.enabled`                                 | Switch to enable or disable the PostgreSQL helm chart                                                                      | `true`                                                |
+| `postgresql.auth.enablePostgresUser`                 | Assign a password to the "postgres" admin user. Otherwise, remote access will be blocked for this user                     | `false`                                               |
+| `postgresql.auth.username`                           | Name for a custom user to create                                                                                           | `chainloop`                                           |
+| `postgresql.auth.password`                           | Password for the custom user to create                                                                                     | `chainlooppwd`                                        |
+| `postgresql.auth.database`                           | Name for a custom database to create                                                                                       | `chainloop-cp`                                        |
+| `postgresql.auth.existingSecret`                     | Name of existing secret to use for PostgreSQL credentials                                                                  | `""`                                                  |
+| `vault.server.command`                               | Override default container command                                                                                         | `["/vault-init.sh"]`                                  |
+| `vault.server.args`                                  | Override default container args                                                                                            | `[""]`                                                |
+| `vault.server.extraVolumes[0].name`                  | Name of the extra volume                                                                                                   | `vault-init`                                          |
+| `vault.server.extraVolumes[0].configMap.name`        | Name of the ConfigMap to mount                                                                                             | `{{ include "vault.server.fullname" . }}-init`        |
+| `vault.server.extraVolumes[0].configMap.defaultMode` | Default mode for the ConfigMap files                                                                                       | `755`                                                 |
+| `vault.server.extraVolumeMounts[0].name`             | Name of the volume to mount                                                                                                | `vault-init`                                          |
+| `vault.server.extraVolumeMounts[0].mountPath`        | Path where the volume should be mounted                                                                                    | `/vault-init.sh`                                      |
+| `vault.server.extraVolumeMounts[0].subPath`          | Subpath within the volume to mount                                                                                         | `vault-init.sh`                                       |
+| `dex.dex.redirectURL`                                | Control Plane URL where Dex will redirect after a successful login                                                         | `http(s)://[controlplane http ingress]/auth/callback` |
+| `dex.dex.ingress`                                    | Configuration for the Dex ingress record                                                                                   |                                                       |
+| `dex.dex.ingress.enabled`                            | Enable ingress record generation for Dex                                                                                   | `false`                                               |
+| `dex.dex.ingress.tls`                                | Enable TLS for the Dex ingress record                                                                                      | `false`                                               |
+| `dex.dex.ingress.hostname`                           | Hostname for the Dex ingress record                                                                                        | `""`                                                  |
+| `dex.dex.ingress.ingressClassName`                   | IngressClass that will be be used to implement the Dex Ingress (Kubernetes 1.18+)                                          | `""`                                                  |
+| `dex.dex.httpRoute.enabled`                          | Enable HTTPRoute generation for controlplane                                                                               | `false`                                               |
+| `dex.dex.httpRoute.hostnames`                        | List of hostnames to match for this route WARNING: Please use only one domain                                              | `["dex.[domain]"]`                                    |
+| `dex.dex.httpRoute.parentRefs`                       | Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace. | `[]`                                                  |
 
 ## License
 
