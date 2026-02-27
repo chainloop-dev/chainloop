@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,10 +49,11 @@ type CASRedirectService struct {
 
 	casMappingUC    *biz.CASMappingUseCase
 	casCredsUseCase *biz.CASCredentialsUseCase
+	casBackendUC    *biz.CASBackendUseCase
 	casServerConf   *conf.Bootstrap_CASServer
 }
 
-func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCredentialsUseCase, conf *conf.Bootstrap_CASServer, opts ...NewOpt) (*CASRedirectService, error) {
+func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCredentialsUseCase, casBackendUC *biz.CASBackendUseCase, conf *conf.Bootstrap_CASServer, opts ...NewOpt) (*CASRedirectService, error) {
 	if conf == nil || conf.GetDownloadUrl() == "" {
 		return nil, errors.New("CASServer.downloadURL configuration is missing")
 	}
@@ -62,6 +63,7 @@ func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCre
 		casMappingUC:    casmUC,
 		casCredsUseCase: casCredsUC,
 		casServerConf:   conf,
+		casBackendUC:    casBackendUC,
 	}, nil
 }
 
@@ -108,6 +110,11 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	// inline backends don't have a download URL
 	if backend.Inline {
 		return nil, kerrors.NotFound("not found", "CAS backend is inline")
+	}
+
+	// check if the backend is on a valid state, if not return an error
+	if backend.ValidationStatus != biz.CASBackendValidationOK {
+		return nil, pb.ErrorCasBackendErrorReasonInvalid("CAS Storage is on a invalid state and can't download artifacts, please fix it before attempting it again")
 	}
 
 	// Create an URL to download the artifact from the CAS backend

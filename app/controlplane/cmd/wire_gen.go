@@ -215,7 +215,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	integrationsService := service.NewIntegrationsService(integrationUseCase, workflowUseCase, availablePlugins, v5...)
 	organizationService := service.NewOrganizationService(membershipUseCase, organizationUseCase, v5...)
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v5...)
-	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v5...)
+	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, casBackendUseCase, bootstrap_CASServer, v5...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
