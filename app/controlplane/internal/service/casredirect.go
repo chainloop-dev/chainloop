@@ -112,7 +112,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 
 	// check if the backend is on a valid state, if not return an error
 	if backend.ValidationStatus != biz.CASBackendValidationOK {
-		return nil, pb.ErrorCasBackendErrorReasonInvalid("CAS Storage is in a invalid state and can't download artifacts, please fix it before attempting it again")
+		return nil, pb.ErrorCasBackendErrorReasonInvalid("CAS Storage is in an invalid state and can't download artifacts, please fix it before attempting it again")
 	}
 
 	// Create an URL to download the artifact from the CAS backend
