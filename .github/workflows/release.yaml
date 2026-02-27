@@ -93,6 +93,9 @@ jobs:
           # Install Syft
           wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O - | sh -s -- -b /usr/local/bin
 
+      - name: Install Grype
+        run: curl -sSfL https://raw.githubusercontent.com/anchore/grype/7b7d5be174d392ded78fd45d6cfaff4b7610d23b/install.sh | sh -s -- -b /usr/local/bin
+
       - name: Run GoReleaser
         id: release
         uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 # v3.2.0
@@ -149,6 +152,10 @@ jobs:
 
               # Upload the SBOM to the release
               gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
+
+              # Run Grype vulnerability scan and attest result
+              grype --only-fixed -o sarif --file ./vuln-${container_name}.json $entry
+              chainloop attestation add --name ${container_name}-vulnerability-report --value ./vuln-${container_name}.json --attestation-id ${{ env.ATTESTATION_ID }}
             fi
           done
 

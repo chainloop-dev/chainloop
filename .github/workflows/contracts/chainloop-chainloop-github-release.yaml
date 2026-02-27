@@ -14,3 +14,6 @@ spec:
     - ref: slsa-checks
       with:
         runner: GITHUB_ACTION
+    - ref: vulnerability-management
+      with:
+        severity: "HIGH"
