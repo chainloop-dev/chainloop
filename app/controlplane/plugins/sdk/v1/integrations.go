@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"sort"
 
 	"github.com/invopop/jsonschema"
@@ -234,6 +235,24 @@ func ToConfig(m any) (Configuration, error) {
 
 func FromConfig(data Configuration, v any) error {
 	return json.Unmarshal(data, v)
+}
+
+// MaskURL returns a masked version of the URL suitable for display.
+// It preserves the scheme and host, and shows only the last 4 characters
+// of the path with the rest replaced by asterisks.
+func MaskURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		return ""
+	}
+
+	path := u.Path
+	const suffixLen = 4
+	if len(path) > suffixLen {
+		path = "****" + path[len(path)-suffixLen:]
+	}
+
+	return u.Scheme + "://" + u.Host + path
 }
 
 // GenerateJSONSchema generates a flat JSON schema from a struct using https://github.com/invopop/jsonschema
