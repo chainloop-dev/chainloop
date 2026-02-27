@@ -97,7 +97,7 @@ type Opts struct {
 var (
 	currentUserSkipRegexp                  = regexp.MustCompile("(controlplane.v1.AttestationService/.*|controlplane.v1.StatusService/.*|controlplane.v1.ReferrerService/DiscoverPublicShared|controlplane.v1.AttestationStateService|controlplane.v1.SigningService)")
 	fullyConfiguredOrgSkipRegexp           = regexp.MustCompile("controlplane.v1.OCIRepositoryService/.*|controlplane.v1.ContextService/Current|/controlplane.v1.OrganizationService/.*|/controlplane.v1.AuthService/DeleteAccount|controlplane.v1.CASBackendService/.*|/controlplane.v1.UserService/.*|controlplane.v1.SigningService/.*")
-	fullyConfiguredCASBackendRequireRegexp = regexp.MustCompile("/controlplane.v1.AttestationService.GetUploadCreds|/controlplane.v1.AttestationService.Init|/controlplane.v1.AttestationService.Store|/controlplane.v1.CASCredentialsService.Get|/controlplane.v1.CASRedirectService/DownloadRedirect")
+	fullyConfiguredCASBackendRequireRegexp = regexp.MustCompile("/controlplane.v1.AttestationService.GetUploadCreds|/controlplane.v1.AttestationService.Init|/controlplane.v1.AttestationService.Store|/controlplane.v1.CASCredentialsService.Get")
 	allowListSkipRegexp                    = regexp.MustCompile("controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount")
 	robotAccountRequireRegexp              = regexp.MustCompile("controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/GenerateSigningCert")
 	allButOrganizationOperationsSkipRegexp = regexp.MustCompile("/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount")
