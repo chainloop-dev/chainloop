@@ -107,32 +107,6 @@ func TestInitialize(t *testing.T) {
 	})
 }
 
-func TestLoadAndProcessTemplates(t *testing.T) {
-	t.Run("embedded rego", func(t *testing.T) {
-		opts := &InitOptions{
-			Embedded: true,
-			Name:     "embedded-test",
-		}
-
-		content, err := loadAndProcessTemplates(opts)
-		require.NoError(t, err)
-		assert.NotEmpty(t, content.YAML)
-		assert.Empty(t, content.Rego) // Rego file should be empty for embedded
-	})
-
-	t.Run("separate rego file", func(t *testing.T) {
-		opts := &InitOptions{
-			Embedded: false,
-			Name:     "separate-rego-test",
-		}
-
-		content, err := loadAndProcessTemplates(opts)
-		require.NoError(t, err)
-		assert.NotEmpty(t, content.YAML)
-		assert.NotEmpty(t, content.Rego)
-	})
-}
-
 func TestExecuteTemplate(t *testing.T) {
 	testCases := []struct {
 		name     string

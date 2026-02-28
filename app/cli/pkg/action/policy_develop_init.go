@@ -27,6 +27,7 @@ type PolicyInitOpts struct {
 	Name        string
 	Description string
 	Directory   string
+	PolicyType  string // rego, wasm-go, wasm-js
 }
 
 type PolicyInit struct {
@@ -42,8 +43,15 @@ func NewPolicyInit(opts *PolicyInitOpts, actionOpts *ActionsOpts) (*PolicyInit, 
 }
 
 func (action *PolicyInit) Run() error {
+	// Parse policy type
+	var policyType policydevel.PolicyType
+	if action.opts.PolicyType != "" {
+		policyType = policydevel.PolicyType(action.opts.PolicyType)
+	}
+
 	initOpts := &policydevel.InitOptions{
 		Directory:   action.opts.Directory,
+		PolicyType:  policyType,
 		Embedded:    action.opts.Embedded,
 		Force:       action.opts.Force,
 		Name:        action.opts.Name,

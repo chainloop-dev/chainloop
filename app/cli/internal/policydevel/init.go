@@ -28,9 +28,38 @@ import (
 //go:embed templates/*
 var templateFS embed.FS
 
+// PolicyType represents the type of policy to initialize
+type PolicyType string
+
 const (
-	policyTemplateRegoPath   = "templates/example-policy.rego"
-	policyTemplatePath       = "templates/example-policy.yaml"
+	PolicyTypeRego   PolicyType = "rego"
+	PolicyTypeWasmGo PolicyType = "wasm-go"
+	PolicyTypeWasmJS PolicyType = "wasm-js"
+)
+
+const (
+	// General to all templates
+	policyYAMLFile = "policy.yaml"
+
+	// Rego templates
+	regoTemplateDir = "templates/rego"
+	regoPolicyFile  = "example-policy.rego"
+	regoYAMLFile    = "example-policy.yaml"
+
+	// WASM Go templates
+	wasmGoTemplateDir  = "templates/wasm-go"
+	wasmGoPolicyFile   = "policy.go.tmpl"
+	wasmGoModFile      = "go.mod.tmpl"
+	wasmGoMakefileFile = "Makefile"
+
+	// WASM JS templates
+	wasmJSTemplateDir = "templates/wasm-js"
+	wasmJSPolicyFile  = "policy.js"
+	wasmJSPackageFile = "package.json"
+	wasmJSEsbuildFile = "esbuild.js"
+	wasmJSDTSFile     = "policy.d.ts"
+
+	// Defaults
 	defaultPolicyName        = "policy"
 	defaultPolicyDescription = "Chainloop validation policy"
 	defaultMaterialKind      = "SBOM_CYCLONEDX_JSON"
@@ -45,13 +74,9 @@ type TemplateData struct {
 	MaterialKind string
 }
 
-type Content struct {
-	YAML string
-	Rego string
-}
-
 type InitOptions struct {
 	Directory   string
+	PolicyType  PolicyType
 	Embedded    bool
 	Force       bool
 	Name        string
@@ -59,19 +84,190 @@ type InitOptions struct {
 }
 
 func Initialize(opts *InitOptions) error {
-	content, err := loadAndProcessTemplates(opts)
-	if err != nil {
-		return fmt.Errorf("failed to process templates: %w", err)
+	// Default to Rego if no type specified
+	if opts.PolicyType == "" {
+		opts.PolicyType = PolicyTypeRego
 	}
 
-	files := make(map[string]string)
-	fileNameBase := sanitizeName(getPolicyName(opts.Name))
+	// Route to appropriate initializer based on policy type
+	switch opts.PolicyType {
+	case PolicyTypeRego:
+		return initializeRegoPolicy(opts)
+	case PolicyTypeWasmGo:
+		return initializeWasmGoPolicy(opts)
+	case PolicyTypeWasmJS:
+		return initializeWasmJSPolicy(opts)
+	default:
+		return fmt.Errorf("unsupported policy type: %s", opts.PolicyType)
+	}
+}
 
-	if opts.Embedded {
-		files[fileNameBase+".yaml"] = content.YAML
-	} else {
-		files[fileNameBase+".yaml"] = content.YAML
-		files[fileNameBase+".rego"] = content.Rego
+// initializeRegoPolicy creates a Rego-based policy
+func initializeRegoPolicy(opts *InitOptions) error {
+	// Load templates
+	regoContent, err := templateFS.ReadFile(filepath.Join(regoTemplateDir, regoPolicyFile))
+	if err != nil {
+		return fmt.Errorf("failed to read Rego template: %w", err)
+	}
+
+	yamlContent, err := templateFS.ReadFile(filepath.Join(regoTemplateDir, regoYAMLFile))
+	if err != nil {
+		return fmt.Errorf("failed to read YAML template: %w", err)
+	}
+
+	// Prepare template data
+	data := &TemplateData{
+		Name:         getPolicyName(opts.Name),
+		Description:  getPolicyDescription(opts.Description),
+		RegoPath:     sanitizeName(getPolicyName(opts.Name)) + ".rego",
+		RegoContent:  string(regoContent),
+		Embedded:     opts.Embedded,
+		MaterialKind: defaultMaterialKind,
+	}
+
+	// Process YAML template
+	yamlProcessed, err := executeTemplate(string(yamlContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process YAML template: %w", err)
+	}
+
+	// Prepare files to write
+	files := make(map[string]string)
+	fileNameBase := sanitizeName(data.Name)
+
+	files[fileNameBase+".yaml"] = yamlProcessed
+	if !opts.Embedded {
+		files[fileNameBase+".rego"] = data.RegoContent
+	}
+
+	return writeFiles(opts.Directory, files, opts.Force)
+}
+
+// initializeWasmGoPolicy creates a WASM Go-based policy
+func initializeWasmGoPolicy(opts *InitOptions) error {
+	// Load templates
+	policyContent, err := templateFS.ReadFile(filepath.Join(wasmGoTemplateDir, wasmGoPolicyFile))
+	if err != nil {
+		return fmt.Errorf("failed to read Go policy template: %w", err)
+	}
+
+	goModContent, err := templateFS.ReadFile(filepath.Join(wasmGoTemplateDir, wasmGoModFile))
+	if err != nil {
+		return fmt.Errorf("failed to read go.mod template: %w", err)
+	}
+
+	yamlContent, err := templateFS.ReadFile(filepath.Join(wasmGoTemplateDir, policyYAMLFile))
+	if err != nil {
+		return fmt.Errorf("failed to read YAML template: %w", err)
+	}
+
+	makefileContent, err := templateFS.ReadFile(filepath.Join(wasmGoTemplateDir, wasmGoMakefileFile))
+	if err != nil {
+		return fmt.Errorf("failed to read Makefile template: %w", err)
+	}
+
+	// Prepare template data
+	data := &TemplateData{
+		Name:         getPolicyName(opts.Name),
+		Description:  getPolicyDescription(opts.Description),
+		MaterialKind: defaultMaterialKind,
+	}
+
+	// Process templates
+	policyProcessed, err := executeTemplate(string(policyContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process policy template: %w", err)
+	}
+
+	goModProcessed, err := executeTemplate(string(goModContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process go.mod template: %w", err)
+	}
+
+	yamlProcessed, err := executeTemplate(string(yamlContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process YAML template: %w", err)
+	}
+
+	makefileProcessed, err := executeTemplate(string(makefileContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process Makefile template: %w", err)
+	}
+
+	// Prepare files to write
+	files := map[string]string{
+		"policy.go":   policyProcessed,
+		"go.mod":      goModProcessed,
+		"policy.yaml": yamlProcessed,
+		"Makefile":    makefileProcessed,
+	}
+
+	return writeFiles(opts.Directory, files, opts.Force)
+}
+
+// initializeWasmJSPolicy creates a WASM JavaScript-based policy
+func initializeWasmJSPolicy(opts *InitOptions) error {
+	// Load templates
+	policyContent, err := templateFS.ReadFile(filepath.Join(wasmJSTemplateDir, wasmJSPolicyFile))
+	if err != nil {
+		return fmt.Errorf("failed to read JS policy template: %w", err)
+	}
+
+	packageContent, err := templateFS.ReadFile(filepath.Join(wasmJSTemplateDir, wasmJSPackageFile))
+	if err != nil {
+		return fmt.Errorf("failed to read package.json template: %w", err)
+	}
+
+	esbuildContent, err := templateFS.ReadFile(filepath.Join(wasmJSTemplateDir, wasmJSEsbuildFile))
+	if err != nil {
+		return fmt.Errorf("failed to read esbuild.js template: %w", err)
+	}
+
+	dtsContent, err := templateFS.ReadFile(filepath.Join(wasmJSTemplateDir, wasmJSDTSFile))
+	if err != nil {
+		return fmt.Errorf("failed to read policy.d.ts template: %w", err)
+	}
+
+	yamlContent, err := templateFS.ReadFile(filepath.Join(wasmJSTemplateDir, policyYAMLFile))
+	if err != nil {
+		return fmt.Errorf("failed to read YAML template: %w", err)
+	}
+
+	// Prepare template data
+	data := &TemplateData{
+		Name:         getPolicyName(opts.Name),
+		Description:  getPolicyDescription(opts.Description),
+		MaterialKind: defaultMaterialKind,
+	}
+
+	// Process templates
+	policyProcessed, err := executeTemplate(string(policyContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process policy template: %w", err)
+	}
+
+	packageProcessed, err := executeTemplate(string(packageContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process package.json template: %w", err)
+	}
+
+	dtsProcessed, err := executeTemplate(string(dtsContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process policy.d.ts template: %w", err)
+	}
+
+	yamlProcessed, err := executeTemplate(string(yamlContent), data)
+	if err != nil {
+		return fmt.Errorf("failed to process YAML template: %w", err)
+	}
+
+	// Prepare files to write (esbuild.js doesn't need template processing)
+	files := map[string]string{
+		"policy.js":    policyProcessed,
+		"package.json": packageProcessed,
+		"esbuild.js":   string(esbuildContent),
+		"policy.d.ts":  dtsProcessed,
+		"policy.yaml":  yamlProcessed,
 	}
 
 	return writeFiles(opts.Directory, files, opts.Force)
@@ -91,44 +287,7 @@ func getPolicyDescription(description string) string {
 	return description
 }
 
-func loadAndProcessTemplates(opts *InitOptions) (*Content, error) {
-	regoContent, err := templateFS.ReadFile(policyTemplateRegoPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Rego template: %w", err)
-	}
-
-	data := &TemplateData{
-		Name:         getPolicyName(opts.Name),
-		Description:  getPolicyDescription(opts.Description),
-		RegoPath:     sanitizeName(getPolicyName(opts.Name)) + ".rego",
-		RegoContent:  string(regoContent),
-		Embedded:     opts.Embedded,
-		MaterialKind: defaultMaterialKind,
-	}
-
-	// Process main template
-	content, err := templateFS.ReadFile(policyTemplatePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read policy template: %w", err)
-	}
-
-	yamlContent, err := executeTemplate(string(content), data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	// For non-embedded case, we still need the Rego content to write to file
-	if !opts.Embedded {
-		return &Content{
-			YAML: yamlContent,
-			Rego: data.RegoContent,
-		}, nil
-	}
-
-	return &Content{YAML: yamlContent}, nil
-}
-
-// Add custom template functions
+// executeTemplate processes a template with the given data
 func executeTemplate(content string, data *TemplateData) (string, error) {
 	tmpl := template.New("policy").Funcs(template.FuncMap{
 		"sanitize":  sanitizeName,
