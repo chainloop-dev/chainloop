@@ -227,11 +227,13 @@ jobs:
 
       - name: Promote Chainloop Project Version
         if: ${{ success() }}
+        env:
+          CURRENT_VERSION: ${{ needs.release.outputs.current_version }}
+          TARGET_VERSION: ${{ github.ref_name }}
         run: |
-          current_version="${{ needs.release.outputs.current_version }}"
-          echo "current_version=$current_version"
-          echo "target_version=${{ github.ref_name }}"
-          chainloop project version update --project chainloop --name $current_version --new-name ${{ github.ref_name }} || true
+          echo "current_version=$CURRENT_VERSION"
+          echo "target_version=$TARGET_VERSION"
+          chainloop project version update --project chainloop --name "$CURRENT_VERSION" --new-name "$TARGET_VERSION" || true
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
