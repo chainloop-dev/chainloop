@@ -71,7 +71,7 @@ func (a *Apply) Run(ctx context.Context, path string) ([]*ApplyResult, error) {
 		result := &ApplyResult{Kind: doc.Kind, Name: doc.Name}
 		switch doc.Kind {
 		case KindContract:
-			if err := ApplyContractFromRawData(ctx, a.cfg.CPConnection, doc.Name, doc.RawData); err != nil {
+			if err := ApplyContractFromRawData(ctx, a.cfg.CPConnection, doc.RawData); err != nil {
 				result.Error = err
 			}
 		default:
@@ -114,33 +114,14 @@ func ParseYAMLPath(path string) ([]*YAMLDoc, error) {
 }
 
 // ApplyContractFromRawData applies a single contract document using the gRPC client.
-// It uses describe to check existence, then creates or updates accordingly.
-func ApplyContractFromRawData(ctx context.Context, conn *grpc.ClientConn, name string, rawData []byte) error {
+func ApplyContractFromRawData(ctx context.Context, conn *grpc.ClientConn, rawData []byte) error {
 	client := pb.NewWorkflowContractServiceClient(conn)
 
-	// Try to describe the contract to determine if we should create or update
-	_, err := client.Describe(ctx, &pb.WorkflowContractServiceDescribeRequest{
-		Name: name,
-	})
-	if err == nil {
-		// Contract exists, perform update
-		_, err := client.Update(ctx, &pb.WorkflowContractServiceUpdateRequest{
-			Name:        name,
-			RawContract: rawData,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to update contract %q: %w", name, err)
-		}
-		return nil
-	}
-
-	// Contract doesn't exist, perform create
-	_, err = client.Create(ctx, &pb.WorkflowContractServiceCreateRequest{
-		Name:        name,
-		RawContract: rawData,
+	_, err := client.Apply(ctx, &pb.WorkflowContractServiceApplyRequest{
+		RawSchema: rawData,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create contract %q: %w", name, err)
+		return fmt.Errorf("failed to apply contract: %w", err)
 	}
 
 	return nil

@@ -66,6 +66,15 @@ export interface WorkflowContractServiceDeleteRequest {
 export interface WorkflowContractServiceDeleteResponse {
 }
 
+export interface WorkflowContractServiceApplyRequest {
+  /** Raw representation of the contract in json, yaml or cue */
+  rawSchema: Uint8Array;
+}
+
+export interface WorkflowContractServiceApplyResponse {
+  result?: WorkflowContractItem;
+}
+
 function createBaseWorkflowContractServiceListRequest(): WorkflowContractServiceListRequest {
   return {};
 }
@@ -919,6 +928,130 @@ export const WorkflowContractServiceDeleteResponse = {
   },
 };
 
+function createBaseWorkflowContractServiceApplyRequest(): WorkflowContractServiceApplyRequest {
+  return { rawSchema: new Uint8Array(0) };
+}
+
+export const WorkflowContractServiceApplyRequest = {
+  encode(message: WorkflowContractServiceApplyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.rawSchema.length !== 0) {
+      writer.uint32(10).bytes(message.rawSchema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowContractServiceApplyRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowContractServiceApplyRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rawSchema = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowContractServiceApplyRequest {
+    return { rawSchema: isSet(object.rawSchema) ? bytesFromBase64(object.rawSchema) : new Uint8Array(0) };
+  },
+
+  toJSON(message: WorkflowContractServiceApplyRequest): unknown {
+    const obj: any = {};
+    message.rawSchema !== undefined &&
+      (obj.rawSchema = base64FromBytes(message.rawSchema !== undefined ? message.rawSchema : new Uint8Array(0)));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowContractServiceApplyRequest>, I>>(
+    base?: I,
+  ): WorkflowContractServiceApplyRequest {
+    return WorkflowContractServiceApplyRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowContractServiceApplyRequest>, I>>(
+    object: I,
+  ): WorkflowContractServiceApplyRequest {
+    const message = createBaseWorkflowContractServiceApplyRequest();
+    message.rawSchema = object.rawSchema ?? new Uint8Array(0);
+    return message;
+  },
+};
+
+function createBaseWorkflowContractServiceApplyResponse(): WorkflowContractServiceApplyResponse {
+  return { result: undefined };
+}
+
+export const WorkflowContractServiceApplyResponse = {
+  encode(message: WorkflowContractServiceApplyResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.result !== undefined) {
+      WorkflowContractItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowContractServiceApplyResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowContractServiceApplyResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.result = WorkflowContractItem.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowContractServiceApplyResponse {
+    return { result: isSet(object.result) ? WorkflowContractItem.fromJSON(object.result) : undefined };
+  },
+
+  toJSON(message: WorkflowContractServiceApplyResponse): unknown {
+    const obj: any = {};
+    message.result !== undefined &&
+      (obj.result = message.result ? WorkflowContractItem.toJSON(message.result) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowContractServiceApplyResponse>, I>>(
+    base?: I,
+  ): WorkflowContractServiceApplyResponse {
+    return WorkflowContractServiceApplyResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowContractServiceApplyResponse>, I>>(
+    object: I,
+  ): WorkflowContractServiceApplyResponse {
+    const message = createBaseWorkflowContractServiceApplyResponse();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? WorkflowContractItem.fromPartial(object.result)
+      : undefined;
+    return message;
+  },
+};
+
 export interface WorkflowContractService {
   List(
     request: DeepPartial<WorkflowContractServiceListRequest>,
@@ -940,6 +1073,10 @@ export interface WorkflowContractService {
     request: DeepPartial<WorkflowContractServiceDeleteRequest>,
     metadata?: grpc.Metadata,
   ): Promise<WorkflowContractServiceDeleteResponse>;
+  Apply(
+    request: DeepPartial<WorkflowContractServiceApplyRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowContractServiceApplyResponse>;
 }
 
 export class WorkflowContractServiceClientImpl implements WorkflowContractService {
@@ -952,6 +1089,7 @@ export class WorkflowContractServiceClientImpl implements WorkflowContractServic
     this.Update = this.Update.bind(this);
     this.Describe = this.Describe.bind(this);
     this.Delete = this.Delete.bind(this);
+    this.Apply = this.Apply.bind(this);
   }
 
   List(
@@ -1005,6 +1143,17 @@ export class WorkflowContractServiceClientImpl implements WorkflowContractServic
     return this.rpc.unary(
       WorkflowContractServiceDeleteDesc,
       WorkflowContractServiceDeleteRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  Apply(
+    request: DeepPartial<WorkflowContractServiceApplyRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowContractServiceApplyResponse> {
+    return this.rpc.unary(
+      WorkflowContractServiceApplyDesc,
+      WorkflowContractServiceApplyRequest.fromPartial(request),
       metadata,
     );
   }
@@ -1117,6 +1266,29 @@ export const WorkflowContractServiceDeleteDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = WorkflowContractServiceDeleteResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const WorkflowContractServiceApplyDesc: UnaryMethodDefinitionish = {
+  methodName: "Apply",
+  service: WorkflowContractServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return WorkflowContractServiceApplyRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = WorkflowContractServiceApplyResponse.decode(data);
       return {
         ...value,
         toObject() {

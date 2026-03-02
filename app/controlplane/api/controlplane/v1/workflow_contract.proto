@@ -29,6 +29,7 @@ service WorkflowContractService {
   rpc Update(WorkflowContractServiceUpdateRequest) returns (WorkflowContractServiceUpdateResponse);
   rpc Describe(WorkflowContractServiceDescribeRequest) returns (WorkflowContractServiceDescribeResponse);
   rpc Delete(WorkflowContractServiceDeleteRequest) returns (WorkflowContractServiceDeleteResponse);
+  rpc Apply(WorkflowContractServiceApplyRequest) returns (WorkflowContractServiceApplyResponse);
 }
 
 message WorkflowContractServiceListRequest {}
@@ -114,3 +115,12 @@ message WorkflowContractServiceDeleteRequest {
 }
 
 message WorkflowContractServiceDeleteResponse {}
+
+message WorkflowContractServiceApplyRequest {
+  // Raw representation of the contract in json, yaml or cue
+  bytes raw_schema = 1;
+}
+
+message WorkflowContractServiceApplyResponse {
+  WorkflowContractItem result = 1;
+}
