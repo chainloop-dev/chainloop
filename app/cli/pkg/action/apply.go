@@ -215,6 +215,10 @@ func SplitYAMLDocuments(rawData []byte) ([]*YAMLDoc, error) {
 			return nil, fmt.Errorf("missing 'kind' field in YAML document")
 		}
 
+		if header.Metadata.Name == "" {
+			return nil, fmt.Errorf("missing 'metadata.name' field in YAML document of kind %q", header.Kind)
+		}
+
 		docs = append(docs, &YAMLDoc{
 			Kind:    header.Kind,
 			Name:    header.Metadata.Name,
