@@ -11,8 +11,6 @@ spec:
         with:
           requirement_name: sbom-compliance
         gate: true
-        attestation_phases:
-          - INIT
       - ref: source-commit
         with:
           check_signature: yes

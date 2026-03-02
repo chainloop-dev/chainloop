@@ -57,6 +57,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       attestation_hash: ${{ steps.attest_goreleaser.outputs.attestation_hash }}
+      current_version: ${{ steps.project_version.outputs.current_version }}
 
     steps:
       - name: Install Cosign
@@ -171,17 +172,11 @@ jobs:
           gh release download ${{ github.ref_name }} -A tar.gz -O /tmp/source-code.tar.gz
           chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
-      - name: Promote Chainloop Project Version
-        env:
-          CHAINLOOP_PROJECT_NAME: "chainloop"
-          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+      - name: Read current project version
+        id: project_version
         run: |
-          current_version="$(cat .chainloop.yml | awk '/^projectVersion:/ {print $2}')"
-          # Rename the existing pre-release into the actual release name
-          echo "current_version=$current_version"
-          echo "target_version=${{ github.ref_name }}"
-          chainloop org describe
-          chainloop project version update --project ${CHAINLOOP_PROJECT_NAME} --name $current_version --new-name ${{ github.ref_name }} || true
+          current_version="$(awk '/^projectVersion:/ {print $2}' .chainloop.yml)"
+          echo "current_version=$current_version" >> $GITHUB_OUTPUT
 
       - name: Bump Chart and Dagger Version
         run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
@@ -229,6 +224,16 @@ jobs:
           else
             exit 1
           fi
+
+      - name: Promote Chainloop Project Version
+        if: ${{ success() }}
+        env:
+          CURRENT_VERSION: ${{ needs.release.outputs.current_version }}
+          TARGET_VERSION: ${{ github.ref_name }}
+        run: |
+          echo "current_version=$CURRENT_VERSION"
+          echo "target_version=$TARGET_VERSION"
+          chainloop project version update --project chainloop --name "$CURRENT_VERSION" --new-name "$TARGET_VERSION" || true
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
