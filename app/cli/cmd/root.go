@@ -265,7 +265,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.AddCommand(newWorkflowCmd(), newAuthCmd(), NewVersionCmd(),
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
 		newIntegrationCmd(), newOrganizationCmd(), newCASBackendCmd(),
-		newReferrerDiscoverCmd(), newPolicyCmd(),
+		newReferrerDiscoverCmd(), newPolicyCmd(), newApplyCmd(),
 	)
 
 	// Load plugins for root command and subcommands (except completion and help)
