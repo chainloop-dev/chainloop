@@ -72,10 +72,10 @@ func (a *Apply) Run(ctx context.Context, path string) ([]*ApplyResult, error) {
 		switch doc.Kind {
 		case KindContract:
 			if err := ApplyContractFromRawData(ctx, a.cfg.CPConnection, doc.RawData); err != nil {
-				result.Error = err
+				return results, fmt.Errorf("%s/%s: %w", doc.Kind, doc.Name, err)
 			}
 		default:
-			result.Error = fmt.Errorf("unsupported kind %q", doc.Kind)
+			return results, fmt.Errorf("unsupported kind %q", doc.Kind)
 		}
 		results = append(results, result)
 	}
