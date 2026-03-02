@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
@@ -41,26 +39,7 @@ Supports multi-document YAML files. Each document must have a 'kind' field.`,
 				return err
 			}
 
-			var contracts int
-			var errors []string
-			for _, r := range results {
-				if r.Error != nil {
-					errors = append(errors, fmt.Sprintf("  %s/%s: %s", r.Kind, r.Name, r.Error))
-					continue
-				}
-				if r.Kind == action.KindContract {
-					contracts++
-				}
-			}
-
-			if len(errors) > 0 {
-				for _, e := range errors {
-					logger.Error().Msg(e)
-				}
-				return fmt.Errorf("%d of %d resources failed to apply", len(errors), len(results))
-			}
-
-			logger.Info().Msgf("%d contracts applied", contracts)
+			logger.Info().Msgf("%d contracts applied", len(results))
 
 			return nil
 		},

@@ -34,11 +34,10 @@ const (
 	KindContract = "Contract"
 )
 
-// ApplyResult holds the outcome of applying a single resource document
+// ApplyResult holds the outcome of a successfully applied resource document
 type ApplyResult struct {
-	Kind  string
-	Name  string
-	Error error
+	Kind string
+	Name string
 }
 
 // YAMLDoc holds a parsed YAML document with its kind and raw bytes
