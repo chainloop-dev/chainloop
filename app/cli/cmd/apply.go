@@ -35,7 +35,7 @@ Supports multi-document YAML files. Each document must have a 'kind' field.`,
 
   # Apply resources from a directory
   chainloop apply -f ./contracts/`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			results, err := action.NewApply(ActionOpts).Run(cmd.Context(), filePath)
 			if err != nil {
 				return err
@@ -48,8 +48,7 @@ Supports multi-document YAML files. Each document must have a 'kind' field.`,
 					errors = append(errors, fmt.Sprintf("  %s/%s: %s", r.Kind, r.Name, r.Error))
 					continue
 				}
-				switch r.Kind {
-				case action.KindContract:
+				if r.Kind == action.KindContract {
 					contracts++
 				}
 			}

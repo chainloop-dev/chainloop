@@ -12,6 +12,52 @@ and vulnerability reports-directly from their CI/CD workflows, ensuring complian
 The CLI operates through a contract-based workflow. Security teams define workflow contracts specifying which types of evidence must be collected and how they should be validated. Developers then use the Chainloop CLI to initialize 
 an attestation, add the required materials, and submit the attestation for validation and storage.
 
+## chainloop apply
+
+Apply resources from YAML files
+
+Synopsis
+
+Apply resources from a YAML file or directory.
+Supports multi-document YAML files. Each document must have a 'kind' field.
+
+```
+chainloop apply [flags]
+```
+
+Examples
+
+```
+Apply resources from a single file
+chainloop apply -f my-contract.yaml
+
+Apply resources from a directory
+chainloop apply -f ./contracts/
+```
+
+Options
+
+```
+-f, --file string   path to a YAML file or directory
+-h, --help          help for apply
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
 ## chainloop artifact
 
 Download or upload Artifacts to the CAS
