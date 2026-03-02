@@ -355,6 +355,9 @@ message PolicySpecV2 {
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
     not_in: [3]
   }];
+
+  // Deprecated: attestation_phases has been moved to PolicyAttachment.
+  repeated AttestationPhase attestation_phases = 5 [deprecated = true];
 }
 
 // Auto-matching policy specification

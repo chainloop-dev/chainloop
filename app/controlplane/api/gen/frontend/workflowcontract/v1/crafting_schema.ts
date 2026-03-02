@@ -593,6 +593,12 @@ export interface PolicySpecV2 {
     | undefined;
   /** if set, it will match any material supported by Chainloop */
   kind: CraftingSchema_Material_MaterialType;
+  /**
+   * Deprecated: attestation_phases has been moved to PolicyAttachment.
+   *
+   * @deprecated
+   */
+  attestationPhases: AttestationPhase[];
 }
 
 /** Auto-matching policy specification */
@@ -2263,7 +2269,7 @@ export const PolicyInput = {
 };
 
 function createBasePolicySpecV2(): PolicySpecV2 {
-  return { path: undefined, embedded: undefined, ref: undefined, kind: 0 };
+  return { path: undefined, embedded: undefined, ref: undefined, kind: 0, attestationPhases: [] };
 }
 
 export const PolicySpecV2 = {
@@ -2280,6 +2286,11 @@ export const PolicySpecV2 = {
     if (message.kind !== 0) {
       writer.uint32(24).int32(message.kind);
     }
+    writer.uint32(42).fork();
+    for (const v of message.attestationPhases) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     return writer;
   },
 
@@ -2318,6 +2329,23 @@ export const PolicySpecV2 = {
 
           message.kind = reader.int32() as any;
           continue;
+        case 5:
+          if (tag === 40) {
+            message.attestationPhases.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 42) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.attestationPhases.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2333,6 +2361,9 @@ export const PolicySpecV2 = {
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
       ref: isSet(object.ref) ? String(object.ref) : undefined,
       kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
+      attestationPhases: Array.isArray(object?.attestationPhases)
+        ? object.attestationPhases.map((e: any) => attestationPhaseFromJSON(e))
+        : [],
     };
   },
 
@@ -2342,6 +2373,11 @@ export const PolicySpecV2 = {
     message.embedded !== undefined && (obj.embedded = message.embedded);
     message.ref !== undefined && (obj.ref = message.ref);
     message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
+    if (message.attestationPhases) {
+      obj.attestationPhases = message.attestationPhases.map((e) => attestationPhaseToJSON(e));
+    } else {
+      obj.attestationPhases = [];
+    }
     return obj;
   },
 
@@ -2355,6 +2391,7 @@ export const PolicySpecV2 = {
     message.embedded = object.embedded ?? undefined;
     message.ref = object.ref ?? undefined;
     message.kind = object.kind ?? 0;
+    message.attestationPhases = object.attestationPhases?.map((e) => e) || [];
     return message;
   },
 };

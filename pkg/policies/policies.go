@@ -194,6 +194,23 @@ type evalOpts struct {
 	bindings map[string]string
 }
 
+// Deprecated: attestationPhasesFromSpec extracts attestation phases from the PolicySpecV2
+// entries. This is used as a fallback when the attachment doesn't specify phases.
+func attestationPhasesFromSpec(spec *v1.PolicySpec, kind v1.CraftingSchema_Material_MaterialType) []v1.AttestationPhase {
+	if spec.GetSource() != nil {
+		return nil
+	}
+
+	var phases []v1.AttestationPhase
+	for _, s := range spec.GetPolicies() {
+		if s.GetKind() == v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED || s.GetKind() == kind {
+			phases = append(phases, s.GetAttestationPhases()...) //nolint:staticcheck // deprecated field used as fallback
+		}
+	}
+
+	return phases
+}
+
 // shouldEvaluateAtPhase checks if a policy should be evaluated at the given phase.
 // If no phases are specified, the policy runs at all phases (backwards compatible).
 // If phase is EvalPhaseUnspecified (e.g. material evaluation), the policy always runs.
@@ -223,8 +240,12 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// Skip policies not configured for the current attestation phase.
-	// Phases are defined on the policy attachment in the contract.
-	if !shouldEvaluateAtPhase(attachment.GetAttestationPhases(), pv.evalPhase) {
+	// Phases on the attachment take precedence; fall back to the policy spec level.
+	phases := attachment.GetAttestationPhases()
+	if len(phases) == 0 {
+		phases = attestationPhasesFromSpec(policy.GetSpec(), opts.kind)
+	}
+	if !shouldEvaluateAtPhase(phases, pv.evalPhase) {
 		pv.logger.Debug().Str("policy", policy.GetMetadata().GetName()).Msg("skipping policy not configured for current attestation phase")
 		return nil, nil
 	}
