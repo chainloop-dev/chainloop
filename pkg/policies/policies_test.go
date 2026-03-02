@@ -1252,10 +1252,11 @@ func (s *testSuite) TestMultiKindAWithIgnore() {
 
 func (s *testSuite) TestAttestationPhaseFiltering() {
 	cases := []struct {
-		name      string
-		policyRef string
-		phase     EvalPhase
-		npolicies int
+		name             string
+		policyRef        string
+		attachmentPhases []v12.AttestationPhase
+		phase            EvalPhase
+		npolicies        int
 	}{
 		{
 			name:      "no phases specified, runs at push",
@@ -1270,16 +1271,32 @@ func (s *testSuite) TestAttestationPhaseFiltering() {
 			npolicies: 1,
 		},
 		{
-			name:      "push-only policy, runs at push",
-			policyRef: "file://testdata/workflow_push_only.yaml",
-			phase:     EvalPhasePush,
-			npolicies: 1,
+			name:             "push-only attachment, runs at push",
+			policyRef:        "file://testdata/workflow.yaml",
+			attachmentPhases: []v12.AttestationPhase{v12.AttestationPhase_PUSH},
+			phase:            EvalPhasePush,
+			npolicies:        1,
 		},
 		{
-			name:      "push-only policy, skipped at init",
-			policyRef: "file://testdata/workflow_push_only.yaml",
-			phase:     EvalPhaseInit,
-			npolicies: 0,
+			name:             "push-only attachment, skipped at init",
+			policyRef:        "file://testdata/workflow.yaml",
+			attachmentPhases: []v12.AttestationPhase{v12.AttestationPhase_PUSH},
+			phase:            EvalPhaseInit,
+			npolicies:        0,
+		},
+		{
+			name:             "init-only attachment, runs at init",
+			policyRef:        "file://testdata/workflow.yaml",
+			attachmentPhases: []v12.AttestationPhase{v12.AttestationPhase_INIT},
+			phase:            EvalPhaseInit,
+			npolicies:        1,
+		},
+		{
+			name:             "init-only attachment, skipped at push",
+			policyRef:        "file://testdata/workflow.yaml",
+			attachmentPhases: []v12.AttestationPhase{v12.AttestationPhase_INIT},
+			phase:            EvalPhasePush,
+			npolicies:        0,
 		},
 	}
 
@@ -1288,7 +1305,10 @@ func (s *testSuite) TestAttestationPhaseFiltering() {
 			schema := &v12.CraftingSchema{
 				Policies: &v12.Policies{
 					Attestation: []*v12.PolicyAttachment{
-						{Policy: &v12.PolicyAttachment_Ref{Ref: tc.policyRef}},
+						{
+							Policy:            &v12.PolicyAttachment_Ref{Ref: tc.policyRef},
+							AttestationPhases: tc.attachmentPhases,
+						},
 					},
 				},
 			}

@@ -242,6 +242,11 @@ message PolicyAttachment {
   // - unset: inherit organization-level default behavior
   optional bool gate = 7;
 
+  // Controls at which attestation phases this policy is evaluated.
+  // Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
+  // Only applicable to attestation-level policies.
+  repeated AttestationPhase attestation_phases = 8;
+
   message MaterialSelector {
     // material name
     string name = 1;
@@ -350,11 +355,6 @@ message PolicySpecV2 {
   CraftingSchema.Material.MaterialType kind = 3 [(buf.validate.field).enum = {
     not_in: [3]
   }];
-
-  // Controls at which attestation phases this policy is evaluated.
-  // Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
-  // Only applicable when kind is ATTESTATION.
-  repeated AttestationPhase attestation_phases = 5;
 }
 
 // Auto-matching policy specification

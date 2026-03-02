@@ -7,3 +7,5 @@ spec:
   policies:
     attestation:
       - ref: file://testdata/workflow_push_only.yaml
+        attestation_phases:
+          - PUSH

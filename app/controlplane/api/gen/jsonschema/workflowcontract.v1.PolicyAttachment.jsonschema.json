@@ -3,7 +3,53 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "A policy to be applied to this contract",
+  "patternProperties": {
+    "^(attestation_phases)$": {
+      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.\n Only applicable to attestation-level policies.",
+      "items": {
+        "anyOf": [
+          {
+            "enum": [
+              "ATTESTATION_PHASE_UNSPECIFIED",
+              "INIT",
+              "PUSH"
+            ],
+            "title": "Attestation Phase",
+            "type": "string"
+          },
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          }
+        ]
+      },
+      "type": "array"
+    }
+  },
   "properties": {
+    "attestationPhases": {
+      "description": "Controls at which attestation phases this policy is evaluated.\n Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.\n Only applicable to attestation-level policies.",
+      "items": {
+        "anyOf": [
+          {
+            "enum": [
+              "ATTESTATION_PHASE_UNSPECIFIED",
+              "INIT",
+              "PUSH"
+            ],
+            "title": "Attestation Phase",
+            "type": "string"
+          },
+          {
+            "maximum": 2147483647,
+            "minimum": -2147483648,
+            "type": "integer"
+          }
+        ]
+      },
+      "type": "array"
+    },
     "disabled": {
       "description": "set to true to disable this rule",
       "type": "boolean"

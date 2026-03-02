@@ -717,9 +717,13 @@ type PolicyAttachment struct {
 	// - true: policy violations are blocking for this policy
 	// - false: policy violations are non-blocking for this policy
 	// - unset: inherit organization-level default behavior
-	Gate          *bool `protobuf:"varint,7,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Gate *bool `protobuf:"varint,7,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
+	// Controls at which attestation phases this policy is evaluated.
+	// Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
+	// Only applicable to attestation-level policies.
+	AttestationPhases []AttestationPhase `protobuf:"varint,8,rep,packed,name=attestation_phases,json=attestationPhases,proto3,enum=workflowcontract.v1.AttestationPhase" json:"attestation_phases,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PolicyAttachment) Reset() {
@@ -810,6 +814,13 @@ func (x *PolicyAttachment) GetGate() bool {
 		return *x.Gate
 	}
 	return false
+}
+
+func (x *PolicyAttachment) GetAttestationPhases() []AttestationPhase {
+	if x != nil {
+		return x.AttestationPhases
+	}
+	return nil
 }
 
 type isPolicyAttachment_Policy interface {
@@ -1174,13 +1185,9 @@ type PolicySpecV2 struct {
 	//	*PolicySpecV2_Ref
 	Source isPolicySpecV2_Source `protobuf_oneof:"source"`
 	// if set, it will match any material supported by Chainloop
-	Kind CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
-	// Controls at which attestation phases this policy is evaluated.
-	// Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
-	// Only applicable when kind is ATTESTATION.
-	AttestationPhases []AttestationPhase `protobuf:"varint,5,rep,packed,name=attestation_phases,json=attestationPhases,proto3,enum=workflowcontract.v1.AttestationPhase" json:"attestation_phases,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	Kind          CraftingSchema_Material_MaterialType `protobuf:"varint,3,opt,name=kind,proto3,enum=workflowcontract.v1.CraftingSchema_Material_MaterialType" json:"kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PolicySpecV2) Reset() {
@@ -1253,13 +1260,6 @@ func (x *PolicySpecV2) GetKind() CraftingSchema_Material_MaterialType {
 		return x.Kind
 	}
 	return CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED
-}
-
-func (x *PolicySpecV2) GetAttestationPhases() []AttestationPhase {
-	if x != nil {
-		return x.AttestationPhases
-	}
-	return nil
 }
 
 type isPolicySpecV2_Source interface {
@@ -1990,7 +1990,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x98\x01\n" +
 	"\bPolicies\x12C\n" +
 	"\tmaterials\x18\x01 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\tmaterials\x12G\n" +
-	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\x98\x04\n" +
+	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\xee\x04\n" +
 	"\x10PolicyAttachment\x12\x1b\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x03ref\x129\n" +
 	"\bembedded\x18\x02 \x01(\v2\x1b.workflowcontract.v1.PolicyH\x00R\bembedded\x12R\n" +
@@ -1998,7 +1998,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\bdisabled\x18\x04 \x01(\bR\bdisabled\x12C\n" +
 	"\x04with\x18\x05 \x03(\v2/.workflowcontract.v1.PolicyAttachment.WithEntryR\x04with\x12c\n" +
 	"\frequirements\x18\x06 \x03(\tB?\xbaH<\x92\x019\"7r523^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$R\frequirements\x12\x17\n" +
-	"\x04gate\x18\a \x01(\bH\x01R\x04gate\x88\x01\x01\x1a7\n" +
+	"\x04gate\x18\a \x01(\bH\x01R\x04gate\x88\x01\x01\x12T\n" +
+	"\x12attestation_phases\x18\b \x03(\x0e2%.workflowcontract.v1.AttestationPhaseR\x11attestationPhases\x1a7\n" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a&\n" +
@@ -2042,13 +2043,12 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x14name.go_map_variable\x12:must contain only lowercase letters, numbers, and hyphens.\x1a'this.matches('^[a-zA-Z][a-zA-Z0-9_]*$')R\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
 	"\brequired\x18\x03 \x01(\bR\brequired\x12\x18\n" +
-	"\adefault\x18\x04 \x01(\tR\adefault\"\x9a\x02\n" +
+	"\adefault\x18\x04 \x01(\tR\adefault\"\xc4\x01\n" +
 	"\fPolicySpecV2\x12\x18\n" +
 	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
 	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
 	"\x03ref\x18\x04 \x01(\tH\x00R\x03ref\x12W\n" +
-	"\x04kind\x18\x03 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kind\x12T\n" +
-	"\x12attestation_phases\x18\x05 \x03(\x0e2%.workflowcontract.v1.AttestationPhaseR\x11attestationPhasesB\x0f\n" +
+	"\x04kind\x18\x03 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02 \x03R\x04kindB\x0f\n" +
 	"\x06source\x12\x05\xbaH\x02\b\x01\"h\n" +
 	"\tAutoMatch\x12\x18\n" +
 	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
@@ -2147,15 +2147,15 @@ var file_workflowcontract_v1_crafting_schema_proto_depIdxs = []int32{
 	9,  // 14: workflowcontract.v1.PolicyAttachment.embedded:type_name -> workflowcontract.v1.Policy
 	20, // 15: workflowcontract.v1.PolicyAttachment.selector:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector
 	19, // 16: workflowcontract.v1.PolicyAttachment.with:type_name -> workflowcontract.v1.PolicyAttachment.WithEntry
-	10, // 17: workflowcontract.v1.Policy.metadata:type_name -> workflowcontract.v1.Metadata
-	11, // 18: workflowcontract.v1.Policy.spec:type_name -> workflowcontract.v1.PolicySpec
-	21, // 19: workflowcontract.v1.Metadata.annotations:type_name -> workflowcontract.v1.Metadata.AnnotationsEntry
-	2,  // 20: workflowcontract.v1.PolicySpec.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	13, // 21: workflowcontract.v1.PolicySpec.policies:type_name -> workflowcontract.v1.PolicySpecV2
-	12, // 22: workflowcontract.v1.PolicySpec.inputs:type_name -> workflowcontract.v1.PolicyInput
-	14, // 23: workflowcontract.v1.PolicySpec.auto_match:type_name -> workflowcontract.v1.AutoMatch
-	2,  // 24: workflowcontract.v1.PolicySpecV2.kind:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	0,  // 25: workflowcontract.v1.PolicySpecV2.attestation_phases:type_name -> workflowcontract.v1.AttestationPhase
+	0,  // 17: workflowcontract.v1.PolicyAttachment.attestation_phases:type_name -> workflowcontract.v1.AttestationPhase
+	10, // 18: workflowcontract.v1.Policy.metadata:type_name -> workflowcontract.v1.Metadata
+	11, // 19: workflowcontract.v1.Policy.spec:type_name -> workflowcontract.v1.PolicySpec
+	21, // 20: workflowcontract.v1.Metadata.annotations:type_name -> workflowcontract.v1.Metadata.AnnotationsEntry
+	2,  // 21: workflowcontract.v1.PolicySpec.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	13, // 22: workflowcontract.v1.PolicySpec.policies:type_name -> workflowcontract.v1.PolicySpecV2
+	12, // 23: workflowcontract.v1.PolicySpec.inputs:type_name -> workflowcontract.v1.PolicyInput
+	14, // 24: workflowcontract.v1.PolicySpec.auto_match:type_name -> workflowcontract.v1.AutoMatch
+	2,  // 25: workflowcontract.v1.PolicySpecV2.kind:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
 	22, // 26: workflowcontract.v1.PolicyGroupAttachment.with:type_name -> workflowcontract.v1.PolicyGroupAttachment.WithEntry
 	10, // 27: workflowcontract.v1.PolicyGroup.metadata:type_name -> workflowcontract.v1.Metadata
 	23, // 28: workflowcontract.v1.PolicyGroup.spec:type_name -> workflowcontract.v1.PolicyGroup.PolicyGroupSpec

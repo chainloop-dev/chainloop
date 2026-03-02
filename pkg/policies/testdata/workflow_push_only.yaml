@@ -6,5 +6,3 @@ spec:
   policies:
     - kind: ATTESTATION
       path: workflow.rego
-      attestation_phases:
-        - PUSH

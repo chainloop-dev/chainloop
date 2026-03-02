@@ -493,7 +493,15 @@ export interface PolicyAttachment {
    * - false: policy violations are non-blocking for this policy
    * - unset: inherit organization-level default behavior
    */
-  gate?: boolean | undefined;
+  gate?:
+    | boolean
+    | undefined;
+  /**
+   * Controls at which attestation phases this policy is evaluated.
+   * Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
+   * Only applicable to attestation-level policies.
+   */
+  attestationPhases: AttestationPhase[];
 }
 
 export interface PolicyAttachment_WithEntry {
@@ -585,12 +593,6 @@ export interface PolicySpecV2 {
     | undefined;
   /** if set, it will match any material supported by Chainloop */
   kind: CraftingSchema_Material_MaterialType;
-  /**
-   * Controls at which attestation phases this policy is evaluated.
-   * Empty means evaluate at all phases (INIT and PUSH) for backwards compatibility.
-   * Only applicable when kind is ATTESTATION.
-   */
-  attestationPhases: AttestationPhase[];
 }
 
 /** Auto-matching policy specification */
@@ -1420,6 +1422,7 @@ function createBasePolicyAttachment(): PolicyAttachment {
     with: {},
     requirements: [],
     gate: undefined,
+    attestationPhases: [],
   };
 }
 
@@ -1446,6 +1449,11 @@ export const PolicyAttachment = {
     if (message.gate !== undefined) {
       writer.uint32(56).bool(message.gate);
     }
+    writer.uint32(66).fork();
+    for (const v of message.attestationPhases) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     return writer;
   },
 
@@ -1508,6 +1516,23 @@ export const PolicyAttachment = {
 
           message.gate = reader.bool();
           continue;
+        case 8:
+          if (tag === 64) {
+            message.attestationPhases.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 66) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.attestationPhases.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1531,6 +1556,9 @@ export const PolicyAttachment = {
         : {},
       requirements: Array.isArray(object?.requirements) ? object.requirements.map((e: any) => String(e)) : [],
       gate: isSet(object.gate) ? Boolean(object.gate) : undefined,
+      attestationPhases: Array.isArray(object?.attestationPhases)
+        ? object.attestationPhases.map((e: any) => attestationPhaseFromJSON(e))
+        : [],
     };
   },
 
@@ -1553,6 +1581,11 @@ export const PolicyAttachment = {
       obj.requirements = [];
     }
     message.gate !== undefined && (obj.gate = message.gate);
+    if (message.attestationPhases) {
+      obj.attestationPhases = message.attestationPhases.map((e) => attestationPhaseToJSON(e));
+    } else {
+      obj.attestationPhases = [];
+    }
     return obj;
   },
 
@@ -1578,6 +1611,7 @@ export const PolicyAttachment = {
     }, {});
     message.requirements = object.requirements?.map((e) => e) || [];
     message.gate = object.gate ?? undefined;
+    message.attestationPhases = object.attestationPhases?.map((e) => e) || [];
     return message;
   },
 };
@@ -2229,7 +2263,7 @@ export const PolicyInput = {
 };
 
 function createBasePolicySpecV2(): PolicySpecV2 {
-  return { path: undefined, embedded: undefined, ref: undefined, kind: 0, attestationPhases: [] };
+  return { path: undefined, embedded: undefined, ref: undefined, kind: 0 };
 }
 
 export const PolicySpecV2 = {
@@ -2246,11 +2280,6 @@ export const PolicySpecV2 = {
     if (message.kind !== 0) {
       writer.uint32(24).int32(message.kind);
     }
-    writer.uint32(42).fork();
-    for (const v of message.attestationPhases) {
-      writer.int32(v);
-    }
-    writer.ldelim();
     return writer;
   },
 
@@ -2289,23 +2318,6 @@ export const PolicySpecV2 = {
 
           message.kind = reader.int32() as any;
           continue;
-        case 5:
-          if (tag === 40) {
-            message.attestationPhases.push(reader.int32() as any);
-
-            continue;
-          }
-
-          if (tag === 42) {
-            const end2 = reader.uint32() + reader.pos;
-            while (reader.pos < end2) {
-              message.attestationPhases.push(reader.int32() as any);
-            }
-
-            continue;
-          }
-
-          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2321,9 +2333,6 @@ export const PolicySpecV2 = {
       embedded: isSet(object.embedded) ? String(object.embedded) : undefined,
       ref: isSet(object.ref) ? String(object.ref) : undefined,
       kind: isSet(object.kind) ? craftingSchema_Material_MaterialTypeFromJSON(object.kind) : 0,
-      attestationPhases: Array.isArray(object?.attestationPhases)
-        ? object.attestationPhases.map((e: any) => attestationPhaseFromJSON(e))
-        : [],
     };
   },
 
@@ -2333,11 +2342,6 @@ export const PolicySpecV2 = {
     message.embedded !== undefined && (obj.embedded = message.embedded);
     message.ref !== undefined && (obj.ref = message.ref);
     message.kind !== undefined && (obj.kind = craftingSchema_Material_MaterialTypeToJSON(message.kind));
-    if (message.attestationPhases) {
-      obj.attestationPhases = message.attestationPhases.map((e) => attestationPhaseToJSON(e));
-    } else {
-      obj.attestationPhases = [];
-    }
     return obj;
   },
 
@@ -2351,7 +2355,6 @@ export const PolicySpecV2 = {
     message.embedded = object.embedded ?? undefined;
     message.ref = object.ref ?? undefined;
     message.kind = object.kind ?? 0;
-    message.attestationPhases = object.attestationPhases?.map((e) => e) || [];
     return message;
   },
 };

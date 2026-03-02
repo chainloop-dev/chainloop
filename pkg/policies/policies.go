@@ -215,25 +215,6 @@ func shouldEvaluateAtPhase(phases []v1.AttestationPhase, phase EvalPhase) bool {
 	return slices.Contains(phases, target)
 }
 
-// attestationPhasesForKind returns the aggregated attestation phases from
-// PolicySpecV2 entries that match the given kind. For legacy policies (using
-// spec.type + spec.path), returns nil (evaluate at all phases).
-func attestationPhasesForKind(spec *v1.PolicySpec, kind v1.CraftingSchema_Material_MaterialType) []v1.AttestationPhase {
-	// Legacy single-kind policies don't have per-kind phase config
-	if spec.GetSource() != nil {
-		return nil
-	}
-
-	var phases []v1.AttestationPhase
-	for _, s := range spec.GetPolicies() {
-		if s.GetKind() == v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED || s.GetKind() == kind {
-			phases = append(phases, s.GetAttestationPhases()...)
-		}
-	}
-
-	return phases
-}
-
 func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachment *v1.PolicyAttachment, material []byte, opts *evalOpts) (*v12.PolicyEvaluation, error) {
 	// load the policy policy
 	policy, ref, err := pv.loadPolicySpec(ctx, attachment)
@@ -242,9 +223,8 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// Skip policies not configured for the current attestation phase.
-	// Phases are defined per-kind in PolicySpecV2 entries.
-	phases := attestationPhasesForKind(policy.GetSpec(), opts.kind)
-	if !shouldEvaluateAtPhase(phases, pv.evalPhase) {
+	// Phases are defined on the policy attachment in the contract.
+	if !shouldEvaluateAtPhase(attachment.GetAttestationPhases(), pv.evalPhase) {
 		pv.logger.Debug().Str("policy", policy.GetMetadata().GetName()).Msg("skipping policy not configured for current attestation phase")
 		return nil, nil
 	}
