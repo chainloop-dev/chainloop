@@ -64,7 +64,7 @@ func newAttestationPushCmd() *cobra.Command {
 		Annotations: map[string]string{
 			useAPIToken: "true",
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			info, err := executableInfo()
 			if err != nil {
 				return fmt.Errorf("getting executable information: %w", err)
@@ -163,8 +163,7 @@ func newAttestationPushCmd() *cobra.Command {
 const exceptionFlagName = "exception-bypass-policy-check"
 
 var (
-	ErrBlockedByPolicyViolation = fmt.Errorf("the operator requires all policies to pass before continuing, please fix them and try again or temporarily bypass the policy check using --%s", exceptionFlagName)
-	exceptionBypassPolicyCheck  = fmt.Sprintf("Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --%s as soon as possible.", exceptionFlagName)
+	exceptionBypassPolicyCheck = fmt.Sprintf("Attention: You have opted to bypass the policy enforcement check and an operator has been notified of this exception.\nPlease make sure you are back on track with the policy evaluations and remove the --%s as soon as possible.", exceptionFlagName)
 )
 
 type GateError struct {
@@ -202,9 +201,6 @@ func validatePolicyEnforcement(status *action.AttestationStatusResult, bypassPol
 			return nil
 		}
 
-		if status.HasPolicyViolations {
-			return ErrBlockedByPolicyViolation
-		}
 	}
 
 	return nil

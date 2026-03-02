@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
-	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
+	storageBackend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
 	if err != nil && kerrors.IsNotFound(err) {
 		return err
 	} else if err != nil {
@@ -83,7 +83,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	}
 
 	// We check if the file already exists even before we wait for the whole buffer to be filled
-	if exists, err := backend.Exists(ctx, req.resource.Digest); err != nil {
+	if exists, err := storageBackend.Exists(ctx, req.resource.Digest); err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	} else if exists {
 		s.log.Infow("msg", "artifact already exists", "digest", req.resource.Digest)
@@ -95,6 +95,9 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	buffer := newStreamReader(info.MaxBytes)
 	// Add data from first request
 	if err = buffer.Write(req.GetData()); err != nil {
+		if backend.IsUploadSizeExceeded(err) {
+			return status.Error(codes.ResourceExhausted, err.Error())
+		}
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
@@ -115,11 +118,14 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 			s.log.Infow("msg", "upload canceled", "digest", req.resource.Digest, "name", req.resource.FileName)
 			return nil
 		}
+		if backend.IsUploadSizeExceeded(err) {
+			return status.Error(codes.ResourceExhausted, err.Error())
+		}
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
 	s.log.Infow("msg", "artifact received, uploading now to backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
-	if err := backend.Upload(ctx, buffer, req.resource); err != nil {
+	if err := storageBackend.Upload(ctx, buffer, req.resource); err != nil {
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
@@ -245,7 +251,7 @@ func (r *streamReader) Write(data []byte) error {
 	// Check if the size of the buffer has exceeded the maximum allowed size
 	// if maxSize is 0, then there is no limit
 	if r.maxSize != 0 && r.size > r.maxSize {
-		return fmt.Errorf("max size of upload exceeded: want=%d, max=%d", r.size, r.maxSize)
+		return backend.NewErrUploadSizeExceeded(r.size, r.maxSize)
 	}
 
 	_, err := r.Buffer.Write(data)

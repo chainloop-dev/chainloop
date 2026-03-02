@@ -713,8 +713,11 @@ type PolicyAttachment struct {
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// List of requirements this policy contributes to satisfy
 	Requirements []string `protobuf:"bytes,6,rep,name=requirements,proto3" json:"requirements,omitempty"`
-	// If true, the policy will act as a gate, returning an error code if the policy fails
-	Gate          bool `protobuf:"varint,7,opt,name=gate,proto3" json:"gate,omitempty"`
+	// Controls whether policy violations act as a gate.
+	// - true: policy violations are blocking for this policy
+	// - false: policy violations are non-blocking for this policy
+	// - unset: inherit organization-level default behavior
+	Gate          *bool `protobuf:"varint,7,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -803,8 +806,8 @@ func (x *PolicyAttachment) GetRequirements() []string {
 }
 
 func (x *PolicyAttachment) GetGate() bool {
-	if x != nil {
-		return x.Gate
+	if x != nil && x.Gate != nil {
+		return *x.Gate
 	}
 	return false
 }
@@ -1987,21 +1990,22 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x98\x01\n" +
 	"\bPolicies\x12C\n" +
 	"\tmaterials\x18\x01 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\tmaterials\x12G\n" +
-	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\x8a\x04\n" +
+	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\x98\x04\n" +
 	"\x10PolicyAttachment\x12\x1b\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x03ref\x129\n" +
 	"\bembedded\x18\x02 \x01(\v2\x1b.workflowcontract.v1.PolicyH\x00R\bembedded\x12R\n" +
 	"\bselector\x18\x03 \x01(\v26.workflowcontract.v1.PolicyAttachment.MaterialSelectorR\bselector\x12\x1a\n" +
 	"\bdisabled\x18\x04 \x01(\bR\bdisabled\x12C\n" +
 	"\x04with\x18\x05 \x03(\v2/.workflowcontract.v1.PolicyAttachment.WithEntryR\x04with\x12c\n" +
-	"\frequirements\x18\x06 \x03(\tB?\xbaH<\x92\x019\"7r523^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$R\frequirements\x12\x12\n" +
-	"\x04gate\x18\a \x01(\bR\x04gate\x1a7\n" +
+	"\frequirements\x18\x06 \x03(\tB?\xbaH<\x92\x019\"7r523^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$R\frequirements\x12\x17\n" +
+	"\x04gate\x18\a \x01(\bH\x01R\x04gate\x88\x01\x01\x1a7\n" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a&\n" +
 	"\x10MaterialSelector\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04nameB\x0f\n" +
-	"\x06policy\x12\x05\xbaH\x02\b\x01\"\xf6\x01\n" +
+	"\x06policy\x12\x05\xbaH\x02\b\x01B\a\n" +
+	"\x05_gate\"\xf6\x01\n" +
 	"\x06Policy\x12I\n" +
 	"\vapi_version\x18\x01 \x01(\tB(\xbaH%r#\n" +
 	"!workflowcontract.chainloop.dev/v1R\n" +

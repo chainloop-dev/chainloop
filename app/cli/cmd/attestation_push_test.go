@@ -67,4 +67,25 @@ func TestValidatePolicyEnforcement(t *testing.T) {
 		require.ErrorAs(t, err, &gateErr)
 		require.Equal(t, "cdx-fresh", gateErr.PolicyName)
 	})
+
+	t.Run("does not block when strategy is enforced and policy is explicitly not gated", func(t *testing.T) {
+		status := &action.AttestationStatusResult{
+			PolicyEvaluations: map[string][]*action.PolicyEvaluation{
+				"materials": {
+					{
+						Name: "cdx-fresh",
+						Gate: false,
+						Violations: []*action.PolicyViolation{
+							{Message: "policy violation"},
+						},
+					},
+				},
+			},
+			HasPolicyViolations:         true,
+			MustBlockOnPolicyViolations: true,
+		}
+
+		err := validatePolicyEnforcement(status, false)
+		require.NoError(t, err)
+	})
 }

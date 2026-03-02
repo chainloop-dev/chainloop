@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,4 +34,21 @@ func (e ErrNotFound) Error() string {
 
 func IsNotFound(err error) bool {
 	return errors.As(err, &ErrNotFound{})
+}
+
+type ErrUploadSizeExceeded struct {
+	want int64
+	max  int64
+}
+
+func NewErrUploadSizeExceeded(want, maxSize int64) ErrUploadSizeExceeded {
+	return ErrUploadSizeExceeded{want: want, max: maxSize}
+}
+
+func (e ErrUploadSizeExceeded) Error() string {
+	return fmt.Sprintf("max size of upload exceeded: want=%d, max=%d", e.want, e.max)
+}
+
+func IsUploadSizeExceeded(err error) bool {
+	return errors.As(err, &ErrUploadSizeExceeded{})
 }

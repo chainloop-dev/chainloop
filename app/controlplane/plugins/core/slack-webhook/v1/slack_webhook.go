@@ -39,13 +39,18 @@ type registrationRequest struct {
 	WebhookURL string `json:"webhook" jsonschema:"format=uri,description=URL of the slack webhook"`
 }
 
+// registrationState defines the state stored after registration
+type registrationState struct {
+	WebhookURL string `json:"webhook,omitempty"`
+}
+
 type attachmentRequest struct{}
 
 func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "slack-webhook",
-			Version:     "1.0",
+			Version:     "1.1",
 			Description: "Send attestations to Slack",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -75,7 +80,14 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 		return nil, fmt.Errorf("error validating a webhook: %w", err)
 	}
 
+	// Store a masked version of the URL as non-secret config so it can be displayed for identification
+	config, err := sdk.ToConfig(&registrationState{WebhookURL: sdk.MaskURL(request.WebhookURL)})
+	if err != nil {
+		return nil, fmt.Errorf("marshalling configuration: %w", err)
+	}
+
 	return &sdk.RegistrationResponse{
+		Configuration: config,
 		// We treat the webhook URL as a sensitive field so we store it in the credentials storage
 		Credentials: &sdk.Credentials{Password: request.WebhookURL},
 	}, nil

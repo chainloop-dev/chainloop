@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strconv"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -77,6 +78,7 @@ func (s *bytestreamSuite) TestStreamReaderOverflow() {
 	s.Equal(int64(5), buffer.size)
 	err = buffer.Write([]byte("chainloop"))
 	s.Error(err)
+	s.True(backend.IsUploadSizeExceeded(err))
 	s.ErrorContains(err, "max size of upload exceeded")
 }
 
@@ -118,6 +120,25 @@ func (s *bytestreamSuite) TestWrite() {
 		s.NoError(stream.Send(&bytestream.WriteRequest{ResourceName: "wrong"}))
 		_, err = stream.CloseAndRecv()
 		assertGRPCError(t, err, codes.InvalidArgument, "resourceName must be set")
+	})
+
+	s.T().Run("max size exceeded", func(t *testing.T) {
+		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("role", "uploader", "max-bytes", "8"))
+		s.ociBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
+
+		stream, err := s.client.Write(ctx)
+		s.NoError(err)
+		s.NoError(stream.Send(&bytestream.WriteRequest{
+			ResourceName: encodeResource(s.T(), s.resource),
+			Data:         []byte("hello"),
+		}))
+		s.NoError(stream.Send(&bytestream.WriteRequest{
+			ResourceName: encodeResource(s.T(), s.resource),
+			Data:         []byte("chainloop"),
+		}))
+
+		_, err = stream.CloseAndRecv()
+		assertGRPCError(t, err, codes.ResourceExhausted, "max size of upload exceeded")
 	})
 }
 
@@ -171,7 +192,7 @@ func (s *bytestreamSuite) TestWriteErrorUploading() {
 	}))
 
 	_, err = stream.CloseAndRecv()
-	s.Error(err)
+	assertGRPCError(s.T(), err, codes.Internal, "")
 }
 
 func (s *bytestreamSuite) TestRead() {
@@ -297,6 +318,11 @@ func (s *bytestreamSuite) SetupTest() {
 
 					claims := &casJWT.Claims{
 						StoredSecretID: "secret-id", BackendType: backendType,
+					}
+					if maxBytes := md.Get("max-bytes"); len(maxBytes) > 0 {
+						parsedMaxBytes, err := strconv.ParseInt(maxBytes[0], 10, 64)
+						require.NoError(s.T(), err)
+						claims.MaxBytes = parsedMaxBytes
 					}
 
 					if roles := md.Get("role"); len(roles) > 0 {
