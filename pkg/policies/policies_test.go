@@ -1298,6 +1298,27 @@ func (s *testSuite) TestAttestationPhaseFiltering() {
 			phase:            EvalPhasePush,
 			npolicies:        0,
 		},
+		// Fallback: phases from deprecated PolicySpecV2 field
+		{
+			name:      "spec-level push-only fallback, runs at push",
+			policyRef: "file://testdata/workflow_push_only.yaml",
+			phase:     EvalPhasePush,
+			npolicies: 1,
+		},
+		{
+			name:      "spec-level push-only fallback, skipped at init",
+			policyRef: "file://testdata/workflow_push_only.yaml",
+			phase:     EvalPhaseInit,
+			npolicies: 0,
+		},
+		// Attachment phases take precedence over spec-level phases
+		{
+			name:             "attachment overrides spec-level phases",
+			policyRef:        "file://testdata/workflow_push_only.yaml",
+			attachmentPhases: []v12.AttestationPhase{v12.AttestationPhase_INIT},
+			phase:            EvalPhaseInit,
+			npolicies:        1,
+		},
 	}
 
 	for _, tc := range cases {
