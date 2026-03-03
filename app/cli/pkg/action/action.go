@@ -108,7 +108,7 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 	})
 	if err != nil {
 		// Log warning but don't fail - will fall back to inline storage
-		logger.Warn().Err(err).Msg("failed to get CAS credentials for PR metadata, will store inline")
+		logger.Warn().Err(err).Msg("failed to get CAS credentials, will store inline")
 		return nil, nil, fmt.Errorf("getting upload creds: %w", err)
 	}
 
