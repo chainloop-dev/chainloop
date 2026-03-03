@@ -150,11 +150,12 @@ func (s *apiTokenTestSuite) TestAuthzPolicies() {
 
 	// With the new architecture, API token policies are stored in the database, not in Casbin
 	// Verify that the token has the default policies stored
+	expectedPolicies := append(s.APIToken.DefaultAuthzPolicies, biz.OrgLevelAPITokenPolicies...)
 	s.Require().NotNil(token.Policies)
-	s.Len(token.Policies, len(s.APIToken.DefaultAuthzPolicies))
+	s.Len(token.Policies, len(expectedPolicies))
 
-	// Check that all default policies are present
-	for _, expectedPolicy := range s.APIToken.DefaultAuthzPolicies {
+	// Check that all default policies for org-scoped token are present
+	for _, expectedPolicy := range expectedPolicies {
 		found := false
 		for _, actualPolicy := range token.Policies {
 			if actualPolicy.Resource == expectedPolicy.Resource && actualPolicy.Action == expectedPolicy.Action {
