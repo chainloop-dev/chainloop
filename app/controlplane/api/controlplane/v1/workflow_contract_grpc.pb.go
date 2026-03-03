@@ -39,6 +39,7 @@ const (
 	WorkflowContractService_Update_FullMethodName   = "/controlplane.v1.WorkflowContractService/Update"
 	WorkflowContractService_Describe_FullMethodName = "/controlplane.v1.WorkflowContractService/Describe"
 	WorkflowContractService_Delete_FullMethodName   = "/controlplane.v1.WorkflowContractService/Delete"
+	WorkflowContractService_Apply_FullMethodName    = "/controlplane.v1.WorkflowContractService/Apply"
 )
 
 // WorkflowContractServiceClient is the client API for WorkflowContractService service.
@@ -50,6 +51,7 @@ type WorkflowContractServiceClient interface {
 	Update(ctx context.Context, in *WorkflowContractServiceUpdateRequest, opts ...grpc.CallOption) (*WorkflowContractServiceUpdateResponse, error)
 	Describe(ctx context.Context, in *WorkflowContractServiceDescribeRequest, opts ...grpc.CallOption) (*WorkflowContractServiceDescribeResponse, error)
 	Delete(ctx context.Context, in *WorkflowContractServiceDeleteRequest, opts ...grpc.CallOption) (*WorkflowContractServiceDeleteResponse, error)
+	Apply(ctx context.Context, in *WorkflowContractServiceApplyRequest, opts ...grpc.CallOption) (*WorkflowContractServiceApplyResponse, error)
 }
 
 type workflowContractServiceClient struct {
@@ -105,6 +107,15 @@ func (c *workflowContractServiceClient) Delete(ctx context.Context, in *Workflow
 	return out, nil
 }
 
+func (c *workflowContractServiceClient) Apply(ctx context.Context, in *WorkflowContractServiceApplyRequest, opts ...grpc.CallOption) (*WorkflowContractServiceApplyResponse, error) {
+	out := new(WorkflowContractServiceApplyResponse)
+	err := c.cc.Invoke(ctx, WorkflowContractService_Apply_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkflowContractServiceServer is the server API for WorkflowContractService service.
 // All implementations must embed UnimplementedWorkflowContractServiceServer
 // for forward compatibility
@@ -114,6 +125,7 @@ type WorkflowContractServiceServer interface {
 	Update(context.Context, *WorkflowContractServiceUpdateRequest) (*WorkflowContractServiceUpdateResponse, error)
 	Describe(context.Context, *WorkflowContractServiceDescribeRequest) (*WorkflowContractServiceDescribeResponse, error)
 	Delete(context.Context, *WorkflowContractServiceDeleteRequest) (*WorkflowContractServiceDeleteResponse, error)
+	Apply(context.Context, *WorkflowContractServiceApplyRequest) (*WorkflowContractServiceApplyResponse, error)
 	mustEmbedUnimplementedWorkflowContractServiceServer()
 }
 
@@ -135,6 +147,9 @@ func (UnimplementedWorkflowContractServiceServer) Describe(context.Context, *Wor
 }
 func (UnimplementedWorkflowContractServiceServer) Delete(context.Context, *WorkflowContractServiceDeleteRequest) (*WorkflowContractServiceDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedWorkflowContractServiceServer) Apply(context.Context, *WorkflowContractServiceApplyRequest) (*WorkflowContractServiceApplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedWorkflowContractServiceServer) mustEmbedUnimplementedWorkflowContractServiceServer() {
 }
@@ -240,6 +255,24 @@ func _WorkflowContractService_Delete_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkflowContractService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkflowContractServiceApplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowContractServiceServer).Apply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowContractService_Apply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowContractServiceServer).Apply(ctx, req.(*WorkflowContractServiceApplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkflowContractService_ServiceDesc is the grpc.ServiceDesc for WorkflowContractService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +299,10 @@ var WorkflowContractService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _WorkflowContractService_Delete_Handler,
+		},
+		{
+			MethodName: "Apply",
+			Handler:    _WorkflowContractService_Apply_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

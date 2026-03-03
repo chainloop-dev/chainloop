@@ -233,6 +233,77 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 	return &pb.WorkflowContractServiceUpdateResponse{Result: result}, nil
 }
 
+func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowContractServiceApplyRequest) (*pb.WorkflowContractServiceApplyResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate and extract contract name and description from the raw schema
+	contractName, description, err := validateAndExtractMetadata(req.RawSchema, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := entities.GetRawToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.contractUseCase.ValidateContractPolicies(req.RawSchema, token); err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Check if the contract already exists
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, contractName)
+	if err != nil && !biz.IsNotFound(err) {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	if contract != nil {
+		// Contract exists we update
+		if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractUpdate, false); err != nil {
+			return nil, err
+		}
+
+		schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, contractName,
+			&biz.WorkflowContractUpdateOpts{
+				Description: description,
+				RawSchema:   req.RawSchema,
+			})
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		return &pb.WorkflowContractServiceApplyResponse{Result: bizWorkFlowContractToPb(schemaWithVersion.Contract)}, nil
+	}
+
+	// Contract does not exist we create
+	// Check organization settings for contract creation restriction
+	org, err := s.orgUseCase.FindByID(ctx, currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	if org.RestrictContractCreationToOrgAdmins {
+		if !canCreateContractsInRestrictedMode(ctx) {
+			return nil, errors.Forbidden("forbidden", "contract creation is restricted to organization administrators and service accounts. Please contact your administrator")
+		}
+	}
+
+	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
+		OrgID:       currentOrg.ID,
+		Name:        contractName,
+		Description: description,
+		RawSchema:   req.RawSchema,
+	})
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &pb.WorkflowContractServiceApplyResponse{Result: bizWorkFlowContractToPb(schema)}, nil
+}
+
 func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowContractServiceDeleteRequest) (*pb.WorkflowContractServiceDeleteResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
