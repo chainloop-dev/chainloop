@@ -20,6 +20,7 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -51,6 +52,13 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 	// Force setting a project scope if RBAC is enabled
 	if rbacEnabled(ctx) && !req.ProjectReference.IsSet() {
 		return nil, errors.BadRequest("invalid", "project is required")
+	}
+
+	// Org-level API tokens can only create project-scoped tokens
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+		if !req.ProjectReference.IsSet() {
+			return nil, errors.Forbidden("forbidden", "org-level API tokens must specify a project when creating new tokens")
+		}
 	}
 
 	// if the project is provided we make sure it exists and the user has permission to it
@@ -100,7 +108,13 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		defaultProjectFilter = []uuid.UUID{project.ID}
 	}
 
-	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenStatusFilter(mapTokenStatusFilter(req.GetStatusFilter())), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(mapTokenScope(req.Scope)))
+	// Org-level API tokens can only see project-scoped tokens
+	scope := mapTokenScope(req.Scope)
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+		scope = biz.APITokenScopeProject
+	}
+
+	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenStatusFilter(mapTokenStatusFilter(req.GetStatusFilter())), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(scope))
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -149,6 +163,13 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 	// 1 - Only admins can manage global contracts
 	if t.ProjectID == nil && rbacEnabled(ctx) {
 		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
+	}
+
+	// Org-level API tokens cannot revoke other org-level tokens
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+		if t.ProjectID == nil {
+			return nil, errors.Forbidden("forbidden", "org-level API tokens cannot revoke org-level tokens")
+		}
 	}
 
 	// Make sure the user has permission to revoke the token in the project
