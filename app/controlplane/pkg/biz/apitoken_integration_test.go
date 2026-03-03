@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/golang-jwt/jwt/v4"
@@ -150,7 +151,9 @@ func (s *apiTokenTestSuite) TestAuthzPolicies() {
 
 	// With the new architecture, API token policies are stored in the database, not in Casbin
 	// Verify that the token has the default policies stored
-	expectedPolicies := append(s.APIToken.DefaultAuthzPolicies, biz.OrgLevelAPITokenPolicies...)
+	expectedPolicies := make([]*authz.Policy, 0, len(s.APIToken.DefaultAuthzPolicies)+len(biz.OrgLevelAPITokenPolicies))
+	expectedPolicies = append(expectedPolicies, s.APIToken.DefaultAuthzPolicies...)
+	expectedPolicies = append(expectedPolicies, biz.OrgLevelAPITokenPolicies...)
 	s.Require().NotNil(token.Policies)
 	s.Len(token.Policies, len(expectedPolicies))
 
