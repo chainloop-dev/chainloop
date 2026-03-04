@@ -56,7 +56,6 @@ jobs:
           token: ${{ secrets.buf_api_token }}
           breaking: true
           pr_comment: false
-          exclude_imports: true
 
   lint-dagger-module:
     runs-on: ubuntu-latest
