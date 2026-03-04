@@ -145,29 +145,55 @@ func (s *apiTokenTestSuite) TestCreate() {
 }
 
 func (s *apiTokenTestSuite) TestAuthzPolicies() {
-	// a new token has a new set of policies associated
-	token, err := s.APIToken.Create(context.Background(), randomName(), nil, nil, &s.org.ID)
-	require.NoError(s.T(), err)
+	ctx := context.Background()
 
-	// With the new architecture, API token policies are stored in the database, not in Casbin
-	// Verify that the token has the default policies stored
-	expectedPolicies := make([]*authz.Policy, 0, len(s.APIToken.DefaultAuthzPolicies)+len(biz.OrgLevelAPITokenPolicies))
-	expectedPolicies = append(expectedPolicies, s.APIToken.DefaultAuthzPolicies...)
-	expectedPolicies = append(expectedPolicies, biz.OrgLevelAPITokenPolicies...)
-	s.Require().NotNil(token.Policies)
-	s.Len(token.Policies, len(expectedPolicies))
+	s.Run("project-level token gets default policies", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
+		require.NoError(s.T(), err)
+		s.Require().NotNil(token.Policies)
+		s.Len(token.Policies, len(s.APIToken.DefaultAuthzPolicies))
 
-	// Check that all default policies for org-scoped token are present
-	for _, expectedPolicy := range expectedPolicies {
-		found := false
-		for _, actualPolicy := range token.Policies {
-			if actualPolicy.Resource == expectedPolicy.Resource && actualPolicy.Action == expectedPolicy.Action {
-				found = true
-				break
+		for _, p := range s.APIToken.DefaultAuthzPolicies {
+			found := false
+			for _, actual := range token.Policies {
+				if actual.Resource == p.Resource && actual.Action == p.Action {
+					found = true
+					break
+				}
 			}
+			s.True(found, fmt.Sprintf("policy %s:%s not found", p.Resource, p.Action))
 		}
-		s.True(found, fmt.Sprintf("policy %s:%s not found", expectedPolicy.Resource, expectedPolicy.Action))
-	}
+	})
+
+	s.Run("org-level token gets default plus token management policies", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
+		require.NoError(s.T(), err)
+		s.Require().NotNil(token.Policies)
+
+		// All default policies must be present
+		for _, p := range s.APIToken.DefaultAuthzPolicies {
+			found := false
+			for _, actual := range token.Policies {
+				if actual.Resource == p.Resource && actual.Action == p.Action {
+					found = true
+					break
+				}
+			}
+			s.True(found, fmt.Sprintf("default policy %s:%s not found", p.Resource, p.Action))
+		}
+
+		// Additional org-level token management policies must be present
+		for _, p := range []*authz.Policy{authz.PolicyAPITokenCreate, authz.PolicyAPITokenList, authz.PolicyAPITokenRevoke} {
+			found := false
+			for _, actual := range token.Policies {
+				if actual.Resource == p.Resource && actual.Action == p.Action {
+					found = true
+					break
+				}
+			}
+			s.True(found, fmt.Sprintf("org policy %s:%s not found", p.Resource, p.Action))
+		}
+	})
 }
 
 func (s *apiTokenTestSuite) TestRevoke() {
