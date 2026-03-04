@@ -35,6 +35,14 @@ type APITokenJWTConfig struct {
 	SymmetricHmacKey string
 }
 
+// orgLevelTokenPolicies are additional policies granted only to org-level tokens.
+// They allow managing project-scoped tokens.
+var orgLevelTokenPolicies = []*authz.Policy{
+	authz.PolicyAPITokenCreate,
+	authz.PolicyAPITokenList,
+	authz.PolicyAPITokenRevoke,
+}
+
 // APIToken is used for unattended access to the control plane API.
 type APIToken struct {
 	ID          uuid.UUID
@@ -202,6 +210,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	policies := options.policies
 	if policies == nil {
 		policies = uc.DefaultAuthzPolicies
+	}
+
+	// Org-level tokens additionally get project-level API token management policies
+	if projectID == nil && orgUUID != nil {
+		policies = append(policies, orgLevelTokenPolicies...)
 	}
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
