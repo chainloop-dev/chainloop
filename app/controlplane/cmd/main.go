@@ -121,6 +121,8 @@ func main() {
 
 	logger = log.NewFilter(logger, log.FilterFunc(filterSensitiveArgs))
 
+	_ = logger.Log(log.LevelInfo, "msg", "starting control-plane service", "version", Version)
+
 	flush, err := initSentry(&bc, logger)
 	defer flush()
 	if err != nil {
@@ -177,17 +179,17 @@ func main() {
 	if app.casBackendChecker != nil {
 
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
-			CheckInterval: 30 * time.Minute,
-			InitialDelay:  initialDelay,
-			OnlyDefaultsOrFallbacks:  toPtr(true),
+			CheckInterval:           30 * time.Minute,
+			InitialDelay:            initialDelay,
+			OnlyDefaultsOrFallbacks: toPtr(true),
 		})
 
 		// Start the background CAS Backend checker for ALL backends (every 24 hours)
 		// Start around 24h mark to avoid overlap with default checker
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
-			CheckInterval: 24 * time.Hour,
-			InitialDelay:  (24 * time.Hour) + jitter,
-			OnlyDefaultsOrFallbacks:  toPtr(false),
+			CheckInterval:           24 * time.Hour,
+			InitialDelay:            (24 * time.Hour) + jitter,
+			OnlyDefaultsOrFallbacks: toPtr(false),
 		})
 	}
 
