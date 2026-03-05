@@ -12,11 +12,11 @@ APP VERSION: {{ .Chart.AppVersion  }}
 {{- $casGrpcURL := include "chainloop.cas.external_grpc_url" . }}
 
 {{- $cpSvcType := .Values.controlplane.serviceAPI.type }}
-{{- $cpSvcPort := coalesce .Values.controlplane.serviceAPI.port .Values.controlplane.serviceAPI.ports.http }}
+{{- $cpSvcPort := .Values.controlplane.serviceAPI.ports.http }}
 {{- $cpSvcName := printf "%s-api" (include "chainloop.controlplane.fullname" .) }}
 
 {{- $casSvcType := .Values.cas.serviceAPI.type }}
-{{- $casSvcPort := coalesce .Values.cas.serviceAPI.port .Values.cas.serviceAPI.ports.http }}
+{{- $casSvcPort := .Values.cas.serviceAPI.ports.http }}
 {{- $casSvcName := printf "%s-api" (include "chainloop.cas.fullname" .) }}
 
 {{- $namespace := include "common.names.namespace" . }}
