@@ -35,7 +35,7 @@ spec:
   {{- end }}
   ports:
     - name: grpc
-      {{- $port := coalesce .Values.cas.serviceAPI.port .Values.cas.serviceAPI.ports.http }}
+      {{- $port := .Values.cas.serviceAPI.ports.http }}
       port: {{ $port }}
       {{- if not (eq $port .Values.cas.containerPorts.grpc) }}
       targetPort: {{ .Values.cas.containerPorts.grpc }}
