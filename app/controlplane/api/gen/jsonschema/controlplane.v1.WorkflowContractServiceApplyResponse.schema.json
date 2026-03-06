@@ -5,6 +5,10 @@
   "properties": {
     "result": {
       "$ref": "controlplane.v1.WorkflowContractItem.schema.json"
+    },
+    "unchanged": {
+      "description": "Whether the resource was unchanged",
+      "type": "boolean"
     }
   },
   "title": "Workflow Contract Service Apply Response",

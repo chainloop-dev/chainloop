@@ -39,7 +39,13 @@ Supports multi-document YAML files. Each document must have a 'kind' field.`,
 				return err
 			}
 
-			logger.Info().Msgf("%d contracts applied", len(results))
+			for _, r := range results {
+				status := "applied"
+				if r.Unchanged {
+					status = "unchanged"
+				}
+				logger.Info().Msgf("%s/%s %s", r.Kind, r.Name, status)
+			}
 
 			return nil
 		},
