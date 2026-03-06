@@ -18,7 +18,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -89,21 +88,10 @@ func flagAttestationID(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&attestationID, "attestation-id", "", "Unique identifier of the in-progress attestation")
 }
 
-// attestationStatePath returns the resolved path for local attestation state.
-// If customPath is non-empty it is returned as-is; otherwise the default
-// temp-dir location is used.
-func attestationStatePath(customPath string) string {
-	if customPath != "" {
-		return customPath
-	}
-
-	return filepath.Join(os.TempDir(), action.DefaultAttestationStateFile)
-}
-
 // orgFromLocalState reads the organization from the local attestation state file.
 // Returns empty string on any error (file not found, parse error, etc.).
 func orgFromLocalState(customPath string) string {
-	raw, err := os.ReadFile(attestationStatePath(customPath))
+	raw, err := os.ReadFile(action.AttestationStatePath(customPath))
 	if err != nil {
 		return ""
 	}
