@@ -48,12 +48,16 @@ or update it if it already exists.`,
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), contractName, contractPath, desc, projectName)
+			res, unchanged, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), contractName, contractPath, desc, projectName)
 			if err != nil {
 				return err
 			}
 
-			logger.Info().Msg("Contract applied!")
+			status := "applied"
+			if unchanged {
+				status = "unchanged"
+			}
+			logger.Info().Msgf("Contract/%s %s", contractName, status)
 			return output.EncodeOutput(flagOutputFormat, res, contractItemTableOutput)
 		},
 	}

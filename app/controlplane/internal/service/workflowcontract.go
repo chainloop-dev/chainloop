@@ -275,7 +275,10 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 			return nil, handleUseCaseErr(err, s.log)
 		}
 
-		return &pb.WorkflowContractServiceApplyResponse{Result: bizWorkFlowContractToPb(schemaWithVersion.Contract)}, nil
+		return &pb.WorkflowContractServiceApplyResponse{
+			Result:    bizWorkFlowContractToPb(schemaWithVersion.Contract),
+			Unchanged: schemaWithVersion.Unchanged,
+		}, nil
 	}
 
 	// Contract does not exist we create

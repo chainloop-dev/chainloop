@@ -30,7 +30,7 @@ func NewWorkflowContractApply(cfg *ActionsOpts) *WorkflowContractApply {
 	return &WorkflowContractApply{cfg}
 }
 
-func (action *WorkflowContractApply) Run(ctx context.Context, contractName string, contractPath string, description *string, projectName string) (*WorkflowContractItem, error) {
+func (action *WorkflowContractApply) Run(ctx context.Context, contractName string, contractPath string, description *string, projectName string) (*WorkflowContractItem, bool, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	// Try to describe the specific contract first to determine if we should create or update
@@ -43,14 +43,16 @@ func (action *WorkflowContractApply) Run(ctx context.Context, contractName strin
 		raw, err := LoadFileOrURL(contractPath)
 		if err != nil {
 			action.cfg.Logger.Debug().Err(err).Msg("loading the contract")
-			return nil, err
+			return nil, false, err
 		}
 		rawContract = raw
 	}
 
-	_, err := client.Describe(ctx, describeReq)
+	describeRes, err := client.Describe(ctx, describeReq)
 	if err == nil {
 		// Contract exists, perform update
+		prevRevision := describeRes.Result.GetRevision().GetRevision()
+
 		updateReq := &pb.WorkflowContractServiceUpdateRequest{
 			Name:        contractName,
 			Description: description,
@@ -59,10 +61,12 @@ func (action *WorkflowContractApply) Run(ctx context.Context, contractName strin
 
 		res, err := client.Update(ctx, updateReq)
 		if err != nil {
-			return nil, fmt.Errorf("failed to update existing contract '%s': %w", contractName, err)
+			return nil, false, fmt.Errorf("failed to update existing contract '%s': %w", contractName, err)
 		}
 
-		return pbWorkflowContractItemToAction(res.Result.Contract), nil
+		unchanged := prevRevision == res.Result.GetRevision().GetRevision()
+
+		return pbWorkflowContractItemToAction(res.Result.Contract), unchanged, nil
 	}
 
 	// Contract doesn't exist, perform create
@@ -80,8 +84,8 @@ func (action *WorkflowContractApply) Run(ctx context.Context, contractName strin
 
 	res, err := client.Create(ctx, createReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create new contract '%s': %w", contractName, err)
+		return nil, false, fmt.Errorf("failed to create new contract '%s': %w", contractName, err)
 	}
 
-	return pbWorkflowContractItemToAction(res.Result), nil
+	return pbWorkflowContractItemToAction(res.Result), false, nil
 }

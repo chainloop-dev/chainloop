@@ -36,8 +36,9 @@ const (
 
 // ApplyResult holds the outcome of a successfully applied resource document
 type ApplyResult struct {
-	Kind string
-	Name string
+	Kind      string
+	Name      string
+	Unchanged bool
 }
 
 // YAMLDoc holds a parsed YAML document with its kind and raw bytes
@@ -67,16 +68,16 @@ func (a *Apply) Run(ctx context.Context, path string) ([]*ApplyResult, error) {
 	// Apply contracts
 	var results []*ApplyResult
 	for _, doc := range docs {
-		result := &ApplyResult{Kind: doc.Kind, Name: doc.Name}
 		switch doc.Kind {
 		case KindContract:
-			if err := ApplyContractFromRawData(ctx, a.cfg.CPConnection, doc.RawData); err != nil {
+			unchanged, err := ApplyContractFromRawData(ctx, a.cfg.CPConnection, doc.RawData)
+			if err != nil {
 				return results, fmt.Errorf("%s/%s: %w", doc.Kind, doc.Name, err)
 			}
+			results = append(results, &ApplyResult{Kind: doc.Kind, Name: doc.Name, Unchanged: unchanged})
 		default:
 			return results, fmt.Errorf("unsupported kind %q", doc.Kind)
 		}
-		results = append(results, result)
 	}
 
 	return results, nil
@@ -113,17 +114,17 @@ func ParseYAMLPath(path string) ([]*YAMLDoc, error) {
 }
 
 // ApplyContractFromRawData applies a single contract document using the gRPC client.
-func ApplyContractFromRawData(ctx context.Context, conn *grpc.ClientConn, rawData []byte) error {
+func ApplyContractFromRawData(ctx context.Context, conn *grpc.ClientConn, rawData []byte) (bool, error) {
 	client := pb.NewWorkflowContractServiceClient(conn)
 
-	_, err := client.Apply(ctx, &pb.WorkflowContractServiceApplyRequest{
+	resp, err := client.Apply(ctx, &pb.WorkflowContractServiceApplyRequest{
 		RawSchema: rawData,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to apply contract: %w", err)
+		return false, fmt.Errorf("failed to apply contract: %w", err)
 	}
 
-	return nil
+	return resp.GetUnchanged(), nil
 }
 
 // CollectYAMLFiles returns YAML file paths from the given path.
