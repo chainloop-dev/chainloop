@@ -8,11 +8,115 @@ APP VERSION: {{ .Chart.AppVersion  }}
   CONFIGURE CLI
 ###########################################################################
 
-Configure the CLI to point to this instance, for example
+{{- $cpGrpcURL := include "chainloop.controlplane.external_grpc_url" . }}
+{{- $casGrpcURL := include "chainloop.cas.external_grpc_url" . }}
 
-  chainloop --insecure config save \
-    --control-plane my-controlplane.acme.com:80 \
-    --artifact-cas cas.acme.com:80
+{{- $cpSvcType := .Values.controlplane.serviceAPI.type }}
+{{- $cpSvcPort := .Values.controlplane.serviceAPI.ports.http }}
+{{- $cpSvcName := printf "%s-api" (include "chainloop.controlplane.fullname" .) }}
+
+{{- $casSvcType := .Values.cas.serviceAPI.type }}
+{{- $casSvcPort := .Values.cas.serviceAPI.ports.http }}
+{{- $casSvcName := printf "%s-api" (include "chainloop.cas.fullname" .) }}
+
+{{- $namespace := include "common.names.namespace" . }}
+
+{{- $cpHasTLS := or (and .Values.controlplane.ingressAPI.enabled .Values.controlplane.ingressAPI.tls) (ne (.Values.controlplane.tls.existingSecret | default "") "") }}
+{{- $casHasTLS := or (and .Values.cas.ingressAPI.enabled .Values.cas.ingressAPI.tls) (ne (.Values.cas.tls.existingSecret | default "") "") }}
+{{- $insecure := not (and $cpHasTLS $casHasTLS) }}
+
+{{- if and (ne $cpGrpcURL "") (ne $casGrpcURL "") }}
+{{- /* Both endpoints can be resolved - show a single ready-to-use command */ -}}
+
+Configure the CLI to point to this instance:
+
+  chainloop {{ if $insecure }}--insecure {{ end }}config save \
+    --control-plane {{ $cpGrpcURL }} \
+    --artifact-cas {{ $casGrpcURL }}
+
+{{- else }}
+
+To configure the CLI, you need the Control Plane and Artifact CAS gRPC endpoints.
+{{- /* --- CONTROL PLANE ENDPOINT --- */ -}}
+{{- if ne $cpGrpcURL "" }}
+
+1. The Control Plane gRPC API is available at:
+
+     {{ $cpGrpcURL }}
+{{- else if eq $cpSvcType "LoadBalancer" }}
+
+1. Get the Control Plane gRPC endpoint:
+
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+     Watch the status with: kubectl get --namespace {{ $namespace }} svc {{ $cpSvcName }} -w
+
+     export CP_HOST=$(kubectl get svc --namespace {{ $namespace }} {{ $cpSvcName }} --template "{{ "{{" }} range (index .status.loadBalancer.ingress 0) {{ "}}" }}{{ "{{" }} . {{ "}}" }}{{ "{{" }} end {{ "}}" }}")
+     export CP_PORT={{ $cpSvcPort }}
+{{- else if eq $cpSvcType "NodePort" }}
+
+1. Get the Control Plane gRPC endpoint:
+
+     export CP_HOST=$(kubectl get nodes --namespace {{ $namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+     export CP_PORT=$(kubectl get --namespace {{ $namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ $cpSvcName }})
+{{- else }}
+
+1. The Control Plane gRPC API is not externally accessible (ClusterIP). Use port-forwarding:
+
+     kubectl port-forward --namespace {{ $namespace }} svc/{{ $cpSvcName }} 9000:{{ $cpSvcPort }} &
+{{- end }}
+{{- /* --- CAS ENDPOINT --- */ -}}
+{{- if ne $casGrpcURL "" }}
+
+2. The Artifact CAS gRPC API is available at:
+
+     {{ $casGrpcURL }}
+{{- else if eq $casSvcType "LoadBalancer" }}
+
+2. Get the Artifact CAS gRPC endpoint:
+
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+     Watch the status with: kubectl get --namespace {{ $namespace }} svc {{ $casSvcName }} -w
+
+     export CAS_HOST=$(kubectl get svc --namespace {{ $namespace }} {{ $casSvcName }} --template "{{ "{{" }} range (index .status.loadBalancer.ingress 0) {{ "}}" }}{{ "{{" }} . {{ "}}" }}{{ "{{" }} end {{ "}}" }}")
+     export CAS_PORT={{ $casSvcPort }}
+{{- else if eq $casSvcType "NodePort" }}
+
+2. Get the Artifact CAS gRPC endpoint:
+
+     export CAS_HOST=$(kubectl get nodes --namespace {{ $namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+     export CAS_PORT=$(kubectl get --namespace {{ $namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ $casSvcName }})
+{{- else }}
+
+2. The Artifact CAS gRPC API is not externally accessible (ClusterIP). Use port-forwarding:
+
+     kubectl port-forward --namespace {{ $namespace }} svc/{{ $casSvcName }} 9001:{{ $casSvcPort }} &
+{{- end }}
+
+3. Configure the CLI:
+
+{{- $cpRef := $cpGrpcURL -}}
+{{- if eq $cpRef "" -}}
+  {{- if or (eq $cpSvcType "LoadBalancer") (eq $cpSvcType "NodePort") -}}
+    {{- $cpRef = "$CP_HOST:$CP_PORT" -}}
+  {{- else -}}
+    {{- $cpRef = "localhost:9000" -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $casRef := $casGrpcURL -}}
+{{- if eq $casRef "" -}}
+  {{- if or (eq $casSvcType "LoadBalancer") (eq $casSvcType "NodePort") -}}
+    {{- $casRef = "$CAS_HOST:$CAS_PORT" -}}
+  {{- else -}}
+    {{- $casRef = "localhost:9001" -}}
+  {{- end -}}
+{{- end }}
+
+     chainloop {{ if $insecure }}--insecure {{ end }}config save \
+       --control-plane {{ $cpRef }} \
+       --artifact-cas {{ $casRef }}
+
+{{- end }}
 
 Refer to this link for more information
 https://docs.chainloop.dev/get-started/setup
