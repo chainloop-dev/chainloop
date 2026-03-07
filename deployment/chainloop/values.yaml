@@ -604,6 +604,63 @@ controlplane:
     ##             name: http
     ##
     extraRules: []
+  ## Gateway API HTTP routing parameters
+  ## ref: https://gateway-api.sigs.k8s.io/guides/http-routing/
+  ##
+  httpRoute:
+    ## @param controlplane.httpRoute.enabled Enable HTTPRoute generation for controlplane
+    ##
+    enabled: false
+    ## @param controlplane.httpRoute.tls Indicate if tls is active for this route
+    ##
+    tls: false
+    ## @param controlplane.httpRoute.annotations Additional annotations for the HTTPRoute resource
+    ##
+    annotations: {}
+    ## @param controlplane.httpRoute.labels Additional labels for the HTTPRoute resource
+    ##
+    labels: {}
+    ## @param controlplane.httpRoute.parentRefs Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.
+    ## e.g:
+    ## parentRefs:
+    ##   - name: my-gateway
+    ##     sectionName: http
+    ##     namespace: default
+    ##
+    parentRefs: []
+    ## @param controlplane.httpRoute.hostnames [array] List of hostnames matching HTTP header
+    ##
+    hostnames:
+      - cp.dev.local
+    ## @param controlplane.httpRoute.matches [array] List of match rules applied to the HTTPRoute for the default svc backend reference
+    ##
+    matches:
+      - path:
+          type: PathPrefix
+          value: /
+    ## @param controlplane.httpRoute.filters List of filter rules applied to the HTTPRoute for the default svc backend reference
+    ##
+    filters: []
+    ## @param controlplane.httpRoute.extraRules List of extra rules applied to the HTTPRoute
+    ## e.g:
+    ## extraRules:
+    ##   - matches:
+    ##       - path:
+    ##           type: PathPrefix
+    ##           value: /login
+    ##     filters:
+    ##       - type: RequestHeaderModifier
+    ##         requestHeaderModifier:
+    ##           set:
+    ##             - name: My-Overwrite-Header
+    ##               value: this-is-the-only-value
+    ##           remove:
+    ##             - User-Agent
+    ##     backendRefs:
+    ##       - name: chainloop-controlplane
+    ##         port: 80
+    ##
+    extraRules: []
 
   ## @section Controlplane Misc
 
@@ -1352,7 +1409,63 @@ cas:
     ##             name: http
     ##
     extraRules: []
-
+  ## Gateway API HTTP routing parameters
+  ## ref: https://gateway-api.sigs.k8s.io/guides/http-routing/
+  ##
+  httpRoute:
+    ## @param cas.httpRoute.enabled Enable HTTPRoute generation for CAS
+    ##
+    enabled: false
+    ## @param cas.httpRoute.tls Indicate if tls is active for this route
+    ##
+    tls: false
+    ## @param cas.httpRoute.annotations Additional annotations for the HTTPRoute resource
+    ##
+    annotations: {}
+    ## @param cas.httpRoute.labels Additional labels for the HTTPRoute resource
+    ##
+    labels: {}
+    ## @param cas.httpRoute.parentRefs Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.
+    ## e.g:
+    ## parentRefs:
+    ##   - name: my-gateway
+    ##     sectionName: http
+    ##     namespace: default
+    ##
+    parentRefs: []
+    ## @param cas.httpRoute.hostnames [array] List of hostnames matching HTTP header
+    ##
+    hostnames:
+      - cas.dev.local
+    ## @param cas.httpRoute.matches [array] List of match rules applied to the HTTPRoute for the default svc backend reference
+    ##
+    matches:
+      - path:
+          type: PathPrefix
+          value: /
+    ## @param cas.httpRoute.filters List of filter rules applied to the HTTPRoute for the default svc backend reference
+    ##
+    filters: []
+    ## @param cas.httpRoute.extraRules List of extra rules applied to the HTTPRoute
+    ## e.g:
+    ## extraRules:
+    ##   - matches:
+    ##       - path:
+    ##           type: PathPrefix
+    ##           value: /login
+    ##     filters:
+    ##       - type: RequestHeaderModifier
+    ##         requestHeaderModifier:
+    ##           set:
+    ##             - name: My-Overwrite-Header
+    ##               value: this-is-the-only-value
+    ##           remove:
+    ##             - User-Agent
+    ##     backendRefs:
+    ##       - name: chainloop-cas
+    ##         port: 80
+    ##
+    extraRules: []
   ## @section CAS Misc
   ## @param cas.sentry.enabled Enable sentry.io alerting
   ## @param cas.sentry.dsn DSN endpoint
@@ -1686,12 +1799,16 @@ postgresql:
 
 ## Bitnami Hashicorp Vault chart configuration
 ## ref: https://github.com/bitnami/charts/blob/main/bitnami/vault/values.yaml
-## @param vault.server.args Arguments to pass to the vault server. This is useful for setting the server in development mode
-## @param vault.server.config Configuration for the vault server. Small override of default Bitnami configuration
-## @param vault.server.extraEnvVars[0].name Root token for the vault server
-## @param vault.server.extraEnvVars[0].value The value of the root token. Default: notasecret
-## @param vault.server.extraEnvVars[1].name Address to listen on development mode
-## @param vault.server.extraEnvVars[1].value The address to listen on. Default: [::]:8200
+## @skip vault.extraDeploy Array of extra objects to deploy with Vault (evaluated as a template)
+## @param vault.server.command Override default container command
+## @param vault.server.args Override default container args
+## @skip vault.server.config Configuration for the vault server
+## @param vault.server.extraVolumes[0].name Name of the extra volume
+## @param vault.server.extraVolumes[0].configMap.name Name of the ConfigMap to mount
+## @param vault.server.extraVolumes[0].configMap.defaultMode Default mode for the ConfigMap files
+## @param vault.server.extraVolumeMounts[0].name Name of the volume to mount
+## @param vault.server.extraVolumeMounts[0].mountPath Path where the volume should be mounted
+## @param vault.server.extraVolumeMounts[0].subPath Subpath within the volume to mount
 vault:
   extraDeploy:
     - |
@@ -1784,3 +1901,36 @@ vault:
       - name: vault-init
         mountPath: /vault-init.sh
         subPath: vault-init.sh
+
+## Dex chart configuration
+## @param dex.dex.redirectURL Control Plane URL where Dex will redirect after a successful login
+## @extra dex.dex.ingress Configuration for the Dex ingress record
+## @param dex.dex.ingress.enabled Enable ingress record generation for Dex
+## @param dex.dex.ingress.tls Enable TLS for the Dex ingress record
+## @param dex.dex.ingress.hostname Hostname for the Dex ingress record
+## @param dex.dex.ingress.ingressClassName IngressClass that will be be used to implement the Dex Ingress (Kubernetes 1.18+)
+## @param dex.dex.httpRoute.enabled Enable HTTPRoute generation for controlplane
+## @param dex.dex.httpRoute.hostnames List of hostnames to match for this route WARNING: Please use only one domain
+## @param dex.dex.httpRoute.parentRefs Gateways the HTTPRoute is attached to. If unspecified, it'll be attached to Gateway named 'gateway' in the same namespace.
+
+## Used only if .Values.development is true
+## Yes, dex.dex, since we are overriding the dex section in the dex subchart
+dex:
+  dex:
+    # Point to the [controlplane http ingress]/auth/callback
+    redirectURL: http(s)://[controlplane http ingress]/auth/callback
+    httpRoute:
+      enabled: false
+      tls: false
+      hostnames:
+        - dex.[domain]
+      parentRefs: []
+      #    - name: your-gateway
+      #      sectionName: http
+      #      namespace: your-namespace
+    # Expose the dex instance to the outside world
+    ingress:
+      enabled: false
+      tls: false
+      hostname: ""
+      ingressClassName: ""
