@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,6 +54,18 @@ func TestParse(t *testing.T) {
 				ID:        "https://chainloop.gitlab.com",
 				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
 			},
+		},
+		{
+			name:  "federated github token",
+			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Rva2VuLmFjdGlvbnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiY2hhaW5sb29wIiwicmVwb3NpdG9yeSI6Im1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3QiLCJzdWIiOiJyZXBvOm1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3Q6cmVmOnJlZnMvaGVhZHMvbWFpbiJ9.signature",
+			want: &ParsedToken{
+				ID:        "https://token.actions.githubusercontent.com",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+			},
+		},
+		{
+			name:  "federated token without issuer",
+			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJjaGFpbmxvb3AifQ.signature",
 		},
 		{
 			name:  "old api token (without orgID)",
@@ -199,6 +211,41 @@ func TestIsGitLabFederatedToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := isGitLabFederatedToken(tt.claims)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestIsGitHubFederatedToken(t *testing.T) {
+	tests := []struct {
+		name   string
+		claims jwt.MapClaims
+		want   bool
+	}{
+		{
+			name: "github issuer",
+			claims: jwt.MapClaims{
+				"iss": "https://token.actions.githubusercontent.com",
+			},
+			want: true,
+		},
+		{
+			name: "different issuer",
+			claims: jwt.MapClaims{
+				"iss": "https://gitlab.com",
+			},
+			want: false,
+		},
+		{
+			name:   "missing issuer",
+			claims: jwt.MapClaims{},
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isGitHubFederatedToken(tt.claims)
 			assert.Equal(t, tt.want, got)
 		})
 	}

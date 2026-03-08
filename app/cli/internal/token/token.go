@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ const (
 	//nolint:gosec
 	apiTokenAudience       = "api-token-auth.chainloop"
 	federatedTokenAudience = "chainloop"
+	githubFederatedIssuer  = "https://token.actions.githubusercontent.com"
 )
 
 // Parse the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
@@ -111,13 +112,26 @@ func Parse(token string) (*ParsedToken, error) {
 			pToken.ID = userID
 		}
 	case federatedTokenAudience:
-		if isGitLabFederatedToken(claims) {
+		// Federated tokens require a known provider format.
+		switch {
+		case isGitLabFederatedToken(claims):
 			pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_FEDERATED
-			if issuer, ok := claims["iss"].(string); ok {
-				pToken.ID = issuer
-			}
+		case isGitHubFederatedToken(claims):
+			pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_FEDERATED
+		default:
+			return nil, nil
+		}
+
+		if issuer, ok := claims["iss"].(string); ok {
+			pToken.ID = issuer
 		}
 	default:
+		return nil, nil
+	}
+
+	// Avoid returning partially filled tokens that would create invalid auth metadata
+	// in crafting state (e.g. type=UNSPECIFIED or empty ID).
+	if pToken.TokenType == v1.Attestation_Auth_AUTH_TYPE_UNSPECIFIED || pToken.ID == "" {
 		return nil, nil
 	}
 
@@ -171,4 +185,15 @@ func isGitLabFederatedToken(claims jwt.MapClaims) bool {
 	}
 
 	return found >= requiredClaims
+}
+
+// TODO: Evaluate adding claim-structure validation for GitHub tokens, similar to
+// the GitLab heuristic above, once we stabilize the expected claim set.
+func isGitHubFederatedToken(claims jwt.MapClaims) bool {
+	iss, ok := claims["iss"].(string)
+	if !ok {
+		return false
+	}
+
+	return iss == githubFederatedIssuer
 }
