@@ -27,6 +27,7 @@ import (
 )
 
 type GitlabPipeline struct {
+	*Generic
 	gitlabToken *oidc.GitlabToken
 	logger      *zerolog.Logger
 }
@@ -37,12 +38,14 @@ func NewGitlabPipeline(ctx context.Context, authToken string, logger *zerolog.Lo
 	if err != nil {
 		logger.Debug().Err(err).Msgf("failed to create Gitlab OIDC client: %v", err)
 		return &GitlabPipeline{
+			Generic:     NewGeneric(),
 			gitlabToken: nil,
 			logger:      logger,
 		}
 	}
 
 	return &GitlabPipeline{
+		Generic:     NewGeneric(),
 		gitlabToken: client.Token,
 		logger:      logger,
 	}
@@ -103,6 +106,13 @@ func (r *GitlabPipeline) WorkflowFilePath() string {
 
 func (r *GitlabPipeline) IsAuthenticated() bool {
 	return r.gitlabToken != nil
+}
+
+func (r *GitlabPipeline) FederatedToken() string {
+	if r.gitlabToken == nil {
+		return ""
+	}
+	return r.gitlabToken.RawToken
 }
 
 func (r *GitlabPipeline) Environment() RunnerEnvironment {

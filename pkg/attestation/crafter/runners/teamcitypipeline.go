@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,14 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
-type TeamCityPipeline struct{}
+type TeamCityPipeline struct {
+	*Generic
+}
 
 func NewTeamCityPipeline() *TeamCityPipeline {
-	return &TeamCityPipeline{}
+	return &TeamCityPipeline{
+		Generic: NewGeneric(),
+	}
 }
 
 func (r *TeamCityPipeline) ID() schemaapi.CraftingSchema_Runner_RunnerType {

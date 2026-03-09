@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,8 @@ func newAttestationAddCmd() *cobra.Command {
 		Use:   "add",
 		Short: "add a material to the attestation",
 		Annotations: map[string]string{
-			useAPIToken: "true",
+			useAPIToken:                     "true",
+			supportsFederatedAuthAnnotation: "true",
 		},
 		Example: `  # Add a material to the attestation that is defined in the contract
   chainloop attestation add --name <material-name> --value <material-value>

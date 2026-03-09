@@ -43,6 +43,9 @@ type GitlabToken struct {
 
 	// RunnerEnvironment is the environment the runner is running in.
 	RunnerEnvironment string `json:"runner_environment"`
+
+	// RawToken is the raw JWT token string used for federated authentication.
+	RawToken string `json:"-"`
 }
 
 type GitlabOIDCClient struct {
@@ -86,7 +89,8 @@ func parseToken(ctx context.Context, providerURL string, tokenString string) (*G
 	}
 
 	token := &GitlabToken{
-		IDToken: *idToken,
+		IDToken:  *idToken,
+		RawToken: tokenString,
 	}
 
 	// Verify the audience

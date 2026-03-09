@@ -42,8 +42,9 @@ func newAttestationInitCmd() *cobra.Command {
 		Use:   "init",
 		Short: "start attestation crafting process",
 		Annotations: map[string]string{
-			useAPIToken:          trueString,
-			confirmWhenUserToken: trueString,
+			useAPIToken:                     trueString,
+			supportsFederatedAuthAnnotation: trueString,
+			confirmWhenUserToken:            trueString,
 		},
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if workflowName == "" {

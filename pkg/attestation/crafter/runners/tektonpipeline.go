@@ -60,6 +60,7 @@ type podMetadata struct {
 //   - Tier 1: HOSTNAME env var and SA namespace file (always available in K8s pods)
 //   - Tier 2: K8s API pod labels for rich tekton.dev/* metadata (best-effort)
 type TektonPipeline struct {
+	*Generic
 	logger     *zerolog.Logger
 	podName    string            // from HOSTNAME env var
 	namespace  string            // from /var/run/secrets/kubernetes.io/serviceaccount/namespace
@@ -113,6 +114,7 @@ func NewTektonPipeline(ctx context.Context, logger *zerolog.Logger, opts ...Tekt
 	}
 
 	r := &TektonPipeline{
+		Generic:         NewGeneric(),
 		logger:          logger,
 		labels:          make(map[string]string),
 		saTokenPath:     defaultSATokenPath,

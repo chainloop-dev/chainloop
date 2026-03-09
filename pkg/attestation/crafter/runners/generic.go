@@ -69,3 +69,7 @@ func (r *Generic) VerifyCommitSignature(_ context.Context, _ string) *commitveri
 func (r *Generic) Report(_ []byte, _ string) error {
 	return nil
 }
+
+func (r *Generic) FederatedToken() string {
+	return ""
+}

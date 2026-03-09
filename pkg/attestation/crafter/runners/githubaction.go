@@ -28,6 +28,7 @@ import (
 )
 
 type GitHubAction struct {
+	*Generic
 	githubToken *oidc.Token
 	logger      *zerolog.Logger
 }
@@ -38,10 +39,11 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 	// be done we fallback to reading the env vars directly.
 	actorPersonal := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_ACTOR"))
 	actorOrganization := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_REPOSITORY_OWNER"))
-	client, err := oidc.NewGitHubClient(logger, oidc.WithActor(actorPersonal), oidc.WithActor(actorOrganization))
+	client, err := oidc.NewGitHubClient(logger, oidc.WithActor(actorPersonal), oidc.WithActor(actorOrganization), oidc.WithAudience([]string{oidc.ExpectedAudience}))
 	if err != nil {
 		logger.Debug().Err(err).Msg("failed creating GitHub OIDC client")
 		return &GitHubAction{
+			Generic:     NewGeneric(),
 			githubToken: nil,
 			logger:      logger,
 		}
@@ -51,6 +53,7 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 	if err != nil {
 		logger.Debug().Err(err).Msg("failed to get github token")
 		return &GitHubAction{
+			Generic:     NewGeneric(),
 			githubToken: nil,
 			logger:      logger,
 		}
@@ -60,12 +63,14 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 	if !ok {
 		logger.Debug().Err(err).Msg("failed casting to OIDC token")
 		return &GitHubAction{
+			Generic:     NewGeneric(),
 			githubToken: nil,
 			logger:      logger,
 		}
 	}
 
 	return &GitHubAction{
+		Generic:     NewGeneric(),
 		githubToken: ghToken,
 		logger:      logger,
 	}
@@ -194,4 +199,11 @@ func (r *GitHubAction) Report(tableOutput []byte, attestationViewURL string) err
 	}
 
 	return nil
+}
+
+func (r *GitHubAction) FederatedToken() string {
+	if r.githubToken == nil {
+		return ""
+	}
+	return r.githubToken.RawToken
 }

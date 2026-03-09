@@ -63,6 +63,8 @@ type SupportedRunner interface {
 	// attestationViewURL is an optional URL to view the attestation details.
 	// Returns nil if platform doesn't support reporting.
 	Report(tableOutput []byte, attestationViewURL string) error
+
+	FederatedToken() string
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner

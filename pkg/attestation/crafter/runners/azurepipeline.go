@@ -25,10 +25,14 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
-type AzurePipeline struct{}
+type AzurePipeline struct {
+	*Generic
+}
 
 func NewAzurePipeline() *AzurePipeline {
-	return &AzurePipeline{}
+	return &AzurePipeline{
+		NewGeneric(),
+	}
 }
 
 func (r *AzurePipeline) ID() schemaapi.CraftingSchema_Runner_RunnerType {
