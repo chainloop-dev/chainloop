@@ -38,7 +38,21 @@ import (
 const (
 	PolicyViolationBlockingStrategyEnforced = "ENFORCED"
 	PolicyViolationBlockingStrategyAdvisory = "ADVISORY"
+
+	// defaultAttestationStateFile is the default file name for local attestation state.
+	defaultAttestationStateFile = "chainloop-attestation.tmp.json"
 )
+
+// AttestationStatePath returns the resolved path for local attestation state.
+// If customPath is non-empty it is returned as-is; otherwise the default
+// temp-dir location is used.
+func AttestationStatePath(customPath string) string {
+	if customPath != "" {
+		return customPath
+	}
+
+	return filepath.Join(os.TempDir(), defaultAttestationStateFile)
+}
 
 type ActionsOpts struct {
 	CPConnection *grpc.ClientConn
@@ -83,10 +97,7 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 	case true:
 		stateManager, err = remote.New(pb.NewAttestationStateServiceClient(conn), c.Logger)
 	case false:
-		attestationStatePath := filepath.Join(os.TempDir(), "chainloop-attestation.tmp.json")
-		if path := stateOpts.localStatePath; path != "" {
-			attestationStatePath = path
-		}
+		attestationStatePath := AttestationStatePath(stateOpts.localStatePath)
 
 		c.Logger.Debug().Str("path", fmt.Sprintf("file:%s", attestationStatePath)).Msg("using local state")
 		stateManager, err = filesystem.New(attestationStatePath)

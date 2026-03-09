@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,66 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 )
+
+func TestOrgFromLocalState(t *testing.T) {
+	t.Run("returns org from valid state file", func(t *testing.T) {
+		state := &crafter.VersionedCraftingState{
+			CraftingState: &v1.CraftingState{
+				Attestation: &v1.Attestation{
+					Workflow: &v1.WorkflowMetadata{
+						Organization: "my-org",
+					},
+				},
+			},
+		}
+
+		raw, err := protojson.Marshal(state)
+		require.NoError(t, err)
+
+		statePath := filepath.Join(t.TempDir(), "state.json")
+		require.NoError(t, os.WriteFile(statePath, raw, 0o600))
+
+		assert.Equal(t, "my-org", orgFromLocalState(statePath))
+	})
+
+	t.Run("returns empty for missing file", func(t *testing.T) {
+		assert.Empty(t, orgFromLocalState(filepath.Join(t.TempDir(), "nonexistent.json")))
+	})
+
+	t.Run("returns empty for invalid json", func(t *testing.T) {
+		statePath := filepath.Join(t.TempDir(), "bad.json")
+		require.NoError(t, os.WriteFile(statePath, []byte("not json"), 0o600))
+		assert.Empty(t, orgFromLocalState(statePath))
+	})
+
+	t.Run("returns empty when org not set in state", func(t *testing.T) {
+		state := &crafter.VersionedCraftingState{
+			CraftingState: &v1.CraftingState{
+				Attestation: &v1.Attestation{
+					Workflow: &v1.WorkflowMetadata{},
+				},
+			},
+		}
+
+		raw, err := protojson.Marshal(state)
+		require.NoError(t, err)
+
+		statePath := filepath.Join(t.TempDir(), "state.json")
+		require.NoError(t, os.WriteFile(statePath, raw, 0o600))
+
+		assert.Empty(t, orgFromLocalState(statePath))
+	})
+}
 
 func TestExtractAnnotations(t *testing.T) {
 	testCases := []struct {

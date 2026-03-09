@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,15 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var (
@@ -38,6 +44,16 @@ func newAttestationCmd() *cobra.Command {
 		Short:   "Craft Software Supply Chain Attestations",
 		Example: "Refer to https://docs.chainloop.dev/getting-started/attestation-crafting",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// For non-init attestation subcommands using local state, load the org
+			// from the crafting state so the gRPC connection uses the correct org header.
+			// This handles the case where `init --org X` was used but subsequent commands
+			// would otherwise fall back to the default org from the config file.
+			if orgFlag := cmd.Root().PersistentFlags().Lookup(confOptions.organization.flagName); cmd.Name() != "init" && !useAttestationRemoteState && (orgFlag == nil || !orgFlag.Changed) {
+				if org := orgFromLocalState(attestationLocalStatePath); org != "" {
+					viper.Set(confOptions.organization.viperKey, org)
+				}
+			}
+
 			// run the initialization of the root command plus the new logic
 			// specific to this attestation command
 			rootCmd := cmd.Parent().Parent()
@@ -70,6 +86,22 @@ func newAttestationCmd() *cobra.Command {
 
 func flagAttestationID(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&attestationID, "attestation-id", "", "Unique identifier of the in-progress attestation")
+}
+
+// orgFromLocalState reads the organization from the local attestation state file.
+// Returns empty string on any error (file not found, parse error, etc.).
+func orgFromLocalState(customPath string) string {
+	raw, err := os.ReadFile(action.AttestationStatePath(customPath))
+	if err != nil {
+		return ""
+	}
+
+	state := &crafter.VersionedCraftingState{CraftingState: &v1.CraftingState{}}
+	if err := protojson.Unmarshal(raw, state); err != nil {
+		return ""
+	}
+
+	return state.GetAttestation().GetWorkflow().GetOrganization()
 }
 
 // extractAnnotations extracts the annotations from the flag and returns a map
