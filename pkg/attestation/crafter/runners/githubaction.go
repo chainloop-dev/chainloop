@@ -201,6 +201,9 @@ func (r *GitHubAction) Report(tableOutput []byte, attestationViewURL string) err
 	return nil
 }
 
-func (r *GitHubAction) FederatedToken() *oidc.Token {
-	return r.githubToken
+func (r *GitHubAction) FederatedToken() string {
+	if r.githubToken == nil {
+		return ""
+	}
+	return r.githubToken.RawToken
 }

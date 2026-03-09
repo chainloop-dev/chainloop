@@ -108,6 +108,13 @@ func (r *GitlabPipeline) IsAuthenticated() bool {
 	return r.gitlabToken != nil
 }
 
+func (r *GitlabPipeline) FederatedToken() string {
+	if r.gitlabToken == nil {
+		return ""
+	}
+	return r.gitlabToken.RawToken
+}
+
 func (r *GitlabPipeline) Environment() RunnerEnvironment {
 	if r.gitlabToken != nil {
 		switch r.gitlabToken.RunnerEnvironment {

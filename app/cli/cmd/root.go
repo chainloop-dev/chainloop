@@ -124,9 +124,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			// If the auth token is not set and the command supports federated auth, we try to discover the runner and use the federated token for the runner if available
 			if authToken == "" && cmdSupportsFederatedAuth(cmd) {
 				r := crafter.DiscoverRunner(authToken, logger)
-				if r.IsAuthenticated() && r.FederatedToken() != nil {
+				if r.IsAuthenticated() && r.FederatedToken() != "" {
 					logger.Debug().Str("runner", r.ID().String()).Msg("using federated auth token")
-					authToken = r.FederatedToken().RawToken
+					authToken = r.FederatedToken()
 				}
 			}
 
