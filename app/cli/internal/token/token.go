@@ -38,6 +38,20 @@ const (
 	federatedTokenAudience = "chainloop"
 )
 
+func chooseAudience(audiences []string) string {
+	// Priority matters for mixed-audience tokens: user/api token identity
+	// should win over generic federated audience.
+	for _, candidate := range []string{apiTokenAudience, userAudience, federatedTokenAudience} {
+		for _, aud := range audiences {
+			if aud == candidate {
+				return candidate
+			}
+		}
+	}
+
+	return ""
+}
+
 // Parse the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
 // 1. User account token
 // 2. API token
@@ -65,20 +79,28 @@ func Parse(token string) (*ParsedToken, error) {
 		return nil, nil
 	}
 
-	// Supports both string and array formats per JWT RFC 7519
-	// Takes first array element when multiple audiences exist
-	var audience string
+	// Supports both string and array formats per JWT RFC 7519.
+	// For multi-audience tokens, prefer the most specific Chainloop auth audience
+	// instead of taking the first element (order can vary by issuer/runtime).
+	var audiences []string
 	switch aud := claims["aud"].(type) {
 	case string:
-		audience = aud
+		audiences = []string{aud}
 	case []interface{}:
-		if len(aud) > 0 {
-			audience, _ = aud[0].(string)
+		for _, a := range aud {
+			if s, ok := a.(string); ok && s != "" {
+				audiences = append(audiences, s)
+			}
 		}
 	default:
 		return nil, nil
 	}
 
+	if len(audiences) == 0 {
+		return nil, nil
+	}
+
+	audience := chooseAudience(audiences)
 	if audience == "" {
 		return nil, nil
 	}
