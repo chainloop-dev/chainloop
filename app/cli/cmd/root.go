@@ -127,6 +127,8 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				if r.IsAuthenticated() && r.FederatedToken() != "" {
 					logger.Debug().Str("runner", r.ID().String()).Msg("using federated auth token")
 					authToken = r.FederatedToken()
+					// reset isUserToken to false because we are using a federated token and we don't want to ask for confirmation
+					isUserToken = false
 				}
 			}
 
@@ -168,7 +170,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
-			if shouldAskForConfirmation(cmd) && isUserToken && !flagYes {
+			if shouldAskForConfirmation(cmd) && authToken != "" && isUserToken && !flagYes {
 				logger.Warn().Msg("User-attended mode detected. This is intended for local testing only. For CI/CD or automated workflows, please use an API token.")
 				if !confirmationPrompt(fmt.Sprintf("This command will run against the organization %q", orgName)) {
 					return errors.New("command canceled by user")
