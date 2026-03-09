@@ -39,7 +39,7 @@ func NewGithubAction(ctx context.Context, logger *zerolog.Logger) *GitHubAction 
 	// be done we fallback to reading the env vars directly.
 	actorPersonal := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_ACTOR"))
 	actorOrganization := fmt.Sprintf("https://github.com/%s", os.Getenv("GITHUB_REPOSITORY_OWNER"))
-	client, err := oidc.NewGitHubClient(logger, oidc.WithActor(actorPersonal), oidc.WithActor(actorOrganization), oidc.WithAudience([]string{"chainloop"}))
+	client, err := oidc.NewGitHubClient(logger, oidc.WithActor(actorPersonal), oidc.WithActor(actorOrganization), oidc.WithAudience([]string{oidc.ExpectedAudience}))
 	if err != nil {
 		logger.Debug().Err(err).Msg("failed creating GitHub OIDC client")
 		return &GitHubAction{
