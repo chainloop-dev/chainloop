@@ -62,7 +62,8 @@ func newAttestationPushCmd() *cobra.Command {
   # Or alternatively
   chainloop attestation push --annotation key=value,key2=value2`,
 		Annotations: map[string]string{
-			useAPIToken: "true",
+			useAPIToken:                     "true",
+			supportsFederatedAuthAnnotation: "true",
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			info, err := executableInfo()

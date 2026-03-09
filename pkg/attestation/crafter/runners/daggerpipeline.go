@@ -20,19 +20,20 @@ import (
 	"os"
 	"strings"
 
-
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/rs/zerolog"
 )
 
 type DaggerPipeline struct {
+	*Generic
 	logger *zerolog.Logger
 }
 
 func NewDaggerPipeline(_ string, logger *zerolog.Logger) *DaggerPipeline {
 	return &DaggerPipeline{
-		logger: logger,
+		Generic: NewGeneric(),
+		logger:  logger,
 	}
 }
 

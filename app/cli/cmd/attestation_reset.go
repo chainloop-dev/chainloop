@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,8 @@ func newAttestationResetCmd() *cobra.Command {
 		Use:   "reset",
 		Short: "mark current attestation process as canceled or failed",
 		Annotations: map[string]string{
-			useAPIToken: "true",
+			useAPIToken:                     "true",
+			supportsFederatedAuthAnnotation: "true",
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if trigger != triggerFailed && trigger != triggerCanceled {

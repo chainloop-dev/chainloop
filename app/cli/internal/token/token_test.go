@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@ package token
 
 import (
 	"testing"
-
-	"github.com/golang-jwt/jwt/v4"
 
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
@@ -56,6 +54,18 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			name:  "federated github token",
+			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Rva2VuLmFjdGlvbnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiY2hhaW5sb29wIiwicmVwb3NpdG9yeSI6Im1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3QiLCJzdWIiOiJyZXBvOm1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3Q6cmVmOnJlZnMvaGVhZHMvbWFpbiJ9.signature",
+			want: &ParsedToken{
+				ID:        "https://token.actions.githubusercontent.com",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+			},
+		},
+		{
+			name:  "federated token without issuer",
+			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJjaGFpbmxvb3AifQ.signature",
+		},
+		{
 			name:  "old api token (without orgID)",
 			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsiYXBpLXRva2VuLWF1dGguY2hhaW5sb29wIl0sImp0aSI6ImQ0ZTBlZTVlLTk3MTMtNDFkMi05ZmVhLTBiZGIxNDAzMzA4MSJ9.IOd3JIHPwfo9ihU20kvRwLIQJcQtTvp-ajlGqlCD4Es",
 			want: &ParsedToken{
@@ -80,126 +90,6 @@ func TestParse(t *testing.T) {
 			assert.Equal(t, tt.want.ID, got.ID)
 			assert.Equal(t, tt.want.TokenType, got.TokenType)
 			assert.Equal(t, tt.want.OrgID, got.OrgID)
-		})
-	}
-}
-
-func TestIsGitLabFederatedToken(t *testing.T) {
-	tests := []struct {
-		name   string
-		claims jwt.MapClaims
-		want   bool
-	}{
-		{
-			name:   "empty claims",
-			claims: jwt.MapClaims{},
-			want:   false,
-		},
-		{
-			name: "exactly 10 gitlab",
-			claims: jwt.MapClaims{
-				"namespace_id":   "4243",
-				"namespace_path": "chainloop",
-				"project_id":     "4242",
-				"project_path":   "chainloop/project",
-				"user_id":        "123",
-				"user_login":     "gitlab-ci-token",
-				"user_email":     "ci@gitlab.com",
-				"pipeline_id":    "101",
-				"job_id":         "202",
-				"ref":            "main",
-			},
-			want: true,
-		},
-		{
-			name: "9 gitlab claims",
-			claims: jwt.MapClaims{
-				"namespace_id":   "4243",
-				"namespace_path": "chainloop",
-				"project_id":     "4242",
-				"project_path":   "chainloop/project",
-				"user_id":        "123",
-				"user_login":     "gitlab-ci-token",
-				"pipeline_id":    "101",
-				"job_id":         "202",
-				"ref":            "main",
-			},
-			want: false,
-		},
-		{
-			name: "all gitlab claims",
-			claims: jwt.MapClaims{
-				"namespace_id":          "4243",
-				"namespace_path":        "chainloop",
-				"project_id":            "4242",
-				"project_path":          "chainloop/project",
-				"user_id":               "123",
-				"user_login":            "gitlab-ci-token",
-				"user_email":            "ci@gitlab.com",
-				"user_access_level":     "developer",
-				"pipeline_id":           "101",
-				"pipeline_source":       "push",
-				"job_id":                "202",
-				"ref":                   "main",
-				"ref_type":              "branch",
-				"ref_protected":         true,
-				"groups_direct":         []string{"group1"},
-				"environment":           "production",
-				"environment_protected": true,
-				"deployment_tier":       "production",
-				"deployment_action":     "deploy",
-				"runner_id":             "runner-1",
-				"runner_environment":    "production",
-				"sha":                   "abc123",
-				"ci_config_ref_uri":     "https://gitlab.com",
-				"ci_config_sha":         "config-abc123",
-				"project_visibility":    "public",
-			},
-			want: true,
-		},
-		{
-			name: "10 gitlab claims mixed with non-gitlab claims",
-			claims: jwt.MapClaims{
-				"namespace_id":   "4243",
-				"namespace_path": "chainloop",
-				"project_id":     "4242",
-				"project_path":   "chainloop/project",
-				"user_id":        "123",
-				"user_login":     "gitlab-ci-token",
-				"user_email":     "ci@gitlab.com",
-				"pipeline_id":    "101",
-				"job_id":         "202",
-				"ref":            "main",
-				"custom_claim_1": "value1",
-				"custom_claim_2": "value2",
-				"custom_claim_3": "value3",
-			},
-			want: true,
-		},
-		{
-			name: "9 gitlab claims mixed with non-gitlab claims",
-			claims: jwt.MapClaims{
-				"namespace_id":   "4243",
-				"namespace_path": "chainloop",
-				"project_id":     "4242",
-				"project_path":   "chainloop/project",
-				"user_id":        "123",
-				"user_login":     "gitlab-ci-token",
-				"pipeline_id":    "101",
-				"job_id":         "202",
-				"ref":            "main",
-				"custom_claim_1": "value1",
-				"custom_claim_2": "value2",
-				"custom_claim_3": "value3",
-			},
-			want: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isGitLabFederatedToken(tt.claims)
-			assert.Equal(t, tt.want, got)
 		})
 	}
 }

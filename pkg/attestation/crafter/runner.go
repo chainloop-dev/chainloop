@@ -24,6 +24,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 	"github.com/rs/zerolog"
 )
 
@@ -63,6 +64,8 @@ type SupportedRunner interface {
 	// attestationViewURL is an optional URL to view the attestation details.
 	// Returns nil if platform doesn't support reporting.
 	Report(tableOutput []byte, attestationViewURL string) error
+
+	FederatedToken() *oidc.Token
 }
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner

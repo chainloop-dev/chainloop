@@ -20,6 +20,7 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/oidc"
 )
 
 type Generic struct{}
@@ -67,5 +68,9 @@ func (r *Generic) VerifyCommitSignature(_ context.Context, _ string) *commitveri
 }
 
 func (r *Generic) Report(_ []byte, _ string) error {
+	return nil
+}
+
+func (r *Generic) FederatedToken() *oidc.Token {
 	return nil
 }

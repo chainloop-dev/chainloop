@@ -23,10 +23,14 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
-type CircleCIBuild struct{}
+type CircleCIBuild struct {
+	*Generic
+}
 
 func NewCircleCIBuild() *CircleCIBuild {
-	return &CircleCIBuild{}
+	return &CircleCIBuild{
+		Generic: NewGeneric(),
+	}
 }
 
 func (r *CircleCIBuild) ID() schemaapi.CraftingSchema_Runner_RunnerType {
