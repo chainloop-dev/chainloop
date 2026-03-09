@@ -46,7 +46,7 @@ jobs:
           CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
 
   test:
-    uses: chainloop-dev/chainloop/.github/workflows/test.yml@main
+    uses: chainloop-dev/chainloop/.github/workflows/test.yml@d427768c0b07d50b485df0bcae87eb8ae8769e04
 
   release:
     name: Release CLI and control-plane/artifact-cas container images
