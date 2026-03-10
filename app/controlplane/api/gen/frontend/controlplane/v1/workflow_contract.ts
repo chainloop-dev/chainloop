@@ -73,6 +73,12 @@ export interface WorkflowContractServiceApplyRequest {
 
 export interface WorkflowContractServiceApplyResponse {
   result?: WorkflowContractItem;
+  /**
+   * Deprecated: use changed instead
+   *
+   * @deprecated
+   */
+  unchanged: boolean;
   /** Whether the resource was changed */
   changed: boolean;
 }
@@ -992,13 +998,16 @@ export const WorkflowContractServiceApplyRequest = {
 };
 
 function createBaseWorkflowContractServiceApplyResponse(): WorkflowContractServiceApplyResponse {
-  return { result: undefined, changed: false };
+  return { result: undefined, unchanged: false, changed: false };
 }
 
 export const WorkflowContractServiceApplyResponse = {
   encode(message: WorkflowContractServiceApplyResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.result !== undefined) {
       WorkflowContractItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.unchanged === true) {
+      writer.uint32(16).bool(message.unchanged);
     }
     if (message.changed === true) {
       writer.uint32(24).bool(message.changed);
@@ -1020,6 +1029,13 @@ export const WorkflowContractServiceApplyResponse = {
 
           message.result = WorkflowContractItem.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.unchanged = reader.bool();
+          continue;
         case 3:
           if (tag !== 24) {
             break;
@@ -1039,6 +1055,7 @@ export const WorkflowContractServiceApplyResponse = {
   fromJSON(object: any): WorkflowContractServiceApplyResponse {
     return {
       result: isSet(object.result) ? WorkflowContractItem.fromJSON(object.result) : undefined,
+      unchanged: isSet(object.unchanged) ? Boolean(object.unchanged) : false,
       changed: isSet(object.changed) ? Boolean(object.changed) : false,
     };
   },
@@ -1047,6 +1064,7 @@ export const WorkflowContractServiceApplyResponse = {
     const obj: any = {};
     message.result !== undefined &&
       (obj.result = message.result ? WorkflowContractItem.toJSON(message.result) : undefined);
+    message.unchanged !== undefined && (obj.unchanged = message.unchanged);
     message.changed !== undefined && (obj.changed = message.changed);
     return obj;
   },
@@ -1064,6 +1082,7 @@ export const WorkflowContractServiceApplyResponse = {
     message.result = (object.result !== undefined && object.result !== null)
       ? WorkflowContractItem.fromPartial(object.result)
       : undefined;
+    message.unchanged = object.unchanged ?? false;
     message.changed = object.changed ?? false;
     return message;
   },

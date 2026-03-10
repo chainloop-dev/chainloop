@@ -560,6 +560,10 @@ func (x *WorkflowContractServiceApplyRequest) GetRawSchema() []byte {
 type WorkflowContractServiceApplyResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Result *WorkflowContractItem  `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	// Deprecated: use changed instead
+	//
+	// Deprecated: Marked as deprecated in controlplane/v1/workflow_contract.proto.
+	Unchanged bool `protobuf:"varint,2,opt,name=unchanged,proto3" json:"unchanged,omitempty"`
 	// Whether the resource was changed
 	Changed       bool `protobuf:"varint,3,opt,name=changed,proto3" json:"changed,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -601,6 +605,14 @@ func (x *WorkflowContractServiceApplyResponse) GetResult() *WorkflowContractItem
 		return x.Result
 	}
 	return nil
+}
+
+// Deprecated: Marked as deprecated in controlplane/v1/workflow_contract.proto.
+func (x *WorkflowContractServiceApplyResponse) GetUnchanged() bool {
+	if x != nil {
+		return x.Unchanged
+	}
+	return false
 }
 
 func (x *WorkflowContractServiceApplyResponse) GetChanged() bool {
@@ -757,10 +769,11 @@ const file_controlplane_v1_workflow_contract_proto_rawDesc = "" +
 	"%WorkflowContractServiceDeleteResponse\"D\n" +
 	"#WorkflowContractServiceApplyRequest\x12\x1d\n" +
 	"\n" +
-	"raw_schema\x18\x01 \x01(\fR\trawSchema\"\x85\x01\n" +
+	"raw_schema\x18\x01 \x01(\fR\trawSchema\"\xa1\x01\n" +
 	"$WorkflowContractServiceApplyResponse\x12=\n" +
-	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12\x18\n" +
-	"\achanged\x18\x03 \x01(\bR\achangedJ\x04\b\x02\x10\x032\xec\x05\n" +
+	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12 \n" +
+	"\tunchanged\x18\x02 \x01(\bB\x02\x18\x01R\tunchanged\x12\x18\n" +
+	"\achanged\x18\x03 \x01(\bR\achanged2\xec\x05\n" +
 	"\x17WorkflowContractService\x12q\n" +
 	"\x04List\x123.controlplane.v1.WorkflowContractServiceListRequest\x1a4.controlplane.v1.WorkflowContractServiceListResponse\x12w\n" +
 	"\x06Create\x125.controlplane.v1.WorkflowContractServiceCreateRequest\x1a6.controlplane.v1.WorkflowContractServiceCreateResponse\x12w\n" +

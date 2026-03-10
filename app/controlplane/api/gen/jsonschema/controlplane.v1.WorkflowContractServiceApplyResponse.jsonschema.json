@@ -9,6 +9,10 @@
     },
     "result": {
       "$ref": "controlplane.v1.WorkflowContractItem.jsonschema.json"
+    },
+    "unchanged": {
+      "description": "Deprecated: use changed instead",
+      "type": "boolean"
     }
   },
   "title": "Workflow Contract Service Apply Response",
