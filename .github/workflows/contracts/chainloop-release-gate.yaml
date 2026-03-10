@@ -1,0 +1,18 @@
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: chainloop-release-gate
+  description: Gates a release if chainloop is not compliant
+spec:
+  policies:
+    attestation:
+      - ref: source-commit
+        with:
+          check_signature: true
+          check_author_verified: true
+      - ref: check-compliance-requirement
+        with:
+          requirement_name: no-vulnerabilities-high,sbom-compliance
+        gate: true
+  runner:
+    type: GITHUB_ACTION

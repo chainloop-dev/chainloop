@@ -10,39 +10,47 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    uses: chainloop-dev/chainloop/.github/workflows/test.yml@main
-
-  init_attestation:
+  release_gate:
+    name: Release Gate
     runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
     permissions:
-      id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
-    needs: test
-    if: github.ref_type == 'tag' # Guard to make sure we are releasing once
-    outputs:
-      attestation_id: ${{ steps.init_attestation.outputs.attestation_id }}
+      id-token: write # required for SLSA provenance
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
       - name: Install Chainloop
         run: |
-          # Need the ee CLI to have access to project management capabilities
           curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
 
-      - name: Initialize Attestation
-        id: init_attestation
+      - name: Run Release Gate Attestation
         run: |
-          attestation_id=$(chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME} --release --remote-state -o json | jq -r .attestationID)
-          echo "attestation_id=$attestation_id" >> $GITHUB_OUTPUT
+          chainloop attestation init --workflow release-gate --project chainloop
+          chainloop attestation push
         env:
           CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-          CHAINLOOP_WORKFLOW_NAME: "release"
-          CHAINLOOP_PROJECT_NAME: "chainloop"
-          # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        run: |
+          chainloop attestation reset
+        env:
+          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        run: |
+          chainloop attestation reset --trigger cancellation
+        env:
+          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
+
+  test:
+    uses: chainloop-dev/chainloop/.github/workflows/test.yml@d427768c0b07d50b485df0bcae87eb8ae8769e04
 
   release:
     name: Release CLI and control-plane/artifact-cas container images
-    needs: init_attestation
+    needs: [release_gate, test]
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag' # Guard to make sure we are releasing once
     permissions:
@@ -53,11 +61,7 @@ jobs:
       attestations: write # required for SLSA provenance
     env:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-      ATTESTATION_ID: ${{ needs.init_attestation.outputs.attestation_id }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    outputs:
-      attestation_hash: ${{ steps.attest_goreleaser.outputs.attestation_hash }}
-      current_version: ${{ steps.project_version.outputs.current_version }}
 
     steps:
       - name: Install Cosign
@@ -67,10 +71,22 @@ jobs:
 
       - name: Install Chainloop
         run: |
+          # Need the ee CLI to have access to project management capabilities
           curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Initialize Attestation
+        id: init_attestation
+        run: |
+          attestation_id=$(chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME} --release --remote-state -o json | jq -r .attestationID)
+          echo "attestation_id=$attestation_id" >> $GITHUB_OUTPUT
+        env:
+          CHAINLOOP_WORKFLOW_NAME: "release"
+          CHAINLOOP_PROJECT_NAME: "chainloop"
+          # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker login to Github Packages
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
@@ -112,6 +128,7 @@ jobs:
         id: attest_goreleaser
         env:
           SYFT_GOLANG_SEARCH_REMOTE_LICENSES: "true"
+          ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
         run: |
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
@@ -166,6 +183,8 @@ jobs:
           done
 
       - name: Include source code on attestation
+        env:
+          ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
         run: |
           # This needs to run AFTER goreleaser to make sure the source code is available
 
@@ -197,27 +216,14 @@ jobs:
             automated
             helm
 
-  finish_attestation:
-    name: Finish Attestation
-    runs-on: ubuntu-latest
-    needs:
-      - init_attestation
-      - release
-    env:
-      CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
-    outputs:
-      attestation_hash: ${{ steps.attestation_push.outputs.attestation_sha }}
-    steps:
-      - name: Install Chainloop
-        run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
-
       - name: Finish and Record Attestation
         id: attestation_push
         if: ${{ success() }}
+        env:
+          ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
         run: |
-          chainloop attestation push --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
-          attestation_sha=$(chainloop wf run describe --id ${{ needs.init_attestation.outputs.attestation_id }} -o json | jq -r '.attestation.digest')
+          chainloop attestation push --attestation-id ${{ env.ATTESTATION_ID }}
+          attestation_sha=$(chainloop wf run describe --id ${{ env.ATTESTATION_ID }} -o json | jq -r '.attestation.digest')
           # check that the command succeeded
           if [ -n "$attestation_sha" ]; then
             echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
@@ -228,38 +234,17 @@ jobs:
       - name: Promote Chainloop Project Version
         if: ${{ success() }}
         env:
-          CURRENT_VERSION: ${{ needs.release.outputs.current_version }}
+          CURRENT_VERSION: ${{ steps.project_version.outputs.current_version }}
           TARGET_VERSION: ${{ github.ref_name }}
         run: |
           echo "current_version=$CURRENT_VERSION"
           echo "target_version=$TARGET_VERSION"
           chainloop project version update --project chainloop --name "$CURRENT_VERSION" --new-name "$TARGET_VERSION" || true
 
-      - name: Mark attestation as failed
-        if: ${{ failure() }}
-        run: |
-          chainloop attestation reset --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
-
-      - name: Mark attestation as cancelled
-        if: ${{ cancelled() }}
-        run: |
-          chainloop attestation reset --trigger cancellation --attestation-id ${{ needs.init_attestation.outputs.attestation_id }}
-
-  modify_release_notes:
-    if: ${{ success() }}
-    needs: finish_attestation
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: write
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
       - name: Add attestation link to release notes
         if: ${{ success() }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ATTESTATION_SHA: ${{ needs.finish_attestation.outputs.attestation_hash }}
+          ATTESTATION_SHA: ${{ steps.attestation_push.outputs.attestation_sha }}
         run: |
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ env.ATTESTATION_SHA }})"
           current_notes=$(gh release view ${{github.ref_name}} --json body -q '.body')
@@ -274,3 +259,17 @@ jobs:
 
           # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
           gh release edit ${{github.ref_name}} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
+
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        env:
+          ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
+        run: |
+          chainloop attestation reset --attestation-id ${{ env.ATTESTATION_ID }}
+
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        env:
+          ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
+        run: |
+          chainloop attestation reset --trigger cancellation --attestation-id ${{ env.ATTESTATION_ID }}
