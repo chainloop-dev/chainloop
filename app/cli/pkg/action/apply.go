@@ -36,9 +36,9 @@ const (
 
 // ApplyResult holds the outcome of a successfully applied resource document
 type ApplyResult struct {
-	Kind      string
-	Name      string
-	Unchanged bool
+	Kind    string
+	Name    string
+	Changed bool
 }
 
 // YAMLDoc holds a parsed YAML document with its kind and raw bytes
@@ -70,11 +70,11 @@ func (a *Apply) Run(ctx context.Context, path string) ([]*ApplyResult, error) {
 	for _, doc := range docs {
 		switch doc.Kind {
 		case KindContract:
-			unchanged, err := ApplyContractFromRawData(ctx, a.cfg.CPConnection, doc.RawData)
+			changed, err := ApplyContractFromRawData(ctx, a.cfg.CPConnection, doc.RawData)
 			if err != nil {
 				return results, fmt.Errorf("%s/%s: %w", doc.Kind, doc.Name, err)
 			}
-			results = append(results, &ApplyResult{Kind: doc.Kind, Name: doc.Name, Unchanged: unchanged})
+			results = append(results, &ApplyResult{Kind: doc.Kind, Name: doc.Name, Changed: changed})
 		default:
 			return results, fmt.Errorf("unsupported kind %q", doc.Kind)
 		}
@@ -124,7 +124,7 @@ func ApplyContractFromRawData(ctx context.Context, conn *grpc.ClientConn, rawDat
 		return false, fmt.Errorf("failed to apply contract: %w", err)
 	}
 
-	return resp.GetUnchanged(), nil
+	return resp.GetChanged(), nil
 }
 
 // CollectYAMLFiles returns YAML file paths from the given path.

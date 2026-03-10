@@ -276,8 +276,8 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		}
 
 		return &pb.WorkflowContractServiceApplyResponse{
-			Result:    bizWorkFlowContractToPb(schemaWithVersion.Contract),
-			Unchanged: schemaWithVersion.Unchanged,
+			Result:  bizWorkFlowContractToPb(schemaWithVersion.Contract),
+			Changed: schemaWithVersion.Changed,
 		}, nil
 	}
 

@@ -123,6 +123,6 @@ message WorkflowContractServiceApplyRequest {
 
 message WorkflowContractServiceApplyResponse {
   WorkflowContractItem result = 1;
-  // Whether the resource was unchanged
-  bool unchanged = 2;
+  // Whether the resource was changed
+  bool changed = 2;
 }

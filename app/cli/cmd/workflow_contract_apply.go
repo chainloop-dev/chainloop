@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,14 +48,14 @@ or update it if it already exists.`,
 				desc = &description
 			}
 
-			res, unchanged, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), contractName, contractPath, desc, projectName)
+			res, changed, err := action.NewWorkflowContractApply(ActionOpts).Run(cmd.Context(), contractName, contractPath, desc, projectName)
 			if err != nil {
 				return err
 			}
 
-			status := "applied"
-			if unchanged {
-				status = "unchanged"
+			status := "unchanged"
+			if changed {
+				status = "applied"
 			}
 			logger.Info().Msgf("Contract/%s %s", contractName, status)
 			return output.EncodeOutput(flagOutputFormat, res, contractItemTableOutput)

@@ -3,12 +3,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "changed": {
+      "description": "Whether the resource was changed",
+      "type": "boolean"
+    },
     "result": {
       "$ref": "controlplane.v1.WorkflowContractItem.jsonschema.json"
-    },
-    "unchanged": {
-      "description": "Whether the resource was unchanged",
-      "type": "boolean"
     }
   },
   "title": "Workflow Contract Service Apply Response",

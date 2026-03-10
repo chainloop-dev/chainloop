@@ -560,8 +560,8 @@ func (x *WorkflowContractServiceApplyRequest) GetRawSchema() []byte {
 type WorkflowContractServiceApplyResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Result *WorkflowContractItem  `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
-	// Whether the resource was unchanged
-	Unchanged     bool `protobuf:"varint,2,opt,name=unchanged,proto3" json:"unchanged,omitempty"`
+	// Whether the resource was changed
+	Changed       bool `protobuf:"varint,2,opt,name=changed,proto3" json:"changed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -603,9 +603,9 @@ func (x *WorkflowContractServiceApplyResponse) GetResult() *WorkflowContractItem
 	return nil
 }
 
-func (x *WorkflowContractServiceApplyResponse) GetUnchanged() bool {
+func (x *WorkflowContractServiceApplyResponse) GetChanged() bool {
 	if x != nil {
-		return x.Unchanged
+		return x.Changed
 	}
 	return false
 }
@@ -757,10 +757,10 @@ const file_controlplane_v1_workflow_contract_proto_rawDesc = "" +
 	"%WorkflowContractServiceDeleteResponse\"D\n" +
 	"#WorkflowContractServiceApplyRequest\x12\x1d\n" +
 	"\n" +
-	"raw_schema\x18\x01 \x01(\fR\trawSchema\"\x83\x01\n" +
+	"raw_schema\x18\x01 \x01(\fR\trawSchema\"\x7f\n" +
 	"$WorkflowContractServiceApplyResponse\x12=\n" +
-	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12\x1c\n" +
-	"\tunchanged\x18\x02 \x01(\bR\tunchanged2\xec\x05\n" +
+	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12\x18\n" +
+	"\achanged\x18\x02 \x01(\bR\achanged2\xec\x05\n" +
 	"\x17WorkflowContractService\x12q\n" +
 	"\x04List\x123.controlplane.v1.WorkflowContractServiceListRequest\x1a4.controlplane.v1.WorkflowContractServiceListResponse\x12w\n" +
 	"\x06Create\x125.controlplane.v1.WorkflowContractServiceCreateRequest\x1a6.controlplane.v1.WorkflowContractServiceCreateResponse\x12w\n" +

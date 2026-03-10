@@ -90,9 +90,9 @@ func (c *Contract) isV1Schema() bool {
 }
 
 type WorkflowContractWithVersion struct {
-	Contract  *WorkflowContract
-	Version   *WorkflowContractVersion
-	Unchanged bool
+	Contract *WorkflowContract
+	Version  *WorkflowContractVersion
+	Changed  bool
 }
 
 type WorkflowContractRepo interface {
@@ -426,15 +426,15 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	}
 
 	// Check if the revisions have changed
-	unchanged := wfContractPreUpdate.LatestRevision == c.Version.Revision
-	if !unchanged {
+	changed := wfContractPreUpdate.LatestRevision != c.Version.Revision
+	if changed {
 		eventPayload.NewRevision = &c.Version.Revision
 		eventPayload.NewRevisionID = &c.Version.ID
 	}
 
 	uc.auditorUC.Dispatch(ctx, eventPayload, &orgUUID)
 
-	c.Unchanged = unchanged
+	c.Changed = changed
 
 	return c, nil
 }

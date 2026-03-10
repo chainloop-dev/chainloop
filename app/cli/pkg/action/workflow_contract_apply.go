@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,9 +64,9 @@ func (action *WorkflowContractApply) Run(ctx context.Context, contractName strin
 			return nil, false, fmt.Errorf("failed to update existing contract '%s': %w", contractName, err)
 		}
 
-		unchanged := prevRevision == res.Result.GetRevision().GetRevision()
+		changed := prevRevision != res.Result.GetRevision().GetRevision()
 
-		return pbWorkflowContractItemToAction(res.Result.Contract), unchanged, nil
+		return pbWorkflowContractItemToAction(res.Result.Contract), changed, nil
 	}
 
 	// Contract doesn't exist, perform create

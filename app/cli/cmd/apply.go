@@ -40,9 +40,9 @@ Supports multi-document YAML files. Each document must have a 'kind' field.`,
 			}
 
 			for _, r := range results {
-				status := "applied"
-				if r.Unchanged {
-					status = "unchanged"
+				status := "unchanged"
+				if r.Changed {
+					status = "applied"
 				}
 				logger.Info().Msgf("%s/%s %s", r.Kind, r.Name, status)
 			}
