@@ -87,5 +87,5 @@ func (action *WorkflowContractApply) Run(ctx context.Context, contractName strin
 		return nil, false, fmt.Errorf("failed to create new contract '%s': %w", contractName, err)
 	}
 
-	return pbWorkflowContractItemToAction(res.Result), false, nil
+	return pbWorkflowContractItemToAction(res.Result), true, nil
 }

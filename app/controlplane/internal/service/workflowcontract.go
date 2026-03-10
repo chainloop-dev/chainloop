@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -304,7 +304,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return &pb.WorkflowContractServiceApplyResponse{Result: bizWorkFlowContractToPb(schema)}, nil
+	return &pb.WorkflowContractServiceApplyResponse{Result: bizWorkFlowContractToPb(schema), Changed: true}, nil
 }
 
 func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowContractServiceDeleteRequest) (*pb.WorkflowContractServiceDeleteResponse, error) {
