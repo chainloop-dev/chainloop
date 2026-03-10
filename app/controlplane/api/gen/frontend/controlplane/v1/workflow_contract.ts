@@ -73,8 +73,14 @@ export interface WorkflowContractServiceApplyRequest {
 
 export interface WorkflowContractServiceApplyResponse {
   result?: WorkflowContractItem;
-  /** Whether the resource was unchanged */
+  /**
+   * Deprecated: use changed instead
+   *
+   * @deprecated
+   */
   unchanged: boolean;
+  /** Whether the resource was changed */
+  changed: boolean;
 }
 
 function createBaseWorkflowContractServiceListRequest(): WorkflowContractServiceListRequest {
@@ -992,7 +998,7 @@ export const WorkflowContractServiceApplyRequest = {
 };
 
 function createBaseWorkflowContractServiceApplyResponse(): WorkflowContractServiceApplyResponse {
-  return { result: undefined, unchanged: false };
+  return { result: undefined, unchanged: false, changed: false };
 }
 
 export const WorkflowContractServiceApplyResponse = {
@@ -1002,6 +1008,9 @@ export const WorkflowContractServiceApplyResponse = {
     }
     if (message.unchanged === true) {
       writer.uint32(16).bool(message.unchanged);
+    }
+    if (message.changed === true) {
+      writer.uint32(24).bool(message.changed);
     }
     return writer;
   },
@@ -1027,6 +1036,13 @@ export const WorkflowContractServiceApplyResponse = {
 
           message.unchanged = reader.bool();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.changed = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1040,6 +1056,7 @@ export const WorkflowContractServiceApplyResponse = {
     return {
       result: isSet(object.result) ? WorkflowContractItem.fromJSON(object.result) : undefined,
       unchanged: isSet(object.unchanged) ? Boolean(object.unchanged) : false,
+      changed: isSet(object.changed) ? Boolean(object.changed) : false,
     };
   },
 
@@ -1048,6 +1065,7 @@ export const WorkflowContractServiceApplyResponse = {
     message.result !== undefined &&
       (obj.result = message.result ? WorkflowContractItem.toJSON(message.result) : undefined);
     message.unchanged !== undefined && (obj.unchanged = message.unchanged);
+    message.changed !== undefined && (obj.changed = message.changed);
     return obj;
   },
 
@@ -1065,6 +1083,7 @@ export const WorkflowContractServiceApplyResponse = {
       ? WorkflowContractItem.fromPartial(object.result)
       : undefined;
     message.unchanged = object.unchanged ?? false;
+    message.changed = object.changed ?? false;
     return message;
   },
 };
