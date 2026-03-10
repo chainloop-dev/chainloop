@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -173,6 +173,7 @@ func (c *GitHubOIDCClient) Token(ctx context.Context) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decoding token: %w", err)
 	}
+	token.RawToken = tokenPayload
 
 	if err := c.verifyClaims(token); err != nil {
 		return nil, fmt.Errorf("error verifying claims: %w", err)
