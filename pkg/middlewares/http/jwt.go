@@ -84,6 +84,10 @@ func AuthFromAuthorizationHeader(keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, sig
 func verifyAndMarshalJWT(token string, keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, signingMethod jwt.SigningMethod) (*jwt.Claims, error) {
 	var tokenInfo *jwt.Token
 
+	if token == "" {
+		return nil, jwtMiddleware.ErrTokenInvalid
+	}
+
 	tokenInfo, err := jwt.ParseWithClaims(token, claimsFunc(), keyFunc)
 	if err != nil {
 		var ve *jwt.ValidationError
