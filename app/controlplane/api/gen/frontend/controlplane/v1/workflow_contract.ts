@@ -1001,7 +1001,7 @@ export const WorkflowContractServiceApplyResponse = {
       WorkflowContractItem.encode(message.result, writer.uint32(10).fork()).ldelim();
     }
     if (message.changed === true) {
-      writer.uint32(16).bool(message.changed);
+      writer.uint32(24).bool(message.changed);
     }
     return writer;
   },
@@ -1020,8 +1020,8 @@ export const WorkflowContractServiceApplyResponse = {
 
           message.result = WorkflowContractItem.decode(reader, reader.uint32());
           continue;
-        case 2:
-          if (tag !== 16) {
+        case 3:
+          if (tag !== 24) {
             break;
           }
 
