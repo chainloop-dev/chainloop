@@ -183,7 +183,8 @@ OIDC settings, will fallback to development settings if needed
 {{- define "controlplane.oidc_settings" -}}
   {{- if .Values.development }}
     {{- with .Values.controlplane.auth }}
-    {{- $dexContext := dict "Values" $.Values.dex "Chart" $.Chart "Release" $.Release "Capabilities" $.Capabilities "Template" $.Template }}
+    {{- $dexChart := dict "Name" "dex" }}
+    {{- $dexContext := dict "Values" $.Values.dex "Chart" $dexChart "Release" $.Release "Capabilities" $.Capabilities "Template" $.Template }}
     domain: "{{ coalesce .oidc.url (include "chainloop.dex.external_url" $dexContext ) }}"
     client_id: "{{ coalesce .oidc.clientID "chainloop-dev" }}"
     client_secret: "{{ coalesce .oidc.clientSecret "ZXhhbXBsZS1hcHAtc2VjcmV0" }}"
