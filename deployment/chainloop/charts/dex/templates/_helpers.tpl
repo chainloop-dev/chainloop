@@ -49,7 +49,7 @@ Figure out the external URL for Dex service
 {{- else if (and (eq $service.type "NodePort") $service.nodePorts (not (empty $service.nodePorts.http))) }}
 {{- printf "http://localhost:%s" $service.nodePorts.http }}
 {{- else -}}
-{{- printf "http://%s-dex:%d/dex" ( include "chainloop.dex.fullname" . ) ( int $service.ports.http ) }}
+{{- printf "http://%s:%d/dex" ( include "chainloop.dex.fullname" . ) ( int $service.ports.http ) }}
 {{- end -}}
 {{- end -}}
 
