@@ -95,6 +95,8 @@ type AttestationInitRunOpts struct {
 	RequireExistingVersion       bool
 	WorkflowName                 string
 	NewWorkflowContractRef       string
+	// Collectors is a list of additional collector names to enable (e.g. "aiconfig")
+	Collectors []string
 }
 
 func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
@@ -301,10 +303,17 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	// Register and run auto-discovery collectors
-	action.c.RegisterCollectors(
-		crafter.NewPRMetadataCollector(discoveredRunner),
-		crafter.NewAIAgentConfigCollector(),
-	)
+	// PR metadata is always collected; other collectors are opt-in via --collectors flag
+	collectors := []crafter.Collector{crafter.NewPRMetadataCollector(discoveredRunner)}
+	for _, name := range opts.Collectors {
+		switch name {
+		case "aiconfig":
+			collectors = append(collectors, crafter.NewAIAgentConfigCollector())
+		default:
+			action.Logger.Warn().Str("collector", name).Msg("unknown collector, skipping")
+		}
+	}
+	action.c.RegisterCollectors(collectors...)
 	action.c.RunCollectors(ctx, attestationID, casBackend)
 
 	// Evaluate attestation-level policies at init phase

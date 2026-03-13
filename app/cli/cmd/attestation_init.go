@@ -36,6 +36,7 @@ func newAttestationInitCmd() *cobra.Command {
 		projectVersionRelease bool
 		existingVersion       bool
 		newWorkflowcontract   string
+		collectors            []string
 	)
 
 	cmd := &cobra.Command{
@@ -105,6 +106,7 @@ func newAttestationInitCmd() *cobra.Command {
 						NewWorkflowContractRef:       newWorkflowcontract,
 						ProjectVersionMarkAsReleased: projectVersionRelease,
 						RequireExistingVersion:       existingVersion,
+						Collectors:                   collectors,
 					})
 
 					return err
@@ -164,6 +166,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
 	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
 	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "return an error if the version doesn't exist in the project")
+	cmd.Flags().StringSliceVar(&collectors, "collectors", nil, "comma-separated list of additional collectors to enable (e.g. aiconfig)")
 
 	return cmd
 }
