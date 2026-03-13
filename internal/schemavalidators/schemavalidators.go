@@ -95,7 +95,7 @@ var (
 
 	// AI Agent Config schemas
 	//go:embed internal_schemas/aiagentconfig/ai-agent-config-0.1.schema.json
-	aiAgentConfigSpecVersion1_0 string
+	aiAgentConfigSpecVersion0_1 string
 )
 
 // schemaURLMapping maps the schema URL to the schema content. This is used to compile the schema validators
@@ -115,7 +115,7 @@ var schemaURLMapping = map[string]string{
 	"https://www.first.org/cvss/cvss-v4.0.json":                                   cvssSpecVersion4_0,
 	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json":       runnerContextSpecVersion0_1,
 	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":                prInfoSpecVersion1_0,
-	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json": aiAgentConfigSpecVersion1_0,
+	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json": aiAgentConfigSpecVersion0_1,
 }
 
 var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
