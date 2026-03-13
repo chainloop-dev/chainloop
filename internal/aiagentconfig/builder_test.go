@@ -150,6 +150,24 @@ func TestBuildRejectsSymlinkedParentDir(t *testing.T) {
 	assert.Contains(t, err.Error(), "path escapes root directory via symlink")
 }
 
+func TestBuildEmptyFileList(t *testing.T) {
+	rootDir := t.TempDir()
+
+	data, err := Build(rootDir, []string{}, nil)
+	require.NoError(t, err)
+	assert.Empty(t, data.ConfigFiles)
+	assert.NotEmpty(t, data.ConfigHash)
+	assert.NotEmpty(t, data.CapturedAt)
+}
+
+func TestBuildNilFileList(t *testing.T) {
+	rootDir := t.TempDir()
+
+	data, err := Build(rootDir, nil, nil)
+	require.NoError(t, err)
+	assert.Empty(t, data.ConfigFiles)
+}
+
 func TestBuildAllowsRegularFilesInRoot(t *testing.T) {
 	rootDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
