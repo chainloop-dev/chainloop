@@ -57,6 +57,8 @@ type AttestationInit struct {
 	connectionInsecure bool
 }
 
+const aiConfigCollectorName = "aiconfig"
+
 // ErrAttestationAlreadyExist means that there is an attestation in progress
 var ErrAttestationAlreadyExist = errors.New("attestation already initialized")
 
@@ -307,7 +309,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	collectors := []crafter.Collector{crafter.NewPRMetadataCollector(discoveredRunner)}
 	for _, name := range opts.Collectors {
 		switch name {
-		case "aiconfig":
+		case aiConfigCollectorName:
 			collectors = append(collectors, crafter.NewAIAgentConfigCollector())
 		default:
 			action.Logger.Warn().Str("collector", name).Msg("unknown collector, skipping")
