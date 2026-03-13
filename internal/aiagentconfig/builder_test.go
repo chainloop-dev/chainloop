@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBuildEvidence(t *testing.T) {
+func TestBuild(t *testing.T) {
 	rootDir := t.TempDir()
 
 	// Create test files
@@ -47,35 +47,30 @@ func TestBuildEvidence(t *testing.T) {
 		CommitSHA:  "abc123",
 	}
 
-	evidence, err := BuildEvidence(rootDir, []string{"CLAUDE.md", ".claude/settings.json"}, gitCtx)
+	data, err := Build(rootDir, []string{"CLAUDE.md", ".claude/settings.json"}, gitCtx)
 	require.NoError(t, err)
 
-	// Verify envelope
-	assert.Equal(t, EvidenceID, evidence.ID)
-	assert.Equal(t, EvidenceSchemaURL, evidence.Schema)
-
-	// Verify data
-	assert.Equal(t, "v1alpha", evidence.Data.SchemaVersion)
-	assert.Equal(t, "claude", evidence.Data.Agent.Name)
-	assert.NotEmpty(t, evidence.Data.CapturedAt)
-	assert.NotEmpty(t, evidence.Data.ConfigHash)
+	assert.Equal(t, "v1alpha", data.SchemaVersion)
+	assert.Equal(t, "claude", data.Agent.Name)
+	assert.NotEmpty(t, data.CapturedAt)
+	assert.NotEmpty(t, data.ConfigHash)
 
 	// Verify git context
-	require.NotNil(t, evidence.Data.GitContext)
-	assert.Equal(t, "https://github.com/org/repo", evidence.Data.GitContext.Repository)
-	assert.Equal(t, "abc123", evidence.Data.GitContext.CommitSHA)
+	require.NotNil(t, data.GitContext)
+	assert.Equal(t, "https://github.com/org/repo", data.GitContext.Repository)
+	assert.Equal(t, "abc123", data.GitContext.CommitSHA)
 
 	// Verify config files
-	require.Len(t, evidence.Data.ConfigFiles, 2)
+	require.Len(t, data.ConfigFiles, 2)
 
-	cf1 := evidence.Data.ConfigFiles[0]
+	cf1 := data.ConfigFiles[0]
 	assert.Equal(t, "CLAUDE.md", cf1.Path)
 	assert.Equal(t, int64(len(file1Content)), cf1.Size)
 	hash1 := sha256.Sum256(file1Content)
 	assert.Equal(t, hex.EncodeToString(hash1[:]), cf1.SHA256)
 	assert.Equal(t, base64.StdEncoding.EncodeToString(file1Content), cf1.Base64Content)
 
-	cf2 := evidence.Data.ConfigFiles[1]
+	cf2 := data.ConfigFiles[1]
 	assert.Equal(t, ".claude/settings.json", cf2.Path)
 	hash2 := sha256.Sum256(file2Content)
 	assert.Equal(t, hex.EncodeToString(hash2[:]), cf2.SHA256)
@@ -87,40 +82,45 @@ func TestBuildEvidence(t *testing.T) {
 	}
 	sort.Strings(hashes)
 	combined := sha256.Sum256([]byte(strings.Join(hashes, "")))
-	assert.Equal(t, hex.EncodeToString(combined[:]), evidence.Data.ConfigHash)
+	assert.Equal(t, hex.EncodeToString(combined[:]), data.ConfigHash)
 }
 
-func TestBuildEvidenceWithoutGitContext(t *testing.T) {
+func TestBuildWithoutGitContext(t *testing.T) {
 	rootDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
 
-	evidence, err := BuildEvidence(rootDir, []string{"CLAUDE.md"}, nil)
+	data, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
 	require.NoError(t, err)
 
-	assert.Nil(t, evidence.Data.GitContext)
-	assert.Len(t, evidence.Data.ConfigFiles, 1)
+	assert.Nil(t, data.GitContext)
+	assert.Len(t, data.ConfigFiles, 1)
 }
 
-func TestBuildEvidenceJSONFormat(t *testing.T) {
+func TestBuildJSONFormat(t *testing.T) {
 	rootDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
 
-	evidence, err := BuildEvidence(rootDir, []string{"CLAUDE.md"}, nil)
+	data, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
 	require.NoError(t, err)
 
-	// Verify it marshals to valid JSON with the correct envelope field
-	jsonData, err := json.Marshal(evidence)
+	// Verify it marshals to valid JSON with top-level fields (no envelope)
+	jsonData, err := json.Marshal(data)
 	require.NoError(t, err)
 
 	var raw map[string]any
 	require.NoError(t, json.Unmarshal(jsonData, &raw))
 
-	assert.Equal(t, EvidenceID, raw["chainloop.material.evidence.id"])
-	assert.Equal(t, EvidenceSchemaURL, raw["schema"])
-	assert.NotNil(t, raw["data"])
+	assert.NotNil(t, raw["schema_version"])
+	assert.NotNil(t, raw["agent"])
+	assert.NotNil(t, raw["config_hash"])
+	assert.NotNil(t, raw["captured_at"])
+	assert.NotNil(t, raw["config_files"])
+	// Ensure no envelope fields
+	assert.Nil(t, raw["chainloop.material.evidence.id"])
+	assert.Nil(t, raw["data"])
 }
 
-func TestBuildEvidenceRejectsSymlinksEscapingRoot(t *testing.T) {
+func TestBuildRejectsSymlinksEscapingRoot(t *testing.T) {
 	rootDir := t.TempDir()
 	outsideDir := t.TempDir()
 
@@ -128,12 +128,12 @@ func TestBuildEvidenceRejectsSymlinksEscapingRoot(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "secret.txt"), []byte("secret"), 0o600))
 	require.NoError(t, os.Symlink(filepath.Join(outsideDir, "secret.txt"), filepath.Join(rootDir, "CLAUDE.md")))
 
-	_, err := BuildEvidence(rootDir, []string{"CLAUDE.md"}, nil)
+	_, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "path escapes root directory via symlink")
 }
 
-func TestBuildEvidenceRejectsSymlinkedParentDir(t *testing.T) {
+func TestBuildRejectsSymlinkedParentDir(t *testing.T) {
 	rootDir := t.TempDir()
 	outsideDir := t.TempDir()
 
@@ -145,16 +145,16 @@ func TestBuildEvidenceRejectsSymlinkedParentDir(t *testing.T) {
 	// Symlink .claude -> outside directory
 	require.NoError(t, os.Symlink(outsideClaude, filepath.Join(rootDir, ".claude")))
 
-	_, err := BuildEvidence(rootDir, []string{".claude/settings.json"}, nil)
+	_, err := Build(rootDir, []string{".claude/settings.json"}, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "path escapes root directory via symlink")
 }
 
-func TestBuildEvidenceAllowsRegularFilesInRoot(t *testing.T) {
+func TestBuildAllowsRegularFilesInRoot(t *testing.T) {
 	rootDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
 
-	evidence, err := BuildEvidence(rootDir, []string{"CLAUDE.md"}, nil)
+	data, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
 	require.NoError(t, err)
-	assert.Len(t, evidence.Data.ConfigFiles, 1)
+	assert.Len(t, data.ConfigFiles, 1)
 }

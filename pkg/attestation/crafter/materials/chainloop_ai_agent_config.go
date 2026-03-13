@@ -22,7 +22,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/internal/aiagentconfig"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -54,20 +53,10 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
-	var v aiagentconfig.Evidence
-	if err := json.Unmarshal(f, &v); err != nil {
+	var rawData any
+	if err := json.Unmarshal(f, &rawData); err != nil {
 		c.logger.Debug().Err(err).Msg("error decoding file")
 		return nil, fmt.Errorf("invalid JSON format: %w", err)
-	}
-
-	dataBytes, err := json.Marshal(v.Data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal data for validation: %w", err)
-	}
-
-	var rawData any
-	if err := json.Unmarshal(dataBytes, &rawData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal data for validation: %w", err)
 	}
 
 	if err := schemavalidators.ValidateAIAgentConfig(rawData, schemavalidators.AIAgentConfigVersion0_1); err != nil {

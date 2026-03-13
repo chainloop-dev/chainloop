@@ -27,10 +27,10 @@ import (
 	"time"
 )
 
-// BuildEvidence reads discovered files and constructs the evidence payload.
+// Build reads discovered files and constructs the AI agent config payload.
 // rootDir is the base directory, filePaths are relative to rootDir.
 // gitCtx may be nil if not in a git repository.
-func BuildEvidence(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, error) {
+func Build(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, error) {
 	// Resolve rootDir to its real path so symlink comparisons are reliable
 	realRoot, err := filepath.EvalSymlinks(rootDir)
 	if err != nil {
@@ -76,7 +76,7 @@ func BuildEvidence(rootDir string, filePaths []string, gitCtx *GitContext) (*Evi
 		})
 	}
 
-	data := Data{
+	data := Evidence{
 		SchemaVersion: "v1alpha",
 		Agent:         Agent{Name: "claude"},
 		ConfigHash:    computeCombinedHash(hashes),
@@ -85,7 +85,7 @@ func BuildEvidence(rootDir string, filePaths []string, gitCtx *GitContext) (*Evi
 		ConfigFiles:   configFiles,
 	}
 
-	return NewEvidence(data), nil
+	return &data, nil
 }
 
 // computeCombinedHash sorts individual hashes, concatenates them, and hashes the result.

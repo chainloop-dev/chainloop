@@ -59,9 +59,9 @@ func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attes
 		}
 	}
 
-	evidence, err := aiagentconfig.BuildEvidence(cr.WorkingDir(), files, gitCtx)
+	evidence, err := aiagentconfig.Build(cr.WorkingDir(), files, gitCtx)
 	if err != nil {
-		return fmt.Errorf("building AI agent config evidence: %w", err)
+		return fmt.Errorf("building AI agent config: %w", err)
 	}
 
 	jsonData, err := json.Marshal(evidence)

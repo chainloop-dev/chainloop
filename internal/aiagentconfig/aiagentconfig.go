@@ -15,13 +15,6 @@
 
 package aiagentconfig
 
-const (
-	// EvidenceID is the identifier for the AI agent config evidence
-	EvidenceID = "CHAINLOOP_AI_AGENT_CONFIG"
-	// EvidenceSchemaURL is the URL to the JSON schema for AI agent config
-	EvidenceSchemaURL = "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json"
-)
-
 // Agent identifies the AI agent provider
 type Agent struct {
 	Name    string `json:"name"`
@@ -43,8 +36,8 @@ type ConfigFile struct {
 	Base64Content string `json:"base64_content"`
 }
 
-// Data is the payload inside the evidence envelope
-type Data struct {
+// Evidence is the AI agent configuration payload
+type Evidence struct {
 	SchemaVersion string       `json:"schema_version"`
 	Agent         Agent        `json:"agent"`
 	ConfigHash    string       `json:"config_hash"`
@@ -55,20 +48,4 @@ type Data struct {
 	Permissions any `json:"permissions,omitempty"`
 	MCPServers  any `json:"mcp_servers,omitempty"`
 	Subagents   any `json:"subagents,omitempty"`
-}
-
-// Evidence is the full envelope matching the custom evidence format
-type Evidence struct {
-	ID     string `json:"chainloop.material.evidence.id"`
-	Schema string `json:"schema"`
-	Data   Data   `json:"data"`
-}
-
-// NewEvidence creates a new Evidence instance with the standard envelope
-func NewEvidence(data Data) *Evidence {
-	return &Evidence{
-		ID:     EvidenceID,
-		Schema: EvidenceSchemaURL,
-		Data:   data,
-	}
 }
