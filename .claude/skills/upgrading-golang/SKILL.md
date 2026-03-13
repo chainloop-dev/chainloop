@@ -51,27 +51,18 @@ With:
 FROM golang:X.XX.X@sha256:NEW_DIGEST AS builder
 ```
 
-### 5. Update GitHub Actions
-
-Update `go-version` in all workflow YAML files. See [files-to-update.md](files-to-update.md) for the complete list.
-
-Pattern to replace:
-```yaml
-go-version: "X.XX.X"
-```
-
-### 6. Update Documentation
+### 5. Update Documentation
 
 Update the version reference in `./CLAUDE.md` under "Key Technologies":
 ```markdown
 - **Language**: Go X.XX.X. To know how to upgrade go version, see docs/runbooks
 ```
 
-### 7. Update Atlas Docker Image and CLI (Optional)
+### 6. Update Atlas Docker Image and CLI (Optional)
 
 If the user requested an Atlas upgrade:
 
-**7a. Pull the Atlas Docker image and extract its SHA256 digest:**
+**6a. Pull the Atlas Docker image and extract its SHA256 digest:**
 
 ```bash
 docker pull arigaio/atlas:X.XX.X
@@ -79,7 +70,7 @@ docker pull arigaio/atlas:X.XX.X
 
 Extract the SHA256 digest from the output (format: `sha256:abc123...`).
 
-**7b. Update `./app/controlplane/Dockerfile.migrations`:**
+**6b. Update `./app/controlplane/Dockerfile.migrations`:**
 
 Pattern to replace:
 ```dockerfile
@@ -119,7 +110,7 @@ With the new version (note: use `v` prefix for the version):
 curl -sSf https://atlasgo.sh | ATLAS_VERSION=vX.XX.X sh -s -- -y
 ```
 
-### 8. Verify Changes
+### 7. Verify Changes
 
 Run verification commands:
 ```bash
@@ -129,7 +120,7 @@ make lint
 
 If errors occur, address them before completing the upgrade.
 
-### 9. Final Checks
+### 8. Final Checks
 
 - Ensure all license headers are updated (2024 → 2024-2025 or add current year)
 - Run `buf format -w` if any proto files were affected
