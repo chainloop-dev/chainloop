@@ -25,6 +25,12 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
+)
+
+const (
+	claudeProvider = "claude"
 )
 
 // Build reads discovered files and constructs the AI agent config payload.
@@ -77,8 +83,8 @@ func Build(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, e
 	}
 
 	data := Evidence{
-		SchemaVersion: "v1alpha",
-		Agent:         Agent{Name: "claude"},
+		SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
+		Agent:         Agent{Name: claudeProvider},
 		ConfigHash:    computeCombinedHash(hashes),
 		CapturedAt:    time.Now().UTC().Format(time.RFC3339),
 		GitContext:    gitCtx,
