@@ -300,11 +300,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		return "", err
 	}
 
-	// Auto-collect PR/MR metadata if in PR/MR context
-	if err := action.c.AutoCollectPRMetadata(ctx, attestationID, discoveredRunner, casBackend); err != nil {
-		action.Logger.Warn().Err(err).Msg("failed to auto-collect PR/MR metadata")
-		// Don't fail the init - this is best-effort
-	}
+	// Register and run auto-discovery collectors
+	action.c.RegisterCollectors(
+		crafter.NewPRMetadataCollector(discoveredRunner),
+		crafter.NewAIAgentConfigCollector(),
+	)
+	action.c.RunCollectors(ctx, attestationID, casBackend)
 
 	// Evaluate attestation-level policies at init phase
 	attClient := pb.NewAttestationServiceClient(action.CPConnection)
