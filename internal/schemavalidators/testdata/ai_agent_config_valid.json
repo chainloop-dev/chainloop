@@ -14,9 +14,9 @@
   "config_files": [
     {
       "path": "CLAUDE.md",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size": 42,
-      "base64_content": "IyBQcm9qZWN0IFJ1bGVz"
+      "sha256": "4c3b798d41eb62a633e0954b2cbdd4b388ca0b83f84a89cc7936cf8575d7349e",
+      "size": 15,
+      "content": "IyBQcm9qZWN0IFJ1bGVz"
     }
   ]
 }

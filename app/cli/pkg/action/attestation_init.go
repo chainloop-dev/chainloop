@@ -59,6 +59,9 @@ type AttestationInit struct {
 
 const aiConfigCollectorName = "aiconfig"
 
+// ValidCollectors is the list of known collector names accepted by --collectors.
+var ValidCollectors = []string{aiConfigCollectorName}
+
 // ErrAttestationAlreadyExist means that there is an attestation in progress
 var ErrAttestationAlreadyExist = errors.New("attestation already initialized")
 

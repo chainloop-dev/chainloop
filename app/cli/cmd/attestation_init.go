@@ -18,6 +18,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -73,6 +75,12 @@ func newAttestationInitCmd() *cobra.Command {
 
 			if existingVersion && projectVersion == "" {
 				return errors.New("project version is required when using --existing-version")
+			}
+
+			for _, c := range collectors {
+				if !slices.Contains(action.ValidCollectors, c) {
+					return fmt.Errorf("unknown collector %q, valid options: %s", c, strings.Join(action.ValidCollectors, ", "))
+				}
 			}
 
 			return nil

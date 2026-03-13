@@ -75,10 +75,10 @@ func Build(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, e
 		hashes = append(hashes, fmt.Sprintf("%s:%s", relPath, hexHash))
 
 		configFiles = append(configFiles, ConfigFile{
-			Path:          relPath,
-			SHA256:        hexHash,
-			Size:          info.Size(),
-			Base64Content: base64.StdEncoding.EncodeToString(content),
+			Path:    relPath,
+			SHA256:  hexHash,
+			Size:    info.Size(),
+			Content: base64.StdEncoding.EncodeToString(content),
 		})
 	}
 
@@ -108,10 +108,12 @@ func computeCombinedHash(hashes []string) string {
 // ensureInsideDir verifies that filePath is inside dir. Both paths must be
 // already resolved (no symlinks). Returns an error if the file escapes.
 func ensureInsideDir(filePath, dir string) error {
-	cleanDir := filepath.Clean(dir) + string(filepath.Separator)
-	cleanFile := filepath.Clean(filePath)
+	rel, err := filepath.Rel(dir, filePath)
+	if err != nil {
+		return fmt.Errorf("path escapes root directory via symlink")
+	}
 
-	if !strings.HasPrefix(cleanFile, cleanDir) {
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("path escapes root directory via symlink")
 	}
 

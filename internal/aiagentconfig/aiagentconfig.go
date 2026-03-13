@@ -30,10 +30,10 @@ type GitContext struct {
 
 // ConfigFile represents a single discovered configuration file
 type ConfigFile struct {
-	Path          string `json:"path"`
-	SHA256        string `json:"sha256"`
-	Size          int64  `json:"size"`
-	Base64Content string `json:"base64_content"`
+	Path    string `json:"path"`
+	SHA256  string `json:"sha256"`
+	Size    int64  `json:"size"`
+	Content string `json:"content"`
 }
 
 // Evidence is the AI agent configuration payload

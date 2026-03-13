@@ -33,22 +33,22 @@ var claudePatterns = []string{
 	".claude/skills/*/SKILL.md",
 }
 
-// Discover searches rootDir for AI agent configuration files.
-// It only looks in rootDir and its subdirectories, never in parent directories.
+// Discover searches basePath for AI agent configuration files.
+// It only looks in basePath and its subdirectories, never in parent directories.
 // Returns deduplicated relative paths sorted alphabetically.
-func Discover(rootDir string) ([]string, error) {
+func Discover(basePath string) ([]string, error) {
 	seen := make(map[string]struct{})
 	var results []string
 
 	for _, pattern := range claudePatterns {
-		absPattern := filepath.Join(rootDir, pattern)
+		absPattern := filepath.Join(basePath, pattern)
 		matches, err := filepath.Glob(absPattern)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, match := range matches {
-			rel, err := filepath.Rel(rootDir, match)
+			rel, err := filepath.Rel(basePath, match)
 			if err != nil {
 				return nil, err
 			}

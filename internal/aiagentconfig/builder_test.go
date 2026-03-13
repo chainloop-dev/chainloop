@@ -68,7 +68,7 @@ func TestBuild(t *testing.T) {
 	assert.Equal(t, int64(len(file1Content)), cf1.Size)
 	hash1 := sha256.Sum256(file1Content)
 	assert.Equal(t, hex.EncodeToString(hash1[:]), cf1.SHA256)
-	assert.Equal(t, base64.StdEncoding.EncodeToString(file1Content), cf1.Base64Content)
+	assert.Equal(t, base64.StdEncoding.EncodeToString(file1Content), cf1.Content)
 
 	cf2 := data.ConfigFiles[1]
 	assert.Equal(t, ".claude/settings.json", cf2.Path)

@@ -48,6 +48,7 @@ func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attes
 	}
 
 	cr.Logger.Info().Int("files", len(files)).Msg("discovered AI agent config files")
+	cr.Logger.Debug().Strs("paths", files).Msg("AI agent config file paths")
 
 	var gitCtx *aiagentconfig.GitContext
 	if head := cr.CraftingState.GetAttestation().GetHead(); head != nil {
