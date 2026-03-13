@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/aiagentconfig"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 )
@@ -80,7 +81,7 @@ func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attes
 	}
 	tmpFile.Close()
 
-	if _, err := cr.AddMaterialContractFree(ctx, attestationID, "EVIDENCE", "ai-agent-config-claude", tmpFile.Name(), casBackend, nil); err != nil {
+	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), "ai-agent-config-claude", tmpFile.Name(), casBackend, nil); err != nil {
 		return fmt.Errorf("adding AI agent config material: %w", err)
 	}
 

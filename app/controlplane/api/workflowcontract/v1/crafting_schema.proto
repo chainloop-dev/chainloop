@@ -149,6 +149,8 @@ message CraftingSchema {
       CHAINLOOP_PR_INFO = 26;
       // Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting
       GITLEAKS_JSON = 27;
+      // AI agent configuration collected automatically during attestation
+      CHAINLOOP_AI_AGENT_CONFIG = 28;
     }
   }
 }
