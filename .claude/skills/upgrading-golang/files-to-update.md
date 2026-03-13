@@ -43,20 +43,6 @@ FROM arigaio/atlas@sha256:DIGEST as base
 curl -sSf https://atlasgo.sh | ATLAS_VERSION=vX.XX.X sh -s -- -y
 ```
 
-## CI/CD Workflows
-
-### GitHub Actions
-- `./.github/workflows/lint.yml`
-- `./.github/workflows/test.yml`
-- `./.github/workflows/release.yaml`
-- `./.github/workflows/codeql.yml`
-- `./docs/examples/ci-workflows/github.yaml`
-
-Update pattern in all:
-```yaml
-go-version: "X.XX.X"
-```
-
 ## Documentation
 
 ### Project Documentation
