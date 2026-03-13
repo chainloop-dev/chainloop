@@ -31,24 +31,37 @@ import (
 // rootDir is the base directory, filePaths are relative to rootDir.
 // gitCtx may be nil if not in a git repository.
 func BuildEvidence(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, error) {
+	// Resolve rootDir to its real path so symlink comparisons are reliable
+	realRoot, err := filepath.EvalSymlinks(rootDir)
+	if err != nil {
+		return nil, fmt.Errorf("resolving root dir: %w", err)
+	}
+
 	configFiles := make([]ConfigFile, 0, len(filePaths))
 	hashes := make([]string, 0, len(filePaths))
 
 	for _, relPath := range filePaths {
 		absPath := filepath.Join(rootDir, relPath)
 
-		// Reject symlinks to prevent uploading arbitrary files outside the repo
-		info, err := os.Lstat(absPath)
+		// Resolve the full path through any symlinks (covers both symlinked
+		// files and symlinked parent directories like .claude/) and verify
+		// the resolved path stays within rootDir.
+		realPath, err := filepath.EvalSymlinks(absPath)
 		if err != nil {
-			return nil, fmt.Errorf("stat %s: %w", relPath, err)
+			return nil, fmt.Errorf("resolving %s: %w", relPath, err)
 		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("reading %s: symlinks are not supported", relPath)
+		if err := ensureInsideDir(realPath, realRoot); err != nil {
+			return nil, fmt.Errorf("reading %s: %w", relPath, err)
 		}
 
-		content, err := os.ReadFile(absPath)
+		content, err := os.ReadFile(realPath)
 		if err != nil {
 			return nil, fmt.Errorf("reading %s: %w", relPath, err)
+		}
+
+		info, err := os.Stat(realPath)
+		if err != nil {
+			return nil, fmt.Errorf("stat %s: %w", relPath, err)
 		}
 
 		hash := sha256.Sum256(content)
@@ -84,4 +97,17 @@ func computeCombinedHash(hashes []string) string {
 	combined := sha256.Sum256([]byte(strings.Join(sorted, "")))
 
 	return hex.EncodeToString(combined[:])
+}
+
+// ensureInsideDir verifies that filePath is inside dir. Both paths must be
+// already resolved (no symlinks). Returns an error if the file escapes.
+func ensureInsideDir(filePath, dir string) error {
+	cleanDir := filepath.Clean(dir) + string(filepath.Separator)
+	cleanFile := filepath.Clean(filePath)
+
+	if !strings.HasPrefix(cleanFile, cleanDir) {
+		return fmt.Errorf("path escapes root directory via symlink")
+	}
+
+	return nil
 }

@@ -120,15 +120,41 @@ func TestBuildEvidenceJSONFormat(t *testing.T) {
 	assert.NotNil(t, raw["data"])
 }
 
-func TestBuildEvidenceRejectsSymlinks(t *testing.T) {
+func TestBuildEvidenceRejectsSymlinksEscapingRoot(t *testing.T) {
 	rootDir := t.TempDir()
+	outsideDir := t.TempDir()
 
-	// Create a real file and a symlink to it
-	realFile := filepath.Join(rootDir, "real.txt")
-	require.NoError(t, os.WriteFile(realFile, []byte("secret"), 0o600))
-	require.NoError(t, os.Symlink(realFile, filepath.Join(rootDir, "CLAUDE.md")))
+	// Create a file outside rootDir and a symlink pointing to it
+	require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "secret.txt"), []byte("secret"), 0o600))
+	require.NoError(t, os.Symlink(filepath.Join(outsideDir, "secret.txt"), filepath.Join(rootDir, "CLAUDE.md")))
 
 	_, err := BuildEvidence(rootDir, []string{"CLAUDE.md"}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "symlinks are not supported")
+	assert.Contains(t, err.Error(), "path escapes root directory via symlink")
+}
+
+func TestBuildEvidenceRejectsSymlinkedParentDir(t *testing.T) {
+	rootDir := t.TempDir()
+	outsideDir := t.TempDir()
+
+	// Create a .claude directory outside rootDir with a config file
+	outsideClaude := filepath.Join(outsideDir, "claude-data")
+	require.NoError(t, os.MkdirAll(outsideClaude, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(outsideClaude, "settings.json"), []byte(`{"secret": true}`), 0o600))
+
+	// Symlink .claude -> outside directory
+	require.NoError(t, os.Symlink(outsideClaude, filepath.Join(rootDir, ".claude")))
+
+	_, err := BuildEvidence(rootDir, []string{".claude/settings.json"}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "path escapes root directory via symlink")
+}
+
+func TestBuildEvidenceAllowsRegularFilesInRoot(t *testing.T) {
+	rootDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
+
+	evidence, err := BuildEvidence(rootDir, []string{"CLAUDE.md"}, nil)
+	require.NoError(t, err)
+	assert.Len(t, evidence.Data.ConfigFiles, 1)
 }
