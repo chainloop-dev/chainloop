@@ -144,6 +144,7 @@ func (c *Crafter) RegisterCollectors(collectors ...Collector) {
 func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBackend *casclient.CASBackend) {
 	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to reload crafting state before running collectors")
+		return
 	}
 
 	for _, collector := range c.collectors {

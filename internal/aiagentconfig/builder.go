@@ -37,19 +37,23 @@ func BuildEvidence(rootDir string, filePaths []string, gitCtx *GitContext) (*Evi
 	for _, relPath := range filePaths {
 		absPath := filepath.Join(rootDir, relPath)
 
+		// Reject symlinks to prevent uploading arbitrary files outside the repo
+		info, err := os.Lstat(absPath)
+		if err != nil {
+			return nil, fmt.Errorf("stat %s: %w", relPath, err)
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("reading %s: symlinks are not supported", relPath)
+		}
+
 		content, err := os.ReadFile(absPath)
 		if err != nil {
 			return nil, fmt.Errorf("reading %s: %w", relPath, err)
 		}
 
-		info, err := os.Stat(absPath)
-		if err != nil {
-			return nil, fmt.Errorf("stat %s: %w", relPath, err)
-		}
-
 		hash := sha256.Sum256(content)
 		hexHash := hex.EncodeToString(hash[:])
-		hashes = append(hashes, hexHash)
+		hashes = append(hashes, fmt.Sprintf("%s:%s", relPath, hexHash))
 
 		configFiles = append(configFiles, ConfigFile{
 			Path:          relPath,

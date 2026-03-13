@@ -69,7 +69,7 @@ func (c *PRMetadataCollector) Collect(ctx context.Context, cr *Crafter, attestat
 	}
 
 	materialName := fmt.Sprintf("pr-metadata-%s", metadata.Number)
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s.json", materialName))
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s-*.json", materialName))
 	if err != nil {
 		return fmt.Errorf("creating temp file: %w", err)
 	}

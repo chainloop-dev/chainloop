@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -79,8 +80,11 @@ func TestBuildEvidence(t *testing.T) {
 	hash2 := sha256.Sum256(file2Content)
 	assert.Equal(t, hex.EncodeToString(hash2[:]), cf2.SHA256)
 
-	// Verify config hash is deterministic
-	hashes := []string{hex.EncodeToString(hash1[:]), hex.EncodeToString(hash2[:])}
+	// Verify config hash is deterministic (includes path:hash for rename detection)
+	hashes := []string{
+		fmt.Sprintf("CLAUDE.md:%s", hex.EncodeToString(hash1[:])),
+		fmt.Sprintf(".claude/settings.json:%s", hex.EncodeToString(hash2[:])),
+	}
 	sort.Strings(hashes)
 	combined := sha256.Sum256([]byte(strings.Join(hashes, "")))
 	assert.Equal(t, hex.EncodeToString(combined[:]), evidence.Data.ConfigHash)
@@ -114,4 +118,17 @@ func TestBuildEvidenceJSONFormat(t *testing.T) {
 	assert.Equal(t, EvidenceID, raw["chainloop.material.evidence.id"])
 	assert.Equal(t, EvidenceSchemaURL, raw["schema"])
 	assert.NotNil(t, raw["data"])
+}
+
+func TestBuildEvidenceRejectsSymlinks(t *testing.T) {
+	rootDir := t.TempDir()
+
+	// Create a real file and a symlink to it
+	realFile := filepath.Join(rootDir, "real.txt")
+	require.NoError(t, os.WriteFile(realFile, []byte("secret"), 0o600))
+	require.NoError(t, os.Symlink(realFile, filepath.Join(rootDir, "CLAUDE.md")))
+
+	_, err := BuildEvidence(rootDir, []string{"CLAUDE.md"}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "symlinks are not supported")
 }
