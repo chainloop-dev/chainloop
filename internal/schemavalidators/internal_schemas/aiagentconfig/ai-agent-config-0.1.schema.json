@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://schemas.chainloop.dev/aiagentconfig/1.0/ai-agent-config.schema.json",
+  "$id": "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
   "type": "object",
   "title": "AI Agent Configuration",
   "description": "Schema for AI agent configuration data collected during attestation",

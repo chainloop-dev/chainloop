@@ -70,7 +70,7 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 		return nil, fmt.Errorf("failed to unmarshal data for validation: %w", err)
 	}
 
-	if err := schemavalidators.ValidateAIAgentConfig(rawData, schemavalidators.AIAgentConfigVersion1_0); err != nil {
+	if err := schemavalidators.ValidateAIAgentConfig(rawData, schemavalidators.AIAgentConfigVersion0_1); err != nil {
 		c.logger.Debug().Err(err).Msg("schema validation failed")
 		return nil, fmt.Errorf("AI agent config validation failed: %w", err)
 	}

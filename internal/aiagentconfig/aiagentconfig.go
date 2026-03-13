@@ -19,7 +19,7 @@ const (
 	// EvidenceID is the identifier for the AI agent config evidence
 	EvidenceID = "CHAINLOOP_AI_AGENT_CONFIG"
 	// EvidenceSchemaURL is the URL to the JSON schema for AI agent config
-	EvidenceSchemaURL = "https://schemas.chainloop.dev/aiagentconfig/1.0/ai-agent-config.schema.json"
+	EvidenceSchemaURL = "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json"
 )
 
 // Agent identifies the AI agent provider

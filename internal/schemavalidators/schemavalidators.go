@@ -56,8 +56,8 @@ const (
 	CSAFVersion2_0 CSAFVersion = "2.0"
 	// CSAFVersion2_1 represents CSAF version 2.0 schema.
 	CSAFVersion2_1 CSAFVersion = "2.1"
-	// AIAgentConfigVersion1_0 represents AI Agent Config version 1.0 schema.
-	AIAgentConfigVersion1_0 AIAgentConfigVersion = "1.0"
+	// AIAgentConfigVersion0_1 represents AI Agent Config version 0.1 schema.
+	AIAgentConfigVersion0_1 AIAgentConfigVersion = "0.1"
 )
 
 var (
@@ -94,7 +94,7 @@ var (
 	prInfoSpecVersion1_0 string
 
 	// AI Agent Config schemas
-	//go:embed internal_schemas/aiagentconfig/ai-agent-config-1.0.schema.json
+	//go:embed internal_schemas/aiagentconfig/ai-agent-config-0.1.schema.json
 	aiAgentConfigSpecVersion1_0 string
 )
 
@@ -115,7 +115,7 @@ var schemaURLMapping = map[string]string{
 	"https://www.first.org/cvss/cvss-v4.0.json":                                   cvssSpecVersion4_0,
 	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json":       runnerContextSpecVersion0_1,
 	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":                prInfoSpecVersion1_0,
-	"https://schemas.chainloop.dev/aiagentconfig/1.0/ai-agent-config.schema.json": aiAgentConfigSpecVersion1_0,
+	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json": aiAgentConfigSpecVersion1_0,
 }
 
 var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
@@ -145,7 +145,7 @@ func init() {
 	compiledPRInfoSchemas[PRInfoVersion1_0] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json")
 
 	compiledAIAgentConfigSchemas = make(map[AIAgentConfigVersion]*jsonschema.Schema)
-	compiledAIAgentConfigSchemas[AIAgentConfigVersion1_0] = compiler.MustCompile("https://schemas.chainloop.dev/aiagentconfig/1.0/ai-agent-config.schema.json")
+	compiledAIAgentConfigSchemas[AIAgentConfigVersion0_1] = compiler.MustCompile("https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json")
 }
 
 // ValidateCycloneDX validates the given object against the specified CycloneDX schema version.
@@ -262,7 +262,7 @@ func ValidatePRInfo(data interface{}, version PRInfoVersion) error {
 // ValidateAIAgentConfig validates the AI agent config schema.
 func ValidateAIAgentConfig(data any, version AIAgentConfigVersion) error {
 	if version == "" {
-		version = AIAgentConfigVersion1_0
+		version = AIAgentConfigVersion0_1
 	}
 
 	schema, ok := compiledAIAgentConfigSchemas[version]
