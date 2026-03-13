@@ -50,7 +50,7 @@ func TestBuild(t *testing.T) {
 	data, err := Build(rootDir, []string{"CLAUDE.md", ".claude/settings.json"}, gitCtx)
 	require.NoError(t, err)
 
-	assert.Equal(t, "v1alpha", data.SchemaVersion)
+	assert.Equal(t, "0.1", data.SchemaVersion)
 	assert.Equal(t, "claude", data.Agent.Name)
 	assert.NotEmpty(t, data.CapturedAt)
 	assert.NotEmpty(t, data.ConfigHash)
