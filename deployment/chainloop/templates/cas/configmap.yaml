@@ -20,6 +20,21 @@ data:
         # Timeouts for http downloads
         # grpc downloads/uploads don't require this because they don't have timeouts
         timeout: 300s
+        {{- if .Values.cas.allowedOrigins }}
+        cors:
+          allow_origins:
+            {{- if kindIs "string" .Values.cas.allowedOrigins }}
+            {{- range splitList "," .Values.cas.allowedOrigins }}
+            {{- if . }}
+            - {{ trim . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- else }}
+            {{- range .Values.cas.allowedOrigins }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+        {{- end }}
       grpc:
         {{- if include "cas.tls-secret-name" .  }}
         tls_config:
