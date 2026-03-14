@@ -113,9 +113,7 @@ type Server struct {
 	// GRPC API endpoint
 	Grpc *Server_GRPC `protobuf:"bytes,2,opt,name=grpc,proto3" json:"grpc,omitempty"`
 	// hHTTP server where the prometheus metrics will get exposed
-	HttpMetrics *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
-	// CORS configuration for the HTTP download endpoint
-	Cors          *Server_CORS `protobuf:"bytes,4,opt,name=cors,proto3" json:"cors,omitempty"`
+	HttpMetrics   *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -167,13 +165,6 @@ func (x *Server) GetGrpc() *Server_GRPC {
 func (x *Server) GetHttpMetrics() *Server_HTTP {
 	if x != nil {
 		return x.HttpMetrics
-	}
-	return nil
-}
-
-func (x *Server) GetCors() *Server_CORS {
-	if x != nil {
-		return x.Cors
 	}
 	return nil
 }
@@ -333,18 +324,64 @@ func (x *Bootstrap_Observability_Sentry) GetEnvironment() string {
 	return ""
 }
 
-type Server_HTTP struct {
+type Server_CORS struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Network       string                 `protobuf:"bytes,1,opt,name=network,proto3" json:"network,omitempty"`
-	Addr          string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
-	Timeout       *durationpb.Duration   `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	AllowOrigins  []string               `protobuf:"bytes,1,rep,name=allow_origins,json=allowOrigins,proto3" json:"allow_origins,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Server_CORS) Reset() {
+	*x = Server_CORS{}
+	mi := &file_conf_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Server_CORS) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Server_CORS) ProtoMessage() {}
+
+func (x *Server_CORS) ProtoReflect() protoreflect.Message {
+	mi := &file_conf_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Server_CORS.ProtoReflect.Descriptor instead.
+func (*Server_CORS) Descriptor() ([]byte, []int) {
+	return file_conf_proto_rawDescGZIP(), []int{1, 0}
+}
+
+func (x *Server_CORS) GetAllowOrigins() []string {
+	if x != nil {
+		return x.AllowOrigins
+	}
+	return nil
+}
+
+type Server_HTTP struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Network string                 `protobuf:"bytes,1,opt,name=network,proto3" json:"network,omitempty"`
+	Addr    string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
+	Timeout *durationpb.Duration   `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// CORS configuration for the HTTP download endpoint
+	Cors          *Server_CORS `protobuf:"bytes,4,opt,name=cors,proto3" json:"cors,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Server_HTTP) Reset() {
 	*x = Server_HTTP{}
-	mi := &file_conf_proto_msgTypes[5]
+	mi := &file_conf_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -356,7 +393,7 @@ func (x *Server_HTTP) String() string {
 func (*Server_HTTP) ProtoMessage() {}
 
 func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[5]
+	mi := &file_conf_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -369,7 +406,7 @@ func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Server_HTTP.ProtoReflect.Descriptor instead.
 func (*Server_HTTP) Descriptor() ([]byte, []int) {
-	return file_conf_proto_rawDescGZIP(), []int{1, 0}
+	return file_conf_proto_rawDescGZIP(), []int{1, 1}
 }
 
 func (x *Server_HTTP) GetNetwork() string {
@@ -393,46 +430,9 @@ func (x *Server_HTTP) GetTimeout() *durationpb.Duration {
 	return nil
 }
 
-type Server_CORS struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AllowOrigins  []string               `protobuf:"bytes,1,rep,name=allow_origins,json=allowOrigins,proto3" json:"allow_origins,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Server_CORS) Reset() {
-	*x = Server_CORS{}
-	mi := &file_conf_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Server_CORS) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Server_CORS) ProtoMessage() {}
-
-func (x *Server_CORS) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[6]
+func (x *Server_HTTP) GetCors() *Server_CORS {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Server_CORS.ProtoReflect.Descriptor instead.
-func (*Server_CORS) Descriptor() ([]byte, []int) {
-	return file_conf_proto_rawDescGZIP(), []int{1, 1}
-}
-
-func (x *Server_CORS) GetAllowOrigins() []string {
-	if x != nil {
-		return x.AllowOrigins
+		return x.Cors
 	}
 	return nil
 }
@@ -573,18 +573,18 @@ const file_conf_proto_rawDesc = "" +
 	"\x06sentry\x18\x01 \x01(\v2\x1f.Bootstrap.Observability.SentryR\x06sentry\x1a<\n" +
 	"\x06Sentry\x12\x10\n" +
 	"\x03dsn\x18\x01 \x01(\tR\x03dsn\x12 \n" +
-	"\venvironment\x18\x02 \x01(\tR\venvironment\"\x99\x04\n" +
+	"\venvironment\x18\x02 \x01(\tR\venvironment\"\x9a\x04\n" +
 	"\x06Server\x12 \n" +
 	"\x04http\x18\x01 \x01(\v2\f.Server.HTTPR\x04http\x12 \n" +
 	"\x04grpc\x18\x02 \x01(\v2\f.Server.GRPCR\x04grpc\x12/\n" +
-	"\fhttp_metrics\x18\x03 \x01(\v2\f.Server.HTTPR\vhttpMetrics\x12 \n" +
-	"\x04cors\x18\x04 \x01(\v2\f.Server.CORSR\x04cors\x1ai\n" +
+	"\fhttp_metrics\x18\x03 \x01(\v2\f.Server.HTTPR\vhttpMetrics\x1a+\n" +
+	"\x04CORS\x12#\n" +
+	"\rallow_origins\x18\x01 \x03(\tR\fallowOrigins\x1a\x8b\x01\n" +
 	"\x04HTTP\x12\x18\n" +
 	"\anetwork\x18\x01 \x01(\tR\anetwork\x12\x12\n" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x123\n" +
-	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x1a+\n" +
-	"\x04CORS\x12#\n" +
-	"\rallow_origins\x18\x01 \x03(\tR\fallowOrigins\x1aH\n" +
+	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12 \n" +
+	"\x04cors\x18\x04 \x01(\v2\f.Server.CORSR\x04cors\x1aH\n" +
 	"\x03TLS\x12 \n" +
 	"\vcertificate\x18\x01 \x01(\tR\vcertificate\x12\x1f\n" +
 	"\vprivate_key\x18\x02 \x01(\tR\n" +
@@ -618,8 +618,8 @@ var file_conf_proto_goTypes = []any{
 	(*Auth)(nil),                           // 2: Auth
 	(*Bootstrap_Observability)(nil),        // 3: Bootstrap.Observability
 	(*Bootstrap_Observability_Sentry)(nil), // 4: Bootstrap.Observability.Sentry
-	(*Server_HTTP)(nil),                    // 5: Server.HTTP
-	(*Server_CORS)(nil),                    // 6: Server.CORS
+	(*Server_CORS)(nil),                    // 5: Server.CORS
+	(*Server_HTTP)(nil),                    // 6: Server.HTTP
 	(*Server_TLS)(nil),                     // 7: Server.TLS
 	(*Server_GRPC)(nil),                    // 8: Server.GRPC
 	(*v1.Credentials)(nil),                 // 9: credentials.v1.Credentials
@@ -630,12 +630,12 @@ var file_conf_proto_depIdxs = []int32{
 	2,  // 1: Bootstrap.auth:type_name -> Auth
 	3,  // 2: Bootstrap.observability:type_name -> Bootstrap.Observability
 	9,  // 3: Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
-	5,  // 4: Server.http:type_name -> Server.HTTP
+	6,  // 4: Server.http:type_name -> Server.HTTP
 	8,  // 5: Server.grpc:type_name -> Server.GRPC
-	5,  // 6: Server.http_metrics:type_name -> Server.HTTP
-	6,  // 7: Server.cors:type_name -> Server.CORS
-	4,  // 8: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
-	10, // 9: Server.HTTP.timeout:type_name -> google.protobuf.Duration
+	6,  // 6: Server.http_metrics:type_name -> Server.HTTP
+	4,  // 7: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
+	10, // 8: Server.HTTP.timeout:type_name -> google.protobuf.Duration
+	5,  // 9: Server.HTTP.cors:type_name -> Server.CORS
 	10, // 10: Server.GRPC.timeout:type_name -> google.protobuf.Duration
 	7,  // 11: Server.GRPC.tls_config:type_name -> Server.TLS
 	12, // [12:12] is the sub-list for method output_type
