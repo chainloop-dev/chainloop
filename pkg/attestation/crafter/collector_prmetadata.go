@@ -68,24 +68,40 @@ func (c *PRMetadataCollector) Collect(ctx context.Context, cr *Crafter, attestat
 		return fmt.Errorf("marshaling PR/MR metadata: %w", err)
 	}
 
-	materialName := fmt.Sprintf("pr-metadata-%s", metadata.Number)
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s-*.json", materialName))
+	materialName, tmpFile, err := createPRMetadataTempFile(metadata.Number, jsonData)
 	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
+		return fmt.Errorf("creating PR metadata temp file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer os.Remove(tmpFile)
 
-	if _, err := tmpFile.Write(jsonData); err != nil {
-		tmpFile.Close()
-		return fmt.Errorf("writing temp file: %w", err)
-	}
-	tmpFile.Close()
-
-	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile.Name(), casBackend, nil); err != nil {
+	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile, casBackend, nil); err != nil {
 		return fmt.Errorf("adding PR/MR metadata material: %w", err)
 	}
 
 	cr.Logger.Info().Msg("successfully collected and attested PR/MR metadata")
 
 	return nil
+}
+
+// createPRMetadataTempFile creates a temp file with the PR metadata JSON content
+// and returns the material name and the temp file path.
+func createPRMetadataTempFile(prNumber string, data []byte) (materialName string, filePath string, err error) {
+	materialName = fmt.Sprintf("pr-metadata-%s", prNumber)
+
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s-*.json", materialName))
+	if err != nil {
+		return "", "", fmt.Errorf("creating temp file: %w", err)
+	}
+
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+		return "", "", fmt.Errorf("writing temp file: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpFile.Name())
+		return "", "", fmt.Errorf("closing temp file: %w", err)
+	}
+
+	return materialName, tmpFile.Name(), nil
 }

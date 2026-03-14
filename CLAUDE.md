@@ -259,6 +259,8 @@ Code reviews are required for all submissions via GitHub pull requests.
 - I do not want you to be in the co-author signoff
 - when the schema is changed, run make generate, do not create a migration explicitly
 - If you are writing go code, adhere to best practices such as the ones in effective-go, or others. This could include, error handling patterns, interface design, package organization, concurrency patterns, etc.
+- When writing tests, use table-driven tests whenever possible
+- When implementing new functionality, follow TDD: write failing tests first, then implement the code to make them pass
 - do not change previous migrations, they are immutable
 - if you add any new dependency to a constructor, remember to run wire ./...
 - when adding new inedexes, make sure to update the generated sql migraiton files and make them CREATE INDEX CONCURRENTLY and set -- atlas:txmode none at the top
@@ -272,3 +274,4 @@ Code reviews are required for all submissions via GitHub pull requests.
 - any call to authorization Enforce done from the biz or svc layer must be done using biz.AuthzUseCase
 - if you modify a schema, remember to run `make migration_sync`
 - after changing Helm chart source code (`deployment/chainloop/`), bump the **patch** version (not minor, not major) in the chart's `Chart.yaml`
+- when asked to create a GitHub issue, create it in the `chainloop-dev/chainloop` repository
