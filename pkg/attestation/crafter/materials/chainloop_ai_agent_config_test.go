@@ -102,6 +102,54 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid cursor config",
+			data: &aiagentconfig.Evidence{
+				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
+				Agent:         aiagentconfig.Agent{Name: "cursor"},
+				ConfigHash:    "def456",
+				CapturedAt:    "2026-03-13T10:00:00Z",
+				ConfigFiles: []aiagentconfig.ConfigFile{
+					{
+						Path:    ".cursor/rules/coding.md",
+						SHA256:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+						Size:    20,
+						Content: "IyBDb2RpbmcgUnVsZXM=",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid cursor with multiple file types",
+			data: &aiagentconfig.Evidence{
+				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
+				Agent:         aiagentconfig.Agent{Name: "cursor"},
+				ConfigHash:    "ghi789",
+				CapturedAt:    "2026-03-13T10:00:00Z",
+				ConfigFiles: []aiagentconfig.ConfigFile{
+					{
+						Path:    ".cursor/rules/react.mdc",
+						SHA256:  "abc123",
+						Size:    15,
+						Content: "cnVsZXM=",
+					},
+					{
+						Path:    ".cursor/agents/reviewer.md",
+						SHA256:  "def456",
+						Size:    10,
+						Content: "YWdlbnQ=",
+					},
+					{
+						Path:    "AGENTS.md",
+						SHA256:  "789abc",
+						Size:    8,
+						Content: "YWdlbnRz",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:    "missing required fields",
 			data:    &aiagentconfig.Evidence{},
 			wantErr: true,
