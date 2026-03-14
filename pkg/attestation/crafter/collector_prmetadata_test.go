@@ -16,55 +16,51 @@
 package crafter
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPRMetadataCollectorTempFileHasJSONExtension(t *testing.T) {
+func TestCreatePRMetadataTempFile(t *testing.T) {
 	tests := []struct {
-		name          string
-		prNumber      string
-		wantPrefix    string
-		wantExtension string
+		name           string
+		prNumber       string
+		wantMaterial   string
+		wantFilePrefix string
 	}{
 		{
-			name:          "numeric PR number",
-			prNumber:      "123",
-			wantPrefix:    "pr-metadata-123-",
-			wantExtension: ".json",
+			name:           "numeric PR number",
+			prNumber:       "123",
+			wantMaterial:   "pr-metadata-123",
+			wantFilePrefix: "pr-metadata-123-",
 		},
 		{
-			name:          "large PR number",
-			prNumber:      "99999",
-			wantPrefix:    "pr-metadata-99999-",
-			wantExtension: ".json",
+			name:           "large PR number",
+			prNumber:       "99999",
+			wantMaterial:   "pr-metadata-99999",
+			wantFilePrefix: "pr-metadata-99999-",
 		},
 		{
-			name:          "single digit PR number",
-			prNumber:      "1",
-			wantPrefix:    "pr-metadata-1-",
-			wantExtension: ".json",
+			name:           "single digit PR number",
+			prNumber:       "1",
+			wantMaterial:   "pr-metadata-1",
+			wantFilePrefix: "pr-metadata-1-",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			materialName := fmt.Sprintf("pr-metadata-%s", tc.prNumber)
-			tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s-*.json", materialName))
+			materialName, filePath, err := createPRMetadataTempFile(tc.prNumber, []byte(`{"test": true}`))
 			require.NoError(t, err)
-			defer os.Remove(tmpFile.Name())
-			tmpFile.Close()
+			defer os.Remove(filePath)
 
-			fileName := filepath.Base(tmpFile.Name())
-			assert.Equal(t, tc.wantExtension, filepath.Ext(fileName))
-			assert.True(t, len(fileName) > len(tc.wantPrefix),
-				"filename %q should be longer than prefix %q", fileName, tc.wantPrefix)
-			assert.Equal(t, tc.wantPrefix, fileName[:len(tc.wantPrefix)])
+			assert.Equal(t, tc.wantMaterial, materialName)
+			assert.Equal(t, ".json", filepath.Ext(filePath))
+			assert.True(t, strings.HasPrefix(filepath.Base(filePath), tc.wantFilePrefix))
 		})
 	}
 }
