@@ -304,3 +304,35 @@ func TestFetchGitLabReviewersRequestPath(t *testing.T) {
 
 	fetchGitLabReviewers(context.Background(), server.URL, "group/project", "42", "token")
 }
+
+func TestExtractGitLabMRMetadataWithReviewers(t *testing.T) {
+	// Set up a mock GitLab API that returns reviewers
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"reviewers": [{"username": "alice"}, {"username": "coderabbitai"}]}`)
+	}))
+	defer server.Close()
+
+	// Set env vars that extractGitLabMRMetadata reads via os.Getenv for the API call
+	t.Setenv("CI_SERVER_URL", server.URL)
+	t.Setenv("CI_MERGE_REQUEST_PROJECT_PATH", "group/project")
+	t.Setenv("CI_JOB_TOKEN", "test-token")
+
+	envVars := map[string]string{
+		"CI_PIPELINE_SOURCE":                  "merge_request_event",
+		"CI_MERGE_REQUEST_IID":                "10",
+		"CI_MERGE_REQUEST_TITLE":              "MR with reviewers",
+		"CI_MERGE_REQUEST_PROJECT_URL":        "https://gitlab.com/group/project",
+		"GITLAB_USER_LOGIN":                   "author",
+		"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "feature",
+		"CI_MERGE_REQUEST_TARGET_BRANCH_NAME": "main",
+	}
+
+	isMR, metadata, err := extractGitLabMRMetadata(context.Background(), envVars)
+	require.NoError(t, err)
+	require.True(t, isMR)
+	require.Len(t, metadata.Reviewers, 2)
+	assert.Equal(t, "alice", metadata.Reviewers[0].Login)
+	assert.Equal(t, "unknown", metadata.Reviewers[0].Type)
+	assert.Equal(t, "coderabbitai", metadata.Reviewers[1].Login)
+}

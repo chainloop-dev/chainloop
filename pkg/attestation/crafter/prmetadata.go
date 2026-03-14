@@ -163,8 +163,13 @@ func extractGitLabMRMetadata(ctx context.Context, envVars map[string]string) (bo
 	projectURL := envVars["CI_MERGE_REQUEST_PROJECT_URL"]
 	mrURL := fmt.Sprintf("%s/-/merge_requests/%s", projectURL, mrIID)
 
-	// Fetch reviewers from GitLab API (best-effort)
-	reviewers := fetchGitLabReviewers(ctx, os.Getenv("CI_SERVER_URL"), os.Getenv("CI_PROJECT_PATH"), mrIID, os.Getenv("CI_JOB_TOKEN"))
+	// Fetch reviewers from GitLab API (best-effort).
+	// Prefer CI_MERGE_REQUEST_PROJECT_PATH for fork-based MRs where CI_PROJECT_PATH points to the fork.
+	projectPath := os.Getenv("CI_MERGE_REQUEST_PROJECT_PATH")
+	if projectPath == "" {
+		projectPath = os.Getenv("CI_PROJECT_PATH")
+	}
+	reviewers := fetchGitLabReviewers(ctx, os.Getenv("CI_SERVER_URL"), projectPath, mrIID, os.Getenv("CI_JOB_TOKEN"))
 
 	metadata := &PRMetadata{
 		Platform:     "gitlab",
