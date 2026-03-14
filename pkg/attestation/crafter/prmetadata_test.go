@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,25 @@
 package crafter
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPRMetadataTempFileHasJSONExtension(t *testing.T) {
+	materialName := fmt.Sprintf("pr-metadata-%s", "123")
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s*.json", materialName))
+	require.NoError(t, err)
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close()
+
+	assert.Equal(t, ".json", filepath.Ext(tmpFile.Name()),
+		"temp file should have .json extension, got: %s", tmpFile.Name())
+}
 
 func TestExtractGitHubPRMetadata(t *testing.T) {
 	testCases := []struct {
