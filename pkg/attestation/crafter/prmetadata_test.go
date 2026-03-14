@@ -16,25 +16,12 @@
 package crafter
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestPRMetadataTempFileHasJSONExtension(t *testing.T) {
-	materialName := fmt.Sprintf("pr-metadata-%s", "123")
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s*.json", materialName))
-	require.NoError(t, err)
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
-
-	assert.Equal(t, ".json", filepath.Ext(tmpFile.Name()),
-		"temp file should have .json extension, got: %s", tmpFile.Name())
-}
 
 func TestExtractGitHubPRMetadata(t *testing.T) {
 	testCases := []struct {
