@@ -1,0 +1,227 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "grype",
+          "version": "0.109.1",
+          "informationUri": "https://github.com/anchore/grype",
+          "rules": [
+            {
+              "id": "CVE-2026-25679-stdlib",
+              "name": "GoModuleMatcherCpeMatch",
+              "shortDescription": {
+                "text": "CVE-2026-25679 high vulnerability for stdlib package"
+              },
+              "fullDescription": {
+                "text": "url.Parse insufficiently validated the host/authority component and accepted some invalid URLs."
+              },
+              "helpUri": "https://github.com/anchore/grype",
+              "help": {
+                "text": "Vulnerability CVE-2026-25679\nSeverity: high\nPackage: stdlib\nVersion: go1.25.7\nFix Version: 1.25.8,1.26.1\nType: go-module\nLocation: /atlas\nData Namespace: nvd:cpe\nLink: [CVE-2026-25679](https://nvd.nist.gov/vuln/detail/CVE-2026-25679)",
+                "markdown": "**Vulnerability CVE-2026-25679**\n| Severity | Package | Version | Fix Version | Type | Location | Data Namespace | Link |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| high  | stdlib  | go1.25.7  | 1.25.8,1.26.1  | go-module  | /atlas  | nvd:cpe  | [CVE-2026-25679](https://nvd.nist.gov/vuln/detail/CVE-2026-25679)  |\n"
+              },
+              "properties": {
+                "purls": [
+                  "pkg:golang/stdlib@1.25.7"
+                ],
+                "security-severity": "7.5"
+              }
+            },
+            {
+              "id": "CVE-2026-27142-stdlib",
+              "name": "GoModuleMatcherCpeMatch",
+              "shortDescription": {
+                "text": "CVE-2026-27142 high vulnerability for stdlib package"
+              },
+              "fullDescription": {
+                "text": "Actions which insert URLs into the content attribute of HTML meta tags are not escaped. This can allow XSS if the meta tag also has an http-equiv attribute with the value \"refresh\". A new GODEBUG setting has been added, htmlmetacontenturlescape, which can be used to disable escaping URLs in actions in the meta content attribute which follow \"url=\" by setting htmlmetacontenturlescape=0."
+              },
+              "helpUri": "https://github.com/anchore/grype",
+              "help": {
+                "text": "Vulnerability CVE-2026-27142\nSeverity: high\nPackage: stdlib\nVersion: go1.25.7\nFix Version: 1.25.8,1.26.1\nType: go-module\nLocation: /atlas\nData Namespace: nvd:cpe\nLink: [CVE-2026-27142](https://nvd.nist.gov/vuln/detail/CVE-2026-27142)",
+                "markdown": "**Vulnerability CVE-2026-27142**\n| Severity | Package | Version | Fix Version | Type | Location | Data Namespace | Link |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| high  | stdlib  | go1.25.7  | 1.25.8,1.26.1  | go-module  | /atlas  | nvd:cpe  | [CVE-2026-27142](https://nvd.nist.gov/vuln/detail/CVE-2026-27142)  |\n"
+              },
+              "properties": {
+                "purls": [
+                  "pkg:golang/stdlib@1.25.7"
+                ],
+                "security-severity": "7.5"
+              }
+            },
+            {
+              "id": "GHSA-fw7p-63qq-7hpr-filippo.io/edwards25519",
+              "name": "GoModuleMatcherExactDirectMatch",
+              "shortDescription": {
+                "text": "GHSA-fw7p-63qq-7hpr low vulnerability for filippo.io/edwards25519 package"
+              },
+              "fullDescription": {
+                "text": "filippo.io/edwards25519 MultiScalarMult produces invalid results or undefined behavior if receiver is not the identity"
+              },
+              "helpUri": "https://github.com/anchore/grype",
+              "help": {
+                "text": "Vulnerability GHSA-fw7p-63qq-7hpr\nSeverity: low\nPackage: filippo.io/edwards25519\nVersion: v1.1.0\nFix Version: 1.1.1\nType: go-module\nLocation: /atlas\nData Namespace: github:language:go\nLink: [GHSA-fw7p-63qq-7hpr](https://github.com/advisories/GHSA-fw7p-63qq-7hpr)",
+                "markdown": "**Vulnerability GHSA-fw7p-63qq-7hpr**\n| Severity | Package | Version | Fix Version | Type | Location | Data Namespace | Link |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| low  | filippo.io/edwards25519  | v1.1.0  | 1.1.1  | go-module  | /atlas  | github:language:go  | [GHSA-fw7p-63qq-7hpr](https://github.com/advisories/GHSA-fw7p-63qq-7hpr)  |\n"
+              },
+              "properties": {
+                "purls": [
+                  "pkg:golang/filippo.io/edwards25519@v1.1.0"
+                ],
+                "security-severity": "1.7"
+              }
+            },
+            {
+              "id": "CVE-2026-27139-stdlib",
+              "name": "GoModuleMatcherCpeMatch",
+              "shortDescription": {
+                "text": "CVE-2026-27139 low vulnerability for stdlib package"
+              },
+              "fullDescription": {
+                "text": "On Unix platforms, when listing the contents of a directory using File.ReadDir or File.Readdir the returned FileInfo could reference a file outside of the Root in which the File was opened. The impact of this escape is limited to reading metadata provided by lstat from arbitrary locations on the filesystem without permitting reading or writing files outside the root."
+              },
+              "helpUri": "https://github.com/anchore/grype",
+              "help": {
+                "text": "Vulnerability CVE-2026-27139\nSeverity: low\nPackage: stdlib\nVersion: go1.25.7\nFix Version: 1.25.8,1.26.1\nType: go-module\nLocation: /atlas\nData Namespace: nvd:cpe\nLink: [CVE-2026-27139](https://nvd.nist.gov/vuln/detail/CVE-2026-27139)",
+                "markdown": "**Vulnerability CVE-2026-27139**\n| Severity | Package | Version | Fix Version | Type | Location | Data Namespace | Link |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| low  | stdlib  | go1.25.7  | 1.25.8,1.26.1  | go-module  | /atlas  | nvd:cpe  | [CVE-2026-27139](https://nvd.nist.gov/vuln/detail/CVE-2026-27139)  |\n"
+              },
+              "properties": {
+                "purls": [
+                  "pkg:golang/stdlib@1.25.7"
+                ],
+                "security-severity": "2.5"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CVE-2026-25679-stdlib",
+          "level": "error",
+          "message": {
+            "text": "A high vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64 at: /atlas"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "control-plane-migrations//atlas"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "/atlas",
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64@sha256:964bd688c0e24d4c6fdef59623a9dfc2530c7f6fbda6ef393464d1c3056e82e7:/atlas"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "89354f05e32cb9a36525d61fae4851de004cc0f19963fe409cf660e0ee4218d2:1"
+          }
+        },
+        {
+          "ruleId": "CVE-2026-27142-stdlib",
+          "level": "error",
+          "message": {
+            "text": "A high vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64 at: /atlas"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "control-plane-migrations//atlas"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "/atlas",
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64@sha256:964bd688c0e24d4c6fdef59623a9dfc2530c7f6fbda6ef393464d1c3056e82e7:/atlas"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "89354f05e32cb9a36525d61fae4851de004cc0f19963fe409cf660e0ee4218d2:1"
+          }
+        },
+        {
+          "ruleId": "GHSA-fw7p-63qq-7hpr-filippo.io/edwards25519",
+          "level": "note",
+          "message": {
+            "text": "A low vulnerability in go-module package: filippo.io/edwards25519, version v1.1.0 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64 at: /atlas"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "control-plane-migrations//atlas"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "/atlas",
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64@sha256:964bd688c0e24d4c6fdef59623a9dfc2530c7f6fbda6ef393464d1c3056e82e7:/atlas"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "390150c8d3e38551f59fa1e9cb0565df4199dc774312ea50b9b8f5ddc3b564c1:1"
+          }
+        },
+        {
+          "ruleId": "CVE-2026-27139-stdlib",
+          "level": "note",
+          "message": {
+            "text": "A low vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64 at: /atlas"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "control-plane-migrations//atlas"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "name": "/atlas",
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.0-arm64@sha256:964bd688c0e24d4c6fdef59623a9dfc2530c7f6fbda6ef393464d1c3056e82e7:/atlas"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "89354f05e32cb9a36525d61fae4851de004cc0f19963fe409cf660e0ee4218d2:1"
+          }
+        }
+      ]
+    }
+  ]
+}
