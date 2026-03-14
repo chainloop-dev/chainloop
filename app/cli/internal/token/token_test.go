@@ -54,6 +54,14 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			name:  "user token with mixed audiences prefers user audience",
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYmMwYjIxOTktY2E4NS00MmFiLWE4NTctMDQyZTljMTA5ZDQzIiwiaXNzIjoiY3AuY2hhaW5sb29wIiwiYXVkIjpbImNoYWlubG9vcCIsInVzZXItYXV0aC5jaGFpbmxvb3AiXSwiZXhwIjoxNzE1OTM1MjUwfQ.signature",
+			want: &ParsedToken{
+				ID:        "bc0b2199-ca85-42ab-a857-042e9c109d43",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_USER,
+			},
+		},
+		{
 			name:  "federated github token",
 			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Rva2VuLmFjdGlvbnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiY2hhaW5sb29wIiwicmVwb3NpdG9yeSI6Im1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3QiLCJzdWIiOiJyZXBvOm1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3Q6cmVmOnJlZnMvaGVhZHMvbWFpbiJ9.signature",
 			want: &ParsedToken{
