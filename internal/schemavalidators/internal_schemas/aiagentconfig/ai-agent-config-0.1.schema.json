@@ -63,7 +63,6 @@
     "config_files": {
       "type": "array",
       "description": "Array of discovered configuration files",
-      "minItems": 1,
       "items": {
         "type": "object",
         "required": ["path", "sha256", "size", "content"],

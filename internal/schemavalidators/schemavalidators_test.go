@@ -255,7 +255,6 @@ func TestValidateAIAgentConfig(t *testing.T) {
 		{
 			name:     "empty config_files array",
 			filePath: "./testdata/ai_agent_config_empty_config_files.json",
-			wantErr:  "minimum 1 items required, but found 0",
 		},
 		{
 			name:     "config file missing required fields",
