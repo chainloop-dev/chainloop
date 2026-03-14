@@ -68,6 +68,10 @@ func (r *DaggerPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", true},
 		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", true},
 		{"CI_MERGE_REQUEST_PROJECT_URL", true},
+		{"CI_MERGE_REQUEST_PROJECT_PATH", true},
+		{"CI_SERVER_URL", true},
+		{"CI_PROJECT_PATH", true},
+		{"CI_JOB_TOKEN", true},
 		{"GITLAB_USER_LOGIN", true},
 	}
 }
