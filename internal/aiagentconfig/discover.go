@@ -40,8 +40,8 @@ var agents = []agentDef{
 	{name: "cursor", patterns: []string{
 		".cursor/rules/*.md",
 		".cursor/rules/*.mdc",
-		".cursor/rules/**/*.md",
-		".cursor/rules/**/*.mdc",
+		".cursor/rules/*/*.md",
+		".cursor/rules/*/*.mdc",
 		".cursor/skills/*/SKILL.md",
 		".cursor/agents/*.md",
 	}},
