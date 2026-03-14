@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"time"
 
 	"buf.build/go/protovalidate"
@@ -39,6 +40,7 @@ const (
 	AnnotationToolNameKey    = "chainloop.material.tool.name"
 	AnnotationToolVersionKey = "chainloop.material.tool.version"
 	AnnotationToolsKey       = "chainloop.material.tools"
+	AnnotationMaterialSize   = "chainloop.material.size"
 )
 
 // IsLegacyAnnotation returns true if the annotation key is a legacy annotation
@@ -163,6 +165,10 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 
 		material.InlineCas = true
 		material.GetArtifact().Content = content
+	}
+
+	material.Annotations = map[string]string{
+		AnnotationMaterialSize: strconv.FormatInt(result.size, 10),
 	}
 
 	return material, nil

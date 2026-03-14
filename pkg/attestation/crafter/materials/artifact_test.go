@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,6 +96,9 @@ func TestArtifactCraft(t *testing.T) {
 	assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
 		Id: "test", Digest: "sha256:54181dfe59340b318253e59f7695f547c5c10d071cb75001170a389061349918", Name: "simple.txt",
 	})
+
+	// The result includes the size annotation
+	assert.Equal("8", got.Annotations[materials.AnnotationMaterialSize])
 }
 
 func TestArtifactCraftInline(t *testing.T) {
@@ -153,4 +156,6 @@ func assertMaterial(t *testing.T, got *attestationApi.Attestation_Material) {
 		// Inline content
 		Content: []byte("txt file"),
 	})
+	// The result includes the size annotation
+	assert.Equal("8", got.Annotations[materials.AnnotationMaterialSize])
 }
