@@ -92,7 +92,6 @@ func (s *gitlabPipelineSuite) TestListEnvVars() {
 		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
 		{"CI_PROJECT_PATH", false},
-		{"CI_JOB_TOKEN", true},
 		{"CI_PIPELINE_SOURCE", true},
 		{"CI_MERGE_REQUEST_IID", true},
 		{"CI_MERGE_REQUEST_TITLE", true},
@@ -119,7 +118,6 @@ func (s *gitlabPipelineSuite) TestResolveEnvVars() {
 		"CI_COMMIT_REF_NAME":                  "main",
 		"CI_SERVER_URL":                       "https://gitlab.com",
 		"CI_PROJECT_PATH":                     "chainloop/chainloop",
-		"CI_JOB_TOKEN":                        "gitlab-job-token",
 		"CI_PIPELINE_SOURCE":                  "merge_request_event",
 		"CI_MERGE_REQUEST_IID":                "42",
 		"CI_MERGE_REQUEST_TITLE":              "Add new feature",
@@ -142,7 +140,6 @@ func (s *gitlabPipelineSuite) TestResolveEnvVarsWithoutRunnerDescription() {
 	s.T().Setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "")
 	s.T().Setenv("CI_MERGE_REQUEST_PROJECT_URL", "")
 	s.T().Setenv("CI_MERGE_REQUEST_PROJECT_PATH", "")
-	s.T().Setenv("CI_JOB_TOKEN", "")
 
 	resolvedEnvVars, errors := s.runner.ResolveEnvVars()
 	s.Empty(errors, "Should not error when optional variables are missing")
@@ -194,7 +191,6 @@ func (s *gitlabPipelineSuite) SetupTest() {
 	t.Setenv("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", "main")
 	t.Setenv("CI_MERGE_REQUEST_PROJECT_URL", "https://gitlab.com/chainloop/chainloop/-/merge_requests/42")
 	t.Setenv("CI_PROJECT_PATH", "chainloop/chainloop")
-	t.Setenv("CI_JOB_TOKEN", "gitlab-job-token")
 	t.Setenv("CI_MERGE_REQUEST_PROJECT_PATH", "chainloop/chainloop")
 }
 

@@ -79,7 +79,6 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
 		{"CI_PROJECT_PATH", false},
-		{"CI_JOB_TOKEN", true},
 		// MR-specific variables (optional - only present in MR contexts)
 		{"CI_PIPELINE_SOURCE", true},
 		{"CI_MERGE_REQUEST_IID", true},

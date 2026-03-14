@@ -323,8 +323,10 @@ func TestExtractGitLabMRMetadataWithReviewers(t *testing.T) {
 		"CI_MERGE_REQUEST_TARGET_BRANCH_NAME": "main",
 		"CI_SERVER_URL":                       server.URL,
 		"CI_MERGE_REQUEST_PROJECT_PATH":       "group/project",
-		"CI_JOB_TOKEN":                        "test-token",
 	}
+
+	// CI_JOB_TOKEN is read via os.Getenv (not from envVars) to avoid persisting it in attestations.
+	t.Setenv("CI_JOB_TOKEN", "test-token")
 
 	isMR, metadata, err := extractGitLabMRMetadata(context.Background(), envVars)
 	require.NoError(t, err)

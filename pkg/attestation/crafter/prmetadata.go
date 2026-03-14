@@ -169,7 +169,8 @@ func extractGitLabMRMetadata(ctx context.Context, envVars map[string]string) (bo
 	if projectPath == "" {
 		projectPath = envVars["CI_PROJECT_PATH"]
 	}
-	reviewers := fetchGitLabReviewers(ctx, envVars["CI_SERVER_URL"], projectPath, mrIID, envVars["CI_JOB_TOKEN"])
+	// CI_JOB_TOKEN is read via os.Getenv to avoid persisting it in the attestation envVars map.
+	reviewers := fetchGitLabReviewers(ctx, envVars["CI_SERVER_URL"], projectPath, mrIID, os.Getenv("CI_JOB_TOKEN"))
 
 	metadata := &PRMetadata{
 		Platform:     "gitlab",
