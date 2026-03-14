@@ -29,16 +29,13 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 )
 
-const (
-	claudeProvider = "claude"
-)
-
 // Build reads discovered files and constructs the AI agent config payload.
-// rootDir is the base directory, filePaths are relative to rootDir.
+// basePath is the base directory, filePaths are relative to basePath.
+// agentName identifies the AI agent (e.g. "claude", "cursor").
 // gitCtx may be nil if not in a git repository.
-func Build(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, error) {
-	// Resolve rootDir to its real path so symlink comparisons are reliable
-	realRoot, err := filepath.EvalSymlinks(rootDir)
+func Build(basePath string, filePaths []string, agentName string, gitCtx *GitContext) (*Evidence, error) {
+	// Resolve basePath to its real path so symlink comparisons are reliable
+	realRoot, err := filepath.EvalSymlinks(basePath)
 	if err != nil {
 		return nil, fmt.Errorf("resolving root dir: %w", err)
 	}
@@ -47,11 +44,11 @@ func Build(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, e
 	hashes := make([]string, 0, len(filePaths))
 
 	for _, relPath := range filePaths {
-		absPath := filepath.Join(rootDir, relPath)
+		absPath := filepath.Join(basePath, relPath)
 
 		// Resolve the full path through any symlinks (covers both symlinked
 		// files and symlinked parent directories like .claude/) and verify
-		// the resolved path stays within rootDir.
+		// the resolved path stays within basePath.
 		realPath, err := filepath.EvalSymlinks(absPath)
 		if err != nil {
 			return nil, fmt.Errorf("resolving %s: %w", relPath, err)
@@ -84,7 +81,7 @@ func Build(rootDir string, filePaths []string, gitCtx *GitContext) (*Evidence, e
 
 	data := Evidence{
 		SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
-		Agent:         Agent{Name: claudeProvider},
+		Agent:         Agent{Name: agentName},
 		ConfigHash:    computeCombinedHash(hashes),
 		CapturedAt:    time.Now().UTC().Format(time.RFC3339),
 		GitContext:    gitCtx,

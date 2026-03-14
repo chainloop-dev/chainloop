@@ -47,7 +47,7 @@ func TestBuild(t *testing.T) {
 		CommitSHA:  "abc123",
 	}
 
-	data, err := Build(rootDir, []string{"CLAUDE.md", ".claude/settings.json"}, gitCtx)
+	data, err := Build(rootDir, []string{"CLAUDE.md", ".claude/settings.json"}, "claude", gitCtx)
 	require.NoError(t, err)
 
 	assert.Equal(t, "0.1", data.SchemaVersion)
@@ -85,11 +85,25 @@ func TestBuild(t *testing.T) {
 	assert.Equal(t, hex.EncodeToString(combined[:]), data.ConfigHash)
 }
 
+func TestBuildWithCursorAgent(t *testing.T) {
+	rootDir := t.TempDir()
+
+	require.NoError(t, os.MkdirAll(filepath.Join(rootDir, ".cursor", "rules"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, ".cursor", "rules", "coding.md"), []byte("rules"), 0o600))
+
+	data, err := Build(rootDir, []string{".cursor/rules/coding.md"}, "cursor", nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, "cursor", data.Agent.Name)
+	require.Len(t, data.ConfigFiles, 1)
+	assert.Equal(t, ".cursor/rules/coding.md", data.ConfigFiles[0].Path)
+}
+
 func TestBuildWithoutGitContext(t *testing.T) {
 	rootDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
 
-	data, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
+	data, err := Build(rootDir, []string{"CLAUDE.md"}, "claude", nil)
 	require.NoError(t, err)
 
 	assert.Nil(t, data.GitContext)
@@ -100,7 +114,7 @@ func TestBuildJSONFormat(t *testing.T) {
 	rootDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
 
-	data, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
+	data, err := Build(rootDir, []string{"CLAUDE.md"}, "claude", nil)
 	require.NoError(t, err)
 
 	// Verify it marshals to valid JSON with top-level fields (no envelope)
@@ -128,7 +142,7 @@ func TestBuildRejectsSymlinksEscapingRoot(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "secret.txt"), []byte("secret"), 0o600))
 	require.NoError(t, os.Symlink(filepath.Join(outsideDir, "secret.txt"), filepath.Join(rootDir, "CLAUDE.md")))
 
-	_, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
+	_, err := Build(rootDir, []string{"CLAUDE.md"}, "claude", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "path escapes root directory via symlink")
 }
@@ -145,7 +159,7 @@ func TestBuildRejectsSymlinkedParentDir(t *testing.T) {
 	// Symlink .claude -> outside directory
 	require.NoError(t, os.Symlink(outsideClaude, filepath.Join(rootDir, ".claude")))
 
-	_, err := Build(rootDir, []string{".claude/settings.json"}, nil)
+	_, err := Build(rootDir, []string{".claude/settings.json"}, "claude", nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "path escapes root directory via symlink")
 }
@@ -153,7 +167,7 @@ func TestBuildRejectsSymlinkedParentDir(t *testing.T) {
 func TestBuildEmptyFileList(t *testing.T) {
 	rootDir := t.TempDir()
 
-	data, err := Build(rootDir, []string{}, nil)
+	data, err := Build(rootDir, []string{}, "claude", nil)
 	require.NoError(t, err)
 	assert.Empty(t, data.ConfigFiles)
 	assert.NotEmpty(t, data.ConfigHash)
@@ -163,7 +177,7 @@ func TestBuildEmptyFileList(t *testing.T) {
 func TestBuildNilFileList(t *testing.T) {
 	rootDir := t.TempDir()
 
-	data, err := Build(rootDir, nil, nil)
+	data, err := Build(rootDir, nil, "claude", nil)
 	require.NoError(t, err)
 	assert.Empty(t, data.ConfigFiles)
 }
@@ -172,7 +186,7 @@ func TestBuildAllowsRegularFilesInRoot(t *testing.T) {
 	rootDir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
 
-	data, err := Build(rootDir, []string{"CLAUDE.md"}, nil)
+	data, err := Build(rootDir, []string{"CLAUDE.md"}, "claude", nil)
 	require.NoError(t, err)
 	assert.Len(t, data.ConfigFiles, 1)
 }

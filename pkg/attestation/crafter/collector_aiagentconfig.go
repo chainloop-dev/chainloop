@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/aiagentconfig"
@@ -37,18 +38,15 @@ func NewAIAgentConfigCollector() *AIAgentConfigCollector {
 func (c *AIAgentConfigCollector) ID() string { return "ai-agent-config" }
 
 func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attestationID string, casBackend *casclient.CASBackend) error {
-	files, err := aiagentconfig.Discover(cr.WorkingDir())
+	agentFiles, err := aiagentconfig.DiscoverAll(cr.WorkingDir())
 	if err != nil {
 		return fmt.Errorf("discovering AI agent config files: %w", err)
 	}
 
-	if len(files) == 0 {
+	if len(agentFiles) == 0 {
 		cr.Logger.Debug().Msg("no AI agent config files found, skipping")
 		return nil
 	}
-
-	cr.Logger.Info().Int("files", len(files)).Msg("discovered AI agent config files")
-	cr.Logger.Debug().Strs("paths", files).Msg("AI agent config file paths")
 
 	var gitCtx *aiagentconfig.GitContext
 	if head := cr.CraftingState.GetAttestation().GetHead(); head != nil {
@@ -60,17 +58,42 @@ func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attes
 		}
 	}
 
-	evidence, err := aiagentconfig.Build(cr.WorkingDir(), files, gitCtx)
+	// Process each agent in deterministic order
+	agentNames := make([]string, 0, len(agentFiles))
+	for name := range agentFiles {
+		agentNames = append(agentNames, name)
+	}
+	sort.Strings(agentNames)
+
+	for _, agentName := range agentNames {
+		files := agentFiles[agentName]
+
+		cr.Logger.Info().Str("agent", agentName).Int("files", len(files)).Msg("discovered AI agent config files")
+		cr.Logger.Debug().Str("agent", agentName).Strs("paths", files).Msg("AI agent config file paths")
+
+		if err := c.uploadAgentConfig(ctx, cr, attestationID, casBackend, agentName, files, gitCtx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *AIAgentConfigCollector) uploadAgentConfig(
+	ctx context.Context, cr *Crafter, attestationID string,
+	casBackend *casclient.CASBackend, agentName string, files []string, gitCtx *aiagentconfig.GitContext,
+) error {
+	evidence, err := aiagentconfig.Build(cr.WorkingDir(), files, agentName, gitCtx)
 	if err != nil {
-		return fmt.Errorf("building AI agent config: %w", err)
+		return fmt.Errorf("building AI agent config for %s: %w", agentName, err)
 	}
 
 	jsonData, err := json.Marshal(evidence)
 	if err != nil {
-		return fmt.Errorf("marshaling AI agent config: %w", err)
+		return fmt.Errorf("marshaling AI agent config for %s: %w", agentName, err)
 	}
 
-	tmpFile, err := os.CreateTemp("", "ai-agent-config-*.json")
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("ai-agent-config-%s-*.json", agentName))
 	if err != nil {
 		return fmt.Errorf("creating temp file: %w", err)
 	}
@@ -82,11 +105,12 @@ func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attes
 	}
 	tmpFile.Close()
 
-	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), "ai-agent-config-claude", tmpFile.Name(), casBackend, nil); err != nil {
-		return fmt.Errorf("adding AI agent config material: %w", err)
+	materialName := fmt.Sprintf("ai-agent-config-%s", agentName)
+	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), materialName, tmpFile.Name(), casBackend, nil); err != nil {
+		return fmt.Errorf("adding AI agent config material for %s: %w", agentName, err)
 	}
 
-	cr.Logger.Info().Msg("successfully collected AI agent configuration evidence")
+	cr.Logger.Info().Str("agent", agentName).Msg("successfully collected AI agent configuration")
 
 	return nil
 }
