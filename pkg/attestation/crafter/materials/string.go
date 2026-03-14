@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package materials
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -52,6 +53,9 @@ func (i *StringCrafter) Craft(_ context.Context, value string) (*api.Attestation
 				Id:    i.input.Name,
 				Value: value, Digest: hash.String(),
 			},
+		},
+		Annotations: map[string]string{
+			AnnotationMaterialSize: strconv.Itoa(len(value)),
 		},
 	}, nil
 }

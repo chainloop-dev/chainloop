@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,5 +51,5 @@ func TestCraft(t *testing.T) {
 	// Timestamp
 	assert.WithinDuration(time.Now(), got.AddedAt.AsTime(), 5*time.Second)
 	// Annotations
-	assert.Equal(map[string]string{"test": "test"}, got.Annotations)
+	assert.Equal(map[string]string{"test": "test", "chainloop.material.size": "10"}, got.Annotations)
 }
