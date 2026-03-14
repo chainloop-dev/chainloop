@@ -23,13 +23,13 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/prinfo"
 )
 
-//go:generate go run ./generate.go --output-dir ../../../internal/schemavalidators/internal_schemas/prinfo --version 1.0
+//go:generate go run ./generate.go --output-dir ../../../internal/schemavalidators/internal_schemas/prinfo --version 1.1
 func main() {
 	var outputDir string
 	var version string
 
 	flag.StringVar(&outputDir, "output-dir", "../../../internal/schemavalidators/internal_schemas/prinfo", "Directory to output the schema files")
-	flag.StringVar(&version, "version", "1.0", "Schema version")
+	flag.StringVar(&version, "version", "1.1", "Schema version")
 	flag.Parse()
 
 	generator := prinfo.NewGenerator()

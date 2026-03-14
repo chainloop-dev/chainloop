@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -106,6 +106,57 @@ func TestValidatePRInfo(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "valid PR with reviewers",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "User"},
+					{"login": "coderabbitai", "type": "Bot"}
+				]
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "valid PR with empty reviewers",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": []
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "invalid reviewer missing login",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"type": "User"}
+				]
+			}`,
+			wantErr: true,
+		},
+		{
+			name: "invalid reviewer type",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "InvalidType"}
+				]
+			}`,
+			wantErr: true,
+		},
+		{
 			name:    "invalid JSON",
 			data:    `{invalid json}`,
 			wantErr: true,
@@ -124,7 +175,7 @@ func TestValidatePRInfo(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_0)
+			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_1)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
