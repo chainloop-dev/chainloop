@@ -6,16 +6,10 @@ on:
       tag:
         type: string
         required: true
-    secrets:
-      chainloop_token:
-        required: true
 
-permissions: {}
+permissions: read-all
 
 jobs:
-  # This reusable workflow inspects if the given workflow_name exists on Chainloop. If the Workflow does not exist
-  # it will create one with an empty contract ready for operators to be filled. Otherwise, if found, it will just
-  # be ignored and the process will continue. For this to work it's using a pre-created API Token
   release:
     name: Record release from GitHub
     runs-on: ubuntu-latest
@@ -24,7 +18,6 @@ jobs:
       contents: write
       id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
     env:
-      CHAINLOOP_TOKEN: ${{ secrets.chainloop_token }}
       CHAINLOOP_WORKFLOW_NAME: chainloop-vault-release
       CHAINLOOP_PROJECT: chainloop
       GH_TOKEN: ${{ github.token }}
