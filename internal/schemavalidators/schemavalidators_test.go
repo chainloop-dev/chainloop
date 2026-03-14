@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -223,6 +223,65 @@ func TestValidateRunnerContext(t *testing.T) {
 			require.NoError(t, json.Unmarshal(f, &v))
 
 			err = schemavalidators.ValidateChainloopRunnerContext(v, "")
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestValidateAIAgentConfig(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filePath string
+		wantErr  string
+	}{
+		{
+			name:     "valid full config",
+			filePath: "./testdata/ai_agent_config_valid.json",
+		},
+		{
+			name:     "valid minimal config",
+			filePath: "./testdata/ai_agent_config_minimal.json",
+		},
+		{
+			name:     "missing agent",
+			filePath: "./testdata/ai_agent_config_missing_agent.json",
+			wantErr:  "missing properties: 'agent'",
+		},
+		{
+			name:     "empty config_files array",
+			filePath: "./testdata/ai_agent_config_empty_config_files.json",
+		},
+		{
+			name:     "config file missing required fields",
+			filePath: "./testdata/ai_agent_config_missing_config_file_fields.json",
+			wantErr:  "missing properties",
+		},
+		{
+			name:     "additional properties not allowed",
+			filePath: "./testdata/ai_agent_config_extra_fields.json",
+			wantErr:  "additionalProperties 'unknown_field' not allowed",
+		},
+		{
+			name:     "completely wrong format",
+			filePath: "./testdata/sbom-spdx.json",
+			wantErr:  "missing properties",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := os.ReadFile(tc.filePath)
+			require.NoError(t, err)
+
+			var v any
+			require.NoError(t, json.Unmarshal(f, &v))
+
+			err = schemavalidators.ValidateAIAgentConfig(v, "")
 			if tc.wantErr != "" {
 				require.ErrorContains(t, err, tc.wantErr)
 				return

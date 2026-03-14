@@ -57,6 +57,11 @@ type AttestationInit struct {
 	connectionInsecure bool
 }
 
+const aiConfigCollectorName = "aiconfig"
+
+// ValidCollectors is the list of known collector names accepted by --collectors.
+var ValidCollectors = []string{aiConfigCollectorName}
+
 // ErrAttestationAlreadyExist means that there is an attestation in progress
 var ErrAttestationAlreadyExist = errors.New("attestation already initialized")
 
@@ -95,6 +100,8 @@ type AttestationInitRunOpts struct {
 	RequireExistingVersion       bool
 	WorkflowName                 string
 	NewWorkflowContractRef       string
+	// Collectors is a list of additional collector names to enable (e.g. "aiconfig")
+	Collectors []string
 }
 
 func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
@@ -300,11 +307,19 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		return "", err
 	}
 
-	// Auto-collect PR/MR metadata if in PR/MR context
-	if err := action.c.AutoCollectPRMetadata(ctx, attestationID, discoveredRunner, casBackend); err != nil {
-		action.Logger.Warn().Err(err).Msg("failed to auto-collect PR/MR metadata")
-		// Don't fail the init - this is best-effort
+	// Register and run auto-discovery collectors
+	// PR metadata is always collected; other collectors are opt-in via --collectors flag
+	collectors := []crafter.Collector{crafter.NewPRMetadataCollector(discoveredRunner)}
+	for _, name := range opts.Collectors {
+		switch name {
+		case aiConfigCollectorName:
+			collectors = append(collectors, crafter.NewAIAgentConfigCollector())
+		default:
+			action.Logger.Warn().Str("collector", name).Msg("unknown collector, skipping")
+		}
 	}
+	action.c.RegisterCollectors(collectors...)
+	action.c.RunCollectors(ctx, attestationID, casBackend)
 
 	// Evaluate attestation-level policies at init phase
 	attClient := pb.NewAttestationServiceClient(action.CPConnection)

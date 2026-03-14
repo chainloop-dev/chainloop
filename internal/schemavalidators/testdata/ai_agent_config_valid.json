@@ -1,0 +1,22 @@
+{
+  "schema_version": "0.1",
+  "agent": {
+    "name": "claude",
+    "version": "4.0"
+  },
+  "config_hash": "abc123def456",
+  "captured_at": "2026-03-13T10:00:00Z",
+  "git_context": {
+    "repository": "https://github.com/org/repo",
+    "branch": "main",
+    "commit_sha": "abc123"
+  },
+  "config_files": [
+    {
+      "path": "CLAUDE.md",
+      "sha256": "4c3b798d41eb62a633e0954b2cbdd4b388ca0b83f84a89cc7936cf8575d7349e",
+      "size": 15,
+      "content": "IyBQcm9qZWN0IFJ1bGVz"
+    }
+  ]
+}

@@ -17,7 +17,6 @@ package crafter
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -31,7 +30,6 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/ociauth"
-	"github.com/chainloop-dev/chainloop/internal/prinfo"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
@@ -76,6 +74,9 @@ type Crafter struct {
 
 	// noStrictValidation skips strict schema validation
 	noStrictValidation bool
+
+	// collectors are auto-discovery collectors that run during attestation init
+	collectors []Collector
 }
 
 type VersionedCraftingState struct {
@@ -125,6 +126,31 @@ func WithNoStrictValidation(noStrictValidation bool) NewOpt {
 	return func(c *Crafter) error {
 		c.noStrictValidation = noStrictValidation
 		return nil
+	}
+}
+
+// WorkingDir returns the working directory used for file discovery.
+func (c *Crafter) WorkingDir() string {
+	return c.workingDir
+}
+
+// RegisterCollectors appends collectors to be run during attestation init.
+func (c *Crafter) RegisterCollectors(collectors ...Collector) {
+	c.collectors = append(c.collectors, collectors...)
+}
+
+// RunCollectors executes all registered collectors best-effort.
+// Failures are logged but never propagated.
+func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBackend *casclient.CASBackend) {
+	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to reload crafting state before running collectors")
+		return
+	}
+
+	for _, collector := range c.collectors {
+		if err := collector.Collect(ctx, c, attestationID, casBackend); err != nil {
+			c.Logger.Warn().Err(err).Str("collector", collector.ID()).Msg("collector failed")
+		}
 	}
 }
 
@@ -498,73 +524,6 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 		return fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
-	return nil
-}
-
-// AutoCollectPRMetadata automatically collects PR/MR metadata if running in a PR/MR context
-func (c *Crafter) AutoCollectPRMetadata(ctx context.Context, attestationID string, runner SupportedRunner, casBackend *casclient.CASBackend) error {
-	if err := c.requireStateLoaded(); err != nil {
-		return fmt.Errorf("crafting state not loaded before inspecting PR/MR metadata: %w", err)
-	}
-
-	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
-		c.Logger.Warn().Err(err).Msg("failed to reload crafting state")
-	}
-
-	// Detect if we're in a PR/MR context
-	isPR, metadata, err := DetectPRContext(runner)
-	if err != nil {
-		return fmt.Errorf("failed to detect PR/MR context: %w", err)
-	}
-
-	// If not in PR/MR context, nothing to do
-	if !isPR {
-		c.Logger.Debug().Msg("not in PR/MR context, skipping metadata collection")
-		return nil
-	}
-
-	c.Logger.Info().Str("platform", metadata.Platform).Str("number", metadata.Number).Msg("detected PR/MR context")
-
-	// Create the material
-	evidenceData := prinfo.NewEvidence(prinfo.Data{
-		Platform:     metadata.Platform,
-		Type:         metadata.Type,
-		Number:       metadata.Number,
-		Title:        metadata.Title,
-		Description:  metadata.Description,
-		SourceBranch: metadata.SourceBranch,
-		TargetBranch: metadata.TargetBranch,
-		URL:          metadata.URL,
-		Author:       metadata.Author,
-	})
-
-	// Marshal to JSON
-	jsonData, err := json.Marshal(evidenceData)
-	if err != nil {
-		return fmt.Errorf("failed to marshal PR/MR metadata: %w", err)
-	}
-
-	// Create a temporary file for the metadata
-	materialName := fmt.Sprintf("pr-metadata-%s", metadata.Number)
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s.json", materialName))
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer os.Remove(tmpFile.Name())
-
-	// Write the JSON data to the temp file
-	if _, err := tmpFile.Write(jsonData); err != nil {
-		tmpFile.Close()
-		return fmt.Errorf("failed to write metadata to temp file: %w", err)
-	}
-	tmpFile.Close()
-
-	// Add the material using the crafter with explicit CHAINLOOP_PR_INFO type
-	if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile.Name(), casBackend, nil); err != nil {
-		return fmt.Errorf("failed to add PR/MR metadata material: %w", err)
-	}
-
-	c.Logger.Info().Msg("successfully collected and attested PR/MR metadata")
 	return nil
 }
 

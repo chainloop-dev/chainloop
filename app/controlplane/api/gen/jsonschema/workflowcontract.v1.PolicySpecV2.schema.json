@@ -84,7 +84,8 @@
             "SLSA_PROVENANCE",
             "CHAINLOOP_RUNNER_CONTEXT",
             "CHAINLOOP_PR_INFO",
-            "GITLEAKS_JSON"
+            "GITLEAKS_JSON",
+            "CHAINLOOP_AI_AGENT_CONFIG"
           ],
           "title": "Material Type",
           "type": "string"
