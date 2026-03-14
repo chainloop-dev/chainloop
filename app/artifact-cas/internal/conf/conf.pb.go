@@ -113,7 +113,9 @@ type Server struct {
 	// GRPC API endpoint
 	Grpc *Server_GRPC `protobuf:"bytes,2,opt,name=grpc,proto3" json:"grpc,omitempty"`
 	// hHTTP server where the prometheus metrics will get exposed
-	HttpMetrics   *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
+	HttpMetrics *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
+	// CORS configuration for the HTTP download endpoint
+	Cors          *Server_CORS `protobuf:"bytes,4,opt,name=cors,proto3" json:"cors,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -165,6 +167,13 @@ func (x *Server) GetGrpc() *Server_GRPC {
 func (x *Server) GetHttpMetrics() *Server_HTTP {
 	if x != nil {
 		return x.HttpMetrics
+	}
+	return nil
+}
+
+func (x *Server) GetCors() *Server_CORS {
+	if x != nil {
+		return x.Cors
 	}
 	return nil
 }
@@ -329,7 +338,6 @@ type Server_HTTP struct {
 	Network       string                 `protobuf:"bytes,1,opt,name=network,proto3" json:"network,omitempty"`
 	Addr          string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
 	Timeout       *durationpb.Duration   `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	Cors          *Server_CORS           `protobuf:"bytes,4,opt,name=cors,proto3" json:"cors,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -381,13 +389,6 @@ func (x *Server_HTTP) GetAddr() string {
 func (x *Server_HTTP) GetTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.Timeout
-	}
-	return nil
-}
-
-func (x *Server_HTTP) GetCors() *Server_CORS {
-	if x != nil {
-		return x.Cors
 	}
 	return nil
 }
@@ -572,16 +573,16 @@ const file_conf_proto_rawDesc = "" +
 	"\x06sentry\x18\x01 \x01(\v2\x1f.Bootstrap.Observability.SentryR\x06sentry\x1a<\n" +
 	"\x06Sentry\x12\x10\n" +
 	"\x03dsn\x18\x01 \x01(\tR\x03dsn\x12 \n" +
-	"\venvironment\x18\x02 \x01(\tR\venvironment\"\x9a\x04\n" +
+	"\venvironment\x18\x02 \x01(\tR\venvironment\"\x99\x04\n" +
 	"\x06Server\x12 \n" +
 	"\x04http\x18\x01 \x01(\v2\f.Server.HTTPR\x04http\x12 \n" +
 	"\x04grpc\x18\x02 \x01(\v2\f.Server.GRPCR\x04grpc\x12/\n" +
-	"\fhttp_metrics\x18\x03 \x01(\v2\f.Server.HTTPR\vhttpMetrics\x1a\x8b\x01\n" +
+	"\fhttp_metrics\x18\x03 \x01(\v2\f.Server.HTTPR\vhttpMetrics\x12 \n" +
+	"\x04cors\x18\x04 \x01(\v2\f.Server.CORSR\x04cors\x1ai\n" +
 	"\x04HTTP\x12\x18\n" +
 	"\anetwork\x18\x01 \x01(\tR\anetwork\x12\x12\n" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x123\n" +
-	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12 \n" +
-	"\x04cors\x18\x04 \x01(\v2\f.Server.CORSR\x04cors\x1a+\n" +
+	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x1a+\n" +
 	"\x04CORS\x12#\n" +
 	"\rallow_origins\x18\x01 \x03(\tR\fallowOrigins\x1aH\n" +
 	"\x03TLS\x12 \n" +
@@ -632,9 +633,9 @@ var file_conf_proto_depIdxs = []int32{
 	5,  // 4: Server.http:type_name -> Server.HTTP
 	8,  // 5: Server.grpc:type_name -> Server.GRPC
 	5,  // 6: Server.http_metrics:type_name -> Server.HTTP
-	4,  // 7: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
-	10, // 8: Server.HTTP.timeout:type_name -> google.protobuf.Duration
-	6,  // 9: Server.HTTP.cors:type_name -> Server.CORS
+	6,  // 7: Server.cors:type_name -> Server.CORS
+	4,  // 8: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
+	10, // 9: Server.HTTP.timeout:type_name -> google.protobuf.Duration
 	10, // 10: Server.GRPC.timeout:type_name -> google.protobuf.Duration
 	7,  // 11: Server.GRPC.tls_config:type_name -> Server.TLS
 	12, // [12:12] is the sub-list for method output_type

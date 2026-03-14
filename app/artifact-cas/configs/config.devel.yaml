@@ -8,9 +8,6 @@ server:
     # Timeouts for http downloads
     # grpc downloads/uploads don't require this because they don't have timeouts
     timeout: 300s
-    # cors:
-    #   allow_origins:
-    #     - "http://localhost:3000"
   grpc:
     addr: 0.0.0.0:9001
     # Some unary RPCs are slow, so we need to increase the timeout
@@ -21,6 +18,9 @@ server:
     #   private_key: "../../devel/devkeys/selfsigned/cas.key"
   http_metrics:
     addr: 0.0.0.0:5001
+  # cors:
+  #   allow_origins:
+  #     - "http://localhost:3000"
 
 credentials_service:
   # we will check that we can read there

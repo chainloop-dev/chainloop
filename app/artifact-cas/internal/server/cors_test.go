@@ -82,6 +82,7 @@ func TestCORSMiddleware(t *testing.T) {
 			method:         http.MethodGet,
 			origin:         "http://evil.com",
 			wantStatus:     http.StatusOK,
+			wantVary:       true,
 			wantHandler:    true,
 		},
 		{

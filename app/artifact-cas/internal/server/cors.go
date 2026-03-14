@@ -53,15 +53,17 @@ func CORSMiddleware(allowedOrigins []string, next http.Handler) http.Handler {
 			}
 		}
 
+		// Always set Vary: Origin when the response depends on the Origin header,
+		// so HTTP caches don't serve a cached response for the wrong origin.
+		// Use Add to avoid clobbering any existing Vary values.
+		w.Header().Add("Vary", "Origin")
+
 		if matchedOrigin == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		w.Header().Set("Access-Control-Allow-Origin", matchedOrigin)
-		if matchedOrigin != "*" {
-			w.Header().Set("Vary", "Origin")
-		}
 
 		if r.Method == http.MethodOptions {
 			w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")

@@ -42,7 +42,6 @@ message Server {
     string network = 1;
     string addr = 2;
     google.protobuf.Duration timeout = 3;
-    CORS cors = 4;
   }
   message CORS {
     repeated string allow_origins = 1;
@@ -64,6 +63,8 @@ message Server {
   GRPC grpc = 2;
   // hHTTP server where the prometheus metrics will get exposed
   HTTP http_metrics = 3;
+  // CORS configuration for the HTTP download endpoint
+  CORS cors = 4;
 }
 
 message Auth {
