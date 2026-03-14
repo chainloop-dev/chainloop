@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,9 @@ type RunnerContextVersion string
 // PRInfoVersion represents the version of PR/MR Info schema.
 type PRInfoVersion string
 
+// AIAgentConfigVersion represents the version of AI Agent Config schema.
+type AIAgentConfigVersion string
+
 const (
 	// RunnerContextVersion0_1 represents Runner Context version 0.1 schema.
 	RunnerContextVersion0_1 RunnerContextVersion = "0.1"
@@ -53,6 +56,8 @@ const (
 	CSAFVersion2_0 CSAFVersion = "2.0"
 	// CSAFVersion2_1 represents CSAF version 2.0 schema.
 	CSAFVersion2_1 CSAFVersion = "2.1"
+	// AIAgentConfigVersion0_1 represents AI Agent Config version 0.1 schema.
+	AIAgentConfigVersion0_1 AIAgentConfigVersion = "0.1"
 )
 
 var (
@@ -87,6 +92,10 @@ var (
 	// PR/MR Info schemas
 	//go:embed internal_schemas/prinfo/pr-info-1.0.schema.json
 	prInfoSpecVersion1_0 string
+
+	// AI Agent Config schemas
+	//go:embed internal_schemas/aiagentconfig/ai-agent-config-0.1.schema.json
+	aiAgentConfigSpecVersion0_1 string
 )
 
 // schemaURLMapping maps the schema URL to the schema content. This is used to compile the schema validators
@@ -94,24 +103,26 @@ var (
 // The keys are the URLs of the schemas and the values are the schema content that can be found in the embedded
 // files.
 var schemaURLMapping = map[string]string{
-	"http://cyclonedx.org/schema/jsf-0.82.schema.json":                      jsfSpecVersion0_82,
-	"http://cyclonedx.org/schema/spdx.schema.json":                          spdxSpec,
-	"http://cyclonedx.org/schema/bom-1.5.schema.json":                       bomSpecVersion1_5,
-	"http://cyclonedx.org/schema/bom-1.6.schema.json":                       bomSpecVersion1_6,
-	"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":      casfSpecVersion2_0,
-	"https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json":      casfSpecVersion2_1,
-	"https://www.first.org/cvss/cvss-v2.0.json":                             cvssSpecVersion2_0,
-	"https://www.first.org/cvss/cvss-v3.0.json":                             cvssSpecVersion3_0,
-	"https://www.first.org/cvss/cvss-v3.1.json":                             cvssSpecVersion3_1,
-	"https://www.first.org/cvss/cvss-v4.0.json":                             cvssSpecVersion4_0,
-	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json": runnerContextSpecVersion0_1,
-	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":          prInfoSpecVersion1_0,
+	"http://cyclonedx.org/schema/jsf-0.82.schema.json":                            jsfSpecVersion0_82,
+	"http://cyclonedx.org/schema/spdx.schema.json":                                spdxSpec,
+	"http://cyclonedx.org/schema/bom-1.5.schema.json":                             bomSpecVersion1_5,
+	"http://cyclonedx.org/schema/bom-1.6.schema.json":                             bomSpecVersion1_6,
+	"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":            casfSpecVersion2_0,
+	"https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json":            casfSpecVersion2_1,
+	"https://www.first.org/cvss/cvss-v2.0.json":                                   cvssSpecVersion2_0,
+	"https://www.first.org/cvss/cvss-v3.0.json":                                   cvssSpecVersion3_0,
+	"https://www.first.org/cvss/cvss-v3.1.json":                                   cvssSpecVersion3_1,
+	"https://www.first.org/cvss/cvss-v4.0.json":                                   cvssSpecVersion4_0,
+	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json":       runnerContextSpecVersion0_1,
+	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":                prInfoSpecVersion1_0,
+	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json": aiAgentConfigSpecVersion0_1,
 }
 
 var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
 var compiledCSAFSchemas map[CSAFVersion]*jsonschema.Schema
 var compiledRunnerContextSchemas map[RunnerContextVersion]*jsonschema.Schema
 var compiledPRInfoSchemas map[PRInfoVersion]*jsonschema.Schema
+var compiledAIAgentConfigSchemas map[AIAgentConfigVersion]*jsonschema.Schema
 
 func init() {
 	compiler := jsonschema.NewCompiler()
@@ -132,6 +143,9 @@ func init() {
 
 	compiledPRInfoSchemas = make(map[PRInfoVersion]*jsonschema.Schema)
 	compiledPRInfoSchemas[PRInfoVersion1_0] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json")
+
+	compiledAIAgentConfigSchemas = make(map[AIAgentConfigVersion]*jsonschema.Schema)
+	compiledAIAgentConfigSchemas[AIAgentConfigVersion0_1] = compiler.MustCompile("https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json")
 }
 
 // ValidateCycloneDX validates the given object against the specified CycloneDX schema version.
@@ -232,6 +246,28 @@ func ValidatePRInfo(data interface{}, version PRInfoVersion) error {
 	schema, ok := compiledPRInfoSchemas[version]
 	if !ok {
 		return errors.New("invalid PR info schema version")
+	}
+
+	if err := schema.Validate(data); err != nil {
+		var invalidJSONTypeError jsonschema.InvalidJSONTypeError
+		if errors.As(err, &invalidJSONTypeError) {
+			return ErrInvalidJSONPayload
+		}
+		return err
+	}
+
+	return nil
+}
+
+// ValidateAIAgentConfig validates the AI agent config schema.
+func ValidateAIAgentConfig(data any, version AIAgentConfigVersion) error {
+	if version == "" {
+		version = AIAgentConfigVersion0_1
+	}
+
+	schema, ok := compiledAIAgentConfigSchemas[version]
+	if !ok {
+		return errors.New("invalid AI agent config schema version")
 	}
 
 	if err := schema.Validate(data); err != nil {

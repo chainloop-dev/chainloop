@@ -18,6 +18,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -36,6 +38,7 @@ func newAttestationInitCmd() *cobra.Command {
 		projectVersionRelease bool
 		existingVersion       bool
 		newWorkflowcontract   string
+		collectors            []string
 	)
 
 	cmd := &cobra.Command{
@@ -74,6 +77,12 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("project version is required when using --existing-version")
 			}
 
+			for _, c := range collectors {
+				if !slices.Contains(action.ValidCollectors, c) {
+					return fmt.Errorf("unknown collector %q, valid options: %s", c, strings.Join(action.ValidCollectors, ", "))
+				}
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -105,6 +114,7 @@ func newAttestationInitCmd() *cobra.Command {
 						NewWorkflowContractRef:       newWorkflowcontract,
 						ProjectVersionMarkAsReleased: projectVersionRelease,
 						RequireExistingVersion:       existingVersion,
+						Collectors:                   collectors,
 					})
 
 					return err
@@ -164,6 +174,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
 	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
 	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "return an error if the version doesn't exist in the project")
+	cmd.Flags().StringSliceVar(&collectors, "collectors", nil, "comma-separated list of additional collectors to enable (e.g. aiconfig)")
 
 	return cmd
 }

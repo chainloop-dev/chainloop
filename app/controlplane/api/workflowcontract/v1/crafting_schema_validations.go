@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_ZAP_DAST_ZIP,
 	CraftingSchema_Material_SLSA_PROVENANCE,
 	CraftingSchema_Material_CHAINLOOP_RUNNER_CONTEXT,
+	CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG,
 	CraftingSchema_Material_ATTESTATION,
 	CraftingSchema_Material_CONTAINER_IMAGE,
 	CraftingSchema_Material_ARTIFACT,

@@ -18,6 +18,9 @@ server:
     #   private_key: "../../devel/devkeys/selfsigned/cas.key"
   http_metrics:
     addr: 0.0.0.0:5001
+  # cors:
+  #   allow_origins:
+  #     - "http://localhost:3000"
 
 credentials_service:
   # we will check that we can read there

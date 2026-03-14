@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -171,6 +171,7 @@ func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
 			expectedAnnotations: map[string]string{
 				"chainloop.material.evidence.id":     "custom-evidence-123",
 				"chainloop.material.evidence.schema": "https://example.com/schema/v1",
+				materials.AnnotationMaterialSize:     "297",
 			},
 		},
 		{
@@ -178,6 +179,7 @@ func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
 			filePath: "./testdata/evidence-with-id-data-no-schema.json",
 			expectedAnnotations: map[string]string{
 				"chainloop.material.evidence.id": "custom-evidence-456",
+				materials.AnnotationMaterialSize: "158",
 			},
 		},
 		{
@@ -186,17 +188,22 @@ func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
 			expectedAnnotations: map[string]string{
 				"chainloop.material.evidence.id":     "custom-evidence-123",
 				"chainloop.material.evidence.schema": "https://example.com/schema/v1",
+				materials.AnnotationMaterialSize:     "325",
 			},
 		},
 		{
-			name:                "JSON without required structure does not extract annotations",
-			filePath:            "./testdata/evidence-invalid-structure.json",
-			expectedAnnotations: nil,
+			name:     "JSON without required structure does not extract annotations",
+			filePath: "./testdata/evidence-invalid-structure.json",
+			expectedAnnotations: map[string]string{
+				materials.AnnotationMaterialSize: "90",
+			},
 		},
 		{
-			name:                "Non-JSON file does not extract annotations",
-			filePath:            "./testdata/simple.txt",
-			expectedAnnotations: nil,
+			name:     "Non-JSON file does not extract annotations",
+			filePath: "./testdata/simple.txt",
+			expectedAnnotations: map[string]string{
+				materials.AnnotationMaterialSize: "8",
+			},
 		},
 	}
 

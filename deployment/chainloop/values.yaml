@@ -990,6 +990,17 @@ cas:
   ## @extra cas.externalURL Optional External URL for the CAS service. If not set it will be derived from the ingress and service configuration
   # externalURL: ""
 
+  ## @param cas.allowedOrigins List of allowed origins for CORS on the HTTP download endpoint. If empty, CORS is disabled.
+  ## Each value must be a full origin (scheme + host + optional port), e.g. "https://app.chainloop.dev".
+  ## Bare hostnames like "app.chainloop.dev" will NOT work — browsers always send the scheme in the Origin header.
+  ## Accepts both a YAML list and a comma-separated string:
+  ##   allowedOrigins:
+  ##     - "https://app.chainloop.dev"
+  ##     - "https://console.example.com"
+  ## or:
+  ##   allowedOrigins: "https://app.chainloop.dev,https://console.example.com"
+  allowedOrigins: []
+
   ## @param cas.image.registry [default: REGISTRY_NAME] Image registry
   ## @param cas.image.repository [default: REPOSITORY_NAME] Image repository
   ## @skip cas.image.tag

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,7 +65,8 @@ func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.Dow
 
 	srv := http.NewServer(opts...)
 
-	srv.Handle(service.DownloadPath, middlewares_http.AuthFromQueryParam(loadPublicKey(rawKey), claimsFunc(), casJWT.SigningMethod, downloadSvc))
+	downloadHandler := middlewares_http.AuthFromQueryParam(loadPublicKey(rawKey), claimsFunc(), casJWT.SigningMethod, downloadSvc)
+	srv.Handle(service.DownloadPath, CORSMiddleware(c.GetCors().GetAllowOrigins(), downloadHandler))
 	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version, providers))
 	return srv, nil
 }

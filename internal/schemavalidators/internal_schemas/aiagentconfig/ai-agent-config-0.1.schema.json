@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
+  "type": "object",
+  "title": "AI Agent Configuration",
+  "description": "Schema for AI agent configuration data collected during attestation",
+  "required": [
+    "schema_version",
+    "agent",
+    "config_hash",
+    "captured_at",
+    "config_files"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version identifier"
+    },
+    "agent": {
+      "type": "object",
+      "description": "AI agent provider information",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Agent provider name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Agent version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "config_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of combined config for drift detection"
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of config snapshot"
+    },
+    "git_context": {
+      "type": "object",
+      "description": "Repository, branch, commit SHA at capture time",
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Repository URL"
+        },
+        "branch": {
+          "type": "string",
+          "description": "Branch name"
+        },
+        "commit_sha": {
+          "type": "string",
+          "description": "Commit SHA"
+        }
+      },
+      "additionalProperties": false
+    },
+    "config_files": {
+      "type": "array",
+      "description": "Array of discovered configuration files",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "size", "content"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative file path"
+          },
+          "sha256": {
+            "type": "string",
+            "description": "SHA-256 digest of the file"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "File size in bytes"
+          },
+          "content": {
+            "type": "string",
+            "description": "Base64-encoded file content"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "permissions": {
+      "description": "Parsed allow/deny rules from agent settings"
+    },
+    "mcp_servers": {
+      "description": "MCP server names, URLs, and commands"
+    },
+    "subagents": {
+      "description": "Subagent names, allowed tools, model overrides"
+    }
+  },
+  "additionalProperties": false
+}

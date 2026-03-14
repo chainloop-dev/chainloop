@@ -31,3 +31,18 @@ data:
         timeout: 5s
       http_metrics:
         addr: "0.0.0.0:{{ .Values.cas.containerPorts.metrics}}"
+      {{- if .Values.cas.allowedOrigins }}
+      cors:
+        allow_origins:
+          {{- if kindIs "string" .Values.cas.allowedOrigins }}
+          {{- range splitList "," .Values.cas.allowedOrigins }}
+          {{- if (trim .) }}
+          - {{ trim . | quote }}
+          {{- end }}
+          {{- end }}
+          {{- else }}
+          {{- range .Values.cas.allowedOrigins }}
+          - {{ . | quote }}
+          {{- end }}
+          {{- end }}
+      {{- end }}
