@@ -313,11 +313,6 @@ func TestExtractGitLabMRMetadataWithReviewers(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Set env vars that extractGitLabMRMetadata reads via os.Getenv for the API call
-	t.Setenv("CI_SERVER_URL", server.URL)
-	t.Setenv("CI_MERGE_REQUEST_PROJECT_PATH", "group/project")
-	t.Setenv("CI_JOB_TOKEN", "test-token")
-
 	envVars := map[string]string{
 		"CI_PIPELINE_SOURCE":                  "merge_request_event",
 		"CI_MERGE_REQUEST_IID":                "10",
@@ -326,6 +321,9 @@ func TestExtractGitLabMRMetadataWithReviewers(t *testing.T) {
 		"GITLAB_USER_LOGIN":                   "author",
 		"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME": "feature",
 		"CI_MERGE_REQUEST_TARGET_BRANCH_NAME": "main",
+		"CI_SERVER_URL":                       server.URL,
+		"CI_MERGE_REQUEST_PROJECT_PATH":       "group/project",
+		"CI_JOB_TOKEN":                        "test-token",
 	}
 
 	isMR, metadata, err := extractGitLabMRMetadata(context.Background(), envVars)
