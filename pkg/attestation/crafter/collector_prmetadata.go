@@ -95,6 +95,7 @@ func createPRMetadataTempFile(prNumber string, data []byte) (materialName string
 
 	if _, err := tmpFile.Write(data); err != nil {
 		tmpFile.Close()
+		os.Remove(tmpFile.Name())
 		return "", "", fmt.Errorf("writing temp file: %w", err)
 	}
 	tmpFile.Close()
