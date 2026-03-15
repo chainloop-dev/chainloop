@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -106,6 +106,57 @@ func TestValidatePRInfo(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "valid PR with reviewers",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "User"},
+					{"login": "coderabbitai", "type": "Bot"}
+				]
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "valid PR with empty reviewers",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": []
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "invalid reviewer missing login",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"type": "User"}
+				]
+			}`,
+			wantErr: true,
+		},
+		{
+			name: "invalid reviewer type",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "InvalidType"}
+				]
+			}`,
+			wantErr: true,
+		},
+		{
 			name:    "invalid JSON",
 			data:    `{invalid json}`,
 			wantErr: true,
@@ -123,6 +174,52 @@ func TestValidatePRInfo(t *testing.T) {
 				}
 				require.NoError(t, err)
 			}
+
+			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_1)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestValidatePRInfoV1_0BackwardCompat(t *testing.T) {
+	testCases := []struct {
+		name    string
+		data    string
+		wantErr bool
+	}{
+		{
+			name: "v1.0 valid PR without reviewers",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "123",
+				"url": "https://github.com/owner/repo/pull/123",
+				"author": "username"
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "v1.0 rejects reviewers field",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "123",
+				"url": "https://github.com/owner/repo/pull/123",
+				"reviewers": [{"login": "reviewer1", "type": "User"}]
+			}`,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var data interface{}
+			err := json.Unmarshal([]byte(tc.data), &data)
+			require.NoError(t, err)
 
 			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_0)
 			if tc.wantErr {

@@ -1,0 +1,11 @@
+{
+  "pull_request": {
+    "number": 456,
+    "title": "Fix bug",
+    "body": "This PR fixes a bug.",
+    "html_url": "https://github.com/owner/repo/pull/456",
+    "user": {
+      "login": "janedoe"
+    }
+  }
+}

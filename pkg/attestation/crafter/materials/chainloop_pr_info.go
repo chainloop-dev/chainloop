@@ -75,7 +75,7 @@ func (i *ChainloopPRInfoCrafter) Craft(ctx context.Context, artifactPath string)
 	}
 
 	// Validate the data against JSON schema
-	if err := schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_0); err != nil {
+	if err := schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_1); err != nil {
 		i.logger.Debug().Err(err).Msg("schema validation failed")
 		return nil, fmt.Errorf("PR info validation failed: %w", err)
 	}
