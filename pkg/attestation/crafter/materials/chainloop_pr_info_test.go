@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 			require.NoError(t, err)
 
 			// Validate the data against JSON schema
-			err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_0)
+			err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_1)
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -127,6 +127,27 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestChainloopPRInfoCrafter_V1_0BackwardCompat(t *testing.T) {
+	// Data without reviewers should still validate against v1.0
+	data := prinfo.Data{
+		Platform: "github",
+		Type:     "pull_request",
+		Number:   "123",
+		URL:      "https://github.com/org/repo/pull/123",
+		Author:   "testuser",
+	}
+
+	dataBytes, err := json.Marshal(data)
+	require.NoError(t, err)
+
+	var rawData interface{}
+	err = json.Unmarshal(dataBytes, &rawData)
+	require.NoError(t, err)
+
+	err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_0)
+	require.NoError(t, err)
 }
 
 func TestChainloopPRInfoCrafter_InvalidJSON(t *testing.T) {

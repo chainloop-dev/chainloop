@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,20 +19,27 @@ const (
 	// EvidenceID is the identifier for the PR/MR info material type
 	EvidenceID = "CHAINLOOP_PR_INFO"
 	// EvidenceSchemaURL is the URL to the JSON schema for PR/MR info
-	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json"
+	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json"
 )
+
+// Reviewer represents a reviewer of the PR/MR
+type Reviewer struct {
+	Login string `json:"login" jsonschema:"required,description=Username of the reviewer"`
+	Type  string `json:"type" jsonschema:"required,enum=User,enum=Bot,enum=unknown,description=Account type of the reviewer"`
+}
 
 // Data represents the data payload of the PR/MR info evidence
 type Data struct {
-	Platform     string `json:"platform" jsonschema:"required,enum=github,enum=gitlab,description=The CI/CD platform"`
-	Type         string `json:"type" jsonschema:"required,enum=pull_request,enum=merge_request,description=The type of change request"`
-	Number       string `json:"number" jsonschema:"required,description=The PR/MR number or identifier"`
-	Title        string `json:"title" jsonschema:"description=The PR/MR title"`
-	Description  string `json:"description" jsonschema:"description=The PR/MR description or body"`
-	SourceBranch string `json:"source_branch" jsonschema:"description=The source branch name"`
-	TargetBranch string `json:"target_branch" jsonschema:"description=The target branch name"`
-	URL          string `json:"url" jsonschema:"required,format=uri,description=Direct URL to the PR/MR"`
-	Author       string `json:"author" jsonschema:"description=Username of the PR/MR author"`
+	Platform     string     `json:"platform" jsonschema:"required,enum=github,enum=gitlab,description=The CI/CD platform"`
+	Type         string     `json:"type" jsonschema:"required,enum=pull_request,enum=merge_request,description=The type of change request"`
+	Number       string     `json:"number" jsonschema:"required,description=The PR/MR number or identifier"`
+	Title        string     `json:"title" jsonschema:"description=The PR/MR title"`
+	Description  string     `json:"description" jsonschema:"description=The PR/MR description or body"`
+	SourceBranch string     `json:"source_branch" jsonschema:"description=The source branch name"`
+	TargetBranch string     `json:"target_branch" jsonschema:"description=The target branch name"`
+	URL          string     `json:"url" jsonschema:"required,format=uri,description=Direct URL to the PR/MR"`
+	Author       string     `json:"author" jsonschema:"description=Username of the PR/MR author"`
+	Reviewers    []Reviewer `json:"reviewers,omitempty" jsonschema:"description=List of reviewers who reviewed or were requested to review"`
 }
 
 // Evidence represents the complete evidence structure for PR/MR metadata

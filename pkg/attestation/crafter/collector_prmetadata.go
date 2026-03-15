@@ -39,7 +39,7 @@ func NewPRMetadataCollector(runner SupportedRunner) *PRMetadataCollector {
 func (c *PRMetadataCollector) ID() string { return "pr-metadata" }
 
 func (c *PRMetadataCollector) Collect(ctx context.Context, cr *Crafter, attestationID string, casBackend *casclient.CASBackend) error {
-	isPR, metadata, err := DetectPRContext(c.runner)
+	isPR, metadata, err := DetectPRContext(ctx, c.runner)
 	if err != nil {
 		return fmt.Errorf("detecting PR/MR context: %w", err)
 	}
@@ -61,6 +61,7 @@ func (c *PRMetadataCollector) Collect(ctx context.Context, cr *Crafter, attestat
 		TargetBranch: metadata.TargetBranch,
 		URL:          metadata.URL,
 		Author:       metadata.Author,
+		Reviewers:    metadata.Reviewers,
 	})
 
 	jsonData, err := json.Marshal(evidenceData)
