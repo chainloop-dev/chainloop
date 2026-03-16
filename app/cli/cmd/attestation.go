@@ -109,8 +109,8 @@ func orgFromLocalState(customPath string) string {
 func extractAnnotations(annotationsFlag []string) (map[string]string, error) {
 	var annotations = make(map[string]string)
 	for _, annotation := range annotationsFlag {
-		kv := strings.Split(annotation, "=")
-		if len(kv) != 2 {
+		kv := strings.SplitN(annotation, "=", 2)
+		if len(kv) < 2 {
 			return nil, fmt.Errorf("invalid annotation %q, the format must be key=value", annotation)
 		}
 		annotations[kv[0]] = kv[1]

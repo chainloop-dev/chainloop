@@ -118,7 +118,20 @@ func TestExtractAnnotations(t *testing.T) {
 				"foo=bar",
 				"baz=qux=qux",
 			},
-			wantErr: true,
+			want: map[string]string{
+				"foo": "bar",
+				"baz": "qux=qux",
+			},
+			wantErr: false,
+		},
+		{
+			input: []string{
+				"url=https://example.com/path?id=123&foo=bar",
+			},
+			want: map[string]string{
+				"url": "https://example.com/path?id=123&foo=bar",
+			},
+			wantErr: false,
 		},
 	}
 
