@@ -78,6 +78,7 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_RUNNER_VERSION", false},
 		{"CI_RUNNER_DESCRIPTION", true},
 		{"CI_COMMIT_REF_NAME", false},
+		{"CI_PROJECT_PATH", false},
 		// MR-specific variables (optional - only present in MR contexts)
 		{"CI_PIPELINE_SOURCE", true},
 		{"CI_MERGE_REQUEST_IID", true},
@@ -86,6 +87,7 @@ func (r *GitlabPipeline) ListEnvVars() []*EnvVarDefinition {
 		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", true},
 		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", true},
 		{"CI_MERGE_REQUEST_PROJECT_URL", true},
+		{"CI_MERGE_REQUEST_PROJECT_PATH", true},
 	}
 }
 

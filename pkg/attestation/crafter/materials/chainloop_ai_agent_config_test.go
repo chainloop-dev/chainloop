@@ -25,6 +25,8 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/aiagentconfig"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -265,4 +267,50 @@ func TestChainloopAIAgentConfigCrafter_RejectsExtraFields(t *testing.T) {
 	_, err = crafter.Craft(context.Background(), tmpFile)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "AI agent config validation failed")
+}
+
+func TestChainloopAIAgentConfigCrafter_AgentNameAnnotation(t *testing.T) {
+	testCases := []struct {
+		name              string
+		filePath          string
+		expectedAgentName string
+	}{
+		{
+			name:              "claude agent",
+			filePath:          "./testdata/ai-agent-config-claude.json",
+			expectedAgentName: "claude",
+		},
+		{
+			name:              "cursor agent",
+			filePath:          "./testdata/ai-agent-config-cursor.json",
+			expectedAgentName: "cursor",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := zerolog.Nop()
+			schema := &schemaapi.CraftingSchema_Material{
+				Name: "test",
+				Type: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG,
+			}
+
+			uploader := mUploader.NewUploader(t)
+			uploader.On("UploadFile", context.TODO(), tc.filePath).
+				Return(&casclient.UpDownStatus{
+					Digest:   "deadbeef",
+					Filename: tc.filePath,
+				}, nil)
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+
+			crafter, err := NewChainloopAIAgentConfigCrafter(schema, backend, &logger)
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expectedAgentName, got.Annotations[annotationAIAgentName])
+		})
+	}
 }

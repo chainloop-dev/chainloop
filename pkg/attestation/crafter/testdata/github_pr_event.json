@@ -6,6 +6,16 @@
     "html_url": "https://github.com/owner/repo/pull/123",
     "user": {
       "login": "johndoe"
-    }
+    },
+    "requested_reviewers": [
+      {
+        "login": "reviewer1",
+        "type": "User"
+      },
+      {
+        "login": "coderabbitai",
+        "type": "Bot"
+      }
+    ]
   }
 }

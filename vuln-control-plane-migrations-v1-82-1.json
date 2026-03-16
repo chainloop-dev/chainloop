@@ -101,7 +101,7 @@
           "ruleId": "CVE-2026-25679-stdlib",
           "level": "error",
           "message": {
-            "text": "A high vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64 at: /atlas"
+            "text": "A high vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1 at: /atlas"
           },
           "locations": [
             {
@@ -119,7 +119,7 @@
               "logicalLocations": [
                 {
                   "name": "/atlas",
-                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
                 }
               ]
             }
@@ -132,7 +132,7 @@
           "ruleId": "CVE-2026-27142-stdlib",
           "level": "error",
           "message": {
-            "text": "A high vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64 at: /atlas"
+            "text": "A high vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1 at: /atlas"
           },
           "locations": [
             {
@@ -150,7 +150,7 @@
               "logicalLocations": [
                 {
                   "name": "/atlas",
-                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
                 }
               ]
             }
@@ -163,7 +163,7 @@
           "ruleId": "GHSA-fw7p-63qq-7hpr-filippo.io/edwards25519",
           "level": "note",
           "message": {
-            "text": "A low vulnerability in go-module package: filippo.io/edwards25519, version v1.1.0 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64 at: /atlas"
+            "text": "A low vulnerability in go-module package: filippo.io/edwards25519, version v1.1.0 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1 at: /atlas"
           },
           "locations": [
             {
@@ -181,7 +181,7 @@
               "logicalLocations": [
                 {
                   "name": "/atlas",
-                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
                 }
               ]
             }
@@ -194,7 +194,7 @@
           "ruleId": "CVE-2026-27139-stdlib",
           "level": "note",
           "message": {
-            "text": "A low vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64 at: /atlas"
+            "text": "A low vulnerability in go-module package: stdlib, version go1.25.7 was found in image ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1 at: /atlas"
           },
           "locations": [
             {
@@ -212,7 +212,7 @@
               "logicalLocations": [
                 {
                   "name": "/atlas",
-                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1-amd64@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
+                  "fullyQualifiedName": "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:v1.82.1@sha256:f7033924300831ae1ddc7ce6b8de62020deea1474d12734a1bf0ac8ddc22e796:/atlas"
                 }
               ]
             }

@@ -31,6 +31,9 @@ modules:
       except:
         - EXTENSION_NO_DELETE
         - FIELD_SAME_DEFAULT
+      ignore_only:
+        FIELD_NO_DELETE:
+          - app/artifact-cas/internal/conf/conf.proto
   - path: app/controlplane/api
     lint:
       use:

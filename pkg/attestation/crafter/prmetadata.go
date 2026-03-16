@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,11 +16,16 @@
 package crafter
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
+	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/prinfo"
 )
 
 // PRMetadata holds extracted PR/MR information
@@ -34,10 +39,11 @@ type PRMetadata struct {
 	TargetBranch string
 	URL          string
 	Author       string
+	Reviewers    []prinfo.Reviewer
 }
 
 // DetectPRContext checks if we're in a PR/MR context and extracts metadata
-func DetectPRContext(runner SupportedRunner) (bool, *PRMetadata, error) {
+func DetectPRContext(ctx context.Context, runner SupportedRunner) (bool, *PRMetadata, error) {
 	if runner == nil {
 		return false, nil, fmt.Errorf("runner is nil")
 	}
@@ -55,7 +61,7 @@ func DetectPRContext(runner SupportedRunner) (bool, *PRMetadata, error) {
 	case schemaapi.CraftingSchema_Runner_GITHUB_ACTION:
 		return extractGitHubPRMetadata(envVars)
 	case schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE:
-		return extractGitLabMRMetadata(envVars)
+		return extractGitLabMRMetadata(ctx, envVars)
 	case schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE:
 		// When running in Dagger, check for parent CI context passed through as env vars
 		// Try Github first
@@ -64,7 +70,7 @@ func DetectPRContext(runner SupportedRunner) (bool, *PRMetadata, error) {
 		}
 		// Then try Gitlab
 		if envVars["CI_PIPELINE_SOURCE"] != "" {
-			return extractGitLabMRMetadata(envVars)
+			return extractGitLabMRMetadata(ctx, envVars)
 		}
 		return false, nil, nil
 	default:
@@ -101,11 +107,27 @@ func extractGitHubPRMetadata(envVars map[string]string) (bool, *PRMetadata, erro
 			User    struct {
 				Login string `json:"login"`
 			} `json:"user"`
+			RequestedReviewers []struct {
+				Login string `json:"login"`
+				Type  string `json:"type"`
+			} `json:"requested_reviewers"`
 		} `json:"pull_request"`
 	}
 
 	if err := json.Unmarshal(data, &event); err != nil {
 		return false, nil, fmt.Errorf("failed to parse event JSON: %w", err)
+	}
+
+	var reviewers []prinfo.Reviewer
+	for _, r := range event.PullRequest.RequestedReviewers {
+		reviewerType := r.Type
+		if reviewerType == "" {
+			reviewerType = "unknown"
+		}
+		reviewers = append(reviewers, prinfo.Reviewer{
+			Login: r.Login,
+			Type:  reviewerType,
+		})
 	}
 
 	metadata := &PRMetadata{
@@ -118,13 +140,14 @@ func extractGitHubPRMetadata(envVars map[string]string) (bool, *PRMetadata, erro
 		TargetBranch: envVars["GITHUB_BASE_REF"],
 		URL:          event.PullRequest.HTMLURL,
 		Author:       event.PullRequest.User.Login,
+		Reviewers:    reviewers,
 	}
 
 	return true, metadata, nil
 }
 
 // extractGitLabMRMetadata extracts from GitLab environment variables
-func extractGitLabMRMetadata(envVars map[string]string) (bool, *PRMetadata, error) {
+func extractGitLabMRMetadata(ctx context.Context, envVars map[string]string) (bool, *PRMetadata, error) {
 	pipelineSource := envVars["CI_PIPELINE_SOURCE"]
 	// Check if this is a merge request event
 	if pipelineSource != "merge_request_event" {
@@ -140,6 +163,15 @@ func extractGitLabMRMetadata(envVars map[string]string) (bool, *PRMetadata, erro
 	projectURL := envVars["CI_MERGE_REQUEST_PROJECT_URL"]
 	mrURL := fmt.Sprintf("%s/-/merge_requests/%s", projectURL, mrIID)
 
+	// Fetch reviewers from GitLab API (best-effort).
+	// Prefer CI_MERGE_REQUEST_PROJECT_PATH for fork-based MRs where CI_PROJECT_PATH points to the fork.
+	projectPath := envVars["CI_MERGE_REQUEST_PROJECT_PATH"]
+	if projectPath == "" {
+		projectPath = envVars["CI_PROJECT_PATH"]
+	}
+	// CI_JOB_TOKEN is read via os.Getenv to avoid persisting it in the attestation envVars map.
+	reviewers := fetchGitLabReviewers(ctx, envVars["CI_SERVER_URL"], projectPath, mrIID, os.Getenv("CI_JOB_TOKEN"))
+
 	metadata := &PRMetadata{
 		Platform:     "gitlab",
 		Type:         "merge_request",
@@ -150,7 +182,56 @@ func extractGitLabMRMetadata(envVars map[string]string) (bool, *PRMetadata, erro
 		TargetBranch: envVars["CI_MERGE_REQUEST_TARGET_BRANCH_NAME"],
 		URL:          mrURL,
 		Author:       envVars["GITLAB_USER_LOGIN"],
+		Reviewers:    reviewers,
 	}
 
 	return true, metadata, nil
+}
+
+// fetchGitLabReviewers fetches MR reviewers from the GitLab API.
+// Returns nil on any failure (best-effort).
+func fetchGitLabReviewers(ctx context.Context, baseURL, projectPath, mrIID, token string) []prinfo.Reviewer {
+	if baseURL == "" || projectPath == "" || token == "" {
+		return nil
+	}
+
+	encodedProject := url.PathEscape(projectPath)
+	apiURL := fmt.Sprintf("%s/api/v4/projects/%s/merge_requests/%s", baseURL, encodedProject, mrIID)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("JOB-TOKEN", token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+
+	var mrResponse struct {
+		Reviewers []struct {
+			Username string `json:"username"`
+		} `json:"reviewers"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&mrResponse); err != nil {
+		return nil
+	}
+
+	var reviewers []prinfo.Reviewer
+	for _, r := range mrResponse.Reviewers {
+		reviewers = append(reviewers, prinfo.Reviewer{
+			Login: r.Username,
+			Type:  "unknown",
+		})
+	}
+
+	return reviewers
 }

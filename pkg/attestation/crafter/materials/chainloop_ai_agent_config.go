@@ -29,6 +29,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+var annotationAIAgentName = api.CreateAnnotation("material.aiagent.name")
+
 type ChainloopAIAgentConfigCrafter struct {
 	*crafterCommon
 	backend *casclient.CASBackend
@@ -67,6 +69,16 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 	material, err := uploadAndCraft(ctx, c.input, c.backend, artifactPath, c.logger)
 	if err != nil {
 		return nil, err
+	}
+
+	// Extract agent name from the validated JSON and surface it as an annotation
+	var envelope struct {
+		Agent struct {
+			Name string `json:"name"`
+		} `json:"agent"`
+	}
+	if err := json.Unmarshal(f, &envelope); err == nil && envelope.Agent.Name != "" {
+		material.Annotations[annotationAIAgentName] = envelope.Agent.Name
 	}
 
 	return material, nil
