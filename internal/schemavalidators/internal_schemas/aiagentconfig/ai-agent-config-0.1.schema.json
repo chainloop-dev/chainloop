@@ -65,11 +65,16 @@
       "description": "Array of discovered configuration files",
       "items": {
         "type": "object",
-        "required": ["path", "sha256", "size", "content"],
+        "required": ["path", "kind", "sha256", "size", "content"],
         "properties": {
           "path": {
             "type": "string",
             "description": "Relative file path"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["configuration", "instruction"],
+            "description": "Classification of the file's purpose"
           },
           "sha256": {
             "type": "string",

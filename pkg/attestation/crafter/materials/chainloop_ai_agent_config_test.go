@@ -75,6 +75,7 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 				ConfigFiles: []aiagentconfig.ConfigFile{
 					{
 						Path:    "CLAUDE.md",
+						Kind:    aiagentconfig.ConfigFileKindInstruction,
 						SHA256:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 						Size:    42,
 						Content: "IyBQcm9qZWN0IFJ1bGVz",
@@ -93,6 +94,7 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 				ConfigFiles: []aiagentconfig.ConfigFile{
 					{
 						Path:    "CLAUDE.md",
+						Kind:    aiagentconfig.ConfigFileKindInstruction,
 						SHA256:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 						Size:    10,
 						Content: "Y29udGVudA==",
@@ -111,6 +113,7 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 				ConfigFiles: []aiagentconfig.ConfigFile{
 					{
 						Path:    ".cursor/rules/coding.md",
+						Kind:    aiagentconfig.ConfigFileKindInstruction,
 						SHA256:  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 						Size:    20,
 						Content: "IyBDb2RpbmcgUnVsZXM=",
@@ -129,18 +132,21 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 				ConfigFiles: []aiagentconfig.ConfigFile{
 					{
 						Path:    ".cursor/rules/react.mdc",
+						Kind:    aiagentconfig.ConfigFileKindInstruction,
 						SHA256:  "abc123",
 						Size:    15,
 						Content: "cnVsZXM=",
 					},
 					{
 						Path:    ".cursor/agents/reviewer.md",
+						Kind:    aiagentconfig.ConfigFileKindInstruction,
 						SHA256:  "def456",
 						Size:    10,
 						Content: "YWdlbnQ=",
 					},
 					{
 						Path:    "AGENTS.md",
+						Kind:    aiagentconfig.ConfigFileKindInstruction,
 						SHA256:  "789abc",
 						Size:    8,
 						Content: "YWdlbnRz",
@@ -249,7 +255,7 @@ func TestChainloopAIAgentConfigCrafter_RejectsExtraFields(t *testing.T) {
 		"agent": {"name": "claude"},
 		"config_hash": "abc",
 		"captured_at": "2026-03-13T10:00:00Z",
-		"config_files": [{"path": "CLAUDE.md", "sha256": "abc", "size": 1, "content": "Yg=="}],
+		"config_files": [{"path": "CLAUDE.md", "kind": "instruction", "sha256": "abc", "size": 1, "content": "Yg=="}],
 		"unknown_field": "should fail"
 	}`
 

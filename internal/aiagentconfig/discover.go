@@ -20,51 +20,57 @@ import (
 	"sort"
 )
 
+// patternDef pairs a glob pattern with the kind of file it matches.
+type patternDef struct {
+	pattern string
+	kind    ConfigFileKind
+}
+
 // agentDef defines an AI agent and its exclusive file patterns.
 type agentDef struct {
 	name     string
-	patterns []string
+	patterns []patternDef
 }
 
 // agents is the registry of supported AI agents and their exclusive file patterns.
 var agents = []agentDef{
-	{name: "claude", patterns: []string{
-		"CLAUDE.md",
-		".claude/CLAUDE.md",
-		".claude/settings.json",
-		".claude/rules/*.md",
-		".claude/agents/*.md",
-		".claude/commands/*.md",
-		".claude/skills/*/SKILL.md",
+	{name: "claude", patterns: []patternDef{
+		{"CLAUDE.md", ConfigFileKindInstruction},
+		{".claude/CLAUDE.md", ConfigFileKindInstruction},
+		{".claude/settings.json", ConfigFileKindConfiguration},
+		{".claude/rules/*.md", ConfigFileKindInstruction},
+		{".claude/agents/*.md", ConfigFileKindInstruction},
+		{".claude/commands/*.md", ConfigFileKindInstruction},
+		{".claude/skills/*/SKILL.md", ConfigFileKindInstruction},
 	}},
-	{name: "cursor", patterns: []string{
-		".cursor/rules/*.md",
-		".cursor/rules/*.mdc",
-		".cursor/rules/*/*.md",
-		".cursor/rules/*/*.mdc",
-		".cursor/skills/*/SKILL.md",
-		".cursor/agents/*.md",
+	{name: "cursor", patterns: []patternDef{
+		{".cursor/rules/*.md", ConfigFileKindInstruction},
+		{".cursor/rules/*.mdc", ConfigFileKindInstruction},
+		{".cursor/rules/*/*.md", ConfigFileKindInstruction},
+		{".cursor/rules/*/*.mdc", ConfigFileKindInstruction},
+		{".cursor/skills/*/SKILL.md", ConfigFileKindInstruction},
+		{".cursor/agents/*.md", ConfigFileKindInstruction},
 	}},
 }
 
 // sharedPatterns are file patterns not exclusive to any agent.
 // They are included in every agent's evidence when that agent has exclusive files.
-var sharedPatterns = []string{
-	".mcp.json",
-	"AGENTS.md",
+var sharedPatterns = []patternDef{
+	{".mcp.json", ConfigFileKindConfiguration},
+	{"AGENTS.md", ConfigFileKindInstruction},
 }
 
 // DiscoverAll searches basePath for AI agent configuration files and groups them by agent.
 // Only agents with at least one exclusive file match are included.
 // Shared files are appended to each detected agent's file list.
-// Returns a map of agent name → sorted, deduplicated relative paths.
-func DiscoverAll(basePath string) (map[string][]string, error) {
+// Returns a map of agent name → sorted, deduplicated discovered files.
+func DiscoverAll(basePath string) (map[string][]DiscoveredFile, error) {
 	sharedFiles, err := matchPatterns(basePath, sharedPatterns)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make(map[string][]string)
+	result := make(map[string][]DiscoveredFile)
 
 	for _, agent := range agents {
 		files, err := matchPatterns(basePath, agent.patterns)
@@ -78,18 +84,18 @@ func DiscoverAll(basePath string) (map[string][]string, error) {
 
 		// Merge shared files into this agent's list, deduplicating
 		seen := make(map[string]struct{}, len(files)+len(sharedFiles))
-		merged := make([]string, 0, len(files)+len(sharedFiles))
+		merged := make([]DiscoveredFile, 0, len(files)+len(sharedFiles))
 		for _, f := range files {
-			seen[f] = struct{}{}
+			seen[f.Path] = struct{}{}
 			merged = append(merged, f)
 		}
 		for _, f := range sharedFiles {
-			if _, ok := seen[f]; !ok {
+			if _, ok := seen[f.Path]; !ok {
 				merged = append(merged, f)
 			}
 		}
 
-		sort.Strings(merged)
+		sort.Slice(merged, func(i, j int) bool { return merged[i].Path < merged[j].Path })
 		result[agent.name] = merged
 	}
 
@@ -97,13 +103,13 @@ func DiscoverAll(basePath string) (map[string][]string, error) {
 }
 
 // matchPatterns expands glob patterns relative to basePath and returns
-// deduplicated, sorted relative paths.
-func matchPatterns(basePath string, patterns []string) ([]string, error) {
+// deduplicated, sorted discovered files.
+func matchPatterns(basePath string, patterns []patternDef) ([]DiscoveredFile, error) {
 	seen := make(map[string]struct{})
-	var results []string
+	var results []DiscoveredFile
 
-	for _, pattern := range patterns {
-		absPattern := filepath.Join(basePath, pattern)
+	for _, pd := range patterns {
+		absPattern := filepath.Join(basePath, pd.pattern)
 		matches, err := filepath.Glob(absPattern)
 		if err != nil {
 			return nil, err
@@ -117,12 +123,12 @@ func matchPatterns(basePath string, patterns []string) ([]string, error) {
 
 			if _, ok := seen[rel]; !ok {
 				seen[rel] = struct{}{}
-				results = append(results, rel)
+				results = append(results, DiscoveredFile{Path: rel, Kind: pd.kind})
 			}
 		}
 	}
 
-	sort.Strings(results)
+	sort.Slice(results, func(i, j int) bool { return results[i].Path < results[j].Path })
 
 	return results, nil
 }

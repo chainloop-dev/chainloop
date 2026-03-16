@@ -38,25 +38,31 @@ func TestDiscoverAll(t *testing.T) {
 	tests := []struct {
 		name     string
 		files    []string
-		expected map[string][]string
+		expected map[string][]DiscoveredFile
 	}{
 		{
 			name:     "no config files",
 			files:    []string{"main.go", "README.md"},
-			expected: map[string][]string{},
+			expected: map[string][]DiscoveredFile{},
 		},
 		{
 			name:  "claude only",
 			files: []string{"CLAUDE.md", ".claude/settings.json"},
-			expected: map[string][]string{
-				"claude": {".claude/settings.json", "CLAUDE.md"},
+			expected: map[string][]DiscoveredFile{
+				"claude": {
+					{Path: ".claude/settings.json", Kind: ConfigFileKindConfiguration},
+					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 		{
 			name:  "cursor only",
 			files: []string{".cursor/rules/coding.md", ".cursor/agents/test.md"},
-			expected: map[string][]string{
-				"cursor": {".cursor/agents/test.md", ".cursor/rules/coding.md"},
+			expected: map[string][]DiscoveredFile{
+				"cursor": {
+					{Path: ".cursor/agents/test.md", Kind: ConfigFileKindInstruction},
+					{Path: ".cursor/rules/coding.md", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 		{
@@ -65,8 +71,11 @@ func TestDiscoverAll(t *testing.T) {
 				".cursor/rules/react.mdc",
 				".cursor/rules/api.md",
 			},
-			expected: map[string][]string{
-				"cursor": {".cursor/rules/api.md", ".cursor/rules/react.mdc"},
+			expected: map[string][]DiscoveredFile{
+				"cursor": {
+					{Path: ".cursor/rules/api.md", Kind: ConfigFileKindInstruction},
+					{Path: ".cursor/rules/react.mdc", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 		{
@@ -75,15 +84,20 @@ func TestDiscoverAll(t *testing.T) {
 				".cursor/rules/frontend/components.md",
 				".cursor/rules/backend/api.mdc",
 			},
-			expected: map[string][]string{
-				"cursor": {".cursor/rules/backend/api.mdc", ".cursor/rules/frontend/components.md"},
+			expected: map[string][]DiscoveredFile{
+				"cursor": {
+					{Path: ".cursor/rules/backend/api.mdc", Kind: ConfigFileKindInstruction},
+					{Path: ".cursor/rules/frontend/components.md", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 		{
 			name:  "cursor skills",
 			files: []string{".cursor/skills/search/SKILL.md"},
-			expected: map[string][]string{
-				"cursor": {".cursor/skills/search/SKILL.md"},
+			expected: map[string][]DiscoveredFile{
+				"cursor": {
+					{Path: ".cursor/skills/search/SKILL.md", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 		{
@@ -94,9 +108,15 @@ func TestDiscoverAll(t *testing.T) {
 				".cursor/rules/coding.md",
 				".cursor/agents/reviewer.md",
 			},
-			expected: map[string][]string{
-				"claude": {".claude/settings.json", "CLAUDE.md"},
-				"cursor": {".cursor/agents/reviewer.md", ".cursor/rules/coding.md"},
+			expected: map[string][]DiscoveredFile{
+				"claude": {
+					{Path: ".claude/settings.json", Kind: ConfigFileKindConfiguration},
+					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
+				},
+				"cursor": {
+					{Path: ".cursor/agents/reviewer.md", Kind: ConfigFileKindInstruction},
+					{Path: ".cursor/rules/coding.md", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 		{
@@ -107,15 +127,23 @@ func TestDiscoverAll(t *testing.T) {
 				".mcp.json",
 				"AGENTS.md",
 			},
-			expected: map[string][]string{
-				"claude": {".mcp.json", "AGENTS.md", "CLAUDE.md"},
-				"cursor": {".cursor/rules/coding.md", ".mcp.json", "AGENTS.md"},
+			expected: map[string][]DiscoveredFile{
+				"claude": {
+					{Path: ".mcp.json", Kind: ConfigFileKindConfiguration},
+					{Path: "AGENTS.md", Kind: ConfigFileKindInstruction},
+					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
+				},
+				"cursor": {
+					{Path: ".cursor/rules/coding.md", Kind: ConfigFileKindInstruction},
+					{Path: ".mcp.json", Kind: ConfigFileKindConfiguration},
+					{Path: "AGENTS.md", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 		{
 			name:     "only shared files - no agents returned",
 			files:    []string{".mcp.json", "AGENTS.md"},
-			expected: map[string][]string{},
+			expected: map[string][]DiscoveredFile{},
 		},
 		{
 			name: "all claude patterns with shared",
@@ -131,18 +159,18 @@ func TestDiscoverAll(t *testing.T) {
 				".claude/commands/deploy.md",
 				".claude/skills/search/SKILL.md",
 			},
-			expected: map[string][]string{
+			expected: map[string][]DiscoveredFile{
 				"claude": {
-					".claude/CLAUDE.md",
-					".claude/agents/reviewer.md",
-					".claude/commands/deploy.md",
-					".claude/rules/coding.md",
-					".claude/rules/testing.md",
-					".claude/settings.json",
-					".claude/skills/search/SKILL.md",
-					".mcp.json",
-					"AGENTS.md",
-					"CLAUDE.md",
+					{Path: ".claude/CLAUDE.md", Kind: ConfigFileKindInstruction},
+					{Path: ".claude/agents/reviewer.md", Kind: ConfigFileKindInstruction},
+					{Path: ".claude/commands/deploy.md", Kind: ConfigFileKindInstruction},
+					{Path: ".claude/rules/coding.md", Kind: ConfigFileKindInstruction},
+					{Path: ".claude/rules/testing.md", Kind: ConfigFileKindInstruction},
+					{Path: ".claude/settings.json", Kind: ConfigFileKindConfiguration},
+					{Path: ".claude/skills/search/SKILL.md", Kind: ConfigFileKindInstruction},
+					{Path: ".mcp.json", Kind: ConfigFileKindConfiguration},
+					{Path: "AGENTS.md", Kind: ConfigFileKindInstruction},
+					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
 				},
 			},
 		},
@@ -155,8 +183,10 @@ func TestDiscoverAll(t *testing.T) {
 				"some/nested/CLAUDE.md",      // nested too deep
 				".cursor/other/random.md",    // not a known pattern
 			},
-			expected: map[string][]string{
-				"claude": {"CLAUDE.md"},
+			expected: map[string][]DiscoveredFile{
+				"claude": {
+					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
+				},
 			},
 		},
 	}

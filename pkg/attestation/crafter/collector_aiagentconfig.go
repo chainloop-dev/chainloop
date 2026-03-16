@@ -68,8 +68,13 @@ func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attes
 	for _, agentName := range agentNames {
 		files := agentFiles[agentName]
 
+		paths := make([]string, len(files))
+		for i, f := range files {
+			paths[i] = f.Path
+		}
+
 		cr.Logger.Info().Str("agent", agentName).Int("files", len(files)).Msg("discovered AI agent config files")
-		cr.Logger.Debug().Str("agent", agentName).Strs("paths", files).Msg("AI agent config file paths")
+		cr.Logger.Debug().Str("agent", agentName).Strs("paths", paths).Msg("AI agent config file paths")
 
 		if err := c.uploadAgentConfig(ctx, cr, attestationID, casBackend, agentName, files, gitCtx); err != nil {
 			return err
@@ -81,7 +86,7 @@ func (c *AIAgentConfigCollector) Collect(ctx context.Context, cr *Crafter, attes
 
 func (c *AIAgentConfigCollector) uploadAgentConfig(
 	ctx context.Context, cr *Crafter, attestationID string,
-	casBackend *casclient.CASBackend, agentName string, files []string, gitCtx *aiagentconfig.GitContext,
+	casBackend *casclient.CASBackend, agentName string, files []aiagentconfig.DiscoveredFile, gitCtx *aiagentconfig.GitContext,
 ) error {
 	evidence, err := aiagentconfig.Build(cr.WorkingDir(), files, agentName, gitCtx)
 	if err != nil {

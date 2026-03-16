@@ -30,20 +30,21 @@ import (
 )
 
 // Build reads discovered files and constructs the AI agent config payload.
-// basePath is the base directory, filePaths are relative to basePath.
+// basePath is the base directory, discovered contains files relative to basePath with their kinds.
 // agentName identifies the AI agent (e.g. "claude", "cursor").
 // gitCtx may be nil if not in a git repository.
-func Build(basePath string, filePaths []string, agentName string, gitCtx *GitContext) (*Evidence, error) {
+func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext) (*Evidence, error) {
 	// Resolve basePath to its real path so symlink comparisons are reliable
 	realRoot, err := filepath.EvalSymlinks(basePath)
 	if err != nil {
 		return nil, fmt.Errorf("resolving root dir: %w", err)
 	}
 
-	configFiles := make([]ConfigFile, 0, len(filePaths))
-	hashes := make([]string, 0, len(filePaths))
+	configFiles := make([]ConfigFile, 0, len(discovered))
+	hashes := make([]string, 0, len(discovered))
 
-	for _, relPath := range filePaths {
+	for _, df := range discovered {
+		relPath := df.Path
 		absPath := filepath.Join(basePath, relPath)
 
 		// Resolve the full path through any symlinks (covers both symlinked
@@ -73,6 +74,7 @@ func Build(basePath string, filePaths []string, agentName string, gitCtx *GitCon
 
 		configFiles = append(configFiles, ConfigFile{
 			Path:    relPath,
+			Kind:    df.Kind,
 			SHA256:  hexHash,
 			Size:    info.Size(),
 			Content: base64.StdEncoding.EncodeToString(content),
