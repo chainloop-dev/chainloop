@@ -177,6 +177,9 @@ jobs:
             fi
           done
 
+          # Clean up vulnerability scan files so they don't get picked up by the create-pull-request action
+          rm -f ./vuln-*.json
+
           # Attest the cli binaries
           binaries=$(cat dist/artifacts.json | jq -r '.[] | select(.type=="Binary" and .extra.ID!="binaries-cli") | select(.path | startswith("dist/cli"))  | .path')
           echo "$binaries" | while IFS= read -r entry; do
