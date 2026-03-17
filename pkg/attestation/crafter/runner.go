@@ -114,35 +114,18 @@ func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType, authToken string, l
 
 // DiscoverRunner the runner environment
 // This method does a simple check to see which runner is available in the environment
-// by iterating over the different runners and performing duck-typing checks
-// If more than one runner is detected, we default to generic since its an incongruent result
+// by iterating over the different runners and performing duck-typing checks.
+// It returns the first matching runner immediately to avoid unnecessary CheckEnv()
+// calls from remaining runners.
 func DiscoverRunner(authToken string, logger zerolog.Logger) SupportedRunner {
-	detected := []SupportedRunner{}
-
-	// Create all runners and check their environment
 	for _, factory := range RunnerFactories {
 		r := factory(authToken, &logger)
 		if r.CheckEnv() {
-			detected = append(detected, r)
+			return r
 		}
 	}
 
-	// if we don't detect any runner or more than one, we default to generic
-	if len(detected) == 0 {
-		return runners.NewGeneric()
-	}
-
-	if len(detected) > 1 {
-		var detectedStr []string
-		for _, d := range detected {
-			detectedStr = append(detectedStr, d.ID().String())
-		}
-
-		logger.Warn().Strs("detected", detectedStr).Msg("multiple runners detected, incongruent environment")
-		return runners.NewGeneric()
-	}
-
-	return detected[0]
+	return runners.NewGeneric()
 }
 
 func DiscoverAndEnforceRunner(enforcedRunnerType schemaapi.CraftingSchema_Runner_RunnerType, dryRun bool, authToken string, logger zerolog.Logger) (SupportedRunner, error) {
