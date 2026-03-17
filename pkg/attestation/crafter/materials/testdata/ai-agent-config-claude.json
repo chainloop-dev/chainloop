@@ -1,15 +1,19 @@
 {
-  "schema_version": "0.1",
-  "agent": {"name": "claude"},
-  "config_hash": "abc123",
-  "captured_at": "2026-03-13T10:00:00Z",
-  "config_files": [
-    {
-      "path": "CLAUDE.md",
-      "kind": "instruction",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size": 42,
-      "content": "IyBQcm9qZWN0IFJ1bGVz"
-    }
-  ]
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_AGENT_CONFIG",
+  "schema": "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
+  "data": {
+    "schema_version": "0.1",
+    "agent": {"name": "claude"},
+    "config_hash": "abc123",
+    "captured_at": "2026-03-13T10:00:00Z",
+    "config_files": [
+      {
+        "path": "CLAUDE.md",
+        "kind": "instruction",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 42,
+        "content": "IyBQcm9qZWN0IFJ1bGVz"
+      }
+    ]
+  }
 }

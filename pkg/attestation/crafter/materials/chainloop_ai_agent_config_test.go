@@ -59,12 +59,12 @@ func TestNewChainloopAIAgentConfigCrafter_CorrectType(t *testing.T) {
 func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 	testCases := []struct {
 		name    string
-		data    *aiagentconfig.Evidence
+		data    *aiagentconfig.Data
 		wantErr bool
 	}{
 		{
 			name: "valid full config",
-			data: &aiagentconfig.Evidence{
+			data: &aiagentconfig.Data{
 				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
 				Agent:         aiagentconfig.Agent{Name: "claude", Version: "4.0"},
 				ConfigHash:    "abc123",
@@ -88,7 +88,7 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		},
 		{
 			name: "valid minimal config",
-			data: &aiagentconfig.Evidence{
+			data: &aiagentconfig.Data{
 				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
 				Agent:         aiagentconfig.Agent{Name: "claude"},
 				ConfigHash:    "abc123",
@@ -107,7 +107,7 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		},
 		{
 			name: "valid cursor config",
-			data: &aiagentconfig.Evidence{
+			data: &aiagentconfig.Data{
 				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
 				Agent:         aiagentconfig.Agent{Name: "cursor"},
 				ConfigHash:    "def456",
@@ -126,7 +126,7 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		},
 		{
 			name: "valid cursor with multiple file types",
-			data: &aiagentconfig.Evidence{
+			data: &aiagentconfig.Data{
 				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
 				Agent:         aiagentconfig.Agent{Name: "cursor"},
 				ConfigHash:    "ghi789",
@@ -159,12 +159,12 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		},
 		{
 			name:    "missing required fields",
-			data:    &aiagentconfig.Evidence{},
+			data:    &aiagentconfig.Data{},
 			wantErr: true,
 		},
 		{
 			name: "empty config files",
-			data: &aiagentconfig.Evidence{
+			data: &aiagentconfig.Data{
 				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
 				Agent:         aiagentconfig.Agent{Name: "claude"},
 				ConfigHash:    "abc123",
@@ -220,9 +220,9 @@ func TestChainloopAIAgentConfigCrafter_InvalidSchema(t *testing.T) {
 	crafter, err := NewChainloopAIAgentConfigCrafter(schema, nil, &logger)
 	require.NoError(t, err)
 
-	// Valid JSON but missing required fields
+	// Valid envelope but data is missing required fields
 	tmpFile := filepath.Join(t.TempDir(), "bad-schema.json")
-	require.NoError(t, os.WriteFile(tmpFile, []byte(`{"foo": "bar"}`), 0o600))
+	require.NoError(t, os.WriteFile(tmpFile, []byte(`{"chainloop.material.evidence.id":"CHAINLOOP_AI_AGENT_CONFIG","schema":"test","data":{"foo":"bar"}}`), 0o600))
 
 	_, err = crafter.Craft(context.Background(), tmpFile)
 	require.Error(t, err)
@@ -253,12 +253,16 @@ func TestChainloopAIAgentConfigCrafter_RejectsExtraFields(t *testing.T) {
 	require.NoError(t, err)
 
 	payload := `{
-		"schema_version": "0.1",
-		"agent": {"name": "claude"},
-		"config_hash": "abc",
-		"captured_at": "2026-03-13T10:00:00Z",
-		"config_files": [{"path": "CLAUDE.md", "kind": "instruction", "sha256": "abc", "size": 1, "content": "Yg=="}],
-		"unknown_field": "should fail"
+		"chainloop.material.evidence.id": "CHAINLOOP_AI_AGENT_CONFIG",
+		"schema": "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
+		"data": {
+			"schema_version": "0.1",
+			"agent": {"name": "claude"},
+			"config_hash": "abc",
+			"captured_at": "2026-03-13T10:00:00Z",
+			"config_files": [{"path": "CLAUDE.md", "kind": "instruction", "sha256": "abc", "size": 1, "content": "Yg=="}],
+			"unknown_field": "should fail"
+		}
 	}`
 
 	tmpFile := filepath.Join(t.TempDir(), "extra-fields.json")

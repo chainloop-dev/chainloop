@@ -33,7 +33,7 @@ import (
 // basePath is the base directory, discovered contains files relative to basePath with their kinds.
 // agentName identifies the AI agent (e.g. "claude", "cursor").
 // gitCtx may be nil if not in a git repository.
-func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext) (*Evidence, error) {
+func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext) (*Data, error) {
 	// Resolve basePath to its real path so symlink comparisons are reliable
 	realRoot, err := filepath.EvalSymlinks(basePath)
 	if err != nil {
@@ -81,7 +81,7 @@ func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCt
 		})
 	}
 
-	data := Evidence{
+	data := Data{
 		SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
 		Agent:         Agent{Name: agentName},
 		ConfigHash:    computeCombinedHash(hashes),
