@@ -60,12 +60,11 @@ type ConfigFile struct {
 
 // Data is the AI agent configuration payload
 type Data struct {
-	SchemaVersion string       `json:"schema_version"`
-	Agent         Agent        `json:"agent"`
-	ConfigHash    string       `json:"config_hash"`
-	CapturedAt    string       `json:"captured_at"`
-	GitContext    *GitContext  `json:"git_context,omitempty"`
-	ConfigFiles   []ConfigFile `json:"config_files"`
+	Agent       Agent        `json:"agent"`
+	ConfigHash  string       `json:"config_hash"`
+	CapturedAt  string       `json:"captured_at"`
+	GitContext  *GitContext  `json:"git_context,omitempty"`
+	ConfigFiles []ConfigFile `json:"config_files"`
 	// Future fields for richer analysis
 	Permissions any `json:"permissions,omitempty"`
 	MCPServers  any `json:"mcp_servers,omitempty"`

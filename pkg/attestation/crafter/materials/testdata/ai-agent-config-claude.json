@@ -2,7 +2,6 @@
   "chainloop.material.evidence.id": "CHAINLOOP_AI_AGENT_CONFIG",
   "schema": "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
   "data": {
-    "schema_version": "0.1",
     "agent": {"name": "claude"},
     "config_hash": "abc123",
     "captured_at": "2026-03-13T10:00:00Z",

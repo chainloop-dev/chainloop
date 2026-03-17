@@ -5,17 +5,12 @@
   "title": "AI Agent Configuration",
   "description": "Schema for AI agent configuration data collected during attestation",
   "required": [
-    "schema_version",
     "agent",
     "config_hash",
     "captured_at",
     "config_files"
   ],
   "properties": {
-    "schema_version": {
-      "type": "string",
-      "description": "Schema version identifier"
-    },
     "agent": {
       "type": "object",
       "description": "AI agent provider information",

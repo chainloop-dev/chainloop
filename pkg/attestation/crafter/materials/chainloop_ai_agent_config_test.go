@@ -65,10 +65,9 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		{
 			name: "valid full config",
 			data: &aiagentconfig.Data{
-				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
-				Agent:         aiagentconfig.Agent{Name: "claude", Version: "4.0"},
-				ConfigHash:    "abc123",
-				CapturedAt:    "2026-03-13T10:00:00Z",
+				Agent:      aiagentconfig.Agent{Name: "claude", Version: "4.0"},
+				ConfigHash: "abc123",
+				CapturedAt: "2026-03-13T10:00:00Z",
 				GitContext: &aiagentconfig.GitContext{
 					Repository: "https://github.com/org/repo",
 					Branch:     "main",
@@ -89,10 +88,9 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		{
 			name: "valid minimal config",
 			data: &aiagentconfig.Data{
-				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
-				Agent:         aiagentconfig.Agent{Name: "claude"},
-				ConfigHash:    "abc123",
-				CapturedAt:    "2026-03-13T10:00:00Z",
+				Agent:      aiagentconfig.Agent{Name: "claude"},
+				ConfigHash: "abc123",
+				CapturedAt: "2026-03-13T10:00:00Z",
 				ConfigFiles: []aiagentconfig.ConfigFile{
 					{
 						Path:    "CLAUDE.md",
@@ -108,10 +106,9 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		{
 			name: "valid cursor config",
 			data: &aiagentconfig.Data{
-				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
-				Agent:         aiagentconfig.Agent{Name: "cursor"},
-				ConfigHash:    "def456",
-				CapturedAt:    "2026-03-13T10:00:00Z",
+				Agent:      aiagentconfig.Agent{Name: "cursor"},
+				ConfigHash: "def456",
+				CapturedAt: "2026-03-13T10:00:00Z",
 				ConfigFiles: []aiagentconfig.ConfigFile{
 					{
 						Path:    ".cursor/rules/coding.md",
@@ -127,10 +124,9 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		{
 			name: "valid cursor with multiple file types",
 			data: &aiagentconfig.Data{
-				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
-				Agent:         aiagentconfig.Agent{Name: "cursor"},
-				ConfigHash:    "ghi789",
-				CapturedAt:    "2026-03-13T10:00:00Z",
+				Agent:      aiagentconfig.Agent{Name: "cursor"},
+				ConfigHash: "ghi789",
+				CapturedAt: "2026-03-13T10:00:00Z",
 				ConfigFiles: []aiagentconfig.ConfigFile{
 					{
 						Path:    ".cursor/rules/react.mdc",
@@ -165,11 +161,10 @@ func TestChainloopAIAgentConfigCrafter_Validation(t *testing.T) {
 		{
 			name: "empty config files",
 			data: &aiagentconfig.Data{
-				SchemaVersion: string(schemavalidators.AIAgentConfigVersion0_1),
-				Agent:         aiagentconfig.Agent{Name: "claude"},
-				ConfigHash:    "abc123",
-				CapturedAt:    "2026-03-13T10:00:00Z",
-				ConfigFiles:   []aiagentconfig.ConfigFile{},
+				Agent:       aiagentconfig.Agent{Name: "claude"},
+				ConfigHash:  "abc123",
+				CapturedAt:  "2026-03-13T10:00:00Z",
+				ConfigFiles: []aiagentconfig.ConfigFile{},
 			},
 			wantErr: false,
 		},
@@ -256,7 +251,6 @@ func TestChainloopAIAgentConfigCrafter_RejectsExtraFields(t *testing.T) {
 		"chainloop.material.evidence.id": "CHAINLOOP_AI_AGENT_CONFIG",
 		"schema": "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
 		"data": {
-			"schema_version": "0.1",
 			"agent": {"name": "claude"},
 			"config_hash": "abc",
 			"captured_at": "2026-03-13T10:00:00Z",

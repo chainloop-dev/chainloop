@@ -53,7 +53,6 @@ func TestBuild(t *testing.T) {
 	}, "claude", gitCtx)
 	require.NoError(t, err)
 
-	assert.Equal(t, "0.1", data.SchemaVersion)
 	assert.Equal(t, "claude", data.Agent.Name)
 	assert.NotEmpty(t, data.CapturedAt)
 	assert.NotEmpty(t, data.ConfigHash)
@@ -136,7 +135,6 @@ func TestBuildJSONFormat(t *testing.T) {
 	var raw map[string]any
 	require.NoError(t, json.Unmarshal(jsonData, &raw))
 
-	assert.NotNil(t, raw["schema_version"])
 	assert.NotNil(t, raw["agent"])
 	assert.NotNil(t, raw["config_hash"])
 	assert.NotNil(t, raw["captured_at"])
