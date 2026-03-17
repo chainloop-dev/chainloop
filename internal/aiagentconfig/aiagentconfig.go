@@ -23,6 +23,11 @@ const (
 	ConfigFileKindConfiguration ConfigFileKind = "configuration"
 	// ConfigFileKindInstruction is for markdown instruction/rules files.
 	ConfigFileKindInstruction ConfigFileKind = "instruction"
+
+	// EvidenceID is the identifier for the AI agent config material type
+	EvidenceID = "CHAINLOOP_AI_AGENT_CONFIG"
+	// EvidenceSchemaURL is the URL to the JSON schema for AI agent config
+	EvidenceSchemaURL = "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json"
 )
 
 // DiscoveredFile represents a file found during discovery, before reading its content.
@@ -53,16 +58,31 @@ type ConfigFile struct {
 	Content string         `json:"content"`
 }
 
-// Evidence is the AI agent configuration payload
-type Evidence struct {
-	SchemaVersion string       `json:"schema_version"`
-	Agent         Agent        `json:"agent"`
-	ConfigHash    string       `json:"config_hash"`
-	CapturedAt    string       `json:"captured_at"`
-	GitContext    *GitContext  `json:"git_context,omitempty"`
-	ConfigFiles   []ConfigFile `json:"config_files"`
+// Data is the AI agent configuration payload
+type Data struct {
+	Agent       Agent        `json:"agent"`
+	ConfigHash  string       `json:"config_hash"`
+	CapturedAt  string       `json:"captured_at"`
+	GitContext  *GitContext  `json:"git_context,omitempty"`
+	ConfigFiles []ConfigFile `json:"config_files"`
 	// Future fields for richer analysis
 	Permissions any `json:"permissions,omitempty"`
 	MCPServers  any `json:"mcp_servers,omitempty"`
 	Subagents   any `json:"subagents,omitempty"`
+}
+
+// Evidence represents the complete evidence structure for AI agent config
+type Evidence struct {
+	ID     string `json:"chainloop.material.evidence.id"`
+	Schema string `json:"schema"`
+	Data   Data   `json:"data"`
+}
+
+// NewEvidence creates a new Evidence instance
+func NewEvidence(data Data) *Evidence {
+	return &Evidence{
+		ID:     EvidenceID,
+		Schema: EvidenceSchemaURL,
+		Data:   data,
+	}
 }

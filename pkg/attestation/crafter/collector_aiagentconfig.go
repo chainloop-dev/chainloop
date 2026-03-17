@@ -88,11 +88,12 @@ func (c *AIAgentConfigCollector) uploadAgentConfig(
 	ctx context.Context, cr *Crafter, attestationID string,
 	casBackend *casclient.CASBackend, agentName string, files []aiagentconfig.DiscoveredFile, gitCtx *aiagentconfig.GitContext,
 ) error {
-	evidence, err := aiagentconfig.Build(cr.WorkingDir(), files, agentName, gitCtx)
+	data, err := aiagentconfig.Build(cr.WorkingDir(), files, agentName, gitCtx)
 	if err != nil {
 		return fmt.Errorf("building AI agent config for %s: %w", agentName, err)
 	}
 
+	evidence := aiagentconfig.NewEvidence(*data)
 	jsonData, err := json.Marshal(evidence)
 	if err != nil {
 		return fmt.Errorf("marshaling AI agent config for %s: %w", agentName, err)

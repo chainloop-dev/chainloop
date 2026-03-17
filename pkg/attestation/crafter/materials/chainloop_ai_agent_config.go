@@ -22,6 +22,7 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/aiagentconfig"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -55,10 +56,26 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
-	var rawData any
-	if err := json.Unmarshal(f, &rawData); err != nil {
+	// Unmarshal envelope, keeping data as raw JSON for schema validation
+	var envelope struct {
+		Data json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(f, &envelope); err != nil {
 		c.logger.Debug().Err(err).Msg("error decoding file")
 		return nil, fmt.Errorf("invalid JSON format: %w", err)
+	}
+
+	// Unmarshal data into typed struct for agent name extraction
+	var data aiagentconfig.Data
+	if err := json.Unmarshal(envelope.Data, &data); err != nil {
+		c.logger.Debug().Err(err).Msg("error decoding data field")
+		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
+	}
+
+	// Validate using raw JSON to preserve unknown fields for strict schema validation
+	var rawData any
+	if err := json.Unmarshal(envelope.Data, &rawData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal data for validation: %w", err)
 	}
 
 	if err := schemavalidators.ValidateAIAgentConfig(rawData, schemavalidators.AIAgentConfigVersion0_1); err != nil {
@@ -71,14 +88,9 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 		return nil, err
 	}
 
-	// Extract agent name from the validated JSON and surface it as an annotation
-	var envelope struct {
-		Agent struct {
-			Name string `json:"name"`
-		} `json:"agent"`
-	}
-	if err := json.Unmarshal(f, &envelope); err == nil && envelope.Agent.Name != "" {
-		material.Annotations[annotationAIAgentName] = envelope.Agent.Name
+	// Surface agent name as an annotation
+	if data.Agent.Name != "" {
+		material.Annotations[annotationAIAgentName] = data.Agent.Name
 	}
 
 	return material, nil
