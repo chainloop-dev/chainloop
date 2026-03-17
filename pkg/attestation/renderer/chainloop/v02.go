@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -429,17 +430,11 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationSt
 func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial, error) {
 	m := &NormalizedMaterial{}
 
-	// Set custom annotations
+	// Set annotations (both custom and chainloop.* prefixed)
 	m.Annotations = make(map[string]string)
 	mAnnotationsMap := material.Annotations.GetFields()
 	for k, v := range mAnnotationsMap {
-		// if the annotation key doesn't start with chainloop.
-		// we set it as a custom annotation
-		if strings.HasPrefix(k, v1.AnnotationPrefix) {
-			continue
-		}
-
-		m.Annotations[k] = v.GetStringValue()
+		m.Annotations[k] = structValueToString(v)
 	}
 
 	mType, ok := mAnnotationsMap[v1.AnnotationMaterialType]
@@ -529,4 +524,20 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	}
 
 	return m, nil
+}
+
+// structValueToString converts a structpb.Value to its string representation.
+// Some annotations (e.g. chainloop.material.cas) are stored as BoolValue,
+// for which GetStringValue() returns "".
+func structValueToString(v *structpb.Value) string {
+	switch v.GetKind().(type) {
+	case *structpb.Value_StringValue:
+		return v.GetStringValue()
+	case *structpb.Value_BoolValue:
+		return strconv.FormatBool(v.GetBoolValue())
+	case *structpb.Value_NumberValue:
+		return fmt.Sprintf("%g", v.GetNumberValue())
+	default:
+		return ""
+	}
 }

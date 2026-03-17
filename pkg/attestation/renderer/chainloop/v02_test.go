@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -113,8 +113,6 @@ func mapToStruct(t *testing.T, input map[string]interface{}) *structpb.Struct {
 }
 
 func TestNormalizeMaterial(t *testing.T) {
-	var emptyMap = make(map[string]string)
-
 	testCases := []struct {
 		name             string
 		input            *intoto.ResourceDescriptor
@@ -160,10 +158,13 @@ func TestNormalizeMaterial(t *testing.T) {
 				Content: []byte("bar"),
 			},
 			want: &NormalizedMaterial{
-				Name:        "foo",
-				Type:        "STRING",
-				Value:       "bar",
-				Annotations: emptyMap,
+				Name:  "foo",
+				Type:  "STRING",
+				Value: "bar",
+				Annotations: map[string]string{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "STRING",
+				},
 			},
 		},
 		{
@@ -195,7 +196,11 @@ func TestNormalizeMaterial(t *testing.T) {
 				Filename:      "artifact.tgz",
 				Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				UploadedToCAS: true,
-				Annotations:   emptyMap,
+				Annotations: map[string]string{
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "ARTIFACT",
+					"chainloop.material.cas":  "true",
+				},
 			},
 		},
 		{
@@ -219,7 +224,13 @@ func TestNormalizeMaterial(t *testing.T) {
 				Filename:      "artifact.tgz",
 				Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				UploadedToCAS: true,
-				Annotations:   map[string]string{"foo": "bar", "bar": "baz"},
+				Annotations: map[string]string{
+					"foo":                     "bar",
+					"bar":                     "baz",
+					"chainloop.material.name": "foo",
+					"chainloop.material.type": "ARTIFACT",
+					"chainloop.material.cas":  "true",
+				},
 			},
 		},
 		{
@@ -243,7 +254,11 @@ func TestNormalizeMaterial(t *testing.T) {
 				Value:          "this is an inline material",
 				Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				EmbeddedInline: true,
-				Annotations:    emptyMap,
+				Annotations: map[string]string{
+					"chainloop.material.name":       "foo",
+					"chainloop.material.type":       "ARTIFACT",
+					"chainloop.material.cas.inline": "true",
+				},
 			},
 		},
 		{
@@ -281,6 +296,28 @@ func TestNormalizeMaterial(t *testing.T) {
 				assert.NoError(t, err)
 				assert.EqualValues(t, tc.want, got)
 			}
+		})
+	}
+}
+
+func TestStructValueToString(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input *structpb.Value
+		want  string
+	}{
+		{name: "string value", input: structpb.NewStringValue("hello"), want: "hello"},
+		{name: "empty string", input: structpb.NewStringValue(""), want: ""},
+		{name: "bool true", input: structpb.NewBoolValue(true), want: "true"},
+		{name: "bool false", input: structpb.NewBoolValue(false), want: "false"},
+		{name: "number int", input: structpb.NewNumberValue(42), want: "42"},
+		{name: "number float", input: structpb.NewNumberValue(3.14), want: "3.14"},
+		{name: "null value", input: structpb.NewNullValue(), want: ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, structValueToString(tc.input))
 		})
 	}
 }
