@@ -15,6 +15,22 @@
 
 package aiagentconfig
 
+// ConfigFileKind classifies the purpose of a discovered configuration file.
+type ConfigFileKind string
+
+const (
+	// ConfigFileKindConfiguration is for settings and JSON config files.
+	ConfigFileKindConfiguration ConfigFileKind = "configuration"
+	// ConfigFileKindInstruction is for markdown instruction/rules files.
+	ConfigFileKindInstruction ConfigFileKind = "instruction"
+)
+
+// DiscoveredFile represents a file found during discovery, before reading its content.
+type DiscoveredFile struct {
+	Path string
+	Kind ConfigFileKind
+}
+
 // Agent identifies the AI agent provider
 type Agent struct {
 	Name    string `json:"name"`
@@ -30,10 +46,11 @@ type GitContext struct {
 
 // ConfigFile represents a single discovered configuration file
 type ConfigFile struct {
-	Path    string `json:"path"`
-	SHA256  string `json:"sha256"`
-	Size    int64  `json:"size"`
-	Content string `json:"content"`
+	Path    string         `json:"path"`
+	Kind    ConfigFileKind `json:"kind"`
+	SHA256  string         `json:"sha256"`
+	Size    int64          `json:"size"`
+	Content string         `json:"content"`
 }
 
 // Evidence is the AI agent configuration payload

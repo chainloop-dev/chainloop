@@ -6,6 +6,7 @@
   "config_files": [
     {
       "path": ".cursor/rules/coding.md",
+      "kind": "instruction",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "size": 20,
       "content": "IyBDb2RpbmcgUnVsZXM="
