@@ -14,6 +14,7 @@
   "config_files": [
     {
       "path": "CLAUDE.md",
+      "kind": "instruction",
       "sha256": "4c3b798d41eb62a633e0954b2cbdd4b388ca0b83f84a89cc7936cf8575d7349e",
       "size": 15,
       "content": "IyBQcm9qZWN0IFJ1bGVz"
