@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 		wantMainComponentKind    string
 		wantMainComponentVersion string
 		annotations              map[string]string
+		absentAnnotations        []string
 	}{
 		{
 			name:     "invalid path",
@@ -157,6 +158,34 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			},
 		},
 		{
+			name:                     "1.4 version with empty tool version",
+			filePath:                 "./testdata/sbom.cyclonedx-1.4-empty-tool-version.json",
+			wantDigest:               "sha256:f0b15f1ae6cadb9f14e0071f14888bcbae03686580f8fc8dc0c838e6e96aaf0e",
+			wantFilename:             "sbom.cyclonedx-1.4-empty-tool-version.json",
+			wantMainComponent:        "test-app",
+			wantMainComponentKind:    "application",
+			wantMainComponentVersion: "1.0.0",
+			annotations: map[string]string{
+				"chainloop.material.tool.name": "Hub",
+				"chainloop.material.tools":     `["Hub"]`,
+			},
+			absentAnnotations: []string{"chainloop.material.tool.version"},
+		},
+		{
+			name:                     "1.5 version with empty tool version",
+			filePath:                 "./testdata/sbom.cyclonedx-1.5-empty-tool-version.json",
+			wantDigest:               "sha256:4091c3b42ec5d368365f5b6fba80dd30cc3ddf84f795096e738b02f8e2716ce1",
+			wantFilename:             "sbom.cyclonedx-1.5-empty-tool-version.json",
+			wantMainComponent:        "test-app",
+			wantMainComponentKind:    "application",
+			wantMainComponentVersion: "1.0.0",
+			annotations: map[string]string{
+				"chainloop.material.tool.name": "Hub",
+				"chainloop.material.tools":     `["Hub"]`,
+			},
+			absentAnnotations: []string{"chainloop.material.tool.version"},
+		},
+		{
 			name:                     "1.5 version with multiple tools",
 			filePath:                 "./testdata/sbom.cyclonedx-1.5-multiple-tools.json",
 			wantDigest:               "sha256:56f82c99fb4740f952296705ceb2ee0c5c3c6a3309b35373d542d58878d65cd3",
@@ -220,6 +249,11 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 				for k, v := range tc.annotations {
 					ast.Equal(v, got.Annotations[k])
 				}
+			}
+
+			for _, k := range tc.absentAnnotations {
+				_, exists := got.Annotations[k]
+				ast.False(exists, "annotation %q should not be present", k)
 			}
 		})
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,8 +69,10 @@ func (i *SARIFCrafter) injectAnnotations(m *api.Attestation_Material, doc *sarif
 	if len(doc.Runs) > 0 {
 		// assuming vendor from first run.
 		m.Annotations = make(map[string]string)
-		m.Annotations[AnnotationToolNameKey] = doc.Runs[0].Tool.Driver.Name
-		if doc.Runs[0].Tool.Driver.Version != nil {
+		if doc.Runs[0].Tool.Driver.Name != "" {
+			m.Annotations[AnnotationToolNameKey] = doc.Runs[0].Tool.Driver.Name
+		}
+		if doc.Runs[0].Tool.Driver.Version != nil && *doc.Runs[0].Tool.Driver.Version != "" {
 			m.Annotations[AnnotationToolVersionKey] = *doc.Runs[0].Tool.Driver.Version
 		}
 	}

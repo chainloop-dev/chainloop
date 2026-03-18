@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,12 +66,13 @@ func TestNewSPDXJSONCrafter(t *testing.T) {
 
 func TestSPDXJSONCraft(t *testing.T) {
 	testCases := []struct {
-		name         string
-		filePath     string
-		wantErr      string
-		wantDigest   string
-		wantFilename string
-		annotations  map[string]string
+		name              string
+		filePath          string
+		wantErr           string
+		wantDigest        string
+		wantFilename      string
+		annotations       map[string]string
+		absentAnnotations []string
 	}{
 		{
 			name:     "invalid sbom format",
@@ -98,6 +99,17 @@ func TestSPDXJSONCraft(t *testing.T) {
 				"chainloop.material.tool.version": "0.73.0",
 				"chainloop.material.tools":        `["syft@0.73.0"]`,
 			},
+		},
+		{
+			name:         "tool without version",
+			filePath:     "./testdata/sbom-spdx-no-tool-version.json",
+			wantDigest:   "sha256:c502fcd2944cc7aadf718af910a242cca0702387c27e740229d6e35cd1ccd52e",
+			wantFilename: "sbom-spdx-no-tool-version.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name": "spdxgen",
+				"chainloop.material.tools":     `["spdxgen"]`,
+			},
+			absentAnnotations: []string{"chainloop.material.tool.version"},
 		},
 		{
 			name:         "multiple tools",
@@ -154,6 +166,11 @@ func TestSPDXJSONCraft(t *testing.T) {
 				for k, v := range tc.annotations {
 					assert.Equal(v, got.Annotations[k])
 				}
+			}
+
+			for _, k := range tc.absentAnnotations {
+				_, exists := got.Annotations[k]
+				assert.False(exists, "annotation %q should not be present", k)
 			}
 		})
 	}
