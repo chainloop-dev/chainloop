@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,8 +11,6 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License.
-
 // limitations under the License.
 
 package v1_test
@@ -77,8 +75,14 @@ func TestValidatePolicy(t *testing.T) {
 			violation: "spec source or policies",
 		},
 		{
-			desc: "correct spec",
+			desc: "correct spec with legacy api version",
 			policy: &v1.Policy{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "Policy",
+				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Source: &v1.PolicySpec_Path{Path: "policy.rego"}}},
+			wantErr: false,
+		},
+		{
+			desc: "correct spec with new api version",
+			policy: &v1.Policy{ApiVersion: "chainloop.dev/v1", Kind: "Policy",
 				Metadata: &v1.Metadata{Name: "my-policy"}, Spec: &v1.PolicySpec{Source: &v1.PolicySpec_Path{Path: "policy.rego"}}},
 			wantErr: false,
 		},
@@ -103,6 +107,75 @@ func TestValidatePolicy(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := validator.Validate(tc.policy)
+			if tc.wantErr {
+				assert.Error(t, err)
+
+				if tc.violation != "" {
+					assert.Contains(t, err.Error(), tc.violation)
+				}
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestValidatePolicyGroup(t *testing.T) {
+	testCases := []struct {
+		desc      string
+		group     *v1.PolicyGroup
+		wantErr   bool
+		violation string
+	}{
+		{
+			desc:      "empty policy group",
+			group:     &v1.PolicyGroup{},
+			wantErr:   true,
+			violation: "api_version",
+		},
+		{
+			desc:      "wrong api version",
+			group:     &v1.PolicyGroup{ApiVersion: "wrong", Kind: "PolicyGroup"},
+			wantErr:   true,
+			violation: "api_version",
+		},
+		{
+			desc:    "legacy api version accepted",
+			group:   &v1.PolicyGroup{ApiVersion: "workflowcontract.chainloop.dev/v1", Kind: "PolicyGroup", Metadata: &v1.Metadata{Name: "my-group"}, Spec: &v1.PolicyGroup_PolicyGroupSpec{Policies: &v1.PolicyGroup_PolicyGroupPolicies{}}},
+			wantErr: false,
+		},
+		{
+			desc:    "new api version accepted",
+			group:   &v1.PolicyGroup{ApiVersion: "chainloop.dev/v1", Kind: "PolicyGroup", Metadata: &v1.Metadata{Name: "my-group"}, Spec: &v1.PolicyGroup_PolicyGroupSpec{Policies: &v1.PolicyGroup_PolicyGroupPolicies{}}},
+			wantErr: false,
+		},
+		{
+			desc:      "wrong kind",
+			group:     &v1.PolicyGroup{ApiVersion: "chainloop.dev/v1", Kind: "wrong"},
+			wantErr:   true,
+			violation: "kind",
+		},
+		{
+			desc:      "missing metadata",
+			group:     &v1.PolicyGroup{ApiVersion: "chainloop.dev/v1", Kind: "PolicyGroup"},
+			wantErr:   true,
+			violation: "metadata",
+		},
+		{
+			desc:      "missing spec",
+			group:     &v1.PolicyGroup{ApiVersion: "chainloop.dev/v1", Kind: "PolicyGroup", Metadata: &v1.Metadata{Name: "my-group"}},
+			wantErr:   true,
+			violation: "spec",
+		},
+	}
+
+	validator, err := protovalidate.New()
+	require.NoError(t, err)
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			err := validator.Validate(tc.group)
 			if tc.wantErr {
 				assert.Error(t, err)
 
