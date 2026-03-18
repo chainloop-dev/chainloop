@@ -324,6 +324,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 	// Auto-enable AI agent config collector if the org setting is on and not already requested via CLI flag
 	if enableAIAgentCollector && !aiConfigRequested {
+		action.Logger.Debug().Msg("auto-enabling AI agent config collector from org setting")
 		collectors = append(collectors, crafter.NewAIAgentConfigCollector())
 	}
 	action.c.RegisterCollectors(collectors...)

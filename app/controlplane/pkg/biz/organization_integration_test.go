@@ -149,6 +149,16 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 		s.Equal([]string{}, got.PoliciesAllowedHostnames)
 	})
 
+	s.Run("valid enable AI agent collector update", func() {
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, nil, nil, nil, nil, toPtrBool(true))
+		s.NoError(err)
+		s.True(got.EnableAIAgentCollector)
+
+		got, err = s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, nil, nil, nil, nil, toPtrBool(false))
+		s.NoError(err)
+		s.False(got.EnableAIAgentCollector)
+	})
+
 	s.Run("but not passing a value doesn't clear the hostnames value", func() {
 		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, nil, []string{"foo.com", "bar.com"}, nil, nil, nil, nil)
 		s.NoError(err)
