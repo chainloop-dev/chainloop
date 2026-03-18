@@ -114,7 +114,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 
 	// Now it's time to check if the data provider has sent an error
 	if err != nil {
-		if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
+		if isClientDisconnect(err) {
 			s.log.Infow("msg", "upload canceled", "digest", req.resource.Digest, "name", req.resource.FileName)
 			return nil
 		}
@@ -164,7 +164,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	// streamwriter will stream chunks of data to the client
 	sw := &streamWriter{stream, s.log, req.ResourceName, sha256.New()}
 	if err := backend.Download(ctx, sw, req.ResourceName); err != nil {
-		if errors.Is(err, context.Canceled) {
+		if isClientDisconnect(err) {
 			s.log.Infow("msg", "download canceled", "digest", req.ResourceName)
 			return nil
 		}

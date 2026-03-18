@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@ package service
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -112,7 +110,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// and don't require client-side verification
 	mw := io.MultiWriter(buf, gotChecksum)
 	if err := b.Download(ctx, mw, wantChecksum.Hex); err != nil {
-		if errors.Is(err, context.Canceled) {
+		if isClientDisconnect(err) {
 			s.log.Infow("msg", "download canceled", "digest", wantChecksum)
 			return
 		}
@@ -130,6 +128,11 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := io.Copy(w, buf); err != nil {
+		if isClientDisconnect(err) {
+			s.log.Infow("msg", "download canceled during response write", "digest", wantChecksum)
+			return
+		}
+
 		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
 		return
 	}

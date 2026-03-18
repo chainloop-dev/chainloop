@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,10 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
+	"os"
+	"syscall"
 	"testing"
 
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -28,6 +32,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestInfoFromAuth(t *testing.T) {
@@ -152,6 +158,93 @@ func TestLoadBackend(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, b, got)
+		})
+	}
+}
+
+func TestIsClientDisconnect(t *testing.T) {
+	testCases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "context canceled",
+			err:  context.Canceled,
+			want: true,
+		},
+		{
+			name: "wrapped context canceled",
+			err:  fmt.Errorf("download failed: %w", context.Canceled),
+			want: true,
+		},
+		{
+			name: "grpc canceled status",
+			err:  status.Error(codes.Canceled, "canceled"),
+			want: true,
+		},
+		{
+			name: "connection reset by peer (syscall)",
+			err: &net.OpError{
+				Op:  "write",
+				Net: "tcp",
+				Err: &os.SyscallError{
+					Syscall: "write",
+					Err:     syscall.ECONNRESET,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "broken pipe (syscall)",
+			err: &net.OpError{
+				Op:  "write",
+				Net: "tcp",
+				Err: &os.SyscallError{
+					Syscall: "write",
+					Err:     syscall.EPIPE,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "wrapped connection reset",
+			err: fmt.Errorf("copying data: %w", &net.OpError{
+				Op:  "write",
+				Net: "tcp",
+				Err: &os.SyscallError{
+					Syscall: "write",
+					Err:     syscall.ECONNRESET,
+				},
+			}),
+			want: true,
+		},
+		{
+			name: "generic error",
+			err:  errors.New("something went wrong"),
+			want: false,
+		},
+		{
+			name: "grpc internal error",
+			err:  status.Error(codes.Internal, "internal"),
+			want: false,
+		},
+		{
+			name: "grpc unavailable",
+			err:  status.Error(codes.Unavailable, "unavailable"),
+			want: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isClientDisconnect(tc.err)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }
