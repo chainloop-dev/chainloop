@@ -101,6 +101,16 @@ func TestSPDXJSONCraft(t *testing.T) {
 			},
 		},
 		{
+			name:         "tool with empty name",
+			filePath:     "./testdata/sbom-spdx-empty-tool-name.json",
+			wantDigest:   "sha256:bbc5c2f78c7b05f2e80295e1bf827f24623394dafcd56a4a14f0591b835d28fa",
+			wantFilename: "sbom-spdx-empty-tool-name.json",
+			absentAnnotations: []string{
+				"chainloop.material.tool.name",
+				"chainloop.material.tool.version",
+			},
+		},
+		{
 			name:         "tool without version",
 			filePath:     "./testdata/sbom-spdx-no-tool-version.json",
 			wantDigest:   "sha256:c502fcd2944cc7aadf718af910a242cca0702387c27e740229d6e35cd1ccd52e",
