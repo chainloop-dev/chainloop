@@ -252,7 +252,12 @@ message PolicyAttachment {
 
 // Represents a policy to be applied to a material or attestation
 message Policy {
-  string api_version = 1 [(buf.validate.field).string.const = "workflowcontract.chainloop.dev/v1"];
+  string api_version = 1 [(buf.validate.field).string = {
+    in: [
+      "chainloop.dev/v1",
+      "workflowcontract.chainloop.dev/v1"
+    ]
+  }];
   string kind = 2 [(buf.validate.field).string.const = "Policy"];
 
   Metadata metadata = 3 [(buf.validate.field).required = true];
@@ -388,7 +393,12 @@ message PolicyGroupAttachment {
 
 // Represents a group or policies
 message PolicyGroup {
-  string api_version = 1 [(buf.validate.field).string.const = "workflowcontract.chainloop.dev/v1"];
+  string api_version = 1 [(buf.validate.field).string = {
+    in: [
+      "chainloop.dev/v1",
+      "workflowcontract.chainloop.dev/v1"
+    ]
+  }];
   string kind = 2 [(buf.validate.field).string.const = "PolicyGroup"];
 
   Metadata metadata = 3 [(buf.validate.field).required = true];

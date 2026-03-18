@@ -2010,10 +2010,9 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x10MaterialSelector\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04nameB\x0f\n" +
 	"\x06policy\x12\x05\xbaH\x02\b\x01B\a\n" +
-	"\x05_gate\"\xf6\x01\n" +
-	"\x06Policy\x12I\n" +
-	"\vapi_version\x18\x01 \x01(\tB(\xbaH%r#\n" +
-	"!workflowcontract.chainloop.dev/v1R\n" +
+	"\x05_gate\"\x88\x02\n" +
+	"\x06Policy\x12[\n" +
+	"\vapi_version\x18\x01 \x01(\tB:\xbaH7r5R\x10chainloop.dev/v1R!workflowcontract.chainloop.dev/v1R\n" +
 	"apiVersion\x12!\n" +
 	"\x04kind\x18\x02 \x01(\tB\r\xbaH\n" +
 	"r\b\n" +
@@ -2066,10 +2065,9 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x04skip\x18\x03 \x03(\tR\x04skip\x1a7\n" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\a\n" +
-	"\vPolicyGroup\x12I\n" +
-	"\vapi_version\x18\x01 \x01(\tB(\xbaH%r#\n" +
-	"!workflowcontract.chainloop.dev/v1R\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc7\a\n" +
+	"\vPolicyGroup\x12[\n" +
+	"\vapi_version\x18\x01 \x01(\tB:\xbaH7r5R\x10chainloop.dev/v1R!workflowcontract.chainloop.dev/v1R\n" +
 	"apiVersion\x12&\n" +
 	"\x04kind\x18\x02 \x01(\tB\x12\xbaH\x0fr\r\n" +
 	"\vPolicyGroupR\x04kind\x12A\n" +

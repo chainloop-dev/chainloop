@@ -557,7 +557,7 @@ replace github.com/chainloop-dev/chainloop/labs/wasm-policy-sdk/go => /path/to/c
 ### policy.yaml
 
 ```yaml
-apiVersion: workflowcontract.chainloop.dev/v1
+apiVersion: chainloop.dev/v1
 kind: Policy
 metadata:
   name: my-policy

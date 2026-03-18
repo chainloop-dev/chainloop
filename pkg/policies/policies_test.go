@@ -618,20 +618,20 @@ func (s *testSuite) TestLoadPolicySpec() {
 			expectedCategory: "SBOM",
 			expectedRef: &PolicyDescriptor{
 				URI:    "file://testdata/sbom_syft.yaml",
-				Digest: "sha256:81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
+				Digest: "sha256:8337715eebbb27d498536bb4ac1adb090f63799e7a6ca6e15d22016368555c19",
 			},
 		},
 		{
 			name: "by file ref with valid digest",
 			attachment: &v12.PolicyAttachment{
 				Policy: &v12.PolicyAttachment_Ref{
-					Ref: "file://testdata/sbom_syft.yaml@sha256:81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
+					Ref: "file://testdata/sbom_syft.yaml@sha256:8337715eebbb27d498536bb4ac1adb090f63799e7a6ca6e15d22016368555c19",
 				},
 			},
 			expectedName: "made-with-syft",
 			expectedRef: &PolicyDescriptor{
 				URI:    "file://testdata/sbom_syft.yaml",
-				Digest: "sha256:81b7fbe4c6ef2182fd042a28fa7f3b3971879d18994147cb812b8fe87a4e04e5",
+				Digest: "sha256:8337715eebbb27d498536bb4ac1adb090f63799e7a6ca6e15d22016368555c19",
 			},
 		},
 		{

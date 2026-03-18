@@ -72,7 +72,7 @@ func (s *groupsTestSuite) TestLoadGroupSpec() {
 		{
 			name: "with correct digest",
 			attachment: &v1.PolicyGroupAttachment{
-				Ref: "file://testdata/policy_group.yaml@sha256:e35d8effedf522b33a080168a69b0d56ca7d7e2779e2fe6e7d8c460509771f88",
+				Ref: "file://testdata/policy_group.yaml@sha256:3f27da0d40f194f760c68b99d93f405e135cb7be976b315688723cbdf1d07d90",
 			},
 			expectedName: "sbom-quality",
 		},

@@ -1,4 +1,4 @@
-# Copyright 2024-2025 The Chainloop Authors.
+# Copyright 2024-2026 The Chainloop Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # Checks that there are is a container material with a custom annotation "chainloop-qa-approval=true"
 # chainloop att push
 # This can be used as a control gate to allow e.g. a production deployment
-apiVersion: workflowcontract.chainloop.dev/v1
+apiVersion: chainloop.dev/v1
 kind: Policy
 metadata:
   name: sarif-errors

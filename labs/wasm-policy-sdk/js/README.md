@@ -543,7 +543,7 @@ declare module "main" {
 ### policy.yaml
 
 ```yaml
-apiVersion: workflowcontract.chainloop.dev/v1
+apiVersion: chainloop.dev/v1
 kind: Policy
 metadata:
   name: my-policy
