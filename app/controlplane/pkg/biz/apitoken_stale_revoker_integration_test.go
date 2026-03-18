@@ -199,7 +199,9 @@ func (s *staleRevokerTestSuite) createOrgWithThreshold(ctx context.Context, days
 	_, err = s.Membership.Create(ctx, org.ID, s.user.ID, biz.WithCurrentMembership())
 	require.NoError(s.T(), err)
 
-	org, err = s.Organization.Update(ctx, s.user.ID, org.Name, nil, nil, nil, nil, &days, nil)
+	org, err = s.Organization.Update(ctx, s.user.ID, org.Name, &biz.OrganizationUpdateOpts{
+		APITokenInactivityThresholdDays: &days,
+	})
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), org.APITokenInactivityThresholdDays)
 	assert.Equal(s.T(), days, *org.APITokenInactivityThresholdDays)

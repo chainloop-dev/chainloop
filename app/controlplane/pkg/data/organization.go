@@ -77,28 +77,28 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	return entOrgToBizOrg(org), nil
 }
 
-func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int, enableAIAgentCollector *bool) (*biz.Organization, error) {
-	opts := r.data.DB.Organization.UpdateOneID(id).
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, updateOpts *biz.OrganizationUpdateOpts) (*biz.Organization, error) {
+	query := r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
-		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).
-		SetNillablePreventImplicitWorkflowCreation(preventImplicitWorkflowCreation).
-		SetNillableRestrictContractCreationToOrgAdmins(restrictContractCreationToOrgAdmins).
-		SetNillableEnableAiAgentCollector(enableAIAgentCollector).
+		SetNillableBlockOnPolicyViolation(updateOpts.BlockOnPolicyViolation).
+		SetNillablePreventImplicitWorkflowCreation(updateOpts.PreventImplicitWorkflowCreation).
+		SetNillableRestrictContractCreationToOrgAdmins(updateOpts.RestrictContractCreationToOrgAdmins).
+		SetNillableEnableAiAgentCollector(updateOpts.EnableAIAgentCollector).
 		SetUpdatedAt(time.Now())
 
-	if policiesAllowedHostnames != nil {
-		opts.SetPoliciesAllowedHostnames(policiesAllowedHostnames)
+	if updateOpts.PoliciesAllowedHostnames != nil {
+		query.SetPoliciesAllowedHostnames(updateOpts.PoliciesAllowedHostnames)
 	}
 
-	if apiTokenInactivityThresholdDays != nil {
-		if *apiTokenInactivityThresholdDays == 0 {
-			opts.ClearAPITokenInactivityThresholdDays()
+	if updateOpts.APITokenInactivityThresholdDays != nil {
+		if *updateOpts.APITokenInactivityThresholdDays == 0 {
+			query.ClearAPITokenInactivityThresholdDays()
 		} else {
-			opts.SetAPITokenInactivityThresholdDays(*apiTokenInactivityThresholdDays)
+			query.SetAPITokenInactivityThresholdDays(*updateOpts.APITokenInactivityThresholdDays)
 		}
 	}
 
-	org, err := opts.Save(ctx)
+	org, err := query.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	}
