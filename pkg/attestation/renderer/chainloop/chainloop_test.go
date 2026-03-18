@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,20 +44,33 @@ func TestExtractPredicate(t *testing.T) {
 					Filename:      "main.go",
 					Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "8fce0203a4efaac3b08ee3ad769233039faa762a3da0777c45b315f398f0c150"},
 					UploadedToCAS: true,
-					Annotations:   map[string]string{"annotation": "baz"},
+					Annotations: map[string]string{
+						"annotation":              "baz",
+						"chainloop.material.cas":  "true",
+						"chainloop.material.name": "binary",
+						"chainloop.material.type": "ARTIFACT",
+					},
 				},
 				{
 					Name: "image", Type: "CONTAINER_IMAGE",
-					Value:       "index.docker.io/bitnami/nginx",
-					Hash:        &crv1.Hash{Algorithm: "sha256", Hex: "747ef335ea27a2faf08aa292a5bc5491aff50c6a94ee4ebcbbcd43cdeccccaf1"},
-					Annotations: map[string]string{"another_annotation": "foo"},
+					Value: "index.docker.io/bitnami/nginx",
+					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "747ef335ea27a2faf08aa292a5bc5491aff50c6a94ee4ebcbbcd43cdeccccaf1"},
+					Annotations: map[string]string{
+						"another_annotation":      "foo",
+						"chainloop.material.name": "image",
+						"chainloop.material.type": "CONTAINER_IMAGE",
+					},
 				},
 				{
 					Name: "sbom", Type: "SBOM_CYCLONEDX_JSON",
 					Filename:      "sbom.cyclonedx.json",
 					Hash:          &crv1.Hash{Algorithm: "sha256", Hex: "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"},
 					UploadedToCAS: true,
-					Annotations:   make(map[string]string),
+					Annotations: map[string]string{
+						"chainloop.material.cas":  "true",
+						"chainloop.material.name": "sbom",
+						"chainloop.material.type": "SBOM_CYCLONEDX_JSON",
+					},
 				},
 				{
 					Name: "sbom", Type: "SBOM_CYCLONEDX_JSON",
@@ -65,12 +78,19 @@ func TestExtractPredicate(t *testing.T) {
 					Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"},
 					EmbeddedInline: true,
 					Value:          "hello inline!",
-					Annotations:    make(map[string]string),
+					Annotations: map[string]string{
+						"chainloop.material.cas.inline": "true",
+						"chainloop.material.name":       "sbom",
+						"chainloop.material.type":       "SBOM_CYCLONEDX_JSON",
+					},
 				},
 				{
 					Name: "stringvar", Type: "STRING",
-					Value:       "helloworld",
-					Annotations: make(map[string]string),
+					Value: "helloworld",
+					Annotations: map[string]string{
+						"chainloop.material.name": "stringvar",
+						"chainloop.material.type": "STRING",
+					},
 				},
 			},
 		},
