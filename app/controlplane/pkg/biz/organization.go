@@ -209,6 +209,10 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 }
 
 func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, opts *OrganizationUpdateOpts) (*Organization, error) {
+	if opts == nil {
+		opts = &OrganizationUpdateOpts{}
+	}
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

@@ -78,6 +78,10 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 }
 
 func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, updateOpts *biz.OrganizationUpdateOpts) (*biz.Organization, error) {
+	if updateOpts == nil {
+		updateOpts = &biz.OrganizationUpdateOpts{}
+	}
+
 	query := r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
 		SetNillableBlockOnPolicyViolation(updateOpts.BlockOnPolicyViolation).
