@@ -537,6 +537,12 @@ func structValueToString(v *structpb.Value) string {
 		return strconv.FormatBool(v.GetBoolValue())
 	case *structpb.Value_NumberValue:
 		return fmt.Sprintf("%g", v.GetNumberValue())
+	case *structpb.Value_StructValue, *structpb.Value_ListValue:
+		b, err := json.Marshal(v.AsInterface())
+		if err != nil {
+			return ""
+		}
+		return string(b)
 	default:
 		return ""
 	}

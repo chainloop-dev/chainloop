@@ -313,6 +313,8 @@ func TestStructValueToString(t *testing.T) {
 		{name: "number int", input: structpb.NewNumberValue(42), want: "42"},
 		{name: "number float", input: structpb.NewNumberValue(3.14), want: "3.14"},
 		{name: "null value", input: structpb.NewNullValue(), want: ""},
+		{name: "list value", input: mustListValue(t, []any{"a", "b"}), want: `["a","b"]`},
+		{name: "struct value", input: mustStructValue(t, map[string]any{"k": "v"}), want: `{"k":"v"}`},
 	}
 
 	for _, tc := range testCases {
@@ -320,6 +322,20 @@ func TestStructValueToString(t *testing.T) {
 			assert.Equal(t, tc.want, structValueToString(tc.input))
 		})
 	}
+}
+
+func mustListValue(t *testing.T, items []any) *structpb.Value {
+	t.Helper()
+	list, err := structpb.NewList(items)
+	require.NoError(t, err)
+	return structpb.NewListValue(list)
+}
+
+func mustStructValue(t *testing.T, fields map[string]any) *structpb.Value {
+	t.Helper()
+	s, err := structpb.NewStruct(fields)
+	require.NoError(t, err)
+	return structpb.NewStructValue(s)
 }
 
 func TestPolicyEvaluationsField(t *testing.T) {
