@@ -77,12 +77,13 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 	return entOrgToBizOrg(org), nil
 }
 
-func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*biz.Organization, error) {
+func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int, enableAIAgentCollector *bool) (*biz.Organization, error) {
 	opts := r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
 		SetNillableBlockOnPolicyViolation(blockOnPolicyViolation).
 		SetNillablePreventImplicitWorkflowCreation(preventImplicitWorkflowCreation).
 		SetNillableRestrictContractCreationToOrgAdmins(restrictContractCreationToOrgAdmins).
+		SetNillableEnableAiAgentCollector(enableAIAgentCollector).
 		SetUpdatedAt(time.Now())
 
 	if policiesAllowedHostnames != nil {
@@ -143,5 +144,6 @@ func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 		PreventImplicitWorkflowCreation:     eu.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: eu.RestrictContractCreationToOrgAdmins,
 		APITokenInactivityThresholdDays:     eu.APITokenInactivityThresholdDays,
+		EnableAIAgentCollector:              eu.EnableAiAgentCollector,
 	}
 }

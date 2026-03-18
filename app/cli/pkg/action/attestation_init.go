@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/token"
@@ -196,6 +197,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		attestationID            string
 		blockOnPolicyViolation   bool
 		policiesAllowedHostnames []string
+		enableAIAgentCollector   bool
 		// Timestamp Authority URL for new attestations
 		timestampAuthorityURL, signingCAName string
 		uiDashboardURL                       string
@@ -226,6 +228,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		workflowMeta.Organization = result.GetOrganization()
 		blockOnPolicyViolation = result.GetBlockOnPolicyViolation()
 		policiesAllowedHostnames = result.GetPoliciesAllowedHostnames()
+		enableAIAgentCollector = result.GetEnableAiAgentCollector()
 		signingOpts := result.GetSigningOptions()
 		timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
 		signingCAName = signingOpts.GetSigningCa()
@@ -308,8 +311,9 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	// Register and run auto-discovery collectors
-	// PR metadata is always collected; other collectors are opt-in via --collectors flag
+	// PR metadata is always collected; other collectors are opt-in via --collectors flag or org settings
 	collectors := []crafter.Collector{crafter.NewPRMetadataCollector(discoveredRunner)}
+	aiConfigRequested := slices.Contains(opts.Collectors, aiConfigCollectorName)
 	for _, name := range opts.Collectors {
 		switch name {
 		case aiConfigCollectorName:
@@ -317,6 +321,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		default:
 			action.Logger.Warn().Str("collector", name).Msg("unknown collector, skipping")
 		}
+	}
+	// Auto-enable AI agent config collector if the org setting is on and not already requested via CLI flag
+	if enableAIAgentCollector && !aiConfigRequested {
+		collectors = append(collectors, crafter.NewAIAgentConfigCollector())
 	}
 	action.c.RegisterCollectors(collectors...)
 	action.c.RunCollectors(ctx, attestationID, casBackend)

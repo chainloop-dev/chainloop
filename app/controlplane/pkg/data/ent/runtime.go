@@ -213,6 +213,10 @@ func init() {
 	organizationDescRestrictContractCreationToOrgAdmins := organizationFields[8].Descriptor()
 	// organization.DefaultRestrictContractCreationToOrgAdmins holds the default value on creation for the restrict_contract_creation_to_org_admins field.
 	organization.DefaultRestrictContractCreationToOrgAdmins = organizationDescRestrictContractCreationToOrgAdmins.Default.(bool)
+	// organizationDescEnableAiAgentCollector is the schema descriptor for enable_ai_agent_collector field.
+	organizationDescEnableAiAgentCollector := organizationFields[10].Descriptor()
+	// organization.DefaultEnableAiAgentCollector holds the default value on creation for the enable_ai_agent_collector field.
+	organization.DefaultEnableAiAgentCollector = organizationDescEnableAiAgentCollector.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.
 	organizationDescID := organizationFields[0].Descriptor()
 	// organization.DefaultID holds the default value on creation for the id field.

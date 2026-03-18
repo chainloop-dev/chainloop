@@ -46,13 +46,15 @@ type Organization struct {
 	// APITokenInactivityThresholdDays is the number of days after which inactive API tokens are auto-revoked.
 	// nil means the feature is disabled.
 	APITokenInactivityThresholdDays *int
+	// EnableAIAgentCollector enables automatic AI agent config collection during attestation init
+	EnableAIAgentCollector bool
 }
 
 type OrganizationRepo interface {
 	FindByID(ctx context.Context, orgID uuid.UUID) (*Organization, error)
 	FindByName(ctx context.Context, name string) (*Organization, error)
 	Create(ctx context.Context, name string) (*Organization, error)
-	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*Organization, error)
+	Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int, enableAIAgentCollector *bool) (*Organization, error)
 	Delete(ctx context.Context, ID uuid.UUID) error
 	// FindWithTokenInactivityThreshold returns orgs that have api_token_inactivity_threshold_days set (non-nil).
 	FindWithTokenInactivityThreshold(ctx context.Context) ([]*Organization, error)
@@ -194,7 +196,7 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 	return org, nil
 }
 
-func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*Organization, error) {
+func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int, enableAIAgentCollector *bool) (*Organization, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -214,7 +216,7 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 	}
 
 	// Perform the update
-	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
+	org, err := uc.orgRepo.Update(ctx, orgUUID, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays, enableAIAgentCollector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
 	} else if org == nil {

@@ -102,7 +102,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		apiTokenMaxDaysInactive = &days
 	}
 
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames, req.PreventImplicitWorkflowCreation, req.RestrictContractCreationToOrgAdmins, apiTokenMaxDaysInactive)
+	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, req.BlockOnPolicyViolation, policiesAllowedHostnames, req.PreventImplicitWorkflowCreation, req.RestrictContractCreationToOrgAdmins, apiTokenMaxDaysInactive, req.EnableAiAgentCollector)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

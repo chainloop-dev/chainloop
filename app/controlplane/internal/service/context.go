@@ -125,6 +125,7 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 		PolicyAllowedHostnames:              m.PoliciesAllowedHostnames,
 		PreventImplicitWorkflowCreation:     m.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: m.RestrictContractCreationToOrgAdmins,
+		EnableAiAgentCollector:              m.EnableAIAgentCollector,
 	}
 
 	if m.APITokenInactivityThresholdDays != nil {

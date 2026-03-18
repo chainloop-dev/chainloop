@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,6 +58,8 @@ func (Organization) Fields() []ent.Field {
 		// api_token_inactivity_threshold_days is the number of days after which inactive API tokens are auto-revoked.
 		// nil = disabled, any positive int = threshold in days
 		field.Int("api_token_inactivity_threshold_days").Optional().Nillable(),
+		// enable_ai_agent_collector enables automatic AI agent config collection during attestation init
+		field.Bool("enable_ai_agent_collector").Default(false),
 	}
 }
 

@@ -614,7 +614,11 @@ export interface OrgItem {
   /** restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles) */
   restrictContractCreationToOrgAdmins: boolean;
   /** Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled. */
-  apiTokenMaxDaysInactive?: number | undefined;
+  apiTokenMaxDaysInactive?:
+    | number
+    | undefined;
+  /** Whether AI agent config collection is automatically enabled during attestation init */
+  enableAiAgentCollector: boolean;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -3815,6 +3819,7 @@ function createBaseOrgItem(): OrgItem {
     preventImplicitWorkflowCreation: false,
     restrictContractCreationToOrgAdmins: false,
     apiTokenMaxDaysInactive: undefined,
+    enableAiAgentCollector: false,
   };
 }
 
@@ -3846,6 +3851,9 @@ export const OrgItem = {
     }
     if (message.apiTokenMaxDaysInactive !== undefined) {
       writer.uint32(72).int32(message.apiTokenMaxDaysInactive);
+    }
+    if (message.enableAiAgentCollector === true) {
+      writer.uint32(80).bool(message.enableAiAgentCollector);
     }
     return writer;
   },
@@ -3920,6 +3928,13 @@ export const OrgItem = {
 
           message.apiTokenMaxDaysInactive = reader.int32();
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.enableAiAgentCollector = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3950,6 +3965,7 @@ export const OrgItem = {
       apiTokenMaxDaysInactive: isSet(object.apiTokenMaxDaysInactive)
         ? Number(object.apiTokenMaxDaysInactive)
         : undefined,
+      enableAiAgentCollector: isSet(object.enableAiAgentCollector) ? Boolean(object.enableAiAgentCollector) : false,
     };
   },
 
@@ -3974,6 +3990,7 @@ export const OrgItem = {
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
     message.apiTokenMaxDaysInactive !== undefined &&
       (obj.apiTokenMaxDaysInactive = Math.round(message.apiTokenMaxDaysInactive));
+    message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
     return obj;
   },
 
@@ -3992,6 +4009,7 @@ export const OrgItem = {
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? false;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? false;
     message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
+    message.enableAiAgentCollector = object.enableAiAgentCollector ?? false;
     return message;
   },
 };

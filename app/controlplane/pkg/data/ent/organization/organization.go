@@ -33,6 +33,8 @@ const (
 	FieldRestrictContractCreationToOrgAdmins = "restrict_contract_creation_to_org_admins"
 	// FieldAPITokenInactivityThresholdDays holds the string denoting the api_token_inactivity_threshold_days field in the database.
 	FieldAPITokenInactivityThresholdDays = "api_token_inactivity_threshold_days"
+	// FieldEnableAiAgentCollector holds the string denoting the enable_ai_agent_collector field in the database.
+	FieldEnableAiAgentCollector = "enable_ai_agent_collector"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// EdgeWorkflowContracts holds the string denoting the workflow_contracts edge name in mutations.
@@ -121,6 +123,7 @@ var Columns = []string{
 	FieldPreventImplicitWorkflowCreation,
 	FieldRestrictContractCreationToOrgAdmins,
 	FieldAPITokenInactivityThresholdDays,
+	FieldEnableAiAgentCollector,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -144,6 +147,8 @@ var (
 	DefaultPreventImplicitWorkflowCreation bool
 	// DefaultRestrictContractCreationToOrgAdmins holds the default value on creation for the "restrict_contract_creation_to_org_admins" field.
 	DefaultRestrictContractCreationToOrgAdmins bool
+	// DefaultEnableAiAgentCollector holds the default value on creation for the "enable_ai_agent_collector" field.
+	DefaultEnableAiAgentCollector bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -194,6 +199,11 @@ func ByRestrictContractCreationToOrgAdmins(opts ...sql.OrderTermOption) OrderOpt
 // ByAPITokenInactivityThresholdDays orders the results by the api_token_inactivity_threshold_days field.
 func ByAPITokenInactivityThresholdDays(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAPITokenInactivityThresholdDays, opts...).ToFunc()
+}
+
+// ByEnableAiAgentCollector orders the results by the enable_ai_agent_collector field.
+func ByEnableAiAgentCollector(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEnableAiAgentCollector, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.

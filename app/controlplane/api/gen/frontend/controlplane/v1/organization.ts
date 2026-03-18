@@ -85,7 +85,11 @@ export interface OrganizationServiceUpdateRequest {
     | boolean
     | undefined;
   /** Maximum days of inactivity before API tokens are auto-revoked. Set to 0 to disable. */
-  apiTokenMaxDaysInactive?: number | undefined;
+  apiTokenMaxDaysInactive?:
+    | number
+    | undefined;
+  /** Enable automatic AI agent config collection during attestation init */
+  enableAiAgentCollector?: boolean | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -676,6 +680,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     preventImplicitWorkflowCreation: undefined,
     restrictContractCreationToOrgAdmins: undefined,
     apiTokenMaxDaysInactive: undefined,
+    enableAiAgentCollector: undefined,
   };
 }
 
@@ -701,6 +706,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.apiTokenMaxDaysInactive !== undefined) {
       writer.uint32(56).int32(message.apiTokenMaxDaysInactive);
+    }
+    if (message.enableAiAgentCollector !== undefined) {
+      writer.uint32(64).bool(message.enableAiAgentCollector);
     }
     return writer;
   },
@@ -761,6 +769,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.apiTokenMaxDaysInactive = reader.int32();
           continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.enableAiAgentCollector = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -789,6 +804,7 @@ export const OrganizationServiceUpdateRequest = {
       apiTokenMaxDaysInactive: isSet(object.apiTokenMaxDaysInactive)
         ? Number(object.apiTokenMaxDaysInactive)
         : undefined,
+      enableAiAgentCollector: isSet(object.enableAiAgentCollector) ? Boolean(object.enableAiAgentCollector) : undefined,
     };
   },
 
@@ -809,6 +825,7 @@ export const OrganizationServiceUpdateRequest = {
       (obj.restrictContractCreationToOrgAdmins = message.restrictContractCreationToOrgAdmins);
     message.apiTokenMaxDaysInactive !== undefined &&
       (obj.apiTokenMaxDaysInactive = Math.round(message.apiTokenMaxDaysInactive));
+    message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
     return obj;
   },
 
@@ -829,6 +846,7 @@ export const OrganizationServiceUpdateRequest = {
     message.preventImplicitWorkflowCreation = object.preventImplicitWorkflowCreation ?? undefined;
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? undefined;
     message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
+    message.enableAiAgentCollector = object.enableAiAgentCollector ?? undefined;
     return message;
   },
 };

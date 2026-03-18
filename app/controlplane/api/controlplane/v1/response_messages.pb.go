@@ -1906,8 +1906,10 @@ type OrgItem struct {
 	RestrictContractCreationToOrgAdmins bool `protobuf:"varint,8,opt,name=restrict_contract_creation_to_org_admins,json=restrictContractCreationToOrgAdmins,proto3" json:"restrict_contract_creation_to_org_admins,omitempty"`
 	// Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled.
 	ApiTokenMaxDaysInactive *int32 `protobuf:"varint,9,opt,name=api_token_max_days_inactive,json=apiTokenMaxDaysInactive,proto3,oneof" json:"api_token_max_days_inactive,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// Whether AI agent config collection is automatically enabled during attestation init
+	EnableAiAgentCollector bool `protobuf:"varint,10,opt,name=enable_ai_agent_collector,json=enableAiAgentCollector,proto3" json:"enable_ai_agent_collector,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *OrgItem) Reset() {
@@ -2001,6 +2003,13 @@ func (x *OrgItem) GetApiTokenMaxDaysInactive() int32 {
 		return *x.ApiTokenMaxDaysInactive
 	}
 	return 0
+}
+
+func (x *OrgItem) GetEnableAiAgentCollector() bool {
+	if x != nil {
+		return x.EnableAiAgentCollector
+	}
+	return false
 }
 
 type CASBackendItem struct {
@@ -2807,7 +2816,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x123\n" +
-	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xa1\x06\n" +
+	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xdc\x06\n" +
 	"\aOrgItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
@@ -2819,7 +2828,9 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x18policy_allowed_hostnames\x18\x05 \x03(\tR\x16policyAllowedHostnames\x12K\n" +
 	"\"prevent_implicit_workflow_creation\x18\a \x01(\bR\x1fpreventImplicitWorkflowCreation\x12U\n" +
 	"(restrict_contract_creation_to_org_admins\x18\b \x01(\bR#restrictContractCreationToOrgAdmins\x12A\n" +
-	"\x1bapi_token_max_days_inactive\x18\t \x01(\x05H\x00R\x17apiTokenMaxDaysInactive\x88\x01\x01\"\xb4\x01\n" +
+	"\x1bapi_token_max_days_inactive\x18\t \x01(\x05H\x00R\x17apiTokenMaxDaysInactive\x88\x01\x01\x129\n" +
+	"\x19enable_ai_agent_collector\x18\n" +
+	" \x01(\bR\x16enableAiAgentCollector\"\xb4\x01\n" +
 	"\x1fPolicyViolationBlockingStrategy\x122\n" +
 	".POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED\x10\x00\x12,\n" +
 	"(POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK\x10\x01\x12/\n" +

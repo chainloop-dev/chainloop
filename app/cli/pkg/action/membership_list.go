@@ -36,6 +36,7 @@ type OrgItem struct {
 	PolicyAllowedHostnames          []string   `json:"policyAllowedHostnames,omitempty"`
 	PreventImplicitWorkflowCreation bool       `json:"preventImplicitWorkflowCreation"`
 	APITokenMaxDaysInactive         *string    `json:"apiTokenMaxDaysInactive,omitempty"`
+	EnableAIAgentCollector          bool       `json:"enableAiAgentCollector"`
 }
 
 type MembershipItem struct {
@@ -138,6 +139,7 @@ func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 		CreatedAt:                       toTimePtr(in.CreatedAt.AsTime()),
 		PolicyAllowedHostnames:          in.PolicyAllowedHostnames,
 		PreventImplicitWorkflowCreation: in.PreventImplicitWorkflowCreation,
+		EnableAIAgentCollector:          in.EnableAiAgentCollector,
 	}
 
 	if in.DefaultPolicyViolationStrategy == pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK {

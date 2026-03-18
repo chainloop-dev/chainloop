@@ -31,6 +31,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		preventImplicitWorkflowCreation bool
 		restrictContractCreation        bool
 		apiTokenMaxDaysInactive         string
+		enableAIAgentCollector          bool
 	)
 
 	cmd := &cobra.Command{
@@ -52,6 +53,10 @@ func newOrganizationUpdateCmd() *cobra.Command {
 
 			if cmd.Flags().Changed("restrict-contract-creation") {
 				opts.RestrictContractCreation = &restrictContractCreation
+			}
+
+			if cmd.Flags().Changed("enable-ai-agent-collector") {
+				opts.EnableAIAgentCollector = &enableAIAgentCollector
 			}
 
 			if cmd.Flags().Changed("api-token-max-days-inactive") {
@@ -84,5 +89,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&preventImplicitWorkflowCreation, "prevent-implicit-workflow-creation", false, "prevent workflows and projects from being created implicitly during attestation init")
 	cmd.Flags().BoolVar(&restrictContractCreation, "restrict-contract-creation", false, "restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)")
 	cmd.Flags().StringVar(&apiTokenMaxDaysInactive, "api-token-max-days-inactive", "", "maximum days of inactivity before API tokens are auto-revoked (e.g. '90', '0' to disable)")
+	cmd.Flags().BoolVar(&enableAIAgentCollector, "enable-ai-agent-collector", false, "enable automatic AI agent config collection during attestation init")
 	return cmd
 }

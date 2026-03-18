@@ -117,6 +117,8 @@ export interface AttestationServiceInitResponse_Result {
   policiesAllowedHostnames: string[];
   /** URL pointing to the web dashboard. It might be empty if not available */
   uiDashboardUrl: string;
+  /** Whether AI agent config collection is enabled at the org level */
+  enableAiAgentCollector: boolean;
 }
 
 export interface AttestationServiceInitResponse_SigningOptions {
@@ -1285,6 +1287,7 @@ function createBaseAttestationServiceInitResponse_Result(): AttestationServiceIn
     signingOptions: undefined,
     policiesAllowedHostnames: [],
     uiDashboardUrl: "",
+    enableAiAgentCollector: false,
   };
 }
 
@@ -1307,6 +1310,9 @@ export const AttestationServiceInitResponse_Result = {
     }
     if (message.uiDashboardUrl !== "") {
       writer.uint32(58).string(message.uiDashboardUrl);
+    }
+    if (message.enableAiAgentCollector === true) {
+      writer.uint32(64).bool(message.enableAiAgentCollector);
     }
     return writer;
   },
@@ -1360,6 +1366,13 @@ export const AttestationServiceInitResponse_Result = {
 
           message.uiDashboardUrl = reader.string();
           continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.enableAiAgentCollector = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1381,6 +1394,7 @@ export const AttestationServiceInitResponse_Result = {
         ? object.policiesAllowedHostnames.map((e: any) => String(e))
         : [],
       uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
+      enableAiAgentCollector: isSet(object.enableAiAgentCollector) ? Boolean(object.enableAiAgentCollector) : false,
     };
   },
 
@@ -1399,6 +1413,7 @@ export const AttestationServiceInitResponse_Result = {
       obj.policiesAllowedHostnames = [];
     }
     message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
+    message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
     return obj;
   },
 
@@ -1422,6 +1437,7 @@ export const AttestationServiceInitResponse_Result = {
       : undefined;
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
     message.uiDashboardUrl = object.uiDashboardUrl ?? "";
+    message.enableAiAgentCollector = object.enableAiAgentCollector ?? false;
     return message;
   },
 };

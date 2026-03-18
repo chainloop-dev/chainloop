@@ -141,6 +141,8 @@ message AttestationServiceInitResponse {
     repeated string policies_allowed_hostnames = 6;
     // URL pointing to the web dashboard. It might be empty if not available
     string ui_dashboard_url = 7;
+    // Whether AI agent config collection is enabled at the org level
+    bool enable_ai_agent_collector = 8;
   }
 
   message SigningOptions {

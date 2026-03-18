@@ -288,6 +288,8 @@ message OrgItem {
   bool restrict_contract_creation_to_org_admins = 8;
   // Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled.
   optional int32 api_token_max_days_inactive = 9;
+  // Whether AI agent config collection is automatically enabled during attestation init
+  bool enable_ai_agent_collector = 10;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;
