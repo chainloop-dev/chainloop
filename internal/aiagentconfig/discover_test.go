@@ -96,7 +96,7 @@ func TestDiscoverAll(t *testing.T) {
 			files: []string{".cursor/skills/search/SKILL.md"},
 			expected: map[string][]DiscoveredFile{
 				"cursor": {
-					{Path: ".cursor/skills/search/SKILL.md", Kind: ConfigFileKindInstruction},
+					{Path: ".cursor/skills/search/SKILL.md", Kind: ConfigFileKindSkill},
 				},
 			},
 		},
@@ -167,7 +167,7 @@ func TestDiscoverAll(t *testing.T) {
 					{Path: ".claude/rules/coding.md", Kind: ConfigFileKindInstruction},
 					{Path: ".claude/rules/testing.md", Kind: ConfigFileKindInstruction},
 					{Path: ".claude/settings.json", Kind: ConfigFileKindConfiguration},
-					{Path: ".claude/skills/search/SKILL.md", Kind: ConfigFileKindInstruction},
+					{Path: ".claude/skills/search/SKILL.md", Kind: ConfigFileKindSkill},
 					{Path: ".mcp.json", Kind: ConfigFileKindConfiguration},
 					{Path: "AGENTS.md", Kind: ConfigFileKindInstruction},
 					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
