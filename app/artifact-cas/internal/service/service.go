@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"syscall"
 
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
@@ -26,6 +28,8 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/google/wire"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ProviderSet is service providers.
@@ -73,6 +77,32 @@ func newCommonService(backends backend.Providers, opts ...NewOpt) *commonService
 	}
 
 	return s
+}
+
+// isClientDisconnect returns true if the error indicates the client has disconnected.
+// This includes context cancellation, gRPC canceled status, and network-level
+// errors such as "connection reset by peer" and "broken pipe".
+func isClientDisconnect(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Context cancellation (e.g. client canceled the request)
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+
+	// gRPC canceled status (client disconnect in gRPC streaming)
+	if status.Code(err) == codes.Canceled {
+		return true
+	}
+
+	// Network-level disconnects: connection reset by peer, broken pipe
+	if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) {
+		return true
+	}
+
+	return false
 }
 
 // Extract the JWT claims from the context, note that the JWT verification has happened in the middleware
