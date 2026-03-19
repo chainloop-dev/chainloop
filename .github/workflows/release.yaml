@@ -225,8 +225,7 @@ jobs:
         env:
           ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
         run: |
-          chainloop attestation push --attestation-id ${{ env.ATTESTATION_ID }}
-          attestation_sha=$(chainloop wf run describe --id ${{ env.ATTESTATION_ID }} -o json | jq -r '.attestation.digest')
+          attestation_sha=$(chainloop attestation push --attestation-id ${{ env.ATTESTATION_ID }} -o json | jq -r '.digest')
           # check that the command succeeded
           if [ -n "$attestation_sha" ]; then
             echo "attestation_sha=$attestation_sha" >> $GITHUB_OUTPUT
