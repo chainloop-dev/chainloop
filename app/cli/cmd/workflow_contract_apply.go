@@ -26,12 +26,10 @@ func newWorkflowContractApplyCmd() *cobra.Command {
 	var contractName string
 
 	cmd := &cobra.Command{
-		Use:   "apply",
-		Short: "Apply a contract (create or update)",
-		Long: `Apply a contract from a file. This command will create the contract if it doesn't exist,
-or update it if it already exists.`,
-		Example: `  # Apply a contract from file
-  chainloop workflow contract apply --contract my-contract.yaml --name my-contract --project my-project`,
+		Use:        "apply",
+		Short:      "Apply a contract (create or update)",
+		Deprecated: "use 'chainloop apply -f <file>' instead",
+		Hidden:     true,
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			// Validate and extract the contract name
 			var err error
