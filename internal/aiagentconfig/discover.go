@@ -41,14 +41,14 @@ var agents = []agentDef{
 		{".claude/rules/*.md", ConfigFileKindInstruction},
 		{".claude/agents/*.md", ConfigFileKindInstruction},
 		{".claude/commands/*.md", ConfigFileKindInstruction},
-		{".claude/skills/*/SKILL.md", ConfigFileKindInstruction},
+		{".claude/skills/*/SKILL.md", ConfigFileKindSkill},
 	}},
 	{name: "cursor", patterns: []patternDef{
 		{".cursor/rules/*.md", ConfigFileKindInstruction},
 		{".cursor/rules/*.mdc", ConfigFileKindInstruction},
 		{".cursor/rules/*/*.md", ConfigFileKindInstruction},
 		{".cursor/rules/*/*.mdc", ConfigFileKindInstruction},
-		{".cursor/skills/*/SKILL.md", ConfigFileKindInstruction},
+		{".cursor/skills/*/SKILL.md", ConfigFileKindSkill},
 		{".cursor/agents/*.md", ConfigFileKindInstruction},
 	}},
 }

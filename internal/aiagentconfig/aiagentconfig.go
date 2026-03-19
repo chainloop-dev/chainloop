@@ -23,6 +23,8 @@ const (
 	ConfigFileKindConfiguration ConfigFileKind = "configuration"
 	// ConfigFileKindInstruction is for markdown instruction/rules files.
 	ConfigFileKindInstruction ConfigFileKind = "instruction"
+	// ConfigFileKindSkill is for skill definition files.
+	ConfigFileKindSkill ConfigFileKind = "skill"
 
 	// EvidenceID is the identifier for the AI agent config material type
 	EvidenceID = "CHAINLOOP_AI_AGENT_CONFIG"
