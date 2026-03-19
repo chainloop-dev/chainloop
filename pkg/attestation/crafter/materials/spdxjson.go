@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -91,7 +91,11 @@ func (i *SPDXJSONCrafter) injectAnnotations(m *api.Attestation_Material, doc *sp
 
 	// Maintain backward compatibility - keep legacy keys for the first tool
 	if len(tools) > 0 {
-		m.Annotations[AnnotationToolNameKey] = tools[0].Name
-		m.Annotations[AnnotationToolVersionKey] = tools[0].Version
+		if tools[0].Name != "" {
+			m.Annotations[AnnotationToolNameKey] = tools[0].Name
+		}
+		if tools[0].Version != "" {
+			m.Annotations[AnnotationToolVersionKey] = tools[0].Version
+		}
 	}
 }

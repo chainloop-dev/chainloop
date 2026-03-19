@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,11 +99,13 @@ func TestNewCSAFCrafter(t *testing.T) {
 
 func TestCSAFCraft(t *testing.T) {
 	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
-		digest   string
-		schema   *contractAPI.CraftingSchema_Material
+		name              string
+		filePath          string
+		wantErr           string
+		digest            string
+		schema            *contractAPI.CraftingSchema_Material
+		annotations       map[string]string
+		absentAnnotations []string
 	}{
 		{
 			name:     "non-expected json file",
@@ -166,6 +168,10 @@ func TestCSAFCraft(t *testing.T) {
 			schema: &contractAPI.CraftingSchema_Material{
 				Name: "test",
 				Type: contractAPI.CraftingSchema_Material_CSAF_VEX,
+			},
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "Secvisogram",
+				"chainloop.material.tool.version": "1.11.0",
 			},
 		},
 		{
@@ -252,6 +258,15 @@ func TestCSAFCraft(t *testing.T) {
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
 				Id: "test", Digest: tc.digest, Name: strings.Split(tc.filePath, "/")[2],
 			}, got.GetArtifact())
+
+			for k, v := range tc.annotations {
+				assert.Equal(v, got.Annotations[k])
+			}
+
+			for _, k := range tc.absentAnnotations {
+				_, exists := got.Annotations[k]
+				assert.False(exists, "annotation %q should not be present", k)
+			}
 		})
 	}
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -146,10 +146,10 @@ func (i *CSAFCrafter) injectAnnotations(m *api.Attestation_Material, documentMap
 	if tracking, ok := documentMap["tracking"].(map[string]any); ok {
 		if generator, ok := tracking["generator"].(map[string]any); ok {
 			if engine, ok := generator["engine"].(map[string]any); ok {
-				if name, ok := engine["name"].(string); ok {
+				if name, ok := engine["name"].(string); ok && name != "" {
 					m.Annotations[AnnotationToolNameKey] = name
 				}
-				if version, ok := engine["version"].(string); ok {
+				if version, ok := engine["version"].(string); ok && version != "" {
 					m.Annotations[AnnotationToolVersionKey] = version
 				}
 			}
