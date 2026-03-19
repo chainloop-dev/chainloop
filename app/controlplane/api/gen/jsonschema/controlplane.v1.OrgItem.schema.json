@@ -30,6 +30,10 @@
         }
       ]
     },
+    "^(enableAiAgentCollector)$": {
+      "description": "Whether AI agent config collection is automatically enabled during attestation init",
+      "type": "boolean"
+    },
     "^(policyAllowedHostnames)$": {
       "items": {
         "type": "string"
@@ -75,6 +79,10 @@
           "type": "integer"
         }
       ]
+    },
+    "enable_ai_agent_collector": {
+      "description": "Whether AI agent config collection is automatically enabled during attestation init",
+      "type": "boolean"
     },
     "id": {
       "type": "string"

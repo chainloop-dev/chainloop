@@ -240,6 +240,7 @@ Workflow Contracts define the structure and requirements for CI/CD attestations.
 - **Actions**: Implement business logic in `internal/action/`
 - **Policy Development**: Use `internal/policydevel/` for local policy testing
 - **Default Endpoints**: Override with `-ldflags` at build time using `defaultCASAPI` and `defaultCPAPI` variables
+- **Documentation**: After adding or modifying CLI commands, regenerate docs with `make generate` (runs `go generate ./...` which includes CLI docs)
 
 ### Artifact CAS Development
 - **Storage Backends**: Implement new backends in `pkg/blobmanager/` with Provider interface

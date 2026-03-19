@@ -213,6 +213,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		BlockOnPolicyViolation:   org.BlockOnPolicyViolation,
 		PoliciesAllowedHostnames: org.PoliciesAllowedHostnames,
 		UiDashboardUrl:           s.bootstrapConfig.UiDashboardUrl,
+		EnableAiAgentCollector:   org.EnableAIAgentCollector,
 	}
 
 	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}

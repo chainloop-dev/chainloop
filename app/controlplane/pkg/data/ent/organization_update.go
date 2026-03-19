@@ -174,6 +174,20 @@ func (_u *OrganizationUpdate) ClearAPITokenInactivityThresholdDays() *Organizati
 	return _u
 }
 
+// SetEnableAiAgentCollector sets the "enable_ai_agent_collector" field.
+func (_u *OrganizationUpdate) SetEnableAiAgentCollector(v bool) *OrganizationUpdate {
+	_u.mutation.SetEnableAiAgentCollector(v)
+	return _u
+}
+
+// SetNillableEnableAiAgentCollector sets the "enable_ai_agent_collector" field if the given value is not nil.
+func (_u *OrganizationUpdate) SetNillableEnableAiAgentCollector(v *bool) *OrganizationUpdate {
+	if v != nil {
+		_u.SetEnableAiAgentCollector(*v)
+	}
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -549,6 +563,9 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.APITokenInactivityThresholdDaysCleared() {
 		_spec.ClearField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.EnableAiAgentCollector(); ok {
+		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1067,6 +1084,20 @@ func (_u *OrganizationUpdateOne) ClearAPITokenInactivityThresholdDays() *Organiz
 	return _u
 }
 
+// SetEnableAiAgentCollector sets the "enable_ai_agent_collector" field.
+func (_u *OrganizationUpdateOne) SetEnableAiAgentCollector(v bool) *OrganizationUpdateOne {
+	_u.mutation.SetEnableAiAgentCollector(v)
+	return _u
+}
+
+// SetNillableEnableAiAgentCollector sets the "enable_ai_agent_collector" field if the given value is not nil.
+func (_u *OrganizationUpdateOne) SetNillableEnableAiAgentCollector(v *bool) *OrganizationUpdateOne {
+	if v != nil {
+		_u.SetEnableAiAgentCollector(*v)
+	}
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -1472,6 +1503,9 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 	}
 	if _u.mutation.APITokenInactivityThresholdDaysCleared() {
 		_spec.ClearField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt)
+	}
+	if value, ok := _u.mutation.EnableAiAgentCollector(); ok {
+		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

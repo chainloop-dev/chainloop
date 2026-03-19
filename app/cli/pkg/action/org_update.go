@@ -38,6 +38,8 @@ type NewOrgUpdateOpts struct {
 	// APITokenMaxDaysInactive is the maximum number of days a token can be inactive before auto-revocation.
 	// 0 means disabled.
 	APITokenMaxDaysInactive *int
+	// EnableAIAgentCollector enables automatic AI agent config collection during attestation init
+	EnableAIAgentCollector *bool
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -48,6 +50,7 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 		BlockOnPolicyViolation:              opts.BlockOnPolicyViolation,
 		PreventImplicitWorkflowCreation:     opts.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: opts.RestrictContractCreation,
+		EnableAiAgentCollector:              opts.EnableAIAgentCollector,
 	}
 
 	if opts.PoliciesAllowedHostnames != nil {

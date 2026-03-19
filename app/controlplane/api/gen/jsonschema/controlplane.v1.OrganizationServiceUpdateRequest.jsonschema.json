@@ -13,6 +13,10 @@
       "description": "\"optional\" allow us to detect if the value is explicitly set",
       "type": "boolean"
     },
+    "^(enable_ai_agent_collector)$": {
+      "description": "Enable automatic AI agent config collection during attestation init",
+      "type": "boolean"
+    },
     "^(policies_allowed_hostnames)$": {
       "description": "array of hostnames that are allowed to be used in the policies",
       "items": {
@@ -42,6 +46,10 @@
     },
     "blockOnPolicyViolation": {
       "description": "\"optional\" allow us to detect if the value is explicitly set",
+      "type": "boolean"
+    },
+    "enableAiAgentCollector": {
+      "description": "Enable automatic AI agent config collection during attestation init",
       "type": "boolean"
     },
     "name": {

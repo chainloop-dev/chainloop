@@ -142,6 +142,20 @@ func (_c *OrganizationCreate) SetNillableAPITokenInactivityThresholdDays(v *int)
 	return _c
 }
 
+// SetEnableAiAgentCollector sets the "enable_ai_agent_collector" field.
+func (_c *OrganizationCreate) SetEnableAiAgentCollector(v bool) *OrganizationCreate {
+	_c.mutation.SetEnableAiAgentCollector(v)
+	return _c
+}
+
+// SetNillableEnableAiAgentCollector sets the "enable_ai_agent_collector" field if the given value is not nil.
+func (_c *OrganizationCreate) SetNillableEnableAiAgentCollector(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetEnableAiAgentCollector(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *OrganizationCreate) SetID(v uuid.UUID) *OrganizationCreate {
 	_c.mutation.SetID(v)
@@ -331,6 +345,10 @@ func (_c *OrganizationCreate) defaults() {
 		v := organization.DefaultRestrictContractCreationToOrgAdmins
 		_c.mutation.SetRestrictContractCreationToOrgAdmins(v)
 	}
+	if _, ok := _c.mutation.EnableAiAgentCollector(); !ok {
+		v := organization.DefaultEnableAiAgentCollector
+		_c.mutation.SetEnableAiAgentCollector(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		_c.mutation.SetID(v)
@@ -356,6 +374,9 @@ func (_c *OrganizationCreate) check() error {
 	}
 	if _, ok := _c.mutation.RestrictContractCreationToOrgAdmins(); !ok {
 		return &ValidationError{Name: "restrict_contract_creation_to_org_admins", err: errors.New(`ent: missing required field "Organization.restrict_contract_creation_to_org_admins"`)}
+	}
+	if _, ok := _c.mutation.EnableAiAgentCollector(); !ok {
+		return &ValidationError{Name: "enable_ai_agent_collector", err: errors.New(`ent: missing required field "Organization.enable_ai_agent_collector"`)}
 	}
 	return nil
 }
@@ -428,6 +449,10 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.APITokenInactivityThresholdDays(); ok {
 		_spec.SetField(organization.FieldAPITokenInactivityThresholdDays, field.TypeInt, value)
 		_node.APITokenInactivityThresholdDays = &value
+	}
+	if value, ok := _c.mutation.EnableAiAgentCollector(); ok {
+		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
+		_node.EnableAiAgentCollector = value
 	}
 	if nodes := _c.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -729,6 +754,18 @@ func (u *OrganizationUpsert) ClearAPITokenInactivityThresholdDays() *Organizatio
 	return u
 }
 
+// SetEnableAiAgentCollector sets the "enable_ai_agent_collector" field.
+func (u *OrganizationUpsert) SetEnableAiAgentCollector(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldEnableAiAgentCollector, v)
+	return u
+}
+
+// UpdateEnableAiAgentCollector sets the "enable_ai_agent_collector" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateEnableAiAgentCollector() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldEnableAiAgentCollector)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -917,6 +954,20 @@ func (u *OrganizationUpsertOne) UpdateAPITokenInactivityThresholdDays() *Organiz
 func (u *OrganizationUpsertOne) ClearAPITokenInactivityThresholdDays() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.ClearAPITokenInactivityThresholdDays()
+	})
+}
+
+// SetEnableAiAgentCollector sets the "enable_ai_agent_collector" field.
+func (u *OrganizationUpsertOne) SetEnableAiAgentCollector(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetEnableAiAgentCollector(v)
+	})
+}
+
+// UpdateEnableAiAgentCollector sets the "enable_ai_agent_collector" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateEnableAiAgentCollector() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateEnableAiAgentCollector()
 	})
 }
 
@@ -1275,6 +1326,20 @@ func (u *OrganizationUpsertBulk) UpdateAPITokenInactivityThresholdDays() *Organi
 func (u *OrganizationUpsertBulk) ClearAPITokenInactivityThresholdDays() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.ClearAPITokenInactivityThresholdDays()
+	})
+}
+
+// SetEnableAiAgentCollector sets the "enable_ai_agent_collector" field.
+func (u *OrganizationUpsertBulk) SetEnableAiAgentCollector(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetEnableAiAgentCollector(v)
+	})
+}
+
+// UpdateEnableAiAgentCollector sets the "enable_ai_agent_collector" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateEnableAiAgentCollector() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateEnableAiAgentCollector()
 	})
 }
 

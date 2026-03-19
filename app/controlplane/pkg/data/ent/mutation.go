@@ -8748,6 +8748,7 @@ type OrganizationMutation struct {
 	restrict_contract_creation_to_org_admins *bool
 	api_token_inactivity_threshold_days      *int
 	addapi_token_inactivity_threshold_days   *int
+	enable_ai_agent_collector                *bool
 	clearedFields                            map[string]struct{}
 	memberships                              map[uuid.UUID]struct{}
 	removedmemberships                       map[uuid.UUID]struct{}
@@ -9282,6 +9283,42 @@ func (m *OrganizationMutation) ResetAPITokenInactivityThresholdDays() {
 	delete(m.clearedFields, organization.FieldAPITokenInactivityThresholdDays)
 }
 
+// SetEnableAiAgentCollector sets the "enable_ai_agent_collector" field.
+func (m *OrganizationMutation) SetEnableAiAgentCollector(b bool) {
+	m.enable_ai_agent_collector = &b
+}
+
+// EnableAiAgentCollector returns the value of the "enable_ai_agent_collector" field in the mutation.
+func (m *OrganizationMutation) EnableAiAgentCollector() (r bool, exists bool) {
+	v := m.enable_ai_agent_collector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnableAiAgentCollector returns the old "enable_ai_agent_collector" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldEnableAiAgentCollector(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnableAiAgentCollector is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnableAiAgentCollector requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnableAiAgentCollector: %w", err)
+	}
+	return oldValue.EnableAiAgentCollector, nil
+}
+
+// ResetEnableAiAgentCollector resets all changes to the "enable_ai_agent_collector" field.
+func (m *OrganizationMutation) ResetEnableAiAgentCollector() {
+	m.enable_ai_agent_collector = nil
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
 func (m *OrganizationMutation) AddMembershipIDs(ids ...uuid.UUID) {
 	if m.memberships == nil {
@@ -9748,7 +9785,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9776,6 +9813,9 @@ func (m *OrganizationMutation) Fields() []string {
 	if m.api_token_inactivity_threshold_days != nil {
 		fields = append(fields, organization.FieldAPITokenInactivityThresholdDays)
 	}
+	if m.enable_ai_agent_collector != nil {
+		fields = append(fields, organization.FieldEnableAiAgentCollector)
+	}
 	return fields
 }
 
@@ -9802,6 +9842,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.RestrictContractCreationToOrgAdmins()
 	case organization.FieldAPITokenInactivityThresholdDays:
 		return m.APITokenInactivityThresholdDays()
+	case organization.FieldEnableAiAgentCollector:
+		return m.EnableAiAgentCollector()
 	}
 	return nil, false
 }
@@ -9829,6 +9871,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldRestrictContractCreationToOrgAdmins(ctx)
 	case organization.FieldAPITokenInactivityThresholdDays:
 		return m.OldAPITokenInactivityThresholdDays(ctx)
+	case organization.FieldEnableAiAgentCollector:
+		return m.OldEnableAiAgentCollector(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9900,6 +9944,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAPITokenInactivityThresholdDays(v)
+		return nil
+	case organization.FieldEnableAiAgentCollector:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnableAiAgentCollector(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -10012,6 +10063,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldAPITokenInactivityThresholdDays:
 		m.ResetAPITokenInactivityThresholdDays()
+		return nil
+	case organization.FieldEnableAiAgentCollector:
+		m.ResetEnableAiAgentCollector()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

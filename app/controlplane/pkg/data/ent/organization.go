@@ -37,6 +37,8 @@ type Organization struct {
 	RestrictContractCreationToOrgAdmins bool `json:"restrict_contract_creation_to_org_admins,omitempty"`
 	// APITokenInactivityThresholdDays holds the value of the "api_token_inactivity_threshold_days" field.
 	APITokenInactivityThresholdDays *int `json:"api_token_inactivity_threshold_days,omitempty"`
+	// EnableAiAgentCollector holds the value of the "enable_ai_agent_collector" field.
+	EnableAiAgentCollector bool `json:"enable_ai_agent_collector,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
 	Edges        OrganizationEdges `json:"edges"`
@@ -145,7 +147,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case organization.FieldPoliciesAllowedHostnames:
 			values[i] = new([]byte)
-		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins:
+		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins, organization.FieldEnableAiAgentCollector:
 			values[i] = new(sql.NullBool)
 		case organization.FieldAPITokenInactivityThresholdDays:
 			values[i] = new(sql.NullInt64)
@@ -232,6 +234,12 @@ func (_m *Organization) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.APITokenInactivityThresholdDays = new(int)
 				*_m.APITokenInactivityThresholdDays = int(value.Int64)
+			}
+		case organization.FieldEnableAiAgentCollector:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field enable_ai_agent_collector", values[i])
+			} else if value.Valid {
+				_m.EnableAiAgentCollector = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -337,6 +345,9 @@ func (_m *Organization) String() string {
 		builder.WriteString("api_token_inactivity_threshold_days=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("enable_ai_agent_collector=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EnableAiAgentCollector))
 	builder.WriteByte(')')
 	return builder.String()
 }

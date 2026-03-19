@@ -7,6 +7,10 @@
       "description": "fail the attestation if there is a violation in any policy",
       "type": "boolean"
     },
+    "^(enable_ai_agent_collector)$": {
+      "description": "Whether AI agent config collection is enabled at the org level",
+      "type": "boolean"
+    },
     "^(policies_allowed_hostnames)$": {
       "description": "array of hostnames that are allowed to be used in the policies",
       "items": {
@@ -29,6 +33,10 @@
   "properties": {
     "blockOnPolicyViolation": {
       "description": "fail the attestation if there is a violation in any policy",
+      "type": "boolean"
+    },
+    "enableAiAgentCollector": {
+      "description": "Whether AI agent config collection is enabled at the org level",
       "type": "boolean"
     },
     "organization": {

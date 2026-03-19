@@ -363,8 +363,8 @@ func (_c *OrganizationRepo_FindWithTokenInactivityThreshold_Call) RunAndReturn(r
 }
 
 // Update provides a mock function for the type OrganizationRepo
-func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*biz.Organization, error) {
-	ret := _mock.Called(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
+func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.OrganizationUpdateOpts) (*biz.Organization, error) {
+	ret := _mock.Called(ctx, id, opts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -372,18 +372,18 @@ func (_mock *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, blockOn
 
 	var r0 *biz.Organization
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool, *int) (*biz.Organization, error)); ok {
-		return returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.OrganizationUpdateOpts) (*biz.Organization, error)); ok {
+		return returnFunc(ctx, id, opts)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool, *int) *biz.Organization); ok {
-		r0 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *biz.OrganizationUpdateOpts) *biz.Organization); ok {
+		r0 = returnFunc(ctx, id, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.Organization)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *bool, []string, *bool, *bool, *int) error); ok {
-		r1 = returnFunc(ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *biz.OrganizationUpdateOpts) error); ok {
+		r1 = returnFunc(ctx, id, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -398,16 +398,12 @@ type OrganizationRepo_Update_Call struct {
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-//   - blockOnPolicyViolation *bool
-//   - policiesAllowedHostnames []string
-//   - preventImplicitWorkflowCreation *bool
-//   - restrictContractCreationToOrgAdmins *bool
-//   - apiTokenInactivityThresholdDays *int
-func (_e *OrganizationRepo_Expecter) Update(ctx interface{}, id interface{}, blockOnPolicyViolation interface{}, policiesAllowedHostnames interface{}, preventImplicitWorkflowCreation interface{}, restrictContractCreationToOrgAdmins interface{}, apiTokenInactivityThresholdDays interface{}) *OrganizationRepo_Update_Call {
-	return &OrganizationRepo_Update_Call{Call: _e.mock.On("Update", ctx, id, blockOnPolicyViolation, policiesAllowedHostnames, preventImplicitWorkflowCreation, restrictContractCreationToOrgAdmins, apiTokenInactivityThresholdDays)}
+//   - opts *biz.OrganizationUpdateOpts
+func (_e *OrganizationRepo_Expecter) Update(ctx interface{}, id interface{}, opts interface{}) *OrganizationRepo_Update_Call {
+	return &OrganizationRepo_Update_Call{Call: _e.mock.On("Update", ctx, id, opts)}
 }
 
-func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int)) *OrganizationRepo_Update_Call {
+func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, opts *biz.OrganizationUpdateOpts)) *OrganizationRepo_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -417,34 +413,14 @@ func (_c *OrganizationRepo_Update_Call) Run(run func(ctx context.Context, id uui
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
-		var arg2 *bool
+		var arg2 *biz.OrganizationUpdateOpts
 		if args[2] != nil {
-			arg2 = args[2].(*bool)
-		}
-		var arg3 []string
-		if args[3] != nil {
-			arg3 = args[3].([]string)
-		}
-		var arg4 *bool
-		if args[4] != nil {
-			arg4 = args[4].(*bool)
-		}
-		var arg5 *bool
-		if args[5] != nil {
-			arg5 = args[5].(*bool)
-		}
-		var arg6 *int
-		if args[6] != nil {
-			arg6 = args[6].(*int)
+			arg2 = args[2].(*biz.OrganizationUpdateOpts)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
-			arg4,
-			arg5,
-			arg6,
 		)
 	})
 	return _c
@@ -455,7 +431,7 @@ func (_c *OrganizationRepo_Update_Call) Return(organization *biz.Organization, e
 	return _c
 }
 
-func (_c *OrganizationRepo_Update_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, blockOnPolicyViolation *bool, policiesAllowedHostnames []string, preventImplicitWorkflowCreation *bool, restrictContractCreationToOrgAdmins *bool, apiTokenInactivityThresholdDays *int) (*biz.Organization, error)) *OrganizationRepo_Update_Call {
+func (_c *OrganizationRepo_Update_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, opts *biz.OrganizationUpdateOpts) (*biz.Organization, error)) *OrganizationRepo_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }
