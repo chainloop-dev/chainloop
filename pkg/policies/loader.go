@@ -177,12 +177,13 @@ func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
+	// Check cache (read under lock, release before any I/O)
 	remotePolicyCacheMutex.Lock()
-	defer remotePolicyCacheMutex.Unlock()
-
 	if v, ok := remotePolicyCache[ref]; ok {
+		remotePolicyCacheMutex.Unlock()
 		return v.policy, v.reference, nil
 	}
+	remotePolicyCacheMutex.Unlock()
 
 	if !IsProviderScheme(ref) {
 		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
@@ -190,6 +191,7 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 
 	providerRef := ProviderParts(ref)
 
+	// gRPC call happens outside the lock
 	resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
 		Provider:   providerRef.Provider,
 		PolicyName: providerRef.Name,
@@ -214,8 +216,11 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 
 	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
 
-	// cache result
+	// Write to cache under lock
+	remotePolicyCacheMutex.Lock()
 	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}
+	remotePolicyCacheMutex.Unlock()
+
 	return resp.GetPolicy(), reference, nil
 }
 

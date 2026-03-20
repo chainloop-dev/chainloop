@@ -118,12 +118,13 @@ func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroup
 func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
+	// Check cache (read under lock, release before any I/O)
 	remoteGroupCacheMutex.Lock()
-	defer remoteGroupCacheMutex.Unlock()
-
 	if v, ok := remoteGroupCache[ref]; ok {
+		remoteGroupCacheMutex.Unlock()
 		return v.group, v.reference, nil
 	}
+	remoteGroupCacheMutex.Unlock()
 
 	if !IsProviderScheme(ref) {
 		return nil, nil, fmt.Errorf("invalid group reference %q", ref)
@@ -131,6 +132,7 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 
 	providerRef := ProviderParts(ref)
 
+	// gRPC call happens outside the lock
 	resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
 		Provider:  providerRef.Provider,
 		GroupName: providerRef.Name,
@@ -154,7 +156,11 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 	}
 
 	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
-	// cache result
+
+	// Write to cache under lock
+	remoteGroupCacheMutex.Lock()
 	remoteGroupCache[ref] = &groupWithReference{group: resp.GetGroup(), reference: reference}
+	remoteGroupCacheMutex.Unlock()
+
 	return resp.GetGroup(), reference, nil
 }
