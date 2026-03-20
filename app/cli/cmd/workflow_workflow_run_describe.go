@@ -283,7 +283,7 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 				violations[i] = color.Sprint(v)
 			}
 
-			msg = strings.Join(violations, prefix)
+			msg = prefix + strings.Join(violations, prefix)
 		}
 
 		name := ev.Name
