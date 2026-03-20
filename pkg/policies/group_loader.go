@@ -99,8 +99,6 @@ func (l *HTTPSGroupLoader) Load(_ context.Context, attachment *v1.PolicyGroupAtt
 // ChainloopGroupLoader loads groups referenced with chainloop://provider/name URLs
 type ChainloopGroupLoader struct {
 	Client pb.AttestationServiceClient
-
-	cacheMutex sync.Mutex
 }
 
 type groupWithReference struct {
@@ -108,7 +106,10 @@ type groupWithReference struct {
 	reference *PolicyDescriptor
 }
 
-var remoteGroupCache = make(map[string]*groupWithReference)
+var (
+	remoteGroupCache      = make(map[string]*groupWithReference)
+	remoteGroupCacheMutex sync.Mutex
+)
 
 func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroupLoader {
 	return &ChainloopGroupLoader{Client: client}
@@ -117,8 +118,8 @@ func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroup
 func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
+	remoteGroupCacheMutex.Lock()
+	defer remoteGroupCacheMutex.Unlock()
 
 	if v, ok := remoteGroupCache[ref]; ok {
 		return v.group, v.reference, nil

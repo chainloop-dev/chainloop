@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -73,44 +74,58 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			return nil, NewPolicyError(err)
 		}
 
-		for _, policyAtt := range policyAtts {
-			// Check if policy should be skipped
-			skip, policyName, err := pgv.shouldSkipPolicy(ctx, policyAtt, groupAtt.GetSkip())
-			if err != nil {
-				return nil, NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
-			}
+		// Load material content once for all policies in this group
+		subject, err := material.GetEvaluableContent(path)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
 
-			if skip {
-				pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
-				continue
-			}
+		groupResults := make([]*api.PolicyEvaluation, len(policyAtts))
+		g, gCtx := errgroup.WithContext(ctx)
+		g.SetLimit(pgv.maxConcurrency)
 
-			// Load material content
-			subject, err := material.GetEvaluableContent(path)
-			if err != nil {
-				return nil, NewPolicyError(err)
-			}
+		for i, policyAtt := range policyAtts {
+			g.Go(func() error {
+				// Check if policy should be skipped
+				skip, policyName, err := pgv.shouldSkipPolicy(gCtx, policyAtt, groupAtt.GetSkip())
+				if err != nil {
+					return NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
+				}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, policyAtt, subject,
-				&evalOpts{kind: material.MaterialType, name: material.GetId(), bindings: groupArgs},
-			)
-			if err != nil {
-				return nil, NewPolicyError(err)
-			}
+				if skip {
+					pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
+					return nil
+				}
 
-			if ev == nil {
-				// no evaluation, skip
-				continue
-			}
+				ev, err := pgv.evaluatePolicyAttachment(gCtx, policyAtt, subject,
+					&evalOpts{kind: material.MaterialType, name: material.GetId(), bindings: groupArgs},
+				)
+				if err != nil {
+					return NewPolicyError(err)
+				}
 
-			// Assign group reference to this evaluation
-			ev.GroupReference = &api.PolicyEvaluation_Reference{
-				Name:    group.GetMetadata().GetName(),
-				Digest:  desc.GetDigest(),
-				Uri:     desc.GetURI(),
-				OrgName: desc.GetOrgName(),
+				if ev != nil {
+					// Assign group reference to this evaluation
+					ev.GroupReference = &api.PolicyEvaluation_Reference{
+						Name:    group.GetMetadata().GetName(),
+						Digest:  desc.GetDigest(),
+						Uri:     desc.GetURI(),
+						OrgName: desc.GetOrgName(),
+					}
+				}
+				groupResults[i] = ev
+				return nil
+			})
+		}
+
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+
+		for _, ev := range groupResults {
+			if ev != nil {
+				result = append(result, ev)
 			}
-			result = append(result, ev)
 		}
 	}
 
@@ -137,44 +152,59 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			return nil, NewPolicyError(err)
 		}
 
-		for _, attachment := range group.GetSpec().GetPolicies().GetAttestation() {
-			// Check if policy should be skipped
-			skip, policyName, err := pgv.shouldSkipPolicy(ctx, attachment, groupAtt.GetSkip())
-			if err != nil {
-				return nil, NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
-			}
+		// Marshal statement once for all policies in this group
+		statementJSON, err := protojson.Marshal(statement)
+		if err != nil {
+			return nil, NewPolicyError(err)
+		}
 
-			if skip {
-				pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
-				continue
-			}
+		attestationPolicies := group.GetSpec().GetPolicies().GetAttestation()
+		groupResults := make([]*api.PolicyEvaluation, len(attestationPolicies))
+		g, gCtx := errgroup.WithContext(ctx)
+		g.SetLimit(pgv.maxConcurrency)
 
-			material, err := protojson.Marshal(statement)
-			if err != nil {
-				return nil, NewPolicyError(err)
-			}
+		for i, attachment := range attestationPolicies {
+			g.Go(func() error {
+				// Check if policy should be skipped
+				skip, policyName, err := pgv.shouldSkipPolicy(gCtx, attachment, groupAtt.GetSkip())
+				if err != nil {
+					return NewPolicyError(fmt.Errorf("failed to check if policy should be skipped: %w", err))
+				}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material,
-				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, bindings: groupArgs},
-			)
-			if err != nil {
-				return nil, NewPolicyError(err)
-			}
+				if skip {
+					pgv.logger.Debug().Str("policy", policyName).Msg("skipping attestation policy per skip list")
+					return nil
+				}
 
-			if ev == nil {
-				// no evaluation, skip
-				continue
-			}
+				ev, err := pgv.evaluatePolicyAttachment(gCtx, attachment, statementJSON,
+					&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, bindings: groupArgs},
+				)
+				if err != nil {
+					return NewPolicyError(err)
+				}
 
-			// Assign group reference to this evaluation
-			ev.GroupReference = &api.PolicyEvaluation_Reference{
-				Name:    group.GetMetadata().GetName(),
-				Digest:  desc.GetDigest(),
-				Uri:     desc.GetURI(),
-				OrgName: desc.GetOrgName(),
-			}
+				if ev != nil {
+					// Assign group reference to this evaluation
+					ev.GroupReference = &api.PolicyEvaluation_Reference{
+						Name:    group.GetMetadata().GetName(),
+						Digest:  desc.GetDigest(),
+						Uri:     desc.GetURI(),
+						OrgName: desc.GetOrgName(),
+					}
+				}
+				groupResults[i] = ev
+				return nil
+			})
+		}
 
-			result = append(result, ev)
+		if err := g.Wait(); err != nil {
+			return nil, err
+		}
+
+		for _, ev := range groupResults {
+			if ev != nil {
+				result = append(result, ev)
+			}
 		}
 	}
 
