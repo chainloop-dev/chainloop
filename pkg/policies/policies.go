@@ -191,12 +191,12 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	}
 
 	results := make([]*v12.PolicyEvaluation, len(attachments))
-	g, ctx := errgroup.WithContext(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 	g.SetLimit(pv.maxConcurrency)
 
 	for i, attachment := range attachments {
 		g.Go(func() error {
-			ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject,
+			ev, err := pv.evaluatePolicyAttachment(gCtx, attachment, subject,
 				&evalOpts{kind: material.MaterialType, name: material.GetId()},
 			)
 			if err != nil {
@@ -468,12 +468,12 @@ func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto
 	}
 
 	results := make([]*v12.PolicyEvaluation, len(policies))
-	g, ctx := errgroup.WithContext(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 	g.SetLimit(pv.maxConcurrency)
 
 	for i, policyAtt := range policies {
 		g.Go(func() error {
-			ev, err := pv.evaluatePolicyAttachment(ctx, policyAtt, statementJSON, &evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION})
+			ev, err := pv.evaluatePolicyAttachment(gCtx, policyAtt, statementJSON, &evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION})
 			if err != nil {
 				return NewPolicyError(err)
 			}

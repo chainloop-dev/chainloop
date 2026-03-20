@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
@@ -27,6 +28,10 @@ import (
 	extism "github.com/extism/go-sdk"
 	"github.com/rs/zerolog"
 )
+
+// setLogLevelOnce ensures extism.SetLogLevel is called exactly once,
+// since it modifies global state and is not safe for concurrent calls.
+var setLogLevelOnce sync.Once
 
 // Ensure Engine implements PolicyEngine interface
 var _ engine.PolicyEngine = (*Engine)(nil)
@@ -59,20 +64,22 @@ func NewEngine(opts ...engine.Option) *Engine {
 		logger = &noopLogger
 	}
 
-	// Set WASM plugin log level once at engine creation to avoid
-	// concurrent calls to the global extism.SetLogLevel from Verify().
-	switch {
-	case logger.GetLevel() <= zerolog.TraceLevel:
-		extism.SetLogLevel(extism.LogLevelTrace)
-	case logger.GetLevel() <= zerolog.DebugLevel:
-		extism.SetLogLevel(extism.LogLevelDebug)
-	case logger.GetLevel() <= zerolog.InfoLevel:
-		extism.SetLogLevel(extism.LogLevelInfo)
-	case logger.GetLevel() <= zerolog.WarnLevel:
-		extism.SetLogLevel(extism.LogLevelWarn)
-	default:
-		extism.SetLogLevel(extism.LogLevelError)
-	}
+	// Set WASM plugin log level exactly once across all engine instances.
+	// extism.SetLogLevel modifies global state and is not safe for concurrent calls.
+	setLogLevelOnce.Do(func() {
+		switch {
+		case logger.GetLevel() <= zerolog.TraceLevel:
+			extism.SetLogLevel(extism.LogLevelTrace)
+		case logger.GetLevel() <= zerolog.DebugLevel:
+			extism.SetLogLevel(extism.LogLevelDebug)
+		case logger.GetLevel() <= zerolog.InfoLevel:
+			extism.SetLogLevel(extism.LogLevelInfo)
+		case logger.GetLevel() <= zerolog.WarnLevel:
+			extism.SetLogLevel(extism.LogLevelWarn)
+		default:
+			extism.SetLogLevel(extism.LogLevelError)
+		}
+	})
 
 	return &Engine{
 		executionTimeout:    executionTimeout,
