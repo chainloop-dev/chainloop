@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -107,6 +108,11 @@ type groupWithReference struct {
 	reference *PolicyDescriptor
 }
 
+// remoteGroupFetchTimeout bounds gRPC calls inside singleflight to prevent
+// indefinite blocking. Independent of any caller's context deadline so that
+// all singleflight waiters get uniform timeout behavior.
+const remoteGroupFetchTimeout = 30 * time.Second
+
 var (
 	remoteGroupCache      = make(map[string]*groupWithReference)
 	remoteGroupCacheMutex sync.Mutex
@@ -137,14 +143,11 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 		}
 
 		providerRef := ProviderParts(ref)
-		// Detach from caller's cancellation (so one goroutine's cancel doesn't
-		// kill the shared singleflight call) but preserve a bounded deadline.
-		sfCtx := context.WithoutCancel(ctx)
-		if deadline, ok := ctx.Deadline(); ok {
-			var cancel context.CancelFunc
-			sfCtx, cancel = context.WithDeadline(sfCtx, deadline)
-			defer cancel()
-		}
+		// Use a fixed timeout independent of any caller's context so that all
+		// singleflight waiters get uniform behavior regardless of which goroutine
+		// won the race.
+		sfCtx, cancel := context.WithTimeout(context.Background(), remoteGroupFetchTimeout)
+		defer cancel()
 
 		resp, err := c.Client.GetPolicyGroup(sfCtx, &pb.AttestationServiceGetPolicyGroupRequest{
 			Provider:  providerRef.Provider,
