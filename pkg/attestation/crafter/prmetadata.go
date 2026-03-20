@@ -59,14 +59,14 @@ func DetectPRContext(ctx context.Context, runner SupportedRunner) (bool, *PRMeta
 
 	switch runner.ID() {
 	case schemaapi.CraftingSchema_Runner_GITHUB_ACTION:
-		return extractGitHubPRMetadata(envVars)
+		return extractGitHubPRMetadata(ctx, envVars)
 	case schemaapi.CraftingSchema_Runner_GITLAB_PIPELINE:
 		return extractGitLabMRMetadata(ctx, envVars)
 	case schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE:
 		// When running in Dagger, check for parent CI context passed through as env vars
 		// Try Github first
 		if envVars["GITHUB_EVENT_NAME"] != "" {
-			return extractGitHubPRMetadata(envVars)
+			return extractGitHubPRMetadata(ctx, envVars)
 		}
 		// Then try Gitlab
 		if envVars["CI_PIPELINE_SOURCE"] != "" {
@@ -79,7 +79,7 @@ func DetectPRContext(ctx context.Context, runner SupportedRunner) (bool, *PRMeta
 }
 
 // extractGitHubPRMetadata reads GITHUB_EVENT_PATH JSON and extracts PR metadata
-func extractGitHubPRMetadata(envVars map[string]string) (bool, *PRMetadata, error) {
+func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bool, *PRMetadata, error) {
 	eventName := envVars["GITHUB_EVENT_NAME"]
 	// Check if this is a pull request event
 	if eventName != "pull_request" && eventName != "pull_request_target" {
@@ -118,16 +118,54 @@ func extractGitHubPRMetadata(envVars map[string]string) (bool, *PRMetadata, erro
 		return false, nil, fmt.Errorf("failed to parse event JSON: %w", err)
 	}
 
+	// GITHUB_TOKEN is read via os.Getenv to avoid persisting it in the attestation envVars map.
+	// GITHUB_API_BASE_URL can be overridden (e.g. in tests); defaults to api.github.com.
+	parts := splitOwnerRepo(envVars["GITHUB_REPOSITORY"])
+	owner, repo := parts[0], parts[1]
+	prNumber := fmt.Sprintf("%d", event.PullRequest.Number)
+	githubAPIBase := os.Getenv("GITHUB_API_BASE_URL")
+	if githubAPIBase == "" {
+		githubAPIBase = "https://api.github.com"
+	}
+	token := os.Getenv("GITHUB_TOKEN")
+
+	// Seed the reviewer map from both the event payload and the API requested_reviewers endpoint.
+	// Both sources mark Requested: true. The event file is always available (no token needed),
+	// while the API may surface reviewers not yet reflected in the event (e.g. added after dispatch).
+	reviewerMap := make(map[string]int) // login → index in reviewers slice
 	var reviewers []prinfo.Reviewer
+
 	for _, r := range event.PullRequest.RequestedReviewers {
+		if _, exists := reviewerMap[r.Login]; exists {
+			continue
+		}
 		reviewerType := r.Type
 		if reviewerType == "" {
 			reviewerType = "unknown"
 		}
+		reviewerMap[r.Login] = len(reviewers)
 		reviewers = append(reviewers, prinfo.Reviewer{
-			Login: r.Login,
-			Type:  reviewerType,
+			Login:     r.Login,
+			Type:      reviewerType,
+			Requested: true,
 		})
+	}
+
+	for _, r := range fetchGitHubRequestedReviewers(ctx, githubAPIBase, owner, repo, prNumber, token) {
+		if _, exists := reviewerMap[r.Login]; !exists {
+			reviewerMap[r.Login] = len(reviewers)
+			reviewers = append(reviewers, r)
+		}
+	}
+
+	// Merge review activity: update status for existing entries, add new ones with Requested: false.
+	for _, r := range fetchGitHubReviews(ctx, githubAPIBase, owner, repo, prNumber, token) {
+		if idx, exists := reviewerMap[r.Login]; exists {
+			reviewers[idx].ReviewStatus = r.ReviewStatus
+		} else {
+			reviewerMap[r.Login] = len(reviewers)
+			reviewers = append(reviewers, r)
+		}
 	}
 
 	metadata := &PRMetadata{
@@ -144,6 +182,142 @@ func extractGitHubPRMetadata(envVars map[string]string) (bool, *PRMetadata, erro
 	}
 
 	return true, metadata, nil
+}
+
+// splitOwnerRepo splits "owner/repo" into [owner, repo].
+// Returns ["", ""] if the string does not contain a slash.
+func splitOwnerRepo(ownerRepo string) [2]string {
+	for i := 0; i < len(ownerRepo); i++ {
+		if ownerRepo[i] == '/' {
+			return [2]string{ownerRepo[:i], ownerRepo[i+1:]}
+		}
+	}
+	return [2]string{"", ""}
+}
+
+// fetchGitHubRequestedReviewers fetches the list of users explicitly requested to review a PR.
+// Returns nil on any failure (best-effort).
+// baseURL is the GitHub API base (e.g. "https://api.github.com"); can be overridden in tests.
+func fetchGitHubRequestedReviewers(ctx context.Context, baseURL, owner, repo, prNumber, token string) []prinfo.Reviewer {
+	if baseURL == "" || owner == "" || repo == "" || prNumber == "" || token == "" {
+		return nil
+	}
+
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/pulls/%s/requested_reviewers", baseURL, owner, repo, prNumber)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+
+	var result struct {
+		Users []struct {
+			Login string `json:"login"`
+			Type  string `json:"type"`
+		} `json:"users"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil
+	}
+
+	var reviewers []prinfo.Reviewer
+	for _, u := range result.Users {
+		reviewerType := u.Type
+		if reviewerType == "" {
+			reviewerType = "unknown"
+		}
+		reviewers = append(reviewers, prinfo.Reviewer{
+			Login:     u.Login,
+			Type:      reviewerType,
+			Requested: true,
+		})
+	}
+
+	if len(reviewers) == 0 {
+		return nil
+	}
+	return reviewers
+}
+
+// fetchGitHubReviews fetches PR reviews from the GitHub API.
+// Returns nil on any failure (best-effort).
+// Reviews are deduplicated by login, keeping the most recent state (last entry wins).
+// Returned reviewers have Requested: false; callers should set Requested: true for those
+// already present in the requested_reviewers list.
+// baseURL is the GitHub API base (e.g. "https://api.github.com"); can be overridden in tests.
+func fetchGitHubReviews(ctx context.Context, baseURL, owner, repo, prNumber, token string) []prinfo.Reviewer {
+	if baseURL == "" || owner == "" || repo == "" || prNumber == "" || token == "" {
+		return nil
+	}
+
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/pulls/%s/reviews", baseURL, owner, repo, prNumber)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+
+	var reviews []struct {
+		User struct {
+			Login string `json:"login"`
+			Type  string `json:"type"`
+		} `json:"user"`
+		State string `json:"state"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&reviews); err != nil {
+		return nil
+	}
+
+	// Deduplicate by login, keeping insertion order but updating to the most recent state.
+	seen := make(map[string]int) // login → index
+	var reviewers []prinfo.Reviewer
+	for _, r := range reviews {
+		reviewerType := r.User.Type
+		if reviewerType == "" {
+			reviewerType = "unknown"
+		}
+		if idx, exists := seen[r.User.Login]; exists {
+			reviewers[idx].ReviewStatus = r.State
+			continue
+		}
+		seen[r.User.Login] = len(reviewers)
+		reviewers = append(reviewers, prinfo.Reviewer{
+			Login:        r.User.Login,
+			Type:         reviewerType,
+			ReviewStatus: r.State,
+		})
+	}
+
+	if len(reviewers) == 0 {
+		return nil
+	}
+	return reviewers
 }
 
 // extractGitLabMRMetadata extracts from GitLab environment variables
@@ -228,8 +402,9 @@ func fetchGitLabReviewers(ctx context.Context, baseURL, projectPath, mrIID, toke
 	var reviewers []prinfo.Reviewer
 	for _, r := range mrResponse.Reviewers {
 		reviewers = append(reviewers, prinfo.Reviewer{
-			Login: r.Username,
-			Type:  "unknown",
+			Login:     r.Username,
+			Type:      "unknown",
+			Requested: true,
 		})
 	}
 

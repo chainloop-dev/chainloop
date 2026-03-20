@@ -118,7 +118,7 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 			require.NoError(t, err)
 
 			// Validate the data against JSON schema
-			err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_1)
+			err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_2)
 
 			if tc.wantErr {
 				require.Error(t, err)

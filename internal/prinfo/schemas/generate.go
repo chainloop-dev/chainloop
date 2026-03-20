@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/prinfo"
 )
 
-//go:generate go run ./generate.go --output-dir ../../../internal/schemavalidators/internal_schemas/prinfo --version 1.1
+//go:generate go run ./generate.go --output-dir ../../../internal/schemavalidators/internal_schemas/prinfo --version 1.2
 func main() {
 	var outputDir string
 	var version string
 
 	flag.StringVar(&outputDir, "output-dir", "../../../internal/schemavalidators/internal_schemas/prinfo", "Directory to output the schema files")
-	flag.StringVar(&version, "version", "1.1", "Schema version")
+	flag.StringVar(&version, "version", "1.2", "Schema version")
 	flag.Parse()
 
 	generator := prinfo.NewGenerator()
