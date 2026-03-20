@@ -12,6 +12,10 @@
     "kind": {
       "description": "Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\n Used to filter and resolve ambiguities",
       "type": "string"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.CursorPaginationRequest.schema.json",
+      "description": "Pagination options for the references list"
     }
   },
   "title": "Discover Public Shared Request",

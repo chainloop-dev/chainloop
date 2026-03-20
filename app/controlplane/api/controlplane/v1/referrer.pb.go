@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,7 +47,9 @@ type ReferrerServiceDiscoverPrivateRequest struct {
 	Digest string `protobuf:"bytes,1,opt,name=digest,proto3" json:"digest,omitempty"`
 	// Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
 	// Used to filter and resolve ambiguities
-	Kind          string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Kind string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	// Pagination options for the references list
+	Pagination    *CursorPaginationRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -96,6 +98,13 @@ func (x *ReferrerServiceDiscoverPrivateRequest) GetKind() string {
 	return ""
 }
 
+func (x *ReferrerServiceDiscoverPrivateRequest) GetPagination() *CursorPaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
 // DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method
 type DiscoverPublicSharedRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -103,7 +112,9 @@ type DiscoverPublicSharedRequest struct {
 	Digest string `protobuf:"bytes,1,opt,name=digest,proto3" json:"digest,omitempty"`
 	// Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
 	// Used to filter and resolve ambiguities
-	Kind          string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Kind string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	// Pagination options for the references list
+	Pagination    *CursorPaginationRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -152,11 +163,20 @@ func (x *DiscoverPublicSharedRequest) GetKind() string {
 	return ""
 }
 
+func (x *DiscoverPublicSharedRequest) GetPagination() *CursorPaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
 // DiscoverPublicSharedResponse is the response for the DiscoverPublicShared method
 type DiscoverPublicSharedResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Result is the discovered referrer item
-	Result        *ReferrerItem `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	Result *ReferrerItem `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	// Pagination information for the references list
+	Pagination    *CursorPaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -198,11 +218,20 @@ func (x *DiscoverPublicSharedResponse) GetResult() *ReferrerItem {
 	return nil
 }
 
+func (x *DiscoverPublicSharedResponse) GetPagination() *CursorPaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
 // ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method
 type ReferrerServiceDiscoverPrivateResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Result is the discovered referrer item
-	Result        *ReferrerItem `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	Result *ReferrerItem `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+	// Pagination information for the references list
+	Pagination    *CursorPaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -240,6 +269,13 @@ func (*ReferrerServiceDiscoverPrivateResponse) Descriptor() ([]byte, []int) {
 func (x *ReferrerServiceDiscoverPrivateResponse) GetResult() *ReferrerItem {
 	if x != nil {
 		return x.Result
+	}
+	return nil
+}
+
+func (x *ReferrerServiceDiscoverPrivateResponse) GetPagination() *CursorPaginationResponse {
+	if x != nil {
+		return x.Pagination
 	}
 	return nil
 }
@@ -357,20 +393,32 @@ var File_controlplane_v1_referrer_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_referrer_proto_rawDesc = "" +
 	"\n" +
-	"\x1econtrolplane/v1/referrer.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xb2\x01\n" +
+	"\x1econtrolplane/v1/referrer.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xfc\x01\n" +
 	"%ReferrerServiceDiscoverPrivateRequest\x12\x1f\n" +
 	"\x06digest\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06digest\x12\x12\n" +
-	"\x04kind\x18\x02 \x01(\tR\x04kind:T\x92AQ\n" +
-	"O*%ReferrerServiceDiscoverPrivateRequest2&Request to discover a private referrer\"\xa4\x01\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12H\n" +
+	"\n" +
+	"pagination\x18\x03 \x01(\v2(.controlplane.v1.CursorPaginationRequestR\n" +
+	"pagination:T\x92AQ\n" +
+	"O*%ReferrerServiceDiscoverPrivateRequest2&Request to discover a private referrer\"\xee\x01\n" +
 	"\x1bDiscoverPublicSharedRequest\x12\x1f\n" +
 	"\x06digest\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06digest\x12\x12\n" +
-	"\x04kind\x18\x02 \x01(\tR\x04kind:P\x92AM\n" +
-	"K*\x1bDiscoverPublicSharedRequest2,Request to discover a public shared referrer\"\xa8\x01\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12H\n" +
+	"\n" +
+	"pagination\x18\x03 \x01(\v2(.controlplane.v1.CursorPaginationRequestR\n" +
+	"pagination:P\x92AM\n" +
+	"K*\x1bDiscoverPublicSharedRequest2,Request to discover a public shared referrer\"\xf3\x01\n" +
 	"\x1cDiscoverPublicSharedResponse\x125\n" +
-	"\x06result\x18\x01 \x01(\v2\x1d.controlplane.v1.ReferrerItemR\x06result:Q\x92AN\n" +
-	"L*\x1cDiscoverPublicSharedResponse2,Response for the DiscoverPublicShared method\"\xb7\x01\n" +
+	"\x06result\x18\x01 \x01(\v2\x1d.controlplane.v1.ReferrerItemR\x06result\x12I\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2).controlplane.v1.CursorPaginationResponseR\n" +
+	"pagination:Q\x92AN\n" +
+	"L*\x1cDiscoverPublicSharedResponse2,Response for the DiscoverPublicShared method\"\x82\x02\n" +
 	"&ReferrerServiceDiscoverPrivateResponse\x125\n" +
-	"\x06result\x18\x01 \x01(\v2\x1d.controlplane.v1.ReferrerItemR\x06result:V\x92AS\n" +
+	"\x06result\x18\x01 \x01(\v2\x1d.controlplane.v1.ReferrerItemR\x06result\x12I\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2).controlplane.v1.CursorPaginationResponseR\n" +
+	"pagination:V\x92AS\n" +
 	"Q*&ReferrerServiceDiscoverPrivateResponse2'Response for the DiscoverPrivate method\"\xcc\x04\n" +
 	"\fReferrerItem\x12\x16\n" +
 	"\x06digest\x18\x01 \x01(\tR\x06digest\x12\x12\n" +
@@ -417,24 +465,30 @@ var file_controlplane_v1_referrer_proto_goTypes = []any{
 	(*ReferrerItem)(nil),                           // 4: controlplane.v1.ReferrerItem
 	nil,                                            // 5: controlplane.v1.ReferrerItem.MetadataEntry
 	nil,                                            // 6: controlplane.v1.ReferrerItem.AnnotationsEntry
-	(*timestamppb.Timestamp)(nil),                  // 7: google.protobuf.Timestamp
+	(*CursorPaginationRequest)(nil),                // 7: controlplane.v1.CursorPaginationRequest
+	(*CursorPaginationResponse)(nil),               // 8: controlplane.v1.CursorPaginationResponse
+	(*timestamppb.Timestamp)(nil),                  // 9: google.protobuf.Timestamp
 }
 var file_controlplane_v1_referrer_proto_depIdxs = []int32{
-	4, // 0: controlplane.v1.DiscoverPublicSharedResponse.result:type_name -> controlplane.v1.ReferrerItem
-	4, // 1: controlplane.v1.ReferrerServiceDiscoverPrivateResponse.result:type_name -> controlplane.v1.ReferrerItem
-	4, // 2: controlplane.v1.ReferrerItem.references:type_name -> controlplane.v1.ReferrerItem
-	7, // 3: controlplane.v1.ReferrerItem.created_at:type_name -> google.protobuf.Timestamp
-	5, // 4: controlplane.v1.ReferrerItem.metadata:type_name -> controlplane.v1.ReferrerItem.MetadataEntry
-	6, // 5: controlplane.v1.ReferrerItem.annotations:type_name -> controlplane.v1.ReferrerItem.AnnotationsEntry
-	0, // 6: controlplane.v1.ReferrerService.DiscoverPrivate:input_type -> controlplane.v1.ReferrerServiceDiscoverPrivateRequest
-	1, // 7: controlplane.v1.ReferrerService.DiscoverPublicShared:input_type -> controlplane.v1.DiscoverPublicSharedRequest
-	3, // 8: controlplane.v1.ReferrerService.DiscoverPrivate:output_type -> controlplane.v1.ReferrerServiceDiscoverPrivateResponse
-	2, // 9: controlplane.v1.ReferrerService.DiscoverPublicShared:output_type -> controlplane.v1.DiscoverPublicSharedResponse
-	8, // [8:10] is the sub-list for method output_type
-	6, // [6:8] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	7,  // 0: controlplane.v1.ReferrerServiceDiscoverPrivateRequest.pagination:type_name -> controlplane.v1.CursorPaginationRequest
+	7,  // 1: controlplane.v1.DiscoverPublicSharedRequest.pagination:type_name -> controlplane.v1.CursorPaginationRequest
+	4,  // 2: controlplane.v1.DiscoverPublicSharedResponse.result:type_name -> controlplane.v1.ReferrerItem
+	8,  // 3: controlplane.v1.DiscoverPublicSharedResponse.pagination:type_name -> controlplane.v1.CursorPaginationResponse
+	4,  // 4: controlplane.v1.ReferrerServiceDiscoverPrivateResponse.result:type_name -> controlplane.v1.ReferrerItem
+	8,  // 5: controlplane.v1.ReferrerServiceDiscoverPrivateResponse.pagination:type_name -> controlplane.v1.CursorPaginationResponse
+	4,  // 6: controlplane.v1.ReferrerItem.references:type_name -> controlplane.v1.ReferrerItem
+	9,  // 7: controlplane.v1.ReferrerItem.created_at:type_name -> google.protobuf.Timestamp
+	5,  // 8: controlplane.v1.ReferrerItem.metadata:type_name -> controlplane.v1.ReferrerItem.MetadataEntry
+	6,  // 9: controlplane.v1.ReferrerItem.annotations:type_name -> controlplane.v1.ReferrerItem.AnnotationsEntry
+	0,  // 10: controlplane.v1.ReferrerService.DiscoverPrivate:input_type -> controlplane.v1.ReferrerServiceDiscoverPrivateRequest
+	1,  // 11: controlplane.v1.ReferrerService.DiscoverPublicShared:input_type -> controlplane.v1.DiscoverPublicSharedRequest
+	3,  // 12: controlplane.v1.ReferrerService.DiscoverPrivate:output_type -> controlplane.v1.ReferrerServiceDiscoverPrivateResponse
+	2,  // 13: controlplane.v1.ReferrerService.DiscoverPublicShared:output_type -> controlplane.v1.DiscoverPublicSharedResponse
+	12, // [12:14] is the sub-list for method output_type
+	10, // [10:12] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_referrer_proto_init() }
@@ -442,6 +496,7 @@ func file_controlplane_v1_referrer_proto_init() {
 	if File_controlplane_v1_referrer_proto != nil {
 		return
 	}
+	file_controlplane_v1_pagination_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/chainloop-dev/chainloop/app/cli/cmd/options"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
@@ -26,18 +27,24 @@ import (
 func newReferrerDiscoverCmd() *cobra.Command {
 	var digest, kind string
 	var fromPublicIndex bool
+	paginationOpts := &options.PaginationOpts{DefaultLimit: 20}
 
 	cmd := &cobra.Command{
 		Use:   "discover",
 		Short: "(Preview) inspect pieces of evidence or artifacts stored through Chainloop",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var res *action.ReferrerItem
+			pagination := &action.PaginationOpts{
+				Limit:      paginationOpts.Limit,
+				NextCursor: paginationOpts.NextCursor,
+			}
+
+			var res *action.ReferrerDiscoverResult
 			var err error
 
 			if fromPublicIndex {
-				res, err = action.NewReferrerDiscoverPublicIndex(ActionOpts).Run(context.Background(), digest, kind)
+				res, err = action.NewReferrerDiscoverPublicIndex(ActionOpts).Run(context.Background(), digest, kind, pagination)
 			} else {
-				res, err = action.NewReferrerDiscoverPrivate(ActionOpts).Run(context.Background(), digest, kind)
+				res, err = action.NewReferrerDiscoverPrivate(ActionOpts).Run(context.Background(), digest, kind, pagination)
 			}
 
 			if err != nil {
@@ -45,7 +52,16 @@ func newReferrerDiscoverCmd() *cobra.Command {
 			}
 
 			// NOTE: this is a preview/beta command, for now we only return JSON format
-			return output.EncodeJSON(res)
+			if err := output.EncodeJSON(res.Item); err != nil {
+				return err
+			}
+
+			if next := res.NextCursor; next != "" {
+				logger.Info().Msg("Pagination options \n")
+				logger.Info().Msgf("--next %s\n", next)
+			}
+
+			return nil
 		},
 	}
 
@@ -55,6 +71,7 @@ func newReferrerDiscoverCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&kind, "kind", "k", "", "optional kind of the referrer, used to disambiguate between multiple referrers with the same digest")
 	cobra.CheckErr(err)
 	cmd.Flags().BoolVar(&fromPublicIndex, "public", false, "discover from public shared index instead of your organizations'")
+	paginationOpts.AddFlags(cmd)
 
 	return cmd
 }
