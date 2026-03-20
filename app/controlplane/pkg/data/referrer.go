@@ -240,7 +240,8 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Sort references by creation date and ID in descending order for deterministic pagination
 	q := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().
-		Order(ent.Desc(referrer.FieldCreatedAt, referrer.FieldID))
+		Order(referrer.ByCreatedAt(sql.OrderDesc())).
+		Order(referrer.ByID(sql.OrderDesc()))
 
 	// Apply pagination: fetch limit+1 to detect next page
 	if p != nil {
