@@ -79,6 +79,7 @@ type ProviderAuthOpts struct {
 }
 
 var ErrNotFound = fmt.Errorf("policy not found")
+var ErrUnauthorized = fmt.Errorf("policy provider authentication failed")
 
 // Resolve calls the remote provider for retrieving a policy
 func (p *PolicyProvider) Resolve(policyName, policyOrgName string, authOpts ProviderAuthOpts) (*schemaapi.Policy, *PolicyReference, error) {
@@ -235,6 +236,10 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
 			return "", "", ErrNotFound
+		}
+
+		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			return "", "", fmt.Errorf("%w: status code %d", ErrUnauthorized, resp.StatusCode)
 		}
 
 		return "", "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)

@@ -16,6 +16,10 @@
 package policies
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -57,6 +61,59 @@ func TestCreateRef(t *testing.T) {
 			got := createRef(policyURL, tc.policyName, tc.digest, tc.orgName)
 
 			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestResolveHTTPErrors(t *testing.T) {
+	testCases := []struct {
+		name       string
+		statusCode int
+		wantErr    error
+	}{
+		{
+			name:       "401 returns ErrUnauthorized",
+			statusCode: http.StatusUnauthorized,
+			wantErr:    ErrUnauthorized,
+		},
+		{
+			name:       "403 returns ErrUnauthorized",
+			statusCode: http.StatusForbidden,
+			wantErr:    ErrUnauthorized,
+		},
+		{
+			name:       "404 returns ErrNotFound",
+			statusCode: http.StatusNotFound,
+			wantErr:    ErrNotFound,
+		},
+		{
+			name:       "500 returns generic error",
+			statusCode: http.StatusInternalServerError,
+			wantErr:    nil, // generic error, not a sentinel
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tc.statusCode)
+			}))
+			defer srv.Close()
+
+			provider := &PolicyProvider{
+				name: "test",
+				url:  srv.URL,
+			}
+
+			_, _, err := provider.Resolve("my-policy", "", ProviderAuthOpts{Token: "test-token"})
+			require.Error(t, err)
+
+			if tc.wantErr != nil {
+				assert.True(t, errors.Is(err, tc.wantErr), fmt.Sprintf("expected error wrapping %v, got: %v", tc.wantErr, err))
+			} else {
+				assert.False(t, errors.Is(err, ErrUnauthorized))
+				assert.False(t, errors.Is(err, ErrNotFound))
+			}
 		})
 	}
 }

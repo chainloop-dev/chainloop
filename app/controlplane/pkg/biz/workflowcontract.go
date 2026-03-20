@@ -696,6 +696,10 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, policyOrg
 			return nil, NewErrNotFound(fmt.Sprintf("policy %q", policyName))
 		}
 
+		if errors.Is(err, policies.ErrUnauthorized) {
+			return nil, NewErrUnauthorized(fmt.Errorf("failed to authenticate with policy provider: %w", err))
+		}
+
 		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
 	}
 
@@ -715,6 +719,10 @@ func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, group
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))
+		}
+
+		if errors.Is(err, policies.ErrUnauthorized) {
+			return nil, NewErrUnauthorized(fmt.Errorf("failed to authenticate with policy provider: %w", err))
 		}
 
 		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
