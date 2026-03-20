@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"slices"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
@@ -131,7 +133,7 @@ func (r *ReferrerRepo) Exist(ctx context.Context, digest string, filters ...biz.
 	return query.Exist(ctx)
 }
 
-func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, filters ...biz.GetFromRootFilter) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, p *pagination.CursorOptions, filters ...biz.GetFromRootFilter) (*biz.StoredReferrer, string, error) {
 	opts := &biz.GetFromRootFilters{}
 	for _, f := range filters {
 		f(opts)
@@ -164,28 +166,28 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 
 	refs, err := r.data.DB.Referrer.Query().Where(predicateReferrer...).WithWorkflows().All(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query referrer: %w", err)
+		return nil, "", fmt.Errorf("failed to query referrer: %w", err)
 	}
 
 	// No items found
 	if numrefs := len(refs); numrefs == 0 {
-		return nil, nil
+		return nil, "", nil
 	} else if numrefs > 1 {
 		// if there is more than 1 item with the same digest+artifactType we will fail
 		var kinds []string
 		for _, r := range refs {
 			kinds = append(kinds, r.Kind)
 		}
-		return nil, biz.NewErrReferrerAmbiguous(digest, kinds)
+		return nil, "", biz.NewErrReferrerAmbiguous(digest, kinds)
 	}
 
 	// Find the referrer recursively starting from the root
-	res, err := r.doGet(ctx, refs[0], orgIDs, opts.ProjectIDs, opts.Public, 0)
+	res, nextCursor, err := r.doGet(ctx, refs[0], orgIDs, opts.ProjectIDs, opts.Public, p, 0)
 	if err != nil && !biz.IsErrUnauthorized(err) {
-		return nil, fmt.Errorf("failed to get referrer: %w", err)
+		return nil, "", fmt.Errorf("failed to get referrer: %w", err)
 	}
 
-	return res, nil
+	return res, nextCursor, nil
 }
 
 // max number of recursive levels to traverse
@@ -193,7 +195,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool, level int) (*biz.StoredReferrer, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool, p *pagination.CursorOptions, level int) (*biz.StoredReferrer, string, error) {
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
 		ID:        root.ID,
@@ -212,12 +214,12 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// check that, if RBAC is required, the user has visibility on the artifact in at least 1 org/project
 	if visible := isReferrerVisible(res, allowedOrgs, visibleProjectsMap); !visible {
-		return nil, biz.NewErrUnauthorizedStr("referrer not allowed")
+		return nil, "", biz.NewErrUnauthorizedStr("referrer not allowed")
 	}
 
 	// Next: We'll find the references recursively up to a max of maxTraverseLevels levels
 	if level >= maxTraverseLevels {
-		return res, nil
+		return res, "", nil
 	}
 
 	// Find the references and call recursively filtered out by the allowed organizations
@@ -236,20 +238,44 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// Attach the workflow predicate
 	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
 
-	// sort the references by creation date in descending order
-	// so whenever we add pagination we'll get the latest x references
-	refs, err := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().Order(referrer.ByCreatedAt(), ent.Desc()).All(ctx)
+	// Sort references by creation date and ID in descending order for deterministic pagination
+	q := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().
+		Order(referrer.ByCreatedAt(), ent.Desc()).
+		Order(referrer.ByID(), ent.Desc())
+
+	// Apply pagination: fetch limit+1 to detect next page
+	if p != nil {
+		q = q.Limit(p.Limit + 1)
+
+		if p.Cursor != nil {
+			q = q.Where(func(s *sql.Selector) {
+				s.Where(sql.CompositeLT(
+					[]string{s.C(referrer.FieldCreatedAt), s.C(referrer.FieldID)},
+					p.Cursor.Timestamp, p.Cursor.ID,
+				))
+			})
+		}
+	}
+
+	refs, err := q.All(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query references: %w", err)
+		return nil, "", fmt.Errorf("failed to query references: %w", err)
+	}
+
+	// Determine if there is a next page and encode the cursor
+	var nextCursor string
+	if p != nil && len(refs) > p.Limit {
+		lastVisible := refs[p.Limit-1]
+		nextCursor = pagination.EncodeCursor(lastVisible.CreatedAt, lastVisible.ID)
+		refs = refs[:p.Limit]
 	}
 
 	// Add the references to the result
 	for _, reference := range refs {
-		// Call recursively the function
-		// we return all the references
-		ref, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, public, level+1)
+		// Call recursively the function — pagination only applies to the first level
+		ref, _, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, public, nil, level+1)
 		if err != nil && !biz.IsErrUnauthorized(err) {
-			return nil, fmt.Errorf("failed to get referrer: %w", err)
+			return nil, "", fmt.Errorf("failed to get referrer: %w", err)
 		}
 
 		if ref != nil {
@@ -257,7 +283,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 		}
 	}
 
-	return res, nil
+	return res, nextCursor, nil
 }
 
 func isReferrerVisible(ref *biz.StoredReferrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) bool {

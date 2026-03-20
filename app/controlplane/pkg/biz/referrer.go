@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	v2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -84,10 +85,12 @@ func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCas
 
 type ReferrerRepo interface {
 	Save(ctx context.Context, input []*Referrer, workflowID uuid.UUID) error
-	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references
-	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
-	// OrgIDs represent an allowList of organizations where the referrers should be looked for
-	GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, filters ...GetFromRootFilter) (*StoredReferrer, error)
+	// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references.
+	// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
+	// OrgIDs represent an allowList of organizations where the referrers should be looked for.
+	// Pagination controls how many references are returned and supports cursor-based pagination.
+	// Returns the referrer, a next cursor string (empty if no more pages), and an error.
+	GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, p *pagination.CursorOptions, filters ...GetFromRootFilter) (*StoredReferrer, string, error)
 	// Exist Checks if a given referrer by digest exist.
 	// The query can be scoped further down if needed by providing the kind or visibility status
 	Exist(ctx context.Context, digest string, filters ...GetFromRootFilter) (bool, error)
@@ -176,27 +179,27 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 	return nil
 }
 
-// GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references
-// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it
-// It only returns referrers that belong to organizations the user is member of
-func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string) (*StoredReferrer, error) {
+// GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references.
+// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
+// It only returns referrers that belong to organizations the user is member of.
+func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
-		return nil, NewErrInvalidUUID(err)
+		return nil, "", NewErrInvalidUUID(err)
 	}
 
 	userOrgs, projectIDs, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.
-	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs)
+	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs, p)
 }
 
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
 	filters := make([]GetFromRootFilter, 0)
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
@@ -205,26 +208,26 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
 
-	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)
+	ref, nextCursor, err := s.repo.GetFromRoot(ctx, digest, orgIDs, p, filters...)
 	if err != nil {
 		if errors.As(err, &ErrAmbiguousReferrer{}) {
-			return nil, NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))
+			return nil, "", NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))
 		}
 
-		return nil, fmt.Errorf("getting referrer from root: %w", err)
+		return nil, "", fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
-		return nil, NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
+		return nil, "", NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
 	}
 
-	return ref, nil
+	return ref, nextCursor, nil
 }
 
 // Get the list of public referrers from organizations
 // that have been allowed to be shown in a shared index
 // NOTE: This is a public endpoint under /discover/[sha256:deadbeef]
-func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, digest, rootKind string) (*StoredReferrer, error) {
+func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, digest, rootKind string, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
 	if s.indexConfig == nil || !s.indexConfig.Enabled {
-		return nil, NewErrUnauthorizedStr("shared referrer index functionality is not enabled")
+		return nil, "", NewErrUnauthorizedStr("shared referrer index functionality is not enabled")
 	}
 
 	// Load the organizations that are allowed to appear in the shared index
@@ -232,7 +235,7 @@ func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, di
 	for _, orgID := range s.indexConfig.AllowedOrgs {
 		orgUUID, err := uuid.Parse(orgID)
 		if err != nil {
-			return nil, NewErrInvalidUUID(err)
+			return nil, "", NewErrInvalidUUID(err)
 		}
 		orgIDs = append(orgIDs, orgUUID)
 	}
@@ -243,18 +246,18 @@ func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, di
 		filters = append(filters, WithKind(rootKind))
 	}
 
-	ref, err := s.repo.GetFromRoot(ctx, digest, orgIDs, filters...)
+	ref, nextCursor, err := s.repo.GetFromRoot(ctx, digest, orgIDs, p, filters...)
 	if err != nil {
 		if errors.As(err, &ErrAmbiguousReferrer{}) {
-			return nil, NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))
+			return nil, "", NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))
 		}
 
-		return nil, fmt.Errorf("getting referrer from root: %w", err)
+		return nil, "", fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
-		return nil, NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
+		return nil, "", NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
 	}
 
-	return ref, nil
+	return ref, nextCursor, nil
 }
 
 const (

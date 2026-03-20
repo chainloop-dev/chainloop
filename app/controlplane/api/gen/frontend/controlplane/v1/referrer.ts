@@ -3,6 +3,7 @@ import { grpc } from "@improbable-eng/grpc-web";
 import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "../../google/protobuf/timestamp";
+import { CursorPaginationRequest, CursorPaginationResponse } from "./pagination";
 
 export const protobufPackage = "controlplane.v1";
 
@@ -15,6 +16,8 @@ export interface ReferrerServiceDiscoverPrivateRequest {
    * Used to filter and resolve ambiguities
    */
   kind: string;
+  /** Pagination options for the references list */
+  pagination?: CursorPaginationRequest;
 }
 
 /** DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method */
@@ -26,18 +29,24 @@ export interface DiscoverPublicSharedRequest {
    * Used to filter and resolve ambiguities
    */
   kind: string;
+  /** Pagination options for the references list */
+  pagination?: CursorPaginationRequest;
 }
 
 /** DiscoverPublicSharedResponse is the response for the DiscoverPublicShared method */
 export interface DiscoverPublicSharedResponse {
   /** Result is the discovered referrer item */
   result?: ReferrerItem;
+  /** Pagination information for the references list */
+  pagination?: CursorPaginationResponse;
 }
 
 /** ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method */
 export interface ReferrerServiceDiscoverPrivateResponse {
   /** Result is the discovered referrer item */
   result?: ReferrerItem;
+  /** Pagination information for the references list */
+  pagination?: CursorPaginationResponse;
 }
 
 /** ReferrerItem represents a referrer object in the system */
@@ -71,7 +80,7 @@ export interface ReferrerItem_AnnotationsEntry {
 }
 
 function createBaseReferrerServiceDiscoverPrivateRequest(): ReferrerServiceDiscoverPrivateRequest {
-  return { digest: "", kind: "" };
+  return { digest: "", kind: "", pagination: undefined };
 }
 
 export const ReferrerServiceDiscoverPrivateRequest = {
@@ -81,6 +90,9 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     }
     if (message.kind !== "") {
       writer.uint32(18).string(message.kind);
+    }
+    if (message.pagination !== undefined) {
+      CursorPaginationRequest.encode(message.pagination, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -106,6 +118,13 @@ export const ReferrerServiceDiscoverPrivateRequest = {
 
           message.kind = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pagination = CursorPaginationRequest.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -119,6 +138,7 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     return {
       digest: isSet(object.digest) ? String(object.digest) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
+      pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
   },
 
@@ -126,6 +146,8 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     const obj: any = {};
     message.digest !== undefined && (obj.digest = message.digest);
     message.kind !== undefined && (obj.kind = message.kind);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -141,12 +163,15 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     const message = createBaseReferrerServiceDiscoverPrivateRequest();
     message.digest = object.digest ?? "";
     message.kind = object.kind ?? "";
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? CursorPaginationRequest.fromPartial(object.pagination)
+      : undefined;
     return message;
   },
 };
 
 function createBaseDiscoverPublicSharedRequest(): DiscoverPublicSharedRequest {
-  return { digest: "", kind: "" };
+  return { digest: "", kind: "", pagination: undefined };
 }
 
 export const DiscoverPublicSharedRequest = {
@@ -156,6 +181,9 @@ export const DiscoverPublicSharedRequest = {
     }
     if (message.kind !== "") {
       writer.uint32(18).string(message.kind);
+    }
+    if (message.pagination !== undefined) {
+      CursorPaginationRequest.encode(message.pagination, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -181,6 +209,13 @@ export const DiscoverPublicSharedRequest = {
 
           message.kind = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pagination = CursorPaginationRequest.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -194,6 +229,7 @@ export const DiscoverPublicSharedRequest = {
     return {
       digest: isSet(object.digest) ? String(object.digest) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
+      pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
     };
   },
 
@@ -201,6 +237,8 @@ export const DiscoverPublicSharedRequest = {
     const obj: any = {};
     message.digest !== undefined && (obj.digest = message.digest);
     message.kind !== undefined && (obj.kind = message.kind);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -212,18 +250,24 @@ export const DiscoverPublicSharedRequest = {
     const message = createBaseDiscoverPublicSharedRequest();
     message.digest = object.digest ?? "";
     message.kind = object.kind ?? "";
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? CursorPaginationRequest.fromPartial(object.pagination)
+      : undefined;
     return message;
   },
 };
 
 function createBaseDiscoverPublicSharedResponse(): DiscoverPublicSharedResponse {
-  return { result: undefined };
+  return { result: undefined, pagination: undefined };
 }
 
 export const DiscoverPublicSharedResponse = {
   encode(message: DiscoverPublicSharedResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.result !== undefined) {
       ReferrerItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      CursorPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -242,6 +286,13 @@ export const DiscoverPublicSharedResponse = {
 
           message.result = ReferrerItem.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = CursorPaginationResponse.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -252,12 +303,17 @@ export const DiscoverPublicSharedResponse = {
   },
 
   fromJSON(object: any): DiscoverPublicSharedResponse {
-    return { result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined };
+    return {
+      result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined,
+      pagination: isSet(object.pagination) ? CursorPaginationResponse.fromJSON(object.pagination) : undefined,
+    };
   },
 
   toJSON(message: DiscoverPublicSharedResponse): unknown {
     const obj: any = {};
     message.result !== undefined && (obj.result = message.result ? ReferrerItem.toJSON(message.result) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? CursorPaginationResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -270,18 +326,24 @@ export const DiscoverPublicSharedResponse = {
     message.result = (object.result !== undefined && object.result !== null)
       ? ReferrerItem.fromPartial(object.result)
       : undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? CursorPaginationResponse.fromPartial(object.pagination)
+      : undefined;
     return message;
   },
 };
 
 function createBaseReferrerServiceDiscoverPrivateResponse(): ReferrerServiceDiscoverPrivateResponse {
-  return { result: undefined };
+  return { result: undefined, pagination: undefined };
 }
 
 export const ReferrerServiceDiscoverPrivateResponse = {
   encode(message: ReferrerServiceDiscoverPrivateResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.result !== undefined) {
       ReferrerItem.encode(message.result, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      CursorPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -300,6 +362,13 @@ export const ReferrerServiceDiscoverPrivateResponse = {
 
           message.result = ReferrerItem.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = CursorPaginationResponse.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -310,12 +379,17 @@ export const ReferrerServiceDiscoverPrivateResponse = {
   },
 
   fromJSON(object: any): ReferrerServiceDiscoverPrivateResponse {
-    return { result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined };
+    return {
+      result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined,
+      pagination: isSet(object.pagination) ? CursorPaginationResponse.fromJSON(object.pagination) : undefined,
+    };
   },
 
   toJSON(message: ReferrerServiceDiscoverPrivateResponse): unknown {
     const obj: any = {};
     message.result !== undefined && (obj.result = message.result ? ReferrerItem.toJSON(message.result) : undefined);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? CursorPaginationResponse.toJSON(message.pagination) : undefined);
     return obj;
   },
 
@@ -331,6 +405,9 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     const message = createBaseReferrerServiceDiscoverPrivateResponse();
     message.result = (object.result !== undefined && object.result !== null)
       ? ReferrerItem.fromPartial(object.result)
+      : undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? CursorPaginationResponse.fromPartial(object.pagination)
       : undefined;
     return message;
   },

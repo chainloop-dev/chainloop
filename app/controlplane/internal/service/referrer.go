@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -50,11 +51,17 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 		return nil, err
 	}
 
+	paginationOpts, err := referrerPaginationOptsFromProto(req.GetPagination())
+	if err != nil {
+		return nil, err
+	}
+
 	// if we are logged in as user we find the referrer from the user
 	// otherwise for the current organization associated with the API token
 	var referrer *biz.StoredReferrer
+	var nextCursor string
 	if currentUser != nil {
-		referrer, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID)
+		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, paginationOpts)
 	} else if currentToken != nil {
 		var orgUUID uuid.UUID
 		orgUUID, err = uuid.Parse(currentOrg.ID)
@@ -69,26 +76,45 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 			orgsProjectsMap[orgUUID] = visibleProjects
 		}
 
-		referrer, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap)
+		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap, paginationOpts)
 	}
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.ReferrerServiceDiscoverPrivateResponse{
-		Result: bizReferrerToPb(referrer),
+		Result:     bizReferrerToPb(referrer),
+		Pagination: bizCursorToPb(nextCursor),
 	}, nil
 }
 
 func (s *ReferrerService) DiscoverPublicShared(ctx context.Context, req *pb.DiscoverPublicSharedRequest) (*pb.DiscoverPublicSharedResponse, error) {
-	res, err := s.referrerUC.GetFromRootInPublicSharedIndex(ctx, req.GetDigest(), req.GetKind())
+	paginationOpts, err := referrerPaginationOptsFromProto(req.GetPagination())
+	if err != nil {
+		return nil, err
+	}
+
+	res, nextCursor, err := s.referrerUC.GetFromRootInPublicSharedIndex(ctx, req.GetDigest(), req.GetKind(), paginationOpts)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
 	return &pb.DiscoverPublicSharedResponse{
-		Result: bizReferrerToPb(res),
+		Result:     bizReferrerToPb(res),
+		Pagination: bizCursorToPb(nextCursor),
 	}, nil
+}
+
+const defaultReferrerPageSize = 20
+
+// referrerPaginationOptsFromProto converts the proto pagination request to cursor options.
+// It always returns non-nil options, defaulting to limit=20 when no pagination is provided.
+func referrerPaginationOptsFromProto(p *pb.CursorPaginationRequest) (*pagination.CursorOptions, error) {
+	limit := int(p.GetLimit())
+	if limit == 0 {
+		limit = defaultReferrerPageSize
+	}
+	return pagination.NewCursor(p.GetCursor(), limit)
 }
 
 func bizReferrerToPb(r *biz.StoredReferrer) *pb.ReferrerItem {
