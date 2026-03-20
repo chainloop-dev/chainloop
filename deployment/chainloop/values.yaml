@@ -51,6 +51,18 @@ commonLabels: {}
 ##
 extraDeploy: []
 
+## @section Prometheus Metrics
+## @extra metrics Prometheus metrics configuration for controlplane and CAS
+## @param metrics.enabled Enable metrics services for both controlplane and CAS
+metrics:
+  enabled: false
+  ## @extra metrics.service Metrics service configuration
+  service:
+    ## @param metrics.service.port Metrics service port
+    port: 5000
+    ## @param metrics.service.annotations Additional custom annotations for metrics services
+    annotations: {}
+
 ## @section Secrets Backend
 ##
 
@@ -337,17 +349,6 @@ controlplane:
     ##     timeoutSeconds: 300
     ##
     sessionAffinityConfig: {}
-
-  ## @extra controlplane.metrics Prometheus metrics configuration
-  ## @param controlplane.metrics.enabled Enable metrics service
-  metrics:
-    enabled: false
-    ## @extra controlplane.metrics.service Metrics service configuration
-    service:
-      ## @param controlplane.metrics.service.port Metrics service port
-      port: 5000
-      ## @param controlplane.metrics.service.annotations Additional custom annotations for metrics service
-      annotations: {}
 
   serviceAPI:
     ## @param controlplane.serviceAPI.type Service type
@@ -1102,17 +1103,6 @@ cas:
     ##     timeoutSeconds: 300
     ##
     sessionAffinityConfig: {}
-
-  ## @extra cas.metrics Prometheus metrics configuration
-  ## @param cas.metrics.enabled Enable metrics service
-  metrics:
-    enabled: false
-    ## @extra cas.metrics.service Metrics service configuration
-    service:
-      ## @param cas.metrics.service.port Metrics service port
-      port: 5000
-      ## @param cas.metrics.service.annotations Additional custom annotations for metrics service
-      annotations: {}
 
   serviceAPI:
     ## @param cas.serviceAPI.type Service type
