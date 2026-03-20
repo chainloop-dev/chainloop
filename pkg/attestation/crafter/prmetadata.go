@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -252,7 +253,7 @@ func fetchGitHubRequestedReviewers(ctx context.Context, baseURL, owner, repo, pr
 	return reviewers
 }
 
-// fetchGitHubReviews fetches PR reviews from the GitHub API.
+// fetchGitHubReviews fetches all PR reviews from the GitHub API, following pagination.
 // Returns nil on any failure (best-effort).
 // Reviews are deduplicated by login, keeping the most recent state (last entry wins).
 // Returned reviewers have Requested: false; callers should set Requested: true for those
@@ -263,61 +264,85 @@ func fetchGitHubReviews(ctx context.Context, baseURL, owner, repo, prNumber, tok
 		return nil
 	}
 
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/pulls/%s/reviews", baseURL, owner, repo, prNumber)
-
 	client := &http.Client{Timeout: 10 * time.Second}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return nil
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil
-	}
-
-	var reviews []struct {
-		User struct {
-			Login string `json:"login"`
-			Type  string `json:"type"`
-		} `json:"user"`
-		State string `json:"state"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&reviews); err != nil {
-		return nil
-	}
 
 	// Deduplicate by login, keeping insertion order but updating to the most recent state.
 	seen := make(map[string]int) // login → index
 	var reviewers []prinfo.Reviewer
-	for _, r := range reviews {
-		reviewerType := r.User.Type
-		if reviewerType == "" {
-			reviewerType = "unknown"
+
+	nextURL := fmt.Sprintf("%s/repos/%s/%s/pulls/%s/reviews?per_page=100", baseURL, owner, repo, prNumber)
+	for nextURL != "" {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, nextURL, nil)
+		if err != nil {
+			return nil
 		}
-		if idx, exists := seen[r.User.Login]; exists {
-			reviewers[idx].ReviewStatus = r.State
-			continue
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil
 		}
-		seen[r.User.Login] = len(reviewers)
-		reviewers = append(reviewers, prinfo.Reviewer{
-			Login:        r.User.Login,
-			Type:         reviewerType,
-			ReviewStatus: r.State,
-		})
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return nil
+		}
+
+		var page []struct {
+			User struct {
+				Login string `json:"login"`
+				Type  string `json:"type"`
+			} `json:"user"`
+			State string `json:"state"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&page)
+		nextURL = nextPageURL(resp.Header.Get("Link"))
+		resp.Body.Close()
+		if err != nil {
+			return nil
+		}
+
+		for _, r := range page {
+			reviewerType := r.User.Type
+			if reviewerType == "" {
+				reviewerType = "unknown"
+			}
+			if idx, exists := seen[r.User.Login]; exists {
+				reviewers[idx].ReviewStatus = r.State
+				continue
+			}
+			seen[r.User.Login] = len(reviewers)
+			reviewers = append(reviewers, prinfo.Reviewer{
+				Login:        r.User.Login,
+				Type:         reviewerType,
+				ReviewStatus: r.State,
+			})
+		}
 	}
 
 	if len(reviewers) == 0 {
 		return nil
 	}
 	return reviewers
+}
+
+// nextPageURL parses the GitHub Link header and returns the URL for the next page,
+// or an empty string if there is no next page.
+// Link header format: <url>; rel="next", <url>; rel="last"
+func nextPageURL(linkHeader string) string {
+	for _, part := range strings.Split(linkHeader, ",") {
+		part = strings.TrimSpace(part)
+		sections := strings.SplitN(part, ";", 2)
+		if len(sections) < 2 {
+			continue
+		}
+		urlPart := strings.TrimSpace(sections[0])
+		relPart := strings.TrimSpace(sections[1])
+		if relPart == `rel="next"` && len(urlPart) >= 2 {
+			return urlPart[1 : len(urlPart)-1] // strip angle brackets
+		}
+	}
+	return ""
 }
 
 // extractGitLabMRMetadata extracts from GitLab environment variables

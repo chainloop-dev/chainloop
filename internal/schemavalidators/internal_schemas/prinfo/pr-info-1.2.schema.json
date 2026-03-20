@@ -83,7 +83,8 @@
         "type": "object",
         "required": [
           "login",
-          "type"
+          "type",
+          "requested"
         ]
       },
       "type": "array",

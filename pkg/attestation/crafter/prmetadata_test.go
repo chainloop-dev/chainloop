@@ -444,6 +444,77 @@ func TestFetchGitHubReviewsRequestPath(t *testing.T) {
 	fetchGitHubReviews(context.Background(), server.URL, "owner", "repo", "42", "test-token")
 }
 
+func TestFetchGitHubReviewsPagination(t *testing.T) {
+	page := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		page++
+		switch page {
+		case 1:
+			// Set Link header pointing to page 2
+			w.Header().Set("Link", fmt.Sprintf(`<%s/repos/owner/repo/pulls/42/reviews?per_page=100&page=2>; rel="next"`, r.Host))
+			fmt.Fprint(w, `[{"user":{"login":"reviewer1","type":"User"},"state":"COMMENTED"}]`)
+		case 2:
+			// Last page — no Link header
+			fmt.Fprint(w, `[{"user":{"login":"reviewer2","type":"User"},"state":"APPROVED"},{"user":{"login":"reviewer1","type":"User"},"state":"APPROVED"}]`)
+		}
+	}))
+	defer server.Close()
+
+	// Fix up the Link header host to use the test server URL
+	page = 0
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		page++
+		switch page {
+		case 1:
+			w.Header().Set("Link", fmt.Sprintf(`<%s/repos/owner/repo/pulls/42/reviews?per_page=100&page=2>; rel="next"`, server.URL))
+			fmt.Fprint(w, `[{"user":{"login":"reviewer1","type":"User"},"state":"COMMENTED"}]`)
+		case 2:
+			fmt.Fprint(w, `[{"user":{"login":"reviewer2","type":"User"},"state":"APPROVED"},{"user":{"login":"reviewer1","type":"User"},"state":"APPROVED"}]`)
+		}
+	}))
+	defer server2.Close()
+
+	reviewers := fetchGitHubReviews(context.Background(), server2.URL, "owner", "repo", "42", "test-token")
+	require.Len(t, reviewers, 2)
+	// reviewer1 appears on both pages; last state (APPROVED from page 2) wins
+	assert.Equal(t, "reviewer1", reviewers[0].Login)
+	assert.Equal(t, "APPROVED", reviewers[0].ReviewStatus)
+	assert.Equal(t, "reviewer2", reviewers[1].Login)
+	assert.Equal(t, "APPROVED", reviewers[1].ReviewStatus)
+}
+
+func TestNextPageURL(t *testing.T) {
+	testCases := []struct {
+		name     string
+		header   string
+		expected string
+	}{
+		{
+			name:     "next page present",
+			header:   `<https://api.github.com/repos/o/r/pulls/1/reviews?per_page=100&page=2>; rel="next", <https://api.github.com/repos/o/r/pulls/1/reviews?per_page=100&page=5>; rel="last"`,
+			expected: "https://api.github.com/repos/o/r/pulls/1/reviews?per_page=100&page=2",
+		},
+		{
+			name:     "no next page",
+			header:   `<https://api.github.com/repos/o/r/pulls/1/reviews?per_page=100&page=1>; rel="first"`,
+			expected: "",
+		},
+		{
+			name:     "empty header",
+			header:   "",
+			expected: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, nextPageURL(tc.header))
+		})
+	}
+}
+
 func TestFetchGitHubRequestedReviewers(t *testing.T) {
 	testCases := []struct {
 		name     string

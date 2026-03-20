@@ -207,7 +207,7 @@ func TestValidatePRInfoV1_2(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "backward compat: reviewer without new fields is still valid",
+			name: "reviewer missing required requested field fails validation",
 			data: `{
 				"platform": "github",
 				"type": "pull_request",
@@ -217,7 +217,7 @@ func TestValidatePRInfoV1_2(t *testing.T) {
 					{"login": "reviewer1", "type": "User"}
 				]
 			}`,
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "invalid review_status value",

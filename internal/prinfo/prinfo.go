@@ -26,7 +26,7 @@ const (
 type Reviewer struct {
 	Login        string `json:"login" jsonschema:"required,description=Username of the reviewer"`
 	Type         string `json:"type" jsonschema:"required,enum=User,enum=Bot,enum=unknown,description=Account type of the reviewer"`
-	Requested    bool   `json:"requested" jsonschema:"description=Whether the reviewer was explicitly requested to review"`
+	Requested    bool   `json:"requested" jsonschema:"required,description=Whether the reviewer was explicitly requested to review"`
 	ReviewStatus string `json:"review_status,omitempty" jsonschema:"enum=APPROVED,enum=CHANGES_REQUESTED,enum=COMMENTED,enum=DISMISSED,enum=PENDING,description=The reviewer's current review state if they have submitted a review"`
 }
 
