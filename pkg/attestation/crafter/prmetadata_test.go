@@ -463,7 +463,7 @@ func TestFetchGitHubReviewsPagination(t *testing.T) {
 
 	// Fix up the Link header host to use the test server URL
 	page = 0
-	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		page++
 		switch page {
