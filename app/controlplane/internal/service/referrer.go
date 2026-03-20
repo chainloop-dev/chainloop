@@ -105,13 +105,19 @@ func (s *ReferrerService) DiscoverPublicShared(ctx context.Context, req *pb.Disc
 	}, nil
 }
 
+const defaultReferrerPageSize = 20
+
 // referrerPaginationOptsFromProto converts the proto pagination request to cursor options.
 // Returns nil when the request has no pagination, preserving backward compatibility (all references returned).
 func referrerPaginationOptsFromProto(p *pb.CursorPaginationRequest) (*pagination.CursorOptions, error) {
 	if p == nil {
 		return nil, nil
 	}
-	return pagination.NewCursor(p.GetCursor(), int(p.GetLimit()))
+	limit := int(p.GetLimit())
+	if limit == 0 {
+		limit = defaultReferrerPageSize
+	}
+	return pagination.NewCursor(p.GetCursor(), limit)
 }
 
 func bizReferrerToPb(r *biz.StoredReferrer) *pb.ReferrerItem {
