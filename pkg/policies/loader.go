@@ -28,10 +28,10 @@ import (
 	"sync"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"golang.org/x/sync/singleflight"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
