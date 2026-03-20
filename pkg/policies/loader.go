@@ -28,6 +28,7 @@ import (
 	"sync"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"golang.org/x/sync/singleflight"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
@@ -168,6 +169,7 @@ type policyWithReference struct {
 var (
 	remotePolicyCache      = make(map[string]*policyWithReference)
 	remotePolicyCacheMutex sync.Mutex
+	remotePolicyFlight     singleflight.Group
 )
 
 func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
@@ -177,7 +179,7 @@ func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
-	// Check cache (read under lock, release before any I/O)
+	// Fast path: check cache under lock
 	remotePolicyCacheMutex.Lock()
 	if v, ok := remotePolicyCache[ref]; ok {
 		remotePolicyCacheMutex.Unlock()
@@ -185,43 +187,59 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 	}
 	remotePolicyCacheMutex.Unlock()
 
-	if !IsProviderScheme(ref) {
-		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
-	}
+	// Use singleflight to coalesce concurrent fetches for the same ref.
+	// This ensures exactly one gRPC call per ref regardless of concurrency.
+	result, err, _ := remotePolicyFlight.Do(ref, func() (interface{}, error) {
+		// Re-check cache (another goroutine may have populated it)
+		remotePolicyCacheMutex.Lock()
+		if v, ok := remotePolicyCache[ref]; ok {
+			remotePolicyCacheMutex.Unlock()
+			return v, nil
+		}
+		remotePolicyCacheMutex.Unlock()
 
-	providerRef := ProviderParts(ref)
+		if !IsProviderScheme(ref) {
+			return nil, fmt.Errorf("invalid policy reference %q", ref)
+		}
 
-	// gRPC call happens outside the lock
-	resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
-		Provider:   providerRef.Provider,
-		PolicyName: providerRef.Name,
-		OrgName:    providerRef.OrgName,
+		providerRef := ProviderParts(ref)
+
+		resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
+			Provider:   providerRef.Provider,
+			PolicyName: providerRef.Name,
+			OrgName:    providerRef.OrgName,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		}
+
+		h, err := crv1.NewHash(resp.Reference.GetDigest())
+		if err != nil {
+			return nil, fmt.Errorf("parsing digest: %w", err)
+		}
+
+		orgName := providerRef.OrgName
+		if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
+			if orgParam := u.Query().Get("org"); orgParam != "" {
+				orgName = orgParam
+			}
+		}
+
+		reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
+		cached := &policyWithReference{policy: resp.GetPolicy(), reference: reference}
+
+		remotePolicyCacheMutex.Lock()
+		remotePolicyCache[ref] = cached
+		remotePolicyCacheMutex.Unlock()
+
+		return cached, nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		return nil, nil, err
 	}
 
-	h, err := crv1.NewHash(resp.Reference.GetDigest())
-	if err != nil {
-		return nil, nil, fmt.Errorf("parsing digest: %w", err)
-	}
-
-	orgName := providerRef.OrgName
-	// Extract organization name from URL if present
-	if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
-		if orgParam := u.Query().Get("org"); orgParam != "" {
-			orgName = orgParam
-		}
-	}
-
-	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
-
-	// Write to cache under lock
-	remotePolicyCacheMutex.Lock()
-	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}
-	remotePolicyCacheMutex.Unlock()
-
-	return resp.GetPolicy(), reference, nil
+	cached := result.(*policyWithReference)
+	return cached.policy, cached.reference, nil
 }
 
 func unmarshallResource(raw []byte, ref string, digest string, dest proto.Message) (*PolicyDescriptor, error) {

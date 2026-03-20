@@ -31,6 +31,8 @@ import (
 
 // setLogLevelOnce ensures extism.SetLogLevel is called exactly once,
 // since it modifies global state and is not safe for concurrent calls.
+// Note: the log level is determined by the first NewEngine() call in the
+// process. Subsequent engines with different log levels will not override it.
 var setLogLevelOnce sync.Once
 
 // Ensure Engine implements PolicyEngine interface

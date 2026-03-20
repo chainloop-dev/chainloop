@@ -28,6 +28,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
+	"golang.org/x/sync/singleflight"
 )
 
 // GroupLoader defines the interface for policy loaders from contract attachments
@@ -109,6 +110,7 @@ type groupWithReference struct {
 var (
 	remoteGroupCache      = make(map[string]*groupWithReference)
 	remoteGroupCacheMutex sync.Mutex
+	remoteGroupFlight     singleflight.Group
 )
 
 func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroupLoader {
@@ -118,7 +120,7 @@ func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroup
 func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
-	// Check cache (read under lock, release before any I/O)
+	// Fast path: check cache under lock
 	remoteGroupCacheMutex.Lock()
 	if v, ok := remoteGroupCache[ref]; ok {
 		remoteGroupCacheMutex.Unlock()
@@ -126,41 +128,56 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 	}
 	remoteGroupCacheMutex.Unlock()
 
-	if !IsProviderScheme(ref) {
-		return nil, nil, fmt.Errorf("invalid group reference %q", ref)
-	}
+	// Use singleflight to coalesce concurrent fetches for the same ref.
+	result, err, _ := remoteGroupFlight.Do(ref, func() (interface{}, error) {
+		// Re-check cache (another goroutine may have populated it)
+		remoteGroupCacheMutex.Lock()
+		if v, ok := remoteGroupCache[ref]; ok {
+			remoteGroupCacheMutex.Unlock()
+			return v, nil
+		}
+		remoteGroupCacheMutex.Unlock()
 
-	providerRef := ProviderParts(ref)
+		if !IsProviderScheme(ref) {
+			return nil, fmt.Errorf("invalid group reference %q", ref)
+		}
 
-	// gRPC call happens outside the lock
-	resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
-		Provider:  providerRef.Provider,
-		GroupName: providerRef.Name,
-		OrgName:   providerRef.OrgName,
+		providerRef := ProviderParts(ref)
+
+		resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
+			Provider:  providerRef.Provider,
+			GroupName: providerRef.Name,
+			OrgName:   providerRef.OrgName,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		}
+
+		h, err := crv1.NewHash(resp.Reference.GetDigest())
+		if err != nil {
+			return nil, fmt.Errorf("parsing digest: %w", err)
+		}
+
+		orgName := providerRef.OrgName
+		if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
+			if orgParam := u.Query().Get("org"); orgParam != "" {
+				orgName = orgParam
+			}
+		}
+
+		reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
+		cached := &groupWithReference{group: resp.GetGroup(), reference: reference}
+
+		remoteGroupCacheMutex.Lock()
+		remoteGroupCache[ref] = cached
+		remoteGroupCacheMutex.Unlock()
+
+		return cached, nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		return nil, nil, err
 	}
 
-	h, err := crv1.NewHash(resp.Reference.GetDigest())
-	if err != nil {
-		return nil, nil, fmt.Errorf("parsing digest: %w", err)
-	}
-
-	orgName := providerRef.OrgName
-	// Extract organization name from URL if present
-	if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
-		if orgParam := u.Query().Get("org"); orgParam != "" {
-			orgName = orgParam
-		}
-	}
-
-	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
-
-	// Write to cache under lock
-	remoteGroupCacheMutex.Lock()
-	remoteGroupCache[ref] = &groupWithReference{group: resp.GetGroup(), reference: reference}
-	remoteGroupCacheMutex.Unlock()
-
-	return resp.GetGroup(), reference, nil
+	cached := result.(*groupWithReference)
+	return cached.group, cached.reference, nil
 }
