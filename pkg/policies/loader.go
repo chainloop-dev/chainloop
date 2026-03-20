@@ -189,22 +189,17 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 
 	// Use singleflight to coalesce concurrent fetches for the same ref.
 	// This ensures exactly one gRPC call per ref regardless of concurrency.
+	// Use context.WithoutCancel so the winning goroutine's context cancellation
+	// doesn't propagate to waiters sharing the same singleflight key.
 	result, err, _ := remotePolicyFlight.Do(ref, func() (interface{}, error) {
-		// Re-check cache (another goroutine may have populated it)
-		remotePolicyCacheMutex.Lock()
-		if v, ok := remotePolicyCache[ref]; ok {
-			remotePolicyCacheMutex.Unlock()
-			return v, nil
-		}
-		remotePolicyCacheMutex.Unlock()
-
 		if !IsProviderScheme(ref) {
 			return nil, fmt.Errorf("invalid policy reference %q", ref)
 		}
 
 		providerRef := ProviderParts(ref)
+		sfCtx := context.WithoutCancel(ctx)
 
-		resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
+		resp, err := c.Client.GetPolicy(sfCtx, &pb.AttestationServiceGetPolicyRequest{
 			Provider:   providerRef.Provider,
 			PolicyName: providerRef.Name,
 			OrgName:    providerRef.OrgName,
