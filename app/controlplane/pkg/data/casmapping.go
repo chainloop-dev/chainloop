@@ -78,15 +78,18 @@ func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*bi
 		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
 	}
 
+	// Batch-resolve public status for all mappings to avoid N+1 queries
+	publicByRunID, err := r.batchIsPublic(ctx, r.data.DB, mappings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if workflows are public: %w", err)
+	}
+
 	res := make([]*biz.CASMapping, 0, len(mappings))
 	for _, m := range mappings {
-		public, err := r.IsPublic(ctx, r.data.DB, m.WorkflowRunID)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				continue
-			}
-
-			return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
+		public, ok := publicByRunID[m.WorkflowRunID]
+		if !ok {
+			// workflow run or workflow was not found, skip this mapping
+			continue
 		}
 		r, err := entCASMappingToBiz(m, public)
 		if err != nil {
@@ -122,6 +125,79 @@ func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMa
 	return entCASMappingToBiz(backend, public)
 }
 
+// batchIsPublic resolves the public status for all mappings in two batched queries
+// instead of 2*N individual queries. Returns a map of workflow_run_id -> public flag.
+// Mappings with nil workflow_run_id are included as false.
+// Mappings whose workflow run or workflow was deleted are omitted from the result.
+func (r *CASMappingRepo) batchIsPublic(ctx context.Context, client *ent.Client, mappings []*ent.CASMapping) (map[uuid.UUID]bool, error) {
+	result := make(map[uuid.UUID]bool, len(mappings))
+
+	// Collect unique non-nil workflow run IDs
+	runIDs := make([]uuid.UUID, 0, len(mappings))
+	for _, m := range mappings {
+		if m.WorkflowRunID == uuid.Nil {
+			result[m.WorkflowRunID] = false
+			continue
+		}
+		runIDs = append(runIDs, m.WorkflowRunID)
+	}
+
+	if len(runIDs) == 0 {
+		return result, nil
+	}
+
+	// Batch query: get all workflow runs with their workflow IDs
+	runs, err := client.WorkflowRun.Query().
+		Where(workflowrun.IDIn(runIDs...)).
+		Select(workflowrun.FieldID, workflowrun.FieldWorkflowID).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch get workflow runs: %w", err)
+	}
+
+	// Collect unique workflow IDs and build runID -> workflowID map
+	runToWorkflow := make(map[uuid.UUID]uuid.UUID, len(runs))
+	workflowIDs := make([]uuid.UUID, 0, len(runs))
+	seen := make(map[uuid.UUID]bool, len(runs))
+	for _, wr := range runs {
+		runToWorkflow[wr.ID] = wr.WorkflowID
+		if !seen[wr.WorkflowID] {
+			workflowIDs = append(workflowIDs, wr.WorkflowID)
+			seen[wr.WorkflowID] = true
+		}
+	}
+
+	if len(workflowIDs) == 0 {
+		return result, nil
+	}
+
+	// Batch query: get all workflows with their public flag
+	workflows, err := client.Workflow.Query().
+		Where(workflow.IDIn(workflowIDs...)).
+		Select(workflow.FieldID, workflow.FieldPublic).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch get workflows: %w", err)
+	}
+
+	workflowPublic := make(map[uuid.UUID]bool, len(workflows))
+	for _, w := range workflows {
+		workflowPublic[w.ID] = w.Public
+	}
+
+	// Build the final map: runID -> public
+	for runID, wfID := range runToWorkflow {
+		if public, ok := workflowPublic[wfID]; ok {
+			result[runID] = public
+		}
+		// If the workflow is not found, omit the entry so the mapping gets skipped
+	}
+
+	return result, nil
+}
+
+// IsPublic checks if the workflow associated with a workflow run is public.
+// Used for single-mapping lookups (e.g. findByID).
 func (r *CASMappingRepo) IsPublic(ctx context.Context, client *ent.Client, runID uuid.UUID) (bool, error) {
 	// If the workflow run id is not set, the mapping is not public
 	if runID == uuid.Nil {
