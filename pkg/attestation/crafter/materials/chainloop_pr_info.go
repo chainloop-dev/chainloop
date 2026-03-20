@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ func (i *ChainloopPRInfoCrafter) Craft(ctx context.Context, artifactPath string)
 	}
 
 	// Validate the data against JSON schema
-	if err := schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_1); err != nil {
+	if err := schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_2); err != nil {
 		i.logger.Debug().Err(err).Msg("schema validation failed")
 		return nil, fmt.Errorf("PR info validation failed: %w", err)
 	}
