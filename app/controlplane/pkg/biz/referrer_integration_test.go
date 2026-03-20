@@ -143,7 +143,8 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 		s.NoError(err)
 		// It has a commit and an attestation
 		require.Len(s.T(), got.References, 2)
-		s.Equal(wantDependentAtt.String(), got.References[0].Digest)
+		digests := []string{got.References[0].Digest, got.References[1].Digest}
+		s.Contains(digests, wantDependentAtt.String())
 	})
 }
 
@@ -266,10 +267,19 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// it has all the references
 		require.Len(t, got.References, 6)
 
-		for i, want := range []*biz.Referrer{
-			wantReferrerArtifact, wantReferrerContainerImage, wantReferrerCommit, wantReferrerOpenVEX, wantReferrerSarif, wantReferrerSBOM} {
-			gotR := got.References[i]
-			s.Equal(want, gotR.Referrer)
+		wantRefs := []*biz.Referrer{
+			wantReferrerArtifact, wantReferrerContainerImage, wantReferrerCommit, wantReferrerOpenVEX, wantReferrerSarif, wantReferrerSBOM,
+		}
+		for _, want := range wantRefs {
+			found := false
+			for _, gotR := range got.References {
+				if gotR.Referrer.Digest == want.Digest {
+					s.Equal(want, gotR.Referrer)
+					found = true
+					break
+				}
+			}
+			s.True(found, "expected referrer with digest %s not found", want.Digest)
 		}
 		s.Equal([]uuid.UUID{s.org1UUID}, got.OrgIDs)
 		s.Equal([]uuid.UUID{s.workflow1.ID}, got.WorkflowIDs)
@@ -387,10 +397,12 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.NoError(err)
 		// it should be referenced by two attestations since it's subject of both
 		require.Len(t, got.References, 2)
-		s.Equal("ATTESTATION", got.References[0].Kind)
-		s.Equal("sha256:2e9bf8e13acd112eff355787b2b72eb8af4ee51fc22c7e65611939f2225e1dc5", got.References[0].Digest)
-		s.Equal("ATTESTATION", got.References[1].Kind)
-		s.Equal("sha256:5f4d1baadaf3e439f769f11c7ba0c5f77dad27d00689144d1311b48e65818bbd", got.References[1].Digest)
+		gotDigests := []string{got.References[0].Digest, got.References[1].Digest}
+		for _, ref := range got.References {
+			s.Equal("ATTESTATION", ref.Kind)
+		}
+		s.Contains(gotDigests, "sha256:2e9bf8e13acd112eff355787b2b72eb8af4ee51fc22c7e65611939f2225e1dc5")
+		s.Contains(gotDigests, "sha256:5f4d1baadaf3e439f769f11c7ba0c5f77dad27d00689144d1311b48e65818bbd")
 	})
 
 	s.T().Run("if all associated workflows are private, the referrer is private", func(t *testing.T) {

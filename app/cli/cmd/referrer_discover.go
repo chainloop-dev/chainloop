@@ -57,8 +57,7 @@ func newReferrerDiscoverCmd() *cobra.Command {
 			}
 
 			if next := res.NextCursor; next != "" {
-				logger.Info().Msg("Pagination options \n")
-				logger.Info().Msgf("--next %s\n", next)
+				logger.Info().Msgf("To fetch the next page, use: --next %s", next)
 			}
 
 			return nil
