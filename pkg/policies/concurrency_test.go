@@ -87,20 +87,17 @@ func TestConcurrentVerifyMaterial(t *testing.T) {
 		Policies: &v12.Policies{
 			Materials: []*v12.PolicyAttachment{
 				{
-					Policy:   &v12.PolicyAttachment_Ref{Ref: "file://testdata/materials.yaml"},
-					Selector: &v12.PolicyAttachment_MaterialSelector{Name: "sbom"},
+					Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 				},
 			},
 		},
 	}
 
 	material := &v1.Attestation_Material{
-		MaterialType: v12.CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
-		M: &v1.Attestation_Material_String_{
-			String_: &v1.Attestation_Material_KeyVal{
-				Id:    "sbom",
-				Value: "testdata/sbom.cyclonedx.json",
-			},
+		Id:           "sbom",
+		MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+		M: &v1.Attestation_Material_Artifact_{
+			Artifact: &v1.Attestation_Material_Artifact{},
 		},
 	}
 
@@ -115,7 +112,7 @@ func TestConcurrentVerifyMaterial(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			res, err := pv.VerifyMaterial(context.Background(), material, "")
+			res, err := pv.VerifyMaterial(context.Background(), material, "testdata/sbom-spdx.json")
 			errs[i] = err
 			results[i] = res
 		}()

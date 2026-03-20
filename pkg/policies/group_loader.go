@@ -129,22 +129,17 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 	remoteGroupCacheMutex.Unlock()
 
 	// Use singleflight to coalesce concurrent fetches for the same ref.
+	// Use context.WithoutCancel so the winning goroutine's context cancellation
+	// doesn't propagate to waiters sharing the same singleflight key.
 	result, err, _ := remoteGroupFlight.Do(ref, func() (interface{}, error) {
-		// Re-check cache (another goroutine may have populated it)
-		remoteGroupCacheMutex.Lock()
-		if v, ok := remoteGroupCache[ref]; ok {
-			remoteGroupCacheMutex.Unlock()
-			return v, nil
-		}
-		remoteGroupCacheMutex.Unlock()
-
 		if !IsProviderScheme(ref) {
 			return nil, fmt.Errorf("invalid group reference %q", ref)
 		}
 
 		providerRef := ProviderParts(ref)
+		sfCtx := context.WithoutCancel(ctx)
 
-		resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
+		resp, err := c.Client.GetPolicyGroup(sfCtx, &pb.AttestationServiceGetPolicyGroupRequest{
 			Provider:  providerRef.Provider,
 			GroupName: providerRef.Name,
 			OrgName:   providerRef.OrgName,
