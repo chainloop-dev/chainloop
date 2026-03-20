@@ -1,0 +1,25 @@
+{{- /*
+Copyright Chainloop, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if .Values.cas.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chainloop.cas.fullname" . }}-metrics
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{ include "chainloop.cas.labels" . | nindent 4 }}
+  {{- if or .Values.cas.metrics.service.annotations .Values.commonAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.metrics.service.annotations .Values.commonAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: {{ .Values.cas.metrics.service.port }}
+      targetPort: metrics
+      protocol: TCP
+  selector: {{ include "chainloop.cas.selectorLabels" . | nindent 4 }}
+{{- end }}

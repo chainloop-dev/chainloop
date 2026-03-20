@@ -1,0 +1,26 @@
+{{- /*
+Copyright Chainloop, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- if .Values.controlplane.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chainloop.controlplane.fullname" . }}-metrics
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "chainloop.controlplane.labels" . | nindent 4 }}
+  {{- if or .Values.controlplane.metrics.service.annotations .Values.commonAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.metrics.service.annotations .Values.commonAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" $annotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: {{ .Values.controlplane.metrics.service.port }}
+      targetPort: metrics
+      protocol: TCP
+  {{- $podLabels := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.podLabels .Values.commonLabels) "context" .) | fromYaml }}
+  selector: {{ include "chainloop.controlplane.selectorLabels" . | nindent 4 }}
+{{- end }}
