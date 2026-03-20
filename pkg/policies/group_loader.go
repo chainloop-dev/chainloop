@@ -137,7 +137,14 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 		}
 
 		providerRef := ProviderParts(ref)
+		// Detach from caller's cancellation (so one goroutine's cancel doesn't
+		// kill the shared singleflight call) but preserve a bounded deadline.
 		sfCtx := context.WithoutCancel(ctx)
+		if deadline, ok := ctx.Deadline(); ok {
+			var cancel context.CancelFunc
+			sfCtx, cancel = context.WithDeadline(sfCtx, deadline)
+			defer cancel()
+		}
 
 		resp, err := c.Client.GetPolicyGroup(sfCtx, &pb.AttestationServiceGetPolicyGroupRequest{
 			Provider:  providerRef.Provider,
