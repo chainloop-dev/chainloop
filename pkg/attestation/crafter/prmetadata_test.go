@@ -642,10 +642,11 @@ func TestExtractGitHubPRMetadataWithAPIReviews(t *testing.T) {
 	envVars := map[string]string{
 		"GITHUB_EVENT_NAME": "pull_request",
 		// github_pr_event.json has requested_reviewers: reviewer1 (User), coderabbitai (Bot)
-		"GITHUB_EVENT_PATH": filepath.Join("testdata", "github_pr_event.json"),
-		"GITHUB_HEAD_REF":   "feature-branch",
-		"GITHUB_BASE_REF":   "main",
-		"GITHUB_REPOSITORY": "owner/repo",
+		"GITHUB_EVENT_PATH":       filepath.Join("testdata", "github_pr_event.json"),
+		"GITHUB_HEAD_REF":         "feature-branch",
+		"GITHUB_BASE_REF":         "main",
+		"GITHUB_REPOSITORY":       "owner/repo",
+		"GITHUB_REPOSITORY_OWNER": "owner",
 	}
 
 	isPR, metadata, err := extractGitHubPRMetadata(context.Background(), envVars)

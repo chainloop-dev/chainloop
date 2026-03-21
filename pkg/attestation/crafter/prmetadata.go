@@ -121,8 +121,8 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 
 	// GITHUB_TOKEN is read via os.Getenv to avoid persisting it in the attestation envVars map.
 	// GITHUB_API_BASE_URL can be overridden (e.g. in tests); defaults to api.github.com.
-	parts := splitOwnerRepo(envVars["GITHUB_REPOSITORY"])
-	owner, repo := parts[0], parts[1]
+	owner := envVars["GITHUB_REPOSITORY_OWNER"]
+	_, repo, _ := strings.Cut(envVars["GITHUB_REPOSITORY"], "/")
 	prNumber := fmt.Sprintf("%d", event.PullRequest.Number)
 	githubAPIBase := os.Getenv("GITHUB_API_BASE_URL")
 	if githubAPIBase == "" {
@@ -152,6 +152,9 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 		})
 	}
 
+	// Also fetch from the API: the event payload is a snapshot at dispatch time, so reviewers
+	// added after the event fires won't appear in event.PullRequest.RequestedReviewers.
+	// The API reflects current state and may include those late additions.
 	for _, r := range fetchGitHubRequestedReviewers(ctx, githubAPIBase, owner, repo, prNumber, token) {
 		if _, exists := reviewerMap[r.Login]; !exists {
 			reviewerMap[r.Login] = len(reviewers)
@@ -185,17 +188,6 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 	return true, metadata, nil
 }
 
-// splitOwnerRepo splits "owner/repo" into [owner, repo].
-// Returns ["", ""] if the string does not contain a slash.
-func splitOwnerRepo(ownerRepo string) [2]string {
-	for i := 0; i < len(ownerRepo); i++ {
-		if ownerRepo[i] == '/' {
-			return [2]string{ownerRepo[:i], ownerRepo[i+1:]}
-		}
-	}
-	return [2]string{"", ""}
-}
-
 // fetchGitHubRequestedReviewers fetches the list of users explicitly requested to review a PR.
 // Returns nil on any failure (best-effort).
 // baseURL is the GitHub API base (e.g. "https://api.github.com"); can be overridden in tests.
@@ -225,32 +217,23 @@ func fetchGitHubRequestedReviewers(ctx context.Context, baseURL, owner, repo, pr
 	}
 
 	var result struct {
-		Users []struct {
-			Login string `json:"login"`
-			Type  string `json:"type"`
-		} `json:"users"`
+		Users []prinfo.Reviewer `json:"users"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil
 	}
 
-	var reviewers []prinfo.Reviewer
-	for _, u := range result.Users {
-		reviewerType := u.Type
-		if reviewerType == "" {
-			reviewerType = "unknown"
-		}
-		reviewers = append(reviewers, prinfo.Reviewer{
-			Login:     u.Login,
-			Type:      reviewerType,
-			Requested: true,
-		})
-	}
-
-	if len(reviewers) == 0 {
+	if len(result.Users) == 0 {
 		return nil
 	}
-	return reviewers
+
+	for i := range result.Users {
+		result.Users[i].Requested = true
+		if result.Users[i].Type == "" {
+			result.Users[i].Type = "unknown"
+		}
+	}
+	return result.Users
 }
 
 // fetchGitHubReviews fetches all PR reviews from the GitHub API, following pagination.
