@@ -134,9 +134,9 @@ func (c *Crafter) WorkingDir() string {
 	return c.workingDir
 }
 
-// RegisterCollectors appends collectors to be run during attestation init.
+// RegisterCollectors resets collectors to be run during attestation init.
 func (c *Crafter) RegisterCollectors(collectors ...Collector) {
-	c.collectors = append(c.collectors, collectors...)
+	c.collectors = collectors
 }
 
 // RunCollectors executes all registered collectors best-effort.
@@ -158,7 +158,7 @@ func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBa
 	// NOTE: workaround for old servers that don't return digests in Save responses.
 	// not returning digest makes digests stale, and state save failing with conflict errors
 	// https://github.com/chainloop-dev/chainloop/issues/2908
-	// this conditition will not apply to new servers that return digests in Save responses.
+	// this condition will not apply to new servers that return digests in Save responses.
 	if c.CraftingState.UpdateCheckSum != digestBeforeCollectors {
 		if err := c.LoadCraftingState(ctx, attestationID); err != nil {
 			c.Logger.Warn().Err(err).Msg("failed to reload crafting state after running collectors")
