@@ -67,9 +67,14 @@ func (r *Remote) Write(ctx context.Context, key string, state *crafter.Versioned
 	}
 
 	r.logger.Debug().Str("key", key).Str("baseDigest", state.UpdateCheckSum).Msg("Writing state to remote")
-	if _, err := r.client.Save(ctx, &pb.AttestationStateServiceSaveRequest{WorkflowRunId: key, AttestationState: state.CraftingState, BaseDigest: state.UpdateCheckSum}); err != nil {
+	resp, err := r.client.Save(ctx, &pb.AttestationStateServiceSaveRequest{WorkflowRunId: key, AttestationState: state.CraftingState, BaseDigest: state.UpdateCheckSum})
+	if err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
+
+	// Update the checksum with the digest of the newly saved state
+	// so subsequent writes use the correct base digest for OCC
+	state.UpdateCheckSum = resp.GetDigest()
 
 	return nil
 }

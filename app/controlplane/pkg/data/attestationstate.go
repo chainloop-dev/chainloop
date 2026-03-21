@@ -53,8 +53,14 @@ func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID)
 
 // baseDigest, when provided will be used to check that it matches the digest of the state currently in the DB
 // if the digests do not match, the state has been modified and the caller should retry
-func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte, baseDigest string) error {
-	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+// It returns the digest of the newly saved state.
+func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte, baseDigest string) (string, error) {
+	newDigest, err := digest(state)
+	if err != nil {
+		return "", fmt.Errorf("failed to calculate digest of new state: %w", err)
+	}
+
+	err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// compared the provided digest with the digest of the state in the DB
 		// TODO: make digest check mandatory on updates
 		if baseDigest != "" {
@@ -86,6 +92,11 @@ func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state 
 		}
 		return nil
 	})
+	if err != nil {
+		return "", err
+	}
+
+	return newDigest, nil
 }
 
 func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byte, string, error) {

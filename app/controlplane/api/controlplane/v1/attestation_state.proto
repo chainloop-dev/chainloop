@@ -53,7 +53,10 @@ message AttestationStateServiceSaveRequest {
   string base_digest = 3;
 }
 
-message AttestationStateServiceSaveResponse {}
+message AttestationStateServiceSaveResponse {
+  // digest of the newly saved attestation state
+  string digest = 1;
+}
 
 message AttestationStateServiceReadRequest {
   string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];

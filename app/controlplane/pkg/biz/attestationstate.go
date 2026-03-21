@@ -39,7 +39,7 @@ type AttestationState struct {
 
 type AttestationStateRepo interface {
 	Initialized(ctx context.Context, workflowRunID uuid.UUID) (bool, error)
-	Save(ctx context.Context, workflowRunID uuid.UUID, state []byte, baseDigest string) error
+	Save(ctx context.Context, workflowRunID uuid.UUID, state []byte, baseDigest string) (string, error)
 	Read(ctx context.Context, workflowRunID uuid.UUID) ([]byte, string, error)
 	Reset(ctx context.Context, workflowRunID uuid.UUID) error
 }
@@ -79,7 +79,8 @@ func WithAttStateBaseDigest(digest string) SaveOption {
 	}
 }
 
-func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *v1.CraftingState, passphrase string, opts ...SaveOption) error {
+// Save persists the attestation state and returns the digest of the newly saved state.
+func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *v1.CraftingState, passphrase string, opts ...SaveOption) (string, error) {
 	opt := &AttestationStateSaveOpts{}
 
 	for _, o := range opts {
@@ -88,28 +89,29 @@ func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID s
 
 	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
-		return fmt.Errorf("failed to check workflow run: %w", err)
+		return "", fmt.Errorf("failed to check workflow run: %w", err)
 	}
 
 	rawState, err := proto.Marshal(state)
 	if err != nil {
-		return fmt.Errorf("failed to marshal attestation state: %w", err)
+		return "", fmt.Errorf("failed to marshal attestation state: %w", err)
 	}
 
 	if passphrase == "" {
-		return NewErrValidationStr("passphrase is required")
+		return "", NewErrValidationStr("passphrase is required")
 	}
 
 	encryptedState, err := encrypt(rawState, passphrase)
 	if err != nil {
-		return fmt.Errorf("failed to encrypt attestation state: %w", err)
+		return "", fmt.Errorf("failed to encrypt attestation state: %w", err)
 	}
 
-	if err := uc.repo.Save(ctx, *runUUID, encryptedState, opt.BaseDigest); err != nil {
-		return fmt.Errorf("failed to save attestation state: %w", err)
+	digest, err := uc.repo.Save(ctx, *runUUID, encryptedState, opt.BaseDigest)
+	if err != nil {
+		return "", fmt.Errorf("failed to save attestation state: %w", err)
 	}
 
-	return nil
+	return digest, nil
 }
 
 func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID, passphrase string) (*AttestationState, error) {

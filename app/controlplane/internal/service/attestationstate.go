@@ -105,7 +105,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.Forbidden("forbidden", "failed to authenticate request")
 	}
 
-	err = s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase, biz.WithAttStateBaseDigest(req.GetBaseDigest()))
+	digest, err := s.attestationStateUseCase.Save(ctx, wf.ID.String(), req.WorkflowRunId, req.AttestationState, encryptionPassphrase, biz.WithAttStateBaseDigest(req.GetBaseDigest()))
 	if err != nil {
 		if biz.IsErrAttestationStateConflict(err) {
 			return nil, cpAPI.ErrorAttestationStateErrorConflict("saving attestation: %s", err.Error())
@@ -114,7 +114,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return &cpAPI.AttestationStateServiceSaveResponse{}, nil
+	return &cpAPI.AttestationStateServiceSaveResponse{Digest: digest}, nil
 }
 
 func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.AttestationStateServiceReadRequest) (*cpAPI.AttestationStateServiceReadResponse, error) {
