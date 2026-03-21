@@ -88,7 +88,7 @@ func (c *AIAgentConfigCollector) uploadAgentConfig(
 	ctx context.Context, cr *Crafter, attestationID string,
 	casBackend *casclient.CASBackend, agentName string, files []aiagentconfig.DiscoveredFile, gitCtx *aiagentconfig.GitContext,
 ) error {
-	data, err := aiagentconfig.Build(cr.WorkingDir(), files, agentName, gitCtx)
+	data, err := aiagentconfig.Build(cr.WorkingDir(), files, agentName, gitCtx, cr.CraftingState.GetAttestation().GetInitializedAt().AsTime())
 	if err != nil {
 		return fmt.Errorf("building AI agent config for %s: %w", agentName, err)
 	}

@@ -31,7 +31,12 @@ import (
 // basePath is the base directory, discovered contains files relative to basePath with their kinds.
 // agentName identifies the AI agent (e.g. "claude", "cursor").
 // gitCtx may be nil if not in a git repository.
-func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext) (*Data, error) {
+// capturedAt is the timestamp to record in the output; pass time.Time{} to use the current time.
+func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext, capturedAt time.Time) (*Data, error) {
+	if capturedAt.IsZero() {
+		capturedAt = time.Now().UTC()
+	}
+
 	// Resolve basePath to its real path so symlink comparisons are reliable
 	realRoot, err := filepath.EvalSymlinks(basePath)
 	if err != nil {
@@ -82,7 +87,7 @@ func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCt
 	data := Data{
 		Agent:       Agent{Name: agentName},
 		ConfigHash:  computeCombinedHash(hashes),
-		CapturedAt:  time.Now().UTC().Format(time.RFC3339),
+		CapturedAt:  capturedAt.Format(time.RFC3339),
 		GitContext:  gitCtx,
 		ConfigFiles: configFiles,
 	}
