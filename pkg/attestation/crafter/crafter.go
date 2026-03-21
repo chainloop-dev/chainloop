@@ -152,6 +152,12 @@ func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBa
 			c.Logger.Warn().Err(err).Str("collector", collector.ID()).Msg("collector failed")
 		}
 	}
+
+	// Reload state to sync the local digest with the server after collectors modified it.
+	// This is needed for backward compatibility with servers that don't return digests in Save responses.
+	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to reload crafting state after running collectors")
+	}
 }
 
 // Create a completely new crafter

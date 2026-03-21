@@ -57,7 +57,7 @@ func newSuccessCollector(t *testing.T, id string) *craftermocks.Collector {
 }
 
 func TestRunCollectors(t *testing.T) {
-	t.Run("loads state once before running collectors", func(t *testing.T) {
+	t.Run("loads state before and after running collectors", func(t *testing.T) {
 		sm := craftermocks.NewStateManager(t)
 		setupReadExpectation(sm, "digest-1")
 		sm.On("Info", mock.Anything, mock.Anything).Return("mock://run-1")
@@ -71,8 +71,8 @@ func TestRunCollectors(t *testing.T) {
 
 		cr.RunCollectors(context.Background(), "run-1", nil)
 
-		// Single Read before the loop
-		sm.AssertNumberOfCalls(t, "Read", 1)
+		// Read before the loop + Read after to sync digest
+		sm.AssertNumberOfCalls(t, "Read", 2)
 		c1.AssertCalled(t, "Collect", mock.Anything, mock.Anything, "run-1", mock.Anything)
 		c2.AssertCalled(t, "Collect", mock.Anything, mock.Anything, "run-1", mock.Anything)
 	})
@@ -99,7 +99,7 @@ func TestRunCollectors(t *testing.T) {
 		c2.AssertCalled(t, "Collect", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 
-	t.Run("no collectors only reloads state", func(t *testing.T) {
+	t.Run("no collectors reloads state before and after", func(t *testing.T) {
 		sm := craftermocks.NewStateManager(t)
 		setupReadExpectation(sm, "d")
 		sm.On("Info", mock.Anything, mock.Anything).Return("mock://run-1")
@@ -109,7 +109,7 @@ func TestRunCollectors(t *testing.T) {
 
 		cr.RunCollectors(context.Background(), "run-1", nil)
 
-		sm.AssertNumberOfCalls(t, "Read", 1)
+		sm.AssertNumberOfCalls(t, "Read", 2)
 	})
 
 	t.Run("state load failure aborts before running collectors", func(t *testing.T) {
