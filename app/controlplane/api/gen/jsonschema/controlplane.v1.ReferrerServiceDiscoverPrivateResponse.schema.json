@@ -4,6 +4,10 @@
   "additionalProperties": false,
   "description": "ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method",
   "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.CursorPaginationResponse.schema.json",
+      "description": "Pagination information for the references list"
+    },
     "result": {
       "$ref": "controlplane.v1.ReferrerItem.schema.json",
       "description": "Result is the discovered referrer item"

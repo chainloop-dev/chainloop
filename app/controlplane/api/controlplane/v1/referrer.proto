@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "buf/validate/validate.proto";
+import "controlplane/v1/pagination.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -57,6 +58,8 @@ message ReferrerServiceDiscoverPrivateRequest {
   // Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;
+  // Pagination options for the references list
+  CursorPaginationRequest pagination = 3;
 
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
@@ -73,6 +76,8 @@ message DiscoverPublicSharedRequest {
   // Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
   // Used to filter and resolve ambiguities
   string kind = 2;
+  // Pagination options for the references list
+  CursorPaginationRequest pagination = 3;
 
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
@@ -86,6 +91,8 @@ message DiscoverPublicSharedRequest {
 message DiscoverPublicSharedResponse {
   // Result is the discovered referrer item
   ReferrerItem result = 1;
+  // Pagination information for the references list
+  CursorPaginationResponse pagination = 2;
 
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
@@ -99,6 +106,8 @@ message DiscoverPublicSharedResponse {
 message ReferrerServiceDiscoverPrivateResponse {
   // Result is the discovered referrer item
   ReferrerItem result = 1;
+  // Pagination information for the references list
+  CursorPaginationResponse pagination = 2;
 
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
