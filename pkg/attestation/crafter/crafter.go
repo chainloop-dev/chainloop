@@ -147,16 +147,21 @@ func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBa
 		return
 	}
 
+	digestBeforeCollectors := c.CraftingState.UpdateCheckSum
+
 	for _, collector := range c.collectors {
 		if err := collector.Collect(ctx, c, attestationID, casBackend); err != nil {
 			c.Logger.Warn().Err(err).Str("collector", collector.ID()).Msg("collector failed")
 		}
 	}
 
-	// Reload state to sync the local digest with the server after collectors modified it.
-	// This is needed for backward compatibility with servers that don't return digests in Save responses.
-	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
-		c.Logger.Warn().Err(err).Msg("failed to reload crafting state after running collectors")
+	// Reload state if collectors modified it and the local digest may be stale.
+	// When the digest changed, writes happened but we can't be sure the checksum
+	// reflects the true server-side state (e.g. old servers don't return digests).
+	if c.CraftingState.UpdateCheckSum != digestBeforeCollectors {
+		if err := c.LoadCraftingState(ctx, attestationID); err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to reload crafting state after running collectors")
+		}
 	}
 }
 

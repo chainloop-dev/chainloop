@@ -57,24 +57,29 @@ func newSuccessCollector(t *testing.T, id string) *craftermocks.Collector {
 }
 
 func TestRunCollectors(t *testing.T) {
-	t.Run("loads state before and after running collectors", func(t *testing.T) {
+	t.Run("reloads state after collectors when digest changes", func(t *testing.T) {
 		sm := craftermocks.NewStateManager(t)
 		setupReadExpectation(sm, "digest-1")
 		sm.On("Info", mock.Anything, mock.Anything).Return("mock://run-1")
 
-		c1 := newSuccessCollector(t, "c1")
-		c2 := newSuccessCollector(t, "c2")
+		// Collector modifies the digest (simulates a Write that updates UpdateCheckSum)
+		c1 := craftermocks.NewCollector(t)
+		c1.On("ID").Maybe().Return("c1")
+		c1.On("Collect", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Run(func(args mock.Arguments) {
+				cr := args.Get(1).(*crafter.Crafter)
+				cr.CraftingState.UpdateCheckSum = "digest-after-write"
+			}).Return(nil)
 
 		cr, err := crafter.NewCrafter(sm, nil)
 		require.NoError(t, err)
-		cr.RegisterCollectors(c1, c2)
+		cr.RegisterCollectors(c1)
 
 		cr.RunCollectors(context.Background(), "run-1", nil)
 
-		// Read before the loop + Read after to sync digest
+		// Read before + Read after (digest changed, so reload triggered)
 		sm.AssertNumberOfCalls(t, "Read", 2)
 		c1.AssertCalled(t, "Collect", mock.Anything, mock.Anything, "run-1", mock.Anything)
-		c2.AssertCalled(t, "Collect", mock.Anything, mock.Anything, "run-1", mock.Anything)
 	})
 
 	t.Run("collector failure does not stop other collectors", func(t *testing.T) {
@@ -99,7 +104,7 @@ func TestRunCollectors(t *testing.T) {
 		c2.AssertCalled(t, "Collect", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 
-	t.Run("no collectors reloads state before and after", func(t *testing.T) {
+	t.Run("no collectors skips reload when digest unchanged", func(t *testing.T) {
 		sm := craftermocks.NewStateManager(t)
 		setupReadExpectation(sm, "d")
 		sm.On("Info", mock.Anything, mock.Anything).Return("mock://run-1")
@@ -109,7 +114,8 @@ func TestRunCollectors(t *testing.T) {
 
 		cr.RunCollectors(context.Background(), "run-1", nil)
 
-		sm.AssertNumberOfCalls(t, "Read", 2)
+		// Only the initial Read, no reload since digest didn't change
+		sm.AssertNumberOfCalls(t, "Read", 1)
 	})
 
 	t.Run("state load failure aborts before running collectors", func(t *testing.T) {
