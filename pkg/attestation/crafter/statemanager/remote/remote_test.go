@@ -43,10 +43,10 @@ func TestWriteUpdatesChecksum(t *testing.T) {
 			expectedChecksum: "new-digest-from-server",
 		},
 		{
-			name:             "clears checksum when response digest is empty",
+			name:             "keeps checksum when response digest is empty",
 			initialChecksum:  "old-digest",
 			responseDigest:   "",
-			expectedChecksum: "",
+			expectedChecksum: "old-digest",
 		},
 		{
 			name:             "first write with empty initial checksum",

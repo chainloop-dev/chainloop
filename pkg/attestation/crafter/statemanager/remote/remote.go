@@ -72,8 +72,11 @@ func (r *Remote) Write(ctx context.Context, key string, state *crafter.Versioned
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
-	// Update the checksum so subsequent writes use the correct base digest
-	state.UpdateCheckSum = resp.GetDigest()
+	// Update the checksum so subsequent writes use the correct base digest.
+	// Only update if the server returned a digest (old servers don't).
+	if d := resp.GetDigest(); d != "" {
+		state.UpdateCheckSum = d
+	}
 
 	return nil
 }
