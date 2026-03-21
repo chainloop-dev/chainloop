@@ -24,7 +24,6 @@ import (
 
 	"github.com/digitorus/timestamp"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
-	"github.com/sigstore/timestamp-authority/v2/pkg/verification"
 )
 
 func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
@@ -68,12 +67,7 @@ func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 				roots = tsa[len(tsa)-1:]
 				intermediates = tsa[1 : len(tsa)-1]
 			}
-			ts, err := verification.VerifyTimestampResponse(st, bytes.NewReader(sigBytes),
-				verification.VerifyOpts{
-					TSACertificate: tsaCert,
-					Intermediates:  intermediates,
-					Roots:          roots,
-				})
+			ts, err := verifyTimestampAtTime(st, sigBytes, tsaCert, intermediates, roots)
 			if err != nil {
 				continue
 			}
@@ -97,4 +91,47 @@ func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 		return fmt.Errorf("some timestamps verification failed")
 	}
 	return nil
+}
+
+// verifyTimestampAtTime parses and verifies a timestamp response, validating
+// the TSA certificate chain at the timestamp's time rather than the current time.
+// This is semantically correct because a timestamp proves a signature existed at a
+// specific point in time — the TSA certificate only needs to have been valid then.
+func verifyTimestampAtTime(tsrBytes, signature []byte, tsaCert *x509.Certificate, intermediates, roots []*x509.Certificate) (*timestamp.Timestamp, error) {
+	// Parse and verify the PKCS7 signature in the timestamp response
+	ts, err := timestamp.ParseResponse(tsrBytes)
+	if err != nil {
+		return nil, fmt.Errorf("parsing timestamp response: %w", err)
+	}
+
+	// Verify the hashed message matches the provided signature
+	h := ts.HashAlgorithm.New()
+	h.Write(signature)
+	if !bytes.Equal(h.Sum(nil), ts.HashedMessage) {
+		return nil, fmt.Errorf("hashed message mismatch")
+	}
+
+	// Verify the TSA certificate chain at the timestamp's time.
+	// The upstream verification.VerifyTimestampResponse uses time.Now() for
+	// x509 chain validation, which causes failures when TSA certs expire
+	// even though the timestamps they issued were valid.
+	rootPool := x509.NewCertPool()
+	for _, r := range roots {
+		rootPool.AddCert(r)
+	}
+	intermediatePool := x509.NewCertPool()
+	for _, im := range intermediates {
+		intermediatePool.AddCert(im)
+	}
+	_, err = tsaCert.Verify(x509.VerifyOptions{
+		Roots:         rootPool,
+		Intermediates: intermediatePool,
+		CurrentTime:   ts.Time,
+		KeyUsages:     []x509.ExtKeyUsage{x509.ExtKeyUsageTimeStamping},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("verifying TSA certificate chain: %w", err)
+	}
+
+	return ts, nil
 }
