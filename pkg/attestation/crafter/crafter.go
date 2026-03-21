@@ -155,9 +155,10 @@ func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBa
 		}
 	}
 
-	// Reload state if collectors modified it and the local digest may be stale.
-	// When the digest changed, writes happened but we can't be sure the checksum
-	// reflects the true server-side state (e.g. old servers don't return digests).
+	// NOTE: workaround for old servers that don't return digests in Save responses.
+	// not returning digest makes digests stale, and state save failing with conflict errors
+	// https://github.com/chainloop-dev/chainloop/issues/2908
+	// this conditition will not apply to new servers that return digests in Save responses.
 	if c.CraftingState.UpdateCheckSum != digestBeforeCollectors {
 		if err := c.LoadCraftingState(ctx, attestationID); err != nil {
 			c.Logger.Warn().Err(err).Msg("failed to reload crafting state after running collectors")
