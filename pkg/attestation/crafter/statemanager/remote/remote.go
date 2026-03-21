@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,8 +67,15 @@ func (r *Remote) Write(ctx context.Context, key string, state *crafter.Versioned
 	}
 
 	r.logger.Debug().Str("key", key).Str("baseDigest", state.UpdateCheckSum).Msg("Writing state to remote")
-	if _, err := r.client.Save(ctx, &pb.AttestationStateServiceSaveRequest{WorkflowRunId: key, AttestationState: state.CraftingState, BaseDigest: state.UpdateCheckSum}); err != nil {
+	resp, err := r.client.Save(ctx, &pb.AttestationStateServiceSaveRequest{WorkflowRunId: key, AttestationState: state.CraftingState, BaseDigest: state.UpdateCheckSum})
+	if err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
+	}
+
+	// Update the checksum so subsequent writes use the correct base digest.
+	// Only update if the server returned a digest (old servers don't).
+	if d := resp.GetDigest(); d != "" {
+		state.UpdateCheckSum = d
 	}
 
 	return nil

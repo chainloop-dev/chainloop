@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -238,7 +238,9 @@ func (x *AttestationStateServiceSaveRequest) GetBaseDigest() string {
 }
 
 type AttestationStateServiceSaveResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// digest of the newly saved attestation state for Optimistic Concurrency Control
+	Digest        string `protobuf:"bytes,1,opt,name=digest,proto3" json:"digest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -271,6 +273,13 @@ func (x *AttestationStateServiceSaveResponse) ProtoReflect() protoreflect.Messag
 // Deprecated: Use AttestationStateServiceSaveResponse.ProtoReflect.Descriptor instead.
 func (*AttestationStateServiceSaveResponse) Descriptor() ([]byte, []int) {
 	return file_controlplane_v1_attestation_state_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AttestationStateServiceSaveResponse) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
 }
 
 type AttestationStateServiceReadRequest struct {
@@ -553,8 +562,9 @@ const file_controlplane_v1_attestation_state_proto_rawDesc = "" +
 	"\x0fworkflow_run_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\rworkflowRunId\x12R\n" +
 	"\x11attestation_state\x18\x02 \x01(\v2\x1d.attestation.v1.CraftingStateB\x06\xbaH\x03\xd8\x01\x03R\x10attestationState\x12\x1f\n" +
 	"\vbase_digest\x18\x03 \x01(\tR\n" +
-	"baseDigest\"%\n" +
-	"#AttestationStateServiceSaveResponse\"U\n" +
+	"baseDigest\"=\n" +
+	"#AttestationStateServiceSaveResponse\x12\x16\n" +
+	"\x06digest\x18\x01 \x01(\tR\x06digest\"U\n" +
 	"\"AttestationStateServiceReadRequest\x12/\n" +
 	"\x0fworkflow_run_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\rworkflowRunId\"\xe8\x01\n" +
 	"#AttestationStateServiceReadResponse\x12S\n" +

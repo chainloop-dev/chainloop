@@ -64,6 +64,8 @@ export interface AttestationStateServiceSaveRequest {
 }
 
 export interface AttestationStateServiceSaveResponse {
+  /** digest of the newly saved attestation state for Optimistic Concurrency Control */
+  digest: string;
 }
 
 export interface AttestationStateServiceReadRequest {
@@ -370,11 +372,14 @@ export const AttestationStateServiceSaveRequest = {
 };
 
 function createBaseAttestationStateServiceSaveResponse(): AttestationStateServiceSaveResponse {
-  return {};
+  return { digest: "" };
 }
 
 export const AttestationStateServiceSaveResponse = {
-  encode(_: AttestationStateServiceSaveResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: AttestationStateServiceSaveResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.digest !== "") {
+      writer.uint32(10).string(message.digest);
+    }
     return writer;
   },
 
@@ -385,6 +390,13 @@ export const AttestationStateServiceSaveResponse = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -394,12 +406,13 @@ export const AttestationStateServiceSaveResponse = {
     return message;
   },
 
-  fromJSON(_: any): AttestationStateServiceSaveResponse {
-    return {};
+  fromJSON(object: any): AttestationStateServiceSaveResponse {
+    return { digest: isSet(object.digest) ? String(object.digest) : "" };
   },
 
-  toJSON(_: AttestationStateServiceSaveResponse): unknown {
+  toJSON(message: AttestationStateServiceSaveResponse): unknown {
     const obj: any = {};
+    message.digest !== undefined && (obj.digest = message.digest);
     return obj;
   },
 
@@ -410,9 +423,10 @@ export const AttestationStateServiceSaveResponse = {
   },
 
   fromPartial<I extends Exact<DeepPartial<AttestationStateServiceSaveResponse>, I>>(
-    _: I,
+    object: I,
   ): AttestationStateServiceSaveResponse {
     const message = createBaseAttestationStateServiceSaveResponse();
+    message.digest = object.digest ?? "";
     return message;
   },
 };

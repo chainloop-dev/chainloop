@@ -1,0 +1,17 @@
+all: false
+formatter: goimports
+include-auto-generated: false
+log-level: info
+recursive: false
+require-template-schema-exists: true
+template: testify
+template-schema: "{{.Template}}.schema.json"
+packages:
+  github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "{{.InterfaceName}}.go"
+      pkgname: mocks
+      structname: "{{.InterfaceName}}"
+    interfaces:
+      AttestationStateServiceClient:
