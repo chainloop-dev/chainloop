@@ -185,6 +185,84 @@ func TestValidatePRInfo(t *testing.T) {
 	}
 }
 
+func TestValidatePRInfoV1_2(t *testing.T) {
+	testCases := []struct {
+		name    string
+		data    string
+		wantErr bool
+	}{
+		{
+			name: "valid reviewer with requested and review_status",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "User", "requested": true, "review_status": "COMMENTED"},
+					{"login": "reviewer2", "type": "User", "requested": false, "review_status": "APPROVED"},
+					{"login": "coderabbitai", "type": "Bot", "requested": true}
+				]
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "reviewer missing required requested field fails validation",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "User"}
+				]
+			}`,
+			wantErr: true,
+		},
+		{
+			name: "invalid review_status value",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "User", "review_status": "UNKNOWN_STATE"}
+				]
+			}`,
+			wantErr: true,
+		},
+		{
+			name: "additional property in reviewer not allowed",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"reviewers": [
+					{"login": "reviewer1", "type": "User", "extra": "not allowed"}
+				]
+			}`,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var data interface{}
+			err := json.Unmarshal([]byte(tc.data), &data)
+			require.NoError(t, err)
+
+			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_2)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestValidatePRInfoV1_0BackwardCompat(t *testing.T) {
 	testCases := []struct {
 		name    string
