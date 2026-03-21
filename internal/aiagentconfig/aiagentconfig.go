@@ -60,6 +60,16 @@ type ConfigFile struct {
 	Content string         `json:"content"`
 }
 
+// MCPServer represents a single MCP server entry extracted from configuration.
+type MCPServer struct {
+	Name     string   `json:"name"`
+	Command  string   `json:"command,omitempty"`
+	Args     []string `json:"args,omitempty"`
+	URL      string   `json:"url,omitempty"`
+	EnvKeys  []string `json:"env_keys,omitempty"`
+	Disabled bool     `json:"disabled,omitempty"`
+}
+
 // Data is the AI agent configuration payload
 type Data struct {
 	Agent       Agent        `json:"agent"`
@@ -68,9 +78,9 @@ type Data struct {
 	GitContext  *GitContext  `json:"git_context,omitempty"`
 	ConfigFiles []ConfigFile `json:"config_files"`
 	// Future fields for richer analysis
-	Permissions any `json:"permissions,omitempty"`
-	MCPServers  any `json:"mcp_servers,omitempty"`
-	Subagents   any `json:"subagents,omitempty"`
+	Permissions any         `json:"permissions,omitempty"`
+	MCPServers  []MCPServer `json:"mcp_servers,omitempty"`
+	Subagents   any         `json:"subagents,omitempty"`
 }
 
 // Evidence represents the complete evidence structure for AI agent config

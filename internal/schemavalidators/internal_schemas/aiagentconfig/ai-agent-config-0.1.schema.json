@@ -92,7 +92,41 @@
       "description": "Parsed allow/deny rules from agent settings"
     },
     "mcp_servers": {
-      "description": "MCP server names, URLs, and commands"
+      "type": "array",
+      "description": "Extracted MCP server configurations (env values stripped for security)",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Server name from config map key"
+          },
+          "command": {
+            "type": "string",
+            "description": "Command for stdio transport"
+          },
+          "args": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Arguments for the command"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL for remote/SSE transport"
+          },
+          "env_keys": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Environment variable names (values stripped)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "description": "Whether the server is disabled"
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "subagents": {
       "description": "Subagent names, allowed tools, model overrides"
