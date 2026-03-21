@@ -30,8 +30,10 @@ import (
 // Build reads discovered files and constructs the AI agent config payload.
 // basePath is the base directory, discovered contains files relative to basePath with their kinds.
 // agentName identifies the AI agent (e.g. "claude", "cursor").
+// capturedAt is the timestamp to record in the payload; callers should pass a stable value
+// (e.g. the attestation's initialized_at) so that retries produce an identical digest.
 // gitCtx may be nil if not in a git repository.
-func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext) (*Data, error) {
+func Build(basePath string, discovered []DiscoveredFile, agentName string, capturedAt time.Time, gitCtx *GitContext) (*Data, error) {
 	// Resolve basePath to its real path so symlink comparisons are reliable
 	realRoot, err := filepath.EvalSymlinks(basePath)
 	if err != nil {
@@ -82,7 +84,7 @@ func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCt
 	data := Data{
 		Agent:       Agent{Name: agentName},
 		ConfigHash:  computeCombinedHash(hashes),
-		CapturedAt:  time.Now().UTC().Format(time.RFC3339),
+		CapturedAt:  capturedAt.UTC().Format(time.RFC3339),
 		GitContext:  gitCtx,
 		ConfigFiles: configFiles,
 	}
