@@ -150,10 +150,6 @@ func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBa
 	digestBeforeCollectors := c.CraftingState.UpdateCheckSum
 
 	for _, collector := range c.collectors {
-		if err := c.LoadCraftingState(ctx, attestationID); err != nil {
-			c.Logger.Warn().Err(err).Msg("failed to reload crafting state before running collectors")
-			return
-		}
 		if err := collector.Collect(ctx, c, attestationID, casBackend); err != nil {
 			c.Logger.Warn().Err(err).Str("collector", collector.ID()).Msg("collector failed")
 		}
