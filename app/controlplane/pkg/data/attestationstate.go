@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,9 +52,10 @@ func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID)
 }
 
 // baseDigest, when provided will be used to check that it matches the digest of the state currently in the DB
-// if the digests do not match, the state has been modified and the caller should retry
-func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte, baseDigest string) error {
-	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+// if the digests do not match, the state has been modified and the caller should retry.
+// It returns the digest of the newly saved state.
+func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte, baseDigest string) (string, error) {
+	err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// compared the provided digest with the digest of the state in the DB
 		// TODO: make digest check mandatory on updates
 		if baseDigest != "" {
@@ -84,8 +85,19 @@ func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state 
 		} else if err != nil {
 			return biz.NewErrNotFound("workflow run")
 		}
+
 		return nil
 	})
+	if err != nil {
+		return "", err
+	}
+
+	newDigest, err := digest(state)
+	if err != nil {
+		return "", fmt.Errorf("failed to calculate new digest: %w", err)
+	}
+
+	return newDigest, nil
 }
 
 func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byte, string, error) {

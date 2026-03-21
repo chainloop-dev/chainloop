@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,10 @@ message AttestationStateServiceSaveRequest {
   string base_digest = 3;
 }
 
-message AttestationStateServiceSaveResponse {}
+message AttestationStateServiceSaveResponse {
+  // digest of the newly saved attestation state for Optimistic Concurrency Control
+  string digest = 1;
+}
 
 message AttestationStateServiceReadRequest {
   string workflow_run_id = 1 [(buf.validate.field).string = {min_len: 1}];

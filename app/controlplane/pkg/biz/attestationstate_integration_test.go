@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ func (s *attestationStateTestSuite) TestInitialized() {
 	})
 
 	s.T().Run("the run is initialized", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 		ok, err := s.AttestationState.Initialized(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
 		s.NoError(err)
@@ -70,19 +70,19 @@ func (s *attestationStateTestSuite) TestInitialized() {
 func (s *attestationStateTestSuite) TestSave() {
 	ctx := context.Background()
 	s.Run("run in different workflow causes error", func() {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg2.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg2.ID.String(), s.testState, s.passphrase)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
 	s.Run("the run doesn't exist", func() {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), uuid.NewString(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), uuid.NewString(), s.testState, s.passphrase)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
 
 	s.Run("the run exists", func() {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
@@ -93,7 +93,7 @@ func (s *attestationStateTestSuite) TestSave() {
 	})
 
 	s.Run("it can be overridden", func() {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
@@ -103,7 +103,7 @@ func (s *attestationStateTestSuite) TestSave() {
 		}
 
 		newState := &v1.CraftingState{}
-		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), newState, s.passphrase)
+		_, err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), newState, s.passphrase)
 		s.NoError(err)
 
 		got, err = s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
@@ -120,23 +120,24 @@ func (s *attestationStateTestSuite) TestSave() {
 
 		// Write again passing the base digest
 		update := &v1.CraftingState{Attestation: &v1.Attestation{Annotations: map[string]string{"key": "updated"}}}
-		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(state.Digest))
+		returnedDigest, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(state.Digest))
 		s.NoError(err)
+		s.NotEmpty(returnedDigest)
 
-		// The digest now should be different
+		// The returned digest should match what Read returns
 		updatedState, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
 		s.NoError(err)
 		s.NotEmpty(updatedState.Digest)
 		s.NotEqual(state.Digest, updatedState.Digest)
+		s.Equal(returnedDigest, updatedState.Digest)
 
 		// trying to update passing the wrong base digest should fail with a conflict error
-		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(state.Digest))
+		_, err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(state.Digest))
 		s.Error(err)
 		s.True(biz.IsErrAttestationStateConflict(err))
 
 		// but will not fail if base digest is not passed
-		// trying to update passing the wrong base digest should fail with a conflict error
-		err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(""))
+		_, err = s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), update, s.passphrase, biz.WithAttStateBaseDigest(""))
 		s.NoError(err)
 	})
 }
@@ -144,7 +145,7 @@ func (s *attestationStateTestSuite) TestSave() {
 func (s *attestationStateTestSuite) TestRead() {
 	ctx := context.Background()
 	s.T().Run("can be retrieved with same passphrase", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
@@ -155,7 +156,7 @@ func (s *attestationStateTestSuite) TestRead() {
 	})
 
 	s.T().Run("it fails if they are different passphrases", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), "wrong-passphrase")
@@ -164,11 +165,11 @@ func (s *attestationStateTestSuite) TestRead() {
 	})
 
 	s.T().Run("it fails if the content has been tampered with", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		// tamper directly with the database
-		err = s.Repos.AttestationState.Save(ctx, s.runOrg1.ID, []byte("tampered data modified directly in the DB"), "")
+		_, err = s.Repos.AttestationState.Save(ctx, s.runOrg1.ID, []byte("tampered data modified directly in the DB"), "")
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
@@ -180,7 +181,7 @@ func (s *attestationStateTestSuite) TestRead() {
 func (s *attestationStateTestSuite) TestWorkflowRunLifecycle() {
 	ctx := context.Background()
 	s.T().Run("the state gets cleared when workflow run is set as finished", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		err = s.WorkflowRun.MarkAsFinished(ctx, s.runOrg1.ID.String(), biz.WorkflowRunSuccess, "finished")
@@ -192,7 +193,7 @@ func (s *attestationStateTestSuite) TestWorkflowRunLifecycle() {
 	})
 
 	s.T().Run("or it expires", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		err = s.Repos.WorkflowRunRepo.Expire(ctx, s.runOrg1.ID)
@@ -208,7 +209,7 @@ func (s *attestationStateTestSuite) TestReset() {
 	ctx := context.Background()
 
 	s.T().Run("the run is initialized", func(t *testing.T) {
-		err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
+		_, err := s.AttestationState.Save(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.testState, s.passphrase)
 		s.NoError(err)
 
 		ok, err := s.AttestationState.Initialized(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String())
