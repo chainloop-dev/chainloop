@@ -1409,10 +1409,10 @@ type PolicyGroupAttachment struct {
 	With map[string]string `protobuf:"bytes,2,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// policy names to skip (matched against metadata.name)
 	Skip []string `protobuf:"bytes,3,rep,name=skip,proto3" json:"skip,omitempty"`
-	// Controls whether policy violations act as a gate for every policy in the group.
-	// - true: policy violations are blocking for all policies in this group
-	// - false: policy violations are non-blocking for all policies in this group
-	// - unset: inherit organization-level default behavior, unless a policy attachment sets its own gate
+	// Controls whether policy violations act as a gate for this group.
+	// - true: policy violations are blocking for this policy group
+	// - false: policy violations are non-blocking for this policy group
+	// - unset: inherit organization-level default behavior
 	Gate          *bool `protobuf:"varint,4,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

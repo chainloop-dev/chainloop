@@ -628,10 +628,10 @@ export interface PolicyGroupAttachment {
   /** policy names to skip (matched against metadata.name) */
   skip: string[];
   /**
-   * Controls whether policy violations act as a gate for every policy in the group.
-   * - true: policy violations are blocking for all policies in this group
-   * - false: policy violations are non-blocking for all policies in this group
-   * - unset: inherit organization-level default behavior, unless a policy attachment sets its own gate
+   * Controls whether policy violations act as a gate for this group.
+   * - true: policy violations are blocking for this policy group
+   * - false: policy violations are non-blocking for this policy group
+   * - unset: inherit organization-level default behavior
    */
   gate?: boolean | undefined;
 }
