@@ -112,10 +112,7 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 // grpcStatus is the actual error that might be wrapped in both the status and the error
 func isWrappedErr(grpcStatus *status.Status, target *errors.Error) bool {
 	err := errors.FromError(grpcStatus.Err())
-	// The error might be wrapped since the CLI sometimes returns a wrapped error
-	if errors.Is(err, target) {
-		return true
-	}
-
-	return target.Code == err.Code && err.Message == target.Message
+	// Compare Code, Reason and Message to distinguish between different error types
+	// that share the same Code and Reason (e.g. all UNAUTHORIZED errors have code 401 and reason "UNAUTHORIZED")
+	return err.Code == target.Code && err.Reason == target.Reason && err.Message == target.Message
 }
