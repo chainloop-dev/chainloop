@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -136,18 +136,22 @@ func validateReaderClient(kv *vault.KVv2, pathPrefix string) error {
 	return nil
 }
 
-func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
+func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, opts ...credentials.SaveOption) (string, error) {
 	credsM, err := structToMap(creds)
 	if err != nil {
 		return "", fmt.Errorf("converting struct to map: %w", err)
 	}
 
-	secretName := strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "/")
+	o := credentials.ApplySaveOptions(opts...)
+	secretName := o.SecretName
+	if secretName == "" {
+		secretName = strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "/")
+	}
 	m.logger.Infow("msg", "storing credentials", "path", secretName)
 
 	_, err = m.client.Put(ctx, secretName, credsM)
 	if err != nil {
-		return "", fmt.Errorf("creating secret in Vault: %w", err)
+		return "", fmt.Errorf("storing secret in Vault: %w", err)
 	}
 
 	return secretName, nil

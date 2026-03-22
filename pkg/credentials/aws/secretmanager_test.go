@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	smtypes "github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -198,6 +199,75 @@ func (s *testSuite) TestReadWriteCredentials() {
 			err = m.ReadCredentials(ctx, "invalid", got)
 			assert.Error(err)
 			assert.ErrorIs(err, credentials.ErrNotFound)
+		})
+	}
+}
+
+func (s *testSuite) TestSaveCredentialsUpsert() {
+	assert := assert.New(s.T())
+	creds := &credentials.OCIKeypair{Repo: "r", Username: "u", Password: "p"}
+	existingSecretName := "org/existing-secret"
+
+	testCases := []struct {
+		name          string
+		secretName    string // non-empty = WithExistingSecret upsert
+		awsNotFound   bool   // simulate ResourceNotFoundException on PutSecretValue
+		expectedError bool
+	}{
+		{
+			name:       "new secret — CreateSecret called",
+			secretName: "",
+		},
+		{
+			name:       "upsert existing — PutSecretValue succeeds",
+			secretName: existingSecretName,
+		},
+		{
+			name:        "upsert not found — fallback to CreateSecret",
+			secretName:  existingSecretName,
+			awsNotFound: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			initMockedManager(s)
+			m := s.mockedManager
+			mc, _ := m.client.(*mclient.SecretsManagerIface)
+			ctx := context.Background()
+
+			var saveOpts []credentials.SaveOption
+			if tc.secretName != "" {
+				saveOpts = append(saveOpts, credentials.WithExistingSecret(tc.secretName))
+			}
+
+			switch {
+			case tc.secretName == "":
+				// New secret path: only CreateSecret is called.
+				mc.On("CreateSecret", ctx, mock.Anything).Return(nil, nil)
+			case tc.awsNotFound:
+				// Upsert path: PutSecretValue returns not-found, then CreateSecret.
+				mc.On("PutSecretValue", ctx, mock.Anything).Return(nil, &smtypes.ResourceNotFoundException{})
+				mc.On("CreateSecret", ctx, mock.Anything).Return(nil, nil)
+			default:
+				// Upsert path: PutSecretValue succeeds directly.
+				mc.On("PutSecretValue", ctx, mock.Anything).Return(&secretsmanager.PutSecretValueOutput{}, nil)
+			}
+
+			returned, err := m.SaveCredentials(ctx, orgID, creds, saveOpts...)
+			if tc.expectedError {
+				assert.Error(err)
+				return
+			}
+			assert.NoError(err)
+
+			if tc.secretName != "" {
+				// In-place upsert must return the same path.
+				assert.Equal(tc.secretName, returned)
+			} else {
+				// New path must be auto-generated (non-empty and different from the existing one).
+				assert.NotEmpty(returned)
+			}
 		})
 	}
 }

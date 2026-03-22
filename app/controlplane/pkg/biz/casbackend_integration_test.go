@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -410,7 +410,7 @@ func (s *CASBackendIntegrationTestSuite) TestUpdate() {
 		creds := struct{}{}
 		ctx := context.TODO()
 		s.credsWriter.Mock = mock.Mock{}
-		s.credsWriter.On("SaveCredentials", ctx, s.orgNoBackend.ID, creds).Return("new-secret", nil)
+		s.credsWriter.On("SaveCredentials", ctx, s.orgNoBackend.ID, creds, mock.Anything).Return("new-secret", nil)
 		s.credsWriter.On("ReadCredentials", ctx, "new-secret", mock.Anything).Return(nil)
 		s.backendProvider.On("ValidateAndExtractCredentials", location, mock.Anything).Return(nil, nil)
 		defaultB, err = s.CASBackend.Update(ctx, s.orgNoBackend.ID, defaultB.ID.String(), toPtrS(description), creds, nil, nil, nil)

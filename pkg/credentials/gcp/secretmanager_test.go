@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const defaultOrgID = "test-org"
@@ -74,8 +76,8 @@ func TestCreateCredentials(t *testing.T) {
 	clientMock := gcpmocks.NewSecretsManagerInterface(t)
 	m.client = clientMock
 
-	clientMock.On("CreateSecret", ctx, mock.Anything).Return(&secretmanagerpb.Secret{}, nil).Once()
-	clientMock.On("AddSecretVersion", ctx, mock.Anything).Return(&secretmanagerpb.SecretVersion{}, nil)
+	clientMock.On("CreateSecret", ctx, mock.Anything, mock.Anything).Return(&secretmanagerpb.Secret{}, nil).Once()
+	clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).Return(&secretmanagerpb.SecretVersion{}, nil)
 
 	_, err = m.SaveCredentials(ctx, defaultOrgID, creds)
 	assert.NoError(t, err)
@@ -105,6 +107,78 @@ func TestReadCredentials(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "host", creds.Host)
 	assert.Equal(t, "key", creds.Key)
+}
+
+func TestSaveCredentialsUpsert(t *testing.T) {
+	existingSecretName := "my-existing-secret"
+
+	testCases := []struct {
+		name        string
+		secretName  string // non-empty = WithExistingSecret upsert
+		gcpNotFound bool   // simulate secret container absent in GCP
+	}{
+		{
+			name:       "new secret - CreateSecret then AddSecretVersion",
+			secretName: "",
+		},
+		{
+			name:       "upsert existing - AddSecretVersion succeeds directly",
+			secretName: existingSecretName,
+		},
+		{
+			name:        "upsert not found - AddSecretVersion returns NotFound then CreateSecret + AddSecretVersion",
+			secretName:  existingSecretName,
+			gcpNotFound: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			m := &Manager{projectID: defaultProjectID}
+			m.logger = servicelogger.ScopedHelper(log.NewStdLogger(io.Discard), "credentials/gcp-secrets-manager")
+			clientMock := gcpmocks.NewSecretsManagerInterface(t)
+			m.client = clientMock
+
+			ociCreds := &credentials.OCIKeypair{Repo: "repo", Username: "user", Password: "password"}
+
+			var saveOpts []credentials.SaveOption
+			if tc.secretName != "" {
+				saveOpts = append(saveOpts, credentials.WithExistingSecret(tc.secretName))
+			}
+
+			switch {
+			case tc.secretName == "":
+				// New path: CreateSecret returns a secret, then AddSecretVersion.
+				clientMock.On("CreateSecret", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.Secret{Name: "projects/1234-5678-9012/secrets/generated-id"}, nil).Once()
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.SecretVersion{Name: "v1"}, nil).Once()
+			case tc.gcpNotFound:
+				// Upsert: AddSecretVersion returns NotFound, then CreateSecret, then AddSecretVersion again.
+				notFoundErr := status.Error(codes.NotFound, "secret not found")
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(nil, notFoundErr).Once()
+				clientMock.On("CreateSecret", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.Secret{}, nil).Once()
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.SecretVersion{Name: "v1"}, nil).Once()
+			default:
+				// Upsert: AddSecretVersion succeeds directly (no CreateSecret call).
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.SecretVersion{Name: "v2"}, nil).Once()
+			}
+
+			returned, err := m.SaveCredentials(ctx, defaultOrgID, ociCreds, saveOpts...)
+			assert.NoError(t, err)
+
+			if tc.secretName != "" {
+				assert.Equal(t, tc.secretName, returned, "upsert must return the same secret name")
+			} else {
+				assert.NotEmpty(t, returned)
+			}
+		})
+	}
 }
 
 func TestDeleteCredentials(t *testing.T) {

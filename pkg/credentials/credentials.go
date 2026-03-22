@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,8 +34,35 @@ type ReaderWriter interface {
 	Writer
 }
 
+// SaveOpts holds optional parameters for SaveCredentials.
+type SaveOpts struct {
+	// SecretName when non-empty causes SaveCredentials to upsert at the given path
+	// instead of generating a new UUID-based path.
+	SecretName string
+}
+
+// SaveOption is a functional option for SaveCredentials.
+type SaveOption func(*SaveOpts)
+
+// WithExistingSecret instructs SaveCredentials to upsert at the provided existing
+// secret path. An empty name is a no-op (auto-generate behavior is preserved).
+func WithExistingSecret(name string) SaveOption {
+	return func(o *SaveOpts) { o.SecretName = name }
+}
+
+// ApplySaveOptions applies the given options and returns the resulting SaveOpts.
+func ApplySaveOptions(opts ...SaveOption) SaveOpts {
+	o := SaveOpts{}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&o)
+		}
+	}
+	return o
+}
+
 type Writer interface {
-	SaveCredentials(ctx context.Context, org string, credentials any) (string, error)
+	SaveCredentials(ctx context.Context, org string, credentials any, opts ...SaveOption) (string, error)
 	DeleteCredentials(ctx context.Context, credID string) error
 }
 

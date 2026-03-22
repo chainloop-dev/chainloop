@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -157,6 +157,56 @@ func (s *testSuite) TestSaveCredentials() {
 		s.ErrorIs(err, upstreamErr)
 		s.Empty(got)
 	})
+}
+
+func (s *testSuite) TestSaveCredentialsUpsert() {
+	creds := &credentials.APICreds{Host: "myhost", Key: "mykey"}
+	existingSecretName := "org-existing-secret"
+
+	testCases := []struct {
+		name       string
+		secretName string // non-empty = WithExistingSecret upsert
+	}{
+		{
+			name:       "new secret — auto-generated name",
+			secretName: "",
+		},
+		{
+			name:       "upsert existing — SetSecret called with given name",
+			secretName: existingSecretName,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			ctx := context.Background()
+			secretsRW := mocks.NewSecretsRW(s.T())
+
+			var capturedName string
+			secretsRW.On("SetSecret", ctx, mock.Anything, mock.Anything, mock.Anything).
+				Return(azsecrets.SetSecretResponse{}, nil).
+				Run(func(args mock.Arguments) {
+					capturedName = args.Get(1).(string)
+				})
+
+			m := &Manager{client: secretsRW, secretPrefix: "my-prefix"}
+
+			var saveOpts []credentials.SaveOption
+			if tc.secretName != "" {
+				saveOpts = append(saveOpts, credentials.WithExistingSecret(tc.secretName))
+			}
+
+			returned, err := m.SaveCredentials(ctx, "my-org", creds, saveOpts...)
+			s.NoError(err)
+			s.Equal(capturedName, returned)
+
+			if tc.secretName != "" {
+				s.Equal(tc.secretName, returned, "upsert must return the existing secret name unchanged")
+			} else {
+				s.NotEmpty(returned)
+			}
+		})
+	}
 }
 
 func (s *testSuite) TestReadCredentials() {

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -429,7 +429,11 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 	credentialsUpdated := creds != nil
 	// We want to rotate credentials
 	if creds != nil {
-		secretName, err = uc.credsRW.SaveCredentials(ctx, orgID, creds)
+		var saveOpts []credentials.SaveOption
+		if before.SecretName != "" {
+			saveOpts = append(saveOpts, credentials.WithExistingSecret(before.SecretName))
+		}
+		secretName, err = uc.credsRW.SaveCredentials(ctx, orgID, creds, saveOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("storing the credentials: %w", err)
 		}
