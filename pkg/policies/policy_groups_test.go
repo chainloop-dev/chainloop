@@ -40,6 +40,10 @@ func TestPolicyGroups(t *testing.T) {
 	suite.Run(t, new(groupsTestSuite))
 }
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func (s *groupsTestSuite) TestLoadGroupSpec() {
 	var cases = []struct {
 		name             string
@@ -646,4 +650,96 @@ func (s *groupsTestSuite) TestAttestationPhaseFilteringInGroups() {
 			s.Len(res, tc.npolicies)
 		})
 	}
+}
+
+func (s *groupsTestSuite) TestInheritGroupGate() {
+	policyGate := false
+	groupGate := true
+
+	cases := []struct {
+		name         string
+		policyAtt    *v1.PolicyAttachment
+		groupAtt     *v1.PolicyGroupAttachment
+		expectedGate *bool
+	}{
+		{
+			name:         "unset group gate leaves policy unchanged",
+			policyAtt:    &v1.PolicyAttachment{},
+			groupAtt:     &v1.PolicyGroupAttachment{},
+			expectedGate: nil,
+		},
+		{
+			name:         "group gate sets policy gate when policy gate unset",
+			policyAtt:    &v1.PolicyAttachment{},
+			groupAtt:     &v1.PolicyGroupAttachment{Gate: &groupGate},
+			expectedGate: boolPtr(true),
+		},
+		{
+			name: "group gate overrides policy gate",
+			policyAtt: &v1.PolicyAttachment{
+				Gate: &policyGate,
+			},
+			groupAtt:     &v1.PolicyGroupAttachment{Gate: &groupGate},
+			expectedGate: boolPtr(true),
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			got := inheritGroupGate(tc.policyAtt, tc.groupAtt)
+
+			if tc.expectedGate == nil {
+				s.Nil(got.Gate)
+				return
+			}
+
+			s.Require().NotNil(got.Gate)
+			s.Equal(*tc.expectedGate, got.GetGate())
+		})
+	}
+}
+
+func (s *groupsTestSuite) TestVerifyMaterialInheritsGroupGate() {
+	schema := &v1.CraftingSchema{
+		PolicyGroups: []*v1.PolicyGroupAttachment{
+			{
+				Ref:  "file://testdata/policy_group_multikind.yaml",
+				Gate: boolPtr(true),
+			},
+		},
+	}
+
+	material := &api.Attestation_Material{
+		M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{
+			Content: []byte(`{"specVersion": "1.4"}`),
+		}},
+		MaterialType: v1.CraftingSchema_Material_OPENVEX,
+		InlineCas:    true,
+	}
+
+	verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger, WithDefaultGate(false))
+	evs, err := verifier.VerifyMaterial(context.Background(), material, "")
+
+	s.Require().NoError(err)
+	s.Len(evs, 1)
+	s.True(evs[0].GetGate())
+}
+
+func (s *groupsTestSuite) TestVerifyStatementInheritsGroupGate() {
+	schema := &v1.CraftingSchema{
+		PolicyGroups: []*v1.PolicyGroupAttachment{
+			{
+				Ref:  "file://testdata/policy_group.yaml",
+				Gate: boolPtr(true),
+			},
+		},
+	}
+
+	verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger, WithDefaultGate(false))
+	statement := loadStatement("testdata/statement.json", &s.Suite)
+
+	evs, err := verifier.VerifyStatement(context.Background(), statement)
+	s.Require().NoError(err)
+	s.Len(evs, 1)
+	s.True(evs[0].GetGate())
 }

@@ -91,7 +91,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 				return nil, NewPolicyError(err)
 			}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, policyAtt, subject,
+			ev, err := pgv.evaluatePolicyAttachment(ctx, inheritGroupGate(policyAtt, groupAtt), subject,
 				&evalOpts{kind: material.MaterialType, name: material.GetId(), bindings: groupArgs},
 			)
 			if err != nil {
@@ -154,7 +154,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 				return nil, NewPolicyError(err)
 			}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material,
+			ev, err := pgv.evaluatePolicyAttachment(ctx, inheritGroupGate(attachment, groupAtt), material,
 				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, bindings: groupArgs},
 			)
 			if err != nil {
@@ -179,6 +179,18 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	}
 
 	return result, nil
+}
+
+func inheritGroupGate(policyAtt *v1.PolicyAttachment, groupAtt *v1.PolicyGroupAttachment) *v1.PolicyAttachment {
+	if policyAtt == nil || groupAtt == nil || groupAtt.Gate == nil {
+		return policyAtt
+	}
+
+	cloned := *policyAtt
+	groupGate := groupAtt.GetGate()
+	cloned.Gate = &groupGate
+
+	return &cloned
 }
 
 type LoadPolicyGroupOptions struct {

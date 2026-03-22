@@ -4,6 +4,10 @@
   "additionalProperties": false,
   "description": "Represents a group attachment in a contract",
   "properties": {
+    "gate": {
+      "description": "Controls whether policy violations act as a gate for every policy in the group.\n - true: policy violations are blocking for all policies in this group\n - false: policy violations are non-blocking for all policies in this group\n - unset: inherit organization-level default behavior, unless a policy attachment sets its own gate",
+      "type": "boolean"
+    },
     "ref": {
       "description": "Group reference, it might be an URL or a provider reference",
       "minLength": 1,

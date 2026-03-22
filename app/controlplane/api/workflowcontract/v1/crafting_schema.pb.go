@@ -1408,7 +1408,12 @@ type PolicyGroupAttachment struct {
 	// group arguments
 	With map[string]string `protobuf:"bytes,2,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// policy names to skip (matched against metadata.name)
-	Skip          []string `protobuf:"bytes,3,rep,name=skip,proto3" json:"skip,omitempty"`
+	Skip []string `protobuf:"bytes,3,rep,name=skip,proto3" json:"skip,omitempty"`
+	// Controls whether policy violations act as a gate for every policy in the group.
+	// - true: policy violations are blocking for all policies in this group
+	// - false: policy violations are non-blocking for all policies in this group
+	// - unset: inherit organization-level default behavior, unless a policy attachment sets its own gate
+	Gate          *bool `protobuf:"varint,4,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1462,6 +1467,13 @@ func (x *PolicyGroupAttachment) GetSkip() []string {
 		return x.Skip
 	}
 	return nil
+}
+
+func (x *PolicyGroupAttachment) GetGate() bool {
+	if x != nil && x.Gate != nil {
+		return *x.Gate
+	}
+	return false
 }
 
 // Represents a group or policies
@@ -2058,14 +2070,16 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x04path\x18\x01 \x01(\tB\x02\x18\x01H\x00R\x04path\x12\x1c\n" +
 	"\bembedded\x18\x02 \x01(\tH\x00R\bembedded\x12\x12\n" +
 	"\x03ref\x18\x03 \x01(\tH\x00R\x03refB\x0f\n" +
-	"\x06source\x12\x05\xbaH\x02\b\x01\"\xc9\x01\n" +
+	"\x06source\x12\x05\xbaH\x02\b\x01\"\xeb\x01\n" +
 	"\x15PolicyGroupAttachment\x12\x19\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03ref\x12H\n" +
 	"\x04with\x18\x02 \x03(\v24.workflowcontract.v1.PolicyGroupAttachment.WithEntryR\x04with\x12\x12\n" +
-	"\x04skip\x18\x03 \x03(\tR\x04skip\x1a7\n" +
+	"\x04skip\x18\x03 \x03(\tR\x04skip\x12\x17\n" +
+	"\x04gate\x18\x04 \x01(\bH\x00R\x04gate\x88\x01\x01\x1a7\n" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc7\a\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\a\n" +
+	"\x05_gate\"\xc7\a\n" +
 	"\vPolicyGroup\x12[\n" +
 	"\vapi_version\x18\x01 \x01(\tB:\xbaH7r5R\x10chainloop.dev/v1R!workflowcontract.chainloop.dev/v1R\n" +
 	"apiVersion\x12&\n" +
@@ -2202,6 +2216,7 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 		(*AutoMatch_Embedded)(nil),
 		(*AutoMatch_Ref)(nil),
 	}
+	file_workflowcontract_v1_crafting_schema_proto_msgTypes[12].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

@@ -627,6 +627,13 @@ export interface PolicyGroupAttachment {
   with: { [key: string]: string };
   /** policy names to skip (matched against metadata.name) */
   skip: string[];
+  /**
+   * Controls whether policy violations act as a gate for every policy in the group.
+   * - true: policy violations are blocking for all policies in this group
+   * - false: policy violations are non-blocking for all policies in this group
+   * - unset: inherit organization-level default behavior, unless a policy attachment sets its own gate
+   */
+  gate?: boolean | undefined;
 }
 
 export interface PolicyGroupAttachment_WithEntry {
@@ -2448,7 +2455,7 @@ export const AutoMatch = {
 };
 
 function createBasePolicyGroupAttachment(): PolicyGroupAttachment {
-  return { ref: "", with: {}, skip: [] };
+  return { ref: "", with: {}, skip: [], gate: undefined };
 }
 
 export const PolicyGroupAttachment = {
@@ -2461,6 +2468,9 @@ export const PolicyGroupAttachment = {
     });
     for (const v of message.skip) {
       writer.uint32(26).string(v!);
+    }
+    if (message.gate !== undefined) {
+      writer.uint32(32).bool(message.gate);
     }
     return writer;
   },
@@ -2496,6 +2506,13 @@ export const PolicyGroupAttachment = {
 
           message.skip.push(reader.string());
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.gate = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2515,6 +2532,7 @@ export const PolicyGroupAttachment = {
         }, {})
         : {},
       skip: Array.isArray(object?.skip) ? object.skip.map((e: any) => String(e)) : [],
+      gate: isSet(object.gate) ? Boolean(object.gate) : undefined,
     };
   },
 
@@ -2532,6 +2550,7 @@ export const PolicyGroupAttachment = {
     } else {
       obj.skip = [];
     }
+    message.gate !== undefined && (obj.gate = message.gate);
     return obj;
   },
 
@@ -2549,6 +2568,7 @@ export const PolicyGroupAttachment = {
       return acc;
     }, {});
     message.skip = object.skip?.map((e) => e) || [];
+    message.gate = object.gate ?? undefined;
     return message;
   },
 };
