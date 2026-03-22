@@ -265,7 +265,7 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 }
 
 // TestUpdateRotatesCredentialsInPlace verifies that Update() passes the existing SecretName
-// as a WithSecretName option so the credential store upserts in-place instead of
+// as a WithExistingSecret option so the credential store upserts in-place instead of
 // creating a new entry.
 func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 	ctx := context.Background()
@@ -274,22 +274,22 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 	newCreds := &credentials.OCIKeypair{Repo: "r", Username: "u", Password: "p"}
 
 	tests := []struct {
-		name               string
-		existingSecret     string
-		wantWithSecretName bool   // whether the SaveOption should carry the existing secret name
-		returnedSecretName string // what SaveCredentials mock returns
+		name                   string
+		existingSecret         string
+		wantWithExistingSecret bool   // whether the SaveOption should carry the existing secret name
+		returnedSecretName     string // what SaveCredentials mock returns
 	}{
 		{
-			name:               "existing secret name is forwarded as WithSecretName",
-			existingSecret:     existingSecretName,
-			wantWithSecretName: true,
-			returnedSecretName: existingSecretName,
+			name:                   "existing secret name is forwarded as WithExistingSecret",
+			existingSecret:         existingSecretName,
+			wantWithExistingSecret: true,
+			returnedSecretName:     existingSecretName,
 		},
 		{
-			name:               "empty secret name generates a new path",
-			existingSecret:     "",
-			wantWithSecretName: false,
-			returnedSecretName: "new-secret-path",
+			name:                   "empty secret name generates a new path",
+			existingSecret:         "",
+			wantWithExistingSecret: false,
+			returnedSecretName:     "new-secret-path",
 		},
 	}
 
@@ -308,11 +308,12 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 
 			// Step 2: SaveCredentials — capture SaveOption(s) to verify the secret name.
 			var capturedSecretName string
+			var optWasPassed bool
 			saveMatcher := mock.MatchedBy(func(_ interface{}) bool { return true })
 			s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), saveMatcher, mock.Anything).
 				Run(func(args mock.Arguments) {
-					// args[3] is the first SaveOption when opts is non-empty.
 					if len(args) > 3 {
+						optWasPassed = true
 						if opt, ok := args.Get(3).(credentials.SaveOption); ok {
 							o := credentials.ApplySaveOptions(opt)
 							capturedSecretName = o.SecretName
@@ -320,7 +321,7 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 					}
 				}).Return(tc.returnedSecretName, nil).Maybe()
 
-			// Fallback for no-opts case (empty existing secret → no WithSecretName).
+			// Fallback for no-opts case (empty existing secret → no WithExistingSecret).
 			s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), saveMatcher).
 				Return(tc.returnedSecretName, nil).Maybe()
 
@@ -341,11 +342,12 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 			s.Require().NoError(err)
 			s.Equal(tc.returnedSecretName, got.SecretName)
 
-			if tc.wantWithSecretName {
+			if tc.wantWithExistingSecret {
+				s.True(optWasPassed, "expected SaveOption to be passed to SaveCredentials")
 				s.Equal(existingSecretName, capturedSecretName,
-					"expected WithSecretName(%q) to be forwarded to SaveCredentials", existingSecretName)
+					"expected WithExistingSecret(%q) to be forwarded to SaveCredentials", existingSecretName)
 			} else {
-				s.Empty(capturedSecretName, "expected no WithSecretName when existingSecret is empty")
+				s.False(optWasPassed, "expected no SaveOption to be passed to SaveCredentials")
 			}
 		})
 	}

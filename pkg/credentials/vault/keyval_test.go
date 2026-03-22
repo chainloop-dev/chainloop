@@ -129,7 +129,7 @@ func (s *testSuite) TestReadWriteCredentials() {
 	assert.ErrorIs(err, credentials.ErrNotFound)
 }
 
-// TestSaveCredentialsUpsert verifies that WithSecretName causes SaveCredentials to write
+// TestSaveCredentialsUpsert verifies that WithExistingSecret causes SaveCredentials to write
 // to the provided path (overwriting if it already exists) instead of generating a new UUID.
 func (s *testSuite) TestSaveCredentialsUpsert() {
 	assert := assert.New(s.T())
@@ -137,7 +137,7 @@ func (s *testSuite) TestSaveCredentialsUpsert() {
 
 	testCases := []struct {
 		name             string
-		useExisting      bool // whether to pass WithSecretName
+		useExisting      bool // whether to pass WithExistingSecret
 		expectedSamePath bool
 	}{
 		{"new secret generates unique path", false, false},
@@ -160,7 +160,7 @@ func (s *testSuite) TestSaveCredentialsUpsert() {
 
 			var saveOpts []credentials.SaveOption
 			if tc.useExisting {
-				saveOpts = append(saveOpts, credentials.WithSecretName(existingPath))
+				saveOpts = append(saveOpts, credentials.WithExistingSecret(existingPath))
 			}
 
 			returnedPath, err := m.SaveCredentials(context.Background(), orgID, updatedCreds, saveOpts...)

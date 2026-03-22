@@ -431,7 +431,7 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 	if creds != nil {
 		var saveOpts []credentials.SaveOption
 		if before.SecretName != "" {
-			saveOpts = append(saveOpts, credentials.WithSecretName(before.SecretName))
+			saveOpts = append(saveOpts, credentials.WithExistingSecret(before.SecretName))
 		}
 		secretName, err = uc.credsRW.SaveCredentials(ctx, orgID, creds, saveOpts...)
 		if err != nil {

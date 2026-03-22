@@ -165,7 +165,7 @@ func (s *testSuite) TestSaveCredentialsUpsert() {
 
 	testCases := []struct {
 		name       string
-		secretName string // non-empty = WithSecretName upsert
+		secretName string // non-empty = WithExistingSecret upsert
 	}{
 		{
 			name:       "new secret — auto-generated name",
@@ -193,7 +193,7 @@ func (s *testSuite) TestSaveCredentialsUpsert() {
 
 			var saveOpts []credentials.SaveOption
 			if tc.secretName != "" {
-				saveOpts = append(saveOpts, credentials.WithSecretName(tc.secretName))
+				saveOpts = append(saveOpts, credentials.WithExistingSecret(tc.secretName))
 			}
 
 			returned, err := m.SaveCredentials(ctx, "my-org", creds, saveOpts...)

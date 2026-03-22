@@ -76,8 +76,8 @@ func TestCreateCredentials(t *testing.T) {
 	clientMock := gcpmocks.NewSecretsManagerInterface(t)
 	m.client = clientMock
 
-	clientMock.On("CreateSecret", ctx, mock.Anything).Return(&secretmanagerpb.Secret{}, nil).Once()
-	clientMock.On("AddSecretVersion", ctx, mock.Anything).Return(&secretmanagerpb.SecretVersion{}, nil)
+	clientMock.On("CreateSecret", ctx, mock.Anything, mock.Anything).Return(&secretmanagerpb.Secret{}, nil).Once()
+	clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).Return(&secretmanagerpb.SecretVersion{}, nil)
 
 	_, err = m.SaveCredentials(ctx, defaultOrgID, creds)
 	assert.NoError(t, err)
@@ -114,19 +114,19 @@ func TestSaveCredentialsUpsert(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		secretName  string // non-empty = WithSecretName upsert
+		secretName  string // non-empty = WithExistingSecret upsert
 		gcpNotFound bool   // simulate secret container absent in GCP
 	}{
 		{
-			name:       "new secret — CreateSecret then AddSecretVersion",
+			name:       "new secret - CreateSecret then AddSecretVersion",
 			secretName: "",
 		},
 		{
-			name:       "upsert existing — CreateSecret AlreadyExists, AddSecretVersion only",
+			name:       "upsert existing - AddSecretVersion succeeds directly",
 			secretName: existingSecretName,
 		},
 		{
-			name:        "upsert not found — CreateSecret then AddSecretVersion",
+			name:        "upsert not found - AddSecretVersion returns NotFound then CreateSecret + AddSecretVersion",
 			secretName:  existingSecretName,
 			gcpNotFound: true,
 		},
@@ -144,27 +144,29 @@ func TestSaveCredentialsUpsert(t *testing.T) {
 
 			var saveOpts []credentials.SaveOption
 			if tc.secretName != "" {
-				saveOpts = append(saveOpts, credentials.WithSecretName(tc.secretName))
+				saveOpts = append(saveOpts, credentials.WithExistingSecret(tc.secretName))
 			}
 
 			switch {
 			case tc.secretName == "":
 				// New path: CreateSecret returns a secret, then AddSecretVersion.
-				clientMock.On("CreateSecret", ctx, mock.Anything).
+				clientMock.On("CreateSecret", ctx, mock.Anything, mock.Anything).
 					Return(&secretmanagerpb.Secret{Name: "projects/1234-5678-9012/secrets/generated-id"}, nil).Once()
-				clientMock.On("AddSecretVersion", ctx, mock.Anything).
-					Return(&secretmanagerpb.SecretVersion{Name: "…/versions/1"}, nil)
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.SecretVersion{Name: "v1"}, nil).Once()
 			case tc.gcpNotFound:
-				// Upsert: secret container absent → CreateSecret succeeds → AddSecretVersion.
-				clientMock.On("CreateSecret", ctx, mock.Anything).Return(&secretmanagerpb.Secret{}, nil).Once()
-				clientMock.On("AddSecretVersion", ctx, mock.Anything).
-					Return(&secretmanagerpb.SecretVersion{Name: "…/versions/1"}, nil)
+				// Upsert: AddSecretVersion returns NotFound, then CreateSecret, then AddSecretVersion again.
+				notFoundErr := status.Error(codes.NotFound, "secret not found")
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(nil, notFoundErr).Once()
+				clientMock.On("CreateSecret", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.Secret{}, nil).Once()
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.SecretVersion{Name: "v1"}, nil).Once()
 			default:
-				// Upsert: secret container exists → CreateSecret returns AlreadyExists → AddSecretVersion only.
-				alreadyExistsErr := status.Error(codes.AlreadyExists, "secret already exists")
-				clientMock.On("CreateSecret", ctx, mock.Anything).Return(nil, alreadyExistsErr).Once()
-				clientMock.On("AddSecretVersion", ctx, mock.Anything).
-					Return(&secretmanagerpb.SecretVersion{Name: "…/versions/2"}, nil)
+				// Upsert: AddSecretVersion succeeds directly (no CreateSecret call).
+				clientMock.On("AddSecretVersion", ctx, mock.Anything, mock.Anything).
+					Return(&secretmanagerpb.SecretVersion{Name: "v2"}, nil).Once()
 			}
 
 			returned, err := m.SaveCredentials(ctx, defaultOrgID, ociCreds, saveOpts...)

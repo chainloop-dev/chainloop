@@ -34,7 +34,7 @@ type ReaderWriter interface {
 	Writer
 }
 
-// SaveOpts holds optional parameters for SaveCredentials. Exported for use by sub-packages.
+// SaveOpts holds optional parameters for SaveCredentials.
 type SaveOpts struct {
 	// SecretName when non-empty causes SaveCredentials to upsert at the given path
 	// instead of generating a new UUID-based path.
@@ -44,9 +44,9 @@ type SaveOpts struct {
 // SaveOption is a functional option for SaveCredentials.
 type SaveOption func(*SaveOpts)
 
-// WithSecretName instructs SaveCredentials to upsert at the provided path.
-// An empty name is a no-op (auto-generate behavior is preserved).
-func WithSecretName(name string) SaveOption {
+// WithExistingSecret instructs SaveCredentials to upsert at the provided existing
+// secret path. An empty name is a no-op (auto-generate behavior is preserved).
+func WithExistingSecret(name string) SaveOption {
 	return func(o *SaveOpts) { o.SecretName = name }
 }
 
@@ -54,7 +54,9 @@ func WithSecretName(name string) SaveOption {
 func ApplySaveOptions(opts ...SaveOption) SaveOpts {
 	o := SaveOpts{}
 	for _, opt := range opts {
-		opt(&o)
+		if opt != nil {
+			opt(&o)
+		}
 	}
 	return o
 }

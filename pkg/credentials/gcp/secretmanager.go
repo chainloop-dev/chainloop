@@ -85,7 +85,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}, nil
 }
 
-// SaveCredentials saves credentials. If opts includes WithSecretName, upserts at the given path.
+// SaveCredentials saves credentials. If opts includes WithExistingSecret, upserts at the given path.
 func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, opts ...credentials.SaveOption) (string, error) {
 	// store creds in key-value pair
 	c, err := json.Marshal(creds)
@@ -113,12 +113,24 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 
 	var parent string
 	if o.SecretName != "" {
-		// Upsert: attempt to create the container; AlreadyExists means it's already there.
+		// Upsert: try adding a new version first (only needs secretmanager.versions.add).
 		parent = fmt.Sprintf("projects/%s/secrets/%s", m.projectID, secretID)
-		_, err = m.client.CreateSecret(ctx, secretReq)
-		if err != nil && !isAlreadyExistsErr(err) {
+		v, addErr := m.client.AddSecretVersion(ctx, &secretmanagerpb.AddSecretVersionRequest{
+			Parent:  parent,
+			Payload: &secretmanagerpb.SecretPayload{Data: c},
+		})
+		if addErr == nil {
+			m.logger.Infow("msg", "added new secret version", "secretID", secretID, "versionID", v.Name)
+			return secretID, nil
+		}
+		if !isNotFoundErr(addErr) {
+			return "", fmt.Errorf("adding secret version in GCP: %w", addErr)
+		}
+		// Secret container doesn't exist yet — create it and fall through to AddSecretVersion below.
+		if _, err = m.client.CreateSecret(ctx, secretReq); err != nil {
 			return "", fmt.Errorf("creating secret in GCP: %w", err)
 		}
+		m.logger.Infow("msg", "created new secret", "secretID", secretID)
 	} else {
 		// New secret: create the container and use the canonical name from the API response.
 		secret, createErr := m.client.CreateSecret(ctx, secretReq)
@@ -142,10 +154,10 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 	return secretID, nil
 }
 
-// isAlreadyExistsErr returns true when the error is a gRPC AlreadyExists status.
-func isAlreadyExistsErr(err error) bool {
+// isNotFoundErr returns true when the error is a gRPC NotFound status.
+func isNotFoundErr(err error) bool {
 	s, ok := status.FromError(err)
-	return ok && s.Code() == codes.AlreadyExists
+	return ok && s.Code() == codes.NotFound
 }
 
 // ReadCredentials reads the latest version of the credentials

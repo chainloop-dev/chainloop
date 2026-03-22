@@ -210,7 +210,7 @@ func (s *testSuite) TestSaveCredentialsUpsert() {
 
 	testCases := []struct {
 		name          string
-		secretName    string // non-empty = WithSecretName upsert
+		secretName    string // non-empty = WithExistingSecret upsert
 		awsNotFound   bool   // simulate ResourceNotFoundException on PutSecretValue
 		expectedError bool
 	}{
@@ -238,7 +238,7 @@ func (s *testSuite) TestSaveCredentialsUpsert() {
 
 			var saveOpts []credentials.SaveOption
 			if tc.secretName != "" {
-				saveOpts = append(saveOpts, credentials.WithSecretName(tc.secretName))
+				saveOpts = append(saveOpts, credentials.WithExistingSecret(tc.secretName))
 			}
 
 			switch {
