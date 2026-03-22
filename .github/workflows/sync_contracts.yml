@@ -18,7 +18,7 @@ jobs:
       CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Install Chainloop
         run: |
           curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s

@@ -21,7 +21,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install Chainloop
         run: |
@@ -33,7 +33,7 @@ jobs:
 
       - name: Generate a token
         id: generate-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.CHAINLOOP_GATHERER_APP_ID }}
           private-key: ${{ secrets.GATHERER_APP_PRIVATE_KEY }}
