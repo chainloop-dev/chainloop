@@ -19,13 +19,15 @@ const (
 	// EvidenceID is the identifier for the PR/MR info material type
 	EvidenceID = "CHAINLOOP_PR_INFO"
 	// EvidenceSchemaURL is the URL to the JSON schema for PR/MR info
-	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json"
+	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json"
 )
 
 // Reviewer represents a reviewer of the PR/MR
 type Reviewer struct {
-	Login string `json:"login" jsonschema:"required,description=Username of the reviewer"`
-	Type  string `json:"type" jsonschema:"required,enum=User,enum=Bot,enum=unknown,description=Account type of the reviewer"`
+	Login        string `json:"login" jsonschema:"required,description=Username of the reviewer"`
+	Type         string `json:"type" jsonschema:"required,enum=User,enum=Bot,enum=unknown,description=Account type of the reviewer"`
+	Requested    bool   `json:"requested" jsonschema:"required,description=Whether the reviewer was explicitly requested to review"`
+	ReviewStatus string `json:"review_status,omitempty" jsonschema:"enum=APPROVED,enum=CHANGES_REQUESTED,enum=COMMENTED,enum=DISMISSED,enum=PENDING,description=The reviewer's current review state if they have submitted a review"`
 }
 
 // Data represents the data payload of the PR/MR info evidence
