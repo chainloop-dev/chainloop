@@ -28,6 +28,7 @@ import (
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type PolicyGroupVerifier struct {
@@ -186,11 +187,11 @@ func inheritGroupGate(policyAtt *v1.PolicyAttachment, groupAtt *v1.PolicyGroupAt
 		return policyAtt
 	}
 
-	cloned := *policyAtt
+	cloned := proto.Clone(policyAtt).(*v1.PolicyAttachment)
 	groupGate := groupAtt.GetGate()
 	cloned.Gate = &groupGate
 
-	return &cloned
+	return cloned
 }
 
 type LoadPolicyGroupOptions struct {
