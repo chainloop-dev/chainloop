@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -83,48 +85,83 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}, nil
 }
 
-// SaveCredentials saves credentials
-func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
+// SaveCredentials saves credentials. If opts includes WithSecretName, upserts at the given path.
+func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, opts ...credentials.SaveOption) (string, error) {
 	// store creds in key-value pair
 	c, err := json.Marshal(creds)
 	if err != nil {
 		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
-	secretID := strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "-")
+	o := credentials.ApplySaveOptions(opts)
+	secretID := o.SecretName
+	if secretID == "" {
+		secretID = strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "-")
+	}
 
-	// first create the secret itself
-	createSecretReq := &secretmanagerpb.CreateSecretRequest{
-		Parent:   fmt.Sprintf("projects/%s", m.projectID),
-		SecretId: secretID,
-		Secret: &secretmanagerpb.Secret{
-			Replication: &secretmanagerpb.Replication{
-				Replication: &secretmanagerpb.Replication_Automatic_{
-					Automatic: &secretmanagerpb.Replication_Automatic{},
+	parent := fmt.Sprintf("projects/%s/secrets/%s", m.projectID, secretID)
+
+	if o.SecretName != "" {
+		// Upsert path: check if secret container exists
+		_, err = m.client.GetSecret(ctx, &secretmanagerpb.GetSecretRequest{Name: parent})
+		if isNotFoundErr(err) {
+			// Secret does not exist, create the container first
+			_, err = m.client.CreateSecret(ctx, &secretmanagerpb.CreateSecretRequest{
+				Parent:   fmt.Sprintf("projects/%s", m.projectID),
+				SecretId: secretID,
+				Secret: &secretmanagerpb.Secret{
+					Replication: &secretmanagerpb.Replication{
+						Replication: &secretmanagerpb.Replication_Automatic_{
+							Automatic: &secretmanagerpb.Replication_Automatic{},
+						},
+					},
+				},
+			})
+			if err != nil {
+				return "", fmt.Errorf("creating secret in GCP: %w", err)
+			}
+			m.logger.Infow("msg", "created new secret for upsert", "secretID", secretID)
+		} else if err != nil {
+			return "", fmt.Errorf("checking secret existence in GCP: %w", err)
+		}
+	} else {
+		// New secret path: create the container
+		secret, err := m.client.CreateSecret(ctx, &secretmanagerpb.CreateSecretRequest{
+			Parent:   fmt.Sprintf("projects/%s", m.projectID),
+			SecretId: secretID,
+			Secret: &secretmanagerpb.Secret{
+				Replication: &secretmanagerpb.Replication{
+					Replication: &secretmanagerpb.Replication_Automatic_{
+						Automatic: &secretmanagerpb.Replication_Automatic{},
+					},
 				},
 			},
-		},
+		})
+		if err != nil {
+			return "", fmt.Errorf("creating secret in GCP: %w", err)
+		}
+		// Use the fully-qualified name returned by CreateSecret
+		parent = secret.Name
+		m.logger.Infow("msg", "created new secret", "secretID", secretID)
 	}
-	secret, err := m.client.CreateSecret(ctx, createSecretReq)
-	if err != nil {
-		return "", fmt.Errorf("creating secret in GCP: %w", err)
-	}
-	m.logger.Infow("msg", "created new secret", "secretID", secretID)
 
-	// once the secret is created store it as the newest version
-	addSecretVersionReq := &secretmanagerpb.AddSecretVersionRequest{
-		Parent: secret.Name,
-		Payload: &secretmanagerpb.SecretPayload{
-			Data: c,
-		},
-	}
-	v, err := m.client.AddSecretVersion(ctx, addSecretVersionReq)
+	// Add a new version with the credential payload
+	v, err := m.client.AddSecretVersion(ctx, &secretmanagerpb.AddSecretVersionRequest{
+		Parent:  parent,
+		Payload: &secretmanagerpb.SecretPayload{Data: c},
+	})
 	if err != nil {
 		return "", fmt.Errorf("creating secret version in GCP: %w", err)
 	}
 	m.logger.Infow("msg", "added new secret version", "secretID", secretID, "versionID", v.Name)
 
 	return secretID, nil
+}
+
+// isNotFoundErr returns true when the error is a gRPC NotFound status.
+func isNotFoundErr(err error) bool {
+	s, ok := status.FromError(err)
+	return ok && s.Code() == codes.NotFound
 }
 
 // ReadCredentials reads the latest version of the credentials

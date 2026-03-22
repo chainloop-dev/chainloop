@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -259,6 +259,93 @@ func (s *casBackendTestSuite) TestNewCASBackendUseCase() {
 				assert.NoError(err)
 				assert.NotNil(useCase)
 				assert.Equal(tc.wantSize, useCase.MaxBytesDefault)
+			}
+		})
+	}
+}
+
+// TestUpdateRotatesCredentialsInPlace verifies that Update() passes the existing SecretName
+// as a WithSecretName option so the credential store upserts in-place instead of
+// creating a new entry.
+func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
+	ctx := context.Background()
+	existingSecretName := "org/existing-secret-path"
+	backendID := uuid.New()
+	newCreds := &credentials.OCIKeypair{Repo: "r", Username: "u", Password: "p"}
+
+	tests := []struct {
+		name               string
+		existingSecret     string
+		wantWithSecretName bool   // whether the SaveOption should carry the existing secret name
+		returnedSecretName string // what SaveCredentials mock returns
+	}{
+		{
+			name:               "existing secret name is forwarded as WithSecretName",
+			existingSecret:     existingSecretName,
+			wantWithSecretName: true,
+			returnedSecretName: existingSecretName,
+		},
+		{
+			name:               "empty secret name generates a new path",
+			existingSecret:     "",
+			wantWithSecretName: false,
+			returnedSecretName: "new-secret-path",
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			s.resetMock()
+
+			before := &biz.CASBackend{
+				ID:         backendID,
+				SecretName: tc.existingSecret,
+				Provider:   backendType,
+			}
+
+			// Step 1: FindByIDInOrg returns the existing backend (consumed once).
+			s.repo.On("FindByIDInOrg", ctx, s.validUUID, backendID).Return(before, nil).Once()
+
+			// Step 2: SaveCredentials — capture SaveOption(s) to verify the secret name.
+			var capturedSecretName string
+			saveMatcher := mock.MatchedBy(func(_ interface{}) bool { return true })
+			s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), saveMatcher, mock.Anything).
+				Run(func(args mock.Arguments) {
+					// args[3] is the first SaveOption when opts is non-empty.
+					if len(args) > 3 {
+						if opt, ok := args.Get(3).(credentials.SaveOption); ok {
+							o := credentials.ApplySaveOptions([]credentials.SaveOption{opt})
+							capturedSecretName = o.SecretName
+						}
+					}
+				}).Return(tc.returnedSecretName, nil).Maybe()
+
+			// Fallback for no-opts case (empty existing secret → no WithSecretName).
+			s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), saveMatcher).
+				Return(tc.returnedSecretName, nil).Maybe()
+
+			// Step 3: repo.Update persists the change.
+			updatedBackend := &biz.CASBackend{ID: backendID, SecretName: tc.returnedSecretName, Provider: backendType}
+			s.repo.On("Update", ctx, mock.Anything).Return(updatedBackend, nil)
+
+			// Steps 4–7: PerformValidation is called internally with new creds.
+			s.repo.On("FindByID", mock.Anything, backendID).Return(updatedBackend, nil)
+			s.credsRW.On("ReadCredentials", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			s.backendProvider.On("ValidateAndExtractCredentials", mock.Anything, mock.Anything).Return(nil, nil)
+			s.repo.On("UpdateValidationStatus", mock.Anything, backendID, biz.CASBackendValidationOK, mock.Anything).Return(nil)
+
+			// Step 8: FindByIDInOrg reload after validation.
+			s.repo.On("FindByIDInOrg", ctx, s.validUUID, backendID).Return(updatedBackend, nil)
+
+			got, err := s.useCase.Update(ctx, s.validUUID.String(), backendID.String(), nil, newCreds, nil, nil, nil)
+			s.Require().NoError(err)
+			s.Equal(tc.returnedSecretName, got.SecretName)
+
+			if tc.wantWithSecretName {
+				s.Equal(existingSecretName, capturedSecretName,
+					"expected WithSecretName(%q) to be forwarded to SaveCredentials", existingSecretName)
+			} else {
+				s.Empty(capturedSecretName, "expected no WithSecretName when existingSecret is empty")
 			}
 		})
 	}

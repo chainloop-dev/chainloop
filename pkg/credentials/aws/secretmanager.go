@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	smtypes "github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
@@ -38,6 +39,7 @@ import (
 type SecretsManagerIface interface {
 	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
 	CreateSecret(ctx context.Context, params *secretsmanager.CreateSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.CreateSecretOutput, error)
+	PutSecretValue(ctx context.Context, params *secretsmanager.PutSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.PutSecretValueOutput, error)
 	DeleteSecret(ctx context.Context, params *secretsmanager.DeleteSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.DeleteSecretOutput, error)
 }
 
@@ -79,10 +81,13 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}, nil
 }
 
-// Save Credentials, this is a generic function that can be used to save any type of credentials
-// as long as they can be passed to json.Marshal
-func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) (string, error) {
-	secretName := strings.Join([]string{m.secretPrefix, orgID, uuid.New().String()}, "/")
+// SaveCredentials saves credentials. If opts includes WithSecretName, upserts at the given path.
+func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, opts ...credentials.SaveOption) (string, error) {
+	o := credentials.ApplySaveOptions(opts)
+	secretName := o.SecretName
+	if secretName == "" {
+		secretName = strings.Join([]string{m.secretPrefix, orgID, uuid.New().String()}, "/")
+	}
 
 	// Store the credentials as json key pairs
 	c, err := json.Marshal(creds)
@@ -90,10 +95,29 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any) 
 		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
-	if _, err = m.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
-		Name: aws.String(secretName), SecretString: aws.String(string(c)),
-	}); err != nil {
-		return "", fmt.Errorf("creating secret in AWS: %w", err)
+	if o.SecretName != "" {
+		// Upsert: try to update existing secret first
+		_, err = m.client.PutSecretValue(ctx, &secretsmanager.PutSecretValueInput{
+			SecretId:     aws.String(secretName),
+			SecretString: aws.String(string(c)),
+		})
+		var notFoundErr *smtypes.ResourceNotFoundException
+		if errors.As(err, &notFoundErr) {
+			// Secret does not exist yet, create it
+			_, err = m.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+				Name:         aws.String(secretName),
+				SecretString: aws.String(string(c)),
+			})
+		}
+	} else {
+		_, err = m.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{
+			Name:         aws.String(secretName),
+			SecretString: aws.String(string(c)),
+		})
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("saving secret in AWS: %w", err)
 	}
 
 	return secretName, nil

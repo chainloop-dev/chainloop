@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -127,6 +127,57 @@ func (s *testSuite) TestReadWriteCredentials() {
 	require.NoError(s.T(), err)
 	err = m.ReadCredentials(context.Background(), "bogus", nil)
 	assert.ErrorIs(err, credentials.ErrNotFound)
+}
+
+// TestSaveCredentialsUpsert verifies that WithSecretName causes SaveCredentials to write
+// to the provided path (overwriting if it already exists) instead of generating a new UUID.
+func (s *testSuite) TestSaveCredentialsUpsert() {
+	assert := assert.New(s.T())
+	require := require.New(s.T())
+
+	testCases := []struct {
+		name             string
+		useExisting      bool // whether to pass WithSecretName
+		expectedSamePath bool
+	}{
+		{"new secret generates unique path", false, false},
+		{"upsert at existing path returns same path", true, true},
+	}
+
+	opts := &vault.NewManagerOpts{AuthToken: defaultToken, Address: s.connectionString, SecretPrefix: "test-prefix"}
+	m, err := vault.NewManager(opts)
+	require.NoError(err)
+
+	// First write to establish the path.
+	firstCreds := &credentials.OCIKeypair{Repo: "repo1", Username: "user1", Password: "pass1"}
+	existingPath, err := m.SaveCredentials(context.Background(), orgID, firstCreds)
+	require.NoError(err)
+	require.NotEmpty(existingPath)
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			updatedCreds := &credentials.OCIKeypair{Repo: "repo2", Username: "user2", Password: "pass2"}
+
+			var saveOpts []credentials.SaveOption
+			if tc.useExisting {
+				saveOpts = append(saveOpts, credentials.WithSecretName(existingPath))
+			}
+
+			returnedPath, err := m.SaveCredentials(context.Background(), orgID, updatedCreds, saveOpts...)
+			assert.NoError(err)
+
+			if tc.expectedSamePath {
+				assert.Equal(existingPath, returnedPath, "upsert must return the same path")
+
+				// Verify the credential was updated at the existing path.
+				got := &credentials.OCIKeypair{}
+				assert.NoError(m.ReadCredentials(context.Background(), returnedPath, got))
+				assert.Equal(updatedCreds, got, "secret value must reflect the updated credentials")
+			} else {
+				assert.NotEqual(existingPath, returnedPath, "new write must generate a different path")
+			}
+		})
+	}
 }
 
 // Create a new secret, delete it and check it does not exist antymore
