@@ -56,7 +56,6 @@ var agents = []agentDef{
 // sharedPatterns are file patterns not exclusive to any agent.
 // They are included in every agent's evidence when that agent has exclusive files.
 var sharedPatterns = []patternDef{
-	{".mcp.json", ConfigFileKindConfiguration},
 	{"AGENTS.md", ConfigFileKindInstruction},
 }
 

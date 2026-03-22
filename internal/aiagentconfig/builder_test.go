@@ -213,3 +213,124 @@ func TestBuildAllowsRegularFilesInRoot(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, data.ConfigFiles, 1)
 }
+
+func TestBuildExtractsMCPServers(t *testing.T) {
+	rootDir := t.TempDir()
+
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, ".mcp.json"), []byte(`{
+		"mcpServers": {
+			"my-server": {
+				"command": "npx",
+				"args": ["-y", "my-package"],
+				"env": {"API_KEY": "secret-value", "HOME": "/home/user"}
+			}
+		}
+	}`), 0o600))
+
+	data, err := Build(rootDir, []DiscoveredFile{
+		{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
+	}, "claude", nil)
+	require.NoError(t, err)
+
+	// MCP servers extracted from .mcp.json
+	require.Len(t, data.MCPServers, 1)
+	assert.Equal(t, "my-server", data.MCPServers[0].Name)
+	assert.Equal(t, "npx", data.MCPServers[0].Command)
+	assert.Equal(t, []string{"-y", "my-package"}, data.MCPServers[0].Args)
+	assert.Equal(t, []string{"API_KEY", "HOME"}, data.MCPServers[0].EnvKeys)
+
+	// .mcp.json must NOT appear in config_files
+	for _, cf := range data.ConfigFiles {
+		assert.NotEqual(t, ".mcp.json", cf.Path, ".mcp.json should not be in config_files")
+	}
+}
+
+func TestBuildMCPServersFromSettings(t *testing.T) {
+	rootDir := t.TempDir()
+
+	require.NoError(t, os.MkdirAll(filepath.Join(rootDir, ".claude"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, ".claude", "settings.json"), []byte(`{
+		"permissions": {"allow": ["read"]},
+		"mcpServers": {
+			"settings-server": {"url": "https://example.com/mcp"}
+		}
+	}`), 0o600))
+
+	data, err := Build(rootDir, []DiscoveredFile{
+		{Path: ".claude/settings.json", Kind: ConfigFileKindConfiguration},
+	}, "claude", nil)
+	require.NoError(t, err)
+
+	require.Len(t, data.MCPServers, 1)
+	assert.Equal(t, "settings-server", data.MCPServers[0].Name)
+	assert.Equal(t, "https://example.com/mcp", data.MCPServers[0].URL)
+}
+
+func TestBuildMCPServersDeduplication(t *testing.T) {
+	rootDir := t.TempDir()
+
+	// .mcp.json defines "shared-server" with command "from-mcp"
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, ".mcp.json"), []byte(`{
+		"mcpServers": {
+			"shared-server": {"command": "from-mcp"},
+			"mcp-only": {"command": "mcp-cmd"}
+		}
+	}`), 0o600))
+
+	// settings.json defines "shared-server" with command "from-settings" and a unique server
+	require.NoError(t, os.MkdirAll(filepath.Join(rootDir, ".claude"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, ".claude", "settings.json"), []byte(`{
+		"mcpServers": {
+			"shared-server": {"command": "from-settings"},
+			"settings-only": {"url": "https://example.com"}
+		}
+	}`), 0o600))
+
+	data, err := Build(rootDir, []DiscoveredFile{
+		{Path: ".claude/settings.json", Kind: ConfigFileKindConfiguration},
+	}, "claude", nil)
+	require.NoError(t, err)
+
+	require.Len(t, data.MCPServers, 3)
+
+	// Sorted by name: mcp-only, settings-only, shared-server
+	assert.Equal(t, "mcp-only", data.MCPServers[0].Name)
+	assert.Equal(t, "mcp-cmd", data.MCPServers[0].Command)
+
+	assert.Equal(t, "settings-only", data.MCPServers[1].Name)
+	assert.Equal(t, "https://example.com", data.MCPServers[1].URL)
+
+	// shared-server comes from .mcp.json (first occurrence wins)
+	assert.Equal(t, "shared-server", data.MCPServers[2].Name)
+	assert.Equal(t, "from-mcp", data.MCPServers[2].Command)
+}
+
+func TestBuildNoMCPServersWhenNonePresent(t *testing.T) {
+	rootDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
+
+	data, err := Build(rootDir, []DiscoveredFile{
+		{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
+	}, "claude", nil)
+	require.NoError(t, err)
+
+	assert.Nil(t, data.MCPServers)
+}
+
+func TestBuildMCPServersIgnoresInvalidJSON(t *testing.T) {
+	rootDir := t.TempDir()
+
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, "CLAUDE.md"), []byte("content"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(rootDir, ".mcp.json"), []byte(`not valid json`), 0o600))
+
+	data, err := Build(rootDir, []DiscoveredFile{
+		{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
+	}, "claude", nil)
+	require.NoError(t, err)
+
+	// Build succeeds but no MCP servers extracted
+	assert.Nil(t, data.MCPServers)
+	// Config files still collected (CLAUDE.md)
+	require.Len(t, data.ConfigFiles, 1)
+}
