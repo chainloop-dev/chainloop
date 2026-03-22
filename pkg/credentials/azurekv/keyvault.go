@@ -122,7 +122,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 // SaveCredentials saves credentials. If opts includes WithSecretName, upserts at the given path.
 func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, opts ...credentials.SaveOption) (string, error) {
-	o := credentials.ApplySaveOptions(opts)
+	o := credentials.ApplySaveOptions(opts...)
 	secretName := o.SecretName
 	if secretName == "" {
 		secretName = strings.Join([]string{m.secretPrefix, orgID, uuid.New().String()}, "-")

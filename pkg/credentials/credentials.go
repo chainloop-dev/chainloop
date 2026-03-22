@@ -51,7 +51,7 @@ func WithSecretName(name string) SaveOption {
 }
 
 // ApplySaveOptions applies the given options and returns the resulting SaveOpts.
-func ApplySaveOptions(opts []SaveOption) SaveOpts {
+func ApplySaveOptions(opts ...SaveOption) SaveOpts {
 	o := SaveOpts{}
 	for _, opt := range opts {
 		opt(&o)

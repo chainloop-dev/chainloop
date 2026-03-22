@@ -93,54 +93,38 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
-	o := credentials.ApplySaveOptions(opts)
+	o := credentials.ApplySaveOptions(opts...)
 	secretID := o.SecretName
 	if secretID == "" {
 		secretID = strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "-")
 	}
 
-	parent := fmt.Sprintf("projects/%s/secrets/%s", m.projectID, secretID)
-
-	if o.SecretName != "" {
-		// Upsert path: check if secret container exists
-		_, err = m.client.GetSecret(ctx, &secretmanagerpb.GetSecretRequest{Name: parent})
-		if isNotFoundErr(err) {
-			// Secret does not exist, create the container first
-			_, err = m.client.CreateSecret(ctx, &secretmanagerpb.CreateSecretRequest{
-				Parent:   fmt.Sprintf("projects/%s", m.projectID),
-				SecretId: secretID,
-				Secret: &secretmanagerpb.Secret{
-					Replication: &secretmanagerpb.Replication{
-						Replication: &secretmanagerpb.Replication_Automatic_{
-							Automatic: &secretmanagerpb.Replication_Automatic{},
-						},
-					},
-				},
-			})
-			if err != nil {
-				return "", fmt.Errorf("creating secret in GCP: %w", err)
-			}
-			m.logger.Infow("msg", "created new secret for upsert", "secretID", secretID)
-		} else if err != nil {
-			return "", fmt.Errorf("checking secret existence in GCP: %w", err)
-		}
-	} else {
-		// New secret path: create the container
-		secret, err := m.client.CreateSecret(ctx, &secretmanagerpb.CreateSecretRequest{
-			Parent:   fmt.Sprintf("projects/%s", m.projectID),
-			SecretId: secretID,
-			Secret: &secretmanagerpb.Secret{
-				Replication: &secretmanagerpb.Replication{
-					Replication: &secretmanagerpb.Replication_Automatic_{
-						Automatic: &secretmanagerpb.Replication_Automatic{},
-					},
+	secretReq := &secretmanagerpb.CreateSecretRequest{
+		Parent:   fmt.Sprintf("projects/%s", m.projectID),
+		SecretId: secretID,
+		Secret: &secretmanagerpb.Secret{
+			Replication: &secretmanagerpb.Replication{
+				Replication: &secretmanagerpb.Replication_Automatic_{
+					Automatic: &secretmanagerpb.Replication_Automatic{},
 				},
 			},
-		})
-		if err != nil {
+		},
+	}
+
+	var parent string
+	if o.SecretName != "" {
+		// Upsert: attempt to create the container; AlreadyExists means it's already there.
+		parent = fmt.Sprintf("projects/%s/secrets/%s", m.projectID, secretID)
+		_, err = m.client.CreateSecret(ctx, secretReq)
+		if err != nil && !isAlreadyExistsErr(err) {
 			return "", fmt.Errorf("creating secret in GCP: %w", err)
 		}
-		// Use the fully-qualified name returned by CreateSecret
+	} else {
+		// New secret: create the container and use the canonical name from the API response.
+		secret, createErr := m.client.CreateSecret(ctx, secretReq)
+		if createErr != nil {
+			return "", fmt.Errorf("creating secret in GCP: %w", createErr)
+		}
 		parent = secret.Name
 		m.logger.Infow("msg", "created new secret", "secretID", secretID)
 	}
@@ -158,10 +142,10 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 	return secretID, nil
 }
 
-// isNotFoundErr returns true when the error is a gRPC NotFound status.
-func isNotFoundErr(err error) bool {
+// isAlreadyExistsErr returns true when the error is a gRPC AlreadyExists status.
+func isAlreadyExistsErr(err error) bool {
 	s, ok := status.FromError(err)
-	return ok && s.Code() == codes.NotFound
+	return ok && s.Code() == codes.AlreadyExists
 }
 
 // ReadCredentials reads the latest version of the credentials

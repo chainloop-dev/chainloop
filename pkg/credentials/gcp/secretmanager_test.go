@@ -115,14 +115,14 @@ func TestSaveCredentialsUpsert(t *testing.T) {
 	testCases := []struct {
 		name        string
 		secretName  string // non-empty = WithSecretName upsert
-		gcpNotFound bool   // simulate NotFound on GetSecret (secret container absent)
+		gcpNotFound bool   // simulate secret container absent in GCP
 	}{
 		{
 			name:       "new secret — CreateSecret then AddSecretVersion",
 			secretName: "",
 		},
 		{
-			name:       "upsert existing — GetSecret succeeds, AddSecretVersion only",
+			name:       "upsert existing — CreateSecret AlreadyExists, AddSecretVersion only",
 			secretName: existingSecretName,
 		},
 		{
@@ -155,16 +155,14 @@ func TestSaveCredentialsUpsert(t *testing.T) {
 				clientMock.On("AddSecretVersion", ctx, mock.Anything).
 					Return(&secretmanagerpb.SecretVersion{Name: "…/versions/1"}, nil)
 			case tc.gcpNotFound:
-				// GetSecret returns not-found → CreateSecret → AddSecretVersion.
-				notFoundErr := status.Error(codes.NotFound, "secret not found")
-				clientMock.On("GetSecret", ctx, mock.Anything).Return(nil, notFoundErr).Once()
+				// Upsert: secret container absent → CreateSecret succeeds → AddSecretVersion.
 				clientMock.On("CreateSecret", ctx, mock.Anything).Return(&secretmanagerpb.Secret{}, nil).Once()
 				clientMock.On("AddSecretVersion", ctx, mock.Anything).
 					Return(&secretmanagerpb.SecretVersion{Name: "…/versions/1"}, nil)
 			default:
-				// GetSecret succeeds (secret exists) → AddSecretVersion only.
-				clientMock.On("GetSecret", ctx, mock.Anything).
-					Return(&secretmanagerpb.Secret{Name: "projects/1234-5678-9012/secrets/" + tc.secretName}, nil).Once()
+				// Upsert: secret container exists → CreateSecret returns AlreadyExists → AddSecretVersion only.
+				alreadyExistsErr := status.Error(codes.AlreadyExists, "secret already exists")
+				clientMock.On("CreateSecret", ctx, mock.Anything).Return(nil, alreadyExistsErr).Once()
 				clientMock.On("AddSecretVersion", ctx, mock.Anything).
 					Return(&secretmanagerpb.SecretVersion{Name: "…/versions/2"}, nil)
 			}

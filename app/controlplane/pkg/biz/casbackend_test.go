@@ -314,7 +314,7 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 					// args[3] is the first SaveOption when opts is non-empty.
 					if len(args) > 3 {
 						if opt, ok := args.Get(3).(credentials.SaveOption); ok {
-							o := credentials.ApplySaveOptions([]credentials.SaveOption{opt})
+							o := credentials.ApplySaveOptions(opt)
 							capturedSecretName = o.SecretName
 						}
 					}

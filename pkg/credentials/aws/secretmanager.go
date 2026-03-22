@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 // SaveCredentials saves credentials. If opts includes WithSecretName, upserts at the given path.
 func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, opts ...credentials.SaveOption) (string, error) {
-	o := credentials.ApplySaveOptions(opts)
+	o := credentials.ApplySaveOptions(opts...)
 	secretName := o.SecretName
 	if secretName == "" {
 		secretName = strings.Join([]string{m.secretPrefix, orgID, uuid.New().String()}, "/")

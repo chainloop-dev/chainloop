@@ -142,7 +142,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 		return "", fmt.Errorf("converting struct to map: %w", err)
 	}
 
-	o := credentials.ApplySaveOptions(opts)
+	o := credentials.ApplySaveOptions(opts...)
 	secretName := o.SecretName
 	if secretName == "" {
 		secretName = strings.Join([]string{m.secretPrefix, orgID, uuid.Generate().String()}, "/")
