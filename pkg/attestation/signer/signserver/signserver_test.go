@@ -204,7 +204,8 @@ func TestSignMessage_Success(t *testing.T) {
 		f, fh, err := r.FormFile("file")
 		require.NoError(t, err)
 		gotFileName = fh.Filename
-		gotFileContent, _ = io.ReadAll(f)
+		gotFileContent, err = io.ReadAll(f)
+		require.NoError(t, err)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("fakesignature"))
 	}))
