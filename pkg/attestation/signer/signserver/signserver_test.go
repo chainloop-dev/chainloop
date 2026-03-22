@@ -237,7 +237,7 @@ func TestSignMessage_Non200Status(t *testing.T) {
 }
 
 func TestSignMessage_NetworkError(t *testing.T) {
-	srv, caPath := tlsServerWithCA(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {}))
+	srv, caPath := tlsServerWithCA(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	host := strings.TrimPrefix(srv.URL, "https://")
 	srv.Close() // closed before the call
 
@@ -293,7 +293,7 @@ func TestPrivateKeyFromPem(t *testing.T) {
 	}{
 		{
 			name:     "unencrypted PKCS8 key with empty password",
-			pemBytes: func(t *testing.T) []byte { return generatePrivateKeyPEM(t) },
+			pemBytes: generatePrivateKeyPEM,
 			password: "",
 		},
 		{
@@ -315,7 +315,7 @@ func TestPrivateKeyFromPem(t *testing.T) {
 		},
 		{
 			name:     "certificate block only — no key",
-			pemBytes: func(t *testing.T) []byte { return generateSelfSignedCertPEM(t) },
+			pemBytes: generateSelfSignedCertPEM,
 			password: "",
 			wantErr:  true,
 		},
