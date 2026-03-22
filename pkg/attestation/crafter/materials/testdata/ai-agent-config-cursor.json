@@ -4,7 +4,6 @@
   "data": {
     "agent": {"name": "cursor"},
     "config_hash": "def456",
-    "captured_at": "2026-03-13T10:00:00Z",
     "config_files": [
       {
         "path": ".cursor/rules/coding.md",

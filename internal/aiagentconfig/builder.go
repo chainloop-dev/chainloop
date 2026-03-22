@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -33,12 +32,7 @@ import (
 // basePath is the base directory, discovered contains files relative to basePath with their kinds.
 // agentName identifies the AI agent (e.g. "claude", "cursor").
 // gitCtx may be nil if not in a git repository.
-// capturedAt is the timestamp to record in the output; pass time.Time{} to use the current time.
-func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext, capturedAt time.Time) (*Data, error) {
-	if capturedAt.IsZero() {
-		capturedAt = time.Now().UTC()
-	}
-
+func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCtx *GitContext) (*Data, error) {
 	// Resolve basePath to its real path so symlink comparisons are reliable
 	realRoot, err := filepath.EvalSymlinks(basePath)
 	if err != nil {
@@ -54,14 +48,9 @@ func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCt
 		relPath := df.Path
 		absPath := filepath.Join(basePath, relPath)
 
-		content, realPath, err := safeReadFile(absPath, realRoot)
+		content, _, err := safeReadFile(absPath, realRoot)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", relPath, err)
-		}
-
-		info, err := os.Stat(realPath)
-		if err != nil {
-			return nil, fmt.Errorf("stat %s: %w", relPath, err)
 		}
 
 		hash := sha256.Sum256(content)
@@ -72,7 +61,7 @@ func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCt
 			Path:    relPath,
 			Kind:    df.Kind,
 			SHA256:  hexHash,
-			Size:    info.Size(),
+			Size:    int64(len(content)),
 			Content: base64.StdEncoding.EncodeToString(content),
 		})
 
@@ -87,7 +76,6 @@ func Build(basePath string, discovered []DiscoveredFile, agentName string, gitCt
 	data := Data{
 		Agent:       Agent{Name: agentName},
 		ConfigHash:  computeCombinedHash(hashes),
-		CapturedAt:  capturedAt.Format(time.RFC3339),
 		GitContext:  gitCtx,
 		ConfigFiles: configFiles,
 		MCPServers:  mcpServers,

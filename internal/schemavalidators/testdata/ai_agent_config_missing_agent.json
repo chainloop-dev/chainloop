@@ -1,7 +1,6 @@
 {
   "schema_version": "0.1",
   "config_hash": "abc123",
-  "captured_at": "2026-03-13T10:00:00Z",
   "config_files": [
     {
       "path": "CLAUDE.md",

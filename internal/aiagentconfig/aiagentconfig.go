@@ -74,7 +74,6 @@ type MCPServer struct {
 type Data struct {
 	Agent       Agent        `json:"agent"`
 	ConfigHash  string       `json:"config_hash"`
-	CapturedAt  string       `json:"captured_at"`
 	GitContext  *GitContext  `json:"git_context,omitempty"`
 	ConfigFiles []ConfigFile `json:"config_files"`
 	// Future fields for richer analysis

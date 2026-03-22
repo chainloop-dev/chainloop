@@ -7,7 +7,6 @@
   "required": [
     "agent",
     "config_hash",
-    "captured_at",
     "config_files"
   ],
   "properties": {
@@ -30,11 +29,6 @@
     "config_hash": {
       "type": "string",
       "description": "SHA-256 hash of combined config for drift detection"
-    },
-    "captured_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp of config snapshot"
     },
     "git_context": {
       "type": "object",
