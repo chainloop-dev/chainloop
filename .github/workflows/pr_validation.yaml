@@ -13,10 +13,7 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-  id-token: write # Required for GitHub keyless attestation via OIDC
-  pull-requests: read # Required to fetch PR reviews
+permissions: read-all
 
 jobs:
   # Create and push a Chainloop attestation for this PR event
@@ -24,9 +21,13 @@ jobs:
     if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.user.login != 'github-actions[bot]' && github.event.pull_request.draft == false }}
     name: Perform PR Validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: read
     env:
       CHAINLOOP_WORKFLOW_NAME: pr-validation
-      CHAINLOOP_PROJECT_NAME: chainloop-platform
+      CHAINLOOP_PROJECT_NAME: chainloop
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -38,7 +39,7 @@ jobs:
       # Initialize a new attestation for this PR event
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME} --collectors aiconfig
+          chainloop attestation init --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT_NAME}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
