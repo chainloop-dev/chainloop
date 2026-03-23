@@ -1,0 +1,19 @@
+# Contract for author verification workflow
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: chainloop-vault-author-verification
+  description: Contract for author verification on merge to main
+spec:
+  runner:
+    type: GITHUB_ACTION
+  policies:
+    attestation:
+      - ref: source-commit
+        with:
+          check_signature: "yes"
+          check_author_verified: "yes"
+  policyGroups:
+    - ref: slsa-checks
+      with:
+        runner: GITHUB_ACTION

@@ -1,0 +1,49 @@
+name: Author Verification
+
+on:
+  push:
+    branches: ["main"]
+
+permissions: read-all
+
+jobs:
+  verify:
+    name: Verify Author
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for SLSA provenance - https://docs.chainloop.dev/guides/slsa/
+    env:
+      CHAINLOOP_WORKFLOW_NAME: "author-verification"
+      CHAINLOOP_PROJECT: "chainloop"
+
+    steps:
+      - name: Install Chainloop
+        run: |
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Initialize Attestation
+        run: |
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT
+        env:
+          # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Finish and Record Attestation
+        if: ${{ success() }}
+        run: |
+          chainloop attestation status --full
+          chainloop attestation push
+
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        run: |
+          chainloop attestation reset
+
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        run: |
+          chainloop attestation reset --trigger cancellation
