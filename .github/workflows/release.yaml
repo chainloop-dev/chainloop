@@ -237,6 +237,7 @@ jobs:
       - name: Promote Chainloop Project Version
         if: ${{ success() }}
         env:
+          CHAINLOOP_TOKEN: ${{ secrets.CHAINLOOP_TOKEN }}
           CURRENT_VERSION: ${{ steps.project_version.outputs.current_version }}
           TARGET_VERSION: ${{ github.ref_name }}
         run: |
