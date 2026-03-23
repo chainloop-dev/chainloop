@@ -86,6 +86,11 @@ func TestChainloopRunnerContextCraft(t *testing.T) {
 			filePath: "./testdata/runner-context-branches-v0.1.json",
 			digest:   "sha256:3c587dfc0cb5b588b1ac4d9a2301efa45458a9e9c4d0fbd417515a2a5ccc7fa4",
 		},
+		{
+			name:     "valid artifact type with tags",
+			filePath: "./testdata/runner-context-tags-v0.1.json",
+			digest:   "sha256:588638b4a2451ec4b572ecc8e620940ad925e297c49d73887d563350d77cf84e",
+		},
 	}
 
 	assert := assert.New(t)
