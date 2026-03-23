@@ -4,9 +4,7 @@ on:
   push:
     branches: ["main"]
 
-permissions:
-  contents: read
-  id-token: write # required for SLSA attestation
+permissions: read-all
 
 jobs:
   verify:
