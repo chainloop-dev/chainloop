@@ -62,6 +62,10 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			name:  "unknown audiences return nil",
+			token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjcC5jaGFpbmxvb3AiLCJhdWQiOlsidW5rbm93bjEiLCJ1bmtub3duMiJdLCJleHAiOjE3MTU5MzUyNTB9.signature",
+		},
+		{
 			name:  "federated github token",
 			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Rva2VuLmFjdGlvbnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiY2hhaW5sb29wIiwicmVwb3NpdG9yeSI6Im1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3QiLCJzdWIiOiJyZXBvOm1hdGlhc2luc2F1cnJhbGRlL3Byb2plY3Q6cmVmOnJlZnMvaGVhZHMvbWFpbiJ9.signature",
 			want: &ParsedToken{
