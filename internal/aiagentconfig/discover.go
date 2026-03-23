@@ -39,7 +39,7 @@ var agents = []agentDef{
 		{".claude/CLAUDE.md", ConfigFileKindInstruction},
 		{".claude/settings.json", ConfigFileKindConfiguration},
 		{".claude/rules/*.md", ConfigFileKindInstruction},
-		{".claude/agents/*.md", ConfigFileKindInstruction},
+		{".claude/agents/*.md", ConfigFileKindAgent},
 		{".claude/commands/*.md", ConfigFileKindInstruction},
 		{".claude/skills/*/SKILL.md", ConfigFileKindSkill},
 	}},
@@ -49,14 +49,14 @@ var agents = []agentDef{
 		{".cursor/rules/*/*.md", ConfigFileKindInstruction},
 		{".cursor/rules/*/*.mdc", ConfigFileKindInstruction},
 		{".cursor/skills/*/SKILL.md", ConfigFileKindSkill},
-		{".cursor/agents/*.md", ConfigFileKindInstruction},
+		{".cursor/agents/*.md", ConfigFileKindAgent},
 	}},
 }
 
 // sharedPatterns are file patterns not exclusive to any agent.
 // They are included in every agent's evidence when that agent has exclusive files.
 var sharedPatterns = []patternDef{
-	{"AGENTS.md", ConfigFileKindInstruction},
+	{"AGENTS.md", ConfigFileKindAgent},
 }
 
 // DiscoverAll searches basePath for AI agent configuration files and groups them by agent.
