@@ -27,7 +27,7 @@ jobs:
 
       - name: Initialize Attestation
         run: |
-          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT
+          chainloop attestation init --workflow $CHAINLOOP_WORKFLOW_NAME --project $CHAINLOOP_PROJECT --collectors aiconfig
         env:
           # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
