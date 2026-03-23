@@ -1,0 +1,73 @@
+{
+    "meta": {
+        "id": "chainloop.dev/runner-context/v0.1"
+    },
+    "data": {
+        "tool": "platform@test",
+        "provider": "github",
+        "repos": [
+            {
+                "owner": "test-org",
+                "repository": "test-repo",
+                "branches": [],
+                "tags": [
+                    {
+                        "name": "v*",
+                        "active_rules": [
+                            {
+                                "name": "deletion",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "TagProtection",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "12345",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ],
+                                "bypass_configuration": [
+                                    {
+                                        "actor_id": 5,
+                                        "actor_type": "RepositoryRole",
+                                        "bypass_mode": "always",
+                                        "actor_name": "Repository Admin"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "non_fast_forward",
+                                "enabled": "true",
+                                "context": [
+                                    {
+                                        "name": "ruleset",
+                                        "value": "TagProtection",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "ruleset_id",
+                                        "value": "12345",
+                                        "enabled": "true"
+                                    },
+                                    {
+                                        "name": "enforcement",
+                                        "value": "active",
+                                        "enabled": "true"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
