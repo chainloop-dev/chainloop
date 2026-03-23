@@ -62,7 +62,7 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["configuration", "instruction", "skill"],
+            "enum": ["configuration", "instruction", "skill", "agent"],
             "description": "Classification of the file's purpose"
           },
           "sha256": {

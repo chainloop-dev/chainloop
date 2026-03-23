@@ -60,7 +60,7 @@ func TestDiscoverAll(t *testing.T) {
 			files: []string{".cursor/rules/coding.md", ".cursor/agents/test.md"},
 			expected: map[string][]DiscoveredFile{
 				"cursor": {
-					{Path: ".cursor/agents/test.md", Kind: ConfigFileKindInstruction},
+					{Path: ".cursor/agents/test.md", Kind: ConfigFileKindAgent},
 					{Path: ".cursor/rules/coding.md", Kind: ConfigFileKindInstruction},
 				},
 			},
@@ -114,7 +114,7 @@ func TestDiscoverAll(t *testing.T) {
 					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
 				},
 				"cursor": {
-					{Path: ".cursor/agents/reviewer.md", Kind: ConfigFileKindInstruction},
+					{Path: ".cursor/agents/reviewer.md", Kind: ConfigFileKindAgent},
 					{Path: ".cursor/rules/coding.md", Kind: ConfigFileKindInstruction},
 				},
 			},
@@ -128,12 +128,12 @@ func TestDiscoverAll(t *testing.T) {
 			},
 			expected: map[string][]DiscoveredFile{
 				"claude": {
-					{Path: "AGENTS.md", Kind: ConfigFileKindInstruction},
+					{Path: "AGENTS.md", Kind: ConfigFileKindAgent},
 					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
 				},
 				"cursor": {
 					{Path: ".cursor/rules/coding.md", Kind: ConfigFileKindInstruction},
-					{Path: "AGENTS.md", Kind: ConfigFileKindInstruction},
+					{Path: "AGENTS.md", Kind: ConfigFileKindAgent},
 				},
 			},
 		},
@@ -159,13 +159,13 @@ func TestDiscoverAll(t *testing.T) {
 			expected: map[string][]DiscoveredFile{
 				"claude": {
 					{Path: ".claude/CLAUDE.md", Kind: ConfigFileKindInstruction},
-					{Path: ".claude/agents/reviewer.md", Kind: ConfigFileKindInstruction},
+					{Path: ".claude/agents/reviewer.md", Kind: ConfigFileKindAgent},
 					{Path: ".claude/commands/deploy.md", Kind: ConfigFileKindInstruction},
 					{Path: ".claude/rules/coding.md", Kind: ConfigFileKindInstruction},
 					{Path: ".claude/rules/testing.md", Kind: ConfigFileKindInstruction},
 					{Path: ".claude/settings.json", Kind: ConfigFileKindConfiguration},
 					{Path: ".claude/skills/search/SKILL.md", Kind: ConfigFileKindSkill},
-					{Path: "AGENTS.md", Kind: ConfigFileKindInstruction},
+					{Path: "AGENTS.md", Kind: ConfigFileKindAgent},
 					{Path: "CLAUDE.md", Kind: ConfigFileKindInstruction},
 				},
 			},
