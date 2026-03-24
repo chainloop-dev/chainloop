@@ -105,7 +105,7 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 			Title   string `json:"title"`
 			Body    string `json:"body"`
 			HTMLURL string `json:"html_url"`
-			User struct {
+			User    struct {
 				Login string `json:"login"`
 				Type  string `json:"type"`
 			} `json:"user"`
@@ -186,7 +186,7 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 			Login: event.PullRequest.User.Login,
 			Type:  normalizeAuthorType(event.PullRequest.User.Type),
 		},
-		Reviewers:    reviewers,
+		Reviewers: reviewers,
 	}
 
 	return true, metadata, nil
@@ -371,7 +371,7 @@ func extractGitLabMRMetadata(ctx context.Context, envVars map[string]string) (bo
 			Login: envVars["GITLAB_USER_LOGIN"],
 			Type:  "unknown",
 		},
-		Reviewers:    reviewers,
+		Reviewers: reviewers,
 	}
 
 	return true, metadata, nil

@@ -15,6 +15,11 @@
 
 package prinfo
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 const (
 	// EvidenceID is the identifier for the PR/MR info material type
 	EvidenceID = "CHAINLOOP_PR_INFO"
@@ -48,6 +53,44 @@ type Data struct {
 	URL          string     `json:"url" jsonschema:"required,format=uri,description=Direct URL to the PR/MR"`
 	Author       *Author    `json:"author,omitempty" jsonschema:"description=The PR/MR author"`
 	Reviewers    []Reviewer `json:"reviewers,omitempty" jsonschema:"description=List of reviewers who reviewed or were requested to review"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for Data to handle
+// backwards compatibility where author can be either a string (v1.0-v1.2)
+// or an object (v1.3+).
+func (d *Data) UnmarshalJSON(b []byte) error {
+	// Use an alias to avoid infinite recursion
+	type Alias Data
+	aux := &struct {
+		Author json.RawMessage `json:"author,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(d),
+	}
+
+	if err := json.Unmarshal(b, aux); err != nil {
+		return err
+	}
+
+	if len(aux.Author) == 0 {
+		return nil
+	}
+
+	// Try object format first
+	var author Author
+	if err := json.Unmarshal(aux.Author, &author); err == nil {
+		d.Author = &author
+		return nil
+	}
+
+	// Fall back to string format
+	var login string
+	if err := json.Unmarshal(aux.Author, &login); err == nil {
+		d.Author = &Author{Login: login, Type: "unknown"}
+		return nil
+	}
+
+	return fmt.Errorf("author field must be a string or an object with login and type fields")
 }
 
 // Evidence represents the complete evidence structure for PR/MR metadata

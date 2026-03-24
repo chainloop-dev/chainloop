@@ -47,7 +47,7 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 				SourceBranch: "feature",
 				TargetBranch: "main",
 				URL:          "https://github.com/org/repo/pull/123",
-				Author: &prinfo.Author{Login: "testuser", Type: "User"},
+				Author:       &prinfo.Author{Login: "testuser", Type: "User"},
 			}),
 			wantErr: false,
 		},
