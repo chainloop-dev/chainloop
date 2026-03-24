@@ -660,8 +660,15 @@ func (s *groupsTestSuite) TestInheritGroupGate() {
 		name         string
 		policyAtt    *v1.PolicyAttachment
 		groupAtt     *v1.PolicyGroupAttachment
+		expectedNil  bool
 		expectedGate *bool
 	}{
+		{
+			name:        "nil policy attachment is returned as-is",
+			policyAtt:   nil,
+			groupAtt:    &v1.PolicyGroupAttachment{Gate: &groupGate},
+			expectedNil: true,
+		},
 		{
 			name:         "unset group gate leaves policy unchanged",
 			policyAtt:    &v1.PolicyAttachment{},
@@ -687,6 +694,11 @@ func (s *groupsTestSuite) TestInheritGroupGate() {
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
 			got := inheritGroupGate(tc.policyAtt, tc.groupAtt)
+
+			if tc.expectedNil {
+				s.Nil(got)
+				return
+			}
 
 			if tc.expectedGate == nil {
 				s.Nil(got.Gate)
