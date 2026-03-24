@@ -52,6 +52,8 @@ const (
 	PRInfoVersion1_1 PRInfoVersion = "1.1"
 	// PRInfoVersion1_2 represents PR/MR Info version 1.2 schema (adds requested and review_status to reviewers).
 	PRInfoVersion1_2 PRInfoVersion = "1.2"
+	// PRInfoVersion1_3 represents PR/MR Info version 1.3 schema (author as object with type).
+	PRInfoVersion1_3 PRInfoVersion = "1.3"
 	// CycloneDXVersion1_5 represents CycloneDX version 1.5 schema.
 	CycloneDXVersion1_5 CycloneDXVersion = "1.5"
 	// CycloneDXVersion1_6 represents CycloneDX version 1.6 schema.
@@ -100,6 +102,8 @@ var (
 	prInfoSpecVersion1_1 string
 	//go:embed internal_schemas/prinfo/pr-info-1.2.schema.json
 	prInfoSpecVersion1_2 string
+	//go:embed internal_schemas/prinfo/pr-info-1.3.schema.json
+	prInfoSpecVersion1_3 string
 
 	// AI Agent Config schemas
 	//go:embed internal_schemas/aiagentconfig/ai-agent-config-0.1.schema.json
@@ -125,6 +129,7 @@ var schemaURLMapping = map[string]string{
 	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":                prInfoSpecVersion1_0,
 	"https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json":                prInfoSpecVersion1_1,
 	"https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json":                prInfoSpecVersion1_2,
+	"https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json":                prInfoSpecVersion1_3,
 	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json": aiAgentConfigSpecVersion0_1,
 }
 
@@ -155,6 +160,7 @@ func init() {
 	compiledPRInfoSchemas[PRInfoVersion1_0] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json")
 	compiledPRInfoSchemas[PRInfoVersion1_1] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json")
 	compiledPRInfoSchemas[PRInfoVersion1_2] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json")
+	compiledPRInfoSchemas[PRInfoVersion1_3] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json")
 
 	compiledAIAgentConfigSchemas = make(map[AIAgentConfigVersion]*jsonschema.Schema)
 	compiledAIAgentConfigSchemas[AIAgentConfigVersion0_1] = compiler.MustCompile("https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json")
@@ -252,7 +258,7 @@ func ValidateChainloopRunnerContext(data interface{}, version RunnerContextVersi
 // ValidatePRInfo validates the PR/MR info schema.
 func ValidatePRInfo(data interface{}, version PRInfoVersion) error {
 	if version == "" {
-		version = PRInfoVersion1_2
+		version = PRInfoVersion1_3
 	}
 
 	schema, ok := compiledPRInfoSchemas[version]

@@ -47,7 +47,7 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 				SourceBranch: "feature",
 				TargetBranch: "main",
 				URL:          "https://github.com/org/repo/pull/123",
-				Author:       "testuser",
+				Author:       &prinfo.Author{Login: "testuser", Type: "User"},
 			}),
 			wantErr: false,
 		},
@@ -118,7 +118,7 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 			require.NoError(t, err)
 
 			// Validate the data against JSON schema
-			err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_2)
+			err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_3)
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -129,24 +129,36 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 	}
 }
 
-func TestChainloopPRInfoCrafter_V1_0BackwardCompat(t *testing.T) {
-	// Data without reviewers should still validate against v1.0
-	data := prinfo.Data{
-		Platform: "github",
-		Type:     "pull_request",
-		Number:   "123",
-		URL:      "https://github.com/org/repo/pull/123",
-		Author:   "testuser",
-	}
-
-	dataBytes, err := json.Marshal(data)
-	require.NoError(t, err)
+func TestChainloopPRInfoCrafter_BackwardCompat(t *testing.T) {
+	// Old string author format should still validate against v1.3
+	oldFormatJSON := `{
+		"platform": "github",
+		"type": "pull_request",
+		"number": "123",
+		"url": "https://github.com/org/repo/pull/123",
+		"author": "testuser"
+	}`
 
 	var rawData interface{}
-	err = json.Unmarshal(dataBytes, &rawData)
+	err := json.Unmarshal([]byte(oldFormatJSON), &rawData)
 	require.NoError(t, err)
 
-	err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_0)
+	err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_3)
+	require.NoError(t, err)
+
+	// New object author format should also validate against v1.3
+	newFormatJSON := `{
+		"platform": "github",
+		"type": "pull_request",
+		"number": "123",
+		"url": "https://github.com/org/repo/pull/123",
+		"author": {"login": "dependabot[bot]", "type": "Bot"}
+	}`
+
+	err = json.Unmarshal([]byte(newFormatJSON), &rawData)
+	require.NoError(t, err)
+
+	err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_3)
 	require.NoError(t, err)
 }
 

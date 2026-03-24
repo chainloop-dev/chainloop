@@ -56,7 +56,7 @@ func TestExtractGitHubPRMetadata(t *testing.T) {
 				assert.Equal(t, "feature-branch", metadata.SourceBranch)
 				assert.Equal(t, "main", metadata.TargetBranch)
 				assert.Equal(t, "https://github.com/owner/repo/pull/123", metadata.URL)
-				assert.Equal(t, "johndoe", metadata.Author)
+				assert.Equal(t, &prinfo.Author{Login: "johndoe", Type: "unknown"}, metadata.Author)
 				// Event file provides requested_reviewers without needing a token.
 				require.Len(t, metadata.Reviewers, 2)
 				assert.Equal(t, "reviewer1", metadata.Reviewers[0].Login)
@@ -80,7 +80,7 @@ func TestExtractGitHubPRMetadata(t *testing.T) {
 			validate: func(t *testing.T, metadata *PRMetadata) {
 				assert.Equal(t, "github", metadata.Platform)
 				assert.Equal(t, "456", metadata.Number)
-				assert.Equal(t, "janedoe", metadata.Author)
+				assert.Equal(t, &prinfo.Author{Login: "janedoe", Type: "unknown"}, metadata.Author)
 				assert.Empty(t, metadata.Reviewers)
 			},
 		},
@@ -164,7 +164,7 @@ func TestExtractGitLabMRMetadata(t *testing.T) {
 				assert.Equal(t, "feature-branch", metadata.SourceBranch)
 				assert.Equal(t, "main", metadata.TargetBranch)
 				assert.Equal(t, "https://gitlab.com/owner/repo/-/merge_requests/42", metadata.URL)
-				assert.Equal(t, "testuser", metadata.Author)
+				assert.Equal(t, &prinfo.Author{Login: "testuser", Type: "unknown"}, metadata.Author)
 				// No reviewers without API access in tests
 				assert.Empty(t, metadata.Reviewers)
 			},
@@ -207,7 +207,7 @@ func TestExtractGitLabMRMetadata(t *testing.T) {
 	}
 }
 
-func TestFetchGitLabReviewers(t *testing.T) {
+func TestFetchGitLabMRDetails(t *testing.T) {
 	testCases := []struct {
 		name        string
 		handler     http.HandlerFunc
@@ -215,33 +215,38 @@ func TestFetchGitLabReviewers(t *testing.T) {
 		projectPath string
 		mrIID       string
 		token       string
-		expected    []prinfo.Reviewer
+		expected    *gitlabMRDetails
 	}{
 		{
 			name: "successful response with reviewers",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "test-token", r.Header.Get("JOB-TOKEN"))
 				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprint(w, `{"reviewers": [{"username": "alice"}, {"username": "bot-reviewer"}]}`)
+				fmt.Fprint(w, `{"author": {"username": "mr-author", "bot": false}, "reviewers": [{"username": "alice", "bot": false}, {"username": "bot-reviewer", "bot": true}]}`)
 			},
 			projectPath: "group/project",
 			mrIID:       "10",
 			token:       "test-token",
-			expected: []prinfo.Reviewer{
-				{Login: "alice", Type: "unknown", Requested: true},
-				{Login: "bot-reviewer", Type: "unknown", Requested: true},
+			expected: &gitlabMRDetails{
+				Author: &prinfo.Author{Login: "mr-author", Type: "User"},
+				Reviewers: []prinfo.Reviewer{
+					{Login: "alice", Type: "User", Requested: true},
+					{Login: "bot-reviewer", Type: "Bot", Requested: true},
+				},
 			},
 		},
 		{
 			name: "empty reviewers",
 			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprint(w, `{"reviewers": []}`)
+				fmt.Fprint(w, `{"author": {"username": "author", "bot": false}, "reviewers": []}`)
 			},
 			projectPath: "group/project",
 			mrIID:       "10",
 			token:       "test-token",
-			expected:    nil,
+			expected: &gitlabMRDetails{
+				Author: &prinfo.Author{Login: "author", Type: "User"},
+			},
 		},
 		{
 			name: "API returns error",
@@ -286,18 +291,18 @@ func TestFetchGitLabReviewers(t *testing.T) {
 				baseURL = serverURL
 			}
 
-			reviewers := fetchGitLabReviewers(context.Background(), baseURL, tc.projectPath, tc.mrIID, tc.token)
+			details := fetchGitLabMRDetails(context.Background(), baseURL, tc.projectPath, tc.mrIID, tc.token)
 
 			if tc.expected == nil {
-				assert.Nil(t, reviewers)
+				assert.Nil(t, details)
 			} else {
-				assert.Equal(t, tc.expected, reviewers)
+				assert.Equal(t, tc.expected, details)
 			}
 		})
 	}
 }
 
-func TestFetchGitLabReviewersRequestPath(t *testing.T) {
+func TestFetchGitLabMRDetailsRequestPath(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v4/projects/group%2Fproject/merge_requests/42", r.URL.RawPath)
 		w.Header().Set("Content-Type", "application/json")
@@ -305,14 +310,14 @@ func TestFetchGitLabReviewersRequestPath(t *testing.T) {
 	}))
 	defer server.Close()
 
-	fetchGitLabReviewers(context.Background(), server.URL, "group/project", "42", "token")
+	fetchGitLabMRDetails(context.Background(), server.URL, "group/project", "42", "token")
 }
 
 func TestExtractGitLabMRMetadataWithReviewers(t *testing.T) {
 	// Set up a mock GitLab API that returns reviewers
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"reviewers": [{"username": "alice"}, {"username": "coderabbitai"}]}`)
+		fmt.Fprint(w, `{"author": {"username": "author", "bot": false}, "reviewers": [{"username": "alice", "bot": false}, {"username": "coderabbitai", "bot": true}]}`)
 	}))
 	defer server.Close()
 
@@ -336,10 +341,15 @@ func TestExtractGitLabMRMetadataWithReviewers(t *testing.T) {
 	require.True(t, isMR)
 	require.Len(t, metadata.Reviewers, 2)
 	assert.Equal(t, "alice", metadata.Reviewers[0].Login)
-	assert.Equal(t, "unknown", metadata.Reviewers[0].Type)
+	assert.Equal(t, "User", metadata.Reviewers[0].Type)
 	assert.True(t, metadata.Reviewers[0].Requested)
 	assert.Equal(t, "coderabbitai", metadata.Reviewers[1].Login)
+	assert.Equal(t, "Bot", metadata.Reviewers[1].Type)
 	assert.True(t, metadata.Reviewers[1].Requested)
+	// Author should come from the API, not env var
+	require.NotNil(t, metadata.Author)
+	assert.Equal(t, "author", metadata.Author.Login)
+	assert.Equal(t, "User", metadata.Author.Type)
 }
 
 func TestFetchGitHubReviews(t *testing.T) {

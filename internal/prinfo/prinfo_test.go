@@ -308,3 +308,133 @@ func TestValidatePRInfoV1_0BackwardCompat(t *testing.T) {
 		})
 	}
 }
+
+func TestDataUnmarshalJSON(t *testing.T) {
+	testCases := []struct {
+		name       string
+		input      string
+		wantAuthor *Author
+		wantErr    bool
+	}{
+		{
+			name:       "string author (v1.0-v1.2 backwards compat)",
+			input:      `{"platform":"github","type":"pull_request","number":"1","url":"https://github.com/o/r/pull/1","author":"dependabot[bot]"}`,
+			wantAuthor: &Author{Login: "dependabot[bot]", Type: "unknown"},
+		},
+		{
+			name:       "object author (v1.3)",
+			input:      `{"platform":"github","type":"pull_request","number":"1","url":"https://github.com/o/r/pull/1","author":{"login":"dependabot[bot]","type":"Bot"}}`,
+			wantAuthor: &Author{Login: "dependabot[bot]", Type: "Bot"},
+		},
+		{
+			name:       "no author field",
+			input:      `{"platform":"github","type":"pull_request","number":"1","url":"https://github.com/o/r/pull/1"}`,
+			wantAuthor: nil,
+		},
+		{
+			name:       "null author field",
+			input:      `{"platform":"github","type":"pull_request","number":"1","url":"https://github.com/o/r/pull/1","author":null}`,
+			wantAuthor: nil,
+		},
+		{
+			name:    "invalid author type",
+			input:   `{"platform":"github","type":"pull_request","number":"1","url":"https://github.com/o/r/pull/1","author":123}`,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var data Data
+			err := json.Unmarshal([]byte(tc.input), &data)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantAuthor, data.Author)
+		})
+	}
+}
+
+func TestValidatePRInfoV1_3(t *testing.T) {
+	testCases := []struct {
+		name    string
+		data    string
+		wantErr bool
+	}{
+		{
+			name: "v1.3 author as object",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "123",
+				"url": "https://github.com/owner/repo/pull/123",
+				"author": {"login": "dependabot[bot]", "type": "Bot"}
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "v1.3 author as string (backwards compat)",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "123",
+				"url": "https://github.com/owner/repo/pull/123",
+				"author": "username"
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "v1.3 author object missing type",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "123",
+				"url": "https://github.com/owner/repo/pull/123",
+				"author": {"login": "username"}
+			}`,
+			wantErr: true,
+		},
+		{
+			name: "v1.3 author object invalid type",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "123",
+				"url": "https://github.com/owner/repo/pull/123",
+				"author": {"login": "username", "type": "InvalidType"}
+			}`,
+			wantErr: true,
+		},
+		{
+			name: "v1.3 with reviewers and object author",
+			data: `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "789",
+				"url": "https://github.com/owner/repo/pull/789",
+				"author": {"login": "renovate[bot]", "type": "Bot"},
+				"reviewers": [
+					{"login": "reviewer1", "type": "User", "requested": true, "review_status": "APPROVED"}
+				]
+			}`,
+			wantErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var data interface{}
+			err := json.Unmarshal([]byte(tc.data), &data)
+			require.NoError(t, err)
+
+			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_3)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

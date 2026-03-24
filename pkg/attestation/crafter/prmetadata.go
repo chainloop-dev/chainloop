@@ -39,7 +39,7 @@ type PRMetadata struct {
 	SourceBranch string
 	TargetBranch string
 	URL          string
-	Author       string
+	Author       *prinfo.Author
 	Reviewers    []prinfo.Reviewer
 }
 
@@ -107,6 +107,7 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 			HTMLURL string `json:"html_url"`
 			User    struct {
 				Login string `json:"login"`
+				Type  string `json:"type"`
 			} `json:"user"`
 			RequestedReviewers []struct {
 				Login string `json:"login"`
@@ -181,8 +182,11 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 		SourceBranch: envVars["GITHUB_HEAD_REF"],
 		TargetBranch: envVars["GITHUB_BASE_REF"],
 		URL:          event.PullRequest.HTMLURL,
-		Author:       event.PullRequest.User.Login,
-		Reviewers:    reviewers,
+		Author: &prinfo.Author{
+			Login: event.PullRequest.User.Login,
+			Type:  normalizeAuthorType(event.PullRequest.User.Type),
+		},
+		Reviewers: reviewers,
 	}
 
 	return true, metadata, nil
@@ -345,14 +349,27 @@ func extractGitLabMRMetadata(ctx context.Context, envVars map[string]string) (bo
 	projectURL := envVars["CI_MERGE_REQUEST_PROJECT_URL"]
 	mrURL := fmt.Sprintf("%s/-/merge_requests/%s", projectURL, mrIID)
 
-	// Fetch reviewers from GitLab API (best-effort).
+	// Fetch MR details (author + reviewers) from GitLab API (best-effort).
 	// Prefer CI_MERGE_REQUEST_PROJECT_PATH for fork-based MRs where CI_PROJECT_PATH points to the fork.
 	projectPath := envVars["CI_MERGE_REQUEST_PROJECT_PATH"]
 	if projectPath == "" {
 		projectPath = envVars["CI_PROJECT_PATH"]
 	}
 	// CI_JOB_TOKEN is read via os.Getenv to avoid persisting it in the attestation envVars map.
-	reviewers := fetchGitLabReviewers(ctx, envVars["CI_SERVER_URL"], projectPath, mrIID, os.Getenv("CI_JOB_TOKEN"))
+	mrDetails := fetchGitLabMRDetails(ctx, envVars["CI_SERVER_URL"], projectPath, mrIID, os.Getenv("CI_JOB_TOKEN"))
+
+	// Use API author if available (includes bot detection), fall back to env var
+	author := &prinfo.Author{
+		Login: envVars["GITLAB_USER_LOGIN"],
+		Type:  "unknown",
+	}
+	var reviewers []prinfo.Reviewer
+	if mrDetails != nil {
+		if mrDetails.Author != nil {
+			author = mrDetails.Author
+		}
+		reviewers = mrDetails.Reviewers
+	}
 
 	metadata := &PRMetadata{
 		Platform:     "gitlab",
@@ -363,16 +380,22 @@ func extractGitLabMRMetadata(ctx context.Context, envVars map[string]string) (bo
 		SourceBranch: envVars["CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"],
 		TargetBranch: envVars["CI_MERGE_REQUEST_TARGET_BRANCH_NAME"],
 		URL:          mrURL,
-		Author:       envVars["GITLAB_USER_LOGIN"],
+		Author:       author,
 		Reviewers:    reviewers,
 	}
 
 	return true, metadata, nil
 }
 
-// fetchGitLabReviewers fetches MR reviewers from the GitLab API.
+// gitlabMRDetails holds the author and reviewer data extracted from the GitLab MR API.
+type gitlabMRDetails struct {
+	Author    *prinfo.Author
+	Reviewers []prinfo.Reviewer
+}
+
+// fetchGitLabMRDetails fetches MR details (author + reviewers) from the GitLab API.
 // Returns nil on any failure (best-effort).
-func fetchGitLabReviewers(ctx context.Context, baseURL, projectPath, mrIID, token string) []prinfo.Reviewer {
+func fetchGitLabMRDetails(ctx context.Context, baseURL, projectPath, mrIID, token string) *gitlabMRDetails {
 	if baseURL == "" || projectPath == "" || token == "" {
 		return nil
 	}
@@ -399,22 +422,56 @@ func fetchGitLabReviewers(ctx context.Context, baseURL, projectPath, mrIID, toke
 	}
 
 	var mrResponse struct {
+		Author struct {
+			Username string `json:"username"`
+			Bot      bool   `json:"bot"`
+		} `json:"author"`
 		Reviewers []struct {
 			Username string `json:"username"`
+			Bot      bool   `json:"bot"`
 		} `json:"reviewers"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&mrResponse); err != nil {
 		return nil
 	}
 
-	var reviewers []prinfo.Reviewer
+	details := &gitlabMRDetails{}
+
+	// Extract author with bot detection
+	if mrResponse.Author.Username != "" {
+		authorType := prinfo.AuthorTypeUser
+		if mrResponse.Author.Bot {
+			authorType = prinfo.AuthorTypeBot
+		}
+		details.Author = &prinfo.Author{
+			Login: mrResponse.Author.Username,
+			Type:  authorType,
+		}
+	}
+
+	// Extract reviewers with bot detection
 	for _, r := range mrResponse.Reviewers {
-		reviewers = append(reviewers, prinfo.Reviewer{
+		reviewerType := prinfo.AuthorTypeUser
+		if r.Bot {
+			reviewerType = prinfo.AuthorTypeBot
+		}
+		details.Reviewers = append(details.Reviewers, prinfo.Reviewer{
 			Login:     r.Username,
-			Type:      "unknown",
+			Type:      reviewerType,
 			Requested: true,
 		})
 	}
 
-	return reviewers
+	return details
+}
+
+// normalizeAuthorType normalizes the author type string from the CI platform
+// to one of the allowed values: "User", "Bot", or "unknown".
+func normalizeAuthorType(authorType string) string {
+	switch authorType {
+	case prinfo.AuthorTypeUser, prinfo.AuthorTypeBot:
+		return authorType
+	default:
+		return prinfo.AuthorTypeUnknown
+	}
 }
