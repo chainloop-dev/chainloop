@@ -72,7 +72,7 @@ func (d *Data) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if len(aux.Author) == 0 {
+	if len(aux.Author) == 0 || string(aux.Author) == "null" {
 		return nil
 	}
 

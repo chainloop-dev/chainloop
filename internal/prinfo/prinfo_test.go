@@ -332,6 +332,11 @@ func TestDataUnmarshalJSON(t *testing.T) {
 			wantAuthor: nil,
 		},
 		{
+			name:       "null author field",
+			input:      `{"platform":"github","type":"pull_request","number":"1","url":"https://github.com/o/r/pull/1","author":null}`,
+			wantAuthor: nil,
+		},
+		{
 			name:    "invalid author type",
 			input:   `{"platform":"github","type":"pull_request","number":"1","url":"https://github.com/o/r/pull/1","author":123}`,
 			wantErr: true,
