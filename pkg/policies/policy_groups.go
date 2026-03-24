@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type PolicyGroupVerifier struct {
@@ -91,7 +92,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 				return nil, NewPolicyError(err)
 			}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, policyAtt, subject,
+			ev, err := pgv.evaluatePolicyAttachment(ctx, applyGroupGate(policyAtt, groupAtt), subject,
 				&evalOpts{kind: material.MaterialType, name: material.GetId(), bindings: groupArgs},
 			)
 			if err != nil {
@@ -154,7 +155,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 				return nil, NewPolicyError(err)
 			}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, attachment, material,
+			ev, err := pgv.evaluatePolicyAttachment(ctx, applyGroupGate(attachment, groupAtt), material,
 				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, bindings: groupArgs},
 			)
 			if err != nil {
@@ -179,6 +180,18 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	}
 
 	return result, nil
+}
+
+func applyGroupGate(policyAtt *v1.PolicyAttachment, groupAtt *v1.PolicyGroupAttachment) *v1.PolicyAttachment {
+	if policyAtt == nil || groupAtt == nil || groupAtt.Gate == nil {
+		return policyAtt
+	}
+
+	cloned := proto.Clone(policyAtt).(*v1.PolicyAttachment)
+	groupGate := groupAtt.GetGate()
+	cloned.Gate = &groupGate
+
+	return cloned
 }
 
 type LoadPolicyGroupOptions struct {

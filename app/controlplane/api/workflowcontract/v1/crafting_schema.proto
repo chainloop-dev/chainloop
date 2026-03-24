@@ -389,6 +389,11 @@ message PolicyGroupAttachment {
   map<string, string> with = 2;
   // policy names to skip (matched against metadata.name)
   repeated string skip = 3;
+  // Controls whether policy violations act as a gate for this group.
+  // - true: policy violations are blocking for this policy group
+  // - false: policy violations are non-blocking for this policy group
+  // - unset: inherit organization-level default behavior
+  optional bool gate = 4;
 }
 
 // Represents a group or policies
