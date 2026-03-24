@@ -652,7 +652,7 @@ func (s *groupsTestSuite) TestAttestationPhaseFilteringInGroups() {
 	}
 }
 
-func (s *groupsTestSuite) TestInheritGroupGate() {
+func (s *groupsTestSuite) TestApplyGroupGate() {
 	policyGate := false
 	groupGate := true
 
@@ -693,7 +693,7 @@ func (s *groupsTestSuite) TestInheritGroupGate() {
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			got := inheritGroupGate(tc.policyAtt, tc.groupAtt)
+			got := applyGroupGate(tc.policyAtt, tc.groupAtt)
 
 			if tc.expectedNil {
 				s.Nil(got)

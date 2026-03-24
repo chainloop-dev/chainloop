@@ -92,7 +92,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 				return nil, NewPolicyError(err)
 			}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, inheritGroupGate(policyAtt, groupAtt), subject,
+			ev, err := pgv.evaluatePolicyAttachment(ctx, applyGroupGate(policyAtt, groupAtt), subject,
 				&evalOpts{kind: material.MaterialType, name: material.GetId(), bindings: groupArgs},
 			)
 			if err != nil {
@@ -155,7 +155,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 				return nil, NewPolicyError(err)
 			}
 
-			ev, err := pgv.evaluatePolicyAttachment(ctx, inheritGroupGate(attachment, groupAtt), material,
+			ev, err := pgv.evaluatePolicyAttachment(ctx, applyGroupGate(attachment, groupAtt), material,
 				&evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION, bindings: groupArgs},
 			)
 			if err != nil {
@@ -182,7 +182,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	return result, nil
 }
 
-func inheritGroupGate(policyAtt *v1.PolicyAttachment, groupAtt *v1.PolicyGroupAttachment) *v1.PolicyAttachment {
+func applyGroupGate(policyAtt *v1.PolicyAttachment, groupAtt *v1.PolicyGroupAttachment) *v1.PolicyAttachment {
 	if policyAtt == nil || groupAtt == nil || groupAtt.Gate == nil {
 		return policyAtt
 	}
