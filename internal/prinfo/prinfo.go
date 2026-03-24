@@ -25,6 +25,13 @@ const (
 	EvidenceID = "CHAINLOOP_PR_INFO"
 	// EvidenceSchemaURL is the URL to the JSON schema for PR/MR info
 	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json"
+
+	// AuthorTypeUser represents a human user account
+	AuthorTypeUser = "User"
+	// AuthorTypeBot represents a bot/service account
+	AuthorTypeBot = "Bot"
+	// AuthorTypeUnknown represents an account with unknown type
+	AuthorTypeUnknown = "unknown"
 )
 
 // Author represents the author of the PR/MR with account type information
@@ -86,7 +93,7 @@ func (d *Data) UnmarshalJSON(b []byte) error {
 	// Fall back to string format
 	var login string
 	if err := json.Unmarshal(aux.Author, &login); err == nil {
-		d.Author = &Author{Login: login, Type: "unknown"}
+		d.Author = &Author{Login: login, Type: AuthorTypeUnknown}
 		return nil
 	}
 

@@ -439,9 +439,9 @@ func fetchGitLabMRDetails(ctx context.Context, baseURL, projectPath, mrIID, toke
 
 	// Extract author with bot detection
 	if mrResponse.Author.Username != "" {
-		authorType := "User"
+		authorType := prinfo.AuthorTypeUser
 		if mrResponse.Author.Bot {
-			authorType = "Bot"
+			authorType = prinfo.AuthorTypeBot
 		}
 		details.Author = &prinfo.Author{
 			Login: mrResponse.Author.Username,
@@ -451,9 +451,9 @@ func fetchGitLabMRDetails(ctx context.Context, baseURL, projectPath, mrIID, toke
 
 	// Extract reviewers with bot detection
 	for _, r := range mrResponse.Reviewers {
-		reviewerType := "User"
+		reviewerType := prinfo.AuthorTypeUser
 		if r.Bot {
-			reviewerType = "Bot"
+			reviewerType = prinfo.AuthorTypeBot
 		}
 		details.Reviewers = append(details.Reviewers, prinfo.Reviewer{
 			Login:     r.Username,
@@ -469,9 +469,9 @@ func fetchGitLabMRDetails(ctx context.Context, baseURL, projectPath, mrIID, toke
 // to one of the allowed values: "User", "Bot", or "unknown".
 func normalizeAuthorType(authorType string) string {
 	switch authorType {
-	case "User", "Bot":
+	case prinfo.AuthorTypeUser, prinfo.AuthorTypeBot:
 		return authorType
 	default:
-		return "unknown"
+		return prinfo.AuthorTypeUnknown
 	}
 }
