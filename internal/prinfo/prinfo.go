@@ -19,8 +19,14 @@ const (
 	// EvidenceID is the identifier for the PR/MR info material type
 	EvidenceID = "CHAINLOOP_PR_INFO"
 	// EvidenceSchemaURL is the URL to the JSON schema for PR/MR info
-	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json"
+	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json"
 )
+
+// Author represents the author of the PR/MR with account type information
+type Author struct {
+	Login string `json:"login" jsonschema:"required,description=Username of the PR/MR author"`
+	Type  string `json:"type" jsonschema:"required,enum=User,enum=Bot,enum=unknown,description=Account type of the PR/MR author"`
+}
 
 // Reviewer represents a reviewer of the PR/MR
 type Reviewer struct {
@@ -40,7 +46,7 @@ type Data struct {
 	SourceBranch string     `json:"source_branch" jsonschema:"description=The source branch name"`
 	TargetBranch string     `json:"target_branch" jsonschema:"description=The target branch name"`
 	URL          string     `json:"url" jsonschema:"required,format=uri,description=Direct URL to the PR/MR"`
-	Author       string     `json:"author" jsonschema:"description=Username of the PR/MR author"`
+	Author       *Author    `json:"author,omitempty" jsonschema:"description=The PR/MR author"`
 	Reviewers    []Reviewer `json:"reviewers,omitempty" jsonschema:"description=List of reviewers who reviewed or were requested to review"`
 }
 

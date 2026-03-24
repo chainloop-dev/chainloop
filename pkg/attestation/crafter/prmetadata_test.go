@@ -56,7 +56,7 @@ func TestExtractGitHubPRMetadata(t *testing.T) {
 				assert.Equal(t, "feature-branch", metadata.SourceBranch)
 				assert.Equal(t, "main", metadata.TargetBranch)
 				assert.Equal(t, "https://github.com/owner/repo/pull/123", metadata.URL)
-				assert.Equal(t, "johndoe", metadata.Author)
+				assert.Equal(t, &prinfo.Author{Login: "johndoe", Type: "unknown"}, metadata.Author)
 				// Event file provides requested_reviewers without needing a token.
 				require.Len(t, metadata.Reviewers, 2)
 				assert.Equal(t, "reviewer1", metadata.Reviewers[0].Login)
@@ -80,7 +80,7 @@ func TestExtractGitHubPRMetadata(t *testing.T) {
 			validate: func(t *testing.T, metadata *PRMetadata) {
 				assert.Equal(t, "github", metadata.Platform)
 				assert.Equal(t, "456", metadata.Number)
-				assert.Equal(t, "janedoe", metadata.Author)
+				assert.Equal(t, &prinfo.Author{Login: "janedoe", Type: "unknown"}, metadata.Author)
 				assert.Empty(t, metadata.Reviewers)
 			},
 		},
@@ -164,7 +164,7 @@ func TestExtractGitLabMRMetadata(t *testing.T) {
 				assert.Equal(t, "feature-branch", metadata.SourceBranch)
 				assert.Equal(t, "main", metadata.TargetBranch)
 				assert.Equal(t, "https://gitlab.com/owner/repo/-/merge_requests/42", metadata.URL)
-				assert.Equal(t, "testuser", metadata.Author)
+				assert.Equal(t, &prinfo.Author{Login: "testuser", Type: "unknown"}, metadata.Author)
 				// No reviewers without API access in tests
 				assert.Empty(t, metadata.Reviewers)
 			},

@@ -39,7 +39,7 @@ type PRMetadata struct {
 	SourceBranch string
 	TargetBranch string
 	URL          string
-	Author       string
+	Author       *prinfo.Author
 	Reviewers    []prinfo.Reviewer
 }
 
@@ -105,8 +105,9 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 			Title   string `json:"title"`
 			Body    string `json:"body"`
 			HTMLURL string `json:"html_url"`
-			User    struct {
+			User struct {
 				Login string `json:"login"`
+				Type  string `json:"type"`
 			} `json:"user"`
 			RequestedReviewers []struct {
 				Login string `json:"login"`
@@ -181,7 +182,10 @@ func extractGitHubPRMetadata(ctx context.Context, envVars map[string]string) (bo
 		SourceBranch: envVars["GITHUB_HEAD_REF"],
 		TargetBranch: envVars["GITHUB_BASE_REF"],
 		URL:          event.PullRequest.HTMLURL,
-		Author:       event.PullRequest.User.Login,
+		Author: &prinfo.Author{
+			Login: event.PullRequest.User.Login,
+			Type:  normalizeAuthorType(event.PullRequest.User.Type),
+		},
 		Reviewers:    reviewers,
 	}
 
@@ -363,7 +367,10 @@ func extractGitLabMRMetadata(ctx context.Context, envVars map[string]string) (bo
 		SourceBranch: envVars["CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"],
 		TargetBranch: envVars["CI_MERGE_REQUEST_TARGET_BRANCH_NAME"],
 		URL:          mrURL,
-		Author:       envVars["GITLAB_USER_LOGIN"],
+		Author: &prinfo.Author{
+			Login: envVars["GITLAB_USER_LOGIN"],
+			Type:  "unknown",
+		},
 		Reviewers:    reviewers,
 	}
 
@@ -417,4 +424,15 @@ func fetchGitLabReviewers(ctx context.Context, baseURL, projectPath, mrIID, toke
 	}
 
 	return reviewers
+}
+
+// normalizeAuthorType normalizes the author type string from the CI platform
+// to one of the allowed values: "User", "Bot", or "unknown".
+func normalizeAuthorType(authorType string) string {
+	switch authorType {
+	case "User", "Bot":
+		return authorType
+	default:
+		return "unknown"
+	}
 }
