@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2026 The Chainloop Authors.
+// Copyright 2024-2025 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -114,10 +114,9 @@ type AuthService struct {
 	orgInvitesUseCase *biz.OrgInvitationUseCase
 	AuthURLs          *AuthURLs
 	auditorUseCase    *biz.AuditorUseCase
-	version           Version
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, auc *biz.AuditorUseCase, version Version, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, auc *biz.AuditorUseCase, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -152,7 +151,6 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		membershipUseCase: mUC,
 		orgInvitesUseCase: inviteUC,
 		auditorUseCase:    auc,
-		version:           version,
 	}, nil
 }
 
@@ -225,13 +223,13 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 
 	// Store a random string to check it in the oauth callback
 	state := base64.URLEncoding.EncodeToString(b)
-	svc.setOauthCookie(w, cookieOauthStateName, state)
+	setOauthCookie(w, cookieOauthStateName, state)
 
 	// Store the final destination where the auth token will be pushed to, i.e the CLI
-	svc.setOauthCookie(w, cookieCallback, r.URL.Query().Get(oauth.QueryParamCallback))
+	setOauthCookie(w, cookieCallback, r.URL.Query().Get(oauth.QueryParamCallback))
 
 	// Wether the token should be short lived or not
-	svc.setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
+	setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
 
 	authorizationURI := svc.authenticator.AuthCodeURL(state)
 
@@ -435,14 +433,14 @@ func generateUserJWT(userID, passphrase string, expiration time.Duration) (strin
 	return b.GenerateJWT(userID)
 }
 
-func (svc *AuthService) setOauthCookie(w http.ResponseWriter, name, value string) {
+func setOauthCookie(w http.ResponseWriter, name, value string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     name,
 		Value:    value,
 		Path:     "/",
 		Expires:  time.Now().Add(10 * time.Minute),
 		HttpOnly: true,
-		Secure:   string(svc.version) != "dev",
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
