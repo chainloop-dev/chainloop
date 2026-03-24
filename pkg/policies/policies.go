@@ -75,9 +75,9 @@ const (
 )
 
 // defaultMaxConcurrency is the default number of concurrent policy evaluations.
-// Set higher than NumCPU because policy evaluation is I/O-mixed (gRPC calls,
-// file loads) rather than purely CPU-bound. Can be overridden via WithMaxConcurrency.
-var defaultMaxConcurrency = max(runtime.NumCPU()*2, 10)
+// Kept conservative to avoid contention on remote state optimistic locking
+// and to limit pressure on AI-enabled policies. Can be overridden via WithMaxConcurrency.
+var defaultMaxConcurrency = max(runtime.NumCPU(), 5)
 
 type PolicyVerifier struct {
 	policies         *v1.Policies
