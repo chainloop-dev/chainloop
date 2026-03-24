@@ -146,7 +146,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v5 := serviceOpts(logger, authzUseCase, projectUseCase, groupUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, organizationUseCase, userUseCase, v5...)
 	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
+	version := _wireVersionValue
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, version, v5...)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -319,7 +320,8 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 }
 
 var (
-	_wireValue = []biz.CASClientOpts{}
+	_wireValue        = []biz.CASClientOpts{}
+	_wireVersionValue = service.Version(server.Version)
 )
 
 // wire.go:
