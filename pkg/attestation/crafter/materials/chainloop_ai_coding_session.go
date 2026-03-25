@@ -30,7 +30,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var annotationAICodingModel = api.CreateAnnotation("material.aicoding.model")
+var annotationAICodingModel = api.CreateAnnotation("material.aiagent.model")
 
 type ChainloopAICodingSessionCrafter struct {
 	*crafterCommon
