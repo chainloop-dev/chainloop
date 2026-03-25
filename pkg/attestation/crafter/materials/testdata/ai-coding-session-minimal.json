@@ -1,0 +1,15 @@
+{
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_CODING_SESSION",
+  "schema": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
+  "data": {
+    "schema_version": "v1",
+    "agent": {
+      "name": "cursor"
+    },
+    "session": {
+      "id": "abc-123",
+      "started_at": "2026-03-25T15:10:49.161Z",
+      "duration_seconds": 100
+    }
+  }
+}

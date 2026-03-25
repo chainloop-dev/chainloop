@@ -255,6 +255,8 @@ export enum CraftingSchema_Material_MaterialType {
   GITLEAKS_JSON = 27,
   /** CHAINLOOP_AI_AGENT_CONFIG - AI agent configuration collected automatically during attestation */
   CHAINLOOP_AI_AGENT_CONFIG = 28,
+  /** CHAINLOOP_AI_CODING_SESSION - AI coding session telemetry collected during attestation */
+  CHAINLOOP_AI_CODING_SESSION = 29,
   UNRECOGNIZED = -1,
 }
 
@@ -347,6 +349,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 28:
     case "CHAINLOOP_AI_AGENT_CONFIG":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_AI_AGENT_CONFIG;
+    case 29:
+    case "CHAINLOOP_AI_CODING_SESSION":
+      return CraftingSchema_Material_MaterialType.CHAINLOOP_AI_CODING_SESSION;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -414,6 +419,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "GITLEAKS_JSON";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_AI_AGENT_CONFIG:
       return "CHAINLOOP_AI_AGENT_CONFIG";
+    case CraftingSchema_Material_MaterialType.CHAINLOOP_AI_CODING_SESSION:
+      return "CHAINLOOP_AI_CODING_SESSION";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

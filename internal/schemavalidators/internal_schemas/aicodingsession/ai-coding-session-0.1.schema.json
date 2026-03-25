@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
+  "type": "object",
+  "title": "AI Coding Session",
+  "description": "Schema for AI coding session telemetry data collected during attestation",
+  "required": [
+    "schema_version",
+    "agent",
+    "session"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Schema version identifier"
+    },
+    "agent": {
+      "type": "object",
+      "description": "AI agent provider information",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Agent provider name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Agent version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "session": {
+      "type": "object",
+      "description": "Session timing and identity",
+      "required": ["id", "started_at", "duration_seconds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique session identifier"
+        },
+        "slug": {
+          "type": "string",
+          "description": "Human-readable session slug"
+        },
+        "started_at": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ISO 8601 timestamp when the session started"
+        },
+        "ended_at": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when the session ended"
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total session duration in seconds"
+        }
+      },
+      "additionalProperties": false
+    },
+    "git_context": {
+      "type": "object",
+      "description": "Repository and commit information"
+    },
+    "code_changes": {
+      "type": "object",
+      "description": "Summary of code modifications"
+    },
+    "model": {
+      "type": "object",
+      "description": "AI model information"
+    },
+    "usage": {
+      "type": "object",
+      "description": "Token usage and cost information"
+    },
+    "tools_used": {
+      "type": "object",
+      "description": "Tool usage statistics"
+    },
+    "conversation": {
+      "type": "object",
+      "description": "Message count statistics"
+    },
+    "subagents": {
+      "type": "array",
+      "description": "Subagent information (open schema)",
+      "items": {
+        "type": "object"
+      }
+    },
+    "raw_session": {
+      "type": "object",
+      "description": "Raw session conversation data keyed by thread name",
+      "additionalProperties": {
+        "type": "array"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warnings generated during session processing",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

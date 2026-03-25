@@ -43,6 +43,9 @@ type PRInfoVersion string
 // AIAgentConfigVersion represents the version of AI Agent Config schema.
 type AIAgentConfigVersion string
 
+// AICodingSessionVersion represents the version of AI Coding Session schema.
+type AICodingSessionVersion string
+
 const (
 	// RunnerContextVersion0_1 represents Runner Context version 0.1 schema.
 	RunnerContextVersion0_1 RunnerContextVersion = "0.1"
@@ -64,6 +67,8 @@ const (
 	CSAFVersion2_1 CSAFVersion = "2.1"
 	// AIAgentConfigVersion0_1 represents AI Agent Config version 0.1 schema.
 	AIAgentConfigVersion0_1 AIAgentConfigVersion = "0.1"
+	// AICodingSessionVersion0_1 represents AI Coding Session version 0.1 schema.
+	AICodingSessionVersion0_1 AICodingSessionVersion = "0.1"
 )
 
 var (
@@ -108,6 +113,10 @@ var (
 	// AI Agent Config schemas
 	//go:embed internal_schemas/aiagentconfig/ai-agent-config-0.1.schema.json
 	aiAgentConfigSpecVersion0_1 string
+
+	// AI Coding Session schemas
+	//go:embed internal_schemas/aicodingsession/ai-coding-session-0.1.schema.json
+	aiCodingSessionSpecVersion0_1 string
 )
 
 // schemaURLMapping maps the schema URL to the schema content. This is used to compile the schema validators
@@ -115,22 +124,23 @@ var (
 // The keys are the URLs of the schemas and the values are the schema content that can be found in the embedded
 // files.
 var schemaURLMapping = map[string]string{
-	"http://cyclonedx.org/schema/jsf-0.82.schema.json":                            jsfSpecVersion0_82,
-	"http://cyclonedx.org/schema/spdx.schema.json":                                spdxSpec,
-	"http://cyclonedx.org/schema/bom-1.5.schema.json":                             bomSpecVersion1_5,
-	"http://cyclonedx.org/schema/bom-1.6.schema.json":                             bomSpecVersion1_6,
-	"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":            casfSpecVersion2_0,
-	"https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json":            casfSpecVersion2_1,
-	"https://www.first.org/cvss/cvss-v2.0.json":                                   cvssSpecVersion2_0,
-	"https://www.first.org/cvss/cvss-v3.0.json":                                   cvssSpecVersion3_0,
-	"https://www.first.org/cvss/cvss-v3.1.json":                                   cvssSpecVersion3_1,
-	"https://www.first.org/cvss/cvss-v4.0.json":                                   cvssSpecVersion4_0,
-	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json":       runnerContextSpecVersion0_1,
-	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":                prInfoSpecVersion1_0,
-	"https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json":                prInfoSpecVersion1_1,
-	"https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json":                prInfoSpecVersion1_2,
-	"https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json":                prInfoSpecVersion1_3,
-	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json": aiAgentConfigSpecVersion0_1,
+	"http://cyclonedx.org/schema/jsf-0.82.schema.json":                                jsfSpecVersion0_82,
+	"http://cyclonedx.org/schema/spdx.schema.json":                                    spdxSpec,
+	"http://cyclonedx.org/schema/bom-1.5.schema.json":                                 bomSpecVersion1_5,
+	"http://cyclonedx.org/schema/bom-1.6.schema.json":                                 bomSpecVersion1_6,
+	"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":                casfSpecVersion2_0,
+	"https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json":                casfSpecVersion2_1,
+	"https://www.first.org/cvss/cvss-v2.0.json":                                       cvssSpecVersion2_0,
+	"https://www.first.org/cvss/cvss-v3.0.json":                                       cvssSpecVersion3_0,
+	"https://www.first.org/cvss/cvss-v3.1.json":                                       cvssSpecVersion3_1,
+	"https://www.first.org/cvss/cvss-v4.0.json":                                       cvssSpecVersion4_0,
+	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json":           runnerContextSpecVersion0_1,
+	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":                    prInfoSpecVersion1_0,
+	"https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json":                    prInfoSpecVersion1_1,
+	"https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json":                    prInfoSpecVersion1_2,
+	"https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json":                    prInfoSpecVersion1_3,
+	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json":     aiAgentConfigSpecVersion0_1,
+	"https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json": aiCodingSessionSpecVersion0_1,
 }
 
 var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
@@ -138,6 +148,7 @@ var compiledCSAFSchemas map[CSAFVersion]*jsonschema.Schema
 var compiledRunnerContextSchemas map[RunnerContextVersion]*jsonschema.Schema
 var compiledPRInfoSchemas map[PRInfoVersion]*jsonschema.Schema
 var compiledAIAgentConfigSchemas map[AIAgentConfigVersion]*jsonschema.Schema
+var compiledAICodingSessionSchemas map[AICodingSessionVersion]*jsonschema.Schema
 
 func init() {
 	compiler := jsonschema.NewCompiler()
@@ -164,6 +175,9 @@ func init() {
 
 	compiledAIAgentConfigSchemas = make(map[AIAgentConfigVersion]*jsonschema.Schema)
 	compiledAIAgentConfigSchemas[AIAgentConfigVersion0_1] = compiler.MustCompile("https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json")
+
+	compiledAICodingSessionSchemas = make(map[AICodingSessionVersion]*jsonschema.Schema)
+	compiledAICodingSessionSchemas[AICodingSessionVersion0_1] = compiler.MustCompile("https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json")
 }
 
 // ValidateCycloneDX validates the given object against the specified CycloneDX schema version.
@@ -286,6 +300,28 @@ func ValidateAIAgentConfig(data any, version AIAgentConfigVersion) error {
 	schema, ok := compiledAIAgentConfigSchemas[version]
 	if !ok {
 		return errors.New("invalid AI agent config schema version")
+	}
+
+	if err := schema.Validate(data); err != nil {
+		var invalidJSONTypeError jsonschema.InvalidJSONTypeError
+		if errors.As(err, &invalidJSONTypeError) {
+			return ErrInvalidJSONPayload
+		}
+		return err
+	}
+
+	return nil
+}
+
+// ValidateAICodingSession validates the AI coding session schema.
+func ValidateAICodingSession(data any, version AICodingSessionVersion) error {
+	if version == "" {
+		version = AICodingSessionVersion0_1
+	}
+
+	schema, ok := compiledAICodingSessionSchemas[version]
+	if !ok {
+		return errors.New("invalid AI coding session schema version")
 	}
 
 	if err := schema.Validate(data); err != nil {
