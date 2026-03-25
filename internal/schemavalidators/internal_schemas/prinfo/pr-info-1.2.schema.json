@@ -44,8 +44,28 @@
       "description": "Direct URL to the PR/MR"
     },
     "author": {
-      "type": "string",
-      "description": "Username of the PR/MR author"
+      "properties": {
+        "login": {
+          "type": "string",
+          "description": "Username of the PR/MR author"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "User",
+            "Bot",
+            "unknown"
+          ],
+          "description": "Account type of the PR/MR author"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "login",
+        "type"
+      ],
+      "description": "The PR/MR author"
     },
     "reviewers": {
       "items": {
