@@ -114,6 +114,7 @@ type AuthService struct {
 	orgInvitesUseCase *biz.OrgInvitationUseCase
 	AuthURLs          *AuthURLs
 	auditorUseCase    *biz.AuditorUseCase
+	devMode           bool
 }
 
 func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, auc *biz.AuditorUseCase, opts ...NewOpt) (*AuthService, error) {
@@ -151,6 +152,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		membershipUseCase: mUC,
 		orgInvitesUseCase: inviteUC,
 		auditorUseCase:    auc,
+		devMode:           authConfig.DevUser != "",
 	}, nil
 }
 
@@ -223,13 +225,13 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 
 	// Store a random string to check it in the oauth callback
 	state := base64.URLEncoding.EncodeToString(b)
-	setOauthCookie(w, cookieOauthStateName, state)
+	svc.setOauthCookie(w, cookieOauthStateName, state)
 
 	// Store the final destination where the auth token will be pushed to, i.e the CLI
-	setOauthCookie(w, cookieCallback, r.URL.Query().Get(oauth.QueryParamCallback))
+	svc.setOauthCookie(w, cookieCallback, r.URL.Query().Get(oauth.QueryParamCallback))
 
 	// Wether the token should be short lived or not
-	setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
+	svc.setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
 
 	authorizationURI := svc.authenticator.AuthCodeURL(state)
 
@@ -433,16 +435,21 @@ func generateUserJWT(userID, passphrase string, expiration time.Duration) (strin
 	return b.GenerateJWT(userID)
 }
 
-func setOauthCookie(w http.ResponseWriter, name, value string) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     name,
-		Value:    value,
-		Path:     "/",
-		Expires:  time.Now().Add(10 * time.Minute),
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
-	})
+func (svc *AuthService) setOauthCookie(w http.ResponseWriter, name, value string) {
+	c := &http.Cookie{
+		Name:    name,
+		Value:   value,
+		Path:    "/",
+		Expires: time.Now().Add(10 * time.Minute),
+	}
+
+	if !svc.devMode {
+		c.HttpOnly = true
+		c.Secure = true
+		c.SameSite = http.SameSiteLaxMode
+	}
+
+	http.SetCookie(w, c)
 }
 
 func generateAndLogDevUser(userUC *biz.UserUseCase, log *log.Helper, authConfig *conf.Auth) error {
