@@ -266,19 +266,16 @@ func TestChainloopAIAgentConfigCrafter_AgentNameAnnotation(t *testing.T) {
 		name              string
 		filePath          string
 		expectedAgentName string
-		expectedSchema    string
 	}{
 		{
 			name:              "claude agent",
 			filePath:          "./testdata/ai-agent-config-claude.json",
 			expectedAgentName: "claude",
-			expectedSchema:    "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
 		},
 		{
 			name:              "cursor agent",
 			filePath:          "./testdata/ai-agent-config-cursor.json",
 			expectedAgentName: "cursor",
-			expectedSchema:    "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json",
 		},
 	}
 
@@ -306,7 +303,6 @@ func TestChainloopAIAgentConfigCrafter_AgentNameAnnotation(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expectedAgentName, got.Annotations[annotationAIAgentName])
-			assert.Equal(t, tc.expectedSchema, got.Annotations[annotationEvidenceSchema])
 		})
 	}
 }

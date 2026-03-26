@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/internal/aicodingsession"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
@@ -232,7 +232,6 @@ func TestChainloopAICodingSessionCrafter_Annotations(t *testing.T) {
 		filePath          string
 		expectedAgentName string
 		expectedModel     string
-		expectedSchema    string
 		modelPresent      bool
 	}{
 		{
@@ -240,14 +239,12 @@ func TestChainloopAICodingSessionCrafter_Annotations(t *testing.T) {
 			filePath:          "./testdata/ai-coding-session.json",
 			expectedAgentName: "claude-code",
 			expectedModel:     "claude-opus-4-6",
-			expectedSchema:    "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
 			modelPresent:      true,
 		},
 		{
 			name:              "minimal session without model",
 			filePath:          "./testdata/ai-coding-session-minimal.json",
 			expectedAgentName: "cursor",
-			expectedSchema:    "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
 			modelPresent:      false,
 		},
 	}
@@ -276,7 +273,6 @@ func TestChainloopAICodingSessionCrafter_Annotations(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expectedAgentName, got.Annotations[annotationAIAgentName])
-			assert.Equal(t, tc.expectedSchema, got.Annotations[annotationEvidenceSchema])
 			if tc.modelPresent {
 				assert.Equal(t, tc.expectedModel, got.Annotations[annotationAICodingModel])
 			} else {

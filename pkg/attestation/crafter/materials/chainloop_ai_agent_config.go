@@ -58,8 +58,7 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 
 	// Unmarshal envelope, keeping data as raw JSON for schema validation
 	var envelope struct {
-		Schema string          `json:"schema"`
-		Data   json.RawMessage `json:"data"`
+		Data json.RawMessage `json:"data"`
 	}
 	if err := json.Unmarshal(f, &envelope); err != nil {
 		c.logger.Debug().Err(err).Msg("error decoding file")
@@ -87,11 +86,6 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 	material, err := uploadAndCraft(ctx, c.input, c.backend, artifactPath, c.logger)
 	if err != nil {
 		return nil, err
-	}
-
-	// Surface schema as an annotation
-	if envelope.Schema != "" {
-		material.Annotations[annotationEvidenceSchema] = envelope.Schema
 	}
 
 	// Surface agent name as an annotation
