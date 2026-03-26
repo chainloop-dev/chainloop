@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +60,8 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 
 	// initialize the underneath http server
 	httpSrv := http.NewServer(serverOpts...)
+	// Relax secure cookie settings in development mode
+	opts.AuthSvc.SetDevMode(Version == "dev")
 	// NOTE: these non-grpc transcoded methods DO NOT RUN the middlewares
 	httpSrv.Handle(service.AuthLoginPath, middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterLoginHandler()))
 	httpSrv.Handle(service.AuthCallbackPath, middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterCallbackHandler()))
