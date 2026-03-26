@@ -273,7 +273,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		for _, want := range wantRefs {
 			found := false
 			for _, gotR := range got.References {
-				if gotR.Referrer.Digest == want.Digest {
+				if gotR.Digest == want.Digest {
 					s.Equal(want, gotR.Referrer)
 					found = true
 					break

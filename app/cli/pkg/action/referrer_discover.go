@@ -41,8 +41,8 @@ type ReferrerItem struct {
 }
 
 type ReferrerDiscoverResult struct {
-	Item       *ReferrerItem
-	NextCursor string
+	Item       *ReferrerItem `json:"result"`
+	NextCursor string        `json:"nextCursor,omitempty"`
 }
 
 func NewReferrerDiscoverPrivate(cfg *ActionsOpts) *ReferrerDiscover {

@@ -52,15 +52,7 @@ func newReferrerDiscoverCmd() *cobra.Command {
 			}
 
 			// NOTE: this is a preview/beta command, for now we only return JSON format
-			if err := output.EncodeJSON(res.Item); err != nil {
-				return err
-			}
-
-			if next := res.NextCursor; next != "" {
-				logger.Info().Msgf("To fetch the next page, use: --next %s", next)
-			}
-
-			return nil
+			return output.EncodeJSON(res)
 		},
 	}
 
