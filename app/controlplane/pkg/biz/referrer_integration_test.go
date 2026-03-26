@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -52,17 +53,17 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 	// We'll store the attestation in the private only index
 	ctx := context.Background()
 	s.Run("public endpoint fails if feature not enabled", func() {
-		_, err := s.Referrer.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		_, _, err := s.Referrer.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
 		s.ErrorContains(err, "not enabled")
 	})
 
 	s.Run("storing it associated with a private workflow keeps it private and not in the index", func() {
 		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
 		require.NoError(s.T(), err)
-		ref, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		ref, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		s.False(ref.InPublicWorkflow)
-		res, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		res, _, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
 		s.True(biz.IsNotFound(err))
 		s.Nil(res)
 	})
@@ -75,12 +76,12 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		require.NoError(s.T(), err)
 		// It's marked as public in the internal index
-		ref, err := s.sharedEnabledUC.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		ref, _, err := s.sharedEnabledUC.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		s.True(ref.InPublicWorkflow)
 
 		// But it's not in the public shared index because the org 2 is not whitelisted
-		res, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		res, _, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
 		s.True(biz.IsNotFound(err))
 		s.Nil(res)
 	})
@@ -93,7 +94,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 			}, nil)
 		require.NoError(t, err)
 		// Now it's public since org2 is whitelisted
-		res, err := uc.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		res, _, err := uc.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
 		s.NoError(err)
 		s.Equal(wantReferrerAtt.Digest, res.Digest)
 	})
@@ -108,7 +109,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
 		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		require.NoError(s.T(), err)
 		// Now it's public since org1 is whitelisted
-		res, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "")
+		res, _, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
 		s.NoError(err)
 		s.Equal(wantReferrerAtt.Digest, res.Digest)
 	})
@@ -138,11 +139,12 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 
 		err = s.Referrer.ExtractAndPersist(ctx, envelope, wantReferrerAtt, s.workflow1.ID.String())
 		s.NoError(err)
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.String(), "ATTESTATION", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.String(), "ATTESTATION", s.user.ID, nil)
 		s.NoError(err)
 		// It has a commit and an attestation
 		require.Len(s.T(), got.References, 2)
-		s.Equal(wantDependentAtt.String(), got.References[0].Digest)
+		digests := []string{got.References[0].Digest, got.References[1].Digest}
+		s.Contains(digests, wantDependentAtt.String())
 	})
 }
 
@@ -166,7 +168,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
 		}
 		wg.Wait()
 
-		got, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
 		s.NoError(err)
 		s.Len(got.WorkflowIDs, 2)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
@@ -229,21 +231,21 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	s.T().Run("it can store properly the first time", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
 		s.NoError(err)
-		prevStoredRef, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID)
+		prevStoredRef, _, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
 		s.NoError(err)
 	})
 
 	s.T().Run("and it's idempotent", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
 		s.NoError(err)
-		ref, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID)
+		ref, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
 		s.NoError(err)
 		// Check it's the same referrer than previously retrieved, including timestamps
 		s.Equal(prevStoredRef, ref)
 	})
 
 	s.T().Run("contains all the info", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		// parent i.e attestation
 		s.Equal(wantReferrerAtt.Digest, got.Digest)
@@ -265,24 +267,33 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// it has all the references
 		require.Len(t, got.References, 6)
 
-		for i, want := range []*biz.Referrer{
-			wantReferrerArtifact, wantReferrerContainerImage, wantReferrerCommit, wantReferrerOpenVEX, wantReferrerSarif, wantReferrerSBOM} {
-			gotR := got.References[i]
-			s.Equal(want, gotR.Referrer)
+		wantRefs := []*biz.Referrer{
+			wantReferrerArtifact, wantReferrerContainerImage, wantReferrerCommit, wantReferrerOpenVEX, wantReferrerSarif, wantReferrerSBOM,
+		}
+		for _, want := range wantRefs {
+			found := false
+			for _, gotR := range got.References {
+				if gotR.Digest == want.Digest {
+					s.Equal(want, gotR.Referrer)
+					found = true
+					break
+				}
+			}
+			s.True(found, "expected referrer with digest %s not found", want.Digest)
 		}
 		s.Equal([]uuid.UUID{s.org1UUID}, got.OrgIDs)
 		s.Equal([]uuid.UUID{s.workflow1.ID}, got.WorkflowIDs)
 	})
 
 	s.T().Run("can get sha1 digests too", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerCommit.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerCommit.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		s.Equal(wantReferrerCommit.Digest, got.Digest)
 	})
 
 	s.T().Run("can't be accessed by a second user in another org", func(t *testing.T) {
 		// the user2 has not access to org1
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user2.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user2.ID, nil)
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
@@ -290,7 +301,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	s.T().Run("but another workflow can be attached", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		s.NoError(err)
-		got, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
 		s.Contains(got.OrgIDs, s.org1UUID)
@@ -299,7 +310,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// and it's idempotent (no new orgs added)
 		err = s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		s.NoError(err)
-		got, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID)
+		got, _, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
 		s.Equal([]uuid.UUID{s.org2UUID, s.org1UUID}, got.OrgIDs)
@@ -309,13 +320,13 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	s.T().Run("and now user2 has access to it since it has access to workflow2 in org2", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		s.NoError(err)
-		got, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user2.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user2.ID, nil)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
 	})
 
 	s.T().Run("subject materials are returned connected to the attestation", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerContainerImage.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerContainerImage.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		// parent i.e attestation
 		s.Equal(wantReferrerContainerImage.Digest, got.Digest)
@@ -329,7 +340,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("non-subject materials also are connected to the attestation", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		require.Len(t, got.References, 1)
 		s.Equal(wantReferrerAtt.Digest, got.References[0].Digest)
@@ -338,7 +349,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("or it does not exist", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRootUser(ctx, "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", s.user.ID, nil)
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
@@ -360,20 +371,20 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.NoError(err)
 
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "", s.user.ID, nil)
 		s.Nil(got)
 		s.ErrorContains(err, "present in 2 kinds")
 	})
 
 	s.T().Run("it should not fail on retrieval if we filter out by one kind", func(t *testing.T) {
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "SARIF", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "SARIF", s.user.ID, nil)
 		s.NoError(err)
 		s.Equal(wantReferrerSarif.Digest, got.Digest)
 		s.Equal(true, got.Downloadable)
 		s.Equal("SARIF", got.Kind)
 
-		got, err = s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "ARTIFACT", s.user.ID)
+		got, _, err = s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "ARTIFACT", s.user.ID, nil)
 		s.NoError(err)
 		s.Equal(wantReferrerSarif.Digest, got.Digest)
 		s.Equal(true, got.Downloadable)
@@ -382,18 +393,20 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 
 	s.T().Run("now there should a container image pointing to two attestations", func(t *testing.T) {
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerContainerImage.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerContainerImage.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		// it should be referenced by two attestations since it's subject of both
 		require.Len(t, got.References, 2)
-		s.Equal("ATTESTATION", got.References[0].Kind)
-		s.Equal("sha256:2e9bf8e13acd112eff355787b2b72eb8af4ee51fc22c7e65611939f2225e1dc5", got.References[0].Digest)
-		s.Equal("ATTESTATION", got.References[1].Kind)
-		s.Equal("sha256:5f4d1baadaf3e439f769f11c7ba0c5f77dad27d00689144d1311b48e65818bbd", got.References[1].Digest)
+		gotDigests := []string{got.References[0].Digest, got.References[1].Digest}
+		for _, ref := range got.References {
+			s.Equal("ATTESTATION", ref.Kind)
+		}
+		s.Contains(gotDigests, "sha256:2e9bf8e13acd112eff355787b2b72eb8af4ee51fc22c7e65611939f2225e1dc5")
+		s.Contains(gotDigests, "sha256:5f4d1baadaf3e439f769f11c7ba0c5f77dad27d00689144d1311b48e65818bbd")
 	})
 
 	s.T().Run("if all associated workflows are private, the referrer is private", func(t *testing.T) {
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		s.False(got.InPublicWorkflow)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
@@ -407,11 +420,113 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		_, err := s.Workflow.Update(ctx, s.org1.ID, s.workflow1.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
 		require.NoError(t, err)
 
-		got, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
 		s.NoError(err)
 		s.True(got.InPublicWorkflow)
 		for _, r := range got.References {
 			s.True(r.InPublicWorkflow)
+		}
+	})
+}
+
+func (s *referrerIntegrationTestSuite) TestPagination() {
+	// Load attestation — it has 6 references (ARTIFACT, CONTAINER_IMAGE, GIT_HEAD_COMMIT, OPENVEX, SARIF, SBOM_CYCLONEDX_JSON)
+	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	h, _, err := v1.SHA256(bytes.NewReader(envBytes))
+	require.NoError(s.T(), err)
+	ctx := context.Background()
+
+	err = s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
+	require.NoError(s.T(), err)
+
+	tests := []struct {
+		name           string
+		limit          int
+		cursor         string
+		wantCount      int
+		wantNextCursor bool
+		description    string
+	}{
+		{
+			name:           "nil pagination returns all references (no limit)",
+			wantCount:      6,
+			wantNextCursor: false,
+			description:    "backward compat: nil pagination returns everything",
+		},
+		{
+			name:           "limit larger than total returns all",
+			limit:          100,
+			wantCount:      6,
+			wantNextCursor: false,
+		},
+		{
+			name:           "limit equal to total returns all with no next cursor",
+			limit:          6,
+			wantCount:      6,
+			wantNextCursor: false,
+		},
+		{
+			name:           "limit less than total returns partial with next cursor",
+			limit:          3,
+			wantCount:      3,
+			wantNextCursor: true,
+		},
+		{
+			name:           "limit of 1 returns single reference with next cursor",
+			limit:          1,
+			wantCount:      1,
+			wantNextCursor: true,
+		},
+	}
+
+	for _, tc := range tests {
+		s.T().Run(tc.name, func(t *testing.T) {
+			var p *pagination.CursorOptions
+			if tc.limit > 0 {
+				p, err = pagination.NewCursor(tc.cursor, tc.limit)
+				require.NoError(t, err)
+			}
+
+			got, nextCursor, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, p)
+			require.NoError(t, err)
+			require.Len(t, got.References, tc.wantCount)
+
+			if tc.wantNextCursor {
+				s.NotEmpty(nextCursor, "expected a next cursor")
+			} else {
+				s.Empty(nextCursor, "expected no next cursor")
+			}
+		})
+	}
+
+	// Test cursor traversal: page through all references one at a time
+	s.T().Run("cursor traversal visits all references", func(t *testing.T) {
+		var allDigests []string
+		cursor := ""
+
+		for i := 0; i < 10; i++ { // safety limit
+			p, err := pagination.NewCursor(cursor, 1)
+			require.NoError(t, err)
+
+			got, nextCursor, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, p)
+			require.NoError(t, err)
+			require.Len(t, got.References, 1)
+
+			allDigests = append(allDigests, got.References[0].Digest)
+
+			if nextCursor == "" {
+				break
+			}
+			cursor = nextCursor
+		}
+
+		// Should have traversed all 6 references
+		s.Len(allDigests, 6)
+		// All digests should be unique
+		seen := make(map[string]bool)
+		for _, d := range allDigests {
+			s.False(seen[d], "duplicate digest found: %s", d)
+			seen[d] = true
 		}
 	})
 }

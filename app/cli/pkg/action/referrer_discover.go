@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,36 +40,62 @@ type ReferrerItem struct {
 	Annotations  map[string]string `json:"annotations,omitempty"`
 }
 
+type ReferrerDiscoverResult struct {
+	Item       *ReferrerItem `json:"result"`
+	NextCursor string        `json:"nextCursor,omitempty"`
+}
+
 func NewReferrerDiscoverPrivate(cfg *ActionsOpts) *ReferrerDiscover {
 	return &ReferrerDiscover{cfg}
 }
 
-func (action *ReferrerDiscover) Run(ctx context.Context, digest, kind string) (*ReferrerItem, error) {
+func (action *ReferrerDiscover) Run(ctx context.Context, digest, kind string, p *PaginationOpts) (*ReferrerDiscoverResult, error) {
 	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
 	resp, err := client.DiscoverPrivate(ctx, &pb.ReferrerServiceDiscoverPrivateRequest{
-		Digest: digest, Kind: kind,
+		Digest:     digest,
+		Kind:       kind,
+		Pagination: paginationOptsToPb(p),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return pbReferrerItemToAction(resp.Result), nil
+	return newReferrerDiscoverResult(resp.Result, resp.GetPagination()), nil
 }
 
 func NewReferrerDiscoverPublicIndex(cfg *ActionsOpts) *ReferrerDiscoverPublic {
 	return &ReferrerDiscoverPublic{cfg}
 }
 
-func (action *ReferrerDiscoverPublic) Run(ctx context.Context, digest, kind string) (*ReferrerItem, error) {
+func (action *ReferrerDiscoverPublic) Run(ctx context.Context, digest, kind string, p *PaginationOpts) (*ReferrerDiscoverResult, error) {
 	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
 	resp, err := client.DiscoverPublicShared(ctx, &pb.DiscoverPublicSharedRequest{
-		Digest: digest, Kind: kind,
+		Digest:     digest,
+		Kind:       kind,
+		Pagination: paginationOptsToPb(p),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return pbReferrerItemToAction(resp.Result), nil
+	return newReferrerDiscoverResult(resp.Result, resp.GetPagination()), nil
+}
+
+func paginationOptsToPb(p *PaginationOpts) *pb.CursorPaginationRequest {
+	if p == nil {
+		return nil
+	}
+	return &pb.CursorPaginationRequest{
+		Limit:  int32(p.Limit),
+		Cursor: p.NextCursor,
+	}
+}
+
+func newReferrerDiscoverResult(item *pb.ReferrerItem, p *pb.CursorPaginationResponse) *ReferrerDiscoverResult {
+	return &ReferrerDiscoverResult{
+		Item:       pbReferrerItemToAction(item),
+		NextCursor: p.GetNextCursor(),
+	}
 }
 
 func pbReferrerItemToAction(in *pb.ReferrerItem) *ReferrerItem {
