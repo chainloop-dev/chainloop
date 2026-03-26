@@ -142,7 +142,8 @@
             "CHAINLOOP_RUNNER_CONTEXT",
             "CHAINLOOP_PR_INFO",
             "GITLEAKS_JSON",
-            "CHAINLOOP_AI_AGENT_CONFIG"
+            "CHAINLOOP_AI_AGENT_CONFIG",
+            "CHAINLOOP_AI_CODING_SESSION"
           ],
           "title": "Material Type",
           "type": "string"

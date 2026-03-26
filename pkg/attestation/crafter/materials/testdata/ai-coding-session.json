@@ -1,0 +1,77 @@
+{
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_CODING_SESSION",
+  "schema": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
+  "data": {
+    "schema_version": "v1",
+    "agent": {
+      "name": "claude-code",
+      "version": "2.1.83"
+    },
+    "session": {
+      "id": "fa8acbe6-a176-4c2a-b51e-fd4541615eb5",
+      "slug": "stateful-wobbling-sutherland",
+      "started_at": "2026-03-25T15:10:49.161Z",
+      "ended_at": "2026-03-25T16:59:14.988Z",
+      "duration_seconds": 6505
+    },
+    "git_context": {
+      "repository": "git@github.com:example/repo.git",
+      "branch": "main",
+      "work_dir": "/home/user/repo",
+      "commit_start": "ae79df1aae6ef53fea636b4aad0a8c3d372178e9",
+      "commit_end": "5869b91e80fea5ac3d4502c728b118e85d65d825",
+      "commits": [
+        "ae79df1 Add Go hello world application",
+        "5869b91 Add --bye flag"
+      ],
+      "commit_count": 2
+    },
+    "code_changes": {
+      "files_modified": 0,
+      "files_created": 2,
+      "files_deleted": 0,
+      "lines_added": 36,
+      "lines_removed": 0,
+      "files": [
+        {"path": "go.mod", "status": "created"},
+        {"path": "main.go", "status": "created"}
+      ]
+    },
+    "model": {
+      "primary": "claude-opus-4-6",
+      "provider": "anthropic",
+      "models_used": ["claude-opus-4-6"]
+    },
+    "usage": {
+      "input_tokens": 63,
+      "output_tokens": 2989,
+      "total_tokens": 3052,
+      "cache_read_input_tokens": 933233,
+      "cache_creation_input_tokens": 47538,
+      "estimated_cost_usd": 0.8388
+    },
+    "tools_used": {
+      "summary": [
+        {"tool_name": "Bash", "invocation_count": 13},
+        {"tool_name": "Edit", "invocation_count": 4}
+      ],
+      "total_invocations": 17
+    },
+    "conversation": {
+      "total_messages": 87,
+      "user_messages": 34,
+      "assistant_messages": 36
+    },
+    "subagents": [],
+    "raw_session": {
+      "main": [
+        {
+          "type": "user",
+          "message": {"role": "user", "content": "hello world"},
+          "timestamp": "2026-03-25T15:13:37.330Z"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

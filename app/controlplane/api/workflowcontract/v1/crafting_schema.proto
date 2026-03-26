@@ -151,6 +151,8 @@ message CraftingSchema {
       GITLEAKS_JSON = 27;
       // AI agent configuration collected automatically during attestation
       CHAINLOOP_AI_AGENT_CONFIG = 28;
+      // AI coding session telemetry collected during attestation
+      CHAINLOOP_AI_CODING_SESSION = 29;
     }
   }
 }
