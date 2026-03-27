@@ -5,6 +5,10 @@ on:
     - cron: '30 1 * * *'
   workflow_dispatch:
 
+# Job-level permissions completely replace workflow-level defaults, so the
+# token only receives the job's issues: write + pull-requests: write grants.
+permissions: {}
+
 jobs:
   close-issues:
     runs-on: ubuntu-latest
