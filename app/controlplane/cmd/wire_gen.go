@@ -141,12 +141,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, organizationRepo, logger)
-	cache, err := newMembershipsCache(conn)
+	cache, err := newMembershipsCache(conn, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	cacheCache, err := newClaimsCache(conn)
+	cacheCache, err := newClaimsCache(conn, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -400,18 +400,45 @@ var cacheProviderSet = wire.NewSet(
 	newClaimsCache,
 )
 
-func newClaimsCache(conn *nats.Conn) (cache.Cache[*jwt.MapClaims], error) {
-	opts := []cache.Option{cache.WithTTL(10 * time.Second)}
+func newClaimsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
+	l := log.NewHelper(logger)
+	backend := "memory"
+	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(&kratosLogAdapter{h: l})}
 	if conn != nil {
-		opts = append(opts, cache.WithNATS(conn, "jwt-claims"))
+		backend = "nats"
+		opts = append(opts, cache.WithNATS(conn, "chainloop-jwt-claims"))
 	}
+	l.Infow("msg", "cache initialized", "bucket", "chainloop-jwt-claims", "backend", backend, "ttl", "10s")
 	return cache.New[*jwt.MapClaims](opts...)
 }
 
-func newMembershipsCache(conn *nats.Conn) (cache.Cache[*entities.Membership], error) {
-	opts := []cache.Option{cache.WithTTL(time.Second)}
+func newMembershipsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*entities.Membership], error) {
+	l := log.NewHelper(logger)
+	backend := "memory"
+	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(&kratosLogAdapter{h: l})}
 	if conn != nil {
-		opts = append(opts, cache.WithNATS(conn, "memberships"))
+		backend = "nats"
+		opts = append(opts, cache.WithNATS(conn, "chainloop-memberships"))
 	}
+	l.Infow("msg", "cache initialized", "bucket", "chainloop-memberships", "backend", backend, "ttl", "1s")
 	return cache.New[*entities.Membership](opts...)
+}
+
+// kratosLogAdapter adapts kratos log.Helper (Debugw(...interface{})) to cache.Logger (Debugw(string, ...any)).
+type kratosLogAdapter struct{ h *log.Helper }
+
+func (a *kratosLogAdapter) Debugw(msg string, keyvals ...any) {
+	a.h.Debugw(append([]any{"msg", msg}, keyvals...)...)
+}
+
+func (a *kratosLogAdapter) Infow(msg string, keyvals ...any) {
+	a.h.Infow(append([]any{"msg", msg}, keyvals...)...)
+}
+
+func (a *kratosLogAdapter) Warnw(msg string, keyvals ...any) {
+	a.h.Warnw(append([]any{"msg", msg}, keyvals...)...)
+}
+
+func (a *kratosLogAdapter) Errorw(msg string, keyvals ...any) {
+	a.h.Errorw(append([]any{"msg", msg}, keyvals...)...)
 }
