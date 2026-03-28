@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -296,6 +296,11 @@ message PolicyEvaluation {
     // Output data returned by the policy engine
     bytes output = 2;
   }
+}
+
+// Bundle of all policy evaluations for an attestation, stored as a CAS object.
+message PolicyEvaluationBundle {
+  repeated PolicyEvaluation evaluations = 1;
 }
 
 message Commit {
