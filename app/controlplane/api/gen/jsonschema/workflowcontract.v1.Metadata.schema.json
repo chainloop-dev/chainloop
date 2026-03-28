@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(findingType)$": {
-      "description": "Declares the structured output schema for policy violations.\n When set, the policy engine validates that violations conform to the\n corresponding proto message (e.g., PolicyVulnerabilityFinding).",
+      "description": "Declares the structured output schema for policy violations.\n When set, the policy engine validates that violations conform to the\n corresponding proto message:\n   VULNERABILITY    -\u003e attestation.v1.PolicyVulnerabilityFinding\n   SAST             -\u003e attestation.v1.PolicySASTFinding\n   LICENSE_VIOLATION -\u003e attestation.v1.PolicyLicenseViolationFinding",
       "enum": [
         "VULNERABILITY",
         "SAST",
@@ -27,7 +27,7 @@
       "type": "string"
     },
     "finding_type": {
-      "description": "Declares the structured output schema for policy violations.\n When set, the policy engine validates that violations conform to the\n corresponding proto message (e.g., PolicyVulnerabilityFinding).",
+      "description": "Declares the structured output schema for policy violations.\n When set, the policy engine validates that violations conform to the\n corresponding proto message:\n   VULNERABILITY    -\u003e attestation.v1.PolicyVulnerabilityFinding\n   SAST             -\u003e attestation.v1.PolicySASTFinding\n   LICENSE_VIOLATION -\u003e attestation.v1.PolicyLicenseViolationFinding",
       "enum": [
         "VULNERABILITY",
         "SAST",

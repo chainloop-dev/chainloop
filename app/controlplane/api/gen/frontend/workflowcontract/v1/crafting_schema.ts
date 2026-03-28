@@ -539,7 +539,10 @@ export interface Metadata {
   /**
    * Declares the structured output schema for policy violations.
    * When set, the policy engine validates that violations conform to the
-   * corresponding proto message (e.g., PolicyVulnerabilityFinding).
+   * corresponding proto message:
+   *   VULNERABILITY    -> attestation.v1.PolicyVulnerabilityFinding
+   *   SAST             -> attestation.v1.PolicySASTFinding
+   *   LICENSE_VIOLATION -> attestation.v1.PolicyLicenseViolationFinding
    */
   findingType?: string | undefined;
 }

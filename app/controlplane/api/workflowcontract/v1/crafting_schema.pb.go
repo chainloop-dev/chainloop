@@ -916,7 +916,11 @@ type Metadata struct {
 	Organization *string           `protobuf:"bytes,6,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
 	// Declares the structured output schema for policy violations.
 	// When set, the policy engine validates that violations conform to the
-	// corresponding proto message (e.g., PolicyVulnerabilityFinding).
+	// corresponding proto message:
+	//
+	//	VULNERABILITY    -> attestation.v1.PolicyVulnerabilityFinding
+	//	SAST             -> attestation.v1.PolicySASTFinding
+	//	LICENSE_VIOLATION -> attestation.v1.PolicyLicenseViolationFinding
 	FindingType   *string `protobuf:"bytes,7,opt,name=finding_type,json=findingType,proto3,oneof" json:"finding_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
