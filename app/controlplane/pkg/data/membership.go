@@ -155,35 +155,7 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID, opts *b
 		return nil, 0, err
 	}
 
-	// Fetch all member IDs from the memberships, in this context they are user IDs
-	memberIDs := make([]uuid.UUID, 0, len(memberships))
-	for _, m := range memberships {
-		memberIDs = append(memberIDs, m.MemberID)
-	}
-
-	// Fetch user data for all the member IDs
-	users, err := r.data.DB.User.Query().Where(user.IDIn(memberIDs...)).All(ctx)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to fetch user data: %w", err)
-	}
-
-	// Create a map of users by ID
-	userMap := make(map[uuid.UUID]*ent.User, len(users))
-	for _, u := range users {
-		userMap[u.ID] = u
-	}
-
-	// Convert to biz.Membership objects and attach user data manually
-	result := make([]*biz.Membership, 0, len(memberships))
-	for _, m := range memberships {
-		bizMembership := entMembershipToBiz(m)
-		if u, ok := userMap[m.MemberID]; ok {
-			bizMembership.User = entUserToBizUser(u)
-		}
-		result = append(result, bizMembership)
-	}
-
-	return result, count, nil
+	return entMembershipsToBiz(memberships), count, nil
 }
 
 // FindByOrgAndUser finds the membership for a given organization and user
