@@ -44,8 +44,12 @@ type PolicyGroupVerifier struct {
 var _ Verifier = (*PolicyGroupVerifier)(nil)
 
 func NewPolicyGroupVerifier(policyGroups []*v1.PolicyGroupAttachment, policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyGroupVerifier {
+	pv := NewPolicyVerifier(policies, client, logger, opts...)
+	if pv.groupCache == nil {
+		pv.groupCache, _ = cache.New[*groupWithReference](cache.WithTTL(defaultPolicyCacheTTL))
+	}
 	return &PolicyGroupVerifier{policyGroups: policyGroups, client: client, logger: logger,
-		PolicyVerifier: NewPolicyVerifier(policies, client, logger, opts...)}
+		PolicyVerifier: pv}
 }
 
 // VerifyMaterial evaluates a material against groups of policies defined in the schema

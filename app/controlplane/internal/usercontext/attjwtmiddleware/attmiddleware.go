@@ -258,11 +258,8 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 	}
 
 	if o.claimsCache == nil {
-		var err error
-		o.claimsCache, err = cache.New[*jwt.MapClaims](cache.WithTTL(10 * time.Second))
-		if err != nil {
-			panic(fmt.Sprintf("failed to create default claims cache: %v", err))
-		}
+		// Default in-memory cache; cache.New only errors on zero TTL so this is safe.
+		o.claimsCache, _ = cache.New[*jwt.MapClaims](cache.WithTTL(10 * time.Second))
 	}
 
 	return func(handler middleware.Handler) middleware.Handler {

@@ -96,7 +96,11 @@ func (c *natsKVCache[T]) getKV() jetstream.KeyValue {
 	return c.kv
 }
 
-func (c *natsKVCache[T]) Get(_ context.Context, key string) (T, bool, error) {
+// All operations degrade gracefully: if the KV handle is nil or a NATS
+// operation fails, the method returns a cache miss / no-op instead of an error.
+// This keeps the cache fail-open so callers fall through to the source of truth.
+
+func (c *natsKVCache[T]) Get(ctx context.Context, key string) (T, bool, error) {
 	var zero T
 	kv := c.getKV()
 	if kv == nil {
@@ -105,7 +109,7 @@ func (c *natsKVCache[T]) Get(_ context.Context, key string) (T, bool, error) {
 	}
 
 	sKey := sanitizeKey(key)
-	entry, err := kv.Get(context.Background(), sKey)
+	entry, err := kv.Get(ctx, sKey)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			c.logger.Debugw("cache get", "key", key, "hit", false, "backend", "nats")
@@ -118,7 +122,7 @@ func (c *natsKVCache[T]) Get(_ context.Context, key string) (T, bool, error) {
 	var val T
 	if err := json.Unmarshal(entry.Value(), &val); err != nil {
 		c.logger.Warnw("cache get: unmarshal failed, deleting corrupted entry", "key", key, "error", err, "backend", "nats")
-		_ = kv.Delete(context.Background(), sKey)
+		_ = kv.Delete(ctx, sKey)
 		return zero, false, nil
 	}
 
@@ -126,7 +130,7 @@ func (c *natsKVCache[T]) Get(_ context.Context, key string) (T, bool, error) {
 	return val, true, nil
 }
 
-func (c *natsKVCache[T]) Set(_ context.Context, key string, value T) error {
+func (c *natsKVCache[T]) Set(ctx context.Context, key string, value T) error {
 	kv := c.getKV()
 	if kv == nil {
 		c.logger.Warnw("cache set: KV handle is nil, skipping", "key", key, "backend", "nats")
@@ -138,7 +142,7 @@ func (c *natsKVCache[T]) Set(_ context.Context, key string, value T) error {
 		return err
 	}
 
-	if _, err := kv.Put(context.Background(), sanitizeKey(key), data); err != nil {
+	if _, err := kv.Put(ctx, sanitizeKey(key), data); err != nil {
 		c.logger.Warnw("cache set error", "key", key, "error", err, "backend", "nats")
 		return nil
 	}
@@ -147,13 +151,13 @@ func (c *natsKVCache[T]) Set(_ context.Context, key string, value T) error {
 	return nil
 }
 
-func (c *natsKVCache[T]) Delete(_ context.Context, key string) error {
+func (c *natsKVCache[T]) Delete(ctx context.Context, key string) error {
 	kv := c.getKV()
 	if kv == nil {
 		return nil
 	}
 
-	if err := kv.Delete(context.Background(), sanitizeKey(key)); err != nil {
+	if err := kv.Delete(ctx, sanitizeKey(key)); err != nil {
 		if !errors.Is(err, jetstream.ErrKeyNotFound) {
 			c.logger.Warnw("cache delete error", "key", key, "error", err, "backend", "nats")
 		}
@@ -163,13 +167,13 @@ func (c *natsKVCache[T]) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (c *natsKVCache[T]) Purge(_ context.Context) error {
+func (c *natsKVCache[T]) Purge(ctx context.Context) error {
 	kv := c.getKV()
 	if kv == nil {
 		return nil
 	}
 
-	keys, err := kv.Keys(context.Background())
+	keys, err := kv.Keys(ctx)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrNoKeysFound) {
 			return nil
@@ -179,7 +183,8 @@ func (c *natsKVCache[T]) Purge(_ context.Context) error {
 	}
 
 	for _, k := range keys {
-		_ = kv.Delete(context.Background(), k)
+		// Purge removes all revisions of the key, unlike Delete which only adds a marker.
+		_ = kv.Purge(ctx, k)
 	}
 
 	c.logger.Debugw("cache purge", "backend", "nats")
