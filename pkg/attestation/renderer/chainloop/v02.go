@@ -43,7 +43,7 @@ const PolicyEvaluationsBundleMediaType = "application/vnd.chainloop.policy-evalu
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
-	// Map materials and policies
+	// Deprecated: use PolicyEvaluationsRef to fetch full data from CAS.
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policyEvaluations,omitempty"`
 	// Reference to the PolicyEvaluationBundle stored in CAS
 	PolicyEvaluationsRef *intoto.ResourceDescriptor `json:"policyEvaluationsRef,omitempty"`
