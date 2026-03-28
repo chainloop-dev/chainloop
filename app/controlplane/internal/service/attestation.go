@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import (
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -62,6 +63,7 @@ type AttestationService struct {
 	signingUseCase          *biz.SigningUseCase
 	userUseCase             *biz.UserUseCase
 	bootstrapConfig         *conf.Bootstrap
+	membershipsCache        cache.Cache[*entities.Membership]
 }
 
 type NewAttestationServiceOpts struct {
@@ -83,6 +85,7 @@ type NewAttestationServiceOpts struct {
 	SigningUseCase     *biz.SigningUseCase
 	UserUC             *biz.UserUseCase
 	BootstrapConfig    *conf.Bootstrap
+	MembershipsCache   cache.Cache[*entities.Membership]
 	Opts               []NewOpt
 }
 
@@ -107,6 +110,7 @@ func NewAttestationService(opts *NewAttestationServiceOpts) *AttestationService 
 		signingUseCase:          opts.SigningUseCase,
 		userUseCase:             opts.UserUC,
 		bootstrapConfig:         opts.BootstrapConfig,
+		membershipsCache:        opts.MembershipsCache,
 	}
 }
 
@@ -797,7 +801,9 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	}
 
 	// reset RBAC cache, since we might have created a new project
-	usercontext.ResetMembershipsCache()
+	if s.membershipsCache != nil {
+		_ = s.membershipsCache.Purge(ctx)
+	}
 
 	return &cpAPI.FindOrCreateWorkflowResponse{Result: bizWorkflowToPb(wf)}, nil
 }

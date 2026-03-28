@@ -24,6 +24,7 @@ import (
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -56,8 +57,9 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 	for _, groupAtt := range groupAtts {
 		// 1. load the policy group
 		group, desc, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
-			Client: pgv.client,
-			Logger: pgv.logger,
+			Client:     pgv.client,
+			Logger:     pgv.logger,
+			GroupCache: pgv.groupCache,
 		})
 		if err != nil {
 			return nil, NewPolicyError(err)
@@ -138,8 +140,9 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	attachments := pgv.policyGroups
 	for _, groupAtt := range attachments {
 		group, desc, err := LoadPolicyGroup(ctx, groupAtt, &LoadPolicyGroupOptions{
-			Client: pgv.client,
-			Logger: pgv.logger,
+			Client:     pgv.client,
+			Logger:     pgv.logger,
+			GroupCache: pgv.groupCache,
 		})
 		if err != nil {
 			// Temporarily skip if policy groups still use old schema
@@ -225,8 +228,9 @@ func applyGroupGate(policyAtt *v1.PolicyAttachment, groupAtt *v1.PolicyGroupAtta
 }
 
 type LoadPolicyGroupOptions struct {
-	Client v13.AttestationServiceClient
-	Logger *zerolog.Logger
+	Client     v13.AttestationServiceClient
+	Logger     *zerolog.Logger
+	GroupCache cache.Cache[*groupWithReference]
 }
 
 // LoadPolicyGroup loads a group (unmarshalls it) from a group attachment
@@ -262,7 +266,11 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 	switch scheme {
 	// No scheme means chainloop loader
 	case chainloopScheme, "":
-		loader = NewChainloopGroupLoader(opts.Client)
+		groupCache := opts.GroupCache
+		if groupCache == nil {
+			groupCache, _ = cache.New[*groupWithReference](cache.WithTTL(defaultPolicyCacheTTL))
+		}
+		loader = NewChainloopGroupLoader(opts.Client, groupCache)
 	case fileScheme:
 		loader = new(FileGroupLoader)
 	case httpsScheme, httpScheme:

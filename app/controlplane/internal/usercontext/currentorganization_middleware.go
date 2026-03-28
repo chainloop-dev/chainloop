@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,23 +21,19 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/google/uuid"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
-// membershipsCache caches user memberships to save some database queries during intensive sessions
-var membershipsCache = expirable.NewLRU[string, *entities.Membership](0, nil, time.Second*1)
-
-func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC) middleware.Middleware {
+func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC, membershipsCache cache.Cache[*entities.Membership]) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
@@ -48,7 +44,7 @@ func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC) middlewa
 
 			var err error
 			// Let's store all memberships in the context.
-			ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC)
+			ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC, membershipsCache)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org membership: %w", err)
 			}
@@ -107,11 +103,14 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, orgUC *biz
 }
 
 // setCurrentMembershipsForUser retrieves all user memberships for RBAC
-func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, membershipUC biz.MembershipsRBAC) (context.Context, error) {
-	var membership *entities.Membership
-	var ok bool
+func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, membershipUC biz.MembershipsRBAC, membershipsCache cache.Cache[*entities.Membership]) (context.Context, error) {
+	membership, ok, err := membershipsCache.Get(ctx, u.ID)
+	if err != nil {
+		log.Warnf("memberships cache read failed, falling through to DB: %v", err)
+		ok = false
+	}
 
-	if membership, ok = membershipsCache.Get(u.ID); !ok {
+	if !ok {
 		uid, err := uuid.Parse(u.ID)
 		if err != nil {
 			return nil, err
@@ -133,14 +132,12 @@ func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, members
 		}
 
 		membership = &entities.Membership{UserID: uuid.MustParse(u.ID), Resources: resourceMemberships}
-		membershipsCache.Add(u.ID, membership)
+		if err := membershipsCache.Set(ctx, u.ID, membership); err != nil {
+			log.Warnf("memberships cache write failed: %v", err)
+		}
 	}
 
 	return entities.WithMembership(ctx, membership), nil
-}
-
-func ResetMembershipsCache() {
-	membershipsCache.Purge()
 }
 
 func setCurrentMembershipFromOrgName(ctx context.Context, user *entities.User, orgName string, userUC biz.UserOrgFinder, orgUC *biz.OrganizationUseCase) (context.Context, error) {
