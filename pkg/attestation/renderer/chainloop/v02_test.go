@@ -338,6 +338,56 @@ func mustStructValue(t *testing.T, fields map[string]any) *structpb.Value {
 	return structpb.NewStructValue(s)
 }
 
+func TestPredicateWithPolicyEvaluationsRef(t *testing.T) {
+	stateRaw, err := os.ReadFile("testdata/attestation.source.v2.json")
+	require.NoError(t, err)
+
+	state := &api.CraftingState{}
+	err = protojson.Unmarshal(stateRaw, state)
+	require.NoError(t, err)
+
+	renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
+
+	ref := &intoto.ResourceDescriptor{
+		Name:      "policy-evaluations",
+		Digest:    map[string]string{"sha256": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+		MediaType: PolicyEvaluationsBundleMediaType,
+	}
+	renderer.SetPolicyEvaluationsRef(ref)
+
+	statement, err := renderer.Statement(context.TODO())
+	require.NoError(t, err)
+
+	var predicate ProvenancePredicateV02
+	err = extractPredicate(statement, &predicate)
+	require.NoError(t, err)
+
+	require.NotNil(t, predicate.PolicyEvaluationsRef)
+	assert.Equal(t, "policy-evaluations", predicate.PolicyEvaluationsRef.Name)
+	assert.Equal(t, PolicyEvaluationsBundleMediaType, predicate.PolicyEvaluationsRef.MediaType)
+	assert.Equal(t, "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890", predicate.PolicyEvaluationsRef.Digest["sha256"])
+}
+
+func TestPredicateWithoutPolicyEvaluationsRef(t *testing.T) {
+	stateRaw, err := os.ReadFile("testdata/attestation.source.v2.json")
+	require.NoError(t, err)
+
+	state := &api.CraftingState{}
+	err = protojson.Unmarshal(stateRaw, state)
+	require.NoError(t, err)
+
+	renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
+
+	statement, err := renderer.Statement(context.TODO())
+	require.NoError(t, err)
+
+	var predicate ProvenancePredicateV02
+	err = extractPredicate(statement, &predicate)
+	require.NoError(t, err)
+
+	assert.Nil(t, predicate.PolicyEvaluationsRef)
+}
+
 func TestPolicyEvaluationsField(t *testing.T) {
 	raw, err := os.ReadFile("testdata/attestation-pe-snake.json")
 	require.NoError(t, err)
