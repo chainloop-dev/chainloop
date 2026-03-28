@@ -229,6 +229,10 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 			defer connectionCloserFn()
 		}
 
+		if getCASErr != nil || casBackend.Uploader == nil {
+			action.Logger.Debug().Msg("CAS backend not available, skipping policy evaluations bundle upload")
+		}
+
 		if getCASErr == nil && casBackend.Uploader != nil {
 			ref, uploadErr := uploadPolicyEvaluationsBundle(ctx, crafter.CraftingState.GetAttestation().GetPolicyEvaluations(), casBackend.Uploader)
 			if uploadErr != nil {
