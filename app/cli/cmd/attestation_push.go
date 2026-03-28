@@ -22,6 +22,7 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -71,9 +72,15 @@ func newAttestationPushCmd() *cobra.Command {
 				return fmt.Errorf("getting executable information: %w", err)
 			}
 			a, err := action.NewAttestationPush(&action.AttestationPushOpts{
-				ActionsOpts: ActionOpts, KeyPath: pkPath, BundlePath: bundle,
-				CLIVersion: info.Version, CLIDigest: info.Digest,
-				LocalStatePath: attestationLocalStatePath,
+				ActionsOpts:        ActionOpts,
+				KeyPath:            pkPath,
+				BundlePath:         bundle,
+				CLIVersion:         info.Version,
+				CLIDigest:          info.Digest,
+				CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
+				CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
+				ConnectionInsecure: apiInsecure(),
+				LocalStatePath:     attestationLocalStatePath,
 				SignServerOpts: &action.SignServerOpts{
 					CAPath:             signServerCAPath,
 					AuthClientCertPath: signServerAuthCertPath,
