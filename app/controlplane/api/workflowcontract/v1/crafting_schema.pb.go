@@ -917,7 +917,6 @@ type Metadata struct {
 	// Declares the structured output schema for policy violations.
 	// When set, the policy engine validates that violations conform to the
 	// corresponding proto message (e.g., PolicyVulnerabilityFinding).
-	// Valid values: "VULNERABILITY", "SAST", "LICENSE_VIOLATION"
 	FindingType   *string `protobuf:"bytes,7,opt,name=finding_type,json=findingType,proto3,oneof" json:"finding_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2047,14 +2046,14 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"r\b\n" +
 	"\x06PolicyR\x04kind\x12A\n" +
 	"\bmetadata\x18\x03 \x01(\v2\x1d.workflowcontract.v1.MetadataB\x06\xbaH\x03\xc8\x01\x01R\bmetadata\x12;\n" +
-	"\x04spec\x18\x04 \x01(\v2\x1f.workflowcontract.v1.PolicySpecB\x06\xbaH\x03\xc8\x01\x01R\x04spec\"\xcb\x03\n" +
+	"\x04spec\x18\x04 \x01(\v2\x1f.workflowcontract.v1.PolicySpecB\x06\xbaH\x03\xc8\x01\x01R\x04spec\"\xfa\x03\n" +
 	"\bMetadata\x12\x97\x01\n" +
 	"\x04name\x18\x03 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12 \n" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\x12P\n" +
 	"\vannotations\x18\x05 \x03(\v2..workflowcontract.v1.Metadata.AnnotationsEntryR\vannotations\x12'\n" +
-	"\forganization\x18\x06 \x01(\tH\x00R\forganization\x88\x01\x01\x12&\n" +
-	"\ffinding_type\x18\a \x01(\tH\x01R\vfindingType\x88\x01\x01\x1a>\n" +
+	"\forganization\x18\x06 \x01(\tH\x00R\forganization\x88\x01\x01\x12U\n" +
+	"\ffinding_type\x18\a \x01(\tB-\xbaH*r(R\rVULNERABILITYR\x04SASTR\x11LICENSE_VIOLATIONH\x01R\vfindingType\x88\x01\x01\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +

@@ -282,9 +282,17 @@ message Metadata {
 
   // Declares the structured output schema for policy violations.
   // When set, the policy engine validates that violations conform to the
-  // corresponding proto message (e.g., PolicyVulnerabilityFinding).
-  // Valid values: "VULNERABILITY", "SAST", "LICENSE_VIOLATION"
-  optional string finding_type = 7;
+  // corresponding proto message:
+  //   VULNERABILITY    -> attestation.v1.PolicyVulnerabilityFinding
+  //   SAST             -> attestation.v1.PolicySASTFinding
+  //   LICENSE_VIOLATION -> attestation.v1.PolicyLicenseViolationFinding
+  optional string finding_type = 7 [(buf.validate.field).string = {
+    in: [
+      "VULNERABILITY",
+      "SAST",
+      "LICENSE_VIOLATION"
+    ]
+  }];
 }
 
 message PolicySpec {
