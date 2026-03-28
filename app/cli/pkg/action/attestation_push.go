@@ -221,7 +221,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	attestationStatus.PolicyEvaluations, attestationStatus.HasPolicyViolations = getPolicyEvaluations(crafter)
 
 	// Upload policy evaluations bundle to CAS (best-effort, conditional on CAS availability)
-	if !crafter.CraftingState.DryRun {
+	if evaluations := crafter.CraftingState.GetAttestation().GetPolicyEvaluations(); !crafter.CraftingState.DryRun && len(evaluations) > 0 {
 		casBackend := &casclient.CASBackend{Name: "not-set"}
 		workflowRunID := crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId()
 		_, connectionCloserFn, getCASErr := getCASBackend(ctx, attClient, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
@@ -231,10 +231,8 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 		if getCASErr != nil || casBackend.Uploader == nil {
 			action.Logger.Debug().Msg("CAS backend not available, skipping policy evaluations bundle upload")
-		}
-
-		if getCASErr == nil && casBackend.Uploader != nil {
-			ref, uploadErr := uploadPolicyEvaluationsBundle(ctx, crafter.CraftingState.GetAttestation().GetPolicyEvaluations(), casBackend.Uploader)
+		} else {
+			ref, uploadErr := uploadPolicyEvaluationsBundle(ctx, evaluations, casBackend.Uploader)
 			if uploadErr != nil {
 				action.Logger.Warn().Err(uploadErr).Msg("failed to upload policy evaluations bundle to CAS")
 			} else if ref != nil {
