@@ -38,7 +38,7 @@ import (
 // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
 const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 const AttPolicyEvaluation = "CHAINLOOP.ATTESTATION"
-const PolicyEvaluationsBundleMediaType = "application/vnd.chainloop.policy-evaluations.v1+proto"
+const PolicyEvaluationsBundleMediaType = "application/vnd.chainloop.policy-evaluations.v1+json"
 
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon

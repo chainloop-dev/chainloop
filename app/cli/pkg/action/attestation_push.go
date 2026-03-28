@@ -38,7 +38,6 @@ import (
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -365,7 +364,7 @@ func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.Policy
 	}
 
 	bundle := &v1.PolicyEvaluationBundle{Evaluations: evaluations}
-	data, err := proto.Marshal(bundle)
+	data, err := protojson.Marshal(bundle)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling policy evaluation bundle: %w", err)
 	}
@@ -373,7 +372,7 @@ func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.Policy
 	hexDigest := fmt.Sprintf("%x", sha256.Sum256(data))
 	digest := fmt.Sprintf("sha256:%s", hexDigest)
 
-	if _, err := uploader.Upload(ctx, bytes.NewReader(data), "policy-evaluations.pb", digest); err != nil {
+	if _, err := uploader.Upload(ctx, bytes.NewReader(data), "policy-evaluations.json", digest); err != nil {
 		return nil, fmt.Errorf("uploading policy evaluation bundle: %w", err)
 	}
 

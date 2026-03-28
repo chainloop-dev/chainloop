@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestUploadPolicyEvaluationsBundle(t *testing.T) {
@@ -64,9 +64,9 @@ func TestUploadPolicyEvaluationsBundle(t *testing.T) {
 			uploader: func(t *testing.T) casclient.Uploader {
 				t.Helper()
 				m := casclientmock.NewUploader(t)
-				m.On("Upload", mock.Anything, mock.Anything, "policy-evaluations.pb", mock.MatchedBy(func(digest string) bool {
+				m.On("Upload", mock.Anything, mock.Anything, "policy-evaluations.json", mock.MatchedBy(func(digest string) bool {
 					return len(digest) > 7 && digest[:7] == "sha256:"
-				})).Return(&casclient.UpDownStatus{Filename: "policy-evaluations.pb"}, nil)
+				})).Return(&casclient.UpDownStatus{Filename: "policy-evaluations.json"}, nil)
 				return m
 			},
 			wantRef: true,
@@ -113,7 +113,7 @@ func TestUploadPolicyEvaluationsBundle(t *testing.T) {
 
 			// Verify the digest matches what we'd expect from serializing the bundle
 			bundle := &v1.PolicyEvaluationBundle{Evaluations: tc.evaluations}
-			data, err := proto.Marshal(bundle)
+			data, err := protojson.Marshal(bundle)
 			require.NoError(t, err)
 			expectedDigest := fmt.Sprintf("%x", sha256.Sum256(data))
 			assert.Equal(t, expectedDigest, ref.Digest["sha256"])
