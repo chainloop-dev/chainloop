@@ -184,6 +184,10 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		options.PolicyCache, _ = cache.New[*policyWithReference](cache.WithTTL(defaultPolicyCacheTTL))
 	}
 
+	if options.GroupCache == nil {
+		options.GroupCache, _ = cache.New[*groupWithReference](cache.WithTTL(defaultPolicyCacheTTL))
+	}
+
 	return &PolicyVerifier{
 		policies:         policies,
 		client:           client,

@@ -103,14 +103,16 @@ func TestNATSKV_GetSetDelete(t *testing.T) {
 				require.NoError(t, c.Set(ctx, "k1", testStruct{Name: "a", Value: 1}))
 				require.NoError(t, c.Set(ctx, "k2", testStruct{Name: "b", Value: 2}))
 				require.NoError(t, c.Purge(ctx))
-				_, ok1, _ := c.Get(ctx, "k1")
-				_, ok2, _ := c.Get(ctx, "k2")
+				_, ok1, err := c.Get(ctx, "k1")
+				require.NoError(t, err)
+				_, ok2, err := c.Get(ctx, "k2")
+				require.NoError(t, err)
 				assert.False(t, ok1)
 				assert.False(t, ok2)
 			},
 		},
 		{
-			name: "key sanitization replaces colons with dots",
+			name: "key sanitization encodes special characters",
 			run: func(t *testing.T, c Cache[testStruct]) {
 				ctx := context.Background()
 				v := testStruct{Name: "sanitized", Value: 99}
@@ -119,6 +121,20 @@ func TestNATSKV_GetSetDelete(t *testing.T) {
 				require.NoError(t, err)
 				assert.True(t, ok)
 				assert.Equal(t, v, got)
+
+				// Verify distinct keys with similar characters don't collide
+				v2 := testStruct{Name: "different", Value: 100}
+				require.NoError(t, c.Set(ctx, "token.org.name", v2))
+				got2, ok2, err := c.Get(ctx, "token.org.name")
+				require.NoError(t, err)
+				assert.True(t, ok2)
+				assert.Equal(t, v2, got2)
+
+				// Original key should still have its value
+				got3, ok3, err := c.Get(ctx, "token:org:name")
+				require.NoError(t, err)
+				assert.True(t, ok3)
+				assert.Equal(t, v, got3)
 			},
 		},
 	}

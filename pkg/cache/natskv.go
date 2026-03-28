@@ -17,9 +17,9 @@ package cache
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"strings"
 	"sync"
 
 	"github.com/nats-io/nats.go"
@@ -85,9 +85,11 @@ func (c *natsKVCache[T]) watchReconnect(ch <-chan struct{}) {
 	}
 }
 
-// sanitizeKey replaces colons with dots for NATS subject token compatibility.
+// sanitizeKey encodes the key for NATS KV compatibility.
+// NATS KV keys only allow alphanumeric, '.', '-', '_', '/'.
+// We use base64url encoding to avoid collisions from character replacement.
 func sanitizeKey(key string) string {
-	return strings.ReplaceAll(key, ":", ".")
+	return base64.RawURLEncoding.EncodeToString([]byte(key))
 }
 
 func (c *natsKVCache[T]) getKV() jetstream.KeyValue {
@@ -183,8 +185,9 @@ func (c *natsKVCache[T]) Purge(ctx context.Context) error {
 	}
 
 	for _, k := range keys {
-		// Purge removes all revisions of the key, unlike Delete which only adds a marker.
-		_ = kv.Purge(ctx, k)
+		if err := kv.Purge(ctx, k); err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
+			c.logger.Warnw("cache purge: failed to purge key", "key", k, "error", err, "backend", "nats")
+		}
 	}
 
 	c.logger.Debugw("cache purge", "backend", "nats")

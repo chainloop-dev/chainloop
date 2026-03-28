@@ -27,9 +27,9 @@ type memoryCache[T any] struct {
 }
 
 func newMemoryCache[T any](cfg *config) *memoryCache[T] {
-	cfg.logger.Infow("cache: using in-memory LRU backend", "ttl", cfg.ttl)
+	cfg.logger.Infow("cache: using in-memory LRU backend", "ttl", cfg.ttl, "maxSize", cfg.maxSize)
 	return &memoryCache[T]{
-		lru:    expirable.NewLRU[string, T](0, nil, cfg.ttl),
+		lru:    expirable.NewLRU[string, T](cfg.maxSize, nil, cfg.ttl),
 		logger: cfg.logger,
 	}
 }

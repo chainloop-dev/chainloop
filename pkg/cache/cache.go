@@ -41,8 +41,13 @@ type Logger interface {
 	Errorw(msg string, keyvals ...any)
 }
 
+// defaultMaxSize is a sensible upper bound on in-memory cache entries
+// to prevent unbounded growth. 0 means no LRU eviction (TTL-only).
+const defaultMaxSize = 1000
+
 type config struct {
 	ttl        time.Duration
+	maxSize    int
 	logger     Logger
 	natsConn   *nats.Conn
 	bucketName string
@@ -83,16 +88,23 @@ func New[T any](opts ...Option) (Cache[T], error) {
 		o(cfg)
 	}
 
-	if cfg.ttl == 0 {
-		return nil, errors.New("cache: TTL is required (use WithTTL)")
+	if cfg.ttl <= 0 {
+		return nil, errors.New("cache: TTL must be greater than 0")
 	}
 
 	if cfg.logger == nil {
 		cfg.logger = nopLogger{}
 	}
 
-	if cfg.natsConn != nil && cfg.bucketName != "" {
+	if cfg.natsConn != nil {
+		if cfg.bucketName == "" {
+			return nil, errors.New("cache: bucket name is required when NATS backend is enabled")
+		}
 		return newNATSKV[T](cfg)
+	}
+
+	if cfg.maxSize == 0 {
+		cfg.maxSize = defaultMaxSize
 	}
 
 	return newMemoryCache[T](cfg), nil

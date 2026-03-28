@@ -266,11 +266,7 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 	switch scheme {
 	// No scheme means chainloop loader
 	case chainloopScheme, "":
-		groupCache := opts.GroupCache
-		if groupCache == nil {
-			groupCache, _ = cache.New[*groupWithReference](cache.WithTTL(defaultPolicyCacheTTL))
-		}
-		loader = NewChainloopGroupLoader(opts.Client, groupCache)
+		loader = NewChainloopGroupLoader(opts.Client, opts.GroupCache)
 	case fileScheme:
 		loader = new(FileGroupLoader)
 	case httpsScheme, httpScheme:
