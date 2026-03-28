@@ -55,7 +55,7 @@ values.local.yaml
 deployment/chainloop/charts/**/*.tgz
 
 # Local development overrides
-app/controlplane/configs/config.local.yaml
+config.local.yaml
 devel/dex/config.dev.local.yaml
 devel/compose.override.yml
 .claude/worktrees/

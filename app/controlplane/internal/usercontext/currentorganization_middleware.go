@@ -106,7 +106,8 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, orgUC *biz
 func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, membershipUC biz.MembershipsRBAC, membershipsCache cache.Cache[*entities.Membership]) (context.Context, error) {
 	membership, ok, err := membershipsCache.Get(ctx, u.ID)
 	if err != nil {
-		return nil, fmt.Errorf("error reading memberships cache: %w", err)
+		log.Warnf("memberships cache read failed, falling through to DB: %v", err)
+		ok = false
 	}
 
 	if !ok {
@@ -132,7 +133,7 @@ func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, members
 
 		membership = &entities.Membership{UserID: uuid.MustParse(u.ID), Resources: resourceMemberships}
 		if err := membershipsCache.Set(ctx, u.ID, membership); err != nil {
-			return nil, fmt.Errorf("error writing memberships cache: %w", err)
+			log.Warnf("memberships cache write failed: %v", err)
 		}
 	}
 

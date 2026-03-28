@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -110,11 +109,6 @@ type groupWithReference struct {
 	Reference *PolicyDescriptor `json:"reference"`
 }
 
-// remoteGroupFetchTimeout bounds gRPC calls inside singleflight to prevent
-// indefinite blocking. Independent of any caller's context deadline so that
-// all singleflight waiters get uniform timeout behavior.
-const remoteGroupFetchTimeout = 30 * time.Second
-
 func NewChainloopGroupLoader(client pb.AttestationServiceClient, c cache.Cache[*groupWithReference]) *ChainloopGroupLoader {
 	return &ChainloopGroupLoader{Client: client, cache: c}
 }
@@ -128,9 +122,14 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 	}
 
 	// Use singleflight to coalesce concurrent fetches for the same ref.
+	// All operations inside use a fixed-timeout context independent of any
+	// caller's deadline so that all singleflight waiters get uniform behavior.
 	result, err, _ := c.flight.Do(ref, func() (interface{}, error) {
+		sfCtx, cancel := context.WithTimeout(context.Background(), remoteLoaderFetchTimeout)
+		defer cancel()
+
 		// Double-check cache inside singleflight
-		if cached, ok, _ := c.cache.Get(ctx, ref); ok {
+		if cached, ok, _ := c.cache.Get(sfCtx, ref); ok {
 			return cached, nil
 		}
 
@@ -139,11 +138,6 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 		}
 
 		providerRef := ProviderParts(ref)
-		// Use a fixed timeout independent of any caller's context so that all
-		// singleflight waiters get uniform behavior regardless of which goroutine
-		// won the race.
-		sfCtx, cancel := context.WithTimeout(context.Background(), remoteGroupFetchTimeout)
-		defer cancel()
 
 		resp, err := c.Client.GetPolicyGroup(sfCtx, &pb.AttestationServiceGetPolicyGroupRequest{
 			Provider:  providerRef.Provider,
@@ -169,7 +163,7 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 		reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
 		cached := &groupWithReference{Group: resp.GetGroup(), Reference: reference}
 
-		_ = c.cache.Set(ctx, ref, cached)
+		_ = c.cache.Set(sfCtx, ref, cached)
 
 		return cached, nil
 	})
