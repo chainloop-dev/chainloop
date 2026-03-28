@@ -226,6 +226,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		workflowRunID := crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId()
 		_, connectionCloserFn, getCASErr := getCASBackend(ctx, attClient, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
 		if connectionCloserFn != nil {
+			// nolint: errcheck
 			defer connectionCloserFn()
 		}
 
