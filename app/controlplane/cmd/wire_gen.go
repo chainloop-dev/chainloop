@@ -11,6 +11,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -19,8 +20,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/wire"
+	"github.com/nats-io/nats.go"
+	"time"
 )
 
 import (
@@ -135,6 +140,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, organizationRepo, logger)
+	cache, err := newMembershipsCache(conn)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
 	if err != nil {
@@ -205,6 +215,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		SigningUseCase:     signingUseCase,
 		UserUC:             userUseCase,
 		BootstrapConfig:    bootstrap,
+		MembershipsCache:   cache,
 		Opts:               v5,
 	}
 	attestationService := service.NewAttestationService(newAttestationServiceOpts)
@@ -259,6 +270,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		OrganizationUseCase: organizationUseCase,
 		WorkflowUseCase:     workflowUseCase,
 		MembershipUseCase:   membershipUseCase,
+		MembershipsCache:    cache,
 		WorkflowSvc:         workflowService,
 		AuthSvc:             authService,
 		RobotAccountSvc:     robotAccountService,
@@ -374,4 +386,16 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 
 func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
 	return conf2.Auth.GetAllowList()
+}
+
+var cacheProviderSet = wire.NewSet(
+	newMembershipsCache,
+)
+
+func newMembershipsCache(conn *nats.Conn) (cache.Cache[*entities.Membership], error) {
+	opts := []cache.Option{cache.WithTTL(time.Second)}
+	if conn != nil {
+		opts = append(opts, cache.WithNATS(conn, "memberships"))
+	}
+	return cache.New[*entities.Membership](opts...)
 }

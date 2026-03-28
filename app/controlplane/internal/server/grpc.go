@@ -25,9 +25,11 @@ import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/sentrycontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	authzMiddleware "github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz/middleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 
 	"buf.build/go/protovalidate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
@@ -61,6 +63,7 @@ type Opts struct {
 	OrganizationUseCase *biz.OrganizationUseCase
 	WorkflowUseCase     *biz.WorkflowUseCase
 	MembershipUseCase   *biz.MembershipUseCase
+	MembershipsCache    cache.Cache[*entities.Membership]
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
@@ -203,7 +206,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 2.c - Set its user
 			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
 			// Store all memberships in the context
-			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
+			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase, opts.MembershipsCache),
 			selector.Server(
 				// 2.d- Set its organization
 				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, opts.OrganizationUseCase, logHelper),
@@ -245,7 +248,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			// 2.d - Set its robot account from federated delegation
 			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
 			// Store all memberships in the context
-			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase),
+			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase, opts.MembershipsCache),
 			// 3 - Update API Token last usage
 			usercontext.WithAPITokenUsageUpdater(opts.APITokenUseCase, logHelper),
 			// 4 - Validate the CAS Backend is fully configured and valid

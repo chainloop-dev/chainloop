@@ -21,10 +21,13 @@
 package main
 
 import (
+	"time"
+
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -33,9 +36,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"github.com/nats-io/nats.go"
 )
 
 func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins) (*app, func(), error) {
@@ -60,6 +65,7 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newDataConf,
 			newPolicyProviderConfig,
 			newNatsConnection,
+			cacheProviderSet,
 			auditor.NewAuditLogPublisher,
 			newCASServerOptions,
 			newAuthAllowList,
@@ -126,4 +132,16 @@ func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts
 
 func newAuthAllowList(conf *conf.Bootstrap) *pkgConf.AllowList {
 	return conf.Auth.GetAllowList()
+}
+
+var cacheProviderSet = wire.NewSet(
+	newMembershipsCache,
+)
+
+func newMembershipsCache(conn *nats.Conn) (cache.Cache[*entities.Membership], error) {
+	opts := []cache.Option{cache.WithTTL(time.Second)}
+	if conn != nil {
+		opts = append(opts, cache.WithNATS(conn, "memberships"))
+	}
+	return cache.New[*entities.Membership](opts...)
 }
