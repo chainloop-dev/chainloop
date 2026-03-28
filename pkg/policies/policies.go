@@ -26,8 +26,11 @@ import (
 	"slices"
 	"strings"
 
+	"time"
+
 	"buf.build/go/protovalidate"
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -90,6 +93,8 @@ type PolicyVerifier struct {
 	enablePrint      bool
 	evalPhase        EvalPhase
 	maxConcurrency   int
+	policyCache      cache.Cache[*policyWithReference]
+	groupCache       cache.Cache[*groupWithReference]
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
@@ -102,6 +107,8 @@ type PolicyVerifierOptions struct {
 	GRPCConn         *grpc.ClientConn
 	EvalPhase        EvalPhase
 	MaxConcurrency   int
+	PolicyCache      cache.Cache[*policyWithReference]
+	GroupCache       cache.Cache[*groupWithReference]
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -148,6 +155,20 @@ func WithMaxConcurrency(n int) PolicyVerifierOption {
 	}
 }
 
+func WithPolicyCache(c cache.Cache[*policyWithReference]) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.PolicyCache = c
+	}
+}
+
+func WithGroupCache(c cache.Cache[*groupWithReference]) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.GroupCache = c
+	}
+}
+
+const defaultPolicyCacheTTL = 5 * time.Minute
+
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
@@ -157,6 +178,14 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 	maxConcurrency := options.MaxConcurrency
 	if maxConcurrency <= 0 {
 		maxConcurrency = defaultMaxConcurrency
+	}
+
+	if options.PolicyCache == nil {
+		options.PolicyCache, _ = cache.New[*policyWithReference](cache.WithTTL(defaultPolicyCacheTTL))
+	}
+
+	if options.GroupCache == nil {
+		options.GroupCache, _ = cache.New[*groupWithReference](cache.WithTTL(defaultPolicyCacheTTL))
 	}
 
 	return &PolicyVerifier{
@@ -170,6 +199,8 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		enablePrint:      options.EnablePrint,
 		evalPhase:        options.EvalPhase,
 		maxConcurrency:   maxConcurrency,
+		policyCache:      options.PolicyCache,
+		groupCache:       options.GroupCache,
 	}
 }
 
@@ -593,7 +624,7 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	switch scheme {
 	// No scheme means chainloop loader
 	case chainloopScheme, "":
-		loader = NewChainloopLoader(pv.client)
+		loader = NewChainloopLoader(pv.client, pv.policyCache)
 	case fileScheme:
 		loader = new(FileLoader)
 	case httpsScheme, httpScheme:

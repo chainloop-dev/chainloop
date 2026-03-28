@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -160,11 +160,13 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs
 type ChainloopLoader struct {
 	Client pb.AttestationServiceClient
+	cache  cache.Cache[*policyWithReference]
+	flight singleflight.Group
 }
 
 type policyWithReference struct {
-	policy    *v1.Policy
-	reference *PolicyDescriptor
+	Policy    *v1.Policy        `json:"policy"`
+	Reference *PolicyDescriptor `json:"reference"`
 }
 
 // remotePolicyFetchTimeout bounds gRPC calls inside singleflight to prevent
@@ -172,32 +174,26 @@ type policyWithReference struct {
 // all singleflight waiters get uniform timeout behavior.
 const remotePolicyFetchTimeout = 30 * time.Second
 
-var (
-	remotePolicyCache      = make(map[string]*policyWithReference)
-	remotePolicyCacheMutex sync.Mutex
-	remotePolicyFlight     singleflight.Group
-)
-
-func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
-	return &ChainloopLoader{Client: client}
+func NewChainloopLoader(client pb.AttestationServiceClient, c cache.Cache[*policyWithReference]) *ChainloopLoader {
+	return &ChainloopLoader{Client: client, cache: c}
 }
 
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
-	// Fast path: check cache under lock
-	remotePolicyCacheMutex.Lock()
-	if v, ok := remotePolicyCache[ref]; ok {
-		remotePolicyCacheMutex.Unlock()
-		return v.policy, v.reference, nil
+	// Fast path: check cache
+	if cached, ok, _ := c.cache.Get(ctx, ref); ok {
+		return cached.Policy, cached.Reference, nil
 	}
-	remotePolicyCacheMutex.Unlock()
 
 	// Use singleflight to coalesce concurrent fetches for the same ref.
 	// This ensures exactly one gRPC call per ref regardless of concurrency.
-	// Use context.WithoutCancel so the winning goroutine's context cancellation
-	// doesn't propagate to waiters sharing the same singleflight key.
-	result, err, _ := remotePolicyFlight.Do(ref, func() (interface{}, error) {
+	result, err, _ := c.flight.Do(ref, func() (interface{}, error) {
+		// Double-check cache inside singleflight
+		if cached, ok, _ := c.cache.Get(ctx, ref); ok {
+			return cached, nil
+		}
+
 		if !IsProviderScheme(ref) {
 			return nil, fmt.Errorf("invalid policy reference %q", ref)
 		}
@@ -232,11 +228,9 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 		}
 
 		reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
-		cached := &policyWithReference{policy: resp.GetPolicy(), reference: reference}
+		cached := &policyWithReference{Policy: resp.GetPolicy(), Reference: reference}
 
-		remotePolicyCacheMutex.Lock()
-		remotePolicyCache[ref] = cached
-		remotePolicyCacheMutex.Unlock()
+		_ = c.cache.Set(ctx, ref, cached)
 
 		return cached, nil
 	})
@@ -245,7 +239,7 @@ func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachm
 	}
 
 	cached := result.(*policyWithReference)
-	return cached.policy, cached.reference, nil
+	return cached.Policy, cached.Reference, nil
 }
 
 func unmarshallResource(raw []byte, ref string, digest string, dest proto.Message) (*PolicyDescriptor, error) {

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,11 +23,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"golang.org/x/sync/singleflight"
 )
@@ -101,11 +101,13 @@ func (l *HTTPSGroupLoader) Load(_ context.Context, attachment *v1.PolicyGroupAtt
 // ChainloopGroupLoader loads groups referenced with chainloop://provider/name URLs
 type ChainloopGroupLoader struct {
 	Client pb.AttestationServiceClient
+	cache  cache.Cache[*groupWithReference]
+	flight singleflight.Group
 }
 
 type groupWithReference struct {
-	group     *v1.PolicyGroup
-	reference *PolicyDescriptor
+	Group     *v1.PolicyGroup   `json:"group"`
+	Reference *PolicyDescriptor `json:"reference"`
 }
 
 // remoteGroupFetchTimeout bounds gRPC calls inside singleflight to prevent
@@ -113,31 +115,25 @@ type groupWithReference struct {
 // all singleflight waiters get uniform timeout behavior.
 const remoteGroupFetchTimeout = 30 * time.Second
 
-var (
-	remoteGroupCache      = make(map[string]*groupWithReference)
-	remoteGroupCacheMutex sync.Mutex
-	remoteGroupFlight     singleflight.Group
-)
-
-func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroupLoader {
-	return &ChainloopGroupLoader{Client: client}
+func NewChainloopGroupLoader(client pb.AttestationServiceClient, c cache.Cache[*groupWithReference]) *ChainloopGroupLoader {
+	return &ChainloopGroupLoader{Client: client, cache: c}
 }
 
 func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
-	// Fast path: check cache under lock
-	remoteGroupCacheMutex.Lock()
-	if v, ok := remoteGroupCache[ref]; ok {
-		remoteGroupCacheMutex.Unlock()
-		return v.group, v.reference, nil
+	// Fast path: check cache
+	if cached, ok, _ := c.cache.Get(ctx, ref); ok {
+		return cached.Group, cached.Reference, nil
 	}
-	remoteGroupCacheMutex.Unlock()
 
 	// Use singleflight to coalesce concurrent fetches for the same ref.
-	// Use context.WithoutCancel so the winning goroutine's context cancellation
-	// doesn't propagate to waiters sharing the same singleflight key.
-	result, err, _ := remoteGroupFlight.Do(ref, func() (interface{}, error) {
+	result, err, _ := c.flight.Do(ref, func() (interface{}, error) {
+		// Double-check cache inside singleflight
+		if cached, ok, _ := c.cache.Get(ctx, ref); ok {
+			return cached, nil
+		}
+
 		if !IsProviderScheme(ref) {
 			return nil, fmt.Errorf("invalid group reference %q", ref)
 		}
@@ -171,11 +167,9 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 		}
 
 		reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
-		cached := &groupWithReference{group: resp.GetGroup(), reference: reference}
+		cached := &groupWithReference{Group: resp.GetGroup(), Reference: reference}
 
-		remoteGroupCacheMutex.Lock()
-		remoteGroupCache[ref] = cached
-		remoteGroupCacheMutex.Unlock()
+		_ = c.cache.Set(ctx, ref, cached)
 
 		return cached, nil
 	})
@@ -184,5 +178,5 @@ func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGr
 	}
 
 	cached := result.(*groupWithReference)
-	return cached.group, cached.reference, nil
+	return cached.Group, cached.Reference, nil
 }
