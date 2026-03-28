@@ -324,7 +324,10 @@ message PolicyVulnerabilityFinding {
   // Severity level (CRITICAL, HIGH, MEDIUM, LOW)
   string severity = 4 [(buf.validate.field).required = true];
   // CVSS v3 score (0.0-10.0)
-  double cvss_v3_score = 5;
+  double cvss_v3_score = 5 [(buf.validate.field).double = {
+    gte: 0
+    lte: 10
+  }];
   // CWE references (e.g., CWE-79, CWE-89)
   repeated string cwes = 6;
   // Suggested fix or upgrade path

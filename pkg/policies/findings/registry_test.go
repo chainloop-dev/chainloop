@@ -85,6 +85,18 @@ func TestValidateFinding(t *testing.T) {
 			wantErr: "finding validation failed",
 		},
 		{
+			name:        "vulnerability finding with out-of-range CVSS score",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":       "Found CVE-2024-1234",
+				"external_id":   "CVE-2024-1234",
+				"package_purl":  "pkg:golang/example.com/lib@v1.0.0",
+				"severity":      "CRITICAL",
+				"cvss_v3_score": 15.0,
+			},
+			wantErr: "finding validation failed",
+		},
+		{
 			name:        "valid SAST finding",
 			findingType: "SAST",
 			raw: map[string]any{

@@ -48,7 +48,7 @@ type EvalOptions struct {
 
 type EvalResult struct {
 	Violations  []string `json:"violations"`
-	Warnings    []string `json:"warnings,omitempty"`
+	Warnings    []string `json:"warnings"`
 	SkipReasons []string `json:"skip_reasons"`
 	Skipped     bool     `json:"skipped"`
 }
