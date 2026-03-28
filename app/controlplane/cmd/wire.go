@@ -39,6 +39,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
 )
@@ -136,7 +137,16 @@ func newAuthAllowList(conf *conf.Bootstrap) *pkgConf.AllowList {
 
 var cacheProviderSet = wire.NewSet(
 	newMembershipsCache,
+	newClaimsCache,
 )
+
+func newClaimsCache(conn *nats.Conn) (cache.Cache[*jwt.MapClaims], error) {
+	opts := []cache.Option{cache.WithTTL(10 * time.Second)}
+	if conn != nil {
+		opts = append(opts, cache.WithNATS(conn, "jwt-claims"))
+	}
+	return cache.New[*jwt.MapClaims](opts...)
+}
 
 func newMembershipsCache(conn *nats.Conn) (cache.Cache[*entities.Membership], error) {
 	opts := []cache.Option{cache.WithTTL(time.Second)}

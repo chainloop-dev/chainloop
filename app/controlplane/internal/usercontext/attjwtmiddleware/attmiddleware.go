@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,11 +32,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -199,6 +199,12 @@ func WithVerifyAudienceFunc(f VerifyAudienceFunc) TokenProviderOption {
 type options struct {
 	tokenProviders   []providerOption
 	federatedAuthURL string
+	claimsCache      cache.Cache[*jwt.MapClaims]
+}
+
+// WithClaimsCache sets an external cache for federated JWT claims.
+func WithClaimsCache(c cache.Cache[*jwt.MapClaims]) JWTOption {
+	return func(o *options) { o.claimsCache = c }
 }
 
 func withTokenProvider(providerKey string, opts ...TokenProviderOption) JWTOption {
@@ -251,8 +257,13 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 		logger.Infof("federated authentication enabled, using URL: %s", o.federatedAuthURL)
 	}
 
-	// claims cache with 10s TTL and unlimited keys
-	claimsCache := expirable.NewLRU[string, *jwt.MapClaims](0, nil, time.Second*10)
+	if o.claimsCache == nil {
+		var err error
+		o.claimsCache, err = cache.New[*jwt.MapClaims](cache.WithTTL(10 * time.Second))
+		if err != nil {
+			panic(fmt.Sprintf("failed to create default claims cache: %v", err))
+		}
+	}
 
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -286,7 +297,7 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 							}
 
 							logger.Infof("calling federated provider, orgName: %s", orgName)
-							claims, err := callFederatedProvider(o.federatedAuthURL, jwtToken, orgName, claimsCache)
+							claims, err := callFederatedProvider(ctx, o.federatedAuthURL, jwtToken, orgName, o.claimsCache)
 							if err != nil {
 								// if we receive an error from upstream we want to expose it to the user, for example if the federated provider
 								// is saying that the token is invalid
@@ -333,9 +344,9 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 
 // callFederatedProvider calls the federated provider to verify the token
 // it returns the claims of the token if the token is valid and verified
-func callFederatedProvider(verifyURL string, jwtToken, orgName string, cache *expirable.LRU[string, *jwt.MapClaims]) (*jwt.MapClaims, error) {
+func callFederatedProvider(ctx context.Context, verifyURL string, jwtToken, orgName string, claimsCache cache.Cache[*jwt.MapClaims]) (*jwt.MapClaims, error) {
 	cacheKey := fmt.Sprintf("%s:%s", jwtToken, orgName)
-	if claims, ok := cache.Get(cacheKey); ok {
+	if claims, ok, _ := claimsCache.Get(ctx, cacheKey); ok {
 		return claims, nil
 	}
 
@@ -391,7 +402,7 @@ func callFederatedProvider(verifyURL string, jwtToken, orgName string, cache *ex
 		"orgName":    response.OrgName,
 	}
 
-	cache.Add(cacheKey, claims)
+	_ = claimsCache.Set(ctx, cacheKey, claims)
 
 	return claims, nil
 }

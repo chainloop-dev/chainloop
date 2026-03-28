@@ -64,6 +64,7 @@ type Opts struct {
 	WorkflowUseCase     *biz.WorkflowUseCase
 	MembershipUseCase   *biz.MembershipUseCase
 	MembershipsCache    cache.Cache[*entities.Membership]
+	ClaimsCache         cache.Cache[*jwt.MapClaims]
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
@@ -238,6 +239,8 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 				attjwtmiddleware.NewUserTokenProvider(opts.AuthConfig.GeneratedJwsHmacSecret),
 				// Delegated Federated provider
 				attjwtmiddleware.WithFederatedProvider(opts.FederatedConfig),
+				// Claims cache for federated provider
+				attjwtmiddleware.WithClaimsCache(opts.ClaimsCache),
 			),
 			// 2.a - Set its workflow and organization in the context
 			usercontext.WithAttestationContextFromRobotAccount(opts.RobotAccountUseCase, opts.OrganizationUseCase, logHelper),

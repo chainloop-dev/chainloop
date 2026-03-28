@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/wire"
 	"github.com/nats-io/nats.go"
 	"time"
@@ -141,6 +142,11 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, organizationRepo, logger)
 	cache, err := newMembershipsCache(conn)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	cacheCache, err := newClaimsCache(conn)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -271,6 +277,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		WorkflowUseCase:     workflowUseCase,
 		MembershipUseCase:   membershipUseCase,
 		MembershipsCache:    cache,
+		ClaimsCache:         cacheCache,
 		WorkflowSvc:         workflowService,
 		AuthSvc:             authService,
 		RobotAccountSvc:     robotAccountService,
@@ -390,7 +397,16 @@ func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
 
 var cacheProviderSet = wire.NewSet(
 	newMembershipsCache,
+	newClaimsCache,
 )
+
+func newClaimsCache(conn *nats.Conn) (cache.Cache[*jwt.MapClaims], error) {
+	opts := []cache.Option{cache.WithTTL(10 * time.Second)}
+	if conn != nil {
+		opts = append(opts, cache.WithNATS(conn, "jwt-claims"))
+	}
+	return cache.New[*jwt.MapClaims](opts...)
+}
 
 func newMembershipsCache(conn *nats.Conn) (cache.Cache[*entities.Membership], error) {
 	opts := []cache.Option{cache.WithTTL(time.Second)}
