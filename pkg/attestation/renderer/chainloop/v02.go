@@ -428,6 +428,10 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEval
 	return p.PolicyEvaluations
 }
 
+func (p *ProvenancePredicateV02) GetPolicyEvaluationsRef() *intoto.ResourceDescriptor {
+	return p.PolicyEvaluationsRef
+}
+
 func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationStatus {
 	return &PolicyEvaluationStatus{
 		Strategy:           p.PolicyCheckBlockingStrategy,

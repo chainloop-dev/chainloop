@@ -240,5 +240,15 @@ func (uc *CASMappingUseCase) LookupDigestsInAttestation(att *dsse.Envelope, dige
 		}
 	}
 
+	// Include the policy evaluations bundle if stored in CAS
+	if ref := predicate.GetPolicyEvaluationsRef(); ref != nil {
+		if d, ok := ref.Digest["sha256"]; ok {
+			references = append(references, &CASMappingLookupRef{
+				Name:   ref.Name,
+				Digest: fmt.Sprintf("sha256:%s", d),
+			})
+		}
+	}
+
 	return references, nil
 }
