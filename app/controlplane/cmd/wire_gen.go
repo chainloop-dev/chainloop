@@ -179,19 +179,27 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 		cleanup()
 		return nil, nil, err
 	}
+	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
+	cache2, err := newPolicyEvalBundleCache(conn, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
 	newWorkflowRunServiceOpts := &service.NewWorkflowRunServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,
 		WorkflowContractUC: workflowContractUseCase,
 		ProjectUC:          projectUseCase,
 		CredsReader:        readerWriter,
+		CASClient:          casClientUseCase,
+		CASMappingUC:       casMappingUseCase,
+		PolicyEvalCache:    cache2,
 		Opts:               v5,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
 	attestationUseCase := biz.NewAttestationUseCase(casClientUseCase, logger)
 	fanOutDispatcher := dispatcher.New(integrationUseCase, workflowUseCase, workflowRunUseCase, readerWriter, casClientUseCase, availablePlugins, logger)
-	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
 	v6 := bootstrap.PrometheusIntegration
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
@@ -398,12 +406,13 @@ func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
 var cacheProviderSet = wire.NewSet(
 	newMembershipsCache,
 	newClaimsCache,
+	newPolicyEvalBundleCache,
 )
 
 func newClaimsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
-	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(&kratosLogAdapter{h: l})}
+	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for JWT claims")}
 	if conn != nil {
 		backend = "nats"
 		opts = append(opts, cache.WithNATS(conn, "chainloop-jwt-claims"))
@@ -415,13 +424,25 @@ func newClaimsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*jwt.MapCla
 func newMembershipsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*entities.Membership], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
-	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(&kratosLogAdapter{h: l})}
+	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for org memberships")}
 	if conn != nil {
 		backend = "nats"
 		opts = append(opts, cache.WithNATS(conn, "chainloop-memberships"))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-memberships", "backend", backend, "ttl", "1s")
 	return cache.New[*entities.Membership](opts...)
+}
+
+func newPolicyEvalBundleCache(conn *nats.Conn, logger log.Logger) (cache.Cache[[]byte], error) {
+	l := log.NewHelper(logger)
+	backend := "memory"
+	opts := []cache.Option{cache.WithTTL(24 * time.Hour), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for policy evaluation bundles from CAS")}
+	if conn != nil {
+		backend = "nats"
+		opts = append(opts, cache.WithNATS(conn, "chainloop-policy-eval-bundles"))
+	}
+	l.Infow("msg", "cache initialized", "bucket", "chainloop-policy-eval-bundles", "backend", backend, "ttl", "24h")
+	return cache.New[[]byte](opts...)
 }
 
 // kratosLogAdapter adapts kratos log.Helper (Debugw(...interface{})) to cache.Logger (Debugw(string, ...any)).

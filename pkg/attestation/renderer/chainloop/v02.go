@@ -288,12 +288,27 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	return predicate, nil
 }
 
-// collect all policy evaluations grouped by material and returns if there is a policy violation
 func mappedPolicyEvaluations(att *v1.Attestation) (map[string][]*PolicyEvaluation, bool, error) {
-	var hasPolicyViolations bool
-	result := map[string][]*PolicyEvaluation{}
+	return groupEvaluations(att.GetPolicyEvaluations())
+}
 
-	for _, p := range att.GetPolicyEvaluations() {
+// PolicyEvaluationsFromBundle deserializes a PolicyEvaluationBundle from protojson bytes
+// and returns evaluations grouped by material name.
+func PolicyEvaluationsFromBundle(data []byte) (map[string][]*PolicyEvaluation, error) {
+	var bundle v1.PolicyEvaluationBundle
+	if err := protojson.Unmarshal(data, &bundle); err != nil {
+		return nil, fmt.Errorf("unmarshaling policy evaluation bundle: %w", err)
+	}
+
+	evals, _, err := groupEvaluations(bundle.GetEvaluations())
+	return evals, err
+}
+
+func groupEvaluations(evals []*v1.PolicyEvaluation) (map[string][]*PolicyEvaluation, bool, error) {
+	var hasViolations bool
+	result := make(map[string][]*PolicyEvaluation)
+
+	for _, p := range evals {
 		keyName := p.MaterialName
 		if keyName == "" {
 			keyName = AttPolicyEvaluation
@@ -305,13 +320,13 @@ func mappedPolicyEvaluations(att *v1.Attestation) (map[string][]*PolicyEvaluatio
 		}
 
 		if len(ev.Violations) > 0 {
-			hasPolicyViolations = true
+			hasViolations = true
 		}
 
 		result[keyName] = append(result[keyName], ev)
 	}
 
-	return result, hasPolicyViolations, nil
+	return result, hasViolations, nil
 }
 
 func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {

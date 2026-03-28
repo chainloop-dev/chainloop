@@ -395,6 +395,103 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 	}
 }
 
+func TestPolicyEvaluationsFromBundle(t *testing.T) {
+	tests := []struct {
+		name    string
+		bundle  *api.PolicyEvaluationBundle
+		wantLen map[string]int // expected number of evaluations per material
+		wantErr bool
+	}{
+		{
+			name: "groups evaluations by material name",
+			bundle: &api.PolicyEvaluationBundle{
+				Evaluations: []*api.PolicyEvaluation{
+					{Name: "check-sbom", MaterialName: "sbom"},
+					{Name: "check-sarif", MaterialName: "sarif"},
+					{Name: "check-sbom-format", MaterialName: "sbom"},
+				},
+			},
+			wantLen: map[string]int{"sbom": 2, "sarif": 1},
+		},
+		{
+			name: "empty material name uses attestation key",
+			bundle: &api.PolicyEvaluationBundle{
+				Evaluations: []*api.PolicyEvaluation{
+					{Name: "att-policy", MaterialName: ""},
+				},
+			},
+			wantLen: map[string]int{AttPolicyEvaluation: 1},
+		},
+		{
+			name:    "empty bundle returns empty map",
+			bundle:  &api.PolicyEvaluationBundle{},
+			wantLen: map[string]int{},
+		},
+		{
+			name:    "invalid data returns error",
+			bundle:  nil, // we'll pass invalid bytes directly
+			wantErr: true,
+		},
+		{
+			name: "preserves violations and fields",
+			bundle: &api.PolicyEvaluationBundle{
+				Evaluations: []*api.PolicyEvaluation{
+					{
+						Name:         "vuln-check",
+						MaterialName: "image",
+						Description:  "checks for vulns",
+						Violations: []*api.PolicyEvaluation_Violation{
+							{Subject: "CVE-2024-1234", Message: "critical vuln found"},
+						},
+						Skipped:     true,
+						SkipReasons: []string{"not applicable"},
+					},
+				},
+			},
+			wantLen: map[string]int{"image": 1},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var data []byte
+			if tc.bundle != nil {
+				var err error
+				data, err = protojson.Marshal(tc.bundle)
+				require.NoError(t, err)
+			} else if tc.wantErr {
+				data = []byte("not valid protojson")
+			}
+
+			result, err := PolicyEvaluationsFromBundle(data)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			// Check grouping counts
+			assert.Len(t, result, len(tc.wantLen))
+			for key, expectedCount := range tc.wantLen {
+				assert.Len(t, result[key], expectedCount, "key=%s", key)
+			}
+
+			// For the violations test case, verify field mapping
+			if tc.name == "preserves violations and fields" {
+				ev := result["image"][0]
+				assert.Equal(t, "vuln-check", ev.Name)
+				assert.Equal(t, "image", ev.MaterialName)
+				assert.Equal(t, "checks for vulns", ev.Description)
+				assert.True(t, ev.Skipped)
+				assert.Equal(t, []string{"not applicable"}, ev.SkipReasons)
+				require.Len(t, ev.Violations, 1)
+				assert.Equal(t, "CVE-2024-1234", ev.Violations[0].Subject)
+				assert.Equal(t, "critical vuln found", ev.Violations[0].Message)
+			}
+		})
+	}
+}
+
 func TestPolicyEvaluationsField(t *testing.T) {
 	raw, err := os.ReadFile("testdata/attestation-pe-snake.json")
 	require.NoError(t, err)

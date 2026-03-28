@@ -533,7 +533,7 @@ func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.Atte
 	}}, nil
 }
 
-func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
+func bizAttestationToPb(att *biz.Attestation, predicate chainloop.NormalizablePredicate) (*cpAPI.AttestationItem, error) {
 	if att == nil || att.Envelope == nil {
 		return nil, nil
 	}
@@ -541,11 +541,6 @@ func bizAttestationToPb(att *biz.Attestation) (*cpAPI.AttestationItem, error) {
 	encodedAttestation, err := json.Marshal(att.Envelope)
 	if err != nil {
 		return nil, err
-	}
-
-	predicate, err := chainloop.ExtractPredicate(att.Envelope)
-	if err != nil {
-		return nil, fmt.Errorf("error extracting predicate from attestation: %w", err)
 	}
 
 	materials, err := extractMaterials(predicate.GetMaterials())

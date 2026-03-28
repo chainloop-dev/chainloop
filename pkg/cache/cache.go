@@ -46,12 +46,13 @@ type Logger interface {
 const defaultMaxSize = 1000
 
 type config struct {
-	ttl        time.Duration
-	maxSize    int
-	logger     Logger
-	natsConn   *nats.Conn
-	bucketName string
-	reconnCh   <-chan struct{}
+	ttl         time.Duration
+	maxSize     int
+	logger      Logger
+	natsConn    *nats.Conn
+	bucketName  string
+	description string
+	reconnCh    <-chan struct{}
 }
 
 // Option configures cache construction.
@@ -73,6 +74,11 @@ func WithNATS(conn *nats.Conn, bucketName string) Option {
 		c.natsConn = conn
 		c.bucketName = bucketName
 	}
+}
+
+// WithDescription sets the NATS KV bucket description. Ignored for in-memory backend.
+func WithDescription(desc string) Option {
+	return func(c *config) { c.description = desc }
 }
 
 // WithReconnect provides a channel that signals NATS reconnection events.
