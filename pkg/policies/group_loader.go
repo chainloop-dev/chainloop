@@ -24,10 +24,12 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
+	"golang.org/x/sync/singleflight"
 )
 
 // GroupLoader defines the interface for policy loaders from contract attachments
@@ -99,8 +101,6 @@ func (l *HTTPSGroupLoader) Load(_ context.Context, attachment *v1.PolicyGroupAtt
 // ChainloopGroupLoader loads groups referenced with chainloop://provider/name URLs
 type ChainloopGroupLoader struct {
 	Client pb.AttestationServiceClient
-
-	cacheMutex sync.Mutex
 }
 
 type groupWithReference struct {
@@ -108,7 +108,16 @@ type groupWithReference struct {
 	reference *PolicyDescriptor
 }
 
-var remoteGroupCache = make(map[string]*groupWithReference)
+// remoteGroupFetchTimeout bounds gRPC calls inside singleflight to prevent
+// indefinite blocking. Independent of any caller's context deadline so that
+// all singleflight waiters get uniform timeout behavior.
+const remoteGroupFetchTimeout = 30 * time.Second
+
+var (
+	remoteGroupCache      = make(map[string]*groupWithReference)
+	remoteGroupCacheMutex sync.Mutex
+	remoteGroupFlight     singleflight.Group
+)
 
 func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroupLoader {
 	return &ChainloopGroupLoader{Client: client}
@@ -117,43 +126,63 @@ func NewChainloopGroupLoader(client pb.AttestationServiceClient) *ChainloopGroup
 func (c *ChainloopGroupLoader) Load(ctx context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-
+	// Fast path: check cache under lock
+	remoteGroupCacheMutex.Lock()
 	if v, ok := remoteGroupCache[ref]; ok {
+		remoteGroupCacheMutex.Unlock()
 		return v.group, v.reference, nil
 	}
+	remoteGroupCacheMutex.Unlock()
 
-	if !IsProviderScheme(ref) {
-		return nil, nil, fmt.Errorf("invalid group reference %q", ref)
-	}
+	// Use singleflight to coalesce concurrent fetches for the same ref.
+	// Use context.WithoutCancel so the winning goroutine's context cancellation
+	// doesn't propagate to waiters sharing the same singleflight key.
+	result, err, _ := remoteGroupFlight.Do(ref, func() (interface{}, error) {
+		if !IsProviderScheme(ref) {
+			return nil, fmt.Errorf("invalid group reference %q", ref)
+		}
 
-	providerRef := ProviderParts(ref)
+		providerRef := ProviderParts(ref)
+		// Use a fixed timeout independent of any caller's context so that all
+		// singleflight waiters get uniform behavior regardless of which goroutine
+		// won the race.
+		sfCtx, cancel := context.WithTimeout(context.Background(), remoteGroupFetchTimeout)
+		defer cancel()
 
-	resp, err := c.Client.GetPolicyGroup(ctx, &pb.AttestationServiceGetPolicyGroupRequest{
-		Provider:  providerRef.Provider,
-		GroupName: providerRef.Name,
-		OrgName:   providerRef.OrgName,
+		resp, err := c.Client.GetPolicyGroup(sfCtx, &pb.AttestationServiceGetPolicyGroupRequest{
+			Provider:  providerRef.Provider,
+			GroupName: providerRef.Name,
+			OrgName:   providerRef.OrgName,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		}
+
+		h, err := crv1.NewHash(resp.Reference.GetDigest())
+		if err != nil {
+			return nil, fmt.Errorf("parsing digest: %w", err)
+		}
+
+		orgName := providerRef.OrgName
+		if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
+			if orgParam := u.Query().Get("org"); orgParam != "" {
+				orgName = orgParam
+			}
+		}
+
+		reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
+		cached := &groupWithReference{group: resp.GetGroup(), reference: reference}
+
+		remoteGroupCacheMutex.Lock()
+		remoteGroupCache[ref] = cached
+		remoteGroupCacheMutex.Unlock()
+
+		return cached, nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote group (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		return nil, nil, err
 	}
 
-	h, err := crv1.NewHash(resp.Reference.GetDigest())
-	if err != nil {
-		return nil, nil, fmt.Errorf("parsing digest: %w", err)
-	}
-
-	orgName := providerRef.OrgName
-	// Extract organization name from URL if present
-	if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
-		if orgParam := u.Query().Get("org"); orgParam != "" {
-			orgName = orgParam
-		}
-	}
-
-	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
-	// cache result
-	remoteGroupCache[ref] = &groupWithReference{group: resp.GetGroup(), reference: reference}
-	return resp.GetGroup(), reference, nil
+	cached := result.(*groupWithReference)
+	return cached.group, cached.reference, nil
 }

@@ -26,11 +26,13 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -158,8 +160,6 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs
 type ChainloopLoader struct {
 	Client pb.AttestationServiceClient
-
-	cacheMutex sync.Mutex
 }
 
 type policyWithReference struct {
@@ -167,7 +167,16 @@ type policyWithReference struct {
 	reference *PolicyDescriptor
 }
 
-var remotePolicyCache = make(map[string]*policyWithReference)
+// remotePolicyFetchTimeout bounds gRPC calls inside singleflight to prevent
+// indefinite blocking. Independent of any caller's context deadline so that
+// all singleflight waiters get uniform timeout behavior.
+const remotePolicyFetchTimeout = 30 * time.Second
+
+var (
+	remotePolicyCache      = make(map[string]*policyWithReference)
+	remotePolicyCacheMutex sync.Mutex
+	remotePolicyFlight     singleflight.Group
+)
 
 func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
 	return &ChainloopLoader{Client: client}
@@ -176,46 +185,67 @@ func NewChainloopLoader(client pb.AttestationServiceClient) *ChainloopLoader {
 func (c *ChainloopLoader) Load(ctx context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	ref := attachment.GetRef()
 
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-
+	// Fast path: check cache under lock
+	remotePolicyCacheMutex.Lock()
 	if v, ok := remotePolicyCache[ref]; ok {
+		remotePolicyCacheMutex.Unlock()
 		return v.policy, v.reference, nil
 	}
+	remotePolicyCacheMutex.Unlock()
 
-	if !IsProviderScheme(ref) {
-		return nil, nil, fmt.Errorf("invalid policy reference %q", ref)
-	}
+	// Use singleflight to coalesce concurrent fetches for the same ref.
+	// This ensures exactly one gRPC call per ref regardless of concurrency.
+	// Use context.WithoutCancel so the winning goroutine's context cancellation
+	// doesn't propagate to waiters sharing the same singleflight key.
+	result, err, _ := remotePolicyFlight.Do(ref, func() (interface{}, error) {
+		if !IsProviderScheme(ref) {
+			return nil, fmt.Errorf("invalid policy reference %q", ref)
+		}
 
-	providerRef := ProviderParts(ref)
+		providerRef := ProviderParts(ref)
+		// Use a fixed timeout independent of any caller's context so that all
+		// singleflight waiters get uniform behavior regardless of which goroutine
+		// won the race. The caller's cancellation/deadline is intentionally not
+		// inherited to avoid one caller's short deadline failing the shared call.
+		sfCtx, cancel := context.WithTimeout(context.Background(), remotePolicyFetchTimeout)
+		defer cancel()
 
-	resp, err := c.Client.GetPolicy(ctx, &pb.AttestationServiceGetPolicyRequest{
-		Provider:   providerRef.Provider,
-		PolicyName: providerRef.Name,
-		OrgName:    providerRef.OrgName,
+		resp, err := c.Client.GetPolicy(sfCtx, &pb.AttestationServiceGetPolicyRequest{
+			Provider:   providerRef.Provider,
+			PolicyName: providerRef.Name,
+			OrgName:    providerRef.OrgName,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		}
+
+		h, err := crv1.NewHash(resp.Reference.GetDigest())
+		if err != nil {
+			return nil, fmt.Errorf("parsing digest: %w", err)
+		}
+
+		orgName := providerRef.OrgName
+		if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
+			if orgParam := u.Query().Get("org"); orgParam != "" {
+				orgName = orgParam
+			}
+		}
+
+		reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
+		cached := &policyWithReference{policy: resp.GetPolicy(), reference: reference}
+
+		remotePolicyCacheMutex.Lock()
+		remotePolicyCache[ref] = cached
+		remotePolicyCacheMutex.Unlock()
+
+		return cached, nil
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote policy (provider: %s, name: %s): %w", providerRef.Provider, providerRef.Name, err)
+		return nil, nil, err
 	}
 
-	h, err := crv1.NewHash(resp.Reference.GetDigest())
-	if err != nil {
-		return nil, nil, fmt.Errorf("parsing digest: %w", err)
-	}
-
-	orgName := providerRef.OrgName
-	// Extract organization name from URL if present
-	if u, err := url.Parse(resp.Reference.GetUrl()); err == nil {
-		if orgParam := u.Query().Get("org"); orgParam != "" {
-			orgName = orgParam
-		}
-	}
-
-	reference := policyReferenceResourceDescriptor(providerRef.Name, resp.Reference.GetUrl(), orgName, h)
-
-	// cache result
-	remotePolicyCache[ref] = &policyWithReference{policy: resp.GetPolicy(), reference: reference}
-	return resp.GetPolicy(), reference, nil
+	cached := result.(*policyWithReference)
+	return cached.policy, cached.reference, nil
 }
 
 func unmarshallResource(raw []byte, ref string, digest string, dest proto.Message) (*PolicyDescriptor, error) {

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -40,6 +41,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/wasm"
+	"golang.org/x/sync/errgroup"
 )
 
 type PolicyError struct {
@@ -72,6 +74,11 @@ const (
 	EvalPhasePush
 )
 
+// defaultMaxConcurrency is the default number of concurrent policy evaluations.
+// Kept conservative to avoid contention on remote state optimistic locking
+// and to limit pressure on AI-enabled policies. Can be overridden via WithMaxConcurrency.
+var defaultMaxConcurrency = max(runtime.NumCPU(), 5)
+
 type PolicyVerifier struct {
 	policies         *v1.Policies
 	logger           *zerolog.Logger
@@ -82,6 +89,7 @@ type PolicyVerifier struct {
 	includeRawData   bool
 	enablePrint      bool
 	evalPhase        EvalPhase
+	maxConcurrency   int
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
@@ -93,6 +101,7 @@ type PolicyVerifierOptions struct {
 	EnablePrint      bool
 	GRPCConn         *grpc.ClientConn
 	EvalPhase        EvalPhase
+	MaxConcurrency   int
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -133,10 +142,21 @@ func WithEvalPhase(phase EvalPhase) PolicyVerifierOption {
 	}
 }
 
+func WithMaxConcurrency(n int) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.MaxConcurrency = n
+	}
+}
+
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
 	options := &PolicyVerifierOptions{}
 	for _, opt := range opts {
 		opt(options)
+	}
+
+	maxConcurrency := options.MaxConcurrency
+	if maxConcurrency <= 0 {
+		maxConcurrency = defaultMaxConcurrency
 	}
 
 	return &PolicyVerifier{
@@ -149,6 +169,7 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		includeRawData:   options.IncludeRawData,
 		enablePrint:      options.EnablePrint,
 		evalPhase:        options.EvalPhase,
+		maxConcurrency:   maxConcurrency,
 	}
 }
 
@@ -171,14 +192,29 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 		return nil, NewPolicyError(err)
 	}
 
-	for _, attachment := range attachments {
-		ev, err := pv.evaluatePolicyAttachment(ctx, attachment, subject,
-			&evalOpts{kind: material.MaterialType, name: material.GetId()},
-		)
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
+	results := make([]*v12.PolicyEvaluation, len(attachments))
+	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(pv.maxConcurrency)
 
+	for i, attachment := range attachments {
+		g.Go(func() error {
+			ev, err := pv.evaluatePolicyAttachment(gCtx, attachment, subject,
+				&evalOpts{kind: material.MaterialType, name: material.GetId()},
+			)
+			if err != nil {
+				return NewPolicyError(err)
+			}
+			results[i] = ev
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Filter nil entries (skipped policies)
+	for _, ev := range results {
 		if ev != nil {
 			result = append(result, ev)
 		}
@@ -425,19 +461,36 @@ func ComputeArguments(name string, inputs []*v1.PolicyInput, args map[string]str
 
 // VerifyStatement verifies that the statement is compliant with the policies present in the schema
 func (pv *PolicyVerifier) VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error) {
-	result := make([]*v12.PolicyEvaluation, 0)
 	policies := pv.policies.GetAttestation()
-	for _, policyAtt := range policies {
-		material, err := protojson.Marshal(statement)
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
 
-		ev, err := pv.evaluatePolicyAttachment(ctx, policyAtt, material, &evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION})
-		if err != nil {
-			return nil, NewPolicyError(err)
-		}
+	// Marshal statement once — it's read-only input shared across evaluations
+	statementJSON, err := protojson.Marshal(statement)
+	if err != nil {
+		return nil, NewPolicyError(err)
+	}
 
+	results := make([]*v12.PolicyEvaluation, len(policies))
+	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(pv.maxConcurrency)
+
+	for i, policyAtt := range policies {
+		g.Go(func() error {
+			ev, err := pv.evaluatePolicyAttachment(gCtx, policyAtt, statementJSON, &evalOpts{kind: v1.CraftingSchema_Material_ATTESTATION})
+			if err != nil {
+				return NewPolicyError(err)
+			}
+			results[i] = ev
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Filter nil entries (skipped policies)
+	result := make([]*v12.PolicyEvaluation, 0, len(policies))
+	for _, ev := range results {
 		if ev != nil {
 			result = append(result, ev)
 		}

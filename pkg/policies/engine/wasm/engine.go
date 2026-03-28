@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
@@ -27,6 +28,12 @@ import (
 	extism "github.com/extism/go-sdk"
 	"github.com/rs/zerolog"
 )
+
+// setLogLevelOnce ensures extism.SetLogLevel is called exactly once,
+// since it modifies global state and is not safe for concurrent calls.
+// Note: the log level is determined by the first NewEngine() call in the
+// process. Subsequent engines with different log levels will not override it.
+var setLogLevelOnce sync.Once
 
 // Ensure Engine implements PolicyEngine interface
 var _ engine.PolicyEngine = (*Engine)(nil)
@@ -59,6 +66,23 @@ func NewEngine(opts ...engine.Option) *Engine {
 		logger = &noopLogger
 	}
 
+	// Set WASM plugin log level exactly once across all engine instances.
+	// extism.SetLogLevel modifies global state and is not safe for concurrent calls.
+	setLogLevelOnce.Do(func() {
+		switch {
+		case logger.GetLevel() <= zerolog.TraceLevel:
+			extism.SetLogLevel(extism.LogLevelTrace)
+		case logger.GetLevel() <= zerolog.DebugLevel:
+			extism.SetLogLevel(extism.LogLevelDebug)
+		case logger.GetLevel() <= zerolog.InfoLevel:
+			extism.SetLogLevel(extism.LogLevelInfo)
+		case logger.GetLevel() <= zerolog.WarnLevel:
+			extism.SetLogLevel(extism.LogLevelWarn)
+		default:
+			extism.SetLogLevel(extism.LogLevelError)
+		}
+	})
+
 	return &Engine{
 		executionTimeout:    executionTimeout,
 		logger:              logger,
@@ -69,21 +93,6 @@ func NewEngine(opts ...engine.Option) *Engine {
 // Verify executes a WASM policy against the provided input
 func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
 	e.logger.Debug().Str("policy", policy.Name).Int("wasm_size", len(policy.Source)).Int("input_size", len(input)).Int("args_count", len(args)).Msg("Starting WASM policy execution")
-
-	// Enable WASM plugin logging based on logger level
-	// This allows LogInfo(), LogDebug(), etc. from the WASM policy to be visible
-	switch {
-	case e.logger.GetLevel() <= zerolog.TraceLevel:
-		extism.SetLogLevel(extism.LogLevelTrace)
-	case e.logger.GetLevel() <= zerolog.DebugLevel:
-		extism.SetLogLevel(extism.LogLevelDebug)
-	case e.logger.GetLevel() <= zerolog.InfoLevel:
-		extism.SetLogLevel(extism.LogLevelInfo)
-	case e.logger.GetLevel() <= zerolog.WarnLevel:
-		extism.SetLogLevel(extism.LogLevelWarn)
-	default:
-		extism.SetLogLevel(extism.LogLevelError)
-	}
 
 	// Prepare config with args if present
 	configMap := make(map[string]string)
