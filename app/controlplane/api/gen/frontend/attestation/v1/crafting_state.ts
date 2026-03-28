@@ -311,6 +311,9 @@ export interface PolicyEvaluation_WithEntry {
 export interface PolicyEvaluation_Violation {
   subject: string;
   message: string;
+  vulnerability?: PolicyVulnerabilityFinding | undefined;
+  sast?: PolicySASTFinding | undefined;
+  licenseViolation?: PolicyLicenseViolationFinding | undefined;
 }
 
 export interface PolicyEvaluation_Reference {
@@ -330,6 +333,69 @@ export interface PolicyEvaluation_RawResult {
 /** Bundle of all policy evaluations for an attestation, stored as a CAS object. */
 export interface PolicyEvaluationBundle {
   evaluations: PolicyEvaluation[];
+}
+
+/**
+ * Output schema for vulnerability findings from policy evaluation.
+ * Used when a policy declares finding_type: VULNERABILITY.
+ */
+export interface PolicyVulnerabilityFinding {
+  /** Human-readable violation description */
+  message: string;
+  /** Vulnerability identifier (e.g., CVE-2024-1234, GHSA-xxxx) */
+  externalId: string;
+  /** Package URL of the affected component (e.g., pkg:golang/example.com/lib@v1.0.0) */
+  packagePurl: string;
+  /** Severity level (CRITICAL, HIGH, MEDIUM, LOW) */
+  severity: string;
+  /** CVSS v3 score (0.0-10.0) */
+  cvssV3Score: number;
+  /** CWE references (e.g., CWE-79, CWE-89) */
+  cwes: string[];
+  /** Suggested fix or upgrade path */
+  recommendation: string;
+}
+
+/**
+ * Output schema for SAST findings from policy evaluation.
+ * Used when a policy declares finding_type: SAST.
+ */
+export interface PolicySASTFinding {
+  /** Human-readable violation description */
+  message: string;
+  /** Tool-specific rule identifier (e.g., java:S1234, go-sec:G101) */
+  ruleId: string;
+  /** Severity level (CRITICAL, HIGH, MEDIUM, LOW) */
+  severity: string;
+  /** File path where the issue was found */
+  location: string;
+  /** Line number in the file */
+  lineNumber: number;
+  /** Code snippet showing the issue */
+  codeSnippet: string;
+  /** Suggested fix */
+  recommendation: string;
+}
+
+/**
+ * Output schema for license violation findings from policy evaluation.
+ * Used when a policy declares finding_type: LICENSE_VIOLATION.
+ */
+export interface PolicyLicenseViolationFinding {
+  /** Human-readable violation description */
+  message: string;
+  /** Component name (e.g., "lodash") */
+  componentName: string;
+  /** Package URL (e.g., pkg:npm/lodash@4.17.21) */
+  packagePurl: string;
+  /** License identifier (e.g., "GPL-3.0", "AGPL-3.0") */
+  licenseId: string;
+  /** Human-readable license name */
+  licenseName: string;
+  /** Component version */
+  componentVersion: string;
+  /** Suggested fix */
+  recommendation: string;
 }
 
 export interface Commit {
@@ -2807,7 +2873,7 @@ export const PolicyEvaluation_WithEntry = {
 };
 
 function createBasePolicyEvaluation_Violation(): PolicyEvaluation_Violation {
-  return { subject: "", message: "" };
+  return { subject: "", message: "", vulnerability: undefined, sast: undefined, licenseViolation: undefined };
 }
 
 export const PolicyEvaluation_Violation = {
@@ -2817,6 +2883,15 @@ export const PolicyEvaluation_Violation = {
     }
     if (message.message !== "") {
       writer.uint32(18).string(message.message);
+    }
+    if (message.vulnerability !== undefined) {
+      PolicyVulnerabilityFinding.encode(message.vulnerability, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.sast !== undefined) {
+      PolicySASTFinding.encode(message.sast, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.licenseViolation !== undefined) {
+      PolicyLicenseViolationFinding.encode(message.licenseViolation, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -2842,6 +2917,27 @@ export const PolicyEvaluation_Violation = {
 
           message.message = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.vulnerability = PolicyVulnerabilityFinding.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sast = PolicySASTFinding.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.licenseViolation = PolicyLicenseViolationFinding.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2855,6 +2951,13 @@ export const PolicyEvaluation_Violation = {
     return {
       subject: isSet(object.subject) ? String(object.subject) : "",
       message: isSet(object.message) ? String(object.message) : "",
+      vulnerability: isSet(object.vulnerability)
+        ? PolicyVulnerabilityFinding.fromJSON(object.vulnerability)
+        : undefined,
+      sast: isSet(object.sast) ? PolicySASTFinding.fromJSON(object.sast) : undefined,
+      licenseViolation: isSet(object.licenseViolation)
+        ? PolicyLicenseViolationFinding.fromJSON(object.licenseViolation)
+        : undefined,
     };
   },
 
@@ -2862,6 +2965,14 @@ export const PolicyEvaluation_Violation = {
     const obj: any = {};
     message.subject !== undefined && (obj.subject = message.subject);
     message.message !== undefined && (obj.message = message.message);
+    message.vulnerability !== undefined &&
+      (obj.vulnerability = message.vulnerability
+        ? PolicyVulnerabilityFinding.toJSON(message.vulnerability)
+        : undefined);
+    message.sast !== undefined && (obj.sast = message.sast ? PolicySASTFinding.toJSON(message.sast) : undefined);
+    message.licenseViolation !== undefined && (obj.licenseViolation = message.licenseViolation
+      ? PolicyLicenseViolationFinding.toJSON(message.licenseViolation)
+      : undefined);
     return obj;
   },
 
@@ -2873,6 +2984,15 @@ export const PolicyEvaluation_Violation = {
     const message = createBasePolicyEvaluation_Violation();
     message.subject = object.subject ?? "";
     message.message = object.message ?? "";
+    message.vulnerability = (object.vulnerability !== undefined && object.vulnerability !== null)
+      ? PolicyVulnerabilityFinding.fromPartial(object.vulnerability)
+      : undefined;
+    message.sast = (object.sast !== undefined && object.sast !== null)
+      ? PolicySASTFinding.fromPartial(object.sast)
+      : undefined;
+    message.licenseViolation = (object.licenseViolation !== undefined && object.licenseViolation !== null)
+      ? PolicyLicenseViolationFinding.fromPartial(object.licenseViolation)
+      : undefined;
     return message;
   },
 };
@@ -3107,6 +3227,428 @@ export const PolicyEvaluationBundle = {
   fromPartial<I extends Exact<DeepPartial<PolicyEvaluationBundle>, I>>(object: I): PolicyEvaluationBundle {
     const message = createBasePolicyEvaluationBundle();
     message.evaluations = object.evaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePolicyVulnerabilityFinding(): PolicyVulnerabilityFinding {
+  return { message: "", externalId: "", packagePurl: "", severity: "", cvssV3Score: 0, cwes: [], recommendation: "" };
+}
+
+export const PolicyVulnerabilityFinding = {
+  encode(message: PolicyVulnerabilityFinding, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.message !== "") {
+      writer.uint32(10).string(message.message);
+    }
+    if (message.externalId !== "") {
+      writer.uint32(18).string(message.externalId);
+    }
+    if (message.packagePurl !== "") {
+      writer.uint32(26).string(message.packagePurl);
+    }
+    if (message.severity !== "") {
+      writer.uint32(34).string(message.severity);
+    }
+    if (message.cvssV3Score !== 0) {
+      writer.uint32(41).double(message.cvssV3Score);
+    }
+    for (const v of message.cwes) {
+      writer.uint32(50).string(v!);
+    }
+    if (message.recommendation !== "") {
+      writer.uint32(58).string(message.recommendation);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyVulnerabilityFinding {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyVulnerabilityFinding();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.externalId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.packagePurl = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.severity = reader.string();
+          continue;
+        case 5:
+          if (tag !== 41) {
+            break;
+          }
+
+          message.cvssV3Score = reader.double();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.cwes.push(reader.string());
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.recommendation = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyVulnerabilityFinding {
+    return {
+      message: isSet(object.message) ? String(object.message) : "",
+      externalId: isSet(object.externalId) ? String(object.externalId) : "",
+      packagePurl: isSet(object.packagePurl) ? String(object.packagePurl) : "",
+      severity: isSet(object.severity) ? String(object.severity) : "",
+      cvssV3Score: isSet(object.cvssV3Score) ? Number(object.cvssV3Score) : 0,
+      cwes: Array.isArray(object?.cwes) ? object.cwes.map((e: any) => String(e)) : [],
+      recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
+    };
+  },
+
+  toJSON(message: PolicyVulnerabilityFinding): unknown {
+    const obj: any = {};
+    message.message !== undefined && (obj.message = message.message);
+    message.externalId !== undefined && (obj.externalId = message.externalId);
+    message.packagePurl !== undefined && (obj.packagePurl = message.packagePurl);
+    message.severity !== undefined && (obj.severity = message.severity);
+    message.cvssV3Score !== undefined && (obj.cvssV3Score = message.cvssV3Score);
+    if (message.cwes) {
+      obj.cwes = message.cwes.map((e) => e);
+    } else {
+      obj.cwes = [];
+    }
+    message.recommendation !== undefined && (obj.recommendation = message.recommendation);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyVulnerabilityFinding>, I>>(base?: I): PolicyVulnerabilityFinding {
+    return PolicyVulnerabilityFinding.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyVulnerabilityFinding>, I>>(object: I): PolicyVulnerabilityFinding {
+    const message = createBasePolicyVulnerabilityFinding();
+    message.message = object.message ?? "";
+    message.externalId = object.externalId ?? "";
+    message.packagePurl = object.packagePurl ?? "";
+    message.severity = object.severity ?? "";
+    message.cvssV3Score = object.cvssV3Score ?? 0;
+    message.cwes = object.cwes?.map((e) => e) || [];
+    message.recommendation = object.recommendation ?? "";
+    return message;
+  },
+};
+
+function createBasePolicySASTFinding(): PolicySASTFinding {
+  return { message: "", ruleId: "", severity: "", location: "", lineNumber: 0, codeSnippet: "", recommendation: "" };
+}
+
+export const PolicySASTFinding = {
+  encode(message: PolicySASTFinding, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.message !== "") {
+      writer.uint32(10).string(message.message);
+    }
+    if (message.ruleId !== "") {
+      writer.uint32(18).string(message.ruleId);
+    }
+    if (message.severity !== "") {
+      writer.uint32(26).string(message.severity);
+    }
+    if (message.location !== "") {
+      writer.uint32(34).string(message.location);
+    }
+    if (message.lineNumber !== 0) {
+      writer.uint32(40).int32(message.lineNumber);
+    }
+    if (message.codeSnippet !== "") {
+      writer.uint32(50).string(message.codeSnippet);
+    }
+    if (message.recommendation !== "") {
+      writer.uint32(58).string(message.recommendation);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicySASTFinding {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicySASTFinding();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.ruleId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.severity = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.location = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.lineNumber = reader.int32();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.codeSnippet = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.recommendation = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicySASTFinding {
+    return {
+      message: isSet(object.message) ? String(object.message) : "",
+      ruleId: isSet(object.ruleId) ? String(object.ruleId) : "",
+      severity: isSet(object.severity) ? String(object.severity) : "",
+      location: isSet(object.location) ? String(object.location) : "",
+      lineNumber: isSet(object.lineNumber) ? Number(object.lineNumber) : 0,
+      codeSnippet: isSet(object.codeSnippet) ? String(object.codeSnippet) : "",
+      recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
+    };
+  },
+
+  toJSON(message: PolicySASTFinding): unknown {
+    const obj: any = {};
+    message.message !== undefined && (obj.message = message.message);
+    message.ruleId !== undefined && (obj.ruleId = message.ruleId);
+    message.severity !== undefined && (obj.severity = message.severity);
+    message.location !== undefined && (obj.location = message.location);
+    message.lineNumber !== undefined && (obj.lineNumber = Math.round(message.lineNumber));
+    message.codeSnippet !== undefined && (obj.codeSnippet = message.codeSnippet);
+    message.recommendation !== undefined && (obj.recommendation = message.recommendation);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicySASTFinding>, I>>(base?: I): PolicySASTFinding {
+    return PolicySASTFinding.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicySASTFinding>, I>>(object: I): PolicySASTFinding {
+    const message = createBasePolicySASTFinding();
+    message.message = object.message ?? "";
+    message.ruleId = object.ruleId ?? "";
+    message.severity = object.severity ?? "";
+    message.location = object.location ?? "";
+    message.lineNumber = object.lineNumber ?? 0;
+    message.codeSnippet = object.codeSnippet ?? "";
+    message.recommendation = object.recommendation ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyLicenseViolationFinding(): PolicyLicenseViolationFinding {
+  return {
+    message: "",
+    componentName: "",
+    packagePurl: "",
+    licenseId: "",
+    licenseName: "",
+    componentVersion: "",
+    recommendation: "",
+  };
+}
+
+export const PolicyLicenseViolationFinding = {
+  encode(message: PolicyLicenseViolationFinding, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.message !== "") {
+      writer.uint32(10).string(message.message);
+    }
+    if (message.componentName !== "") {
+      writer.uint32(18).string(message.componentName);
+    }
+    if (message.packagePurl !== "") {
+      writer.uint32(26).string(message.packagePurl);
+    }
+    if (message.licenseId !== "") {
+      writer.uint32(34).string(message.licenseId);
+    }
+    if (message.licenseName !== "") {
+      writer.uint32(42).string(message.licenseName);
+    }
+    if (message.componentVersion !== "") {
+      writer.uint32(50).string(message.componentVersion);
+    }
+    if (message.recommendation !== "") {
+      writer.uint32(58).string(message.recommendation);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyLicenseViolationFinding {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyLicenseViolationFinding();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.componentName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.packagePurl = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.licenseId = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.licenseName = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.componentVersion = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.recommendation = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyLicenseViolationFinding {
+    return {
+      message: isSet(object.message) ? String(object.message) : "",
+      componentName: isSet(object.componentName) ? String(object.componentName) : "",
+      packagePurl: isSet(object.packagePurl) ? String(object.packagePurl) : "",
+      licenseId: isSet(object.licenseId) ? String(object.licenseId) : "",
+      licenseName: isSet(object.licenseName) ? String(object.licenseName) : "",
+      componentVersion: isSet(object.componentVersion) ? String(object.componentVersion) : "",
+      recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
+    };
+  },
+
+  toJSON(message: PolicyLicenseViolationFinding): unknown {
+    const obj: any = {};
+    message.message !== undefined && (obj.message = message.message);
+    message.componentName !== undefined && (obj.componentName = message.componentName);
+    message.packagePurl !== undefined && (obj.packagePurl = message.packagePurl);
+    message.licenseId !== undefined && (obj.licenseId = message.licenseId);
+    message.licenseName !== undefined && (obj.licenseName = message.licenseName);
+    message.componentVersion !== undefined && (obj.componentVersion = message.componentVersion);
+    message.recommendation !== undefined && (obj.recommendation = message.recommendation);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyLicenseViolationFinding>, I>>(base?: I): PolicyLicenseViolationFinding {
+    return PolicyLicenseViolationFinding.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyLicenseViolationFinding>, I>>(
+    object: I,
+  ): PolicyLicenseViolationFinding {
+    const message = createBasePolicyLicenseViolationFinding();
+    message.message = object.message ?? "";
+    message.componentName = object.componentName ?? "";
+    message.packagePurl = object.packagePurl ?? "";
+    message.licenseId = object.licenseId ?? "";
+    message.licenseName = object.licenseName ?? "";
+    message.componentVersion = object.componentVersion ?? "";
+    message.recommendation = object.recommendation ?? "";
     return message;
   },
 };

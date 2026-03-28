@@ -1,0 +1,62 @@
+{
+  "$id": "attestation.v1.PolicySASTFinding.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Output schema for SAST findings from policy evaluation.\n Used when a policy declares finding_type: SAST.",
+  "patternProperties": {
+    "^(codeSnippet)$": {
+      "description": "Code snippet showing the issue",
+      "type": "string"
+    },
+    "^(lineNumber)$": {
+      "description": "Line number in the file",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "^(ruleId)$": {
+      "description": "Tool-specific rule identifier (e.g., java:S1234, go-sec:G101)",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "code_snippet": {
+      "description": "Code snippet showing the issue",
+      "type": "string"
+    },
+    "line_number": {
+      "description": "Line number in the file",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "location": {
+      "description": "File path where the issue was found",
+      "type": "string"
+    },
+    "message": {
+      "description": "Human-readable violation description",
+      "type": "string"
+    },
+    "recommendation": {
+      "description": "Suggested fix",
+      "type": "string"
+    },
+    "rule_id": {
+      "description": "Tool-specific rule identifier (e.g., java:S1234, go-sec:G101)",
+      "type": "string"
+    },
+    "severity": {
+      "description": "Severity level (CRITICAL, HIGH, MEDIUM, LOW)",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message",
+    "rule_id",
+    "severity",
+    "location"
+  ],
+  "title": "PolicySAST Finding",
+  "type": "object"
+}

@@ -279,6 +279,12 @@ message Metadata {
   string description = 4;
   map<string, string> annotations = 5;
   optional string organization = 6;
+
+  // Declares the structured output schema for policy violations.
+  // When set, the policy engine validates that violations conform to the
+  // corresponding proto message (e.g., PolicyVulnerabilityFinding).
+  // Valid values: "VULNERABILITY", "SAST", "LICENSE_VIOLATION"
+  optional string finding_type = 7;
 }
 
 message PolicySpec {

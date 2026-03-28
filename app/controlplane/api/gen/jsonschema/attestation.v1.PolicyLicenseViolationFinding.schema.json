@@ -1,0 +1,65 @@
+{
+  "$id": "attestation.v1.PolicyLicenseViolationFinding.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Output schema for license violation findings from policy evaluation.\n Used when a policy declares finding_type: LICENSE_VIOLATION.",
+  "patternProperties": {
+    "^(componentName)$": {
+      "description": "Component name (e.g., \"lodash\")",
+      "type": "string"
+    },
+    "^(componentVersion)$": {
+      "description": "Component version",
+      "type": "string"
+    },
+    "^(licenseId)$": {
+      "description": "License identifier (e.g., \"GPL-3.0\", \"AGPL-3.0\")",
+      "type": "string"
+    },
+    "^(licenseName)$": {
+      "description": "Human-readable license name",
+      "type": "string"
+    },
+    "^(packagePurl)$": {
+      "description": "Package URL (e.g., pkg:npm/lodash@4.17.21)",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "component_name": {
+      "description": "Component name (e.g., \"lodash\")",
+      "type": "string"
+    },
+    "component_version": {
+      "description": "Component version",
+      "type": "string"
+    },
+    "license_id": {
+      "description": "License identifier (e.g., \"GPL-3.0\", \"AGPL-3.0\")",
+      "type": "string"
+    },
+    "license_name": {
+      "description": "Human-readable license name",
+      "type": "string"
+    },
+    "message": {
+      "description": "Human-readable violation description",
+      "type": "string"
+    },
+    "package_purl": {
+      "description": "Package URL (e.g., pkg:npm/lodash@4.17.21)",
+      "type": "string"
+    },
+    "recommendation": {
+      "description": "Suggested fix",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message",
+    "component_name",
+    "license_id"
+  ],
+  "title": "Policy License Violation Finding",
+  "type": "object"
+}

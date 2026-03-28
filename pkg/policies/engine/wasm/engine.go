@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -189,10 +189,10 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 
 	// Parse output
 	var result struct {
-		Skipped    bool     `json:"skipped"`
-		Violations []string `json:"violations"`
-		SkipReason string   `json:"skip_reason"`
-		Ignore     bool     `json:"ignore"`
+		Skipped    bool              `json:"skipped"`
+		Violations []json.RawMessage `json:"violations"`
+		SkipReason string            `json:"skip_reason"`
+		Ignore     bool              `json:"ignore"`
 	}
 
 	if err := json.Unmarshal(output, &result); err != nil {
@@ -208,11 +208,12 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		Violations: make([]*engine.PolicyViolation, 0, len(result.Violations)),
 	}
 
-	for _, v := range result.Violations {
-		evalResult.Violations = append(evalResult.Violations, &engine.PolicyViolation{
-			Subject:   policy.Name,
-			Violation: v,
-		})
+	for _, raw := range result.Violations {
+		pv, err := parseWasmViolation(policy.Name, raw)
+		if err != nil {
+			return nil, fmt.Errorf("violation in policy %q: %w", policy.Name, err)
+		}
+		evalResult.Violations = append(evalResult.Violations, pv)
 	}
 
 	e.logger.Debug().Str("policy", policy.Name).Int("violations", len(evalResult.Violations)).Bool("skipped", evalResult.Skipped).Msg("WASM policy evaluation complete")
@@ -226,6 +227,27 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	}
 
 	return evalResult, nil
+}
+
+// parseWasmViolation parses a single violation from WASM output.
+// The violation can be either a JSON string or a JSON object with a required "message" field.
+func parseWasmViolation(policyName string, raw json.RawMessage) (*engine.PolicyViolation, error) {
+	var v any
+	if err := json.Unmarshal(raw, &v); err != nil {
+		return nil, fmt.Errorf("invalid violation JSON: %w", err)
+	}
+
+	switch typed := v.(type) {
+	case string:
+		return &engine.PolicyViolation{
+			Subject:   policyName,
+			Violation: typed,
+		}, nil
+	case map[string]any:
+		return engine.NewStructuredViolation(policyName, typed)
+	default:
+		return nil, fmt.Errorf("violation must be a string or object, got %T", v)
+	}
 }
 
 // MatchesParameters is a stub implementation for WASM policies

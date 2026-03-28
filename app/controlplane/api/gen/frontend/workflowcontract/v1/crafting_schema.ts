@@ -533,7 +533,16 @@ export interface Metadata {
   name: string;
   description: string;
   annotations: { [key: string]: string };
-  organization?: string | undefined;
+  organization?:
+    | string
+    | undefined;
+  /**
+   * Declares the structured output schema for policy violations.
+   * When set, the policy engine validates that violations conform to the
+   * corresponding proto message (e.g., PolicyVulnerabilityFinding).
+   * Valid values: "VULNERABILITY", "SAST", "LICENSE_VIOLATION"
+   */
+  findingType?: string | undefined;
 }
 
 export interface Metadata_AnnotationsEntry {
@@ -1833,7 +1842,7 @@ export const Policy = {
 };
 
 function createBaseMetadata(): Metadata {
-  return { name: "", description: "", annotations: {}, organization: undefined };
+  return { name: "", description: "", annotations: {}, organization: undefined, findingType: undefined };
 }
 
 export const Metadata = {
@@ -1849,6 +1858,9 @@ export const Metadata = {
     });
     if (message.organization !== undefined) {
       writer.uint32(50).string(message.organization);
+    }
+    if (message.findingType !== undefined) {
+      writer.uint32(58).string(message.findingType);
     }
     return writer;
   },
@@ -1891,6 +1903,13 @@ export const Metadata = {
 
           message.organization = reader.string();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.findingType = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1911,6 +1930,7 @@ export const Metadata = {
         }, {})
         : {},
       organization: isSet(object.organization) ? String(object.organization) : undefined,
+      findingType: isSet(object.findingType) ? String(object.findingType) : undefined,
     };
   },
 
@@ -1925,6 +1945,7 @@ export const Metadata = {
       });
     }
     message.organization !== undefined && (obj.organization = message.organization);
+    message.findingType !== undefined && (obj.findingType = message.findingType);
     return obj;
   },
 
@@ -1946,6 +1967,7 @@ export const Metadata = {
       {},
     );
     message.organization = object.organization ?? undefined;
+    message.findingType = object.findingType ?? undefined;
     return message;
   },
 };

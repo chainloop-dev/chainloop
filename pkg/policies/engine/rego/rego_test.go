@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -532,4 +532,185 @@ violations contains msg if {
 		assert.False(t, result.Skipped)
 		assert.Len(t, result.Violations, 0)
 	})
+}
+
+func TestRego_StructuredViolations(t *testing.T) {
+	tests := []struct {
+		name           string
+		fixture        string
+		input          string
+		wantViolations int
+		wantErr        string
+		checkFn        func(t *testing.T, result *engine.EvaluationResult)
+	}{
+		{
+			name:           "structured violations with message field",
+			fixture:        "testfiles/structured_violations.rego",
+			input:          `{"vulnerabilities": [{"id": "CVE-2024-1234", "severity": "CRITICAL", "purl": "pkg:golang/example.com/lib@v1.0.0"}]}`,
+			wantViolations: 1,
+			checkFn: func(t *testing.T, result *engine.EvaluationResult) {
+				t.Helper()
+				v := result.Violations[0]
+				assert.Equal(t, "structured-policy", v.Subject)
+				assert.Equal(t, "Found vulnerability CVE-2024-1234 (CRITICAL)", v.Violation)
+				assert.NotNil(t, v.RawFinding)
+				assert.Equal(t, "CVE-2024-1234", v.RawFinding["external_id"])
+				assert.Equal(t, "CRITICAL", v.RawFinding["severity"])
+				assert.Equal(t, "pkg:golang/example.com/lib@v1.0.0", v.RawFinding["package_purl"])
+			},
+		},
+		{
+			name:    "structured violations without message field errors",
+			fixture: "testfiles/structured_no_message.rego",
+			input:   `{"vulnerabilities": [{"id": "CVE-2024-1234", "severity": "HIGH"}]}`,
+			wantErr: `missing required "message" field`,
+		},
+		{
+			name:           "mixed string and structured violations",
+			fixture:        "testfiles/mixed_violations.rego",
+			input:          `{"has_string_violation": true, "vulnerabilities": [{"id": "CVE-2024-5678", "severity": "HIGH"}]}`,
+			wantViolations: 2,
+			checkFn: func(t *testing.T, result *engine.EvaluationResult) {
+				t.Helper()
+				var stringViolation, structuredViolation *engine.PolicyViolation
+				for _, v := range result.Violations {
+					if v.RawFinding == nil {
+						stringViolation = v
+					} else {
+						structuredViolation = v
+					}
+				}
+				require.NotNil(t, stringViolation, "expected a string violation")
+				assert.Equal(t, "simple string violation", stringViolation.Violation)
+				assert.Nil(t, stringViolation.RawFinding)
+
+				require.NotNil(t, structuredViolation, "expected a structured violation")
+				assert.Equal(t, "Found vulnerability CVE-2024-5678", structuredViolation.Violation)
+				assert.Equal(t, "CVE-2024-5678", structuredViolation.RawFinding["external_id"])
+			},
+		},
+		{
+			name:           "no violations with structured policy",
+			fixture:        "testfiles/structured_violations.rego",
+			input:          `{"vulnerabilities": []}`,
+			wantViolations: 0,
+		},
+		{
+			name:           "multiple structured violations",
+			fixture:        "testfiles/structured_violations.rego",
+			input:          `{"vulnerabilities": [{"id": "CVE-2024-1", "severity": "HIGH", "purl": "pkg:npm/foo@1.0"}, {"id": "CVE-2024-2", "severity": "LOW", "purl": "pkg:npm/bar@2.0"}]}`,
+			wantViolations: 2,
+			checkFn: func(t *testing.T, result *engine.EvaluationResult) {
+				t.Helper()
+				ids := make(map[string]bool)
+				for _, v := range result.Violations {
+					require.NotNil(t, v.RawFinding)
+					ids[v.RawFinding["external_id"].(string)] = true
+				}
+				assert.True(t, ids["CVE-2024-1"])
+				assert.True(t, ids["CVE-2024-2"])
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			regoContent, err := os.ReadFile(tc.fixture)
+			require.NoError(t, err)
+
+			r := NewEngine()
+			policy := &engine.Policy{
+				Name:   "structured-policy",
+				Source: regoContent,
+			}
+
+			result, err := r.Verify(context.TODO(), policy, []byte(tc.input), nil)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Len(t, result.Violations, tc.wantViolations)
+			if tc.checkFn != nil {
+				tc.checkFn(t, result)
+			}
+		})
+	}
+}
+
+func TestRego_StructuredSASTViolations(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/structured_sast.rego")
+	require.NoError(t, err)
+
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "sast-policy",
+		Source: regoContent,
+	}
+
+	input := `{
+		"findings": [
+			{
+				"rule_id": "java:S1234",
+				"severity": "HIGH",
+				"location": "src/main/Handler.java",
+				"line_number": 42,
+				"code_snippet": "String query = \"SELECT * FROM users WHERE id=\" + userId;"
+			}
+		]
+	}`
+
+	result, err := r.Verify(context.TODO(), policy, []byte(input), nil)
+	require.NoError(t, err)
+	require.Len(t, result.Violations, 1)
+
+	v := result.Violations[0]
+	assert.Contains(t, v.Violation, "java:S1234")
+	assert.NotNil(t, v.RawFinding)
+	assert.Equal(t, "java:S1234", v.RawFinding["rule_id"])
+	assert.Equal(t, "HIGH", v.RawFinding["severity"])
+	assert.Equal(t, "src/main/Handler.java", v.RawFinding["location"])
+}
+
+func TestRego_StructuredLicenseViolations(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/structured_license.rego")
+	require.NoError(t, err)
+
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "license-policy",
+		Source: regoContent,
+	}
+
+	input := `{
+		"banned_licenses": ["GPL-3.0", "AGPL-3.0"],
+		"components": [
+			{
+				"name": "libfoo",
+				"purl": "pkg:npm/libfoo@2.1.0",
+				"version": "2.1.0",
+				"licenses": ["GPL-3.0"]
+			},
+			{
+				"name": "libbar",
+				"purl": "pkg:npm/libbar@1.0.0",
+				"version": "1.0.0",
+				"licenses": ["MIT"]
+			}
+		]
+	}`
+
+	result, err := r.Verify(context.TODO(), policy, []byte(input), nil)
+	require.NoError(t, err)
+	require.Len(t, result.Violations, 1)
+
+	v := result.Violations[0]
+	assert.Contains(t, v.Violation, "GPL-3.0")
+	assert.Contains(t, v.Violation, "libfoo")
+	assert.NotNil(t, v.RawFinding)
+	assert.Equal(t, "libfoo", v.RawFinding["component_name"])
+	assert.Equal(t, "GPL-3.0", v.RawFinding["license_id"])
+	assert.Equal(t, "pkg:npm/libfoo@2.1.0", v.RawFinding["package_purl"])
 }
