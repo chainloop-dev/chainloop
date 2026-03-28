@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ func (x Commit_CommitVerification_VerificationStatus) Number() protoreflect.Enum
 
 // Deprecated: Use Commit_CommitVerification_VerificationStatus.Descriptor instead.
 func (Commit_CommitVerification_VerificationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{3, 1, 0}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{4, 1, 0}
 }
 
 type Attestation struct {
@@ -628,6 +628,51 @@ func (x *PolicyEvaluation) GetGate() bool {
 	return false
 }
 
+// Bundle of all policy evaluations for an attestation, stored as a CAS object.
+type PolicyEvaluationBundle struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Evaluations   []*PolicyEvaluation    `protobuf:"bytes,1,rep,name=evaluations,proto3" json:"evaluations,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PolicyEvaluationBundle) Reset() {
+	*x = PolicyEvaluationBundle{}
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PolicyEvaluationBundle) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PolicyEvaluationBundle) ProtoMessage() {}
+
+func (x *PolicyEvaluationBundle) ProtoReflect() protoreflect.Message {
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PolicyEvaluationBundle.ProtoReflect.Descriptor instead.
+func (*PolicyEvaluationBundle) Descriptor() ([]byte, []int) {
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PolicyEvaluationBundle) GetEvaluations() []*PolicyEvaluation {
+	if x != nil {
+		return x.Evaluations
+	}
+	return nil
+}
+
 type Commit struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Hash  string                 `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -646,7 +691,7 @@ type Commit struct {
 
 func (x *Commit) Reset() {
 	*x = Commit{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[3]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -658,7 +703,7 @@ func (x *Commit) String() string {
 func (*Commit) ProtoMessage() {}
 
 func (x *Commit) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[3]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -671,7 +716,7 @@ func (x *Commit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Commit.ProtoReflect.Descriptor instead.
 func (*Commit) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{3}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Commit) GetHash() string {
@@ -748,7 +793,7 @@ type CraftingState struct {
 
 func (x *CraftingState) Reset() {
 	*x = CraftingState{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[4]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -760,7 +805,7 @@ func (x *CraftingState) String() string {
 func (*CraftingState) ProtoMessage() {}
 
 func (x *CraftingState) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[4]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +818,7 @@ func (x *CraftingState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CraftingState.ProtoReflect.Descriptor instead.
 func (*CraftingState) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{4}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CraftingState) GetSchema() isCraftingState_Schema {
@@ -862,7 +907,7 @@ type WorkflowMetadata struct {
 
 func (x *WorkflowMetadata) Reset() {
 	*x = WorkflowMetadata{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -874,7 +919,7 @@ func (x *WorkflowMetadata) String() string {
 func (*WorkflowMetadata) ProtoMessage() {}
 
 func (x *WorkflowMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[5]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -887,7 +932,7 @@ func (x *WorkflowMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkflowMetadata.ProtoReflect.Descriptor instead.
 func (*WorkflowMetadata) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{5}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *WorkflowMetadata) GetName() string {
@@ -973,7 +1018,7 @@ type ProjectVersion struct {
 
 func (x *ProjectVersion) Reset() {
 	*x = ProjectVersion{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[6]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -985,7 +1030,7 @@ func (x *ProjectVersion) String() string {
 func (*ProjectVersion) ProtoMessage() {}
 
 func (x *ProjectVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[6]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -998,7 +1043,7 @@ func (x *ProjectVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectVersion.ProtoReflect.Descriptor instead.
 func (*ProjectVersion) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{6}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ProjectVersion) GetVersion() string {
@@ -1046,7 +1091,7 @@ type ResourceDescriptor struct {
 
 func (x *ResourceDescriptor) Reset() {
 	*x = ResourceDescriptor{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[7]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1058,7 +1103,7 @@ func (x *ResourceDescriptor) String() string {
 func (*ResourceDescriptor) ProtoMessage() {}
 
 func (x *ResourceDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[7]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1071,7 +1116,7 @@ func (x *ResourceDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceDescriptor.ProtoReflect.Descriptor instead.
 func (*ResourceDescriptor) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{7}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ResourceDescriptor) GetName() string {
@@ -1150,7 +1195,7 @@ type Attestation_Material struct {
 
 func (x *Attestation_Material) Reset() {
 	*x = Attestation_Material{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[10]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1162,7 +1207,7 @@ func (x *Attestation_Material) String() string {
 func (*Attestation_Material) ProtoMessage() {}
 
 func (x *Attestation_Material) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[10]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1316,7 +1361,7 @@ type Attestation_Auth struct {
 
 func (x *Attestation_Auth) Reset() {
 	*x = Attestation_Auth{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[12]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1328,7 +1373,7 @@ func (x *Attestation_Auth) String() string {
 func (*Attestation_Auth) ProtoMessage() {}
 
 func (x *Attestation_Auth) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[12]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1372,7 +1417,7 @@ type Attestation_CASBackend struct {
 
 func (x *Attestation_CASBackend) Reset() {
 	*x = Attestation_CASBackend{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1384,7 +1429,7 @@ func (x *Attestation_CASBackend) String() string {
 func (*Attestation_CASBackend) ProtoMessage() {}
 
 func (x *Attestation_CASBackend) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[13]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1433,7 +1478,7 @@ type Attestation_SigningOptions struct {
 
 func (x *Attestation_SigningOptions) Reset() {
 	*x = Attestation_SigningOptions{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[14]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1445,7 +1490,7 @@ func (x *Attestation_SigningOptions) String() string {
 func (*Attestation_SigningOptions) ProtoMessage() {}
 
 func (x *Attestation_SigningOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[14]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1490,7 +1535,7 @@ type Attestation_Material_KeyVal struct {
 
 func (x *Attestation_Material_KeyVal) Reset() {
 	*x = Attestation_Material_KeyVal{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[16]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1502,7 +1547,7 @@ func (x *Attestation_Material_KeyVal) String() string {
 func (*Attestation_Material_KeyVal) ProtoMessage() {}
 
 func (x *Attestation_Material_KeyVal) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[16]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1568,7 +1613,7 @@ type Attestation_Material_ContainerImage struct {
 
 func (x *Attestation_Material_ContainerImage) Reset() {
 	*x = Attestation_Material_ContainerImage{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1580,7 +1625,7 @@ func (x *Attestation_Material_ContainerImage) String() string {
 func (*Attestation_Material_ContainerImage) ProtoMessage() {}
 
 func (x *Attestation_Material_ContainerImage) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[17]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1682,7 +1727,7 @@ type Attestation_Material_Artifact struct {
 
 func (x *Attestation_Material_Artifact) Reset() {
 	*x = Attestation_Material_Artifact{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[18]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1694,7 +1739,7 @@ func (x *Attestation_Material_Artifact) String() string {
 func (*Attestation_Material_Artifact) ProtoMessage() {}
 
 func (x *Attestation_Material_Artifact) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[18]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1758,7 +1803,7 @@ type Attestation_Material_SBOMArtifact struct {
 
 func (x *Attestation_Material_SBOMArtifact) Reset() {
 	*x = Attestation_Material_SBOMArtifact{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[19]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1770,7 +1815,7 @@ func (x *Attestation_Material_SBOMArtifact) String() string {
 func (*Attestation_Material_SBOMArtifact) ProtoMessage() {}
 
 func (x *Attestation_Material_SBOMArtifact) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[19]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1815,7 +1860,7 @@ type Attestation_Material_SBOMArtifact_MainComponent struct {
 
 func (x *Attestation_Material_SBOMArtifact_MainComponent) Reset() {
 	*x = Attestation_Material_SBOMArtifact_MainComponent{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[20]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1827,7 +1872,7 @@ func (x *Attestation_Material_SBOMArtifact_MainComponent) String() string {
 func (*Attestation_Material_SBOMArtifact_MainComponent) ProtoMessage() {}
 
 func (x *Attestation_Material_SBOMArtifact_MainComponent) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[20]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1874,7 +1919,7 @@ type PolicyEvaluation_Violation struct {
 
 func (x *PolicyEvaluation_Violation) Reset() {
 	*x = PolicyEvaluation_Violation{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[23]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1886,7 +1931,7 @@ func (x *PolicyEvaluation_Violation) String() string {
 func (*PolicyEvaluation_Violation) ProtoMessage() {}
 
 func (x *PolicyEvaluation_Violation) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[23]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1928,7 +1973,7 @@ type PolicyEvaluation_Reference struct {
 
 func (x *PolicyEvaluation_Reference) Reset() {
 	*x = PolicyEvaluation_Reference{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[24]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1940,7 +1985,7 @@ func (x *PolicyEvaluation_Reference) String() string {
 func (*PolicyEvaluation_Reference) ProtoMessage() {}
 
 func (x *PolicyEvaluation_Reference) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[24]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1996,7 +2041,7 @@ type PolicyEvaluation_RawResult struct {
 
 func (x *PolicyEvaluation_RawResult) Reset() {
 	*x = PolicyEvaluation_RawResult{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[25]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2008,7 +2053,7 @@ func (x *PolicyEvaluation_RawResult) String() string {
 func (*PolicyEvaluation_RawResult) ProtoMessage() {}
 
 func (x *PolicyEvaluation_RawResult) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[25]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2048,7 +2093,7 @@ type Commit_Remote struct {
 
 func (x *Commit_Remote) Reset() {
 	*x = Commit_Remote{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[26]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2060,7 +2105,7 @@ func (x *Commit_Remote) String() string {
 func (*Commit_Remote) ProtoMessage() {}
 
 func (x *Commit_Remote) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[26]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2073,7 +2118,7 @@ func (x *Commit_Remote) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Commit_Remote.ProtoReflect.Descriptor instead.
 func (*Commit_Remote) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{3, 0}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{4, 0}
 }
 
 func (x *Commit_Remote) GetName() string {
@@ -2110,7 +2155,7 @@ type Commit_CommitVerification struct {
 
 func (x *Commit_CommitVerification) Reset() {
 	*x = Commit_CommitVerification{}
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[27]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2122,7 +2167,7 @@ func (x *Commit_CommitVerification) String() string {
 func (*Commit_CommitVerification) ProtoMessage() {}
 
 func (x *Commit_CommitVerification) ProtoReflect() protoreflect.Message {
-	mi := &file_attestation_v1_crafting_state_proto_msgTypes[27]
+	mi := &file_attestation_v1_crafting_state_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2135,7 +2180,7 @@ func (x *Commit_CommitVerification) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Commit_CommitVerification.ProtoReflect.Descriptor instead.
 func (*Commit_CommitVerification) Descriptor() ([]byte, []int) {
-	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{3, 1}
+	return file_attestation_v1_crafting_state_proto_rawDescGZIP(), []int{4, 1}
 }
 
 func (x *Commit_CommitVerification) GetAttempted() bool {
@@ -2329,7 +2374,9 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\borg_name\x18\x04 \x01(\tR\aorgName\x1a9\n" +
 	"\tRawResult\x12\x14\n" +
 	"\x05input\x18\x01 \x01(\fR\x05input\x12\x16\n" +
-	"\x06output\x18\x02 \x01(\fR\x06output\"\xce\x06\n" +
+	"\x06output\x18\x02 \x01(\fR\x06output\"\\\n" +
+	"\x16PolicyEvaluationBundle\x12B\n" +
+	"\vevaluations\x18\x01 \x03(\v2 .attestation.v1.PolicyEvaluationR\vevaluations\"\xce\x06\n" +
 	"\x06Commit\x12\x1b\n" +
 	"\x04hash\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04hash\x12!\n" +
 	"\fauthor_email\x18\x02 \x01(\tR\vauthorEmail\x12(\n" +
@@ -2410,96 +2457,98 @@ func file_attestation_v1_crafting_state_proto_rawDescGZIP() []byte {
 }
 
 var file_attestation_v1_crafting_state_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_attestation_v1_crafting_state_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_attestation_v1_crafting_state_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_attestation_v1_crafting_state_proto_goTypes = []any{
 	(Attestation_Auth_AuthType)(0),                    // 0: attestation.v1.Attestation.Auth.AuthType
 	(Commit_CommitVerification_VerificationStatus)(0), // 1: attestation.v1.Commit.CommitVerification.VerificationStatus
 	(*Attestation)(nil),                               // 2: attestation.v1.Attestation
 	(*RunnerEnvironment)(nil),                         // 3: attestation.v1.RunnerEnvironment
 	(*PolicyEvaluation)(nil),                          // 4: attestation.v1.PolicyEvaluation
-	(*Commit)(nil),                                    // 5: attestation.v1.Commit
-	(*CraftingState)(nil),                             // 6: attestation.v1.CraftingState
-	(*WorkflowMetadata)(nil),                          // 7: attestation.v1.WorkflowMetadata
-	(*ProjectVersion)(nil),                            // 8: attestation.v1.ProjectVersion
-	(*ResourceDescriptor)(nil),                        // 9: attestation.v1.ResourceDescriptor
-	nil,                                               // 10: attestation.v1.Attestation.MaterialsEntry
-	nil,                                               // 11: attestation.v1.Attestation.AnnotationsEntry
-	(*Attestation_Material)(nil),                      // 12: attestation.v1.Attestation.Material
-	nil,                                               // 13: attestation.v1.Attestation.EnvVarsEntry
-	(*Attestation_Auth)(nil),                          // 14: attestation.v1.Attestation.Auth
-	(*Attestation_CASBackend)(nil),                    // 15: attestation.v1.Attestation.CASBackend
-	(*Attestation_SigningOptions)(nil),                // 16: attestation.v1.Attestation.SigningOptions
-	nil,                                               // 17: attestation.v1.Attestation.Material.AnnotationsEntry
-	(*Attestation_Material_KeyVal)(nil),               // 18: attestation.v1.Attestation.Material.KeyVal
-	(*Attestation_Material_ContainerImage)(nil),             // 19: attestation.v1.Attestation.Material.ContainerImage
-	(*Attestation_Material_Artifact)(nil),                   // 20: attestation.v1.Attestation.Material.Artifact
-	(*Attestation_Material_SBOMArtifact)(nil),               // 21: attestation.v1.Attestation.Material.SBOMArtifact
-	(*Attestation_Material_SBOMArtifact_MainComponent)(nil), // 22: attestation.v1.Attestation.Material.SBOMArtifact.MainComponent
-	nil,                                      // 23: attestation.v1.PolicyEvaluation.AnnotationsEntry
-	nil,                                      // 24: attestation.v1.PolicyEvaluation.WithEntry
-	(*PolicyEvaluation_Violation)(nil),       // 25: attestation.v1.PolicyEvaluation.Violation
-	(*PolicyEvaluation_Reference)(nil),       // 26: attestation.v1.PolicyEvaluation.Reference
-	(*PolicyEvaluation_RawResult)(nil),       // 27: attestation.v1.PolicyEvaluation.RawResult
-	(*Commit_Remote)(nil),                    // 28: attestation.v1.Commit.Remote
-	(*Commit_CommitVerification)(nil),        // 29: attestation.v1.Commit.CommitVerification
-	nil,                                      // 30: attestation.v1.ResourceDescriptor.DigestEntry
-	(*timestamppb.Timestamp)(nil),            // 31: google.protobuf.Timestamp
-	(v1.CraftingSchema_Runner_RunnerType)(0), // 32: workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	(v1.CraftingSchema_Material_MaterialType)(0), // 33: workflowcontract.v1.CraftingSchema.Material.MaterialType
-	(*v1.CraftingSchema)(nil),                    // 34: workflowcontract.v1.CraftingSchema
-	(*v1.CraftingSchemaV2)(nil),                  // 35: workflowcontract.v1.CraftingSchemaV2
-	(*structpb.Struct)(nil),                      // 36: google.protobuf.Struct
-	(*wrapperspb.BoolValue)(nil),                 // 37: google.protobuf.BoolValue
+	(*PolicyEvaluationBundle)(nil),                    // 5: attestation.v1.PolicyEvaluationBundle
+	(*Commit)(nil),                                    // 6: attestation.v1.Commit
+	(*CraftingState)(nil),                             // 7: attestation.v1.CraftingState
+	(*WorkflowMetadata)(nil),                          // 8: attestation.v1.WorkflowMetadata
+	(*ProjectVersion)(nil),                            // 9: attestation.v1.ProjectVersion
+	(*ResourceDescriptor)(nil),                        // 10: attestation.v1.ResourceDescriptor
+	nil,                                               // 11: attestation.v1.Attestation.MaterialsEntry
+	nil,                                               // 12: attestation.v1.Attestation.AnnotationsEntry
+	(*Attestation_Material)(nil),                      // 13: attestation.v1.Attestation.Material
+	nil,                                               // 14: attestation.v1.Attestation.EnvVarsEntry
+	(*Attestation_Auth)(nil),                          // 15: attestation.v1.Attestation.Auth
+	(*Attestation_CASBackend)(nil),                    // 16: attestation.v1.Attestation.CASBackend
+	(*Attestation_SigningOptions)(nil),                // 17: attestation.v1.Attestation.SigningOptions
+	nil,                                               // 18: attestation.v1.Attestation.Material.AnnotationsEntry
+	(*Attestation_Material_KeyVal)(nil),               // 19: attestation.v1.Attestation.Material.KeyVal
+	(*Attestation_Material_ContainerImage)(nil),             // 20: attestation.v1.Attestation.Material.ContainerImage
+	(*Attestation_Material_Artifact)(nil),                   // 21: attestation.v1.Attestation.Material.Artifact
+	(*Attestation_Material_SBOMArtifact)(nil),               // 22: attestation.v1.Attestation.Material.SBOMArtifact
+	(*Attestation_Material_SBOMArtifact_MainComponent)(nil), // 23: attestation.v1.Attestation.Material.SBOMArtifact.MainComponent
+	nil,                                      // 24: attestation.v1.PolicyEvaluation.AnnotationsEntry
+	nil,                                      // 25: attestation.v1.PolicyEvaluation.WithEntry
+	(*PolicyEvaluation_Violation)(nil),       // 26: attestation.v1.PolicyEvaluation.Violation
+	(*PolicyEvaluation_Reference)(nil),       // 27: attestation.v1.PolicyEvaluation.Reference
+	(*PolicyEvaluation_RawResult)(nil),       // 28: attestation.v1.PolicyEvaluation.RawResult
+	(*Commit_Remote)(nil),                    // 29: attestation.v1.Commit.Remote
+	(*Commit_CommitVerification)(nil),        // 30: attestation.v1.Commit.CommitVerification
+	nil,                                      // 31: attestation.v1.ResourceDescriptor.DigestEntry
+	(*timestamppb.Timestamp)(nil),            // 32: google.protobuf.Timestamp
+	(v1.CraftingSchema_Runner_RunnerType)(0), // 33: workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	(v1.CraftingSchema_Material_MaterialType)(0), // 34: workflowcontract.v1.CraftingSchema.Material.MaterialType
+	(*v1.CraftingSchema)(nil),                    // 35: workflowcontract.v1.CraftingSchema
+	(*v1.CraftingSchemaV2)(nil),                  // 36: workflowcontract.v1.CraftingSchemaV2
+	(*structpb.Struct)(nil),                      // 37: google.protobuf.Struct
+	(*wrapperspb.BoolValue)(nil),                 // 38: google.protobuf.BoolValue
 }
 var file_attestation_v1_crafting_state_proto_depIdxs = []int32{
-	31, // 0: attestation.v1.Attestation.initialized_at:type_name -> google.protobuf.Timestamp
-	31, // 1: attestation.v1.Attestation.finished_at:type_name -> google.protobuf.Timestamp
-	7,  // 2: attestation.v1.Attestation.workflow:type_name -> attestation.v1.WorkflowMetadata
-	10, // 3: attestation.v1.Attestation.materials:type_name -> attestation.v1.Attestation.MaterialsEntry
-	11, // 4: attestation.v1.Attestation.annotations:type_name -> attestation.v1.Attestation.AnnotationsEntry
-	13, // 5: attestation.v1.Attestation.env_vars:type_name -> attestation.v1.Attestation.EnvVarsEntry
-	32, // 6: attestation.v1.Attestation.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	5,  // 7: attestation.v1.Attestation.head:type_name -> attestation.v1.Commit
+	32, // 0: attestation.v1.Attestation.initialized_at:type_name -> google.protobuf.Timestamp
+	32, // 1: attestation.v1.Attestation.finished_at:type_name -> google.protobuf.Timestamp
+	8,  // 2: attestation.v1.Attestation.workflow:type_name -> attestation.v1.WorkflowMetadata
+	11, // 3: attestation.v1.Attestation.materials:type_name -> attestation.v1.Attestation.MaterialsEntry
+	12, // 4: attestation.v1.Attestation.annotations:type_name -> attestation.v1.Attestation.AnnotationsEntry
+	14, // 5: attestation.v1.Attestation.env_vars:type_name -> attestation.v1.Attestation.EnvVarsEntry
+	33, // 6: attestation.v1.Attestation.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	6,  // 7: attestation.v1.Attestation.head:type_name -> attestation.v1.Commit
 	4,  // 8: attestation.v1.Attestation.policy_evaluations:type_name -> attestation.v1.PolicyEvaluation
-	16, // 9: attestation.v1.Attestation.signing_options:type_name -> attestation.v1.Attestation.SigningOptions
+	17, // 9: attestation.v1.Attestation.signing_options:type_name -> attestation.v1.Attestation.SigningOptions
 	3,  // 10: attestation.v1.Attestation.runner_environment:type_name -> attestation.v1.RunnerEnvironment
-	14, // 11: attestation.v1.Attestation.auth:type_name -> attestation.v1.Attestation.Auth
-	15, // 12: attestation.v1.Attestation.cas_backend:type_name -> attestation.v1.Attestation.CASBackend
-	32, // 13: attestation.v1.RunnerEnvironment.type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	23, // 14: attestation.v1.PolicyEvaluation.annotations:type_name -> attestation.v1.PolicyEvaluation.AnnotationsEntry
-	25, // 15: attestation.v1.PolicyEvaluation.violations:type_name -> attestation.v1.PolicyEvaluation.Violation
-	24, // 16: attestation.v1.PolicyEvaluation.with:type_name -> attestation.v1.PolicyEvaluation.WithEntry
-	33, // 17: attestation.v1.PolicyEvaluation.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	26, // 18: attestation.v1.PolicyEvaluation.policy_reference:type_name -> attestation.v1.PolicyEvaluation.Reference
-	26, // 19: attestation.v1.PolicyEvaluation.group_reference:type_name -> attestation.v1.PolicyEvaluation.Reference
-	27, // 20: attestation.v1.PolicyEvaluation.raw_results:type_name -> attestation.v1.PolicyEvaluation.RawResult
-	31, // 21: attestation.v1.Commit.date:type_name -> google.protobuf.Timestamp
-	28, // 22: attestation.v1.Commit.remotes:type_name -> attestation.v1.Commit.Remote
-	29, // 23: attestation.v1.Commit.platform_verification:type_name -> attestation.v1.Commit.CommitVerification
-	34, // 24: attestation.v1.CraftingState.input_schema:type_name -> workflowcontract.v1.CraftingSchema
-	35, // 25: attestation.v1.CraftingState.schema_v2:type_name -> workflowcontract.v1.CraftingSchemaV2
-	2,  // 26: attestation.v1.CraftingState.attestation:type_name -> attestation.v1.Attestation
-	8,  // 27: attestation.v1.WorkflowMetadata.version:type_name -> attestation.v1.ProjectVersion
-	30, // 28: attestation.v1.ResourceDescriptor.digest:type_name -> attestation.v1.ResourceDescriptor.DigestEntry
-	36, // 29: attestation.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
-	12, // 30: attestation.v1.Attestation.MaterialsEntry.value:type_name -> attestation.v1.Attestation.Material
-	18, // 31: attestation.v1.Attestation.Material.string:type_name -> attestation.v1.Attestation.Material.KeyVal
-	19, // 32: attestation.v1.Attestation.Material.container_image:type_name -> attestation.v1.Attestation.Material.ContainerImage
-	20, // 33: attestation.v1.Attestation.Material.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
-	21, // 34: attestation.v1.Attestation.Material.sbom_artifact:type_name -> attestation.v1.Attestation.Material.SBOMArtifact
-	31, // 35: attestation.v1.Attestation.Material.added_at:type_name -> google.protobuf.Timestamp
-	33, // 36: attestation.v1.Attestation.Material.material_type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	17, // 37: attestation.v1.Attestation.Material.annotations:type_name -> attestation.v1.Attestation.Material.AnnotationsEntry
-	0,  // 38: attestation.v1.Attestation.Auth.type:type_name -> attestation.v1.Attestation.Auth.AuthType
-	37, // 39: attestation.v1.Attestation.Material.ContainerImage.has_latest_tag:type_name -> google.protobuf.BoolValue
-	20, // 40: attestation.v1.Attestation.Material.SBOMArtifact.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
-	22, // 41: attestation.v1.Attestation.Material.SBOMArtifact.main_component:type_name -> attestation.v1.Attestation.Material.SBOMArtifact.MainComponent
-	1,  // 42: attestation.v1.Commit.CommitVerification.status:type_name -> attestation.v1.Commit.CommitVerification.VerificationStatus
-	43, // [43:43] is the sub-list for method output_type
-	43, // [43:43] is the sub-list for method input_type
-	43, // [43:43] is the sub-list for extension type_name
-	43, // [43:43] is the sub-list for extension extendee
-	0,  // [0:43] is the sub-list for field type_name
+	15, // 11: attestation.v1.Attestation.auth:type_name -> attestation.v1.Attestation.Auth
+	16, // 12: attestation.v1.Attestation.cas_backend:type_name -> attestation.v1.Attestation.CASBackend
+	33, // 13: attestation.v1.RunnerEnvironment.type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	24, // 14: attestation.v1.PolicyEvaluation.annotations:type_name -> attestation.v1.PolicyEvaluation.AnnotationsEntry
+	26, // 15: attestation.v1.PolicyEvaluation.violations:type_name -> attestation.v1.PolicyEvaluation.Violation
+	25, // 16: attestation.v1.PolicyEvaluation.with:type_name -> attestation.v1.PolicyEvaluation.WithEntry
+	34, // 17: attestation.v1.PolicyEvaluation.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	27, // 18: attestation.v1.PolicyEvaluation.policy_reference:type_name -> attestation.v1.PolicyEvaluation.Reference
+	27, // 19: attestation.v1.PolicyEvaluation.group_reference:type_name -> attestation.v1.PolicyEvaluation.Reference
+	28, // 20: attestation.v1.PolicyEvaluation.raw_results:type_name -> attestation.v1.PolicyEvaluation.RawResult
+	4,  // 21: attestation.v1.PolicyEvaluationBundle.evaluations:type_name -> attestation.v1.PolicyEvaluation
+	32, // 22: attestation.v1.Commit.date:type_name -> google.protobuf.Timestamp
+	29, // 23: attestation.v1.Commit.remotes:type_name -> attestation.v1.Commit.Remote
+	30, // 24: attestation.v1.Commit.platform_verification:type_name -> attestation.v1.Commit.CommitVerification
+	35, // 25: attestation.v1.CraftingState.input_schema:type_name -> workflowcontract.v1.CraftingSchema
+	36, // 26: attestation.v1.CraftingState.schema_v2:type_name -> workflowcontract.v1.CraftingSchemaV2
+	2,  // 27: attestation.v1.CraftingState.attestation:type_name -> attestation.v1.Attestation
+	9,  // 28: attestation.v1.WorkflowMetadata.version:type_name -> attestation.v1.ProjectVersion
+	31, // 29: attestation.v1.ResourceDescriptor.digest:type_name -> attestation.v1.ResourceDescriptor.DigestEntry
+	37, // 30: attestation.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
+	13, // 31: attestation.v1.Attestation.MaterialsEntry.value:type_name -> attestation.v1.Attestation.Material
+	19, // 32: attestation.v1.Attestation.Material.string:type_name -> attestation.v1.Attestation.Material.KeyVal
+	20, // 33: attestation.v1.Attestation.Material.container_image:type_name -> attestation.v1.Attestation.Material.ContainerImage
+	21, // 34: attestation.v1.Attestation.Material.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
+	22, // 35: attestation.v1.Attestation.Material.sbom_artifact:type_name -> attestation.v1.Attestation.Material.SBOMArtifact
+	32, // 36: attestation.v1.Attestation.Material.added_at:type_name -> google.protobuf.Timestamp
+	34, // 37: attestation.v1.Attestation.Material.material_type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	18, // 38: attestation.v1.Attestation.Material.annotations:type_name -> attestation.v1.Attestation.Material.AnnotationsEntry
+	0,  // 39: attestation.v1.Attestation.Auth.type:type_name -> attestation.v1.Attestation.Auth.AuthType
+	38, // 40: attestation.v1.Attestation.Material.ContainerImage.has_latest_tag:type_name -> google.protobuf.BoolValue
+	21, // 41: attestation.v1.Attestation.Material.SBOMArtifact.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
+	23, // 42: attestation.v1.Attestation.Material.SBOMArtifact.main_component:type_name -> attestation.v1.Attestation.Material.SBOMArtifact.MainComponent
+	1,  // 43: attestation.v1.Commit.CommitVerification.status:type_name -> attestation.v1.Commit.CommitVerification.VerificationStatus
+	44, // [44:44] is the sub-list for method output_type
+	44, // [44:44] is the sub-list for method input_type
+	44, // [44:44] is the sub-list for extension type_name
+	44, // [44:44] is the sub-list for extension extendee
+	0,  // [0:44] is the sub-list for field type_name
 }
 
 func init() { file_attestation_v1_crafting_state_proto_init() }
@@ -2507,12 +2556,12 @@ func file_attestation_v1_crafting_state_proto_init() {
 	if File_attestation_v1_crafting_state_proto != nil {
 		return
 	}
-	file_attestation_v1_crafting_state_proto_msgTypes[3].OneofWrappers = []any{}
-	file_attestation_v1_crafting_state_proto_msgTypes[4].OneofWrappers = []any{
+	file_attestation_v1_crafting_state_proto_msgTypes[4].OneofWrappers = []any{}
+	file_attestation_v1_crafting_state_proto_msgTypes[5].OneofWrappers = []any{
 		(*CraftingState_InputSchema)(nil),
 		(*CraftingState_SchemaV2)(nil),
 	}
-	file_attestation_v1_crafting_state_proto_msgTypes[10].OneofWrappers = []any{
+	file_attestation_v1_crafting_state_proto_msgTypes[11].OneofWrappers = []any{
 		(*Attestation_Material_String_)(nil),
 		(*Attestation_Material_ContainerImage_)(nil),
 		(*Attestation_Material_Artifact_)(nil),
@@ -2524,7 +2573,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_attestation_v1_crafting_state_proto_rawDesc), len(file_attestation_v1_crafting_state_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   29,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

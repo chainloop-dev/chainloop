@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -123,6 +123,28 @@ func (s *casMappingSuite) TestLookupDigestsInAttestation() {
 				{
 					Name:   "attestation",
 					Digest: "sha256:b447f27683a88b55d529744d56c83c42fbe7d05692efaa6e5eddfadec392f812",
+				},
+			},
+		},
+		{
+			name:    "with-policy-evaluations-ref",
+			attPath: "testdata/attestations/full-with-policy-evaluations-ref.json",
+			want: []*biz.CASMappingLookupRef{
+				{
+					Name:   "attestation",
+					Digest: "sha256:724b081c081fe79e308d100ccdeba8ecc77052a9e76ad638fdfe8a8db96b1c9b",
+				},
+				{
+					Name:   "skynet-sbom",
+					Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+				},
+				{
+					Name:   "skynet2-sbom",
+					Digest: "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c",
+				},
+				{
+					Name:   "policy-evaluations",
+					Digest: "sha256:aabbccdd00112233aabbccdd00112233aabbccdd00112233aabbccdd00112233",
 				},
 			},
 		},

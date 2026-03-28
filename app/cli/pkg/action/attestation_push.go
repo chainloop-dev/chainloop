@@ -16,7 +16,9 @@
 package action
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -25,9 +27,13 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
+	crChainloop "github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/signer"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"google.golang.org/grpc"
@@ -38,9 +44,11 @@ import (
 type AttestationPushOpts struct {
 	*ActionsOpts
 	KeyPath, CLIVersion, CLIDigest, BundlePath string
-
-	LocalStatePath string
-	SignServerOpts *SignServerOpts
+	CASURI                                     string
+	CASCAPath                                  string
+	ConnectionInsecure                         bool
+	LocalStatePath                             string
+	SignServerOpts                             *SignServerOpts
 }
 
 // SignServerOpts holds SignServer integration options
@@ -60,6 +68,9 @@ type AttestationResult struct {
 type AttestationPush struct {
 	*ActionsOpts
 	keyPath, cliVersion, cliDigest, bundlePath string
+	casURI                                     string
+	casCAPath                                  string
+	connectionInsecure                         bool
 	localStatePath                             string
 	signServerOpts                             *SignServerOpts
 	*newCrafterOpts
@@ -68,14 +79,17 @@ type AttestationPush struct {
 func NewAttestationPush(cfg *AttestationPushOpts) (*AttestationPush, error) {
 	opts := []crafter.NewOpt{crafter.WithLogger(&cfg.Logger), crafter.WithAuthRawToken(cfg.AuthTokenRaw)}
 	return &AttestationPush{
-		ActionsOpts:    cfg.ActionsOpts,
-		keyPath:        cfg.KeyPath,
-		cliVersion:     cfg.CLIVersion,
-		cliDigest:      cfg.CLIDigest,
-		bundlePath:     cfg.BundlePath,
-		signServerOpts: cfg.SignServerOpts,
-		localStatePath: cfg.LocalStatePath,
-		newCrafterOpts: &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
+		ActionsOpts:        cfg.ActionsOpts,
+		keyPath:            cfg.KeyPath,
+		cliVersion:         cfg.CLIVersion,
+		cliDigest:          cfg.CLIDigest,
+		bundlePath:         cfg.BundlePath,
+		casURI:             cfg.CASURI,
+		casCAPath:          cfg.CASCAPath,
+		connectionInsecure: cfg.ConnectionInsecure,
+		signServerOpts:     cfg.SignServerOpts,
+		localStatePath:     cfg.LocalStatePath,
+		newCrafterOpts:     &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
 	}, nil
 }
 
@@ -205,6 +219,29 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	// Update the status result with the definitive push-phase evaluation against the final statement
 	attestationStatus.PolicyEvaluations, attestationStatus.HasPolicyViolations = getPolicyEvaluations(crafter)
 
+	// Upload policy evaluations bundle to CAS when an external backend is available
+	if evaluations := crafter.CraftingState.GetAttestation().GetPolicyEvaluations(); !crafter.CraftingState.DryRun && len(evaluations) > 0 {
+		casBackend := &casclient.CASBackend{Name: "not-set"}
+		workflowRunID := crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId()
+		_, connectionCloserFn, getCASErr := getCASBackend(ctx, attClient, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
+		if connectionCloserFn != nil {
+			// nolint: errcheck
+			defer connectionCloserFn()
+		}
+
+		if getCASErr != nil || casBackend.Uploader == nil {
+			action.Logger.Debug().Msg("CAS backend is inline, skipping policy evaluations bundle upload")
+		} else {
+			ref, uploadErr := uploadPolicyEvaluationsBundle(ctx, evaluations, casBackend.Uploader)
+			if uploadErr != nil {
+				return nil, fmt.Errorf("uploading policy evaluations bundle to CAS: %w", uploadErr)
+			}
+			if ref != nil {
+				renderer.SetPolicyEvaluationsRef(ref)
+			}
+		}
+	}
+
 	// render final attestation with all the evaluated policies inside
 	envelope, bundle, err := renderer.Render(ctx)
 	if err != nil {
@@ -317,4 +354,32 @@ func decodeEnvelope(rawEnvelope []byte) (*dsse.Envelope, error) {
 	}
 
 	return envelope, nil
+}
+
+// uploadPolicyEvaluationsBundle serializes policy evaluations as a protobuf bundle,
+// uploads to CAS, and returns a ResourceDescriptor referencing the uploaded object.
+// Returns (nil, nil) when there are no evaluations or no uploader.
+func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.PolicyEvaluation, uploader casclient.Uploader) (*intoto.ResourceDescriptor, error) {
+	if len(evaluations) == 0 || uploader == nil {
+		return nil, nil
+	}
+
+	bundle := &v1.PolicyEvaluationBundle{Evaluations: evaluations}
+	data, err := protojson.Marshal(bundle)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling policy evaluation bundle: %w", err)
+	}
+
+	hexDigest := fmt.Sprintf("%x", sha256.Sum256(data))
+	digest := fmt.Sprintf("sha256:%s", hexDigest)
+
+	if _, err := uploader.Upload(ctx, bytes.NewReader(data), "policy-evaluations.json", digest); err != nil {
+		return nil, fmt.Errorf("uploading policy evaluation bundle: %w", err)
+	}
+
+	return &intoto.ResourceDescriptor{
+		Name:      "policy-evaluations",
+		Digest:    map[string]string{"sha256": hexDigest},
+		MediaType: crChainloop.PolicyEvaluationsBundleMediaType,
+	}, nil
 }

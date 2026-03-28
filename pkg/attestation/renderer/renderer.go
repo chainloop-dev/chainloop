@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,13 +42,14 @@ import (
 )
 
 type AttestationRenderer struct {
-	logger     zerolog.Logger
-	att        *v1.Attestation
-	renderer   r
-	signer     sigstoresigner.Signer
-	dsseSigner sigstoresigner.Signer
-	bundlePath string
-	attClient  pb.AttestationServiceClient
+	logger      zerolog.Logger
+	att         *v1.Attestation
+	renderer    r
+	v02Renderer *chainloop.RendererV02
+	signer      sigstoresigner.Signer
+	dsseSigner  sigstoresigner.Signer
+	bundlePath  string
+	attClient   pb.AttestationServiceClient
 }
 
 type r interface {
@@ -86,7 +87,9 @@ func NewAttestationRenderer(state *crafter.VersionedCraftingState, attClient pb.
 		opt(r)
 	}
 
-	r.renderer = chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest, attClient, &r.logger)
+	v02 := chainloop.NewChainloopRendererV02(state.GetAttestation(), builderVersion, builderDigest, attClient, &r.logger)
+	r.renderer = v02
+	r.v02Renderer = v02
 
 	return r, nil
 }
@@ -99,6 +102,12 @@ func (ab *AttestationRenderer) RenderStatement(ctx context.Context) (*intoto.Sta
 	}
 
 	return statement, nil
+}
+
+// SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations bundle
+// on the underlying renderer. This must be called before Render().
+func (ab *AttestationRenderer) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor) {
+	ab.v02Renderer.SetPolicyEvaluationsRef(ref)
 }
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.

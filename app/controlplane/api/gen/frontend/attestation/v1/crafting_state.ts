@@ -327,6 +327,11 @@ export interface PolicyEvaluation_RawResult {
   output: Uint8Array;
 }
 
+/** Bundle of all policy evaluations for an attestation, stored as a CAS object. */
+export interface PolicyEvaluationBundle {
+  evaluations: PolicyEvaluation[];
+}
+
 export interface Commit {
   hash: string;
   /** Commit authors might not include email i.e "Flux <>" */
@@ -3038,6 +3043,70 @@ export const PolicyEvaluation_RawResult = {
     const message = createBasePolicyEvaluation_RawResult();
     message.input = object.input ?? new Uint8Array(0);
     message.output = object.output ?? new Uint8Array(0);
+    return message;
+  },
+};
+
+function createBasePolicyEvaluationBundle(): PolicyEvaluationBundle {
+  return { evaluations: [] };
+}
+
+export const PolicyEvaluationBundle = {
+  encode(message: PolicyEvaluationBundle, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.evaluations) {
+      PolicyEvaluation.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluationBundle {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluationBundle();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.evaluations.push(PolicyEvaluation.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluationBundle {
+    return {
+      evaluations: Array.isArray(object?.evaluations)
+        ? object.evaluations.map((e: any) => PolicyEvaluation.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PolicyEvaluationBundle): unknown {
+    const obj: any = {};
+    if (message.evaluations) {
+      obj.evaluations = message.evaluations.map((e) => e ? PolicyEvaluation.toJSON(e) : undefined);
+    } else {
+      obj.evaluations = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluationBundle>, I>>(base?: I): PolicyEvaluationBundle {
+    return PolicyEvaluationBundle.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluationBundle>, I>>(object: I): PolicyEvaluationBundle {
+    const message = createBasePolicyEvaluationBundle();
+    message.evaluations = object.evaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
     return message;
   },
 };

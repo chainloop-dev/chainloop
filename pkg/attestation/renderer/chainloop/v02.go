@@ -38,12 +38,15 @@ import (
 // Replace custom material type with https://github.com/in-toto/attestation/blob/main/spec/v1.0/resource_descriptor.md
 const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 const AttPolicyEvaluation = "CHAINLOOP.ATTESTATION"
+const PolicyEvaluationsBundleMediaType = "application/vnd.chainloop.policy-evaluations.v1+json"
 
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
-	// Map materials and policies
+	// Deprecated: use PolicyEvaluationsRef to fetch full data from CAS.
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policyEvaluations,omitempty"`
+	// Reference to the PolicyEvaluationBundle stored in CAS
+	PolicyEvaluationsRef *intoto.ResourceDescriptor `json:"policyEvaluationsRef,omitempty"`
 	// Used to read policy evaluations from old attestations
 	PolicyEvaluationsFallback map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 
@@ -99,17 +102,25 @@ type PolicyViolation struct {
 
 type RendererV02 struct {
 	*RendererCommon
-	attClient pb.AttestationServiceClient
-	logger    *zerolog.Logger
+	attClient            pb.AttestationServiceClient
+	logger               *zerolog.Logger
+	policyEvaluationsRef *intoto.ResourceDescriptor
+}
+
+// SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations bundle.
+func (r *RendererV02) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor) {
+	r.policyEvaluationsRef = ref
 }
 
 func NewChainloopRendererV02(att *v1.Attestation, builderVersion, builderDigest string, attClient pb.AttestationServiceClient, logger *zerolog.Logger) *RendererV02 {
 	return &RendererV02{
-		&RendererCommon{
-			PredicateTypeV02, att, &builderInfo{builderVersion, builderDigest},
+		RendererCommon: &RendererCommon{
+			predicateType: PredicateTypeV02,
+			att:           att,
+			builder:       &builderInfo{builderVersion, builderDigest},
 		},
-		attClient,
-		logger,
+		attClient: attClient,
+		logger:    logger,
 	}
 }
 
@@ -251,6 +262,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		ProvenancePredicateCommon:   predicateCommon(r.builder, r.att),
 		Materials:                   normalizedMaterials,
 		PolicyEvaluations:           policies,
+		PolicyEvaluationsRef:        r.policyEvaluationsRef,
 		PolicyHasViolations:         hasViolations,
 		PolicyHasGatedViolations:    gated,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
@@ -414,6 +426,10 @@ func (p *ProvenancePredicateV02) GetMaterials() []*NormalizedMaterial {
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEvaluation {
 	return p.PolicyEvaluations
+}
+
+func (p *ProvenancePredicateV02) GetPolicyEvaluationsRef() *intoto.ResourceDescriptor {
+	return p.PolicyEvaluationsRef
 }
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationStatus {
