@@ -640,6 +640,46 @@ func TestRego_StructuredViolations(t *testing.T) {
 	}
 }
 
+func TestRego_VulnerabilityBuiltinIntegration(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/structured_vulnerability_builtin.rego")
+	require.NoError(t, err)
+
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "vuln-builtin-policy",
+		Source: regoContent,
+	}
+
+	input := `{
+		"vulnerabilities": [
+			{"id": "CVE-2024-1234", "severity": "CRITICAL", "purl": "pkg:golang/example.com/lib@v1.0.0"},
+			{"id": "CVE-2024-5678", "severity": "HIGH", "purl": "pkg:npm/foo@2.0.0"}
+		]
+	}`
+
+	result, err := r.Verify(context.TODO(), policy, []byte(input), nil)
+	require.NoError(t, err)
+	require.Len(t, result.Violations, 2)
+
+	ids := make(map[string]*engine.PolicyViolation)
+	for _, v := range result.Violations {
+		require.NotNil(t, v.RawFinding)
+		ids[v.RawFinding["external_id"].(string)] = v
+	}
+
+	v1 := ids["CVE-2024-1234"]
+	require.NotNil(t, v1)
+	assert.Equal(t, "Found vulnerability CVE-2024-1234 (CRITICAL)", v1.Violation)
+	assert.Equal(t, "CRITICAL", v1.RawFinding["severity"])
+	assert.Equal(t, "pkg:golang/example.com/lib@v1.0.0", v1.RawFinding["package_purl"])
+
+	v2 := ids["CVE-2024-5678"]
+	require.NotNil(t, v2)
+	assert.Equal(t, "Found vulnerability CVE-2024-5678 (HIGH)", v2.Violation)
+	assert.Equal(t, "HIGH", v2.RawFinding["severity"])
+	assert.Equal(t, "pkg:npm/foo@2.0.0", v2.RawFinding["package_purl"])
+}
+
 func TestRego_StructuredSASTViolations(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/structured_sast.rego")
 	require.NoError(t, err)
