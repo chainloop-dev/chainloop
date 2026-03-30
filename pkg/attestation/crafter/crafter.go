@@ -706,6 +706,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithLenientFindingValidation(),
 	)
 	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
@@ -723,6 +724,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithLenientFindingValidation(),
 	)
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
@@ -758,6 +760,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithEvalPhase(phase),
+		policies.WithLenientFindingValidation(),
 	)
 	policyEvaluations, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
@@ -768,6 +771,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithEvalPhase(phase),
+		policies.WithLenientFindingValidation(),
 	)
 	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
 	if err != nil {

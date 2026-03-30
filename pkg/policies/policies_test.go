@@ -1492,13 +1492,14 @@ func (s *testSuite) TestPolicyAttachmentGate() {
 
 func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 	cases := []struct {
-		name           string
-		findingType    string
-		violations     []*engine.PolicyViolation
-		wantErr        string
-		wantWarnings   int
-		wantViolations int
-		checkFn        func(violations []*v1.PolicyEvaluation_Violation)
+		name              string
+		findingType       string
+		lenientValidation bool
+		violations        []*engine.PolicyViolation
+		wantErr           string
+		wantWarnings      int
+		wantViolations    int
+		checkFn           func(violations []*v1.PolicyEvaluation_Violation)
 	}{
 		{
 			name:        "no finding_type + string violations - current behavior",
@@ -1602,7 +1603,7 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 			},
 		},
 		{
-			name:        "finding_type + invalid structured violations - validation error",
+			name:        "finding_type + invalid structured violations - strict validation error",
 			findingType: "VULNERABILITY",
 			violations: []*engine.PolicyViolation{
 				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
@@ -1613,7 +1614,7 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 			wantErr: "validation failed",
 		},
 		{
-			name:        "unknown finding_type - error",
+			name:        "unknown finding_type - strict error",
 			findingType: "UNKNOWN",
 			violations: []*engine.PolicyViolation{
 				{Subject: "p1", Violation: "something", RawFinding: map[string]any{
@@ -1628,6 +1629,81 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 			violations:     []*engine.PolicyViolation{},
 			wantViolations: 0,
 		},
+		// --- Lenient validation mode ---
+		{
+			name:              "lenient - invalid structured violations - fallback with warning and degraded flag",
+			findingType:       "VULNERABILITY",
+			lenientValidation: true,
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
+					"message": "vuln found", "external_id": "CVE-1",
+					// missing package_purl and severity (required)
+				}},
+			},
+			wantViolations: 1,
+			wantWarnings:   1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				s.Equal("vuln found", violations[0].GetMessage())
+				s.Nil(violations[0].GetVulnerability())
+				s.True(violations[0].GetFindingDegraded())
+			},
+		},
+		{
+			name:              "lenient - unknown finding_type - fallback with warning and degraded flag",
+			findingType:       "UNKNOWN",
+			lenientValidation: true,
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "something", RawFinding: map[string]any{
+					"message": "something",
+				}},
+			},
+			wantViolations: 1,
+			wantWarnings:   1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				s.Equal("something", violations[0].GetMessage())
+				s.Nil(violations[0].GetVulnerability())
+				s.True(violations[0].GetFindingDegraded())
+			},
+		},
+		{
+			name:              "lenient - valid structured violations - still validates and sets oneof",
+			findingType:       "VULNERABILITY",
+			lenientValidation: true,
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
+					"message": "vuln found", "external_id": "CVE-2024-1234",
+					"package_purl": "pkg:golang/example.com/lib@v1.0.0", "severity": "HIGH",
+				}},
+			},
+			wantViolations: 1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				f := violations[0].GetVulnerability()
+				s.Require().NotNil(f)
+				s.Equal("CVE-2024-1234", f.GetExternalId())
+				s.False(violations[0].GetFindingDegraded())
+			},
+		},
+		{
+			name:              "lenient - multiple invalid violations - warning deduplicated, all degraded",
+			findingType:       "VULNERABILITY",
+			lenientValidation: true,
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln 1", RawFinding: map[string]any{
+					"message": "vuln 1", "external_id": "CVE-1",
+				}},
+				{Subject: "p2", Violation: "vuln 2", RawFinding: map[string]any{
+					"message": "vuln 2", "external_id": "CVE-2",
+				}},
+			},
+			wantViolations: 2,
+			wantWarnings:   1, // deduplicated
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				s.True(violations[0].GetFindingDegraded())
+				s.True(violations[1].GetFindingDegraded())
+				s.Nil(violations[0].GetVulnerability())
+				s.Nil(violations[1].GetVulnerability())
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -1636,7 +1712,7 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 				{Violations: tc.violations},
 			}
 
-			violations, warnings, err := engineEvaluationsToAPIViolations(results, tc.findingType)
+			violations, warnings, err := engineEvaluationsToAPIViolations(results, tc.findingType, tc.lenientValidation)
 			if tc.wantErr != "" {
 				s.Require().Error(err)
 				s.Contains(err.Error(), tc.wantErr)

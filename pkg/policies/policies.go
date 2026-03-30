@@ -84,32 +84,34 @@ const (
 var defaultMaxConcurrency = max(runtime.NumCPU(), 5)
 
 type PolicyVerifier struct {
-	policies         *v1.Policies
-	logger           *zerolog.Logger
-	client           v13.AttestationServiceClient
-	grpcConn         *grpc.ClientConn
-	allowedHostnames []string
-	defaultGate      bool
-	includeRawData   bool
-	enablePrint      bool
-	evalPhase        EvalPhase
-	maxConcurrency   int
-	policyCache      cache.Cache[*policyWithReference]
-	groupCache       cache.Cache[*groupWithReference]
+	policies                 *v1.Policies
+	logger                   *zerolog.Logger
+	client                   v13.AttestationServiceClient
+	grpcConn                 *grpc.ClientConn
+	allowedHostnames         []string
+	defaultGate              bool
+	includeRawData           bool
+	enablePrint              bool
+	evalPhase                EvalPhase
+	maxConcurrency           int
+	lenientFindingValidation bool
+	policyCache              cache.Cache[*policyWithReference]
+	groupCache               cache.Cache[*groupWithReference]
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
 
 type PolicyVerifierOptions struct {
-	AllowedHostnames []string
-	DefaultGate      bool
-	IncludeRawData   bool
-	EnablePrint      bool
-	GRPCConn         *grpc.ClientConn
-	EvalPhase        EvalPhase
-	MaxConcurrency   int
-	PolicyCache      cache.Cache[*policyWithReference]
-	GroupCache       cache.Cache[*groupWithReference]
+	AllowedHostnames         []string
+	DefaultGate              bool
+	IncludeRawData           bool
+	EnablePrint              bool
+	GRPCConn                 *grpc.ClientConn
+	EvalPhase                EvalPhase
+	MaxConcurrency           int
+	LenientFindingValidation bool
+	PolicyCache              cache.Cache[*policyWithReference]
+	GroupCache               cache.Cache[*groupWithReference]
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -168,6 +170,15 @@ func WithGroupCache(c cache.Cache[*groupWithReference]) PolicyVerifierOption {
 	}
 }
 
+// WithLenientFindingValidation makes structured finding validation errors non-fatal.
+// When enabled, validation failures produce warnings and the violation is kept as a
+// plain string with FindingDegraded=true instead of returning a hard error.
+func WithLenientFindingValidation() PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.LenientFindingValidation = true
+	}
+}
+
 const defaultPolicyCacheTTL = 5 * time.Minute
 
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
@@ -190,18 +201,19 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 	}
 
 	return &PolicyVerifier{
-		policies:         policies,
-		client:           client,
-		logger:           logger,
-		grpcConn:         options.GRPCConn,
-		allowedHostnames: options.AllowedHostnames,
-		defaultGate:      options.DefaultGate,
-		includeRawData:   options.IncludeRawData,
-		enablePrint:      options.EnablePrint,
-		evalPhase:        options.EvalPhase,
-		maxConcurrency:   maxConcurrency,
-		policyCache:      options.PolicyCache,
-		groupCache:       options.GroupCache,
+		policies:                 policies,
+		client:                   client,
+		logger:                   logger,
+		grpcConn:                 options.GRPCConn,
+		allowedHostnames:         options.AllowedHostnames,
+		defaultGate:              options.DefaultGate,
+		includeRawData:           options.IncludeRawData,
+		enablePrint:              options.EnablePrint,
+		evalPhase:                options.EvalPhase,
+		maxConcurrency:           maxConcurrency,
+		lenientFindingValidation: options.LenientFindingValidation,
+		policyCache:              options.PolicyCache,
+		groupCache:               options.GroupCache,
 	}
 }
 
@@ -389,7 +401,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	findingType := policy.GetMetadata().GetFindingType()
-	apiViolations, warnings, err := engineEvaluationsToAPIViolations(evalResults, findingType)
+	apiViolations, warnings, err := engineEvaluationsToAPIViolations(evalResults, findingType, pv.lenientFindingValidation)
 	if err != nil {
 		return nil, NewPolicyError(fmt.Errorf("policy %q: %w", policy.GetMetadata().GetName(), err))
 	}
@@ -754,11 +766,35 @@ func splitArgs(s string) []string {
 	return result
 }
 
-func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findingType string) ([]*v12.PolicyEvaluation_Violation, []string, error) {
+// validateAndSetFinding validates a structured finding and sets it on the violation.
+// When lenient is true and validation fails, it returns degraded=true with a descriptive
+// error for use as a warning. When lenient is false, it returns degraded=false with the
+// error for the caller to treat as fatal.
+func validateAndSetFinding(apiV *v12.PolicyEvaluation_Violation, findingType string, rawFinding map[string]any, lenient bool) (degraded bool, err error) {
+	finding, err := findings.ValidateFinding(findingType, rawFinding)
+	if err != nil {
+		if lenient {
+			return true, fmt.Errorf("structured finding validation failed for finding_type %q: %w — violations will be treated as plain strings", findingType, err)
+		}
+		return false, fmt.Errorf("structured violation validation: %w", err)
+	}
+
+	if err := findings.SetViolationFinding(apiV, findingType, finding); err != nil {
+		if lenient {
+			return true, fmt.Errorf("failed to set structured finding for finding_type %q: %w — violations will be treated as plain strings", findingType, err)
+		}
+		return false, fmt.Errorf("setting violation finding: %w", err)
+	}
+
+	return false, nil
+}
+
+func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findingType string, lenientValidation bool) ([]*v12.PolicyEvaluation_Violation, []string, error) {
 	res := make([]*v12.PolicyEvaluation_Violation, 0)
 	var warnings []string
 	warnedNoFindingType := false
 	warnedNoStructuredData := false
+	warnedValidationFailed := false
 
 	for _, r := range results {
 		for _, v := range r.Violations {
@@ -771,7 +807,7 @@ func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findin
 
 			switch {
 			case findingType == "" && !hasStructuredData:
-				// No finding_type, string violation — current behavior
+				// no-op: plain string violation without finding_type
 
 			case findingType == "" && hasStructuredData:
 				if !warnedNoFindingType {
@@ -791,13 +827,14 @@ func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findin
 				}
 
 			case findingType != "" && hasStructuredData:
-				finding, err := findings.ValidateFinding(findingType, v.RawFinding)
-				if err != nil {
-					return nil, nil, fmt.Errorf("structured violation validation: %w", err)
-				}
-
-				if err := findings.SetViolationFinding(apiV, findingType, finding); err != nil {
-					return nil, nil, fmt.Errorf("setting violation finding: %w", err)
+				if degraded, err := validateAndSetFinding(apiV, findingType, v.RawFinding, lenientValidation); degraded {
+					apiV.FindingDegraded = true
+					if !warnedValidationFailed && err != nil {
+						warnings = append(warnings, err.Error())
+						warnedValidationFailed = true
+					}
+				} else if err != nil {
+					return nil, nil, err
 				}
 			}
 

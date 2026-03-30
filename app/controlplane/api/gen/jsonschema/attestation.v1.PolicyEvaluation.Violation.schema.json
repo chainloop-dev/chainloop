@@ -3,11 +3,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(findingDegraded)$": {
+      "description": "True when the policy declared a finding_type and returned structured data,\n but validation failed at runtime. The violation was kept as a plain string\n and the finding oneof is NOT set. Consumers should treat this as a\n data-quality signal: the violation exists but structured finding data is\n missing due to a policy authoring issue.",
+      "type": "boolean"
+    },
     "^(licenseViolation)$": {
       "$ref": "attestation.v1.PolicyLicenseViolationFinding.schema.json"
     }
   },
   "properties": {
+    "finding_degraded": {
+      "description": "True when the policy declared a finding_type and returned structured data,\n but validation failed at runtime. The violation was kept as a plain string\n and the finding oneof is NOT set. Consumers should treat this as a\n data-quality signal: the violation exists but structured finding data is\n missing due to a policy authoring issue.",
+      "type": "boolean"
+    },
     "license_violation": {
       "$ref": "attestation.v1.PolicyLicenseViolationFinding.schema.json"
     },

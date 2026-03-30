@@ -2225,9 +2225,15 @@ type PolicyEvaluation_Violation struct {
 	//	*PolicyEvaluation_Violation_Vulnerability
 	//	*PolicyEvaluation_Violation_Sast
 	//	*PolicyEvaluation_Violation_LicenseViolation
-	Finding       isPolicyEvaluation_Violation_Finding `protobuf_oneof:"finding"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Finding isPolicyEvaluation_Violation_Finding `protobuf_oneof:"finding"`
+	// True when the policy declared a finding_type and returned structured data,
+	// but validation failed at runtime. The violation was kept as a plain string
+	// and the finding oneof is NOT set. Consumers should treat this as a
+	// data-quality signal: the violation exists but structured finding data is
+	// missing due to a policy authoring issue.
+	FindingDegraded bool `protobuf:"varint,6,opt,name=finding_degraded,json=findingDegraded,proto3" json:"finding_degraded,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *PolicyEvaluation_Violation) Reset() {
@@ -2306,6 +2312,13 @@ func (x *PolicyEvaluation_Violation) GetLicenseViolation() *PolicyLicenseViolati
 		}
 	}
 	return nil
+}
+
+func (x *PolicyEvaluation_Violation) GetFindingDegraded() bool {
+	if x != nil {
+		return x.FindingDegraded
+	}
+	return false
 }
 
 type isPolicyEvaluation_Violation_Finding interface {
@@ -2701,7 +2714,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\venvironment\x18\x02 \x01(\tR\venvironment\x12$\n" +
 	"\rauthenticated\x18\x03 \x01(\bR\rauthenticated\x12I\n" +
 	"\x04type\x18\x04 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeR\x04type\x12\x10\n" +
-	"\x03url\x18\x05 \x01(\tR\x03url\"\x98\x0e\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\"\xc3\x0e\n" +
 	"\x10PolicyEvaluation\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12#\n" +
@@ -2731,13 +2744,14 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xc5\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xf0\x02\n" +
 	"\tViolation\x12 \n" +
 	"\asubject\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\asubject\x12 \n" +
 	"\amessage\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12R\n" +
 	"\rvulnerability\x18\x03 \x01(\v2*.attestation.v1.PolicyVulnerabilityFindingH\x00R\rvulnerability\x127\n" +
 	"\x04sast\x18\x04 \x01(\v2!.attestation.v1.PolicySASTFindingH\x00R\x04sast\x12\\\n" +
-	"\x11license_violation\x18\x05 \x01(\v2-.attestation.v1.PolicyLicenseViolationFindingH\x00R\x10licenseViolationB\t\n" +
+	"\x11license_violation\x18\x05 \x01(\v2-.attestation.v1.PolicyLicenseViolationFindingH\x00R\x10licenseViolation\x12)\n" +
+	"\x10finding_degraded\x18\x06 \x01(\bR\x0ffindingDegradedB\t\n" +
 	"\afinding\x1a\xfc\x01\n" +
 	"\tReference\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +

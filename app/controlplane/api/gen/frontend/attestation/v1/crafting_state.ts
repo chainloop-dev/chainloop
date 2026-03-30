@@ -313,7 +313,17 @@ export interface PolicyEvaluation_Violation {
   message: string;
   vulnerability?: PolicyVulnerabilityFinding | undefined;
   sast?: PolicySASTFinding | undefined;
-  licenseViolation?: PolicyLicenseViolationFinding | undefined;
+  licenseViolation?:
+    | PolicyLicenseViolationFinding
+    | undefined;
+  /**
+   * True when the policy declared a finding_type and returned structured data,
+   * but validation failed at runtime. The violation was kept as a plain string
+   * and the finding oneof is NOT set. Consumers should treat this as a
+   * data-quality signal: the violation exists but structured finding data is
+   * missing due to a policy authoring issue.
+   */
+  findingDegraded: boolean;
 }
 
 export interface PolicyEvaluation_Reference {
@@ -2873,7 +2883,14 @@ export const PolicyEvaluation_WithEntry = {
 };
 
 function createBasePolicyEvaluation_Violation(): PolicyEvaluation_Violation {
-  return { subject: "", message: "", vulnerability: undefined, sast: undefined, licenseViolation: undefined };
+  return {
+    subject: "",
+    message: "",
+    vulnerability: undefined,
+    sast: undefined,
+    licenseViolation: undefined,
+    findingDegraded: false,
+  };
 }
 
 export const PolicyEvaluation_Violation = {
@@ -2892,6 +2909,9 @@ export const PolicyEvaluation_Violation = {
     }
     if (message.licenseViolation !== undefined) {
       PolicyLicenseViolationFinding.encode(message.licenseViolation, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.findingDegraded === true) {
+      writer.uint32(48).bool(message.findingDegraded);
     }
     return writer;
   },
@@ -2938,6 +2958,13 @@ export const PolicyEvaluation_Violation = {
 
           message.licenseViolation = PolicyLicenseViolationFinding.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.findingDegraded = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2958,6 +2985,7 @@ export const PolicyEvaluation_Violation = {
       licenseViolation: isSet(object.licenseViolation)
         ? PolicyLicenseViolationFinding.fromJSON(object.licenseViolation)
         : undefined,
+      findingDegraded: isSet(object.findingDegraded) ? Boolean(object.findingDegraded) : false,
     };
   },
 
@@ -2973,6 +3001,7 @@ export const PolicyEvaluation_Violation = {
     message.licenseViolation !== undefined && (obj.licenseViolation = message.licenseViolation
       ? PolicyLicenseViolationFinding.toJSON(message.licenseViolation)
       : undefined);
+    message.findingDegraded !== undefined && (obj.findingDegraded = message.findingDegraded);
     return obj;
   },
 
@@ -2993,6 +3022,7 @@ export const PolicyEvaluation_Violation = {
     message.licenseViolation = (object.licenseViolation !== undefined && object.licenseViolation !== null)
       ? PolicyLicenseViolationFinding.fromPartial(object.licenseViolation)
       : undefined;
+    message.findingDegraded = object.findingDegraded ?? false;
     return message;
   },
 };

@@ -284,6 +284,13 @@ message PolicyEvaluation {
       PolicySASTFinding sast = 4;
       PolicyLicenseViolationFinding license_violation = 5;
     }
+
+    // True when the policy declared a finding_type and returned structured data,
+    // but validation failed at runtime. The violation was kept as a plain string
+    // and the finding oneof is NOT set. Consumers should treat this as a
+    // data-quality signal: the violation exists but structured finding data is
+    // missing due to a policy authoring issue.
+    bool finding_degraded = 6;
   }
 
   message Reference {
