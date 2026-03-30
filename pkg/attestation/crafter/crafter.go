@@ -312,20 +312,6 @@ type CommitRemote struct {
 // This error is not exposed by go-git
 var errBranchInvalidMerge = errors.New("branch config: invalid merge")
 
-// isGitExtensionError returns true if the error is related to unsupported git
-// repository format extensions (e.g. worktreeConfig). go-git v5.17.0 introduced
-// strict validation that rejects repos with extensions it doesn't support.
-// See https://github.com/go-git/go-git/pull/1861
-func isGitExtensionError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := err.Error()
-	return strings.Contains(msg, "does not support extension") ||
-		strings.Contains(msg, "unknown extension") ||
-		strings.Contains(msg, "repositoryformatversion not supported")
-}
-
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
 func gracefulGitRepoHead(path string) (*HeadCommit, error) {
@@ -335,8 +321,13 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	})
 
 	if err != nil {
+		// go-git v5.17.0 introduced strict extension validation (go-git/go-git#1861)
+		// that rejects repos with extensions it doesn't fully support (e.g. worktreeConfig).
+		// Degrade gracefully instead of failing the attestation.
 		if errors.Is(err, git.ErrRepositoryNotExists) ||
-			isGitExtensionError(err) {
+			errors.Is(err, git.ErrUnsupportedExtensionRepositoryFormatVersion) ||
+			errors.Is(err, git.ErrUnknownExtension) ||
+			errors.Is(err, git.ErrUnsupportedRepositoryFormatVersion) {
 			return nil, nil
 		}
 
