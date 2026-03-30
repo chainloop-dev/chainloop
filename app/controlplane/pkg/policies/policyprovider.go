@@ -155,7 +155,7 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, tok
 			// Ignore endpoint not found as it might not be implemented by the provider
 			return nil
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return ErrUnauthorized
+			return fmt.Errorf("%w: %s", ErrUnauthorized, readBodyMsg(resp))
 		default:
 			return fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 		}
@@ -243,7 +243,7 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 		case http.StatusNotFound:
 			return "", "", ErrNotFound
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return "", "", ErrUnauthorized
+			return "", "", fmt.Errorf("%w: %s", ErrUnauthorized, readBodyMsg(resp))
 		default:
 			return "", "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 		}
@@ -285,6 +285,17 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 	}
 
 	return response.Digest, orgName, nil
+}
+
+// readBodyMsg reads the response body and returns it as a trimmed string.
+// If the body cannot be read, it returns the HTTP status instead.
+func readBodyMsg(resp *http.Response) string {
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512))
+	if err != nil || len(body) == 0 {
+		return resp.Status
+	}
+	return string(body)
 }
 
 func unmarshalFromRaw(raw *RawMessage, out proto.Message) error {

@@ -29,17 +29,30 @@ func TestResolveHTTPStatusHandling(t *testing.T) {
 	testCases := []struct {
 		name       string
 		statusCode int
+		body       string
 		wantErr    error
+		wantMsg    string // substring expected in error message
 	}{
 		{
-			name:       "401 returns ErrUnauthorized",
+			name:       "401 returns ErrUnauthorized with upstream message",
 			statusCode: http.StatusUnauthorized,
+			body:       "token expired",
 			wantErr:    ErrUnauthorized,
+			wantMsg:    "token expired",
 		},
 		{
-			name:       "403 returns ErrUnauthorized",
+			name:       "403 returns ErrUnauthorized with upstream message",
 			statusCode: http.StatusForbidden,
+			body:       "insufficient permissions",
 			wantErr:    ErrUnauthorized,
+			wantMsg:    "insufficient permissions",
+		},
+		{
+			name:       "401 with empty body falls back to status text",
+			statusCode: http.StatusUnauthorized,
+			body:       "",
+			wantErr:    ErrUnauthorized,
+			wantMsg:    "401 Unauthorized",
 		},
 		{
 			name:       "404 returns ErrNotFound",
@@ -57,6 +70,9 @@ func TestResolveHTTPStatusHandling(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tc.statusCode)
+				if tc.body != "" {
+					_, _ = w.Write([]byte(tc.body))
+				}
 			}))
 			defer server.Close()
 
@@ -75,6 +91,9 @@ func TestResolveHTTPStatusHandling(t *testing.T) {
 				assert.NotErrorIs(t, err, ErrNotFound)
 				assert.Contains(t, err.Error(), fmt.Sprintf("got %d", tc.statusCode))
 			}
+			if tc.wantMsg != "" {
+				assert.Contains(t, err.Error(), tc.wantMsg)
+			}
 		})
 	}
 }
@@ -83,17 +102,23 @@ func TestResolveGroupHTTPStatusHandling(t *testing.T) {
 	testCases := []struct {
 		name       string
 		statusCode int
+		body       string
 		wantErr    error
+		wantMsg    string
 	}{
 		{
-			name:       "401 returns ErrUnauthorized",
+			name:       "401 returns ErrUnauthorized with upstream message",
 			statusCode: http.StatusUnauthorized,
+			body:       "invalid token",
 			wantErr:    ErrUnauthorized,
+			wantMsg:    "invalid token",
 		},
 		{
-			name:       "403 returns ErrUnauthorized",
+			name:       "403 returns ErrUnauthorized with upstream message",
 			statusCode: http.StatusForbidden,
+			body:       "access denied",
 			wantErr:    ErrUnauthorized,
+			wantMsg:    "access denied",
 		},
 		{
 			name:       "404 returns ErrNotFound",
@@ -106,6 +131,9 @@ func TestResolveGroupHTTPStatusHandling(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tc.statusCode)
+				if tc.body != "" {
+					_, _ = w.Write([]byte(tc.body))
+				}
 			}))
 			defer server.Close()
 
@@ -117,6 +145,9 @@ func TestResolveGroupHTTPStatusHandling(t *testing.T) {
 			_, _, err := provider.ResolveGroup("test-group", "", ProviderAuthOpts{Token: "test-token"})
 			require.Error(t, err)
 			assert.ErrorIs(t, err, tc.wantErr)
+			if tc.wantMsg != "" {
+				assert.Contains(t, err.Error(), tc.wantMsg)
+			}
 		})
 	}
 }
@@ -125,18 +156,24 @@ func TestValidateAttachmentHTTPStatusHandling(t *testing.T) {
 	testCases := []struct {
 		name       string
 		statusCode int
+		body       string
 		wantErr    error
+		wantMsg    string
 		errNil     bool
 	}{
 		{
-			name:       "401 returns ErrUnauthorized",
+			name:       "401 returns ErrUnauthorized with upstream message",
 			statusCode: http.StatusUnauthorized,
+			body:       "token revoked",
 			wantErr:    ErrUnauthorized,
+			wantMsg:    "token revoked",
 		},
 		{
-			name:       "403 returns ErrUnauthorized",
+			name:       "403 returns ErrUnauthorized with upstream message",
 			statusCode: http.StatusForbidden,
+			body:       "org mismatch",
 			wantErr:    ErrUnauthorized,
+			wantMsg:    "org mismatch",
 		},
 		{
 			name:       "404 is ignored",
@@ -159,6 +196,9 @@ func TestValidateAttachmentHTTPStatusHandling(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tc.statusCode)
+				if tc.body != "" {
+					_, _ = w.Write([]byte(tc.body))
+				}
 			}))
 			defer server.Close()
 
@@ -179,6 +219,9 @@ func TestValidateAttachmentHTTPStatusHandling(t *testing.T) {
 			} else {
 				assert.NotErrorIs(t, err, ErrUnauthorized)
 				assert.Contains(t, err.Error(), fmt.Sprintf("got %d", tc.statusCode))
+			}
+			if tc.wantMsg != "" {
+				assert.Contains(t, err.Error(), tc.wantMsg)
 			}
 		})
 	}
