@@ -1526,12 +1526,47 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 			},
 		},
 		{
-			name:        "finding_type + string violations - error",
+			name:        "finding_type + string violations - fallback with warning",
 			findingType: "VULNERABILITY",
 			violations: []*engine.PolicyViolation{
 				{Subject: "p1", Violation: "plain string"},
 			},
-			wantErr: "declares finding_type",
+			wantViolations: 1,
+			wantWarnings:   1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				// The violation is kept as a plain string, no structured finding
+				s.Equal("plain string", violations[0].GetMessage())
+				s.Nil(violations[0].GetVulnerability())
+			},
+		},
+		{
+			name:        "finding_type + mixed string and structured violations - per-violation handling",
+			findingType: "VULNERABILITY",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "plain string fallback"},
+				{Subject: "p2", Violation: "vuln found", RawFinding: map[string]any{
+					"message": "vuln found", "external_id": "CVE-2024-1234",
+					"package_purl": "pkg:golang/example.com/lib@v1.0.0", "severity": "HIGH",
+				}},
+				{Subject: "p3", Violation: "another plain string"},
+			},
+			wantViolations: 3,
+			wantWarnings:   1, // deduplicated warning
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				// First violation: plain string, no structured finding
+				s.Equal("plain string fallback", violations[0].GetMessage())
+				s.Nil(violations[0].GetVulnerability())
+
+				// Second violation: structured, validated
+				f := violations[1].GetVulnerability()
+				s.Require().NotNil(f)
+				s.Equal("CVE-2024-1234", f.GetExternalId())
+				s.Equal("HIGH", f.GetSeverity())
+
+				// Third violation: plain string, no structured finding
+				s.Equal("another plain string", violations[2].GetMessage())
+				s.Nil(violations[2].GetVulnerability())
+			},
 		},
 		{
 			name:        "finding_type + valid structured violations - validates and sets oneof",
