@@ -77,6 +77,11 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			return nil, NewPolicyError(err)
 		}
 
+		// Skip loading content if no policies apply to this material
+		if len(policyAtts) == 0 {
+			continue
+		}
+
 		// Load material content once for all policies in this group
 		subject, err := material.GetEvaluableContent(path)
 		if err != nil {
