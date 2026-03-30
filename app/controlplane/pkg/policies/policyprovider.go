@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -78,7 +78,10 @@ type ProviderAuthOpts struct {
 	OrgName string
 }
 
-var ErrNotFound = fmt.Errorf("policy not found")
+var (
+	ErrNotFound     = fmt.Errorf("policy not found")
+	ErrUnauthorized = fmt.Errorf("unauthorized request to policy provider")
+)
 
 // Resolve calls the remote provider for retrieving a policy
 func (p *PolicyProvider) Resolve(policyName, policyOrgName string, authOpts ProviderAuthOpts) (*schemaapi.Policy, *PolicyReference, error) {
@@ -147,12 +150,15 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, tok
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusMethodNotAllowed {
+		switch resp.StatusCode {
+		case http.StatusNotFound, http.StatusMethodNotAllowed:
 			// Ignore endpoint not found as it might not be implemented by the provider
 			return nil
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return ErrUnauthorized
+		default:
+			return fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 		}
-
-		return fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 	}
 
 	resBytes, err := io.ReadAll(resp.Body)
@@ -233,11 +239,14 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNotFound {
+		switch resp.StatusCode {
+		case http.StatusNotFound:
 			return "", "", ErrNotFound
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return "", "", ErrUnauthorized
+		default:
+			return "", "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 		}
-
-		return "", "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
 	}
 
 	resBytes, err := io.ReadAll(resp.Body)
