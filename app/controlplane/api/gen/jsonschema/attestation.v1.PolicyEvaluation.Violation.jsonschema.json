@@ -2,12 +2,26 @@
   "$id": "attestation.v1.PolicyEvaluation.Violation.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(license_violation)$": {
+      "$ref": "attestation.v1.PolicyLicenseViolationFinding.jsonschema.json"
+    }
+  },
   "properties": {
+    "licenseViolation": {
+      "$ref": "attestation.v1.PolicyLicenseViolationFinding.jsonschema.json"
+    },
     "message": {
       "type": "string"
     },
+    "sast": {
+      "$ref": "attestation.v1.PolicySASTFinding.jsonschema.json"
+    },
     "subject": {
       "type": "string"
+    },
+    "vulnerability": {
+      "$ref": "attestation.v1.PolicyVulnerabilityFinding.jsonschema.json"
     }
   },
   "required": [

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -157,6 +157,9 @@ type RawData struct {
 type PolicyViolation struct {
 	Subject   string `json:"subject"`
 	Violation string `json:"violation"`
+	// RawFinding holds the original structured violation object when the policy
+	// returns a map instead of a string. It is nil for plain-string violations.
+	RawFinding map[string]any `json:"rawFinding,omitempty"`
 }
 
 // Policy represents a loaded policy in any of the supported engines.
@@ -165,6 +168,27 @@ type Policy struct {
 	Source []byte `json:"module"`
 	// The unique policy name
 	Name string `json:"name"`
+}
+
+// NewStructuredViolation creates a PolicyViolation from a structured (map)
+// violation object. The object must contain a "message" string field.
+// The full object is preserved in RawFinding for downstream validation.
+func NewStructuredViolation(policyName string, obj map[string]any) (*PolicyViolation, error) {
+	msg, ok := obj["message"]
+	if !ok {
+		return nil, fmt.Errorf("missing required \"message\" field in structured violation")
+	}
+
+	msgStr, ok := msg.(string)
+	if !ok {
+		return nil, fmt.Errorf("\"message\" field must be a string, got %T", msg)
+	}
+
+	return &PolicyViolation{
+		Subject:    policyName,
+		Violation:  msgStr,
+		RawFinding: obj,
+	}, nil
 }
 
 type ResultFormatError struct {

@@ -2,6 +2,17 @@
   "$id": "workflowcontract.v1.Metadata.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(findingType)$": {
+      "description": "Declares the structured output schema for policy violations.\n When set, the policy engine validates that violations conform to the\n corresponding proto message:\n   VULNERABILITY    -\u003e attestation.v1.PolicyVulnerabilityFinding\n   SAST             -\u003e attestation.v1.PolicySASTFinding\n   LICENSE_VIOLATION -\u003e attestation.v1.PolicyLicenseViolationFinding",
+      "enum": [
+        "VULNERABILITY",
+        "SAST",
+        "LICENSE_VIOLATION"
+      ],
+      "type": "string"
+    }
+  },
   "properties": {
     "annotations": {
       "additionalProperties": {
@@ -13,6 +24,15 @@
       "type": "object"
     },
     "description": {
+      "type": "string"
+    },
+    "finding_type": {
+      "description": "Declares the structured output schema for policy violations.\n When set, the policy engine validates that violations conform to the\n corresponding proto message:\n   VULNERABILITY    -\u003e attestation.v1.PolicyVulnerabilityFinding\n   SAST             -\u003e attestation.v1.PolicySASTFinding\n   LICENSE_VIOLATION -\u003e attestation.v1.PolicyLicenseViolationFinding",
+      "enum": [
+        "VULNERABILITY",
+        "SAST",
+        "LICENSE_VIOLATION"
+      ],
       "type": "string"
     },
     "name": {

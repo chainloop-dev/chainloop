@@ -23,6 +23,7 @@ import (
 
 	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/suite"
@@ -1485,6 +1486,134 @@ func (s *testSuite) TestPolicyAttachmentGate() {
 		s.Run(tc.name, func() {
 			got := policyAttachmentGate(tc.attachment, tc.defaultGate)
 			s.Equal(tc.expectedGate, got)
+		})
+	}
+}
+
+func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
+	cases := []struct {
+		name           string
+		findingType    string
+		violations     []*engine.PolicyViolation
+		wantErr        string
+		wantWarnings   int
+		wantViolations int
+		checkFn        func(violations []*v1.PolicyEvaluation_Violation)
+	}{
+		{
+			name:        "no finding_type + string violations - current behavior",
+			findingType: "",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "something failed"},
+			},
+			wantViolations: 1,
+		},
+		{
+			name:        "no finding_type + structured violations - warning emitted",
+			findingType: "",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
+					"message": "vuln found", "external_id": "CVE-1",
+				}},
+			},
+			wantViolations: 1,
+			wantWarnings:   1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				// The oneof finding should NOT be populated
+				s.Nil(violations[0].GetVulnerability())
+				s.Nil(violations[0].GetSast())
+				s.Nil(violations[0].GetLicenseViolation())
+			},
+		},
+		{
+			name:        "finding_type + string violations - error",
+			findingType: "VULNERABILITY",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "plain string"},
+			},
+			wantErr: "declares finding_type",
+		},
+		{
+			name:        "finding_type + valid structured violations - validates and sets oneof",
+			findingType: "VULNERABILITY",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
+					"message": "vuln found", "external_id": "CVE-2024-1234",
+					"package_purl": "pkg:golang/example.com/lib@v1.0.0", "severity": "HIGH",
+				}},
+			},
+			wantViolations: 1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				f := violations[0].GetVulnerability()
+				s.Require().NotNil(f)
+				s.Equal("CVE-2024-1234", f.GetExternalId())
+				s.Equal("HIGH", f.GetSeverity())
+			},
+		},
+		{
+			name:        "finding_type SAST + valid structured violations",
+			findingType: "SAST",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "sql injection", RawFinding: map[string]any{
+					"message": "sql injection", "rule_id": "java:S1234",
+					"severity": "HIGH", "location": "src/Handler.java",
+				}},
+			},
+			wantViolations: 1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				f := violations[0].GetSast()
+				s.Require().NotNil(f)
+				s.Equal("java:S1234", f.GetRuleId())
+			},
+		},
+		{
+			name:        "finding_type + invalid structured violations - validation error",
+			findingType: "VULNERABILITY",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
+					"message": "vuln found", "external_id": "CVE-1",
+					// missing package_purl and severity (required)
+				}},
+			},
+			wantErr: "validation failed",
+		},
+		{
+			name:        "unknown finding_type - error",
+			findingType: "UNKNOWN",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "something", RawFinding: map[string]any{
+					"message": "something",
+				}},
+			},
+			wantErr: "unknown finding type",
+		},
+		{
+			name:           "empty violations - no error",
+			findingType:    "VULNERABILITY",
+			violations:     []*engine.PolicyViolation{},
+			wantViolations: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			results := []*engine.EvaluationResult{
+				{Violations: tc.violations},
+			}
+
+			violations, warnings, err := engineEvaluationsToAPIViolations(results, tc.findingType)
+			if tc.wantErr != "" {
+				s.Require().Error(err)
+				s.Contains(err.Error(), tc.wantErr)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Len(violations, tc.wantViolations)
+			s.Len(warnings, tc.wantWarnings)
+			if tc.checkFn != nil {
+				tc.checkFn(violations)
+			}
 		})
 	}
 }

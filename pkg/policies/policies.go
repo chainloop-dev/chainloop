@@ -44,6 +44,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/wasm"
+	"github.com/chainloop-dev/chainloop/pkg/policies/findings"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -387,13 +388,23 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		reasons = []string{}
 	}
 
+	findingType := policy.GetMetadata().GetFindingType()
+	apiViolations, warnings, err := engineEvaluationsToAPIViolations(evalResults, findingType)
+	if err != nil {
+		return nil, NewPolicyError(fmt.Errorf("policy %q: %w", policy.GetMetadata().GetName(), err))
+	}
+
+	for _, w := range warnings {
+		pv.logger.Warn().Str("policy", policy.GetMetadata().GetName()).Msg(w)
+	}
+
 	// Merge multi-kind results
 	return &v12.PolicyEvaluation{
 		Name:         policy.GetMetadata().GetName(),
 		MaterialName: opts.name,
 		Sources:      evaluationSources,
 		// merge all violations
-		Violations:      engineEvaluationsToAPIViolations(evalResults),
+		Violations:      apiViolations,
 		Annotations:     policy.GetMetadata().GetAnnotations(),
 		Description:     policy.GetMetadata().GetDescription(),
 		With:            args,
@@ -743,18 +754,50 @@ func splitArgs(s string) []string {
 	return result
 }
 
-func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult) []*v12.PolicyEvaluation_Violation {
+func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findingType string) ([]*v12.PolicyEvaluation_Violation, []string, error) {
 	res := make([]*v12.PolicyEvaluation_Violation, 0)
+	var warnings []string
+	warnedNoFindingType := false
+
 	for _, r := range results {
 		for _, v := range r.Violations {
-			res = append(res, &v12.PolicyEvaluation_Violation{
+			apiV := &v12.PolicyEvaluation_Violation{
 				Subject: v.Subject,
 				Message: v.Violation,
-			})
+			}
+
+			hasStructuredData := v.RawFinding != nil
+
+			switch {
+			case findingType == "" && !hasStructuredData:
+				// No finding_type, string violation — current behavior
+
+			case findingType == "" && hasStructuredData:
+				if !warnedNoFindingType {
+					warnings = append(warnings,
+						"policy returns structured violation objects but does not declare finding_type in metadata — finding data will be ignored")
+					warnedNoFindingType = true
+				}
+
+			case findingType != "" && !hasStructuredData:
+				return nil, nil, fmt.Errorf("declares finding_type %q but violation is not a structured object", findingType)
+
+			case findingType != "" && hasStructuredData:
+				finding, err := findings.ValidateFinding(findingType, v.RawFinding)
+				if err != nil {
+					return nil, nil, fmt.Errorf("structured violation validation: %w", err)
+				}
+
+				if err := findings.SetViolationFinding(apiV, findingType, finding); err != nil {
+					return nil, nil, fmt.Errorf("setting violation finding: %w", err)
+				}
+			}
+
+			res = append(res, apiV)
 		}
 	}
 
-	return res
+	return res, warnings, nil
 }
 
 // returns the list of polices to be applied to a material, following these rules:

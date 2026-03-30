@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -216,11 +216,18 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 			result.Ignore = ignore
 
 			for _, violation := range violations {
-				vs, ok := violation.(string)
-				if !ok {
-					return nil, fmt.Errorf("failed to evaluate violation in policy evaluation result: %s", val.Text)
+				switch v := violation.(type) {
+				case string:
+					result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: v})
+				case map[string]any:
+					pv, err := engine.NewStructuredViolation(policy.Name, v)
+					if err != nil {
+						return nil, fmt.Errorf("structured violation in policy %q: %w", policy.Name, err)
+					}
+					result.Violations = append(result.Violations, pv)
+				default:
+					return nil, fmt.Errorf("violation must be a string or object, got %T", violation)
 				}
-				result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: vs})
 			}
 		}
 	}

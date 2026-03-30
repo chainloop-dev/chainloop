@@ -275,6 +275,15 @@ message PolicyEvaluation {
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];
+
+    // Structured finding data, validated against the policy's declared finding_type.
+    // Only populated in the CAS-stored PolicyEvaluationBundle, not in the
+    // inline attestation predicate.
+    oneof finding {
+      PolicyVulnerabilityFinding vulnerability = 3;
+      PolicySASTFinding sast = 4;
+      PolicyLicenseViolationFinding license_violation = 5;
+    }
   }
 
   message Reference {
@@ -301,6 +310,66 @@ message PolicyEvaluation {
 // Bundle of all policy evaluations for an attestation, stored as a CAS object.
 message PolicyEvaluationBundle {
   repeated PolicyEvaluation evaluations = 1;
+}
+
+// Output schema for vulnerability findings from policy evaluation.
+// Used when a policy declares finding_type: VULNERABILITY.
+message PolicyVulnerabilityFinding {
+  // Human-readable violation description
+  string message = 1 [(buf.validate.field).required = true];
+  // Vulnerability identifier (e.g., CVE-2024-1234, GHSA-xxxx)
+  string external_id = 2 [(buf.validate.field).required = true];
+  // Package URL of the affected component (e.g., pkg:golang/example.com/lib@v1.0.0)
+  string package_purl = 3 [(buf.validate.field).required = true];
+  // Severity level (CRITICAL, HIGH, MEDIUM, LOW)
+  string severity = 4 [(buf.validate.field).required = true];
+  // CVSS v3 score (0.0-10.0)
+  double cvss_v3_score = 5 [(buf.validate.field).double = {
+    gte: 0
+    lte: 10
+  }];
+  // CWE references (e.g., CWE-79, CWE-89)
+  repeated string cwes = 6;
+  // Suggested fix or upgrade path
+  string recommendation = 7;
+}
+
+// Output schema for SAST findings from policy evaluation.
+// Used when a policy declares finding_type: SAST.
+message PolicySASTFinding {
+  // Human-readable violation description
+  string message = 1 [(buf.validate.field).required = true];
+  // Tool-specific rule identifier (e.g., java:S1234, go-sec:G101)
+  string rule_id = 2 [(buf.validate.field).required = true];
+  // Severity level (CRITICAL, HIGH, MEDIUM, LOW)
+  string severity = 3 [(buf.validate.field).required = true];
+  // File path where the issue was found
+  string location = 4 [(buf.validate.field).required = true];
+  // Line number in the file
+  int32 line_number = 5;
+  // Code snippet showing the issue
+  string code_snippet = 6;
+  // Suggested fix
+  string recommendation = 7;
+}
+
+// Output schema for license violation findings from policy evaluation.
+// Used when a policy declares finding_type: LICENSE_VIOLATION.
+message PolicyLicenseViolationFinding {
+  // Human-readable violation description
+  string message = 1 [(buf.validate.field).required = true];
+  // Component name (e.g., "lodash")
+  string component_name = 2 [(buf.validate.field).required = true];
+  // Package URL (e.g., pkg:npm/lodash@4.17.21)
+  string package_purl = 3;
+  // License identifier (e.g., "GPL-3.0", "AGPL-3.0")
+  string license_id = 4 [(buf.validate.field).required = true];
+  // Human-readable license name
+  string license_name = 5;
+  // Component version
+  string component_version = 6;
+  // Suggested fix
+  string recommendation = 7;
 }
 
 message Commit {
