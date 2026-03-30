@@ -353,6 +353,9 @@ require (
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fsouza/fake-gcs-server v1.47.6
+	// Pinned to v5.16.5: v5.17.x has a case-sensitivity bug in extension validation
+	// that breaks PlainOpen on repos using git worktree.
+	// https://github.com/chainloop-dev/chainloop/issues/2966
 	github.com/go-git/go-git/v5 v5.16.5
 	github.com/go-kratos/aegis v0.2.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
