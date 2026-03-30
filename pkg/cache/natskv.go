@@ -62,9 +62,10 @@ func (c *natsKVCache[T]) initBucket() error {
 	}
 
 	kv, err := js.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
-		Bucket:  c.bucket,
-		TTL:     c.cfg.ttl,
-		Storage: jetstream.MemoryStorage,
+		Bucket:      c.bucket,
+		Description: c.cfg.description,
+		TTL:         c.cfg.ttl,
+		Storage:     jetstream.MemoryStorage,
 	})
 	if err != nil {
 		return err

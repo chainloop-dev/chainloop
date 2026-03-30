@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"slices"
@@ -25,9 +26,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	chainloop "github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -40,6 +44,9 @@ type WorkflowRunService struct {
 	workflowContractUseCase *biz.WorkflowContractUseCase
 	projectUseCase          *biz.ProjectUseCase
 	credsReader             credentials.Reader
+	casClient               biz.CASClient
+	casMappingUC            *biz.CASMappingUseCase
+	policyEvalCache         cache.Cache[[]byte]
 }
 
 type NewWorkflowRunServiceOpts struct {
@@ -48,6 +55,9 @@ type NewWorkflowRunServiceOpts struct {
 	WorkflowContractUC *biz.WorkflowContractUseCase
 	ProjectUC          *biz.ProjectUseCase
 	CredsReader        credentials.Reader
+	CASClient          biz.CASClient
+	CASMappingUC       *biz.CASMappingUseCase
+	PolicyEvalCache    cache.Cache[[]byte]
 	Opts               []NewOpt
 }
 
@@ -59,7 +69,54 @@ func NewWorkflowRunService(opts *NewWorkflowRunServiceOpts) *WorkflowRunService 
 		workflowContractUseCase: opts.WorkflowContractUC,
 		projectUseCase:          opts.ProjectUC,
 		credsReader:             opts.CredsReader,
+		casClient:               opts.CASClient,
+		casMappingUC:            opts.CASMappingUC,
+		policyEvalCache:         opts.PolicyEvalCache,
 	}
+}
+
+type casResolvedPredicate struct {
+	chainloop.NormalizablePredicate
+	evals map[string][]*chainloop.PolicyEvaluation
+}
+
+func (p *casResolvedPredicate) GetPolicyEvaluations() map[string][]*chainloop.PolicyEvaluation {
+	return p.evals
+}
+
+func (s *WorkflowRunService) resolvePolicyEvaluations(
+	ctx context.Context,
+	ref *intoto.ResourceDescriptor,
+	orgID uuid.UUID,
+) (map[string][]*chainloop.PolicyEvaluation, error) {
+	if ref == nil {
+		return nil, nil
+	}
+
+	hexDigest, ok := ref.Digest["sha256"]
+	if !ok {
+		return nil, fmt.Errorf("no sha256 digest in policy evaluations ref")
+	}
+	digest := fmt.Sprintf("sha256:%s", hexDigest)
+
+	if cached, found, err := s.policyEvalCache.Get(ctx, digest); err == nil && found {
+		return chainloop.PolicyEvaluationsFromBundle(cached)
+	}
+
+	mapping, err := s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, digest, []uuid.UUID{orgID}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("finding CAS mapping: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, &buf, digest); err != nil {
+		return nil, fmt.Errorf("downloading policy eval bundle: %w", err)
+	}
+
+	data := buf.Bytes()
+	_ = s.policyEvalCache.Set(ctx, digest, data)
+
+	return chainloop.PolicyEvaluationsFromBundle(data)
 }
 
 func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServiceListRequest) (*pb.WorkflowRunServiceListResponse, error) {
@@ -185,7 +242,24 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		verificationResult = bizVerificationToPb(vr)
 	}
 
-	attestation, err := bizAttestationToPb(run.Attestation)
+	var predicate chainloop.NormalizablePredicate
+	if run.Attestation != nil && run.Attestation.Envelope != nil {
+		predicate, err = chainloop.ExtractPredicate(run.Attestation.Envelope)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		if ref := predicate.GetPolicyEvaluationsRef(); ref != nil {
+			resolved, resolveErr := s.resolvePolicyEvaluations(ctx, ref, run.Workflow.OrgID)
+			if resolveErr != nil {
+				s.log.Warnw("msg", "failed to resolve policy evaluations from CAS, using inline", "err", resolveErr)
+			} else if resolved != nil {
+				predicate = &casResolvedPredicate{NormalizablePredicate: predicate, evals: resolved}
+			}
+		}
+	}
+
+	attestation, err := bizAttestationToPb(run.Attestation, predicate)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
