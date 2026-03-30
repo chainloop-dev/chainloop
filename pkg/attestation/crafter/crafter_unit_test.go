@@ -152,6 +152,30 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 			name:         "not a repository",
 			wantNoCommit: true,
 		},
+		{
+			name: "repo with unsupported extension degrades gracefully",
+			repoProvider: func(repoPath string) (*HeadCommit, error) {
+				// Init a repo and add a worktreeConfig extension to trigger
+				// go-git's strict extension validation (added in v5.17.0)
+				if _, err := git.PlainInit(repoPath, false); err != nil {
+					return nil, err
+				}
+
+				// Write the extension directly into the git config file
+				gitConfigPath := filepath.Join(repoPath, ".git", "config")
+				f, err := os.OpenFile(gitConfigPath, os.O_APPEND|os.O_WRONLY, 0o600)
+				if err != nil {
+					return nil, err
+				}
+				defer f.Close()
+				if _, err := f.WriteString("[extensions]\n\tworktreeConfig = true\n"); err != nil {
+					return nil, err
+				}
+
+				return nil, nil
+			},
+			wantNoCommit: true,
+		},
 	}
 
 	for _, tc := range testCases {
