@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -500,6 +500,9 @@ func (uc *WorkflowContractUseCase) ValidatePolicyAttachment(providerName string,
 	}
 
 	if err = provider.ValidateAttachment(att, token); err != nil {
+		if errors.Is(err, policies.ErrUnauthorized) {
+			return NewErrUnauthorized(fmt.Errorf("invalid attachment: %w", err))
+		}
 		return fmt.Errorf("invalid attachment: %w", err)
 	}
 
@@ -695,6 +698,9 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, policyOrg
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy %q", policyName))
 		}
+		if errors.Is(err, policies.ErrUnauthorized) {
+			return nil, NewErrUnauthorized(fmt.Errorf("failed to resolve policy %q: %w", policyName, err))
+		}
 
 		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
 	}
@@ -715,6 +721,9 @@ func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, group
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))
+		}
+		if errors.Is(err, policies.ErrUnauthorized) {
+			return nil, NewErrUnauthorized(fmt.Errorf("failed to resolve policy group %q: %w", groupName, err))
 		}
 
 		return nil, fmt.Errorf("failed to resolve policy: %w. Available providers: %s", err, uc.policyRegistry.GetProviderNames())
