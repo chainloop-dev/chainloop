@@ -287,14 +287,23 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 	return response.Digest, orgName, nil
 }
 
-// readBodyMsg reads the response body and returns it as a trimmed string.
-// If the body cannot be read, it returns the HTTP status instead.
+// readBodyMsg reads the response body and extracts a human-readable error message.
+// It tries to parse the body as JSON and extract the "reason" field (common in
+// Connect/gRPC error responses). Falls back to the raw body, or the HTTP status text.
 func readBodyMsg(resp *http.Response) string {
 	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 512))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1024))
 	if err != nil || len(body) == 0 {
 		return resp.Status
 	}
+
+	var structured struct {
+		Reason string `json:"reason"`
+	}
+	if json.Unmarshal(body, &structured) == nil && structured.Reason != "" {
+		return structured.Reason
+	}
+
 	return string(body)
 }
 

@@ -48,6 +48,13 @@ func TestResolveHTTPStatusHandling(t *testing.T) {
 			wantMsg:    "insufficient permissions",
 		},
 		{
+			name:       "401 with JSON reason extracts reason field",
+			statusCode: http.StatusUnauthorized,
+			body:       `{"level":"info","code":"unauthenticated","reason":"repository has no linked projects"}`,
+			wantErr:    ErrUnauthorized,
+			wantMsg:    "repository has no linked projects",
+		},
+		{
 			name:       "401 with empty body falls back to status text",
 			statusCode: http.StatusUnauthorized,
 			body:       "",
