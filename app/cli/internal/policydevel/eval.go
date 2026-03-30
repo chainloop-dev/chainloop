@@ -1,4 +1,4 @@
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -47,9 +48,10 @@ type EvalOptions struct {
 }
 
 type EvalResult struct {
-	Violations  []string `json:"violations"`
-	SkipReasons []string `json:"skip_reasons"`
-	Skipped     bool     `json:"skipped"`
+	Violations           []string          `json:"violations"`
+	StructuredViolations []json.RawMessage `json:"structured_violations,omitempty"`
+	SkipReasons          []string          `json:"skip_reasons"`
+	Skipped              bool              `json:"skipped"`
 }
 
 type EvalSummary struct {
@@ -136,9 +138,25 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 		},
 	}
 
-	// Collect violation messages
+	hasStructuredFindings := false
 	for _, v := range policyEv.Violations {
 		summary.Result.Violations = append(summary.Result.Violations, v.Message)
+		if v.GetFinding() != nil {
+			hasStructuredFindings = true
+		}
+	}
+
+	// Include structured violations when any violation has finding data
+	if hasStructuredFindings {
+		marshaler := protojson.MarshalOptions{UseProtoNames: true}
+		summary.Result.StructuredViolations = make([]json.RawMessage, 0, len(policyEv.Violations))
+		for _, v := range policyEv.Violations {
+			b, err := marshaler.Marshal(v)
+			if err != nil {
+				return nil, fmt.Errorf("marshaling structured violation: %w", err)
+			}
+			summary.Result.StructuredViolations = append(summary.Result.StructuredViolations, b)
+		}
 	}
 
 	// Include raw debug info if requested

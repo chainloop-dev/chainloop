@@ -1,0 +1,24 @@
+apiVersion: chainloop.dev/v1
+kind: Policy
+metadata:
+  name: sbom-structured-vuln
+  description: Policy that returns structured vulnerability violations
+  finding_type: VULNERABILITY
+spec:
+  policies:
+    - kind: SBOM_CYCLONEDX_JSON
+      embedded: |
+        package main
+
+        import rego.v1
+
+        violations contains v if {
+            comp := input.components[_]
+            v := {
+                "message": sprintf("Vulnerability found in %s@%s", [comp.name, comp.version]),
+                "external_id": "CVE-2024-1234",
+                "package_purl": sprintf("pkg:generic/%s@%s", [comp.name, comp.version]),
+                "severity": "HIGH",
+                "cvss_v3_score": 7.5,
+            }
+        }
