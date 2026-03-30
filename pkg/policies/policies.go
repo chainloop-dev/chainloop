@@ -758,6 +758,7 @@ func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findin
 	res := make([]*v12.PolicyEvaluation_Violation, 0)
 	var warnings []string
 	warnedNoFindingType := false
+	warnedNoStructuredData := false
 
 	for _, r := range results {
 		for _, v := range r.Violations {
@@ -780,7 +781,14 @@ func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findin
 				}
 
 			case findingType != "" && !hasStructuredData:
-				return nil, nil, fmt.Errorf("declares finding_type %q but violation is not a structured object", findingType)
+				// Policy declares a finding type but this violation is a plain string.
+				// This can happen when some evaluation branches do not support structured output yet.
+				// Fall back to treating it as a regular string violation without the typed finding.
+				if !warnedNoStructuredData {
+					warnings = append(warnings,
+						fmt.Sprintf("policy declares finding_type %q but some violations are plain strings — structured finding data will not be available for those", findingType))
+					warnedNoStructuredData = true
+				}
 
 			case findingType != "" && hasStructuredData:
 				finding, err := findings.ValidateFinding(findingType, v.RawFinding)
