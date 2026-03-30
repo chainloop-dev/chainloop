@@ -321,7 +321,13 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	})
 
 	if err != nil {
-		if errors.Is(err, git.ErrRepositoryNotExists) {
+		// go-git v5.17.0 introduced strict extension validation (go-git/go-git#1861)
+		// that rejects repos with extensions it doesn't fully support (e.g. worktreeConfig).
+		// Degrade gracefully instead of failing the attestation.
+		if errors.Is(err, git.ErrRepositoryNotExists) ||
+			errors.Is(err, git.ErrUnsupportedExtensionRepositoryFormatVersion) ||
+			errors.Is(err, git.ErrUnknownExtension) ||
+			errors.Is(err, git.ErrUnsupportedRepositoryFormatVersion) {
 			return nil, nil
 		}
 
