@@ -54,6 +54,7 @@ func (s *membershipIntegrationTestSuite) TestByOrg() {
 		s.Len(memberships, 1)
 		s.Equal(1, count)
 		s.Equal(memberships[0].OrganizationID.String(), userOrg.ID)
+		s.NotNil(memberships[0].User)
 		s.Equal(memberships[0].User.Email, user.Email)
 		s.Equal(memberships[0].Role, authz.RoleViewer)
 	})
@@ -63,6 +64,9 @@ func (s *membershipIntegrationTestSuite) TestByOrg() {
 		s.NoError(err)
 		s.Len(memberships, 2)
 		s.Equal(2, count)
+		for _, m := range memberships {
+			s.NotNil(m.User)
+		}
 	})
 
 	s.T().Run("non existing org", func(t *testing.T) {
