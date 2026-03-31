@@ -26,6 +26,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -48,10 +49,9 @@ type EvalOptions struct {
 }
 
 type EvalResult struct {
-	Violations           []string          `json:"violations"`
-	StructuredViolations []json.RawMessage `json:"structured_violations,omitempty"`
-	SkipReasons          []string          `json:"skip_reasons"`
-	Skipped              bool              `json:"skipped"`
+	Violations  []json.RawMessage `json:"violations"`
+	SkipReasons []string          `json:"skip_reasons"`
+	Skipped     bool              `json:"skipped"`
 }
 
 type EvalSummary struct {
@@ -134,29 +134,22 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 		Result: &EvalResult{
 			Skipped:     policyEv.GetSkipped(),
 			SkipReasons: policyEv.SkipReasons,
-			Violations:  make([]string, 0, len(policyEv.Violations)),
+			Violations:  make([]json.RawMessage, 0, len(policyEv.Violations)),
 		},
 	}
 
-	hasStructuredFindings := false
+	// Marshal violations using protojson to match the attestation storage format.
+	// Subject is cleared since it's redundant in eval context (always the policy name).
+	marshaler := protojson.MarshalOptions{UseProtoNames: true}
 	for _, v := range policyEv.Violations {
-		summary.Result.Violations = append(summary.Result.Violations, v.Message)
-		if v.GetFinding() != nil {
-			hasStructuredFindings = true
-		}
-	}
+		vc := proto.Clone(v).(*v12.PolicyEvaluation_Violation)
+		vc.Subject = ""
 
-	// Include structured violations when any violation has finding data
-	if hasStructuredFindings {
-		marshaler := protojson.MarshalOptions{UseProtoNames: true}
-		summary.Result.StructuredViolations = make([]json.RawMessage, 0, len(policyEv.Violations))
-		for _, v := range policyEv.Violations {
-			b, err := marshaler.Marshal(v)
-			if err != nil {
-				return nil, fmt.Errorf("marshaling structured violation: %w", err)
-			}
-			summary.Result.StructuredViolations = append(summary.Result.StructuredViolations, b)
+		b, err := marshaler.Marshal(vc)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling violation: %w", err)
 		}
+		summary.Result.Violations = append(summary.Result.Violations, b)
 	}
 
 	// Include raw debug info if requested
