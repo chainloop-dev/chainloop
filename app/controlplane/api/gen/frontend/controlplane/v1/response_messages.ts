@@ -392,6 +392,10 @@ export interface AttestationItem_PolicyEvaluationStatus {
   blocked: boolean;
   hasViolations: boolean;
   hasGatedViolations: boolean;
+  /** Total number of policy evaluations */
+  evaluationsCount: number;
+  /** Total number of policy violations across all evaluations */
+  violationsCount: number;
 }
 
 export interface AttestationItem_EnvVariable {
@@ -1698,7 +1702,15 @@ export const AttestationItem_PolicyEvaluationsEntry = {
 };
 
 function createBaseAttestationItem_PolicyEvaluationStatus(): AttestationItem_PolicyEvaluationStatus {
-  return { strategy: "", bypassed: false, blocked: false, hasViolations: false, hasGatedViolations: false };
+  return {
+    strategy: "",
+    bypassed: false,
+    blocked: false,
+    hasViolations: false,
+    hasGatedViolations: false,
+    evaluationsCount: 0,
+    violationsCount: 0,
+  };
 }
 
 export const AttestationItem_PolicyEvaluationStatus = {
@@ -1717,6 +1729,12 @@ export const AttestationItem_PolicyEvaluationStatus = {
     }
     if (message.hasGatedViolations === true) {
       writer.uint32(40).bool(message.hasGatedViolations);
+    }
+    if (message.evaluationsCount !== 0) {
+      writer.uint32(48).int32(message.evaluationsCount);
+    }
+    if (message.violationsCount !== 0) {
+      writer.uint32(56).int32(message.violationsCount);
     }
     return writer;
   },
@@ -1763,6 +1781,20 @@ export const AttestationItem_PolicyEvaluationStatus = {
 
           message.hasGatedViolations = reader.bool();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.evaluationsCount = reader.int32();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.violationsCount = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1779,6 +1811,8 @@ export const AttestationItem_PolicyEvaluationStatus = {
       blocked: isSet(object.blocked) ? Boolean(object.blocked) : false,
       hasViolations: isSet(object.hasViolations) ? Boolean(object.hasViolations) : false,
       hasGatedViolations: isSet(object.hasGatedViolations) ? Boolean(object.hasGatedViolations) : false,
+      evaluationsCount: isSet(object.evaluationsCount) ? Number(object.evaluationsCount) : 0,
+      violationsCount: isSet(object.violationsCount) ? Number(object.violationsCount) : 0,
     };
   },
 
@@ -1789,6 +1823,8 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.blocked !== undefined && (obj.blocked = message.blocked);
     message.hasViolations !== undefined && (obj.hasViolations = message.hasViolations);
     message.hasGatedViolations !== undefined && (obj.hasGatedViolations = message.hasGatedViolations);
+    message.evaluationsCount !== undefined && (obj.evaluationsCount = Math.round(message.evaluationsCount));
+    message.violationsCount !== undefined && (obj.violationsCount = Math.round(message.violationsCount));
     return obj;
   },
 
@@ -1807,6 +1843,8 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.blocked = object.blocked ?? false;
     message.hasViolations = object.hasViolations ?? false;
     message.hasGatedViolations = object.hasGatedViolations ?? false;
+    message.evaluationsCount = object.evaluationsCount ?? 0;
+    message.violationsCount = object.violationsCount ?? 0;
     return message;
   },
 };

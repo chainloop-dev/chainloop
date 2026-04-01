@@ -57,6 +57,10 @@ type PolicyEvaluationStatus struct {
 	HasViolations bool
 	// Whether the attestation has gated policy violations
 	HasGatedViolations bool
+	// Total number of policy evaluations
+	EvaluationsCount int
+	// Total number of policy violations across all evaluations
+	ViolationsCount int
 }
 
 type NormalizedMaterial struct {

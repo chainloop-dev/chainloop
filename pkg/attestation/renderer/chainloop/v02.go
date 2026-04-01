@@ -52,6 +52,10 @@ type ProvenancePredicateV02 struct {
 
 	// Whether the attestation has policy violations
 	PolicyHasViolations bool `json:"policyHasViolations"`
+	// Total number of policy evaluations
+	PolicyEvaluationsCount int `json:"policyEvaluationsCount"`
+	// Total number of policy violations across all evaluations
+	PolicyViolationsCount int `json:"policyViolationsCount"`
 	// Whether the attestation has policy violations in gated policies
 	PolicyHasGatedViolations bool `json:"policyHasGatedViolations,omitempty"`
 	// Whether we want to block the attestation on policy violations
@@ -234,7 +238,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error normalizing materials: %w", err)
 	}
 
-	policies, hasViolations, err := mappedPolicyEvaluations(r.att)
+	evalResult, err := mappedPolicyEvaluations(r.att)
 	if err != nil {
 		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
 	}
@@ -244,27 +248,21 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		policyCheckBlockingStrategy = PolicyViolationBlockingStrategyEnforced
 	}
 
-	// Determine if the attestation is blocked
 	// An attestation is blocked when:
 	// - any of the policies marked as gate has violations
 	// - or if there are any policy violations and the attestation is configured to be blocked on violations
 	// In all cases, if the bypass flag is set, the attestation is not blocked
-	gated := false
-	for _, eval := range r.att.PolicyEvaluations {
-		if len(eval.Violations) > 0 && eval.Gate {
-			gated = true
-			break
-		}
-	}
-	blocked := !r.att.GetBypassPolicyCheck() && (gated || hasViolations && r.att.GetBlockOnPolicyViolation())
+	blocked := !r.att.GetBypassPolicyCheck() && (evalResult.hasGatedViolations || (evalResult.hasViolations && r.att.GetBlockOnPolicyViolation()))
 
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon:   predicateCommon(r.builder, r.att),
 		Materials:                   normalizedMaterials,
-		PolicyEvaluations:           policies,
+		PolicyEvaluations:           evalResult.evaluations,
 		PolicyEvaluationsRef:        r.policyEvaluationsRef,
-		PolicyHasViolations:         hasViolations,
-		PolicyHasGatedViolations:    gated,
+		PolicyHasViolations:         evalResult.hasViolations,
+		PolicyEvaluationsCount:      evalResult.evaluationsCount,
+		PolicyViolationsCount:       evalResult.violationsCount,
+		PolicyHasGatedViolations:    evalResult.hasGatedViolations,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
 		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
 		PolicyAttBlocked:            blocked,
@@ -288,7 +286,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	return predicate, nil
 }
 
-func mappedPolicyEvaluations(att *v1.Attestation) (map[string][]*PolicyEvaluation, bool, error) {
+func mappedPolicyEvaluations(att *v1.Attestation) (*evaluationsResult, error) {
 	return groupEvaluations(att.GetPolicyEvaluations())
 }
 
@@ -300,13 +298,25 @@ func PolicyEvaluationsFromBundle(data []byte) (map[string][]*PolicyEvaluation, e
 		return nil, fmt.Errorf("unmarshaling policy evaluation bundle: %w", err)
 	}
 
-	evals, _, err := groupEvaluations(bundle.GetEvaluations())
-	return evals, err
+	res, err := groupEvaluations(bundle.GetEvaluations())
+	if err != nil {
+		return nil, err
+	}
+	return res.evaluations, nil
 }
 
-func groupEvaluations(evals []*v1.PolicyEvaluation) (map[string][]*PolicyEvaluation, bool, error) {
-	var hasViolations bool
-	result := make(map[string][]*PolicyEvaluation)
+type evaluationsResult struct {
+	evaluations        map[string][]*PolicyEvaluation
+	hasViolations      bool
+	hasGatedViolations bool
+	evaluationsCount   int
+	violationsCount    int
+}
+
+func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) {
+	res := &evaluationsResult{
+		evaluations: make(map[string][]*PolicyEvaluation),
+	}
 
 	for _, p := range evals {
 		keyName := p.MaterialName
@@ -316,17 +326,22 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (map[string][]*PolicyEvaluat
 
 		ev, err := renderEvaluation(p)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 
 		if len(ev.Violations) > 0 {
-			hasViolations = true
+			res.hasViolations = true
+			res.violationsCount += len(ev.Violations)
+			if ev.Gate {
+				res.hasGatedViolations = true
+			}
 		}
 
-		result[keyName] = append(result[keyName], ev)
+		res.evaluations[keyName] = append(res.evaluations[keyName], ev)
 	}
 
-	return result, hasViolations, nil
+	res.evaluationsCount = len(evals)
+	return res, nil
 }
 
 func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
@@ -454,6 +469,8 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationSt
 		Blocked:            p.PolicyAttBlocked,
 		HasViolations:      p.PolicyHasViolations,
 		HasGatedViolations: p.PolicyHasGatedViolations,
+		EvaluationsCount:   p.PolicyEvaluationsCount,
+		ViolationsCount:    p.PolicyViolationsCount,
 	}
 }
 

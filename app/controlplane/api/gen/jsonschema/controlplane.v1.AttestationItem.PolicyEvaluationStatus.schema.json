@@ -3,11 +3,23 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(evaluationsCount)$": {
+      "description": "Total number of policy evaluations",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
     "^(hasGatedViolations)$": {
       "type": "boolean"
     },
     "^(hasViolations)$": {
       "type": "boolean"
+    },
+    "^(violationsCount)$": {
+      "description": "Total number of policy violations across all evaluations",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
     }
   },
   "properties": {
@@ -17,6 +29,12 @@
     "bypassed": {
       "type": "boolean"
     },
+    "evaluations_count": {
+      "description": "Total number of policy evaluations",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
     "has_gated_violations": {
       "type": "boolean"
     },
@@ -25,6 +43,12 @@
     },
     "strategy": {
       "type": "string"
+    },
+    "violations_count": {
+      "description": "Total number of policy violations across all evaluations",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
     }
   },
   "title": "Policy Evaluation Status",

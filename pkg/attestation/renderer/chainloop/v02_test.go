@@ -492,6 +492,124 @@ func TestPolicyEvaluationsFromBundle(t *testing.T) {
 	}
 }
 
+func TestGroupEvaluationsCounts(t *testing.T) {
+	tests := []struct {
+		name                string
+		evals               []*api.PolicyEvaluation
+		wantEvalCount       int
+		wantViolCount       int
+		wantViolations      bool
+		wantGatedViolations bool
+	}{
+		{
+			name:          "no evaluations",
+			evals:         nil,
+			wantEvalCount: 0,
+			wantViolCount: 0,
+		},
+		{
+			name: "evaluations without violations",
+			evals: []*api.PolicyEvaluation{
+				{Name: "check-1", MaterialName: "sbom"},
+				{Name: "check-2", MaterialName: "sarif"},
+			},
+			wantEvalCount: 2,
+			wantViolCount: 0,
+		},
+		{
+			name: "evaluations with violations",
+			evals: []*api.PolicyEvaluation{
+				{
+					Name:         "check-1",
+					MaterialName: "sbom",
+					Violations: []*api.PolicyEvaluation_Violation{
+						{Subject: "s1", Message: "m1"},
+						{Subject: "s2", Message: "m2"},
+					},
+				},
+				{Name: "check-2", MaterialName: "sbom"},
+				{
+					Name:         "check-3",
+					MaterialName: "sarif",
+					Violations: []*api.PolicyEvaluation_Violation{
+						{Subject: "s3", Message: "m3"},
+					},
+				},
+			},
+			wantEvalCount:  3,
+			wantViolCount:  3,
+			wantViolations: true,
+		},
+		{
+			name: "single evaluation with multiple violations",
+			evals: []*api.PolicyEvaluation{
+				{
+					Name:         "check-1",
+					MaterialName: "image",
+					Violations: []*api.PolicyEvaluation_Violation{
+						{Subject: "CVE-1", Message: "critical"},
+						{Subject: "CVE-2", Message: "high"},
+						{Subject: "CVE-3", Message: "medium"},
+					},
+				},
+			},
+			wantEvalCount:  1,
+			wantViolCount:  3,
+			wantViolations: true,
+		},
+		{
+			name: "gated evaluation with violations",
+			evals: []*api.PolicyEvaluation{
+				{
+					Name:         "gated-check",
+					MaterialName: "sbom",
+					Gate:         true,
+					Violations: []*api.PolicyEvaluation_Violation{
+						{Subject: "s1", Message: "m1"},
+					},
+				},
+				{Name: "check-2", MaterialName: "sbom"},
+			},
+			wantEvalCount:       2,
+			wantViolCount:       1,
+			wantViolations:      true,
+			wantGatedViolations: true,
+		},
+		{
+			name: "gated evaluation without violations",
+			evals: []*api.PolicyEvaluation{
+				{Name: "gated-check", MaterialName: "sbom", Gate: true},
+			},
+			wantEvalCount: 1,
+			wantViolCount: 0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := groupEvaluations(tc.evals)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantEvalCount, res.evaluationsCount)
+			assert.Equal(t, tc.wantViolCount, res.violationsCount)
+			assert.Equal(t, tc.wantViolations, res.hasViolations)
+			assert.Equal(t, tc.wantGatedViolations, res.hasGatedViolations)
+		})
+	}
+}
+
+func TestPolicyEvaluationStatusCounts(t *testing.T) {
+	p := &ProvenancePredicateV02{
+		PolicyEvaluationsCount: 5,
+		PolicyViolationsCount:  2,
+		PolicyHasViolations:    true,
+	}
+
+	status := p.GetPolicyEvaluationStatus()
+	assert.Equal(t, 5, status.EvaluationsCount)
+	assert.Equal(t, 2, status.ViolationsCount)
+	assert.True(t, status.HasViolations)
+}
+
 func TestPolicyEvaluationsField(t *testing.T) {
 	raw, err := os.ReadFile("testdata/attestation-pe-snake.json")
 	require.NoError(t, err)

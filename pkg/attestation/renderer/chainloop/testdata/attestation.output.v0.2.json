@@ -117,7 +117,9 @@
         }
       ]
     },
+    "policyEvaluationsCount": 1,
     "policyHasViolations": true,
+    "policyViolationsCount": 1,
     "runnerType": "GITHUB_ACTION"
   }
 }

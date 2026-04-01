@@ -121,7 +121,9 @@
     "policyAttBlocked": false,
     "policyBlockBypassEnabled": false,
     "policyCheckBlockingStrategy": "ADVISORY",
+    "policyEvaluationsCount": 0,
     "policyHasViolations": false,
+    "policyViolationsCount": 0,
     "runnerType": "RUNNER_TYPE_UNSPECIFIED"
   }
 }
