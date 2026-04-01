@@ -117,6 +117,10 @@ message AttestationItem {
     bool blocked = 3;
     bool has_violations = 4;
     bool has_gated_violations = 5;
+    // Total number of policy evaluations
+    int32 evaluations_count = 6;
+    // Total number of policy violations across all evaluations
+    int32 violations_count = 7;
   }
 
   message EnvVariable {

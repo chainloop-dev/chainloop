@@ -563,6 +563,8 @@ func bizAttestationToPb(att *biz.Attestation, predicate chainloop.NormalizablePr
 			Blocked:            policyEvaluationStatus.Blocked,
 			HasViolations:      policyEvaluationStatus.HasViolations,
 			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
+			EvaluationsCount:   int32(policyEvaluationStatus.EvaluationsCount),
+			ViolationsCount:    int32(policyEvaluationStatus.ViolationsCount),
 		},
 		Bundle: att.Bundle,
 	}, nil
