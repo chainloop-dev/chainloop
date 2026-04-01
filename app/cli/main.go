@@ -16,6 +16,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd"
@@ -87,13 +88,24 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 	case v1.IsCasBackendErrorReasonInvalid(err):
 		msg = "the CAS backend you provided is invalid. Refer to `chainloop cas-backend update` command or contact your administrator."
 	case isWrappedErr(st, jwtMiddleware.ErrTokenExpired):
-		msg = "your authentication token has expired, please run chainloop auth login again"
+		msg = "your authentication token has expired, please run \"chainloop auth login\" again"
+	case isWrappedErr(st, jwtMiddleware.ErrTokenInvalid):
+		msg = "your authentication token is invalid, please run \"chainloop auth login\" again"
+	case isWrappedErr(st, jwtMiddleware.ErrTokenParseFail):
+		msg = "failed to parse authentication token, please run \"chainloop auth login\" again"
 	case isWrappedErr(st, jwtMiddleware.ErrMissingJwtToken):
 		msg = "authentication required, please run \"chainloop auth login\""
 	case v1.IsUserNotMemberOfOrgErrorNotInOrg(err):
 		msg = "the organization you are trying to access does not exist or you are not part of it, please run \"chainloop auth login\""
 	case v1.IsUserWithNoMembershipErrorNotInOrg(err):
 		msg = "you are not part of any organization, please run \"chainloop organization create --name ORG_NAME\" to create one"
+	case isUnmatchedAuthErr(st):
+		// Fallback for any other 401/Unauthenticated errors not matched above.
+		// Org-membership errors (IsUserNotMemberOfOrgErrorNotInOrg,
+		// IsUserWithNoMembershipErrorNotInOrg) use gRPC code 7 (PermissionDenied),
+		// not code 16 (Unauthenticated), so shadowing is structurally impossible.
+		// We keep this case ordered after them purely for readability/clarity.
+		msg = fmt.Sprintf("authentication error: %s", st.Message())
 	case errors.As(err, &cmd.GracefulError{}):
 		// Graceful recovery if the flag is set and the received error is marked as recoverable
 		if cmd.GracefulExit {
@@ -110,12 +122,21 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 
 // target is the expected error
 // grpcStatus is the actual error that might be wrapped in both the status and the error
+//
+// NOTE: We intentionally do NOT use kratos errors.Is() here because it only
+// compares Code and Reason. Since all JWT errors share the same Code (401) and
+// Reason ("UNAUTHORIZED"), errors.Is() would match any 401 error against any
+// JWT sentinel — causing e.g. "token invalid" to be reported as "token expired".
+// Instead we compare Code and Message, which carry the distinguishing text.
 func isWrappedErr(grpcStatus *status.Status, target *errors.Error) bool {
 	err := errors.FromError(grpcStatus.Err())
-	// The error might be wrapped since the CLI sometimes returns a wrapped error
-	if errors.Is(err, target) {
-		return true
-	}
-
 	return target.Code == err.Code && err.Message == target.Message
+}
+
+// isUnmatchedAuthErr returns true when the gRPC status represents an
+// Unauthenticated (401-equivalent) error that was not matched by any of the
+// specific JWT sentinel checks above. This lets us surface the server's
+// original message instead of silently dropping it.
+func isUnmatchedAuthErr(grpcStatus *status.Status) bool {
+	return grpcStatus.Code() == codes.Unauthenticated
 }
