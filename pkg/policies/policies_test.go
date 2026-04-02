@@ -17,6 +17,7 @@ package policies
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"os"
 	"testing"
@@ -1357,6 +1358,89 @@ func (s *testSuite) TestShouldEvaluateAtPhase() {
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
 			s.Equal(tc.want, shouldEvaluateAtPhase(tc.phases, tc.phase))
+		})
+	}
+}
+
+func (s *testSuite) TestUndefinedBuiltinGracefulDegradation() {
+	content, err := os.ReadFile("testdata/sbom-spdx.json")
+	s.Require().NoError(err)
+
+	schema := &v12.CraftingSchema{
+		Policies: &v12.Policies{
+			Materials: []*v12.PolicyAttachment{
+				{
+					Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/policy_undefined_builtin.yaml"},
+				},
+			},
+		},
+	}
+	material := &v1.Attestation_Material{
+		M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+			Content: content,
+		}},
+		MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+		InlineCas:    true,
+	}
+
+	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
+
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	s.Require().NoError(err, "undefined chainloop builtin should not cause a hard error")
+	s.Require().Len(res, 1)
+	s.True(res[0].Skipped, "policy should be marked as skipped")
+	s.Require().Len(res[0].SkipReasons, 1)
+	s.Contains(res[0].SkipReasons[0], "chainloop.nonexistent")
+	s.Contains(res[0].SkipReasons[0], "please upgrade")
+	s.Empty(res[0].Violations, "skipped policy should have no violations")
+}
+
+func (s *testSuite) TestUndefinedChainloopBuiltins() {
+	cases := []struct {
+		name   string
+		err    error
+		expect []string
+	}{
+		{
+			name:   "single chainloop builtin",
+			err:    fmt.Errorf("failed to evaluate policy: 1 error occurred: vulnerabilities:115: rego_type_error: undefined function chainloop.vulnerability"),
+			expect: []string{"chainloop.vulnerability"},
+		},
+		{
+			name:   "wrapped chainloop builtin",
+			err:    fmt.Errorf("failed to execute policy: %w", fmt.Errorf("rego_type_error: undefined function chainloop.nonexistent")),
+			expect: []string{"chainloop.nonexistent"},
+		},
+		{
+			name:   "multiple chainloop builtins",
+			err:    fmt.Errorf("rego_type_error: undefined function chainloop.foo\nrego_type_error: undefined function chainloop.bar"),
+			expect: []string{"chainloop.foo", "chainloop.bar"},
+		},
+		{
+			name:   "blocked OPA function is not caught",
+			err:    fmt.Errorf("rego_type_error: undefined function opa.runtime"),
+			expect: nil,
+		},
+		{
+			name:   "blocked trace function is not caught",
+			err:    fmt.Errorf("rego_type_error: undefined function trace"),
+			expect: nil,
+		},
+		{
+			name:   "regular evaluation error",
+			err:    fmt.Errorf("failed to evaluate policy: some other error"),
+			expect: nil,
+		},
+		{
+			name:   "syntax error",
+			err:    fmt.Errorf("rego_parse_error: unexpected token"),
+			expect: nil,
+		},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			s.Equal(tc.expect, undefinedChainloopBuiltins(tc.err))
 		})
 	}
 }
