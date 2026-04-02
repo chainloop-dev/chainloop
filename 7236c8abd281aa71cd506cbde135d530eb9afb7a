@@ -1,0 +1,29 @@
+pkg/policies/testdata/policy_undefined_builtin.yaml
+  496c2cef13ca828c 1-8
+pkg/policies/testdata/policy_undefined_builtin.rego
+  496c2cef13ca828c 1-26
+pkg/policies/policies.go
+  496c2cef13ca828c 25,595-608,615-630
+pkg/policies/policies_test.go
+  496c2cef13ca828c 20,1365-1447
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.4",
+  "base_commit_sha": "7236c8abd281aa71cd506cbde135d530eb9afb7a",
+  "prompts": {
+    "496c2cef13ca828c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ffae6b6a-55fd-40bb-990d-707f321417f0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 178,
+      "total_deletions": 27,
+      "accepted_lines": 149,
+      "overriden_lines": 0
+    }
+  }
+}
