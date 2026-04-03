@@ -1,0 +1,21 @@
+{
+  "platform": "github",
+  "type": "pull_request",
+  "number": "42",
+  "title": "Add schema validators",
+  "url": "https://github.com/chainloop-dev/chainloop/pull/42",
+  "source_branch": "feat/schema-validators",
+  "target_branch": "main",
+  "author": {
+    "login": "octocat",
+    "type": "User"
+  },
+  "reviewers": [
+    {
+      "login": "reviewer1",
+      "type": "User",
+      "requested": true,
+      "review_status": "APPROVED"
+    }
+  ]
+}
