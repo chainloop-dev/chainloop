@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	attestationApi "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
@@ -66,13 +65,17 @@ func TestNewSPDXJSONCrafter(t *testing.T) {
 
 func TestSPDXJSONCraft(t *testing.T) {
 	testCases := []struct {
-		name              string
-		filePath          string
-		wantErr           string
-		wantDigest        string
-		wantFilename      string
-		annotations       map[string]string
-		absentAnnotations []string
+		name                     string
+		filePath                 string
+		wantErr                  string
+		wantDigest               string
+		wantFilename             string
+		wantMainComponent        string
+		wantMainComponentKind    string
+		wantMainComponentVersion string
+		wantNoMainComponent      bool
+		annotations              map[string]string
+		absentAnnotations        []string
 	}{
 		{
 			name:     "invalid sbom format",
@@ -90,10 +93,11 @@ func TestSPDXJSONCraft(t *testing.T) {
 			wantErr:  "unexpected material type",
 		},
 		{
-			name:         "valid artifact type",
-			filePath:     "./testdata/sbom-spdx.json",
-			wantDigest:   "sha256:fe2636fb6c698a29a315278b762b2000efd5959afe776ee4f79f1ed523365a33",
-			wantFilename: "sbom-spdx.json",
+			name:                "valid artifact type (no described package)",
+			filePath:            "./testdata/sbom-spdx.json",
+			wantDigest:          "sha256:fe2636fb6c698a29a315278b762b2000efd5959afe776ee4f79f1ed523365a33",
+			wantFilename:        "sbom-spdx.json",
+			wantNoMainComponent: true,
 			annotations: map[string]string{
 				"chainloop.material.tool.name":    "syft",
 				"chainloop.material.tool.version": "0.73.0",
@@ -132,6 +136,46 @@ func TestSPDXJSONCraft(t *testing.T) {
 				"chainloop.material.tools":        `["spdxgen@1.0.0","scanner@2.1.5"]`,
 			},
 		},
+		{
+			name:                     "with described application package",
+			filePath:                 "./testdata/sbom-spdx-with-described-package.json",
+			wantDigest:               "sha256:c6aaa874345f9d309f1b7a3e1cdb00817c91326fcc8ede9507dce882b0efdf16",
+			wantFilename:             "sbom-spdx-with-described-package.json",
+			wantMainComponent:        "my-app",
+			wantMainComponentKind:    "application",
+			wantMainComponentVersion: "1.2.3",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "syft",
+				"chainloop.material.tool.version": "0.100.0",
+				"chainloop.material.tools":        `["syft@0.100.0"]`,
+			},
+		},
+		{
+			name:                     "with described container package",
+			filePath:                 "./testdata/sbom-spdx-container.json",
+			wantDigest:               "sha256:47df762774170904a7ab6bf0c565a2c525b60c3f92f9484744f9aafc631ce307",
+			wantFilename:             "sbom-spdx-container.json",
+			wantMainComponent:        "ghcr.io/chainloop-dev/chainloop/control-plane",
+			wantMainComponentKind:    "container",
+			wantMainComponentVersion: "sha256:abcdef1234567890",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "trivy",
+				"chainloop.material.tool.version": "0.50.0",
+				"chainloop.material.tools":        `["trivy@0.50.0"]`,
+			},
+		},
+		{
+			name:                "described package without PrimaryPackagePurpose (optional in SPDX 2.3)",
+			filePath:            "./testdata/sbom-spdx-no-purpose.json",
+			wantDigest:          "sha256:140b55bcbdd447fee1c86d50d8459b05159bebcd80a8a8da4ea6475eeab2f487",
+			wantFilename:        "sbom-spdx-no-purpose.json",
+			wantNoMainComponent: true,
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "syft",
+				"chainloop.material.tool.version": "0.100.0",
+				"chainloop.material.tools":        `["syft@0.100.0"]`,
+			},
+		},
 	}
 
 	assert := assert.New(t)
@@ -166,10 +210,22 @@ func TestSPDXJSONCraft(t *testing.T) {
 			assert.Equal(contractAPI.CraftingSchema_Material_SBOM_SPDX_JSON.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
-			// The result includes the digest reference
-			assert.Equal(got.GetArtifact(), &attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: tc.wantDigest, Name: tc.wantFilename,
-			})
+			// The result wraps the artifact in SbomArtifact
+			sbomArtifact := got.GetSbomArtifact()
+			require.NotNil(t, sbomArtifact)
+			assert.Equal(tc.wantDigest, sbomArtifact.Artifact.Digest)
+			assert.Equal(tc.wantFilename, sbomArtifact.Artifact.Name)
+			assert.Equal("test", sbomArtifact.Artifact.Id)
+
+			// Validate main component extraction
+			if tc.wantNoMainComponent {
+				assert.Nil(sbomArtifact.MainComponent)
+			} else if tc.wantMainComponent != "" {
+				require.NotNil(t, sbomArtifact.MainComponent)
+				assert.Equal(tc.wantMainComponent, sbomArtifact.MainComponent.Name)
+				assert.Equal(tc.wantMainComponentKind, sbomArtifact.MainComponent.Kind)
+				assert.Equal(tc.wantMainComponentVersion, sbomArtifact.MainComponent.Version)
+			}
 
 			// Validate annotations if specified
 			if tc.annotations != nil {
