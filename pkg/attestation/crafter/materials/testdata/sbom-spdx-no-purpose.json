@@ -1,0 +1,34 @@
+{
+ "spdxVersion": "SPDX-2.3",
+ "dataLicense": "CC0-1.0",
+ "SPDXID": "SPDXRef-DOCUMENT",
+ "name": "my-lib",
+ "documentNamespace": "https://example.com/test/my-lib-9999",
+ "creationInfo": {
+  "licenseListVersion": "3.20",
+  "creators": [
+   "Organization: Example, Inc",
+   "Tool: syft-0.100.0"
+  ],
+  "created": "2024-01-15T10:00:00Z"
+ },
+ "packages": [
+  {
+   "name": "my-lib",
+   "SPDXID": "SPDXRef-Package-my-lib",
+   "versionInfo": "2.0.0",
+   "downloadLocation": "https://example.com/my-lib",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION",
+   "supplier": "Organization: Example, Inc"
+  }
+ ],
+ "relationships": [
+  {
+   "spdxElementId": "SPDXRef-DOCUMENT",
+   "relatedSpdxElement": "SPDXRef-Package-my-lib",
+   "relationshipType": "DESCRIBES"
+  }
+ ]
+}

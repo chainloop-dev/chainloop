@@ -1,0 +1,49 @@
+{
+ "spdxVersion": "SPDX-2.3",
+ "dataLicense": "CC0-1.0",
+ "SPDXID": "SPDXRef-DOCUMENT",
+ "name": "ghcr.io/chainloop-dev/chainloop/control-plane",
+ "documentNamespace": "https://example.com/test/control-plane-5678",
+ "creationInfo": {
+  "licenseListVersion": "3.20",
+  "creators": [
+   "Organization: Example, Inc",
+   "Tool: trivy-0.50.0"
+  ],
+  "created": "2024-01-15T10:00:00Z"
+ },
+ "packages": [
+  {
+   "name": "ghcr.io/chainloop-dev/chainloop/control-plane:v0.55.0",
+   "SPDXID": "SPDXRef-Package-control-plane",
+   "versionInfo": "sha256:abcdef1234567890",
+   "downloadLocation": "NOASSERTION",
+   "primaryPackagePurpose": "CONTAINER",
+   "licenseConcluded": "NOASSERTION",
+   "licenseDeclared": "NOASSERTION",
+   "copyrightText": "NOASSERTION",
+   "supplier": "Organization: Chainloop"
+  },
+  {
+   "name": "libc",
+   "SPDXID": "SPDXRef-Package-libc",
+   "versionInfo": "2.31",
+   "downloadLocation": "NOASSERTION",
+   "licenseConcluded": "GPL-2.0-only",
+   "licenseDeclared": "GPL-2.0-only",
+   "copyrightText": "NOASSERTION"
+  }
+ ],
+ "relationships": [
+  {
+   "spdxElementId": "SPDXRef-DOCUMENT",
+   "relatedSpdxElement": "SPDXRef-Package-control-plane",
+   "relationshipType": "DESCRIBES"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-control-plane",
+   "relatedSpdxElement": "SPDXRef-Package-libc",
+   "relationshipType": "CONTAINS"
+  }
+ ]
+}
