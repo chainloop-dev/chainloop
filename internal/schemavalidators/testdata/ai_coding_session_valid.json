@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1",
+  "agent": {
+    "name": "claude-code",
+    "version": "1.0.0"
+  },
+  "session": {
+    "id": "sess-abc123",
+    "slug": "fix-bug",
+    "started_at": "2026-01-15T10:00:00Z",
+    "ended_at": "2026-01-15T10:30:00Z",
+    "duration_seconds": 1800
+  }
+}
