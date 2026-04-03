@@ -539,6 +539,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 		expectedType   schemaapi.CraftingSchema_Material_MaterialType
 		uploadArtifact bool
 		wantErr        bool
+		wantErrMsg     string
 	}{
 		{
 			name:         "sarif",
@@ -593,6 +594,36 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			wantErr:        true,
 			uploadArtifact: true,
 		},
+		{
+			name:           "non-dns-1123 name surfaces clear error",
+			materialName:   "My_Invalid.Name",
+			materialPath:   "./materials/testdata/report.sarif",
+			wantErr:        true,
+			wantErrMsg:     "must be DNS-1123 compliant",
+			uploadArtifact: true, // no uploader interaction expected
+		},
+		{
+			name:           "uppercase name surfaces dns-1123 error",
+			materialName:   "MyMaterial",
+			materialPath:   "random-string",
+			wantErr:        true,
+			wantErrMsg:     "must be DNS-1123 compliant",
+			uploadArtifact: true,
+		},
+		{
+			// This test exercises the auto-discovery loop with a valid DNS-1123 name
+			// but content (empty string) that every material kind rejects during Craft.
+			// File-based kinds fail because empty string is not a file path. The STRING kind
+			// crafts successfully but fails proto validation (KeyVal.Value min_len=1).
+			// This verifies the shadowing fix (= instead of :=) works: the error from
+			// the loop is properly propagated instead of being nil.
+			name:           "valid dns name with empty value surfaces crafting error",
+			materialName:   "my-material",
+			materialPath:   "",
+			wantErr:        true,
+			wantErrMsg:     "validation error",
+			uploadArtifact: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -613,7 +644,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 
 			// Establishing a maximum size for the artifact to be uploaded to the CAS causes an error
 			// if the value is exceeded
-			if tc.wantErr {
+			if tc.wantErr && tc.wantErrMsg == "" {
 				backend.MaxSize = 1
 			}
 
@@ -622,10 +653,15 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 
 			m, err := c.AddMaterialContactFreeWithAutoDetectedKind(context.Background(), "random-id", tc.materialName, tc.materialPath, backend, nil)
 			if tc.wantErr {
-				assert.ErrorIs(s.T(), err, materials.ErrBaseUploadAndCraft)
-			} else {
-				require.NoError(s.T(), err)
+				require.Error(s.T(), err)
+				if tc.wantErrMsg != "" {
+					assert.Contains(s.T(), err.Error(), tc.wantErrMsg)
+				} else {
+					assert.ErrorIs(s.T(), err, materials.ErrBaseUploadAndCraft)
+				}
+				return
 			}
+			require.NoError(s.T(), err)
 			kind := m.GetMaterialType()
 			assert.Equal(s.T(), tc.expectedType.String(), kind.String())
 			if tc.materialName != "" {
