@@ -41,7 +41,7 @@ type AuditLogPublisher struct {
 	logger *log.Helper
 }
 
-func NewAuditLogPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) (*AuditLogPublisher, error) {
+func NewAuditLogPublisher(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (*AuditLogPublisher, error) {
 	l := log.NewHelper(log.With(logger, "component", "natsAuditLogPublisher"))
 	if rc == nil {
 		l.Infow("msg", "NATS connection not set, audit log publisher disabled")
@@ -54,7 +54,7 @@ func NewAuditLogPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) 
 		return nil, err
 	}
 
-	go p.watchReconnect(rc.Subscribe(context.Background()))
+	go p.watchReconnect(rc.Subscribe(ctx))
 
 	return p, nil
 }

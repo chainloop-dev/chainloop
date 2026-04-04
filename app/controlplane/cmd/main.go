@@ -144,7 +144,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins)
+	app, cleanup, err := wireApp(ctx, &bc, credsWriter, logger, availablePlugins)
 	if err != nil {
 		panic(err)
 	}

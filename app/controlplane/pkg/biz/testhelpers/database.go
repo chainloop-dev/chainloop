@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ func NewTestingUseCases(t *testing.T, opts ...NewTestingUCOpt) *TestingUseCases 
 
 	db := NewTestDatabase(t)
 	log := log.NewStdLogger(io.Discard)
-	testData, _, err := WireTestData(db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{
+	testData, _, err := WireTestData(t.Context(), db, t, log, newArgs.credsReaderWriter, &robotaccount.Builder{}, &conf.Auth{
 		GeneratedJwsHmacSecret:        "test",
 		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
 	}, &conf.Bootstrap{}, newArgs.onboardingConfiguration, newArgs.integrations, newArgs.providers)
