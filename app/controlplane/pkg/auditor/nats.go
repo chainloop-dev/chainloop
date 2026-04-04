@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -37,20 +38,34 @@ const (
 )
 
 type AuditLogPublisher struct {
-	conn   *nats.Conn
+	mu     sync.RWMutex
+	rc     *natsconn.ReloadableConnection
+	js     jetstream.JetStream
 	logger *log.Helper
 }
 
-func NewAuditLogPublisher(conn *nats.Conn, logger log.Logger) (*AuditLogPublisher, error) {
+func NewAuditLogPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) (*AuditLogPublisher, error) {
 	l := log.NewHelper(log.With(logger, "component", "natsAuditLogPublisher"))
-	if conn == nil {
+	if rc == nil {
 		l.Infow("msg", "NATS connection not set, audit log publisher disabled")
 		return nil, nil
 	}
 
-	js, err := jetstream.New(conn)
+	p := &AuditLogPublisher{rc: rc, logger: l}
+
+	if err := p.initJetStream(); err != nil {
+		return nil, err
+	}
+
+	go p.watchReconnect(rc.Subscribe(context.Background()))
+
+	return p, nil
+}
+
+func (p *AuditLogPublisher) initJetStream() error {
+	js, err := jetstream.New(p.rc.Conn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create jetstream context: %w", err)
+		return fmt.Errorf("creating jetstream context: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -60,26 +75,38 @@ func NewAuditLogPublisher(conn *nats.Conn, logger log.Logger) (*AuditLogPublishe
 		Name:     streamName,
 		Subjects: []string{subjectName},
 	}); err != nil {
-		return nil, fmt.Errorf("failed to create stream: %w", err)
+		return fmt.Errorf("creating stream: %w", err)
 	}
 
-	l.Infow("msg", "Stream Created or Updated", "name", streamName, "subject", subjectName)
+	p.mu.Lock()
+	p.js = js
+	p.mu.Unlock()
 
-	return &AuditLogPublisher{conn, l}, nil
+	p.logger.Infow("msg", "stream created or updated", "name", streamName, "subject", subjectName)
+
+	return nil
 }
 
-func (n *AuditLogPublisher) Publish(data *EventPayload) error {
-	// If the connection is nil, we don't want to publish anything
-	if n == nil || n.conn == nil {
+func (p *AuditLogPublisher) watchReconnect(ch <-chan struct{}) {
+	for range ch {
+		p.logger.Infow("msg", "NATS reconnected, reinitializing JetStream")
+		if err := p.initJetStream(); err != nil {
+			p.logger.Errorw("msg", "failed to reinitialize JetStream after reconnect", "error", err)
+		}
+	}
+}
+
+func (p *AuditLogPublisher) Publish(data *EventPayload) error {
+	if p == nil || p.rc == nil {
 		return nil
 	}
 
 	jsonPayload, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("failed to marshal event payload: %w", err)
+		return fmt.Errorf("marshaling event payload: %w", err)
 	}
 
 	// Send the event to the specific subject based on the event type "audit.<target_type>.<action_type>"
 	specificSubject := fmt.Sprintf("%s.%s.%s", baseSubjectName, strings.ToLower(string(data.Data.TargetType)), strings.ToLower(data.Data.ActionType))
-	return n.conn.Publish(specificSubject, jsonPayload)
+	return p.rc.Publish(specificSubject, jsonPayload)
 }

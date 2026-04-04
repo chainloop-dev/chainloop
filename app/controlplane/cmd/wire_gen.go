@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -22,10 +23,10 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/wire"
-	"github.com/nats-io/nats.go"
 	"time"
 )
 
@@ -60,12 +61,13 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	bootstrap_CASServer := bootstrap.CasServer
 	casServerDefaultOpts := newCASServerOptions(bootstrap_CASServer)
 	bootstrap_NatsServer := bootstrap.NatsServer
-	conn, err := newNatsConnection(bootstrap_NatsServer)
+	natsconnConfig := newNatsConfig(bootstrap_NatsServer)
+	reloadableConnection, err := natsconn.New(natsconnConfig, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
+	auditLogPublisher, err := auditor.NewAuditLogPublisher(reloadableConnection, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -141,12 +143,12 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, organizationRepo, logger)
-	cache, err := newMembershipsCache(conn, logger)
+	cache, err := newMembershipsCache(reloadableConnection, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	cacheCache, err := newClaimsCache(conn, logger)
+	cacheCache, err := newClaimsCache(reloadableConnection, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -181,7 +183,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
-	cache2, err := newPolicyEvalBundleCache(conn, logger)
+	cache2, err := newPolicyEvalBundleCache(reloadableConnection, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -409,37 +411,40 @@ var cacheProviderSet = wire.NewSet(
 	newPolicyEvalBundleCache,
 )
 
-func newClaimsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
+func newClaimsCache(rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for JWT claims")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-jwt-claims"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-jwt-claims"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(context.Background())))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-jwt-claims", "backend", backend, "ttl", "10s")
 	return cache.New[*jwt.MapClaims](opts...)
 }
 
-func newMembershipsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*entities.Membership], error) {
+func newMembershipsCache(rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*entities.Membership], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for org memberships")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-memberships"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-memberships"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(context.Background())))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-memberships", "backend", backend, "ttl", "1s")
 	return cache.New[*entities.Membership](opts...)
 }
 
-func newPolicyEvalBundleCache(conn *nats.Conn, logger log.Logger) (cache.Cache[[]byte], error) {
+func newPolicyEvalBundleCache(rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[[]byte], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(24 * time.Hour), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for policy evaluation bundles from CAS")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-policy-eval-bundles"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-policy-eval-bundles"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(context.Background())))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-policy-eval-bundles", "backend", backend, "ttl", "24h")
 	return cache.New[[]byte](opts...)

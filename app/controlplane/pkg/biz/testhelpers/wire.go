@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,9 +35,9 @@ import (
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
-	"github.com/nats-io/nats.go"
 )
 
 // wireTestData init testing data
@@ -55,7 +55,7 @@ func WireTestData(*TestDatabase, *testing.T, log.Logger, credentials.ReaderWrite
 			NewPolicyProviderConfig,
 			policies.NewRegistry,
 			authz.NewCasbinEnforcer,
-			newNatsConnection,
+			newNatsReloadableConnection,
 			auditor.NewAuditLogPublisher,
 			NewCASBackendConfig,
 			NewCASServerOptions,
@@ -87,9 +87,9 @@ func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
 	}
 }
 
-// Connection to nats is optional, if not configured, pubsub will be disabled
-func newNatsConnection() (*nats.Conn, error) {
-	return nil, nil
+// newNatsReloadableConnection returns nil in tests (NATS is not available).
+func newNatsReloadableConnection() *natsconn.ReloadableConnection {
+	return nil
 }
 
 func newAuthAllowList(conf *conf.Bootstrap) *pkgConf.AllowList {

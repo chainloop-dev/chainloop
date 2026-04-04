@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -38,10 +39,10 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/wire"
-	"github.com/nats-io/nats.go"
 )
 
 func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.AvailablePlugins) (*app, func(), error) {
@@ -65,7 +66,8 @@ func wireApp(*conf.Bootstrap, credentials.ReaderWriter, log.Logger, sdk.Availabl
 			newProtoValidator,
 			newDataConf,
 			newPolicyProviderConfig,
-			newNatsConnection,
+			newNatsConfig,
+			natsconn.New,
 			cacheProviderSet,
 			auditor.NewAuditLogPublisher,
 			newCASServerOptions,
@@ -141,37 +143,40 @@ var cacheProviderSet = wire.NewSet(
 	newPolicyEvalBundleCache,
 )
 
-func newClaimsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
+func newClaimsCache(rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for JWT claims")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-jwt-claims"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-jwt-claims"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(context.Background())))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-jwt-claims", "backend", backend, "ttl", "10s")
 	return cache.New[*jwt.MapClaims](opts...)
 }
 
-func newMembershipsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*entities.Membership], error) {
+func newMembershipsCache(rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*entities.Membership], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for org memberships")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-memberships"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-memberships"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(context.Background())))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-memberships", "backend", backend, "ttl", "1s")
 	return cache.New[*entities.Membership](opts...)
 }
 
-func newPolicyEvalBundleCache(conn *nats.Conn, logger log.Logger) (cache.Cache[[]byte], error) {
+func newPolicyEvalBundleCache(rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[[]byte], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(24 * time.Hour), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for policy evaluation bundles from CAS")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-policy-eval-bundles"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-policy-eval-bundles"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(context.Background())))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-policy-eval-bundles", "backend", backend, "ttl", "24h")
 	return cache.New[[]byte](opts...)
