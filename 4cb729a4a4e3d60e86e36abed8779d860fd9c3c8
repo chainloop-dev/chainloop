@@ -1,0 +1,33 @@
+app/controlplane/pkg/biz/testhelpers/wire.go
+  b0af0a9037cf926b 2,38,58,90-92
+pkg/natsconn/natsconn.go
+  b0af0a9037cf926b 1-141
+app/controlplane/pkg/auditor/nats.go
+  b0af0a9037cf926b 2,23,26,41-43,47,49,54-66,68,78,81-83,85,87-96,99-100,106,111
+pkg/natsconn/natsconn_test.go
+  b0af0a9037cf926b 1-176
+app/controlplane/cmd/wire.go
+  b0af0a9037cf926b 2,24,42,69-70,146,150,152-153,159,163,165-166,172,176,178-179
+app/controlplane/cmd/main.go
+  b0af0a9037cf926b 217-218,224-226,229-230,233
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "4cb729a4a4e3d60e86e36abed8779d860fd9c3c8",
+  "prompts": {
+    "b0af0a9037cf926b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f0aa3ef-9b68-450f-be3e-b2181bb3154b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 412,
+      "total_deletions": 70,
+      "accepted_lines": 390,
+      "overriden_lines": 0
+    }
+  }
+}
