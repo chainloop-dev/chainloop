@@ -1,0 +1,25 @@
+pkg/natsconn/natsconn.go
+  b0af0a9037cf926b 46-49,51,79,85-92
+pkg/natsconn/natsconn_test.go
+  b0af0a9037cf926b 54,60-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "5b6265e2feb89d8cbf76380a0d8cb129ae003ad1",
+  "prompts": {
+    "b0af0a9037cf926b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f0aa3ef-9b68-450f-be3e-b2181bb3154b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 14,
+      "accepted_lines": 17,
+      "overriden_lines": 0
+    }
+  }
+}
