@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -591,10 +592,42 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Poli
 	// Execute using the selected engine
 	res, err := policyEngine.Verify(ctx, script, material, argsAny)
 	if err != nil {
+		// Gracefully degrade when a policy references a chainloop.* builtin that this
+		// client version doesn't have registered (e.g., chainloop.vulnerability on an
+		// older CLI). Mark as skipped so the attestation can proceed.
+		// Intentionally blocked OPA functions (opa.runtime, trace, etc.) are NOT
+		// caught here — those remain hard errors.
+		if builtins := undefinedChainloopBuiltins(err); len(builtins) > 0 {
+			pv.logger.Warn().Str("policy", script.Name).Strs("builtins", builtins).
+				Msg("policy requires builtin functions not available in this CLI version, skipping — please upgrade")
+			return &engine.EvaluationResult{
+				Skipped:    true,
+				SkipReason: fmt.Sprintf("policy requires builtin functions not available in this CLI version: %s — please upgrade to the latest version", strings.Join(builtins, ", ")),
+				Violations: make([]*engine.PolicyViolation, 0),
+			}, nil
+		}
 		return nil, fmt.Errorf("failed to execute policy: %w", err)
 	}
 
 	return res, nil
+}
+
+var undefinedChainloopBuiltinRe = regexp.MustCompile(`rego_type_error: undefined function (chainloop\.\w+)`)
+
+// undefinedChainloopBuiltins extracts chainloop.* function names from OPA
+// undefined-function type errors. Returns nil if the error doesn't involve
+// any chainloop builtins (e.g., intentionally blocked OPA functions like
+// opa.runtime or trace still produce hard errors).
+func undefinedChainloopBuiltins(err error) []string {
+	matches := undefinedChainloopBuiltinRe.FindAllStringSubmatch(err.Error(), -1)
+	if len(matches) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(matches))
+	for _, m := range matches {
+		names = append(names, m[1])
+	}
+	return names
 }
 
 // LoadPolicySpec loads and validates a policy spec from a contract

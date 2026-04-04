@@ -1,0 +1,8 @@
+apiVersion: chainloop.dev/v1
+kind: Policy
+metadata:
+  name: undefined-builtin
+  description: Test policy that uses an undefined builtin function
+spec:
+  type: SBOM_SPDX_JSON
+  path: policy_undefined_builtin.rego
