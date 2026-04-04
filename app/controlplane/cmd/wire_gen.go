@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/server"
@@ -22,10 +23,10 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/wire"
-	"github.com/nats-io/nats.go"
 	"time"
 )
 
@@ -35,7 +36,7 @@ import (
 
 // Injectors from wire.go:
 
-func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
+func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
 	config := authzConfig()
 	casbinEnforcer, err := authz.NewCasbinEnforcer(config)
 	if err != nil {
@@ -60,19 +61,22 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	bootstrap_CASServer := bootstrap.CasServer
 	casServerDefaultOpts := newCASServerOptions(bootstrap_CASServer)
 	bootstrap_NatsServer := bootstrap.NatsServer
-	conn, err := newNatsConnection(bootstrap_NatsServer)
+	natsconnConfig := newNatsConfig(bootstrap_NatsServer)
+	reloadableConnection, cleanup2, err := natsconn.New(natsconnConfig, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
+	auditLogPublisher, err := auditor.NewAuditLogPublisher(contextContext, reloadableConnection, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
 	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, casServerDefaultOpts, auditorUseCase, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -107,6 +111,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -116,17 +121,20 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	referrerSharedIndex := bootstrap.ReferrerSharedIndex
 	referrerSharedIndexConfig, err := biz.NewIndexConfig(referrerSharedIndex)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipUseCase, referrerSharedIndexConfig, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	apiTokenJWTConfig := newJWTConfig(auth)
 	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, authzUseCase, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -136,24 +144,28 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	v4 := newPolicyProviderConfig(v3)
 	registry, err := policies.NewRegistry(logger, v4...)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, organizationRepo, logger)
-	cache, err := newMembershipsCache(conn, logger)
+	cache, err := newMembershipsCache(contextContext, reloadableConnection, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	cacheCache, err := newClaimsCache(conn, logger)
+	cacheCache, err := newClaimsCache(contextContext, reloadableConnection, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -164,6 +176,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	confServer := bootstrap.Server
 	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -171,18 +184,21 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, auditorUseCase, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
-	cache2, err := newPolicyEvalBundleCache(conn, logger)
+	cache2, err := newPolicyEvalBundleCache(contextContext, reloadableConnection, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -204,6 +220,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -242,6 +259,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v5...)
 	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v5...)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -251,6 +269,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	attestationStateRepo := data.NewAttestationStateRepo(dataData, logger)
 	attestationStateUseCase, err := biz.NewAttestationStateUseCase(attestationStateRepo, workflowRunRepo)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -269,6 +288,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	federatedAuthentication := bootstrap.FederatedAuthentication
 	validator, err := newProtoValidator()
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -318,21 +338,25 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	httpServer, err := server.NewHTTPServer(opts, grpcServer)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	httpMetricsServer, err := server.NewHTTPMetricsServer(opts)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	httpProfilerServer, err := server.NewHTTPProfilerServer(opts)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
@@ -341,6 +365,7 @@ func wireApp(bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, l
 	apiTokenStaleRevoker := biz.NewAPITokenStaleRevoker(organizationRepo, apiTokenRepo, apiTokenUseCase, logger)
 	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, apiTokenStaleRevoker, bootstrap)
 	return mainApp, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }
@@ -409,37 +434,40 @@ var cacheProviderSet = wire.NewSet(
 	newPolicyEvalBundleCache,
 )
 
-func newClaimsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
+func newClaimsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for JWT claims")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-jwt-claims"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-jwt-claims"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-jwt-claims", "backend", backend, "ttl", "10s")
 	return cache.New[*jwt.MapClaims](opts...)
 }
 
-func newMembershipsCache(conn *nats.Conn, logger log.Logger) (cache.Cache[*entities.Membership], error) {
+func newMembershipsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*entities.Membership], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for org memberships")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-memberships"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-memberships"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-memberships", "backend", backend, "ttl", "1s")
 	return cache.New[*entities.Membership](opts...)
 }
 
-func newPolicyEvalBundleCache(conn *nats.Conn, logger log.Logger) (cache.Cache[[]byte], error) {
+func newPolicyEvalBundleCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[[]byte], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(24 * time.Hour), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for policy evaluation bundles from CAS")}
-	if conn != nil {
+	if rc != nil {
 		backend = "nats"
-		opts = append(opts, cache.WithNATS(conn, "chainloop-policy-eval-bundles"))
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-policy-eval-bundles"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-policy-eval-bundles", "backend", backend, "ttl", "24h")
 	return cache.New[[]byte](opts...)

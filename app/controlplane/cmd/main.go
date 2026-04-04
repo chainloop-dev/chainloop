@@ -17,7 +17,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	_ "net/http/pprof"
 	"os"
@@ -25,7 +24,6 @@ import (
 
 	"buf.build/go/protovalidate"
 	"github.com/getsentry/sentry-go"
-	"github.com/nats-io/nats.go"
 	flag "github.com/spf13/pflag"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -35,6 +33,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2"
@@ -145,7 +144,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	app, cleanup, err := wireApp(&bc, credsWriter, logger, availablePlugins)
+	app, cleanup, err := wireApp(ctx, &bc, credsWriter, logger, availablePlugins)
 	if err != nil {
 		panic(err)
 	}
@@ -215,29 +214,23 @@ type app struct {
 	apiTokenStaleRevoker *biz.APITokenStaleRevoker
 }
 
-// Connection to nats is optional, if not configured, pubsub will be disabled
-func newNatsConnection(c *conf.Bootstrap_NatsServer) (*nats.Conn, error) {
+// newNatsConfig converts the proto config to a plain natsconn.Config.
+func newNatsConfig(c *conf.Bootstrap_NatsServer) *natsconn.Config {
 	uri := c.GetUri()
 	if uri == "" {
-		return nil, nil
+		return nil
 	}
 
-	var opts []nats.Option
-	if c.GetAuthentication() != nil {
-		switch c.GetAuthentication().(type) {
-		case *conf.Bootstrap_NatsServer_Token:
-			opts = append(opts, nats.Token(c.GetToken()))
-		default:
-			return nil, fmt.Errorf("unsupported nats authentication type: %T", c.GetAuthentication())
-		}
+	cfg := &natsconn.Config{
+		URI:  uri,
+		Name: "chainloop-controlplane",
 	}
 
-	nc, err := nats.Connect(uri, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to nats: %w", err)
+	if c.GetToken() != "" {
+		cfg.Token = c.GetToken()
 	}
 
-	return nc, nil
+	return cfg
 }
 
 func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {

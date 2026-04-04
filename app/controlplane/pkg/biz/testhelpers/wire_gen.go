@@ -7,6 +7,7 @@
 package testhelpers
 
 import (
+	"context"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -18,8 +19,8 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/nats-io/nats.go"
 	"testing"
 )
 
@@ -30,7 +31,7 @@ import (
 // Injectors from wire.go:
 
 // wireTestData init testing data
-func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, bootstrap *conf.Bootstrap, arg []*v1.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
+func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, bootstrap *conf.Bootstrap, arg []*v1.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := NewConfData(testDatabase, t)
 	databaseConfig := NewDataConfig(confData)
 	dataData, cleanup, err := data.NewData(databaseConfig, logger)
@@ -43,12 +44,8 @@ func WireTestData(testDatabase *TestDatabase, t *testing.T, logger log.Logger, r
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
 	bootstrap_CASServer := NewCASBackendConfig()
 	casServerDefaultOpts := NewCASServerOptions(bootstrap_CASServer)
-	conn, err := newNatsConnection()
-	if err != nil {
-		cleanup()
-		return nil, nil, err
-	}
-	auditLogPublisher, err := auditor.NewAuditLogPublisher(conn, logger)
+	reloadableConnection := newNatsReloadableConnection()
+	auditLogPublisher, err := auditor.NewAuditLogPublisher(contextContext, reloadableConnection, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -229,9 +226,9 @@ func newJWTConfig(conf2 *conf.Auth) *biz.APITokenJWTConfig {
 	}
 }
 
-// Connection to nats is optional, if not configured, pubsub will be disabled
-func newNatsConnection() (*nats.Conn, error) {
-	return nil, nil
+// newNatsReloadableConnection returns nil in tests (NATS is not available).
+func newNatsReloadableConnection() *natsconn.ReloadableConnection {
+	return nil
 }
 
 func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
