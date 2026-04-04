@@ -51,12 +51,14 @@ func TestNew(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			rc, err := New(tc.cfg, log.DefaultLogger)
+			rc, cleanup, err := New(tc.cfg, log.DefaultLogger)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
+			require.NotNil(t, cleanup)
+			defer cleanup()
 			if tc.wantNil {
 				assert.Nil(t, rc)
 			}

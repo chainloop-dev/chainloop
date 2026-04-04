@@ -43,10 +43,12 @@ type ReloadableConnection struct {
 }
 
 // New creates a ReloadableConnection with automatic reconnection handling.
-// Returns (nil, nil) when cfg is nil or URI is empty (NATS is optional).
-func New(cfg *Config, logger log.Logger) (*ReloadableConnection, error) {
+// Returns (nil, cleanup, nil) when cfg is nil or URI is empty (NATS is optional).
+// The cleanup function drains the NATS connection on shutdown.
+func New(cfg *Config, logger log.Logger) (*ReloadableConnection, func(), error) {
+	noop := func() {}
 	if cfg == nil || cfg.URI == "" {
-		return nil, nil
+		return nil, noop, nil
 	}
 
 	l := log.NewHelper(log.With(logger, "component", "natsconn"))
@@ -74,13 +76,20 @@ func New(cfg *Config, logger log.Logger) (*ReloadableConnection, error) {
 
 	nc, err := nats.Connect(cfg.URI, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("connecting to NATS: %w", err)
+		return nil, noop, fmt.Errorf("connecting to NATS: %w", err)
 	}
 
 	rc.Conn = nc
 	l.Infow("msg", "NATS connected", "url", nc.ConnectedUrl())
 
-	return rc, nil
+	cleanup := func() {
+		l.Infow("msg", "draining NATS connection")
+		if err := nc.Drain(); err != nil {
+			l.Warnw("msg", "failed to drain NATS connection", "error", err)
+		}
+	}
+
+	return rc, cleanup, nil
 }
 
 // Subscribe registers for reconnection notifications. The returned channel

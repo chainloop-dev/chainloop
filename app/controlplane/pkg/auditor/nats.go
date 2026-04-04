@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
@@ -38,9 +37,7 @@ const (
 )
 
 type AuditLogPublisher struct {
-	mu     sync.RWMutex
 	rc     *natsconn.ReloadableConnection
-	js     jetstream.JetStream
 	logger *log.Helper
 }
 
@@ -78,10 +75,6 @@ func (p *AuditLogPublisher) initJetStream() error {
 		return fmt.Errorf("creating stream: %w", err)
 	}
 
-	p.mu.Lock()
-	p.js = js
-	p.mu.Unlock()
-
 	p.logger.Infow("msg", "stream created or updated", "name", streamName, "subject", subjectName)
 
 	return nil
@@ -106,7 +99,6 @@ func (p *AuditLogPublisher) Publish(data *EventPayload) error {
 		return fmt.Errorf("marshaling event payload: %w", err)
 	}
 
-	// Send the event to the specific subject based on the event type "audit.<target_type>.<action_type>"
 	specificSubject := fmt.Sprintf("%s.%s.%s", baseSubjectName, strings.ToLower(string(data.Data.TargetType)), strings.ToLower(data.Data.ActionType))
 	return p.rc.Publish(specificSubject, jsonPayload)
 }
