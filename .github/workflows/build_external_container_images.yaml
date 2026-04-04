@@ -5,12 +5,14 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   build_and_push_images:
     name: Build and Push ${{ matrix.image.name }} Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         image:
