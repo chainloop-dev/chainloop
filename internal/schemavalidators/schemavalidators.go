@@ -18,8 +18,10 @@ package schemavalidators
 import (
 	_ "embed"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -119,69 +121,131 @@ var (
 	aiCodingSessionSpecVersion0_1 string
 )
 
-// schemaURLMapping maps the schema URL to the schema content. This is used to compile the schema validators
-// against the schemas on external_schemas/*. This is done in the init function.
-// The keys are the URLs of the schemas and the values are the schema content that can be found in the embedded
-// files.
-var schemaURLMapping = map[string]string{
-	"http://cyclonedx.org/schema/jsf-0.82.schema.json":                                jsfSpecVersion0_82,
-	"http://cyclonedx.org/schema/spdx.schema.json":                                    spdxSpec,
-	"http://cyclonedx.org/schema/bom-1.5.schema.json":                                 bomSpecVersion1_5,
-	"http://cyclonedx.org/schema/bom-1.6.schema.json":                                 bomSpecVersion1_6,
-	"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":                casfSpecVersion2_0,
-	"https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json":                casfSpecVersion2_1,
-	"https://www.first.org/cvss/cvss-v2.0.json":                                       cvssSpecVersion2_0,
-	"https://www.first.org/cvss/cvss-v3.0.json":                                       cvssSpecVersion3_0,
-	"https://www.first.org/cvss/cvss-v3.1.json":                                       cvssSpecVersion3_1,
-	"https://www.first.org/cvss/cvss-v4.0.json":                                       cvssSpecVersion4_0,
-	"https://chainloop.dev/schemas/runner-context-response-0.1.schema.json":           runnerContextSpecVersion0_1,
-	"https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json":                    prInfoSpecVersion1_0,
-	"https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json":                    prInfoSpecVersion1_1,
-	"https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json":                    prInfoSpecVersion1_2,
-	"https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json":                    prInfoSpecVersion1_3,
-	"https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json":     aiAgentConfigSpecVersion0_1,
-	"https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json": aiCodingSessionSpecVersion0_1,
-}
+var (
+	compiledCycloneDxSchemas       map[CycloneDXVersion]*jsonschema.Schema
+	cycloneDxOnce                  sync.Once
+	compiledCSAFSchemas            map[CSAFVersion]*jsonschema.Schema
+	csafOnce                       sync.Once
+	compiledRunnerContextSchemas   map[RunnerContextVersion]*jsonschema.Schema
+	runnerContextOnce              sync.Once
+	compiledPRInfoSchemas          map[PRInfoVersion]*jsonschema.Schema
+	prInfoOnce                     sync.Once
+	compiledAIAgentConfigSchemas   map[AIAgentConfigVersion]*jsonschema.Schema
+	aiAgentConfigOnce              sync.Once
+	compiledAICodingSessionSchemas map[AICodingSessionVersion]*jsonschema.Schema
+	aiCodingSessionOnce            sync.Once
+)
 
-var compiledCycloneDxSchemas map[CycloneDXVersion]*jsonschema.Schema
-var compiledCSAFSchemas map[CSAFVersion]*jsonschema.Schema
-var compiledRunnerContextSchemas map[RunnerContextVersion]*jsonschema.Schema
-var compiledPRInfoSchemas map[PRInfoVersion]*jsonschema.Schema
-var compiledAIAgentConfigSchemas map[AIAgentConfigVersion]*jsonschema.Schema
-var compiledAICodingSessionSchemas map[AICodingSessionVersion]*jsonschema.Schema
-
-func init() {
+func initCycloneDxSchemas() {
 	compiler := jsonschema.NewCompiler()
-	for url, schema := range schemaURLMapping {
-		_ = compiler.AddResource(url, strings.NewReader(schema))
+	if err := compiler.AddResource("http://cyclonedx.org/schema/jsf-0.82.schema.json", strings.NewReader(jsfSpecVersion0_82)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "http://cyclonedx.org/schema/jsf-0.82.schema.json", err))
+	}
+	if err := compiler.AddResource("http://cyclonedx.org/schema/spdx.schema.json", strings.NewReader(spdxSpec)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "http://cyclonedx.org/schema/spdx.schema.json", err))
+	}
+	if err := compiler.AddResource("http://cyclonedx.org/schema/bom-1.5.schema.json", strings.NewReader(bomSpecVersion1_5)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "http://cyclonedx.org/schema/bom-1.5.schema.json", err))
+	}
+	if err := compiler.AddResource("http://cyclonedx.org/schema/bom-1.6.schema.json", strings.NewReader(bomSpecVersion1_6)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "http://cyclonedx.org/schema/bom-1.6.schema.json", err))
 	}
 
-	compiledCycloneDxSchemas = make(map[CycloneDXVersion]*jsonschema.Schema)
-	compiledCycloneDxSchemas[CycloneDXVersion1_5] = compiler.MustCompile("http://cyclonedx.org/schema/bom-1.5.schema.json")
-	compiledCycloneDxSchemas[CycloneDXVersion1_6] = compiler.MustCompile("http://cyclonedx.org/schema/bom-1.6.schema.json")
+	// MustCompile panics if the embedded schema is malformed. This is a build-time
+	// invariant: the schemas are embedded at compile time and must always be valid.
+	compiledCycloneDxSchemas = map[CycloneDXVersion]*jsonschema.Schema{
+		CycloneDXVersion1_5: compiler.MustCompile("http://cyclonedx.org/schema/bom-1.5.schema.json"),
+		CycloneDXVersion1_6: compiler.MustCompile("http://cyclonedx.org/schema/bom-1.6.schema.json"),
+	}
+}
 
-	compiledCSAFSchemas = make(map[CSAFVersion]*jsonschema.Schema)
-	compiledCSAFSchemas[CSAFVersion2_0] = compiler.MustCompile("https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json")
-	compiledCSAFSchemas[CSAFVersion2_1] = compiler.MustCompile("https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json")
+func initCSAFSchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", strings.NewReader(casfSpecVersion2_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", err))
+	}
+	if err := compiler.AddResource("https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json", strings.NewReader(casfSpecVersion2_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json", err))
+	}
+	if err := compiler.AddResource("https://www.first.org/cvss/cvss-v2.0.json", strings.NewReader(cvssSpecVersion2_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://www.first.org/cvss/cvss-v2.0.json", err))
+	}
+	if err := compiler.AddResource("https://www.first.org/cvss/cvss-v3.0.json", strings.NewReader(cvssSpecVersion3_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://www.first.org/cvss/cvss-v3.0.json", err))
+	}
+	if err := compiler.AddResource("https://www.first.org/cvss/cvss-v3.1.json", strings.NewReader(cvssSpecVersion3_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://www.first.org/cvss/cvss-v3.1.json", err))
+	}
+	if err := compiler.AddResource("https://www.first.org/cvss/cvss-v4.0.json", strings.NewReader(cvssSpecVersion4_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://www.first.org/cvss/cvss-v4.0.json", err))
+	}
 
-	compiledRunnerContextSchemas = make(map[RunnerContextVersion]*jsonschema.Schema)
-	compiledRunnerContextSchemas[RunnerContextVersion0_1] = compiler.MustCompile("https://chainloop.dev/schemas/runner-context-response-0.1.schema.json")
+	compiledCSAFSchemas = map[CSAFVersion]*jsonschema.Schema{
+		CSAFVersion2_0: compiler.MustCompile("https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json"),
+		CSAFVersion2_1: compiler.MustCompile("https://docs.oasis-open.org/csaf/csaf/v2.1/csaf_json_schema.json"),
+	}
+}
 
-	compiledPRInfoSchemas = make(map[PRInfoVersion]*jsonschema.Schema)
-	compiledPRInfoSchemas[PRInfoVersion1_0] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json")
-	compiledPRInfoSchemas[PRInfoVersion1_1] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json")
-	compiledPRInfoSchemas[PRInfoVersion1_2] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json")
-	compiledPRInfoSchemas[PRInfoVersion1_3] = compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json")
+func initRunnerContextSchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://chainloop.dev/schemas/runner-context-response-0.1.schema.json", strings.NewReader(runnerContextSpecVersion0_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://chainloop.dev/schemas/runner-context-response-0.1.schema.json", err))
+	}
 
-	compiledAIAgentConfigSchemas = make(map[AIAgentConfigVersion]*jsonschema.Schema)
-	compiledAIAgentConfigSchemas[AIAgentConfigVersion0_1] = compiler.MustCompile("https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json")
+	compiledRunnerContextSchemas = map[RunnerContextVersion]*jsonschema.Schema{
+		RunnerContextVersion0_1: compiler.MustCompile("https://chainloop.dev/schemas/runner-context-response-0.1.schema.json"),
+	}
+}
 
-	compiledAICodingSessionSchemas = make(map[AICodingSessionVersion]*jsonschema.Schema)
-	compiledAICodingSessionSchemas[AICodingSessionVersion0_1] = compiler.MustCompile("https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json")
+func initPRInfoSchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json", err))
+	}
+	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json", err))
+	}
+	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_2)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json", err))
+	}
+	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_3)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json", err))
+	}
+
+	compiledPRInfoSchemas = map[PRInfoVersion]*jsonschema.Schema{
+		PRInfoVersion1_0: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json"),
+		PRInfoVersion1_1: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json"),
+		PRInfoVersion1_2: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json"),
+		PRInfoVersion1_3: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json"),
+	}
+}
+
+func initAIAgentConfigSchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json", strings.NewReader(aiAgentConfigSpecVersion0_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json", err))
+	}
+
+	compiledAIAgentConfigSchemas = map[AIAgentConfigVersion]*jsonschema.Schema{
+		AIAgentConfigVersion0_1: compiler.MustCompile("https://schemas.chainloop.dev/aiagentconfig/0.1/ai-agent-config.schema.json"),
+	}
+}
+
+func initAICodingSessionSchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json", strings.NewReader(aiCodingSessionSpecVersion0_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json", err))
+	}
+
+	compiledAICodingSessionSchemas = map[AICodingSessionVersion]*jsonschema.Schema{
+		AICodingSessionVersion0_1: compiler.MustCompile("https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json"),
+	}
 }
 
 // ValidateCycloneDX validates the given object against the specified CycloneDX schema version.
 func ValidateCycloneDX(data interface{}, version CycloneDXVersion) error {
+	cycloneDxOnce.Do(initCycloneDxSchemas)
+
 	if version == "" {
 		version = CycloneDXVersion1_6
 	}
@@ -222,6 +286,8 @@ func ValidateCycloneDX(data interface{}, version CycloneDXVersion) error {
 // ValidateCSAF validates the given object against a CSAF schema version.
 // The schema version is determined by the "csaf_version" field in the object.
 func ValidateCSAF(data interface{}) error {
+	csafOnce.Do(initCSAFSchemas)
+
 	var errs error
 	err := compiledCSAFSchemas[CSAFVersion2_1].Validate(data)
 	if err != nil {
@@ -249,6 +315,8 @@ func ValidateCSAF(data interface{}) error {
 // ValidateChainloopRunnerContext validates the runner context schema.
 // The schema version is determined by the "id" field in the object.
 func ValidateChainloopRunnerContext(data interface{}, version RunnerContextVersion) error {
+	runnerContextOnce.Do(initRunnerContextSchemas)
+
 	if version == "" {
 		version = RunnerContextVersion0_1
 	}
@@ -271,6 +339,8 @@ func ValidateChainloopRunnerContext(data interface{}, version RunnerContextVersi
 
 // ValidatePRInfo validates the PR/MR info schema.
 func ValidatePRInfo(data interface{}, version PRInfoVersion) error {
+	prInfoOnce.Do(initPRInfoSchemas)
+
 	if version == "" {
 		version = PRInfoVersion1_3
 	}
@@ -293,6 +363,8 @@ func ValidatePRInfo(data interface{}, version PRInfoVersion) error {
 
 // ValidateAIAgentConfig validates the AI agent config schema.
 func ValidateAIAgentConfig(data any, version AIAgentConfigVersion) error {
+	aiAgentConfigOnce.Do(initAIAgentConfigSchemas)
+
 	if version == "" {
 		version = AIAgentConfigVersion0_1
 	}
@@ -315,6 +387,8 @@ func ValidateAIAgentConfig(data any, version AIAgentConfigVersion) error {
 
 // ValidateAICodingSession validates the AI coding session schema.
 func ValidateAICodingSession(data any, version AICodingSessionVersion) error {
+	aiCodingSessionOnce.Do(initAICodingSessionSchemas)
+
 	if version == "" {
 		version = AICodingSessionVersion0_1
 	}
