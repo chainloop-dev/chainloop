@@ -1,0 +1,49 @@
+{
+ "spdxVersion": "SPDX-2.3",
+ "dataLicense": "CC0-1.0",
+ "SPDXID": "SPDXRef-DOCUMENT",
+ "name": "my-app",
+ "documentNamespace": "https://example.com/test/my-app-1234",
+ "creationInfo": {
+  "licenseListVersion": "3.20",
+  "creators": [
+   "Organization: Example, Inc",
+   "Tool: syft-0.100.0"
+  ],
+  "created": "2024-01-15T10:00:00Z"
+ },
+ "packages": [
+  {
+   "name": "my-app",
+   "SPDXID": "SPDXRef-Package-my-app",
+   "versionInfo": "1.2.3",
+   "downloadLocation": "https://example.com/my-app",
+   "primaryPackagePurpose": "APPLICATION",
+   "licenseConcluded": "Apache-2.0",
+   "licenseDeclared": "Apache-2.0",
+   "copyrightText": "NOASSERTION",
+   "supplier": "Organization: Example, Inc"
+  },
+  {
+   "name": "dep-a",
+   "SPDXID": "SPDXRef-Package-dep-a",
+   "versionInfo": "0.1.0",
+   "downloadLocation": "NOASSERTION",
+   "licenseConcluded": "MIT",
+   "licenseDeclared": "MIT",
+   "copyrightText": "NOASSERTION"
+  }
+ ],
+ "relationships": [
+  {
+   "spdxElementId": "SPDXRef-DOCUMENT",
+   "relatedSpdxElement": "SPDXRef-Package-my-app",
+   "relationshipType": "DESCRIBES"
+  },
+  {
+   "spdxElementId": "SPDXRef-Package-my-app",
+   "relatedSpdxElement": "SPDXRef-Package-dep-a",
+   "relationshipType": "DEPENDS_ON"
+  }
+ ]
+}
