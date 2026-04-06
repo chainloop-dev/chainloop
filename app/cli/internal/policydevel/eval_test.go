@@ -149,7 +149,7 @@ func TestEvaluateSimplifiedPolicies(t *testing.T) {
 		assert.Contains(t, string(result.Result.Violations[0]), "at least 2 components")
 	})
 
-	t.Run("violations with finding_type use unified format matching attestation storage", func(t *testing.T) {
+	t.Run("structured findings are returned separately from string violations", func(t *testing.T) {
 		opts := &EvalOptions{
 			PolicyPath:   "testdata/sbom-structured-vuln-policy.yaml",
 			MaterialPath: sbomPath,
@@ -160,23 +160,23 @@ func TestEvaluateSimplifiedPolicies(t *testing.T) {
 		require.NotNil(t, result)
 		assert.False(t, result.Result.Skipped)
 
-		// Single unified violations field with full violation objects (same as attestation)
+		// violations contains string messages
 		require.Len(t, result.Result.Violations, 1)
+		assert.Contains(t, result.Result.Violations[0], "Vulnerability found in test-component@1.0.0")
 
-		var v map[string]any
-		require.NoError(t, json.Unmarshal(result.Result.Violations[0], &v))
-		assert.Nil(t, v["subject"], "subject should be excluded from eval output")
-		assert.Contains(t, v["message"], "Vulnerability found in test-component@1.0.0")
-
-		vuln, ok := v["vulnerability"].(map[string]any)
-		require.True(t, ok, "expected vulnerability finding in violation object")
+		// findings contains the structured data
+		require.Len(t, result.Result.Findings, 1)
+		var f map[string]any
+		require.NoError(t, json.Unmarshal(result.Result.Findings[0], &f))
+		vuln, ok := f["vulnerability"].(map[string]any)
+		require.True(t, ok, "expected vulnerability finding")
 		assert.Equal(t, "CVE-2024-1234", vuln["external_id"])
 		assert.Equal(t, "pkg:generic/test-component@1.0.0", vuln["package_purl"])
 		assert.Equal(t, "HIGH", vuln["severity"])
 		assert.InDelta(t, 7.5, vuln["cvss_v3_score"], 0.001)
 	})
 
-	t.Run("violations without finding_type use same unified format", func(t *testing.T) {
+	t.Run("plain string violations have no findings", func(t *testing.T) {
 		opts := &EvalOptions{
 			PolicyPath:   "testdata/sbom-min-components-policy.yaml",
 			MaterialPath: sbomPath,
@@ -186,12 +186,8 @@ func TestEvaluateSimplifiedPolicies(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.Len(t, result.Result.Violations, 1)
-
-		// Same structure as attestation: object with message (subject excluded in eval)
-		var v map[string]any
-		require.NoError(t, json.Unmarshal(result.Result.Violations[0], &v))
-		assert.Nil(t, v["subject"], "subject should be excluded from eval output")
-		assert.Contains(t, v["message"], "at least 2 components")
+		assert.Contains(t, result.Result.Violations[0], "at least 2 components")
+		assert.Empty(t, result.Result.Findings)
 	})
 
 	t.Run("sbom metadata component policy", func(t *testing.T) {
