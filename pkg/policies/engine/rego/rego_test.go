@@ -579,6 +579,19 @@ func TestRego_StructuredViolations(t *testing.T) {
 			},
 		},
 		{
+			name:           "deprecated structured objects in violations still work",
+			fixture:        "testfiles/deprecated_structured_violations.rego",
+			input:          `{"vulnerabilities": [{"id": "CVE-2024-1234", "severity": "CRITICAL", "purl": "pkg:golang/example.com/lib@v1.0.0"}]}`,
+			wantViolations: 1,
+			checkFn: func(t *testing.T, result *engine.EvaluationResult) {
+				t.Helper()
+				v := result.Violations[0]
+				assert.Equal(t, "Found vulnerability CVE-2024-1234 (CRITICAL)", v.Violation)
+				assert.NotNil(t, v.RawFinding)
+				assert.Equal(t, "CVE-2024-1234", v.RawFinding["external_id"])
+			},
+		},
+		{
 			name:           "no findings with structured policy",
 			fixture:        "testfiles/structured_violations.rego",
 			input:          `{"vulnerabilities": []}`,

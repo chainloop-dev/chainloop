@@ -209,7 +209,7 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		Violations: make([]*engine.PolicyViolation, 0),
 	}
 
-	// "findings" (structured objects) takes precedence over "violations" (legacy strings)
+	// "findings" (structured objects) takes precedence over "violations"
 	if len(result.Findings) > 0 {
 		for _, raw := range result.Findings {
 			pv, err := parseWasmFinding(policy.Name, raw)
@@ -219,8 +219,10 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 			evalResult.Violations = append(evalResult.Violations, pv)
 		}
 	} else {
+		// Fallback: violations (strings or structured objects).
+		// Structured objects in violations are deprecated — use findings instead.
 		for _, raw := range result.Violations {
-			pv, err := parseWasmStringViolation(policy.Name, raw)
+			pv, err := parseWasmViolation(policy.Name, raw)
 			if err != nil {
 				return nil, fmt.Errorf("violation in policy %q: %w", policy.Name, err)
 			}
@@ -250,16 +252,27 @@ func parseWasmFinding(policyName string, raw json.RawMessage) (*engine.PolicyVio
 	return engine.NewStructuredViolation(policyName, obj)
 }
 
-// parseWasmStringViolation parses a legacy string violation.
-func parseWasmStringViolation(policyName string, raw json.RawMessage) (*engine.PolicyViolation, error) {
-	var s string
-	if err := json.Unmarshal(raw, &s); err != nil {
-		return nil, fmt.Errorf("violation must be a JSON string: %w", err)
+// parseWasmViolation parses a single violation from WASM output.
+// Accepts both strings (legacy) and objects (deprecated, use findings instead).
+func parseWasmViolation(policyName string, raw json.RawMessage) (*engine.PolicyViolation, error) {
+	var v any
+	if err := json.Unmarshal(raw, &v); err != nil {
+		return nil, fmt.Errorf("invalid violation JSON: %w", err)
 	}
-	return &engine.PolicyViolation{
-		Subject:   policyName,
-		Violation: s,
-	}, nil
+
+	switch typed := v.(type) {
+	case string:
+		return &engine.PolicyViolation{
+			Subject:   policyName,
+			Violation: typed,
+		}, nil
+	case map[string]any:
+		// Deprecated: structured objects in violations will be removed in a future release.
+		// Migrate to the "findings" field instead.
+		return engine.NewStructuredViolation(policyName, typed)
+	default:
+		return nil, fmt.Errorf("violation must be a string or object, got %T", v)
+	}
 }
 
 // MatchesParameters is a stub implementation for WASM policies

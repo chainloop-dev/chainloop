@@ -227,17 +227,27 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 					result.Violations = append(result.Violations, pv)
 				}
 			} else {
-				// Legacy format: string-only violations
+				// Fallback: violations (strings or structured objects).
+				// Structured objects in violations are deprecated — use findings instead.
 				violations, ok := ruleResult["violations"].([]any)
 				if !ok {
 					return nil, engine.ResultFormatError{Field: "violations"}
 				}
 				for _, violation := range violations {
-					vs, ok := violation.(string)
-					if !ok {
-						return nil, fmt.Errorf("violation must be a string, got %T", violation)
+					switch v := violation.(type) {
+					case string:
+						result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: v})
+					case map[string]any:
+						// Deprecated: structured objects in violations will be removed in a future release.
+						// Migrate to the "findings" field instead.
+						pv, err := engine.NewStructuredViolation(policy.Name, v)
+						if err != nil {
+							return nil, fmt.Errorf("structured violation in policy %q: %w", policy.Name, err)
+						}
+						result.Violations = append(result.Violations, pv)
+					default:
+						return nil, fmt.Errorf("violation must be a string or object, got %T", violation)
 					}
-					result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: vs})
 				}
 			}
 		}
