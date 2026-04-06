@@ -1,0 +1,29 @@
+pkg/policies/engine/rego/rego.go
+  f0ff6d90004da745 230-231,237-249
+pkg/policies/engine/rego/testfiles/deprecated_structured_violations.rego
+  f0ff6d90004da745 1-43
+pkg/policies/engine/wasm/engine.go
+  f0ff6d90004da745 212,222-223,225,255-260,262-274
+pkg/policies/engine/rego/rego_test.go
+  f0ff6d90004da745 582-593
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "af3b2333d3f2ed9e3daebd26781a982f8d0e6844",
+  "prompts": {
+    "f0ff6d90004da745": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "94460fd4-7616-4189-812a-698a2576905a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 95,
+      "total_deletions": 16,
+      "accepted_lines": 95,
+      "overriden_lines": 0
+    }
+  }
+}
