@@ -1,0 +1,27 @@
+pkg/attestation/crafter/api/attestation/v1/crafting_state.proto
+  f0ff6d90004da745 335-336
+pkg/policies/findings/registry_test.go
+  f0ff6d90004da745 78-96,166-181
+pkg/policies/findings/registry.go
+  f0ff6d90004da745 63-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "503052a119f42757c5be46ffd377310c26ed40dc",
+  "prompts": {
+    "f0ff6d90004da745": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "94460fd4-7616-4189-812a-698a2576905a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 42,
+      "total_deletions": 1,
+      "accepted_lines": 42,
+      "overriden_lines": 0
+    }
+  }
+}
