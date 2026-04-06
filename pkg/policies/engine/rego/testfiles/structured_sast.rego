@@ -8,7 +8,7 @@ import rego.v1
 
 result := {
     "skipped": skipped,
-    "violations": violations,
+    "findings": findings,
     "skip_reason": skip_reason,
 }
 
@@ -29,8 +29,8 @@ skipped := false if valid_input
 
 valid_input := true
 
-# Returns structured SAST violation objects
-violations contains v if {
+# Returns structured SAST finding objects
+findings contains v if {
     some finding in input.findings
     v := {
         "message": sprintf("SAST finding %s in %s", [finding.rule_id, finding.location]),

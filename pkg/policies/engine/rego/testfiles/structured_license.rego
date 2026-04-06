@@ -8,7 +8,7 @@ import rego.v1
 
 result := {
     "skipped": skipped,
-    "violations": violations,
+    "findings": findings,
     "skip_reason": skip_reason,
 }
 
@@ -29,8 +29,8 @@ skipped := false if valid_input
 
 valid_input := true
 
-# Returns structured license violation objects
-violations contains v if {
+# Returns structured license finding objects
+findings contains v if {
     some comp in input.components
     some license in comp.licenses
     license in input.banned_licenses

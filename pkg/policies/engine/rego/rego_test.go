@@ -544,7 +544,7 @@ func TestRego_StructuredViolations(t *testing.T) {
 		checkFn        func(t *testing.T, result *engine.EvaluationResult)
 	}{
 		{
-			name:           "structured violations with message field",
+			name:           "structured findings with message field",
 			fixture:        "testfiles/structured_violations.rego",
 			input:          `{"vulnerabilities": [{"id": "CVE-2024-1234", "severity": "CRITICAL", "purl": "pkg:golang/example.com/lib@v1.0.0"}]}`,
 			wantViolations: 1,
@@ -560,43 +560,32 @@ func TestRego_StructuredViolations(t *testing.T) {
 			},
 		},
 		{
-			name:    "structured violations without message field errors",
+			name:    "structured findings without message field errors",
 			fixture: "testfiles/structured_no_message.rego",
 			input:   `{"vulnerabilities": [{"id": "CVE-2024-1234", "severity": "HIGH"}]}`,
-			wantErr: `missing required "message" field`,
+			wantErr: `structured finding in policy`,
 		},
 		{
-			name:           "mixed string and structured violations",
+			name:           "findings takes precedence over violations",
 			fixture:        "testfiles/mixed_violations.rego",
 			input:          `{"has_string_violation": true, "vulnerabilities": [{"id": "CVE-2024-5678", "severity": "HIGH"}]}`,
-			wantViolations: 2,
+			wantViolations: 1, // only findings, string violations ignored
 			checkFn: func(t *testing.T, result *engine.EvaluationResult) {
 				t.Helper()
-				var stringViolation, structuredViolation *engine.PolicyViolation
-				for _, v := range result.Violations {
-					if v.RawFinding == nil {
-						stringViolation = v
-					} else {
-						structuredViolation = v
-					}
-				}
-				require.NotNil(t, stringViolation, "expected a string violation")
-				assert.Equal(t, "simple string violation", stringViolation.Violation)
-				assert.Nil(t, stringViolation.RawFinding)
-
-				require.NotNil(t, structuredViolation, "expected a structured violation")
-				assert.Equal(t, "Found vulnerability CVE-2024-5678", structuredViolation.Violation)
-				assert.Equal(t, "CVE-2024-5678", structuredViolation.RawFinding["external_id"])
+				v := result.Violations[0]
+				require.NotNil(t, v.RawFinding)
+				assert.Equal(t, "Found vulnerability CVE-2024-5678", v.Violation)
+				assert.Equal(t, "CVE-2024-5678", v.RawFinding["external_id"])
 			},
 		},
 		{
-			name:           "no violations with structured policy",
+			name:           "no findings with structured policy",
 			fixture:        "testfiles/structured_violations.rego",
 			input:          `{"vulnerabilities": []}`,
 			wantViolations: 0,
 		},
 		{
-			name:           "multiple structured violations",
+			name:           "multiple structured findings",
 			fixture:        "testfiles/structured_violations.rego",
 			input:          `{"vulnerabilities": [{"id": "CVE-2024-1", "severity": "HIGH", "purl": "pkg:npm/foo@1.0"}, {"id": "CVE-2024-2", "severity": "LOW", "purl": "pkg:npm/bar@2.0"}]}`,
 			wantViolations: 2,

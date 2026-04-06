@@ -206,27 +206,38 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 				ignore = val
 			}
 
-			violations, ok := ruleResult["violations"].([]any)
-			if !ok {
-				return nil, engine.ResultFormatError{Field: "violations"}
-			}
-
 			result.Skipped = skipped
 			result.SkipReason = reason
 			result.Ignore = ignore
 
-			for _, violation := range violations {
-				switch v := violation.(type) {
-				case string:
-					result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: v})
-				case map[string]any:
-					pv, err := engine.NewStructuredViolation(policy.Name, v)
+			// Try "findings" first (new format, structured objects).
+			// When present it fully replaces "violations", providing backward
+			// compatibility: old CLIs that only understand string violations
+			// ignore the unknown "findings" key.
+			if findingsRaw, ok := ruleResult["findings"].([]any); ok {
+				for _, f := range findingsRaw {
+					obj, ok := f.(map[string]any)
+					if !ok {
+						return nil, fmt.Errorf("finding must be an object, got %T", f)
+					}
+					pv, err := engine.NewStructuredViolation(policy.Name, obj)
 					if err != nil {
-						return nil, fmt.Errorf("structured violation in policy %q: %w", policy.Name, err)
+						return nil, fmt.Errorf("structured finding in policy %q: %w", policy.Name, err)
 					}
 					result.Violations = append(result.Violations, pv)
-				default:
-					return nil, fmt.Errorf("violation must be a string or object, got %T", violation)
+				}
+			} else {
+				// Legacy format: string-only violations
+				violations, ok := ruleResult["violations"].([]any)
+				if !ok {
+					return nil, engine.ResultFormatError{Field: "violations"}
+				}
+				for _, violation := range violations {
+					vs, ok := violation.(string)
+					if !ok {
+						return nil, fmt.Errorf("violation must be a string, got %T", violation)
+					}
+					result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: vs})
 				}
 			}
 		}
