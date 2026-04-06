@@ -8,7 +8,7 @@ import rego.v1
 
 result := {
     "skipped": skipped,
-    "findings": findings,
+    "violations": violations,
     "skip_reason": skip_reason,
 }
 
@@ -29,15 +29,15 @@ skipped := false if valid_input
 
 valid_input := true
 
-# Returns structured SAST finding objects
-findings contains v if {
-    some finding in input.findings
+# Deprecated: structured objects in violations.
+# This format is supported temporarily for backward compatibility.
+# Policies should migrate to use the "findings" field instead.
+violations contains v if {
+    some vuln in input.vulnerabilities
     v := {
-        "message": sprintf("SAST finding %s in %s", [finding.rule_id, finding.location]),
-        "rule_id": finding.rule_id,
-        "severity": finding.severity,
-        "location": finding.location,
-        "line_number": finding.line_number,
-        "code_snippet": finding.code_snippet,
+        "message": sprintf("Found vulnerability %s (%s)", [vuln.id, vuln.severity]),
+        "external_id": vuln.id,
+        "severity": vuln.severity,
+        "package_purl": vuln.purl,
     }
 }

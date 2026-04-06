@@ -60,7 +60,9 @@ func ValidateFinding(findingType string, raw map[string]any) (proto.Message, err
 	}
 
 	msg := factory()
-	if err := protojson.Unmarshal(data, msg); err != nil {
+	// DiscardUnknown allows policies to include fields added in newer proto
+	// versions without breaking older CLIs that haven't been updated yet.
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(data, msg); err != nil {
 		return nil, fmt.Errorf("finding does not match %s schema: %w", findingType, err)
 	}
 

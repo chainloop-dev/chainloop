@@ -206,29 +206,43 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 				ignore = val
 			}
 
-			violations, ok := ruleResult["violations"].([]any)
-			if !ok {
-				return nil, engine.ResultFormatError{Field: "violations"}
-			}
-
 			result.Skipped = skipped
 			result.SkipReason = reason
 			result.Ignore = ignore
 
-			for _, violation := range violations {
-				switch v := violation.(type) {
-				case string:
-					result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: v})
-				case map[string]any:
-					pv, err := engine.NewStructuredViolation(policy.Name, v)
+			// Prefer non-empty "findings" (structured objects) over "violations" for backward compatibility.
+			findingsRaw, _ := ruleResult["findings"].([]any)
+			if len(findingsRaw) > 0 {
+				for _, f := range findingsRaw {
+					obj, ok := f.(map[string]any)
+					if !ok {
+						return nil, fmt.Errorf("finding must be an object, got %T", f)
+					}
+					pv, err := engine.NewStructuredViolation(policy.Name, obj)
 					if err != nil {
-						return nil, fmt.Errorf("structured violation in policy %q: %w", policy.Name, err)
+						return nil, fmt.Errorf("structured finding in policy %q: %w", policy.Name, err)
 					}
 					result.Violations = append(result.Violations, pv)
-				default:
-					return nil, fmt.Errorf("violation must be a string or object, got %T", violation)
+				}
+			} else if violations, ok := ruleResult["violations"].([]any); ok {
+				// Fallback: violations (strings or deprecated structured objects).
+				// TODO: remove structured object support once policies are fully migrated to findings.
+				for _, violation := range violations {
+					switch v := violation.(type) {
+					case string:
+						result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: v})
+					case map[string]any:
+						pv, err := engine.NewStructuredViolation(policy.Name, v)
+						if err != nil {
+							return nil, fmt.Errorf("structured violation in policy %q: %w", policy.Name, err)
+						}
+						result.Violations = append(result.Violations, pv)
+					default:
+						return nil, fmt.Errorf("violation must be a string or object, got %T", violation)
+					}
 				}
 			}
+			// If neither findings nor violations is present, result has zero violations.
 		}
 	}
 

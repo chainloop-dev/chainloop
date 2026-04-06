@@ -9,6 +9,7 @@ import rego.v1
 result := {
     "skipped": skipped,
     "violations": violations,
+    "findings": findings,
     "skip_reason": skip_reason,
 }
 
@@ -29,13 +30,14 @@ skipped := false if valid_input
 
 valid_input := true
 
-# Returns a mix of string and structured violations
+# Legacy string violations — should be ignored when findings is present
 violations contains msg if {
     input.has_string_violation
     msg := "simple string violation"
 }
 
-violations contains v if {
+# Structured findings take precedence over violations
+findings contains v if {
     some vuln in input.vulnerabilities
     v := {
         "message": sprintf("Found vulnerability %s", [vuln.id]),

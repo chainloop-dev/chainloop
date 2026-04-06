@@ -332,6 +332,8 @@ message PolicyVulnerabilityFinding {
   repeated string cwes = 6;
   // Suggested fix or upgrade path
   string recommendation = 7;
+  // Optional longer description of the vulnerability
+  string description = 8;
 }
 
 // Output schema for SAST findings from policy evaluation.

@@ -49,7 +49,8 @@ type EvalOptions struct {
 }
 
 type EvalResult struct {
-	Violations  []json.RawMessage `json:"violations"`
+	Violations  []string          `json:"violations"`
+	Findings    []json.RawMessage `json:"findings,omitempty"`
 	SkipReasons []string          `json:"skip_reasons"`
 	Skipped     bool              `json:"skipped"`
 }
@@ -134,22 +135,29 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 		Result: &EvalResult{
 			Skipped:     policyEv.GetSkipped(),
 			SkipReasons: policyEv.SkipReasons,
-			Violations:  make([]json.RawMessage, 0, len(policyEv.Violations)),
+			Violations:  make([]string, 0, len(policyEv.Violations)),
 		},
 	}
 
-	// Marshal violations using protojson to match the attestation storage format.
-	// Subject is cleared since it's redundant in eval context (always the policy name).
+	// Split violations into string messages and structured findings.
+	// "violations" contains the message strings (what old CLIs see).
+	// "findings" contains the full structured data when present.
 	marshaler := protojson.MarshalOptions{UseProtoNames: true}
 	for _, v := range policyEv.Violations {
-		vc := proto.Clone(v).(*v12.PolicyEvaluation_Violation)
-		vc.Subject = ""
+		summary.Result.Violations = append(summary.Result.Violations, v.GetMessage())
 
-		b, err := marshaler.Marshal(vc)
-		if err != nil {
-			return nil, fmt.Errorf("marshaling violation: %w", err)
+		if f := v.GetFinding(); f != nil {
+			// Clone to clear subject before marshaling
+			vc := proto.Clone(v).(*v12.PolicyEvaluation_Violation)
+			vc.Subject = ""
+			vc.Message = ""
+
+			b, err := marshaler.Marshal(vc)
+			if err != nil {
+				return nil, fmt.Errorf("marshaling finding: %w", err)
+			}
+			summary.Result.Findings = append(summary.Result.Findings, b)
 		}
-		summary.Result.Violations = append(summary.Result.Violations, b)
 	}
 
 	// Include raw debug info if requested

@@ -191,6 +191,7 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	var result struct {
 		Skipped    bool              `json:"skipped"`
 		Violations []json.RawMessage `json:"violations"`
+		Findings   []json.RawMessage `json:"findings"`
 		SkipReason string            `json:"skip_reason"`
 		Ignore     bool              `json:"ignore"`
 	}
@@ -205,15 +206,28 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		Skipped:    result.Skipped,
 		SkipReason: result.SkipReason,
 		Ignore:     result.Ignore,
-		Violations: make([]*engine.PolicyViolation, 0, len(result.Violations)),
 	}
 
-	for _, raw := range result.Violations {
-		pv, err := parseWasmViolation(policy.Name, raw)
-		if err != nil {
-			return nil, fmt.Errorf("violation in policy %q: %w", policy.Name, err)
+	// Prefer non-empty "findings" (structured objects) over "violations" for backward compatibility.
+	if len(result.Findings) > 0 {
+		evalResult.Violations = make([]*engine.PolicyViolation, 0, len(result.Findings))
+		for _, raw := range result.Findings {
+			pv, err := parseWasmFinding(policy.Name, raw)
+			if err != nil {
+				return nil, fmt.Errorf("finding in policy %q: %w", policy.Name, err)
+			}
+			evalResult.Violations = append(evalResult.Violations, pv)
 		}
-		evalResult.Violations = append(evalResult.Violations, pv)
+	} else {
+		// Fallback: violations (strings or deprecated structured objects).
+		evalResult.Violations = make([]*engine.PolicyViolation, 0, len(result.Violations))
+		for _, raw := range result.Violations {
+			pv, err := parseWasmViolation(policy.Name, raw)
+			if err != nil {
+				return nil, fmt.Errorf("violation in policy %q: %w", policy.Name, err)
+			}
+			evalResult.Violations = append(evalResult.Violations, pv)
+		}
 	}
 
 	e.logger.Debug().Str("policy", policy.Name).Int("violations", len(evalResult.Violations)).Bool("skipped", evalResult.Skipped).Msg("WASM policy evaluation complete")
@@ -229,8 +243,17 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	return evalResult, nil
 }
 
+// parseWasmFinding parses a single structured finding (object with "message" field).
+func parseWasmFinding(policyName string, raw json.RawMessage) (*engine.PolicyViolation, error) {
+	var obj map[string]any
+	if err := json.Unmarshal(raw, &obj); err != nil {
+		return nil, fmt.Errorf("finding must be a JSON object: %w", err)
+	}
+	return engine.NewStructuredViolation(policyName, obj)
+}
+
 // parseWasmViolation parses a single violation from WASM output.
-// The violation can be either a JSON string or a JSON object with a required "message" field.
+// Accepts both strings (legacy) and objects (deprecated, use findings instead).
 func parseWasmViolation(policyName string, raw json.RawMessage) (*engine.PolicyViolation, error) {
 	var v any
 	if err := json.Unmarshal(raw, &v); err != nil {
