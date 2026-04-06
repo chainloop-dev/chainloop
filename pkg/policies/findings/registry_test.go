@@ -75,6 +75,26 @@ func TestValidateFinding(t *testing.T) {
 			},
 		},
 		{
+			name:        "valid vulnerability finding with description",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-5678",
+				"external_id":  "CVE-2024-5678",
+				"package_purl": "pkg:golang/example.com/lib@v2.0.0",
+				"severity":     "HIGH",
+				"description":  "A buffer overflow vulnerability in the parsing module allows remote code execution.",
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyVulnerabilityFinding)
+				require.True(t, ok)
+				assert.Equal(t, "Found CVE-2024-5678", f.GetMessage())
+				assert.Equal(t, "CVE-2024-5678", f.GetExternalId())
+				assert.Equal(t, "HIGH", f.GetSeverity())
+				assert.Equal(t, "A buffer overflow vulnerability in the parsing module allows remote code execution.", f.GetDescription())
+			},
+		},
+		{
 			name:        "vulnerability finding missing required field",
 			findingType: "VULNERABILITY",
 			raw: map[string]any{
@@ -140,6 +160,23 @@ func TestValidateFinding(t *testing.T) {
 				assert.Equal(t, "Banned license GPL-3.0", f.GetMessage())
 				assert.Equal(t, "lodash", f.GetComponentName())
 				assert.Equal(t, "GPL-3.0", f.GetLicenseId())
+			},
+		},
+		{
+			name:        "vulnerability finding with unknown field is accepted",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-9999",
+				"external_id":  "CVE-2024-9999",
+				"package_purl": "pkg:golang/example.com/lib@v3.0.0",
+				"severity":     "LOW",
+				"future_field": "some value from a newer policy",
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyVulnerabilityFinding)
+				require.True(t, ok)
+				assert.Equal(t, "CVE-2024-9999", f.GetExternalId())
 			},
 		},
 		{

@@ -354,6 +354,8 @@ export interface PolicyVulnerabilityFinding {
   cwes: string[];
   /** Suggested fix or upgrade path */
   recommendation: string;
+  /** Optional longer description of the vulnerability */
+  description: string;
 }
 
 /**
@@ -3232,7 +3234,16 @@ export const PolicyEvaluationBundle = {
 };
 
 function createBasePolicyVulnerabilityFinding(): PolicyVulnerabilityFinding {
-  return { message: "", externalId: "", packagePurl: "", severity: "", cvssV3Score: 0, cwes: [], recommendation: "" };
+  return {
+    message: "",
+    externalId: "",
+    packagePurl: "",
+    severity: "",
+    cvssV3Score: 0,
+    cwes: [],
+    recommendation: "",
+    description: "",
+  };
 }
 
 export const PolicyVulnerabilityFinding = {
@@ -3257,6 +3268,9 @@ export const PolicyVulnerabilityFinding = {
     }
     if (message.recommendation !== "") {
       writer.uint32(58).string(message.recommendation);
+    }
+    if (message.description !== "") {
+      writer.uint32(66).string(message.description);
     }
     return writer;
   },
@@ -3317,6 +3331,13 @@ export const PolicyVulnerabilityFinding = {
 
           message.recommendation = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3335,6 +3356,7 @@ export const PolicyVulnerabilityFinding = {
       cvssV3Score: isSet(object.cvssV3Score) ? Number(object.cvssV3Score) : 0,
       cwes: Array.isArray(object?.cwes) ? object.cwes.map((e: any) => String(e)) : [],
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
+      description: isSet(object.description) ? String(object.description) : "",
     };
   },
 
@@ -3351,6 +3373,7 @@ export const PolicyVulnerabilityFinding = {
       obj.cwes = [];
     }
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
+    message.description !== undefined && (obj.description = message.description);
     return obj;
   },
 
@@ -3367,6 +3390,7 @@ export const PolicyVulnerabilityFinding = {
     message.cvssV3Score = object.cvssV3Score ?? 0;
     message.cwes = object.cwes?.map((e) => e) || [];
     message.recommendation = object.recommendation ?? "";
+    message.description = object.description ?? "";
     return message;
   },
 };
