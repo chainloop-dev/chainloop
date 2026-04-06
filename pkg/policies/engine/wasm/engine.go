@@ -206,11 +206,11 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		Skipped:    result.Skipped,
 		SkipReason: result.SkipReason,
 		Ignore:     result.Ignore,
-		Violations: make([]*engine.PolicyViolation, 0),
 	}
 
-	// "findings" (structured objects) takes precedence over "violations"
+	// Prefer non-empty "findings" (structured objects) over "violations" for backward compatibility.
 	if len(result.Findings) > 0 {
+		evalResult.Violations = make([]*engine.PolicyViolation, 0, len(result.Findings))
 		for _, raw := range result.Findings {
 			pv, err := parseWasmFinding(policy.Name, raw)
 			if err != nil {
@@ -219,8 +219,8 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 			evalResult.Violations = append(evalResult.Violations, pv)
 		}
 	} else {
-		// Fallback: violations (strings or structured objects).
-		// Structured objects in violations are deprecated — use findings instead.
+		// Fallback: violations (strings or deprecated structured objects).
+		evalResult.Violations = make([]*engine.PolicyViolation, 0, len(result.Violations))
 		for _, raw := range result.Violations {
 			pv, err := parseWasmViolation(policy.Name, raw)
 			if err != nil {
@@ -267,8 +267,6 @@ func parseWasmViolation(policyName string, raw json.RawMessage) (*engine.PolicyV
 			Violation: typed,
 		}, nil
 	case map[string]any:
-		// Deprecated: structured objects in violations will be removed in a future release.
-		// Migrate to the "findings" field instead.
 		return engine.NewStructuredViolation(policyName, typed)
 	default:
 		return nil, fmt.Errorf("violation must be a string or object, got %T", v)

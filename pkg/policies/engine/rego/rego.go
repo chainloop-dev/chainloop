@@ -210,11 +210,9 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 			result.SkipReason = reason
 			result.Ignore = ignore
 
-			// Try "findings" first (new format, structured objects).
-			// When present it fully replaces "violations", providing backward
-			// compatibility: old CLIs that only understand string violations
-			// ignore the unknown "findings" key.
-			if findingsRaw, ok := ruleResult["findings"].([]any); ok {
+			// Prefer non-empty "findings" (structured objects) over "violations" for backward compatibility.
+			findingsRaw, _ := ruleResult["findings"].([]any)
+			if len(findingsRaw) > 0 {
 				for _, f := range findingsRaw {
 					obj, ok := f.(map[string]any)
 					if !ok {
@@ -226,20 +224,14 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 					}
 					result.Violations = append(result.Violations, pv)
 				}
-			} else {
-				// Fallback: violations (strings or structured objects).
-				// Structured objects in violations are deprecated — use findings instead.
-				violations, ok := ruleResult["violations"].([]any)
-				if !ok {
-					return nil, engine.ResultFormatError{Field: "violations"}
-				}
+			} else if violations, ok := ruleResult["violations"].([]any); ok {
+				// Fallback: violations (strings or deprecated structured objects).
+				// TODO: remove structured object support once policies are fully migrated to findings.
 				for _, violation := range violations {
 					switch v := violation.(type) {
 					case string:
 						result.Violations = append(result.Violations, &engine.PolicyViolation{Subject: policy.Name, Violation: v})
 					case map[string]any:
-						// Deprecated: structured objects in violations will be removed in a future release.
-						// Migrate to the "findings" field instead.
 						pv, err := engine.NewStructuredViolation(policy.Name, v)
 						if err != nil {
 							return nil, fmt.Errorf("structured violation in policy %q: %w", policy.Name, err)
@@ -250,6 +242,7 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 					}
 				}
 			}
+			// If neither findings nor violations is present, result has zero violations.
 		}
 	}
 
