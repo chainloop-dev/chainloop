@@ -1,0 +1,25 @@
+app/cli/internal/policydevel/eval.go
+  f0ff6d90004da745 52-53,138,142-144,147,149-159
+app/cli/internal/policydevel/eval_test.go
+  f0ff6d90004da745 152,163,165,167-172,179,189-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "584f0340a6857d4976bbbd427adef914bbaa0851",
+  "prompts": {
+    "f0ff6d90004da745": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "94460fd4-7616-4189-812a-698a2576905a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 30,
+      "total_deletions": 26,
+      "accepted_lines": 30,
+      "overriden_lines": 0
+    }
+  }
+}
