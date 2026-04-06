@@ -1,0 +1,39 @@
+pkg/policies/engine/rego/testfiles/structured_no_message.rego
+  f0ff6d90004da745 11,32-33
+pkg/policies/engine/rego/rego.go
+  f0ff6d90004da745 213-223,225,228-240
+pkg/policies/engine/rego/testfiles/structured_vulnerability_builtin.rego
+  f0ff6d90004da745 11,33
+pkg/policies/engine/rego/testfiles/structured_sast.rego
+  f0ff6d90004da745 11,32-33
+pkg/policies/engine/rego/testfiles/structured_license.rego
+  f0ff6d90004da745 11,32-33
+pkg/policies/engine/rego/testfiles/mixed_violations.rego
+  f0ff6d90004da745 12,33,39-40
+pkg/policies/engine/rego/rego_test.go
+  f0ff6d90004da745 547,563,566,569,572,575-578,582,588
+pkg/policies/engine/rego/testfiles/structured_violations.rego
+  f0ff6d90004da745 11,32-33
+pkg/policies/engine/wasm/engine.go
+  f0ff6d90004da745 194,212-219,221-227,244-248,250-251,253-257,259-262
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "b8726ca9b6e5e039e65a40d3540d63540815140d",
+  "prompts": {
+    "f0ff6d90004da745": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "94460fd4-7616-4189-812a-698a2576905a",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 88,
+      "total_deletions": 74,
+      "accepted_lines": 87,
+      "overriden_lines": 0
+    }
+  }
+}
