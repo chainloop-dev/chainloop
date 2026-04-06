@@ -1,0 +1,23 @@
+app/cli/cmd/auth_login.go
+  9b9fa07bd533c55c 2,26,79,189-199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "b70ce5a2a5c2ab608d93e7c88061281f3f507c93",
+  "prompts": {
+    "9b9fa07bd533c55c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37b14fc4-8ea6-4eef-9c4c-72b48de52cd0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 14,
+      "total_deletions": 2,
+      "accepted_lines": 14,
+      "overriden_lines": 0
+    }
+  }
+}
