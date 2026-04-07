@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"runtime"
 	"time"
@@ -75,7 +76,7 @@ func interactiveAuth(forceHeadless bool) error {
 	q.Set(oauth.QueryParamLongLived, "true")
 	serverLoginURL.RawQuery = q.Encode()
 
-	if forceHeadless {
+	if forceHeadless || isRemoteSession() {
 		return headlessAuth(serverLoginURL)
 	}
 
@@ -183,6 +184,17 @@ func openbrowser(url string) error {
 	}
 
 	return cmd.Wait()
+}
+
+// isRemoteSession returns true if the CLI is running inside an SSH session
+// where a local browser callback would not be reachable.
+func isRemoteSession() bool {
+	for _, key := range []string{"SSH_CLIENT", "SSH_TTY", "SSH_CONNECTION"} {
+		if os.Getenv(key) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // Retrieve loginURL from the control plane
