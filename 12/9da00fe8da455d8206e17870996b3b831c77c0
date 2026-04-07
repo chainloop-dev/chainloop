@@ -1,0 +1,27 @@
+pkg/policies/engine/rego/builtins/vulnerability_test.go
+  ceadac8b711626ba 64-79
+pkg/policies/findings/registry_test.go
+  ceadac8b711626ba 98-117
+pkg/attestation/crafter/api/attestation/v1/crafting_state.proto
+  ceadac8b711626ba 337
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "129da00fe8da455d8206e17870996b3b831c77c0",
+  "prompts": {
+    "ceadac8b711626ba": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "45d553e9-2e13-4fab-83c5-297569f71ac7",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 40,
+      "total_deletions": 0,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    }
+  }
+}
