@@ -17,12 +17,9 @@ package crafter
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/prinfo"
@@ -72,22 +69,40 @@ func (c *PRMetadataCollector) Collect(ctx context.Context, cr *Crafter, attestat
 		return fmt.Errorf("marshaling PR/MR metadata: %w", err)
 	}
 
-	// Use a deterministic filename derived from a hash of the content so that
-	// retries produce the same Artifact.Name (via fileStats -> os.Stat().Name())
-	// and avoid duplicate CAS uploads.
-	contentHash := sha256.Sum256(jsonData)
-	materialName := fmt.Sprintf("pr-metadata-%s", metadata.Number)
-	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.json", materialName, hex.EncodeToString(contentHash[:])))
-	if err := os.WriteFile(tmpPath, jsonData, 0o600); err != nil {
-		return fmt.Errorf("writing temp file: %w", err)
+	materialName, tmpFile, err := createPRMetadataTempFile(metadata.Number, jsonData)
+	if err != nil {
+		return fmt.Errorf("creating PR metadata temp file: %w", err)
 	}
-	defer os.Remove(tmpPath)
+	defer os.Remove(tmpFile)
 
-	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpPath, casBackend, nil); err != nil {
+	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile, casBackend, nil); err != nil {
 		return fmt.Errorf("adding PR/MR metadata material: %w", err)
 	}
 
 	cr.Logger.Info().Msg("successfully collected and attested PR/MR metadata")
 
 	return nil
+}
+
+// createPRMetadataTempFile creates a temp file with the PR metadata JSON content
+// and returns the material name and the temp file path.
+func createPRMetadataTempFile(prNumber string, data []byte) (materialName string, filePath string, err error) {
+	materialName = fmt.Sprintf("pr-metadata-%s", prNumber)
+
+	tmpFile, err := os.CreateTemp("", fmt.Sprintf("%s-*.json", materialName))
+	if err != nil {
+		return "", "", fmt.Errorf("creating temp file: %w", err)
+	}
+
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+		return "", "", fmt.Errorf("writing temp file: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpFile.Name())
+		return "", "", fmt.Errorf("closing temp file: %w", err)
+	}
+
+	return materialName, tmpFile.Name(), nil
 }

@@ -100,17 +100,15 @@ func (c *AIAgentConfigCollector) uploadAgentConfig(
 		return fmt.Errorf("marshaling AI agent config for %s: %w", agentName, err)
 	}
 
-	// Use a deterministic filename derived from the config hash so that retries
-	// produce the same Artifact.Name (via fileStats -> os.Stat().Name()) and
-	// avoid duplicate CAS uploads. PR #2917 fixed the primary root cause
-	// (non-deterministic content from captured_at); this is additional hardening.
-	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("ai-agent-config-%s-%s.json", agentName, data.ConfigHash))
+	// Use a constant filename per agent so retries produce the same
+	// Artifact.Name (via fileStats -> os.Stat().Name()).
+	materialName := fmt.Sprintf("ai-agent-config-%s", agentName)
+	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", materialName))
 	if err := os.WriteFile(tmpPath, jsonData, 0o600); err != nil {
 		return fmt.Errorf("writing temp file: %w", err)
 	}
 	defer os.Remove(tmpPath)
 
-	materialName := fmt.Sprintf("ai-agent-config-%s", agentName)
 	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), materialName, tmpPath, casBackend, nil); err != nil {
 		return fmt.Errorf("adding AI agent config material for %s: %w", agentName, err)
 	}
