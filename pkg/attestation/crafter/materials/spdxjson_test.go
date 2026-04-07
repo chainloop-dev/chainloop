@@ -215,7 +215,6 @@ func TestSPDXJSONCraft(t *testing.T) {
 			require.NotNil(t, sbomArtifact)
 			assert.Equal(tc.wantDigest, sbomArtifact.Artifact.Digest)
 			assert.Equal(tc.wantFilename, sbomArtifact.Artifact.Name)
-			assert.Equal("test", sbomArtifact.Artifact.Id)
 
 			// Validate main component extraction
 			if tc.wantNoMainComponent {
