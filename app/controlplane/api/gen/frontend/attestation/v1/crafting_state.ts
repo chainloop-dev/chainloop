@@ -356,6 +356,8 @@ export interface PolicyVulnerabilityFinding {
   recommendation: string;
   /** Optional longer description of the vulnerability */
   description: string;
+  /** Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1") */
+  fixedVersion: string;
 }
 
 /**
@@ -3243,6 +3245,7 @@ function createBasePolicyVulnerabilityFinding(): PolicyVulnerabilityFinding {
     cwes: [],
     recommendation: "",
     description: "",
+    fixedVersion: "",
   };
 }
 
@@ -3271,6 +3274,9 @@ export const PolicyVulnerabilityFinding = {
     }
     if (message.description !== "") {
       writer.uint32(66).string(message.description);
+    }
+    if (message.fixedVersion !== "") {
+      writer.uint32(74).string(message.fixedVersion);
     }
     return writer;
   },
@@ -3338,6 +3344,13 @@ export const PolicyVulnerabilityFinding = {
 
           message.description = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.fixedVersion = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3357,6 +3370,7 @@ export const PolicyVulnerabilityFinding = {
       cwes: Array.isArray(object?.cwes) ? object.cwes.map((e: any) => String(e)) : [],
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
       description: isSet(object.description) ? String(object.description) : "",
+      fixedVersion: isSet(object.fixedVersion) ? String(object.fixedVersion) : "",
     };
   },
 
@@ -3374,6 +3388,7 @@ export const PolicyVulnerabilityFinding = {
     }
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
     message.description !== undefined && (obj.description = message.description);
+    message.fixedVersion !== undefined && (obj.fixedVersion = message.fixedVersion);
     return obj;
   },
 
@@ -3391,6 +3406,7 @@ export const PolicyVulnerabilityFinding = {
     message.cwes = object.cwes?.map((e) => e) || [];
     message.recommendation = object.recommendation ?? "";
     message.description = object.description ?? "";
+    message.fixedVersion = object.fixedVersion ?? "";
     return message;
   },
 };

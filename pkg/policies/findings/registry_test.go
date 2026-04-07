@@ -95,6 +95,27 @@ func TestValidateFinding(t *testing.T) {
 			},
 		},
 		{
+			name:        "valid vulnerability finding with fixed_version",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":       "Found CVE-2024-5678",
+				"external_id":   "CVE-2024-5678",
+				"package_purl":  "pkg:golang/example.com/lib@v1.0.0",
+				"severity":      "HIGH",
+				"fixed_version": "1.0.1",
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyVulnerabilityFinding)
+				require.True(t, ok)
+				assert.Equal(t, "Found CVE-2024-5678", f.GetMessage())
+				assert.Equal(t, "CVE-2024-5678", f.GetExternalId())
+				assert.Equal(t, "pkg:golang/example.com/lib@v1.0.0", f.GetPackagePurl())
+				assert.Equal(t, "HIGH", f.GetSeverity())
+				assert.Equal(t, "1.0.1", f.GetFixedVersion())
+			},
+		},
+		{
 			name:        "vulnerability finding missing required field",
 			findingType: "VULNERABILITY",
 			raw: map[string]any{

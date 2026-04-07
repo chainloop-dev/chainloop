@@ -692,7 +692,9 @@ type PolicyVulnerabilityFinding struct {
 	// Suggested fix or upgrade path
 	Recommendation string `protobuf:"bytes,7,opt,name=recommendation,proto3" json:"recommendation,omitempty"`
 	// Optional longer description of the vulnerability
-	Description   string `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	Description string `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	// Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1")
+	FixedVersion  string `protobuf:"bytes,9,opt,name=fixed_version,json=fixedVersion,proto3" json:"fixed_version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -779,6 +781,13 @@ func (x *PolicyVulnerabilityFinding) GetRecommendation() string {
 func (x *PolicyVulnerabilityFinding) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *PolicyVulnerabilityFinding) GetFixedVersion() string {
+	if x != nil {
+		return x.FixedVersion
 	}
 	return ""
 }
@@ -2758,7 +2767,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x05input\x18\x01 \x01(\fR\x05input\x12\x16\n" +
 	"\x06output\x18\x02 \x01(\fR\x06output\"\\\n" +
 	"\x16PolicyEvaluationBundle\x12B\n" +
-	"\vevaluations\x18\x01 \x03(\v2 .attestation.v1.PolicyEvaluationR\vevaluations\"\xd1\x02\n" +
+	"\vevaluations\x18\x01 \x03(\v2 .attestation.v1.PolicyEvaluationR\vevaluations\"\xf6\x02\n" +
 	"\x1aPolicyVulnerabilityFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12'\n" +
 	"\vexternal_id\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\n" +
@@ -2768,7 +2777,8 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\rcvss_v3_score\x18\x05 \x01(\x01B\x17\xbaH\x14\x12\x12\x19\x00\x00\x00\x00\x00\x00$@)\x00\x00\x00\x00\x00\x00\x00\x00R\vcvssV3Score\x12\x12\n" +
 	"\x04cwes\x18\x06 \x03(\tR\x04cwes\x12&\n" +
 	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12 \n" +
-	"\vdescription\x18\b \x01(\tR\vdescription\"\x8a\x02\n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\x12#\n" +
+	"\rfixed_version\x18\t \x01(\tR\ffixedVersion\"\x8a\x02\n" +
 	"\x11PolicySASTFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12\x1f\n" +
 	"\arule_id\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x06ruleId\x12\"\n" +
