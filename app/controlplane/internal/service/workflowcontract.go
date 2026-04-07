@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -465,7 +466,7 @@ func validateAndExtractMetadata(rawContract []byte, explicitName, explicitDesc s
 	return name, description, nil
 }
 
-// extractNameFromMetadata attempts to extract the name from metadata.name in v2 contracts
+// extractMetadata attempts to extract the name from metadata.name in v2 contracts
 func extractMetadata(rawContract []byte) (*schemav1.Metadata, error) {
 	if len(rawContract) == 0 {
 		return nil, nil
@@ -474,17 +475,33 @@ func extractMetadata(rawContract []byte) (*schemav1.Metadata, error) {
 	// Identify the format
 	format, err := unmarshal.IdentifyFormat(rawContract)
 	if err != nil {
-		return nil, errors.BadRequest("invalid", "failed to identify contract format")
+		return nil, nil
 	}
 
-	// Try parsing as v2 Contract
+	// Do a lenient parse (no validation) to detect v2 markers.
+	v2Probe := &schemav1.CraftingSchemaV2{}
+	lenientErr := unmarshal.FromRaw(rawContract, format, v2Probe, false)
+
+	isV2 := v2Probe.GetApiVersion() == "chainloop.dev/v1" && v2Probe.GetKind() == "Contract"
+	if !isV2 {
+		// Not a v2 contract
+		return nil, nil
+	}
+
+	// It's a v2 contract. If the lenient parse already failed, surface that error
+	if lenientErr != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid contract: %s", lenientErr))
+	}
+
+	// Lenient parse succeeded, validate
 	v2Contract := &schemav1.CraftingSchemaV2{}
-	if err := unmarshal.FromRaw(rawContract, format, v2Contract, true); err == nil {
-		if v2Contract.GetMetadata() != nil {
-			return v2Contract.GetMetadata(), nil
-		}
+	if err := unmarshal.FromRaw(rawContract, format, v2Contract, true); err != nil {
+		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid contract: %s", err))
 	}
 
-	// If v2 parsing failed or no metadata, return nothing
+	if v2Contract.GetMetadata() != nil {
+		return v2Contract.GetMetadata(), nil
+	}
+
 	return nil, nil
 }
