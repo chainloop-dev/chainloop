@@ -1,0 +1,23 @@
+app/controlplane/Dockerfile.migrations
+  18c54ea92ef6f548 3-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "b5acf4df723de78147efc957291e10b6325ee20d",
+  "prompts": {
+    "18c54ea92ef6f548": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1acd817e-098a-49bf-8896-739a51dfd6df",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 4,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
