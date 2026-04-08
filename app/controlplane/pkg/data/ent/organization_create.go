@@ -156,6 +156,20 @@ func (_c *OrganizationCreate) SetNillableEnableAiAgentCollector(v *bool) *Organi
 	return _c
 }
 
+// SetSuspended sets the "suspended" field.
+func (_c *OrganizationCreate) SetSuspended(v bool) *OrganizationCreate {
+	_c.mutation.SetSuspended(v)
+	return _c
+}
+
+// SetNillableSuspended sets the "suspended" field if the given value is not nil.
+func (_c *OrganizationCreate) SetNillableSuspended(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetSuspended(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *OrganizationCreate) SetID(v uuid.UUID) *OrganizationCreate {
 	_c.mutation.SetID(v)
@@ -349,6 +363,10 @@ func (_c *OrganizationCreate) defaults() {
 		v := organization.DefaultEnableAiAgentCollector
 		_c.mutation.SetEnableAiAgentCollector(v)
 	}
+	if _, ok := _c.mutation.Suspended(); !ok {
+		v := organization.DefaultSuspended
+		_c.mutation.SetSuspended(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := organization.DefaultID()
 		_c.mutation.SetID(v)
@@ -377,6 +395,9 @@ func (_c *OrganizationCreate) check() error {
 	}
 	if _, ok := _c.mutation.EnableAiAgentCollector(); !ok {
 		return &ValidationError{Name: "enable_ai_agent_collector", err: errors.New(`ent: missing required field "Organization.enable_ai_agent_collector"`)}
+	}
+	if _, ok := _c.mutation.Suspended(); !ok {
+		return &ValidationError{Name: "suspended", err: errors.New(`ent: missing required field "Organization.suspended"`)}
 	}
 	return nil
 }
@@ -453,6 +474,10 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.EnableAiAgentCollector(); ok {
 		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
 		_node.EnableAiAgentCollector = value
+	}
+	if value, ok := _c.mutation.Suspended(); ok {
+		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
+		_node.Suspended = value
 	}
 	if nodes := _c.mutation.MembershipsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -766,6 +791,18 @@ func (u *OrganizationUpsert) UpdateEnableAiAgentCollector() *OrganizationUpsert 
 	return u
 }
 
+// SetSuspended sets the "suspended" field.
+func (u *OrganizationUpsert) SetSuspended(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldSuspended, v)
+	return u
+}
+
+// UpdateSuspended sets the "suspended" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateSuspended() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldSuspended)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -968,6 +1005,20 @@ func (u *OrganizationUpsertOne) SetEnableAiAgentCollector(v bool) *OrganizationU
 func (u *OrganizationUpsertOne) UpdateEnableAiAgentCollector() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateEnableAiAgentCollector()
+	})
+}
+
+// SetSuspended sets the "suspended" field.
+func (u *OrganizationUpsertOne) SetSuspended(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetSuspended(v)
+	})
+}
+
+// UpdateSuspended sets the "suspended" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateSuspended() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateSuspended()
 	})
 }
 
@@ -1340,6 +1391,20 @@ func (u *OrganizationUpsertBulk) SetEnableAiAgentCollector(v bool) *Organization
 func (u *OrganizationUpsertBulk) UpdateEnableAiAgentCollector() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateEnableAiAgentCollector()
+	})
+}
+
+// SetSuspended sets the "suspended" field.
+func (u *OrganizationUpsertBulk) SetSuspended(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetSuspended(v)
+	})
+}
+
+// UpdateSuspended sets the "suspended" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateSuspended() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateSuspended()
 	})
 }
 

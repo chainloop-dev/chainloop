@@ -60,6 +60,8 @@ func (Organization) Fields() []ent.Field {
 		field.Int("api_token_inactivity_threshold_days").Optional().Nillable(),
 		// enable_ai_agent_collector enables automatic AI agent config collection during attestation init
 		field.Bool("enable_ai_agent_collector").Default(false),
+		// Suspended orgs are restricted to read-only operations.
+		field.Bool("suspended").Default(false),
 	}
 }
 

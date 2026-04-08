@@ -188,6 +188,20 @@ func (_u *OrganizationUpdate) SetNillableEnableAiAgentCollector(v *bool) *Organi
 	return _u
 }
 
+// SetSuspended sets the "suspended" field.
+func (_u *OrganizationUpdate) SetSuspended(v bool) *OrganizationUpdate {
+	_u.mutation.SetSuspended(v)
+	return _u
+}
+
+// SetNillableSuspended sets the "suspended" field if the given value is not nil.
+func (_u *OrganizationUpdate) SetNillableSuspended(v *bool) *OrganizationUpdate {
+	if v != nil {
+		_u.SetSuspended(*v)
+	}
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdate) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -566,6 +580,9 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.EnableAiAgentCollector(); ok {
 		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Suspended(); ok {
+		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1098,6 +1115,20 @@ func (_u *OrganizationUpdateOne) SetNillableEnableAiAgentCollector(v *bool) *Org
 	return _u
 }
 
+// SetSuspended sets the "suspended" field.
+func (_u *OrganizationUpdateOne) SetSuspended(v bool) *OrganizationUpdateOne {
+	_u.mutation.SetSuspended(v)
+	return _u
+}
+
+// SetNillableSuspended sets the "suspended" field if the given value is not nil.
+func (_u *OrganizationUpdateOne) SetNillableSuspended(v *bool) *OrganizationUpdateOne {
+	if v != nil {
+		_u.SetSuspended(*v)
+	}
+	return _u
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by IDs.
 func (_u *OrganizationUpdateOne) AddMembershipIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	_u.mutation.AddMembershipIDs(ids...)
@@ -1506,6 +1537,9 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 	}
 	if value, ok := _u.mutation.EnableAiAgentCollector(); ok {
 		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.Suspended(); ok {
+		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
 	}
 	if _u.mutation.MembershipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

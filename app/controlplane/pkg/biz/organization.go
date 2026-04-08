@@ -48,6 +48,8 @@ type Organization struct {
 	APITokenInactivityThresholdDays *int
 	// EnableAIAgentCollector enables automatic AI agent config collection during attestation init
 	EnableAIAgentCollector bool
+	// Suspended indicates whether the organization is suspended (read-only mode)
+	Suspended bool
 }
 
 // OrganizationUpdateOpts holds optional fields for updating an organization.
@@ -70,6 +72,7 @@ type OrganizationRepo interface {
 	Delete(ctx context.Context, ID uuid.UUID) error
 	// FindWithTokenInactivityThreshold returns orgs that have api_token_inactivity_threshold_days set (non-nil).
 	FindWithTokenInactivityThreshold(ctx context.Context) ([]*Organization, error)
+	SetSuspended(ctx context.Context, id uuid.UUID, suspended bool) error
 }
 
 type OrganizationUseCase struct {

@@ -61,7 +61,7 @@ func WithAttestationContextFromFederatedInfo(orgUC *biz.OrganizationUseCase, log
 			}
 
 			// Set the current organization and API-Token in the context
-			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt, Suspended: org.Suspended})
 			logger.Infow("msg", "[authN] processed credentials", "type", "Federated delegation")
 
 			return handler(ctx, req)

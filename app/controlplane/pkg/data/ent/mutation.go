@@ -8749,6 +8749,7 @@ type OrganizationMutation struct {
 	api_token_inactivity_threshold_days      *int
 	addapi_token_inactivity_threshold_days   *int
 	enable_ai_agent_collector                *bool
+	suspended                                *bool
 	clearedFields                            map[string]struct{}
 	memberships                              map[uuid.UUID]struct{}
 	removedmemberships                       map[uuid.UUID]struct{}
@@ -9319,6 +9320,42 @@ func (m *OrganizationMutation) ResetEnableAiAgentCollector() {
 	m.enable_ai_agent_collector = nil
 }
 
+// SetSuspended sets the "suspended" field.
+func (m *OrganizationMutation) SetSuspended(b bool) {
+	m.suspended = &b
+}
+
+// Suspended returns the value of the "suspended" field in the mutation.
+func (m *OrganizationMutation) Suspended() (r bool, exists bool) {
+	v := m.suspended
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSuspended returns the old "suspended" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldSuspended(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSuspended is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSuspended requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSuspended: %w", err)
+	}
+	return oldValue.Suspended, nil
+}
+
+// ResetSuspended resets all changes to the "suspended" field.
+func (m *OrganizationMutation) ResetSuspended() {
+	m.suspended = nil
+}
+
 // AddMembershipIDs adds the "memberships" edge to the Membership entity by ids.
 func (m *OrganizationMutation) AddMembershipIDs(ids ...uuid.UUID) {
 	if m.memberships == nil {
@@ -9785,7 +9822,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -9816,6 +9853,9 @@ func (m *OrganizationMutation) Fields() []string {
 	if m.enable_ai_agent_collector != nil {
 		fields = append(fields, organization.FieldEnableAiAgentCollector)
 	}
+	if m.suspended != nil {
+		fields = append(fields, organization.FieldSuspended)
+	}
 	return fields
 }
 
@@ -9844,6 +9884,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.APITokenInactivityThresholdDays()
 	case organization.FieldEnableAiAgentCollector:
 		return m.EnableAiAgentCollector()
+	case organization.FieldSuspended:
+		return m.Suspended()
 	}
 	return nil, false
 }
@@ -9873,6 +9915,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldAPITokenInactivityThresholdDays(ctx)
 	case organization.FieldEnableAiAgentCollector:
 		return m.OldEnableAiAgentCollector(ctx)
+	case organization.FieldSuspended:
+		return m.OldSuspended(ctx)
 	}
 	return nil, fmt.Errorf("unknown Organization field %s", name)
 }
@@ -9951,6 +9995,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEnableAiAgentCollector(v)
+		return nil
+	case organization.FieldSuspended:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSuspended(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)
@@ -10066,6 +10117,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldEnableAiAgentCollector:
 		m.ResetEnableAiAgentCollector()
+		return nil
+	case organization.FieldSuspended:
+		m.ResetSuspended()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization field %s", name)

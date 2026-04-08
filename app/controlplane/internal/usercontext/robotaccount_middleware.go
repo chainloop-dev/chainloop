@@ -111,7 +111,7 @@ func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccoun
 				return nil, fmt.Errorf("error retrieving the organization: %w", err)
 			}
 
-			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt, Suspended: org.Suspended})
 
 			// Check that the encoded workflow ID is the one associated with the robot account
 			// NOTE: This in theory should not be necessary since currently we allow a robot account to be attached to ONLY ONE workflowID

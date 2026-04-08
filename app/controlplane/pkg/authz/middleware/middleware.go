@@ -17,8 +17,6 @@ package middleware
 
 import (
 	"context"
-	"errors"
-	"regexp"
 
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 
@@ -75,7 +73,7 @@ func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middl
 func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer Enforcer, logger *log.Helper) error {
 	logger.Infow("msg", "[authZ] checking authorization", "sub", subject, "operation", apiOperation, "component", "authz/middleware")
 	// If there is no entry in the map for this API operation, we deny access
-	policies, err := policiesLookup(apiOperation)
+	policies, err := authz.PoliciesLookup(apiOperation)
 	if err != nil {
 		return errorsAPI.Forbidden("forbidden", err.Error())
 	}
@@ -97,25 +95,3 @@ func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer E
 	return nil
 }
 
-// policiesLookup returns the policies required for a given API operation
-// it performs a two run lookup
-// 1 - It checks if there is an entry in the map
-// 2 - if there is not, it runs a regex match in each key in case one of those keys contains a regex
-func policiesLookup(apiOperation string) ([]*authz.Policy, error) {
-	// Direct match
-	policies, found := authz.ServerOperationsMap[apiOperation]
-	if found {
-		return policies, nil
-	}
-
-	// second pass trying to match a regex
-	// i.e "/controlplane.v1.OrgMetricsService/.*" -> "/controlplane.v1.OrgMetricsService/Totals"
-	for k, policies := range authz.ServerOperationsMap {
-		found, _ := regexp.MatchString(k, apiOperation)
-		if found {
-			return policies, nil
-		}
-	}
-
-	return nil, errors.New("operation not allowed")
-}

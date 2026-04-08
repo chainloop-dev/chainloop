@@ -138,6 +138,15 @@ func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		Exec(ctx)
 }
 
+// SetSuspended sets or clears the suspended flag on an organization.
+func (r *OrganizationRepo) SetSuspended(ctx context.Context, id uuid.UUID, suspended bool) error {
+	return r.data.DB.Organization.UpdateOneID(id).
+		Where(organization.DeletedAtIsNil()).
+		SetSuspended(suspended).
+		SetUpdatedAt(time.Now()).
+		Exec(ctx)
+}
+
 func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 	return &biz.Organization{
 		Name: eu.Name, ID: eu.ID.String(),
@@ -149,5 +158,6 @@ func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 		RestrictContractCreationToOrgAdmins: eu.RestrictContractCreationToOrgAdmins,
 		APITokenInactivityThresholdDays:     eu.APITokenInactivityThresholdDays,
 		EnableAIAgentCollector:              eu.EnableAiAgentCollector,
+		Suspended:                           eu.Suspended,
 	}
 }

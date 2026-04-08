@@ -35,6 +35,8 @@ const (
 	FieldAPITokenInactivityThresholdDays = "api_token_inactivity_threshold_days"
 	// FieldEnableAiAgentCollector holds the string denoting the enable_ai_agent_collector field in the database.
 	FieldEnableAiAgentCollector = "enable_ai_agent_collector"
+	// FieldSuspended holds the string denoting the suspended field in the database.
+	FieldSuspended = "suspended"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
 	EdgeMemberships = "memberships"
 	// EdgeWorkflowContracts holds the string denoting the workflow_contracts edge name in mutations.
@@ -124,6 +126,7 @@ var Columns = []string{
 	FieldRestrictContractCreationToOrgAdmins,
 	FieldAPITokenInactivityThresholdDays,
 	FieldEnableAiAgentCollector,
+	FieldSuspended,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -149,6 +152,8 @@ var (
 	DefaultRestrictContractCreationToOrgAdmins bool
 	// DefaultEnableAiAgentCollector holds the default value on creation for the "enable_ai_agent_collector" field.
 	DefaultEnableAiAgentCollector bool
+	// DefaultSuspended holds the default value on creation for the "suspended" field.
+	DefaultSuspended bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -204,6 +209,11 @@ func ByAPITokenInactivityThresholdDays(opts ...sql.OrderTermOption) OrderOption 
 // ByEnableAiAgentCollector orders the results by the enable_ai_agent_collector field.
 func ByEnableAiAgentCollector(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEnableAiAgentCollector, opts...).ToFunc()
+}
+
+// BySuspended orders the results by the suspended field.
+func BySuspended(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSuspended, opts...).ToFunc()
 }
 
 // ByMembershipsCount orders the results by memberships count.

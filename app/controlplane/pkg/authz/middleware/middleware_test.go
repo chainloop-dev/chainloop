@@ -214,7 +214,7 @@ func TestPoliciesLookup(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := policiesLookup(tc.operation)
+			_, err := authz.PoliciesLookup(tc.operation)
 
 			if tc.wantErr {
 				assert.Error(t, err)

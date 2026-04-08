@@ -23,6 +23,7 @@ import (
 type Org struct {
 	ID, Name  string
 	CreatedAt *time.Time
+	Suspended bool
 }
 
 func WithCurrentOrg(ctx context.Context, org *Org) context.Context {
