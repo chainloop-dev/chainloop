@@ -57,7 +57,7 @@ func newSuccessCollector(t *testing.T, id string) *craftermocks.Collector {
 }
 
 func TestRunCollectors(t *testing.T) {
-	t.Run("reloads state after collectors when digest changes", func(t *testing.T) {
+	t.Run("always reloads state after collectors", func(t *testing.T) {
 		sm := craftermocks.NewStateManager(t)
 		setupReadExpectation(sm, "digest-1")
 		sm.On("Info", mock.Anything, mock.Anything).Return("mock://run-1")
@@ -77,7 +77,7 @@ func TestRunCollectors(t *testing.T) {
 
 		cr.RunCollectors(context.Background(), "run-1", nil)
 
-		// Read before + Read after (digest changed, so reload triggered)
+		// Read before collectors + unconditional Read after collectors
 		sm.AssertNumberOfCalls(t, "Read", 2)
 		c1.AssertCalled(t, "Collect", mock.Anything, mock.Anything, "run-1", mock.Anything)
 	})
@@ -102,9 +102,10 @@ func TestRunCollectors(t *testing.T) {
 
 		c1.AssertCalled(t, "Collect", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 		c2.AssertCalled(t, "Collect", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+		sm.AssertNumberOfCalls(t, "Read", 2)
 	})
 
-	t.Run("no collectors skips reload when digest unchanged", func(t *testing.T) {
+	t.Run("reloads state even with no collectors", func(t *testing.T) {
 		sm := craftermocks.NewStateManager(t)
 		setupReadExpectation(sm, "d")
 		sm.On("Info", mock.Anything, mock.Anything).Return("mock://run-1")
@@ -114,8 +115,30 @@ func TestRunCollectors(t *testing.T) {
 
 		cr.RunCollectors(context.Background(), "run-1", nil)
 
-		// Only the initial Read, no reload since digest didn't change
-		sm.AssertNumberOfCalls(t, "Read", 1)
+		// Read before + unconditional Read after, even with no collectors
+		sm.AssertNumberOfCalls(t, "Read", 2)
+	})
+
+	t.Run("reloads state when digest is stale (old server)", func(t *testing.T) {
+		sm := craftermocks.NewStateManager(t)
+		setupReadExpectation(sm, "digest-1")
+		sm.On("Info", mock.Anything, mock.Anything).Return("mock://run-1")
+
+		// Collector persists state via Write but the old server doesn't return
+		// a new digest, so UpdateCheckSum stays unchanged (stale).
+		c1 := craftermocks.NewCollector(t)
+		c1.On("ID").Maybe().Return("c1")
+		c1.On("Collect", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+		cr, err := crafter.NewCrafter(sm, nil)
+		require.NoError(t, err)
+		cr.RegisterCollectors(c1)
+
+		cr.RunCollectors(context.Background(), "run-1", nil)
+
+		// Unconditional reload ensures the stale digest is refreshed
+		sm.AssertNumberOfCalls(t, "Read", 2)
+		c1.AssertCalled(t, "Collect", mock.Anything, mock.Anything, "run-1", mock.Anything)
 	})
 
 	t.Run("state load failure aborts before running collectors", func(t *testing.T) {
