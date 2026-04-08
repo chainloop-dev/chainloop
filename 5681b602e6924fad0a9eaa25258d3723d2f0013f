@@ -1,0 +1,33 @@
+app/controlplane/internal/service/workflowrun.go
+  e849d5cd59aba8ff 30,49,60
+app/controlplane/cmd/wire.go
+  e849d5cd59aba8ff 41-42,175-176,178-179,181,184-185,187-188,190
+pkg/cache/attestationbundle/attestationbundle.go
+  e849d5cd59aba8ff 1-61,63-68
+app/controlplane/pkg/biz/workflowrun.go
+  e849d5cd59aba8ff 33,114,125
+app/controlplane/pkg/biz/testhelpers/wire.go
+  e849d5cd59aba8ff 38,75
+pkg/cache/policyevalbundle/policyevalbundle.go
+  e849d5cd59aba8ff 1-61,63-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "5681b602e6924fad0a9eaa25258d3723d2f0013f",
+  "prompts": {
+    "e849d5cd59aba8ff": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "127f24c1-fc28-49b1-9700-6af46c79d910",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 216,
+      "total_deletions": 94,
+      "accepted_lines": 258,
+      "overriden_lines": 0
+    }
+  }
+}
