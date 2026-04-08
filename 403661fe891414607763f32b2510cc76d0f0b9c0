@@ -1,0 +1,39 @@
+pkg/cache/policyevalbundle/policyevalbundle.go
+  e849d5cd59aba8ff 1-48,50-52,55-60
+pkg/cache/attestationbundle/attestationbundle.go
+  e849d5cd59aba8ff 1-48,50-52,55-60
+pkg/cache/memory.go
+  e849d5cd59aba8ff 30,39,45,51,57
+pkg/cache/natskv.go
+  e849d5cd59aba8ff 54,82,84,110,118,121,127,132,139,149,153,165,169,184,190,194
+app/controlplane/pkg/biz/workflowrun.go
+  e849d5cd59aba8ff 33,114,125
+app/controlplane/pkg/biz/testhelpers/wire.go
+  e849d5cd59aba8ff 38,75
+pkg/cache/cache.go
+  e849d5cd59aba8ff 35,37-40,121-124
+app/controlplane/internal/service/workflowrun.go
+  e849d5cd59aba8ff 30,49,60
+app/controlplane/cmd/wire.go
+  e849d5cd59aba8ff 41-42,146,152,165
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "403661fe891414607763f32b2510cc76d0f0b9c0",
+  "prompts": {
+    "e849d5cd59aba8ff": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "127f24c1-fc28-49b1-9700-6af46c79d910",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 338,
+      "total_deletions": 259,
+      "accepted_lines": 256,
+      "overriden_lines": 0
+    }
+  }
+}
