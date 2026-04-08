@@ -18,6 +18,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
@@ -95,7 +96,21 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		cleanup()
 		return nil, nil, err
 	}
-	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, auditorUseCase, logger)
+	cache := newAttestationBundleCache()
+	casClient := newNilCASClient()
+	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
+	workflowRunUseCaseOpts := &biz.WorkflowRunUseCaseOpts{
+		WfrRepo:      workflowRunRepo,
+		WfRepo:       workflowRepo,
+		SigningUC:    signingUseCase,
+		AuditorUC:    auditorUseCase,
+		Logger:       logger,
+		BundleCache:  cache,
+		CASClient:    casClient,
+		CASMappingUC: casMappingUseCase,
+	}
+	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunUseCaseOpts)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -122,8 +137,6 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
-	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
 	if err != nil {
@@ -206,6 +219,14 @@ var (
 )
 
 // wire.go:
+
+func newAttestationBundleCache() *attestationbundle.Cache {
+	return nil
+}
+
+func newNilCASClient() biz.CASClient {
+	return nil
+}
 
 func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}

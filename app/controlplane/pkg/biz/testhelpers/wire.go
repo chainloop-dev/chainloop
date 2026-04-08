@@ -35,6 +35,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
@@ -65,8 +66,18 @@ func WireTestData(context.Context, *TestDatabase, *testing.T, log.Logger, creden
 			authzConfig,
 			authzUseCaseConfig,
 			biz.NewIndexConfig,
+			newAttestationBundleCache,
+			newNilCASClient,
 		),
 	)
+}
+
+func newAttestationBundleCache() *attestationbundle.Cache {
+	return nil
+}
+
+func newNilCASClient() biz.CASClient {
+	return nil
 }
 
 func authzConfig() *authz.Config {

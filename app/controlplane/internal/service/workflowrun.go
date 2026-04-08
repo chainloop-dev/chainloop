@@ -27,7 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	chainloop "github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
-	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/cache/policyevalbundle"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
@@ -46,7 +46,7 @@ type WorkflowRunService struct {
 	credsReader             credentials.Reader
 	casClient               biz.CASClient
 	casMappingUC            *biz.CASMappingUseCase
-	policyEvalCache         cache.Cache[[]byte]
+	policyEvalCache         *policyevalbundle.Cache
 }
 
 type NewWorkflowRunServiceOpts struct {
@@ -57,7 +57,7 @@ type NewWorkflowRunServiceOpts struct {
 	CredsReader        credentials.Reader
 	CASClient          biz.CASClient
 	CASMappingUC       *biz.CASMappingUseCase
-	PolicyEvalCache    cache.Cache[[]byte]
+	PolicyEvalCache    *policyevalbundle.Cache
 	Opts               []NewOpt
 }
 
