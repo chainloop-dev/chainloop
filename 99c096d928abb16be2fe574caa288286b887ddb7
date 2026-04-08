@@ -1,0 +1,23 @@
+app/controlplane/cmd/wire.go
+  b89877b59c8c8fa8 149,152,156,159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.6",
+  "base_commit_sha": "99c096d928abb16be2fe574caa288286b887ddb7",
+  "prompts": {
+    "b89877b59c8c8fa8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "42a376ab-2891-4ea7-a1ee-1a0df58e17b0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 16,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
