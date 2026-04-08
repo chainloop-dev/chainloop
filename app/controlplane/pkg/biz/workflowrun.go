@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
@@ -103,6 +104,12 @@ type WorkflowRunRepo interface {
 	Expire(ctx context.Context, id uuid.UUID) error
 }
 
+// AttestationBundleCache wraps cache.Cache[[]byte] to disambiguate from other
+// []byte caches (e.g. policy evaluation bundles) in the wire dependency graph.
+type AttestationBundleCache struct {
+	cache.Cache[[]byte]
+}
+
 type WorkflowRunUseCase struct {
 	wfRunRepo WorkflowRunRepo
 	wfRepo    WorkflowRepo
@@ -110,17 +117,37 @@ type WorkflowRunUseCase struct {
 	auditorUC *AuditorUseCase
 
 	signingUseCase *SigningUseCase
+	bundleCache    *AttestationBundleCache
+	casClient      CASClient
+	casMappingUC   *CASMappingUseCase
 }
 
-func NewWorkflowRunUseCase(wfrRepo WorkflowRunRepo, wfRepo WorkflowRepo, suc *SigningUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*WorkflowRunUseCase, error) {
+type WorkflowRunUseCaseOpts struct {
+	WfrRepo      WorkflowRunRepo
+	WfRepo       WorkflowRepo
+	SigningUC    *SigningUseCase
+	AuditorUC    *AuditorUseCase
+	Logger       log.Logger
+	BundleCache  *AttestationBundleCache
+	CASClient    CASClient
+	CASMappingUC *CASMappingUseCase
+}
+
+func NewWorkflowRunUseCase(opts *WorkflowRunUseCaseOpts) (*WorkflowRunUseCase, error) {
+	logger := opts.Logger
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
 
 	return &WorkflowRunUseCase{
-		wfRunRepo: wfrRepo, wfRepo: wfRepo, auditorUC: auditorUC,
-		signingUseCase: suc,
+		wfRunRepo:      opts.WfrRepo,
+		wfRepo:         opts.WfRepo,
+		auditorUC:      opts.AuditorUC,
+		signingUseCase: opts.SigningUC,
 		logger:         log.NewHelper(logger),
+		bundleCache:    opts.BundleCache,
+		casClient:      opts.CASClient,
+		casMappingUC:   opts.CASMappingUC,
 	}, nil
 }
 
@@ -535,27 +562,95 @@ func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgI
 	return workflowRunInOrgOrPublic(wfrun, orgUUID)
 }
 
+// addAttestationFromBundle resolves the attestation bundle using cache → DB → CAS fallback.
+// Bundles are being migrated from the workflow run DB column into CAS; the layered resolution
+// provides backward compatibility and prepares for dropping the DB column.
 func (uc *WorkflowRunUseCase) addAttestationFromBundle(ctx context.Context, wfRun *WorkflowRun) error {
-	// missing workflow run or attestation already there, do nothing
 	if wfRun == nil || wfRun.State != string(WorkflowRunSuccess) {
 		return nil
 	}
 
-	var bundle protobundle.Bundle
-	bundleBytes, err := uc.wfRunRepo.GetBundle(ctx, wfRun.ID)
-	if err != nil {
-		if IsNotFound(err) {
-			return nil
+	if wfRun.Attestation == nil || wfRun.Attestation.Digest == "" {
+		return nil
+	}
+
+	digest := wfRun.Attestation.Digest
+
+	// Layer 1: cache lookup by digest
+	if uc.bundleCache != nil {
+		cached, found, err := uc.bundleCache.Get(ctx, digest)
+		if err != nil {
+			uc.logger.Warnw("msg", "attestation bundle cache get error", "digest", digest, "error", err)
 		}
+		if found {
+			return uc.applyBundle(wfRun, cached)
+		}
+	}
+
+	// Layer 2: DB fallback
+	bundleBytes, err := uc.wfRunRepo.GetBundle(ctx, wfRun.ID)
+	if err != nil && !IsNotFound(err) {
 		return fmt.Errorf("retrieving bundle from repo: %w", err)
 	}
-	if err = protojson.Unmarshal(bundleBytes, &bundle); err != nil {
+
+	if len(bundleBytes) > 0 {
+		uc.cacheBundle(ctx, digest, bundleBytes)
+		return uc.applyBundle(wfRun, bundleBytes)
+	}
+
+	// Layer 3: CAS download by digest
+	bundleBytes, err = uc.downloadBundleFromCAS(ctx, digest, wfRun.Workflow.OrgID)
+	if err != nil {
+		uc.logger.Warnw("msg", "failed to download bundle from CAS", "digest", digest, "error", err)
+		return nil
+	}
+
+	if len(bundleBytes) > 0 {
+		uc.cacheBundle(ctx, digest, bundleBytes)
+		return uc.applyBundle(wfRun, bundleBytes)
+	}
+
+	return nil
+}
+
+func (uc *WorkflowRunUseCase) applyBundle(wfRun *WorkflowRun, bundleBytes []byte) error {
+	var bundle protobundle.Bundle
+	if err := protojson.Unmarshal(bundleBytes, &bundle); err != nil {
 		return fmt.Errorf("unmarshalling bundle: %w", err)
 	}
 	wfRun.Attestation.Envelope = attestation.DSSEEnvelopeFromBundle(&bundle)
 	wfRun.Attestation.Bundle = bundleBytes
-
 	return nil
+}
+
+func (uc *WorkflowRunUseCase) cacheBundle(ctx context.Context, digest string, data []byte) {
+	if uc.bundleCache == nil {
+		return
+	}
+	if err := uc.bundleCache.Set(ctx, digest, data); err != nil {
+		uc.logger.Warnw("msg", "failed to cache attestation bundle", "digest", digest, "error", err)
+	}
+}
+
+func (uc *WorkflowRunUseCase) downloadBundleFromCAS(ctx context.Context, digest string, orgID uuid.UUID) ([]byte, error) {
+	if uc.casClient == nil || uc.casMappingUC == nil {
+		return nil, nil
+	}
+
+	mapping, err := uc.casMappingUC.FindCASMappingForDownloadByOrg(ctx, digest, []uuid.UUID{orgID}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("finding CAS mapping: %w", err)
+	}
+	if mapping == nil {
+		return nil, nil
+	}
+
+	var buf bytes.Buffer
+	if err := uc.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, &buf, digest); err != nil {
+		return nil, fmt.Errorf("downloading attestation bundle: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 // filter the workflow runs that belong to the org or are public

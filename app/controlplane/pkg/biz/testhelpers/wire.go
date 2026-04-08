@@ -65,8 +65,18 @@ func WireTestData(context.Context, *TestDatabase, *testing.T, log.Logger, creden
 			authzConfig,
 			authzUseCaseConfig,
 			biz.NewIndexConfig,
+			newAttestationBundleCache,
+			newNilCASClient,
 		),
 	)
+}
+
+func newAttestationBundleCache() *biz.AttestationBundleCache {
+	return nil
+}
+
+func newNilCASClient() biz.CASClient {
+	return nil
 }
 
 func authzConfig() *authz.Config {

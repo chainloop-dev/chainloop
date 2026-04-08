@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ type workflowrunTestSuite struct {
 
 func (s *workflowrunTestSuite) SetupTest() {
 	s.repo = repoM.NewWorkflowRunRepo(s.T())
-	uc, err := biz.NewWorkflowRunUseCase(s.repo, nil, nil, nil, nil)
+	uc, err := biz.NewWorkflowRunUseCase(&biz.WorkflowRunUseCaseOpts{WfrRepo: s.repo})
 	require.NoError(s.T(), err)
 	s.useCase = uc
 	s.validID = uuid.New()

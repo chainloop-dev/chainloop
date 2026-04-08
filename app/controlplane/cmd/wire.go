@@ -141,6 +141,7 @@ var cacheProviderSet = wire.NewSet(
 	newMembershipsCache,
 	newClaimsCache,
 	newPolicyEvalBundleCache,
+	newAttestationBundleCache,
 )
 
 func newClaimsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
@@ -180,6 +181,23 @@ func newPolicyEvalBundleCache(ctx context.Context, rc *natsconn.ReloadableConnec
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-policy-eval-bundles", "backend", backend, "ttl", "24h")
 	return cache.New[[]byte](opts...)
+}
+
+func newAttestationBundleCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (*biz.AttestationBundleCache, error) {
+	l := log.NewHelper(logger)
+	backend := "memory"
+	opts := []cache.Option{cache.WithTTL(5 * 24 * time.Hour), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for attestation bundles")}
+	if rc != nil {
+		backend = "nats"
+		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-attestation-bundles"))
+		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
+	}
+	l.Infow("msg", "cache initialized", "bucket", "chainloop-attestation-bundles", "backend", backend, "ttl", "120h")
+	c, err := cache.New[[]byte](opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &biz.AttestationBundleCache{Cache: c}, nil
 }
 
 // kratosLogAdapter adapts kratos log.Helper (Debugw(...interface{})) to cache.Logger (Debugw(string, ...any)).

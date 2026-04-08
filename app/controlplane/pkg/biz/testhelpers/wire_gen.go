@@ -95,7 +95,21 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		cleanup()
 		return nil, nil, err
 	}
-	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunRepo, workflowRepo, signingUseCase, auditorUseCase, logger)
+	attestationBundleCache := newAttestationBundleCache()
+	casClient := newNilCASClient()
+	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
+	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
+	workflowRunUseCaseOpts := &biz.WorkflowRunUseCaseOpts{
+		WfrRepo:      workflowRunRepo,
+		WfRepo:       workflowRepo,
+		SigningUC:    signingUseCase,
+		AuditorUC:    auditorUseCase,
+		Logger:       logger,
+		BundleCache:  attestationBundleCache,
+		CASClient:    casClient,
+		CASMappingUC: casMappingUseCase,
+	}
+	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunUseCaseOpts)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -122,8 +136,6 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
-	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
-	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
 	if err != nil {
@@ -206,6 +218,14 @@ var (
 )
 
 // wire.go:
+
+func newAttestationBundleCache() *biz.AttestationBundleCache {
+	return nil
+}
+
+func newNilCASClient() biz.CASClient {
+	return nil
+}
 
 func authzConfig() *authz.Config {
 	return &authz.Config{RolesMap: authz.RolesMap}
