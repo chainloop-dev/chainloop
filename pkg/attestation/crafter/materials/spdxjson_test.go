@@ -165,11 +165,13 @@ func TestSPDXJSONCraft(t *testing.T) {
 			},
 		},
 		{
-			name:                "described package without PrimaryPackagePurpose (optional in SPDX 2.3)",
-			filePath:            "./testdata/sbom-spdx-no-purpose.json",
-			wantDigest:          "sha256:140b55bcbdd447fee1c86d50d8459b05159bebcd80a8a8da4ea6475eeab2f487",
-			wantFilename:        "sbom-spdx-no-purpose.json",
-			wantNoMainComponent: true,
+			name:                     "described package without PrimaryPackagePurpose returns best-effort name and version",
+			filePath:                 "./testdata/sbom-spdx-no-purpose.json",
+			wantDigest:               "sha256:140b55bcbdd447fee1c86d50d8459b05159bebcd80a8a8da4ea6475eeab2f487",
+			wantFilename:             "sbom-spdx-no-purpose.json",
+			wantMainComponent:        "my-lib",
+			wantMainComponentKind:    "",
+			wantMainComponentVersion: "2.0.0",
 			annotations: map[string]string{
 				"chainloop.material.tool.name":    "syft",
 				"chainloop.material.tool.version": "0.100.0",

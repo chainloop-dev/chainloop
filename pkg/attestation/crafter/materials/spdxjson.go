@@ -122,21 +122,20 @@ func (i *SPDXJSONCrafter) extractMainComponent(m *api.Attestation_Material, doc 
 	name := describedPkg.PackageName
 	version := describedPkg.PackageVersion
 
-	// PrimaryPackagePurpose is optional in SPDX 2.3. If absent, skip main component extraction
-	// since we cannot determine the component kind.
+	// PrimaryPackagePurpose is optional in SPDX 2.3. Best effort: return name
+	// and version even if kind is unknown.
 	kind := strings.ToLower(describedPkg.PrimaryPackagePurpose)
-	if kind == "" {
-		return fmt.Errorf("described package %q has no PrimaryPackagePurpose set", describedPkg.PackageName)
-	}
 
 	// For container packages, standardize the name via go-containerregistry
-	// to get the full repository name and strip any tag (matching CycloneDX behavior)
+	// to get the full repository name and strip any tag (matching CycloneDX behavior).
+	// If parsing fails (e.g. missing registry credentials), continue with the original name.
 	if kind == containerComponentKind {
 		ref, err := remotename.ParseReference(name)
 		if err != nil {
-			return fmt.Errorf("couldn't parse OCI image repository name: %w", err)
+			i.logger.Debug().Err(err).Str("name", name).Msg("couldn't parse OCI image reference, using original name")
+		} else {
+			name = ref.Context().String()
 		}
-		name = ref.Context().String()
 	}
 
 	m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
