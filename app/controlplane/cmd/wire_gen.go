@@ -152,13 +152,13 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	}
 	workflowContractUseCase := biz.NewWorkflowContractUseCase(workflowContractRepo, registry, auditorUseCase, logger)
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, organizationRepo, logger)
-	cache, err := newMembershipsCache(contextContext, reloadableConnection, logger)
+	cache, err := newMembershipsCache(logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	cacheCache, err := newClaimsCache(contextContext, reloadableConnection, logger)
+	cacheCache, err := newClaimsCache(logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -451,28 +451,16 @@ var cacheProviderSet = wire.NewSet(
 	newClaimsCache, policyevalbundle.New, attestationbundle.New,
 )
 
-func newClaimsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
+func newClaimsCache(logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
 	l := log.NewHelper(logger)
-	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(l), cache.WithDescription("Cache for JWT claims")}
-	if rc != nil {
-		backend = "nats"
-		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-jwt-claims"))
-		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
-	}
-	l.Infow("msg", "cache initialized", "bucket", "chainloop-jwt-claims", "backend", backend, "ttl", "10s")
+	l.Infow("msg", "cache initialized", "backend", "memory", "ttl", "10s")
 	return cache.New[*jwt.MapClaims](opts...)
 }
 
-func newMembershipsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*entities.Membership], error) {
+func newMembershipsCache(logger log.Logger) (cache.Cache[*entities.Membership], error) {
 	l := log.NewHelper(logger)
-	backend := "memory"
 	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(l), cache.WithDescription("Cache for org memberships")}
-	if rc != nil {
-		backend = "nats"
-		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-memberships"))
-		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
-	}
-	l.Infow("msg", "cache initialized", "bucket", "chainloop-memberships", "backend", backend, "ttl", "1s")
+	l.Infow("msg", "cache initialized", "backend", "memory", "ttl", "1s")
 	return cache.New[*entities.Membership](opts...)
 }
