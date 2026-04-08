@@ -22,6 +22,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
+	"github.com/chainloop-dev/chainloop/pkg/cache/policyevalbundle"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
@@ -188,7 +190,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		cleanup()
 		return nil, nil, err
 	}
-	attestationBundleCache, err := newAttestationBundleCache(contextContext, reloadableConnection, logger)
+	attestationbundleCache, err := attestationbundle.New(contextContext, reloadableConnection, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -202,7 +204,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		SigningUC:    signingUseCase,
 		AuditorUC:    auditorUseCase,
 		Logger:       logger,
-		BundleCache:  attestationBundleCache,
+		BundleCache:  attestationbundleCache,
 		CASClient:    casClientUseCase,
 		CASMappingUC: casMappingUseCase,
 	}
@@ -212,7 +214,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		cleanup()
 		return nil, nil, err
 	}
-	cache2, err := newPolicyEvalBundleCache(contextContext, reloadableConnection, logger)
+	policyevalbundleCache, err := policyevalbundle.New(contextContext, reloadableConnection, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -226,7 +228,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		CredsReader:        readerWriter,
 		CASClient:          casClientUseCase,
 		CASMappingUC:       casMappingUseCase,
-		PolicyEvalCache:    cache2,
+		PolicyEvalCache:    policyevalbundleCache,
 		Opts:               v5,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)
@@ -446,15 +448,13 @@ func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {
 
 var cacheProviderSet = wire.NewSet(
 	newMembershipsCache,
-	newClaimsCache,
-	newPolicyEvalBundleCache,
-	newAttestationBundleCache,
+	newClaimsCache, policyevalbundle.New, attestationbundle.New,
 )
 
 func newClaimsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*jwt.MapClaims], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
-	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for JWT claims")}
+	opts := []cache.Option{cache.WithTTL(10 * time.Second), cache.WithLogger(l), cache.WithDescription("Cache for JWT claims")}
 	if rc != nil {
 		backend = "nats"
 		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-jwt-claims"))
@@ -467,7 +467,7 @@ func newClaimsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logg
 func newMembershipsCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[*entities.Membership], error) {
 	l := log.NewHelper(logger)
 	backend := "memory"
-	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for org memberships")}
+	opts := []cache.Option{cache.WithTTL(time.Second), cache.WithLogger(l), cache.WithDescription("Cache for org memberships")}
 	if rc != nil {
 		backend = "nats"
 		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-memberships"))
@@ -475,53 +475,4 @@ func newMembershipsCache(ctx context.Context, rc *natsconn.ReloadableConnection,
 	}
 	l.Infow("msg", "cache initialized", "bucket", "chainloop-memberships", "backend", backend, "ttl", "1s")
 	return cache.New[*entities.Membership](opts...)
-}
-
-func newPolicyEvalBundleCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (cache.Cache[[]byte], error) {
-	l := log.NewHelper(logger)
-	backend := "memory"
-	opts := []cache.Option{cache.WithTTL(24 * time.Hour), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for policy evaluation bundles from CAS")}
-	if rc != nil {
-		backend = "nats"
-		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-policy-eval-bundles"))
-		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
-	}
-	l.Infow("msg", "cache initialized", "bucket", "chainloop-policy-eval-bundles", "backend", backend, "ttl", "24h")
-	return cache.New[[]byte](opts...)
-}
-
-func newAttestationBundleCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (*biz.AttestationBundleCache, error) {
-	l := log.NewHelper(logger)
-	backend := "memory"
-	opts := []cache.Option{cache.WithTTL(5 * 24 * time.Hour), cache.WithLogger(&kratosLogAdapter{h: l}), cache.WithDescription("Cache for attestation bundles")}
-	if rc != nil {
-		backend = "nats"
-		opts = append(opts, cache.WithNATS(rc.Conn, "chainloop-attestation-bundles"))
-		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
-	}
-	l.Infow("msg", "cache initialized", "bucket", "chainloop-attestation-bundles", "backend", backend, "ttl", "120h")
-	c, err := cache.New[[]byte](opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &biz.AttestationBundleCache{Cache: c}, nil
-}
-
-// kratosLogAdapter adapts kratos log.Helper (Debugw(...interface{})) to cache.Logger (Debugw(string, ...any)).
-type kratosLogAdapter struct{ h *log.Helper }
-
-func (a *kratosLogAdapter) Debugw(msg string, keyvals ...any) {
-	a.h.Debugw(append([]any{"msg", msg}, keyvals...)...)
-}
-
-func (a *kratosLogAdapter) Infow(msg string, keyvals ...any) {
-	a.h.Infow(append([]any{"msg", msg}, keyvals...)...)
-}
-
-func (a *kratosLogAdapter) Warnw(msg string, keyvals ...any) {
-	a.h.Warnw(append([]any{"msg", msg}, keyvals...)...)
-}
-
-func (a *kratosLogAdapter) Errorw(msg string, keyvals ...any) {
-	a.h.Errorw(append([]any{"msg", msg}, keyvals...)...)
 }

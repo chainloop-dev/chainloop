@@ -30,7 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
-	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
@@ -104,12 +104,6 @@ type WorkflowRunRepo interface {
 	Expire(ctx context.Context, id uuid.UUID) error
 }
 
-// AttestationBundleCache wraps cache.Cache[[]byte] to disambiguate from other
-// []byte caches (e.g. policy evaluation bundles) in the wire dependency graph.
-type AttestationBundleCache struct {
-	cache.Cache[[]byte]
-}
-
 type WorkflowRunUseCase struct {
 	wfRunRepo WorkflowRunRepo
 	wfRepo    WorkflowRepo
@@ -117,7 +111,7 @@ type WorkflowRunUseCase struct {
 	auditorUC *AuditorUseCase
 
 	signingUseCase *SigningUseCase
-	bundleCache    *AttestationBundleCache
+	bundleCache    *attestationbundle.Cache
 	casClient      CASClient
 	casMappingUC   *CASMappingUseCase
 }
@@ -128,7 +122,7 @@ type WorkflowRunUseCaseOpts struct {
 	SigningUC    *SigningUseCase
 	AuditorUC    *AuditorUseCase
 	Logger       log.Logger
-	BundleCache  *AttestationBundleCache
+	BundleCache  *attestationbundle.Cache
 	CASClient    CASClient
 	CASMappingUC *CASMappingUseCase
 }

@@ -32,13 +32,12 @@ type Cache[T any] interface {
 	Purge(ctx context.Context) error
 }
 
-// Logger is a structured logging interface compatible with Kratos log.Helper
-// but does not import it.
+// Logger is a structured logging interface satisfied by *log.Helper from Kratos.
 type Logger interface {
-	Debugw(msg string, keyvals ...any)
-	Warnw(msg string, keyvals ...any)
-	Infow(msg string, keyvals ...any)
-	Errorw(msg string, keyvals ...any)
+	Debugw(keyvals ...any)
+	Warnw(keyvals ...any)
+	Infow(keyvals ...any)
+	Errorw(keyvals ...any)
 }
 
 // defaultMaxSize is a sensible upper bound on in-memory cache entries
@@ -119,7 +118,7 @@ func New[T any](opts ...Option) (Cache[T], error) {
 // nopLogger is a no-op implementation of Logger.
 type nopLogger struct{}
 
-func (nopLogger) Debugw(_ string, _ ...any) {}
-func (nopLogger) Warnw(_ string, _ ...any)  {}
-func (nopLogger) Infow(_ string, _ ...any)  {}
-func (nopLogger) Errorw(_ string, _ ...any) {}
+func (nopLogger) Debugw(_ ...any) {}
+func (nopLogger) Warnw(_ ...any)  {}
+func (nopLogger) Infow(_ ...any)  {}
+func (nopLogger) Errorw(_ ...any) {}

@@ -18,6 +18,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
@@ -95,7 +96,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		cleanup()
 		return nil, nil, err
 	}
-	attestationBundleCache := newAttestationBundleCache()
+	cache := newAttestationBundleCache()
 	casClient := newNilCASClient()
 	casMappingRepo := data.NewCASMappingRepo(dataData, casBackendRepo, logger)
 	casMappingUseCase := biz.NewCASMappingUseCase(casMappingRepo, membershipUseCase, logger)
@@ -105,7 +106,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		SigningUC:    signingUseCase,
 		AuditorUC:    auditorUseCase,
 		Logger:       logger,
-		BundleCache:  attestationBundleCache,
+		BundleCache:  cache,
 		CASClient:    casClient,
 		CASMappingUC: casMappingUseCase,
 	}
@@ -219,7 +220,7 @@ var (
 
 // wire.go:
 
-func newAttestationBundleCache() *biz.AttestationBundleCache {
+func newAttestationBundleCache() *attestationbundle.Cache {
 	return nil
 }
 

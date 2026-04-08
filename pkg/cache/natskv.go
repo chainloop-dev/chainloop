@@ -51,7 +51,7 @@ func newNATSKV[T any](cfg *config) (*natsKVCache[T], error) {
 		go c.watchReconnect(cfg.reconnCh)
 	}
 
-	cfg.logger.Infow("cache: using NATS KV backend", "bucket", cfg.bucketName, "ttl", cfg.ttl)
+	cfg.logger.Infow("msg", "cache: using NATS KV backend", "bucket", cfg.bucketName, "ttl", cfg.ttl)
 	return c, nil
 }
 
@@ -79,9 +79,9 @@ func (c *natsKVCache[T]) initBucket() error {
 
 func (c *natsKVCache[T]) watchReconnect(ch <-chan struct{}) {
 	for range ch {
-		c.logger.Infow("cache: NATS reconnected, reinitializing bucket", "bucket", c.bucket)
+		c.logger.Infow("msg", "cache: NATS reconnected, reinitializing bucket", "bucket", c.bucket)
 		if err := c.initBucket(); err != nil {
-			c.logger.Warnw("cache: failed to reinitialize bucket after reconnect", "bucket", c.bucket, "error", err)
+			c.logger.Warnw("msg", "cache: failed to reinitialize bucket after reconnect", "bucket", c.bucket, "error", err)
 		}
 	}
 }
@@ -107,7 +107,7 @@ func (c *natsKVCache[T]) Get(ctx context.Context, key string) (T, bool, error) {
 	var zero T
 	kv := c.getKV()
 	if kv == nil {
-		c.logger.Warnw("cache get: KV handle is nil, returning miss", "key", key, "backend", "nats")
+		c.logger.Warnw("msg", "cache get: KV handle is nil, returning miss", "key", key, "backend", "nats")
 		return zero, false, nil
 	}
 
@@ -115,28 +115,28 @@ func (c *natsKVCache[T]) Get(ctx context.Context, key string) (T, bool, error) {
 	entry, err := kv.Get(ctx, sKey)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
-			c.logger.Debugw("cache get", "key", key, "hit", false, "backend", "nats")
+			c.logger.Debugw("msg", "cache get", "key", key, "hit", false, "backend", "nats")
 			return zero, false, nil
 		}
-		c.logger.Warnw("cache get error", "key", key, "error", err, "backend", "nats")
+		c.logger.Warnw("msg", "cache get error", "key", key, "error", err, "backend", "nats")
 		return zero, false, nil
 	}
 
 	var val T
 	if err := json.Unmarshal(entry.Value(), &val); err != nil {
-		c.logger.Warnw("cache get: unmarshal failed, deleting corrupted entry", "key", key, "error", err, "backend", "nats")
+		c.logger.Warnw("msg", "cache get: unmarshal failed, deleting corrupted entry", "key", key, "error", err, "backend", "nats")
 		_ = kv.Delete(ctx, sKey)
 		return zero, false, nil
 	}
 
-	c.logger.Debugw("cache get", "key", key, "hit", true, "backend", "nats")
+	c.logger.Debugw("msg", "cache get", "key", key, "hit", true, "backend", "nats")
 	return val, true, nil
 }
 
 func (c *natsKVCache[T]) Set(ctx context.Context, key string, value T) error {
 	kv := c.getKV()
 	if kv == nil {
-		c.logger.Warnw("cache set: KV handle is nil, skipping", "key", key, "backend", "nats")
+		c.logger.Warnw("msg", "cache set: KV handle is nil, skipping", "key", key, "backend", "nats")
 		return nil
 	}
 
@@ -146,11 +146,11 @@ func (c *natsKVCache[T]) Set(ctx context.Context, key string, value T) error {
 	}
 
 	if _, err := kv.Put(ctx, sanitizeKey(key), data); err != nil {
-		c.logger.Warnw("cache set error", "key", key, "error", err, "backend", "nats")
+		c.logger.Warnw("msg", "cache set error", "key", key, "error", err, "backend", "nats")
 		return nil
 	}
 
-	c.logger.Debugw("cache set", "key", key, "backend", "nats")
+	c.logger.Debugw("msg", "cache set", "key", key, "backend", "nats")
 	return nil
 }
 
@@ -162,11 +162,11 @@ func (c *natsKVCache[T]) Delete(ctx context.Context, key string) error {
 
 	if err := kv.Delete(ctx, sanitizeKey(key)); err != nil {
 		if !errors.Is(err, jetstream.ErrKeyNotFound) {
-			c.logger.Warnw("cache delete error", "key", key, "error", err, "backend", "nats")
+			c.logger.Warnw("msg", "cache delete error", "key", key, "error", err, "backend", "nats")
 		}
 	}
 
-	c.logger.Debugw("cache delete", "key", key, "backend", "nats")
+	c.logger.Debugw("msg", "cache delete", "key", key, "backend", "nats")
 	return nil
 }
 
@@ -181,16 +181,16 @@ func (c *natsKVCache[T]) Purge(ctx context.Context) error {
 		if errors.Is(err, jetstream.ErrNoKeysFound) {
 			return nil
 		}
-		c.logger.Warnw("cache purge: failed to list keys", "error", err, "backend", "nats")
+		c.logger.Warnw("msg", "cache purge: failed to list keys", "error", err, "backend", "nats")
 		return nil
 	}
 
 	for _, k := range keys {
 		if err := kv.Purge(ctx, k); err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
-			c.logger.Warnw("cache purge: failed to purge key", "key", k, "error", err, "backend", "nats")
+			c.logger.Warnw("msg", "cache purge: failed to purge key", "key", k, "error", err, "backend", "nats")
 		}
 	}
 
-	c.logger.Debugw("cache purge", "backend", "nats")
+	c.logger.Debugw("msg", "cache purge", "backend", "nats")
 	return nil
 }
