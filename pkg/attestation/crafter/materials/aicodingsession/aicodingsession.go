@@ -50,20 +50,35 @@ type GitContext struct {
 	CommitCount int      `json:"commit_count,omitempty"`
 }
 
+// LineRange represents a contiguous range of lines.
+type LineRange struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
+}
+
 // FileChange represents a single file modification in the session.
 type FileChange struct {
-	Path   string `json:"path"`
-	Status string `json:"status"`
+	Path         string      `json:"path"`
+	Status       string      `json:"status"`
+	LinesAdded   int         `json:"lines_added,omitempty"`
+	LinesRemoved int         `json:"lines_removed,omitempty"`
+	Attribution  string      `json:"attribution,omitempty"`
+	LineRanges   []LineRange `json:"line_ranges,omitempty"`
+	SessionIDs   []string    `json:"session_ids,omitempty"`
 }
 
 // CodeChanges summarizes code modifications made during the session.
 type CodeChanges struct {
-	FilesModified int          `json:"files_modified,omitempty"`
-	FilesCreated  int          `json:"files_created,omitempty"`
-	FilesDeleted  int          `json:"files_deleted,omitempty"`
-	LinesAdded    int          `json:"lines_added,omitempty"`
-	LinesRemoved  int          `json:"lines_removed,omitempty"`
-	Files         []FileChange `json:"files,omitempty"`
+	FilesModified     int          `json:"files_modified,omitempty"`
+	FilesCreated      int          `json:"files_created,omitempty"`
+	FilesDeleted      int          `json:"files_deleted,omitempty"`
+	LinesAdded        int          `json:"lines_added,omitempty"`
+	LinesRemoved      int          `json:"lines_removed,omitempty"`
+	AILinesAdded      int          `json:"ai_lines_added,omitempty"`
+	AILinesRemoved    int          `json:"ai_lines_removed,omitempty"`
+	HumanLinesAdded   int          `json:"human_lines_added,omitempty"`
+	HumanLinesRemoved int          `json:"human_lines_removed,omitempty"`
+	Files             []FileChange `json:"files,omitempty"`
 }
 
 // Model holds information about the AI models used in the session.
@@ -95,6 +110,20 @@ type ToolsUsed struct {
 	TotalInvocations int           `json:"total_invocations,omitempty"`
 }
 
+// SubagentTokens holds token usage for a subagent.
+type SubagentTokens struct {
+	Input  int `json:"input"`
+	Output int `json:"output"`
+}
+
+// Subagent describes a spawned subagent within the session.
+type Subagent struct {
+	ID          string         `json:"id"`
+	Type        string         `json:"type"`
+	Description string         `json:"description"`
+	Tokens      SubagentTokens `json:"tokens"`
+}
+
 // Conversation holds message count statistics.
 type Conversation struct {
 	TotalMessages     int `json:"total_messages,omitempty"`
@@ -113,7 +142,7 @@ type Data struct {
 	Usage         *Usage                       `json:"usage,omitempty"`
 	ToolsUsed     *ToolsUsed                   `json:"tools_used,omitempty"`
 	Conversation  *Conversation                `json:"conversation,omitempty"`
-	Subagents     []json.RawMessage            `json:"subagents,omitempty"`
+	Subagents     []Subagent                   `json:"subagents,omitempty"`
 	RawSession    map[string][]json.RawMessage `json:"raw_session,omitempty"`
 	Warnings      []string                     `json:"warnings,omitempty"`
 }

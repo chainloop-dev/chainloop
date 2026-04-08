@@ -226,6 +226,68 @@ func TestChainloopAICodingSessionCrafter_RejectsExtraFields(t *testing.T) {
 	assert.Contains(t, err.Error(), "AI coding session validation failed")
 }
 
+func TestChainloopAICodingSessionCrafter_RealWorldEvidence(t *testing.T) {
+	// Load real-world evidence that uses the new attribution, line range, and subagent fields.
+	raw, err := os.ReadFile("./testdata/ai-coding-session-with-attribution.json")
+	require.NoError(t, err)
+
+	var evidence aicodingsession.Evidence
+	require.NoError(t, json.Unmarshal(raw, &evidence))
+
+	data := evidence.Data
+
+	// Top-level identifiers
+	assert.Equal(t, aicodingsession.EvidenceID, evidence.ID)
+	assert.Equal(t, aicodingsession.EvidenceSchemaURL, evidence.Schema)
+	assert.Equal(t, "v1", data.SchemaVersion)
+
+	// Agent
+	assert.Equal(t, "claude-code", data.Agent.Name)
+	assert.Equal(t, "2.1.92", data.Agent.Version)
+
+	// Session
+	assert.Equal(t, "1dea3f43-4c8f-4625-8732-349613261162", data.Session.ID)
+	assert.Equal(t, 14, data.Session.DurationSeconds)
+
+	// Code changes — AI/human attribution
+	require.NotNil(t, data.CodeChanges)
+	assert.Equal(t, 11, data.CodeChanges.LinesAdded)
+	assert.Equal(t, 8, data.CodeChanges.AILinesAdded)
+	assert.Equal(t, 0, data.CodeChanges.AILinesRemoved)
+	assert.Equal(t, 3, data.CodeChanges.HumanLinesAdded)
+	assert.Equal(t, 0, data.CodeChanges.HumanLinesRemoved)
+
+	// File-level fields
+	require.Len(t, data.CodeChanges.Files, 2)
+
+	goMod := data.CodeChanges.Files[0]
+	assert.Equal(t, "go.mod", goMod.Path)
+	assert.Equal(t, "human", goMod.Attribution)
+	assert.Equal(t, 3, goMod.LinesAdded)
+
+	mainGo := data.CodeChanges.Files[1]
+	assert.Equal(t, "main.go", mainGo.Path)
+	assert.Equal(t, "ai", mainGo.Attribution)
+	assert.Equal(t, 8, mainGo.LinesAdded)
+	require.Len(t, mainGo.LineRanges, 1)
+	assert.Equal(t, 6, mainGo.LineRanges[0].Start)
+	assert.Equal(t, 6, mainGo.LineRanges[0].End)
+	require.Len(t, mainGo.SessionIDs, 1)
+	assert.Equal(t, "1dea3f43-4c8f-4625-8732-349613261162", mainGo.SessionIDs[0])
+
+	// Usage
+	require.NotNil(t, data.Usage)
+	assert.InDelta(t, 0.1917, data.Usage.EstimatedCostUSD, 0.0001)
+
+	// Schema validation should pass
+	dataBytes, err := json.Marshal(data)
+	require.NoError(t, err)
+
+	var rawData any
+	require.NoError(t, json.Unmarshal(dataBytes, &rawData))
+	require.NoError(t, schemavalidators.ValidateAICodingSession(rawData, schemavalidators.AICodingSessionVersion0_1))
+}
+
 func TestChainloopAICodingSessionCrafter_Annotations(t *testing.T) {
 	testCases := []struct {
 		name              string
@@ -237,6 +299,13 @@ func TestChainloopAICodingSessionCrafter_Annotations(t *testing.T) {
 		{
 			name:              "full session with model",
 			filePath:          "./testdata/ai-coding-session.json",
+			expectedAgentName: "claude-code",
+			expectedModel:     "claude-opus-4-6",
+			modelPresent:      true,
+		},
+		{
+			name:              "session with AI attribution fields",
+			filePath:          "./testdata/ai-coding-session-with-attribution.json",
 			expectedAgentName: "claude-code",
 			expectedModel:     "claude-opus-4-6",
 			modelPresent:      true,
