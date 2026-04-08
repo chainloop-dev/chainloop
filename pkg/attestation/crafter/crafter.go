@@ -147,22 +147,18 @@ func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBa
 		return
 	}
 
-	digestBeforeCollectors := c.CraftingState.UpdateCheckSum
-
 	for _, collector := range c.collectors {
 		if err := collector.Collect(ctx, c, attestationID, casBackend); err != nil {
 			c.Logger.Warn().Err(err).Str("collector", collector.ID()).Msg("collector failed")
 		}
 	}
 
-	// NOTE: workaround for old servers that don't return digests in Save responses.
-	// not returning digest makes digests stale, and state save failing with conflict errors
-	// https://github.com/chainloop-dev/chainloop/issues/2908
-	// this condition will not apply to new servers that return digests in Save responses.
-	if c.CraftingState.UpdateCheckSum != digestBeforeCollectors {
-		if err := c.LoadCraftingState(ctx, attestationID); err != nil {
-			c.Logger.Warn().Err(err).Msg("failed to reload crafting state after running collectors")
-		}
+	// Always reload state after collectors to ensure the digest is in sync with the server.
+	// Collectors persist changes via Write(), but old servers don't return the new digest
+	// in Save responses, leaving the client-side UpdateCheckSum stale.
+	// Reloading via Read() fetches the authoritative digest regardless of server version.
+	if err := c.LoadCraftingState(ctx, attestationID); err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to reload crafting state after running collectors")
 	}
 }
 
