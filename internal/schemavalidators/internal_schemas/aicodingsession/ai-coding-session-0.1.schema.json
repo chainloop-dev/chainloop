@@ -69,7 +69,101 @@
     },
     "code_changes": {
       "type": "object",
-      "description": "Summary of code modifications"
+      "description": "Summary of code modifications",
+      "properties": {
+        "files_modified": {
+          "type": "integer",
+          "description": "Number of files modified"
+        },
+        "files_created": {
+          "type": "integer",
+          "description": "Number of files created"
+        },
+        "files_deleted": {
+          "type": "integer",
+          "description": "Number of files deleted"
+        },
+        "lines_added": {
+          "type": "integer",
+          "description": "Total lines added"
+        },
+        "lines_removed": {
+          "type": "integer",
+          "description": "Total lines removed"
+        },
+        "ai_lines_added": {
+          "type": "integer",
+          "description": "Lines added attributed to AI"
+        },
+        "ai_lines_removed": {
+          "type": "integer",
+          "description": "Lines removed attributed to AI"
+        },
+        "human_lines_added": {
+          "type": "integer",
+          "description": "Lines added attributed to human"
+        },
+        "human_lines_removed": {
+          "type": "integer",
+          "description": "Lines removed attributed to human"
+        },
+        "files": {
+          "type": "array",
+          "description": "Per-file change details",
+          "items": {
+            "type": "object",
+            "required": ["path", "status"],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "File path"
+              },
+              "status": {
+                "type": "string",
+                "description": "Change status (e.g. modified, created, deleted)"
+              },
+              "lines_added": {
+                "type": "integer",
+                "description": "Lines added in this file"
+              },
+              "lines_removed": {
+                "type": "integer",
+                "description": "Lines removed in this file"
+              },
+              "attribution": {
+                "type": "string",
+                "description": "Change attribution: ai or human"
+              },
+              "line_ranges": {
+                "type": "array",
+                "description": "Contiguous line ranges",
+                "items": {
+                  "type": "object",
+                  "required": ["start", "end"],
+                  "properties": {
+                    "start": {
+                      "type": "integer",
+                      "description": "Start line number"
+                    },
+                    "end": {
+                      "type": "integer",
+                      "description": "End line number"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "session_ids": {
+                "type": "array",
+                "description": "Session IDs associated with changes in this file",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "model": {
       "type": "object",
@@ -89,9 +183,37 @@
     },
     "subagents": {
       "type": "array",
-      "description": "Subagent information (open schema)",
+      "description": "Subagent information",
       "items": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique subagent identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Subagent type"
+          },
+          "description": {
+            "type": "string",
+            "description": "Subagent description"
+          },
+          "tokens": {
+            "type": "object",
+            "description": "Token usage for this subagent",
+            "properties": {
+              "input": {
+                "type": "integer",
+                "description": "Input tokens consumed"
+              },
+              "output": {
+                "type": "integer",
+                "description": "Output tokens produced"
+              }
+            }
+          }
+        }
       }
     },
     "raw_session": {

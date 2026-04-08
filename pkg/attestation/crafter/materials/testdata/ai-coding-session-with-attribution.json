@@ -1,0 +1,109 @@
+{
+  "schema": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_CODING_SESSION",
+  "data": {
+    "schema_version": "v1",
+    "agent": {
+      "name": "claude-code",
+      "version": "2.1.92"
+    },
+    "session": {
+      "id": "1dea3f43-4c8f-4625-8732-349613261162",
+      "slug": "keen-juggling-hickey",
+      "started_at": "2026-04-06T17:59:31.566Z",
+      "ended_at": "2026-04-06T17:59:46.098Z",
+      "duration_seconds": 14
+    },
+    "git_context": {
+      "repository": "git@github.com:jiparis/workflow-tests.git",
+      "branch": "add-credits-comment",
+      "work_dir": "/Users/jiparis/projects/playground/workflow-tests",
+      "commit_start": "f9ab7b49bd2f94a8925d55821792308f6ec87a57",
+      "commit_end": "f9ab7b49bd2f94a8925d55821792308f6ec87a57",
+      "commits": [
+        "f9ab7b49bd2f94a8925d55821792308f6ec87a57"
+      ],
+      "commit_count": 1
+    },
+    "code_changes": {
+      "files_modified": 0,
+      "files_created": 2,
+      "files_deleted": 0,
+      "lines_added": 11,
+      "lines_removed": 0,
+      "ai_lines_added": 8,
+      "ai_lines_removed": 0,
+      "human_lines_added": 3,
+      "human_lines_removed": 0,
+      "files": [
+        {
+          "path": "go.mod",
+          "status": "created",
+          "lines_added": 3,
+          "lines_removed": 0,
+          "attribution": "human"
+        },
+        {
+          "path": "main.go",
+          "status": "created",
+          "lines_added": 8,
+          "lines_removed": 0,
+          "attribution": "ai",
+          "line_ranges": [
+            {
+              "start": 6,
+              "end": 6
+            }
+          ],
+          "session_ids": [
+            "1dea3f43-4c8f-4625-8732-349613261162"
+          ]
+        }
+      ]
+    },
+    "model": {
+      "primary": "claude-opus-4-6",
+      "provider": "anthropic",
+      "models_used": [
+        "claude-opus-4-6"
+      ]
+    },
+    "usage": {
+      "input_tokens": 8,
+      "output_tokens": 294,
+      "total_tokens": 302,
+      "cache_read_input_tokens": 91602,
+      "cache_creation_input_tokens": 22159,
+      "estimated_cost_usd": 0.1917
+    },
+    "tools_used": {
+      "summary": [
+        {
+          "tool_name": "Read",
+          "invocation_count": 1
+        },
+        {
+          "tool_name": "Edit",
+          "invocation_count": 1
+        }
+      ],
+      "total_invocations": 2
+    },
+    "conversation": {
+      "total_messages": 7,
+      "user_messages": 3,
+      "assistant_messages": 4
+    },
+    "subagents": [],
+    "raw_session": {
+      "main": [
+        {
+          "type": "permission-mode",
+          "permissionMode": "default",
+          "sessionId": "1dea3f43-4c8f-4625-8732-349613261162"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}
