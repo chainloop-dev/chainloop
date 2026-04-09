@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"context"
+	"os"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
@@ -54,8 +55,12 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 		grpcconn.WithInsecure(apiInsecure()),
 	}
 
-	if caFilePath := viper.GetString(confOptions.CASCA.viperKey); caFilePath != "" {
-		opts = append(opts, grpcconn.WithCAFile(caFilePath))
+	if caValue := viper.GetString(confOptions.CASCA.viperKey); caValue != "" {
+		if _, err := os.Stat(caValue); err == nil {
+			opts = append(opts, grpcconn.WithCAFile(caValue))
+		} else {
+			opts = append(opts, grpcconn.WithCAContent(caValue))
+		}
 	}
 
 	return grpcconn.New(viper.GetString(confOptions.CASAPI.viperKey), resp.Result.Token, opts...)
