@@ -16,11 +16,6 @@
 // Authorization package
 package authz
 
-import (
-	"errors"
-	"regexp"
-)
-
 // resource, action tuple
 type Policy struct {
 	Resource string
@@ -479,29 +474,4 @@ func (Role) Values() (roles []string) {
 	}
 
 	return
-}
-
-// ErrOperationNotAllowed is returned when an operation has no entry in ServerOperationsMap.
-var ErrOperationNotAllowed = errors.New("operation not allowed")
-
-// PoliciesLookup returns the policies required for a given API operation.
-// It performs a two-pass lookup:
-// 1. Direct match in ServerOperationsMap
-// 2. Regex match for keys containing patterns (e.g., "/controlplane.v1.OrgMetricsService/.*")
-func PoliciesLookup(apiOperation string) ([]*Policy, error) {
-	// Direct match
-	policies, found := ServerOperationsMap[apiOperation]
-	if found {
-		return policies, nil
-	}
-
-	// Second pass: regex match
-	for k, policies := range ServerOperationsMap {
-		found, _ := regexp.MatchString(k, apiOperation)
-		if found {
-			return policies, nil
-		}
-	}
-
-	return nil, ErrOperationNotAllowed
 }
