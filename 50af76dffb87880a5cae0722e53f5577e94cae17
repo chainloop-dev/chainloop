@@ -1,0 +1,31 @@
+pkg/cache/cache.go
+  8a8b14e7db4c0a6e 45,74-79
+pkg/cache/attestationbundle/attestationbundle.go
+  8a8b14e7db4c0a6e 30,44
+pkg/cache/natskv.go
+  8a8b14e7db4c0a6e 68
+pkg/cache/policyevalbundle/policyevalbundle.go
+  8a8b14e7db4c0a6e 30,44
+pkg/cache/memory.go
+  8a8b14e7db4c0a6e 24-27,34,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.6",
+  "base_commit_sha": "50af76dffb87880a5cae0722e53f5577e94cae17",
+  "prompts": {
+    "8a8b14e7db4c0a6e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aebff0c4-f58d-4079-87d5-39ceb29aa90b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 20,
+      "total_deletions": 13,
+      "accepted_lines": 18,
+      "overriden_lines": 0
+    }
+  }
+}
