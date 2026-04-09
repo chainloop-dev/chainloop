@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -99,20 +100,16 @@ func (c *AIAgentConfigCollector) uploadAgentConfig(
 		return fmt.Errorf("marshaling AI agent config for %s: %w", agentName, err)
 	}
 
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("ai-agent-config-%s-*.json", agentName))
-	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
-	}
-	defer os.Remove(tmpFile.Name())
-
-	if _, err := tmpFile.Write(jsonData); err != nil {
-		tmpFile.Close()
+	// Use a constant filename per agent so retries produce the same
+	// Artifact.Name (via fileStats -> os.Stat().Name()).
+	materialName := fmt.Sprintf("ai-agent-config-%s", agentName)
+	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s.json", materialName))
+	if err := os.WriteFile(tmpPath, jsonData, 0o600); err != nil {
 		return fmt.Errorf("writing temp file: %w", err)
 	}
-	tmpFile.Close()
+	defer os.Remove(tmpPath)
 
-	materialName := fmt.Sprintf("ai-agent-config-%s", agentName)
-	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), materialName, tmpFile.Name(), casBackend, nil); err != nil {
+	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), materialName, tmpPath, casBackend, nil); err != nil {
 		return fmt.Errorf("adding AI agent config material for %s: %w", agentName, err)
 	}
 
