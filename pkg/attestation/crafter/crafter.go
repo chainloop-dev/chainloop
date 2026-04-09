@@ -19,9 +19,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"os"
-	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -752,6 +752,13 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	return mt, nil
 }
 
+// policyEvalMatches returns true if two policy evaluations refer to the same policy
+// with the same arguments. It treats nil and empty maps as equivalent to handle
+// protojson round-trip serialization where empty maps are omitted.
+func policyEvalMatches(a, b *api.PolicyEvaluation) bool {
+	return proto.Equal(a.GetPolicyReference(), b.GetPolicyReference()) && maps.Equal(a.GetWith(), b.GetWith())
+}
+
 // EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state.
 // The phase parameter controls which policies are evaluated based on their attestation_phases spec field.
 func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement, phase policies.EvalPhase) error {
@@ -783,7 +790,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 	for _, ev := range policyEvaluations {
 		var duplicated bool
 		for _, existing := range filteredPolicyEvaluations {
-			if proto.Equal(existing.PolicyReference, ev.PolicyReference) && reflect.DeepEqual(existing.With, ev.With) {
+			if policyEvalMatches(existing, ev) {
 				duplicated = true
 				break
 			}
@@ -808,7 +815,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 		// Check if this attestation-level evaluation was re-evaluated in the current phase
 		var reEvaluated bool
 		for _, newEv := range policyEvaluations {
-			if proto.Equal(newEv.PolicyReference, ev.PolicyReference) && reflect.DeepEqual(newEv.With, ev.With) {
+			if policyEvalMatches(newEv, ev) {
 				reEvaluated = true
 				break
 			}
