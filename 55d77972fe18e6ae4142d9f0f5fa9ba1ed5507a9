@@ -1,0 +1,25 @@
+pkg/cache/natskv_test.go
+  8a8b14e7db4c0a6e 219-252
+pkg/cache/natskv.go
+  8a8b14e7db4c0a6e 23,76-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.6",
+  "base_commit_sha": "55d77972fe18e6ae4142d9f0f5fa9ba1ed5507a9",
+  "prompts": {
+    "8a8b14e7db4c0a6e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aebff0c4-f58d-4079-87d5-39ceb29aa90b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 83,
+      "total_deletions": 32,
+      "accepted_lines": 51,
+      "overriden_lines": 0
+    }
+  }
+}
