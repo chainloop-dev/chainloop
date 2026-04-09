@@ -40,13 +40,9 @@ type Logger interface {
 	Errorw(keyvals ...any)
 }
 
-// defaultMaxSize is a sensible upper bound on in-memory cache entries
-// to prevent unbounded growth. 0 means no LRU eviction (TTL-only).
-const defaultMaxSize = 1000
-
 type config struct {
 	ttl         time.Duration
-	maxSize     int
+	maxBytes    int64
 	logger      Logger
 	natsConn    *nats.Conn
 	bucketName  string
@@ -73,6 +69,12 @@ func WithNATS(conn *nats.Conn, bucketName string) Option {
 		c.natsConn = conn
 		c.bucketName = bucketName
 	}
+}
+
+// WithMaxBytes sets the maximum total size (in bytes) for the NATS KV bucket.
+// When the limit is reached, NATS discards the oldest entries. Ignored for in-memory backend.
+func WithMaxBytes(n int64) Option {
+	return func(c *config) { c.maxBytes = n }
 }
 
 // WithDescription sets the NATS KV bucket description. Ignored for in-memory backend.
@@ -106,10 +108,6 @@ func New[T any](opts ...Option) (Cache[T], error) {
 			return nil, errors.New("cache: bucket name is required when NATS backend is enabled")
 		}
 		return newNATSKV[T](cfg)
-	}
-
-	if cfg.maxSize == 0 {
-		cfg.maxSize = defaultMaxSize
 	}
 
 	return newMemoryCache[T](cfg), nil

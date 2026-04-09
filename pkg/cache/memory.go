@@ -21,15 +21,19 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 )
 
+// defaultMaxSize is a sensible upper bound on in-memory cache entries
+// to prevent unbounded growth. 0 means no LRU eviction (TTL-only).
+const defaultMaxSize = 1000
+
 type memoryCache[T any] struct {
 	lru    *expirable.LRU[string, T]
 	logger Logger
 }
 
 func newMemoryCache[T any](cfg *config) *memoryCache[T] {
-	cfg.logger.Infow("msg", "cache: using in-memory LRU backend", "ttl", cfg.ttl, "maxSize", cfg.maxSize)
+	cfg.logger.Infow("msg", "cache: using in-memory LRU backend", "ttl", cfg.ttl, "maxSize", defaultMaxSize)
 	return &memoryCache[T]{
-		lru:    expirable.NewLRU[string, T](cfg.maxSize, nil, cfg.ttl),
+		lru:    expirable.NewLRU[string, T](defaultMaxSize, nil, cfg.ttl),
 		logger: cfg.logger,
 	}
 }
