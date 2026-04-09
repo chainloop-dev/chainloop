@@ -156,7 +156,7 @@ func setCurrentMembershipFromOrgName(ctx context.Context, user *entities.User, o
 		role = authz.RoleInstanceAdmin
 	} else {
 		role = membership.Role
-		ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
+		ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt, Suspended: membership.Org.Suspended})
 	}
 
 	// Set the authorization subject that will be used to check the policies
@@ -175,7 +175,7 @@ func setMembershipIfInstanceAdmin(ctx context.Context, orgName string, orgUC *bi
 			if err != nil {
 				return nil, fmt.Errorf("failed to find organization: %w", err)
 			}
-			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt})
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt, Suspended: org.Suspended})
 		}
 	} else {
 		// if no membership and no instance admin, return error
@@ -202,7 +202,7 @@ func setCurrentOrganizationFromDB(ctx context.Context, user *entities.User, user
 		return nil, errors.New("org not found")
 	}
 
-	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt})
+	ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: membership.Org.Name, ID: membership.Org.ID, CreatedAt: membership.CreatedAt, Suspended: membership.Org.Suspended})
 
 	// Set the authorization subject that will be used to check the policies
 	ctx = WithAuthzSubject(ctx, string(membership.Role))

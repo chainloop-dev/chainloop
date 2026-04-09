@@ -101,6 +101,11 @@ func EnableAiAgentCollector(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldEnableAiAgentCollector, v))
 }
 
+// Suspended applies equality check predicate on the "suspended" field. It's identical to SuspendedEQ.
+func Suspended(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldSuspended, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldName, v))
@@ -394,6 +399,16 @@ func EnableAiAgentCollectorEQ(v bool) predicate.Organization {
 // EnableAiAgentCollectorNEQ applies the NEQ predicate on the "enable_ai_agent_collector" field.
 func EnableAiAgentCollectorNEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldNEQ(FieldEnableAiAgentCollector, v))
+}
+
+// SuspendedEQ applies the EQ predicate on the "suspended" field.
+func SuspendedEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldSuspended, v))
+}
+
+// SuspendedNEQ applies the NEQ predicate on the "suspended" field.
+func SuspendedNEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldSuspended, v))
 }
 
 // HasMemberships applies the HasEdge predicate on the "memberships" edge.

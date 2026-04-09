@@ -217,6 +217,10 @@ func init() {
 	organizationDescEnableAiAgentCollector := organizationFields[10].Descriptor()
 	// organization.DefaultEnableAiAgentCollector holds the default value on creation for the enable_ai_agent_collector field.
 	organization.DefaultEnableAiAgentCollector = organizationDescEnableAiAgentCollector.Default.(bool)
+	// organizationDescSuspended is the schema descriptor for suspended field.
+	organizationDescSuspended := organizationFields[11].Descriptor()
+	// organization.DefaultSuspended holds the default value on creation for the suspended field.
+	organization.DefaultSuspended = organizationDescSuspended.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.
 	organizationDescID := organizationFields[0].Descriptor()
 	// organization.DefaultID holds the default value on creation for the id field.
