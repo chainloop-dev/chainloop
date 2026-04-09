@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/go-git/go-git/v5/config"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -210,6 +210,106 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 				URL:  "git@cyberdyne.com:skynet.git",
 			}, got.Remotes[0])
 			assert.NotEmpty(s.T(), got.Date)
+		})
+	}
+}
+
+func (s *crafterUnitSuite) TestPolicyEvaluationDedup() {
+	// Simulate the protojson round-trip issue:
+	// - Init phase sets With = map[string]string{} (empty map)
+	// - protojson.Marshal omits empty maps
+	// - protojson.Unmarshal sets With = nil (absent field)
+	// - Push phase produces With = map[string]string{} again
+	// The dedup comparison must treat nil and empty map as equal.
+
+	policyRef := &api.PolicyEvaluation_Reference{
+		Name:   "source-commit",
+		Digest: "sha256:abc123",
+	}
+
+	testCases := []struct {
+		name        string
+		existing    []*api.PolicyEvaluation
+		newEvals    []*api.PolicyEvaluation
+		wantCount   int
+		description string
+	}{
+		{
+			name: "nil vs empty map With are deduplicated",
+			existing: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: nil},
+			},
+			newEvals: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: map[string]string{}},
+			},
+			wantCount:   1,
+			description: "after protojson round-trip, nil With should match empty map With",
+		},
+		{
+			name: "empty map vs empty map With are deduplicated",
+			existing: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: map[string]string{}},
+			},
+			newEvals: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: map[string]string{}},
+			},
+			wantCount:   1,
+			description: "identical empty maps should deduplicate",
+		},
+		{
+			name: "nil vs nil With are deduplicated",
+			existing: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: nil},
+			},
+			newEvals: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: nil},
+			},
+			wantCount:   1,
+			description: "both nil should deduplicate",
+		},
+		{
+			name: "different With args are not deduplicated",
+			existing: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: map[string]string{"key": "val1"}},
+			},
+			newEvals: []*api.PolicyEvaluation{
+				{Name: "source-commit", PolicyReference: policyRef, With: map[string]string{"key": "val2"}},
+			},
+			wantCount:   2,
+			description: "different With values should not deduplicate",
+		},
+		{
+			name: "different policy references are not deduplicated",
+			existing: []*api.PolicyEvaluation{
+				{Name: "policy-a", PolicyReference: &api.PolicyEvaluation_Reference{Name: "policy-a"}, With: nil},
+			},
+			newEvals: []*api.PolicyEvaluation{
+				{Name: "policy-b", PolicyReference: &api.PolicyEvaluation_Reference{Name: "policy-b"}, With: nil},
+			},
+			wantCount:   2,
+			description: "different policies should both be kept",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			all := append(tc.existing, tc.newEvals...)
+
+			var filtered []*api.PolicyEvaluation
+			for _, ev := range all {
+				var duplicated bool
+				for _, existing := range filtered {
+					if policyEvalMatches(existing, ev) {
+						duplicated = true
+						break
+					}
+				}
+				if !duplicated {
+					filtered = append(filtered, ev)
+				}
+			}
+
+			s.Len(filtered, tc.wantCount, tc.description)
 		})
 	}
 }
