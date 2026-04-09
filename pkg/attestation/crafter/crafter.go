@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -86,6 +87,9 @@ type VersionedCraftingState struct {
 }
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
+
+// dns1123Regex matches valid DNS-1123 label names (same rule as the proto CEL constraint).
+var dns1123Regex = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 
 type NewOpt func(c *Crafter) error
 
@@ -574,6 +578,13 @@ func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, ki
 		m.Name = fmt.Sprintf("material-%d", time.Now().UnixNano())
 	}
 
+	// 2.2 - Validate the material name is DNS-1123 compliant before proceeding.
+	// This catches invalid names early instead of letting them be masked by the
+	// auto-discovery loop which swallows validation errors while probing kinds.
+	if !dns1123Regex.MatchString(m.Name) {
+		return nil, fmt.Errorf("invalid material name %q: must be DNS-1123 compliant (lowercase alphanumeric and hyphens only)", m.Name)
+	}
+
 	// 3 - Craft resulting material
 	return c.addMaterial(ctx, &m, attestationID, value, casBackend, runtimeAnnotations)
 }
@@ -624,9 +635,12 @@ func (c *Crafter) IsMaterialInContract(key string) bool {
 // AddMaterialContactFreeWithAutoDetectedKind adds a material to the crafting state checking the incoming material matches any of the
 // supported types in validation order. If the material is not found it will return an error.
 func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
-	var err error
+	var (
+		err error
+		m   *api.Attestation_Material
+	)
 	for _, kind := range schemaapi.CraftingMaterialInValidationOrder {
-		m, err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
+		m, err = c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
 		if err == nil {
 			// Successfully added material, return the kind
 			return m, nil
@@ -635,7 +649,6 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 		c.Logger.Debug().Err(err).Str("kind", kind.String()).Msg("failed to add material")
 
 		// Handle base error for upload and craft errors except the opening file error
-		// TODO: have an error to detect validation error instead
 		var policyError *policies.PolicyError
 		if errors.Is(err, materials.ErrBaseUploadAndCraft) || errors.As(err, &policyError) {
 			return nil, err
@@ -643,6 +656,14 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 
 		// This is a final error, we detected the kind
 		if v1.IsAttestationStateErrorConflict(err) {
+			return nil, err
+		}
+
+		// Proto-validation errors (e.g. invalid material name) are schema-level
+		// failures, not kind mismatches. Stop probing immediately so the real
+		// error is surfaced to the user instead of being masked by the loop.
+		var valErr *protovalidate.ValidationError
+		if errors.As(err, &valErr) {
 			return nil, err
 		}
 	}
