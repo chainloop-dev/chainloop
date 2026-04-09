@@ -211,7 +211,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			selector.Server(
 				// 2.d- Set its organization
 				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, opts.OrganizationUseCase, logHelper),
-				// 2.e- Block write operations on suspended orgs
+				// 2.e- Block all operations on suspended orgs
 				usercontext.WithSuspensionMiddleware(),
 				// 3 - Check user/token authorization
 				authzMiddleware.WithAuthzMiddleware(opts.AuthzUseCase, logHelper),
@@ -253,7 +253,7 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithAttestationContextFromFederatedInfo(opts.OrganizationUseCase, logHelper),
 			// Store all memberships in the context
 			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase, opts.MembershipsCache),
-			// 2.e - Block write operations on suspended orgs
+			// 2.e - Block all operations on suspended orgs
 			usercontext.WithSuspensionMiddleware(),
 			// 3 - Update API Token last usage
 			usercontext.WithAPITokenUsageUpdater(opts.APITokenUseCase, logHelper),

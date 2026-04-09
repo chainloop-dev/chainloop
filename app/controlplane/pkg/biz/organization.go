@@ -48,7 +48,7 @@ type Organization struct {
 	APITokenInactivityThresholdDays *int
 	// EnableAIAgentCollector enables automatic AI agent config collection during attestation init
 	EnableAIAgentCollector bool
-	// Suspended indicates whether the organization is suspended (read-only mode)
+	// Suspended indicates whether the organization is suspended
 	Suspended bool
 }
 
