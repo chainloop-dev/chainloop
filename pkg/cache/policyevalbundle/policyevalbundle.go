@@ -27,6 +27,7 @@ import (
 
 const (
 	ttl         = 24 * time.Hour
+	maxBytes    = 100 * 1024 * 1024 // 100 MB
 	bucket      = "chainloop-policy-eval-bundles"
 	description = "Cache for policy evaluation bundles from CAS"
 )
@@ -40,6 +41,7 @@ type Cache struct {
 func New(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (*Cache, error) {
 	opts := []cache.Option{
 		cache.WithTTL(ttl),
+		cache.WithMaxBytes(maxBytes),
 		cache.WithDescription(description),
 	}
 
