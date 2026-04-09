@@ -216,6 +216,40 @@ func TestNATSKV_NilKVGracefulDegradation(t *testing.T) {
 	require.NoError(t, nkv.Purge(ctx))
 }
 
+func TestNATSKV_MaxBytesEvictsOldEntries(t *testing.T) {
+	nc := startEmbeddedNATS(t)
+
+	// With MaxBytes set, the backing stream is updated to DiscardOld so that
+	// the oldest entries are evicted when the bucket is full.
+	const maxBytes int64 = 10 * 1024
+	c, err := New[[]byte](
+		WithTTL(time.Minute),
+		WithNATS(nc, "test-maxbytes"),
+		WithMaxBytes(maxBytes),
+	)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	payload := make([]byte, 1024)
+
+	// Write 20 entries, well beyond the 10 KiB limit
+	for i := range 20 {
+		key := "key-" + strings.Repeat("x", i)
+		require.NoError(t, c.Set(ctx, key, payload), "Set should not fail even when bucket is full")
+	}
+
+	// The latest entry should still be retrievable
+	lastKey := "key-" + strings.Repeat("x", 19)
+	_, ok, err := c.Get(ctx, lastKey)
+	require.NoError(t, err)
+	assert.True(t, ok, "most recent entry should still be in the cache")
+
+	// The earliest entries should have been evicted
+	_, ok, err = c.Get(ctx, "key-")
+	require.NoError(t, err)
+	assert.False(t, ok, "oldest entry should have been evicted")
+}
+
 func TestNew_WithNATSReturnsNATSBackend(t *testing.T) {
 	nc := startEmbeddedNATS(t)
 	c, err := New[string](

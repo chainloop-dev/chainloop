@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/nats-io/nats.go"
@@ -70,6 +71,22 @@ func (c *natsKVCache[T]) initBucket() error {
 	})
 	if err != nil {
 		return err
+	}
+
+	// NATS KV hardcodes DiscardNew on the backing stream, which rejects writes
+	// when MaxBytes is reached. For cache use-cases we want DiscardOld so that
+	// the oldest entries are evicted automatically to make room for new ones.
+	if c.cfg.maxBytes > 0 {
+		streamName := fmt.Sprintf("KV_%s", c.bucket)
+		stream, err := js.Stream(context.Background(), streamName)
+		if err != nil {
+			return fmt.Errorf("cache: failed to get backing stream %s: %w", streamName, err)
+		}
+		cfg := stream.CachedInfo().Config
+		cfg.Discard = jetstream.DiscardOld
+		if _, err := js.UpdateStream(context.Background(), cfg); err != nil {
+			return fmt.Errorf("cache: failed to set DiscardOld on stream %s: %w", streamName, err)
+		}
 	}
 
 	c.mu.Lock()
