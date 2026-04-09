@@ -18,6 +18,7 @@ package crafter
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -293,7 +294,7 @@ func (s *crafterUnitSuite) TestPolicyEvaluationDedup() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			all := append(tc.existing, tc.newEvals...)
+			all := slices.Concat(tc.existing, tc.newEvals)
 
 			var filtered []*api.PolicyEvaluation
 			for _, ev := range all {
