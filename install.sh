@@ -54,7 +54,7 @@ is_command() {
 
 # checksums.txt file validation
 # example: check_sha256 "${TMP_DIR}" checksums.txt
-validate_checksums_file() {
+validate_checksums_file() (
   cd "$1"
   if is_command sha256sum; then
     sha256sum --ignore-missing --quiet --check "$2"
@@ -65,7 +65,7 @@ validate_checksums_file() {
     return 1
   fi
   fancy_print 2 "Checksum OK\n"
-}
+)
 
 # Parse input arguments
 while [[ $# -gt 0 ]]; do
