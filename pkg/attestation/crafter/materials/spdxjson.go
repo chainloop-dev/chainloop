@@ -138,11 +138,7 @@ func (i *SPDXJSONCrafter) extractMainComponent(m *api.Attestation_Material, doc 
 		}
 	}
 
-	m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
-		Name:    name,
-		Kind:    kind,
-		Version: version,
-	}
+	setMainComponent(m, name, kind, version)
 
 	return nil
 }

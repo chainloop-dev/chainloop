@@ -84,14 +84,13 @@ var (
 	ErrBaseUploadAndCraft = errors.New("upload and craft error")
 )
 
-// SBOMMainComponentInfo is a struct that holds the main component information for a SBOM
-type SBOMMainComponentInfo struct {
-	// name of the main component the SBOM is about
-	name string
-	// kind specifies the type of component
-	kind string
-	// version of the component
-	version string
+// setMainComponent sets the main component information on an SBOM material.
+// Shared by CycloneDX and SPDX crafters.
+func setMainComponent(m *api.Attestation_Material, name, kind, version string) {
+	m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent =
+		&api.Attestation_Material_SBOMArtifact_MainComponent{
+			Name: name, Kind: kind, Version: version,
+		}
 }
 
 type crafterCommon struct {
