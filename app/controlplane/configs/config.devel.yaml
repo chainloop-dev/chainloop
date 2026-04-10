@@ -108,4 +108,8 @@ enable_profiler: true
 #   enabled: true
 #   url: http://localhost:8002/machine-identity/verify-token
 
+# operation_authorization_provider:
+#   enabled: true
+#   url: http://localhost:8002/v1/authorize
+
 ui_dashboard_url: http://localhost:3000
