@@ -61,9 +61,9 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 	client := &http.Client{Timeout: 5 * time.Second}
 	url := conf.GetUrl()
 
-	// LRU cache with 30s TTL keyed by "user_id:operation"
+	// LRU cache with 10s TTL keyed by "user_id:org_id:operation"
 	authCache, err := cache.New[*operationAuthResponse](
-		cache.WithTTL(30*time.Second),
+		cache.WithTTL(10*time.Second),
 		cache.WithDescription("Operation authorization cache"),
 	)
 	if err != nil {
@@ -93,7 +93,7 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 				orgID = org.ID
 			}
 
-			cacheKey := fmt.Sprintf("%s:%s", user.ID, operation)
+			cacheKey := fmt.Sprintf("%s:%s:%s", user.ID, orgID, operation)
 
 			// Check cache
 			if authCache != nil {
