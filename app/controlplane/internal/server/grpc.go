@@ -92,8 +92,9 @@ type Opts struct {
 	Logger          log.Logger
 	ServerConfig    *conf.Server
 	AuthConfig      *conf.Auth
-	FederatedConfig *conf.FederatedAuthentication
-	BootstrapConfig *conf.Bootstrap
+	FederatedConfig     *conf.FederatedAuthentication
+	OperationAuthConfig *conf.OperationAuthorizationProvider
+	BootstrapConfig     *conf.Bootstrap
 	Credentials     credentials.ReaderWriter
 	Validator       protovalidate.Validator
 }
@@ -208,6 +209,8 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 			usercontext.WithCurrentUserMiddleware(opts.UserUseCase, logHelper),
 			// Store all memberships in the context
 			usercontext.WithCurrentMembershipsMiddleware(opts.MembershipUseCase, opts.MembershipsCache),
+			// Operation authorization forward
+			usercontext.WithOperationAuthorizationMiddleware(opts.OperationAuthConfig, logHelper),
 			selector.Server(
 				// 2.d- Set its organization
 				usercontext.WithCurrentOrganizationMiddleware(opts.UserUseCase, opts.OrganizationUseCase, logHelper),

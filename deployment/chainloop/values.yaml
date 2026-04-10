@@ -177,6 +177,13 @@ controlplane:
     enabled: false
     url: ""
   
+  ## @extra controlplane.operationAuthorizationProvider Enable external operation authorization
+  ## @param controlplane.operationAuthorizationProvider.enabled Enable operation authorization
+  ## @param controlplane.operationAuthorizationProvider.url URL of the authorization endpoint
+  operationAuthorizationProvider:
+    enabled: false
+    url: ""
+
   ## @skip controlplane.restrictOrgCreation Restrict organization creation to instance admins
   restrictOrgCreation: false
 
