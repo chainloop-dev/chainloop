@@ -63,7 +63,7 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 
 	// LRU cache with 30s TTL keyed by "user_id:operation"
 	authCache, err := cache.New[*operationAuthResponse](
-		cache.WithTTL(30 * time.Second),
+		cache.WithTTL(30*time.Second),
 		cache.WithDescription("Operation authorization cache"),
 	)
 	if err != nil {
