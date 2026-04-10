@@ -36,11 +36,11 @@ type fakeTransport struct {
 	operation string
 }
 
-func (f *fakeTransport) Kind() transport.Kind       { return transport.KindGRPC }
-func (f *fakeTransport) Endpoint() string            { return "" }
-func (f *fakeTransport) Operation() string           { return f.operation }
-func (f *fakeTransport) RequestHeader() transport.Header  { return nil }
-func (f *fakeTransport) ReplyHeader() transport.Header    { return nil }
+func (f *fakeTransport) Kind() transport.Kind            { return transport.KindGRPC }
+func (f *fakeTransport) Endpoint() string                { return "" }
+func (f *fakeTransport) Operation() string               { return f.operation }
+func (f *fakeTransport) RequestHeader() transport.Header { return nil }
+func (f *fakeTransport) ReplyHeader() transport.Header   { return nil }
 
 func ctxWithOperation(ctx context.Context, op string) context.Context {
 	return transport.NewServerContext(ctx, &fakeTransport{operation: op})
