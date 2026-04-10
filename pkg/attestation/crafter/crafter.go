@@ -314,6 +314,8 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
 		// walk up the directory tree until we find a git repo
 		DetectDotGit: true,
+		// enable .git/commondir support so worktrees can resolve HEAD
+		EnableDotGitCommonDir: true,
 	})
 
 	if err != nil {

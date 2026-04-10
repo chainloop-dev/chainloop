@@ -17,6 +17,7 @@ package crafter
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -313,6 +314,63 @@ func (s *crafterUnitSuite) TestPolicyEvaluationDedup() {
 			s.Len(filtered, tc.wantCount, tc.description)
 		})
 	}
+}
+
+func (s *crafterUnitSuite) TestGitRepoHeadWorktree() {
+	// go-git cannot create worktrees, so use the git CLI
+	if _, err := exec.LookPath("git"); err != nil {
+		s.T().Skip("git not found in PATH")
+	}
+
+	repoPath := s.T().TempDir()
+
+	// Initialize a repo and create a commit using go-git
+	repo, err := git.PlainInit(repoPath, false)
+	require.NoError(s.T(), err)
+
+	_, err = repo.CreateRemote(&config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{"git@cyberdyne.com:skynet.git"},
+	})
+	require.NoError(s.T(), err)
+
+	wt, err := repo.Worktree()
+	require.NoError(s.T(), err)
+
+	filename := filepath.Join(repoPath, "example-git-file")
+	require.NoError(s.T(), os.WriteFile(filename, []byte("hello world!"), 0o600))
+
+	_, err = wt.Add("example-git-file")
+	require.NoError(s.T(), err)
+
+	h, err := wt.Commit("test commit", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "John Doe",
+			Email: "john@doe.org",
+			When:  time.Now(),
+		},
+	})
+	require.NoError(s.T(), err)
+
+	// Create a worktree using git CLI (go-git doesn't support this)
+	worktreePath := filepath.Join(s.T().TempDir(), "test-worktree")
+	cmd := exec.Command("git", "-C", repoPath, "worktree", "add", worktreePath)
+	out, err := cmd.CombinedOutput()
+	require.NoError(s.T(), err, "git worktree add: %s", out)
+
+	got, err := gracefulGitRepoHead(worktreePath)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), got)
+
+	assert.Equal(s.T(), h.String(), got.Hash)
+	assert.Equal(s.T(), "john@doe.org", got.AuthorEmail)
+	assert.Equal(s.T(), "John Doe", got.AuthorName)
+	assert.NotEmpty(s.T(), got.Remotes)
+	assert.Equal(s.T(), &CommitRemote{
+		Name: "origin",
+		URL:  "git@cyberdyne.com:skynet.git",
+	}, got.Remotes[0])
+	assert.NotEmpty(s.T(), got.Date)
 }
 
 func TestSuite(t *testing.T) {
