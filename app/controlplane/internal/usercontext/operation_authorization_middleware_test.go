@@ -154,6 +154,41 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		assert.Contains(t, err.Error(), "unable to verify operation authorization")
 	})
 
+	t.Run("cache key includes orgID so different orgs are not conflated", func(t *testing.T) {
+		var callCount atomic.Int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			callCount.Add(1)
+			var req operationAuthRequest
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+
+			allowed := req.OrganizationID == "org-allowed"
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: allowed, Reason: "denied for this org"}) //nolint:errcheck
+		}))
+		defer srv.Close()
+
+		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
+		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
+
+		baseCtx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
+		baseCtx = entities.WithCurrentUser(baseCtx, &entities.User{ID: "user-org-test"})
+
+		// Call with org-allowed -> should succeed and be cached
+		ctxAllowed := entities.WithCurrentOrg(baseCtx, &entities.Org{ID: "org-allowed"})
+		result, err := m(passHandler)(ctxAllowed, nil)
+		require.NoError(t, err)
+		assert.Equal(t, "ok", result)
+		assert.Equal(t, int32(1), callCount.Load())
+
+		// Call with org-denied -> must NOT reuse the cached "allowed" result
+		ctxDenied := entities.WithCurrentOrg(baseCtx, &entities.Org{ID: "org-denied"})
+		result, err = m(passHandler)(ctxDenied, nil)
+		require.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "denied for this org")
+		assert.Equal(t, int32(2), callCount.Load(), "expected a second HTTP call for a different org")
+	})
+
 	t.Run("cache hit skips HTTP call", func(t *testing.T) {
 		var callCount atomic.Int32
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
