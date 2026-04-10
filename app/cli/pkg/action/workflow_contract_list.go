@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ type WorkflowContractItem struct {
 	Workflows               []string       `json:"workflows,omitempty"` // TODO: remove this field after all clients are updated
 	WorkflowRefs            []*WorkflowRef `json:"workflowRefs,omitempty"`
 	ScopedEntity            *ScopedEntity  `json:"scopedEntity,omitempty"`
+	Scope                   string         `json:"scope"`
 }
 
 type ScopedEntity struct {
@@ -117,6 +118,8 @@ func pbWorkflowContractItemToAction(in *pb.WorkflowContractItem) *WorkflowContra
 			Name: in.ScopedEntity.Name,
 		}
 	}
+
+	item.Scope = item.ScopedEntity.String()
 
 	return item
 }
