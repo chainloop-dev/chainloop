@@ -238,23 +238,27 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// Attach the workflow predicate
 	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
 
+	// Defense-in-depth: if the caller did not supply pagination options, fall back
+	// to the package-wide default instead of emitting an unbounded query. This
+	// guarantees the response is bounded even when a future biz-layer caller
+	// forgets to pass options through — see chainloop-dev/chainloop#2890.
+	if p == nil {
+		p = &pagination.CursorOptions{Limit: pagination.DefaultCursorLimit}
+	}
+
 	// Sort references by creation date and ID in descending order for deterministic pagination
 	q := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().
 		Order(referrer.ByCreatedAt(sql.OrderDesc())).
-		Order(referrer.ByID(sql.OrderDesc()))
+		Order(referrer.ByID(sql.OrderDesc())).
+		Limit(p.Limit + 1) // fetch limit+1 to detect next page
 
-	// Apply pagination: fetch limit+1 to detect next page
-	if p != nil {
-		q = q.Limit(p.Limit + 1)
-
-		if p.Cursor != nil {
-			q = q.Where(func(s *sql.Selector) {
-				s.Where(sql.CompositeLT(
-					[]string{s.C(referrer.FieldCreatedAt), s.C(referrer.FieldID)},
-					p.Cursor.Timestamp, p.Cursor.ID,
-				))
-			})
-		}
+	if p.Cursor != nil {
+		q = q.Where(func(s *sql.Selector) {
+			s.Where(sql.CompositeLT(
+				[]string{s.C(referrer.FieldCreatedAt), s.C(referrer.FieldID)},
+				p.Cursor.Timestamp, p.Cursor.ID,
+			))
+		})
 	}
 
 	refs, err := q.All(ctx)
@@ -264,7 +268,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Determine if there is a next page and encode the cursor
 	var nextCursor string
-	if p != nil && len(refs) > p.Limit {
+	if len(refs) > p.Limit {
 		lastVisible := refs[p.Limit-1]
 		nextCursor = pagination.EncodeCursor(lastVisible.CreatedAt, lastVisible.ID)
 		refs = refs[:p.Limit]
