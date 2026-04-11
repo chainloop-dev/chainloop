@@ -251,8 +251,6 @@ func (i *CyclonedxJSONCrafter) extractMetadata(m *api.Attestation_Material, meta
 
 // extractMainComponent inspects the SBOM and extracts the main component if any and available
 func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material, component *cyclonedxComponent) error {
-	var mainComponent *SBOMMainComponentInfo
-
 	// If the version is empty, try to extract it from the properties
 	if component.Version == "" {
 		for _, prop := range component.Properties {
@@ -265,33 +263,18 @@ func (i *CyclonedxJSONCrafter) extractMainComponent(m *api.Attestation_Material,
 		}
 	}
 
-	if component.Type != containerComponentKind {
-		mainComponent = &SBOMMainComponentInfo{
-			name:    component.Name,
-			kind:    component.Type,
-			version: component.Version,
-		}
-	} else {
+	name := component.Name
+	if component.Type == containerComponentKind {
 		// Standardize the name to have the full repository name including the registry and
 		// sanitize the name to remove the possible tag from the repository name
 		ref, err := remotename.ParseReference(component.Name)
 		if err != nil {
 			return fmt.Errorf("couldn't parse OCI image repository name: %w", err)
 		}
-
-		mainComponent = &SBOMMainComponentInfo{
-			name:    ref.Context().String(),
-			kind:    component.Type,
-			version: component.Version,
-		}
+		name = ref.Context().String()
 	}
 
-	// If the main component is available, include it in the material
-	m.M.(*api.Attestation_Material_SbomArtifact).SbomArtifact.MainComponent = &api.Attestation_Material_SBOMArtifact_MainComponent{
-		Name:    mainComponent.name,
-		Kind:    mainComponent.kind,
-		Version: mainComponent.version,
-	}
+	setMainComponent(m, name, component.Type, component.Version)
 
 	return nil
 }
