@@ -80,8 +80,10 @@ type Bootstrap struct {
 	RestrictOrgCreation bool `protobuf:"varint,18,opt,name=restrict_org_creation,json=restrictOrgCreation,proto3" json:"restrict_org_creation,omitempty"`
 	// External URL of the platform UI, if available
 	UiDashboardUrl string `protobuf:"bytes,19,opt,name=ui_dashboard_url,json=uiDashboardUrl,proto3" json:"ui_dashboard_url,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Optional external operation authorization provider
+	OperationAuthorizationProvider *OperationAuthorizationProvider `protobuf:"bytes,20,opt,name=operation_authorization_provider,json=operationAuthorizationProvider,proto3" json:"operation_authorization_provider,omitempty"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
 }
 
 func (x *Bootstrap) Reset() {
@@ -248,6 +250,67 @@ func (x *Bootstrap) GetUiDashboardUrl() string {
 	return ""
 }
 
+func (x *Bootstrap) GetOperationAuthorizationProvider() *OperationAuthorizationProvider {
+	if x != nil {
+		return x.OperationAuthorizationProvider
+	}
+	return nil
+}
+
+type OperationAuthorizationProvider struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// URL of the authorization endpoint
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	// Whether to enable the operation authorization
+	Enabled       bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OperationAuthorizationProvider) Reset() {
+	*x = OperationAuthorizationProvider{}
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperationAuthorizationProvider) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperationAuthorizationProvider) ProtoMessage() {}
+
+func (x *OperationAuthorizationProvider) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperationAuthorizationProvider.ProtoReflect.Descriptor instead.
+func (*OperationAuthorizationProvider) Descriptor() ([]byte, []int) {
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *OperationAuthorizationProvider) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *OperationAuthorizationProvider) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
 type FederatedAuthentication struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// URL of the federated verification endpoint
@@ -260,7 +323,7 @@ type FederatedAuthentication struct {
 
 func (x *FederatedAuthentication) Reset() {
 	*x = FederatedAuthentication{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[1]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -272,7 +335,7 @@ func (x *FederatedAuthentication) String() string {
 func (*FederatedAuthentication) ProtoMessage() {}
 
 func (x *FederatedAuthentication) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[1]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -285,7 +348,7 @@ func (x *FederatedAuthentication) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FederatedAuthentication.ProtoReflect.Descriptor instead.
 func (*FederatedAuthentication) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{1}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *FederatedAuthentication) GetUrl() string {
@@ -319,7 +382,7 @@ type PolicyProvider struct {
 
 func (x *PolicyProvider) Reset() {
 	*x = PolicyProvider{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[2]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -331,7 +394,7 @@ func (x *PolicyProvider) String() string {
 func (*PolicyProvider) ProtoMessage() {}
 
 func (x *PolicyProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[2]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -344,7 +407,7 @@ func (x *PolicyProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyProvider.ProtoReflect.Descriptor instead.
 func (*PolicyProvider) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{2}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PolicyProvider) GetName() string {
@@ -392,7 +455,7 @@ type ReferrerSharedIndex struct {
 
 func (x *ReferrerSharedIndex) Reset() {
 	*x = ReferrerSharedIndex{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[3]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -404,7 +467,7 @@ func (x *ReferrerSharedIndex) String() string {
 func (*ReferrerSharedIndex) ProtoMessage() {}
 
 func (x *ReferrerSharedIndex) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[3]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -417,7 +480,7 @@ func (x *ReferrerSharedIndex) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReferrerSharedIndex.ProtoReflect.Descriptor instead.
 func (*ReferrerSharedIndex) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{3}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ReferrerSharedIndex) GetEnabled() bool {
@@ -446,7 +509,7 @@ type Server struct {
 
 func (x *Server) Reset() {
 	*x = Server{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[4]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -458,7 +521,7 @@ func (x *Server) String() string {
 func (*Server) ProtoMessage() {}
 
 func (x *Server) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[4]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -471,7 +534,7 @@ func (x *Server) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Server.ProtoReflect.Descriptor instead.
 func (*Server) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{4}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Server) GetHttp() *Server_HTTP {
@@ -504,7 +567,7 @@ type Data struct {
 
 func (x *Data) Reset() {
 	*x = Data{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[5]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -516,7 +579,7 @@ func (x *Data) String() string {
 func (*Data) ProtoMessage() {}
 
 func (x *Data) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[5]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -529,7 +592,7 @@ func (x *Data) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Data.ProtoReflect.Descriptor instead.
 func (*Data) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{5}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Data) GetDatabase() *Data_Database {
@@ -554,7 +617,7 @@ type Auth struct {
 
 func (x *Auth) Reset() {
 	*x = Auth{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[6]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -566,7 +629,7 @@ func (x *Auth) String() string {
 func (*Auth) ProtoMessage() {}
 
 func (x *Auth) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[6]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -579,7 +642,7 @@ func (x *Auth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Auth.ProtoReflect.Descriptor instead.
 func (*Auth) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{6}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Auth) GetGeneratedJwsHmacSecret() string {
@@ -631,7 +694,7 @@ type TSA struct {
 
 func (x *TSA) Reset() {
 	*x = TSA{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[7]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -643,7 +706,7 @@ func (x *TSA) String() string {
 func (*TSA) ProtoMessage() {}
 
 func (x *TSA) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[7]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -656,7 +719,7 @@ func (x *TSA) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TSA.ProtoReflect.Descriptor instead.
 func (*TSA) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{7}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *TSA) GetUrl() string {
@@ -697,7 +760,7 @@ type CA struct {
 
 func (x *CA) Reset() {
 	*x = CA{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[8]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -709,7 +772,7 @@ func (x *CA) String() string {
 func (*CA) ProtoMessage() {}
 
 func (x *CA) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[8]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -722,7 +785,7 @@ func (x *CA) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CA.ProtoReflect.Descriptor instead.
 func (*CA) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{8}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CA) GetCa() isCA_Ca {
@@ -784,7 +847,7 @@ type PrometheusIntegrationSpec struct {
 
 func (x *PrometheusIntegrationSpec) Reset() {
 	*x = PrometheusIntegrationSpec{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[9]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -796,7 +859,7 @@ func (x *PrometheusIntegrationSpec) String() string {
 func (*PrometheusIntegrationSpec) ProtoMessage() {}
 
 func (x *PrometheusIntegrationSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[9]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -809,7 +872,7 @@ func (x *PrometheusIntegrationSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrometheusIntegrationSpec.ProtoReflect.Descriptor instead.
 func (*PrometheusIntegrationSpec) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{9}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PrometheusIntegrationSpec) GetOrgName() string {
@@ -828,7 +891,7 @@ type Bootstrap_Observability struct {
 
 func (x *Bootstrap_Observability) Reset() {
 	*x = Bootstrap_Observability{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[10]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -840,7 +903,7 @@ func (x *Bootstrap_Observability) String() string {
 func (*Bootstrap_Observability) ProtoMessage() {}
 
 func (x *Bootstrap_Observability) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[10]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -883,7 +946,7 @@ type Bootstrap_CASServer struct {
 
 func (x *Bootstrap_CASServer) Reset() {
 	*x = Bootstrap_CASServer{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[11]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -895,7 +958,7 @@ func (x *Bootstrap_CASServer) String() string {
 func (*Bootstrap_CASServer) ProtoMessage() {}
 
 func (x *Bootstrap_CASServer) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[11]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -953,7 +1016,7 @@ type Bootstrap_NatsServer struct {
 
 func (x *Bootstrap_NatsServer) Reset() {
 	*x = Bootstrap_NatsServer{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[12]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -965,7 +1028,7 @@ func (x *Bootstrap_NatsServer) String() string {
 func (*Bootstrap_NatsServer) ProtoMessage() {}
 
 func (x *Bootstrap_NatsServer) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[12]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1025,7 +1088,7 @@ type Bootstrap_Observability_Sentry struct {
 
 func (x *Bootstrap_Observability_Sentry) Reset() {
 	*x = Bootstrap_Observability_Sentry{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[13]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1037,7 +1100,7 @@ func (x *Bootstrap_Observability_Sentry) String() string {
 func (*Bootstrap_Observability_Sentry) ProtoMessage() {}
 
 func (x *Bootstrap_Observability_Sentry) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[13]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1081,7 +1144,7 @@ type Server_HTTP struct {
 
 func (x *Server_HTTP) Reset() {
 	*x = Server_HTTP{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[14]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1093,7 +1156,7 @@ func (x *Server_HTTP) String() string {
 func (*Server_HTTP) ProtoMessage() {}
 
 func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[14]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1106,7 +1169,7 @@ func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Server_HTTP.ProtoReflect.Descriptor instead.
 func (*Server_HTTP) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{4, 0}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{5, 0}
 }
 
 func (x *Server_HTTP) GetNetwork() string {
@@ -1148,7 +1211,7 @@ type Server_TLS struct {
 
 func (x *Server_TLS) Reset() {
 	*x = Server_TLS{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[15]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1160,7 +1223,7 @@ func (x *Server_TLS) String() string {
 func (*Server_TLS) ProtoMessage() {}
 
 func (x *Server_TLS) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[15]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1173,7 +1236,7 @@ func (x *Server_TLS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Server_TLS.ProtoReflect.Descriptor instead.
 func (*Server_TLS) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{4, 1}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{5, 1}
 }
 
 func (x *Server_TLS) GetCertificate() string {
@@ -1202,7 +1265,7 @@ type Server_GRPC struct {
 
 func (x *Server_GRPC) Reset() {
 	*x = Server_GRPC{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[16]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1214,7 +1277,7 @@ func (x *Server_GRPC) String() string {
 func (*Server_GRPC) ProtoMessage() {}
 
 func (x *Server_GRPC) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[16]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1227,7 +1290,7 @@ func (x *Server_GRPC) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Server_GRPC.ProtoReflect.Descriptor instead.
 func (*Server_GRPC) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{4, 2}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{5, 2}
 }
 
 func (x *Server_GRPC) GetNetwork() string {
@@ -1274,7 +1337,7 @@ type Data_Database struct {
 
 func (x *Data_Database) Reset() {
 	*x = Data_Database{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[17]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1286,7 +1349,7 @@ func (x *Data_Database) String() string {
 func (*Data_Database) ProtoMessage() {}
 
 func (x *Data_Database) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[17]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1299,7 +1362,7 @@ func (x *Data_Database) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Data_Database.ProtoReflect.Descriptor instead.
 func (*Data_Database) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{5, 0}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{6, 0}
 }
 
 func (x *Data_Database) GetDriver() string {
@@ -1351,7 +1414,7 @@ type Auth_OIDC struct {
 
 func (x *Auth_OIDC) Reset() {
 	*x = Auth_OIDC{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[18]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1363,7 +1426,7 @@ func (x *Auth_OIDC) String() string {
 func (*Auth_OIDC) ProtoMessage() {}
 
 func (x *Auth_OIDC) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[18]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1376,7 +1439,7 @@ func (x *Auth_OIDC) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Auth_OIDC.ProtoReflect.Descriptor instead.
 func (*Auth_OIDC) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{6, 0}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{7, 0}
 }
 
 func (x *Auth_OIDC) GetDomain() string {
@@ -1418,7 +1481,7 @@ type CA_FileCA struct {
 
 func (x *CA_FileCA) Reset() {
 	*x = CA_FileCA{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[19]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1430,7 +1493,7 @@ func (x *CA_FileCA) String() string {
 func (*CA_FileCA) ProtoMessage() {}
 
 func (x *CA_FileCA) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[19]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1443,7 +1506,7 @@ func (x *CA_FileCA) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CA_FileCA.ProtoReflect.Descriptor instead.
 func (*CA_FileCA) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{8, 0}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{9, 0}
 }
 
 func (x *CA_FileCA) GetCertPath() string {
@@ -1484,7 +1547,7 @@ type CA_EJBCA struct {
 
 func (x *CA_EJBCA) Reset() {
 	*x = CA_EJBCA{}
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[20]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1496,7 +1559,7 @@ func (x *CA_EJBCA) String() string {
 func (*CA_EJBCA) ProtoMessage() {}
 
 func (x *CA_EJBCA) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_config_v1_conf_proto_msgTypes[20]
+	mi := &file_controlplane_config_v1_conf_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1572,7 @@ func (x *CA_EJBCA) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CA_EJBCA.ProtoReflect.Descriptor instead.
 func (*CA_EJBCA) Descriptor() ([]byte, []int) {
-	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{8, 1}
+	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{9, 1}
 }
 
 func (x *CA_EJBCA) GetServerUrl() string {
@@ -1565,7 +1628,7 @@ var File_controlplane_config_v1_conf_proto protoreflect.FileDescriptor
 
 const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\n" +
-	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x9c\x0e\n" +
+	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x9f\x0f\n" +
 	"\tBootstrap\x126\n" +
 	"\x06server\x18\x01 \x01(\v2\x1e.controlplane.config.v1.ServerR\x06server\x120\n" +
 	"\x04data\x18\x02 \x01(\v2\x1c.controlplane.config.v1.DataR\x04data\x120\n" +
@@ -1591,7 +1654,8 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"natsServer\x12j\n" +
 	"\x18federated_authentication\x18\x10 \x01(\v2/.controlplane.config.v1.FederatedAuthenticationR\x17federatedAuthentication\x122\n" +
 	"\x15restrict_org_creation\x18\x12 \x01(\bR\x13restrictOrgCreation\x12(\n" +
-	"\x10ui_dashboard_url\x18\x13 \x01(\tR\x0euiDashboardUrl\x1a\x9d\x01\n" +
+	"\x10ui_dashboard_url\x18\x13 \x01(\tR\x0euiDashboardUrl\x12\x80\x01\n" +
+	" operation_authorization_provider\x18\x14 \x01(\v26.controlplane.config.v1.OperationAuthorizationProviderR\x1eoperationAuthorizationProvider\x1a\x9d\x01\n" +
 	"\rObservability\x12N\n" +
 	"\x06sentry\x18\x01 \x01(\v26.controlplane.config.v1.Bootstrap.Observability.SentryR\x06sentry\x1a<\n" +
 	"\x06Sentry\x12\x10\n" +
@@ -1606,7 +1670,10 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"NatsServer\x12\x19\n" +
 	"\x03uri\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03uri\x12\x1f\n" +
 	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x05tokenB\x10\n" +
-	"\x0eauthentication\"O\n" +
+	"\x0eauthentication\"V\n" +
+	"\x1eOperationAuthorizationProvider\x12\x1a\n" +
+	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\"O\n" +
 	"\x17FederatedAuthentication\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\"\xee\x01\n" +
@@ -1696,69 +1763,71 @@ func file_controlplane_config_v1_conf_proto_rawDescGZIP() []byte {
 	return file_controlplane_config_v1_conf_proto_rawDescData
 }
 
-var file_controlplane_config_v1_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_controlplane_config_v1_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_controlplane_config_v1_conf_proto_goTypes = []any{
 	(*Bootstrap)(nil),                      // 0: controlplane.config.v1.Bootstrap
-	(*FederatedAuthentication)(nil),        // 1: controlplane.config.v1.FederatedAuthentication
-	(*PolicyProvider)(nil),                 // 2: controlplane.config.v1.PolicyProvider
-	(*ReferrerSharedIndex)(nil),            // 3: controlplane.config.v1.ReferrerSharedIndex
-	(*Server)(nil),                         // 4: controlplane.config.v1.Server
-	(*Data)(nil),                           // 5: controlplane.config.v1.Data
-	(*Auth)(nil),                           // 6: controlplane.config.v1.Auth
-	(*TSA)(nil),                            // 7: controlplane.config.v1.TSA
-	(*CA)(nil),                             // 8: controlplane.config.v1.CA
-	(*PrometheusIntegrationSpec)(nil),      // 9: controlplane.config.v1.PrometheusIntegrationSpec
-	(*Bootstrap_Observability)(nil),        // 10: controlplane.config.v1.Bootstrap.Observability
-	(*Bootstrap_CASServer)(nil),            // 11: controlplane.config.v1.Bootstrap.CASServer
-	(*Bootstrap_NatsServer)(nil),           // 12: controlplane.config.v1.Bootstrap.NatsServer
-	(*Bootstrap_Observability_Sentry)(nil), // 13: controlplane.config.v1.Bootstrap.Observability.Sentry
-	(*Server_HTTP)(nil),                    // 14: controlplane.config.v1.Server.HTTP
-	(*Server_TLS)(nil),                     // 15: controlplane.config.v1.Server.TLS
-	(*Server_GRPC)(nil),                    // 16: controlplane.config.v1.Server.GRPC
-	(*Data_Database)(nil),                  // 17: controlplane.config.v1.Data.Database
-	(*Auth_OIDC)(nil),                      // 18: controlplane.config.v1.Auth.OIDC
-	(*CA_FileCA)(nil),                      // 19: controlplane.config.v1.CA.FileCA
-	(*CA_EJBCA)(nil),                       // 20: controlplane.config.v1.CA.EJBCA
-	(*v1.Credentials)(nil),                 // 21: credentials.v1.Credentials
-	(*v11.OnboardingSpec)(nil),             // 22: controlplane.config.v1.OnboardingSpec
-	(*v11.AllowList)(nil),                  // 23: controlplane.config.v1.AllowList
-	(*durationpb.Duration)(nil),            // 24: google.protobuf.Duration
+	(*OperationAuthorizationProvider)(nil), // 1: controlplane.config.v1.OperationAuthorizationProvider
+	(*FederatedAuthentication)(nil),        // 2: controlplane.config.v1.FederatedAuthentication
+	(*PolicyProvider)(nil),                 // 3: controlplane.config.v1.PolicyProvider
+	(*ReferrerSharedIndex)(nil),            // 4: controlplane.config.v1.ReferrerSharedIndex
+	(*Server)(nil),                         // 5: controlplane.config.v1.Server
+	(*Data)(nil),                           // 6: controlplane.config.v1.Data
+	(*Auth)(nil),                           // 7: controlplane.config.v1.Auth
+	(*TSA)(nil),                            // 8: controlplane.config.v1.TSA
+	(*CA)(nil),                             // 9: controlplane.config.v1.CA
+	(*PrometheusIntegrationSpec)(nil),      // 10: controlplane.config.v1.PrometheusIntegrationSpec
+	(*Bootstrap_Observability)(nil),        // 11: controlplane.config.v1.Bootstrap.Observability
+	(*Bootstrap_CASServer)(nil),            // 12: controlplane.config.v1.Bootstrap.CASServer
+	(*Bootstrap_NatsServer)(nil),           // 13: controlplane.config.v1.Bootstrap.NatsServer
+	(*Bootstrap_Observability_Sentry)(nil), // 14: controlplane.config.v1.Bootstrap.Observability.Sentry
+	(*Server_HTTP)(nil),                    // 15: controlplane.config.v1.Server.HTTP
+	(*Server_TLS)(nil),                     // 16: controlplane.config.v1.Server.TLS
+	(*Server_GRPC)(nil),                    // 17: controlplane.config.v1.Server.GRPC
+	(*Data_Database)(nil),                  // 18: controlplane.config.v1.Data.Database
+	(*Auth_OIDC)(nil),                      // 19: controlplane.config.v1.Auth.OIDC
+	(*CA_FileCA)(nil),                      // 20: controlplane.config.v1.CA.FileCA
+	(*CA_EJBCA)(nil),                       // 21: controlplane.config.v1.CA.EJBCA
+	(*v1.Credentials)(nil),                 // 22: credentials.v1.Credentials
+	(*v11.OnboardingSpec)(nil),             // 23: controlplane.config.v1.OnboardingSpec
+	(*v11.AllowList)(nil),                  // 24: controlplane.config.v1.AllowList
+	(*durationpb.Duration)(nil),            // 25: google.protobuf.Duration
 }
 var file_controlplane_config_v1_conf_proto_depIdxs = []int32{
-	4,  // 0: controlplane.config.v1.Bootstrap.server:type_name -> controlplane.config.v1.Server
-	5,  // 1: controlplane.config.v1.Bootstrap.data:type_name -> controlplane.config.v1.Data
-	6,  // 2: controlplane.config.v1.Bootstrap.auth:type_name -> controlplane.config.v1.Auth
-	10, // 3: controlplane.config.v1.Bootstrap.observability:type_name -> controlplane.config.v1.Bootstrap.Observability
-	21, // 4: controlplane.config.v1.Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
-	11, // 5: controlplane.config.v1.Bootstrap.cas_server:type_name -> controlplane.config.v1.Bootstrap.CASServer
-	3,  // 6: controlplane.config.v1.Bootstrap.referrer_shared_index:type_name -> controlplane.config.v1.ReferrerSharedIndex
-	8,  // 7: controlplane.config.v1.Bootstrap.certificate_authority:type_name -> controlplane.config.v1.CA
-	8,  // 8: controlplane.config.v1.Bootstrap.certificate_authorities:type_name -> controlplane.config.v1.CA
-	7,  // 9: controlplane.config.v1.Bootstrap.timestamp_authorities:type_name -> controlplane.config.v1.TSA
-	22, // 10: controlplane.config.v1.Bootstrap.onboarding:type_name -> controlplane.config.v1.OnboardingSpec
-	9,  // 11: controlplane.config.v1.Bootstrap.prometheus_integration:type_name -> controlplane.config.v1.PrometheusIntegrationSpec
-	2,  // 12: controlplane.config.v1.Bootstrap.policy_providers:type_name -> controlplane.config.v1.PolicyProvider
-	12, // 13: controlplane.config.v1.Bootstrap.nats_server:type_name -> controlplane.config.v1.Bootstrap.NatsServer
-	1,  // 14: controlplane.config.v1.Bootstrap.federated_authentication:type_name -> controlplane.config.v1.FederatedAuthentication
-	14, // 15: controlplane.config.v1.Server.http:type_name -> controlplane.config.v1.Server.HTTP
-	16, // 16: controlplane.config.v1.Server.grpc:type_name -> controlplane.config.v1.Server.GRPC
-	14, // 17: controlplane.config.v1.Server.http_metrics:type_name -> controlplane.config.v1.Server.HTTP
-	17, // 18: controlplane.config.v1.Data.database:type_name -> controlplane.config.v1.Data.Database
-	23, // 19: controlplane.config.v1.Auth.allow_list:type_name -> controlplane.config.v1.AllowList
-	18, // 20: controlplane.config.v1.Auth.oidc:type_name -> controlplane.config.v1.Auth.OIDC
-	19, // 21: controlplane.config.v1.CA.file_ca:type_name -> controlplane.config.v1.CA.FileCA
-	20, // 22: controlplane.config.v1.CA.ejbca_ca:type_name -> controlplane.config.v1.CA.EJBCA
-	13, // 23: controlplane.config.v1.Bootstrap.Observability.sentry:type_name -> controlplane.config.v1.Bootstrap.Observability.Sentry
-	16, // 24: controlplane.config.v1.Bootstrap.CASServer.grpc:type_name -> controlplane.config.v1.Server.GRPC
-	24, // 25: controlplane.config.v1.Server.HTTP.timeout:type_name -> google.protobuf.Duration
-	24, // 26: controlplane.config.v1.Server.GRPC.timeout:type_name -> google.protobuf.Duration
-	15, // 27: controlplane.config.v1.Server.GRPC.tls_config:type_name -> controlplane.config.v1.Server.TLS
-	24, // 28: controlplane.config.v1.Data.Database.max_conn_idle_time:type_name -> google.protobuf.Duration
-	29, // [29:29] is the sub-list for method output_type
-	29, // [29:29] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	5,  // 0: controlplane.config.v1.Bootstrap.server:type_name -> controlplane.config.v1.Server
+	6,  // 1: controlplane.config.v1.Bootstrap.data:type_name -> controlplane.config.v1.Data
+	7,  // 2: controlplane.config.v1.Bootstrap.auth:type_name -> controlplane.config.v1.Auth
+	11, // 3: controlplane.config.v1.Bootstrap.observability:type_name -> controlplane.config.v1.Bootstrap.Observability
+	22, // 4: controlplane.config.v1.Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
+	12, // 5: controlplane.config.v1.Bootstrap.cas_server:type_name -> controlplane.config.v1.Bootstrap.CASServer
+	4,  // 6: controlplane.config.v1.Bootstrap.referrer_shared_index:type_name -> controlplane.config.v1.ReferrerSharedIndex
+	9,  // 7: controlplane.config.v1.Bootstrap.certificate_authority:type_name -> controlplane.config.v1.CA
+	9,  // 8: controlplane.config.v1.Bootstrap.certificate_authorities:type_name -> controlplane.config.v1.CA
+	8,  // 9: controlplane.config.v1.Bootstrap.timestamp_authorities:type_name -> controlplane.config.v1.TSA
+	23, // 10: controlplane.config.v1.Bootstrap.onboarding:type_name -> controlplane.config.v1.OnboardingSpec
+	10, // 11: controlplane.config.v1.Bootstrap.prometheus_integration:type_name -> controlplane.config.v1.PrometheusIntegrationSpec
+	3,  // 12: controlplane.config.v1.Bootstrap.policy_providers:type_name -> controlplane.config.v1.PolicyProvider
+	13, // 13: controlplane.config.v1.Bootstrap.nats_server:type_name -> controlplane.config.v1.Bootstrap.NatsServer
+	2,  // 14: controlplane.config.v1.Bootstrap.federated_authentication:type_name -> controlplane.config.v1.FederatedAuthentication
+	1,  // 15: controlplane.config.v1.Bootstrap.operation_authorization_provider:type_name -> controlplane.config.v1.OperationAuthorizationProvider
+	15, // 16: controlplane.config.v1.Server.http:type_name -> controlplane.config.v1.Server.HTTP
+	17, // 17: controlplane.config.v1.Server.grpc:type_name -> controlplane.config.v1.Server.GRPC
+	15, // 18: controlplane.config.v1.Server.http_metrics:type_name -> controlplane.config.v1.Server.HTTP
+	18, // 19: controlplane.config.v1.Data.database:type_name -> controlplane.config.v1.Data.Database
+	24, // 20: controlplane.config.v1.Auth.allow_list:type_name -> controlplane.config.v1.AllowList
+	19, // 21: controlplane.config.v1.Auth.oidc:type_name -> controlplane.config.v1.Auth.OIDC
+	20, // 22: controlplane.config.v1.CA.file_ca:type_name -> controlplane.config.v1.CA.FileCA
+	21, // 23: controlplane.config.v1.CA.ejbca_ca:type_name -> controlplane.config.v1.CA.EJBCA
+	14, // 24: controlplane.config.v1.Bootstrap.Observability.sentry:type_name -> controlplane.config.v1.Bootstrap.Observability.Sentry
+	17, // 25: controlplane.config.v1.Bootstrap.CASServer.grpc:type_name -> controlplane.config.v1.Server.GRPC
+	25, // 26: controlplane.config.v1.Server.HTTP.timeout:type_name -> google.protobuf.Duration
+	25, // 27: controlplane.config.v1.Server.GRPC.timeout:type_name -> google.protobuf.Duration
+	16, // 28: controlplane.config.v1.Server.GRPC.tls_config:type_name -> controlplane.config.v1.Server.TLS
+	25, // 29: controlplane.config.v1.Data.Database.max_conn_idle_time:type_name -> google.protobuf.Duration
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_config_v1_conf_proto_init() }
@@ -1766,11 +1835,11 @@ func file_controlplane_config_v1_conf_proto_init() {
 	if File_controlplane_config_v1_conf_proto != nil {
 		return
 	}
-	file_controlplane_config_v1_conf_proto_msgTypes[8].OneofWrappers = []any{
+	file_controlplane_config_v1_conf_proto_msgTypes[9].OneofWrappers = []any{
 		(*CA_FileCa)(nil),
 		(*CA_EjbcaCa)(nil),
 	}
-	file_controlplane_config_v1_conf_proto_msgTypes[12].OneofWrappers = []any{
+	file_controlplane_config_v1_conf_proto_msgTypes[13].OneofWrappers = []any{
 		(*Bootstrap_NatsServer_Token)(nil),
 	}
 	type x struct{}
@@ -1779,7 +1848,7 @@ func file_controlplane_config_v1_conf_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_config_v1_conf_proto_rawDesc), len(file_controlplane_config_v1_conf_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
