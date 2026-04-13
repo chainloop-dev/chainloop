@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -947,8 +947,11 @@ type Bootstrap_NatsServer struct {
 	//
 	//	*Bootstrap_NatsServer_Token
 	Authentication isBootstrap_NatsServer_Authentication `protobuf_oneof:"authentication"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Number of replicas for JetStream KV buckets.
+	// Defaults to 1. Maximum is 3. Set to 3 for production clusters.
+	Replicas      int32 `protobuf:"varint,3,opt,name=replicas,proto3" json:"replicas,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Bootstrap_NatsServer) Reset() {
@@ -1002,6 +1005,13 @@ func (x *Bootstrap_NatsServer) GetToken() string {
 		}
 	}
 	return ""
+}
+
+func (x *Bootstrap_NatsServer) GetReplicas() int32 {
+	if x != nil {
+		return x.Replicas
+	}
+	return 0
 }
 
 type isBootstrap_NatsServer_Authentication interface {
@@ -1565,7 +1575,7 @@ var File_controlplane_config_v1_conf_proto protoreflect.FileDescriptor
 
 const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\n" +
-	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x9c\x0e\n" +
+	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb8\x0e\n" +
 	"\tBootstrap\x126\n" +
 	"\x06server\x18\x01 \x01(\v2\x1e.controlplane.config.v1.ServerR\x06server\x120\n" +
 	"\x04data\x18\x02 \x01(\v2\x1c.controlplane.config.v1.DataR\x04data\x120\n" +
@@ -1601,11 +1611,12 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x04grpc\x18\x01 \x01(\v2#.controlplane.config.v1.Server.GRPCB\x06\xbaH\x03\xc8\x01\x01R\x04grpc\x12\x1a\n" +
 	"\binsecure\x18\x02 \x01(\bR\binsecure\x12!\n" +
 	"\fdownload_url\x18\x03 \x01(\tR\vdownloadUrl\x123\n" +
-	"\x16default_entry_max_size\x18\x04 \x01(\tR\x13defaultEntryMaxSize\x1aZ\n" +
+	"\x16default_entry_max_size\x18\x04 \x01(\tR\x13defaultEntryMaxSize\x1av\n" +
 	"\n" +
 	"NatsServer\x12\x19\n" +
 	"\x03uri\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03uri\x12\x1f\n" +
-	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x05tokenB\x10\n" +
+	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x05token\x12\x1a\n" +
+	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
 	"\x0eauthentication\"O\n" +
 	"\x17FederatedAuthentication\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +

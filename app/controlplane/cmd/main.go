@@ -221,9 +221,17 @@ func newNatsConfig(c *conf.Bootstrap_NatsServer) *natsconn.Config {
 		return nil
 	}
 
+	replicas := int(c.GetReplicas())
+	if replicas < 1 {
+		replicas = 1
+	} else if replicas > 3 {
+		replicas = 3
+	}
+
 	cfg := &natsconn.Config{
-		URI:  uri,
-		Name: "chainloop-controlplane",
+		URI:      uri,
+		Name:     "chainloop-controlplane",
+		Replicas: replicas,
 	}
 
 	if c.GetToken() != "" {

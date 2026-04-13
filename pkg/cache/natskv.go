@@ -67,6 +67,7 @@ func (c *natsKVCache[T]) initBucket() error {
 		Description: c.cfg.description,
 		TTL:         c.cfg.ttl,
 		MaxBytes:    c.cfg.maxBytes,
+		Replicas:    c.cfg.replicas,
 		Storage:     jetstream.MemoryStorage,
 	})
 	if err != nil {
