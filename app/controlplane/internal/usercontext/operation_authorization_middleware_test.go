@@ -39,9 +39,9 @@ type fakeTransport struct {
 
 type headerCarrier http.Header
 
-func (h headerCarrier) Get(key string) string        { return http.Header(h).Get(key) }
-func (h headerCarrier) Set(key, value string)         { http.Header(h).Set(key, value) }
-func (h headerCarrier) Add(key, value string)         { http.Header(h).Add(key, value) }
+func (h headerCarrier) Get(key string) string { return http.Header(h).Get(key) }
+func (h headerCarrier) Set(key, value string) { http.Header(h).Set(key, value) }
+func (h headerCarrier) Add(key, value string) { http.Header(h).Add(key, value) }
 func (h headerCarrier) Keys() []string {
 	keys := make([]string, 0, len(h))
 	for k := range h {
