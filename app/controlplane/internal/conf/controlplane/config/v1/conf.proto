@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -101,6 +101,9 @@ message Bootstrap {
       // Token based authentication
       string token = 2 [(buf.validate.field).string.min_len = 1];
     }
+    // Number of replicas for JetStream KV buckets.
+    // Defaults to 1. Maximum is 3. Set to 3 for production clusters.
+    int32 replicas = 3;
   }
 
   // External URL of the platform UI, if available

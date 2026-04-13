@@ -28,15 +28,17 @@ import (
 // Config holds the connection parameters for NATS.
 // Decoupled from protobuf config so this package can be imported externally.
 type Config struct {
-	URI   string
-	Token string
-	Name  string
+	URI      string
+	Token    string
+	Name     string
+	Replicas int // JetStream KV replica count; defaults to 1
 }
 
 // ReloadableConnection wraps a NATS connection and provides reconnection
 // notifications via a pub/sub fan-out to subscribers.
 type ReloadableConnection struct {
 	*nats.Conn
+	Replicas    int // JetStream KV replica count
 	mu          sync.RWMutex
 	subscribers []chan struct{}
 	logger      *log.Helper
@@ -52,7 +54,7 @@ func New(cfg *Config, logger log.Logger) (*ReloadableConnection, func(), error) 
 	}
 
 	l := log.NewHelper(log.With(logger, "component", "natsconn"))
-	rc := &ReloadableConnection{logger: l}
+	rc := &ReloadableConnection{logger: l, Replicas: cfg.Replicas}
 
 	opts := []nats.Option{
 		nats.MaxReconnects(-1),

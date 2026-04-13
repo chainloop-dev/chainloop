@@ -52,6 +52,7 @@ func New(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logg
 	if rc != nil {
 		opts = append(opts, cache.WithNATS(rc.Conn, bucket))
 		opts = append(opts, cache.WithReconnect(rc.Subscribe(ctx)))
+		opts = append(opts, cache.WithReplicas(rc.Replicas))
 	}
 
 	c, err := cache.New[[]byte](opts...)

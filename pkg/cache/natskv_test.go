@@ -23,6 +23,7 @@ import (
 
 	natsserver "github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -248,6 +249,53 @@ func TestNATSKV_MaxBytesEvictsOldEntries(t *testing.T) {
 	_, ok, err = c.Get(ctx, "key-")
 	require.NoError(t, err)
 	assert.False(t, ok, "oldest entry should have been evicted")
+}
+
+func TestNATSKV_WithReplicas(t *testing.T) {
+	nc := startEmbeddedNATS(t)
+
+	tests := []struct {
+		name     string
+		replicas int
+		wantRep  int
+	}{
+		{"no WithReplicas defaults to 1", 0, 1},
+		{"explicit 1 replica", 1, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bucket := sanitizeBucketName("test-replicas-" + tt.name)
+			opts := []Option{
+				WithTTL(5 * time.Second),
+				WithNATS(nc, bucket),
+			}
+			if tt.replicas > 0 {
+				opts = append(opts, WithReplicas(tt.replicas))
+			}
+			c, err := New[string](opts...)
+			require.NoError(t, err)
+
+			// Verify replica count via the backing stream config
+			nkv := c.(*natsKVCache[string])
+			js, err := jetstream.New(nc)
+			require.NoError(t, err)
+			stream, err := js.Stream(context.Background(), "KV_"+nkv.bucket)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantRep, stream.CachedInfo().Config.Replicas)
+		})
+	}
+
+	// Replicas > 1 requires a multi-node NATS cluster. Verify that the option
+	// is actually passed through by confirming that a single-node server rejects it.
+	t.Run("replicas 3 rejected by single-node server", func(t *testing.T) {
+		_, err := New[string](
+			WithTTL(5*time.Second),
+			WithNATS(nc, "test-replicas-3"),
+			WithReplicas(3),
+		)
+		require.Error(t, err, "single-node NATS should reject replicas > 1")
+	})
 }
 
 func TestNew_WithNATSReturnsNATSBackend(t *testing.T) {

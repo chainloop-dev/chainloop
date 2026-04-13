@@ -188,11 +188,13 @@ controlplane:
   ## @param controlplane.nats.host NATS Host
   ## @param controlplane.nats.port NATS Port
   ## @param controlplane.nats.token NATS Client authentication token
+  ## @param controlplane.nats.replicas Number of JetStream KV replicas (1-3). Set to 3 for clustered NATS deployments.
   nats:
     enabled: false
     host: ""
     port: 4222
     token: ""
+    replicas: 1
 
   ## @extra controlplane.onboarding.name Name of the organization to onboard
   ## @extra controlplane.onboarding.role Role of the organization to onboard

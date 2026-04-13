@@ -43,6 +43,7 @@ type Logger interface {
 type config struct {
 	ttl         time.Duration
 	maxBytes    int64
+	replicas    int
 	logger      Logger
 	natsConn    *nats.Conn
 	bucketName  string
@@ -80,6 +81,13 @@ func WithMaxBytes(n int64) Option {
 // WithDescription sets the NATS KV bucket description. Ignored for in-memory backend.
 func WithDescription(desc string) Option {
 	return func(c *config) { c.description = desc }
+}
+
+// WithReplicas sets the number of JetStream KV replicas for the NATS bucket.
+// Defaults to 1 if not set. Set to match the cluster size (e.g. 3) for
+// production NATS clusters. Ignored for in-memory backend.
+func WithReplicas(n int) Option {
+	return func(c *config) { c.replicas = n }
 }
 
 // WithReconnect provides a channel that signals NATS reconnection events.
