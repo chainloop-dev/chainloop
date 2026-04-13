@@ -25,18 +25,12 @@ import (
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
-
-	"github.com/chainloop-dev/chainloop/pkg/cache"
 )
-
-// Operations that require authorization checks
-var operationAuthTargets = map[string]bool{
-	"/controlplane.v1.OrganizationService/Create": true,
-}
 
 type operationAuthRequest struct {
 	Operation      string `json:"operation"`
@@ -61,16 +55,6 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 	client := &http.Client{Timeout: 5 * time.Second}
 	url := conf.GetUrl()
 
-	// LRU cache with 10s TTL keyed by "user_id:org_id:operation"
-	authCache, err := cache.New[*operationAuthResponse](
-		cache.WithTTL(10*time.Second),
-		cache.WithDescription("Operation authorization cache"),
-	)
-	if err != nil {
-		logger.Warnw("msg", "failed to create operation auth cache, proceeding without cache", "error", err)
-		authCache = nil
-	}
-
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			info, ok := transport.FromServerContext(ctx)
@@ -79,7 +63,7 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 			}
 
 			operation := info.Operation()
-			if !operationAuthTargets[operation] {
+			if !authz.RequiresExternalAuthz(operation) {
 				return handler(ctx, req)
 			}
 
@@ -93,18 +77,6 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 				orgID = org.ID
 			}
 
-			cacheKey := fmt.Sprintf("%s:%s:%s", user.ID, orgID, operation)
-
-			// Check cache
-			if authCache != nil {
-				if cached, found, _ := authCache.Get(ctx, cacheKey); found {
-					if !cached.Allowed {
-						return nil, errorsAPI.Forbidden("operation_denied", cached.Reason)
-					}
-					return handler(ctx, req)
-				}
-			}
-
 			result, err := callAuthorizationEndpoint(ctx, client, url, &operationAuthRequest{
 				Operation:      operation,
 				UserID:         user.ID,
@@ -113,11 +85,6 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 			if err != nil {
 				logger.Errorw("msg", "operation authorization call failed, denying request (fail-closed)", "error", err, "operation", operation)
 				return nil, errorsAPI.Forbidden("operation_denied", "unable to verify operation authorization")
-			}
-
-			// Cache the result
-			if authCache != nil {
-				_ = authCache.Set(ctx, cacheKey, result)
 			}
 
 			if !result.Allowed {
@@ -140,6 +107,11 @@ func callAuthorizationEndpoint(ctx context.Context, client *http.Client, url str
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+
+	// Forward the Bearer token from the incoming request
+	if rawToken, err := entities.GetRawToken(ctx); err == nil && rawToken != "" {
+		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", rawToken))
+	}
 
 	resp, err := client.Do(httpReq)
 	if err != nil {

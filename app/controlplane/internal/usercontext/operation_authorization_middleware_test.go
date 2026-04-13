@@ -34,16 +34,31 @@ import (
 // fakeTransport implements transport.Transporter for testing middleware operation matching.
 type fakeTransport struct {
 	operation string
+	header    headerCarrier
 }
+
+type headerCarrier http.Header
+
+func (h headerCarrier) Get(key string) string        { return http.Header(h).Get(key) }
+func (h headerCarrier) Set(key, value string)         { http.Header(h).Set(key, value) }
+func (h headerCarrier) Add(key, value string)         { http.Header(h).Add(key, value) }
+func (h headerCarrier) Keys() []string {
+	keys := make([]string, 0, len(h))
+	for k := range h {
+		keys = append(keys, k)
+	}
+	return keys
+}
+func (h headerCarrier) Values(key string) []string { return http.Header(h).Values(key) }
 
 func (f *fakeTransport) Kind() transport.Kind            { return transport.KindGRPC }
 func (f *fakeTransport) Endpoint() string                { return "" }
 func (f *fakeTransport) Operation() string               { return f.operation }
-func (f *fakeTransport) RequestHeader() transport.Header { return nil }
+func (f *fakeTransport) RequestHeader() transport.Header { return f.header }
 func (f *fakeTransport) ReplyHeader() transport.Header   { return nil }
 
 func ctxWithOperation(ctx context.Context, op string) context.Context {
-	return transport.NewServerContext(ctx, &fakeTransport{operation: op})
+	return transport.NewServerContext(ctx, &fakeTransport{operation: op, header: headerCarrier{}})
 }
 
 func TestWithOperationAuthorizationMiddleware(t *testing.T) {
@@ -154,45 +169,12 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		assert.Contains(t, err.Error(), "unable to verify operation authorization")
 	})
 
-	t.Run("cache key includes orgID so different orgs are not conflated", func(t *testing.T) {
-		var callCount atomic.Int32
+	t.Run("organization ID is forwarded", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			callCount.Add(1)
 			var req operationAuthRequest
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+			assert.Equal(t, "org-123", req.OrganizationID)
 
-			allowed := req.OrganizationID == "org-allowed"
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: allowed, Reason: "denied for this org"}) //nolint:errcheck
-		}))
-		defer srv.Close()
-
-		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
-		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
-
-		baseCtx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
-		baseCtx = entities.WithCurrentUser(baseCtx, &entities.User{ID: "user-org-test"})
-
-		// Call with org-allowed -> should succeed and be cached
-		ctxAllowed := entities.WithCurrentOrg(baseCtx, &entities.Org{ID: "org-allowed"})
-		result, err := m(passHandler)(ctxAllowed, nil)
-		require.NoError(t, err)
-		assert.Equal(t, "ok", result)
-		assert.Equal(t, int32(1), callCount.Load())
-
-		// Call with org-denied -> must NOT reuse the cached "allowed" result
-		ctxDenied := entities.WithCurrentOrg(baseCtx, &entities.Org{ID: "org-denied"})
-		result, err = m(passHandler)(ctxDenied, nil)
-		require.Error(t, err)
-		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "denied for this org")
-		assert.Equal(t, int32(2), callCount.Load(), "expected a second HTTP call for a different org")
-	})
-
-	t.Run("cache hit skips HTTP call", func(t *testing.T) {
-		var callCount atomic.Int32
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			callCount.Add(1)
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: true}) //nolint:errcheck
 		}))
@@ -202,18 +184,36 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-cache"})
+		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
+		ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: "org-123"})
 
-		// First call hits the server
 		result, err := m(passHandler)(ctx, nil)
 		require.NoError(t, err)
 		assert.Equal(t, "ok", result)
-		assert.Equal(t, int32(1), callCount.Load())
+	})
 
-		// Second call should use cache
-		result, err = m(passHandler)(ctx, nil)
+	t.Run("bearer token is forwarded", func(t *testing.T) {
+		var gotAuth string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotAuth = r.Header.Get("Authorization")
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: true}) //nolint:errcheck
+		}))
+		defer srv.Close()
+
+		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
+		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
+
+		ft := &fakeTransport{
+			operation: "/controlplane.v1.OrganizationService/Create",
+			header:    headerCarrier(http.Header{"Authorization": []string{"Bearer test-token-123"}}),
+		}
+		ctx := transport.NewServerContext(context.Background(), ft)
+		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
+
+		result, err := m(passHandler)(ctx, nil)
 		require.NoError(t, err)
 		assert.Equal(t, "ok", result)
-		assert.Equal(t, int32(1), callCount.Load())
+		assert.Equal(t, "Bearer test-token-123", gotAuth)
 	})
 }
