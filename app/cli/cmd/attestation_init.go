@@ -35,6 +35,7 @@ func newAttestationInitCmd() *cobra.Command {
 		workflowName          string
 		projectName           string
 		projectVersion        string
+		useLatestVersion      bool
 		projectVersionRelease bool
 		existingVersion       bool
 		newWorkflowcontract   string
@@ -54,8 +55,8 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
 
-			// load version from the file if not set
-			if projectVersion == "" {
+			// load version from the file if not set and not using --latest-version
+			if projectVersion == "" && !useLatestVersion {
 				// load the cfg from the file
 				cfg, path, err := loadDotChainloopConfigWithParentTraversal()
 				// we do gracefully load, if not found, or any other error we continue
@@ -67,6 +68,10 @@ func newAttestationInitCmd() *cobra.Command {
 				logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
 
 				projectVersion = cfg.ProjectVersion
+			}
+
+			if useLatestVersion && projectVersion != "" {
+				return errors.New("--latest-version and --version are mutually exclusive")
 			}
 
 			if projectVersion == "" && projectVersionRelease {
@@ -110,6 +115,7 @@ func newAttestationInitCmd() *cobra.Command {
 						ContractRevision:             contractRevision,
 						ProjectName:                  projectName,
 						ProjectVersion:               projectVersion,
+						UseLatestVersion:             useLatestVersion,
 						WorkflowName:                 workflowName,
 						NewWorkflowContractRef:       newWorkflowcontract,
 						ProjectVersionMarkAsReleased: projectVersionRelease,
@@ -172,6 +178,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&newWorkflowcontract, "contract", "", "name of an existing contract or the path/URL to a contract file, to attach it to the auto-created workflow (it doesn't update an existing one)")
 
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
+	cmd.Flags().BoolVar(&useLatestVersion, "latest-version", false, "use the latest existing project version instead of specifying one")
 	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
 	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "return an error if the version doesn't exist in the project")
 	cmd.Flags().StringSliceVar(&collectors, "collectors", nil, "comma-separated list of additional collectors to enable (e.g. aiconfig)")

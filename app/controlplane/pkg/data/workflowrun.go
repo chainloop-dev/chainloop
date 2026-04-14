@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,16 +55,30 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		return nil, fmt.Errorf("getting workflow: %w", err)
 	}
 
-	// load the version in advance to prevent locking if it already exists
-	version, err := r.data.DB.ProjectVersion.Query().
-		Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return nil, fmt.Errorf("checking existing version: %w", err)
-	}
+	var version *ent.ProjectVersion
+	if opts.UseLatestVersion {
+		// Resolve to the project version with latest=true
+		version, err = r.data.DB.ProjectVersion.Query().
+			Where(projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil(), projectversion.Latest(true)).
+			First(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return nil, fmt.Errorf("resolving latest version: %w", err)
+		}
+		if version == nil {
+			return nil, biz.NewErrValidationStr("no project version exists; create one before attesting with --latest-version")
+		}
+	} else {
+		// load the version in advance to prevent locking if it already exists
+		version, err = r.data.DB.ProjectVersion.Query().
+			Where(projectversion.Version(opts.ProjectVersion), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).First(ctx)
+		if err != nil && !ent.IsNotFound(err) {
+			return nil, fmt.Errorf("checking existing version: %w", err)
+		}
 
-	// If RequireExistingVersion is set, fail if the version doesn't exist
-	if opts.RequireExistingVersion && version == nil {
-		return nil, biz.NewErrValidationStr(fmt.Errorf("project version %q not found", opts.ProjectVersion).Error())
+		// If RequireExistingVersion is set, fail if the version doesn't exist
+		if opts.RequireExistingVersion && version == nil {
+			return nil, biz.NewErrValidationStr(fmt.Errorf("project version %q not found", opts.ProjectVersion).Error())
+		}
 	}
 
 	var p *ent.WorkflowRun

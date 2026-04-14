@@ -97,6 +97,7 @@ type AttestationInitRunOpts struct {
 	ContractRevision             int
 	ProjectName                  string
 	ProjectVersion               string
+	UseLatestVersion             bool
 	ProjectVersionMarkAsReleased bool
 	RequireExistingVersion       bool
 	WorkflowName                 string
@@ -170,7 +171,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		ContractName:   workflow.ContractName,
 	}
 
-	if opts.ProjectVersion != "" {
+	if opts.ProjectVersion != "" || opts.UseLatestVersion {
 		workflowMeta.Version = &clientAPI.ProjectVersion{
 			Version:        opts.ProjectVersion,
 			MarkAsReleased: opts.ProjectVersionMarkAsReleased,
@@ -215,6 +216,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 				WorkflowName:           opts.WorkflowName,
 				ProjectName:            opts.ProjectName,
 				ProjectVersion:         opts.ProjectVersion,
+				UseLatestVersion:       opts.UseLatestVersion,
 				RequireExistingVersion: opts.RequireExistingVersion,
 			},
 		)
@@ -235,6 +237,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		uiDashboardURL = result.GetUiDashboardUrl()
 
 		if v := workflowMeta.Version; v != nil && workflowRun.GetVersion() != nil {
+			v.Version = workflowRun.GetVersion().GetVersion()
 			v.Prerelease = workflowRun.GetVersion().GetPrerelease()
 		}
 

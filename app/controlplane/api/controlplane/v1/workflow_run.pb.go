@@ -600,8 +600,11 @@ type AttestationServiceInitRequest struct {
 	ProjectVersion string `protobuf:"bytes,6,opt,name=project_version,json=projectVersion,proto3" json:"project_version,omitempty"`
 	// Optional flag to require that the project version already exists
 	RequireExistingVersion bool `protobuf:"varint,7,opt,name=require_existing_version,json=requireExistingVersion,proto3" json:"require_existing_version,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Use the latest project version instead of specifying one explicitly.
+	// Mutually exclusive with project_version.
+	UseLatestVersion bool `protobuf:"varint,8,opt,name=use_latest_version,json=useLatestVersion,proto3" json:"use_latest_version,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *AttestationServiceInitRequest) Reset() {
@@ -679,6 +682,13 @@ func (x *AttestationServiceInitRequest) GetProjectVersion() string {
 func (x *AttestationServiceInitRequest) GetRequireExistingVersion() bool {
 	if x != nil {
 		return x.RequireExistingVersion
+	}
+	return false
+}
+
+func (x *AttestationServiceInitRequest) GetUseLatestVersion() bool {
+	if x != nil {
+		return x.UseLatestVersion
 	}
 	return false
 }
@@ -1784,7 +1794,7 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x06result\x18\x01 \x01(\v2=.controlplane.v1.AttestationServiceGetContractResponse.ResultR\x06result\x1a\x8d\x01\n" +
 	"\x06Result\x129\n" +
 	"\bworkflow\x18\x01 \x01(\v2\x1d.controlplane.v1.WorkflowItemR\bworkflow\x12H\n" +
-	"\bcontract\x18\x02 \x01(\v2,.controlplane.v1.WorkflowContractVersionItemR\bcontract\"\xf1\x02\n" +
+	"\bcontract\x18\x02 \x01(\v2,.controlplane.v1.WorkflowContractVersionItemR\bcontract\"\x9f\x03\n" +
 	"\x1dAttestationServiceInitRequest\x12+\n" +
 	"\x11contract_revision\x18\x01 \x01(\x05R\x10contractRevision\x12\x17\n" +
 	"\ajob_url\x18\x02 \x01(\tR\x06jobUrl\x12M\n" +
@@ -1792,7 +1802,8 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\rworkflow_name\x18\x04 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\fworkflowName\x12*\n" +
 	"\fproject_name\x18\x05 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vprojectName\x12'\n" +
 	"\x0fproject_version\x18\x06 \x01(\tR\x0eprojectVersion\x128\n" +
-	"\x18require_existing_version\x18\a \x01(\bR\x16requireExistingVersion\"\x94\x05\n" +
+	"\x18require_existing_version\x18\a \x01(\bR\x16requireExistingVersion\x12,\n" +
+	"\x12use_latest_version\x18\b \x01(\bR\x10useLatestVersion\"\x94\x05\n" +
 	"\x1eAttestationServiceInitResponse\x12N\n" +
 	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xb8\x03\n" +
 	"\x06Result\x12C\n" +
