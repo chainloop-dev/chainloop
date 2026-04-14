@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"time"
+	"unicode/utf8"
 
 	"github.com/cenkalti/backoff/v4"
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -654,10 +655,16 @@ func extractMaterials(in []*chainloop.NormalizedMaterial) ([]*cpAPI.AttestationI
 			Type:           m.Type,
 			Filename:       m.Filename,
 			Annotations:    m.Annotations,
-			Value:          m.Value,
+			RawValue:       m.Value,
 			UploadedToCas:  m.UploadedToCAS,
 			EmbeddedInline: m.EmbeddedInline,
 			Tag:            m.Tag,
+		}
+
+		// Deprecated: maintained for backward compatibility with older CLI versions
+		// that read the string value field. Only populated when content is valid UTF-8.
+		if utf8.Valid(m.Value) {
+			materialItem.Value = string(m.Value) //nolint:staticcheck // deprecated field populated for backward compatibility
 		}
 
 		if m.Hash != nil {

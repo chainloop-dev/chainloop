@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"sort"
 	"time"
+	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -135,10 +136,12 @@ func (r *renderer) summaryTable(m *ChainloopMetadata, predicate chainloop.Normal
 		for _, m := range materials {
 			mt.AppendRow(table.Row{"Name", m.Name})
 			mt.AppendRow(table.Row{"Type", m.Type})
-			value := m.Value
+			var value string
 			// Override the value for the filename of the item uploaded
 			if m.EmbeddedInline || m.UploadedToCAS {
 				value = m.Filename
+			} else if utf8.Valid(m.Value) {
+				value = string(m.Value)
 			}
 			mt.AppendRow(table.Row{"Value", wrap.String(value, 100)})
 			if m.Hash != nil {

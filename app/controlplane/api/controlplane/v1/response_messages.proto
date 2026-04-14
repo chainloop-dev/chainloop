@@ -130,8 +130,8 @@ message AttestationItem {
 
   message Material {
     string name = 1;
-    // This might be the raw value, the container image name, the filename and so on
-    string value = 2;
+    // Deprecated: use raw_value instead. This field cannot represent binary content.
+    string value = 2 [deprecated = true];
     // filename of the artifact that was either uploaded or injected inline in "value"
     string filename = 8;
     // Material type, i.e ARTIFACT
@@ -144,6 +144,12 @@ message AttestationItem {
     bool uploaded_to_cas = 6;
     // the content instead if inline
     bool embedded_inline = 7;
+    // Binary-safe material content. For inline artifacts, contains the raw bytes.
+    // For string materials, contains the UTF-8 encoded value.
+    // For non-inline materials (container images, uploaded artifacts), contains
+    // the filename or image reference as UTF-8.
+    // Clients should prefer this field over the deprecated string value field.
+    bytes raw_value = 10;
   }
 }
 

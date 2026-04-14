@@ -31,17 +31,17 @@ func TestExtractMaterials(t *testing.T) {
 		want  []*cpAPI.AttestationItem_Material
 	}{
 		{
-			name: "different material types",
+			name: "different material types with UTF-8 content",
 			input: []*chainloop.NormalizedMaterial{
 				{
 					Name:  "foo",
 					Type:  "STRING",
-					Value: "bar",
+					Value: []byte("bar"),
 				},
 				{
 					Name:  "with_annotations",
 					Type:  "STRING",
-					Value: "bar",
+					Value: []byte("bar"),
 					Annotations: map[string]string{
 						"foo": "bar",
 						"bar": "baz",
@@ -50,42 +50,69 @@ func TestExtractMaterials(t *testing.T) {
 				{
 					Name:  "foo",
 					Type:  "ARTIFACT",
-					Value: "bar",
+					Value: []byte("bar"),
 					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				},
 				{
 					Name:  "image",
 					Type:  "CONTAINER_IMAGE",
-					Value: "docker.io/nginx",
+					Value: []byte("docker.io/nginx"),
 					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				},
 			},
 			want: []*cpAPI.AttestationItem_Material{
 				{
-					Name:  "foo",
-					Type:  "STRING",
-					Value: "bar",
+					Name:     "foo",
+					Type:     "STRING",
+					Value:    "bar",
+					RawValue: []byte("bar"),
 				},
 				{
-					Name:  "with_annotations",
-					Type:  "STRING",
-					Value: "bar",
+					Name:     "with_annotations",
+					Type:     "STRING",
+					Value:    "bar",
+					RawValue: []byte("bar"),
 					Annotations: map[string]string{
 						"foo": "bar",
 						"bar": "baz",
 					},
 				},
 				{
-					Name:  "foo",
-					Type:  "ARTIFACT",
-					Value: "bar",
-					Hash:  "sha256:deadbeef",
+					Name:     "foo",
+					Type:     "ARTIFACT",
+					Value:    "bar",
+					RawValue: []byte("bar"),
+					Hash:     "sha256:deadbeef",
 				},
 				{
-					Name:  "image",
-					Type:  "CONTAINER_IMAGE",
-					Value: "docker.io/nginx",
-					Hash:  "sha256:deadbeef",
+					Name:     "image",
+					Type:     "CONTAINER_IMAGE",
+					Value:    "docker.io/nginx",
+					RawValue: []byte("docker.io/nginx"),
+					Hash:     "sha256:deadbeef",
+				},
+			},
+		},
+		{
+			name: "binary content skips deprecated string value",
+			input: []*chainloop.NormalizedMaterial{
+				{
+					Name:           "binary-artifact",
+					Type:           "ARTIFACT",
+					Filename:       "data.bin",
+					Value:          []byte{0xff, 0xfe, 0x00, 0x01},
+					Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
+					EmbeddedInline: true,
+				},
+			},
+			want: []*cpAPI.AttestationItem_Material{
+				{
+					Name:           "binary-artifact",
+					Type:           "ARTIFACT",
+					Filename:       "data.bin",
+					RawValue:       []byte{0xff, 0xfe, 0x00, 0x01},
+					Hash:           "sha256:deadbeef",
+					EmbeddedInline: true,
 				},
 			},
 		},

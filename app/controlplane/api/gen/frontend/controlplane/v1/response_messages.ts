@@ -405,7 +405,11 @@ export interface AttestationItem_EnvVariable {
 
 export interface AttestationItem_Material {
   name: string;
-  /** This might be the raw value, the container image name, the filename and so on */
+  /**
+   * Deprecated: use raw_value instead. This field cannot represent binary content.
+   *
+   * @deprecated
+   */
   value: string;
   /** filename of the artifact that was either uploaded or injected inline in "value" */
   filename: string;
@@ -419,6 +423,14 @@ export interface AttestationItem_Material {
   uploadedToCas: boolean;
   /** the content instead if inline */
   embeddedInline: boolean;
+  /**
+   * Binary-safe material content. For inline artifacts, contains the raw bytes.
+   * For string materials, contains the UTF-8 encoded value.
+   * For non-inline materials (container images, uploaded artifacts), contains
+   * the filename or image reference as UTF-8.
+   * Clients should prefer this field over the deprecated string value field.
+   */
+  rawValue: Uint8Array;
 }
 
 export interface AttestationItem_Material_AnnotationsEntry {
@@ -1931,6 +1943,7 @@ function createBaseAttestationItem_Material(): AttestationItem_Material {
     hash: "",
     uploadedToCas: false,
     embeddedInline: false,
+    rawValue: new Uint8Array(0),
   };
 }
 
@@ -1962,6 +1975,9 @@ export const AttestationItem_Material = {
     }
     if (message.embeddedInline === true) {
       writer.uint32(56).bool(message.embeddedInline);
+    }
+    if (message.rawValue.length !== 0) {
+      writer.uint32(82).bytes(message.rawValue);
     }
     return writer;
   },
@@ -2039,6 +2055,13 @@ export const AttestationItem_Material = {
 
           message.embeddedInline = reader.bool();
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.rawValue = reader.bytes();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2064,6 +2087,7 @@ export const AttestationItem_Material = {
       hash: isSet(object.hash) ? String(object.hash) : "",
       uploadedToCas: isSet(object.uploadedToCas) ? Boolean(object.uploadedToCas) : false,
       embeddedInline: isSet(object.embeddedInline) ? Boolean(object.embeddedInline) : false,
+      rawValue: isSet(object.rawValue) ? bytesFromBase64(object.rawValue) : new Uint8Array(0),
     };
   },
 
@@ -2083,6 +2107,8 @@ export const AttestationItem_Material = {
     message.hash !== undefined && (obj.hash = message.hash);
     message.uploadedToCas !== undefined && (obj.uploadedToCas = message.uploadedToCas);
     message.embeddedInline !== undefined && (obj.embeddedInline = message.embeddedInline);
+    message.rawValue !== undefined &&
+      (obj.rawValue = base64FromBytes(message.rawValue !== undefined ? message.rawValue : new Uint8Array(0)));
     return obj;
   },
 
@@ -2109,6 +2135,7 @@ export const AttestationItem_Material = {
     message.hash = object.hash ?? "";
     message.uploadedToCas = object.uploadedToCas ?? false;
     message.embeddedInline = object.embeddedInline ?? false;
+    message.rawValue = object.rawValue ?? new Uint8Array(0);
     return message;
   },
 };

@@ -142,7 +142,6 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ..
 				uc.logger.Debugw("msg", "Org exists!", "name", name)
 				continue
 			}
-			uc.logger.Debugw("msg", "BOOM", "name", name, "err", err)
 			return nil, err
 		}
 

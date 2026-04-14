@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -76,6 +77,7 @@ type PolicyEvaluationStatus struct {
 type Material struct {
 	Name           string        `json:"name"`
 	Value          string        `json:"value"`
+	RawValue       []byte        `json:"raw_value,omitempty"`
 	Hash           string        `json:"hash"`
 	Tag            string        `json:"tag"`
 	Filename       string        `json:"filename"`
@@ -312,9 +314,22 @@ func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
 }
 
 func materialPBToAction(in *pb.AttestationItem_Material) *Material {
+	// Prefer raw_value (binary-safe) when available.
+	// Fall back to deprecated string value field for compatibility with
+	// older control plane versions that don't populate raw_value.
+	var value string
+	if raw := in.GetRawValue(); len(raw) > 0 {
+		if utf8.Valid(raw) {
+			value = string(raw)
+		}
+	} else {
+		value = in.GetValue() //nolint:staticcheck // fallback for older servers
+	}
+
 	m := &Material{
 		Name:           in.Name,
-		Value:          in.Value,
+		Value:          value,
+		RawValue:       in.GetRawValue(),
 		Type:           in.Type,
 		Hash:           in.Hash,
 		Tag:            in.Tag,
