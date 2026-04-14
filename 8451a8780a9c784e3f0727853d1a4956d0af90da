@@ -1,0 +1,60 @@
+app/controlplane/plugins/sdk/v1/plugin/api/fanout.pb.go
+  f9eae8c5f911b56c 2,892,951,955,1241
+app/controlplane/internal/service/attestation.go
+  f9eae8c5f911b56c 24,658,664-667
+app/controlplane/plugins/sdk/v1/plugin/api/fanout.proto
+  f9eae8c5f911b56c 2,112
+app/controlplane/api/controlplane/v1/response_messages.pb.go
+  f9eae8c5f911b56c 2437-2439,2453-2460,2500,2557-2561,2712,2739,2741-2742,2749-2751
+app/controlplane/plugins/sdk/v1/helpers.go
+  f9eae8c5f911b56c 2,22,139,143-144
+app/controlplane/api/controlplane/v1/response_messages.proto
+  f9eae8c5f911b56c 133-134,147-152
+app/controlplane/internal/service/attestation_test.go
+  f9eae8c5f911b56c 34,39,44,53,59,65-68,71-74,81-85,88-115
+pkg/attestation/renderer/chainloop/chainloop_test.go
+  f9eae8c5f911b56c 56,80,89
+pkg/attestation/renderer/chainloop/v02.go
+  f9eae8c5f911b56c 511,534,567,571
+app/controlplane/plugins/sdk/v1/plugin/api/fanout_grpc.pb.go
+  f9eae8c5f911b56c 2
+pkg/attestation/renderer/chainloop/v02_test.go
+  f9eae8c5f911b56c 163,254
+app/cli/pkg/action/workflow_run_describe.go
+  f9eae8c5f911b56c 2,315-324,327
+pkg/attestation/renderer/chainloop/chainloop.go
+  f9eae8c5f911b56c 73-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "8451a8780a9c784e3f0727853d1a4956d0af90da",
+  "prompts": {
+    "0af70fb4c3b8346b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e3d381ab-989f-42f4-bb8e-e68797ca8403",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 159,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "f9eae8c5f911b56c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36303523-642c-4f4e-8edd-ddf05007e8a2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 125,
+      "total_deletions": 54,
+      "accepted_lines": 124,
+      "overriden_lines": 0
+    }
+  }
+}
