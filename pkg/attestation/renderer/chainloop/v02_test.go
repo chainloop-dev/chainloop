@@ -300,6 +300,102 @@ func TestNormalizeMaterial(t *testing.T) {
 	}
 }
 
+// TestBinaryContentStructRoundTrip verifies that binary (non-UTF-8) content in
+// ResourceDescriptor.Content survives the structpb.Struct round-trip that happens
+// during predicate() → extractPredicate(): json.Marshal → protojson.Unmarshal(Struct) →
+// protojson.Marshal(Struct) → json.Unmarshal.
+func TestBinaryContentStructRoundTrip(t *testing.T) {
+	testCases := []struct {
+		name    string
+		content []byte
+	}{
+		{
+			name:    "null bytes and high bytes",
+			content: []byte{0xff, 0xfe, 0x00, 0x01, 0x80, 0x7f},
+		},
+		{
+			name:    "ELF header",
+			content: []byte{0x7f, 0x45, 0x4c, 0x46, 0x02, 0x01, 0x01, 0x00},
+		},
+		{
+			name: "all byte values",
+			content: func() []byte {
+				b := make([]byte, 256)
+				for i := range b {
+					b[i] = byte(i)
+				}
+				return b
+			}(),
+		},
+		{
+			name:    "valid UTF-8 text",
+			content: []byte("hello world"),
+		},
+		{
+			name: "large binary payload",
+			content: func() []byte {
+				b := make([]byte, 64*1024)
+				for i := range b {
+					b[i] = byte(i % 251)
+				}
+				return b
+			}(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Build a minimal predicate with one inline artifact material
+			original := &ProvenancePredicateV02{
+				ProvenancePredicateCommon: &ProvenancePredicateCommon{},
+				Materials: []*intoto.ResourceDescriptor{
+					{
+						Name: "binary.bin",
+						Annotations: mapToStruct(t, map[string]interface{}{
+							"chainloop.material.name":       "test-binary",
+							"chainloop.material.type":       "ARTIFACT",
+							"chainloop.material.cas.inline": true,
+						}),
+						Digest:  map[string]string{"sha256": "deadbeef"},
+						Content: tc.content,
+					},
+				},
+			}
+
+			// === Step 1: predicate() path ===
+			// json.Marshal base64-encodes []byte fields
+			predicateJSON, err := json.Marshal(original)
+			require.NoError(t, err)
+
+			// protojson.Unmarshal stores the base64 string in Struct
+			predStruct := &structpb.Struct{}
+			err = protojson.Unmarshal(predicateJSON, predStruct)
+			require.NoError(t, err)
+
+			// === Step 2: extractPredicate() path ===
+			// protojson.Marshal outputs the Struct as JSON
+			roundTrippedJSON, err := protojson.Marshal(predStruct)
+			require.NoError(t, err)
+
+			// json.Unmarshal decodes base64 back into []byte
+			var restored ProvenancePredicateV02
+			err = json.Unmarshal(roundTrippedJSON, &restored)
+			require.NoError(t, err)
+
+			require.Len(t, restored.Materials, 1)
+			assert.Equal(t, tc.content, restored.Materials[0].Content,
+				"binary content should survive structpb.Struct round-trip")
+
+			// === Step 3: normalizeMaterial() ===
+			normalized, err := normalizeMaterial(restored.Materials[0])
+			require.NoError(t, err)
+			assert.Equal(t, tc.content, normalized.Value,
+				"binary content should survive normalization")
+			assert.True(t, normalized.EmbeddedInline)
+		})
+	}
+}
+
 func TestStructValueToString(t *testing.T) {
 	testCases := []struct {
 		name  string

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -76,6 +77,7 @@ type PolicyEvaluationStatus struct {
 type Material struct {
 	Name           string        `json:"name"`
 	Value          string        `json:"value"`
+	RawValue       []byte        `json:"raw_value,omitempty"`
 	Hash           string        `json:"hash"`
 	Tag            string        `json:"tag"`
 	Filename       string        `json:"filename"`
@@ -318,13 +320,18 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 	var value string
 	if len(in.GetRawValue()) > 0 {
 		value = string(in.GetRawValue())
+		if !utf8.Valid(in.GetRawValue()) {
+			value = ""
+		}
 	} else {
 		value = in.GetValue() //nolint:staticcheck // fallback for older servers
 	}
 
 	m := &Material{
-		Name:           in.Name,
+		Name: in.Name,
+		// kept for compatibility in case we have users that are still using the string value field
 		Value:          value,
+		RawValue:       in.GetRawValue(),
 		Type:           in.Type,
 		Hash:           in.Hash,
 		Tag:            in.Tag,
