@@ -55,8 +55,8 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
 
-			// load version from the file if not set
-			if projectVersion == "" {
+			// load version from the file if not set and not using --latest-version
+			if projectVersion == "" && !useLatestVersion {
 				// load the cfg from the file
 				cfg, path, err := loadDotChainloopConfigWithParentTraversal()
 				// we do gracefully load, if not found, or any other error we continue
