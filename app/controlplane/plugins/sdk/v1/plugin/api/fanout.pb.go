@@ -889,7 +889,7 @@ type ExecuteRequest_NormalizedMaterial struct {
 	Content       []byte                 `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
-	Value         []byte                 `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
+	Value         string                 `protobuf:"bytes,4,opt,name=value,proto3" json:"value,omitempty"`
 	Hash          string                 `protobuf:"bytes,5,opt,name=hash,proto3" json:"hash,omitempty"`
 	UploadedToCas bool                   `protobuf:"varint,6,opt,name=uploaded_to_cas,json=uploadedToCas,proto3" json:"uploaded_to_cas,omitempty"`
 	FileName      string                 `protobuf:"bytes,7,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
@@ -948,11 +948,11 @@ func (x *ExecuteRequest_NormalizedMaterial) GetType() string {
 	return ""
 }
 
-func (x *ExecuteRequest_NormalizedMaterial) GetValue() []byte {
+func (x *ExecuteRequest_NormalizedMaterial) GetValue() string {
 	if x != nil {
 		return x.Value
 	}
-	return nil
+	return ""
 }
 
 func (x *ExecuteRequest_NormalizedMaterial) GetHash() string {
@@ -1238,7 +1238,7 @@ const file_fanout_proto_rawDesc = "" +
 	"\acontent\x18\x01 \x01(\fR\acontent\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x03 \x01(\tR\x04type\x12\x14\n" +
-	"\x05value\x18\x04 \x01(\fR\x05value\x12\x12\n" +
+	"\x05value\x18\x04 \x01(\tR\x05value\x12\x12\n" +
 	"\x04hash\x18\x05 \x01(\tR\x04hash\x12&\n" +
 	"\x0fuploaded_to_cas\x18\x06 \x01(\bR\ruploadedToCas\x12\x1b\n" +
 	"\tfile_name\x18\a \x01(\tR\bfileName\x1a\x8f\x04\n" +

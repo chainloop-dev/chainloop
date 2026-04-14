@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package api
 
 import (
 	"errors"
+	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -148,11 +149,18 @@ func MetadataProtoToSDK(in *ExecuteRequest_Metadata) *sdk.ChainloopMetadata {
 }
 
 func MaterialSDKToProto(in *sdk.ExecuteMaterial) *ExecuteRequest_NormalizedMaterial {
+	// The fanout proto uses string for value since plugins expect text.
+	// Binary inline content is available in the Content bytes field instead.
+	var value string
+	if utf8.Valid(in.Value) {
+		value = string(in.Value)
+	}
+
 	return &ExecuteRequest_NormalizedMaterial{
 		Content:       in.Content,
 		Name:          in.Name,
 		Type:          in.Type,
-		Value:         in.Value,
+		Value:         value,
 		FileName:      in.Filename,
 		Hash:          in.Hash.String(),
 		UploadedToCas: in.UploadedToCAS,
@@ -171,7 +179,7 @@ func MaterialProtoToSDK(in *ExecuteRequest_NormalizedMaterial) *sdk.ExecuteMater
 		NormalizedMaterial: &chainloop.NormalizedMaterial{
 			Name:          in.Name,
 			Type:          in.Type,
-			Value:         in.Value,
+			Value:         []byte(in.Value),
 			Filename:      in.FileName,
 			UploadedToCAS: in.UploadedToCas,
 			Hash:          &hash,

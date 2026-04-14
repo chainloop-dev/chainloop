@@ -109,7 +109,7 @@ message ExecuteRequest {
     bytes content = 1;
     string name = 2;
     string type = 3;
-    bytes value = 4;
+    string value = 4;
     string hash = 5;
     bool uploaded_to_cas = 6;
     string file_name = 7;
