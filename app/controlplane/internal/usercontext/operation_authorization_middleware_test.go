@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
@@ -88,7 +87,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.WorkflowService/List")
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
 
 		result, err := m(passHandler)(ctx, nil)
 		require.NoError(t, err)
@@ -101,7 +99,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 			var req operationAuthRequest
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
 			assert.Equal(t, "/controlplane.v1.OrganizationService/Create", req.Operation)
-			assert.Equal(t, "user-1", req.UserID)
 
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: true}) //nolint:errcheck
@@ -112,7 +109,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
 
 		result, err := m(passHandler)(ctx, nil)
 		require.NoError(t, err)
@@ -130,7 +126,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
 
 		result, err := m(passHandler)(ctx, nil)
 		require.Error(t, err)
@@ -143,7 +138,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
 
 		result, err := m(passHandler)(ctx, nil)
 		require.Error(t, err)
@@ -161,35 +155,11 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-2"})
 
 		result, err := m(passHandler)(ctx, nil)
 		require.Error(t, err)
 		assert.Nil(t, result)
 		assert.Contains(t, err.Error(), "unable to verify operation authorization")
-	})
-
-	t.Run("organization ID is forwarded", func(t *testing.T) {
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var req operationAuthRequest
-			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
-			assert.Equal(t, "org-123", req.OrganizationID)
-
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: true}) //nolint:errcheck
-		}))
-		defer srv.Close()
-
-		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
-		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
-
-		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
-		ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: "org-123"})
-
-		result, err := m(passHandler)(ctx, nil)
-		require.NoError(t, err)
-		assert.Equal(t, "ok", result)
 	})
 
 	t.Run("bearer token is forwarded", func(t *testing.T) {
@@ -209,7 +179,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 			header:    headerCarrier(http.Header{"Authorization": []string{"Bearer test-token-123"}}),
 		}
 		ctx := transport.NewServerContext(context.Background(), ft)
-		ctx = entities.WithCurrentUser(ctx, &entities.User{ID: "user-1"})
 
 		result, err := m(passHandler)(ctx, nil)
 		require.NoError(t, err)

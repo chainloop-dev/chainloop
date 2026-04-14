@@ -33,9 +33,7 @@ import (
 )
 
 type operationAuthRequest struct {
-	Operation      string `json:"operation"`
-	UserID         string `json:"user_id"`
-	OrganizationID string `json:"organization_id,omitempty"`
+	Operation string `json:"operation"`
 }
 
 type operationAuthResponse struct {
@@ -67,20 +65,8 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 				return handler(ctx, req)
 			}
 
-			user := entities.CurrentUser(ctx)
-			if user == nil {
-				return handler(ctx, req)
-			}
-
-			var orgID string
-			if org := entities.CurrentOrg(ctx); org != nil {
-				orgID = org.ID
-			}
-
 			result, err := callAuthorizationEndpoint(ctx, client, url, &operationAuthRequest{
-				Operation:      operation,
-				UserID:         user.ID,
-				OrganizationID: orgID,
+				Operation: operation,
 			})
 			if err != nil {
 				logger.Errorw("msg", "operation authorization call failed, denying request (fail-closed)", "error", err, "operation", operation)
