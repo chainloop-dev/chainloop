@@ -235,6 +235,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		uiDashboardURL = result.GetUiDashboardUrl()
 
 		if v := workflowMeta.Version; v != nil && workflowRun.GetVersion() != nil {
+			v.Version = workflowRun.GetVersion().GetVersion()
 			v.Prerelease = workflowRun.GetVersion().GetPrerelease()
 		}
 
