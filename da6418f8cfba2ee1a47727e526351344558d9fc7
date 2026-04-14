@@ -1,0 +1,27 @@
+app/controlplane/plugins/sdk/v1/plugin/api/translation.go
+  11779f6c73b7adab 2,20,152-158,163,182
+app/controlplane/plugins/sdk/v1/plugin/api/fanout.proto
+  11779f6c73b7adab 112
+app/controlplane/plugins/sdk/v1/plugin/api/fanout.pb.go
+  11779f6c73b7adab 892,951,955,1241
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "da6418f8cfba2ee1a47727e526351344558d9fc7",
+  "prompts": {
+    "11779f6c73b7adab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b0e10fa-b11d-442a-9b30-f2bb4aea8e36",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 12,
+      "accepted_lines": 16,
+      "overriden_lines": 0
+    }
+  }
+}
