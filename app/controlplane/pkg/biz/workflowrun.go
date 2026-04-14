@@ -249,7 +249,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 
 	contractRevision := opts.ContractRevision
 
-	if opts.ProjectVersion != "" {
+	if opts.ProjectVersion != "" && opts.ProjectVersion != LatestVersionMagicConstant {
 		if err := ValidateVersion(opts.ProjectVersion); err != nil {
 			return nil, err
 		}
