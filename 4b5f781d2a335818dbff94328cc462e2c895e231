@@ -1,0 +1,25 @@
+app/cli/pkg/action/workflow_run_describe.go
+  11779f6c73b7adab 321-323,330
+pkg/attestation/renderer/chainloop/v02_test.go
+  11779f6c73b7adab 354
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "4b5f781d2a335818dbff94328cc462e2c895e231",
+  "prompts": {
+    "11779f6c73b7adab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b0e10fa-b11d-442a-9b30-f2bb4aea8e36",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 7,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
