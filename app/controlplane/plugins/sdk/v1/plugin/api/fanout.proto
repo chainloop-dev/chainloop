@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ message ExecuteRequest {
     bytes content = 1;
     string name = 2;
     string type = 3;
-    string value = 4;
+    bytes value = 4;
     string hash = 5;
     bool uploaded_to_cas = 6;
     string file_name = 7;

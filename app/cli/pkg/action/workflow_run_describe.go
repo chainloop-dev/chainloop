@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -312,9 +312,19 @@ func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
 }
 
 func materialPBToAction(in *pb.AttestationItem_Material) *Material {
+	// Prefer raw_value (binary-safe) when available.
+	// Fall back to deprecated string value field for compatibility with
+	// older control plane versions that don't populate raw_value.
+	var value string
+	if len(in.GetRawValue()) > 0 {
+		value = string(in.GetRawValue())
+	} else {
+		value = in.GetValue() //nolint:staticcheck // fallback for older servers
+	}
+
 	m := &Material{
 		Name:           in.Name,
-		Value:          in.Value,
+		Value:          value,
 		Type:           in.Type,
 		Hash:           in.Hash,
 		Tag:            in.Tag,

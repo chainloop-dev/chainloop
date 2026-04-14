@@ -160,7 +160,7 @@ func TestNormalizeMaterial(t *testing.T) {
 			want: &NormalizedMaterial{
 				Name:  "foo",
 				Type:  "STRING",
-				Value: "bar",
+				Value: []byte("bar"),
 				Annotations: map[string]string{
 					"chainloop.material.name": "foo",
 					"chainloop.material.type": "STRING",
@@ -251,7 +251,7 @@ func TestNormalizeMaterial(t *testing.T) {
 				Name:           "foo",
 				Type:           "ARTIFACT",
 				Filename:       "artifact.tgz",
-				Value:          "this is an inline material",
+				Value:          []byte("this is an inline material"),
 				Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "deadbeef"},
 				EmbeddedInline: true,
 				Annotations: map[string]string{

@@ -508,7 +508,7 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 			return nil, fmt.Errorf("material content not found")
 		}
 
-		m.Value = string(material.Content)
+		m.Value = material.Content
 		hash, ok := material.Digest["sha256"]
 		if ok {
 			m.Hash = &crv1.Hash{Algorithm: "sha256", Hex: hash}
@@ -531,7 +531,7 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	}
 
 	// In the case of container images for example the value is in the name field
-	m.Value = material.Name
+	m.Value = []byte(material.Name)
 
 	if v, ok := mAnnotationsMap[v1.AnnotationMaterialCAS]; ok && v.GetBoolValue() {
 		m.UploadedToCAS = true
@@ -564,11 +564,11 @@ func normalizeMaterial(material *intoto.ResourceDescriptor) (*NormalizedMaterial
 	// In the case of an artifact type or derivative the filename is set and the inline content if any
 	if m.EmbeddedInline || m.UploadedToCAS {
 		m.Filename = material.Name
-		m.Value = ""
+		m.Value = nil
 	}
 
 	if m.EmbeddedInline {
-		m.Value = string(material.Content)
+		m.Value = material.Content
 	}
 
 	return m, nil

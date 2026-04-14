@@ -70,8 +70,8 @@ type NormalizedMaterial struct {
 	Type string
 	// filename of the artifact that was either uploaded or injected inline in "value"
 	Filename string
-	// Inline content for an artifact or string material
-	Value string
+	// Inline content for an artifact or string material (binary-safe)
+	Value []byte
 	// Hash of the Material
 	Hash *crv1.Hash
 	// Tag of the container image

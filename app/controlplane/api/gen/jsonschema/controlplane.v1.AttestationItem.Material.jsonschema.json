@@ -7,6 +7,11 @@
       "description": "the content instead if inline",
       "type": "boolean"
     },
+    "^(raw_value)$": {
+      "description": "Binary-safe material content. For inline artifacts, contains the raw bytes.\n For string materials, contains the UTF-8 encoded value.\n For non-inline materials (container images, uploaded artifacts), contains\n the filename or image reference as UTF-8.\n Clients should prefer this field over the deprecated string value field.",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
     "^(uploaded_to_cas)$": {
       "description": "it's been uploaded to an actual CAS backend",
       "type": "boolean"
@@ -36,6 +41,11 @@
     "name": {
       "type": "string"
     },
+    "rawValue": {
+      "description": "Binary-safe material content. For inline artifacts, contains the raw bytes.\n For string materials, contains the UTF-8 encoded value.\n For non-inline materials (container images, uploaded artifacts), contains\n the filename or image reference as UTF-8.\n Clients should prefer this field over the deprecated string value field.",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "type": "string"
+    },
     "tag": {
       "description": "in the case of a container image, the tag of the attested image",
       "type": "string"
@@ -49,7 +59,7 @@
       "type": "boolean"
     },
     "value": {
-      "description": "This might be the raw value, the container image name, the filename and so on",
+      "description": "Deprecated: use raw_value instead. This field cannot represent binary content.",
       "type": "string"
     }
   },

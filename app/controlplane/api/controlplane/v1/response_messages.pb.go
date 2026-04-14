@@ -2434,7 +2434,9 @@ func (x *AttestationItem_EnvVariable) GetValue() string {
 type AttestationItem_Material struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// This might be the raw value, the container image name, the filename and so on
+	// Deprecated: use raw_value instead. This field cannot represent binary content.
+	//
+	// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	// filename of the artifact that was either uploaded or injected inline in "value"
 	Filename string `protobuf:"bytes,8,opt,name=filename,proto3" json:"filename,omitempty"`
@@ -2448,8 +2450,14 @@ type AttestationItem_Material struct {
 	UploadedToCas bool `protobuf:"varint,6,opt,name=uploaded_to_cas,json=uploadedToCas,proto3" json:"uploaded_to_cas,omitempty"`
 	// the content instead if inline
 	EmbeddedInline bool `protobuf:"varint,7,opt,name=embedded_inline,json=embeddedInline,proto3" json:"embedded_inline,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Binary-safe material content. For inline artifacts, contains the raw bytes.
+	// For string materials, contains the UTF-8 encoded value.
+	// For non-inline materials (container images, uploaded artifacts), contains
+	// the filename or image reference as UTF-8.
+	// Clients should prefer this field over the deprecated string value field.
+	RawValue      []byte `protobuf:"bytes,10,opt,name=raw_value,json=rawValue,proto3" json:"raw_value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AttestationItem_Material) Reset() {
@@ -2489,6 +2497,7 @@ func (x *AttestationItem_Material) GetName() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
 func (x *AttestationItem_Material) GetValue() string {
 	if x != nil {
 		return x.Value
@@ -2543,6 +2552,13 @@ func (x *AttestationItem_Material) GetEmbeddedInline() bool {
 		return x.EmbeddedInline
 	}
 	return false
+}
+
+func (x *AttestationItem_Material) GetRawValue() []byte {
+	if x != nil {
+		return x.RawValue
+	}
+	return nil
 }
 
 type WorkflowContractVersionItem_RawBody struct {
@@ -2693,7 +2709,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12;\n" +
 	"\vreleased_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"releasedAt\"\xbb\v\n" +
+	"releasedAt\"\xdc\v\n" +
 	"\x0fAttestationItem\x12\x1e\n" +
 	"\benvelope\x18\x03 \x01(\fB\x02\x18\x01R\benvelope\x12\x16\n" +
 	"\x06bundle\x18\n" +
@@ -2720,17 +2736,19 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x10violations_count\x18\a \x01(\x05R\x0fviolationsCount\x1a7\n" +
 	"\vEnvVariable\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\x1a\xf9\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\x1a\x9a\x03\n" +
 	"\bMaterial\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\x12\x1a\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\x05value\x18\x02 \x01(\tB\x02\x18\x01R\x05value\x12\x1a\n" +
 	"\bfilename\x18\b \x01(\tR\bfilename\x12\x12\n" +
 	"\x04type\x18\x03 \x01(\tR\x04type\x12\\\n" +
 	"\vannotations\x18\x04 \x03(\v2:.controlplane.v1.AttestationItem.Material.AnnotationsEntryR\vannotations\x12\x10\n" +
 	"\x03tag\x18\t \x01(\tR\x03tag\x12\x12\n" +
 	"\x04hash\x18\x05 \x01(\tR\x04hash\x12&\n" +
 	"\x0fuploaded_to_cas\x18\x06 \x01(\bR\ruploadedToCas\x12'\n" +
-	"\x0fembedded_inline\x18\a \x01(\bR\x0eembeddedInline\x1a>\n" +
+	"\x0fembedded_inline\x18\a \x01(\bR\x0eembeddedInline\x12\x1b\n" +
+	"\traw_value\x18\n" +
+	" \x01(\fR\brawValue\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +

@@ -53,7 +53,7 @@ func TestExtractPredicate(t *testing.T) {
 				},
 				{
 					Name: "image", Type: "CONTAINER_IMAGE",
-					Value: "index.docker.io/bitnami/nginx",
+					Value: []byte("index.docker.io/bitnami/nginx"),
 					Hash:  &crv1.Hash{Algorithm: "sha256", Hex: "747ef335ea27a2faf08aa292a5bc5491aff50c6a94ee4ebcbbcd43cdeccccaf1"},
 					Annotations: map[string]string{
 						"another_annotation":      "foo",
@@ -77,7 +77,7 @@ func TestExtractPredicate(t *testing.T) {
 					Filename:       "inline-sbom.json",
 					Hash:           &crv1.Hash{Algorithm: "sha256", Hex: "16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"},
 					EmbeddedInline: true,
-					Value:          "hello inline!",
+					Value:          []byte("hello inline!"),
 					Annotations: map[string]string{
 						"chainloop.material.cas.inline": "true",
 						"chainloop.material.name":       "sbom",
@@ -86,7 +86,7 @@ func TestExtractPredicate(t *testing.T) {
 				},
 				{
 					Name: "stringvar", Type: "STRING",
-					Value: "helloworld",
+					Value: []byte("helloworld"),
 					Annotations: map[string]string{
 						"chainloop.material.name": "stringvar",
 						"chainloop.material.type": "STRING",
