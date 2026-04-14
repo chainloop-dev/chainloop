@@ -1,0 +1,25 @@
+pkg/attestation/crafter/crafter.go
+  eb382fae2917a2d0 313-318,337-342,375-377,402-403,428
+pkg/attestation/crafter/crafter_unit_test.go
+  eb382fae2917a2d0 30,194-195,363-364
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "2ecc394d0885184ee56d12a8e99e54b2e202bef3",
+  "prompts": {
+    "eb382fae2917a2d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "348a4d5f-e587-4bee-be87-6039fa7e74b0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 29,
+      "total_deletions": 21,
+      "accepted_lines": 25,
+      "overriden_lines": 0
+    }
+  }
+}
