@@ -1,0 +1,25 @@
+go.mod
+  eb382fae2917a2d0 357
+pkg/attestation/crafter/crafter_unit_test.go
+  eb382fae2917a2d0 193,361
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "a734897755bfab535bbaadcb2cb7146db2d091f4",
+  "prompts": {
+    "eb382fae2917a2d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "348a4d5f-e587-4bee-be87-6039fa7e74b0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 67,
+      "total_deletions": 71,
+      "accepted_lines": 65,
+      "overriden_lines": 0
+    }
+  }
+}
