@@ -190,7 +190,7 @@ func (s *crafterUnitSuite) TestGitRepoHead() {
 				require.NoError(s.T(), err)
 			}
 
-			got, err := gracefulGitRepoHead(path)
+			got, err := gracefulGitRepoHead(path, nil)
 			if tc.wantErr {
 				assert.Error(s.T(), err)
 				return
@@ -358,7 +358,7 @@ func (s *crafterUnitSuite) TestGitRepoHeadWorktree() {
 	out, err := cmd.CombinedOutput()
 	require.NoError(s.T(), err, "git worktree add: %s", out)
 
-	got, err := gracefulGitRepoHead(worktreePath)
+	got, err := gracefulGitRepoHead(worktreePath, nil)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), got)
 
