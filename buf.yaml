@@ -102,6 +102,10 @@ modules:
       except:
         - EXTENSION_NO_DELETE
         - FIELD_SAME_DEFAULT
+      ignore_only:
+        # string→bytes is wire-compatible; internal plugin SDK, not public API
+        FIELD_SAME_TYPE:
+          - app/controlplane/plugins/sdk/v1/plugin/api/fanout.proto
   - path: pkg/attestation/crafter/api
     lint:
       use:
