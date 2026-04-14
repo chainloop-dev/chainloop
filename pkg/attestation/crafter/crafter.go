@@ -310,7 +310,12 @@ var errBranchInvalidMerge = errors.New("branch config: invalid merge")
 
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
-func gracefulGitRepoHead(path string) (*HeadCommit, error) {
+func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, error) {
+	if logger == nil {
+		l := zerolog.Nop()
+		logger = &l
+	}
+
 	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
 		// walk up the directory tree until we find a git repo
 		DetectDotGit: true,
@@ -326,6 +331,15 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 			errors.Is(err, git.ErrUnsupportedExtensionRepositoryFormatVersion) ||
 			errors.Is(err, git.ErrUnknownExtension) ||
 			errors.Is(err, git.ErrUnsupportedRepositoryFormatVersion) {
+			return nil, nil
+		}
+
+		// Mitigate https://github.com/go-git/go-git/issues/331
+		// This error is not exposed by go-git so we do a string comparison.
+		// The upcoming go-git v6 no longer returns this error, so this
+		// workaround can be removed after upgrading.
+		if isBranchInvalidMergeError(err) {
+			logger.Warn().Err(err).Msg("branch is invalid merge, skipping commit")
 			return nil, nil
 		}
 
@@ -361,7 +375,8 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 		// we do not care about that use-case, so we ignore the error
 		// we compare by error string because go-git does not expose the error type
 		// and errors.Is require the same instance of the error
-		if err.Error() == errBranchInvalidMerge.Error() {
+		if isBranchInvalidMergeError(err) {
+			logger.Warn().Err(err).Msg("branch is invalid merge, skipping remotes")
 			return c, nil
 		}
 
@@ -387,6 +402,10 @@ func gracefulGitRepoHead(path string) (*HeadCommit, error) {
 	return c, nil
 }
 
+func isBranchInvalidMergeError(err error) bool {
+	return err.Error() == errBranchInvalidMerge.Error()
+}
+
 // Clear any basic auth credentials from the remote URL
 func sanitizeRemoteURL(remoteURL string) (string, error) {
 	uri, err := url.Parse(remoteURL)
@@ -409,7 +428,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		return nil, errors.New("required init options not provided")
 	}
 	// Get git commit hash
-	headCommit, err := gracefulGitRepoHead(cwd)
+	headCommit, err := gracefulGitRepoHead(cwd, opts.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("getting git commit hash: %w", err)
 	}
