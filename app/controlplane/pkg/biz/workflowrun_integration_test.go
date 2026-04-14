@@ -341,9 +341,7 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		}
 	})
 
-	s.T().Run("latest resolves to version with latest=true", func(_ *testing.T) {
-		// workflowOrg1 already has versions from previous test runs.
-		// The last created version should have latest=true.
+	s.T().Run("use-latest-version resolves to version with latest=true", func(_ *testing.T) {
 		// Create a named version first so we know which one is latest.
 		namedRun, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
@@ -352,24 +350,24 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		s.Require().NoError(err)
 		latestVersion := namedRun.ProjectVersion
 
-		// Now create a run with "latest" — should resolve to "latest-target"
+		// Now create a run with UseLatestVersion — should resolve to "latest-target"
 		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
 			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
-			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "latest",
+			RunnerType: "runnerType", RunnerRunURL: "runURL", UseLatestVersion: true,
 		})
 		s.Require().NoError(err)
 		s.Equal(latestVersion.ID, run.ProjectVersion.ID)
 		s.Equal("latest-target", run.ProjectVersion.Version)
 	})
 
-	s.T().Run("latest with no versions returns error", func(_ *testing.T) {
+	s.T().Run("use-latest-version with no versions returns error", func(_ *testing.T) {
 		// Create a new workflow in a fresh project (which auto-creates a default version)
 		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
 			Name: "no-versions-workflow", OrgID: s.org.ID, Project: "empty-project",
 		})
 		s.Require().NoError(err)
 
-		// Soft-delete all versions for this project so "latest" resolution fails
+		// Delete all versions for this project so resolution fails
 		_, err = s.Data.DB.ProjectVersion.Delete().
 			Where(
 				entProjectVersion.ProjectID(wf.ProjectID),
@@ -378,11 +376,21 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 
 		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
 			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
-			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "latest",
+			RunnerType: "runnerType", RunnerRunURL: "runURL", UseLatestVersion: true,
 		})
 		s.Require().Error(err)
 		s.True(biz.IsErrValidation(err))
 		s.Contains(err.Error(), "no project version exists")
+	})
+
+	s.T().Run("use-latest-version and project-version are mutually exclusive", func(_ *testing.T) {
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "v1.0", UseLatestVersion: true,
+		})
+		s.Require().Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "cannot specify both")
 	})
 }
 

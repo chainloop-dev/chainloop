@@ -201,6 +201,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		RunnerType:             req.GetRunner().String(),
 		CASBackendID:           backend.ID,
 		ProjectVersion:         req.GetProjectVersion(),
+		UseLatestVersion:       req.GetUseLatestVersion(),
 		RequireExistingVersion: req.GetRequireExistingVersion(),
 	}
 

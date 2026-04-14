@@ -23,6 +23,10 @@
       "description": "Optional flag to require that the project version already exists",
       "type": "boolean"
     },
+    "^(use_latest_version)$": {
+      "description": "Use the latest project version instead of specifying one explicitly.\n Mutually exclusive with project_version.",
+      "type": "boolean"
+    },
     "^(workflow_name)$": {
       "minLength": 1,
       "type": "string"
@@ -72,6 +76,10 @@
           "type": "integer"
         }
       ]
+    },
+    "useLatestVersion": {
+      "description": "Use the latest project version instead of specifying one explicitly.\n Mutually exclusive with project_version.",
+      "type": "boolean"
     },
     "workflowName": {
       "minLength": 1,

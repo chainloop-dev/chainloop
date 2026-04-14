@@ -83,11 +83,6 @@ func (s *versionTestSuite) TestValidateVersion() {
 			wantError: false,
 		},
 		{
-			name:      "reserved latest keyword",
-			version:   "latest",
-			wantError: true,
-		},
-		{
 			name:      "invalid version with spaces",
 			version:   "version 1.0",
 			wantError: true,

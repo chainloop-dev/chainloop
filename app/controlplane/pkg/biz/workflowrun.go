@@ -220,6 +220,7 @@ type WorkflowRunCreateOpts struct {
 	RunnerType             string
 	CASBackendID           uuid.UUID
 	ProjectVersion         string
+	UseLatestVersion       bool
 	RequireExistingVersion bool
 }
 
@@ -229,6 +230,7 @@ type WorkflowRunRepoCreateOpts struct {
 	Backends                     []uuid.UUID
 	LatestRevision, UsedRevision int
 	ProjectVersion               string
+	UseLatestVersion             bool
 	RequireExistingVersion       bool
 }
 
@@ -249,7 +251,11 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 
 	contractRevision := opts.ContractRevision
 
-	if opts.ProjectVersion != "" && opts.ProjectVersion != LatestVersionMagicConstant {
+	if opts.UseLatestVersion && opts.ProjectVersion != "" {
+		return nil, NewErrValidationStr("cannot specify both a project version and use-latest-version")
+	}
+
+	if opts.ProjectVersion != "" {
 		if err := ValidateVersion(opts.ProjectVersion); err != nil {
 			return nil, err
 		}
@@ -268,6 +274,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			LatestRevision:         contractRevision.Contract.LatestRevision,
 			UsedRevision:           contractRevision.Version.Revision,
 			ProjectVersion:         opts.ProjectVersion,
+			UseLatestVersion:       opts.UseLatestVersion,
 			RequireExistingVersion: opts.RequireExistingVersion,
 		})
 	if err != nil {

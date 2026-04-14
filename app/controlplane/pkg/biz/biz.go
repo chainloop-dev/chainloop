@@ -65,10 +65,6 @@ var ProviderSet = wire.NewSet(
 	wire.Struct(new(NewUserUseCaseParams), "*"),
 )
 
-// LatestVersionMagicConstant is a reserved version identifier that resolves to
-// the project version with latest=true in the database.
-const LatestVersionMagicConstant = "latest"
-
 var (
 	// versionRegexp allows alphanumeric, dots, hyphens, underscores, plus signs, and build metadata
 	versionRegexp = regexp.MustCompile(`^[a-zA-Z0-9.\-_+]+(?:\+[a-zA-Z0-9.\-_]+)?$`)
@@ -121,10 +117,6 @@ func ValidateIsDNS1123(name string) error {
 // The version string must match the following regular expression: ^[a-zA-Z0-9.\-]+$
 // This ensures the version only contains alphanumeric characters, dots, and hyphens.
 func ValidateVersion(version string) error {
-	if version == LatestVersionMagicConstant {
-		return NewErrValidationStr("'latest' is a reserved version identifier")
-	}
-
 	if !versionRegexp.MatchString(version) {
 		return NewErrValidationStr(fmt.Sprintf("invalid version format: %s. Valid examples: '1.0.0', 'v2.1-alpha', '3.0.0+build.123', '2024.3.12', 'v1.0_beta'", version))
 	}
