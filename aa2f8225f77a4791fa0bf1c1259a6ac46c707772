@@ -1,0 +1,23 @@
+buf.yaml
+  f9eae8c5f911b56c 105-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "aa2f8225f77a4791fa0bf1c1259a6ac46c707772",
+  "prompts": {
+    "f9eae8c5f911b56c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36303523-642c-4f4e-8edd-ddf05007e8a2",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 0,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
