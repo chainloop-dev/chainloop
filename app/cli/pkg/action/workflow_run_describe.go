@@ -318,18 +318,16 @@ func materialPBToAction(in *pb.AttestationItem_Material) *Material {
 	// Fall back to deprecated string value field for compatibility with
 	// older control plane versions that don't populate raw_value.
 	var value string
-	if len(in.GetRawValue()) > 0 {
-		value = string(in.GetRawValue())
-		if !utf8.Valid(in.GetRawValue()) {
-			value = ""
+	if raw := in.GetRawValue(); len(raw) > 0 {
+		if utf8.Valid(raw) {
+			value = string(raw)
 		}
 	} else {
 		value = in.GetValue() //nolint:staticcheck // fallback for older servers
 	}
 
 	m := &Material{
-		Name: in.Name,
-		// kept for compatibility in case we have users that are still using the string value field
+		Name:           in.Name,
 		Value:          value,
 		RawValue:       in.GetRawValue(),
 		Type:           in.Type,

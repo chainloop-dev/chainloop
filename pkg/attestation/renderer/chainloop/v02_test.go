@@ -351,7 +351,7 @@ func TestBinaryContentStructRoundTrip(t *testing.T) {
 				Materials: []*intoto.ResourceDescriptor{
 					{
 						Name: "binary.bin",
-						Annotations: mapToStruct(t, map[string]interface{}{
+						Annotations: mapToStruct(t, map[string]any{
 							"chainloop.material.name":       "test-binary",
 							"chainloop.material.type":       "ARTIFACT",
 							"chainloop.material.cas.inline": true,
