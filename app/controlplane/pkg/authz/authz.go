@@ -22,6 +22,13 @@ type Policy struct {
 	Action   string
 }
 
+// OperationPolicy describes both the local Casbin policies required for an operation
+// and whether the operation also requires external authorization.
+type OperationPolicy struct {
+	Policies      []*Policy
+	ExternalAuthz bool
+}
+
 type Role string
 
 // RBACEnabled returns whether an org-scoped role has RBAC enabled and needs resource-scoped enforcement.
@@ -351,67 +358,67 @@ var RolesMap = map[Role][]*Policy{
 	},
 }
 
-// ServerOperationsMap is a map of server operations to the ResourceAction tuples that are
-// required to perform the operation
-// If it contains more than one policy, all of them need to be true
-var ServerOperationsMap = map[string][]*Policy{
+// ServerOperationsMap is a map of server operations to their authorization requirements.
+// Each entry specifies the Casbin policies required (all must pass) and whether the
+// operation also requires external authorization.
+var ServerOperationsMap = map[string]*OperationPolicy{
 	// Discover endpoint
-	"/controlplane.v1.ReferrerService/DiscoverPrivate": {PolicyReferrerRead},
+	"/controlplane.v1.ReferrerService/DiscoverPrivate": {Policies: []*Policy{PolicyReferrerRead}},
 	// Download/Uploading artifacts
 	// There are no policies for the download endpoint, we do a manual check in the service layer
 	// to differentiate between upload and download requests
 	"/controlplane.v1.CASCredentialsService/Get": {},
 	// We have an endpoint to generate a download URL
-	"/controlplane.v1.CASRedirectService/DownloadRedirect": {PolicyArtifactDownload},
+	"/controlplane.v1.CASRedirectService/DownloadRedirect": {Policies: []*Policy{PolicyArtifactDownload}},
 	// Or to retrieve a download url
-	"/controlplane.v1.CASRedirectService/GetDownloadURL": {PolicyArtifactDownload},
+	"/controlplane.v1.CASRedirectService/GetDownloadURL": {Policies: []*Policy{PolicyArtifactDownload}},
 	// CAS Backend listing
-	"/controlplane.v1.CASBackendService/List":       {PolicyCASBackendList},
-	"/controlplane.v1.CASBackendService/Revalidate": {PolicyCASBackendUpdate},
-	"/controlplane.v1.CASBackendService/Create":     {PolicyCASBackendCreate},
+	"/controlplane.v1.CASBackendService/List":       {Policies: []*Policy{PolicyCASBackendList}},
+	"/controlplane.v1.CASBackendService/Revalidate": {Policies: []*Policy{PolicyCASBackendUpdate}},
+	"/controlplane.v1.CASBackendService/Create":     {Policies: []*Policy{PolicyCASBackendCreate}},
 	// Available integrations
-	"/controlplane.v1.IntegrationsService/ListAvailable": {PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead},
+	"/controlplane.v1.IntegrationsService/ListAvailable": {Policies: []*Policy{PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead}},
 	// Registered integrations
-	"/controlplane.v1.IntegrationsService/ListRegistrations":    {PolicyRegisteredIntegrationList},
-	"/controlplane.v1.IntegrationsService/DescribeRegistration": {PolicyRegisteredIntegrationRead},
-	"/controlplane.v1.IntegrationsService/Register":             {PolicyRegisteredIntegrationAdd},
+	"/controlplane.v1.IntegrationsService/ListRegistrations":    {Policies: []*Policy{PolicyRegisteredIntegrationList}},
+	"/controlplane.v1.IntegrationsService/DescribeRegistration": {Policies: []*Policy{PolicyRegisteredIntegrationRead}},
+	"/controlplane.v1.IntegrationsService/Register":             {Policies: []*Policy{PolicyRegisteredIntegrationAdd}},
 	// Attached integrations
-	"/controlplane.v1.IntegrationsService/ListAttachments": {PolicyAttachedIntegrationList},
-	"/controlplane.v1.IntegrationsService/Attach":          {PolicyAttachedIntegrationAttach},
-	"/controlplane.v1.IntegrationsService/Detach":          {PolicyAttachedIntegrationDetach},
+	"/controlplane.v1.IntegrationsService/ListAttachments": {Policies: []*Policy{PolicyAttachedIntegrationList}},
+	"/controlplane.v1.IntegrationsService/Attach":          {Policies: []*Policy{PolicyAttachedIntegrationAttach}},
+	"/controlplane.v1.IntegrationsService/Detach":          {Policies: []*Policy{PolicyAttachedIntegrationDetach}},
 	// Metrics
-	"/controlplane.v1.OrgMetricsService/.*": {PolicyOrgMetricsRead},
+	"/controlplane.v1.OrgMetricsService/.*": {Policies: []*Policy{PolicyOrgMetricsRead}},
 	// Robot Account
-	"/controlplane.v1.RobotAccountService/List":   {PolicyRobotAccountList},
-	"/controlplane.v1.RobotAccountService/Create": {PolicyRobotAccountCreate},
+	"/controlplane.v1.RobotAccountService/List":   {Policies: []*Policy{PolicyRobotAccountList}},
+	"/controlplane.v1.RobotAccountService/Create": {Policies: []*Policy{PolicyRobotAccountCreate}},
 	// Workflows
-	"/controlplane.v1.WorkflowService/List":   {PolicyWorkflowList},
-	"/controlplane.v1.WorkflowService/View":   {PolicyWorkflowRead},
-	"/controlplane.v1.WorkflowService/Create": {PolicyWorkflowCreate},
-	"/controlplane.v1.WorkflowService/Update": {PolicyWorkflowUpdate},
-	"/controlplane.v1.WorkflowService/Delete": {PolicyWorkflowDelete},
+	"/controlplane.v1.WorkflowService/List":   {Policies: []*Policy{PolicyWorkflowList}},
+	"/controlplane.v1.WorkflowService/View":   {Policies: []*Policy{PolicyWorkflowRead}},
+	"/controlplane.v1.WorkflowService/Create": {Policies: []*Policy{PolicyWorkflowCreate}},
+	"/controlplane.v1.WorkflowService/Update": {Policies: []*Policy{PolicyWorkflowUpdate}},
+	"/controlplane.v1.WorkflowService/Delete": {Policies: []*Policy{PolicyWorkflowDelete}},
 	// WorkflowRun
-	"/controlplane.v1.WorkflowRunService/List": {PolicyWorkflowRunList},
-	"/controlplane.v1.WorkflowRunService/View": {PolicyWorkflowRunRead},
+	"/controlplane.v1.WorkflowRunService/List": {Policies: []*Policy{PolicyWorkflowRunList}},
+	"/controlplane.v1.WorkflowRunService/View": {Policies: []*Policy{PolicyWorkflowRunRead}},
 	// Workflow Contracts
-	"/controlplane.v1.WorkflowContractService/List":     {PolicyWorkflowContractList},
-	"/controlplane.v1.WorkflowContractService/Describe": {PolicyWorkflowContractRead},
-	"/controlplane.v1.WorkflowContractService/Update":   {PolicyWorkflowContractUpdate},
-	"/controlplane.v1.WorkflowContractService/Create":   {PolicyWorkflowContractCreate},
-	"/controlplane.v1.WorkflowContractService/Delete":   {PolicyWorkflowContractDelete},
+	"/controlplane.v1.WorkflowContractService/List":     {Policies: []*Policy{PolicyWorkflowContractList}},
+	"/controlplane.v1.WorkflowContractService/Describe": {Policies: []*Policy{PolicyWorkflowContractRead}},
+	"/controlplane.v1.WorkflowContractService/Update":   {Policies: []*Policy{PolicyWorkflowContractUpdate}},
+	"/controlplane.v1.WorkflowContractService/Create":   {Policies: []*Policy{PolicyWorkflowContractCreate}},
+	"/controlplane.v1.WorkflowContractService/Delete":   {Policies: []*Policy{PolicyWorkflowContractDelete}},
 	// Get current information about an organization
-	"/controlplane.v1.ContextService/Current": {PolicyOrganizationRead},
+	"/controlplane.v1.ContextService/Current": {Policies: []*Policy{PolicyOrganizationRead}},
 	// Listing, create or selecting an organization does not have any required permissions,
 	// since all the permissions here are in the context of an organization
 	// Create new organization. No user required at middleware level. The endpoint will handle
-	// it based on diverse conditions
-	"/controlplane.v1.OrganizationService/Create": {},
+	// it based on diverse conditions. Requires external authorization when configured.
+	"/controlplane.v1.OrganizationService/Create": {ExternalAuthz: true},
 	// Delete an organization makes checks at the service level since the
 	// user can explicitly set the org they want to delete and might not be the current one
 	"/controlplane.v1.OrganizationService/Delete": {},
 
 	// List global memberships
-	"/controlplane.v1.OrganizationService/ListMemberships": {PolicyOrganizationListMemberships},
+	"/controlplane.v1.OrganizationService/ListMemberships": {Policies: []*Policy{PolicyOrganizationListMemberships}},
 
 	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
 	"/controlplane.v1.UserService/ListMemberships": {},
@@ -436,19 +443,27 @@ var ServerOperationsMap = map[string][]*Policy{
 	"/controlplane.v1.GroupService/UpdateMemberMaintainerStatus": {},
 
 	// Project Memberships
-	"/controlplane.v1.ProjectService/ListMembers":            {PolicyProjectListMemberships},
-	"/controlplane.v1.ProjectService/AddMember":              {PolicyProjectAddMemberships},
-	"/controlplane.v1.ProjectService/RemoveMember":           {PolicyProjectRemoveMemberships},
-	"/controlplane.v1.ProjectService/UpdateMemberRole":       {PolicyProjectUpdateMemberships},
-	"/controlplane.v1.ProjectService/ListPendingInvitations": {PolicyProjectListMemberships},
+	"/controlplane.v1.ProjectService/ListMembers":            {Policies: []*Policy{PolicyProjectListMemberships}},
+	"/controlplane.v1.ProjectService/AddMember":              {Policies: []*Policy{PolicyProjectAddMemberships}},
+	"/controlplane.v1.ProjectService/RemoveMember":           {Policies: []*Policy{PolicyProjectRemoveMemberships}},
+	"/controlplane.v1.ProjectService/UpdateMemberRole":       {Policies: []*Policy{PolicyProjectUpdateMemberships}},
+	"/controlplane.v1.ProjectService/ListPendingInvitations": {Policies: []*Policy{PolicyProjectListMemberships}},
 
 	// API tokens RBAC are handled at the service level
-	"/controlplane.v1.APITokenService/List":   {PolicyAPITokenList},
-	"/controlplane.v1.APITokenService/Create": {PolicyAPITokenCreate},
-	"/controlplane.v1.APITokenService/Revoke": {PolicyAPITokenRevoke},
+	"/controlplane.v1.APITokenService/List":   {Policies: []*Policy{PolicyAPITokenList}},
+	"/controlplane.v1.APITokenService/Create": {Policies: []*Policy{PolicyAPITokenCreate}},
+	"/controlplane.v1.APITokenService/Revoke": {Policies: []*Policy{PolicyAPITokenRevoke}},
 
 	// Org invitations
-	"/controlplane.v1.OrgInvitationService/Create": {PolicyOrganizationInvitationsCreate},
+	"/controlplane.v1.OrgInvitationService/Create": {Policies: []*Policy{PolicyOrganizationInvitationsCreate}},
+}
+
+// RequiresExternalAuthz returns whether the given operation requires external authorization.
+func RequiresExternalAuthz(operation string) bool {
+	if entry, ok := ServerOperationsMap[operation]; ok {
+		return entry.ExternalAuthz
+	}
+	return false
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

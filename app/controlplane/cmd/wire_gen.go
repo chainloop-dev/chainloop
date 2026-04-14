@@ -304,6 +304,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	groupService := service.NewGroupService(groupUseCase, v5...)
 	projectService := service.NewProjectService(v5...)
 	federatedAuthentication := bootstrap.FederatedAuthentication
+	operationAuthorizationProvider := bootstrap.OperationAuthorizationProvider
 	validator, err := newProtoValidator()
 	if err != nil {
 		cleanup2()
@@ -350,6 +351,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		ServerConfig:        confServer,
 		AuthConfig:          auth,
 		FederatedConfig:     federatedAuthentication,
+		OperationAuthConfig: operationAuthorizationProvider,
 		BootstrapConfig:     bootstrap,
 		Credentials:         readerWriter,
 		Validator:           validator,

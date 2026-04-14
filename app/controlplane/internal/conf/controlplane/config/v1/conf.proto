@@ -108,6 +108,16 @@ message Bootstrap {
 
   // External URL of the platform UI, if available
   string ui_dashboard_url = 19;
+
+  // Optional external operation authorization provider
+  OperationAuthorizationProvider operation_authorization_provider = 20;
+}
+
+message OperationAuthorizationProvider {
+  // URL of the authorization endpoint
+  string url = 1 [(buf.validate.field).string.uri = true];
+  // Whether to enable the operation authorization
+  bool enabled = 2;
 }
 
 message FederatedAuthentication {

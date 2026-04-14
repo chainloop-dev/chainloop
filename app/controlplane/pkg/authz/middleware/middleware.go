@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -103,17 +103,17 @@ func checkPolicies(ctx context.Context, subject, apiOperation string, enforcer E
 // 2 - if there is not, it runs a regex match in each key in case one of those keys contains a regex
 func policiesLookup(apiOperation string) ([]*authz.Policy, error) {
 	// Direct match
-	policies, found := authz.ServerOperationsMap[apiOperation]
+	entry, found := authz.ServerOperationsMap[apiOperation]
 	if found {
-		return policies, nil
+		return entry.Policies, nil
 	}
 
 	// second pass trying to match a regex
 	// i.e "/controlplane.v1.OrgMetricsService/.*" -> "/controlplane.v1.OrgMetricsService/Totals"
-	for k, policies := range authz.ServerOperationsMap {
+	for k, entry := range authz.ServerOperationsMap {
 		found, _ := regexp.MatchString(k, apiOperation)
 		if found {
-			return policies, nil
+			return entry.Policies, nil
 		}
 	}
 
