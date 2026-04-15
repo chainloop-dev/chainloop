@@ -17,6 +17,25 @@
     "^(rule_id)$": {
       "description": "Tool-specific rule identifier (e.g., java:S1234, go-sec:G101)",
       "type": "string"
+    },
+    "^(severity_score)$": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Optional numeric severity score from the scanner (scale is tool-defined)"
     }
   },
   "properties": {
@@ -49,6 +68,25 @@
     "severity": {
       "description": "Severity level (CRITICAL, HIGH, MEDIUM, LOW)",
       "type": "string"
+    },
+    "severityScore": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Optional numeric severity score from the scanner (scale is tool-defined)"
     }
   },
   "required": [

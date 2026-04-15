@@ -154,6 +154,25 @@ func TestValidateFinding(t *testing.T) {
 				assert.Equal(t, "java:S1234", f.GetRuleId())
 				assert.Equal(t, "HIGH", f.GetSeverity())
 				assert.Equal(t, "src/main/Handler.java", f.GetLocation())
+				assert.Nil(t, f.SeverityScore)
+			},
+		},
+		{
+			name:        "valid SAST finding with severity_score",
+			findingType: "SAST",
+			raw: map[string]any{
+				"message":        "SQL injection in handler",
+				"rule_id":        "java:S1234",
+				"severity":       "HIGH",
+				"location":       "src/main/Handler.java",
+				"severity_score": 7.5,
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicySASTFinding)
+				require.True(t, ok)
+				require.NotNil(t, f.SeverityScore)
+				assert.InDelta(t, 7.5, *f.SeverityScore, 1e-9)
 			},
 		},
 		{
@@ -238,6 +257,7 @@ func TestValidateFinding(t *testing.T) {
 }
 
 func TestSetViolationFinding(t *testing.T) {
+	sastSeverityScore := 4.0
 	tests := []struct {
 		name        string
 		findingType string
@@ -265,16 +285,19 @@ func TestSetViolationFinding(t *testing.T) {
 			name:        "set SAST finding",
 			findingType: "SAST",
 			finding: &v1.PolicySASTFinding{
-				Message:  "test",
-				RuleId:   "go-sec:G101",
-				Severity: "MEDIUM",
-				Location: "main.go",
+				Message:       "test",
+				RuleId:        "go-sec:G101",
+				Severity:      "MEDIUM",
+				Location:      "main.go",
+				SeverityScore: &sastSeverityScore,
 			},
 			checkFn: func(t *testing.T, v *v1.PolicyEvaluation_Violation) {
 				t.Helper()
 				f := v.GetSast()
 				require.NotNil(t, f)
 				assert.Equal(t, "go-sec:G101", f.GetRuleId())
+				require.NotNil(t, f.SeverityScore)
+				assert.InDelta(t, 4.0, *f.SeverityScore, 1e-9)
 			},
 		},
 		{

@@ -355,6 +355,8 @@ message PolicySASTFinding {
   string code_snippet = 6;
   // Suggested fix
   string recommendation = 7;
+  // Optional numeric severity score from the scanner (scale is tool-defined)
+  optional double severity_score = 8;
 }
 
 // Output schema for license violation findings from policy evaluation.
