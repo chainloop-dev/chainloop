@@ -20,7 +20,7 @@ jobs:
 
       - name: Install Chainloop
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
 
       - name: Run Release Gate Attestation
         run: |
@@ -65,8 +65,7 @@ jobs:
 
       - name: Install Chainloop
         run: |
-          # Need the ee CLI to have access to project management capabilities
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --ee
+          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
