@@ -251,45 +251,51 @@ func TestNATSKV_MaxBytesEvictsOldEntries(t *testing.T) {
 	assert.False(t, ok, "oldest entry should have been evicted")
 }
 
-func TestNATSKV_InitBucketIsIdempotent(t *testing.T) {
-	// Simulates a pod restart: first New() sets DiscardOld on the backing
-	// stream, second New() against the same NATS sees it's already correct
-	// and must not issue another UpdateStream.
+func TestNATSKV_EnsureDiscardOldSkipsWhenAlreadySet(t *testing.T) {
+	// Exercise both branches of ensureDiscardOld directly: when the stream's
+	// Discard policy already matches, UpdateStream must not be called.
 	nc := startEmbeddedNATS(t)
 	bucket := "test-idempotent"
 
-	c1, err := New[[]byte](
+	// First New creates the bucket and sets DiscardOld.
+	_, err := New[[]byte](
 		WithTTL(time.Minute),
 		WithNATS(nc, bucket),
 		WithMaxBytes(10*1024),
 	)
 	require.NoError(t, err)
-	_ = c1
 
+	// Flip the backing stream back to DiscardNew so we can observe the update branch.
 	js, err := jetstream.New(nc)
 	require.NoError(t, err)
 	streamName := "KV_" + bucket
 	stream, err := js.Stream(context.Background(), streamName)
 	require.NoError(t, err)
-	info, err := stream.Info(context.Background())
+	cfg := stream.CachedInfo().Config
+	cfg.Discard = jetstream.DiscardNew
+	_, err = js.UpdateStream(context.Background(), cfg)
 	require.NoError(t, err)
-	firstUpdate := info.Created
-	firstDiscard := info.Config.Discard
-	require.Equal(t, jetstream.DiscardOld, firstDiscard, "first init must set DiscardOld")
 
-	// Second init against the same bucket must be a no-op for the update path.
-	c2, err := New[[]byte](
-		WithTTL(time.Minute),
-		WithNATS(nc, bucket),
-		WithMaxBytes(10*1024),
-	)
-	require.NoError(t, err)
-	_ = c2
+	c := &natsKVCache[[]byte]{
+		logger: nopLogger{},
+		conn:   nc,
+		bucket: bucket,
+		cfg:    &config{logger: nopLogger{}, bucketName: bucket, maxBytes: 10 * 1024},
+	}
 
-	info2, err := stream.Info(context.Background())
+	// Update branch: must flip Discard back to DiscardOld.
+	require.NoError(t, c.ensureDiscardOld(js))
+	stream, err = js.Stream(context.Background(), streamName)
 	require.NoError(t, err)
-	assert.Equal(t, firstUpdate, info2.Created, "stream should not have been recreated")
-	assert.Equal(t, jetstream.DiscardOld, info2.Config.Discard)
+	require.Equal(t, jetstream.DiscardOld, stream.CachedInfo().Config.Discard)
+
+	// Skip branch: with DiscardOld already set, ensureDiscardOld must not
+	// issue an UpdateStream call. Measure outbound NATS request count across
+	// a call — one Stream() lookup, zero UpdateStream() calls => 1 request.
+	before := nc.Stats().OutMsgs
+	require.NoError(t, c.ensureDiscardOld(js))
+	delta := nc.Stats().OutMsgs - before
+	assert.LessOrEqual(t, delta, uint64(1), "skip path must not issue an UpdateStream request")
 }
 
 func TestNATSKV_InitBucketRetriesOnTransientError(t *testing.T) {
