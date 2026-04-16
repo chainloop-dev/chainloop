@@ -1,0 +1,49 @@
+app/controlplane/pkg/data/projectversion.go
+  b45cf221721e25ae 2,108-111
+app/controlplane/pkg/biz/workflowrun_integration_test.go
+  b45cf221721e25ae 313-314,324-326,328-329,333-342,347-363
+app/controlplane/pkg/biz/version_test.go
+  b45cf221721e25ae 29-32
+app/controlplane/pkg/biz/workflowrun.go
+  875d11071a581f4d 258-262
+app/cli/cmd/workflow_workflow_run_list.go
+  b45cf221721e25ae 2,133,138
+app/controlplane/pkg/data/workflow.go
+  875d11071a581f4d 102,107
+app/controlplane/pkg/biz/projectversion.go
+  b45cf221721e25ae 28-30,97-100
+  875d11071a581f4d 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "a64872a197b9898d70bbbaa9e037206e537df2e5",
+  "prompts": {
+    "875d11071a581f4d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e3315d05-859f-4ad0-8ab5-6aba642345be",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 3,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    },
+    "b45cf221721e25ae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "98890e90-a94e-46b9-800b-a514d04ed4d8",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 123831,
+      "total_deletions": 27,
+      "accepted_lines": 346,
+      "overriden_lines": 0
+    }
+  }
+}
