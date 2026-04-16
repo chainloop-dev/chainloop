@@ -810,8 +810,10 @@ type PolicySASTFinding struct {
 	CodeSnippet string `protobuf:"bytes,6,opt,name=code_snippet,json=codeSnippet,proto3" json:"code_snippet,omitempty"`
 	// Suggested fix
 	Recommendation string `protobuf:"bytes,7,opt,name=recommendation,proto3" json:"recommendation,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Optional numeric severity score from the scanner (scale is tool-defined)
+	SeverityScore *float64 `protobuf:"fixed64,8,opt,name=severity_score,json=severityScore,proto3,oneof" json:"severity_score,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PolicySASTFinding) Reset() {
@@ -891,6 +893,13 @@ func (x *PolicySASTFinding) GetRecommendation() string {
 		return x.Recommendation
 	}
 	return ""
+}
+
+func (x *PolicySASTFinding) GetSeverityScore() float64 {
+	if x != nil && x.SeverityScore != nil {
+		return *x.SeverityScore
+	}
+	return 0
 }
 
 // Output schema for license violation findings from policy evaluation.
@@ -2778,7 +2787,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x04cwes\x18\x06 \x03(\tR\x04cwes\x12&\n" +
 	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12 \n" +
 	"\vdescription\x18\b \x01(\tR\vdescription\x12#\n" +
-	"\rfixed_version\x18\t \x01(\tR\ffixedVersion\"\x8a\x02\n" +
+	"\rfixed_version\x18\t \x01(\tR\ffixedVersion\"\xc9\x02\n" +
 	"\x11PolicySASTFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12\x1f\n" +
 	"\arule_id\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x06ruleId\x12\"\n" +
@@ -2787,7 +2796,9 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\vline_number\x18\x05 \x01(\x05R\n" +
 	"lineNumber\x12!\n" +
 	"\fcode_snippet\x18\x06 \x01(\tR\vcodeSnippet\x12&\n" +
-	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\"\xb2\x02\n" +
+	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12*\n" +
+	"\x0eseverity_score\x18\b \x01(\x01H\x00R\rseverityScore\x88\x01\x01B\x11\n" +
+	"\x0f_severity_score\"\xb2\x02\n" +
 	"\x1dPolicyLicenseViolationFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12-\n" +
 	"\x0ecomponent_name\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\rcomponentName\x12!\n" +
@@ -2982,6 +2993,7 @@ func file_attestation_v1_crafting_state_proto_init() {
 	if File_attestation_v1_crafting_state_proto != nil {
 		return
 	}
+	file_attestation_v1_crafting_state_proto_msgTypes[5].OneofWrappers = []any{}
 	file_attestation_v1_crafting_state_proto_msgTypes[7].OneofWrappers = []any{}
 	file_attestation_v1_crafting_state_proto_msgTypes[8].OneofWrappers = []any{
 		(*CraftingState_InputSchema)(nil),

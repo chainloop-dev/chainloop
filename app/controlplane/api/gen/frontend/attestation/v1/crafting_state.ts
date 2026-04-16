@@ -379,6 +379,8 @@ export interface PolicySASTFinding {
   codeSnippet: string;
   /** Suggested fix */
   recommendation: string;
+  /** Optional numeric severity score from the scanner (scale is tool-defined) */
+  severityScore?: number | undefined;
 }
 
 /**
@@ -3412,7 +3414,16 @@ export const PolicyVulnerabilityFinding = {
 };
 
 function createBasePolicySASTFinding(): PolicySASTFinding {
-  return { message: "", ruleId: "", severity: "", location: "", lineNumber: 0, codeSnippet: "", recommendation: "" };
+  return {
+    message: "",
+    ruleId: "",
+    severity: "",
+    location: "",
+    lineNumber: 0,
+    codeSnippet: "",
+    recommendation: "",
+    severityScore: undefined,
+  };
 }
 
 export const PolicySASTFinding = {
@@ -3437,6 +3448,9 @@ export const PolicySASTFinding = {
     }
     if (message.recommendation !== "") {
       writer.uint32(58).string(message.recommendation);
+    }
+    if (message.severityScore !== undefined) {
+      writer.uint32(65).double(message.severityScore);
     }
     return writer;
   },
@@ -3497,6 +3511,13 @@ export const PolicySASTFinding = {
 
           message.recommendation = reader.string();
           continue;
+        case 8:
+          if (tag !== 65) {
+            break;
+          }
+
+          message.severityScore = reader.double();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3515,6 +3536,7 @@ export const PolicySASTFinding = {
       lineNumber: isSet(object.lineNumber) ? Number(object.lineNumber) : 0,
       codeSnippet: isSet(object.codeSnippet) ? String(object.codeSnippet) : "",
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
+      severityScore: isSet(object.severityScore) ? Number(object.severityScore) : undefined,
     };
   },
 
@@ -3527,6 +3549,7 @@ export const PolicySASTFinding = {
     message.lineNumber !== undefined && (obj.lineNumber = Math.round(message.lineNumber));
     message.codeSnippet !== undefined && (obj.codeSnippet = message.codeSnippet);
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
+    message.severityScore !== undefined && (obj.severityScore = message.severityScore);
     return obj;
   },
 
@@ -3543,6 +3566,7 @@ export const PolicySASTFinding = {
     message.lineNumber = object.lineNumber ?? 0;
     message.codeSnippet = object.codeSnippet ?? "";
     message.recommendation = object.recommendation ?? "";
+    message.severityScore = object.severityScore ?? undefined;
     return message;
   },
 };
