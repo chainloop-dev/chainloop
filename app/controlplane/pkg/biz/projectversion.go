@@ -94,6 +94,11 @@ func (uc *ProjectVersionUseCase) Create(ctx context.Context, projectID, version 
 		return nil, NewErrInvalidUUID(err)
 	}
 
+	// Treat empty version as the default for backward compatibility
+	if version == "" {
+		version = DefaultVersionName
+	}
+
 	if err := ValidateVersion(version); err != nil {
 		return nil, err
 	}
