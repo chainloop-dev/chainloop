@@ -1,0 +1,23 @@
+pkg/cache/attestationbundle/attestationbundle.go
+  c0240b1d014b083e 29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "20a9b4c716a0980f311c74083145c982cfaa52d2",
+  "prompts": {
+    "c0240b1d014b083e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2ae6c7e5-446d-40c5-b399-e30fb2c2adb9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
