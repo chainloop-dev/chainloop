@@ -100,6 +100,8 @@ To **install the latest version** for macOS, Linux or Windows (using [WSL](https
 curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --oss
 ```
 
+> To install the **enterprise edition** instead, omit the `--oss` flag.
+
 you can retrieve a specific version with
 
 ```bash
