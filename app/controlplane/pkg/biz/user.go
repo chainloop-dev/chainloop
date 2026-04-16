@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -141,6 +141,8 @@ type UpsertByEmailOpts struct {
 	FirstName             *string
 	LastName              *string
 	SSOGroups             []string
+	// Source indicates the authentication method used (e.g., "oidc", "saml")
+	Source string
 }
 
 // UpsertByEmail finds or creates a user by email. By default, it will auto-onboard the user
@@ -171,6 +173,7 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 				UserID:    ToPtr(uuid.MustParse(u.ID)),
 				Email:     u.Email,
 				SSOGroups: opts.SSOGroups,
+				Source:    opts.Source,
 			},
 		}, nil)
 	} else {
@@ -181,6 +184,7 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 				UserID:    ToPtr(uuid.MustParse(u.ID)),
 				Email:     u.Email,
 				SSOGroups: opts.SSOGroups,
+				Source:    opts.Source,
 			},
 			LoggedIn: time.Now(),
 		}, nil)

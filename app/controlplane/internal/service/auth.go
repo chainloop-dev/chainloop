@@ -317,6 +317,7 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 		FirstName: &claims.GivenName,
 		LastName:  &claims.FamilyName,
 		SSOGroups: claims.Groups,
+		Source:    "oidc",
 	})
 	if err != nil {
 		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to find or create user: %w", err), false)
