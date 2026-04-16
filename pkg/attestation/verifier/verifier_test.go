@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"errors"
 	"os"
 	"testing"
 
@@ -64,6 +65,12 @@ func TestVerifyBundle(t *testing.T) {
 			bundle:    "testdata/bundle_invalid.json",
 			expectErr: "validating the DSSE envelope",
 		},
+		{
+			name:      "legacy DSSE envelope (not a bundle)",
+			roots:     roots,
+			bundle:    "testdata/dsse_envelope.json",
+			expectErr: "invalid bundle",
+		},
 	}
 
 	for _, tc := range cases {
@@ -77,6 +84,46 @@ func TestVerifyBundle(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestVerifyTimestamps_TypedErrors(t *testing.T) {
+	ca, err := os.ReadFile("testdata/ca.pub")
+	require.NoError(t, err)
+	certs, err := cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(ca))
+	require.NoError(t, err)
+
+	cases := []struct {
+		name           string
+		roots          *TrustedRoot
+		expectSentinel error
+	}{
+		{
+			name: "bad timestamp with TSA configured",
+			roots: &TrustedRoot{
+				TimestampAuthorities: map[string][]*x509.Certificate{
+					"fake-tsa": certs,
+				},
+			},
+			expectSentinel: ErrTSAResponseInvalid,
+		},
+		{
+			name:           "timestamp with no TSA roots configured",
+			roots:          &TrustedRoot{},
+			expectSentinel: ErrNoTSARootsConfigured,
+		},
+	}
+
+	bundleBytes, err := os.ReadFile("testdata/bundle_with_bad_timestamp.json")
+	require.NoError(t, err)
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := VerifyBundle(context.TODO(), bundleBytes, tc.roots)
+			require.Error(t, err)
+			assert.True(t, errors.Is(err, tc.expectSentinel),
+				"expected %v, got: %v", tc.expectSentinel, err)
 		})
 	}
 }
