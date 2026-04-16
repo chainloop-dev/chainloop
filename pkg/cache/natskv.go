@@ -30,10 +30,8 @@ import (
 
 const (
 	streamUpdateTimeout = 5 * time.Second
-	// initMaxWait bounds the total time we'll retry bucket init on the initial
-	// boot path. NATS auto-reconnects every ReconnectWait (2s), so this gives
-	// the client several reconnect cycles to heal a transient drop before we
-	// give up and refuse to start.
+	// initMaxWait covers several nats.ReconnectWait (2s) cycles so a transient
+	// drop during boot can heal before we give up.
 	initMaxWait     = 30 * time.Second
 	initRetryPeriod = 2 * time.Second
 )
@@ -73,19 +71,18 @@ func newNATSKV[T any](cfg *config) (*natsKVCache[T], error) {
 // apply to connectivity errors; configuration errors fail fast.
 func (c *natsKVCache[T]) initBucketWithRetry(maxWait, period time.Duration) error {
 	deadline := time.Now().Add(maxWait)
-	var lastErr error
 	for attempt := 1; ; attempt++ {
-		lastErr = c.initBucket()
-		if lastErr == nil {
+		err := c.initBucket()
+		if err == nil {
 			return nil
 		}
-		if !isRetryableInitError(lastErr) {
-			return lastErr
+		if !isRetryableInitError(err) {
+			return err
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("cache: bucket %q init failed after %s (%d attempts): %w", c.bucket, maxWait, attempt, lastErr)
+			return fmt.Errorf("cache: bucket %q init failed after %s (%d attempts): %w", c.bucket, maxWait, attempt, err)
 		}
-		c.logger.Warnw("msg", "cache: bucket init failed, retrying", "bucket", c.bucket, "attempt", attempt, "error", lastErr)
+		c.logger.Warnw("msg", "cache: bucket init failed, retrying", "bucket", c.bucket, "attempt", attempt, "error", err)
 		time.Sleep(period)
 	}
 }

@@ -59,13 +59,6 @@ type testStruct struct {
 	Value int    `json:"value"`
 }
 
-type testLogger struct{}
-
-func (testLogger) Debugw(...any) {}
-func (testLogger) Warnw(...any)  {}
-func (testLogger) Infow(...any)  {}
-func (testLogger) Errorw(...any) {}
-
 func TestNATSKV_GetSetDelete(t *testing.T) {
 	nc := startEmbeddedNATS(t)
 
@@ -307,11 +300,11 @@ func TestNATSKV_InitBucketRetriesOnTransientError(t *testing.T) {
 	nc.Close()
 
 	c := &natsKVCache[[]byte]{
-		logger: testLogger{},
+		logger: nopLogger{},
 		conn:   nc,
 		bucket: "test-retry-exhausted",
 		cfg: &config{
-			logger:     testLogger{},
+			logger:     nopLogger{},
 			bucketName: "test-retry-exhausted",
 			ttl:        time.Minute,
 			maxBytes:   10 * 1024,
