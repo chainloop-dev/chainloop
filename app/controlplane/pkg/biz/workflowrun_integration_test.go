@@ -310,8 +310,8 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 			RunnerType: "runnerType", RunnerRunURL: "runURL",
 		})
 		s.Require().NoError(err)
-		// Load project version
-		pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), "")
+		// Load project version — empty version is translated to DefaultVersionName
+		pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), biz.DefaultVersionName)
 		s.Require().NoError(err)
 		s.Equal("runnerType", run.RunnerType)
 		s.Equal("runURL", run.RunURL)
@@ -321,24 +321,44 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 
 	s.T().Run("find or create version", func(_ *testing.T) {
 		testCases := []struct {
-			version string
+			name            string
+			version         string
+			expectedVersion string
 		}{
-			{version: ""},
-			{version: "custom"},
+			{name: "empty string maps to default", version: "", expectedVersion: biz.DefaultVersionName},
+			{name: "custom version", version: "custom", expectedVersion: "custom"},
 		}
 
 		for _, tc := range testCases {
-			run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-				WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
-				RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: tc.version,
+			s.T().Run(tc.name, func(_ *testing.T) {
+				run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+					WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+					RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: tc.version,
+				})
+				s.Require().NoError(err)
+				s.Equal(tc.expectedVersion, run.ProjectVersion.Version)
+				pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), tc.expectedVersion)
+				s.Require().NoError(err)
+				s.Equal(pv.ID, run.ProjectVersion.ID)
 			})
-			s.Require().NoError(err)
-			// Load project version
-			s.Equal(tc.version, run.ProjectVersion.Version)
-			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), tc.version)
-			s.Require().NoError(err)
-			s.Equal(pv.ID, run.ProjectVersion.ID)
 		}
+	})
+
+	s.T().Run("explicit v0 uses same default version", func(_ *testing.T) {
+		// First create a run without version (gets default "v0")
+		runDefault, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+		})
+		s.Require().NoError(err)
+		s.Equal(biz.DefaultVersionName, runDefault.ProjectVersion.Version)
+
+		// Now explicitly specify "v0" — should find the same version record
+		runExplicit, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			ProjectVersion: biz.DefaultVersionName,
+		})
+		s.Require().NoError(err)
+		s.Equal(runDefault.ProjectVersion.ID, runExplicit.ProjectVersion.ID)
 	})
 
 	s.T().Run("use-latest-version resolves to version with latest=true", func(_ *testing.T) {

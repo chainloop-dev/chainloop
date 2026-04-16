@@ -26,6 +26,10 @@ type versionTestSuite struct {
 	suite.Suite
 }
 
+func (s *versionTestSuite) TestDefaultVersionNameIsValid() {
+	s.NoError(biz.ValidateVersion(biz.DefaultVersionName))
+}
+
 func (s *versionTestSuite) TestValidateVersion() {
 	testCases := []struct {
 		name      string

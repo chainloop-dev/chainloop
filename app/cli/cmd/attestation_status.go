@@ -102,10 +102,6 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.W
 	gt.AppendRow(table.Row{"Name", meta.Name})
 	gt.AppendRow(table.Row{"Project", meta.Project})
 	projectVersion := versionStringAttestation(meta.ProjectVersion, status.IsPushed)
-	if projectVersion == "" {
-		projectVersion = "none"
-	}
-
 	gt.AppendRow(table.Row{"Version", projectVersion})
 	gt.AppendRow(table.Row{"Contract", fmt.Sprintf("%s (revision %s)", meta.ContractName, meta.ContractRevision)})
 	if status.RunnerContext.JobURL != "" {

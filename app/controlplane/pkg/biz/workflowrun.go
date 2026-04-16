@@ -255,6 +255,11 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 		return nil, NewErrValidationStr("cannot specify both a project version and use-latest-version")
 	}
 
+	// Treat empty version as the default for backward compatibility with old clients
+	if opts.ProjectVersion == "" && !opts.UseLatestVersion {
+		opts.ProjectVersion = DefaultVersionName
+	}
+
 	if opts.ProjectVersion != "" {
 		if err := ValidateVersion(opts.ProjectVersion); err != nil {
 			return nil, err

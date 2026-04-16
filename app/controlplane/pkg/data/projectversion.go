@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -105,6 +105,10 @@ func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, ve
 }
 
 func createProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.UUID, version string, prerelease bool) (*ent.ProjectVersion, error) {
+	if version == "" {
+		return nil, biz.NewErrValidationStr("version must not be empty")
+	}
+
 	// Update all existing versions of this project to not be the latest
 	if err := tx.ProjectVersion.Update().
 		Where(

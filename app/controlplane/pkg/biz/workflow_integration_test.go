@@ -210,7 +210,7 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 			s.NotEmpty(got.ContractID)
 			s.NotEmpty(got.ContractName)
 			// There is a project version created
-			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, got.ProjectID.String(), "")
+			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, got.ProjectID.String(), biz.DefaultVersionName)
 			s.NoError(err)
 			s.NotNil(pv)
 		})
