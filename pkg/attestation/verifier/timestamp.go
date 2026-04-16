@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,24 +22,45 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/digitorus/timestamp"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
+	"github.com/sigstore/sigstore-go/pkg/verify"
 	"github.com/sigstore/timestamp-authority/v2/pkg/verification"
+)
+
+var (
+	// ErrTSAResponseInvalid indicates the RFC3161 timestamp response could not
+	// be verified against the TSA certificate chain.
+	ErrTSAResponseInvalid = errors.New("TSA response verification failed")
+
+	// ErrTimestampOutsideTSAValidity indicates the timestamp's time falls
+	// outside the TSA certificate's NotBefore/NotAfter window.
+	ErrTimestampOutsideTSAValidity = errors.New("timestamp outside TSA certificate validity window")
+
+	// ErrSigningCertNotValidAtTimestamp indicates the signing certificate
+	// was not valid at the timestamp's time.
+	ErrSigningCertNotValidAtTimestamp = errors.New("signing certificate not valid at timestamp time")
+
+	// ErrNoTSARootsConfigured indicates the bundle contains signed timestamps
+	// but no TSA trust roots are configured on the server.
+	ErrNoTSARootsConfigured = errors.New("no TSA trust roots configured")
 )
 
 func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 	signedTimestamps, err := sb.Timestamps()
 	if err != nil {
 		if errors.Is(err, bundle.ErrMissingVerificationMaterial) {
-			// translate error
 			return ErrMissingVerificationMaterial
 		}
 		return fmt.Errorf("could not get timestamps: %w", err)
 	}
 	if len(signedTimestamps) == 0 {
-		// nothing to do
 		return ErrMissingVerificationMaterial
 	}
+
+	if len(tr.TimestampAuthorities) == 0 {
+		return ErrNoTSARootsConfigured
+	}
+
 	sc, err := sb.SignatureContent()
 	if err != nil {
 		return fmt.Errorf("could not get signature material: %w", err)
@@ -53,48 +74,58 @@ func VerifyTimestamps(sb *bundle.Bundle, tr *TrustedRoot) error {
 	dst := make([]byte, base64.RawURLEncoding.DecodedLen(len(signature)))
 	i, err := base64.StdEncoding.Decode(dst, signature)
 	if err == nil {
-		// get the decoded one
 		sigBytes = dst[:i]
 	}
 
-	var verifiedTimestamps []*timestamp.Timestamp
-	for _, st := range signedTimestamps {
-		// let's try with all TSAs
-		for _, tsa := range tr.TimestampAuthorities {
-			tsaCert := tsa[0]
-			var roots []*x509.Certificate
-			var intermediates []*x509.Certificate
-			if len(tsa) > 1 {
-				roots = tsa[len(tsa)-1:]
-				intermediates = tsa[1 : len(tsa)-1]
-			}
-			ts, err := verification.VerifyTimestampResponse(st, bytes.NewReader(sigBytes),
-				verification.VerifyOpts{
-					TSACertificate: tsaCert,
-					Intermediates:  intermediates,
-					Roots:          roots,
-				})
-			if err != nil {
-				continue
-			}
-			// verify timestamp time
-			if ts.Time.After(tsaCert.NotAfter) || ts.Time.Before(tsaCert.NotBefore) {
-				continue
-			}
+	vc, vcErr := sb.VerificationContent()
+	if vcErr != nil && !errors.Is(vcErr, bundle.ErrMissingVerificationMaterial) {
+		return fmt.Errorf("could not get verification material: %w", vcErr)
+	}
 
-			vc, err := sb.VerificationContent()
-			if err != nil && !errors.Is(err, bundle.ErrMissingVerificationMaterial) {
-				return fmt.Errorf("could not get verification material: %w", err)
-			}
-			// verify signing certificate issuing time
-			if vc != nil && vc.Certificate() != nil && !vc.ValidAtTime(ts.Time, nil) {
-				continue
-			}
-			verifiedTimestamps = append(verifiedTimestamps, ts)
+	for _, st := range signedTimestamps {
+		if err := verifyTimestamp(st, sigBytes, vc, tr); err != nil {
+			return err
 		}
 	}
-	if len(verifiedTimestamps) < len(signedTimestamps) {
-		return fmt.Errorf("some timestamps verification failed")
-	}
 	return nil
+}
+
+// verifyTimestamp tries to verify a single signed timestamp against every
+// configured TSA. Returns the error from the last attempted TSA on failure.
+func verifyTimestamp(st []byte, sigBytes []byte, vc verify.VerificationContent, tr *TrustedRoot) error {
+	var lastErr error
+	for _, tsa := range tr.TimestampAuthorities {
+		tsaCert := tsa[0]
+		var roots []*x509.Certificate
+		var intermediates []*x509.Certificate
+		if len(tsa) > 1 {
+			roots = tsa[len(tsa)-1:]
+			intermediates = tsa[1 : len(tsa)-1]
+		}
+
+		ts, err := verification.VerifyTimestampResponse(st, bytes.NewReader(sigBytes),
+			verification.VerifyOpts{
+				TSACertificate: tsaCert,
+				Intermediates:  intermediates,
+				Roots:          roots,
+			})
+		if err != nil {
+			lastErr = fmt.Errorf("%w: %w", ErrTSAResponseInvalid, err)
+			continue
+		}
+
+		if ts.Time.After(tsaCert.NotAfter) || ts.Time.Before(tsaCert.NotBefore) {
+			lastErr = fmt.Errorf("%w: timestamp=%s, cert validity=[%s, %s]",
+				ErrTimestampOutsideTSAValidity, ts.Time, tsaCert.NotBefore, tsaCert.NotAfter)
+			continue
+		}
+
+		if vc != nil && vc.Certificate() != nil && !vc.ValidAtTime(ts.Time, nil) {
+			lastErr = fmt.Errorf("%w: timestamp=%s", ErrSigningCertNotValidAtTimestamp, ts.Time)
+			continue
+		}
+
+		return nil
+	}
+	return lastErr
 }

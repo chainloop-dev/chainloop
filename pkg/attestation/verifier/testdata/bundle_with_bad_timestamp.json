@@ -1,0 +1,21 @@
+{
+   "mediaType": "application/vnd.dev.sigstore.bundle+json;version=0.3",
+   "verificationMaterial": {
+      "timestampVerificationData": {
+         "rfc3161Timestamps": [
+            {
+               "signedTimestamp": "bm90LWEtdmFsaWQtdHNy"
+            }
+         ]
+      }
+   },
+   "dsseEnvelope": {
+      "payload": "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEifQ==",
+      "payloadType": "application/vnd.in-toto+json",
+      "signatures": [
+         {
+            "sig": "TUVVQ0lRQ1JjOFVmeFVSMnBkL2UxVW1pVmhkRE5BZUxVRi83ODZ2WGxCT1VWM0dJcUFJZ0NqOTROczZwbzFQSzJjTW95MzBpOVB3Smx5c1E0R1RmTGI4TnZ5WlB1ckk9"
+         }
+      ]
+   }
+}
