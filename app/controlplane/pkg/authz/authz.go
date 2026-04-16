@@ -106,6 +106,10 @@ const (
 	RoleProductViewer Role = "role:product:viewer"
 	RoleProductAdmin  Role = "role:product:admin"
 
+	// BillingAccount roles
+	RoleBillingAccountOwner Role = "role:billing_account:owner"
+	RoleBillingAccountAdmin Role = "role:billing_account:admin"
+
 	// Scope for instance admin tokens
 	ScopeInstanceAdmin = "INSTANCE_ADMIN"
 )
@@ -356,6 +360,10 @@ var RolesMap = map[Role][]*Policy{
 		PolicyGroupRemoveMemberships,
 		PolicyGroupUpdateMemberships,
 	},
+
+	// BillingAccount roles
+	RoleBillingAccountOwner: {},
+	RoleBillingAccountAdmin: {},
 }
 
 // ServerOperationsMap is a map of server operations to their authorization requirements.
@@ -484,6 +492,8 @@ func (Role) Values() (roles []string) {
 		RoleGroupMaintainer,
 		RoleProductAdmin,
 		RoleProductViewer,
+		RoleBillingAccountOwner,
+		RoleBillingAccountAdmin,
 	} {
 		roles = append(roles, string(s))
 	}
