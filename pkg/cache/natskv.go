@@ -22,10 +22,13 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
+
+const streamUpdateTimeout = 5 * time.Second
 
 type natsKVCache[T any] struct {
 	mu     sync.RWMutex
@@ -74,26 +77,40 @@ func (c *natsKVCache[T]) initBucket() error {
 		return err
 	}
 
-	// NATS KV hardcodes DiscardNew on the backing stream, which rejects writes
-	// when MaxBytes is reached. For cache use-cases we want DiscardOld so that
-	// the oldest entries are evicted automatically to make room for new ones.
-	if c.cfg.maxBytes > 0 {
-		streamName := fmt.Sprintf("KV_%s", c.bucket)
-		stream, err := js.Stream(context.Background(), streamName)
-		if err != nil {
-			return fmt.Errorf("cache: failed to get backing stream %s: %w", streamName, err)
-		}
-		cfg := stream.CachedInfo().Config
-		cfg.Discard = jetstream.DiscardOld
-		if _, err := js.UpdateStream(context.Background(), cfg); err != nil {
-			return fmt.Errorf("cache: failed to set DiscardOld on stream %s: %w", streamName, err)
-		}
-	}
-
 	c.mu.Lock()
 	c.kv = kv
 	c.mu.Unlock()
+
+	// NATS KV hardcodes DiscardNew; we want DiscardOld so the cache evicts
+	// oldest entries at MaxBytes. Fail-open to avoid crashing on NATS slowness.
+	if c.cfg.maxBytes > 0 {
+		c.ensureDiscardOld(js)
+	}
+
 	return nil
+}
+
+func (c *natsKVCache[T]) ensureDiscardOld(js jetstream.JetStream) {
+	streamName := fmt.Sprintf("KV_%s", c.bucket)
+
+	ctx, cancel := context.WithTimeout(context.Background(), streamUpdateTimeout)
+	defer cancel()
+
+	stream, err := js.Stream(ctx, streamName)
+	if err != nil {
+		c.logger.Warnw("msg", "cache: failed to get backing stream, skipping discard policy update", "stream", streamName, "error", err)
+		return
+	}
+
+	cfg := stream.CachedInfo().Config
+	if cfg.Discard == jetstream.DiscardOld {
+		return
+	}
+	cfg.Discard = jetstream.DiscardOld
+
+	if _, err := js.UpdateStream(ctx, cfg); err != nil {
+		c.logger.Warnw("msg", "cache: failed to set DiscardOld on stream, continuing without it", "stream", streamName, "error", err)
+	}
 }
 
 func (c *natsKVCache[T]) watchReconnect(ch <-chan struct{}) {

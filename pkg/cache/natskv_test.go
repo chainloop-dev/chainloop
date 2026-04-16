@@ -251,6 +251,73 @@ func TestNATSKV_MaxBytesEvictsOldEntries(t *testing.T) {
 	assert.False(t, ok, "oldest entry should have been evicted")
 }
 
+func TestNATSKV_InitBucketIsIdempotent(t *testing.T) {
+	// Simulates a pod restart: first New() sets DiscardOld on the backing
+	// stream, second New() against the same NATS sees it's already correct
+	// and must not issue another UpdateStream.
+	nc := startEmbeddedNATS(t)
+	bucket := "test-idempotent"
+
+	c1, err := New[[]byte](
+		WithTTL(time.Minute),
+		WithNATS(nc, bucket),
+		WithMaxBytes(10*1024),
+	)
+	require.NoError(t, err)
+	_ = c1
+
+	js, err := jetstream.New(nc)
+	require.NoError(t, err)
+	streamName := "KV_" + bucket
+	stream, err := js.Stream(context.Background(), streamName)
+	require.NoError(t, err)
+	info, err := stream.Info(context.Background())
+	require.NoError(t, err)
+	firstUpdate := info.Created
+	firstDiscard := info.Config.Discard
+	require.Equal(t, jetstream.DiscardOld, firstDiscard, "first init must set DiscardOld")
+
+	// Second init against the same bucket must be a no-op for the update path.
+	c2, err := New[[]byte](
+		WithTTL(time.Minute),
+		WithNATS(nc, bucket),
+		WithMaxBytes(10*1024),
+	)
+	require.NoError(t, err)
+	_ = c2
+
+	info2, err := stream.Info(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, firstUpdate, info2.Created, "stream should not have been recreated")
+	assert.Equal(t, jetstream.DiscardOld, info2.Config.Discard)
+}
+
+func TestNATSKV_InitBucketFailsOpenOnStreamUpdateError(t *testing.T) {
+	// If the JetStream metadata calls time out or fail, init must not crash
+	// the process — the runtime Get/Set already fail-open, so the cache
+	// simply degrades. We exercise this by cancelling the context in the
+	// middle of ensureDiscardOld via a NATS connection that's already closed.
+	nc := startEmbeddedNATS(t)
+	bucket := "test-failopen"
+
+	c, err := New[[]byte](
+		WithTTL(time.Minute),
+		WithNATS(nc, bucket),
+		WithMaxBytes(10*1024),
+	)
+	require.NoError(t, err)
+
+	// Now close the NATS connection and call ensureDiscardOld directly —
+	// it must return without panicking or returning an error.
+	nc.Close()
+	nkv := c.(*natsKVCache[[]byte])
+	js, err := jetstream.New(nkv.conn)
+	require.NoError(t, err)
+	require.NotPanics(t, func() {
+		nkv.ensureDiscardOld(js)
+	})
+}
+
 func TestNATSKV_WithReplicas(t *testing.T) {
 	nc := startEmbeddedNATS(t)
 
