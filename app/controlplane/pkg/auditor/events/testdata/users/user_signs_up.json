@@ -10,7 +10,8 @@
   "Description": "John Connor has signed up",
   "Info": {
     "user_id": "1089bb36-e27b-428b-8009-d015c8737c54",
-    "email": "john@cyberdyne.io"
+    "email": "john@cyberdyne.io",
+    "source": "oidc"
   },
-  "Digest": "sha256:d4d9f5e46478c99fef178ac4cc2cc9e01001063ccff9353d038632480ade6786"
+  "Digest": "sha256:6f55a8b133568683a867ef22ca27d25750cd18e5675fefe08044068ef9c17560"
 }
