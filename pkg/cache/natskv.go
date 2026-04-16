@@ -52,7 +52,7 @@ func newNATSKV[T any](cfg *config) (*natsKVCache[T], error) {
 		go c.watchReconnect(cfg.reconnCh)
 	}
 
-	cfg.logger.Infow("msg", "cache: using NATS KV backend", "bucket", cfg.bucketName, "ttl", cfg.ttl)
+	cfg.logger.Infow("msg", "cache: using NATS KV backend", "bucket", cfg.bucketName, "ttl", cfg.ttl, "replicas", cfg.replicas)
 	return c, nil
 }
 
