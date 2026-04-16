@@ -146,7 +146,12 @@ func main() {
 
 	app, cleanup, err := wireApp(ctx, &bc, credsWriter, logger, availablePlugins)
 	if err != nil {
-		panic(err)
+		_ = logger.Log(log.LevelError, "msg", "failed to initialize control plane", "error", err.Error())
+		// Invoke critical deferred cleanups explicitly since os.Exit skips defers.
+		cancel()
+		availablePlugins.Cleanup()
+		flush()
+		os.Exit(1) //nolint:gocritic // deferred cleanups called explicitly above
 	}
 	defer cleanup()
 

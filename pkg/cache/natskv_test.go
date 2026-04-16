@@ -59,6 +59,13 @@ type testStruct struct {
 	Value int    `json:"value"`
 }
 
+type testLogger struct{}
+
+func (testLogger) Debugw(...any) {}
+func (testLogger) Warnw(...any)  {}
+func (testLogger) Infow(...any)  {}
+func (testLogger) Errorw(...any) {}
+
 func TestNATSKV_GetSetDelete(t *testing.T) {
 	nc := startEmbeddedNATS(t)
 
@@ -292,30 +299,33 @@ func TestNATSKV_InitBucketIsIdempotent(t *testing.T) {
 	assert.Equal(t, jetstream.DiscardOld, info2.Config.Discard)
 }
 
-func TestNATSKV_InitBucketFailsOpenOnStreamUpdateError(t *testing.T) {
-	// If the JetStream metadata calls time out or fail, init must not crash
-	// the process — the runtime Get/Set already fail-open, so the cache
-	// simply degrades. We exercise this by cancelling the context in the
-	// middle of ensureDiscardOld via a NATS connection that's already closed.
+func TestNATSKV_InitBucketRetriesOnTransientError(t *testing.T) {
+	// Verify the retry wrapper gives up cleanly (returns an error, no panic)
+	// when the NATS connection is unusable for the full budget. A closed
+	// connection is a deterministic way to make every attempt fail.
 	nc := startEmbeddedNATS(t)
-	bucket := "test-failopen"
-
-	c, err := New[[]byte](
-		WithTTL(time.Minute),
-		WithNATS(nc, bucket),
-		WithMaxBytes(10*1024),
-	)
-	require.NoError(t, err)
-
-	// Now close the NATS connection and call ensureDiscardOld directly —
-	// it must return without panicking or returning an error.
 	nc.Close()
-	nkv := c.(*natsKVCache[[]byte])
-	js, err := jetstream.New(nkv.conn)
-	require.NoError(t, err)
-	require.NotPanics(t, func() {
-		nkv.ensureDiscardOld(js)
-	})
+
+	c := &natsKVCache[[]byte]{
+		logger: testLogger{},
+		conn:   nc,
+		bucket: "test-retry-exhausted",
+		cfg: &config{
+			logger:     testLogger{},
+			bucketName: "test-retry-exhausted",
+			ttl:        time.Minute,
+			maxBytes:   10 * 1024,
+			replicas:   1,
+		},
+	}
+
+	start := time.Now()
+	err := c.initBucketWithRetry(200*time.Millisecond, 50*time.Millisecond)
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	assert.GreaterOrEqual(t, elapsed, 200*time.Millisecond, "should have retried for at least the budget")
+	assert.Less(t, elapsed, 2*time.Second, "should not have hung beyond the budget")
 }
 
 func TestNATSKV_WithReplicas(t *testing.T) {
