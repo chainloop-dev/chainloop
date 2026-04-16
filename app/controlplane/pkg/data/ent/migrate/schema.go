@@ -497,7 +497,7 @@ var (
 	// ProjectVersionsColumns holds the columns for the "project_versions" table.
 	ProjectVersionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
-		{Name: "version", Type: field.TypeString, Default: ""},
+		{Name: "version", Type: field.TypeString, Default: "v0"},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},

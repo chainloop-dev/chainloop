@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,13 +36,8 @@ type ProjectVersion struct {
 func (ProjectVersion) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique(),
-		// empty version means no defined version
-		field.String("version").Default("").Validate(func(s string) error {
-			if s == "" {
-				return nil
-			}
-			return biz.ValidateVersion(s)
-		}),
+		// v0 is the default unversioned project version
+		field.String("version").Default(biz.DefaultVersionName).Validate(biz.ValidateVersion),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable().

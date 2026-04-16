@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,9 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+// DefaultVersionName is the canonical name for the default/unversioned project version.
+const DefaultVersionName = "v0"
 
 type ProjectVersion struct {
 	// ID is the UUID of the project version.
@@ -89,6 +92,10 @@ func (uc *ProjectVersionUseCase) Create(ctx context.Context, projectID, version 
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
+	}
+
+	if err := ValidateVersion(version); err != nil {
+		return nil, err
 	}
 
 	return uc.projectRepo.Create(ctx, projectUUID, version, prerelease)
