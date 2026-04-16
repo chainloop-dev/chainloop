@@ -169,7 +169,10 @@ func (c *natsKVCache[T]) ensureDiscardOld(js jetstream.JetStream) error {
 func (c *natsKVCache[T]) watchReconnect(ch <-chan struct{}) {
 	for range ch {
 		c.logger.Infow("msg", "cache: NATS reconnected, reinitializing bucket", "bucket", c.bucket)
-		if err := c.initBucket(); err != nil {
+		// Share the initial-boot retry budget: a reconnect may race with
+		// NATS leader election / cluster settle, so one shot isn't enough.
+		// Runtime ops already fail-open, so this is best-effort.
+		if err := c.initBucketWithRetry(initMaxWait, initRetryPeriod); err != nil {
 			c.logger.Warnw("msg", "cache: failed to reinitialize bucket after reconnect", "bucket", c.bucket, "error", err)
 		}
 	}
