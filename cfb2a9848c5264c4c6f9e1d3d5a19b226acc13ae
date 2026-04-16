@@ -1,0 +1,25 @@
+pkg/cache/natskv.go
+  c0240b1d014b083e 55
+app/controlplane/pkg/auditor/nats.go
+  c0240b1d014b083e 74,79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "cfb2a9848c5264c4c6f9e1d3d5a19b226acc13ae",
+  "prompts": {
+    "c0240b1d014b083e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2ae6c7e5-446d-40c5-b399-e30fb2c2adb9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 2,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    }
+  }
+}
