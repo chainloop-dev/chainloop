@@ -92,10 +92,15 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 }
 
 // DSSEEnvelopeFromBundleBytes extracts a DSSE envelope from the protojson-encoded bytes of a Sigstore bundle.
+// It validates that the bundle carries a DSSE envelope with at least one signature, since callers
+// (and DSSEEnvelopeFromBundle) assume that invariant.
 func DSSEEnvelopeFromBundleBytes(bundle []byte) (*dsse.Envelope, error) {
 	var attBundle protobundle.Bundle
 	if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
 		return nil, fmt.Errorf("unmarshalling bundle: %w", err)
+	}
+	if len(attBundle.GetDsseEnvelope().GetSignatures()) == 0 {
+		return nil, fmt.Errorf("invalid attestation bundle: missing DSSE signature")
 	}
 	return DSSEEnvelopeFromBundle(&attBundle), nil
 }
