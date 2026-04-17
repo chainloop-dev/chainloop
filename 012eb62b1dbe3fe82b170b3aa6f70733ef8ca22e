@@ -1,0 +1,37 @@
+app/controlplane/pkg/data/workflowrun.go
+  11b9c69273ce2e89 207-210
+app/controlplane/api/controlplane/v1/workflow_run.proto
+  11b9c69273ce2e89 2,166-168
+app/controlplane/internal/service/attestation.go
+  11b9c69273ce2e89 248,273,283-284,289,295,316
+app/controlplane/pkg/biz/workflowrun_integration_test.go
+  11b9c69273ce2e89 137-138,141-142,153,174,471-482,522-523,533-534,544-545
+pkg/attestation/attestations.go
+  11b9c69273ce2e89 2,94-98,100
+app/controlplane/pkg/biz/mocks/WorkflowRunRepo.go
+  11b9c69273ce2e89 677-678,685-686,702-703,706,716,718,734
+app/cli/pkg/action/attestation_push.go
+  11b9c69273ce2e89 266,306,309,314,316
+app/controlplane/pkg/biz/workflowrun.go
+  11b9c69273ce2e89 96,329,337,342,354,382-385,388-389
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "012eb62b1dbe3fe82b170b3aa6f70733ef8ca22e",
+  "prompts": {
+    "11b9c69273ce2e89": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f4e5cbe-487f-4fc6-97dd-c1a681f1294b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 3047,
+      "total_deletions": 150,
+      "accepted_lines": 73,
+      "overriden_lines": 0
+    }
+  }
+}
