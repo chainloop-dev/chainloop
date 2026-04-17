@@ -263,7 +263,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 
 	workflow := crafter.CraftingState.Attestation.GetWorkflow()
 
-	attestationResult.Digest, err = pushToControlPlane(ctx, action.CPConnection, envelope, bundle, workflow.GetWorkflowRunId(), workflow.GetVersion().GetMarkAsReleased())
+	attestationResult.Digest, err = pushToControlPlane(ctx, action.CPConnection, bundle, workflow.GetWorkflowRunId(), workflow.GetVersion().GetMarkAsReleased())
 	if err != nil {
 		return nil, fmt.Errorf("pushing to control plane: %w", err)
 	}
@@ -303,32 +303,17 @@ func (action *AttestationPush) saveBundle(bundle *protobundle.Bundle) error {
 	return nil
 }
 
-func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *dsse.Envelope, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
+func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
+	// remove additional base64 encoding in signature. See https://github.com/chainloop-dev/chainloop/issues/1832
+	attestation.FixSignatureInBundle(bundle)
 	encodedBundle, err := encodeBundle(bundle)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
 	}
 
 	client := pb.NewAttestationServiceClient(conn)
-
-	// if endpoint doesn't accept the bundle, we still send the plain attestation for backwards compatibility
-	encodedAttestation, err := encodeEnvelope(envelope)
-	if err != nil {
-		return "", fmt.Errorf("encoding attestation: %w", err)
-	}
-
-	// remove additional base64 encoding in signature. See https://github.com/chainloop-dev/chainloop/issues/1832
-	attestation.FixSignatureInBundle(bundle)
-	encodedFixedBundle, err := encodeBundle(bundle)
-	if err != nil {
-		return "", fmt.Errorf("encoding attestation: %w", err)
-	}
-
-	// Store bundle next versions will perform this in a single call)
 	resp, err := client.Store(ctx, &pb.AttestationServiceStoreRequest{
-		Attestation:           encodedAttestation,
-		Bundle:                encodedBundle,
-		AttestationBundle:     encodedFixedBundle,
+		AttestationBundle:     encodedBundle,
 		WorkflowRunId:         workflowRunID,
 		MarkVersionAsReleased: &markVersionAsReleased,
 	})
@@ -337,10 +322,6 @@ func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, envelope *ds
 	}
 
 	return resp.Result.Digest, nil
-}
-
-func encodeEnvelope(e *dsse.Envelope) ([]byte, error) {
-	return json.Marshal(e)
 }
 
 func encodeBundle(b *protobundle.Bundle) ([]byte, error) {

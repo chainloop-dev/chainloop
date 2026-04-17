@@ -18,18 +18,8 @@
     }
   },
   "properties": {
-    "attestation": {
-      "description": "encoded DSEE envelope",
-      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
-      "type": "string"
-    },
     "attestationBundle": {
       "description": "encoded Sigstore attestation bundle",
-      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
-      "type": "string"
-    },
-    "bundle": {
-      "description": "deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
     },

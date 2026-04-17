@@ -33,7 +33,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
 
 type WorkflowRunRepo struct {
@@ -204,37 +203,22 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 	return entWrToBizWr(ctx, run)
 }
 
-// SaveAttestation Saves the attestation for a workflow run in the database
-func (r *WorkflowRunRepo) SaveAttestation(ctx context.Context, id uuid.UUID, att *dsse.Envelope, digest string) error {
-	q := r.data.DB.WorkflowRun.UpdateOneID(id).
-		SetAttestationDigest(digest)
+// SaveAttestationBundle persists the attestation digest on the workflow run and the bundle bytes
+// in the linked attestation row within a single transaction.
+func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUID, digest string, bundle []byte) error {
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		if err := tx.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+			}
+			return err
+		}
 
-	// the envelope will come empty in normal attestations, since bundles are stored separately
-	// But old CLIs might still send the envelope instead of the bundle. In those cases, we store it
-	// as before. But this is a DEPRECATED behaviour that will be removed eventually.
-	if att != nil {
-		// Set attestation when using old CLI versions
-		q.SetAttestation(att)
-	}
-	run, err := q.Save(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return err
-	} else if run == nil {
-		return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
-	}
-
-	return nil
-}
-
-// SaveBundle Save the bundle for a workflow run in the database
-func (r *WorkflowRunRepo) SaveBundle(ctx context.Context, wrID uuid.UUID, bundle []byte) error {
-	if err := r.data.DB.Attestation.Create().
-		SetBundle(bundle).SetWorkflowrunID(wrID).
-		Exec(ctx); err != nil {
-		return fmt.Errorf("saving bundle: %w", err)
-	}
-
-	return nil
+		if err := tx.Attestation.Create().SetBundle(bundle).SetWorkflowrunID(id).Exec(ctx); err != nil {
+			return fmt.Errorf("saving bundle: %w", err)
+		}
+		return nil
+	})
 }
 
 // UpdatePolicyViolationsStatus updates the policy violations status for a workflow run
