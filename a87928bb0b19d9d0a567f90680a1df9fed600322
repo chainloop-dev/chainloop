@@ -1,0 +1,23 @@
+pkg/attestation/attestations.go
+  11b9c69273ce2e89 95-96,102-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "a87928bb0b19d9d0a567f90680a1df9fed600322",
+  "prompts": {
+    "11b9c69273ce2e89": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f4e5cbe-487f-4fc6-97dd-c1a681f1294b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 0,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
