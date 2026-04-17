@@ -93,8 +93,7 @@ type WorkflowRunRepo interface {
 	FindByAttestationDigest(ctx context.Context, digest string) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
-	SaveAttestation(ctx context.Context, ID uuid.UUID, digest string) error
-	SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error
+	SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error
 	GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error)
 	UpdatePolicyViolationsStatus(ctx context.Context, ID uuid.UUID, hasPolicyViolations bool) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
@@ -379,14 +378,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		}
 	}
 
-	// Update the workflow run first so a missing runID surfaces as NotFound before the bundle insert,
-	// which would otherwise fail with a foreign-key violation.
-	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, digest.String()); err != nil {
-		return nil, fmt.Errorf("saving attestation: %w", err)
-	}
-
-	if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundle); err != nil {
-		return nil, fmt.Errorf("saving bundle: %w", err)
+	if err := uc.wfRunRepo.SaveAttestationBundle(ctx, runID, digest.String(), bundle); err != nil {
+		return nil, fmt.Errorf("saving attestation bundle: %w", err)
 	}
 
 	// Extract and save policy violations status from the predicate

@@ -673,37 +673,38 @@ func (_c *WorkflowRunRepo_MarkAsFinished_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
-// SaveAttestation provides a mock function for the type WorkflowRunRepo
-func (_mock *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, digest string) error {
-	ret := _mock.Called(ctx, ID, digest)
+// SaveAttestationBundle provides a mock function for the type WorkflowRunRepo
+func (_mock *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error {
+	ret := _mock.Called(ctx, ID, digest, bundle)
 
 	if len(ret) == 0 {
-		panic("no return value specified for SaveAttestation")
+		panic("no return value specified for SaveAttestationBundle")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
-		r0 = returnFunc(ctx, ID, digest)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, []byte) error); ok {
+		r0 = returnFunc(ctx, ID, digest, bundle)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// WorkflowRunRepo_SaveAttestation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveAttestation'
-type WorkflowRunRepo_SaveAttestation_Call struct {
+// WorkflowRunRepo_SaveAttestationBundle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveAttestationBundle'
+type WorkflowRunRepo_SaveAttestationBundle_Call struct {
 	*mock.Call
 }
 
-// SaveAttestation is a helper method to define mock.On call
+// SaveAttestationBundle is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ID uuid.UUID
 //   - digest string
-func (_e *WorkflowRunRepo_Expecter) SaveAttestation(ctx interface{}, ID interface{}, digest interface{}) *WorkflowRunRepo_SaveAttestation_Call {
-	return &WorkflowRunRepo_SaveAttestation_Call{Call: _e.mock.On("SaveAttestation", ctx, ID, digest)}
+//   - bundle []byte
+func (_e *WorkflowRunRepo_Expecter) SaveAttestationBundle(ctx interface{}, ID interface{}, digest interface{}, bundle interface{}) *WorkflowRunRepo_SaveAttestationBundle_Call {
+	return &WorkflowRunRepo_SaveAttestationBundle_Call{Call: _e.mock.On("SaveAttestationBundle", ctx, ID, digest, bundle)}
 }
 
-func (_c *WorkflowRunRepo_SaveAttestation_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string)) *WorkflowRunRepo_SaveAttestation_Call {
+func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string, bundle []byte)) *WorkflowRunRepo_SaveAttestationBundle_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -717,84 +718,26 @@ func (_c *WorkflowRunRepo_SaveAttestation_Call) Run(run func(ctx context.Context
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *WorkflowRunRepo_SaveAttestation_Call) Return(err error) *WorkflowRunRepo_SaveAttestation_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *WorkflowRunRepo_SaveAttestation_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string) error) *WorkflowRunRepo_SaveAttestation_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// SaveBundle provides a mock function for the type WorkflowRunRepo
-func (_mock *WorkflowRunRepo) SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error {
-	ret := _mock.Called(ctx, ID, bundle)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SaveBundle")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, []byte) error); ok {
-		r0 = returnFunc(ctx, ID, bundle)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// WorkflowRunRepo_SaveBundle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveBundle'
-type WorkflowRunRepo_SaveBundle_Call struct {
-	*mock.Call
-}
-
-// SaveBundle is a helper method to define mock.On call
-//   - ctx context.Context
-//   - ID uuid.UUID
-//   - bundle []byte
-func (_e *WorkflowRunRepo_Expecter) SaveBundle(ctx interface{}, ID interface{}, bundle interface{}) *WorkflowRunRepo_SaveBundle_Call {
-	return &WorkflowRunRepo_SaveBundle_Call{Call: _e.mock.On("SaveBundle", ctx, ID, bundle)}
-}
-
-func (_c *WorkflowRunRepo_SaveBundle_Call) Run(run func(ctx context.Context, ID uuid.UUID, bundle []byte)) *WorkflowRunRepo_SaveBundle_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 uuid.UUID
-		if args[1] != nil {
-			arg1 = args[1].(uuid.UUID)
-		}
-		var arg2 []byte
-		if args[2] != nil {
-			arg2 = args[2].([]byte)
+		var arg3 []byte
+		if args[3] != nil {
+			arg3 = args[3].([]byte)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
 }
 
-func (_c *WorkflowRunRepo_SaveBundle_Call) Return(err error) *WorkflowRunRepo_SaveBundle_Call {
+func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) Return(err error) *WorkflowRunRepo_SaveAttestationBundle_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *WorkflowRunRepo_SaveBundle_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, bundle []byte) error) *WorkflowRunRepo_SaveBundle_Call {
+func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error) *WorkflowRunRepo_SaveAttestationBundle_Call {
 	_c.Call.Return(run)
 	return _c
 }
