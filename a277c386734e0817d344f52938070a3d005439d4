@@ -1,0 +1,27 @@
+app/controlplane/pkg/data/workflowrun.go
+  11b9c69273ce2e89 206-221,223-229
+app/controlplane/pkg/biz/mocks/WorkflowRunRepo.go
+  11b9c69273ce2e89 676-678,681,685-686,693-694,698,702-704,707,721-723,729,735,740
+app/controlplane/pkg/biz/workflowrun.go
+  11b9c69273ce2e89 96,381-382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "a277c386734e0817d344f52938070a3d005439d4",
+  "prompts": {
+    "11b9c69273ce2e89": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f4e5cbe-487f-4fc6-97dd-c1a681f1294b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 3627,
+      "total_deletions": 7708,
+      "accepted_lines": 45,
+      "overriden_lines": 0
+    }
+  }
+}
