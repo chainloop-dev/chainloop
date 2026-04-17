@@ -251,6 +251,82 @@ func TestNATSKV_MaxBytesEvictsOldEntries(t *testing.T) {
 	assert.False(t, ok, "oldest entry should have been evicted")
 }
 
+func TestNATSKV_EnsureDiscardOldSkipsWhenAlreadySet(t *testing.T) {
+	// Exercise both branches of ensureDiscardOld directly: when the stream's
+	// Discard policy already matches, UpdateStream must not be called.
+	nc := startEmbeddedNATS(t)
+	bucket := "test-idempotent"
+
+	// First New creates the bucket and sets DiscardOld.
+	_, err := New[[]byte](
+		WithTTL(time.Minute),
+		WithNATS(nc, bucket),
+		WithMaxBytes(10*1024),
+	)
+	require.NoError(t, err)
+
+	// Flip the backing stream back to DiscardNew so we can observe the update branch.
+	js, err := jetstream.New(nc)
+	require.NoError(t, err)
+	streamName := "KV_" + bucket
+	stream, err := js.Stream(context.Background(), streamName)
+	require.NoError(t, err)
+	cfg := stream.CachedInfo().Config
+	cfg.Discard = jetstream.DiscardNew
+	_, err = js.UpdateStream(context.Background(), cfg)
+	require.NoError(t, err)
+
+	c := &natsKVCache[[]byte]{
+		logger: nopLogger{},
+		conn:   nc,
+		bucket: bucket,
+		cfg:    &config{logger: nopLogger{}, bucketName: bucket, maxBytes: 10 * 1024},
+	}
+
+	// Update branch: must flip Discard back to DiscardOld.
+	require.NoError(t, c.ensureDiscardOld(js))
+	stream, err = js.Stream(context.Background(), streamName)
+	require.NoError(t, err)
+	require.Equal(t, jetstream.DiscardOld, stream.CachedInfo().Config.Discard)
+
+	// Skip branch: with DiscardOld already set, ensureDiscardOld must not
+	// issue an UpdateStream call. Measure outbound NATS request count across
+	// a call — one Stream() lookup, zero UpdateStream() calls => 1 request.
+	before := nc.Stats().OutMsgs
+	require.NoError(t, c.ensureDiscardOld(js))
+	delta := nc.Stats().OutMsgs - before
+	assert.LessOrEqual(t, delta, uint64(1), "skip path must not issue an UpdateStream request")
+}
+
+func TestNATSKV_InitBucketRetriesOnTransientError(t *testing.T) {
+	// Verify the retry wrapper gives up cleanly (returns an error, no panic)
+	// when the NATS connection is unusable for the full budget. A closed
+	// connection is a deterministic way to make every attempt fail.
+	nc := startEmbeddedNATS(t)
+	nc.Close()
+
+	c := &natsKVCache[[]byte]{
+		logger: nopLogger{},
+		conn:   nc,
+		bucket: "test-retry-exhausted",
+		cfg: &config{
+			logger:     nopLogger{},
+			bucketName: "test-retry-exhausted",
+			ttl:        time.Minute,
+			maxBytes:   10 * 1024,
+			replicas:   1,
+		},
+	}
+
+	start := time.Now()
+	err := c.initBucketWithRetry(200*time.Millisecond, 50*time.Millisecond)
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	assert.GreaterOrEqual(t, elapsed, 200*time.Millisecond, "should have retried for at least the budget")
+	assert.Less(t, elapsed, 2*time.Second, "should not have hung beyond the budget")
+}
+
 func TestNATSKV_WithReplicas(t *testing.T) {
 	nc := startEmbeddedNATS(t)
 
