@@ -1,0 +1,23 @@
+go.mod
+  b9c7fe5cfa2a2cb2 82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "665b361d1a73ccb7b1013ef5adaa61332bcb48a4",
+  "prompts": {
+    "b9c7fe5cfa2a2cb2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a58efbe-7d09-40eb-a266-151841aedc62",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
