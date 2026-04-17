@@ -204,25 +204,17 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 }
 
 // SaveAttestationBundle persists the attestation digest on the workflow run and the bundle bytes
-// in the linked attestation row within a single transaction. Missing workflow runs surface as NotFound.
+// in the linked attestation row within a single transaction.
 func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUID, digest string, bundle []byte) error {
 	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-		run, err := tx.WorkflowRun.UpdateOneID(id).
-			SetAttestationDigest(digest).
-			Save(ctx)
-		if err != nil {
+		if err := tx.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
 			if ent.IsNotFound(err) {
 				return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
 			}
 			return err
 		}
-		if run == nil {
-			return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
-		}
 
-		if err := tx.Attestation.Create().
-			SetBundle(bundle).SetWorkflowrunID(id).
-			Exec(ctx); err != nil {
+		if err := tx.Attestation.Create().SetBundle(bundle).SetWorkflowrunID(id).Exec(ctx); err != nil {
 			return fmt.Errorf("saving bundle: %w", err)
 		}
 		return nil
