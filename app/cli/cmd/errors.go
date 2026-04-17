@@ -63,7 +63,6 @@ func isRetriableAPIError(err error) bool {
 	retriableCodes := []codes.Code{
 		codes.Unavailable,
 		codes.Internal,
-		codes.ResourceExhausted,
 		codes.DeadlineExceeded,
 	}
 
