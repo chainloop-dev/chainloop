@@ -1264,13 +1264,16 @@ func (x *Server_TLS) GetPrivateKey() string {
 }
 
 type Server_GRPC struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Network       string                 `protobuf:"bytes,1,opt,name=network,proto3" json:"network,omitempty"`
-	Addr          string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
-	Timeout       *durationpb.Duration   `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	TlsConfig     *Server_TLS            `protobuf:"bytes,4,opt,name=tls_config,json=tlsConfig,proto3" json:"tls_config,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Network   string                 `protobuf:"bytes,1,opt,name=network,proto3" json:"network,omitempty"`
+	Addr      string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
+	Timeout   *durationpb.Duration   `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	TlsConfig *Server_TLS            `protobuf:"bytes,4,opt,name=tls_config,json=tlsConfig,proto3" json:"tls_config,omitempty"`
+	// Maximum size in bytes of received gRPC messages.
+	// Defaults to 4MB (4194304) if not set. Use this to allow larger attestations.
+	MaxRecvMsgSize int32 `protobuf:"varint,5,opt,name=max_recv_msg_size,json=maxRecvMsgSize,proto3" json:"max_recv_msg_size,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Server_GRPC) Reset() {
@@ -1329,6 +1332,13 @@ func (x *Server_GRPC) GetTlsConfig() *Server_TLS {
 		return x.TlsConfig
 	}
 	return nil
+}
+
+func (x *Server_GRPC) GetMaxRecvMsgSize() int32 {
+	if x != nil {
+		return x.MaxRecvMsgSize
+	}
+	return 0
 }
 
 type Data_Database struct {
@@ -1696,7 +1706,7 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x03url\x18\x04 \x01(\tR\x03url\"R\n" +
 	"\x13ReferrerSharedIndex\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12!\n" +
-	"\fallowed_orgs\x18\x02 \x03(\tR\vallowedOrgs\"\xd3\x04\n" +
+	"\fallowed_orgs\x18\x02 \x03(\tR\vallowedOrgs\"\xfe\x04\n" +
 	"\x06Server\x127\n" +
 	"\x04http\x18\x01 \x01(\v2#.controlplane.config.v1.Server.HTTPR\x04http\x127\n" +
 	"\x04grpc\x18\x02 \x01(\v2#.controlplane.config.v1.Server.GRPCR\x04grpc\x12F\n" +
@@ -1709,13 +1719,14 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x03TLS\x12 \n" +
 	"\vcertificate\x18\x01 \x01(\tR\vcertificate\x12\x1f\n" +
 	"\vprivate_key\x18\x02 \x01(\tR\n" +
-	"privateKey\x1a\xb5\x01\n" +
+	"privateKey\x1a\xe0\x01\n" +
 	"\x04GRPC\x12\x18\n" +
 	"\anetwork\x18\x01 \x01(\tR\anetwork\x12\x1b\n" +
 	"\x04addr\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04addr\x123\n" +
 	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12A\n" +
 	"\n" +
-	"tls_config\x18\x04 \x01(\v2\".controlplane.config.v1.Server.TLSR\ttlsConfig\"\x9a\x02\n" +
+	"tls_config\x18\x04 \x01(\v2\".controlplane.config.v1.Server.TLSR\ttlsConfig\x12)\n" +
+	"\x11max_recv_msg_size\x18\x05 \x01(\x05R\x0emaxRecvMsgSize\"\x9a\x02\n" +
 	"\x04Data\x12A\n" +
 	"\bdatabase\x18\x01 \x01(\v2%.controlplane.config.v1.Data.DatabaseR\bdatabase\x1a\xce\x01\n" +
 	"\bDatabase\x12\x16\n" +

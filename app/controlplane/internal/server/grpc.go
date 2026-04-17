@@ -48,6 +48,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpcLib "google.golang.org/grpc"
 )
 
 type Opts struct {
@@ -89,14 +90,14 @@ type Opts struct {
 	GroupSvc            *service.GroupService
 	ProjectSvc          *service.ProjectService
 	// Utils
-	Logger          log.Logger
-	ServerConfig    *conf.Server
-	AuthConfig      *conf.Auth
+	Logger              log.Logger
+	ServerConfig        *conf.Server
+	AuthConfig          *conf.Auth
 	FederatedConfig     *conf.FederatedAuthentication
 	OperationAuthConfig *conf.OperationAuthorizationProvider
 	BootstrapConfig     *conf.Bootstrap
-	Credentials     credentials.ReaderWriter
-	Validator       protovalidate.Validator
+	Credentials         credentials.ReaderWriter
+	Validator           protovalidate.Validator
 }
 
 var (
@@ -144,6 +145,10 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 				MinVersion:   tls.VersionTLS12, // gosec complains about insecure minimum version we use default value
 			}))
 		}
+	}
+
+	if v := opts.ServerConfig.Grpc.GetMaxRecvMsgSize(); v > 0 {
+		serverOpts = append(serverOpts, grpc.Options(grpcLib.MaxRecvMsgSize(int(v))))
 	}
 
 	srv := grpc.NewServer(serverOpts...)
