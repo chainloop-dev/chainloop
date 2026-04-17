@@ -52,6 +52,11 @@ modules:
       except:
         - EXTENSION_NO_DELETE
         - FIELD_SAME_DEFAULT
+      ignore_only:
+        # Deprecated `attestation` and `bundle` fields were removed in favor of `attestation_bundle`;
+        # their tag numbers and names are `reserved` in the proto to prevent accidental reuse.
+        FIELD_NO_DELETE:
+          - app/controlplane/api/controlplane/v1/workflow_run.proto
   - path: app/controlplane/internal/conf
     lint:
       use:
