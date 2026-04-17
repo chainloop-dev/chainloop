@@ -1,0 +1,23 @@
+pkg/cache/natskv.go
+  ccd678fd94d59f04 172-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "3f9a0230472c122350db6e420698a501bf5375bd",
+  "prompts": {
+    "ccd678fd94d59f04": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b464ac0-1f8c-4ca2-b5f7-e950f4d0165a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 1,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
