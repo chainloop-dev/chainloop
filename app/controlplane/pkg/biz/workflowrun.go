@@ -93,7 +93,7 @@ type WorkflowRunRepo interface {
 	FindByAttestationDigest(ctx context.Context, digest string) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
-	SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error
+	SaveAttestation(ctx context.Context, ID uuid.UUID, digest string) error
 	SaveBundle(ctx context.Context, ID uuid.UUID, bundle []byte) error
 	GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error)
 	UpdatePolicyViolationsStatus(ctx context.Context, ID uuid.UUID, hasPolicyViolations bool) error
@@ -326,25 +326,20 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, envelope, bundle []byte) (*v1.Hash, error) {
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte) (*v1.Hash, error) {
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	rawContent := bundle
-	if rawContent == nil {
-		rawContent = envelope
-	}
-
 	// calculate the content digest
 	// Todo: this should be calculated in the use case
-	digest, _, err := v1.SHA256(bytes.NewReader(rawContent))
+	digest, _, err := v1.SHA256(bytes.NewReader(bundle))
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate SHA256 of attestation: %w", err)
 	}
 
-	dsseEnv, err := attestation.DSSEEnvelopeFromRaw(bundle, envelope)
+	dsseEnv, err := attestation.DSSEEnvelopeFromBundleBytes(bundle)
 	if err != nil {
 		return nil, fmt.Errorf("extracting DSSE envelope: %w", err)
 	}
@@ -356,7 +351,7 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 	}
 
 	// verify attestation (only if chainloop is the signer)
-	validation, err := uc.verifyBundle(ctx, rawContent)
+	validation, err := uc.verifyBundle(ctx, bundle)
 	if err != nil {
 		if !errors.Is(err, verifier.ErrInvalidBundle) {
 			return nil, err
@@ -384,18 +379,14 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, en
 		}
 	}
 
-	// Save bundle if provided, as it might come as an empty struct
-	if bundle != nil {
-		// Save bundle
-		if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundle); err != nil {
-			return nil, fmt.Errorf("saving bundle: %w", err)
-		}
-		// do not store the envelope if bundle is already stored
-		dsseEnv = nil
+	// Update the workflow run first so a missing runID surfaces as NotFound before the bundle insert,
+	// which would otherwise fail with a foreign-key violation.
+	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, digest.String()); err != nil {
+		return nil, fmt.Errorf("saving attestation: %w", err)
 	}
 
-	if err := uc.wfRunRepo.SaveAttestation(ctx, runID, dsseEnv, digest.String()); err != nil {
-		return nil, fmt.Errorf("saving attestation: %w", err)
+	if err = uc.wfRunRepo.SaveBundle(ctx, runID, bundle); err != nil {
+		return nil, fmt.Errorf("saving bundle: %w", err)
 	}
 
 	// Extract and save policy violations status from the predicate

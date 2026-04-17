@@ -134,18 +134,6 @@ export interface AttestationServiceInitResponse_SigningOptions {
 }
 
 export interface AttestationServiceStoreRequest {
-  /**
-   * encoded DSEE envelope
-   *
-   * @deprecated
-   */
-  attestation: Uint8Array;
-  /**
-   * deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832
-   *
-   * @deprecated
-   */
-  bundle: Uint8Array;
   /** encoded Sigstore attestation bundle */
   attestationBundle: Uint8Array;
   workflowRunId: string;
@@ -1537,23 +1525,11 @@ export const AttestationServiceInitResponse_SigningOptions = {
 };
 
 function createBaseAttestationServiceStoreRequest(): AttestationServiceStoreRequest {
-  return {
-    attestation: new Uint8Array(0),
-    bundle: new Uint8Array(0),
-    attestationBundle: new Uint8Array(0),
-    workflowRunId: "",
-    markVersionAsReleased: undefined,
-  };
+  return { attestationBundle: new Uint8Array(0), workflowRunId: "", markVersionAsReleased: undefined };
 }
 
 export const AttestationServiceStoreRequest = {
   encode(message: AttestationServiceStoreRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.attestation.length !== 0) {
-      writer.uint32(10).bytes(message.attestation);
-    }
-    if (message.bundle.length !== 0) {
-      writer.uint32(34).bytes(message.bundle);
-    }
     if (message.attestationBundle.length !== 0) {
       writer.uint32(42).bytes(message.attestationBundle);
     }
@@ -1573,20 +1549,6 @@ export const AttestationServiceStoreRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.attestation = reader.bytes();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.bundle = reader.bytes();
-          continue;
         case 5:
           if (tag !== 42) {
             break;
@@ -1619,8 +1581,6 @@ export const AttestationServiceStoreRequest = {
 
   fromJSON(object: any): AttestationServiceStoreRequest {
     return {
-      attestation: isSet(object.attestation) ? bytesFromBase64(object.attestation) : new Uint8Array(0),
-      bundle: isSet(object.bundle) ? bytesFromBase64(object.bundle) : new Uint8Array(0),
       attestationBundle: isSet(object.attestationBundle)
         ? bytesFromBase64(object.attestationBundle)
         : new Uint8Array(0),
@@ -1631,10 +1591,6 @@ export const AttestationServiceStoreRequest = {
 
   toJSON(message: AttestationServiceStoreRequest): unknown {
     const obj: any = {};
-    message.attestation !== undefined &&
-      (obj.attestation = base64FromBytes(message.attestation !== undefined ? message.attestation : new Uint8Array(0)));
-    message.bundle !== undefined &&
-      (obj.bundle = base64FromBytes(message.bundle !== undefined ? message.bundle : new Uint8Array(0)));
     message.attestationBundle !== undefined &&
       (obj.attestationBundle = base64FromBytes(
         message.attestationBundle !== undefined ? message.attestationBundle : new Uint8Array(0),
@@ -1652,8 +1608,6 @@ export const AttestationServiceStoreRequest = {
     object: I,
   ): AttestationServiceStoreRequest {
     const message = createBaseAttestationServiceStoreRequest();
-    message.attestation = object.attestation ?? new Uint8Array(0);
-    message.bundle = object.bundle ?? new Uint8Array(0);
     message.attestationBundle = object.attestationBundle ?? new Uint8Array(0);
     message.workflowRunId = object.workflowRunId ?? "";
     message.markVersionAsReleased = object.markVersionAsReleased ?? undefined;

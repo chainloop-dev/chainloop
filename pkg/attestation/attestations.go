@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -91,24 +91,14 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 	}, nil
 }
 
-func DSSEEnvelopeFromRaw(bundle, envelope []byte) (*dsse.Envelope, error) {
-	var dsseEnv dsse.Envelope
-	if bundle != nil {
-		var attBundle protobundle.Bundle
-		if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
-			return nil, fmt.Errorf("unmarshalling bundle: %w", err)
-		}
-		dsseEnv = *DSSEEnvelopeFromBundle(&attBundle)
-	} else {
-		if err := json.Unmarshal(envelope, &dsseEnv); err != nil {
-			return nil, fmt.Errorf("unmarshalling envelope: %w", err)
-		}
+// DSSEEnvelopeFromBundleBytes extracts a DSSE envelope from the protojson-encoded bytes of a Sigstore bundle.
+func DSSEEnvelopeFromBundleBytes(bundle []byte) (*dsse.Envelope, error) {
+	var attBundle protobundle.Bundle
+	if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
+		return nil, fmt.Errorf("unmarshalling bundle: %w", err)
 	}
-	return &dsseEnv, nil
+	return DSSEEnvelopeFromBundle(&attBundle), nil
 }
-
-// TODO: remove this fix once `AttestationServiceStoreRequest.Bundle` is fully removed,
-//	     and move the logic to BundleFromDSSEEnvelope method instead (where the bug is originated)
 
 // FixSignatureInBundle removes any additional base64 encoding from the signature in the bundle.
 // Old attestations have signatures base64 encoded twice, see https://github.com/chainloop-dev/chainloop/issues/1832

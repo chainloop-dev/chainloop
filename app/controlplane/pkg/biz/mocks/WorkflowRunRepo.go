@@ -11,7 +11,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/google/uuid"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -675,16 +674,16 @@ func (_c *WorkflowRunRepo_MarkAsFinished_Call) RunAndReturn(run func(ctx context
 }
 
 // SaveAttestation provides a mock function for the type WorkflowRunRepo
-func (_mock *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error {
-	ret := _mock.Called(ctx, ID, att, digest)
+func (_mock *WorkflowRunRepo) SaveAttestation(ctx context.Context, ID uuid.UUID, digest string) error {
+	ret := _mock.Called(ctx, ID, digest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveAttestation")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *dsse.Envelope, string) error); ok {
-		r0 = returnFunc(ctx, ID, att, digest)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, ID, digest)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -699,13 +698,12 @@ type WorkflowRunRepo_SaveAttestation_Call struct {
 // SaveAttestation is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ID uuid.UUID
-//   - att *dsse.Envelope
 //   - digest string
-func (_e *WorkflowRunRepo_Expecter) SaveAttestation(ctx interface{}, ID interface{}, att interface{}, digest interface{}) *WorkflowRunRepo_SaveAttestation_Call {
-	return &WorkflowRunRepo_SaveAttestation_Call{Call: _e.mock.On("SaveAttestation", ctx, ID, att, digest)}
+func (_e *WorkflowRunRepo_Expecter) SaveAttestation(ctx interface{}, ID interface{}, digest interface{}) *WorkflowRunRepo_SaveAttestation_Call {
+	return &WorkflowRunRepo_SaveAttestation_Call{Call: _e.mock.On("SaveAttestation", ctx, ID, digest)}
 }
 
-func (_c *WorkflowRunRepo_SaveAttestation_Call) Run(run func(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string)) *WorkflowRunRepo_SaveAttestation_Call {
+func (_c *WorkflowRunRepo_SaveAttestation_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string)) *WorkflowRunRepo_SaveAttestation_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -715,19 +713,14 @@ func (_c *WorkflowRunRepo_SaveAttestation_Call) Run(run func(ctx context.Context
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
-		var arg2 *dsse.Envelope
+		var arg2 string
 		if args[2] != nil {
-			arg2 = args[2].(*dsse.Envelope)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
+			arg2 = args[2].(string)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -738,7 +731,7 @@ func (_c *WorkflowRunRepo_SaveAttestation_Call) Return(err error) *WorkflowRunRe
 	return _c
 }
 
-func (_c *WorkflowRunRepo_SaveAttestation_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, att *dsse.Envelope, digest string) error) *WorkflowRunRepo_SaveAttestation_Call {
+func (_c *WorkflowRunRepo_SaveAttestation_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string) error) *WorkflowRunRepo_SaveAttestation_Call {
 	_c.Call.Return(run)
 	return _c
 }

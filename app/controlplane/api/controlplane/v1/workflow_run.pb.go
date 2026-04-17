@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -739,14 +739,6 @@ func (x *AttestationServiceInitResponse) GetResult() *AttestationServiceInitResp
 
 type AttestationServiceStoreRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// encoded DSEE envelope
-	//
-	// Deprecated: Marked as deprecated in controlplane/v1/workflow_run.proto.
-	Attestation []byte `protobuf:"bytes,1,opt,name=attestation,proto3" json:"attestation,omitempty"`
-	// deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832
-	//
-	// Deprecated: Marked as deprecated in controlplane/v1/workflow_run.proto.
-	Bundle []byte `protobuf:"bytes,4,opt,name=bundle,proto3" json:"bundle,omitempty"`
 	// encoded Sigstore attestation bundle
 	AttestationBundle []byte `protobuf:"bytes,5,opt,name=attestation_bundle,json=attestationBundle,proto3" json:"attestation_bundle,omitempty"`
 	WorkflowRunId     string `protobuf:"bytes,2,opt,name=workflow_run_id,json=workflowRunId,proto3" json:"workflow_run_id,omitempty"`
@@ -784,22 +776,6 @@ func (x *AttestationServiceStoreRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use AttestationServiceStoreRequest.ProtoReflect.Descriptor instead.
 func (*AttestationServiceStoreRequest) Descriptor() ([]byte, []int) {
 	return file_controlplane_v1_workflow_run_proto_rawDescGZIP(), []int{11}
-}
-
-// Deprecated: Marked as deprecated in controlplane/v1/workflow_run.proto.
-func (x *AttestationServiceStoreRequest) GetAttestation() []byte {
-	if x != nil {
-		return x.Attestation
-	}
-	return nil
-}
-
-// Deprecated: Marked as deprecated in controlplane/v1/workflow_run.proto.
-func (x *AttestationServiceStoreRequest) GetBundle() []byte {
-	if x != nil {
-		return x.Bundle
-	}
-	return nil
 }
 
 func (x *AttestationServiceStoreRequest) GetAttestationBundle() []byte {
@@ -1817,14 +1793,12 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x0eSigningOptions\x126\n" +
 	"\x17timestamp_authority_url\x18\x01 \x01(\tR\x15timestampAuthorityUrl\x12\x1d\n" +
 	"\n" +
-	"signing_ca\x18\x02 \x01(\tR\tsigningCa\"\x9d\x02\n" +
-	"\x1eAttestationServiceStoreRequest\x12$\n" +
-	"\vattestation\x18\x01 \x01(\fB\x02\x18\x01R\vattestation\x12\x1a\n" +
-	"\x06bundle\x18\x04 \x01(\fB\x02\x18\x01R\x06bundle\x12-\n" +
+	"signing_ca\x18\x02 \x01(\tR\tsigningCa\"\xfc\x01\n" +
+	"\x1eAttestationServiceStoreRequest\x12-\n" +
 	"\x12attestation_bundle\x18\x05 \x01(\fR\x11attestationBundle\x12/\n" +
 	"\x0fworkflow_run_id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\rworkflowRunId\x12<\n" +
 	"\x18mark_version_as_released\x18\x03 \x01(\bH\x00R\x15markVersionAsReleased\x88\x01\x01B\x1b\n" +
-	"\x19_mark_version_as_released\"\x94\x01\n" +
+	"\x19_mark_version_as_releasedJ\x04\b\x01\x10\x02J\x04\b\x04\x10\x05R\vattestationR\x06bundle\"\x94\x01\n" +
 	"\x1fAttestationServiceStoreResponse\x12O\n" +
 	"\x06result\x18\x01 \x01(\v27.controlplane.v1.AttestationServiceStoreResponse.ResultR\x06result\x1a \n" +
 	"\x06Result\x12\x16\n" +
