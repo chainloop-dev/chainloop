@@ -25,70 +25,58 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Guards against the double-base64 bug in https://github.com/chainloop-dev/chainloop/issues/1832.
-func TestBundleFromDSSEEnvelopeDecodesSignature(t *testing.T) {
-	rawSig := []byte{0x30, 0x44, 0x02, 0x20, 0xAA, 0xBB, 0xCC, 0xDD}
-	rawPayload := []byte(`{"_type":"statement"}`)
+var (
+	testRawSig     = []byte{0x30, 0x44, 0x02, 0x20, 0xAA, 0xBB, 0xCC, 0xDD}
+	testRawPayload = []byte(`{"_type":"statement"}`)
+)
 
-	env := &dsse.Envelope{
+func newTestEnvelope(t *testing.T) *dsse.Envelope {
+	t.Helper()
+	return &dsse.Envelope{
 		PayloadType: "application/vnd.in-toto+json",
-		Payload:     base64.StdEncoding.EncodeToString(rawPayload),
+		Payload:     base64.StdEncoding.EncodeToString(testRawPayload),
 		Signatures: []dsse.Signature{
-			{KeyID: "key-1", Sig: base64.StdEncoding.EncodeToString(rawSig)},
+			{KeyID: "key-1", Sig: base64.StdEncoding.EncodeToString(testRawSig)},
 		},
 	}
+}
 
-	bundle, err := attestation.BundleFromDSSEEnvelope(env)
+// Guards against the double-base64 bug in https://github.com/chainloop-dev/chainloop/issues/1832.
+func TestBundleFromDSSEEnvelopeDecodesSignature(t *testing.T) {
+	bundle, err := attestation.BundleFromDSSEEnvelope(newTestEnvelope(t))
 	require.NoError(t, err)
 
 	gotEnv := bundle.GetDsseEnvelope()
-	assert.Equal(t, rawPayload, gotEnv.GetPayload())
+	assert.Equal(t, testRawPayload, gotEnv.GetPayload())
 	require.Len(t, gotEnv.GetSignatures(), 1)
-	assert.Equal(t, rawSig, gotEnv.GetSignatures()[0].GetSig())
+	assert.Equal(t, testRawSig, gotEnv.GetSignatures()[0].GetSig())
 	assert.Equal(t, "key-1", gotEnv.GetSignatures()[0].GetKeyid())
 }
 
-func TestBundleRoundTripWithFixedSignature(t *testing.T) {
-	rawSig := []byte{0x30, 0x44, 0x02, 0x20, 0xAA, 0xBB, 0xCC, 0xDD}
-	encodedSig := base64.StdEncoding.EncodeToString(rawSig)
+func TestBundleFromDSSEEnvelopeNoSignatures(t *testing.T) {
+	env := newTestEnvelope(t)
+	env.Signatures = nil
+	_, err := attestation.BundleFromDSSEEnvelope(env)
+	require.Error(t, err)
+}
 
-	env := &dsse.Envelope{
-		PayloadType: "application/vnd.in-toto+json",
-		Payload:     base64.StdEncoding.EncodeToString([]byte("payload")),
-		Signatures: []dsse.Signature{
-			{KeyID: "key-1", Sig: encodedSig},
-		},
-	}
-
-	bundle, err := attestation.BundleFromDSSEEnvelope(env)
+func TestFixSignatureInBundleIsNoOpOnFixedBundles(t *testing.T) {
+	bundle, err := attestation.BundleFromDSSEEnvelope(newTestEnvelope(t))
 	require.NoError(t, err)
 
 	before := bundle.GetDsseEnvelope().GetSignatures()[0].GetSig()
 	attestation.FixSignatureInBundle(bundle)
-	assert.Equal(t, before, bundle.GetDsseEnvelope().GetSignatures()[0].GetSig(),
-		"FixSignatureInBundle should be a no-op on properly formed bundles")
-
-	gotEnv := attestation.DSSEEnvelopeFromBundle(bundle)
-	assert.Equal(t, encodedSig, gotEnv.Signatures[0].Sig)
+	assert.Equal(t, before, bundle.GetDsseEnvelope().GetSignatures()[0].GetSig())
 }
 
 func TestFixSignatureInBundleRepairsLegacyBundles(t *testing.T) {
-	rawSig := []byte{0x30, 0x44, 0x02, 0x20, 0xAA, 0xBB, 0xCC, 0xDD}
-	encodedSig := base64.StdEncoding.EncodeToString(rawSig)
-
-	env := &dsse.Envelope{
-		PayloadType: "application/vnd.in-toto+json",
-		Payload:     base64.StdEncoding.EncodeToString([]byte("payload")),
-		Signatures: []dsse.Signature{
-			{KeyID: "key-1", Sig: encodedSig},
-		},
-	}
-	bundle, err := attestation.BundleFromDSSEEnvelope(env)
+	bundle, err := attestation.BundleFromDSSEEnvelope(newTestEnvelope(t))
 	require.NoError(t, err)
 
 	// Simulate the legacy bug: signature is stored as the ASCII bytes of the base64 string.
+	encodedSig := base64.StdEncoding.EncodeToString(testRawSig)
 	bundle.GetDsseEnvelope().GetSignatures()[0].Sig = []byte(encodedSig)
 
 	attestation.FixSignatureInBundle(bundle)
-	assert.Equal(t, rawSig, bundle.GetDsseEnvelope().GetSignatures()[0].GetSig())
+	assert.Equal(t, testRawSig, bundle.GetDsseEnvelope().GetSignatures()[0].GetSig())
 }

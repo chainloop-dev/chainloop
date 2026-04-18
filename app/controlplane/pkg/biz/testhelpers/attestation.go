@@ -26,9 +26,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// BundleBytesFromEnvelope reads a DSSE envelope fixture from disk, wraps it into a
-// Sigstore bundle, and returns its protojson-encoded bytes. Useful to feed envelope
-// test fixtures into APIs that now only accept Sigstore bundles.
+// BundleBytesFromEnvelope reads a DSSE envelope fixture from disk and returns the
+// protojson-encoded bytes of an equivalent Sigstore bundle.
 func BundleBytesFromEnvelope(t *testing.T, path string) []byte {
 	t.Helper()
 	raw, err := os.ReadFile(path)

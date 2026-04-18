@@ -70,6 +70,9 @@ func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 }
 
 func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
+	if len(dsseEnvelope.Signatures) == 0 {
+		return nil, fmt.Errorf("DSSE envelope has no signatures")
+	}
 	// DSSE Envelope payload and signature are base64 encoded, we need to decode them so they
 	// are not encoded twice when stored as raw bytes in the Sigstore bundle. See #1832.
 	payload, err := base64.StdEncoding.DecodeString(dsseEnvelope.Payload)
