@@ -476,6 +476,22 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationsRef() *intoto.ResourceDescr
 }
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationStatus {
+	skipped, passed := p.PolicySkippedCount, p.PolicyPassedCount
+	// Attestations signed before the skipped/passed counters were added to
+	// the predicate decode them as zero. When the inline evaluations are
+	// available, recompute to keep the canonical PolicyStatus derivation
+	// correct for historic envelopes (e.g. skipped-only runs would otherwise
+	// be misclassified as PASSED).
+	if skipped == 0 && passed == 0 && p.PolicyEvaluationsCount > 0 {
+		evals := p.PolicyEvaluations
+		if len(evals) == 0 {
+			evals = p.PolicyEvaluationsFallback
+		}
+		if len(evals) > 0 {
+			skipped, passed = countSkippedAndPassed(evals)
+		}
+	}
+
 	return &PolicyEvaluationStatus{
 		Strategy:           p.PolicyCheckBlockingStrategy,
 		Bypassed:           p.PolicyBlockBypassEnabled,
@@ -484,9 +500,25 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationSt
 		HasGatedViolations: p.PolicyHasGatedViolations,
 		EvaluationsCount:   p.PolicyEvaluationsCount,
 		ViolationsCount:    p.PolicyViolationsCount,
-		SkippedCount:       p.PolicySkippedCount,
-		PassedCount:        p.PolicyPassedCount,
+		SkippedCount:       skipped,
+		PassedCount:        passed,
 	}
+}
+
+func countSkippedAndPassed(evals map[string][]*PolicyEvaluation) (skipped, passed int) {
+	for _, list := range evals {
+		for _, ev := range list {
+			switch {
+			case len(ev.Violations) > 0:
+				// violation-bearing evaluations are neither passed nor skipped
+			case ev.Skipped:
+				skipped++
+			default:
+				passed++
+			}
+		}
+	}
+	return
 }
 
 // Translate a ResourceDescriptor to a NormalizedMaterial

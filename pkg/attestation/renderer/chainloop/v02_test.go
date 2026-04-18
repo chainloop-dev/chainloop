@@ -710,6 +710,49 @@ func TestPolicyEvaluationStatusCounts(t *testing.T) {
 	assert.True(t, status.HasViolations)
 }
 
+// Attestations predating the skipped/passed counters must still surface them
+// correctly at describe time — otherwise a run where every evaluation was
+// skipped would be misclassified as PASSED by DerivePolicyStatusSummary.
+func TestPolicyEvaluationStatusBackfill(t *testing.T) {
+	evals := map[string][]*PolicyEvaluation{
+		"material-a": {
+			{Skipped: true},
+			{Skipped: true},
+		},
+		"material-b": {
+			{}, // passed
+			{Violations: []*PolicyViolation{{Message: "boom"}}},
+		},
+	}
+	p := &ProvenancePredicateV02{
+		PolicyEvaluations:      evals,
+		PolicyEvaluationsCount: 4,
+		PolicyViolationsCount:  1,
+		PolicyHasViolations:    true,
+	}
+
+	status := p.GetPolicyEvaluationStatus()
+	assert.Equal(t, 2, status.SkippedCount)
+	assert.Equal(t, 1, status.PassedCount)
+}
+
+// When the predicate already carries counters, the inline evaluations are
+// ignored — the stored values are authoritative for new attestations.
+func TestPolicyEvaluationStatusDoesNotOverrideStoredCounters(t *testing.T) {
+	p := &ProvenancePredicateV02{
+		PolicyEvaluations: map[string][]*PolicyEvaluation{
+			"m": {{Skipped: true}},
+		},
+		PolicyEvaluationsCount: 3,
+		PolicySkippedCount:     0,
+		PolicyPassedCount:      3,
+	}
+
+	status := p.GetPolicyEvaluationStatus()
+	assert.Equal(t, 0, status.SkippedCount)
+	assert.Equal(t, 3, status.PassedCount)
+}
+
 func TestPolicyEvaluationsField(t *testing.T) {
 	raw, err := os.ReadFile("testdata/attestation-pe-snake.json")
 	require.NoError(t, err)
