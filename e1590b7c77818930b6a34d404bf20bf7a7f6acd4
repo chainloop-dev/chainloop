@@ -1,0 +1,38 @@
+pkg/attestation/renderer/chainloop/v02_test.go
+  806a90fe14f2a2c6 713-755
+pkg/attestation/renderer/chainloop/v02.go
+  806a90fe14f2a2c6 479-494,503-519,521
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "e1590b7c77818930b6a34d404bf20bf7a7f6acd4",
+  "prompts": {
+    "806a90fe14f2a2c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5467b417-92cd-4dd7-ab36-a758ff13ed2a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 77,
+      "total_deletions": 2,
+      "accepted_lines": 77,
+      "overriden_lines": 0
+    },
+    "eb382fae2917a2d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "348a4d5f-e587-4bee-be87-6039fa7e74b0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": null,
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
