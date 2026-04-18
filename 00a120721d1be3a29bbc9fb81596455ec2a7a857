@@ -1,0 +1,27 @@
+pkg/attestation/attestations_test.go
+  41a6961c6e7ba8f3 28-31,33-35,37,39,42,44-46,50,52,56-61,63-64,69,73,77,81
+pkg/attestation/attestations.go
+  41a6961c6e7ba8f3 73-75
+app/controlplane/pkg/biz/testhelpers/attestation.go
+  41a6961c6e7ba8f3 29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "00a120721d1be3a29bbc9fb81596455ec2a7a857",
+  "prompts": {
+    "41a6961c6e7ba8f3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "911e0671-cd74-4282-bc85-a78977851fb2",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 43,
+      "accepted_lines": 33,
+      "overriden_lines": 0
+    }
+  }
+}
