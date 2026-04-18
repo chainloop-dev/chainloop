@@ -1,0 +1,36 @@
+app/controlplane/api/controlplane/v1/response_messages.proto
+  806a90fe14f2a2c6 71-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "c1b5757736bb54598f33f37488fd6e43b55800d7",
+  "prompts": {
+    "806a90fe14f2a2c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5467b417-92cd-4dd7-ab36-a758ff13ed2a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 1,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    },
+    "eb382fae2917a2d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "348a4d5f-e587-4bee-be87-6039fa7e74b0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": null,
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
