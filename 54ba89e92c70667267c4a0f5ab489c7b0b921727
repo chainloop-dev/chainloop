@@ -1,0 +1,61 @@
+pkg/attestation/renderer/chainloop/v02_test.go
+  806a90fe14f2a2c6 701-702,708-709
+pkg/attestation/renderer/chainloop/policy_status_test.go
+  806a90fe14f2a2c6 1-210
+app/controlplane/api/controlplane/v1/response_messages.proto
+  806a90fe14f2a2c6 72-76,97-99,101-102,108-155,178-185
+pkg/attestation/renderer/chainloop/chainloop.go
+  806a90fe14f2a2c6 64-67
+app/controlplane/internal/service/attestation.go
+  806a90fe14f2a2c6 544,561
+pkg/attestation/renderer/chainloop/v02.go
+  806a90fe14f2a2c6 59-62,269-270,320-321,340-341,347-350,487-488
+app/controlplane/api/controlplane/v1/workflow_run.proto
+  806a90fe14f2a2c6 218-222
+app/controlplane/pkg/biz/workflowrun.go
+  806a90fe14f2a2c6 61-63,101,388-392,404-406
+app/controlplane/internal/service/workflowrun.go
+  806a90fe14f2a2c6 174-175,177,182-188,324,391-445
+app/controlplane/pkg/data/workflowrun.go
+  806a90fe14f2a2c6 34,225-246,256-297,369-379,461,497-522
+pkg/attestation/renderer/chainloop/policy_status.go
+  806a90fe14f2a2c6 1-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "54ba89e92c70667267c4a0f5ab489c7b0b921727",
+  "prompts": {
+    "806a90fe14f2a2c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5467b417-92cd-4dd7-ab36-a758ff13ed2a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez Trivino",
+      "messages": [],
+      "total_additions": 575,
+      "total_deletions": 24,
+      "accepted_lines": 575,
+      "overriden_lines": 0
+    },
+    "eb382fae2917a2d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "348a4d5f-e587-4bee-be87-6039fa7e74b0",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": null,
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_0dd3ea76cc8eb5": {
+      "author": "Miguel Martinez Trivino"
+    }
+  }
+}
