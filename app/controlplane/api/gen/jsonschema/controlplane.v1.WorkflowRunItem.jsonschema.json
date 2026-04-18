@@ -31,6 +31,10 @@
     "^(job_url)$": {
       "type": "string"
     },
+    "^(policy_summary)$": {
+      "$ref": "controlplane.v1.PolicyStatusSummary.jsonschema.json",
+      "description": "Canonical policy status summary for this run (null if no policies were\n evaluated). Carries both the categorical PolicyStatus and per-evaluation\n counters so list consumers can render a badge without calling View."
+    },
     "^(runner_type)$": {
       "anyOf": [
         {
@@ -88,6 +92,10 @@
     },
     "jobUrl": {
       "type": "string"
+    },
+    "policySummary": {
+      "$ref": "controlplane.v1.PolicyStatusSummary.jsonschema.json",
+      "description": "Canonical policy status summary for this run (null if no policies were\n evaluated). Carries both the categorical PolicyStatus and per-evaluation\n counters so list consumers can render a badge without calling View."
     },
     "reason": {
       "type": "string"

@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -221,11 +222,28 @@ func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUI
 	})
 }
 
-// UpdatePolicyViolationsStatus updates the policy violations status for a workflow run
-func (r *WorkflowRunRepo) UpdatePolicyViolationsStatus(ctx context.Context, id uuid.UUID, hasPolicyViolations bool) error {
-	run, err := r.data.DB.WorkflowRun.UpdateOneID(id).
-		SetHasPolicyViolations(hasPolicyViolations).
-		Save(ctx)
+// UpdatePolicyStatus persists the canonical policy status summary plus the
+// legacy has_policy_violations bool (kept populated for back-compat with older
+// clients still reading WorkflowRunItem.has_policy_violations).
+func (r *WorkflowRunRepo) UpdatePolicyStatus(ctx context.Context, id uuid.UUID, summary *chainloop.PolicyStatusSummary) error {
+	if summary == nil {
+		return errors.New("policy status summary is required")
+	}
+
+	entStatus, err := policyStatusToEnt(summary.Status)
+	if err != nil {
+		return err
+	}
+
+	update := r.data.DB.WorkflowRun.UpdateOneID(id).
+		SetHasPolicyViolations(summary.Violated > 0).
+		SetPolicyStatus(entStatus).
+		SetPolicyEvaluationsTotal(int32(summary.Total)).
+		SetPolicyEvaluationsPassed(int32(summary.Passed)).
+		SetPolicyEvaluationsSkipped(int32(summary.Skipped)).
+		SetPolicyViolationsCount(int32(summary.Violated))
+
+	run, err := update.Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return err
 	} else if run == nil {
@@ -233,6 +251,48 @@ func (r *WorkflowRunRepo) UpdatePolicyViolationsStatus(ctx context.Context, id u
 	}
 
 	return nil
+}
+
+// policyStatusToEnt maps the domain PolicyStatus onto the ent-generated enum.
+// PolicyStatusUnspecified collapses to NOT_APPLICABLE so every persisted row
+// has a deterministic categorical value.
+func policyStatusToEnt(s chainloop.PolicyStatus) (workflowrun.PolicyStatus, error) {
+	switch s {
+	case chainloop.PolicyStatusNotApplicable, chainloop.PolicyStatusUnspecified:
+		return workflowrun.PolicyStatusNOT_APPLICABLE, nil
+	case chainloop.PolicyStatusPassed:
+		return workflowrun.PolicyStatusPASSED, nil
+	case chainloop.PolicyStatusSkipped:
+		return workflowrun.PolicyStatusSKIPPED, nil
+	case chainloop.PolicyStatusWarning:
+		return workflowrun.PolicyStatusWARNING, nil
+	case chainloop.PolicyStatusBlocked:
+		return workflowrun.PolicyStatusBLOCKED, nil
+	case chainloop.PolicyStatusBypassed:
+		return workflowrun.PolicyStatusBYPASSED, nil
+	default:
+		return "", fmt.Errorf("unknown policy status: %q", s)
+	}
+}
+
+// entToPolicyStatus is the inverse of policyStatusToEnt.
+func entToPolicyStatus(s workflowrun.PolicyStatus) chainloop.PolicyStatus {
+	switch s {
+	case workflowrun.PolicyStatusNOT_APPLICABLE:
+		return chainloop.PolicyStatusNotApplicable
+	case workflowrun.PolicyStatusPASSED:
+		return chainloop.PolicyStatusPassed
+	case workflowrun.PolicyStatusSKIPPED:
+		return chainloop.PolicyStatusSkipped
+	case workflowrun.PolicyStatusWARNING:
+		return chainloop.PolicyStatusWarning
+	case workflowrun.PolicyStatusBLOCKED:
+		return chainloop.PolicyStatusBlocked
+	case workflowrun.PolicyStatusBYPASSED:
+		return chainloop.PolicyStatusBypassed
+	default:
+		return chainloop.PolicyStatusUnspecified
+	}
 }
 
 func (r *WorkflowRunRepo) GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error) {
@@ -306,13 +366,20 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		q = q.Where(workflowrun.VersionID(*filters.VersionID))
 	}
 
-	// Append the policy violations filter if present
-	if filters != nil && filters.PolicyViolationsFilter != nil {
+	// Canonical policy status filter takes precedence over the legacy
+	// violations-only filter. Only one is applied to avoid contradictory
+	// predicates when a client sends both.
+	switch {
+	case filters != nil && filters.PolicyStatus != nil:
+		entStatus, err := policyStatusToEnt(*filters.PolicyStatus)
+		if err != nil {
+			return nil, "", err
+		}
+		q = q.Where(workflowrun.PolicyStatusEQ(entStatus))
+	case filters != nil && filters.PolicyViolationsFilter != nil:
 		if *filters.PolicyViolationsFilter {
-			// Filter for runs WITH violations (has_policy_violations = true)
 			q = q.Where(workflowrun.HasPolicyViolations(true))
 		} else {
-			// Filter for runs WITHOUT violations (has_policy_violations = false)
 			q = q.Where(workflowrun.HasPolicyViolations(false))
 		}
 	}
@@ -391,6 +458,7 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, e
 		ContractRevisionUsed:   wr.ContractRevisionUsed,
 		ContractRevisionLatest: wr.ContractRevisionLatest,
 		HasPolicyViolations:    wr.HasPolicyViolations,
+		PolicyStatus:           entWrPolicySummary(wr),
 		Attestation: &biz.Attestation{
 			Digest: wr.AttestationDigest,
 		},
@@ -425,4 +493,30 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, e
 	}
 
 	return r, nil
+}
+
+// entWrPolicySummary builds the domain summary from the materialized columns.
+// Returns nil when the row predates the materialization change (all columns
+// NULL) so callers can tell "never computed" apart from "computed and empty".
+func entWrPolicySummary(wr *ent.WorkflowRun) *chainloop.PolicyStatusSummary {
+	if wr.PolicyStatus == nil {
+		return nil
+	}
+
+	s := &chainloop.PolicyStatusSummary{
+		Status: entToPolicyStatus(*wr.PolicyStatus),
+	}
+	if wr.PolicyEvaluationsTotal != nil {
+		s.Total = int(*wr.PolicyEvaluationsTotal)
+	}
+	if wr.PolicyEvaluationsPassed != nil {
+		s.Passed = int(*wr.PolicyEvaluationsPassed)
+	}
+	if wr.PolicyEvaluationsSkipped != nil {
+		s.Skipped = int(*wr.PolicyEvaluationsSkipped)
+	}
+	if wr.PolicyViolationsCount != nil {
+		s.Violated = int(*wr.PolicyViolationsCount)
+	}
+	return s
 }

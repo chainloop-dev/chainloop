@@ -58,6 +58,9 @@ type WorkflowRun struct {
 	ProjectVersion         *ProjectVersion
 	// Whether the run has policy violations (nil if no policies were evaluated)
 	HasPolicyViolations *bool
+	// Canonical policy outcome summary (nil if no policies were evaluated or if
+	// the row predates the policy-summary materialization change).
+	PolicyStatus *chainloop.PolicyStatusSummary
 }
 
 type Attestation struct {
@@ -95,7 +98,7 @@ type WorkflowRunRepo interface {
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
 	SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error
 	GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error)
-	UpdatePolicyViolationsStatus(ctx context.Context, ID uuid.UUID, hasPolicyViolations bool) error
+	UpdatePolicyStatus(ctx context.Context, ID uuid.UUID, summary *chainloop.PolicyStatusSummary) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
 	// List the runs that have not finished and are older than a given time
 	ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*WorkflowRun, error)
@@ -382,13 +385,11 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		return nil, fmt.Errorf("saving attestation bundle: %w", err)
 	}
 
-	// Extract and save policy violations status from the predicate
-	var hasPolicyViolations bool
-	if policyStatus := predicate.GetPolicyEvaluationStatus(); policyStatus != nil {
-		hasPolicyViolations = policyStatus.HasViolations
-	}
-	if err := uc.wfRunRepo.UpdatePolicyViolationsStatus(ctx, runID, hasPolicyViolations); err != nil {
-		return nil, fmt.Errorf("updating policy violations status: %w", err)
+	// Compute and persist the canonical policy status summary so the list
+	// handler can render a status badge without pulling the full attestation.
+	summary := chainloop.DerivePolicyStatusSummary(predicate.GetPolicyEvaluationStatus())
+	if err := uc.wfRunRepo.UpdatePolicyStatus(ctx, runID, &summary); err != nil {
+		return nil, fmt.Errorf("updating policy status: %w", err)
 	}
 
 	return &digest, nil
@@ -400,6 +401,9 @@ type RunListFilters struct {
 	Status                 WorkflowRunStatus
 	ProjectIDs             []uuid.UUID
 	PolicyViolationsFilter *bool
+	// Filter by canonical policy status. When both PolicyStatus and
+	// PolicyViolationsFilter are set, PolicyStatus takes precedence.
+	PolicyStatus *chainloop.PolicyStatus
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow

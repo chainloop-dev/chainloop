@@ -3,6 +3,29 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(policyStatus)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_STATUS_FILTER_UNSPECIFIED",
+            "POLICY_STATUS_FILTER_NOT_APPLICABLE",
+            "POLICY_STATUS_FILTER_PASSED",
+            "POLICY_STATUS_FILTER_SKIPPED",
+            "POLICY_STATUS_FILTER_WARNING",
+            "POLICY_STATUS_FILTER_BLOCKED",
+            "POLICY_STATUS_FILTER_BYPASSED"
+          ],
+          "title": "Policy Status Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "by canonical policy status"
+    },
     "^(policyViolations)$": {
       "anyOf": [
         {
@@ -20,7 +43,7 @@
           "type": "integer"
         }
       ],
-      "description": "by policy violations status"
+      "description": "by policy violations status\n Deprecated: use policy_status (PolicyStatusFilter), which aligns 1:1 with\n the canonical PolicyStatus enum. When both are set, policy_status wins."
     },
     "^(projectName)$": {
       "description": "Not required since filtering by workflow and project is optional",
@@ -41,6 +64,29 @@
       "$ref": "controlplane.v1.CursorPaginationRequest.schema.json",
       "description": "pagination options"
     },
+    "policy_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_STATUS_FILTER_UNSPECIFIED",
+            "POLICY_STATUS_FILTER_NOT_APPLICABLE",
+            "POLICY_STATUS_FILTER_PASSED",
+            "POLICY_STATUS_FILTER_SKIPPED",
+            "POLICY_STATUS_FILTER_WARNING",
+            "POLICY_STATUS_FILTER_BLOCKED",
+            "POLICY_STATUS_FILTER_BYPASSED"
+          ],
+          "title": "Policy Status Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "by canonical policy status"
+    },
     "policy_violations": {
       "anyOf": [
         {
@@ -58,7 +104,7 @@
           "type": "integer"
         }
       ],
-      "description": "by policy violations status"
+      "description": "by policy violations status\n Deprecated: use policy_status (PolicyStatusFilter), which aligns 1:1 with\n the canonical PolicyStatus enum. When both are set, policy_status wins."
     },
     "project_name": {
       "description": "Not required since filtering by workflow and project is optional",

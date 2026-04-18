@@ -698,11 +698,15 @@ func TestPolicyEvaluationStatusCounts(t *testing.T) {
 		PolicyEvaluationsCount: 5,
 		PolicyViolationsCount:  2,
 		PolicyHasViolations:    true,
+		PolicySkippedCount:     1,
+		PolicyPassedCount:      2,
 	}
 
 	status := p.GetPolicyEvaluationStatus()
 	assert.Equal(t, 5, status.EvaluationsCount)
 	assert.Equal(t, 2, status.ViolationsCount)
+	assert.Equal(t, 1, status.SkippedCount)
+	assert.Equal(t, 2, status.PassedCount)
 	assert.True(t, status.HasViolations)
 }
 

@@ -45,6 +45,16 @@ const (
 	FieldWorkflowID = "workflow_id"
 	// FieldHasPolicyViolations holds the string denoting the has_policy_violations field in the database.
 	FieldHasPolicyViolations = "has_policy_violations"
+	// FieldPolicyStatus holds the string denoting the policy_status field in the database.
+	FieldPolicyStatus = "policy_status"
+	// FieldPolicyEvaluationsTotal holds the string denoting the policy_evaluations_total field in the database.
+	FieldPolicyEvaluationsTotal = "policy_evaluations_total"
+	// FieldPolicyEvaluationsPassed holds the string denoting the policy_evaluations_passed field in the database.
+	FieldPolicyEvaluationsPassed = "policy_evaluations_passed"
+	// FieldPolicyEvaluationsSkipped holds the string denoting the policy_evaluations_skipped field in the database.
+	FieldPolicyEvaluationsSkipped = "policy_evaluations_skipped"
+	// FieldPolicyViolationsCount holds the string denoting the policy_violations_count field in the database.
+	FieldPolicyViolationsCount = "policy_violations_count"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
@@ -109,6 +119,11 @@ var Columns = []string{
 	FieldVersionID,
 	FieldWorkflowID,
 	FieldHasPolicyViolations,
+	FieldPolicyStatus,
+	FieldPolicyEvaluationsTotal,
+	FieldPolicyEvaluationsPassed,
+	FieldPolicyEvaluationsSkipped,
+	FieldPolicyViolationsCount,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
@@ -154,6 +169,33 @@ func StateValidator(s biz.WorkflowRunStatus) error {
 		return nil
 	default:
 		return fmt.Errorf("workflowrun: invalid enum value for state field: %q", s)
+	}
+}
+
+// PolicyStatus defines the type for the "policy_status" enum field.
+type PolicyStatus string
+
+// PolicyStatus values.
+const (
+	PolicyStatusNOT_APPLICABLE PolicyStatus = "NOT_APPLICABLE"
+	PolicyStatusPASSED         PolicyStatus = "PASSED"
+	PolicyStatusSKIPPED        PolicyStatus = "SKIPPED"
+	PolicyStatusWARNING        PolicyStatus = "WARNING"
+	PolicyStatusBLOCKED        PolicyStatus = "BLOCKED"
+	PolicyStatusBYPASSED       PolicyStatus = "BYPASSED"
+)
+
+func (ps PolicyStatus) String() string {
+	return string(ps)
+}
+
+// PolicyStatusValidator is a validator for the "policy_status" field enum values. It is called by the builders before save.
+func PolicyStatusValidator(ps PolicyStatus) error {
+	switch ps {
+	case PolicyStatusNOT_APPLICABLE, PolicyStatusPASSED, PolicyStatusSKIPPED, PolicyStatusWARNING, PolicyStatusBLOCKED, PolicyStatusBYPASSED:
+		return nil
+	default:
+		return fmt.Errorf("workflowrun: invalid enum value for policy_status field: %q", ps)
 	}
 }
 
@@ -223,6 +265,31 @@ func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
 // ByHasPolicyViolations orders the results by the has_policy_violations field.
 func ByHasPolicyViolations(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHasPolicyViolations, opts...).ToFunc()
+}
+
+// ByPolicyStatus orders the results by the policy_status field.
+func ByPolicyStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPolicyStatus, opts...).ToFunc()
+}
+
+// ByPolicyEvaluationsTotal orders the results by the policy_evaluations_total field.
+func ByPolicyEvaluationsTotal(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPolicyEvaluationsTotal, opts...).ToFunc()
+}
+
+// ByPolicyEvaluationsPassed orders the results by the policy_evaluations_passed field.
+func ByPolicyEvaluationsPassed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPolicyEvaluationsPassed, opts...).ToFunc()
+}
+
+// ByPolicyEvaluationsSkipped orders the results by the policy_evaluations_skipped field.
+func ByPolicyEvaluationsSkipped(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPolicyEvaluationsSkipped, opts...).ToFunc()
+}
+
+// ByPolicyViolationsCount orders the results by the policy_violations_count field.
+func ByPolicyViolationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPolicyViolationsCount, opts...).ToFunc()
 }
 
 // ByWorkflowField orders the results by workflow field.

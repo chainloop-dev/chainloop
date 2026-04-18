@@ -69,6 +69,11 @@ message WorkflowRunItem {
 
   // Whether the run has policy violations (null if no policies were evaluated)
   optional bool has_policy_violations = 14;
+
+  // Canonical policy status summary for this run (null if no policies were
+  // evaluated). Carries both the categorical PolicyStatus and per-evaluation
+  // counters so list consumers can render a badge without calling View.
+  PolicyStatusSummary policy_summary = 15;
 }
 
 message ProjectVersion {
@@ -89,10 +94,63 @@ enum RunStatus {
   RUN_STATUS_CANCELLED = 5;
 }
 
+// Deprecated: use PolicyStatusFilter which aligns 1:1 with PolicyStatus and
+// lets callers distinguish warning/blocked/bypassed from the coarse with/
+// without-violations split.
 enum PolicyViolationsFilter {
+  option deprecated = true;
+
   POLICY_VIOLATIONS_FILTER_UNSPECIFIED = 0;
   POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS = 1;
   POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS = 2;
+}
+
+// Canonical, server-computed categorical policy outcome for an attestation.
+// Collapses the raw enforcement/bypass/violation signals on
+// AttestationItem.PolicyEvaluationStatus into a single flat value so that
+// list and describe surfaces can render a consistent badge without
+// re-deriving.
+enum PolicyStatus {
+  POLICY_STATUS_UNSPECIFIED = 0;
+  // No policies were evaluated on this run
+  POLICY_STATUS_NOT_APPLICABLE = 1;
+  // Policies ran with no violations and no skips
+  POLICY_STATUS_PASSED = 2;
+  // No violations but at least one evaluation was skipped
+  POLICY_STATUS_SKIPPED = 3;
+  // Has violations but enforcement is advisory — run succeeded
+  POLICY_STATUS_WARNING = 4;
+  // Has gated violations or enforced strategy with violations; not bypassed
+  POLICY_STATUS_BLOCKED = 5;
+  // Enforcement would have blocked the run but was bypassed
+  POLICY_STATUS_BYPASSED = 6;
+}
+
+// PolicyStatusSummary bundles the canonical PolicyStatus with per-evaluation
+// counters. It is surfaced on both WorkflowRunItem (list response) and
+// AttestationItem.PolicyEvaluationStatus (describe response) and is computed
+// by a single backend helper so list and describe cannot drift.
+message PolicyStatusSummary {
+  PolicyStatus status = 1;
+  // Total number of policy evaluations that ran for this attestation
+  int32 total = 2;
+  // Number of evaluations with no violations and not skipped
+  int32 passed = 3;
+  // Number of evaluations that were skipped
+  int32 skipped = 4;
+  // Total number of violations across all evaluations
+  int32 violated = 5;
+}
+
+// Server-side filter aligned 1:1 with PolicyStatus values.
+enum PolicyStatusFilter {
+  POLICY_STATUS_FILTER_UNSPECIFIED = 0;
+  POLICY_STATUS_FILTER_NOT_APPLICABLE = 1;
+  POLICY_STATUS_FILTER_PASSED = 2;
+  POLICY_STATUS_FILTER_SKIPPED = 3;
+  POLICY_STATUS_FILTER_WARNING = 4;
+  POLICY_STATUS_FILTER_BLOCKED = 5;
+  POLICY_STATUS_FILTER_BYPASSED = 6;
 }
 
 message AttestationItem {
@@ -117,10 +175,14 @@ message AttestationItem {
     bool blocked = 3;
     bool has_violations = 4;
     bool has_gated_violations = 5;
-    // Total number of policy evaluations
-    int32 evaluations_count = 6;
-    // Total number of policy violations across all evaluations
-    int32 violations_count = 7;
+    // Deprecated: use summary.total instead.
+    int32 evaluations_count = 6 [deprecated = true];
+    // Deprecated: use summary.violated instead.
+    int32 violations_count = 7 [deprecated = true];
+    // Canonical categorical status + counters. Single source of truth for UI
+    // consumers — consumers that re-derive from the raw bools above tend to
+    // disagree on semantics, especially around gating and bypass.
+    PolicyStatusSummary summary = 8;
   }
 
   message EnvVariable {

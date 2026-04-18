@@ -56,6 +56,10 @@ type ProvenancePredicateV02 struct {
 	PolicyEvaluationsCount int `json:"policyEvaluationsCount"`
 	// Total number of policy violations across all evaluations
 	PolicyViolationsCount int `json:"policyViolationsCount"`
+	// Number of evaluations that were skipped (did not run)
+	PolicySkippedCount int `json:"policySkippedCount,omitempty"`
+	// Number of evaluations that passed (no violations and not skipped)
+	PolicyPassedCount int `json:"policyPassedCount,omitempty"`
 	// Whether the attestation has policy violations in gated policies
 	PolicyHasGatedViolations bool `json:"policyHasGatedViolations,omitempty"`
 	// Whether we want to block the attestation on policy violations
@@ -262,6 +266,8 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		PolicyHasViolations:         evalResult.hasViolations,
 		PolicyEvaluationsCount:      evalResult.evaluationsCount,
 		PolicyViolationsCount:       evalResult.violationsCount,
+		PolicySkippedCount:          evalResult.skippedCount,
+		PolicyPassedCount:           evalResult.passedCount,
 		PolicyHasGatedViolations:    evalResult.hasGatedViolations,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
 		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
@@ -311,6 +317,8 @@ type evaluationsResult struct {
 	hasGatedViolations bool
 	evaluationsCount   int
 	violationsCount    int
+	skippedCount       int
+	passedCount        int
 }
 
 func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) {
@@ -329,12 +337,17 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 			return nil, err
 		}
 
-		if len(ev.Violations) > 0 {
+		switch {
+		case len(ev.Violations) > 0:
 			res.hasViolations = true
 			res.violationsCount += len(ev.Violations)
 			if ev.Gate {
 				res.hasGatedViolations = true
 			}
+		case ev.Skipped:
+			res.skippedCount++
+		default:
+			res.passedCount++
 		}
 
 		res.evaluations[keyName] = append(res.evaluations[keyName], ev)
@@ -471,6 +484,8 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationSt
 		HasGatedViolations: p.PolicyHasGatedViolations,
 		EvaluationsCount:   p.PolicyEvaluationsCount,
 		ViolationsCount:    p.PolicyViolationsCount,
+		SkippedCount:       p.PolicySkippedCount,
+		PassedCount:        p.PolicyPassedCount,
 	}
 }
 
