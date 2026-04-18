@@ -488,7 +488,14 @@ export interface WorkflowRunItem {
   contractRevisionLatest: number;
   /** The version of the project the attestation was initiated with */
   version?: ProjectVersion;
-  /** Whether the run has policy violations (null if no policies were evaluated) */
+  /**
+   * Whether the run has policy violations (null if no policies were evaluated)
+   * Deprecated: use policy_summary.violated > 0, or the richer
+   * policy_summary.status, which also distinguishes skipped / warning /
+   * blocked / bypassed outcomes.
+   *
+   * @deprecated
+   */
   hasPolicyViolations?:
     | boolean
     | undefined;

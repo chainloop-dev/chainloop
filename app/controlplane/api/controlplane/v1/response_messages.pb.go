@@ -838,6 +838,11 @@ type WorkflowRunItem struct {
 	// The version of the project the attestation was initiated with
 	Version *ProjectVersion `protobuf:"bytes,13,opt,name=version,proto3" json:"version,omitempty"`
 	// Whether the run has policy violations (null if no policies were evaluated)
+	// Deprecated: use policy_summary.violated > 0, or the richer
+	// policy_summary.status, which also distinguishes skipped / warning /
+	// blocked / bypassed outcomes.
+	//
+	// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
 	HasPolicyViolations *bool `protobuf:"varint,14,opt,name=has_policy_violations,json=hasPolicyViolations,proto3,oneof" json:"has_policy_violations,omitempty"`
 	// Canonical policy status summary for this run (null if no policies were
 	// evaluated). Carries both the categorical PolicyStatus and per-evaluation
@@ -969,6 +974,7 @@ func (x *WorkflowRunItem) GetVersion() *ProjectVersion {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
 func (x *WorkflowRunItem) GetHasPolicyViolations() bool {
 	if x != nil && x.HasPolicyViolations != nil {
 		return *x.HasPolicyViolations
@@ -2930,7 +2936,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x18contract_revision_latest\x18\v \x01(\x05R\x16contractRevisionLatest\x12\x16\n" +
 	"\x06public\x18\t \x01(\bR\x06public\x12 \n" +
 	"\vdescription\x18\n" +
-	" \x01(\tR\vdescription\"\xcf\x06\n" +
+	" \x01(\tR\vdescription\"\xd3\x06\n" +
 	"\x0fWorkflowRunItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x129\n" +
 	"\n" +
@@ -2948,8 +2954,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x16contract_revision_used\x18\n" +
 	" \x01(\x05R\x14contractRevisionUsed\x128\n" +
 	"\x18contract_revision_latest\x18\v \x01(\x05R\x16contractRevisionLatest\x129\n" +
-	"\aversion\x18\r \x01(\v2\x1f.controlplane.v1.ProjectVersionR\aversion\x127\n" +
-	"\x15has_policy_violations\x18\x0e \x01(\bH\x00R\x13hasPolicyViolations\x88\x01\x01\x12K\n" +
+	"\aversion\x18\r \x01(\v2\x1f.controlplane.v1.ProjectVersionR\aversion\x12;\n" +
+	"\x15has_policy_violations\x18\x0e \x01(\bB\x02\x18\x01H\x00R\x13hasPolicyViolations\x88\x01\x01\x12K\n" +
 	"\x0epolicy_summary\x18\x0f \x01(\v2$.controlplane.v1.PolicyStatusSummaryR\rpolicySummaryB\x18\n" +
 	"\x16_has_policy_violations\"\xd2\x01\n" +
 	"\x0eProjectVersion\x12\x0e\n" +

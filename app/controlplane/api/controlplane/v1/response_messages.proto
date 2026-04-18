@@ -68,7 +68,10 @@ message WorkflowRunItem {
   ProjectVersion version = 13;
 
   // Whether the run has policy violations (null if no policies were evaluated)
-  optional bool has_policy_violations = 14;
+  // Deprecated: use policy_summary.violated > 0, or the richer
+  // policy_summary.status, which also distinguishes skipped / warning /
+  // blocked / bypassed outcomes.
+  optional bool has_policy_violations = 14 [deprecated = true];
 
   // Canonical policy status summary for this run (null if no policies were
   // evaluated). Carries both the categorical PolicyStatus and per-evaluation

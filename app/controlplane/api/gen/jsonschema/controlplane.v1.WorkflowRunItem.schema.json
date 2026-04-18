@@ -25,7 +25,7 @@
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
     "^(hasPolicyViolations)$": {
-      "description": "Whether the run has policy violations (null if no policies were evaluated)",
+      "description": "Whether the run has policy violations (null if no policies were evaluated)\n Deprecated: use policy_summary.violated \u003e 0, or the richer\n policy_summary.status, which also distinguishes skipped / warning /\n blocked / bypassed outcomes.",
       "type": "boolean"
     },
     "^(jobUrl)$": {
@@ -84,7 +84,7 @@
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
     "has_policy_violations": {
-      "description": "Whether the run has policy violations (null if no policies were evaluated)",
+      "description": "Whether the run has policy violations (null if no policies were evaluated)\n Deprecated: use policy_summary.violated \u003e 0, or the richer\n policy_summary.status, which also distinguishes skipped / warning /\n blocked / bypassed outcomes.",
       "type": "boolean"
     },
     "id": {
