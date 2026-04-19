@@ -25,11 +25,12 @@ const (
 	MembershipTypeUser  MembershipType = "user"
 	MembershipTypeGroup MembershipType = "group"
 
-	ResourceTypeInstance     ResourceType = "instance"
-	ResourceTypeOrganization ResourceType = "organization"
-	ResourceTypeProject      ResourceType = "project"
-	ResourceTypeProduct      ResourceType = "product"
-	ResourceTypeGroup        ResourceType = "group"
+	ResourceTypeInstance       ResourceType = "instance"
+	ResourceTypeOrganization   ResourceType = "organization"
+	ResourceTypeProject        ResourceType = "project"
+	ResourceTypeProduct        ResourceType = "product"
+	ResourceTypeGroup          ResourceType = "group"
+	ResourceTypeBillingAccount ResourceType = "billing_account"
 )
 
 // Values implement https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
@@ -50,6 +51,7 @@ func (ResourceType) Values() (values []string) {
 		string(ResourceTypeProject),
 		string(ResourceTypeGroup),
 		string(ResourceTypeProduct),
+		string(ResourceTypeBillingAccount),
 	)
 
 	return
