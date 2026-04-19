@@ -468,18 +468,6 @@ func testBundle(t *testing.T, path string) (*v1.Bundle, []byte) {
 	return &bundle, bundleJSON
 }
 
-// testBundleBytesFromEnvelope wraps a DSSE envelope file into a Sigstore bundle and returns its protojson bytes.
-func testBundleBytesFromEnvelope(t *testing.T, path string) []byte {
-	_, envBytes := testEnvelope(t, path)
-	var env dsse.Envelope
-	require.NoError(t, json.Unmarshal(envBytes, &env))
-	b, err := attestation.BundleFromDSSEEnvelope(&env)
-	require.NoError(t, err)
-	out, err := protojson.Marshal(b)
-	require.NoError(t, err)
-	return out
-}
-
 const (
 	version1 = "v1"
 	version2 = "v2"
@@ -519,7 +507,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			ProjectVersion: version1,
 		})
 	assert.NoError(err)
-	bundleBytes := testBundleBytesFromEnvelope(t, "testdata/attestations/full.json")
+	bundleBytes := testhelpers.BundleBytesFromEnvelope(t, "testdata/attestations/full.json")
 	d, err := suite.WorkflowRun.SaveAttestation(ctx, s.runOrg1.ID.String(), bundleBytes)
 	assert.NoError(err)
 	s.digestAtt1 = d.String()
@@ -530,7 +518,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			ProjectVersion: version1,
 		})
 	assert.NoError(err)
-	bundleBytes = testBundleBytesFromEnvelope(t, "testdata/attestations/empty.json")
+	bundleBytes = testhelpers.BundleBytesFromEnvelope(t, "testdata/attestations/empty.json")
 	d, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2.ID.String(), bundleBytes)
 	assert.NoError(err)
 	s.digestAttOrg2 = d.String()
@@ -541,7 +529,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 			ProjectVersion: version2,
 		})
 	assert.NoError(err)
-	bundleBytes = testBundleBytesFromEnvelope(t, "testdata/attestations/with-string.json")
+	bundleBytes = testhelpers.BundleBytesFromEnvelope(t, "testdata/attestations/with-string.json")
 	d, err = suite.WorkflowRun.SaveAttestation(ctx, s.runOrg2Public.ID.String(), bundleBytes)
 	assert.NoError(err)
 	s.digestAttPublic = d.String()
