@@ -117,6 +117,26 @@ func HasPolicyViolations(v bool) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldHasPolicyViolations, v))
 }
 
+// PolicyEvaluationsTotal applies equality check predicate on the "policy_evaluations_total" field. It's identical to PolicyEvaluationsTotalEQ.
+func PolicyEvaluationsTotal(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyEvaluationsTotal, v))
+}
+
+// PolicyEvaluationsPassed applies equality check predicate on the "policy_evaluations_passed" field. It's identical to PolicyEvaluationsPassedEQ.
+func PolicyEvaluationsPassed(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyEvaluationsPassed, v))
+}
+
+// PolicyEvaluationsSkipped applies equality check predicate on the "policy_evaluations_skipped" field. It's identical to PolicyEvaluationsSkippedEQ.
+func PolicyEvaluationsSkipped(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyEvaluationsSkipped, v))
+}
+
+// PolicyViolationsCount applies equality check predicate on the "policy_violations_count" field. It's identical to PolicyViolationsCountEQ.
+func PolicyViolationsCount(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyViolationsCount, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -735,6 +755,236 @@ func HasPolicyViolationsIsNil() predicate.WorkflowRun {
 // HasPolicyViolationsNotNil applies the NotNil predicate on the "has_policy_violations" field.
 func HasPolicyViolationsNotNil() predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotNull(FieldHasPolicyViolations))
+}
+
+// PolicyStatusEQ applies the EQ predicate on the "policy_status" field.
+func PolicyStatusEQ(v PolicyStatus) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyStatus, v))
+}
+
+// PolicyStatusNEQ applies the NEQ predicate on the "policy_status" field.
+func PolicyStatusNEQ(v PolicyStatus) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldPolicyStatus, v))
+}
+
+// PolicyStatusIn applies the In predicate on the "policy_status" field.
+func PolicyStatusIn(vs ...PolicyStatus) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldPolicyStatus, vs...))
+}
+
+// PolicyStatusNotIn applies the NotIn predicate on the "policy_status" field.
+func PolicyStatusNotIn(vs ...PolicyStatus) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldPolicyStatus, vs...))
+}
+
+// PolicyStatusIsNil applies the IsNil predicate on the "policy_status" field.
+func PolicyStatusIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldPolicyStatus))
+}
+
+// PolicyStatusNotNil applies the NotNil predicate on the "policy_status" field.
+func PolicyStatusNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyStatus))
+}
+
+// PolicyEvaluationsTotalEQ applies the EQ predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyEvaluationsTotal, v))
+}
+
+// PolicyEvaluationsTotalNEQ applies the NEQ predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalNEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldPolicyEvaluationsTotal, v))
+}
+
+// PolicyEvaluationsTotalIn applies the In predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldPolicyEvaluationsTotal, vs...))
+}
+
+// PolicyEvaluationsTotalNotIn applies the NotIn predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalNotIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldPolicyEvaluationsTotal, vs...))
+}
+
+// PolicyEvaluationsTotalGT applies the GT predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalGT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldPolicyEvaluationsTotal, v))
+}
+
+// PolicyEvaluationsTotalGTE applies the GTE predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalGTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldPolicyEvaluationsTotal, v))
+}
+
+// PolicyEvaluationsTotalLT applies the LT predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalLT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldPolicyEvaluationsTotal, v))
+}
+
+// PolicyEvaluationsTotalLTE applies the LTE predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalLTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldPolicyEvaluationsTotal, v))
+}
+
+// PolicyEvaluationsTotalIsNil applies the IsNil predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldPolicyEvaluationsTotal))
+}
+
+// PolicyEvaluationsTotalNotNil applies the NotNil predicate on the "policy_evaluations_total" field.
+func PolicyEvaluationsTotalNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyEvaluationsTotal))
+}
+
+// PolicyEvaluationsPassedEQ applies the EQ predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyEvaluationsPassed, v))
+}
+
+// PolicyEvaluationsPassedNEQ applies the NEQ predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedNEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldPolicyEvaluationsPassed, v))
+}
+
+// PolicyEvaluationsPassedIn applies the In predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldPolicyEvaluationsPassed, vs...))
+}
+
+// PolicyEvaluationsPassedNotIn applies the NotIn predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedNotIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldPolicyEvaluationsPassed, vs...))
+}
+
+// PolicyEvaluationsPassedGT applies the GT predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedGT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldPolicyEvaluationsPassed, v))
+}
+
+// PolicyEvaluationsPassedGTE applies the GTE predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedGTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldPolicyEvaluationsPassed, v))
+}
+
+// PolicyEvaluationsPassedLT applies the LT predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedLT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldPolicyEvaluationsPassed, v))
+}
+
+// PolicyEvaluationsPassedLTE applies the LTE predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedLTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldPolicyEvaluationsPassed, v))
+}
+
+// PolicyEvaluationsPassedIsNil applies the IsNil predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldPolicyEvaluationsPassed))
+}
+
+// PolicyEvaluationsPassedNotNil applies the NotNil predicate on the "policy_evaluations_passed" field.
+func PolicyEvaluationsPassedNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyEvaluationsPassed))
+}
+
+// PolicyEvaluationsSkippedEQ applies the EQ predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyEvaluationsSkipped, v))
+}
+
+// PolicyEvaluationsSkippedNEQ applies the NEQ predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedNEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldPolicyEvaluationsSkipped, v))
+}
+
+// PolicyEvaluationsSkippedIn applies the In predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldPolicyEvaluationsSkipped, vs...))
+}
+
+// PolicyEvaluationsSkippedNotIn applies the NotIn predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedNotIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldPolicyEvaluationsSkipped, vs...))
+}
+
+// PolicyEvaluationsSkippedGT applies the GT predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedGT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldPolicyEvaluationsSkipped, v))
+}
+
+// PolicyEvaluationsSkippedGTE applies the GTE predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedGTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldPolicyEvaluationsSkipped, v))
+}
+
+// PolicyEvaluationsSkippedLT applies the LT predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedLT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldPolicyEvaluationsSkipped, v))
+}
+
+// PolicyEvaluationsSkippedLTE applies the LTE predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedLTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldPolicyEvaluationsSkipped, v))
+}
+
+// PolicyEvaluationsSkippedIsNil applies the IsNil predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldPolicyEvaluationsSkipped))
+}
+
+// PolicyEvaluationsSkippedNotNil applies the NotNil predicate on the "policy_evaluations_skipped" field.
+func PolicyEvaluationsSkippedNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyEvaluationsSkipped))
+}
+
+// PolicyViolationsCountEQ applies the EQ predicate on the "policy_violations_count" field.
+func PolicyViolationsCountEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyViolationsCount, v))
+}
+
+// PolicyViolationsCountNEQ applies the NEQ predicate on the "policy_violations_count" field.
+func PolicyViolationsCountNEQ(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldPolicyViolationsCount, v))
+}
+
+// PolicyViolationsCountIn applies the In predicate on the "policy_violations_count" field.
+func PolicyViolationsCountIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIn(FieldPolicyViolationsCount, vs...))
+}
+
+// PolicyViolationsCountNotIn applies the NotIn predicate on the "policy_violations_count" field.
+func PolicyViolationsCountNotIn(vs ...int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotIn(FieldPolicyViolationsCount, vs...))
+}
+
+// PolicyViolationsCountGT applies the GT predicate on the "policy_violations_count" field.
+func PolicyViolationsCountGT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGT(FieldPolicyViolationsCount, v))
+}
+
+// PolicyViolationsCountGTE applies the GTE predicate on the "policy_violations_count" field.
+func PolicyViolationsCountGTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldGTE(FieldPolicyViolationsCount, v))
+}
+
+// PolicyViolationsCountLT applies the LT predicate on the "policy_violations_count" field.
+func PolicyViolationsCountLT(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLT(FieldPolicyViolationsCount, v))
+}
+
+// PolicyViolationsCountLTE applies the LTE predicate on the "policy_violations_count" field.
+func PolicyViolationsCountLTE(v int32) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldLTE(FieldPolicyViolationsCount, v))
+}
+
+// PolicyViolationsCountIsNil applies the IsNil predicate on the "policy_violations_count" field.
+func PolicyViolationsCountIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldPolicyViolationsCount))
+}
+
+// PolicyViolationsCountNotNil applies the NotNil predicate on the "policy_violations_count" field.
+func PolicyViolationsCountNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyViolationsCount))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.

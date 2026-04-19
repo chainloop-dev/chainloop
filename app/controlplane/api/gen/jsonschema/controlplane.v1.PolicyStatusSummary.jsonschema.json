@@ -1,0 +1,56 @@
+{
+  "$id": "controlplane.v1.PolicyStatusSummary.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "PolicyStatusSummary bundles the canonical PolicyStatus with per-evaluation\n counters. It is surfaced on both WorkflowRunItem (list response) and\n AttestationItem.PolicyEvaluationStatus (describe response) and is computed\n by a single backend helper so list and describe cannot drift.",
+  "properties": {
+    "passed": {
+      "description": "Number of evaluations with no violations and not skipped",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "skipped": {
+      "description": "Number of evaluations that were skipped",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_STATUS_UNSPECIFIED",
+            "POLICY_STATUS_NOT_APPLICABLE",
+            "POLICY_STATUS_PASSED",
+            "POLICY_STATUS_SKIPPED",
+            "POLICY_STATUS_WARNING",
+            "POLICY_STATUS_BLOCKED",
+            "POLICY_STATUS_BYPASSED"
+          ],
+          "title": "Policy Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    },
+    "total": {
+      "description": "Total number of policy evaluations that ran for this attestation",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "violated": {
+      "description": "Total number of violations across all evaluations",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "title": "Policy Status Summary",
+  "type": "object"
+}

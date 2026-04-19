@@ -10,6 +10,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -742,37 +743,37 @@ func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
-// UpdatePolicyViolationsStatus provides a mock function for the type WorkflowRunRepo
-func (_mock *WorkflowRunRepo) UpdatePolicyViolationsStatus(ctx context.Context, ID uuid.UUID, hasPolicyViolations bool) error {
-	ret := _mock.Called(ctx, ID, hasPolicyViolations)
+// UpdatePolicyStatus provides a mock function for the type WorkflowRunRepo
+func (_mock *WorkflowRunRepo) UpdatePolicyStatus(ctx context.Context, ID uuid.UUID, summary *chainloop.PolicyStatusSummary) error {
+	ret := _mock.Called(ctx, ID, summary)
 
 	if len(ret) == 0 {
-		panic("no return value specified for UpdatePolicyViolationsStatus")
+		panic("no return value specified for UpdatePolicyStatus")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) error); ok {
-		r0 = returnFunc(ctx, ID, hasPolicyViolations)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *chainloop.PolicyStatusSummary) error); ok {
+		r0 = returnFunc(ctx, ID, summary)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// WorkflowRunRepo_UpdatePolicyViolationsStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdatePolicyViolationsStatus'
-type WorkflowRunRepo_UpdatePolicyViolationsStatus_Call struct {
+// WorkflowRunRepo_UpdatePolicyStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdatePolicyStatus'
+type WorkflowRunRepo_UpdatePolicyStatus_Call struct {
 	*mock.Call
 }
 
-// UpdatePolicyViolationsStatus is a helper method to define mock.On call
+// UpdatePolicyStatus is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ID uuid.UUID
-//   - hasPolicyViolations bool
-func (_e *WorkflowRunRepo_Expecter) UpdatePolicyViolationsStatus(ctx interface{}, ID interface{}, hasPolicyViolations interface{}) *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call {
-	return &WorkflowRunRepo_UpdatePolicyViolationsStatus_Call{Call: _e.mock.On("UpdatePolicyViolationsStatus", ctx, ID, hasPolicyViolations)}
+//   - summary *chainloop.PolicyStatusSummary
+func (_e *WorkflowRunRepo_Expecter) UpdatePolicyStatus(ctx interface{}, ID interface{}, summary interface{}) *WorkflowRunRepo_UpdatePolicyStatus_Call {
+	return &WorkflowRunRepo_UpdatePolicyStatus_Call{Call: _e.mock.On("UpdatePolicyStatus", ctx, ID, summary)}
 }
 
-func (_c *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call) Run(run func(ctx context.Context, ID uuid.UUID, hasPolicyViolations bool)) *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call {
+func (_c *WorkflowRunRepo_UpdatePolicyStatus_Call) Run(run func(ctx context.Context, ID uuid.UUID, summary *chainloop.PolicyStatusSummary)) *WorkflowRunRepo_UpdatePolicyStatus_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -782,9 +783,9 @@ func (_c *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call) Run(run func(ctx co
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
-		var arg2 bool
+		var arg2 *chainloop.PolicyStatusSummary
 		if args[2] != nil {
-			arg2 = args[2].(bool)
+			arg2 = args[2].(*chainloop.PolicyStatusSummary)
 		}
 		run(
 			arg0,
@@ -795,12 +796,12 @@ func (_c *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call) Run(run func(ctx co
 	return _c
 }
 
-func (_c *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call) Return(err error) *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call {
+func (_c *WorkflowRunRepo_UpdatePolicyStatus_Call) Return(err error) *WorkflowRunRepo_UpdatePolicyStatus_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, hasPolicyViolations bool) error) *WorkflowRunRepo_UpdatePolicyViolationsStatus_Call {
+func (_c *WorkflowRunRepo_UpdatePolicyStatus_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, summary *chainloop.PolicyStatusSummary) error) *WorkflowRunRepo_UpdatePolicyStatus_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(evaluationsCount)$": {
-      "description": "Total number of policy evaluations",
+      "description": "Deprecated: use summary.total instead.",
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
@@ -16,7 +16,7 @@
       "type": "boolean"
     },
     "^(violationsCount)$": {
-      "description": "Total number of policy violations across all evaluations",
+      "description": "Deprecated: use summary.violated instead.",
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
@@ -30,7 +30,7 @@
       "type": "boolean"
     },
     "evaluations_count": {
-      "description": "Total number of policy evaluations",
+      "description": "Deprecated: use summary.total instead.",
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
@@ -44,8 +44,12 @@
     "strategy": {
       "type": "string"
     },
+    "summary": {
+      "$ref": "controlplane.v1.PolicyStatusSummary.schema.json",
+      "description": "Canonical categorical status + counters. Single source of truth for UI\n consumers — consumers that re-derive from the raw bools above tend to\n disagree on semantics, especially around gating and bypass."
+    },
     "violations_count": {
-      "description": "Total number of policy violations across all evaluations",
+      "description": "Deprecated: use summary.violated instead.",
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"

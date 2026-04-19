@@ -17909,38 +17909,47 @@ func (m *WorkflowContractVersionMutation) ResetEdge(name string) error {
 // WorkflowRunMutation represents an operation that mutates the WorkflowRun nodes in the graph.
 type WorkflowRunMutation struct {
 	config
-	op                          Op
-	typ                         string
-	id                          *uuid.UUID
-	created_at                  *time.Time
-	finished_at                 *time.Time
-	state                       *biz.WorkflowRunStatus
-	reason                      *string
-	run_url                     *string
-	runner_type                 *string
-	attestation                 **dsse.Envelope
-	attestation_digest          *string
-	attestation_state           *[]byte
-	contract_revision_used      *int
-	addcontract_revision_used   *int
-	contract_revision_latest    *int
-	addcontract_revision_latest *int
-	has_policy_violations       *bool
-	clearedFields               map[string]struct{}
-	workflow                    *uuid.UUID
-	clearedworkflow             bool
-	contract_version            *uuid.UUID
-	clearedcontract_version     bool
-	cas_backends                map[uuid.UUID]struct{}
-	removedcas_backends         map[uuid.UUID]struct{}
-	clearedcas_backends         bool
-	version                     *uuid.UUID
-	clearedversion              bool
-	attestation_bundle          *uuid.UUID
-	clearedattestation_bundle   bool
-	done                        bool
-	oldValue                    func(context.Context) (*WorkflowRun, error)
-	predicates                  []predicate.WorkflowRun
+	op                            Op
+	typ                           string
+	id                            *uuid.UUID
+	created_at                    *time.Time
+	finished_at                   *time.Time
+	state                         *biz.WorkflowRunStatus
+	reason                        *string
+	run_url                       *string
+	runner_type                   *string
+	attestation                   **dsse.Envelope
+	attestation_digest            *string
+	attestation_state             *[]byte
+	contract_revision_used        *int
+	addcontract_revision_used     *int
+	contract_revision_latest      *int
+	addcontract_revision_latest   *int
+	has_policy_violations         *bool
+	policy_status                 *workflowrun.PolicyStatus
+	policy_evaluations_total      *int32
+	addpolicy_evaluations_total   *int32
+	policy_evaluations_passed     *int32
+	addpolicy_evaluations_passed  *int32
+	policy_evaluations_skipped    *int32
+	addpolicy_evaluations_skipped *int32
+	policy_violations_count       *int32
+	addpolicy_violations_count    *int32
+	clearedFields                 map[string]struct{}
+	workflow                      *uuid.UUID
+	clearedworkflow               bool
+	contract_version              *uuid.UUID
+	clearedcontract_version       bool
+	cas_backends                  map[uuid.UUID]struct{}
+	removedcas_backends           map[uuid.UUID]struct{}
+	clearedcas_backends           bool
+	version                       *uuid.UUID
+	clearedversion                bool
+	attestation_bundle            *uuid.UUID
+	clearedattestation_bundle     bool
+	done                          bool
+	oldValue                      func(context.Context) (*WorkflowRun, error)
+	predicates                    []predicate.WorkflowRun
 }
 
 var _ ent.Mutation = (*WorkflowRunMutation)(nil)
@@ -18695,6 +18704,335 @@ func (m *WorkflowRunMutation) ResetHasPolicyViolations() {
 	delete(m.clearedFields, workflowrun.FieldHasPolicyViolations)
 }
 
+// SetPolicyStatus sets the "policy_status" field.
+func (m *WorkflowRunMutation) SetPolicyStatus(ws workflowrun.PolicyStatus) {
+	m.policy_status = &ws
+}
+
+// PolicyStatus returns the value of the "policy_status" field in the mutation.
+func (m *WorkflowRunMutation) PolicyStatus() (r workflowrun.PolicyStatus, exists bool) {
+	v := m.policy_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPolicyStatus returns the old "policy_status" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldPolicyStatus(ctx context.Context) (v *workflowrun.PolicyStatus, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPolicyStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPolicyStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPolicyStatus: %w", err)
+	}
+	return oldValue.PolicyStatus, nil
+}
+
+// ClearPolicyStatus clears the value of the "policy_status" field.
+func (m *WorkflowRunMutation) ClearPolicyStatus() {
+	m.policy_status = nil
+	m.clearedFields[workflowrun.FieldPolicyStatus] = struct{}{}
+}
+
+// PolicyStatusCleared returns if the "policy_status" field was cleared in this mutation.
+func (m *WorkflowRunMutation) PolicyStatusCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldPolicyStatus]
+	return ok
+}
+
+// ResetPolicyStatus resets all changes to the "policy_status" field.
+func (m *WorkflowRunMutation) ResetPolicyStatus() {
+	m.policy_status = nil
+	delete(m.clearedFields, workflowrun.FieldPolicyStatus)
+}
+
+// SetPolicyEvaluationsTotal sets the "policy_evaluations_total" field.
+func (m *WorkflowRunMutation) SetPolicyEvaluationsTotal(i int32) {
+	m.policy_evaluations_total = &i
+	m.addpolicy_evaluations_total = nil
+}
+
+// PolicyEvaluationsTotal returns the value of the "policy_evaluations_total" field in the mutation.
+func (m *WorkflowRunMutation) PolicyEvaluationsTotal() (r int32, exists bool) {
+	v := m.policy_evaluations_total
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPolicyEvaluationsTotal returns the old "policy_evaluations_total" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldPolicyEvaluationsTotal(ctx context.Context) (v *int32, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPolicyEvaluationsTotal is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPolicyEvaluationsTotal requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPolicyEvaluationsTotal: %w", err)
+	}
+	return oldValue.PolicyEvaluationsTotal, nil
+}
+
+// AddPolicyEvaluationsTotal adds i to the "policy_evaluations_total" field.
+func (m *WorkflowRunMutation) AddPolicyEvaluationsTotal(i int32) {
+	if m.addpolicy_evaluations_total != nil {
+		*m.addpolicy_evaluations_total += i
+	} else {
+		m.addpolicy_evaluations_total = &i
+	}
+}
+
+// AddedPolicyEvaluationsTotal returns the value that was added to the "policy_evaluations_total" field in this mutation.
+func (m *WorkflowRunMutation) AddedPolicyEvaluationsTotal() (r int32, exists bool) {
+	v := m.addpolicy_evaluations_total
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPolicyEvaluationsTotal clears the value of the "policy_evaluations_total" field.
+func (m *WorkflowRunMutation) ClearPolicyEvaluationsTotal() {
+	m.policy_evaluations_total = nil
+	m.addpolicy_evaluations_total = nil
+	m.clearedFields[workflowrun.FieldPolicyEvaluationsTotal] = struct{}{}
+}
+
+// PolicyEvaluationsTotalCleared returns if the "policy_evaluations_total" field was cleared in this mutation.
+func (m *WorkflowRunMutation) PolicyEvaluationsTotalCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldPolicyEvaluationsTotal]
+	return ok
+}
+
+// ResetPolicyEvaluationsTotal resets all changes to the "policy_evaluations_total" field.
+func (m *WorkflowRunMutation) ResetPolicyEvaluationsTotal() {
+	m.policy_evaluations_total = nil
+	m.addpolicy_evaluations_total = nil
+	delete(m.clearedFields, workflowrun.FieldPolicyEvaluationsTotal)
+}
+
+// SetPolicyEvaluationsPassed sets the "policy_evaluations_passed" field.
+func (m *WorkflowRunMutation) SetPolicyEvaluationsPassed(i int32) {
+	m.policy_evaluations_passed = &i
+	m.addpolicy_evaluations_passed = nil
+}
+
+// PolicyEvaluationsPassed returns the value of the "policy_evaluations_passed" field in the mutation.
+func (m *WorkflowRunMutation) PolicyEvaluationsPassed() (r int32, exists bool) {
+	v := m.policy_evaluations_passed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPolicyEvaluationsPassed returns the old "policy_evaluations_passed" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldPolicyEvaluationsPassed(ctx context.Context) (v *int32, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPolicyEvaluationsPassed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPolicyEvaluationsPassed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPolicyEvaluationsPassed: %w", err)
+	}
+	return oldValue.PolicyEvaluationsPassed, nil
+}
+
+// AddPolicyEvaluationsPassed adds i to the "policy_evaluations_passed" field.
+func (m *WorkflowRunMutation) AddPolicyEvaluationsPassed(i int32) {
+	if m.addpolicy_evaluations_passed != nil {
+		*m.addpolicy_evaluations_passed += i
+	} else {
+		m.addpolicy_evaluations_passed = &i
+	}
+}
+
+// AddedPolicyEvaluationsPassed returns the value that was added to the "policy_evaluations_passed" field in this mutation.
+func (m *WorkflowRunMutation) AddedPolicyEvaluationsPassed() (r int32, exists bool) {
+	v := m.addpolicy_evaluations_passed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPolicyEvaluationsPassed clears the value of the "policy_evaluations_passed" field.
+func (m *WorkflowRunMutation) ClearPolicyEvaluationsPassed() {
+	m.policy_evaluations_passed = nil
+	m.addpolicy_evaluations_passed = nil
+	m.clearedFields[workflowrun.FieldPolicyEvaluationsPassed] = struct{}{}
+}
+
+// PolicyEvaluationsPassedCleared returns if the "policy_evaluations_passed" field was cleared in this mutation.
+func (m *WorkflowRunMutation) PolicyEvaluationsPassedCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldPolicyEvaluationsPassed]
+	return ok
+}
+
+// ResetPolicyEvaluationsPassed resets all changes to the "policy_evaluations_passed" field.
+func (m *WorkflowRunMutation) ResetPolicyEvaluationsPassed() {
+	m.policy_evaluations_passed = nil
+	m.addpolicy_evaluations_passed = nil
+	delete(m.clearedFields, workflowrun.FieldPolicyEvaluationsPassed)
+}
+
+// SetPolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field.
+func (m *WorkflowRunMutation) SetPolicyEvaluationsSkipped(i int32) {
+	m.policy_evaluations_skipped = &i
+	m.addpolicy_evaluations_skipped = nil
+}
+
+// PolicyEvaluationsSkipped returns the value of the "policy_evaluations_skipped" field in the mutation.
+func (m *WorkflowRunMutation) PolicyEvaluationsSkipped() (r int32, exists bool) {
+	v := m.policy_evaluations_skipped
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPolicyEvaluationsSkipped returns the old "policy_evaluations_skipped" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldPolicyEvaluationsSkipped(ctx context.Context) (v *int32, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPolicyEvaluationsSkipped is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPolicyEvaluationsSkipped requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPolicyEvaluationsSkipped: %w", err)
+	}
+	return oldValue.PolicyEvaluationsSkipped, nil
+}
+
+// AddPolicyEvaluationsSkipped adds i to the "policy_evaluations_skipped" field.
+func (m *WorkflowRunMutation) AddPolicyEvaluationsSkipped(i int32) {
+	if m.addpolicy_evaluations_skipped != nil {
+		*m.addpolicy_evaluations_skipped += i
+	} else {
+		m.addpolicy_evaluations_skipped = &i
+	}
+}
+
+// AddedPolicyEvaluationsSkipped returns the value that was added to the "policy_evaluations_skipped" field in this mutation.
+func (m *WorkflowRunMutation) AddedPolicyEvaluationsSkipped() (r int32, exists bool) {
+	v := m.addpolicy_evaluations_skipped
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPolicyEvaluationsSkipped clears the value of the "policy_evaluations_skipped" field.
+func (m *WorkflowRunMutation) ClearPolicyEvaluationsSkipped() {
+	m.policy_evaluations_skipped = nil
+	m.addpolicy_evaluations_skipped = nil
+	m.clearedFields[workflowrun.FieldPolicyEvaluationsSkipped] = struct{}{}
+}
+
+// PolicyEvaluationsSkippedCleared returns if the "policy_evaluations_skipped" field was cleared in this mutation.
+func (m *WorkflowRunMutation) PolicyEvaluationsSkippedCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldPolicyEvaluationsSkipped]
+	return ok
+}
+
+// ResetPolicyEvaluationsSkipped resets all changes to the "policy_evaluations_skipped" field.
+func (m *WorkflowRunMutation) ResetPolicyEvaluationsSkipped() {
+	m.policy_evaluations_skipped = nil
+	m.addpolicy_evaluations_skipped = nil
+	delete(m.clearedFields, workflowrun.FieldPolicyEvaluationsSkipped)
+}
+
+// SetPolicyViolationsCount sets the "policy_violations_count" field.
+func (m *WorkflowRunMutation) SetPolicyViolationsCount(i int32) {
+	m.policy_violations_count = &i
+	m.addpolicy_violations_count = nil
+}
+
+// PolicyViolationsCount returns the value of the "policy_violations_count" field in the mutation.
+func (m *WorkflowRunMutation) PolicyViolationsCount() (r int32, exists bool) {
+	v := m.policy_violations_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPolicyViolationsCount returns the old "policy_violations_count" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldPolicyViolationsCount(ctx context.Context) (v *int32, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPolicyViolationsCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPolicyViolationsCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPolicyViolationsCount: %w", err)
+	}
+	return oldValue.PolicyViolationsCount, nil
+}
+
+// AddPolicyViolationsCount adds i to the "policy_violations_count" field.
+func (m *WorkflowRunMutation) AddPolicyViolationsCount(i int32) {
+	if m.addpolicy_violations_count != nil {
+		*m.addpolicy_violations_count += i
+	} else {
+		m.addpolicy_violations_count = &i
+	}
+}
+
+// AddedPolicyViolationsCount returns the value that was added to the "policy_violations_count" field in this mutation.
+func (m *WorkflowRunMutation) AddedPolicyViolationsCount() (r int32, exists bool) {
+	v := m.addpolicy_violations_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPolicyViolationsCount clears the value of the "policy_violations_count" field.
+func (m *WorkflowRunMutation) ClearPolicyViolationsCount() {
+	m.policy_violations_count = nil
+	m.addpolicy_violations_count = nil
+	m.clearedFields[workflowrun.FieldPolicyViolationsCount] = struct{}{}
+}
+
+// PolicyViolationsCountCleared returns if the "policy_violations_count" field was cleared in this mutation.
+func (m *WorkflowRunMutation) PolicyViolationsCountCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldPolicyViolationsCount]
+	return ok
+}
+
+// ResetPolicyViolationsCount resets all changes to the "policy_violations_count" field.
+func (m *WorkflowRunMutation) ResetPolicyViolationsCount() {
+	m.policy_violations_count = nil
+	m.addpolicy_violations_count = nil
+	delete(m.clearedFields, workflowrun.FieldPolicyViolationsCount)
+}
+
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (m *WorkflowRunMutation) ClearWorkflow() {
 	m.clearedworkflow = true
@@ -18915,7 +19253,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 19)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -18958,6 +19296,21 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.has_policy_violations != nil {
 		fields = append(fields, workflowrun.FieldHasPolicyViolations)
 	}
+	if m.policy_status != nil {
+		fields = append(fields, workflowrun.FieldPolicyStatus)
+	}
+	if m.policy_evaluations_total != nil {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsTotal)
+	}
+	if m.policy_evaluations_passed != nil {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsPassed)
+	}
+	if m.policy_evaluations_skipped != nil {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsSkipped)
+	}
+	if m.policy_violations_count != nil {
+		fields = append(fields, workflowrun.FieldPolicyViolationsCount)
+	}
 	return fields
 }
 
@@ -18994,6 +19347,16 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.WorkflowID()
 	case workflowrun.FieldHasPolicyViolations:
 		return m.HasPolicyViolations()
+	case workflowrun.FieldPolicyStatus:
+		return m.PolicyStatus()
+	case workflowrun.FieldPolicyEvaluationsTotal:
+		return m.PolicyEvaluationsTotal()
+	case workflowrun.FieldPolicyEvaluationsPassed:
+		return m.PolicyEvaluationsPassed()
+	case workflowrun.FieldPolicyEvaluationsSkipped:
+		return m.PolicyEvaluationsSkipped()
+	case workflowrun.FieldPolicyViolationsCount:
+		return m.PolicyViolationsCount()
 	}
 	return nil, false
 }
@@ -19031,6 +19394,16 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldWorkflowID(ctx)
 	case workflowrun.FieldHasPolicyViolations:
 		return m.OldHasPolicyViolations(ctx)
+	case workflowrun.FieldPolicyStatus:
+		return m.OldPolicyStatus(ctx)
+	case workflowrun.FieldPolicyEvaluationsTotal:
+		return m.OldPolicyEvaluationsTotal(ctx)
+	case workflowrun.FieldPolicyEvaluationsPassed:
+		return m.OldPolicyEvaluationsPassed(ctx)
+	case workflowrun.FieldPolicyEvaluationsSkipped:
+		return m.OldPolicyEvaluationsSkipped(ctx)
+	case workflowrun.FieldPolicyViolationsCount:
+		return m.OldPolicyViolationsCount(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -19138,6 +19511,41 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetHasPolicyViolations(v)
 		return nil
+	case workflowrun.FieldPolicyStatus:
+		v, ok := value.(workflowrun.PolicyStatus)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPolicyStatus(v)
+		return nil
+	case workflowrun.FieldPolicyEvaluationsTotal:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPolicyEvaluationsTotal(v)
+		return nil
+	case workflowrun.FieldPolicyEvaluationsPassed:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPolicyEvaluationsPassed(v)
+		return nil
+	case workflowrun.FieldPolicyEvaluationsSkipped:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPolicyEvaluationsSkipped(v)
+		return nil
+	case workflowrun.FieldPolicyViolationsCount:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPolicyViolationsCount(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -19152,6 +19560,18 @@ func (m *WorkflowRunMutation) AddedFields() []string {
 	if m.addcontract_revision_latest != nil {
 		fields = append(fields, workflowrun.FieldContractRevisionLatest)
 	}
+	if m.addpolicy_evaluations_total != nil {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsTotal)
+	}
+	if m.addpolicy_evaluations_passed != nil {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsPassed)
+	}
+	if m.addpolicy_evaluations_skipped != nil {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsSkipped)
+	}
+	if m.addpolicy_violations_count != nil {
+		fields = append(fields, workflowrun.FieldPolicyViolationsCount)
+	}
 	return fields
 }
 
@@ -19164,6 +19584,14 @@ func (m *WorkflowRunMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedContractRevisionUsed()
 	case workflowrun.FieldContractRevisionLatest:
 		return m.AddedContractRevisionLatest()
+	case workflowrun.FieldPolicyEvaluationsTotal:
+		return m.AddedPolicyEvaluationsTotal()
+	case workflowrun.FieldPolicyEvaluationsPassed:
+		return m.AddedPolicyEvaluationsPassed()
+	case workflowrun.FieldPolicyEvaluationsSkipped:
+		return m.AddedPolicyEvaluationsSkipped()
+	case workflowrun.FieldPolicyViolationsCount:
+		return m.AddedPolicyViolationsCount()
 	}
 	return nil, false
 }
@@ -19186,6 +19614,34 @@ func (m *WorkflowRunMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddContractRevisionLatest(v)
+		return nil
+	case workflowrun.FieldPolicyEvaluationsTotal:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPolicyEvaluationsTotal(v)
+		return nil
+	case workflowrun.FieldPolicyEvaluationsPassed:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPolicyEvaluationsPassed(v)
+		return nil
+	case workflowrun.FieldPolicyEvaluationsSkipped:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPolicyEvaluationsSkipped(v)
+		return nil
+	case workflowrun.FieldPolicyViolationsCount:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPolicyViolationsCount(v)
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun numeric field %s", name)
@@ -19218,6 +19674,21 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(workflowrun.FieldHasPolicyViolations) {
 		fields = append(fields, workflowrun.FieldHasPolicyViolations)
+	}
+	if m.FieldCleared(workflowrun.FieldPolicyStatus) {
+		fields = append(fields, workflowrun.FieldPolicyStatus)
+	}
+	if m.FieldCleared(workflowrun.FieldPolicyEvaluationsTotal) {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsTotal)
+	}
+	if m.FieldCleared(workflowrun.FieldPolicyEvaluationsPassed) {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsPassed)
+	}
+	if m.FieldCleared(workflowrun.FieldPolicyEvaluationsSkipped) {
+		fields = append(fields, workflowrun.FieldPolicyEvaluationsSkipped)
+	}
+	if m.FieldCleared(workflowrun.FieldPolicyViolationsCount) {
+		fields = append(fields, workflowrun.FieldPolicyViolationsCount)
 	}
 	return fields
 }
@@ -19256,6 +19727,21 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 		return nil
 	case workflowrun.FieldHasPolicyViolations:
 		m.ClearHasPolicyViolations()
+		return nil
+	case workflowrun.FieldPolicyStatus:
+		m.ClearPolicyStatus()
+		return nil
+	case workflowrun.FieldPolicyEvaluationsTotal:
+		m.ClearPolicyEvaluationsTotal()
+		return nil
+	case workflowrun.FieldPolicyEvaluationsPassed:
+		m.ClearPolicyEvaluationsPassed()
+		return nil
+	case workflowrun.FieldPolicyEvaluationsSkipped:
+		m.ClearPolicyEvaluationsSkipped()
+		return nil
+	case workflowrun.FieldPolicyViolationsCount:
+		m.ClearPolicyViolationsCount()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)
@@ -19306,6 +19792,21 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldHasPolicyViolations:
 		m.ResetHasPolicyViolations()
+		return nil
+	case workflowrun.FieldPolicyStatus:
+		m.ResetPolicyStatus()
+		return nil
+	case workflowrun.FieldPolicyEvaluationsTotal:
+		m.ResetPolicyEvaluationsTotal()
+		return nil
+	case workflowrun.FieldPolicyEvaluationsPassed:
+		m.ResetPolicyEvaluationsPassed()
+		return nil
+	case workflowrun.FieldPolicyEvaluationsSkipped:
+		m.ResetPolicyEvaluationsSkipped()
+		return nil
+	case workflowrun.FieldPolicyViolationsCount:
+		m.ResetPolicyViolationsCount()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)

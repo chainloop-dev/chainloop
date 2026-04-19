@@ -215,7 +215,11 @@ message WorkflowRunServiceListRequest {
     ignore: IGNORE_IF_ZERO_VALUE
   }];
   // by policy violations status
-  PolicyViolationsFilter policy_violations = 6;
+  // Deprecated: use policy_status (PolicyStatusFilter), which aligns 1:1 with
+  // the canonical PolicyStatus enum. When both are set, policy_status wins.
+  PolicyViolationsFilter policy_violations = 6 [deprecated = true];
+  // by canonical policy status
+  PolicyStatusFilter policy_status = 7;
   // pagination options
   CursorPaginationRequest pagination = 2;
 

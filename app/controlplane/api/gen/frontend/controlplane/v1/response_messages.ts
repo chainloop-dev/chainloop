@@ -68,6 +68,13 @@ export function runStatusToJSON(object: RunStatus): string {
   }
 }
 
+/**
+ * Deprecated: use PolicyStatusFilter which aligns 1:1 with PolicyStatus and
+ * lets callers distinguish warning/blocked/bypassed from the coarse with/
+ * without-violations split.
+ *
+ * @deprecated
+ */
 export enum PolicyViolationsFilter {
   POLICY_VIOLATIONS_FILTER_UNSPECIFIED = 0,
   POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS = 1,
@@ -102,6 +109,146 @@ export function policyViolationsFilterToJSON(object: PolicyViolationsFilter): st
     case PolicyViolationsFilter.POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS:
       return "POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS";
     case PolicyViolationsFilter.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/**
+ * Canonical, server-computed categorical policy outcome for an attestation.
+ * Collapses the raw enforcement/bypass/violation signals on
+ * AttestationItem.PolicyEvaluationStatus into a single flat value so that
+ * list and describe surfaces can render a consistent badge without
+ * re-deriving.
+ */
+export enum PolicyStatus {
+  POLICY_STATUS_UNSPECIFIED = 0,
+  /** POLICY_STATUS_NOT_APPLICABLE - No policies were evaluated on this run */
+  POLICY_STATUS_NOT_APPLICABLE = 1,
+  /** POLICY_STATUS_PASSED - Policies ran with no violations and no skips */
+  POLICY_STATUS_PASSED = 2,
+  /** POLICY_STATUS_SKIPPED - No violations but at least one evaluation was skipped */
+  POLICY_STATUS_SKIPPED = 3,
+  /** POLICY_STATUS_WARNING - Has violations but enforcement is advisory — run succeeded */
+  POLICY_STATUS_WARNING = 4,
+  /** POLICY_STATUS_BLOCKED - Has gated violations or enforced strategy with violations; not bypassed */
+  POLICY_STATUS_BLOCKED = 5,
+  /** POLICY_STATUS_BYPASSED - Enforcement would have blocked the run but was bypassed */
+  POLICY_STATUS_BYPASSED = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function policyStatusFromJSON(object: any): PolicyStatus {
+  switch (object) {
+    case 0:
+    case "POLICY_STATUS_UNSPECIFIED":
+      return PolicyStatus.POLICY_STATUS_UNSPECIFIED;
+    case 1:
+    case "POLICY_STATUS_NOT_APPLICABLE":
+      return PolicyStatus.POLICY_STATUS_NOT_APPLICABLE;
+    case 2:
+    case "POLICY_STATUS_PASSED":
+      return PolicyStatus.POLICY_STATUS_PASSED;
+    case 3:
+    case "POLICY_STATUS_SKIPPED":
+      return PolicyStatus.POLICY_STATUS_SKIPPED;
+    case 4:
+    case "POLICY_STATUS_WARNING":
+      return PolicyStatus.POLICY_STATUS_WARNING;
+    case 5:
+    case "POLICY_STATUS_BLOCKED":
+      return PolicyStatus.POLICY_STATUS_BLOCKED;
+    case 6:
+    case "POLICY_STATUS_BYPASSED":
+      return PolicyStatus.POLICY_STATUS_BYPASSED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyStatus.UNRECOGNIZED;
+  }
+}
+
+export function policyStatusToJSON(object: PolicyStatus): string {
+  switch (object) {
+    case PolicyStatus.POLICY_STATUS_UNSPECIFIED:
+      return "POLICY_STATUS_UNSPECIFIED";
+    case PolicyStatus.POLICY_STATUS_NOT_APPLICABLE:
+      return "POLICY_STATUS_NOT_APPLICABLE";
+    case PolicyStatus.POLICY_STATUS_PASSED:
+      return "POLICY_STATUS_PASSED";
+    case PolicyStatus.POLICY_STATUS_SKIPPED:
+      return "POLICY_STATUS_SKIPPED";
+    case PolicyStatus.POLICY_STATUS_WARNING:
+      return "POLICY_STATUS_WARNING";
+    case PolicyStatus.POLICY_STATUS_BLOCKED:
+      return "POLICY_STATUS_BLOCKED";
+    case PolicyStatus.POLICY_STATUS_BYPASSED:
+      return "POLICY_STATUS_BYPASSED";
+    case PolicyStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/** Server-side filter aligned 1:1 with PolicyStatus values. */
+export enum PolicyStatusFilter {
+  POLICY_STATUS_FILTER_UNSPECIFIED = 0,
+  POLICY_STATUS_FILTER_NOT_APPLICABLE = 1,
+  POLICY_STATUS_FILTER_PASSED = 2,
+  POLICY_STATUS_FILTER_SKIPPED = 3,
+  POLICY_STATUS_FILTER_WARNING = 4,
+  POLICY_STATUS_FILTER_BLOCKED = 5,
+  POLICY_STATUS_FILTER_BYPASSED = 6,
+  UNRECOGNIZED = -1,
+}
+
+export function policyStatusFilterFromJSON(object: any): PolicyStatusFilter {
+  switch (object) {
+    case 0:
+    case "POLICY_STATUS_FILTER_UNSPECIFIED":
+      return PolicyStatusFilter.POLICY_STATUS_FILTER_UNSPECIFIED;
+    case 1:
+    case "POLICY_STATUS_FILTER_NOT_APPLICABLE":
+      return PolicyStatusFilter.POLICY_STATUS_FILTER_NOT_APPLICABLE;
+    case 2:
+    case "POLICY_STATUS_FILTER_PASSED":
+      return PolicyStatusFilter.POLICY_STATUS_FILTER_PASSED;
+    case 3:
+    case "POLICY_STATUS_FILTER_SKIPPED":
+      return PolicyStatusFilter.POLICY_STATUS_FILTER_SKIPPED;
+    case 4:
+    case "POLICY_STATUS_FILTER_WARNING":
+      return PolicyStatusFilter.POLICY_STATUS_FILTER_WARNING;
+    case 5:
+    case "POLICY_STATUS_FILTER_BLOCKED":
+      return PolicyStatusFilter.POLICY_STATUS_FILTER_BLOCKED;
+    case 6:
+    case "POLICY_STATUS_FILTER_BYPASSED":
+      return PolicyStatusFilter.POLICY_STATUS_FILTER_BYPASSED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyStatusFilter.UNRECOGNIZED;
+  }
+}
+
+export function policyStatusFilterToJSON(object: PolicyStatusFilter): string {
+  switch (object) {
+    case PolicyStatusFilter.POLICY_STATUS_FILTER_UNSPECIFIED:
+      return "POLICY_STATUS_FILTER_UNSPECIFIED";
+    case PolicyStatusFilter.POLICY_STATUS_FILTER_NOT_APPLICABLE:
+      return "POLICY_STATUS_FILTER_NOT_APPLICABLE";
+    case PolicyStatusFilter.POLICY_STATUS_FILTER_PASSED:
+      return "POLICY_STATUS_FILTER_PASSED";
+    case PolicyStatusFilter.POLICY_STATUS_FILTER_SKIPPED:
+      return "POLICY_STATUS_FILTER_SKIPPED";
+    case PolicyStatusFilter.POLICY_STATUS_FILTER_WARNING:
+      return "POLICY_STATUS_FILTER_WARNING";
+    case PolicyStatusFilter.POLICY_STATUS_FILTER_BLOCKED:
+      return "POLICY_STATUS_FILTER_BLOCKED";
+    case PolicyStatusFilter.POLICY_STATUS_FILTER_BYPASSED:
+      return "POLICY_STATUS_FILTER_BYPASSED";
+    case PolicyStatusFilter.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -341,8 +488,23 @@ export interface WorkflowRunItem {
   contractRevisionLatest: number;
   /** The version of the project the attestation was initiated with */
   version?: ProjectVersion;
-  /** Whether the run has policy violations (null if no policies were evaluated) */
-  hasPolicyViolations?: boolean | undefined;
+  /**
+   * Whether the run has policy violations (null if no policies were evaluated)
+   * Deprecated: use policy_summary.violated > 0, or the richer
+   * policy_summary.status, which also distinguishes skipped / warning /
+   * blocked / bypassed outcomes.
+   *
+   * @deprecated
+   */
+  hasPolicyViolations?:
+    | boolean
+    | undefined;
+  /**
+   * Canonical policy status summary for this run (null if no policies were
+   * evaluated). Carries both the categorical PolicyStatus and per-evaluation
+   * counters so list consumers can render a badge without calling View.
+   */
+  policySummary?: PolicyStatusSummary;
 }
 
 export interface ProjectVersion {
@@ -352,6 +514,24 @@ export interface ProjectVersion {
   createdAt?: Date;
   /** when it was marked as released */
   releasedAt?: Date;
+}
+
+/**
+ * PolicyStatusSummary bundles the canonical PolicyStatus with per-evaluation
+ * counters. It is surfaced on both WorkflowRunItem (list response) and
+ * AttestationItem.PolicyEvaluationStatus (describe response) and is computed
+ * by a single backend helper so list and describe cannot drift.
+ */
+export interface PolicyStatusSummary {
+  status: PolicyStatus;
+  /** Total number of policy evaluations that ran for this attestation */
+  total: number;
+  /** Number of evaluations with no violations and not skipped */
+  passed: number;
+  /** Number of evaluations that were skipped */
+  skipped: number;
+  /** Total number of violations across all evaluations */
+  violated: number;
 }
 
 export interface AttestationItem {
@@ -392,10 +572,24 @@ export interface AttestationItem_PolicyEvaluationStatus {
   blocked: boolean;
   hasViolations: boolean;
   hasGatedViolations: boolean;
-  /** Total number of policy evaluations */
+  /**
+   * Deprecated: use summary.total instead.
+   *
+   * @deprecated
+   */
   evaluationsCount: number;
-  /** Total number of policy violations across all evaluations */
+  /**
+   * Deprecated: use summary.violated instead.
+   *
+   * @deprecated
+   */
   violationsCount: number;
+  /**
+   * Canonical categorical status + counters. Single source of truth for UI
+   * consumers — consumers that re-derive from the raw bools above tend to
+   * disagree on semantics, especially around gating and bypass.
+   */
+  summary?: PolicyStatusSummary;
 }
 
 export interface AttestationItem_EnvVariable {
@@ -995,6 +1189,7 @@ function createBaseWorkflowRunItem(): WorkflowRunItem {
     contractRevisionLatest: 0,
     version: undefined,
     hasPolicyViolations: undefined,
+    policySummary: undefined,
   };
 }
 
@@ -1041,6 +1236,9 @@ export const WorkflowRunItem = {
     }
     if (message.hasPolicyViolations !== undefined) {
       writer.uint32(112).bool(message.hasPolicyViolations);
+    }
+    if (message.policySummary !== undefined) {
+      PolicyStatusSummary.encode(message.policySummary, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -1150,6 +1348,13 @@ export const WorkflowRunItem = {
 
           message.hasPolicyViolations = reader.bool();
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.policySummary = PolicyStatusSummary.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1177,6 +1382,7 @@ export const WorkflowRunItem = {
       contractRevisionLatest: isSet(object.contractRevisionLatest) ? Number(object.contractRevisionLatest) : 0,
       version: isSet(object.version) ? ProjectVersion.fromJSON(object.version) : undefined,
       hasPolicyViolations: isSet(object.hasPolicyViolations) ? Boolean(object.hasPolicyViolations) : undefined,
+      policySummary: isSet(object.policySummary) ? PolicyStatusSummary.fromJSON(object.policySummary) : undefined,
     };
   },
 
@@ -1201,6 +1407,8 @@ export const WorkflowRunItem = {
     message.version !== undefined &&
       (obj.version = message.version ? ProjectVersion.toJSON(message.version) : undefined);
     message.hasPolicyViolations !== undefined && (obj.hasPolicyViolations = message.hasPolicyViolations);
+    message.policySummary !== undefined &&
+      (obj.policySummary = message.policySummary ? PolicyStatusSummary.toJSON(message.policySummary) : undefined);
     return obj;
   },
 
@@ -1230,6 +1438,9 @@ export const WorkflowRunItem = {
       ? ProjectVersion.fromPartial(object.version)
       : undefined;
     message.hasPolicyViolations = object.hasPolicyViolations ?? undefined;
+    message.policySummary = (object.policySummary !== undefined && object.policySummary !== null)
+      ? PolicyStatusSummary.fromPartial(object.policySummary)
+      : undefined;
     return message;
   },
 };
@@ -1340,6 +1551,116 @@ export const ProjectVersion = {
     message.prerelease = object.prerelease ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.releasedAt = object.releasedAt ?? undefined;
+    return message;
+  },
+};
+
+function createBasePolicyStatusSummary(): PolicyStatusSummary {
+  return { status: 0, total: 0, passed: 0, skipped: 0, violated: 0 };
+}
+
+export const PolicyStatusSummary = {
+  encode(message: PolicyStatusSummary, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.status !== 0) {
+      writer.uint32(8).int32(message.status);
+    }
+    if (message.total !== 0) {
+      writer.uint32(16).int32(message.total);
+    }
+    if (message.passed !== 0) {
+      writer.uint32(24).int32(message.passed);
+    }
+    if (message.skipped !== 0) {
+      writer.uint32(32).int32(message.skipped);
+    }
+    if (message.violated !== 0) {
+      writer.uint32(40).int32(message.violated);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyStatusSummary {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyStatusSummary();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.total = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.passed = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.skipped = reader.int32();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.violated = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyStatusSummary {
+    return {
+      status: isSet(object.status) ? policyStatusFromJSON(object.status) : 0,
+      total: isSet(object.total) ? Number(object.total) : 0,
+      passed: isSet(object.passed) ? Number(object.passed) : 0,
+      skipped: isSet(object.skipped) ? Number(object.skipped) : 0,
+      violated: isSet(object.violated) ? Number(object.violated) : 0,
+    };
+  },
+
+  toJSON(message: PolicyStatusSummary): unknown {
+    const obj: any = {};
+    message.status !== undefined && (obj.status = policyStatusToJSON(message.status));
+    message.total !== undefined && (obj.total = Math.round(message.total));
+    message.passed !== undefined && (obj.passed = Math.round(message.passed));
+    message.skipped !== undefined && (obj.skipped = Math.round(message.skipped));
+    message.violated !== undefined && (obj.violated = Math.round(message.violated));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyStatusSummary>, I>>(base?: I): PolicyStatusSummary {
+    return PolicyStatusSummary.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyStatusSummary>, I>>(object: I): PolicyStatusSummary {
+    const message = createBasePolicyStatusSummary();
+    message.status = object.status ?? 0;
+    message.total = object.total ?? 0;
+    message.passed = object.passed ?? 0;
+    message.skipped = object.skipped ?? 0;
+    message.violated = object.violated ?? 0;
     return message;
   },
 };
@@ -1722,6 +2043,7 @@ function createBaseAttestationItem_PolicyEvaluationStatus(): AttestationItem_Pol
     hasGatedViolations: false,
     evaluationsCount: 0,
     violationsCount: 0,
+    summary: undefined,
   };
 }
 
@@ -1747,6 +2069,9 @@ export const AttestationItem_PolicyEvaluationStatus = {
     }
     if (message.violationsCount !== 0) {
       writer.uint32(56).int32(message.violationsCount);
+    }
+    if (message.summary !== undefined) {
+      PolicyStatusSummary.encode(message.summary, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -1807,6 +2132,13 @@ export const AttestationItem_PolicyEvaluationStatus = {
 
           message.violationsCount = reader.int32();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.summary = PolicyStatusSummary.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1825,6 +2157,7 @@ export const AttestationItem_PolicyEvaluationStatus = {
       hasGatedViolations: isSet(object.hasGatedViolations) ? Boolean(object.hasGatedViolations) : false,
       evaluationsCount: isSet(object.evaluationsCount) ? Number(object.evaluationsCount) : 0,
       violationsCount: isSet(object.violationsCount) ? Number(object.violationsCount) : 0,
+      summary: isSet(object.summary) ? PolicyStatusSummary.fromJSON(object.summary) : undefined,
     };
   },
 
@@ -1837,6 +2170,8 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.hasGatedViolations !== undefined && (obj.hasGatedViolations = message.hasGatedViolations);
     message.evaluationsCount !== undefined && (obj.evaluationsCount = Math.round(message.evaluationsCount));
     message.violationsCount !== undefined && (obj.violationsCount = Math.round(message.violationsCount));
+    message.summary !== undefined &&
+      (obj.summary = message.summary ? PolicyStatusSummary.toJSON(message.summary) : undefined);
     return obj;
   },
 
@@ -1857,6 +2192,9 @@ export const AttestationItem_PolicyEvaluationStatus = {
     message.hasGatedViolations = object.hasGatedViolations ?? false;
     message.evaluationsCount = object.evaluationsCount ?? 0;
     message.violationsCount = object.violationsCount ?? 0;
+    message.summary = (object.summary !== undefined && object.summary !== null)
+      ? PolicyStatusSummary.fromPartial(object.summary)
+      : undefined;
     return message;
   },
 };

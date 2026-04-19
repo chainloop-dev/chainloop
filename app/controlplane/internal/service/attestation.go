@@ -541,6 +541,7 @@ func bizAttestationToPb(att *biz.Attestation, predicate chainloop.NormalizablePr
 	}
 
 	policyEvaluationStatus := predicate.GetPolicyEvaluationStatus()
+	summary := chainloop.DerivePolicyStatusSummary(policyEvaluationStatus)
 
 	return &cpAPI.AttestationItem{
 		Envelope:           encodedAttestation,
@@ -557,6 +558,7 @@ func bizAttestationToPb(att *biz.Attestation, predicate chainloop.NormalizablePr
 			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
 			EvaluationsCount:   int32(policyEvaluationStatus.EvaluationsCount),
 			ViolationsCount:    int32(policyEvaluationStatus.ViolationsCount),
+			Summary:            bizPolicyStatusSummaryToPb(&summary),
 		},
 		Bundle: att.Bundle,
 	}, nil
