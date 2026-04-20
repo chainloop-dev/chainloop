@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,10 +70,18 @@ func DSSEEnvelopeFromBundle(bundle *protobundle.Bundle) *dsse.Envelope {
 }
 
 func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, error) {
-	// DSSE Envelope is already base64 encoded, we need to decode to prevent it from being encoded twice
+	if len(dsseEnvelope.Signatures) == 0 {
+		return nil, fmt.Errorf("DSSE envelope has no signatures")
+	}
+	// DSSE Envelope payload and signature are base64 encoded, we need to decode them so they
+	// are not encoded twice when stored as raw bytes in the Sigstore bundle. See #1832.
 	payload, err := base64.StdEncoding.DecodeString(dsseEnvelope.Payload)
 	if err != nil {
-		return nil, fmt.Errorf("decoding: %w", err)
+		return nil, fmt.Errorf("decoding payload: %w", err)
+	}
+	sig, err := base64.StdEncoding.DecodeString(dsseEnvelope.Signatures[0].Sig)
+	if err != nil {
+		return nil, fmt.Errorf("decoding signature: %w", err)
 	}
 	return &protobundle.Bundle{
 		MediaType: "application/vnd.dev.sigstore.bundle+json;version=0.3",
@@ -82,7 +90,7 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 			PayloadType: dsseEnvelope.PayloadType,
 			Signatures: []*sigstoredsse.Signature{
 				{
-					Sig:   []byte(dsseEnvelope.Signatures[0].Sig),
+					Sig:   sig,
 					Keyid: dsseEnvelope.Signatures[0].KeyID,
 				},
 			},
@@ -91,27 +99,24 @@ func BundleFromDSSEEnvelope(dsseEnvelope *dsse.Envelope) (*protobundle.Bundle, e
 	}, nil
 }
 
-func DSSEEnvelopeFromRaw(bundle, envelope []byte) (*dsse.Envelope, error) {
-	var dsseEnv dsse.Envelope
-	if bundle != nil {
-		var attBundle protobundle.Bundle
-		if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
-			return nil, fmt.Errorf("unmarshalling bundle: %w", err)
-		}
-		dsseEnv = *DSSEEnvelopeFromBundle(&attBundle)
-	} else {
-		if err := json.Unmarshal(envelope, &dsseEnv); err != nil {
-			return nil, fmt.Errorf("unmarshalling envelope: %w", err)
-		}
+// DSSEEnvelopeFromBundleBytes extracts a DSSE envelope from the protojson-encoded bytes of a Sigstore bundle.
+// It validates that the bundle carries a DSSE envelope with at least one signature, since callers
+// (and DSSEEnvelopeFromBundle) assume that invariant.
+func DSSEEnvelopeFromBundleBytes(bundle []byte) (*dsse.Envelope, error) {
+	var attBundle protobundle.Bundle
+	if err := protojson.Unmarshal(bundle, &attBundle); err != nil {
+		return nil, fmt.Errorf("unmarshalling bundle: %w", err)
 	}
-	return &dsseEnv, nil
+	if len(attBundle.GetDsseEnvelope().GetSignatures()) == 0 {
+		return nil, fmt.Errorf("invalid attestation bundle: missing DSSE signature")
+	}
+	return DSSEEnvelopeFromBundle(&attBundle), nil
 }
 
-// TODO: remove this fix once `AttestationServiceStoreRequest.Bundle` is fully removed,
-//	     and move the logic to BundleFromDSSEEnvelope method instead (where the bug is originated)
-
 // FixSignatureInBundle removes any additional base64 encoding from the signature in the bundle.
-// Old attestations have signatures base64 encoded twice, see https://github.com/chainloop-dev/chainloop/issues/1832
+// Kept for backward compatibility with attestations stored before the fix for
+// https://github.com/chainloop-dev/chainloop/issues/1832, whose signatures are base64-encoded twice.
+// New bundles produced by BundleFromDSSEEnvelope already carry a properly decoded signature.
 func FixSignatureInBundle(bundle *protobundle.Bundle) {
 	sig := bundle.GetDsseEnvelope().GetSignatures()[0].GetSig()
 	dst := make([]byte, base64.StdEncoding.EncodedLen(len(sig)))

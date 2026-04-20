@@ -71,11 +71,12 @@ func (p *AuditLogPublisher) initJetStream() error {
 	if _, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:     streamName,
 		Subjects: []string{subjectName},
+		Replicas: p.rc.Replicas,
 	}); err != nil {
 		return fmt.Errorf("creating stream: %w", err)
 	}
 
-	p.logger.Infow("msg", "stream created or updated", "name", streamName, "subject", subjectName)
+	p.logger.Infow("msg", "stream created or updated", "name", streamName, "subject", subjectName, "replicas", p.rc.Replicas)
 
 	return nil
 }

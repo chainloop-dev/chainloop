@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	ttl         = 5 * 24 * time.Hour
-	maxBytes    = 100 * 1024 * 1024 // 100 MB
+	ttl         = 48 * time.Hour
+	maxBytes    = 200 * 1024 * 1024 // 200 MB
 	bucket      = "chainloop-attestation-bundles"
 	description = "Cache for attestation bundles"
 )

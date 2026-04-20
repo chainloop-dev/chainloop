@@ -22,9 +22,18 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+)
+
+const (
+	streamUpdateTimeout = 5 * time.Second
+	// initMaxWait covers several nats.ReconnectWait (2s) cycles so a transient
+	// drop during boot can heal before we give up.
+	initMaxWait     = 30 * time.Second
+	initRetryPeriod = 2 * time.Second
 )
 
 type natsKVCache[T any] struct {
@@ -44,7 +53,7 @@ func newNATSKV[T any](cfg *config) (*natsKVCache[T], error) {
 		cfg:    cfg,
 	}
 
-	if err := c.initBucket(); err != nil {
+	if err := c.initBucketWithRetry(initMaxWait, initRetryPeriod); err != nil {
 		return nil, err
 	}
 
@@ -52,8 +61,50 @@ func newNATSKV[T any](cfg *config) (*natsKVCache[T], error) {
 		go c.watchReconnect(cfg.reconnCh)
 	}
 
-	cfg.logger.Infow("msg", "cache: using NATS KV backend", "bucket", cfg.bucketName, "ttl", cfg.ttl)
+	cfg.logger.Infow("msg", "cache: using NATS KV backend", "bucket", cfg.bucketName, "ttl", cfg.ttl, "replicas", cfg.replicas)
 	return c, nil
+}
+
+// initBucketWithRetry runs initBucket with a bounded retry loop so transient
+// NATS disconnects (handled by the client's background auto-reconnect) don't
+// cause the whole service to refuse startup on a momentary blip. Retries only
+// apply to connectivity errors; configuration errors fail fast.
+func (c *natsKVCache[T]) initBucketWithRetry(maxWait, period time.Duration) error {
+	deadline := time.Now().Add(maxWait)
+	for attempt := 1; ; attempt++ {
+		err := c.initBucket()
+		if err == nil {
+			return nil
+		}
+		if !isRetryableInitError(err) {
+			return err
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("cache: bucket %q init failed after %s (%d attempts): %w", c.bucket, maxWait, attempt, err)
+		}
+		c.logger.Warnw("msg", "cache: bucket init failed, retrying", "bucket", c.bucket, "attempt", attempt, "error", err)
+		time.Sleep(period)
+	}
+}
+
+// isRetryableInitError reports whether err looks like a transient NATS
+// connectivity issue worth retrying. Config errors (e.g. unsupported replica
+// count) fail fast so misconfigured deployments don't spin for the full budget.
+func isRetryableInitError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return true
+	}
+	if errors.Is(err, nats.ErrConnectionClosed) ||
+		errors.Is(err, nats.ErrConnectionDraining) ||
+		errors.Is(err, nats.ErrNoServers) ||
+		errors.Is(err, nats.ErrTimeout) ||
+		errors.Is(err, nats.ErrDisconnected) {
+		return true
+	}
+	return false
 }
 
 func (c *natsKVCache[T]) initBucket() error {
@@ -74,32 +125,51 @@ func (c *natsKVCache[T]) initBucket() error {
 		return err
 	}
 
-	// NATS KV hardcodes DiscardNew on the backing stream, which rejects writes
-	// when MaxBytes is reached. For cache use-cases we want DiscardOld so that
-	// the oldest entries are evicted automatically to make room for new ones.
+	// NATS KV hardcodes DiscardNew; we want DiscardOld so the cache evicts
+	// oldest entries when MaxBytes is reached.
 	if c.cfg.maxBytes > 0 {
-		streamName := fmt.Sprintf("KV_%s", c.bucket)
-		stream, err := js.Stream(context.Background(), streamName)
-		if err != nil {
-			return fmt.Errorf("cache: failed to get backing stream %s: %w", streamName, err)
-		}
-		cfg := stream.CachedInfo().Config
-		cfg.Discard = jetstream.DiscardOld
-		if _, err := js.UpdateStream(context.Background(), cfg); err != nil {
-			return fmt.Errorf("cache: failed to set DiscardOld on stream %s: %w", streamName, err)
+		if err := c.ensureDiscardOld(js); err != nil {
+			return err
 		}
 	}
 
 	c.mu.Lock()
 	c.kv = kv
 	c.mu.Unlock()
+
+	return nil
+}
+
+func (c *natsKVCache[T]) ensureDiscardOld(js jetstream.JetStream) error {
+	streamName := fmt.Sprintf("KV_%s", c.bucket)
+
+	ctx, cancel := context.WithTimeout(context.Background(), streamUpdateTimeout)
+	defer cancel()
+
+	stream, err := js.Stream(ctx, streamName)
+	if err != nil {
+		return fmt.Errorf("cache: failed to get backing stream %s: %w", streamName, err)
+	}
+
+	cfg := stream.CachedInfo().Config
+	if cfg.Discard == jetstream.DiscardOld {
+		return nil
+	}
+	cfg.Discard = jetstream.DiscardOld
+
+	if _, err := js.UpdateStream(ctx, cfg); err != nil {
+		return fmt.Errorf("cache: failed to set DiscardOld on stream %s: %w", streamName, err)
+	}
 	return nil
 }
 
 func (c *natsKVCache[T]) watchReconnect(ch <-chan struct{}) {
 	for range ch {
 		c.logger.Infow("msg", "cache: NATS reconnected, reinitializing bucket", "bucket", c.bucket)
-		if err := c.initBucket(); err != nil {
+		// Share the initial-boot retry budget: a reconnect may race with
+		// NATS leader election / cluster settle, so one shot isn't enough.
+		// Runtime ops already fail-open, so this is best-effort.
+		if err := c.initBucketWithRetry(initMaxWait, initRetryPeriod); err != nil {
 			c.logger.Warnw("msg", "cache: failed to reinitialize bucket after reconnect", "bucket", c.bucket, "error", err)
 		}
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -157,16 +157,15 @@ message AttestationServiceInitResponse {
 }
 
 message AttestationServiceStoreRequest {
-  // encoded DSEE envelope
-  bytes attestation = 1 [deprecated = true];
-  // deprecated because of https://github.com/chainloop-dev/chainloop/issues/1832
-  bytes bundle = 4 [deprecated = true];
   // encoded Sigstore attestation bundle
   bytes attestation_bundle = 5;
 
   string workflow_run_id = 2 [(buf.validate.field).string = {min_len: 1}];
   // mark the associated version as released
   optional bool mark_version_as_released = 3;
+
+  reserved 1, 4;
+  reserved "attestation", "bundle";
 }
 
 message AttestationServiceStoreResponse {
