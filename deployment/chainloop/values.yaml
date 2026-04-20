@@ -141,6 +141,9 @@ controlplane:
     tag: "v1.93.3"
 
 
+  ## @param controlplane.grpcMaxRecvMsgSize Maximum size in bytes of received gRPC messages. Increase to allow larger attestations. Defaults to the gRPC standard 4MB (4194304) if not set.
+  grpcMaxRecvMsgSize: ""
+
   ## @param controlplane.containerPorts.http controlplane HTTP container port
   ## @param controlplane.containerPorts.grpc controlplane gRPC container port
   ## @param controlplane.containerPorts.metrics controlplane prometheus metrics container port
