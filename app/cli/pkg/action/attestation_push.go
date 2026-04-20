@@ -25,7 +25,6 @@ import (
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
@@ -304,8 +303,6 @@ func (action *AttestationPush) saveBundle(bundle *protobundle.Bundle) error {
 }
 
 func pushToControlPlane(ctx context.Context, conn *grpc.ClientConn, bundle *protobundle.Bundle, workflowRunID string, markVersionAsReleased bool) (string, error) {
-	// remove additional base64 encoding in signature. See https://github.com/chainloop-dev/chainloop/issues/1832
-	attestation.FixSignatureInBundle(bundle)
 	encodedBundle, err := encodeBundle(bundle)
 	if err != nil {
 		return "", fmt.Errorf("encoding attestation: %w", err)
