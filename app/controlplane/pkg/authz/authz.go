@@ -411,7 +411,7 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	// Listing, create or selecting an organization does not have any required permissions,
 	// since all the permissions here are in the context of an organization
 	// Create new organization. No user required at middleware level. The endpoint will handle
-	// it based on diverse conditions (e.g. the restrict_org_creation setting).
+	// it based on diverse conditions.
 	"/controlplane.v1.OrganizationService/Create": {},
 	// Delete an organization makes checks at the service level since the
 	// user can explicitly set the org they want to delete and might not be the current one
