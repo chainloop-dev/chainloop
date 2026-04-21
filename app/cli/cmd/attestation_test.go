@@ -77,6 +77,31 @@ func TestOrgFromLocalState(t *testing.T) {
 	})
 }
 
+func TestAttestationInitProjectFromDotChainloop(t *testing.T) {
+	t.Chdir(t.TempDir())
+	require.NoError(t, os.WriteFile(".chainloop.yaml", []byte("project: config-project\n"), 0o600))
+
+	for _, tc := range []struct {
+		name       string
+		cliProject string
+		want       string
+	}{
+		{name: "from config", want: "config-project"},
+		{name: "CLI takes precedence", cliProject: "cli-project", want: "cli-project"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newAttestationInitCmd()
+			require.NoError(t, cmd.Flags().Set("workflow", "test-workflow"))
+			if tc.cliProject != "" {
+				require.NoError(t, cmd.Flags().Set("project", tc.cliProject))
+			}
+
+			require.NoError(t, cmd.PreRunE(cmd, nil))
+			assert.Equal(t, tc.want, cmd.Flags().Lookup("project").Value.String())
+		})
+	}
+}
+
 func TestExtractAnnotations(t *testing.T) {
 	testCases := []struct {
 		input   []string
