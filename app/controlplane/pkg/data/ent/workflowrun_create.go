@@ -179,6 +179,90 @@ func (_c *WorkflowRunCreate) SetNillableHasPolicyViolations(v *bool) *WorkflowRu
 	return _c
 }
 
+// SetPolicyStatus sets the "policy_status" field.
+func (_c *WorkflowRunCreate) SetPolicyStatus(v workflowrun.PolicyStatus) *WorkflowRunCreate {
+	_c.mutation.SetPolicyStatus(v)
+	return _c
+}
+
+// SetNillablePolicyStatus sets the "policy_status" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyStatus(v *workflowrun.PolicyStatus) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyStatus(*v)
+	}
+	return _c
+}
+
+// SetPolicyEvaluationsTotal sets the "policy_evaluations_total" field.
+func (_c *WorkflowRunCreate) SetPolicyEvaluationsTotal(v int32) *WorkflowRunCreate {
+	_c.mutation.SetPolicyEvaluationsTotal(v)
+	return _c
+}
+
+// SetNillablePolicyEvaluationsTotal sets the "policy_evaluations_total" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyEvaluationsTotal(v *int32) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyEvaluationsTotal(*v)
+	}
+	return _c
+}
+
+// SetPolicyEvaluationsPassed sets the "policy_evaluations_passed" field.
+func (_c *WorkflowRunCreate) SetPolicyEvaluationsPassed(v int32) *WorkflowRunCreate {
+	_c.mutation.SetPolicyEvaluationsPassed(v)
+	return _c
+}
+
+// SetNillablePolicyEvaluationsPassed sets the "policy_evaluations_passed" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyEvaluationsPassed(v *int32) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyEvaluationsPassed(*v)
+	}
+	return _c
+}
+
+// SetPolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field.
+func (_c *WorkflowRunCreate) SetPolicyEvaluationsSkipped(v int32) *WorkflowRunCreate {
+	_c.mutation.SetPolicyEvaluationsSkipped(v)
+	return _c
+}
+
+// SetNillablePolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyEvaluationsSkipped(v *int32) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyEvaluationsSkipped(*v)
+	}
+	return _c
+}
+
+// SetPolicyViolationsCount sets the "policy_violations_count" field.
+func (_c *WorkflowRunCreate) SetPolicyViolationsCount(v int32) *WorkflowRunCreate {
+	_c.mutation.SetPolicyViolationsCount(v)
+	return _c
+}
+
+// SetNillablePolicyViolationsCount sets the "policy_violations_count" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyViolationsCount(v *int32) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyViolationsCount(*v)
+	}
+	return _c
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (_c *WorkflowRunCreate) SetPolicyHasGates(v bool) *WorkflowRunCreate {
+	_c.mutation.SetPolicyHasGates(v)
+	return _c
+}
+
+// SetNillablePolicyHasGates sets the "policy_has_gates" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyHasGates(v *bool) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyHasGates(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *WorkflowRunCreate) SetID(v uuid.UUID) *WorkflowRunCreate {
 	_c.mutation.SetID(v)
@@ -330,6 +414,11 @@ func (_c *WorkflowRunCreate) check() error {
 	if _, ok := _c.mutation.WorkflowID(); !ok {
 		return &ValidationError{Name: "workflow_id", err: errors.New(`ent: missing required field "WorkflowRun.workflow_id"`)}
 	}
+	if v, ok := _c.mutation.PolicyStatus(); ok {
+		if err := workflowrun.PolicyStatusValidator(v); err != nil {
+			return &ValidationError{Name: "policy_status", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.policy_status": %w`, err)}
+		}
+	}
 	if len(_c.mutation.WorkflowIDs()) == 0 {
 		return &ValidationError{Name: "workflow", err: errors.New(`ent: missing required edge "WorkflowRun.workflow"`)}
 	}
@@ -419,6 +508,30 @@ func (_c *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.HasPolicyViolations(); ok {
 		_spec.SetField(workflowrun.FieldHasPolicyViolations, field.TypeBool, value)
 		_node.HasPolicyViolations = &value
+	}
+	if value, ok := _c.mutation.PolicyStatus(); ok {
+		_spec.SetField(workflowrun.FieldPolicyStatus, field.TypeEnum, value)
+		_node.PolicyStatus = &value
+	}
+	if value, ok := _c.mutation.PolicyEvaluationsTotal(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsTotal, field.TypeInt32, value)
+		_node.PolicyEvaluationsTotal = &value
+	}
+	if value, ok := _c.mutation.PolicyEvaluationsPassed(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsPassed, field.TypeInt32, value)
+		_node.PolicyEvaluationsPassed = &value
+	}
+	if value, ok := _c.mutation.PolicyEvaluationsSkipped(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsSkipped, field.TypeInt32, value)
+		_node.PolicyEvaluationsSkipped = &value
+	}
+	if value, ok := _c.mutation.PolicyViolationsCount(); ok {
+		_spec.SetField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32, value)
+		_node.PolicyViolationsCount = &value
+	}
+	if value, ok := _c.mutation.PolicyHasGates(); ok {
+		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
+		_node.PolicyHasGates = &value
 	}
 	if nodes := _c.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -759,6 +872,138 @@ func (u *WorkflowRunUpsert) ClearHasPolicyViolations() *WorkflowRunUpsert {
 	return u
 }
 
+// SetPolicyStatus sets the "policy_status" field.
+func (u *WorkflowRunUpsert) SetPolicyStatus(v workflowrun.PolicyStatus) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyStatus, v)
+	return u
+}
+
+// UpdatePolicyStatus sets the "policy_status" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyStatus() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyStatus)
+	return u
+}
+
+// ClearPolicyStatus clears the value of the "policy_status" field.
+func (u *WorkflowRunUpsert) ClearPolicyStatus() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyStatus)
+	return u
+}
+
+// SetPolicyEvaluationsTotal sets the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsert) SetPolicyEvaluationsTotal(v int32) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyEvaluationsTotal, v)
+	return u
+}
+
+// UpdatePolicyEvaluationsTotal sets the "policy_evaluations_total" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyEvaluationsTotal() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyEvaluationsTotal)
+	return u
+}
+
+// AddPolicyEvaluationsTotal adds v to the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsert) AddPolicyEvaluationsTotal(v int32) *WorkflowRunUpsert {
+	u.Add(workflowrun.FieldPolicyEvaluationsTotal, v)
+	return u
+}
+
+// ClearPolicyEvaluationsTotal clears the value of the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsert) ClearPolicyEvaluationsTotal() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyEvaluationsTotal)
+	return u
+}
+
+// SetPolicyEvaluationsPassed sets the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsert) SetPolicyEvaluationsPassed(v int32) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyEvaluationsPassed, v)
+	return u
+}
+
+// UpdatePolicyEvaluationsPassed sets the "policy_evaluations_passed" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyEvaluationsPassed() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyEvaluationsPassed)
+	return u
+}
+
+// AddPolicyEvaluationsPassed adds v to the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsert) AddPolicyEvaluationsPassed(v int32) *WorkflowRunUpsert {
+	u.Add(workflowrun.FieldPolicyEvaluationsPassed, v)
+	return u
+}
+
+// ClearPolicyEvaluationsPassed clears the value of the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsert) ClearPolicyEvaluationsPassed() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyEvaluationsPassed)
+	return u
+}
+
+// SetPolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsert) SetPolicyEvaluationsSkipped(v int32) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyEvaluationsSkipped, v)
+	return u
+}
+
+// UpdatePolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyEvaluationsSkipped() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyEvaluationsSkipped)
+	return u
+}
+
+// AddPolicyEvaluationsSkipped adds v to the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsert) AddPolicyEvaluationsSkipped(v int32) *WorkflowRunUpsert {
+	u.Add(workflowrun.FieldPolicyEvaluationsSkipped, v)
+	return u
+}
+
+// ClearPolicyEvaluationsSkipped clears the value of the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsert) ClearPolicyEvaluationsSkipped() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyEvaluationsSkipped)
+	return u
+}
+
+// SetPolicyViolationsCount sets the "policy_violations_count" field.
+func (u *WorkflowRunUpsert) SetPolicyViolationsCount(v int32) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyViolationsCount, v)
+	return u
+}
+
+// UpdatePolicyViolationsCount sets the "policy_violations_count" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyViolationsCount() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyViolationsCount)
+	return u
+}
+
+// AddPolicyViolationsCount adds v to the "policy_violations_count" field.
+func (u *WorkflowRunUpsert) AddPolicyViolationsCount(v int32) *WorkflowRunUpsert {
+	u.Add(workflowrun.FieldPolicyViolationsCount, v)
+	return u
+}
+
+// ClearPolicyViolationsCount clears the value of the "policy_violations_count" field.
+func (u *WorkflowRunUpsert) ClearPolicyViolationsCount() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyViolationsCount)
+	return u
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (u *WorkflowRunUpsert) SetPolicyHasGates(v bool) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyHasGates, v)
+	return u
+}
+
+// UpdatePolicyHasGates sets the "policy_has_gates" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyHasGates() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyHasGates)
+	return u
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (u *WorkflowRunUpsert) ClearPolicyHasGates() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyHasGates)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1048,6 +1293,160 @@ func (u *WorkflowRunUpsertOne) UpdateHasPolicyViolations() *WorkflowRunUpsertOne
 func (u *WorkflowRunUpsertOne) ClearHasPolicyViolations() *WorkflowRunUpsertOne {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearHasPolicyViolations()
+	})
+}
+
+// SetPolicyStatus sets the "policy_status" field.
+func (u *WorkflowRunUpsertOne) SetPolicyStatus(v workflowrun.PolicyStatus) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyStatus(v)
+	})
+}
+
+// UpdatePolicyStatus sets the "policy_status" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyStatus() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyStatus()
+	})
+}
+
+// ClearPolicyStatus clears the value of the "policy_status" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyStatus() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyStatus()
+	})
+}
+
+// SetPolicyEvaluationsTotal sets the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsertOne) SetPolicyEvaluationsTotal(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyEvaluationsTotal(v)
+	})
+}
+
+// AddPolicyEvaluationsTotal adds v to the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsertOne) AddPolicyEvaluationsTotal(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyEvaluationsTotal(v)
+	})
+}
+
+// UpdatePolicyEvaluationsTotal sets the "policy_evaluations_total" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyEvaluationsTotal() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyEvaluationsTotal()
+	})
+}
+
+// ClearPolicyEvaluationsTotal clears the value of the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyEvaluationsTotal() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyEvaluationsTotal()
+	})
+}
+
+// SetPolicyEvaluationsPassed sets the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsertOne) SetPolicyEvaluationsPassed(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyEvaluationsPassed(v)
+	})
+}
+
+// AddPolicyEvaluationsPassed adds v to the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsertOne) AddPolicyEvaluationsPassed(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyEvaluationsPassed(v)
+	})
+}
+
+// UpdatePolicyEvaluationsPassed sets the "policy_evaluations_passed" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyEvaluationsPassed() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyEvaluationsPassed()
+	})
+}
+
+// ClearPolicyEvaluationsPassed clears the value of the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyEvaluationsPassed() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyEvaluationsPassed()
+	})
+}
+
+// SetPolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsertOne) SetPolicyEvaluationsSkipped(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyEvaluationsSkipped(v)
+	})
+}
+
+// AddPolicyEvaluationsSkipped adds v to the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsertOne) AddPolicyEvaluationsSkipped(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyEvaluationsSkipped(v)
+	})
+}
+
+// UpdatePolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyEvaluationsSkipped() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyEvaluationsSkipped()
+	})
+}
+
+// ClearPolicyEvaluationsSkipped clears the value of the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyEvaluationsSkipped() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyEvaluationsSkipped()
+	})
+}
+
+// SetPolicyViolationsCount sets the "policy_violations_count" field.
+func (u *WorkflowRunUpsertOne) SetPolicyViolationsCount(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyViolationsCount(v)
+	})
+}
+
+// AddPolicyViolationsCount adds v to the "policy_violations_count" field.
+func (u *WorkflowRunUpsertOne) AddPolicyViolationsCount(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyViolationsCount(v)
+	})
+}
+
+// UpdatePolicyViolationsCount sets the "policy_violations_count" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyViolationsCount() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyViolationsCount()
+	})
+}
+
+// ClearPolicyViolationsCount clears the value of the "policy_violations_count" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyViolationsCount() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyViolationsCount()
+	})
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (u *WorkflowRunUpsertOne) SetPolicyHasGates(v bool) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyHasGates(v)
+	})
+}
+
+// UpdatePolicyHasGates sets the "policy_has_gates" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyHasGates() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyHasGates()
+	})
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyHasGates() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyHasGates()
 	})
 }
 
@@ -1507,6 +1906,160 @@ func (u *WorkflowRunUpsertBulk) UpdateHasPolicyViolations() *WorkflowRunUpsertBu
 func (u *WorkflowRunUpsertBulk) ClearHasPolicyViolations() *WorkflowRunUpsertBulk {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearHasPolicyViolations()
+	})
+}
+
+// SetPolicyStatus sets the "policy_status" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyStatus(v workflowrun.PolicyStatus) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyStatus(v)
+	})
+}
+
+// UpdatePolicyStatus sets the "policy_status" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyStatus() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyStatus()
+	})
+}
+
+// ClearPolicyStatus clears the value of the "policy_status" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyStatus() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyStatus()
+	})
+}
+
+// SetPolicyEvaluationsTotal sets the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyEvaluationsTotal(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyEvaluationsTotal(v)
+	})
+}
+
+// AddPolicyEvaluationsTotal adds v to the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsertBulk) AddPolicyEvaluationsTotal(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyEvaluationsTotal(v)
+	})
+}
+
+// UpdatePolicyEvaluationsTotal sets the "policy_evaluations_total" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyEvaluationsTotal() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyEvaluationsTotal()
+	})
+}
+
+// ClearPolicyEvaluationsTotal clears the value of the "policy_evaluations_total" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyEvaluationsTotal() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyEvaluationsTotal()
+	})
+}
+
+// SetPolicyEvaluationsPassed sets the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyEvaluationsPassed(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyEvaluationsPassed(v)
+	})
+}
+
+// AddPolicyEvaluationsPassed adds v to the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsertBulk) AddPolicyEvaluationsPassed(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyEvaluationsPassed(v)
+	})
+}
+
+// UpdatePolicyEvaluationsPassed sets the "policy_evaluations_passed" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyEvaluationsPassed() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyEvaluationsPassed()
+	})
+}
+
+// ClearPolicyEvaluationsPassed clears the value of the "policy_evaluations_passed" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyEvaluationsPassed() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyEvaluationsPassed()
+	})
+}
+
+// SetPolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyEvaluationsSkipped(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyEvaluationsSkipped(v)
+	})
+}
+
+// AddPolicyEvaluationsSkipped adds v to the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsertBulk) AddPolicyEvaluationsSkipped(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyEvaluationsSkipped(v)
+	})
+}
+
+// UpdatePolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyEvaluationsSkipped() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyEvaluationsSkipped()
+	})
+}
+
+// ClearPolicyEvaluationsSkipped clears the value of the "policy_evaluations_skipped" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyEvaluationsSkipped() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyEvaluationsSkipped()
+	})
+}
+
+// SetPolicyViolationsCount sets the "policy_violations_count" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyViolationsCount(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyViolationsCount(v)
+	})
+}
+
+// AddPolicyViolationsCount adds v to the "policy_violations_count" field.
+func (u *WorkflowRunUpsertBulk) AddPolicyViolationsCount(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyViolationsCount(v)
+	})
+}
+
+// UpdatePolicyViolationsCount sets the "policy_violations_count" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyViolationsCount() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyViolationsCount()
+	})
+}
+
+// ClearPolicyViolationsCount clears the value of the "policy_violations_count" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyViolationsCount() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyViolationsCount()
+	})
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyHasGates(v bool) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyHasGates(v)
+	})
+}
+
+// UpdatePolicyHasGates sets the "policy_has_gates" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyHasGates() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyHasGates()
+	})
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyHasGates() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyHasGates()
 	})
 }
 

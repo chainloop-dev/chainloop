@@ -56,8 +56,13 @@ type ProvenancePredicateV02 struct {
 	PolicyEvaluationsCount int `json:"policyEvaluationsCount"`
 	// Total number of policy violations across all evaluations
 	PolicyViolationsCount int `json:"policyViolationsCount"`
+	// Number of evaluations that were skipped (did not run)
+	PolicySkippedCount int `json:"policySkippedCount,omitempty"`
+	// Number of evaluations that passed (no violations and not skipped)
+	PolicyPassedCount int `json:"policyPassedCount,omitempty"`
 	// Whether the attestation has policy violations in gated policies
 	PolicyHasGatedViolations bool `json:"policyHasGatedViolations,omitempty"`
+	PolicyHasGates           bool `json:"policyHasGates,omitempty"`
 	// Whether we want to block the attestation on policy violations
 	PolicyCheckBlockingStrategy PolicyViolationBlockingStrategy `json:"policyCheckBlockingStrategy"`
 	// Whether the policy check was bypassed
@@ -254,6 +259,8 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 	// In all cases, if the bypass flag is set, the attestation is not blocked
 	blocked := !r.att.GetBypassPolicyCheck() && (evalResult.hasGatedViolations || (evalResult.hasViolations && r.att.GetBlockOnPolicyViolation()))
 
+	hasGates := evalResult.hasGates || policyCheckBlockingStrategy == PolicyViolationBlockingStrategyEnforced
+
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon:   predicateCommon(r.builder, r.att),
 		Materials:                   normalizedMaterials,
@@ -262,7 +269,10 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		PolicyHasViolations:         evalResult.hasViolations,
 		PolicyEvaluationsCount:      evalResult.evaluationsCount,
 		PolicyViolationsCount:       evalResult.violationsCount,
+		PolicySkippedCount:          evalResult.skippedCount,
+		PolicyPassedCount:           evalResult.passedCount,
 		PolicyHasGatedViolations:    evalResult.hasGatedViolations,
+		PolicyHasGates:              hasGates,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
 		PolicyBlockBypassEnabled:    r.att.GetBypassPolicyCheck(),
 		PolicyAttBlocked:            blocked,
@@ -309,8 +319,11 @@ type evaluationsResult struct {
 	evaluations        map[string][]*PolicyEvaluation
 	hasViolations      bool
 	hasGatedViolations bool
+	hasGates           bool
 	evaluationsCount   int
 	violationsCount    int
+	skippedCount       int
+	passedCount        int
 }
 
 func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) {
@@ -329,12 +342,21 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 			return nil, err
 		}
 
-		if len(ev.Violations) > 0 {
+		if ev.Gate {
+			res.hasGates = true
+		}
+
+		switch {
+		case len(ev.Violations) > 0:
 			res.hasViolations = true
 			res.violationsCount += len(ev.Violations)
 			if ev.Gate {
 				res.hasGatedViolations = true
 			}
+		case ev.Skipped:
+			res.skippedCount++
+		default:
+			res.passedCount++
 		}
 
 		res.evaluations[keyName] = append(res.evaluations[keyName], ev)
@@ -463,15 +485,61 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationsRef() *intoto.ResourceDescr
 }
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationStatus {
+	skipped, passed, hasGates := p.PolicySkippedCount, p.PolicyPassedCount, p.PolicyHasGates
+
+	// Attestations signed before these counters/flags were added to the
+	// predicate decode as zero. Backfill from the inline evaluations when
+	// available so DerivePolicyStatusSummary stays correct for historic
+	// envelopes (e.g. skipped-only runs misclassified as PASSED).
+	countersMissing := skipped == 0 && passed == 0 && p.PolicyEvaluationsCount > 0
+	if countersMissing || !hasGates {
+		evals := p.PolicyEvaluations
+		if len(evals) == 0 {
+			evals = p.PolicyEvaluationsFallback
+		}
+		if len(evals) > 0 {
+			sc, pc, hg := summarizeInlineEvaluations(evals)
+			if countersMissing {
+				skipped, passed = sc, pc
+			}
+			hasGates = hasGates || hg
+		}
+	}
+	// Strategy-level enforcement implies gating even without inline evaluations.
+	if !hasGates && p.PolicyCheckBlockingStrategy == PolicyViolationBlockingStrategyEnforced {
+		hasGates = true
+	}
+
 	return &PolicyEvaluationStatus{
 		Strategy:           p.PolicyCheckBlockingStrategy,
 		Bypassed:           p.PolicyBlockBypassEnabled,
 		Blocked:            p.PolicyAttBlocked,
 		HasViolations:      p.PolicyHasViolations,
 		HasGatedViolations: p.PolicyHasGatedViolations,
+		HasGates:           hasGates,
 		EvaluationsCount:   p.PolicyEvaluationsCount,
 		ViolationsCount:    p.PolicyViolationsCount,
+		SkippedCount:       skipped,
+		PassedCount:        passed,
 	}
+}
+
+func summarizeInlineEvaluations(evals map[string][]*PolicyEvaluation) (skipped, passed int, hasGates bool) {
+	for _, list := range evals {
+		for _, ev := range list {
+			if ev.Gate {
+				hasGates = true
+			}
+			switch {
+			case len(ev.Violations) > 0:
+			case ev.Skipped:
+				skipped++
+			default:
+				passed++
+			}
+		}
+	}
+	return
 }
 
 // Translate a ResourceDescriptor to a NormalizedMaterial

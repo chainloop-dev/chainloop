@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,6 +61,17 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.UUID("workflow_id", uuid.UUID{}).Immutable(),
 		// Whether the run has policy violations (nullable for backward compatibility)
 		field.Bool("has_policy_violations").Optional().Nillable(),
+		// Canonical policy status summary — all fields nullable so pre-existing
+		// rows (before this column set was introduced) remain valid and are
+		// interpreted as NOT_APPLICABLE by the service layer.
+		field.Enum("policy_status").
+			Values("NOT_APPLICABLE", "PASSED", "SKIPPED", "WARNING", "BLOCKED", "BYPASSED").
+			Optional().Nillable(),
+		field.Int32("policy_evaluations_total").Optional().Nillable(),
+		field.Int32("policy_evaluations_passed").Optional().Nillable(),
+		field.Int32("policy_evaluations_skipped").Optional().Nillable(),
+		field.Int32("policy_violations_count").Optional().Nillable(),
+		field.Bool("policy_has_gates").Optional().Nillable(),
 	}
 }
 
@@ -94,5 +105,11 @@ func (WorkflowRun) Indexes() []ent.Index {
 		index.Edges("workflow"),
 		// Workflow run counts per project version
 		index.Fields("version_id", "workflow_id"),
+		// List filtering on canonical policy status
+		index.Fields("policy_status"),
+		// Partial index: most "gated" queries ask for true; NULL rows predate
+		// the column, and false is the high-cardinality majority where a
+		// seqscan is fine anyway.
+		index.Fields("policy_has_gates").Annotations(entsql.IndexWhere("policy_has_gates = true")),
 	}
 }

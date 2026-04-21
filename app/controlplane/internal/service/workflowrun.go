@@ -171,10 +171,24 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		filters.Status = st
 	}
 
-	// by policy violations status
+	// by policy violations status (legacy, coarse — kept for back-compat)
+	//nolint:staticcheck // honoring the deprecated field for older clients
 	if req.GetPolicyViolations() != pb.PolicyViolationsFilter_POLICY_VIOLATIONS_FILTER_UNSPECIFIED {
+		//nolint:staticcheck // honoring the deprecated field for older clients
 		hasViolations := req.GetPolicyViolations() == pb.PolicyViolationsFilter_POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS
 		filters.PolicyViolationsFilter = &hasViolations
+	}
+
+	// by canonical policy status — takes precedence over policy_violations
+	// when both are set (documented on the request message).
+	if req.GetPolicyStatus() != pb.PolicyStatusFilter_POLICY_STATUS_FILTER_UNSPECIFIED {
+		s := pbPolicyStatusFilterToBiz(req.GetPolicyStatus())
+		filters.PolicyStatus = &s
+	}
+
+	if req.GetPolicyGates() != pb.PolicyGatesFilter_POLICY_GATES_FILTER_UNSPECIFIED {
+		hasGates := req.GetPolicyGates() == pb.PolicyGatesFilter_POLICY_GATES_FILTER_WITH_GATES
+		filters.PolicyHasGates = &hasGates
 	}
 
 	p := req.GetPagination()
@@ -312,6 +326,7 @@ func bizWorkFlowRunToPb(wfr *biz.WorkflowRun) *pb.WorkflowRunItem {
 		ContractRevisionLatest: int32(wfr.ContractRevisionLatest),
 		Version:                bizProjectVersionToPb(wfr.ProjectVersion),
 		HasPolicyViolations:    wfr.HasPolicyViolations,
+		PolicySummary:          bizPolicyStatusSummaryToPb(wfr.PolicyStatus),
 	}
 
 	if wfr.FinishedAt != nil {
@@ -376,6 +391,62 @@ func bizWorkflowRunStatusToPb(st biz.WorkflowRunStatus) pb.RunStatus {
 	}
 
 	return m[st]
+}
+
+// bizPolicyStatusSummaryToPb maps the domain summary onto its protobuf shape.
+// Returns nil for nil input so rows predating the materialization change
+// travel over the wire as "no policy_summary present" and clients can fall
+// back to has_policy_violations.
+func bizPolicyStatusSummaryToPb(s *chainloop.PolicyStatusSummary) *pb.PolicyStatusSummary {
+	if s == nil {
+		return nil
+	}
+	return &pb.PolicyStatusSummary{
+		Status:   bizPolicyStatusToPb(s.Status),
+		Total:    int32(s.Total),
+		Passed:   int32(s.Passed),
+		Skipped:  int32(s.Skipped),
+		Violated: int32(s.Violated),
+		HasGates: s.HasGates,
+	}
+}
+
+func bizPolicyStatusToPb(s chainloop.PolicyStatus) pb.PolicyStatus {
+	switch s {
+	case chainloop.PolicyStatusNotApplicable:
+		return pb.PolicyStatus_POLICY_STATUS_NOT_APPLICABLE
+	case chainloop.PolicyStatusPassed:
+		return pb.PolicyStatus_POLICY_STATUS_PASSED
+	case chainloop.PolicyStatusSkipped:
+		return pb.PolicyStatus_POLICY_STATUS_SKIPPED
+	case chainloop.PolicyStatusWarning:
+		return pb.PolicyStatus_POLICY_STATUS_WARNING
+	case chainloop.PolicyStatusBlocked:
+		return pb.PolicyStatus_POLICY_STATUS_BLOCKED
+	case chainloop.PolicyStatusBypassed:
+		return pb.PolicyStatus_POLICY_STATUS_BYPASSED
+	default:
+		return pb.PolicyStatus_POLICY_STATUS_UNSPECIFIED
+	}
+}
+
+func pbPolicyStatusFilterToBiz(f pb.PolicyStatusFilter) chainloop.PolicyStatus {
+	switch f {
+	case pb.PolicyStatusFilter_POLICY_STATUS_FILTER_NOT_APPLICABLE:
+		return chainloop.PolicyStatusNotApplicable
+	case pb.PolicyStatusFilter_POLICY_STATUS_FILTER_PASSED:
+		return chainloop.PolicyStatusPassed
+	case pb.PolicyStatusFilter_POLICY_STATUS_FILTER_SKIPPED:
+		return chainloop.PolicyStatusSkipped
+	case pb.PolicyStatusFilter_POLICY_STATUS_FILTER_WARNING:
+		return chainloop.PolicyStatusWarning
+	case pb.PolicyStatusFilter_POLICY_STATUS_FILTER_BLOCKED:
+		return chainloop.PolicyStatusBlocked
+	case pb.PolicyStatusFilter_POLICY_STATUS_FILTER_BYPASSED:
+		return chainloop.PolicyStatusBypassed
+	default:
+		return chainloop.PolicyStatusUnspecified
+	}
 }
 
 // validateAndGetProjectID finds a project by name and verifies it's in the visible projects list

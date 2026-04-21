@@ -53,6 +53,18 @@ type WorkflowRun struct {
 	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
 	// HasPolicyViolations holds the value of the "has_policy_violations" field.
 	HasPolicyViolations *bool `json:"has_policy_violations,omitempty"`
+	// PolicyStatus holds the value of the "policy_status" field.
+	PolicyStatus *workflowrun.PolicyStatus `json:"policy_status,omitempty"`
+	// PolicyEvaluationsTotal holds the value of the "policy_evaluations_total" field.
+	PolicyEvaluationsTotal *int32 `json:"policy_evaluations_total,omitempty"`
+	// PolicyEvaluationsPassed holds the value of the "policy_evaluations_passed" field.
+	PolicyEvaluationsPassed *int32 `json:"policy_evaluations_passed,omitempty"`
+	// PolicyEvaluationsSkipped holds the value of the "policy_evaluations_skipped" field.
+	PolicyEvaluationsSkipped *int32 `json:"policy_evaluations_skipped,omitempty"`
+	// PolicyViolationsCount holds the value of the "policy_violations_count" field.
+	PolicyViolationsCount *int32 `json:"policy_violations_count,omitempty"`
+	// PolicyHasGates holds the value of the "policy_has_gates" field.
+	PolicyHasGates *bool `json:"policy_has_gates,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -137,11 +149,11 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState:
 			values[i] = new([]byte)
-		case workflowrun.FieldHasPolicyViolations:
+		case workflowrun.FieldHasPolicyViolations, workflowrun.FieldPolicyHasGates:
 			values[i] = new(sql.NullBool)
-		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatest:
+		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatest, workflowrun.FieldPolicyEvaluationsTotal, workflowrun.FieldPolicyEvaluationsPassed, workflowrun.FieldPolicyEvaluationsSkipped, workflowrun.FieldPolicyViolationsCount:
 			values[i] = new(sql.NullInt64)
-		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest:
+		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest, workflowrun.FieldPolicyStatus:
 			values[i] = new(sql.NullString)
 		case workflowrun.FieldCreatedAt, workflowrun.FieldFinishedAt:
 			values[i] = new(sql.NullTime)
@@ -257,6 +269,48 @@ func (_m *WorkflowRun) assignValues(columns []string, values []any) error {
 				_m.HasPolicyViolations = new(bool)
 				*_m.HasPolicyViolations = value.Bool
 			}
+		case workflowrun.FieldPolicyStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_status", values[i])
+			} else if value.Valid {
+				_m.PolicyStatus = new(workflowrun.PolicyStatus)
+				*_m.PolicyStatus = workflowrun.PolicyStatus(value.String)
+			}
+		case workflowrun.FieldPolicyEvaluationsTotal:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_evaluations_total", values[i])
+			} else if value.Valid {
+				_m.PolicyEvaluationsTotal = new(int32)
+				*_m.PolicyEvaluationsTotal = int32(value.Int64)
+			}
+		case workflowrun.FieldPolicyEvaluationsPassed:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_evaluations_passed", values[i])
+			} else if value.Valid {
+				_m.PolicyEvaluationsPassed = new(int32)
+				*_m.PolicyEvaluationsPassed = int32(value.Int64)
+			}
+		case workflowrun.FieldPolicyEvaluationsSkipped:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_evaluations_skipped", values[i])
+			} else if value.Valid {
+				_m.PolicyEvaluationsSkipped = new(int32)
+				*_m.PolicyEvaluationsSkipped = int32(value.Int64)
+			}
+		case workflowrun.FieldPolicyViolationsCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_violations_count", values[i])
+			} else if value.Valid {
+				_m.PolicyViolationsCount = new(int32)
+				*_m.PolicyViolationsCount = int32(value.Int64)
+			}
+		case workflowrun.FieldPolicyHasGates:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_has_gates", values[i])
+			} else if value.Valid {
+				_m.PolicyHasGates = new(bool)
+				*_m.PolicyHasGates = value.Bool
+			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
@@ -366,6 +420,36 @@ func (_m *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	if v := _m.HasPolicyViolations; v != nil {
 		builder.WriteString("has_policy_violations=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyStatus; v != nil {
+		builder.WriteString("policy_status=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyEvaluationsTotal; v != nil {
+		builder.WriteString("policy_evaluations_total=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyEvaluationsPassed; v != nil {
+		builder.WriteString("policy_evaluations_passed=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyEvaluationsSkipped; v != nil {
+		builder.WriteString("policy_evaluations_skipped=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyViolationsCount; v != nil {
+		builder.WriteString("policy_violations_count=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyHasGates; v != nil {
+		builder.WriteString("policy_has_gates=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteByte(')')

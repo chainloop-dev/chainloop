@@ -250,6 +250,154 @@ func (_u *WorkflowRunUpdate) ClearHasPolicyViolations() *WorkflowRunUpdate {
 	return _u
 }
 
+// SetPolicyStatus sets the "policy_status" field.
+func (_u *WorkflowRunUpdate) SetPolicyStatus(v workflowrun.PolicyStatus) *WorkflowRunUpdate {
+	_u.mutation.SetPolicyStatus(v)
+	return _u
+}
+
+// SetNillablePolicyStatus sets the "policy_status" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyStatus(v *workflowrun.PolicyStatus) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyStatus(*v)
+	}
+	return _u
+}
+
+// ClearPolicyStatus clears the value of the "policy_status" field.
+func (_u *WorkflowRunUpdate) ClearPolicyStatus() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyStatus()
+	return _u
+}
+
+// SetPolicyEvaluationsTotal sets the "policy_evaluations_total" field.
+func (_u *WorkflowRunUpdate) SetPolicyEvaluationsTotal(v int32) *WorkflowRunUpdate {
+	_u.mutation.ResetPolicyEvaluationsTotal()
+	_u.mutation.SetPolicyEvaluationsTotal(v)
+	return _u
+}
+
+// SetNillablePolicyEvaluationsTotal sets the "policy_evaluations_total" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyEvaluationsTotal(v *int32) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyEvaluationsTotal(*v)
+	}
+	return _u
+}
+
+// AddPolicyEvaluationsTotal adds value to the "policy_evaluations_total" field.
+func (_u *WorkflowRunUpdate) AddPolicyEvaluationsTotal(v int32) *WorkflowRunUpdate {
+	_u.mutation.AddPolicyEvaluationsTotal(v)
+	return _u
+}
+
+// ClearPolicyEvaluationsTotal clears the value of the "policy_evaluations_total" field.
+func (_u *WorkflowRunUpdate) ClearPolicyEvaluationsTotal() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyEvaluationsTotal()
+	return _u
+}
+
+// SetPolicyEvaluationsPassed sets the "policy_evaluations_passed" field.
+func (_u *WorkflowRunUpdate) SetPolicyEvaluationsPassed(v int32) *WorkflowRunUpdate {
+	_u.mutation.ResetPolicyEvaluationsPassed()
+	_u.mutation.SetPolicyEvaluationsPassed(v)
+	return _u
+}
+
+// SetNillablePolicyEvaluationsPassed sets the "policy_evaluations_passed" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyEvaluationsPassed(v *int32) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyEvaluationsPassed(*v)
+	}
+	return _u
+}
+
+// AddPolicyEvaluationsPassed adds value to the "policy_evaluations_passed" field.
+func (_u *WorkflowRunUpdate) AddPolicyEvaluationsPassed(v int32) *WorkflowRunUpdate {
+	_u.mutation.AddPolicyEvaluationsPassed(v)
+	return _u
+}
+
+// ClearPolicyEvaluationsPassed clears the value of the "policy_evaluations_passed" field.
+func (_u *WorkflowRunUpdate) ClearPolicyEvaluationsPassed() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyEvaluationsPassed()
+	return _u
+}
+
+// SetPolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field.
+func (_u *WorkflowRunUpdate) SetPolicyEvaluationsSkipped(v int32) *WorkflowRunUpdate {
+	_u.mutation.ResetPolicyEvaluationsSkipped()
+	_u.mutation.SetPolicyEvaluationsSkipped(v)
+	return _u
+}
+
+// SetNillablePolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyEvaluationsSkipped(v *int32) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyEvaluationsSkipped(*v)
+	}
+	return _u
+}
+
+// AddPolicyEvaluationsSkipped adds value to the "policy_evaluations_skipped" field.
+func (_u *WorkflowRunUpdate) AddPolicyEvaluationsSkipped(v int32) *WorkflowRunUpdate {
+	_u.mutation.AddPolicyEvaluationsSkipped(v)
+	return _u
+}
+
+// ClearPolicyEvaluationsSkipped clears the value of the "policy_evaluations_skipped" field.
+func (_u *WorkflowRunUpdate) ClearPolicyEvaluationsSkipped() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyEvaluationsSkipped()
+	return _u
+}
+
+// SetPolicyViolationsCount sets the "policy_violations_count" field.
+func (_u *WorkflowRunUpdate) SetPolicyViolationsCount(v int32) *WorkflowRunUpdate {
+	_u.mutation.ResetPolicyViolationsCount()
+	_u.mutation.SetPolicyViolationsCount(v)
+	return _u
+}
+
+// SetNillablePolicyViolationsCount sets the "policy_violations_count" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyViolationsCount(v *int32) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyViolationsCount(*v)
+	}
+	return _u
+}
+
+// AddPolicyViolationsCount adds value to the "policy_violations_count" field.
+func (_u *WorkflowRunUpdate) AddPolicyViolationsCount(v int32) *WorkflowRunUpdate {
+	_u.mutation.AddPolicyViolationsCount(v)
+	return _u
+}
+
+// ClearPolicyViolationsCount clears the value of the "policy_violations_count" field.
+func (_u *WorkflowRunUpdate) ClearPolicyViolationsCount() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyViolationsCount()
+	return _u
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (_u *WorkflowRunUpdate) SetPolicyHasGates(v bool) *WorkflowRunUpdate {
+	_u.mutation.SetPolicyHasGates(v)
+	return _u
+}
+
+// SetNillablePolicyHasGates sets the "policy_has_gates" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyHasGates(v *bool) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyHasGates(*v)
+	}
+	return _u
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (_u *WorkflowRunUpdate) ClearPolicyHasGates() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyHasGates()
+	return _u
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (_u *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
 	_u.mutation.SetContractVersionID(id)
@@ -386,6 +534,11 @@ func (_u *WorkflowRunUpdate) check() error {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.PolicyStatus(); ok {
+		if err := workflowrun.PolicyStatusValidator(v); err != nil {
+			return &ValidationError{Name: "policy_status", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.policy_status": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
 	}
@@ -475,6 +628,54 @@ func (_u *WorkflowRunUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.HasPolicyViolationsCleared() {
 		_spec.ClearField(workflowrun.FieldHasPolicyViolations, field.TypeBool)
+	}
+	if value, ok := _u.mutation.PolicyStatus(); ok {
+		_spec.SetField(workflowrun.FieldPolicyStatus, field.TypeEnum, value)
+	}
+	if _u.mutation.PolicyStatusCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyStatus, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.PolicyEvaluationsTotal(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsTotal, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyEvaluationsTotal(); ok {
+		_spec.AddField(workflowrun.FieldPolicyEvaluationsTotal, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyEvaluationsTotalCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyEvaluationsTotal, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyEvaluationsPassed(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsPassed, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyEvaluationsPassed(); ok {
+		_spec.AddField(workflowrun.FieldPolicyEvaluationsPassed, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyEvaluationsPassedCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyEvaluationsPassed, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyEvaluationsSkipped(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsSkipped, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyEvaluationsSkipped(); ok {
+		_spec.AddField(workflowrun.FieldPolicyEvaluationsSkipped, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyEvaluationsSkippedCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyEvaluationsSkipped, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyViolationsCount(); ok {
+		_spec.SetField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyViolationsCount(); ok {
+		_spec.AddField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyViolationsCountCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyHasGates(); ok {
+		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
+	}
+	if _u.mutation.PolicyHasGatesCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyHasGates, field.TypeBool)
 	}
 	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -844,6 +1045,154 @@ func (_u *WorkflowRunUpdateOne) ClearHasPolicyViolations() *WorkflowRunUpdateOne
 	return _u
 }
 
+// SetPolicyStatus sets the "policy_status" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyStatus(v workflowrun.PolicyStatus) *WorkflowRunUpdateOne {
+	_u.mutation.SetPolicyStatus(v)
+	return _u
+}
+
+// SetNillablePolicyStatus sets the "policy_status" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyStatus(v *workflowrun.PolicyStatus) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyStatus(*v)
+	}
+	return _u
+}
+
+// ClearPolicyStatus clears the value of the "policy_status" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyStatus() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyStatus()
+	return _u
+}
+
+// SetPolicyEvaluationsTotal sets the "policy_evaluations_total" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyEvaluationsTotal(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.ResetPolicyEvaluationsTotal()
+	_u.mutation.SetPolicyEvaluationsTotal(v)
+	return _u
+}
+
+// SetNillablePolicyEvaluationsTotal sets the "policy_evaluations_total" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyEvaluationsTotal(v *int32) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyEvaluationsTotal(*v)
+	}
+	return _u
+}
+
+// AddPolicyEvaluationsTotal adds value to the "policy_evaluations_total" field.
+func (_u *WorkflowRunUpdateOne) AddPolicyEvaluationsTotal(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.AddPolicyEvaluationsTotal(v)
+	return _u
+}
+
+// ClearPolicyEvaluationsTotal clears the value of the "policy_evaluations_total" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyEvaluationsTotal() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyEvaluationsTotal()
+	return _u
+}
+
+// SetPolicyEvaluationsPassed sets the "policy_evaluations_passed" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyEvaluationsPassed(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.ResetPolicyEvaluationsPassed()
+	_u.mutation.SetPolicyEvaluationsPassed(v)
+	return _u
+}
+
+// SetNillablePolicyEvaluationsPassed sets the "policy_evaluations_passed" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyEvaluationsPassed(v *int32) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyEvaluationsPassed(*v)
+	}
+	return _u
+}
+
+// AddPolicyEvaluationsPassed adds value to the "policy_evaluations_passed" field.
+func (_u *WorkflowRunUpdateOne) AddPolicyEvaluationsPassed(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.AddPolicyEvaluationsPassed(v)
+	return _u
+}
+
+// ClearPolicyEvaluationsPassed clears the value of the "policy_evaluations_passed" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyEvaluationsPassed() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyEvaluationsPassed()
+	return _u
+}
+
+// SetPolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyEvaluationsSkipped(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.ResetPolicyEvaluationsSkipped()
+	_u.mutation.SetPolicyEvaluationsSkipped(v)
+	return _u
+}
+
+// SetNillablePolicyEvaluationsSkipped sets the "policy_evaluations_skipped" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyEvaluationsSkipped(v *int32) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyEvaluationsSkipped(*v)
+	}
+	return _u
+}
+
+// AddPolicyEvaluationsSkipped adds value to the "policy_evaluations_skipped" field.
+func (_u *WorkflowRunUpdateOne) AddPolicyEvaluationsSkipped(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.AddPolicyEvaluationsSkipped(v)
+	return _u
+}
+
+// ClearPolicyEvaluationsSkipped clears the value of the "policy_evaluations_skipped" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyEvaluationsSkipped() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyEvaluationsSkipped()
+	return _u
+}
+
+// SetPolicyViolationsCount sets the "policy_violations_count" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyViolationsCount(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.ResetPolicyViolationsCount()
+	_u.mutation.SetPolicyViolationsCount(v)
+	return _u
+}
+
+// SetNillablePolicyViolationsCount sets the "policy_violations_count" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyViolationsCount(v *int32) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyViolationsCount(*v)
+	}
+	return _u
+}
+
+// AddPolicyViolationsCount adds value to the "policy_violations_count" field.
+func (_u *WorkflowRunUpdateOne) AddPolicyViolationsCount(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.AddPolicyViolationsCount(v)
+	return _u
+}
+
+// ClearPolicyViolationsCount clears the value of the "policy_violations_count" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyViolationsCount() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyViolationsCount()
+	return _u
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyHasGates(v bool) *WorkflowRunUpdateOne {
+	_u.mutation.SetPolicyHasGates(v)
+	return _u
+}
+
+// SetNillablePolicyHasGates sets the "policy_has_gates" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyHasGates(v *bool) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyHasGates(*v)
+	}
+	return _u
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyHasGates() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyHasGates()
+	return _u
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (_u *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
 	_u.mutation.SetContractVersionID(id)
@@ -993,6 +1342,11 @@ func (_u *WorkflowRunUpdateOne) check() error {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.state": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.PolicyStatus(); ok {
+		if err := workflowrun.PolicyStatusValidator(v); err != nil {
+			return &ValidationError{Name: "policy_status", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.policy_status": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
 	}
@@ -1099,6 +1453,54 @@ func (_u *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowRun
 	}
 	if _u.mutation.HasPolicyViolationsCleared() {
 		_spec.ClearField(workflowrun.FieldHasPolicyViolations, field.TypeBool)
+	}
+	if value, ok := _u.mutation.PolicyStatus(); ok {
+		_spec.SetField(workflowrun.FieldPolicyStatus, field.TypeEnum, value)
+	}
+	if _u.mutation.PolicyStatusCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyStatus, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.PolicyEvaluationsTotal(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsTotal, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyEvaluationsTotal(); ok {
+		_spec.AddField(workflowrun.FieldPolicyEvaluationsTotal, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyEvaluationsTotalCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyEvaluationsTotal, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyEvaluationsPassed(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsPassed, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyEvaluationsPassed(); ok {
+		_spec.AddField(workflowrun.FieldPolicyEvaluationsPassed, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyEvaluationsPassedCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyEvaluationsPassed, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyEvaluationsSkipped(); ok {
+		_spec.SetField(workflowrun.FieldPolicyEvaluationsSkipped, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyEvaluationsSkipped(); ok {
+		_spec.AddField(workflowrun.FieldPolicyEvaluationsSkipped, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyEvaluationsSkippedCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyEvaluationsSkipped, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyViolationsCount(); ok {
+		_spec.SetField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyViolationsCount(); ok {
+		_spec.AddField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyViolationsCountCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyHasGates(); ok {
+		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
+	}
+	if _u.mutation.PolicyHasGatesCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyHasGates, field.TypeBool)
 	}
 	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
