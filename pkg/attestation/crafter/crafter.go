@@ -405,6 +405,17 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		return nil, fmt.Errorf("getting git commit hash: %w", err)
 	}
 
+	// In CI environments that create synthetic merge commits (e.g., GitHub Actions
+	// pull_request events), the local HEAD points to the merge commit instead of
+	// the actual PR branch head. Override the hash (and metadata when available)
+	// from the CI event payload so the attestation references the correct SHA.
+	// See chainloop-dev/chainloop#3064.
+	if headCommit != nil && opts.Runner != nil && opts.Runner.ID() == schemaapi.CraftingSchema_Runner_GITHUB_ACTION {
+		if actualSHA := resolveGitHubPRHeadSHA(); actualSHA != "" && actualSHA != headCommit.Hash {
+			overrideHeadWithPRCommit(headCommit, cwd, actualSHA, opts.Logger)
+		}
+	}
+
 	var headCommitP *api.Commit
 	if headCommit != nil {
 		// Attempt platform verification
