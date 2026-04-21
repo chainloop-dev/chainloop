@@ -249,6 +249,20 @@ func (_c *WorkflowRunCreate) SetNillablePolicyViolationsCount(v *int32) *Workflo
 	return _c
 }
 
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (_c *WorkflowRunCreate) SetPolicyHasGates(v bool) *WorkflowRunCreate {
+	_c.mutation.SetPolicyHasGates(v)
+	return _c
+}
+
+// SetNillablePolicyHasGates sets the "policy_has_gates" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyHasGates(v *bool) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyHasGates(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *WorkflowRunCreate) SetID(v uuid.UUID) *WorkflowRunCreate {
 	_c.mutation.SetID(v)
@@ -514,6 +528,10 @@ func (_c *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.PolicyViolationsCount(); ok {
 		_spec.SetField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32, value)
 		_node.PolicyViolationsCount = &value
+	}
+	if value, ok := _c.mutation.PolicyHasGates(); ok {
+		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
+		_node.PolicyHasGates = &value
 	}
 	if nodes := _c.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -968,6 +986,24 @@ func (u *WorkflowRunUpsert) ClearPolicyViolationsCount() *WorkflowRunUpsert {
 	return u
 }
 
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (u *WorkflowRunUpsert) SetPolicyHasGates(v bool) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyHasGates, v)
+	return u
+}
+
+// UpdatePolicyHasGates sets the "policy_has_gates" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyHasGates() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyHasGates)
+	return u
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (u *WorkflowRunUpsert) ClearPolicyHasGates() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyHasGates)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1390,6 +1426,27 @@ func (u *WorkflowRunUpsertOne) UpdatePolicyViolationsCount() *WorkflowRunUpsertO
 func (u *WorkflowRunUpsertOne) ClearPolicyViolationsCount() *WorkflowRunUpsertOne {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearPolicyViolationsCount()
+	})
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (u *WorkflowRunUpsertOne) SetPolicyHasGates(v bool) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyHasGates(v)
+	})
+}
+
+// UpdatePolicyHasGates sets the "policy_has_gates" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyHasGates() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyHasGates()
+	})
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyHasGates() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyHasGates()
 	})
 }
 
@@ -1982,6 +2039,27 @@ func (u *WorkflowRunUpsertBulk) UpdatePolicyViolationsCount() *WorkflowRunUpsert
 func (u *WorkflowRunUpsertBulk) ClearPolicyViolationsCount() *WorkflowRunUpsertBulk {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearPolicyViolationsCount()
+	})
+}
+
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyHasGates(v bool) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyHasGates(v)
+	})
+}
+
+// UpdatePolicyHasGates sets the "policy_has_gates" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyHasGates() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyHasGates()
+	})
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyHasGates() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyHasGates()
 	})
 }
 

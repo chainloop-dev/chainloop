@@ -186,6 +186,11 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		filters.PolicyStatus = &s
 	}
 
+	if req.GetPolicyGates() != pb.PolicyGatesFilter_POLICY_GATES_FILTER_UNSPECIFIED {
+		hasGates := req.GetPolicyGates() == pb.PolicyGatesFilter_POLICY_GATES_FILTER_WITH_GATES
+		filters.PolicyHasGates = &hasGates
+	}
+
 	p := req.GetPagination()
 	paginationOpts, err := pagination.NewCursor(p.GetCursor(), int(p.GetLimit()))
 	if err != nil {
@@ -402,6 +407,7 @@ func bizPolicyStatusSummaryToPb(s *chainloop.PolicyStatusSummary) *pb.PolicyStat
 		Passed:   int32(s.Passed),
 		Skipped:  int32(s.Skipped),
 		Violated: int32(s.Violated),
+		HasGates: s.HasGates,
 	}
 }
 

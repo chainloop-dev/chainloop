@@ -404,6 +404,9 @@ type RunListFilters struct {
 	// Filter by canonical policy status. When both PolicyStatus and
 	// PolicyViolationsFilter are set, PolicyStatus takes precedence.
 	PolicyStatus *chainloop.PolicyStatus
+	// Filter by whether the run had gates in effect. Orthogonal to
+	// PolicyStatus — a PASSED run can still have had gates.
+	PolicyHasGates *bool
 }
 
 // List the workflowruns associated with an org and optionally filtered by a workflow

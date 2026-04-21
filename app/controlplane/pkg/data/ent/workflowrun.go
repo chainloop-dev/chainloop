@@ -63,6 +63,8 @@ type WorkflowRun struct {
 	PolicyEvaluationsSkipped *int32 `json:"policy_evaluations_skipped,omitempty"`
 	// PolicyViolationsCount holds the value of the "policy_violations_count" field.
 	PolicyViolationsCount *int32 `json:"policy_violations_count,omitempty"`
+	// PolicyHasGates holds the value of the "policy_has_gates" field.
+	PolicyHasGates *bool `json:"policy_has_gates,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -147,7 +149,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState:
 			values[i] = new([]byte)
-		case workflowrun.FieldHasPolicyViolations:
+		case workflowrun.FieldHasPolicyViolations, workflowrun.FieldPolicyHasGates:
 			values[i] = new(sql.NullBool)
 		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatest, workflowrun.FieldPolicyEvaluationsTotal, workflowrun.FieldPolicyEvaluationsPassed, workflowrun.FieldPolicyEvaluationsSkipped, workflowrun.FieldPolicyViolationsCount:
 			values[i] = new(sql.NullInt64)
@@ -302,6 +304,13 @@ func (_m *WorkflowRun) assignValues(columns []string, values []any) error {
 				_m.PolicyViolationsCount = new(int32)
 				*_m.PolicyViolationsCount = int32(value.Int64)
 			}
+		case workflowrun.FieldPolicyHasGates:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_has_gates", values[i])
+			} else if value.Valid {
+				_m.PolicyHasGates = new(bool)
+				*_m.PolicyHasGates = value.Bool
+			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
@@ -436,6 +445,11 @@ func (_m *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	if v := _m.PolicyViolationsCount; v != nil {
 		builder.WriteString("policy_violations_count=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyHasGates; v != nil {
+		builder.WriteString("policy_has_gates=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteByte(')')

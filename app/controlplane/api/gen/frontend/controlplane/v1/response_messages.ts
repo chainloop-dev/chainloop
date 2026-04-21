@@ -190,6 +190,46 @@ export function policyStatusToJSON(object: PolicyStatus): string {
   }
 }
 
+/** Server-side filter aligned with PolicyStatusSummary.has_gates. */
+export enum PolicyGatesFilter {
+  POLICY_GATES_FILTER_UNSPECIFIED = 0,
+  POLICY_GATES_FILTER_WITH_GATES = 1,
+  POLICY_GATES_FILTER_WITHOUT_GATES = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function policyGatesFilterFromJSON(object: any): PolicyGatesFilter {
+  switch (object) {
+    case 0:
+    case "POLICY_GATES_FILTER_UNSPECIFIED":
+      return PolicyGatesFilter.POLICY_GATES_FILTER_UNSPECIFIED;
+    case 1:
+    case "POLICY_GATES_FILTER_WITH_GATES":
+      return PolicyGatesFilter.POLICY_GATES_FILTER_WITH_GATES;
+    case 2:
+    case "POLICY_GATES_FILTER_WITHOUT_GATES":
+      return PolicyGatesFilter.POLICY_GATES_FILTER_WITHOUT_GATES;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyGatesFilter.UNRECOGNIZED;
+  }
+}
+
+export function policyGatesFilterToJSON(object: PolicyGatesFilter): string {
+  switch (object) {
+    case PolicyGatesFilter.POLICY_GATES_FILTER_UNSPECIFIED:
+      return "POLICY_GATES_FILTER_UNSPECIFIED";
+    case PolicyGatesFilter.POLICY_GATES_FILTER_WITH_GATES:
+      return "POLICY_GATES_FILTER_WITH_GATES";
+    case PolicyGatesFilter.POLICY_GATES_FILTER_WITHOUT_GATES:
+      return "POLICY_GATES_FILTER_WITHOUT_GATES";
+    case PolicyGatesFilter.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Server-side filter aligned 1:1 with PolicyStatus values. */
 export enum PolicyStatusFilter {
   POLICY_STATUS_FILTER_UNSPECIFIED = 0,
@@ -532,6 +572,12 @@ export interface PolicyStatusSummary {
   skipped: number;
   /** Total number of violations across all evaluations */
   violated: number;
+  /**
+   * Whether this run had gates in effect — any policy marked gate:true or
+   * the contract using the ENFORCED blocking strategy. Independent of status:
+   * a PASSED run can still have has_gates=true.
+   */
+  hasGates: boolean;
 }
 
 export interface AttestationItem {
@@ -1556,7 +1602,7 @@ export const ProjectVersion = {
 };
 
 function createBasePolicyStatusSummary(): PolicyStatusSummary {
-  return { status: 0, total: 0, passed: 0, skipped: 0, violated: 0 };
+  return { status: 0, total: 0, passed: 0, skipped: 0, violated: 0, hasGates: false };
 }
 
 export const PolicyStatusSummary = {
@@ -1575,6 +1621,9 @@ export const PolicyStatusSummary = {
     }
     if (message.violated !== 0) {
       writer.uint32(40).int32(message.violated);
+    }
+    if (message.hasGates === true) {
+      writer.uint32(48).bool(message.hasGates);
     }
     return writer;
   },
@@ -1621,6 +1670,13 @@ export const PolicyStatusSummary = {
 
           message.violated = reader.int32();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.hasGates = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1637,6 +1693,7 @@ export const PolicyStatusSummary = {
       passed: isSet(object.passed) ? Number(object.passed) : 0,
       skipped: isSet(object.skipped) ? Number(object.skipped) : 0,
       violated: isSet(object.violated) ? Number(object.violated) : 0,
+      hasGates: isSet(object.hasGates) ? Boolean(object.hasGates) : false,
     };
   },
 
@@ -1647,6 +1704,7 @@ export const PolicyStatusSummary = {
     message.passed !== undefined && (obj.passed = Math.round(message.passed));
     message.skipped !== undefined && (obj.skipped = Math.round(message.skipped));
     message.violated !== undefined && (obj.violated = Math.round(message.violated));
+    message.hasGates !== undefined && (obj.hasGates = message.hasGates);
     return obj;
   },
 
@@ -1661,6 +1719,7 @@ export const PolicyStatusSummary = {
     message.passed = object.passed ?? 0;
     message.skipped = object.skipped ?? 0;
     message.violated = object.violated ?? 0;
+    message.hasGates = object.hasGates ?? false;
     return message;
   },
 };

@@ -3,6 +3,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(policy_gates)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_GATES_FILTER_UNSPECIFIED",
+            "POLICY_GATES_FILTER_WITH_GATES",
+            "POLICY_GATES_FILTER_WITHOUT_GATES"
+          ],
+          "title": "Policy Gates Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "by whether the run had gates in effect (either a policy marked gate:true\n or the contract using the ENFORCED blocking strategy)"
+    },
     "^(policy_status)$": {
       "anyOf": [
         {
@@ -63,6 +82,25 @@
     "pagination": {
       "$ref": "controlplane.v1.CursorPaginationRequest.jsonschema.json",
       "description": "pagination options"
+    },
+    "policyGates": {
+      "anyOf": [
+        {
+          "enum": [
+            "POLICY_GATES_FILTER_UNSPECIFIED",
+            "POLICY_GATES_FILTER_WITH_GATES",
+            "POLICY_GATES_FILTER_WITHOUT_GATES"
+          ],
+          "title": "Policy Gates Filter",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "by whether the run had gates in effect (either a policy marked gate:true\n or the contract using the ENFORCED blocking strategy)"
     },
     "policyStatus": {
       "anyOf": [

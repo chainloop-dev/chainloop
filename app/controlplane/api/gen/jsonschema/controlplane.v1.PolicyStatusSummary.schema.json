@@ -3,7 +3,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "PolicyStatusSummary bundles the canonical PolicyStatus with per-evaluation\n counters. It is surfaced on both WorkflowRunItem (list response) and\n AttestationItem.PolicyEvaluationStatus (describe response) and is computed\n by a single backend helper so list and describe cannot drift.",
+  "patternProperties": {
+    "^(hasGates)$": {
+      "description": "Whether this run had gates in effect — any policy marked gate:true or\n the contract using the ENFORCED blocking strategy. Independent of status:\n a PASSED run can still have has_gates=true.",
+      "type": "boolean"
+    }
+  },
   "properties": {
+    "has_gates": {
+      "description": "Whether this run had gates in effect — any policy marked gate:true or\n the contract using the ENFORCED blocking strategy. Independent of status:\n a PASSED run can still have has_gates=true.",
+      "type": "boolean"
+    },
     "passed": {
       "description": "Number of evaluations with no violations and not skipped",
       "maximum": 2147483647,

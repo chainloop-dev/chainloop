@@ -220,6 +220,9 @@ message WorkflowRunServiceListRequest {
   PolicyViolationsFilter policy_violations = 6 [deprecated = true];
   // by canonical policy status
   PolicyStatusFilter policy_status = 7;
+  // by whether the run had gates in effect (either a policy marked gate:true
+  // or the contract using the ENFORCED blocking strategy)
+  PolicyGatesFilter policy_gates = 8;
   // pagination options
   CursorPaginationRequest pagination = 2;
 

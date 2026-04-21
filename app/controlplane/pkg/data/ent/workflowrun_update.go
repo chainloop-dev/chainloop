@@ -378,6 +378,26 @@ func (_u *WorkflowRunUpdate) ClearPolicyViolationsCount() *WorkflowRunUpdate {
 	return _u
 }
 
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (_u *WorkflowRunUpdate) SetPolicyHasGates(v bool) *WorkflowRunUpdate {
+	_u.mutation.SetPolicyHasGates(v)
+	return _u
+}
+
+// SetNillablePolicyHasGates sets the "policy_has_gates" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyHasGates(v *bool) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyHasGates(*v)
+	}
+	return _u
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (_u *WorkflowRunUpdate) ClearPolicyHasGates() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyHasGates()
+	return _u
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (_u *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
 	_u.mutation.SetContractVersionID(id)
@@ -650,6 +670,12 @@ func (_u *WorkflowRunUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.PolicyViolationsCountCleared() {
 		_spec.ClearField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyHasGates(); ok {
+		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
+	}
+	if _u.mutation.PolicyHasGatesCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyHasGates, field.TypeBool)
 	}
 	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1147,6 +1173,26 @@ func (_u *WorkflowRunUpdateOne) ClearPolicyViolationsCount() *WorkflowRunUpdateO
 	return _u
 }
 
+// SetPolicyHasGates sets the "policy_has_gates" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyHasGates(v bool) *WorkflowRunUpdateOne {
+	_u.mutation.SetPolicyHasGates(v)
+	return _u
+}
+
+// SetNillablePolicyHasGates sets the "policy_has_gates" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyHasGates(v *bool) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyHasGates(*v)
+	}
+	return _u
+}
+
+// ClearPolicyHasGates clears the value of the "policy_has_gates" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyHasGates() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyHasGates()
+	return _u
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (_u *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
 	_u.mutation.SetContractVersionID(id)
@@ -1449,6 +1495,12 @@ func (_u *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowRun
 	}
 	if _u.mutation.PolicyViolationsCountCleared() {
 		_spec.ClearField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyHasGates(); ok {
+		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
+	}
+	if _u.mutation.PolicyHasGatesCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyHasGates, field.TypeBool)
 	}
 	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{

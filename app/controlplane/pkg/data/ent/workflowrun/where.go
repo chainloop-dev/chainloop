@@ -137,6 +137,11 @@ func PolicyViolationsCount(v int32) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyViolationsCount, v))
 }
 
+// PolicyHasGates applies equality check predicate on the "policy_has_gates" field. It's identical to PolicyHasGatesEQ.
+func PolicyHasGates(v bool) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyHasGates, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldEQ(FieldCreatedAt, v))
@@ -985,6 +990,26 @@ func PolicyViolationsCountIsNil() predicate.WorkflowRun {
 // PolicyViolationsCountNotNil applies the NotNil predicate on the "policy_violations_count" field.
 func PolicyViolationsCountNotNil() predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyViolationsCount))
+}
+
+// PolicyHasGatesEQ applies the EQ predicate on the "policy_has_gates" field.
+func PolicyHasGatesEQ(v bool) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldEQ(FieldPolicyHasGates, v))
+}
+
+// PolicyHasGatesNEQ applies the NEQ predicate on the "policy_has_gates" field.
+func PolicyHasGatesNEQ(v bool) predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNEQ(FieldPolicyHasGates, v))
+}
+
+// PolicyHasGatesIsNil applies the IsNil predicate on the "policy_has_gates" field.
+func PolicyHasGatesIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldPolicyHasGates))
+}
+
+// PolicyHasGatesNotNil applies the NotNil predicate on the "policy_has_gates" field.
+func PolicyHasGatesNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyHasGates))
 }
 
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.

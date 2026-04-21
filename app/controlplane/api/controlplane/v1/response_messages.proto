@@ -143,6 +143,17 @@ message PolicyStatusSummary {
   int32 skipped = 4;
   // Total number of violations across all evaluations
   int32 violated = 5;
+  // Whether this run had gates in effect — any policy marked gate:true or
+  // the contract using the ENFORCED blocking strategy. Independent of status:
+  // a PASSED run can still have has_gates=true.
+  bool has_gates = 6;
+}
+
+// Server-side filter aligned with PolicyStatusSummary.has_gates.
+enum PolicyGatesFilter {
+  POLICY_GATES_FILTER_UNSPECIFIED = 0;
+  POLICY_GATES_FILTER_WITH_GATES = 1;
+  POLICY_GATES_FILTER_WITHOUT_GATES = 2;
 }
 
 // Server-side filter aligned 1:1 with PolicyStatus values.

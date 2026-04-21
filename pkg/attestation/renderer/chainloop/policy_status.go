@@ -40,6 +40,9 @@ type PolicyStatusSummary struct {
 	Passed   int
 	Skipped  int
 	Violated int
+	// See PolicyEvaluationStatus.HasGates. Independent of Status — a PASSED
+	// run can still have HasGates=true.
+	HasGates bool
 }
 
 // DerivePolicyStatusSummary is the single source of truth for computing the
@@ -66,6 +69,7 @@ func DerivePolicyStatusSummary(s *PolicyEvaluationStatus) PolicyStatusSummary {
 		Passed:   s.PassedCount,
 		Skipped:  s.SkippedCount,
 		Violated: s.ViolationsCount,
+		HasGates: s.HasGates,
 	}
 
 	enforced := s.HasGatedViolations || s.Strategy == PolicyViolationBlockingStrategyEnforced

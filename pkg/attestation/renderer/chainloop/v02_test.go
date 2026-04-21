@@ -596,6 +596,7 @@ func TestGroupEvaluationsCounts(t *testing.T) {
 		wantViolCount       int
 		wantViolations      bool
 		wantGatedViolations bool
+		wantGates           bool
 	}{
 		{
 			name:          "no evaluations",
@@ -670,6 +671,7 @@ func TestGroupEvaluationsCounts(t *testing.T) {
 			wantViolCount:       1,
 			wantViolations:      true,
 			wantGatedViolations: true,
+			wantGates:           true,
 		},
 		{
 			name: "gated evaluation without violations",
@@ -678,6 +680,7 @@ func TestGroupEvaluationsCounts(t *testing.T) {
 			},
 			wantEvalCount: 1,
 			wantViolCount: 0,
+			wantGates:     true,
 		},
 	}
 
@@ -689,6 +692,7 @@ func TestGroupEvaluationsCounts(t *testing.T) {
 			assert.Equal(t, tc.wantViolCount, res.violationsCount)
 			assert.Equal(t, tc.wantViolations, res.hasViolations)
 			assert.Equal(t, tc.wantGatedViolations, res.hasGatedViolations)
+			assert.Equal(t, tc.wantGates, res.hasGates)
 		})
 	}
 }

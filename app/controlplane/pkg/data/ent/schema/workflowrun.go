@@ -71,6 +71,7 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.Int32("policy_evaluations_passed").Optional().Nillable(),
 		field.Int32("policy_evaluations_skipped").Optional().Nillable(),
 		field.Int32("policy_violations_count").Optional().Nillable(),
+		field.Bool("policy_has_gates").Optional().Nillable(),
 	}
 }
 
@@ -106,5 +107,9 @@ func (WorkflowRun) Indexes() []ent.Index {
 		index.Fields("version_id", "workflow_id"),
 		// List filtering on canonical policy status
 		index.Fields("policy_status"),
+		// Partial index: most "gated" queries ask for true; NULL rows predate
+		// the column, and false is the high-cardinality majority where a
+		// seqscan is fine anyway.
+		index.Fields("policy_has_gates").Annotations(entsql.IndexWhere("policy_has_gates = true")),
 	}
 }

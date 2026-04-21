@@ -241,7 +241,8 @@ func (r *WorkflowRunRepo) UpdatePolicyStatus(ctx context.Context, id uuid.UUID, 
 		SetPolicyEvaluationsTotal(int32(summary.Total)).
 		SetPolicyEvaluationsPassed(int32(summary.Passed)).
 		SetPolicyEvaluationsSkipped(int32(summary.Skipped)).
-		SetPolicyViolationsCount(int32(summary.Violated))
+		SetPolicyViolationsCount(int32(summary.Violated)).
+		SetPolicyHasGates(summary.HasGates)
 
 	run, err := update.Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -384,6 +385,10 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		}
 	}
 
+	if filters != nil && filters.PolicyHasGates != nil {
+		q = q.Where(workflowrun.PolicyHasGates(*filters.PolicyHasGates))
+	}
+
 	if p.Cursor != nil {
 		q = q.Where(
 			func(s *sql.Selector) {
@@ -517,6 +522,9 @@ func entWrPolicySummary(wr *ent.WorkflowRun) *chainloop.PolicyStatusSummary {
 	}
 	if wr.PolicyViolationsCount != nil {
 		s.Violated = int(*wr.PolicyViolationsCount)
+	}
+	if wr.PolicyHasGates != nil {
+		s.HasGates = *wr.PolicyHasGates
 	}
 	return s
 }

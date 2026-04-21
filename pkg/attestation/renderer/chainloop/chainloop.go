@@ -57,6 +57,9 @@ type PolicyEvaluationStatus struct {
 	HasViolations bool
 	// Whether the attestation has gated policy violations
 	HasGatedViolations bool
+	// HasGates is true when a gate fired or strategy is ENFORCED, independent
+	// of whether gated violations were recorded.
+	HasGates bool
 	// Total number of policy evaluations
 	EvaluationsCount int
 	// Total number of policy violations across all evaluations

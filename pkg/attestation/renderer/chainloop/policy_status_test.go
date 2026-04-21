@@ -182,6 +182,21 @@ func TestDerivePolicyStatusSummary(t *testing.T) {
 			},
 		},
 		{
+			name: "has_gates propagates from status",
+			status: &PolicyEvaluationStatus{
+				Strategy:         advisory,
+				EvaluationsCount: 2,
+				PassedCount:      2,
+				HasGates:         true,
+			},
+			want: PolicyStatusSummary{
+				Status:   PolicyStatusPassed,
+				Total:    2,
+				Passed:   2,
+				HasGates: true,
+			},
+		},
+		{
 			name: "warning + skipped mix => warning (violations dominate skips)",
 			status: &PolicyEvaluationStatus{
 				Strategy:         advisory,
@@ -204,6 +219,151 @@ func TestDerivePolicyStatusSummary(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := DerivePolicyStatusSummary(tc.status)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestPredicateToPolicyStatusSummary exercises the attestation→summary chain
+// used in the attestation-ingest path (biz.WorkflowRunUseCase.SaveAttestation):
+// ProvenancePredicateV02.GetPolicyEvaluationStatus() → DerivePolicyStatusSummary.
+// The two steps have their own unit tests but are never combined there, which
+// is the exact translation the production code performs.
+func TestPredicateToPolicyStatusSummary(t *testing.T) {
+	testCases := []struct {
+		name      string
+		predicate *ProvenancePredicateV02
+		want      PolicyStatusSummary
+	}{
+		{
+			name:      "predicate with no policy evaluations => not applicable",
+			predicate: &ProvenancePredicateV02{},
+			want:      PolicyStatusSummary{Status: PolicyStatusNotApplicable},
+		},
+		{
+			name: "stored counters => passed",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      3,
+				PolicyPassedCount:           3,
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusPassed, Total: 3, Passed: 3},
+		},
+		{
+			name: "stored counters => skipped",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      3,
+				PolicyPassedCount:           2,
+				PolicySkippedCount:          1,
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusSkipped, Total: 3, Passed: 2, Skipped: 1},
+		},
+		{
+			name: "advisory violation => warning",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      2,
+				PolicyPassedCount:           1,
+				PolicyViolationsCount:       1,
+				PolicyHasViolations:         true,
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusWarning, Total: 2, Passed: 1, Violated: 1},
+		},
+		{
+			name: "gated violation, not bypassed => blocked",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      2,
+				PolicyPassedCount:           1,
+				PolicyViolationsCount:       1,
+				PolicyHasViolations:         true,
+				PolicyHasGatedViolations:    true,
+				PolicyAttBlocked:            true,
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusBlocked, Total: 2, Passed: 1, Violated: 1},
+		},
+		{
+			name: "gated violation bypassed => bypassed",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      2,
+				PolicyPassedCount:           1,
+				PolicyViolationsCount:       1,
+				PolicyHasViolations:         true,
+				PolicyHasGatedViolations:    true,
+				PolicyBlockBypassEnabled:    true,
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusBypassed, Total: 2, Passed: 1, Violated: 1},
+		},
+		{
+			// Attestations signed before the skipped/passed counters existed
+			// decode as zero. The predicate backfills from inline evaluations
+			// before the summary is derived, so a skipped-only run must not
+			// be misclassified as PASSED.
+			name: "historic envelope with only inline skipped evaluations => skipped",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      2,
+				PolicyEvaluations: map[string][]*PolicyEvaluation{
+					"material-a": {{Skipped: true}, {Skipped: true}},
+				},
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusSkipped, Total: 2, Skipped: 2},
+		},
+		{
+			// Historic envelopes can carry inline evaluations in the
+			// fallback-shaped field; the backfill must read from there too.
+			name: "historic envelope backfills from fallback evaluations => passed",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      2,
+				PolicyEvaluationsFallback: map[string][]*PolicyEvaluation{
+					"material-a": {{}, {}},
+				},
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusPassed, Total: 2, Passed: 2},
+		},
+		{
+			name: "stored has_gates flag propagates to summary",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      2,
+				PolicyPassedCount:           2,
+				PolicyHasGates:              true,
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusPassed, Total: 2, Passed: 2, HasGates: true},
+		},
+		{
+			// Historic envelope with no stored has_gates flag: derive from
+			// inline evaluations.
+			name: "historic envelope derives has_gates from inline gate:true",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyAdvisory,
+				PolicyEvaluationsCount:      2,
+				PolicyPassedCount:           2,
+				PolicyEvaluations: map[string][]*PolicyEvaluation{
+					"material-a": {{Gate: true}, {}},
+				},
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusPassed, Total: 2, Passed: 2, HasGates: true},
+		},
+		{
+			// Enforced strategy implies gating even without explicit gate:true
+			// and even when the stored has_gates flag is missing (historic).
+			name: "historic envelope with ENFORCED strategy derives has_gates=true",
+			predicate: &ProvenancePredicateV02{
+				PolicyCheckBlockingStrategy: PolicyViolationBlockingStrategyEnforced,
+				PolicyEvaluationsCount:      1,
+				PolicyPassedCount:           1,
+			},
+			want: PolicyStatusSummary{Status: PolicyStatusPassed, Total: 1, Passed: 1, HasGates: true},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := DerivePolicyStatusSummary(tc.predicate.GetPolicyEvaluationStatus())
 			assert.Equal(t, tc.want, got)
 		})
 	}
