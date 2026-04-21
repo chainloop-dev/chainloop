@@ -161,4 +161,5 @@ func isDir(filename string) bool {
 
 type DotChainloopConfig struct {
 	ProjectVersion string `yaml:"projectVersion"`
+	Project        string `yaml:"project"`
 }

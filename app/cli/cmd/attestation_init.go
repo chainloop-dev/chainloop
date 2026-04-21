@@ -55,19 +55,23 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
 
-			// load version from the file if not set and not using --latest-version
-			if projectVersion == "" && !useLatestVersion {
-				// load the cfg from the file
+			// Load project name and version from .chainloop.yaml when the
+			// corresponding CLI flags are not provided.
+			// Precedence: CLI flag > .chainloop.yaml > default/auto-discovery.
+			if projectName == "" || (projectVersion == "" && !useLatestVersion) {
 				cfg, path, err := loadDotChainloopConfigWithParentTraversal()
-				// we do gracefully load, if not found, or any other error we continue
 				if err != nil {
 					logger.Debug().Msgf("failed to load chainloop config: %s", err)
-					return nil
+				} else {
+					if projectName == "" && cfg.Project != "" {
+						logger.Debug().Msgf("loaded project %q from config file %s", cfg.Project, path)
+						projectName = cfg.Project
+					}
+					if projectVersion == "" && !useLatestVersion && cfg.ProjectVersion != "" {
+						logger.Debug().Msgf("loaded version %q from config file %s", cfg.ProjectVersion, path)
+						projectVersion = cfg.ProjectVersion
+					}
 				}
-
-				logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
-
-				projectVersion = cfg.ProjectVersion
 			}
 
 			if useLatestVersion && projectVersion != "" {
@@ -154,7 +158,7 @@ func newAttestationInitCmd() *cobra.Command {
 			}
 
 			if projectName == "" {
-				logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
+				logger.Warn().Msg("DEPRECATION WARNING: project not set via --project flag or .chainloop.yaml, this will be required in the near future")
 			}
 
 			return output.EncodeOutput(flagOutputFormat, res, fullStatusTable)
@@ -173,8 +177,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&workflowName, "workflow-name", "", "name of the workflow to run the attestation")
 	cobra.CheckErr(cmd.Flags().MarkDeprecated("workflow-name", "please use --workflow instead"))
 
-	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
-	cobra.CheckErr(cmd.MarkFlagRequired("project"))
+	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow (can also be set in .chainloop.yaml)")
 	cmd.Flags().StringVar(&newWorkflowcontract, "contract", "", "name of an existing contract or the path/URL to a contract file, to attach it to the auto-created workflow (it doesn't update an existing one)")
 
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
