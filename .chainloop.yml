@@ -1,3 +1,5 @@
+organization: chainloop
+projectName: chainloop
 # This indicates the [current version]+next
 # to indicate that we are building a new version of the project
 projectVersion: v1.93.3+next
