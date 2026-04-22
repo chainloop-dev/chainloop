@@ -1,3 +1,5 @@
+# organization and projectName are used for Chainloop Trace
+# https://docs.chainloop.dev/reference/operator/trace
 organization: chainloop
 projectName: chainloop
 # This indicates the [current version]+next

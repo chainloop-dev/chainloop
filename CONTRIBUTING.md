@@ -25,6 +25,10 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+## Chainloop Trace
+
+This repository has [Chainloop Trace](https://docs.chainloop.dev/reference/operator/trace) enabled. This means that AI coding sessions can optionally be tracked as part of the software supply chain. See [`.chainloop.yml`](./.chainloop.yml) for the configuration.
+
 ## Development
 
 To learn more about how to run the project locally refer to our development [guide](./devel/README.md).
