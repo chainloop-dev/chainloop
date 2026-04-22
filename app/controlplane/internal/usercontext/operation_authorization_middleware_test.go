@@ -24,11 +24,22 @@ import (
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const testExternalAuthzOp = "/test.v1.ExternalAuthzTestService/Target"
+
+func registerTestExternalAuthzOp(t *testing.T) {
+	t.Helper()
+	authz.ServerOperationsMap[testExternalAuthzOp] = &authz.OperationPolicy{ExternalAuthz: true}
+	t.Cleanup(func() {
+		delete(authz.ServerOperationsMap, testExternalAuthzOp)
+	})
+}
 
 // fakeTransport implements transport.Transporter for testing middleware operation matching.
 type fakeTransport struct {
@@ -95,10 +106,11 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("target operation allowed", func(t *testing.T) {
+		registerTestExternalAuthzOp(t)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var req operationAuthRequest
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
-			assert.Equal(t, "/controlplane.v1.OrganizationService/Create", req.Operation)
+			assert.Equal(t, testExternalAuthzOp, req.Operation)
 
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: true}) //nolint:errcheck
@@ -108,7 +120,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
-		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
+		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
 
 		result, err := m(passHandler)(ctx, nil)
 		require.NoError(t, err)
@@ -116,6 +128,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("target operation denied", func(t *testing.T) {
+		registerTestExternalAuthzOp(t)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: false, Reason: "org limit reached"}) //nolint:errcheck
@@ -125,7 +138,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
-		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
+		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
 
 		result, err := m(passHandler)(ctx, nil)
 		require.Error(t, err)
@@ -134,10 +147,11 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("provider unreachable is fail-closed", func(t *testing.T) {
+		registerTestExternalAuthzOp(t)
 		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: "http://127.0.0.1:1"}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
-		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
+		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
 
 		result, err := m(passHandler)(ctx, nil)
 		require.Error(t, err)
@@ -146,6 +160,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("provider returns 500 is fail-closed", func(t *testing.T) {
+		registerTestExternalAuthzOp(t)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}))
@@ -154,7 +169,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
-		ctx := ctxWithOperation(context.Background(), "/controlplane.v1.OrganizationService/Create")
+		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
 
 		result, err := m(passHandler)(ctx, nil)
 		require.Error(t, err)
@@ -163,6 +178,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("bearer token is forwarded", func(t *testing.T) {
+		registerTestExternalAuthzOp(t)
 		var gotAuth string
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotAuth = r.Header.Get("Authorization")
@@ -175,7 +191,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ft := &fakeTransport{
-			operation: "/controlplane.v1.OrganizationService/Create",
+			operation: testExternalAuthzOp,
 			header:    headerCarrier(http.Header{"Authorization": []string{"Bearer test-token-123"}}),
 		}
 		ctx := transport.NewServerContext(context.Background(), ft)
