@@ -79,7 +79,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/in-toto/attestation v1.1.2
 	github.com/invopop/jsonschema v0.13.0
-	github.com/jackc/pgx/v5 v5.9.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/muesli/reflow v0.3.0
 	github.com/nats-io/nats-server/v2 v2.12.6
 	github.com/nats-io/nats.go v1.49.0
