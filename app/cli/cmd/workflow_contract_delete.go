@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,17 +16,35 @@
 package cmd
 
 import (
+	"errors"
+
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 )
 
 func newWorkflowContractDeleteCmd() *cobra.Command {
 	var name string
+	var purgeUnused bool
 
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete a contract",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(_ *cobra.Command, _ []string) error {
+			if !purgeUnused && name == "" {
+				return errors.New("either --name or --purge-unused must be provided")
+			}
+			return nil
+		},
+		RunE: func(_ *cobra.Command, _ []string) error {
+			if purgeUnused {
+				n, err := action.NewWorkflowContractPurgeUnused(ActionOpts).Run()
+				if err != nil {
+					return err
+				}
+				logger.Info().Int32("count", n).Msg("unused contracts purged")
+				return nil
+			}
+
 			if err := action.NewWorkflowContractDelete(ActionOpts).Run(name); err != nil {
 				return err
 			}
@@ -36,8 +54,8 @@ func newWorkflowContractDeleteCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "contract name")
-	err := cmd.MarkFlagRequired("name")
-	cobra.CheckErr(err)
+	cmd.Flags().BoolVar(&purgeUnused, "purge-unused", false, "delete all contracts with no associated workflows")
+	cmd.MarkFlagsMutuallyExclusive("name", "purge-unused")
 
 	return cmd
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,23 +51,12 @@ func NewWorkflowContractRepo(data *Data, logger log.Logger) biz.WorkflowContract
 // If no project filters are provided, we return all the contracts scoped to the organization
 // otherwise we return the global contracts alongside the org scoped projects
 func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.WorkflowContractListFilters) ([]*biz.WorkflowContract, error) {
-	wcontractQuery := orgScopedQuery(r.data.DB, orgID).
-		QueryWorkflowContracts().
-		Where(workflowcontract.DeletedAtIsNil())
-
-	// If specific projects are provided
-	// we return the global contracts alongside the org scoped projects
-	if len(filter.FilterByProjects) > 0 {
-		wcontractQuery = wcontractQuery.Where(
-			workflowcontract.Or(
-				workflowcontract.And(
-					workflowcontract.ScopedResourceTypeIn(biz.ContractScopeProject),
-					workflowcontract.ScopedResourceIDIn(filter.FilterByProjects...),
-				),
-				workflowcontract.ScopedResourceIDIsNil(),
-			),
-		)
-	}
+	wcontractQuery := applyProjectFilter(
+		orgScopedQuery(r.data.DB, orgID).
+			QueryWorkflowContracts().
+			Where(workflowcontract.DeletedAtIsNil()),
+		filter,
+	)
 
 	contracts, err := wcontractQuery.
 		WithWorkflows(func(q *ent.WorkflowQuery) {
@@ -329,6 +318,59 @@ func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.data.DB.WorkflowContract.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Exec(ctx)
+}
+
+func (r *WorkflowContractRepo) SoftDeleteUnused(ctx context.Context, orgID uuid.UUID, filter *biz.WorkflowContractListFilters) (int, error) {
+	var n int
+	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		query := applyProjectFilter(
+			tx.Organization.Query().
+				Where(organization.ID(orgID)).
+				QueryWorkflowContracts().
+				Where(
+					workflowcontract.DeletedAtIsNil(),
+					workflowcontract.Not(workflowcontract.HasWorkflowsWith(workflow.DeletedAtIsNil())),
+				),
+			filter,
+		)
+
+		ids, err := query.IDs(ctx)
+		if err != nil {
+			return err
+		}
+
+		if len(ids) == 0 {
+			return nil
+		}
+
+		now := time.Now()
+		n, err = tx.WorkflowContract.Update().
+			Where(workflowcontract.IDIn(ids...)).
+			SetDeletedAt(now).
+			SetUpdatedAt(now).
+			Save(ctx)
+
+		return err
+	}); err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
+
+func applyProjectFilter(query *ent.WorkflowContractQuery, filter *biz.WorkflowContractListFilters) *ent.WorkflowContractQuery {
+	if len(filter.FilterByProjects) > 0 {
+		query = query.Where(
+			workflowcontract.Or(
+				workflowcontract.And(
+					workflowcontract.ScopedResourceTypeIn(biz.ContractScopeProject),
+					workflowcontract.ScopedResourceIDIn(filter.FilterByProjects...),
+				),
+				workflowcontract.ScopedResourceIDIsNil(),
+			),
+		)
+	}
+	return query
 }
 
 func entContractVersionToBizContractVersion(w *ent.WorkflowContractVersion) (*biz.WorkflowContractVersion, error) {

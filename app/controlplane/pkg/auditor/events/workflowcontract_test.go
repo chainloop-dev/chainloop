@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -185,6 +185,20 @@ func TestWorkflowContractEvents(t *testing.T) {
 				WorkflowName: wfName,
 			},
 			expected: "testdata/workflowcontracts/workflow_detached_from_contract_by_api_token.json",
+			actor:    auditor.ActorTypeAPIToken,
+			actorID:  apiTokenUUID,
+		},
+		{
+			name:     "Workflow contracts purged by user",
+			event:    &events.WorkflowContractPurged{TotalPurged: 5},
+			expected: "testdata/workflowcontracts/workflow_contracts_purged.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name:     "Workflow contracts purged by API token",
+			event:    &events.WorkflowContractPurged{TotalPurged: 5},
+			expected: "testdata/workflowcontracts/workflow_contracts_purged_by_api_token.json",
 			actor:    auditor.ActorTypeAPIToken,
 			actorID:  apiTokenUUID,
 		},

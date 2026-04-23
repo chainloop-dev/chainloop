@@ -66,6 +66,13 @@ export interface WorkflowContractServiceDeleteRequest {
 export interface WorkflowContractServiceDeleteResponse {
 }
 
+export interface WorkflowContractServicePurgeUnusedRequest {
+}
+
+export interface WorkflowContractServicePurgeUnusedResponse {
+  totalPurged: number;
+}
+
 export interface WorkflowContractServiceApplyRequest {
   /** Raw representation of the contract in json, yaml or cue */
   rawSchema: Uint8Array;
@@ -936,6 +943,114 @@ export const WorkflowContractServiceDeleteResponse = {
   },
 };
 
+function createBaseWorkflowContractServicePurgeUnusedRequest(): WorkflowContractServicePurgeUnusedRequest {
+  return {};
+}
+
+export const WorkflowContractServicePurgeUnusedRequest = {
+  encode(_: WorkflowContractServicePurgeUnusedRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowContractServicePurgeUnusedRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowContractServicePurgeUnusedRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): WorkflowContractServicePurgeUnusedRequest {
+    return {};
+  },
+
+  toJSON(_: WorkflowContractServicePurgeUnusedRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowContractServicePurgeUnusedRequest>, I>>(
+    base?: I,
+  ): WorkflowContractServicePurgeUnusedRequest {
+    return WorkflowContractServicePurgeUnusedRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowContractServicePurgeUnusedRequest>, I>>(
+    _: I,
+  ): WorkflowContractServicePurgeUnusedRequest {
+    const message = createBaseWorkflowContractServicePurgeUnusedRequest();
+    return message;
+  },
+};
+
+function createBaseWorkflowContractServicePurgeUnusedResponse(): WorkflowContractServicePurgeUnusedResponse {
+  return { totalPurged: 0 };
+}
+
+export const WorkflowContractServicePurgeUnusedResponse = {
+  encode(message: WorkflowContractServicePurgeUnusedResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.totalPurged !== 0) {
+      writer.uint32(8).int32(message.totalPurged);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WorkflowContractServicePurgeUnusedResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWorkflowContractServicePurgeUnusedResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.totalPurged = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WorkflowContractServicePurgeUnusedResponse {
+    return { totalPurged: isSet(object.totalPurged) ? Number(object.totalPurged) : 0 };
+  },
+
+  toJSON(message: WorkflowContractServicePurgeUnusedResponse): unknown {
+    const obj: any = {};
+    message.totalPurged !== undefined && (obj.totalPurged = Math.round(message.totalPurged));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WorkflowContractServicePurgeUnusedResponse>, I>>(
+    base?: I,
+  ): WorkflowContractServicePurgeUnusedResponse {
+    return WorkflowContractServicePurgeUnusedResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<WorkflowContractServicePurgeUnusedResponse>, I>>(
+    object: I,
+  ): WorkflowContractServicePurgeUnusedResponse {
+    const message = createBaseWorkflowContractServicePurgeUnusedResponse();
+    message.totalPurged = object.totalPurged ?? 0;
+    return message;
+  },
+};
+
 function createBaseWorkflowContractServiceApplyRequest(): WorkflowContractServiceApplyRequest {
   return { rawSchema: new Uint8Array(0) };
 }
@@ -1113,6 +1228,10 @@ export interface WorkflowContractService {
     request: DeepPartial<WorkflowContractServiceApplyRequest>,
     metadata?: grpc.Metadata,
   ): Promise<WorkflowContractServiceApplyResponse>;
+  PurgeUnused(
+    request: DeepPartial<WorkflowContractServicePurgeUnusedRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowContractServicePurgeUnusedResponse>;
 }
 
 export class WorkflowContractServiceClientImpl implements WorkflowContractService {
@@ -1126,6 +1245,7 @@ export class WorkflowContractServiceClientImpl implements WorkflowContractServic
     this.Describe = this.Describe.bind(this);
     this.Delete = this.Delete.bind(this);
     this.Apply = this.Apply.bind(this);
+    this.PurgeUnused = this.PurgeUnused.bind(this);
   }
 
   List(
@@ -1190,6 +1310,17 @@ export class WorkflowContractServiceClientImpl implements WorkflowContractServic
     return this.rpc.unary(
       WorkflowContractServiceApplyDesc,
       WorkflowContractServiceApplyRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  PurgeUnused(
+    request: DeepPartial<WorkflowContractServicePurgeUnusedRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<WorkflowContractServicePurgeUnusedResponse> {
+    return this.rpc.unary(
+      WorkflowContractServicePurgeUnusedDesc,
+      WorkflowContractServicePurgeUnusedRequest.fromPartial(request),
       metadata,
     );
   }
@@ -1325,6 +1456,29 @@ export const WorkflowContractServiceApplyDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = WorkflowContractServiceApplyResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const WorkflowContractServicePurgeUnusedDesc: UnaryMethodDefinitionish = {
+  methodName: "PurgeUnused",
+  service: WorkflowContractServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return WorkflowContractServicePurgeUnusedRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = WorkflowContractServicePurgeUnusedResponse.decode(data);
       return {
         ...value,
         toObject() {

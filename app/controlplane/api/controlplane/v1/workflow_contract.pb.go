@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -512,6 +512,86 @@ func (*WorkflowContractServiceDeleteResponse) Descriptor() ([]byte, []int) {
 	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{9}
 }
 
+type WorkflowContractServicePurgeUnusedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WorkflowContractServicePurgeUnusedRequest) Reset() {
+	*x = WorkflowContractServicePurgeUnusedRequest{}
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkflowContractServicePurgeUnusedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkflowContractServicePurgeUnusedRequest) ProtoMessage() {}
+
+func (x *WorkflowContractServicePurgeUnusedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkflowContractServicePurgeUnusedRequest.ProtoReflect.Descriptor instead.
+func (*WorkflowContractServicePurgeUnusedRequest) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{10}
+}
+
+type WorkflowContractServicePurgeUnusedResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TotalPurged   int32                  `protobuf:"varint,1,opt,name=total_purged,json=totalPurged,proto3" json:"total_purged,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WorkflowContractServicePurgeUnusedResponse) Reset() {
+	*x = WorkflowContractServicePurgeUnusedResponse{}
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WorkflowContractServicePurgeUnusedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WorkflowContractServicePurgeUnusedResponse) ProtoMessage() {}
+
+func (x *WorkflowContractServicePurgeUnusedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WorkflowContractServicePurgeUnusedResponse.ProtoReflect.Descriptor instead.
+func (*WorkflowContractServicePurgeUnusedResponse) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *WorkflowContractServicePurgeUnusedResponse) GetTotalPurged() int32 {
+	if x != nil {
+		return x.TotalPurged
+	}
+	return 0
+}
+
 type WorkflowContractServiceApplyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Raw representation of the contract in json, yaml or cue
@@ -522,7 +602,7 @@ type WorkflowContractServiceApplyRequest struct {
 
 func (x *WorkflowContractServiceApplyRequest) Reset() {
 	*x = WorkflowContractServiceApplyRequest{}
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[10]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -534,7 +614,7 @@ func (x *WorkflowContractServiceApplyRequest) String() string {
 func (*WorkflowContractServiceApplyRequest) ProtoMessage() {}
 
 func (x *WorkflowContractServiceApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[10]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -547,7 +627,7 @@ func (x *WorkflowContractServiceApplyRequest) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use WorkflowContractServiceApplyRequest.ProtoReflect.Descriptor instead.
 func (*WorkflowContractServiceApplyRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{10}
+	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *WorkflowContractServiceApplyRequest) GetRawSchema() []byte {
@@ -572,7 +652,7 @@ type WorkflowContractServiceApplyResponse struct {
 
 func (x *WorkflowContractServiceApplyResponse) Reset() {
 	*x = WorkflowContractServiceApplyResponse{}
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[11]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -584,7 +664,7 @@ func (x *WorkflowContractServiceApplyResponse) String() string {
 func (*WorkflowContractServiceApplyResponse) ProtoMessage() {}
 
 func (x *WorkflowContractServiceApplyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[11]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +677,7 @@ func (x *WorkflowContractServiceApplyResponse) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use WorkflowContractServiceApplyResponse.ProtoReflect.Descriptor instead.
 func (*WorkflowContractServiceApplyResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{11}
+	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *WorkflowContractServiceApplyResponse) GetResult() *WorkflowContractItem {
@@ -632,7 +712,7 @@ type WorkflowContractServiceUpdateResponse_Result struct {
 
 func (x *WorkflowContractServiceUpdateResponse_Result) Reset() {
 	*x = WorkflowContractServiceUpdateResponse_Result{}
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[12]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -644,7 +724,7 @@ func (x *WorkflowContractServiceUpdateResponse_Result) String() string {
 func (*WorkflowContractServiceUpdateResponse_Result) ProtoMessage() {}
 
 func (x *WorkflowContractServiceUpdateResponse_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[12]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +764,7 @@ type WorkflowContractServiceDescribeResponse_Result struct {
 
 func (x *WorkflowContractServiceDescribeResponse_Result) Reset() {
 	*x = WorkflowContractServiceDescribeResponse_Result{}
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[13]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -696,7 +776,7 @@ func (x *WorkflowContractServiceDescribeResponse_Result) String() string {
 func (*WorkflowContractServiceDescribeResponse_Result) ProtoMessage() {}
 
 func (x *WorkflowContractServiceDescribeResponse_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[13]
+	mi := &file_controlplane_v1_workflow_contract_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -766,21 +846,25 @@ const file_controlplane_v1_workflow_contract_proto_rawDesc = "" +
 	"$WorkflowContractServiceDeleteRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\"'\n" +
-	"%WorkflowContractServiceDeleteResponse\"D\n" +
+	"%WorkflowContractServiceDeleteResponse\"+\n" +
+	")WorkflowContractServicePurgeUnusedRequest\"O\n" +
+	"*WorkflowContractServicePurgeUnusedResponse\x12!\n" +
+	"\ftotal_purged\x18\x01 \x01(\x05R\vtotalPurged\"D\n" +
 	"#WorkflowContractServiceApplyRequest\x12\x1d\n" +
 	"\n" +
 	"raw_schema\x18\x01 \x01(\fR\trawSchema\"\xa1\x01\n" +
 	"$WorkflowContractServiceApplyResponse\x12=\n" +
 	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12 \n" +
 	"\tunchanged\x18\x02 \x01(\bB\x02\x18\x01R\tunchanged\x12\x18\n" +
-	"\achanged\x18\x03 \x01(\bR\achanged2\xec\x05\n" +
+	"\achanged\x18\x03 \x01(\bR\achanged2\xf5\x06\n" +
 	"\x17WorkflowContractService\x12q\n" +
 	"\x04List\x123.controlplane.v1.WorkflowContractServiceListRequest\x1a4.controlplane.v1.WorkflowContractServiceListResponse\x12w\n" +
 	"\x06Create\x125.controlplane.v1.WorkflowContractServiceCreateRequest\x1a6.controlplane.v1.WorkflowContractServiceCreateResponse\x12w\n" +
 	"\x06Update\x125.controlplane.v1.WorkflowContractServiceUpdateRequest\x1a6.controlplane.v1.WorkflowContractServiceUpdateResponse\x12}\n" +
 	"\bDescribe\x127.controlplane.v1.WorkflowContractServiceDescribeRequest\x1a8.controlplane.v1.WorkflowContractServiceDescribeResponse\x12w\n" +
 	"\x06Delete\x125.controlplane.v1.WorkflowContractServiceDeleteRequest\x1a6.controlplane.v1.WorkflowContractServiceDeleteResponse\x12t\n" +
-	"\x05Apply\x124.controlplane.v1.WorkflowContractServiceApplyRequest\x1a5.controlplane.v1.WorkflowContractServiceApplyResponseBLZJgithub.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1b\x06proto3"
+	"\x05Apply\x124.controlplane.v1.WorkflowContractServiceApplyRequest\x1a5.controlplane.v1.WorkflowContractServiceApplyResponse\x12\x86\x01\n" +
+	"\vPurgeUnused\x12:.controlplane.v1.WorkflowContractServicePurgeUnusedRequest\x1a;.controlplane.v1.WorkflowContractServicePurgeUnusedResponseBLZJgithub.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1b\x06proto3"
 
 var (
 	file_controlplane_v1_workflow_contract_proto_rawDescOnce sync.Once
@@ -794,7 +878,7 @@ func file_controlplane_v1_workflow_contract_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_workflow_contract_proto_rawDescData
 }
 
-var file_controlplane_v1_workflow_contract_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_controlplane_v1_workflow_contract_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_controlplane_v1_workflow_contract_proto_goTypes = []any{
 	(*WorkflowContractServiceListRequest)(nil),             // 0: controlplane.v1.WorkflowContractServiceListRequest
 	(*WorkflowContractServiceListResponse)(nil),            // 1: controlplane.v1.WorkflowContractServiceListResponse
@@ -806,39 +890,43 @@ var file_controlplane_v1_workflow_contract_proto_goTypes = []any{
 	(*WorkflowContractServiceDescribeResponse)(nil),        // 7: controlplane.v1.WorkflowContractServiceDescribeResponse
 	(*WorkflowContractServiceDeleteRequest)(nil),           // 8: controlplane.v1.WorkflowContractServiceDeleteRequest
 	(*WorkflowContractServiceDeleteResponse)(nil),          // 9: controlplane.v1.WorkflowContractServiceDeleteResponse
-	(*WorkflowContractServiceApplyRequest)(nil),            // 10: controlplane.v1.WorkflowContractServiceApplyRequest
-	(*WorkflowContractServiceApplyResponse)(nil),           // 11: controlplane.v1.WorkflowContractServiceApplyResponse
-	(*WorkflowContractServiceUpdateResponse_Result)(nil),   // 12: controlplane.v1.WorkflowContractServiceUpdateResponse.Result
-	(*WorkflowContractServiceDescribeResponse_Result)(nil), // 13: controlplane.v1.WorkflowContractServiceDescribeResponse.Result
-	(*WorkflowContractItem)(nil),                           // 14: controlplane.v1.WorkflowContractItem
-	(*IdentityReference)(nil),                              // 15: controlplane.v1.IdentityReference
-	(*WorkflowContractVersionItem)(nil),                    // 16: controlplane.v1.WorkflowContractVersionItem
+	(*WorkflowContractServicePurgeUnusedRequest)(nil),      // 10: controlplane.v1.WorkflowContractServicePurgeUnusedRequest
+	(*WorkflowContractServicePurgeUnusedResponse)(nil),     // 11: controlplane.v1.WorkflowContractServicePurgeUnusedResponse
+	(*WorkflowContractServiceApplyRequest)(nil),            // 12: controlplane.v1.WorkflowContractServiceApplyRequest
+	(*WorkflowContractServiceApplyResponse)(nil),           // 13: controlplane.v1.WorkflowContractServiceApplyResponse
+	(*WorkflowContractServiceUpdateResponse_Result)(nil),   // 14: controlplane.v1.WorkflowContractServiceUpdateResponse.Result
+	(*WorkflowContractServiceDescribeResponse_Result)(nil), // 15: controlplane.v1.WorkflowContractServiceDescribeResponse.Result
+	(*WorkflowContractItem)(nil),                           // 16: controlplane.v1.WorkflowContractItem
+	(*IdentityReference)(nil),                              // 17: controlplane.v1.IdentityReference
+	(*WorkflowContractVersionItem)(nil),                    // 18: controlplane.v1.WorkflowContractVersionItem
 }
 var file_controlplane_v1_workflow_contract_proto_depIdxs = []int32{
-	14, // 0: controlplane.v1.WorkflowContractServiceListResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	15, // 1: controlplane.v1.WorkflowContractServiceCreateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	14, // 2: controlplane.v1.WorkflowContractServiceCreateResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	12, // 3: controlplane.v1.WorkflowContractServiceUpdateResponse.result:type_name -> controlplane.v1.WorkflowContractServiceUpdateResponse.Result
-	13, // 4: controlplane.v1.WorkflowContractServiceDescribeResponse.result:type_name -> controlplane.v1.WorkflowContractServiceDescribeResponse.Result
-	14, // 5: controlplane.v1.WorkflowContractServiceApplyResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	14, // 6: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
-	16, // 7: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
-	14, // 8: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
-	16, // 9: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
+	16, // 0: controlplane.v1.WorkflowContractServiceListResponse.result:type_name -> controlplane.v1.WorkflowContractItem
+	17, // 1: controlplane.v1.WorkflowContractServiceCreateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	16, // 2: controlplane.v1.WorkflowContractServiceCreateResponse.result:type_name -> controlplane.v1.WorkflowContractItem
+	14, // 3: controlplane.v1.WorkflowContractServiceUpdateResponse.result:type_name -> controlplane.v1.WorkflowContractServiceUpdateResponse.Result
+	15, // 4: controlplane.v1.WorkflowContractServiceDescribeResponse.result:type_name -> controlplane.v1.WorkflowContractServiceDescribeResponse.Result
+	16, // 5: controlplane.v1.WorkflowContractServiceApplyResponse.result:type_name -> controlplane.v1.WorkflowContractItem
+	16, // 6: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
+	18, // 7: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
+	16, // 8: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
+	18, // 9: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
 	0,  // 10: controlplane.v1.WorkflowContractService.List:input_type -> controlplane.v1.WorkflowContractServiceListRequest
 	2,  // 11: controlplane.v1.WorkflowContractService.Create:input_type -> controlplane.v1.WorkflowContractServiceCreateRequest
 	4,  // 12: controlplane.v1.WorkflowContractService.Update:input_type -> controlplane.v1.WorkflowContractServiceUpdateRequest
 	6,  // 13: controlplane.v1.WorkflowContractService.Describe:input_type -> controlplane.v1.WorkflowContractServiceDescribeRequest
 	8,  // 14: controlplane.v1.WorkflowContractService.Delete:input_type -> controlplane.v1.WorkflowContractServiceDeleteRequest
-	10, // 15: controlplane.v1.WorkflowContractService.Apply:input_type -> controlplane.v1.WorkflowContractServiceApplyRequest
-	1,  // 16: controlplane.v1.WorkflowContractService.List:output_type -> controlplane.v1.WorkflowContractServiceListResponse
-	3,  // 17: controlplane.v1.WorkflowContractService.Create:output_type -> controlplane.v1.WorkflowContractServiceCreateResponse
-	5,  // 18: controlplane.v1.WorkflowContractService.Update:output_type -> controlplane.v1.WorkflowContractServiceUpdateResponse
-	7,  // 19: controlplane.v1.WorkflowContractService.Describe:output_type -> controlplane.v1.WorkflowContractServiceDescribeResponse
-	9,  // 20: controlplane.v1.WorkflowContractService.Delete:output_type -> controlplane.v1.WorkflowContractServiceDeleteResponse
-	11, // 21: controlplane.v1.WorkflowContractService.Apply:output_type -> controlplane.v1.WorkflowContractServiceApplyResponse
-	16, // [16:22] is the sub-list for method output_type
-	10, // [10:16] is the sub-list for method input_type
+	12, // 15: controlplane.v1.WorkflowContractService.Apply:input_type -> controlplane.v1.WorkflowContractServiceApplyRequest
+	10, // 16: controlplane.v1.WorkflowContractService.PurgeUnused:input_type -> controlplane.v1.WorkflowContractServicePurgeUnusedRequest
+	1,  // 17: controlplane.v1.WorkflowContractService.List:output_type -> controlplane.v1.WorkflowContractServiceListResponse
+	3,  // 18: controlplane.v1.WorkflowContractService.Create:output_type -> controlplane.v1.WorkflowContractServiceCreateResponse
+	5,  // 19: controlplane.v1.WorkflowContractService.Update:output_type -> controlplane.v1.WorkflowContractServiceUpdateResponse
+	7,  // 20: controlplane.v1.WorkflowContractService.Describe:output_type -> controlplane.v1.WorkflowContractServiceDescribeResponse
+	9,  // 21: controlplane.v1.WorkflowContractService.Delete:output_type -> controlplane.v1.WorkflowContractServiceDeleteResponse
+	13, // 22: controlplane.v1.WorkflowContractService.Apply:output_type -> controlplane.v1.WorkflowContractServiceApplyResponse
+	11, // 23: controlplane.v1.WorkflowContractService.PurgeUnused:output_type -> controlplane.v1.WorkflowContractServicePurgeUnusedResponse
+	17, // [17:24] is the sub-list for method output_type
+	10, // [10:17] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -859,7 +947,7 @@ func file_controlplane_v1_workflow_contract_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_workflow_contract_proto_rawDesc), len(file_controlplane_v1_workflow_contract_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

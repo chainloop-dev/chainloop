@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ var (
 	_ auditor.LogEntry = (*WorkflowContractDeleted)(nil)
 	_ auditor.LogEntry = (*WorkflowContractAttached)(nil)
 	_ auditor.LogEntry = (*WorkflowContractDetached)(nil)
+	_ auditor.LogEntry = (*WorkflowContractPurged)(nil)
 )
 
 const (
@@ -40,6 +41,7 @@ const (
 	WorkflowContractDeletedActionType          string             = "WorkflowContractDeleted"
 	WorkflowContractContractAttachedActionType string             = "WorkflowContractContractAttached"
 	WorkflowContractContractDetachedActionType string             = "WorkflowContractContractDetached"
+	WorkflowContractPurgedActionType           string             = "WorkflowContractPurged"
 )
 
 // WorkflowContractBase is the base struct for workflow contract events
@@ -180,4 +182,32 @@ func (w *WorkflowContractDetached) ActionInfo() (json.RawMessage, error) {
 
 func (w *WorkflowContractDetached) Description() string {
 	return fmt.Sprintf("%s has detached the workflow %s from the workflow contract %s", auditor.GetActorIdentifier(), w.WorkflowName, w.WorkflowContractName)
+}
+
+type WorkflowContractPurged struct {
+	TotalPurged int `json:"total_purged"`
+}
+
+func (w *WorkflowContractPurged) ActionType() string {
+	return WorkflowContractPurgedActionType
+}
+
+func (w *WorkflowContractPurged) ActionInfo() (json.RawMessage, error) {
+	return json.Marshal(w)
+}
+
+func (w *WorkflowContractPurged) TargetType() auditor.TargetType {
+	return WorkflowContractType
+}
+
+func (w *WorkflowContractPurged) TargetID() *uuid.UUID {
+	return nil
+}
+
+func (w *WorkflowContractPurged) RequiresActor() bool {
+	return true
+}
+
+func (w *WorkflowContractPurged) Description() string {
+	return fmt.Sprintf("%s has purged %d unused workflow contracts", auditor.GetActorIdentifier(), w.TotalPurged)
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,12 +34,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	WorkflowContractService_List_FullMethodName     = "/controlplane.v1.WorkflowContractService/List"
-	WorkflowContractService_Create_FullMethodName   = "/controlplane.v1.WorkflowContractService/Create"
-	WorkflowContractService_Update_FullMethodName   = "/controlplane.v1.WorkflowContractService/Update"
-	WorkflowContractService_Describe_FullMethodName = "/controlplane.v1.WorkflowContractService/Describe"
-	WorkflowContractService_Delete_FullMethodName   = "/controlplane.v1.WorkflowContractService/Delete"
-	WorkflowContractService_Apply_FullMethodName    = "/controlplane.v1.WorkflowContractService/Apply"
+	WorkflowContractService_List_FullMethodName        = "/controlplane.v1.WorkflowContractService/List"
+	WorkflowContractService_Create_FullMethodName      = "/controlplane.v1.WorkflowContractService/Create"
+	WorkflowContractService_Update_FullMethodName      = "/controlplane.v1.WorkflowContractService/Update"
+	WorkflowContractService_Describe_FullMethodName    = "/controlplane.v1.WorkflowContractService/Describe"
+	WorkflowContractService_Delete_FullMethodName      = "/controlplane.v1.WorkflowContractService/Delete"
+	WorkflowContractService_Apply_FullMethodName       = "/controlplane.v1.WorkflowContractService/Apply"
+	WorkflowContractService_PurgeUnused_FullMethodName = "/controlplane.v1.WorkflowContractService/PurgeUnused"
 )
 
 // WorkflowContractServiceClient is the client API for WorkflowContractService service.
@@ -52,6 +53,7 @@ type WorkflowContractServiceClient interface {
 	Describe(ctx context.Context, in *WorkflowContractServiceDescribeRequest, opts ...grpc.CallOption) (*WorkflowContractServiceDescribeResponse, error)
 	Delete(ctx context.Context, in *WorkflowContractServiceDeleteRequest, opts ...grpc.CallOption) (*WorkflowContractServiceDeleteResponse, error)
 	Apply(ctx context.Context, in *WorkflowContractServiceApplyRequest, opts ...grpc.CallOption) (*WorkflowContractServiceApplyResponse, error)
+	PurgeUnused(ctx context.Context, in *WorkflowContractServicePurgeUnusedRequest, opts ...grpc.CallOption) (*WorkflowContractServicePurgeUnusedResponse, error)
 }
 
 type workflowContractServiceClient struct {
@@ -116,6 +118,15 @@ func (c *workflowContractServiceClient) Apply(ctx context.Context, in *WorkflowC
 	return out, nil
 }
 
+func (c *workflowContractServiceClient) PurgeUnused(ctx context.Context, in *WorkflowContractServicePurgeUnusedRequest, opts ...grpc.CallOption) (*WorkflowContractServicePurgeUnusedResponse, error) {
+	out := new(WorkflowContractServicePurgeUnusedResponse)
+	err := c.cc.Invoke(ctx, WorkflowContractService_PurgeUnused_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkflowContractServiceServer is the server API for WorkflowContractService service.
 // All implementations must embed UnimplementedWorkflowContractServiceServer
 // for forward compatibility
@@ -126,6 +137,7 @@ type WorkflowContractServiceServer interface {
 	Describe(context.Context, *WorkflowContractServiceDescribeRequest) (*WorkflowContractServiceDescribeResponse, error)
 	Delete(context.Context, *WorkflowContractServiceDeleteRequest) (*WorkflowContractServiceDeleteResponse, error)
 	Apply(context.Context, *WorkflowContractServiceApplyRequest) (*WorkflowContractServiceApplyResponse, error)
+	PurgeUnused(context.Context, *WorkflowContractServicePurgeUnusedRequest) (*WorkflowContractServicePurgeUnusedResponse, error)
 	mustEmbedUnimplementedWorkflowContractServiceServer()
 }
 
@@ -150,6 +162,9 @@ func (UnimplementedWorkflowContractServiceServer) Delete(context.Context, *Workf
 }
 func (UnimplementedWorkflowContractServiceServer) Apply(context.Context, *WorkflowContractServiceApplyRequest) (*WorkflowContractServiceApplyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Apply not implemented")
+}
+func (UnimplementedWorkflowContractServiceServer) PurgeUnused(context.Context, *WorkflowContractServicePurgeUnusedRequest) (*WorkflowContractServicePurgeUnusedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PurgeUnused not implemented")
 }
 func (UnimplementedWorkflowContractServiceServer) mustEmbedUnimplementedWorkflowContractServiceServer() {
 }
@@ -273,6 +288,24 @@ func _WorkflowContractService_Apply_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkflowContractService_PurgeUnused_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkflowContractServicePurgeUnusedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowContractServiceServer).PurgeUnused(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkflowContractService_PurgeUnused_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowContractServiceServer).PurgeUnused(ctx, req.(*WorkflowContractServicePurgeUnusedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WorkflowContractService_ServiceDesc is the grpc.ServiceDesc for WorkflowContractService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -303,6 +336,10 @@ var WorkflowContractService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Apply",
 			Handler:    _WorkflowContractService_Apply_Handler,
+		},
+		{
+			MethodName: "PurgeUnused",
+			Handler:    _WorkflowContractService_PurgeUnused_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

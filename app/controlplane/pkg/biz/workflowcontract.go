@@ -104,6 +104,7 @@ type WorkflowContractRepo interface {
 	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractWithVersion, error)
 	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
 	SoftDelete(ctx context.Context, contractID uuid.UUID) error
+	SoftDeleteUnused(ctx context.Context, orgID uuid.UUID, filter *WorkflowContractListFilters) (int, error)
 }
 
 type ContractQueryOpts struct {
@@ -671,6 +672,31 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 	}, &orgUUID)
 
 	return nil
+}
+
+func (uc *WorkflowContractUseCase) PurgeUnused(ctx context.Context, orgID string, opts ...WorkflowListOpt) (int, error) {
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return 0, NewErrInvalidUUID(err)
+	}
+
+	filters := &WorkflowContractListFilters{}
+	for _, opt := range opts {
+		opt(filters)
+	}
+
+	n, err := uc.repo.SoftDeleteUnused(ctx, orgUUID, filters)
+	if err != nil {
+		return 0, fmt.Errorf("failed to purge unused contracts: %w", err)
+	}
+
+	if n > 0 {
+		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractPurged{
+			TotalPurged: n,
+		}, &orgUUID)
+	}
+
+	return n, nil
 }
 
 type RemotePolicy struct {

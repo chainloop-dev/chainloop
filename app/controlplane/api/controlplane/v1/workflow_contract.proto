@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ service WorkflowContractService {
   rpc Describe(WorkflowContractServiceDescribeRequest) returns (WorkflowContractServiceDescribeResponse);
   rpc Delete(WorkflowContractServiceDeleteRequest) returns (WorkflowContractServiceDeleteResponse);
   rpc Apply(WorkflowContractServiceApplyRequest) returns (WorkflowContractServiceApplyResponse);
+  rpc PurgeUnused(WorkflowContractServicePurgeUnusedRequest) returns (WorkflowContractServicePurgeUnusedResponse);
 }
 
 message WorkflowContractServiceListRequest {}
@@ -115,6 +116,12 @@ message WorkflowContractServiceDeleteRequest {
 }
 
 message WorkflowContractServiceDeleteResponse {}
+
+message WorkflowContractServicePurgeUnusedRequest {}
+
+message WorkflowContractServicePurgeUnusedResponse {
+  int32 total_purged = 1;
+}
 
 message WorkflowContractServiceApplyRequest {
   // Raw representation of the contract in json, yaml or cue

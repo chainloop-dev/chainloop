@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.WorkflowContractServicePurgeUnusedResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(totalPurged)$": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "properties": {
+    "total_purged": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "title": "Workflow Contract Service Purge Unused Response",
+  "type": "object"
+}

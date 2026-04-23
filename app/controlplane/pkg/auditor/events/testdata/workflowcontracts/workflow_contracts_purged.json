@@ -1,0 +1,15 @@
+{
+  "ActionType": "WorkflowContractPurged",
+  "TargetType": "WorkflowContract",
+  "TargetID": null,
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor has purged 5 unused workflow contracts",
+  "Info": {
+    "total_purged": 5
+  },
+  "Digest": "sha256:902d94a29ee927ec4ec2fd787a219cc97064623500b6b4528fb622cbebd0f027"
+}

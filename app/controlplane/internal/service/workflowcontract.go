@@ -332,6 +332,24 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 	return &pb.WorkflowContractServiceDeleteResponse{}, nil
 }
 
+func (s *WorkflowContractService) PurgeUnused(ctx context.Context, _ *pb.WorkflowContractServicePurgeUnusedRequest) (*pb.WorkflowContractServicePurgeUnusedResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.checkPolicy(ctx, authz.PolicyWorkflowContractDelete); err != nil {
+		return nil, err
+	}
+
+	n, err := s.contractUseCase.PurgeUnused(ctx, currentOrg.ID, biz.WithProjectFilter(s.visibleProjects(ctx)))
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	return &pb.WorkflowContractServicePurgeUnusedResponse{TotalPurged: int32(n)}, nil
+}
+
 func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractItem {
 	// nolint:prealloc
 	var workflowNames []string

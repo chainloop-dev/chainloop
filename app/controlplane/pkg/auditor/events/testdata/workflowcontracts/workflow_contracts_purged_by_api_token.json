@@ -1,0 +1,15 @@
+{
+  "ActionType": "WorkflowContractPurged",
+  "TargetType": "WorkflowContract",
+  "TargetID": null,
+  "ActorType": "API_TOKEN",
+  "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorEmail": "",
+  "ActorName": "test-token",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "test-token has purged 5 unused workflow contracts",
+  "Info": {
+    "total_purged": 5
+  },
+  "Digest": "sha256:7cb3c69164aa41acc08d6158310739c26cf6a0cc336dcf744d6f55591d27ea0c"
+}

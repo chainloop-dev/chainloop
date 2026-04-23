@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -297,6 +297,82 @@ func (s *workflowContractIntegrationTestSuite) TestList() {
 		s.True(contracts[0].IsProjectScoped())
 		s.Equal(s.contractOrg1.ID, contracts[1].ID)
 		s.True(contracts[1].IsGlobalScoped())
+	})
+}
+
+func (s *workflowContractIntegrationTestSuite) TestPurgeUnused() {
+	ctx := context.Background()
+
+	s.Run("purges all contracts when none have workflows", func() {
+		contracts, err := s.WorkflowContract.List(ctx, s.org.ID)
+		s.Require().NoError(err)
+		s.Require().Equal(3, len(contracts))
+
+		n, err := s.WorkflowContract.PurgeUnused(ctx, s.org.ID)
+		s.Require().NoError(err)
+		s.Equal(3, n)
+
+		contracts, err = s.WorkflowContract.List(ctx, s.org.ID)
+		s.NoError(err)
+		s.Empty(contracts)
+	})
+}
+
+func (s *workflowContractIntegrationTestSuite) TestPurgeUnusedWithWorkflows() {
+	ctx := context.Background()
+
+	_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+		Name:       "wf-attached",
+		OrgID:      s.org.ID,
+		Project:    s.p1.Name,
+		ContractID: s.contractScopedToProject.ID.String(),
+	})
+	s.Require().NoError(err)
+
+	s.Run("purges only unused contracts", func() {
+		contracts, err := s.WorkflowContract.List(ctx, s.org.ID)
+		s.Require().NoError(err)
+		s.Require().Equal(3, len(contracts))
+
+		n, err := s.WorkflowContract.PurgeUnused(ctx, s.org.ID)
+		s.Require().NoError(err)
+		s.Equal(2, n)
+
+		contracts, err = s.WorkflowContract.List(ctx, s.org.ID)
+		s.NoError(err)
+		s.Require().Equal(1, len(contracts))
+		s.Equal(s.contractScopedToProject.ID, contracts[0].ID)
+	})
+}
+
+func (s *workflowContractIntegrationTestSuite) TestPurgeUnusedNothingToPurge() {
+	ctx := context.Background()
+
+	contracts, err := s.WorkflowContract.List(ctx, s.org.ID)
+	s.Require().NoError(err)
+
+	for _, c := range contracts {
+		projectName := s.p1.Name
+		if c.IsProjectScoped() {
+			projectName = c.ScopedEntity.Name
+		}
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			Name:       fmt.Sprintf("wf-for-%s", c.Name),
+			OrgID:      s.org.ID,
+			Project:    projectName,
+			ContractID: c.ID.String(),
+		})
+		s.Require().NoError(err)
+	}
+
+	s.Run("returns zero when all contracts have workflows", func() {
+		n, err := s.WorkflowContract.PurgeUnused(ctx, s.org.ID)
+		s.Require().NoError(err)
+		s.Equal(0, n)
+
+		contracts, err := s.WorkflowContract.List(ctx, s.org.ID)
+		s.NoError(err)
+		s.Equal(3, len(contracts))
 	})
 }
 
