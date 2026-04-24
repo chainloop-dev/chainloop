@@ -22,7 +22,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
-	"github.com/owenrumney/go-sarif/sarif"
+	sarif "github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 	"github.com/rs/zerolog"
 )
 
@@ -44,14 +44,15 @@ func NewSARIFCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend 
 
 func (i *SARIFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding SARIF file")
+
+	// sarif.Open will take care of checkif if the file exists or not and unmarshal it, we just need to check if the schema is present to validate that it's a valid SARIF file
 	doc, err := sarif.Open(filepath)
-	// parse doesn't fail if the provided file is a valid JSON, but not a valid CSAF VEX file
 	if err != nil || doc.Schema == "" {
 		if err != nil {
 			i.logger.Debug().Err(err).Msg("error decoding file")
 		}
 
-		return nil, fmt.Errorf("invalid SARIF file: %w", ErrInvalidMaterialType)
+		return nil, fmt.Errorf("invalid SARIF file (%w): %w", err, ErrInvalidMaterialType)
 	}
 
 	m, err := uploadAndCraft(ctx, i.input, i.backend, filepath, i.logger)
@@ -65,15 +66,22 @@ func (i *SARIFCrafter) Craft(ctx context.Context, filepath string) (*api.Attesta
 }
 
 func (i *SARIFCrafter) injectAnnotations(m *api.Attestation_Material, doc *sarif.Report) {
-	// add vendor information
-	if len(doc.Runs) > 0 {
-		// assuming vendor from first run.
-		m.Annotations = make(map[string]string)
-		if doc.Runs[0].Tool.Driver.Name != "" {
-			m.Annotations[AnnotationToolNameKey] = doc.Runs[0].Tool.Driver.Name
-		}
-		if doc.Runs[0].Tool.Driver.Version != nil && *doc.Runs[0].Tool.Driver.Version != "" {
-			m.Annotations[AnnotationToolVersionKey] = *doc.Runs[0].Tool.Driver.Version
-		}
+	if len(doc.Runs) == 0 {
+		return
+	}
+
+	run := doc.Runs[0]
+	if run == nil || run.Tool == nil || run.Tool.Driver == nil {
+		return
+	}
+
+	m.Annotations = make(map[string]string)
+	driver := run.Tool.Driver
+
+	if driver.Name != nil && *driver.Name != "" {
+		m.Annotations[AnnotationToolNameKey] = *driver.Name
+	}
+	if driver.Version != nil && *driver.Version != "" {
+		m.Annotations[AnnotationToolVersionKey] = *driver.Version
 	}
 }

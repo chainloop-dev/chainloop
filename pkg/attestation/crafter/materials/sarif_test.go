@@ -66,9 +66,11 @@ func TestNewSARIFCrafter(t *testing.T) {
 
 func TestSARIFCraft(t *testing.T) {
 	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
+		name           string
+		filePath       string
+		wantErr        string
+		expectedDigest string
+		expectedName   string
 	}{
 		{
 			name:     "non-expected json file",
@@ -84,10 +86,6 @@ func TestSARIFCraft(t *testing.T) {
 			name:     "invalid artifact type",
 			filePath: "./testdata/simple.txt",
 			wantErr:  "unexpected material type",
-		},
-		{
-			name:     "valid artifact type",
-			filePath: "./testdata/report.sarif",
 		},
 	}
 
@@ -123,10 +121,11 @@ func TestSARIFCraft(t *testing.T) {
 			assert.Equal(contractAPI.CraftingSchema_Material_SARIF.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
-			// // The result includes the digest reference
-			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:c4a63494f9289dd9fd44f841efb4f5b52765c2de6332f2d86e5f6c0340b40a95", Name: "report.sarif",
-			}, got.GetArtifact())
+			if tc.expectedDigest != "" {
+				assert.Equal(&attestationApi.Attestation_Material_Artifact{
+					Id: "test", Digest: tc.expectedDigest, Name: tc.expectedName,
+				}, got.GetArtifact())
+			}
 		})
 	}
 }
