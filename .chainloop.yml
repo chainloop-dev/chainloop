@@ -1,3 +1,7 @@
+# organization and projectName are used for Chainloop Trace
+# https://docs.chainloop.dev/reference/operator/trace
+organization: chainloop
+projectName: chainloop
 # This indicates the [current version]+next
 # to indicate that we are building a new version of the project
 projectVersion: v1.94.1+next
