@@ -35,8 +35,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/google/go-containerregistry/pkg/authn"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -305,9 +305,6 @@ type CommitRemote struct {
 	Name, URL string
 }
 
-// This error is not exposed by go-git
-var errBranchInvalidMerge = errors.New("branch config: invalid merge")
-
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
 func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, error) {
@@ -317,10 +314,7 @@ func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, erro
 	}
 
 	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
-		// walk up the directory tree until we find a git repo
 		DetectDotGit: true,
-		// enable .git/commondir support so worktrees can resolve HEAD
-		EnableDotGitCommonDir: true,
 	})
 
 	if err != nil {
@@ -331,15 +325,6 @@ func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, erro
 			errors.Is(err, git.ErrUnsupportedExtensionRepositoryFormatVersion) ||
 			errors.Is(err, git.ErrUnknownExtension) ||
 			errors.Is(err, git.ErrUnsupportedRepositoryFormatVersion) {
-			return nil, nil
-		}
-
-		// Mitigate https://github.com/go-git/go-git/issues/331
-		// This error is not exposed by go-git so we do a string comparison.
-		// The upcoming go-git v6 no longer returns this error, so this
-		// workaround can be removed after upgrading.
-		if isBranchInvalidMergeError(err) {
-			logger.Warn().Err(err).Msg("branch is invalid merge, skipping commit")
 			return nil, nil
 		}
 
@@ -366,20 +351,11 @@ func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, erro
 		Date:        commit.Author.When,
 		Message:     commit.Message,
 		Remotes:     make([]*CommitRemote, 0),
-		Signature:   commit.PGPSignature,
+		Signature:   commit.Signature,
 	}
 
 	remotes, err := repo.Remotes()
 	if err != nil {
-		// go-git does an additional validation that the branch is pushed upstream
-		// we do not care about that use-case, so we ignore the error
-		// we compare by error string because go-git does not expose the error type
-		// and errors.Is require the same instance of the error
-		if isBranchInvalidMergeError(err) {
-			logger.Warn().Err(err).Msg("branch is invalid merge, skipping remotes")
-			return c, nil
-		}
-
 		return nil, fmt.Errorf("getting remotes: %w", err)
 	}
 
@@ -400,10 +376,6 @@ func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, erro
 	}
 
 	return c, nil
-}
-
-func isBranchInvalidMergeError(err error) bool {
-	return err.Error() == errBranchInvalidMerge.Error()
 }
 
 // Clear any basic auth credentials from the remote URL

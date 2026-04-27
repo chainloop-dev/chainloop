@@ -24,9 +24,9 @@ import (
 	"time"
 
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -79,11 +79,24 @@ func (s *crafterUnitSuite) TestSanitizeRemoteURI() {
 	}
 }
 
+func disableGPGSign(repo *git.Repository) error {
+	cfg, err := repo.Config()
+	if err != nil {
+		return err
+	}
+	cfg.Commit.GpgSign = config.NewOptBool(false)
+	return repo.SetConfig(cfg)
+}
+
 func (s *crafterUnitSuite) TestGitRepoHead() {
 	initRepo := func(withCommit bool) func(string) (*HeadCommit, error) {
 		return func(repoPath string) (*HeadCommit, error) {
 			repo, err := git.PlainInit(repoPath, false)
 			if err != nil {
+				return nil, err
+			}
+
+			if err := disableGPGSign(repo); err != nil {
 				return nil, err
 			}
 
@@ -327,6 +340,8 @@ func (s *crafterUnitSuite) TestGitRepoHeadWorktree() {
 	// Initialize a repo and create a commit using go-git
 	repo, err := git.PlainInit(repoPath, false)
 	require.NoError(s.T(), err)
+
+	require.NoError(s.T(), disableGPGSign(repo))
 
 	_, err = repo.CreateRemote(&config.RemoteConfig{
 		Name: "origin",
