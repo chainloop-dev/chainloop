@@ -67,9 +67,9 @@ func (s *OrgIntegrationTestSuite) TestCreate() {
 		// over the max size
 		{"aabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk", true},
 		// reserved names
-		{"chainloop", true},
 		{"admin", true},
 		{"default", true},
+		{"chainloop", false},
 	}
 
 	for _, tc := range testCases {
