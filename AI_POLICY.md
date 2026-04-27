@@ -1,7 +1,7 @@
 # AI Contribution Policy for Chainloop
 
 The Chainloop project welcomes AI tools as productivity aids while maintaining
-strict accountability standards.
+strict accountability standards. Here are the key requirements:
 
 ## Core Principle
 
@@ -36,3 +36,8 @@ calibrate their focus.
 Respond personally to feedback rather than resubmitting AI-refined responses.
 Maintainers will close PRs showing patterns of disengaged AI-driven revisions
 without detailed explanation.
+
+---
+
+This balanced approach encourages AI adoption while prioritizing code quality
+and human accountability.
