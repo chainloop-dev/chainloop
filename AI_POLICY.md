@@ -1,43 +1,82 @@
-# AI Contribution Policy for Chainloop
+# AI Contribution Policy
 
-The Chainloop project welcomes AI tools as productivity aids while maintaining
-strict accountability standards. Here are the key requirements:
+Chainloop is an open-source evidence store for Software Supply Chain
+attestations, SBOMs, VEX, SARIF, and other compliance artifacts. Correctness,
+security, and long-term maintainability are non-negotiable properties of the
+project.
 
-## Core Principle
+This policy sets clear expectations for AI-assisted contributions. It is not
+an anti-AI stance — maintainers and contributors alike use AI tools in their
+daily workflows, and we encourage you to do the same. AI can accelerate
+learning, improve documentation, generate test scaffolding, and help explore
+design alternatives. We welcome contributors who use AI as a productivity
+amplifier, not as a substitute for understanding.
 
-**The human contributor is always accountable for every line submitted.**
-Contributors must be able to explain all changes; attribution to AI is
-insufficient.
+**AI tools are welcome in the Chainloop contributor workflow. The human
+contributor is always accountable for every line submitted.**
 
-## Essential Guidelines
+## Contribution Guidelines
 
-- **Ownership & Understanding:** You must comprehend every modification you
-  submit. AI-generated code requires full comprehension before contribution.
-- **Design First:** Substantial changes need a prior GitHub Issue with clear
-  reasoning. Ad-hoc pull requests violating established patterns will be
-  rejected.
-- **Testing Mandatory:** Bug fixes require regression tests; new features need
-  unit and integration tests. Ineffective test code will be rejected.
-- **Legal Requirements:** Ensure no unlicensed copyrighted material exists and
-  that AI tool terms don't conflict with Apache 2.0 licensing.
+The following rules apply to all contributions, regardless of how they were
+produced:
 
-## Disclosure Requirements
+- **Own your changes.** You must be able to explain every change you submit.
+  "The AI generated it" is never an acceptable answer during review.
+- **Design before coding.** For non-trivial changes, open a GitHub Issue with
+  clear reasoning before a PR. PRs that ignore established patterns will be
+  closed.
+- **Quality over quantity.** One well-understood, well-tested PR is worth more
+  than many AI-assisted drive-by fixes. A flood of low-effort PRs exhausts
+  maintainer attention and delays everyone in the queue.
+- **Tests are required.** Bug fixes need regression tests; new features need
+  unit and integration tests. AI-generated tests that do not actually exercise
+  the relevant behaviour will be rejected.
+- **Legal compliance.** Chainloop is [Apache 2.0 licensed](LICENSE).
+  Contributions must ensure:
+  - No third-party copyrighted material has been reproduced without a compatible
+    open source license and proper attribution.
+  - When AI tools are used, their terms do not impose restrictions incompatible
+    with Apache 2.0.
 
-Document AI assistance in pull request descriptions using commit trailers like:
+## Disclosure
 
-- `Assisted-by: GitHub Copilot`
-- `Assisted-by: Claude Code`
+If AI assisted in producing any part of your contribution, disclose it in the
+PR description. Add an `Assisted-by:` trailer to each affected commit:
 
-Transparency maintains project integrity and helps reviewers appropriately
-calibrate their focus.
+```
+Assisted-by: GitHub Copilot
+Assisted-by: Claude Code
+Assisted-by: ChatGPT o3
+```
 
-## Review Engagement
+Disclosure is not a penalty — it is trust infrastructure. It preserves
+transparency, helps reviewers calibrate their attention, and keeps provenance
+clear for the project's long-term health.
 
-Respond personally to feedback rather than resubmitting AI-refined responses.
-Maintainers will close PRs showing patterns of disengaged AI-driven revisions
-without detailed explanation.
+## Engaging With Maintainers
 
----
+- **Respond personally.** Do not pipe review feedback back into an AI and
+  apply the output blindly. Responses during review must reflect genuine
+  understanding of the code and the project's design goals.
+- **No AI ping-pong.** If maintainers observe a pattern of AI-driven responses
+  without real engagement, the PR will be closed without further explanation.
+- Maintainers reserve the right to close any low-effort AI contribution without
+  a detailed technical critique.
 
-This balanced approach encourages AI adoption while prioritizing code quality
-and human accountability.
+## Maintainer Use of AI
+
+Maintainers also use AI tools: for reviewing changes, exploring implementation
+options, and improving documentation. The same disclosure and ownership
+expectations apply to maintainer-authored commits.
+
+## Acknowledgements
+
+This policy is inspired by the
+[go-git AI Policy](https://github.com/go-git/go-git/blob/main/AI_POLICY.md),
+the [Kubewarden AI Policy](https://github.com/kubewarden/community/blob/main/AI_POLICY.md),
+the [CloudNativePG AI Policy](https://github.com/cloudnative-pg/governance/blob/main/AI_POLICY.md),
+and the [Kyverno AI Usage Policy](https://github.com/kyverno/kyverno/blob/main/AI_POLICY.md).
+It aligns with the Linux Foundation's
+[Generative AI guidance](https://www.linuxfoundation.org/legal/generative-ai)
+and the CNCF community's evolving norms on sustainable AI-assisted open source
+development.
