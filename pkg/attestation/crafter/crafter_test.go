@@ -36,8 +36,9 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -504,6 +505,12 @@ func (s *crafterSuite) SetupTest() {
 	s.repoPath = s.T().TempDir()
 	repo, err := git.PlainInit(s.repoPath, false)
 	require.NoError(s.T(), err)
+
+	cfg, err := repo.Config()
+	require.NoError(s.T(), err)
+	cfg.Commit.GpgSign = config.NewOptBool(false)
+	require.NoError(s.T(), repo.SetConfig(cfg))
+
 	wt, err := repo.Worktree()
 	require.NoError(s.T(), err)
 
