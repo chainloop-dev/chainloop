@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -210,6 +210,10 @@ func TestPoliciesLookup(t *testing.T) {
 			operation: "/controlplane.v1.OrgMetricsService",
 			wantErr:   true,
 		},
+		{
+			name:      "contract apply operation found",
+			operation: "/controlplane.v1.WorkflowContractService/Apply",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -223,4 +227,10 @@ func TestPoliciesLookup(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPoliciesLookupContractApply(t *testing.T) {
+	policies, err := policiesLookup("/controlplane.v1.WorkflowContractService/Apply")
+	assert.NoError(t, err)
+	assert.Equal(t, []*authz.Policy{authz.PolicyWorkflowContractCreate, authz.PolicyWorkflowContractUpdate}, policies)
 }
