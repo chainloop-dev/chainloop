@@ -110,7 +110,7 @@ func NewOrganizationUseCase(repo OrganizationRepo, repoUC *CASBackendUseCase, au
 
 const RandomNameMaxTries = 10
 
-var reservedOrgNames = []string{"chainloop", "admin", "default"}
+var reservedOrgNames = []string{"admin", "default"}
 
 type createOptions struct {
 	createInlineBackend bool
