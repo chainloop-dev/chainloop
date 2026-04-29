@@ -617,30 +617,36 @@ func (c *Crafter) IsMaterialInContract(key string) bool {
 // AddMaterialContactFreeWithAutoDetectedKind adds a material to the crafting state checking the incoming material matches any of the
 // supported types in validation order. If the material is not found it will return an error.
 func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
-	var err error
+	var (
+		err error
+		m   *api.Attestation_Material
+	)
 	for _, kind := range schemaapi.CraftingMaterialInValidationOrder {
-		m, err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
+		m, err = c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
 		if err == nil {
-			// Successfully added material, return the kind
 			return m, nil
 		}
 
 		c.Logger.Debug().Err(err).Str("kind", kind.String()).Msg("failed to add material")
 
-		// Handle base error for upload and craft errors except the opening file error
-		// TODO: have an error to detect validation error instead
 		var policyError *policies.PolicyError
 		if errors.Is(err, materials.ErrBaseUploadAndCraft) || errors.As(err, &policyError) {
 			return nil, err
 		}
 
-		// This is a final error, we detected the kind
 		if v1.IsAttestationStateErrorConflict(err) {
+			return nil, err
+		}
+
+		// Proto-validation errors (e.g. invalid material name) are schema-level
+		// failures, not kind mismatches. Stop probing immediately so the real
+		// error is surfaced to the user instead of being masked by the loop.
+		var valErr *protovalidate.ValidationError
+		if errors.As(err, &valErr) {
 			return nil, err
 		}
 	}
 
-	// Return an error if no material could be added
 	return nil, fmt.Errorf("failed to auto-discover material kind: %w", err)
 }
 
