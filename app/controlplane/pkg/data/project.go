@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -153,21 +153,26 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 
 		switch m.MembershipType {
 		case authz.MembershipTypeUser:
-			// Fetch the user details for user memberships
 			u, uErr := r.data.DB.User.Get(ctx, m.MemberID)
 			if uErr != nil {
+				// Skip orphaned rows whose member_id no longer points at a real user.
+				// memberships.member_id is polymorphic with no FK, so deletes that bypass
+				// the app-level cascade can leave dangling rows here.
 				if ent.IsNotFound(uErr) {
-					return nil, 0, biz.NewErrNotFound("user")
+					r.log.Warnf("orphaned project membership %s references missing user %s, skipping", m.ID, m.MemberID)
+					totalCount--
+					continue
 				}
 				return nil, 0, fmt.Errorf("failed to find user: %w", uErr)
 			}
 			mems = entProjectMembershipToBiz(m, u, nil)
 		case authz.MembershipTypeGroup:
-			// Fetch the group details for group memberships
 			g, gErr := r.data.DB.Group.Get(ctx, m.MemberID)
 			if gErr != nil {
 				if ent.IsNotFound(gErr) {
-					return nil, 0, biz.NewErrNotFound("group")
+					r.log.Warnf("orphaned project membership %s references missing group %s, skipping", m.ID, m.MemberID)
+					totalCount--
+					continue
 				}
 				return nil, 0, fmt.Errorf("failed to find group: %w", gErr)
 			}
