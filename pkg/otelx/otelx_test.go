@@ -20,6 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -28,12 +30,8 @@ import (
 
 func TestTracer(t *testing.T) {
 	tracer := Tracer("test-service", "biz/pkg")
-	if tracer == nil {
-		t.Fatal("expected non-nil tracer")
-	}
-	if tracer.Layer != "biz" {
-		t.Errorf("expected layer 'biz', got %q", tracer.Layer)
-	}
+	require.NotNil(t, tracer)
+	assert.Equal(t, "biz", tracer.Layer)
 }
 
 func TestTracerLayerExtraction(t *testing.T) {
@@ -51,9 +49,7 @@ func TestTracerLayerExtraction(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tracer := Tracer("svc", tc.name)
-			if tracer.Layer != tc.wantLayer {
-				t.Errorf("Tracer(%q): got layer %q, want %q", tc.name, tracer.Layer, tc.wantLayer)
-			}
+			assert.Equal(t, tc.wantLayer, tracer.Layer)
 		})
 	}
 }
@@ -75,12 +71,8 @@ func TestStartCreatesSpanWithLayerAttribute(t *testing.T) {
 	span.End()
 
 	spans := exporter.GetSpans()
-	if len(spans) != 1 {
-		t.Fatalf("expected 1 span, got %d", len(spans))
-	}
-	if spans[0].Name != "TestOp" {
-		t.Errorf("expected span name 'TestOp', got %q", spans[0].Name)
-	}
+	require.Len(t, spans, 1)
+	assert.Equal(t, "TestOp", spans[0].Name)
 
 	found := false
 	for _, attr := range spans[0].Attributes {
@@ -89,9 +81,7 @@ func TestStartCreatesSpanWithLayerAttribute(t *testing.T) {
 			break
 		}
 	}
-	if !found {
-		t.Error("expected chainloop.layer=biz attribute on span")
-	}
+	assert.True(t, found, "expected chainloop.layer=biz attribute on span")
 }
 
 func TestRecordError(t *testing.T) {
@@ -124,12 +114,8 @@ func TestRecordError(t *testing.T) {
 			span.End()
 
 			spans := exporter.GetSpans()
-			if len(spans) != 1 {
-				t.Fatalf("expected 1 span, got %d", len(spans))
-			}
-			if spans[0].Status.Code != tc.wantStatus {
-				t.Errorf("expected status %v, got %v", tc.wantStatus, spans[0].Status.Code)
-			}
+			require.Len(t, spans, 1)
+			assert.Equal(t, tc.wantStatus, spans[0].Status.Code)
 		})
 	}
 }

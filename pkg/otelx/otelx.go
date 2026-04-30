@@ -71,7 +71,7 @@ func Start(ctx context.Context, tracer *LayeredTracer, spanName string, attrs ..
 	allAttrs = append(allAttrs, LayerKey.String(tracer.Layer))
 	allAttrs = append(allAttrs, attrs...)
 
-	return tracer.Tracer.Start(ctx, spanName, trace.WithAttributes(allAttrs...))
+	return tracer.Start(ctx, spanName, trace.WithAttributes(allAttrs...))
 }
 
 // RecordError records an error on the span and sets its status to Error.

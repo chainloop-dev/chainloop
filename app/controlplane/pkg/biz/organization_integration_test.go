@@ -296,7 +296,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	integration.On("Describe").Return(b.Describe())
-	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
+	integration.On("Register", mock.Anything, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: []byte("deadbeef")}, nil)
 
 	config, err := structpb.NewStruct(map[string]interface{}{"firstName": "John"})

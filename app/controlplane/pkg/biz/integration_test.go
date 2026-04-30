@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ func (s *testSuite) TestCreate() {
 
 	integration.On("Describe").Return(b.Describe()).Maybe()
 	ctx := context.Background()
-	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
+	integration.On("Register", mock.Anything, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: s.config, Credentials: &sdk.Credentials{
 			Password: "key", URL: "host"},
 	}, nil).Maybe()
@@ -192,7 +192,7 @@ func (s *testSuite) TestAttachWorkflow() {
 
 	s.Run("attachment OK", func() {
 		ctx := context.Background()
-		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{
+		s.fanOutIntegration.On("Attach", mock.Anything, mock.Anything).Return(&sdk.AttachmentResponse{
 			Configuration: s.config,
 		}, nil).Once()
 
@@ -218,7 +218,7 @@ func (s *testSuite) TestAttachWorkflow() {
 
 	s.Run("attachment fails", func() {
 		ctx := context.Background()
-		s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
+		s.fanOutIntegration.On("Attach", mock.Anything, mock.Anything).Return(nil, errors.New("invalid attachment options")).Once()
 
 		_, err := s.Integration.AttachToWorkflow(ctx, &biz.AttachOpts{
 			OrgID:             s.org.ID,
@@ -236,7 +236,7 @@ func (s *testSuite) TestListAttachments() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 
-	s.fanOutIntegration.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{
+	s.fanOutIntegration.On("Attach", mock.Anything, mock.Anything).Return(&sdk.AttachmentResponse{
 		Configuration: s.config,
 	}, nil).Once()
 
@@ -315,7 +315,7 @@ func (s *testSuite) SetupTest() {
 	assert.NoError(err)
 
 	fanOut.On("Describe").Return(b.Describe())
-	fanOut.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: s.config}, nil)
+	fanOut.On("Register", mock.Anything, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: s.config}, nil)
 	s.fanOutIntegration = fanOut
 
 	s.integration, err = s.Integration.RegisterAndSave(ctx, s.org.ID, "my-registration", "my integration instance", fanOut, s.configStruct)
