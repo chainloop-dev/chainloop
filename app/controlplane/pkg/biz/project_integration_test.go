@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -184,6 +184,18 @@ func (s *projectMembersIntegrationTestSuite) TestListMembers() {
 		_, _, err = s.Project.ListMembers(ctx, uuid.MustParse(org2.ID), projectRef, nil)
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
+	})
+
+	s.Run("tolerates orphaned user memberships", func() {
+		// Bypass the app-level cascade so the project membership row is left dangling.
+		err := s.Data.DB.User.DeleteOneID(uuid.MustParse(user2.ID)).Exec(ctx)
+		require.NoError(s.T(), err)
+
+		members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+		s.NoError(err)
+		s.Equal(1, len(members))
+		s.Equal(1, count, "totalCount should reflect skipped orphan")
+		s.Equal(user3.ID, members[0].User.ID)
 	})
 }
 
@@ -1227,6 +1239,43 @@ func (s *projectGroupMembersIntegrationTestSuite) TestAddGroupToProject() {
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 	})
+}
+
+func (s *projectGroupMembersIntegrationTestSuite) TestListMembersToleratesOrphanedGroups() {
+	ctx := context.Background()
+
+	projectID := s.project.ID
+	projectRef := &biz.IdentityReference{ID: &projectID}
+
+	_, err := s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		GroupReference:   &biz.IdentityReference{ID: &s.group.ID},
+		RequesterID:      *s.userUUID,
+		Role:             authz.RoleProjectViewer,
+	})
+	require.NoError(s.T(), err)
+
+	survivingGroup, err := s.Group.Create(ctx, uuid.MustParse(s.org.ID), "surviving-group", "kept", s.userUUID)
+	require.NoError(s.T(), err)
+
+	_, err = s.Project.AddMemberToProject(ctx, uuid.MustParse(s.org.ID), &biz.AddMemberToProjectOpts{
+		ProjectReference: projectRef,
+		GroupReference:   &biz.IdentityReference{ID: &survivingGroup.ID},
+		RequesterID:      *s.userUUID,
+		Role:             authz.RoleProjectAdmin,
+	})
+	require.NoError(s.T(), err)
+
+	// Bypass the app-level cascade in MembershipRepo.Delete so the membership row dangles.
+	err = s.Data.DB.Group.DeleteOneID(s.group.ID).Exec(ctx)
+	require.NoError(s.T(), err)
+
+	members, count, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+	s.NoError(err)
+	s.Equal(1, len(members))
+	s.Equal(1, count, "totalCount should reflect skipped orphan")
+	s.NotNil(members[0].Group)
+	s.Equal(survivingGroup.ID, members[0].Group.ID)
 }
 
 // Test removing groups from projects
