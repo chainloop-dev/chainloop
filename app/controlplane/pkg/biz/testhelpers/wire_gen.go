@@ -22,7 +22,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
-	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"testing"
 )
 
@@ -36,7 +37,7 @@ import (
 func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t *testing.T, logger log.Logger, readerWriter credentials.ReaderWriter, builder *robotaccount.Builder, auth *conf.Auth, bootstrap *conf.Bootstrap, arg []*v1.OnboardingSpec, availablePlugins sdk.AvailablePlugins, providers backend.Providers) (*TestingUseCases, func(), error) {
 	confData := NewConfData(testDatabase, t)
 	databaseConfig := NewDataConfig(confData)
-	tracerProvider := newNilTracerProvider()
+	tracerProvider := newNoopTracerProvider()
 	dataData, cleanup, err := data.NewData(databaseConfig, tracerProvider, logger)
 	if err != nil {
 		return nil, nil, err
@@ -254,8 +255,8 @@ func newNatsReloadableConnection() *natsconn.ReloadableConnection {
 	return nil
 }
 
-func newNilTracerProvider() *trace.TracerProvider {
-	return nil
+func newNoopTracerProvider() trace.TracerProvider {
+	return noop.NewTracerProvider()
 }
 
 func newAuthAllowList(conf2 *conf.Bootstrap) *v1.AllowList {

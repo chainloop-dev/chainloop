@@ -17,7 +17,6 @@ package data
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"time"
@@ -31,8 +30,8 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/google/wire"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 
 	// Load PGX driver
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -75,7 +74,7 @@ func (data *Data) SchemaLoad() error {
 }
 
 // NewData .
-func NewData(c *config.DatabaseConfig, tp *sdktrace.TracerProvider, logger log.Logger) (*Data, func(), error) {
+func NewData(c *config.DatabaseConfig, tp trace.TracerProvider, logger log.Logger) (*Data, func(), error) {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
@@ -97,31 +96,24 @@ func NewData(c *config.DatabaseConfig, tp *sdktrace.TracerProvider, logger log.L
 	return &Data{DB: db}, cleanup, nil
 }
 
-func initSQLDatabase(c *config.DatabaseConfig, tp *sdktrace.TracerProvider, log *log.Helper) (*ent.Client, error) {
+func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log.Helper) (*ent.Client, error) {
 	if c.Driver != "pgx" {
 		return nil, fmt.Errorf("unsupported driver: %s", c.Driver)
 	}
 
 	log.Debugf("connecting to db: driver=%s", c.Driver)
 
-	var db *sql.DB
-	var err error
-
-	if tp != nil {
-		db, err = otelsql.Open(c.Driver, c.Source,
-			otelsql.WithTracerProvider(tp),
-			otelsql.WithAttributes(semconv.DBSystemPostgreSQL),
-			otelsql.WithSpanOptions(otelsql.SpanOptions{
-				DisableErrSkip:       true,
-				OmitRows:             true,
-				OmitConnResetSession: true,
-				OmitConnPrepare:      true,
-				OmitConnectorConnect: true,
-			}),
-		)
-	} else {
-		db, err = sql.Open("pgx", c.Source)
-	}
+	db, err := otelsql.Open(c.Driver, c.Source,
+		otelsql.WithTracerProvider(tp),
+		otelsql.WithAttributes(semconv.DBSystemPostgreSQL),
+		otelsql.WithSpanOptions(otelsql.SpanOptions{
+			DisableErrSkip:       true,
+			OmitRows:             true,
+			OmitConnResetSession: true,
+			OmitConnPrepare:      true,
+			OmitConnectorConnect: true,
+		}),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error opening the connection, driver=%s: %w", c.Driver, err)
 	}

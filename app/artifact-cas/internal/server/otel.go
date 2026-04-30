@@ -27,6 +27,8 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -34,14 +36,14 @@ import (
 const tracerShutdownTimeout = 5 * time.Second
 
 // NewTracerProvider creates an OTel TracerProvider configured from the Bootstrap config.
-// When tracing is disabled or not configured, it returns nil with a no-op cleanup.
-func NewTracerProvider(c *conf.Bootstrap, logger log.Logger) (*sdktrace.TracerProvider, func(), error) {
-	noop := func() {}
+// When tracing is disabled or not configured, it returns a noop TracerProvider.
+func NewTracerProvider(c *conf.Bootstrap, logger log.Logger) (trace.TracerProvider, func(), error) {
+	noopCleanup := func() {}
 
 	tracingConf := c.GetObservability().GetTracing()
 	if tracingConf == nil || !tracingConf.GetEnabled() {
 		_ = logger.Log(log.LevelInfo, "msg", "Tracing is disabled")
-		return nil, noop, nil
+		return noop.NewTracerProvider(), noopCleanup, nil
 	}
 
 	ctx := context.Background()
@@ -58,7 +60,7 @@ func NewTracerProvider(c *conf.Bootstrap, logger log.Logger) (*sdktrace.TracerPr
 
 	exporter, err := otlptracegrpc.New(ctx, opts...)
 	if err != nil {
-		return nil, noop, fmt.Errorf("creating OTLP trace exporter: %w", err)
+		return nil, noopCleanup, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
 
 	res, err := resource.Merge(
@@ -69,7 +71,7 @@ func NewTracerProvider(c *conf.Bootstrap, logger log.Logger) (*sdktrace.TracerPr
 		),
 	)
 	if err != nil {
-		return nil, noop, fmt.Errorf("creating OTel resource: %w", err)
+		return nil, noopCleanup, fmt.Errorf("creating OTel resource: %w", err)
 	}
 
 	var sampler sdktrace.Sampler
