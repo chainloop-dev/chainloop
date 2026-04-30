@@ -124,8 +124,8 @@ func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log
 	}
 
 	if n := c.MinOpenConns; n > 0 {
-		log.Infof("DB: setting min open conns: %v", n)
-		// database/sql doesn't have MinOpenConns, but MaxIdleConns serves a similar purpose
+		// database/sql has no MinOpenConns; MaxIdleConns keeps idle connections warm which is the closest equivalent
+		log.Infof("DB: setting max idle conns (from min_open_conns): %v", n)
 		db.SetMaxIdleConns(int(n))
 	}
 

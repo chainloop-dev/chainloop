@@ -342,7 +342,7 @@ type Bootstrap_Observability_Tracing struct {
 	// Whether to use insecure connection (no TLS). Useful for local development.
 	Insecure bool `protobuf:"varint,3,opt,name=insecure,proto3" json:"insecure,omitempty"`
 	// Sampling ratio between 0.0 and 1.0. Defaults to 1.0 (sample everything) when unset.
-	SamplingRatio float64 `protobuf:"fixed64,4,opt,name=sampling_ratio,json=samplingRatio,proto3" json:"sampling_ratio,omitempty"`
+	SamplingRatio *float64 `protobuf:"fixed64,4,opt,name=sampling_ratio,json=samplingRatio,proto3,oneof" json:"sampling_ratio,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -399,8 +399,8 @@ func (x *Bootstrap_Observability_Tracing) GetInsecure() bool {
 }
 
 func (x *Bootstrap_Observability_Tracing) GetSamplingRatio() float64 {
-	if x != nil {
-		return x.SamplingRatio
+	if x != nil && x.SamplingRatio != nil {
+		return *x.SamplingRatio
 	}
 	return 0
 }
@@ -644,23 +644,24 @@ var File_conf_proto protoreflect.FileDescriptor
 const file_conf_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x9f\x04\n" +
+	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb7\x04\n" +
 	"\tBootstrap\x12\x1f\n" +
 	"\x06server\x18\x01 \x01(\v2\a.ServerR\x06server\x12\x19\n" +
 	"\x04auth\x18\x02 \x01(\v2\x05.AuthR\x04auth\x12>\n" +
 	"\robservability\x18\x03 \x01(\v2\x18.Bootstrap.ObservabilityR\robservability\x12L\n" +
-	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x1a\xc7\x02\n" +
+	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x1a\xdf\x02\n" +
 	"\rObservability\x127\n" +
 	"\x06sentry\x18\x01 \x01(\v2\x1f.Bootstrap.Observability.SentryR\x06sentry\x12:\n" +
 	"\atracing\x18\x02 \x01(\v2 .Bootstrap.Observability.TracingR\atracing\x1a<\n" +
 	"\x06Sentry\x12\x10\n" +
 	"\x03dsn\x18\x01 \x01(\tR\x03dsn\x12 \n" +
-	"\venvironment\x18\x02 \x01(\tR\venvironment\x1a\x82\x01\n" +
+	"\venvironment\x18\x02 \x01(\tR\venvironment\x1a\x9a\x01\n" +
 	"\aTracing\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1a\n" +
 	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x12\x1a\n" +
-	"\binsecure\x18\x03 \x01(\bR\binsecure\x12%\n" +
-	"\x0esampling_ratio\x18\x04 \x01(\x01R\rsamplingRatio\"\x9a\x04\n" +
+	"\binsecure\x18\x03 \x01(\bR\binsecure\x12*\n" +
+	"\x0esampling_ratio\x18\x04 \x01(\x01H\x00R\rsamplingRatio\x88\x01\x01B\x11\n" +
+	"\x0f_sampling_ratio\"\x9a\x04\n" +
 	"\x06Server\x12 \n" +
 	"\x04http\x18\x01 \x01(\v2\f.Server.HTTPR\x04http\x12 \n" +
 	"\x04grpc\x18\x02 \x01(\v2\f.Server.GRPCR\x04grpc\x12/\n" +
@@ -739,6 +740,7 @@ func file_conf_proto_init() {
 	if File_conf_proto != nil {
 		return
 	}
+	file_conf_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

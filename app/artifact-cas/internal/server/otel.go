@@ -75,8 +75,16 @@ func NewTracerProvider(c *conf.Bootstrap, logger log.Logger) (trace.TracerProvid
 	}
 
 	var sampler sdktrace.Sampler
-	if ratio := tracingConf.GetSamplingRatio(); ratio > 0 && ratio < 1.0 {
-		sampler = sdktrace.TraceIDRatioBased(ratio)
+	if tracingConf.SamplingRatio != nil {
+		ratio := tracingConf.GetSamplingRatio()
+		switch {
+		case ratio <= 0:
+			sampler = sdktrace.NeverSample()
+		case ratio >= 1.0:
+			sampler = sdktrace.AlwaysSample()
+		default:
+			sampler = sdktrace.TraceIDRatioBased(ratio)
+		}
 	} else {
 		sampler = sdktrace.AlwaysSample()
 	}

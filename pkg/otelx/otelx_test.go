@@ -64,7 +64,7 @@ func setupTestProvider(t *testing.T) *tracetest.InMemoryExporter {
 	otel.SetTracerProvider(tp)
 	t.Cleanup(func() {
 		_ = tp.Shutdown(context.Background())
-		otel.SetTracerProvider(nil)
+		otel.SetTracerProvider(sdktrace.NewTracerProvider())
 	})
 
 	return exporter

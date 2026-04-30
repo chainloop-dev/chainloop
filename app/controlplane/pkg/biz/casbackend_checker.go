@@ -64,9 +64,6 @@ func NewCASBackendChecker(logger log.Logger, casBackendRepo CASBackendRepo, casB
 
 // Start begins the periodic checking of CAS backends
 func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOpts) {
-	ctx, span := otelx.Start(ctx, casBackendCheckerTracer, "CASBackendChecker.Start")
-	defer span.End()
-
 	interval := defaultInterval
 	if opts != nil && opts.CheckInterval > 0 {
 		interval = opts.CheckInterval
@@ -123,6 +120,9 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 // checkBackends validates all CAS backends (or just default and fallback ones based on configuration)
 // using a worker pool for parallel processing with timeouts
 func (c *CASBackendChecker) checkBackends(ctx context.Context, defaultsOrFallbacks bool) error {
+	ctx, span := otelx.Start(ctx, casBackendCheckerTracer, "CASBackendChecker.checkBackends")
+	defer span.End()
+
 	c.logger.Debug("starting CAS backend validation check")
 
 	backends, err := c.casBackendRepo.ListBackends(ctx, defaultsOrFallbacks)

@@ -25,11 +25,15 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // LayerKey is the span attribute key used to tag spans by architectural layer.
 // Values: "service", "biz", "data", "interceptor", "middleware", "job", "consumer".
 var LayerKey = attribute.Key("chainloop.layer")
+
+// noopSpan is a pre-allocated span that is safe to call End() on without side effects.
+var noopSpan trace.Span = noop.Span{}
 
 var (
 	disabledLayers   map[string]bool
@@ -99,7 +103,7 @@ func (t *LayeredTracer) tracer() trace.Tracer {
 // If the layer is disabled, returns a no-op span (zero cost).
 func Start(ctx context.Context, tracer *LayeredTracer, spanName string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
 	if isLayerDisabled(tracer.Layer) {
-		return ctx, trace.SpanFromContext(ctx)
+		return ctx, noopSpan
 	}
 
 	allAttrs := make([]attribute.KeyValue, 0, len(attrs)+1)

@@ -44,7 +44,7 @@ message Bootstrap {
       // Whether to use insecure connection (no TLS). Useful for local development.
       bool insecure = 3;
       // Sampling ratio between 0.0 and 1.0. Defaults to 1.0 (sample everything) when unset.
-      double sampling_ratio = 4;
+      optional double sampling_ratio = 4;
     }
   }
 }

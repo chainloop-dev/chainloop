@@ -1158,7 +1158,7 @@ type Bootstrap_Observability_Tracing struct {
 	// Whether to use insecure connection (no TLS). Useful for local development.
 	Insecure bool `protobuf:"varint,3,opt,name=insecure,proto3" json:"insecure,omitempty"`
 	// Sampling ratio between 0.0 and 1.0. Defaults to 1.0 (sample everything) when unset.
-	SamplingRatio float64 `protobuf:"fixed64,4,opt,name=sampling_ratio,json=samplingRatio,proto3" json:"sampling_ratio,omitempty"`
+	SamplingRatio *float64 `protobuf:"fixed64,4,opt,name=sampling_ratio,json=samplingRatio,proto3,oneof" json:"sampling_ratio,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1215,8 +1215,8 @@ func (x *Bootstrap_Observability_Tracing) GetInsecure() bool {
 }
 
 func (x *Bootstrap_Observability_Tracing) GetSamplingRatio() float64 {
-	if x != nil {
-		return x.SamplingRatio
+	if x != nil && x.SamplingRatio != nil {
+		return *x.SamplingRatio
 	}
 	return 0
 }
@@ -1729,7 +1729,7 @@ var File_controlplane_config_v1_conf_proto protoreflect.FileDescriptor
 
 const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\n" +
-	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x93\x11\n" +
+	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xab\x11\n" +
 	"\tBootstrap\x126\n" +
 	"\x06server\x18\x01 \x01(\v2\x1e.controlplane.config.v1.ServerR\x06server\x120\n" +
 	"\x04data\x18\x02 \x01(\v2\x1c.controlplane.config.v1.DataR\x04data\x120\n" +
@@ -1756,18 +1756,19 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x18federated_authentication\x18\x10 \x01(\v2/.controlplane.config.v1.FederatedAuthenticationR\x17federatedAuthentication\x122\n" +
 	"\x15restrict_org_creation\x18\x12 \x01(\bR\x13restrictOrgCreation\x12(\n" +
 	"\x10ui_dashboard_url\x18\x13 \x01(\tR\x0euiDashboardUrl\x12\x80\x01\n" +
-	" operation_authorization_provider\x18\x14 \x01(\v26.controlplane.config.v1.OperationAuthorizationProviderR\x1eoperationAuthorizationProvider\x1a\xf5\x02\n" +
+	" operation_authorization_provider\x18\x14 \x01(\v26.controlplane.config.v1.OperationAuthorizationProviderR\x1eoperationAuthorizationProvider\x1a\x8d\x03\n" +
 	"\rObservability\x12N\n" +
 	"\x06sentry\x18\x01 \x01(\v26.controlplane.config.v1.Bootstrap.Observability.SentryR\x06sentry\x12Q\n" +
 	"\atracing\x18\x02 \x01(\v27.controlplane.config.v1.Bootstrap.Observability.TracingR\atracing\x1a<\n" +
 	"\x06Sentry\x12\x10\n" +
 	"\x03dsn\x18\x01 \x01(\tR\x03dsn\x12 \n" +
-	"\venvironment\x18\x02 \x01(\tR\venvironment\x1a\x82\x01\n" +
+	"\venvironment\x18\x02 \x01(\tR\venvironment\x1a\x9a\x01\n" +
 	"\aTracing\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1a\n" +
 	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x12\x1a\n" +
-	"\binsecure\x18\x03 \x01(\bR\binsecure\x12%\n" +
-	"\x0esampling_ratio\x18\x04 \x01(\x01R\rsamplingRatio\x1a\xc0\x01\n" +
+	"\binsecure\x18\x03 \x01(\bR\binsecure\x12*\n" +
+	"\x0esampling_ratio\x18\x04 \x01(\x01H\x00R\rsamplingRatio\x88\x01\x01B\x11\n" +
+	"\x0f_sampling_ratio\x1a\xc0\x01\n" +
 	"\tCASServer\x12?\n" +
 	"\x04grpc\x18\x01 \x01(\v2#.controlplane.config.v1.Server.GRPCB\x06\xbaH\x03\xc8\x01\x01R\x04grpc\x12\x1a\n" +
 	"\binsecure\x18\x02 \x01(\bR\binsecure\x12!\n" +
@@ -1953,6 +1954,7 @@ func file_controlplane_config_v1_conf_proto_init() {
 	file_controlplane_config_v1_conf_proto_msgTypes[13].OneofWrappers = []any{
 		(*Bootstrap_NatsServer_Token)(nil),
 	}
+	file_controlplane_config_v1_conf_proto_msgTypes[15].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
