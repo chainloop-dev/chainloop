@@ -32,7 +32,7 @@ credentials_service:
 
 observability:
   tracing:
-    enabled: true
+    enabled: false
     endpoint: "localhost:4317"
     insecure: true
     sampling_ratio: 1.0
