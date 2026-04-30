@@ -263,7 +263,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 
 	// OCI repository credentials
 	s.mockedCredsReaderWriter.On(
-		"SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
+		"SaveCredentials", mock.Anything, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
 	).Return("stored-OCI-secret", nil)
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(s.mockedCredsReaderWriter))

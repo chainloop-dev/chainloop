@@ -275,7 +275,7 @@ func (s *testSuite) SetupTest() {
 	s.mockedCredsReaderWriter = creds.NewReaderWriter(t)
 	// integration credentials
 	s.mockedCredsReaderWriter.On(
-		"SaveCredentials", ctx, mock.Anything, &sdk.Credentials{URL: "host", Password: "key"},
+		"SaveCredentials", mock.Anything, mock.Anything, &sdk.Credentials{URL: "host", Password: "key"},
 	).Return("stored-integration-secret", nil).Maybe()
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(s.mockedCredsReaderWriter))
