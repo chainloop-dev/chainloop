@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -32,6 +33,8 @@ func TestTracer(t *testing.T) {
 	tracer := Tracer("test-service", "biz/pkg")
 	require.NotNil(t, tracer)
 	assert.Equal(t, "biz", tracer.Layer)
+	assert.Equal(t, "biz/pkg", tracer.Name)
+	assert.Equal(t, "test-service", tracer.ServiceName)
 }
 
 func TestTracerLayerExtraction(t *testing.T) {
@@ -54,19 +57,23 @@ func TestTracerLayerExtraction(t *testing.T) {
 	}
 }
 
-func newTestTracer(tp *sdktrace.TracerProvider) *LayeredTracer {
-	return &LayeredTracer{
-		Tracer: tp.Tracer("test"),
-		Layer:  "biz",
-	}
+func setupTestProvider(t *testing.T) *tracetest.InMemoryExporter {
+	t.Helper()
+	exporter := tracetest.NewInMemoryExporter()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+	otel.SetTracerProvider(tp)
+	t.Cleanup(func() {
+		_ = tp.Shutdown(context.Background())
+		otel.SetTracerProvider(nil)
+	})
+
+	return exporter
 }
 
 func TestStartCreatesSpanWithLayerAttribute(t *testing.T) {
-	exporter := tracetest.NewInMemoryExporter()
-	tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
-	defer func() { _ = tp.Shutdown(context.Background()) }()
+	exporter := setupTestProvider(t)
 
-	tracer := newTestTracer(tp)
+	tracer := Tracer("test-svc", "biz/test")
 	_, span := Start(context.Background(), tracer, "TestOp")
 	span.End()
 
@@ -82,6 +89,19 @@ func TestStartCreatesSpanWithLayerAttribute(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "expected chainloop.layer=biz attribute on span")
+}
+
+func TestStartDisabledLayer(t *testing.T) {
+	exporter := setupTestProvider(t)
+
+	SetDisabledLayers(map[string]bool{"data": true})
+	t.Cleanup(func() { SetDisabledLayers(nil) })
+
+	tracer := Tracer("test-svc", "data/test")
+	_, span := Start(context.Background(), tracer, "ShouldBeSkipped")
+	span.End()
+
+	assert.Empty(t, exporter.GetSpans())
 }
 
 func TestRecordError(t *testing.T) {
@@ -104,11 +124,9 @@ func TestRecordError(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			exporter := tracetest.NewInMemoryExporter()
-			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
-			defer func() { _ = tp.Shutdown(context.Background()) }()
+			exporter := setupTestProvider(t)
 
-			tracer := newTestTracer(tp)
+			tracer := Tracer("test-svc", "biz/test")
 			_, span := Start(context.Background(), tracer, "op")
 			RecordError(span, tc.err)
 			span.End()
