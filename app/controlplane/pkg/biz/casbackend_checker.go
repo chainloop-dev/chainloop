@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 )
+
+var casBackendCheckerTracer = otelx.Tracer("chainloop-controlplane", "biz/casbackend_checker")
 
 // Default check interval if none is provided
 const (
@@ -61,6 +64,9 @@ func NewCASBackendChecker(logger log.Logger, casBackendRepo CASBackendRepo, casB
 
 // Start begins the periodic checking of CAS backends
 func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOpts) {
+	ctx, span := otelx.Start(ctx, casBackendCheckerTracer, "CASBackendChecker.Start")
+	defer span.End()
+
 	interval := defaultInterval
 	if opts != nil && opts.CheckInterval > 0 {
 		interval = opts.CheckInterval

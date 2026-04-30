@@ -30,10 +30,13 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var casBackendTracer = otelx.Tracer("chainloop-controlplane", "biz/casbackend")
 
 type CASBackendProvider string
 
@@ -166,6 +169,9 @@ func NewCASBackendUseCase(repo CASBackendRepo, credsRW credentials.ReaderWriter,
 }
 
 func (uc *CASBackendUseCase) List(ctx context.Context, orgID string) ([]*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.List")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -175,6 +181,9 @@ func (uc *CASBackendUseCase) List(ctx context.Context, orgID string) ([]*CASBack
 }
 
 func (uc *CASBackendUseCase) FindDefaultBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.FindDefaultBackend")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -191,6 +200,9 @@ func (uc *CASBackendUseCase) FindDefaultBackend(ctx context.Context, orgID strin
 }
 
 func (uc *CASBackendUseCase) FindByIDInOrg(ctx context.Context, orgID, id string) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.FindByIDInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -212,6 +224,9 @@ func (uc *CASBackendUseCase) FindByIDInOrg(ctx context.Context, orgID, id string
 }
 
 func (uc *CASBackendUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.FindByNameInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -221,6 +236,9 @@ func (uc *CASBackendUseCase) FindByNameInOrg(ctx context.Context, orgID, name st
 }
 
 func (uc *CASBackendUseCase) FindFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.FindFallbackBackend")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -239,6 +257,9 @@ func (uc *CASBackendUseCase) FindFallbackBackend(ctx context.Context, orgID stri
 // FindDefaultOrFallbackBackend finds a valid CAS backend for the organization.
 // Attempts to use the default backend first, if invalid it uses the fallback backend.
 func (uc *CASBackendUseCase) FindDefaultOrFallbackBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.FindDefaultOrFallbackBackend")
+	defer span.End()
+
 	// Find the default backend
 	defaultBackend, err := uc.FindDefaultBackend(ctx, orgID)
 	if err != nil {
@@ -279,6 +300,9 @@ func (uc *CASBackendUseCase) FindDefaultOrFallbackBackend(ctx context.Context, o
 }
 
 func (uc *CASBackendUseCase) CreateInlineBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.CreateInlineBackend")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -324,6 +348,9 @@ func (uc *CASBackendUseCase) promoteNextAvailableBackend(ctx context.Context, or
 }
 
 func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool, fallbackB bool, maxBytes *int64) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.Create")
+	defer span.End()
+
 	if orgID == "" || name == "" {
 		return nil, NewErrValidationStr("organization and name are required")
 	}
@@ -393,6 +420,9 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 
 // Update will update credentials, description, default status, fallback status, or max bytes
 func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, description *string, creds any, defaultB *bool, fallbackB *bool, maxBytes *int64) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.Update")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -509,6 +539,9 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 
 // Deprecated: use Create and update methods separately instead
 func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, username, password string, provider CASBackendProvider, defaultB bool) (*CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.CreateOrUpdate")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -553,6 +586,9 @@ func (uc *CASBackendUseCase) CreateOrUpdate(ctx context.Context, orgID, name, us
 // SoftDelete will mark the cas backend as deleted but will not delete the secret in the external secrets manager
 // We keep it so it can be restored or referenced in the future while trying to download an asset
 func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) error {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.SoftDelete")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -606,6 +642,9 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 // Delete will delete the secret in the external secrets manager and the CAS backend from the database
 // This method is used during user off-boarding
 func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.Delete")
+	defer span.End()
+
 	uc.logger.Infow("msg", "deleting CAS Backend", "ID", id)
 
 	backendUUID, err := uuid.Parse(id)
@@ -660,6 +699,9 @@ func (CASBackendValidationStatus) Values() (kinds []string) {
 
 // Validate that the repository is valid and reachable
 func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) error {
+	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.PerformValidation")
+	defer span.End()
+
 	validationStatus := CASBackendValidationFailed
 	var validationError *string
 

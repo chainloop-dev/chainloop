@@ -19,15 +19,21 @@ import (
 	"context"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
+
+var suspensionTracer = otelx.Tracer("chainloop-controlplane", "middleware/suspension")
 
 // WithSuspensionMiddleware blocks all requests when the current organization is suspended.
 // If there is no org in context (e.g. status endpoints), the request passes through.
 func WithSuspensionMiddleware() middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, suspensionTracer, "WithSuspensionMiddleware")
+			defer span.End()
+
 			org := entities.CurrentOrg(ctx)
 			if org == nil {
 				return handler(ctx, req)

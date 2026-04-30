@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,10 +32,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var projectRepoTracer = otelx.Tracer("chainloop-controlplane", "data/project")
 
 type ProjectRepo struct {
 	data *Data
@@ -51,6 +54,9 @@ func NewProjectsRepo(data *Data, logger log.Logger) biz.ProjectsRepo {
 
 // FindProjectByOrgIDAndName gets a project by organization ID and project name
 func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.UUID, projectName string) (*biz.Project, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.FindProjectByOrgIDAndName")
+	defer span.End()
+
 	pro, err := orgScopedQuery(r.data.DB, orgID).QueryProjects().Where(
 		project.Name(projectName),
 		project.DeletedAtIsNil(),
@@ -68,6 +74,9 @@ func (r *ProjectRepo) FindProjectByOrgIDAndName(ctx context.Context, orgID uuid.
 
 // FindProjectByOrgIDAndID gets a project by organization ID and project ID
 func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*biz.Project, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.FindProjectByOrgIDAndID")
+	defer span.End()
+
 	pro, err := orgScopedQuery(r.data.DB, orgID).QueryProjects().Where(
 		project.ID(projectID),
 		project.DeletedAtIsNil(),
@@ -84,6 +93,9 @@ func (r *ProjectRepo) FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UU
 }
 
 func (r *ProjectRepo) ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) ([]*biz.Project, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.ListProjectsByOrgID")
+	defer span.End()
+
 	prs, err := r.data.DB.Project.Query().Where(
 		project.OrganizationID(orgID),
 		project.DeletedAtIsNil()).All(ctx)
@@ -100,6 +112,9 @@ func (r *ProjectRepo) ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) 
 }
 
 func (r *ProjectRepo) Create(ctx context.Context, orgID uuid.UUID, name string) (*biz.Project, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.Create")
+	defer span.End()
+
 	pro, err := r.data.DB.Project.Create().SetOrganizationID(orgID).SetName(name).Save(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -110,6 +125,9 @@ func (r *ProjectRepo) Create(ctx context.Context, orgID uuid.UUID, name string) 
 
 // ListMembers lists all members of a project (both users and groups)
 func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.ProjectMembership, int, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.ListMembers")
+	defer span.End()
+
 	// Check if the project exists and belongs to the organization
 	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
 	if err != nil {
@@ -184,6 +202,9 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 
 // AddMemberToProject adds a user or group to a project with a specific role
 func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, role authz.Role) (*biz.ProjectMembership, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.AddMemberToProject")
+	defer span.End()
+
 	// Check if the project exists and belongs to the organization
 	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
 	if err != nil {
@@ -215,6 +236,9 @@ func (r *ProjectRepo) AddMemberToProject(ctx context.Context, orgID uuid.UUID, p
 
 // RemoveMemberFromProject removes a user or group from a project
 func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) error {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.RemoveMemberFromProject")
+	defer span.End()
+
 	// Check if the project exists and belongs to the organization
 	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
 	if err != nil {
@@ -244,6 +268,9 @@ func (r *ProjectRepo) RemoveMemberFromProject(ctx context.Context, orgID uuid.UU
 
 // FindProjectMembershipByProjectAndID finds a project membership by project ID and member ID (user or group)
 func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType) (*biz.ProjectMembership, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.FindProjectMembershipByProjectAndID")
+	defer span.End()
+
 	// Find the membership
 	m, err := r.queryMembership(orgID, projectID, memberID, membershipType).Only(ctx)
 
@@ -290,6 +317,9 @@ func (r *ProjectRepo) FindProjectMembershipByProjectAndID(ctx context.Context, o
 
 // UpdateMemberRoleInProject updates the role of a member in a project
 func (r *ProjectRepo) UpdateMemberRoleInProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, memberID uuid.UUID, membershipType authz.MembershipType, newRole authz.Role) (*biz.ProjectMembership, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.UpdateMemberRoleInProject")
+	defer span.End()
+
 	// Check if the project exists and belongs to the organization
 	existingProject, err := r.FindProjectByOrgIDAndID(ctx, orgID, projectID)
 	if err != nil {
@@ -377,6 +407,9 @@ func entProjectMembershipToBiz(m *ent.Membership, u *ent.User, g *ent.Group) *bi
 
 // ListPendingInvitationsByProject retrieves pending invitations for a specific project in an organization.
 func (r *ProjectRepo) ListPendingInvitationsByProject(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.OrgInvitation, int, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.ListPendingInvitationsByProject")
+	defer span.End()
+
 	if paginationOpts == nil {
 		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,11 +25,14 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+var integrationTracer = otelx.Tracer("chainloop-controlplane", "biz/integration")
 
 type IntegrationAttachment struct {
 	ID                        uuid.UUID
@@ -109,6 +112,9 @@ func NewIntegrationUseCase(opts *NewIntegrationUseCaseOpts) *IntegrationUseCase 
 
 // Persist the secret and integration with its configuration in the database
 func (uc *IntegrationUseCase) RegisterAndSave(ctx context.Context, orgID, name, description string, i sdk.FanOut, regConfig *structpb.Struct) (*Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.RegisterAndSave")
+	defer span.End()
+
 	if name == "" {
 		return nil, NewErrValidationStr("name is required")
 	}
@@ -177,6 +183,9 @@ type AttachOpts struct {
 // - Run specific validation for the integration
 // - Persist integration attachment
 func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *AttachOpts) (*IntegrationAttachment, error) {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.AttachToWorkflow")
+	defer span.End()
+
 	if opts.FanOutIntegration == nil {
 		return nil, NewErrValidation(errors.New("integration not provided"))
 	}
@@ -251,6 +260,9 @@ func (uc *IntegrationUseCase) AttachToWorkflow(ctx context.Context, opts *Attach
 }
 
 func (uc *IntegrationUseCase) List(ctx context.Context, orgID string) ([]*Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.List")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -260,6 +272,9 @@ func (uc *IntegrationUseCase) List(ctx context.Context, orgID string) ([]*Integr
 }
 
 func (uc *IntegrationUseCase) FindByIDInOrg(ctx context.Context, orgID, id string) (*Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.FindByIDInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -274,6 +289,9 @@ func (uc *IntegrationUseCase) FindByIDInOrg(ctx context.Context, orgID, id strin
 }
 
 func (uc *IntegrationUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.FindByNameInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -283,6 +301,9 @@ func (uc *IntegrationUseCase) FindByNameInOrg(ctx context.Context, orgID, name s
 }
 
 func (uc *IntegrationUseCase) Delete(ctx context.Context, orgID, integrationID string) error {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.Delete")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -323,6 +344,9 @@ type ListAttachmentsOpts struct {
 
 // List attachments returns the list of attachments for a given organization and optionally workflow
 func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID string, opts *ListAttachmentsOpts) ([]*IntegrationAndAttachment, error) {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.ListAttachments")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -349,6 +373,9 @@ func (uc *IntegrationUseCase) ListAttachments(ctx context.Context, orgID string,
 
 // Detach integration from workflow
 func (uc *IntegrationUseCase) Detach(ctx context.Context, orgID, attachmentID string) error {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.Detach")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -370,6 +397,9 @@ func (uc *IntegrationUseCase) Detach(ctx context.Context, orgID, attachmentID st
 }
 
 func (uc *IntegrationUseCase) GetAttachment(ctx context.Context, orgID, attID uuid.UUID) (*IntegrationAttachment, error) {
+	ctx, span := otelx.Start(ctx, integrationTracer, "IntegrationUseCase.GetAttachment")
+	defer span.End()
+
 	attachment, err := uc.integrationARepo.FindByIDInOrg(ctx, orgID, attID)
 	if err != nil {
 		return nil, err

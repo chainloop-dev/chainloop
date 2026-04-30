@@ -228,8 +228,9 @@ func (x *Auth) GetPublicKeyPath() string {
 }
 
 type Bootstrap_Observability struct {
-	state         protoimpl.MessageState          `protogen:"open.v1"`
-	Sentry        *Bootstrap_Observability_Sentry `protobuf:"bytes,1,opt,name=sentry,proto3" json:"sentry,omitempty"`
+	state         protoimpl.MessageState           `protogen:"open.v1"`
+	Sentry        *Bootstrap_Observability_Sentry  `protobuf:"bytes,1,opt,name=sentry,proto3" json:"sentry,omitempty"`
+	Tracing       *Bootstrap_Observability_Tracing `protobuf:"bytes,2,opt,name=tracing,proto3" json:"tracing,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -267,6 +268,13 @@ func (*Bootstrap_Observability) Descriptor() ([]byte, []int) {
 func (x *Bootstrap_Observability) GetSentry() *Bootstrap_Observability_Sentry {
 	if x != nil {
 		return x.Sentry
+	}
+	return nil
+}
+
+func (x *Bootstrap_Observability) GetTracing() *Bootstrap_Observability_Tracing {
+	if x != nil {
+		return x.Tracing
 	}
 	return nil
 }
@@ -324,6 +332,79 @@ func (x *Bootstrap_Observability_Sentry) GetEnvironment() string {
 	return ""
 }
 
+// OpenTelemetry tracing configuration
+type Bootstrap_Observability_Tracing struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether tracing is enabled. Disabled by default for backward compatibility.
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// OTLP gRPC exporter endpoint (e.g. "localhost:4317")
+	Endpoint string `protobuf:"bytes,2,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	// Whether to use insecure connection (no TLS). Useful for local development.
+	Insecure bool `protobuf:"varint,3,opt,name=insecure,proto3" json:"insecure,omitempty"`
+	// Sampling ratio between 0.0 and 1.0. Defaults to 1.0 (sample everything) when unset.
+	SamplingRatio float64 `protobuf:"fixed64,4,opt,name=sampling_ratio,json=samplingRatio,proto3" json:"sampling_ratio,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Bootstrap_Observability_Tracing) Reset() {
+	*x = Bootstrap_Observability_Tracing{}
+	mi := &file_conf_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Bootstrap_Observability_Tracing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Bootstrap_Observability_Tracing) ProtoMessage() {}
+
+func (x *Bootstrap_Observability_Tracing) ProtoReflect() protoreflect.Message {
+	mi := &file_conf_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Bootstrap_Observability_Tracing.ProtoReflect.Descriptor instead.
+func (*Bootstrap_Observability_Tracing) Descriptor() ([]byte, []int) {
+	return file_conf_proto_rawDescGZIP(), []int{0, 0, 1}
+}
+
+func (x *Bootstrap_Observability_Tracing) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *Bootstrap_Observability_Tracing) GetEndpoint() string {
+	if x != nil {
+		return x.Endpoint
+	}
+	return ""
+}
+
+func (x *Bootstrap_Observability_Tracing) GetInsecure() bool {
+	if x != nil {
+		return x.Insecure
+	}
+	return false
+}
+
+func (x *Bootstrap_Observability_Tracing) GetSamplingRatio() float64 {
+	if x != nil {
+		return x.SamplingRatio
+	}
+	return 0
+}
+
 type Server_CORS struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AllowOrigins  []string               `protobuf:"bytes,1,rep,name=allow_origins,json=allowOrigins,proto3" json:"allow_origins,omitempty"`
@@ -333,7 +414,7 @@ type Server_CORS struct {
 
 func (x *Server_CORS) Reset() {
 	*x = Server_CORS{}
-	mi := &file_conf_proto_msgTypes[5]
+	mi := &file_conf_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -345,7 +426,7 @@ func (x *Server_CORS) String() string {
 func (*Server_CORS) ProtoMessage() {}
 
 func (x *Server_CORS) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[5]
+	mi := &file_conf_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -381,7 +462,7 @@ type Server_HTTP struct {
 
 func (x *Server_HTTP) Reset() {
 	*x = Server_HTTP{}
-	mi := &file_conf_proto_msgTypes[6]
+	mi := &file_conf_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -393,7 +474,7 @@ func (x *Server_HTTP) String() string {
 func (*Server_HTTP) ProtoMessage() {}
 
 func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[6]
+	mi := &file_conf_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -448,7 +529,7 @@ type Server_TLS struct {
 
 func (x *Server_TLS) Reset() {
 	*x = Server_TLS{}
-	mi := &file_conf_proto_msgTypes[7]
+	mi := &file_conf_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -460,7 +541,7 @@ func (x *Server_TLS) String() string {
 func (*Server_TLS) ProtoMessage() {}
 
 func (x *Server_TLS) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[7]
+	mi := &file_conf_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -502,7 +583,7 @@ type Server_GRPC struct {
 
 func (x *Server_GRPC) Reset() {
 	*x = Server_GRPC{}
-	mi := &file_conf_proto_msgTypes[8]
+	mi := &file_conf_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -514,7 +595,7 @@ func (x *Server_GRPC) String() string {
 func (*Server_GRPC) ProtoMessage() {}
 
 func (x *Server_GRPC) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[8]
+	mi := &file_conf_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -563,17 +644,23 @@ var File_conf_proto protoreflect.FileDescriptor
 const file_conf_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xde\x02\n" +
+	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x9f\x04\n" +
 	"\tBootstrap\x12\x1f\n" +
 	"\x06server\x18\x01 \x01(\v2\a.ServerR\x06server\x12\x19\n" +
 	"\x04auth\x18\x02 \x01(\v2\x05.AuthR\x04auth\x12>\n" +
 	"\robservability\x18\x03 \x01(\v2\x18.Bootstrap.ObservabilityR\robservability\x12L\n" +
-	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x1a\x86\x01\n" +
+	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x1a\xc7\x02\n" +
 	"\rObservability\x127\n" +
-	"\x06sentry\x18\x01 \x01(\v2\x1f.Bootstrap.Observability.SentryR\x06sentry\x1a<\n" +
+	"\x06sentry\x18\x01 \x01(\v2\x1f.Bootstrap.Observability.SentryR\x06sentry\x12:\n" +
+	"\atracing\x18\x02 \x01(\v2 .Bootstrap.Observability.TracingR\atracing\x1a<\n" +
 	"\x06Sentry\x12\x10\n" +
 	"\x03dsn\x18\x01 \x01(\tR\x03dsn\x12 \n" +
-	"\venvironment\x18\x02 \x01(\tR\venvironment\"\x9a\x04\n" +
+	"\venvironment\x18\x02 \x01(\tR\venvironment\x1a\x82\x01\n" +
+	"\aTracing\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1a\n" +
+	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x12\x1a\n" +
+	"\binsecure\x18\x03 \x01(\bR\binsecure\x12%\n" +
+	"\x0esampling_ratio\x18\x04 \x01(\x01R\rsamplingRatio\"\x9a\x04\n" +
 	"\x06Server\x12 \n" +
 	"\x04http\x18\x01 \x01(\v2\f.Server.HTTPR\x04http\x12 \n" +
 	"\x04grpc\x18\x02 \x01(\v2\f.Server.GRPCR\x04grpc\x12/\n" +
@@ -611,38 +698,40 @@ func file_conf_proto_rawDescGZIP() []byte {
 	return file_conf_proto_rawDescData
 }
 
-var file_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_conf_proto_goTypes = []any{
-	(*Bootstrap)(nil),                      // 0: Bootstrap
-	(*Server)(nil),                         // 1: Server
-	(*Auth)(nil),                           // 2: Auth
-	(*Bootstrap_Observability)(nil),        // 3: Bootstrap.Observability
-	(*Bootstrap_Observability_Sentry)(nil), // 4: Bootstrap.Observability.Sentry
-	(*Server_CORS)(nil),                    // 5: Server.CORS
-	(*Server_HTTP)(nil),                    // 6: Server.HTTP
-	(*Server_TLS)(nil),                     // 7: Server.TLS
-	(*Server_GRPC)(nil),                    // 8: Server.GRPC
-	(*v1.Credentials)(nil),                 // 9: credentials.v1.Credentials
-	(*durationpb.Duration)(nil),            // 10: google.protobuf.Duration
+	(*Bootstrap)(nil),                       // 0: Bootstrap
+	(*Server)(nil),                          // 1: Server
+	(*Auth)(nil),                            // 2: Auth
+	(*Bootstrap_Observability)(nil),         // 3: Bootstrap.Observability
+	(*Bootstrap_Observability_Sentry)(nil),  // 4: Bootstrap.Observability.Sentry
+	(*Bootstrap_Observability_Tracing)(nil), // 5: Bootstrap.Observability.Tracing
+	(*Server_CORS)(nil),                     // 6: Server.CORS
+	(*Server_HTTP)(nil),                     // 7: Server.HTTP
+	(*Server_TLS)(nil),                      // 8: Server.TLS
+	(*Server_GRPC)(nil),                     // 9: Server.GRPC
+	(*v1.Credentials)(nil),                  // 10: credentials.v1.Credentials
+	(*durationpb.Duration)(nil),             // 11: google.protobuf.Duration
 }
 var file_conf_proto_depIdxs = []int32{
 	1,  // 0: Bootstrap.server:type_name -> Server
 	2,  // 1: Bootstrap.auth:type_name -> Auth
 	3,  // 2: Bootstrap.observability:type_name -> Bootstrap.Observability
-	9,  // 3: Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
-	6,  // 4: Server.http:type_name -> Server.HTTP
-	8,  // 5: Server.grpc:type_name -> Server.GRPC
-	6,  // 6: Server.http_metrics:type_name -> Server.HTTP
+	10, // 3: Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
+	7,  // 4: Server.http:type_name -> Server.HTTP
+	9,  // 5: Server.grpc:type_name -> Server.GRPC
+	7,  // 6: Server.http_metrics:type_name -> Server.HTTP
 	4,  // 7: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
-	10, // 8: Server.HTTP.timeout:type_name -> google.protobuf.Duration
-	5,  // 9: Server.HTTP.cors:type_name -> Server.CORS
-	10, // 10: Server.GRPC.timeout:type_name -> google.protobuf.Duration
-	7,  // 11: Server.GRPC.tls_config:type_name -> Server.TLS
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	5,  // 8: Bootstrap.Observability.tracing:type_name -> Bootstrap.Observability.Tracing
+	11, // 9: Server.HTTP.timeout:type_name -> google.protobuf.Duration
+	6,  // 10: Server.HTTP.cors:type_name -> Server.CORS
+	11, // 11: Server.GRPC.timeout:type_name -> google.protobuf.Duration
+	8,  // 12: Server.GRPC.tls_config:type_name -> Server.TLS
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_conf_proto_init() }
@@ -656,7 +745,7 @@ func file_conf_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_conf_proto_rawDesc), len(file_conf_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

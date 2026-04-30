@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
+
+var attestationTracer = otelx.Tracer("chainloop-controlplane", "biz/attestation")
 
 type AttestationUseCase struct {
 	logger *log.Helper
@@ -43,7 +46,11 @@ func NewAttestationUseCase(client CASClient, logger log.Logger) *AttestationUseC
 }
 
 func (uc *AttestationUseCase) UploadAttestationToCAS(ctx context.Context, content []byte, backend *CASBackend, workflowRunID string, digest v1.Hash) error {
+	ctx, span := otelx.Start(ctx, attestationTracer, "AttestationUseCase.UploadAttestationToCAS")
+	defer span.End()
+
 	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, bytes.NewBuffer(content), fmt.Sprintf("attestation-%s.json", workflowRunID), digest.String()); err != nil {
+		otelx.RecordError(span, err)
 		return err
 	}
 

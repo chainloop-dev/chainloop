@@ -24,10 +24,13 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 )
+
+var authzTracer = otelx.Tracer("chainloop-controlplane", "middleware/authz")
 
 type Enforcer interface {
 	Enforce(ctx context.Context, sub string, p *authz.Policy) (bool, error)
@@ -37,6 +40,9 @@ type Enforcer interface {
 func WithAuthzMiddleware(enforcer Enforcer, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, authzTracer, "WithAuthzMiddleware")
+			defer span.End()
+
 			// Load the authorization subject from the context which might be related to a currentUser or an APItoken
 			subject := usercontext.CurrentAuthzSubject(ctx)
 			if subject == "" {

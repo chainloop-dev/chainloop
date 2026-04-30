@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -103,7 +104,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			Action:   authz.ActionRead,
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(nil, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(nil, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -122,7 +123,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 		}
 
 		expectedErr := errors.New("database error")
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(nil, expectedErr)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(nil, expectedErr)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -148,7 +149,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			},
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(token, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(token, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -173,7 +174,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			},
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(token, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(token, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -195,7 +196,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			Policies: []*authz.Policy{},
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(token, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(token, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -217,7 +218,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			Policies: nil,
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(token, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(token, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -242,7 +243,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			},
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(token, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(token, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -267,7 +268,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			},
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(token, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(token, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 
@@ -295,7 +296,7 @@ func (s *authzTestSuite) TestEnforce_APIToken() {
 			},
 		}
 
-		s.apiTokenRepo.On("FindByID", ctx, tokenID).Return(token, nil)
+		s.apiTokenRepo.On("FindByID", mock.Anything, tokenID).Return(token, nil)
 
 		ok, err := s.useCase.Enforce(ctx, subject, policy)
 

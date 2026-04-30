@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,11 +26,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var orgInvitationTracer = otelx.Tracer("chainloop-controlplane", "biz/orginvitation")
 
 type OrgInvitationUseCase struct {
 	logger *log.Helper
@@ -116,6 +119,9 @@ func WithSender(senderID uuid.UUID) InvitationCreateOpt {
 }
 
 func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail string, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.Create")
+	defer span.End()
+
 	receiverEmail = strings.ToLower(receiverEmail)
 
 	// 1 - Static Validation
@@ -198,6 +204,9 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail
 }
 
 func (uc *OrgInvitationUseCase) ListByOrg(ctx context.Context, orgID string) ([]*OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.ListByOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -208,6 +217,9 @@ func (uc *OrgInvitationUseCase) ListByOrg(ctx context.Context, orgID string) ([]
 
 // Revoke an invitation by ID only if the user is the one who created it
 func (uc *OrgInvitationUseCase) Revoke(ctx context.Context, orgID, invitationID string) error {
+	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.Revoke")
+	defer span.End()
+
 	invitationUUID, err := uuid.Parse(invitationID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -230,6 +242,9 @@ func (uc *OrgInvitationUseCase) Revoke(ctx context.Context, orgID, invitationID 
 
 // AcceptPendingInvitations accepts all pending invitations for a given user email
 func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, receiverEmail string) error {
+	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.AcceptPendingInvitations")
+	defer span.End()
+
 	user, err := uc.userRepo.FindByEmail(ctx, receiverEmail)
 	if err != nil {
 		return fmt.Errorf("error finding user %s: %w", receiverEmail, err)
@@ -313,6 +328,9 @@ func (uc *OrgInvitationUseCase) AcceptPendingInvitations(ctx context.Context, re
 }
 
 func (uc *OrgInvitationUseCase) AcceptInvitation(ctx context.Context, invitationID string) error {
+	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.AcceptInvitation")
+	defer span.End()
+
 	invitationUUID, err := uuid.Parse(invitationID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -322,6 +340,9 @@ func (uc *OrgInvitationUseCase) AcceptInvitation(ctx context.Context, invitation
 }
 
 func (uc *OrgInvitationUseCase) FindByID(ctx context.Context, invitationID string) (*OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.FindByID")
+	defer span.End()
+
 	invitationUUID, err := uuid.Parse(invitationID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

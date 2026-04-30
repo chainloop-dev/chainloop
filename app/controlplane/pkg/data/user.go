@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,10 +25,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var userRepoTracer = otelx.Tracer("chainloop-controlplane", "data/user")
 
 type userRepo struct {
 	data *Data
@@ -43,6 +46,9 @@ func NewUserRepo(data *Data, logger log.Logger) biz.UserRepo {
 }
 
 func (r *userRepo) FindByEmail(ctx context.Context, email string) (*biz.User, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.FindByEmail")
+	defer span.End()
+
 	u, err := r.data.DB.User.Query().
 		Where(user.Email(email)).
 		Only(ctx)
@@ -56,6 +62,9 @@ func (r *userRepo) FindByEmail(ctx context.Context, email string) (*biz.User, er
 }
 
 func (r *userRepo) CreateByEmail(ctx context.Context, email string, firstName, lastName *string) (*biz.User, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.CreateByEmail")
+	defer span.End()
+
 	u, err := r.data.DB.User.Create().SetEmail(email).SetNillableFirstName(firstName).SetNillableLastName(lastName).Save(ctx)
 	if err != nil {
 		return nil, err
@@ -67,6 +76,9 @@ func (r *userRepo) CreateByEmail(ctx context.Context, email string, firstName, l
 
 // UpdateNameAndLastName updates the first and last name of a user
 func (r *userRepo) UpdateNameAndLastName(ctx context.Context, userID uuid.UUID, firstName, lastName *string) (*biz.User, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.UpdateNameAndLastName")
+	defer span.End()
+
 	u, err := r.data.DB.User.UpdateOneID(userID).SetNillableFirstName(firstName).SetNillableLastName(lastName).SetUpdatedAt(time.Now()).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error updating user name: %w", err)
@@ -77,6 +89,9 @@ func (r *userRepo) UpdateNameAndLastName(ctx context.Context, userID uuid.UUID, 
 
 // Find by ID, returns nil if not found
 func (r *userRepo) FindByID(ctx context.Context, userID uuid.UUID) (*biz.User, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.FindByID")
+	defer span.End()
+
 	u, err := r.data.DB.User.Get(ctx, userID)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -88,11 +103,17 @@ func (r *userRepo) FindByID(ctx context.Context, userID uuid.UUID) (*biz.User, e
 }
 
 func (r *userRepo) Delete(ctx context.Context, userID uuid.UUID) (err error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.Delete")
+	defer span.End()
+
 	return r.data.DB.User.DeleteOneID(userID).Exec(ctx)
 }
 
 // UpdateAccess updates the access restriction for a user
 func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessRestricted bool) (*biz.User, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.UpdateAccess")
+	defer span.End()
+
 	u, err := r.data.DB.User.UpdateOneID(userID).SetHasRestrictedAccess(isAccessRestricted).SetUpdatedAt(time.Now()).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error updating user access: %w", err)
@@ -103,6 +124,9 @@ func (r *userRepo) UpdateAccess(ctx context.Context, userID uuid.UUID, isAccessR
 
 // FindAll get all users in the system using pagination
 func (r *userRepo) FindAll(ctx context.Context, pagination *pagination.OffsetPaginationOpts) ([]*biz.User, int, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.FindAll")
+	defer span.End()
+
 	if pagination == nil {
 		return nil, 0, fmt.Errorf("pagination options is required")
 	}
@@ -133,10 +157,16 @@ func (r *userRepo) FindAll(ctx context.Context, pagination *pagination.OffsetPag
 
 // HasUsersWithAccessPropertyNotSet returns the number of users with restricted access or unset access
 func (r *userRepo) HasUsersWithAccessPropertyNotSet(ctx context.Context) (bool, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.HasUsersWithAccessPropertyNotSet")
+	defer span.End()
+
 	return r.data.DB.User.Query().Where(user.HasRestrictedAccessIsNil()).Exist(ctx)
 }
 
 func (r *userRepo) FindUsersWithAccessPropertyNotSet(ctx context.Context) ([]*biz.User, error) {
+	ctx, span := otelx.Start(ctx, userRepoTracer, "UserRepo.FindUsersWithAccessPropertyNotSet")
+	defer span.End()
+
 	users, err := r.data.DB.User.Query().Where(user.HasRestrictedAccessIsNil()).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("find users with access property not set: %w", err)

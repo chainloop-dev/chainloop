@@ -27,10 +27,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var userTracer = otelx.Tracer("chainloop-controlplane", "biz/user")
 
 type User struct {
 	ID                  string
@@ -95,6 +98,9 @@ func NewUserUseCase(opts *NewUserUseCaseParams) *UserUseCase {
 // DeleteUser deletes the user, related memberships and organization if needed
 // Safe approach: blocks deletion if user is sole owner of any organizations
 func (uc *UserUseCase) DeleteUser(ctx context.Context, userID string) error {
+	ctx, span := otelx.Start(ctx, userTracer, "UserUseCase.DeleteUser")
+	defer span.End()
+
 	uc.logger.Infow("msg", "Deleting Account", "user_id", userID)
 
 	userUUID, err := uuid.Parse(userID)
@@ -149,6 +155,9 @@ type UpsertByEmailOpts struct {
 // to the organizations defined in the configuration. If disableAutoOnboarding is set to true, it will
 // skip the auto-onboarding process.
 func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *UpsertByEmailOpts) (*User, error) {
+	ctx, span := otelx.Start(ctx, userTracer, "UserUseCase.UpsertByEmail")
+	defer span.End()
+
 	if opts == nil {
 		opts = &UpsertByEmailOpts{}
 	}
@@ -215,6 +224,9 @@ func (uc *UserUseCase) UpsertByEmail(ctx context.Context, email string, opts *Up
 }
 
 func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, error) {
+	ctx, span := otelx.Start(ctx, userTracer, "UserUseCase.FindByID")
+	defer span.End()
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -223,6 +235,9 @@ func (uc *UserUseCase) FindByID(ctx context.Context, userID string) (*User, erro
 }
 
 func (uc *UserUseCase) MembershipInOrg(ctx context.Context, userID string, orgName string) (*Membership, error) {
+	ctx, span := otelx.Start(ctx, userTracer, "UserUseCase.MembershipInOrg")
+	defer span.End()
+
 	m, err := uc.membershipUseCase.FindByOrgNameAndUser(ctx, orgName, userID)
 	if err != nil {
 		return nil, err
@@ -236,6 +251,9 @@ func (uc *UserUseCase) MembershipInOrg(ctx context.Context, userID string, orgNa
 // Find the membership associated with the user that's marked as current
 // If none is selected, it will pick the first one and set it as current
 func (uc *UserUseCase) CurrentMembership(ctx context.Context, userID string) (*Membership, error) {
+	ctx, span := otelx.Start(ctx, userTracer, "UserUseCase.CurrentMembership")
+	defer span.End()
+
 	memberships, err := uc.membershipUseCase.ByUser(ctx, userID)
 	if err != nil {
 		return nil, err

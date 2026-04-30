@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var emptyHandler = func(_ context.Context, _ interface{}) (interface{}, error) { return nil, nil }
@@ -88,9 +89,9 @@ func TestWithCurrentUserMiddleware(t *testing.T) {
 			}
 
 			if tc.userExist {
-				usecase.On("FindByID", ctx, wantUser.ID).Return(wantUser, nil)
+				usecase.On("FindByID", mock.Anything, wantUser.ID).Return(wantUser, nil)
 			} else if tc.loggedIn {
-				usecase.On("FindByID", ctx, wantUser.ID).Maybe().Return(nil, nil)
+				usecase.On("FindByID", mock.Anything, wantUser.ID).Maybe().Return(nil, nil)
 			}
 
 			m := WithCurrentUserMiddleware(usecase, logger)

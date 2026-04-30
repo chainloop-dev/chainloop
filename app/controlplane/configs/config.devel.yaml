@@ -103,6 +103,13 @@ prometheus_integration:
 #     default: true
 #     url: http://localhost:8002/v1
 
+observability:
+  tracing:
+    enabled: true
+    endpoint: "localhost:4317"
+    insecure: true
+    sampling_ratio: 1.0
+
 enable_profiler: true
 # federated_authentication:
 #   enabled: true

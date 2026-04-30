@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
@@ -42,6 +43,8 @@ type WorkflowRepo struct {
 	contractRepo *WorkflowContractRepo
 }
 
+var workflowRepoTracer = otelx.Tracer("chainloop-controlplane", "data/workflow")
+
 var _ biz.WorkflowRepo = (*WorkflowRepo)(nil)
 
 func NewWorkflowRepo(data *Data, logger log.Logger) biz.WorkflowRepo {
@@ -52,6 +55,9 @@ func NewWorkflowRepo(data *Data, logger log.Logger) biz.WorkflowRepo {
 }
 
 func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts) (wf *biz.Workflow, err error) {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.Create")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(opts.OrgID)
 	if err != nil {
 		return nil, err
@@ -220,6 +226,9 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 }
 
 func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.WorkflowUpdateOpts) (*biz.Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.Update")
+	defer span.End()
+
 	if opts == nil {
 		opts = &biz.WorkflowUpdateOpts{}
 	}
@@ -254,6 +263,9 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 }
 
 func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.WorkflowListOpts, pagination *pagination.OffsetPaginationOpts) ([]*biz.Workflow, int, error) {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.List")
+	defer span.End()
+
 	if pagination == nil {
 		return nil, 0, fmt.Errorf("pagination options is required")
 	}
@@ -388,6 +400,9 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 
 // GetOrgScoped Gets a workflow making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.UUID) (*biz.Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.GetOrgScoped")
+	defer span.End()
+
 	workflow, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		Where(workflow.ID(workflowID), workflow.DeletedAtIsNil()).
@@ -406,6 +421,9 @@ func (r *WorkflowRepo) GetOrgScoped(ctx context.Context, orgID, workflowID uuid.
 
 // GetOrgScopedByProjectAndName Gets a workflow by name making sure it belongs to a given org
 func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID uuid.UUID, projectName, workflowName string) (*biz.Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.GetOrgScopedByProjectAndName")
+	defer span.End()
+
 	p, err := r.data.DB.Project.Query().Where(project.Name(projectName), project.OrganizationIDEQ(orgID), project.DeletedAtIsNil()).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -427,10 +445,16 @@ func (r *WorkflowRepo) GetOrgScopedByProjectAndName(ctx context.Context, orgID u
 }
 
 func (r *WorkflowRepo) IncRunsCounter(ctx context.Context, workflowID uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.IncRunsCounter")
+	defer span.End()
+
 	return r.data.DB.Workflow.Update().AddRunsCount(1).Where(workflow.ID(workflowID)).Exec(ctx)
 }
 
 func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.FindByID")
+	defer span.End()
+
 	workflow, err := r.data.DB.Workflow.Query().
 		Where(workflow.DeletedAtIsNil(), workflow.ID(id)).
 		WithContract().WithOrganization().WithLatestWorkflowRun().WithProject().
@@ -447,6 +471,9 @@ func (r *WorkflowRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Workflo
 
 // Soft delete workflow, attachments and related projects (if applicable)
 func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error) {
+	ctx, span := otelx.Start(ctx, workflowRepoTracer, "WorkflowRepo.SoftDelete")
+	defer span.End()
+
 	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// soft-delete attachments associated with this workflow
 		if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasWorkflowWith(workflow.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {

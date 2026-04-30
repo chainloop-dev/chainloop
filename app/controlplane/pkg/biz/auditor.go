@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,13 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var auditorTracer = otelx.Tracer("chainloop-controlplane", "biz/auditor")
 
 type AuditorUseCase struct {
 	log       *log.Helper
@@ -41,6 +44,9 @@ func NewAuditorUseCase(p *auditor.AuditLogPublisher, logger log.Logger) *Auditor
 
 // Dispatch logs an entry to the audit log asynchronously.
 func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, orgID *uuid.UUID) {
+	ctx, span := otelx.Start(ctx, auditorTracer, "AuditorUseCase.Dispatch")
+	defer span.End()
+
 	// dynamically load user information from the context
 	var opts []auditor.GeneratorOption
 	var gotActor bool

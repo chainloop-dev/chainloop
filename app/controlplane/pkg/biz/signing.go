@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,11 +29,14 @@ import (
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
+
+var signingTracer = otelx.Tracer("chainloop-controlplane", "biz/signing")
 
 type SigningUseCase struct {
 	logger               *log.Helper
@@ -155,6 +158,9 @@ func (s *SigningUseCase) GetSigningCA() ca.CertificateAuthority {
 
 // CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
 func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
+	ctx, span := otelx.Start(ctx, signingTracer, "SigningUseCase.CreateSigningCert")
+	defer span.End()
+
 	if s.CAs == nil {
 		return nil, NewErrNotImplemented("CAs not initialized")
 	}
@@ -208,6 +214,9 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 }
 
 func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, error) {
+	ctx, span := otelx.Start(ctx, signingTracer, "SigningUseCase.GetTrustedRoot")
+	defer span.End()
+
 	if s.CAs == nil {
 		return nil, NewErrNotImplemented("CAs not initialized")
 	}

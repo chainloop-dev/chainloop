@@ -46,6 +46,8 @@ import (
 	grpcselector "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/selector"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	grpcLib "google.golang.org/grpc"
 )
 
 // NewGRPCServer new a gRPC server.
@@ -100,6 +102,7 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 			grpc_prometheus.UnaryServerInterceptor,
 			protovalidateMiddleware.UnaryServerInterceptor(validator),
 		),
+		grpc.Options(grpcLib.StatsHandler(otelgrpc.NewServerHandler())),
 	}
 
 	// Opt-in histogram metrics for the interceptor

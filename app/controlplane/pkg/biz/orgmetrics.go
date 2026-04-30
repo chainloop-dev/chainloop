@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,13 @@ import (
 
 	prometheuscollector "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/collector"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var orgMetricsTracer = otelx.Tracer("chainloop-controlplane", "biz/orgmetrics")
 
 type OrgMetricsUseCase struct {
 	logger *log.Helper
@@ -81,6 +84,9 @@ func NewOrgMetricsUseCase(r OrgMetricsRepo, orgRepo OrganizationRepo, wfUseCase 
 }
 
 func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWindow *TimeWindow, projectIDs []uuid.UUID) (int32, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsTracer, "OrgMetricsUseCase.RunsTotal")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return 0, err
@@ -94,6 +100,9 @@ func (uc *OrgMetricsUseCase) RunsTotal(ctx context.Context, orgID string, timeWi
 }
 
 func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsTracer, "OrgMetricsUseCase.RunsTotalByStatus")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -107,6 +116,9 @@ func (uc *OrgMetricsUseCase) RunsTotalByStatus(ctx context.Context, orgID string
 }
 
 func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID string, timeWindow *TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsTracer, "OrgMetricsUseCase.RunsTotalByRunnerType")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -122,6 +134,9 @@ func (uc *OrgMetricsUseCase) RunsTotalByRunnerType(ctx context.Context, orgID st
 // DailyRunsCount returns the number of runs per day within the provided time window (from now)
 // Optionally filtered by workflowID
 func (uc *OrgMetricsUseCase) DailyRunsCount(ctx context.Context, orgID string, workflowID *string, timeWindow *TimeWindow, projectIDs []uuid.UUID) ([]*DayRunsCount, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsTracer, "OrgMetricsUseCase.DailyRunsCount")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -149,6 +164,9 @@ type TopWorkflowsByRunsCountItem struct {
 }
 
 func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID string, numWorkflows int, timeWindow *TimeWindow, projectIDs []uuid.UUID) ([]*TopWorkflowsByRunsCountItem, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsTracer, "OrgMetricsUseCase.TopWorkflowsByRunsCount")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -164,6 +182,9 @@ func (uc *OrgMetricsUseCase) TopWorkflowsByRunsCount(ctx context.Context, orgID 
 // GetLastWorkflowStatusByRun returns the last status of each workflow by its last run
 // It only returns workflows with at least one run and skips workflows with initialized runs
 func (uc *OrgMetricsUseCase) GetLastWorkflowStatusByRun(ctx context.Context, orgName string) ([]*prometheuscollector.WorkflowLastStatusByRunReport, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsTracer, "OrgMetricsUseCase.GetLastWorkflowStatusByRun")
+	defer span.End()
+
 	// Find organization
 	org, err := uc.orgRepo.FindByName(ctx, orgName)
 	if err != nil {

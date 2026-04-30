@@ -28,11 +28,23 @@ message Bootstrap {
 
   message Observability {
     Sentry sentry = 1;
+    Tracing tracing = 2;
 
     // Sentry notification support
     message Sentry {
       string dsn = 1;
       string environment = 2;
+    }
+    // OpenTelemetry tracing configuration
+    message Tracing {
+      // Whether tracing is enabled. Disabled by default for backward compatibility.
+      bool enabled = 1;
+      // OTLP gRPC exporter endpoint (e.g. "localhost:4317")
+      string endpoint = 2;
+      // Whether to use insecure connection (no TLS). Useful for local development.
+      bool insecure = 3;
+      // Sampling ratio between 0.0 and 1.0. Defaults to 1.0 (sample everything) when unset.
+      double sampling_ratio = 4;
     }
   }
 }

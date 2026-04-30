@@ -20,10 +20,13 @@ import (
 	"io"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var projectVersionTracer = otelx.Tracer("chainloop-controlplane", "biz/projectversion")
 
 // DefaultVersionName is the canonical name for the default/unversioned project version.
 const DefaultVersionName = "v0"
@@ -66,6 +69,9 @@ func NewProjectVersionUseCase(repo ProjectVersionRepo, l log.Logger) *ProjectVer
 }
 
 func (uc *ProjectVersionUseCase) FindByProjectAndVersion(ctx context.Context, projectID string, version string) (*ProjectVersion, error) {
+	ctx, span := otelx.Start(ctx, projectVersionTracer, "ProjectVersionUseCase.FindByProjectAndVersion")
+	defer span.End()
+
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -79,6 +85,9 @@ type ProjectVersionUpdateOpts struct {
 }
 
 func (uc *ProjectVersionUseCase) UpdateReleaseStatus(ctx context.Context, version string, isRelease bool) (*ProjectVersion, error) {
+	ctx, span := otelx.Start(ctx, projectVersionTracer, "ProjectVersionUseCase.UpdateReleaseStatus")
+	defer span.End()
+
 	versionUUID, err := uuid.Parse(version)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -89,6 +98,9 @@ func (uc *ProjectVersionUseCase) UpdateReleaseStatus(ctx context.Context, versio
 }
 
 func (uc *ProjectVersionUseCase) Create(ctx context.Context, projectID, version string, prerelease bool) (*ProjectVersion, error) {
+	ctx, span := otelx.Start(ctx, projectVersionTracer, "ProjectVersionUseCase.Create")
+	defer span.End()
+
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

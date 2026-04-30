@@ -37,6 +37,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	_ "go.uber.org/automaxprocs"
 )
@@ -63,7 +64,7 @@ type app struct {
 	backend.Providers
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, providers backend.Providers) *app {
+func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, providers backend.Providers, _ *sdktrace.TracerProvider) *app {
 	return &app{
 		kratos.New(
 			kratos.ID(id),
@@ -131,7 +132,7 @@ func main() {
 		panic(err)
 	}
 
-	app, cleanup, err := wireApp(bc.Server, bc.Auth, credentialsReader, logger)
+	app, cleanup, err := wireApp(&bc, bc.Server, bc.Auth, credentialsReader, logger)
 	if err != nil {
 		panic(err)
 	}
