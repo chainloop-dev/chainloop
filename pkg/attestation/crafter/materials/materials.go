@@ -292,6 +292,12 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewChainloopAIAgentConfigCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION:
 		crafter, err = NewChainloopAICodingSessionCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_OPENAPI_SPEC:
+		crafter, err = NewOpenAPICrafter(materialSchema, casBackend, logger, WithOpenAPINoStrictValidation(opts.NoStrictValidation))
+	case schemaapi.CraftingSchema_Material_ASYNCAPI_SPEC:
+		crafter, err = NewAsyncAPICrafter(materialSchema, casBackend, logger, WithAsyncAPINoStrictValidation(opts.NoStrictValidation))
+	case schemaapi.CraftingSchema_Material_GRAPHQL_SPEC:
+		crafter, err = NewGraphQLCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

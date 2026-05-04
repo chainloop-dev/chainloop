@@ -1,0 +1,6 @@
+{
+  "asyncapi": "2.6.0",
+  "info": {
+    "description": "Missing required title and version fields"
+  }
+}

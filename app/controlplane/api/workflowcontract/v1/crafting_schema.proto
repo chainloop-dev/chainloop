@@ -153,6 +153,15 @@ message CraftingSchema {
       CHAINLOOP_AI_AGENT_CONFIG = 28;
       // AI coding session telemetry collected during attestation
       CHAINLOOP_AI_CODING_SESSION = 29;
+      // OpenAPI specification (v3.0, v3.1)
+      // https://spec.openapis.org/oas/latest.html
+      OPENAPI_SPEC = 30;
+      // AsyncAPI specification (v2.6, v3.0)
+      // https://www.asyncapi.com/docs/reference/specification/latest
+      ASYNCAPI_SPEC = 31;
+      // GraphQL SDL schema
+      // https://spec.graphql.org/
+      GRAPHQL_SPEC = 32;
     }
   }
 }

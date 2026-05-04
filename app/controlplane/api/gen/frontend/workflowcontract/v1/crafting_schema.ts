@@ -257,6 +257,21 @@ export enum CraftingSchema_Material_MaterialType {
   CHAINLOOP_AI_AGENT_CONFIG = 28,
   /** CHAINLOOP_AI_CODING_SESSION - AI coding session telemetry collected during attestation */
   CHAINLOOP_AI_CODING_SESSION = 29,
+  /**
+   * OPENAPI_SPEC - OpenAPI specification (v3.0, v3.1)
+   * https://spec.openapis.org/oas/latest.html
+   */
+  OPENAPI_SPEC = 30,
+  /**
+   * ASYNCAPI_SPEC - AsyncAPI specification (v2.6, v3.0)
+   * https://www.asyncapi.com/docs/reference/specification/latest
+   */
+  ASYNCAPI_SPEC = 31,
+  /**
+   * GRAPHQL_SPEC - GraphQL SDL schema
+   * https://spec.graphql.org/
+   */
+  GRAPHQL_SPEC = 32,
   UNRECOGNIZED = -1,
 }
 
@@ -352,6 +367,15 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 29:
     case "CHAINLOOP_AI_CODING_SESSION":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_AI_CODING_SESSION;
+    case 30:
+    case "OPENAPI_SPEC":
+      return CraftingSchema_Material_MaterialType.OPENAPI_SPEC;
+    case 31:
+    case "ASYNCAPI_SPEC":
+      return CraftingSchema_Material_MaterialType.ASYNCAPI_SPEC;
+    case 32:
+    case "GRAPHQL_SPEC":
+      return CraftingSchema_Material_MaterialType.GRAPHQL_SPEC;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -421,6 +445,12 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "CHAINLOOP_AI_AGENT_CONFIG";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_AI_CODING_SESSION:
       return "CHAINLOOP_AI_CODING_SESSION";
+    case CraftingSchema_Material_MaterialType.OPENAPI_SPEC:
+      return "OPENAPI_SPEC";
+    case CraftingSchema_Material_MaterialType.ASYNCAPI_SPEC:
+      return "ASYNCAPI_SPEC";
+    case CraftingSchema_Material_MaterialType.GRAPHQL_SPEC:
+      return "GRAPHQL_SPEC";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -1,0 +1,26 @@
+asyncapi: "3.0.0"
+info:
+  title: "IoT Sensor Service"
+  version: "2.0.0"
+  description: "A sample AsyncAPI 3.0 spec"
+servers:
+  mqtt-broker:
+    host: "mqtt.example.com:1883"
+    protocol: mqtt
+channels:
+  sensorData:
+    address: "sensors/temperature"
+    messages:
+      temperatureReading:
+        payload:
+          type: object
+          properties:
+            sensorId:
+              type: string
+            temperature:
+              type: number
+operations:
+  receiveSensorData:
+    action: receive
+    channel:
+      $ref: "#/channels/sensorData"

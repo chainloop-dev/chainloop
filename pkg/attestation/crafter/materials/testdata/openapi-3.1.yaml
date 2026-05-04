@@ -1,0 +1,31 @@
+openapi: "3.1.0"
+info:
+  title: "Bookstore API"
+  version: "2.0.0"
+  description: "A sample bookstore API"
+paths:
+  /books:
+    get:
+      summary: List all books
+      operationId: listBooks
+      responses:
+        "200":
+          description: A list of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+components:
+  schemas:
+    Book:
+      type: object
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
