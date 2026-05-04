@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/transport"
 )
@@ -45,4 +46,16 @@ func GetOrganizationNameFromHeader(ctx context.Context) (string, error) {
 	}
 
 	return "", nil
+}
+
+// GetCLIVersionFromHeader returns the CLI version advertised by the caller in
+// the Chainloop-Cli-Version request header. The value format is
+// "<version>-<edition>", e.g. "v1.94.2-oss". Returns an empty string when the
+// header is absent or there is no transport in the context.
+func GetCLIVersionFromHeader(ctx context.Context) string {
+	header, ok := transport.FromServerContext(ctx)
+	if !ok {
+		return ""
+	}
+	return header.RequestHeader().Get(grpcconn.CLIVersionHeader)
 }

@@ -26,13 +26,22 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	grpc_insecure "google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
+
+// CLIVersionHeader is the request header key the CLI uses to advertise its
+// version (and edition flavor) on every request to the Control Plane and CAS.
+// Both gRPC and HTTP treat header keys as case-insensitive, so the same
+// canonical name is reused when the Control Plane forwards the value to
+// downstream policy providers over HTTP.
+const CLIVersionHeader = "Chainloop-Cli-Version"
 
 type newOptionalArg struct {
 	caFilePath string
 	caContent  string
 	insecure   bool
 	orgName    string
+	cliVersion string
 }
 
 type Option func(*newOptionalArg)
@@ -62,6 +71,28 @@ func WithOrgName(orgName string) Option {
 	}
 }
 
+// WithCLIVersion attaches the given CLI version (e.g. "v1.94.2-oss") to every
+// outgoing request as the chainloop-cli-version header.
+func WithCLIVersion(version string) Option {
+	return func(opt *newOptionalArg) {
+		opt.cliVersion = version
+	}
+}
+
+func cliVersionUnaryInterceptor(version string) grpc.UnaryClientInterceptor {
+	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		ctx = metadata.AppendToOutgoingContext(ctx, CLIVersionHeader, version)
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
+}
+
+func cliVersionStreamInterceptor(version string) grpc.StreamClientInterceptor {
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		ctx = metadata.AppendToOutgoingContext(ctx, CLIVersionHeader, version)
+		return streamer(ctx, desc, cc, method, opts...)
+	}
+}
+
 // Simple wrapper around grpc.Dial that returns a grpc.ClientConn
 // It sets up the connection with the correct credentials headers
 func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
@@ -71,14 +102,25 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 	}
 
 	var opts []grpc.DialOption
+	unaryInterceptors := []grpc.UnaryClientInterceptor{}
+	streamInterceptors := []grpc.StreamClientInterceptor{}
+
 	if authToken != "" {
 		grpcCreds := newTokenAuth(authToken, optionalArgs.insecure, optionalArgs.orgName)
+		opts = append(opts, grpc.WithPerRPCCredentials(grpcCreds))
+		unaryInterceptors = append(unaryInterceptors, grpc_retry.UnaryClientInterceptor())
+	}
 
-		opts = []grpc.DialOption{
-			grpc.WithPerRPCCredentials(grpcCreds),
-			// Retry using default configuration
-			grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor()),
-		}
+	if optionalArgs.cliVersion != "" {
+		unaryInterceptors = append(unaryInterceptors, cliVersionUnaryInterceptor(optionalArgs.cliVersion))
+		streamInterceptors = append(streamInterceptors, cliVersionStreamInterceptor(optionalArgs.cliVersion))
+	}
+
+	if len(unaryInterceptors) > 0 {
+		opts = append(opts, grpc.WithChainUnaryInterceptor(unaryInterceptors...))
+	}
+	if len(streamInterceptors) > 0 {
+		opts = append(opts, grpc.WithChainStreamInterceptor(streamInterceptors...))
 	}
 
 	// Currently we only support system tls certs

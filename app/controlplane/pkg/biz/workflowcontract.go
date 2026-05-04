@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	loader "github.com/chainloop-dev/chainloop/pkg/policies"
@@ -439,7 +440,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	return c, nil
 }
 
-func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, token string) error {
+func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string) error {
 	// Validate that externally provided policies exist
 	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
 	if err != nil {
@@ -452,17 +453,17 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 		// DEPRECATED: v1 schema is deprecated, use v2 Contract format instead
 		schema := c.Schema
 		for _, att := range schema.GetPolicies().GetAttestation() {
-			if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+			if _, err := uc.findAndValidatePolicy(ctx, att, token); err != nil {
 				return NewErrValidation(err)
 			}
 		}
 		for _, att := range schema.GetPolicies().GetMaterials() {
-			if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+			if _, err := uc.findAndValidatePolicy(ctx, att, token); err != nil {
 				return NewErrValidation(err)
 			}
 		}
 		for _, gatt := range schema.GetPolicyGroups() {
-			if _, err := uc.findAndValidatePolicyGroup(gatt, token); err != nil {
+			if _, err := uc.findAndValidatePolicyGroup(ctx, gatt, token); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -471,18 +472,18 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 		spec := c.Schemav2.GetSpec()
 		if spec.GetPolicies() != nil {
 			for _, att := range spec.GetPolicies().GetAttestation() {
-				if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+				if _, err := uc.findAndValidatePolicy(ctx, att, token); err != nil {
 					return NewErrValidation(err)
 				}
 			}
 			for _, att := range spec.GetPolicies().GetMaterials() {
-				if _, err := uc.findAndValidatePolicy(att, token); err != nil {
+				if _, err := uc.findAndValidatePolicy(ctx, att, token); err != nil {
 					return NewErrValidation(err)
 				}
 			}
 		}
 		for _, gatt := range spec.GetPolicyGroups() {
-			if _, err := uc.findAndValidatePolicyGroup(gatt, token); err != nil {
+			if _, err := uc.findAndValidatePolicyGroup(ctx, gatt, token); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -493,13 +494,13 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(rawSchema []byte, to
 	return nil
 }
 
-func (uc *WorkflowContractUseCase) ValidatePolicyAttachment(providerName string, att *schemav1.PolicyAttachment, token string) error {
+func (uc *WorkflowContractUseCase) ValidatePolicyAttachment(ctx context.Context, providerName string, att *schemav1.PolicyAttachment, token string) error {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return err
 	}
 
-	if err = provider.ValidateAttachment(att, token); err != nil {
+	if err = provider.ValidateAttachment(att, providerAuthOpts(ctx, token, "")); err != nil {
 		if errors.Is(err, policies.ErrUnauthorized) {
 			return NewErrUnauthorized(fmt.Errorf("invalid attachment: %w", err))
 		}
@@ -509,7 +510,7 @@ func (uc *WorkflowContractUseCase) ValidatePolicyAttachment(providerName string,
 	return nil
 }
 
-func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAttachment, token string) (*schemav1.Policy, error) {
+func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string) (*schemav1.Policy, error) {
 	var policy *schemav1.Policy
 
 	if att.GetEmbedded() != nil {
@@ -521,11 +522,11 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAtt
 	if loader.IsProviderScheme(att.GetRef()) {
 		pr := loader.ProviderParts(att.GetRef())
 		// Validate attachment
-		if err := uc.ValidatePolicyAttachment(pr.Provider, att, token); err != nil {
+		if err := uc.ValidatePolicyAttachment(ctx, pr.Provider, att, token); err != nil {
 			return nil, err
 		}
 
-		remotePolicy, err := uc.GetPolicy(pr.Provider, pr.Name, pr.OrgName, "", token)
+		remotePolicy, err := uc.GetPolicy(ctx, pr.Provider, pr.Name, pr.OrgName, "", token)
 		if err != nil {
 			return nil, err
 		}
@@ -547,7 +548,7 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(att *schemav1.PolicyAtt
 	return policy, nil
 }
 
-func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(att *schemav1.PolicyGroupAttachment, token string) (*schemav1.PolicyGroup, error) {
+func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(ctx context.Context, att *schemav1.PolicyGroupAttachment, token string) (*schemav1.PolicyGroup, error) {
 	if !loader.IsProviderScheme(att.GetRef()) {
 		// Otherwise, don't return an error, as it might consist of a local policy, not available in this context
 		return nil, nil
@@ -556,7 +557,7 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(att *schemav1.Poli
 	// if it should come from a provider, check that it's available
 	// [chainloop://][provider/]name
 	pr := loader.ProviderParts(att.GetRef())
-	remoteGroup, err := uc.GetPolicyGroup(pr.Provider, pr.Name, pr.OrgName, "", token)
+	remoteGroup, err := uc.GetPolicyGroup(ctx, pr.Provider, pr.Name, pr.OrgName, "", token)
 	if err != nil {
 		return nil, NewErrValidation(fmt.Errorf("failed to get policy group: %w", err))
 	}
@@ -577,7 +578,7 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(att *schemav1.Poli
 	}
 
 	// Validate skip list
-	if err := uc.validateSkipList(remoteGroup.PolicyGroup, att, token); err != nil {
+	if err := uc.validateSkipList(ctx, remoteGroup.PolicyGroup, att, token); err != nil {
 		return nil, fmt.Errorf("failed to validate skip list: %w", err)
 	}
 
@@ -586,7 +587,7 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(att *schemav1.Poli
 
 // validateSkipList checks if policy names in the skip list exist in the group
 // and returns an error if any unknown policy names are found
-func (uc *WorkflowContractUseCase) validateSkipList(group *schemav1.PolicyGroup, groupAtt *schemav1.PolicyGroupAttachment, token string) error {
+func (uc *WorkflowContractUseCase) validateSkipList(ctx context.Context, group *schemav1.PolicyGroup, groupAtt *schemav1.PolicyGroupAttachment, token string) error {
 	if len(groupAtt.GetSkip()) == 0 {
 		return nil
 	}
@@ -598,7 +599,7 @@ func (uc *WorkflowContractUseCase) validateSkipList(group *schemav1.PolicyGroup,
 	// Collect material policy names
 	for _, groupMaterial := range policies.GetMaterials() {
 		for _, policyAtt := range groupMaterial.GetPolicies() {
-			policy, err := uc.findAndValidatePolicy(policyAtt, token)
+			policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token)
 			if err != nil {
 				return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
 			}
@@ -608,7 +609,7 @@ func (uc *WorkflowContractUseCase) validateSkipList(group *schemav1.PolicyGroup,
 
 	// Collect attestation policy names
 	for _, policyAtt := range policies.GetAttestation() {
-		policy, err := uc.findAndValidatePolicy(policyAtt, token)
+		policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token)
 		if err != nil {
 			return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
 		}
@@ -683,17 +684,25 @@ type RemotePolicyGroup struct {
 	PolicyGroup *schemav1.PolicyGroup
 }
 
+// providerAuthOpts forwards the originating CLI's version (read from the
+// inbound gRPC metadata) to the policy provider so the provider can correlate
+// requests with the CLI release that triggered them.
+func providerAuthOpts(ctx context.Context, token, currentOrgName string) policies.ProviderAuthOpts {
+	return policies.ProviderAuthOpts{
+		Token:      token,
+		OrgName:    currentOrgName,
+		CLIVersion: entities.GetCLIVersionFromHeader(ctx),
+	}
+}
+
 // GetPolicy retrieves a policy from a policy provider
-func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, policyOrgName, currentOrgName, token string) (*RemotePolicy, error) {
+func (uc *WorkflowContractUseCase) GetPolicy(ctx context.Context, providerName, policyName, policyOrgName, currentOrgName, token string) (*RemotePolicy, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	policy, ref, err := provider.Resolve(policyName, policyOrgName, policies.ProviderAuthOpts{
-		Token:   token,
-		OrgName: currentOrgName,
-	})
+	policy, ref, err := provider.Resolve(policyName, policyOrgName, providerAuthOpts(ctx, token, currentOrgName))
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy %q", policyName))
@@ -708,16 +717,13 @@ func (uc *WorkflowContractUseCase) GetPolicy(providerName, policyName, policyOrg
 	return &RemotePolicy{Policy: policy, ProviderRef: ref}, nil
 }
 
-func (uc *WorkflowContractUseCase) GetPolicyGroup(providerName, groupName, groupOrgName, currentOrgName, token string) (*RemotePolicyGroup, error) {
+func (uc *WorkflowContractUseCase) GetPolicyGroup(ctx context.Context, providerName, groupName, groupOrgName, currentOrgName, token string) (*RemotePolicyGroup, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	group, ref, err := provider.ResolveGroup(groupName, groupOrgName, policies.ProviderAuthOpts{
-		Token:   token,
-		OrgName: currentOrgName,
-	})
+	group, ref, err := provider.ResolveGroup(groupName, groupOrgName, providerAuthOpts(ctx, token, currentOrgName))
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))
