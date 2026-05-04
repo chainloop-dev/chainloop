@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,10 +22,13 @@ import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	chainloopprometheus "github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/metrics/prometheus/registry"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
+
+var prometheusTracer = otelx.Tracer("chainloop-controlplane", "biz/prometheus")
 
 // PrometheusUseCase is a use case for Prometheus where some metrics are exposed
 type PrometheusUseCase struct {
@@ -65,6 +68,9 @@ func loadPrometheusRegistries(conf []*conf.PrometheusIntegrationSpec, useCase *O
 
 // Record an attestation if the run exists and there is a registry for the organization
 func (uc *PrometheusUseCase) ObserveAttestationIfNeeded(ctx context.Context, run *WorkflowRun, status WorkflowRunStatus) bool {
+	ctx, span := otelx.Start(ctx, prometheusTracer, "PrometheusUseCase.ObserveAttestationIfNeeded")
+	defer span.End()
+
 	if run == nil || run.Workflow == nil {
 		return false
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,9 +27,12 @@ import (
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 )
+
+var casClientTracer = otelx.Tracer("chainloop-controlplane", "biz/casclient")
 
 type CASClientUseCase struct {
 	// to generate temporary credentials
@@ -100,6 +103,9 @@ func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Boot
 
 // The secretID is embedded in the JWT token and is used to identify the secret by the CAS server
 func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID string, content io.Reader, filename, digest string) error {
+	ctx, span := otelx.Start(ctx, casClientTracer, "CASClientUseCase.Upload")
+	defer span.End()
+
 	uc.logger.Infow("msg", "upload initialized", "filename", filename, "digest", digest)
 
 	// client with temporary set of credentials
@@ -120,6 +126,9 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID st
 }
 
 func (uc *CASClientUseCase) Download(ctx context.Context, backendType, secretID string, w io.Writer, digest string) error {
+	ctx, span := otelx.Start(ctx, casClientTracer, "CASClientUseCase.Download")
+	defer span.End()
+
 	uc.logger.Infow("msg", "download initialized", "digest", digest)
 
 	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Downloader})
@@ -150,6 +159,9 @@ func (uc *CASClientUseCase) casAPIClient(backendRef *CASCredsOpts) (casclient.Do
 
 // If the CAS server can be reached and reports readiness
 func (uc *CASClientUseCase) IsReady(ctx context.Context) (bool, error) {
+	ctx, span := otelx.Start(ctx, casClientTracer, "CASClientUseCase.IsReady")
+	defer span.End()
+
 	if uc.casServerConf == nil {
 		return false, errors.New("missing CAS server configuration")
 	}

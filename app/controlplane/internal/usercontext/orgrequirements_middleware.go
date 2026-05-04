@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,11 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/middleware"
 )
+
+var orgRequirementsTracer = otelx.Tracer("chainloop-controlplane", "middleware/orgrequirements")
 
 const validationTimeOffset = 5 * time.Minute
 
@@ -35,6 +38,9 @@ const validationTimeOffset = 5 * time.Minute
 func ValidateCASBackend(uc biz.CASBackendReader) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, orgRequirementsTracer, "ValidateCASBackend")
+			defer span.End()
+
 			org := entities.CurrentOrg(ctx)
 			if org == nil {
 				// Make sure that this middleware is ran after WithCurrentUser
@@ -96,6 +102,9 @@ func shouldRevalidate(repo *biz.CASBackend) bool {
 func BlockIfCASBackendNotValid(uc biz.CASBackendReader) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, orgRequirementsTracer, "BlockIfCASBackendNotValid")
+			defer span.End()
+
 			org := entities.CurrentOrg(ctx)
 			if org == nil {
 				// Make sure that this middleware is ran after WithCurrentUser

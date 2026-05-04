@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var groupTracer = otelx.Tracer("chainloop-controlplane", "biz/group")
 
 type GroupRepo interface {
 	// List retrieves a list of groups in the organization, optionally filtered by name, description, and owner.
@@ -216,6 +219,9 @@ func NewGroupUseCase(logger log.Logger, groupRepo GroupRepo, membershipRepo Memb
 }
 
 func (uc *GroupUseCase) List(ctx context.Context, orgID uuid.UUID, filterOpts *ListGroupOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Group, int, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.List")
+	defer span.End()
+
 	pgOpts := pagination.NewDefaultOffsetPaginationOpts()
 	if paginationOpts != nil {
 		pgOpts = paginationOpts
@@ -226,6 +232,9 @@ func (uc *GroupUseCase) List(ctx context.Context, orgID uuid.UUID, filterOpts *L
 
 // ListMembers retrieves a list of members in a group, optionally filtered by maintainer status and email.
 func (uc *GroupUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, opts *ListMembersOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*GroupMembership, int, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.ListMembers")
+	defer span.End()
+
 	if opts == nil {
 		return nil, 0, NewErrValidationStr("options cannot be nil")
 	}
@@ -252,6 +261,9 @@ func (uc *GroupUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, opts *
 
 // Create creates a new group in the organization.
 func (uc *GroupUseCase) Create(ctx context.Context, orgID uuid.UUID, name string, description string, userID *uuid.UUID) (*Group, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.Create")
+	defer span.End()
+
 	if name == "" {
 		return nil, NewErrValidationStr("name cannot be empty")
 	}
@@ -294,6 +306,9 @@ func (uc *GroupUseCase) Create(ctx context.Context, orgID uuid.UUID, name string
 
 // Get retrieves a group by its organization ID and either group ID or group name.
 func (uc *GroupUseCase) Get(ctx context.Context, orgID uuid.UUID, opts *IdentityReference) (*Group, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.Get")
+	defer span.End()
+
 	if opts == nil {
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
@@ -319,6 +334,9 @@ func (uc *GroupUseCase) Get(ctx context.Context, orgID uuid.UUID, opts *Identity
 
 // Update updates an existing group in the organization using the provided options.
 func (uc *GroupUseCase) Update(ctx context.Context, orgID uuid.UUID, idReference *IdentityReference, opts *UpdateGroupOpts) (*Group, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.Update")
+	defer span.End()
+
 	if opts == nil {
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
@@ -372,6 +390,9 @@ func (uc *GroupUseCase) Update(ctx context.Context, orgID uuid.UUID, idReference
 
 // Delete soft-deletes a group by marking it as deleted using the provided options.
 func (uc *GroupUseCase) Delete(ctx context.Context, orgID uuid.UUID, opts *IdentityReference) error {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.Delete")
+	defer span.End()
+
 	if opts == nil {
 		return NewErrValidationStr("options cannot be nil")
 	}
@@ -412,6 +433,9 @@ func (uc *GroupUseCase) Delete(ctx context.Context, orgID uuid.UUID, opts *Ident
 
 // ListPendingInvitations retrieves a list of pending invitations for a group.
 func (uc *GroupUseCase) ListPendingInvitations(ctx context.Context, orgID uuid.UUID, groupID *uuid.UUID, groupName *string, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.ListPendingInvitations")
+	defer span.End()
+
 	if groupID == nil && groupName == nil {
 		return nil, 0, NewErrValidationStr("either group ID or group name must be provided")
 	}
@@ -437,6 +461,9 @@ func (uc *GroupUseCase) ListPendingInvitations(ctx context.Context, orgID uuid.U
 // If RequesterID is provided, the requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
 // Returns AddMemberToGroupResult which indicates whether a membership was created or an invitation was sent.
 func (uc *GroupUseCase) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, opts *AddMemberToGroupOpts) (*AddMemberToGroupResult, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.AddMemberToGroup")
+	defer span.End()
+
 	// Validate input parameters
 	if opts == nil {
 		return nil, NewErrValidationStr("options cannot be nil")
@@ -619,6 +646,9 @@ func (uc *GroupUseCase) addExistingUserToGroup(ctx context.Context, orgID, group
 // RemoveMemberFromGroup removes a user from a group.
 // The requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
 func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, opts *RemoveMemberFromGroupOpts) error {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.RemoveMemberFromGroup")
+	defer span.End()
+
 	if opts == nil {
 		return NewErrValidationStr("options cannot be nil")
 	}
@@ -689,6 +719,9 @@ func (uc *GroupUseCase) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UU
 // The requester must be either a maintainer of the group or have RoleOwner/RoleAdmin in the organization.
 // nolint: gocyclo
 func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.UUID, opts *UpdateMemberMaintainerStatusOpts) error {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.UpdateMemberMaintainerStatus")
+	defer span.End()
+
 	if opts == nil {
 		return NewErrValidationStr("options cannot be nil")
 	}
@@ -821,6 +854,9 @@ func (uc *GroupUseCase) UpdateMemberMaintainerStatus(ctx context.Context, orgID 
 // Returns an error if both are nil or if the resolved group does not exist.
 // TODO: change to return the group since this is very inefficient in some cases
 func (uc *GroupUseCase) ValidateGroupIdentifier(ctx context.Context, orgID uuid.UUID, groupID *uuid.UUID, groupName *string) (uuid.UUID, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.ValidateGroupIdentifier")
+	defer span.End()
+
 	if groupID == nil && groupName == nil {
 		return uuid.Nil, NewErrValidationStr("either group ID or group name must be provided")
 	}
@@ -840,6 +876,9 @@ func (uc *GroupUseCase) ValidateGroupIdentifier(ctx context.Context, orgID uuid.
 
 // ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
 func (uc *GroupUseCase) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, opts *ListProjectsByGroupOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*GroupProjectInfo, int, error) {
+	ctx, span := otelx.Start(ctx, groupTracer, "GroupUseCase.ListProjectsByGroup")
+	defer span.End()
+
 	if opts == nil {
 		return nil, 0, NewErrValidationStr("options cannot be nil")
 	}

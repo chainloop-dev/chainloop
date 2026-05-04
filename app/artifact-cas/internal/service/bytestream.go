@@ -30,6 +30,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
@@ -37,6 +38,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+var byteStreamTracer = otelx.Tracer("chainloop-cas", "cas/service/bytestream")
 
 // Implements the bytestream interface
 // https://github.com/googleapis/googleapis/blob/master/google/bytestream/bytestream.proto#L49
@@ -57,6 +60,8 @@ func NewByteStreamService(bp backend.Providers, opts ...NewOpt) *ByteStreamServi
 // send them to the backend and return a response with the commitedSize
 func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) error {
 	ctx := stream.Context()
+	ctx, span := otelx.Start(ctx, byteStreamTracer, "ByteStreamService.Write")
+	defer span.End()
 
 	// Get auth info and check that it's an uploader token
 	info, err := infoFromAuth(ctx)
@@ -138,6 +143,8 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 // but instead we need to download the whole artifact and then stream it to the client
 func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.ByteStream_ReadServer) error {
 	ctx := stream.Context()
+	ctx, span := otelx.Start(ctx, byteStreamTracer, "ByteStreamService.Read")
+	defer span.End()
 	info, err := infoFromAuth(ctx)
 	if err != nil {
 		return err

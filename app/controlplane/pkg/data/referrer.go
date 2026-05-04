@@ -28,10 +28,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 )
+
+var referrerRepoTracer = otelx.Tracer("chainloop-controlplane", "data/referrer")
 
 type ReferrerRepo struct {
 	data         *Data
@@ -50,6 +53,9 @@ func NewReferrerRepo(data *Data, wfRepo biz.WorkflowRepo, logger log.Logger) biz
 type storedReferrerMap map[string]uuid.UUID
 
 func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, workflowID uuid.UUID) (err error) {
+	ctx, span := otelx.Start(ctx, referrerRepoTracer, "ReferrerRepo.Save")
+	defer span.End()
+
 	// find the workflow
 	wf, err := r.workflowRepo.FindByID(ctx, workflowID)
 	if err != nil {
@@ -115,6 +121,9 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 
 // Check if a given referrer by digest exist. The query can be scoped further down if needed by providing the kind or visibility status
 func (r *ReferrerRepo) Exist(ctx context.Context, digest string, filters ...biz.GetFromRootFilter) (bool, error) {
+	ctx, span := otelx.Start(ctx, referrerRepoTracer, "ReferrerRepo.Exist")
+	defer span.End()
+
 	opts := &biz.GetFromRootFilters{}
 	for _, f := range filters {
 		f(opts)
@@ -134,6 +143,9 @@ func (r *ReferrerRepo) Exist(ctx context.Context, digest string, filters ...biz.
 }
 
 func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []uuid.UUID, p *pagination.CursorOptions, filters ...biz.GetFromRootFilter) (*biz.StoredReferrer, string, error) {
+	ctx, span := otelx.Start(ctx, referrerRepoTracer, "ReferrerRepo.GetFromRoot")
+	defer span.End()
+
 	opts := &biz.GetFromRootFilters{}
 	for _, f := range filters {
 		f(opts)

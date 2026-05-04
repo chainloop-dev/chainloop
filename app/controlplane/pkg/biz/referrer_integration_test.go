@@ -544,7 +544,7 @@ type referrerIntegrationTestSuite struct {
 func (s *referrerIntegrationTestSuite) SetupTest() {
 	credsWriter := creds.NewReaderWriter(s.T())
 	ctx := context.Background()
-	credsWriter.On("SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"}).Return("stored-OCI-secret", nil)
+	credsWriter.On("SaveCredentials", mock.Anything, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"}).Return("stored-OCI-secret", nil)
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
 

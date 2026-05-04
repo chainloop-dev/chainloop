@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	v2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -34,6 +35,8 @@ import (
 	v1 "github.com/in-toto/attestation/go/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
+
+var referrerTracer = otelx.Tracer("chainloop-controlplane", "biz/referrer")
 
 type ReferrerUseCase struct {
 	repo              ReferrerRepo
@@ -155,6 +158,9 @@ func WithPublicVisibility(public bool) func(*GetFromRootFilters) {
 // ExtractAndPersist extracts the referrers (subject + materials) from the given attestation
 // and store it as part of the referrers index table
 func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envelope, digest cr_v1.Hash, workflowID string) error {
+	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.ExtractAndPersist")
+	defer span.End()
+
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -183,6 +189,9 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
 // It only returns referrers that belong to organizations the user is member of.
 func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
+	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootUser")
+	defer span.End()
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, "", NewErrInvalidUUID(err)
@@ -200,6 +209,9 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 }
 
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
+	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRoot")
+	defer span.End()
+
 	filters := make([]GetFromRootFilter, 0)
 	if rootKind != "" {
 		filters = append(filters, WithKind(rootKind))
@@ -226,6 +238,9 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 // that have been allowed to be shown in a shared index
 // NOTE: This is a public endpoint under /discover/[sha256:deadbeef]
 func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, digest, rootKind string, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
+	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootInPublicSharedIndex")
+	defer span.End()
+
 	if s.indexConfig == nil || !s.indexConfig.Enabled {
 		return nil, "", NewErrUnauthorizedStr("shared referrer index functionality is not enabled")
 	}

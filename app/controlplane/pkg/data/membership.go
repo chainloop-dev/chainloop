@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,10 +30,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var membershipRepoTracer = otelx.Tracer("chainloop-controlplane", "data/membership")
 
 type MembershipRepo struct {
 	data      *Data
@@ -50,6 +53,9 @@ func NewMembershipRepo(data *Data, groupRepo biz.GroupRepo, logger log.Logger) b
 }
 
 func (r *MembershipRepo) Create(ctx context.Context, orgID, userID uuid.UUID, current bool, role authz.Role) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.Create")
+	defer span.End()
+
 	m, err := r.data.DB.Membership.Create().
 		SetUserID(userID).
 		SetOrganizationID(orgID).
@@ -78,6 +84,9 @@ func (r *MembershipRepo) loadMembership(ctx context.Context, id uuid.UUID) (*ent
 }
 
 func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByUser")
+	defer span.End()
+
 	memberships, err := r.data.DB.Membership.Query().Where(
 		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
@@ -92,6 +101,9 @@ func (r *MembershipRepo) FindByUser(ctx context.Context, userID uuid.UUID) ([]*b
 
 // FindByOrg finds all memberships for a given organization
 func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID, opts *biz.ListByOrgOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.Membership, int, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByOrg")
+	defer span.End()
+
 	if paginationOpts == nil {
 		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}
@@ -160,6 +172,9 @@ func (r *MembershipRepo) FindByOrg(ctx context.Context, orgID uuid.UUID, opts *b
 
 // FindByOrgAndUser finds the membership for a given organization and user
 func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uuid.UUID) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByOrgAndUser")
+	defer span.End()
+
 	m, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
@@ -175,6 +190,9 @@ func (r *MembershipRepo) FindByOrgAndUser(ctx context.Context, orgID, userID uui
 
 // FindByOrgIDAndUserEmail finds the membership for a given organization and user email.
 func (r *MembershipRepo) FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid.UUID, userEmail string) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByOrgIDAndUserEmail")
+	defer span.End()
+
 	// Find the user by email
 	u, err := r.data.DB.User.Query().Where(user.Email(userEmail)).Only(ctx)
 	if err != nil {
@@ -202,6 +220,9 @@ func (r *MembershipRepo) FindByOrgIDAndUserEmail(ctx context.Context, orgID uuid
 }
 
 func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName string, userID uuid.UUID) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByOrgNameAndUser")
+	defer span.End()
+
 	org, err := r.data.DB.Organization.Query().Where(organization.Name(orgName), organization.DeletedAtIsNil()).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -224,6 +245,9 @@ func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName strin
 }
 
 func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipID uuid.UUID) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByIDInUser")
+	defer span.End()
+
 	m, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
@@ -238,6 +262,9 @@ func (r *MembershipRepo) FindByIDInUser(ctx context.Context, userID, membershipI
 }
 
 func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID uuid.UUID) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByIDInOrg")
+	defer span.End()
+
 	m, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.ResourceTypeEQ(authz.ResourceTypeOrganization),
@@ -252,6 +279,9 @@ func (r *MembershipRepo) FindByIDInOrg(ctx context.Context, orgID, membershipID 
 }
 
 func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID) (mr *biz.Membership, err error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.SetCurrent")
+	defer span.End()
+
 	// Load membership to find user
 	m, err := r.loadMembership(ctx, membershipID)
 	if err != nil {
@@ -287,6 +317,9 @@ func (r *MembershipRepo) SetCurrent(ctx context.Context, membershipID uuid.UUID)
 }
 
 func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, role authz.Role) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.SetRole")
+	defer span.End()
+
 	if err := r.data.DB.Membership.UpdateOneID(membershipID).SetRole(role).SetUpdatedAt(time.Now()).Exec(ctx); err != nil {
 		return nil, fmt.Errorf("failed to update membership: %w", err)
 	}
@@ -302,6 +335,9 @@ func (r *MembershipRepo) SetRole(ctx context.Context, membershipID uuid.UUID, ro
 // Delete deletes a membership by ID.
 // When deleting a membership, it's important to ensure we're not leaving any dangling references.
 func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.Delete")
+	defer span.End()
+
 	// First, fetch the membership to understand what we're deleting
 	membershipToDelete, err := r.data.DB.Membership.Query().Where(membership.ID(id)).WithOrganization().Only(ctx)
 	if err != nil {
@@ -389,6 +425,9 @@ func (r *MembershipRepo) Delete(ctx context.Context, id uuid.UUID) error {
 // RBAC methods
 
 func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.ListAllByUser")
+	defer span.End()
+
 	mm, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeUser),
 		membership.MemberID(userID),
@@ -403,6 +442,9 @@ func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([
 
 // ListGroupMembershipsByUser returns all memberships of the users inherited from groups
 func (r *MembershipRepo) ListGroupMembershipsByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.ListGroupMembershipsByUser")
+	defer span.End()
+
 	// First query all group memberships for the user directly
 	groupMemberships, err := r.data.DB.GroupMembership.Query().Where(
 		groupmembership.UserID(userID),
@@ -440,6 +482,9 @@ func (r *MembershipRepo) ListGroupMembershipsByUser(ctx context.Context, userID 
 }
 
 func (r *MembershipRepo) ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.ListAllByResource")
+	defer span.End()
+
 	mm, err := r.data.DB.Membership.Query().Where(
 		membership.ResourceTypeEQ(rt),
 		membership.ResourceID(id),
@@ -453,6 +498,9 @@ func (r *MembershipRepo) ListAllByResource(ctx context.Context, rt authz.Resourc
 }
 
 func (r *MembershipRepo) AddResourceRole(ctx context.Context, orgID uuid.UUID, resourceType authz.ResourceType, resID uuid.UUID, mType authz.MembershipType, memberID uuid.UUID, role authz.Role, parentID *uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.AddResourceRole")
+	defer span.End()
+
 	err := r.data.DB.Membership.Create().
 		SetOrganizationID(orgID).
 		SetMembershipType(mType).
@@ -476,6 +524,9 @@ func (r *MembershipRepo) AddResourceRole(ctx context.Context, orgID uuid.UUID, r
 
 // FindByUserAndResourceID finds a membership by user ID and resource ID.
 func (r *MembershipRepo) FindByUserAndResourceID(ctx context.Context, userID, resourceID uuid.UUID) (*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.FindByUserAndResourceID")
+	defer span.End()
+
 	m, err := r.data.DB.Membership.Query().Where(
 		membership.MemberID(userID),
 		membership.ResourceID(resourceID),

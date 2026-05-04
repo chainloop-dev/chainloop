@@ -48,6 +48,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	grpcLib "google.golang.org/grpc"
 )
 
@@ -121,6 +122,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 		grpc.UnaryInterceptor(
 			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
 		),
+		grpc.Options(grpcLib.StatsHandler(otelgrpc.NewServerHandler())),
 	}
 
 	if v := opts.ServerConfig.Grpc.Network; v != "" {

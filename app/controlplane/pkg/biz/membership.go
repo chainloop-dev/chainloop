@@ -23,10 +23,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var membershipTracer = otelx.Tracer("chainloop-controlplane", "biz/membership")
 
 type Membership struct {
 	ID, OrganizationID   uuid.UUID
@@ -101,6 +104,9 @@ func NewMembershipUseCase(repo MembershipRepo, orgUC *OrganizationUseCase, audit
 // but ensures that the user is not deleting itself from the org.
 // callerRole is the authorization subject of the caller (e.g. their org role).
 func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, membershipID string, callerRole authz.Role) error {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.DeleteOther")
+	defer span.End()
+
 	membershipUUID, err := uuid.Parse(membershipID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -141,6 +147,9 @@ func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, mem
 }
 
 func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, membershipID string, role authz.Role, callerRole authz.Role) (*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.UpdateRole")
+	defer span.End()
+
 	// If it has ben overrode by the user, validate it
 	if role == "" {
 		return nil, NewErrValidationStr("role is required")
@@ -237,6 +246,9 @@ func WithMembershipRole(r authz.Role) MembershipCreateOpt {
 }
 
 func (uc *MembershipUseCase) Create(ctx context.Context, orgID, userID string, opts ...MembershipCreateOpt) (*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.Create")
+	defer span.End()
+
 	cp := &membershipCreateOpts{
 		// Default role
 		role: authz.RoleViewer,
@@ -270,6 +282,9 @@ func (uc *MembershipUseCase) Create(ctx context.Context, orgID, userID string, o
 }
 
 func (uc *MembershipUseCase) ByUser(ctx context.Context, userID string) ([]*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.ByUser")
+	defer span.End()
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -279,6 +294,9 @@ func (uc *MembershipUseCase) ByUser(ctx context.Context, userID string) ([]*Memb
 }
 
 func (uc *MembershipUseCase) ByOrg(ctx context.Context, orgID string, opts *ListByOrgOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Membership, int, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.ByOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, 0, NewErrInvalidUUID(err)
@@ -299,6 +317,9 @@ func (uc *MembershipUseCase) ByOrg(ctx context.Context, orgID string, opts *List
 // SetCurrent sets the current membership for the user
 // and unsets the previous one
 func (uc *MembershipUseCase) SetCurrent(ctx context.Context, userID, membershipID string) (*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.SetCurrent")
+	defer span.End()
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -320,6 +341,9 @@ func (uc *MembershipUseCase) SetCurrent(ctx context.Context, userID, membershipI
 }
 
 func (uc *MembershipUseCase) FindByOrgAndUser(ctx context.Context, orgID, userID string) (*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.FindByOrgAndUser")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -341,6 +365,9 @@ func (uc *MembershipUseCase) FindByOrgAndUser(ctx context.Context, orgID, userID
 }
 
 func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, userID string) (*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.FindByOrgNameAndUser")
+	defer span.End()
+
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -360,6 +387,9 @@ func (uc *MembershipUseCase) FindByOrgNameAndUser(ctx context.Context, orgName, 
 
 // ListAllMembershipsForUser retrieves all memberships for a user, including both direct memberships and those inherited from groups
 func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.ListAllMembershipsForUser")
+	defer span.End()
+
 	// First retrieve all memberships directly associated with the user
 	userMemberships, err := uc.repo.ListAllByUser(ctx, userID)
 	if err != nil {
@@ -377,6 +407,9 @@ func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, user
 
 // SetProjectOwner sets the project owner (admin role). It skips the operation if an owner exists already
 func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, projectID, userID uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.SetProjectOwner")
+	defer span.End()
+
 	mm, err := uc.repo.ListAllByResource(ctx, authz.ResourceTypeProject, projectID)
 	if err != nil {
 		return fmt.Errorf("failed to find membership: %w", err)
@@ -397,6 +430,9 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, project
 }
 
 func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.GetOrgsAndRBACInfoForUser")
+	defer span.End()
+
 	// Load ALL memberships for the given user
 	memberships, err := uc.ListAllMembershipsForUser(ctx, userID)
 	if err != nil {
@@ -452,6 +488,9 @@ func (uc *MembershipUseCase) isUserSoleOwner(ctx context.Context, orgID uuid.UUI
 // Leave allows a user to leave an organization with proper owner validation
 // This function never automatically deletes organizations
 func (uc *MembershipUseCase) Leave(ctx context.Context, userID, membershipID string) error {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.Leave")
+	defer span.End()
+
 	membershipUUID, err := uuid.Parse(membershipID)
 	if err != nil {
 		return NewErrInvalidUUID(err)

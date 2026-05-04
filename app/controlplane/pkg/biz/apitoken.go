@@ -25,11 +25,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var apiTokenTracer = otelx.Tracer("chainloop-controlplane", "biz/apitoken")
 
 type APITokenJWTConfig struct {
 	SymmetricHmacKey string
@@ -161,6 +164,9 @@ func APITokenWithPolicies(policies []*authz.Policy) APITokenCreateOpt {
 
 // expires in is a string that can be parsed by time.ParseDuration
 func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID *string, opts ...APITokenCreateOpt) (*APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.Create")
+	defer span.End()
+
 	options := &apiTokenOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -267,6 +273,9 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 
 // RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are not invalidated.
 func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresIn time.Duration) (*APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.RegenerateJWT")
+	defer span.End()
+
 	if expiresIn == 0 {
 		return nil, fmt.Errorf("expiresAt is mandatory")
 	}
@@ -370,6 +379,9 @@ type APITokenListFilters struct {
 }
 
 func (uc *APITokenUseCase) List(ctx context.Context, orgID string, opts ...APITokenListOpt) ([]*APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.List")
+	defer span.End()
+
 	filters := &APITokenListFilters{}
 	for _, opt := range opts {
 		opt(filters)
@@ -392,6 +404,9 @@ func (uc *APITokenUseCase) List(ctx context.Context, orgID string, opts ...APITo
 }
 
 func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.Revoke")
+	defer span.End()
+
 	var orgUUID *uuid.UUID
 	if orgID != "" {
 		parsed, err := uuid.Parse(orgID)
@@ -427,6 +442,9 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 }
 
 func (uc *APITokenUseCase) FindByIDInOrg(ctx context.Context, orgID, id string) (*APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.FindByIDInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -446,6 +464,9 @@ func (uc *APITokenUseCase) FindByIDInOrg(ctx context.Context, orgID, id string) 
 }
 
 func (uc *APITokenUseCase) FindByID(ctx context.Context, id string) (*APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.FindByID")
+	defer span.End()
+
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -462,6 +483,9 @@ func (uc *APITokenUseCase) FindByID(ctx context.Context, id string) (*APIToken, 
 }
 
 func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.FindByNameInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -471,6 +495,9 @@ func (uc *APITokenUseCase) FindByNameInOrg(ctx context.Context, orgID, name stri
 }
 
 func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string) error {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.UpdateLastUsedAt")
+	defer span.End()
+
 	id, err := uuid.Parse(tokenID)
 	if err != nil {
 		return NewErrInvalidUUID(err)

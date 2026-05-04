@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var integrationAttachmentRepoTracer = otelx.Tracer("chainloop-controlplane", "data/integrationattachment")
 
 type IntegrationAttachmentRepo struct {
 	data *Data
@@ -40,6 +43,9 @@ func NewIntegrationAttachmentRepo(data *Data, logger log.Logger) biz.Integration
 }
 
 func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, workflowID uuid.UUID, config []byte) (*biz.IntegrationAttachment, error) {
+	ctx, span := otelx.Start(ctx, integrationAttachmentRepoTracer, "IntegrationAttachmentRepo.Create")
+	defer span.End()
+
 	ia, err := r.data.DB.IntegrationAttachment.Create().
 		SetWorkflowID(workflowID).
 		SetIntegrationID(integrationID).
@@ -59,6 +65,9 @@ func (r *IntegrationAttachmentRepo) Create(ctx context.Context, integrationID, w
 }
 
 func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID uuid.UUID, opts *biz.ListAttachmentsOpts) ([]*biz.IntegrationAndAttachment, error) {
+	ctx, span := otelx.Start(ctx, integrationAttachmentRepoTracer, "IntegrationAttachmentRepo.List")
+	defer span.End()
+
 	wfQuery := orgScopedQuery(r.data.DB, orgID).QueryWorkflows()
 	if opts != nil && opts.WorkflowID != nil {
 		wfQuery = wfQuery.Where(workflow.ID(*opts.WorkflowID))
@@ -85,6 +94,9 @@ func (r *IntegrationAttachmentRepo) List(ctx context.Context, orgID uuid.UUID, o
 }
 
 func (r *IntegrationAttachmentRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.IntegrationAttachment, error) {
+	ctx, span := otelx.Start(ctx, integrationAttachmentRepoTracer, "IntegrationAttachmentRepo.FindByIDInOrg")
+	defer span.End()
+
 	integration, err := orgScopedQuery(r.data.DB, orgID).
 		QueryIntegrations().
 		QueryAttachments().
@@ -101,6 +113,9 @@ func (r *IntegrationAttachmentRepo) FindByIDInOrg(ctx context.Context, orgID, id
 }
 
 func (r *IntegrationAttachmentRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, integrationAttachmentRepoTracer, "IntegrationAttachmentRepo.SoftDelete")
+	defer span.End()
+
 	return r.data.DB.IntegrationAttachment.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 

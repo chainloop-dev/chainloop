@@ -263,7 +263,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 
 	// OCI repository credentials
 	s.mockedCredsReaderWriter.On(
-		"SaveCredentials", ctx, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
+		"SaveCredentials", mock.Anything, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"},
 	).Return("stored-OCI-secret", nil)
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(s.mockedCredsReaderWriter))
@@ -296,7 +296,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 	assert.NoError(err)
 
 	integration.On("Describe").Return(b.Describe())
-	integration.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{
+	integration.On("Register", mock.Anything, mock.Anything).Return(&sdk.RegistrationResponse{
 		Configuration: []byte("deadbeef")}, nil)
 
 	config, err := structpb.NewStruct(map[string]interface{}{"firstName": "John"})

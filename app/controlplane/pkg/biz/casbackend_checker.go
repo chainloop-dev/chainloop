@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 )
+
+var casBackendCheckerTracer = otelx.Tracer("chainloop-controlplane", "biz/casbackend_checker")
 
 // Default check interval if none is provided
 const (
@@ -117,6 +120,9 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 // checkBackends validates all CAS backends (or just default and fallback ones based on configuration)
 // using a worker pool for parallel processing with timeouts
 func (c *CASBackendChecker) checkBackends(ctx context.Context, defaultsOrFallbacks bool) error {
+	ctx, span := otelx.Start(ctx, casBackendCheckerTracer, "CASBackendChecker.checkBackends")
+	defer span.End()
+
 	c.logger.Debug("starting CAS backend validation check")
 
 	backends, err := c.casBackendRepo.ListBackends(ctx, defaultsOrFallbacks)

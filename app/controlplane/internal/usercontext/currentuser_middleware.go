@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,14 +28,20 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/middleware"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
+
+var currentUserTracer = otelx.Tracer("chainloop-controlplane", "middleware/currentuser")
 
 // WithCurrentUserMiddleware injects the current user + organization to the context
 func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, currentUserTracer, "WithCurrentUserMiddleware")
+			defer span.End()
+
 			rawClaims, ok := jwtMiddleware.FromContext(ctx)
 			// If not found means that there is no currentUser set in the context
 			if !ok {

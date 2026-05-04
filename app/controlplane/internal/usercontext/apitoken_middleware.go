@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,9 +28,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/middleware"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 )
+
+var apiTokenTracer = otelx.Tracer("chainloop-controlplane", "middleware/apitoken")
 
 // Store the authorization subject
 func WithAuthzSubject(ctx context.Context, subject string) context.Context {
@@ -51,6 +54,9 @@ type currentAuthzSubjectKey struct{}
 func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, apiTokenTracer, "WithCurrentAPITokenAndOrgMiddleware")
+			defer span.End()
+
 			rawClaims, ok := jwtMiddleware.FromContext(ctx)
 			// If not found means that there is no currentUser set in the context
 			if !ok {

@@ -26,11 +26,14 @@ import (
 	"code.cloudfoundry.org/bytefmt"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/gorilla/mux"
 )
+
+var downloadTracer = otelx.Tracer("chainloop-cas", "cas/service/download")
 
 // i.e /download/sha256:1234567890abcdef
 const DownloadPath = "/download/{digest}"
@@ -47,6 +50,8 @@ func NewDownloadService(bp backend.Providers, opts ...NewOpt) *DownloadService {
 
 func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	ctx, span := otelx.Start(ctx, downloadTracer, "DownloadService.ServeHTTP")
+	defer span.End()
 	auth, err := infoFromAuth(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)

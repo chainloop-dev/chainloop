@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var orgInvitationRepoTracer = otelx.Tracer("chainloop-controlplane", "data/orginvitation")
 
 type OrgInvitation struct {
 	data *Data
@@ -41,6 +44,9 @@ func NewOrgInvitation(data *Data, logger log.Logger) biz.OrgInvitationRepo {
 }
 
 func (r *OrgInvitation) Create(ctx context.Context, orgID uuid.UUID, senderID *uuid.UUID, receiverEmail string, role authz.Role, invCtx *biz.OrgInvitationContext) (*biz.OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationRepoTracer, "OrgInvitation.Create")
+	defer span.End()
+
 	update := r.data.DB.OrgInvitation.Create().
 		SetOrganizationID(orgID).
 		SetRole(role).
@@ -60,6 +66,9 @@ func (r *OrgInvitation) Create(ctx context.Context, orgID uuid.UUID, senderID *u
 }
 
 func (r *OrgInvitation) PendingInvitation(ctx context.Context, orgID uuid.UUID, receiverEmail string) (*biz.OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationRepoTracer, "OrgInvitation.PendingInvitation")
+	defer span.End()
+
 	invite, err := r.query().
 		Where(
 			orginvitation.OrganizationID(orgID),
@@ -76,6 +85,9 @@ func (r *OrgInvitation) PendingInvitation(ctx context.Context, orgID uuid.UUID, 
 }
 
 func (r *OrgInvitation) PendingInvitations(ctx context.Context, receiverEmail string) ([]*biz.OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationRepoTracer, "OrgInvitation.PendingInvitations")
+	defer span.End()
+
 	invites, err := r.query().Where(
 		orginvitation.ReceiverEmail(receiverEmail),
 		orginvitation.StatusEQ(biz.OrgInvitationStatusPending),
@@ -93,6 +105,9 @@ func (r *OrgInvitation) PendingInvitations(ctx context.Context, receiverEmail st
 }
 
 func (r *OrgInvitation) ChangeStatus(ctx context.Context, id uuid.UUID, status biz.OrgInvitationStatus) error {
+	ctx, span := otelx.Start(ctx, orgInvitationRepoTracer, "OrgInvitation.ChangeStatus")
+	defer span.End()
+
 	return r.data.DB.OrgInvitation.UpdateOneID(id).SetStatus(status).Exec(ctx)
 }
 
@@ -102,6 +117,9 @@ func (r *OrgInvitation) query() *ent.OrgInvitationQuery {
 }
 
 func (r *OrgInvitation) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationRepoTracer, "OrgInvitation.FindByID")
+	defer span.End()
+
 	invite, err := r.query().Where(orginvitation.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("error finding invite %s: %w", id.String(), err)
@@ -113,10 +131,16 @@ func (r *OrgInvitation) FindByID(ctx context.Context, id uuid.UUID) (*biz.OrgInv
 }
 
 func (r *OrgInvitation) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, orgInvitationRepoTracer, "OrgInvitation.SoftDelete")
+	defer span.End()
+
 	return r.data.DB.OrgInvitation.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
 func (r *OrgInvitation) ListByOrg(ctx context.Context, orgID uuid.UUID) ([]*biz.OrgInvitation, error) {
+	ctx, span := otelx.Start(ctx, orgInvitationRepoTracer, "OrgInvitation.ListByOrg")
+	defer span.End()
+
 	invite, err := r.query().Where(orginvitation.OrganizationID(orgID)).All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error finding invites for org %s: %w", orgID.String(), err)

@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var authzTracer = otelx.Tracer("chainloop-controlplane", "biz/authz")
 
 type AuthzUseCase struct {
 	log                 *log.Helper
@@ -50,6 +53,9 @@ func NewAuthzUseCase(config *AuthzUseCaseConfig) *AuthzUseCase {
 // Wrapper around the Enforcer.Enforce method that takes into account some of our nuances
 // with regards to policies retrieval and handling for API tokens.
 func (e *AuthzUseCase) Enforce(ctx context.Context, sub string, p *authz.Policy) (ok bool, err error) {
+	ctx, span := otelx.Start(ctx, authzTracer, "AuthzUseCase.Enforce")
+	defer span.End()
+
 	defer e.log.Infow("msg", "policy enforcement result", "sub", sub, "policy", p, "result", ok)
 
 	// Check if this is an API token (subject starts with "api-token:")

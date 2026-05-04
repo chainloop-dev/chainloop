@@ -24,6 +24,7 @@ import (
 
 	"buf.build/go/protoyaml"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
@@ -33,6 +34,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
 )
+
+var workflowContractTracer = otelx.Tracer("chainloop-controlplane", "biz/workflowcontract")
 
 type WorkflowContract struct {
 	ID   uuid.UUID
@@ -162,6 +165,9 @@ func WithProjectFilter(projectIDs []uuid.UUID) WorkflowListOpt {
 }
 
 func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string, opts ...WorkflowListOpt) ([]*WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.List")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -176,6 +182,9 @@ func (uc *WorkflowContractUseCase) List(ctx context.Context, orgID string, opts 
 }
 
 func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, contractID string) (*WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.FindByIDInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -190,6 +199,9 @@ func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, con
 }
 
 func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.FindByNameInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -241,6 +253,9 @@ func createDefaultContract(name string) (*Contract, error) {
 }
 
 func (uc *WorkflowContractUseCase) Create(ctx context.Context, opts *WorkflowContractCreateOpts) (*WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.Create")
+	defer span.End()
+
 	if opts.OrgID == "" {
 		return nil, NewErrValidationStr("organization is required")
 	}
@@ -339,6 +354,9 @@ func (uc *WorkflowContractUseCase) createWithUniqueName(ctx context.Context, opt
 }
 
 func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contractID string, revision int, opts ...ContractQueryOpt) (*WorkflowContractWithVersion, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.Describe")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, err
@@ -363,6 +381,9 @@ func (uc *WorkflowContractUseCase) Describe(ctx context.Context, orgID, contract
 }
 
 func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionID string) (*WorkflowContractWithVersion, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.FindVersionByID")
+	defer span.End()
+
 	versionUUID, err := uuid.Parse(versionID)
 	if err != nil {
 		return nil, err
@@ -384,6 +405,9 @@ type WorkflowContractUpdateOpts struct {
 }
 
 func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.Update")
+	defer span.End()
+
 	if opts == nil {
 		return nil, NewErrValidationStr("no updates provided")
 	}
@@ -633,6 +657,9 @@ func (uc *WorkflowContractUseCase) validateSkipList(group *schemav1.PolicyGroup,
 
 // Delete soft-deletes the entry
 func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID string) error {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.Delete")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return err

@@ -338,10 +338,10 @@ func (s *dispatcherTestSuite) SetupTest() {
 	s.dispatcher = New(s.Integration, nil, nil, nil, s.casClient, registeredIntegrations, l)
 }
 
-func (s *dispatcherTestSuite) newMock(ctx context.Context) *mockedSDK.FanOut {
+func (s *dispatcherTestSuite) newMock(_ context.Context) *mockedSDK.FanOut {
 	customImplementation := mockedSDK.NewFanOut(s.T())
-	customImplementation.On("Register", ctx, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
-	customImplementation.On("Attach", ctx, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
+	customImplementation.On("Register", mock.Anything, mock.Anything).Return(&sdk.RegistrationResponse{Configuration: []byte("deadbeef")}, nil)
+	customImplementation.On("Attach", mock.Anything, mock.Anything).Return(&sdk.AttachmentResponse{Configuration: []byte("deadbeef")}, nil)
 
 	return customImplementation
 }
