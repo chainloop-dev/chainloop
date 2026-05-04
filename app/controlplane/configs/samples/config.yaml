@@ -102,3 +102,10 @@ enable_profiler: true
 # federated_authentication:
 #   enabled: true
 #   url: http://localhost:8002/machine-identity/verify-token
+
+# Attestation storage and processing options
+# attestations:
+#   # When true, skip writing the attestation bundle to the database; the bundle is
+#   # stored exclusively in the configured CAS backend. Has no effect when the
+#   # workflow run's CAS backend is inline.
+#   skip_db_storage: false

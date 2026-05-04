@@ -16,6 +16,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -280,6 +281,25 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	}, nil
 }
 
+// casAttestationUploadMaxElapsedTime caps the total time spent retrying the
+// CAS upload across both the sync (skipDbStorage) and async paths.
+const casAttestationUploadMaxElapsedTime = 1 * time.Minute
+
+// uploadAttestationToCASWithRetry uploads the attestation bundle to CAS with
+// exponential backoff bounded by casAttestationUploadMaxElapsedTime. It is
+// shared by the synchronous (skipDbStorage) and asynchronous paths.
+func (s *AttestationService) uploadAttestationToCASWithRetry(ctx context.Context, bundle []byte, casBackend *biz.CASBackend, workflowRunID string, digest v1.Hash) error {
+	b := backoff.NewExponentialBackOff()
+	b.MaxElapsedTime = casAttestationUploadMaxElapsedTime
+	if err := backoff.Retry(func() error {
+		return s.attestationUseCase.UploadAttestationToCAS(ctx, bundle, casBackend, workflowRunID, digest)
+	}, b); err != nil {
+		return err
+	}
+	s.log.Infow("msg", "attestation uploaded to CAS", "digest", digest, "runID", workflowRunID)
+	return nil
+}
+
 // storeAttestation stores and processes a Sigstore attestation bundle.
 func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte, robotAccount *usercontext.RobotAccount, wf *biz.Workflow, wfRun *biz.WorkflowRun, markAsReleased *bool) (*v1.Hash, error) {
 	workflowRunID := wfRun.ID.String()
@@ -291,40 +311,45 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	// Store the attestation
-	digest, err := s.wrUseCase.SaveAttestation(ctx, workflowRunID, bundle)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+	// Inline backends have no external CAS to fall back to, so the bundle
+	// always stays in the DB regardless of the flag.
+	skipDB := s.bootstrapConfig.GetAttestations().GetSkipDbStorage() && !casBackend.Inline
+
+	if !casBackend.Inline && casBackend.ValidationStatus != biz.CASBackendValidationOK {
+		if err = s.casUC.PerformValidation(ctx, casBackend.ID.String()); err != nil {
+			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
+		}
 	}
 
-	// If we have an external CAS backend, we will push there the attestation
-	if !casBackend.Inline {
-		// Check the validation status of the backend. The backend might be different from the one configured as default
-		if casBackend.ValidationStatus != biz.CASBackendValidationOK {
-			// Try to re-validate the backend; if it still fails, return an error
-			if err = s.casUC.PerformValidation(ctx, casBackend.ID.String()); err != nil {
-				return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("your CAS backend can't be reached")
-			}
+	var digest *v1.Hash
+	if skipDB {
+		digestHash, _, hashErr := v1.SHA256(bytes.NewReader(bundle))
+		if hashErr != nil {
+			return nil, handleUseCaseErr(hashErr, s.log)
 		}
-		go func() {
-			b := backoff.NewExponentialBackOff()
-			b.MaxElapsedTime = 1 * time.Minute
-			err := backoff.Retry(
-				func() error {
-					// reset context
-					ctx := context.Background()
-					if err := s.attestationUseCase.UploadAttestationToCAS(ctx, bundle, casBackend, workflowRunID, *digest); err != nil {
-						return err
-					}
 
-					s.log.Infow("msg", "attestation uploaded to CAS", "digest", digest, "runID", workflowRunID)
-					return nil
-				}, b)
+		if err = s.uploadAttestationToCASWithRetry(ctx, bundle, casBackend, workflowRunID, digestHash); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
 
-			if err != nil {
-				_ = handleUseCaseErr(err, s.log)
-			}
-		}()
+		digest, err = s.wrUseCase.SaveAttestation(ctx, workflowRunID, bundle, biz.WithSkipBundlePersistence())
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+	} else {
+		digest, err = s.wrUseCase.SaveAttestation(ctx, workflowRunID, bundle)
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		if !casBackend.Inline {
+			// Detach from the request context so the upload survives request completion.
+			go func(digest v1.Hash) {
+				if err := s.uploadAttestationToCASWithRetry(context.Background(), bundle, casBackend, workflowRunID, digest); err != nil {
+					_ = handleUseCaseErr(err, s.log)
+				}
+			}(*digest)
+		}
 	}
 
 	// Store the exploded attestation referrer information in the DB
