@@ -24,6 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const caPath = "../../devel/devkeys/selfsigned/rootCA.crt"
@@ -185,6 +187,44 @@ func TestBackwardCompatibility_NewClientOldConfig(t *testing.T) {
 	opts[0](optArg)
 	assert.Equal(t, caPath, optArg.caFilePath, "should use file path method for old config")
 	assert.Empty(t, optArg.caContent, "should not use content method for old config")
+}
+
+func TestWithCLIVersion(t *testing.T) {
+	opt := &newOptionalArg{}
+	WithCLIVersion("v1.94.2-oss")(opt)
+	assert.Equal(t, "v1.94.2-oss", opt.cliVersion)
+}
+
+func TestCLIVersionUnaryInterceptorAttachesHeader(t *testing.T) {
+	const want = "v1.94.2-oss"
+	intercept := cliVersionUnaryInterceptor(want)
+
+	var captured metadata.MD
+	invoker := func(ctx context.Context, _ string, _, _ any, _ *grpc.ClientConn, _ ...grpc.CallOption) error {
+		md, _ := metadata.FromOutgoingContext(ctx)
+		captured = md
+		return nil
+	}
+
+	err := intercept(context.Background(), "/svc/Method", nil, nil, nil, invoker)
+	require.NoError(t, err)
+	assert.Equal(t, []string{want}, captured.Get(CLIVersionHeader))
+}
+
+func TestCLIVersionStreamInterceptorAttachesHeader(t *testing.T) {
+	const want = "v1.94.2-ee"
+	intercept := cliVersionStreamInterceptor(want)
+
+	var captured metadata.MD
+	streamer := func(ctx context.Context, _ *grpc.StreamDesc, _ *grpc.ClientConn, _ string, _ ...grpc.CallOption) (grpc.ClientStream, error) {
+		md, _ := metadata.FromOutgoingContext(ctx)
+		captured = md
+		return nil, nil
+	}
+
+	_, err := intercept(context.Background(), &grpc.StreamDesc{}, nil, "/svc/Method", streamer)
+	require.NoError(t, err)
+	assert.Equal(t, []string{want}, captured.Get(CLIVersionHeader))
 }
 
 func TestBackwardCompatibility_OldClientNewConfig(t *testing.T) {

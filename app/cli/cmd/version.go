@@ -36,6 +36,13 @@ var (
 	Edition = ossEdition
 )
 
+// fullVersion returns the CLI version annotated with its edition flavor,
+// e.g. "v1.94.2-oss" or "dev-ee". Used as the value of the Chainloop-Cli-Version
+// header sent on every request to the Control Plane and CAS.
+func fullVersion() string {
+	return Version + "-" + Edition
+}
+
 type info struct {
 	Version string
 	Digest  string

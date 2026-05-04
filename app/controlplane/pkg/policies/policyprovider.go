@@ -25,6 +25,7 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -76,6 +77,10 @@ type PolicyReference struct {
 type ProviderAuthOpts struct {
 	Token   string
 	OrgName string
+	// CLIVersion, when non-empty, is forwarded to the policy provider as the
+	// Chainloop-Cli-Version header. It carries the version+edition string of
+	// the CLI that originated the request.
+	CLIVersion string
 }
 
 var (
@@ -111,7 +116,7 @@ func (p *PolicyProvider) Resolve(policyName, policyOrgName string, authOpts Prov
 	return &policy, createRef(url, policyName, providerDigest, orgName), nil
 }
 
-func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, token string) error {
+func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, authOpts ProviderAuthOpts) error {
 	endpoint, err := url.JoinPath(p.url, policiesEndpoint, validateAction)
 	if err != nil {
 		return fmt.Errorf("invalid url: %w", err)
@@ -140,8 +145,11 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, tok
 		return fmt.Errorf("error creating policy request: %w", err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authOpts.Token))
 	req.Header.Set("Content-Type", "application/json")
+	if authOpts.CLIVersion != "" {
+		req.Header.Set(grpcconn.CLIVersionHeader, authOpts.CLIVersion)
+	}
 
 	// make the request
 	resp, err := http.DefaultClient.Do(req)
@@ -230,6 +238,9 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authOpts.Token))
 	if authOpts.OrgName != "" {
 		req.Header.Set(organizationHeader, authOpts.OrgName)
+	}
+	if authOpts.CLIVersion != "" {
+		req.Header.Set(grpcconn.CLIVersionHeader, authOpts.CLIVersion)
 	}
 
 	// make the request

@@ -134,6 +134,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 
 			var opts = []grpcconn.Option{
 				grpcconn.WithInsecure(apiInsecure()),
+				grpcconn.WithCLIVersion(fullVersion()),
 			}
 
 			if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
@@ -369,7 +370,7 @@ func initConfigFile() {
 }
 
 func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *action.ActionsOpts {
-	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token, OutputFormat: flagOutputFormat}
+	return &action.ActionsOpts{CPConnection: conn, Logger: logger, AuthTokenRaw: token, OutputFormat: flagOutputFormat, CLIVersion: fullVersion()}
 }
 
 func cleanup(conn *grpc.ClientConn) error {

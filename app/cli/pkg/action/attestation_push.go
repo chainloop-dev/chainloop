@@ -222,7 +222,7 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	if evaluations := crafter.CraftingState.GetAttestation().GetPolicyEvaluations(); !crafter.CraftingState.DryRun && len(evaluations) > 0 {
 		casBackend := &casclient.CASBackend{Name: "not-set"}
 		workflowRunID := crafter.CraftingState.GetAttestation().GetWorkflow().GetWorkflowRunId()
-		_, connectionCloserFn, getCASErr := getCASBackend(ctx, attClient, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend)
+		_, connectionCloserFn, getCASErr := getCASBackend(ctx, attClient, workflowRunID, action.casCAPath, action.casURI, action.connectionInsecure, action.Logger, casBackend, action.CLIVersion)
 		if connectionCloserFn != nil {
 			// nolint: errcheck
 			defer connectionCloserFn()

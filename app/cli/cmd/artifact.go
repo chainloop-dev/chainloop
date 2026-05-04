@@ -53,6 +53,7 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 
 	var opts = []grpcconn.Option{
 		grpcconn.WithInsecure(apiInsecure()),
+		grpcconn.WithCLIVersion(fullVersion()),
 	}
 
 	if caValue := viper.GetString(confOptions.CASCA.viperKey); caValue != "" {

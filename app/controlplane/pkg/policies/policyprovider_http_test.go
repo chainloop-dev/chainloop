@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -159,6 +161,59 @@ func TestResolveGroupHTTPStatusHandling(t *testing.T) {
 	}
 }
 
+func TestProviderForwardsCLIVersionHeader(t *testing.T) {
+	testCases := []struct {
+		name       string
+		cliVersion string
+		wantHeader string
+	}{
+		{
+			name:       "header forwarded when set",
+			cliVersion: "v1.94.2-oss",
+			wantHeader: "v1.94.2-oss",
+		},
+		{
+			name:       "header omitted when empty",
+			cliVersion: "",
+			wantHeader: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var (
+				resolveHeader, groupHeader, validateHeader string
+			)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				got := r.Header.Get("Chainloop-Cli-Version")
+				switch {
+				case strings.Contains(r.URL.Path, "/policies/validate"):
+					validateHeader = got
+				case strings.Contains(r.URL.Path, "/groups/"):
+					groupHeader = got
+				default:
+					resolveHeader = got
+				}
+				// minimal valid response
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{}`))
+			}))
+			defer server.Close()
+
+			provider := &PolicyProvider{name: "test", url: server.URL}
+			authOpts := ProviderAuthOpts{Token: "test-token", CLIVersion: tc.cliVersion}
+
+			_, _, _ = provider.Resolve("p1", "", authOpts)
+			_, _, _ = provider.ResolveGroup("g1", "", authOpts)
+			_ = provider.ValidateAttachment(&schemaapi.PolicyAttachment{}, authOpts)
+
+			assert.Equal(t, tc.wantHeader, resolveHeader, "Resolve")
+			assert.Equal(t, tc.wantHeader, groupHeader, "ResolveGroup")
+			assert.Equal(t, tc.wantHeader, validateHeader, "ValidateAttachment")
+		})
+	}
+}
+
 func TestValidateAttachmentHTTPStatusHandling(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -214,7 +269,7 @@ func TestValidateAttachmentHTTPStatusHandling(t *testing.T) {
 				url:  server.URL,
 			}
 
-			err := provider.ValidateAttachment(nil, "test-token")
+			err := provider.ValidateAttachment(nil, ProviderAuthOpts{Token: "test-token"})
 			if tc.errNil {
 				assert.NoError(t, err)
 				return

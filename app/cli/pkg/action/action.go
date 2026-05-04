@@ -59,6 +59,7 @@ type ActionsOpts struct {
 	Logger       zerolog.Logger
 	AuthTokenRaw string
 	OutputFormat string
+	CLIVersion   string
 }
 
 type OffsetPagination struct {
@@ -113,7 +114,7 @@ func newCrafter(stateOpts *newCrafterStateOpts, conn *grpc.ClientConn, opts ...c
 }
 
 // getCASBackend tries to get CAS upload credentials and set up a CAS client
-func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend) (*clientAPI.Attestation_CASBackend, func() error, error) {
+func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, workflowRunID, casCAPath, casURI string, casConnectionInsecure bool, logger zerolog.Logger, casBackend *casclient.CASBackend, cliVersion string) (*clientAPI.Attestation_CASBackend, func() error, error) {
 	credsResp, err := client.GetUploadCreds(ctx, &pb.AttestationServiceGetUploadCredsRequest{
 		WorkflowRunId: workflowRunID,
 	})
@@ -151,7 +152,10 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 		return casBackendInfo, nil, nil
 	}
 
-	opts := []grpcconn.Option{grpcconn.WithInsecure(casConnectionInsecure)}
+	opts := []grpcconn.Option{
+		grpcconn.WithInsecure(casConnectionInsecure),
+		grpcconn.WithCLIVersion(cliVersion),
+	}
 	if casCAPath != "" {
 		// Check if it's a file path or content. If it's a file path, it should exist. If not, treat it as content.
 		if _, err := os.Stat(casCAPath); err == nil {

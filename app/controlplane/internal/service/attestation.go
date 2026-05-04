@@ -492,7 +492,7 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 		return nil, errors.Forbidden("forbidden", "organization not found")
 	}
 
-	remotePolicy, err := s.workflowContractUseCase.GetPolicy(req.GetProvider(), req.GetPolicyName(), req.GetOrgName(), org.Name, token.Token)
+	remotePolicy, err := s.workflowContractUseCase.GetPolicy(ctx, req.GetProvider(), req.GetPolicyName(), req.GetOrgName(), org.Name, token.Token)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -514,7 +514,7 @@ func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.Atte
 		return nil, errors.Forbidden("forbidden", "organization not found")
 	}
 
-	remoteGroup, err := s.workflowContractUseCase.GetPolicyGroup(req.GetProvider(), req.GetGroupName(), req.GetOrgName(), org.Name, token.Token)
+	remoteGroup, err := s.workflowContractUseCase.GetPolicyGroup(ctx, req.GetProvider(), req.GetGroupName(), req.GetOrgName(), org.Name, token.Token)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
@@ -732,7 +732,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 
 	// contract validation
 	if req.GetContractBytes() != nil {
-		if err = s.workflowContractUseCase.ValidateContractPolicies(req.GetContractBytes(), token); err != nil {
+		if err = s.workflowContractUseCase.ValidateContractPolicies(ctx, req.GetContractBytes(), token); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	}
