@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,11 @@ import (
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/google/uuid"
 )
+
+var userAccessSyncerTracer = otelx.Tracer("chainloop-controlplane", "biz/useraccess_syncer")
 
 type UserAccessSyncerUseCase struct {
 	logger *log.Helper
@@ -47,6 +50,9 @@ func NewUserAccessSyncerUseCase(logger log.Logger, userRepo UserRepo, allowList 
 // If allowDbOverrides is true, the access restriction status of users that have the access property set to null will be updated
 // If allowDbOverrides is true, the DB entries of all users will be updated to match the allowlist
 func (u *UserAccessSyncerUseCase) SyncUserAccess(ctx context.Context) error {
+	ctx, span := otelx.Start(ctx, userAccessSyncerTracer, "UserAccessSyncerUseCase.SyncUserAccess")
+	defer span.End()
+
 	if u.allowList.GetAllowDbOverrides() {
 		return u.reconciliateUsersWithAccessNull(ctx)
 	}
@@ -111,6 +117,9 @@ func (u *UserAccessSyncerUseCase) reconciliateAllUsersAccess(ctx context.Context
 
 // UpdateUserAccessRestriction updates the access restriction status of a user
 func (u *UserAccessSyncerUseCase) UpdateUserAccessRestriction(ctx context.Context, user *User) (*User, error) {
+	ctx, span := otelx.Start(ctx, userAccessSyncerTracer, "UserAccessSyncerUseCase.UpdateUserAccessRestriction")
+	defer span.End()
+
 	isAllowListDeactivated := u.allowList == nil || len(u.allowList.GetRules()) == 0
 
 	var hasRestrictedAccess bool

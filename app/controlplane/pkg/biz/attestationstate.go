@@ -26,10 +26,13 @@ import (
 	"io"
 
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 	"google.golang.org/protobuf/proto"
 )
+
+var attestationStateTracer = otelx.Tracer("chainloop-controlplane", "biz/attestationstate")
 
 type AttestationState struct {
 	State *v1.CraftingState
@@ -54,6 +57,9 @@ func NewAttestationStateUseCase(repo AttestationStateRepo, wfRunRepo WorkflowRun
 }
 
 func (uc *AttestationStateUseCase) Initialized(ctx context.Context, workflowID, runID string) (bool, error) {
+	ctx, span := otelx.Start(ctx, attestationStateTracer, "AttestationStateUseCase.Initialized")
+	defer span.End()
+
 	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return false, fmt.Errorf("failed to check workflow run: %w", err)
@@ -80,6 +86,9 @@ func WithAttStateBaseDigest(digest string) SaveOption {
 }
 
 func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID string, state *v1.CraftingState, passphrase string, opts ...SaveOption) (string, error) {
+	ctx, span := otelx.Start(ctx, attestationStateTracer, "AttestationStateUseCase.Save")
+	defer span.End()
+
 	opt := &AttestationStateSaveOpts{}
 
 	for _, o := range opts {
@@ -114,6 +123,9 @@ func (uc *AttestationStateUseCase) Save(ctx context.Context, workflowID, runID s
 }
 
 func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID, passphrase string) (*AttestationState, error) {
+	ctx, span := otelx.Start(ctx, attestationStateTracer, "AttestationStateUseCase.Read")
+	defer span.End()
+
 	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check workflow run: %w", err)
@@ -138,6 +150,9 @@ func (uc *AttestationStateUseCase) Read(ctx context.Context, workflowID, runID, 
 }
 
 func (uc *AttestationStateUseCase) Reset(ctx context.Context, workflowID, runID string) error {
+	ctx, span := otelx.Start(ctx, attestationStateTracer, "AttestationStateUseCase.Reset")
+	defer span.End()
+
 	runUUID, err := uc.checkWorkflowRunInWorkflow(ctx, workflowID, runID)
 	if err != nil {
 		return fmt.Errorf("failed to check workflow run: %w", err)

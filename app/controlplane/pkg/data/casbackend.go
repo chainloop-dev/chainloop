@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var casBackendRepoTracer = otelx.Tracer("chainloop-controlplane", "data/casbackend")
 
 type CASBackendRepo struct {
 	data *Data
@@ -41,6 +44,9 @@ func NewCASBackendRepo(data *Data, logger log.Logger) biz.CASBackendRepo {
 }
 
 func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.List")
+	defer span.End()
+
 	backends, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.DeletedAtIsNil()).
 		Order(ent.Desc(casbackend.FieldCreatedAt)).
@@ -59,6 +65,9 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 
 // FindDefaultBackend finds the CAS backend that's set as default for the given organization
 func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindDefaultBackend")
+	defer span.End()
+
 	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Default(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
@@ -71,6 +80,9 @@ func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID
 
 // FindFallbackBackend finds the CAS backend that's set as fallback for the given organization
 func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindFallbackBackend")
+	defer span.End()
+
 	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.Fallback(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
@@ -83,6 +95,9 @@ func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUI
 
 // FindInlineBackend finds the inline CAS backend for the given organization
 func (r *CASBackendRepo) FindInlineBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindInlineBackend")
+	defer span.End()
+
 	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.ProviderEQ(biz.CASBackendInline), casbackend.DeletedAtIsNil()).
 		Only(ctx)
@@ -96,6 +111,9 @@ func (r *CASBackendRepo) FindInlineBackend(ctx context.Context, orgID uuid.UUID)
 // Create creates a new CAS backend in the given organization
 // If it's set as default, it will unset the previous default backend
 func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.Create")
+	defer span.End()
+
 	var (
 		backend *ent.CASBackend
 		err     error
@@ -157,6 +175,9 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 }
 
 func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateOpts) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.Update")
+	defer span.End()
+
 	var (
 		backend *ent.CASBackend
 		err     error
@@ -239,6 +260,9 @@ func (r *CASBackendRepo) Update(ctx context.Context, opts *biz.CASBackendUpdateO
 // FindByID finds a CAS backend by ID
 // If not found, returns nil and no error
 func (r *CASBackendRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindByID")
+	defer span.End()
+
 	backend, err := r.data.DB.CASBackend.Query().WithOrganization().
 		Where(casbackend.ID(id), casbackend.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -253,6 +277,9 @@ func (r *CASBackendRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.CASBa
 // FindByIDInOrg finds a CAS backend by ID in the given organization.
 // If not found, returns nil and no error
 func (r *CASBackendRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindByIDInOrg")
+	defer span.End()
+
 	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
 		Where(casbackend.ID(id), casbackend.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -265,6 +292,9 @@ func (r *CASBackendRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID)
 }
 
 func (r *CASBackendRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindByNameInOrg")
+	defer span.End()
+
 	backend, err := orgScopedQuery(r.data.DB, orgID).
 		QueryCasBackends().
 		WithOrganization().
@@ -282,16 +312,25 @@ func (r *CASBackendRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, n
 
 // Set deleted at instead of actually deleting the backend
 func (r *CASBackendRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.SoftDelete")
+	defer span.End()
+
 	return r.data.DB.CASBackend.UpdateOneID(id).SetDeletedAt(time.Now()).Exec(ctx)
 }
 
 // Delete deletes a CAS backend from the DB
 func (r *CASBackendRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.Delete")
+	defer span.End()
+
 	return r.data.DB.CASBackend.DeleteOneID(id).Exec(ctx)
 }
 
 // UpdateValidationStatus updates the validation status of a CAS backend
 func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUID, status biz.CASBackendValidationStatus, validationError *string) error {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.UpdateValidationStatus")
+	defer span.End()
+
 	update := r.data.DB.CASBackend.UpdateOneID(id).
 		SetValidationStatus(status).
 		SetValidatedAt(time.Now())
@@ -308,6 +347,9 @@ func (r *CASBackendRepo) UpdateValidationStatus(ctx context.Context, id uuid.UUI
 // ListBackends returns CAS backends across all organizations. Only not inline backends are returned
 // If defaultsOrFallbacks is true, only default and fallback backends are returned
 func (r *CASBackendRepo) ListBackends(ctx context.Context, defaultsOrFallbacks bool) ([]*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.ListBackends")
+	defer span.End()
+
 	query := r.data.DB.CASBackend.Query().
 		WithOrganization().
 		Where(casbackend.DeletedAtIsNil(),

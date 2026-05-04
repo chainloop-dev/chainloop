@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,9 +26,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var orgMetricsRepoTracer = otelx.Tracer("chainloop-controlplane", "data/orgmetrics")
 
 type OrgMetricsRepo struct {
 	data *Data
@@ -43,6 +46,9 @@ func NewOrgMetricsRepo(data *Data, l log.Logger) biz.OrgMetricsRepo {
 }
 
 func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) (int32, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsRepoTracer, "OrgMetricsRepo.RunsTotal")
+	defer span.End()
+
 	wfQuery := orgScopedQuery(repo.data.DB, orgID).
 		QueryWorkflows()
 
@@ -66,6 +72,9 @@ func (repo *OrgMetricsRepo) RunsTotal(ctx context.Context, orgID uuid.UUID, tw *
 }
 
 func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsRepoTracer, "OrgMetricsRepo.RunsByStatusTotal")
+	defer span.End()
+
 	var runs []struct {
 		State string
 		Count int32
@@ -99,6 +108,9 @@ func (repo *OrgMetricsRepo) RunsByStatusTotal(ctx context.Context, orgID uuid.UU
 }
 
 func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) (map[string]int32, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsRepoTracer, "OrgMetricsRepo.RunsByRunnerTypeTotal")
+	defer span.End()
+
 	var runs []struct {
 		RunnerType string `json:"runner_type"`
 		Count      int32
@@ -131,6 +143,9 @@ func (repo *OrgMetricsRepo) RunsByRunnerTypeTotal(ctx context.Context, orgID uui
 }
 
 func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID uuid.UUID, numWorkflows int, tw *biz.TimeWindow, projectIDs []uuid.UUID) ([]*biz.TopWorkflowsByRunsCountItem, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsRepoTracer, "OrgMetricsRepo.TopWorkflowsByRunsCount")
+	defer span.End()
+
 	var runs []struct {
 		WorkflowID string `json:"workflow_id"`
 		State      string
@@ -207,6 +222,9 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 }
 
 func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) ([]*biz.DayRunsCount, error) {
+	ctx, span := otelx.Start(ctx, orgMetricsRepoTracer, "OrgMetricsRepo.DailyRunsCount")
+	defer span.End()
+
 	var runsByStateAndDay []struct {
 		State     string
 		Count     int32

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,17 +23,18 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
+	"github.com/XSAM/otelsql"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/google/wire"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 
 	// Load PGX driver
-
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // ProviderSet is data providers.
@@ -73,13 +74,13 @@ func (data *Data) SchemaLoad() error {
 }
 
 // NewData .
-func NewData(c *config.DatabaseConfig, logger log.Logger) (*Data, func(), error) {
+func NewData(c *config.DatabaseConfig, tp trace.TracerProvider, logger log.Logger) (*Data, func(), error) {
 	if logger == nil {
 		logger = log.NewStdLogger(io.Discard)
 	}
 
 	log := log.NewHelper(logger)
-	db, err := initSQLDatabase(c, log)
+	db, err := initSQLDatabase(c, tp, log)
 	if err != nil {
 		log.Errorf("error initialing the DB : %v", err)
 		return nil, nil, fmt.Errorf("failed to initialized db: %w", err)
@@ -95,38 +96,44 @@ func NewData(c *config.DatabaseConfig, logger log.Logger) (*Data, func(), error)
 	return &Data{DB: db}, cleanup, nil
 }
 
-func initSQLDatabase(c *config.DatabaseConfig, log *log.Helper) (*ent.Client, error) {
+func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log.Helper) (*ent.Client, error) {
 	if c.Driver != "pgx" {
 		return nil, fmt.Errorf("unsupported driver: %s", c.Driver)
 	}
 
 	log.Debugf("connecting to db: driver=%s", c.Driver)
-	poolConfig, err := pgxpool.ParseConfig(c.Source)
+
+	db, err := otelsql.Open(c.Driver, c.Source,
+		otelsql.WithTracerProvider(tp),
+		otelsql.WithAttributes(semconv.DBSystemPostgreSQL),
+		otelsql.WithSpanOptions(otelsql.SpanOptions{
+			DisableErrSkip:       true,
+			OmitRows:             true,
+			OmitConnResetSession: true,
+			OmitConnPrepare:      true,
+			OmitConnectorConnect: true,
+		}),
+	)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error opening the connection, driver=%s: %w", c.Driver, err)
 	}
 
 	if c.MaxOpenConns > 0 {
 		log.Infof("DB: setting max open conns: %d", c.MaxOpenConns)
-		poolConfig.MaxConns = c.MaxOpenConns
+		db.SetMaxOpenConns(int(c.MaxOpenConns))
 	}
 
 	if n := c.MinOpenConns; n > 0 {
-		log.Infof("DB: setting min open conns: %v", n)
-		poolConfig.MinConns = c.MinOpenConns
+		// database/sql has no MinOpenConns; MaxIdleConns keeps idle connections warm which is the closest equivalent
+		log.Infof("DB: setting max idle conns (from min_open_conns): %v", n)
+		db.SetMaxIdleConns(int(n))
 	}
 
 	if t := c.MaxConnIdleTime.AsDuration(); t > 0 {
 		log.Infof("DB: setting max conn idle time: %v", t)
-		poolConfig.MaxConnIdleTime = t
+		db.SetConnMaxIdleTime(t)
 	}
 
-	pool, err := pgxpool.NewWithConfig(context.TODO(), poolConfig)
-	if err != nil {
-		return nil, fmt.Errorf("error creating the pool: %w", err)
-	}
-
-	db := stdlib.OpenDBFromPool(pool)
 	drv := entsql.OpenDB(dialect.Postgres, db)
 	client := ent.NewClient(ent.Driver(drv))
 

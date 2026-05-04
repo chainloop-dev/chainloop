@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ func (s *organizationTestSuite) TestCreateWithRandomName() {
 	s.Run("the org exists, we retry", func() {
 		ctx := context.Background()
 		// the first one fails because it already exists
-		repo.On("Create", ctx, mock.Anything).Once().Return(nil, biz.NewErrAlreadyExistsStr("it already exists"))
+		repo.On("Create", mock.Anything, mock.Anything).Once().Return(nil, biz.NewErrAlreadyExistsStr("it already exists"))
 		// but the second call creates the org
-		repo.On("Create", ctx, mock.Anything).Once().Return(&biz.Organization{Name: "foobar", ID: uuid.NewString()}, nil)
+		repo.On("Create", mock.Anything, mock.Anything).Once().Return(&biz.Organization{Name: "foobar", ID: uuid.NewString()}, nil)
 		got, err := uc.CreateWithRandomName(ctx)
 		s.NoError(err)
 		s.Equal("foobar", got.Name)
@@ -51,7 +51,7 @@ func (s *organizationTestSuite) TestCreateWithRandomName() {
 	s.Run("if it runs out of tries, it fails", func() {
 		ctx := context.Background()
 		// the first one fails because it already exists
-		repo.On("Create", ctx, mock.Anything).Times(biz.RandomNameMaxTries).Return(nil, biz.NewErrAlreadyExistsStr("it already exists"))
+		repo.On("Create", mock.Anything, mock.Anything).Times(biz.RandomNameMaxTries).Return(nil, biz.NewErrAlreadyExistsStr("it already exists"))
 		got, err := uc.CreateWithRandomName(ctx)
 		s.Error(err)
 		s.Nil(got)

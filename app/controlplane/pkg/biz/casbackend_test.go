@@ -53,7 +53,7 @@ func (s *casBackendTestSuite) TestFindDefaultBackendNotFound() {
 
 	// Not found
 	ctx := context.Background()
-	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(nil, nil)
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(nil, nil)
 
 	repo, err := s.useCase.FindDefaultBackend(ctx, s.validUUID.String())
 	assert.ErrorAs(err, &biz.ErrNotFound{})
@@ -65,7 +65,7 @@ func (s *casBackendTestSuite) TestFindDefaultBackendFound() {
 
 	ctx := context.Background()
 	wantBackend := &biz.CASBackend{}
-	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(wantBackend, nil)
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(wantBackend, nil)
 
 	backend, err := s.useCase.FindDefaultBackend(ctx, s.validUUID.String())
 	assert.NoError(err)
@@ -85,9 +85,9 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendAlreadyExist() {
 
 	r := &biz.CASBackend{ID: s.validUUID, Provider: backendType}
 	ctx := context.Background()
-	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(r, nil)
-	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
-	s.repo.On("Update", ctx, &biz.CASBackendUpdateOpts{
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(r, nil)
+	s.credsRW.On("SaveCredentials", mock.Anything, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
+	s.repo.On("Update", mock.Anything, &biz.CASBackendUpdateOpts{
 		ID: s.validUUID,
 		CASBackendOpts: &biz.CASBackendOpts{
 			Location: repoName, SecretName: "secret-key", Default: toPtrBool(true), Provider: backendType,
@@ -105,11 +105,11 @@ func (s *casBackendTestSuite) TestSaveDefaultBackendOk() {
 	ctx := context.Background()
 	const repo, username, password = "repo", "username", "pass"
 
-	s.repo.On("FindDefaultBackend", ctx, s.validUUID).Return(nil, nil)
-	s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(nil, nil)
+	s.credsRW.On("SaveCredentials", mock.Anything, s.validUUID.String(), mock.Anything).Return("secret-key", nil)
 
 	newRepo := &biz.CASBackend{}
-	s.repo.On("Create", ctx, &biz.CASBackendCreateOpts{
+	s.repo.On("Create", mock.Anything, &biz.CASBackendCreateOpts{
 		CASBackendOpts: &biz.CASBackendOpts{
 			OrgID:    s.validUUID,
 			Location: repo, SecretName: "secret-key", Default: toPtrBool(true), Provider: backendType,
@@ -304,13 +304,13 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 			}
 
 			// Step 1: FindByIDInOrg returns the existing backend (consumed once).
-			s.repo.On("FindByIDInOrg", ctx, s.validUUID, backendID).Return(before, nil).Once()
+			s.repo.On("FindByIDInOrg", mock.Anything, s.validUUID, backendID).Return(before, nil).Once()
 
 			// Step 2: SaveCredentials — capture SaveOption(s) to verify the secret name.
 			var capturedSecretName string
 			var optWasPassed bool
 			saveMatcher := mock.MatchedBy(func(_ interface{}) bool { return true })
-			s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), saveMatcher, mock.Anything).
+			s.credsRW.On("SaveCredentials", mock.Anything, s.validUUID.String(), saveMatcher, mock.Anything).
 				Run(func(args mock.Arguments) {
 					if len(args) > 3 {
 						optWasPassed = true
@@ -322,12 +322,12 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 				}).Return(tc.returnedSecretName, nil).Maybe()
 
 			// Fallback for no-opts case (empty existing secret → no WithExistingSecret).
-			s.credsRW.On("SaveCredentials", ctx, s.validUUID.String(), saveMatcher).
+			s.credsRW.On("SaveCredentials", mock.Anything, s.validUUID.String(), saveMatcher).
 				Return(tc.returnedSecretName, nil).Maybe()
 
 			// Step 3: repo.Update persists the change.
 			updatedBackend := &biz.CASBackend{ID: backendID, SecretName: tc.returnedSecretName, Provider: backendType}
-			s.repo.On("Update", ctx, mock.Anything).Return(updatedBackend, nil)
+			s.repo.On("Update", mock.Anything, mock.Anything).Return(updatedBackend, nil)
 
 			// Steps 4–7: PerformValidation is called internally with new creds.
 			s.repo.On("FindByID", mock.Anything, backendID).Return(updatedBackend, nil)
@@ -336,7 +336,7 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 			s.repo.On("UpdateValidationStatus", mock.Anything, backendID, biz.CASBackendValidationOK, mock.Anything).Return(nil)
 
 			// Step 8: FindByIDInOrg reload after validation.
-			s.repo.On("FindByIDInOrg", ctx, s.validUUID, backendID).Return(updatedBackend, nil)
+			s.repo.On("FindByIDInOrg", mock.Anything, s.validUUID, backendID).Return(updatedBackend, nil)
 
 			got, err := s.useCase.Update(ctx, s.validUUID.String(), backendID.String(), nil, newCreds, nil, nil, nil)
 			s.Require().NoError(err)

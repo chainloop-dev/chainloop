@@ -47,8 +47,13 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	confData := bootstrap.Data
 	data_Database := confData.Database
 	databaseConfig := newDataConf(data_Database)
-	dataData, cleanup, err := data.NewData(databaseConfig, logger)
+	tracerProvider, cleanup, err := server.NewTracerProvider(bootstrap, logger)
 	if err != nil {
+		return nil, nil, err
+	}
+	dataData, cleanup2, err := data.NewData(databaseConfig, tracerProvider, logger)
+	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
 	apiTokenRepo := data.NewAPITokenRepo(dataData, logger)
@@ -64,13 +69,15 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	casServerDefaultOpts := newCASServerOptions(bootstrap_CASServer)
 	bootstrap_NatsServer := bootstrap.NatsServer
 	natsconnConfig := newNatsConfig(bootstrap_NatsServer)
-	reloadableConnection, cleanup2, err := natsconn.New(natsconnConfig, logger)
+	reloadableConnection, cleanup3, err := natsconn.New(natsconnConfig, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	auditLogPublisher, err := auditor.NewAuditLogPublisher(contextContext, reloadableConnection, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -78,6 +85,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	auditorUseCase := biz.NewAuditorUseCase(auditLogPublisher, logger)
 	casBackendUseCase, err := biz.NewCASBackendUseCase(casBackendRepo, readerWriter, providers, casServerDefaultOpts, auditorUseCase, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -113,6 +121,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -123,12 +132,14 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	referrerSharedIndex := bootstrap.ReferrerSharedIndex
 	referrerSharedIndexConfig, err := biz.NewIndexConfig(referrerSharedIndex)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipUseCase, referrerSharedIndexConfig, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -136,6 +147,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	apiTokenJWTConfig := newJWTConfig(auth)
 	apiTokenUseCase, err := biz.NewAPITokenUseCase(apiTokenRepo, apiTokenJWTConfig, authzUseCase, organizationUseCase, auditorUseCase, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -146,6 +158,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	v4 := newPolicyProviderConfig(v3)
 	registry, err := policies.NewRegistry(logger, v4...)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -154,12 +167,14 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	workflowUseCase := biz.NewWorkflowUsecase(workflowRepo, projectsRepo, workflowContractUseCase, auditorUseCase, membershipUseCase, organizationRepo, logger)
 	cache, err := newMembershipsCache(logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	cacheCache, err := newClaimsCache(logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -167,6 +182,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -178,6 +194,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	confServer := bootstrap.Server
 	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -186,12 +203,14 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	attestationbundleCache, err := attestationbundle.New(contextContext, reloadableConnection, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -210,12 +229,14 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	}
 	workflowRunUseCase, err := biz.NewWorkflowRunUseCase(workflowRunUseCaseOpts)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	policyevalbundleCache, err := policyevalbundle.New(contextContext, reloadableConnection, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -238,6 +259,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	orgMetricsRepo := data.NewOrgMetricsRepo(dataData, logger)
 	orgMetricsUseCase, err := biz.NewOrgMetricsUseCase(orgMetricsRepo, organizationRepo, workflowUseCase, logger)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -277,6 +299,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	casBackendService := service.NewCASBackendService(casBackendUseCase, providers, v5...)
 	casRedirectService, err := service.NewCASRedirectService(casMappingUseCase, casCredentialsUseCase, bootstrap_CASServer, v5...)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -287,6 +310,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	attestationStateRepo := data.NewAttestationStateRepo(dataData, logger)
 	attestationStateUseCase, err := biz.NewAttestationStateUseCase(attestationStateRepo, workflowRunRepo)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -307,6 +331,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	operationAuthorizationProvider := bootstrap.OperationAuthorizationProvider
 	validator, err := newProtoValidator()
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -358,24 +383,28 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	httpServer, err := server.NewHTTPServer(opts, grpcServer)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	httpMetricsServer, err := server.NewHTTPMetricsServer(opts)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	httpProfilerServer, err := server.NewHTTPProfilerServer(opts)
 	if err != nil {
+		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
@@ -385,6 +414,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	apiTokenStaleRevoker := biz.NewAPITokenStaleRevoker(organizationRepo, apiTokenRepo, apiTokenUseCase, logger)
 	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, apiTokenStaleRevoker, bootstrap)
 	return mainApp, func() {
+		cleanup3()
 		cleanup2()
 		cleanup()
 	}, nil

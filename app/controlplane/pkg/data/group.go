@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,12 +34,15 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var groupRepoTracer = otelx.Tracer("chainloop-controlplane", "data/group")
 
 type GroupRepo struct {
 	data *Data
@@ -54,6 +57,9 @@ func NewGroupRepo(data *Data, logger log.Logger) biz.GroupRepo {
 }
 
 func (g GroupRepo) List(ctx context.Context, orgID uuid.UUID, filterOpts *biz.ListGroupOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.Group, int, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.List")
+	defer span.End()
+
 	if filterOpts == nil {
 		filterOpts = &biz.ListGroupOpts{}
 	}
@@ -120,6 +126,9 @@ func (g GroupRepo) List(ctx context.Context, orgID uuid.UUID, filterOpts *biz.Li
 
 // ListMembers retrieves the members of a group, optionally filtering by maintainers.
 func (g GroupRepo) ListMembers(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, opts *biz.ListMembersOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.GroupMembership, int, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.ListMembers")
+	defer span.End()
+
 	if paginationOpts == nil {
 		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}
@@ -173,6 +182,9 @@ func (g GroupRepo) ListMembers(ctx context.Context, orgID uuid.UUID, groupID uui
 
 // ListPendingInvitationsByGroup retrieves pending invitations for a specific group in an organization.
 func (g GroupRepo) ListPendingInvitationsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.OrgInvitation, int, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.ListPendingInvitationsByGroup")
+	defer span.End()
+
 	if paginationOpts == nil {
 		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}
@@ -228,6 +240,9 @@ func (g GroupRepo) ListPendingInvitationsByGroup(ctx context.Context, orgID uuid
 
 // Create creates a new group in the specified organization.
 func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.CreateGroupOpts) (*biz.Group, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.Create")
+	defer span.End()
+
 	if opts == nil {
 		return nil, biz.NewErrValidationStr("create group options cannot be nil")
 	}
@@ -291,6 +306,9 @@ func (g GroupRepo) Create(ctx context.Context, orgID uuid.UUID, opts *biz.Create
 
 // FindByOrgAndID retrieves a group by its ID and org, ensuring it is not deleted.
 func (g GroupRepo) FindByOrgAndID(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID) (*biz.Group, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.FindByOrgAndID")
+	defer span.End()
+
 	entGroup, err := g.data.DB.Group.Query().
 		Where(group.DeletedAtIsNil(), group.ID(groupID), group.OrganizationID(orgID)).
 		WithOrganization().
@@ -306,6 +324,9 @@ func (g GroupRepo) FindByOrgAndID(ctx context.Context, orgID uuid.UUID, groupID 
 }
 
 func (g GroupRepo) FindByOrgAndName(ctx context.Context, orgID uuid.UUID, name string) (*biz.Group, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.FindByOrgAndName")
+	defer span.End()
+
 	entGroup, err := g.data.DB.Group.Query().
 		Where(group.DeletedAtIsNil(), group.Name(name), group.OrganizationID(orgID)).
 		WithOrganization().
@@ -322,6 +343,9 @@ func (g GroupRepo) FindByOrgAndName(ctx context.Context, orgID uuid.UUID, name s
 
 // FindGroupMembershipByGroupAndID retrieves a group membership for a specific user in a group.
 func (g GroupRepo) FindGroupMembershipByGroupAndID(ctx context.Context, groupID uuid.UUID, userID uuid.UUID) (*biz.GroupMembership, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.FindGroupMembershipByGroupAndID")
+	defer span.End()
+
 	// Query the group user membership for the specified user in the group
 	groupUser, err := g.data.DB.GroupMembership.Query().
 		Where(
@@ -343,6 +367,9 @@ func (g GroupRepo) FindGroupMembershipByGroupAndID(ctx context.Context, groupID 
 
 // Update updates an existing group in the specified organization.
 func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, opts *biz.UpdateGroupOpts) (*biz.Group, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.Update")
+	defer span.End()
+
 	if opts == nil {
 		return nil, biz.NewErrValidationStr("update group options cannot be nil")
 	}
@@ -371,6 +398,9 @@ func (g GroupRepo) Update(ctx context.Context, orgID uuid.UUID, groupID uuid.UUI
 // SoftDelete soft-deletes a group by setting the DeletedAt field to the current time.
 // It also marks all group memberships as deleted and removes any pending invitations related to the group.
 func (g GroupRepo) SoftDelete(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.SoftDelete")
+	defer span.End()
+
 	return WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
 		now := time.Now()
 
@@ -435,6 +465,9 @@ func (g GroupRepo) SoftDelete(ctx context.Context, orgID uuid.UUID, groupID uuid
 
 // AddMemberToGroup adds a user to a group, creating a new membership if they are not already a member.
 func (g GroupRepo) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, maintainer bool) (*biz.GroupMembership, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.AddMemberToGroup")
+	defer span.End()
+
 	if err := WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
 		// Check if the user is already a member of this group
 		existingMember, err := tx.GroupMembership.Query().
@@ -497,6 +530,9 @@ func (g GroupRepo) AddMemberToGroup(ctx context.Context, orgID uuid.UUID, groupI
 
 // RemoveMemberFromGroup removes a user from a group.
 func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.RemoveMemberFromGroup")
+	defer span.End()
+
 	err := WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
 		// Check if the user is a member of this group
 		existingMembership, err := tx.GroupMembership.Query().
@@ -558,6 +594,9 @@ func (g GroupRepo) RemoveMemberFromGroup(ctx context.Context, orgID uuid.UUID, g
 
 // UpdateMemberMaintainerStatus updates the maintainer status of a group member.
 func (g GroupRepo) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, userID uuid.UUID, isMaintainer bool) error {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.UpdateMemberMaintainerStatus")
+	defer span.End()
+
 	return WithTx(ctx, g.data.DB, func(tx *ent.Tx) error {
 		// Check if the user is a member of this group
 		existingMembership, err := tx.GroupMembership.Query().
@@ -649,6 +688,9 @@ func (g GroupRepo) UpdateMemberMaintainerStatus(ctx context.Context, orgID uuid.
 
 // ListProjectsByGroup retrieves a list of projects that a group is a member of with pagination.
 func (g GroupRepo) ListProjectsByGroup(ctx context.Context, orgID uuid.UUID, groupID uuid.UUID, visibleProjectIDs []uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.GroupProjectInfo, int, error) {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.ListProjectsByGroup")
+	defer span.End()
+
 	if paginationOpts == nil {
 		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
 	}
@@ -784,6 +826,9 @@ func entGroupMembershipToBiz(gu *ent.GroupMembership) *biz.GroupMembership {
 // UpdateGroupMemberCount updates the member count of a group based on an actual count query
 // This should be called after membership changes have been committed.
 func (g GroupRepo) UpdateGroupMemberCount(ctx context.Context, groupID uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, groupRepoTracer, "GroupRepo.UpdateGroupMemberCount")
+	defer span.End()
+
 	// Count active members in the group
 	count, err := g.data.DB.GroupMembership.Query().
 		Where(

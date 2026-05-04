@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var robotAccountRepoTracer = otelx.Tracer("chainloop-controlplane", "data/robotaccount")
 
 type RobotAccountRepo struct {
 	data *Data
@@ -40,6 +43,9 @@ func NewRobotAccountRepo(data *Data, logger log.Logger) biz.RobotAccountRepo {
 }
 
 func (r *RobotAccountRepo) Create(ctx context.Context, name string, workflowID uuid.UUID) (*biz.RobotAccount, error) {
+	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.Create")
+	defer span.End()
+
 	p, err := r.data.DB.RobotAccount.Create().SetName(name).SetWorkflowID(workflowID).Save(ctx)
 	if err != nil {
 		return nil, err
@@ -49,6 +55,9 @@ func (r *RobotAccountRepo) Create(ctx context.Context, name string, workflowID u
 }
 
 func (r *RobotAccountRepo) List(ctx context.Context, workflowID uuid.UUID, includeRevoked bool) ([]*biz.RobotAccount, error) {
+	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.List")
+	defer span.End()
+
 	raQuery := r.data.DB.Workflow.Query().Where(workflow.ID(workflowID)).QueryRobotaccounts()
 	if !includeRevoked {
 		raQuery = raQuery.Where(robotaccount.RevokedAtIsNil())
@@ -68,6 +77,9 @@ func (r *RobotAccountRepo) List(ctx context.Context, workflowID uuid.UUID, inclu
 }
 
 func (r *RobotAccountRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.RobotAccount, error) {
+	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.FindByID")
+	defer span.End()
+
 	p, err := r.data.DB.RobotAccount.Get(ctx, id)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -84,6 +96,9 @@ func (r *RobotAccountRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Rob
 }
 
 func (r *RobotAccountRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.Revoke")
+	defer span.End()
+
 	// Find a non-revoked robot account in the scope of the organization
 	acc, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().

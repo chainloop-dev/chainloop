@@ -23,6 +23,7 @@ import (
 	"os"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	grpc_insecure "google.golang.org/grpc/credentials/insecure"
@@ -108,6 +109,7 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 	}
 
 	opts = append(opts, tlsDialOption)
+	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
 
 	conn, err := grpc.Dial(uri, opts...)
 	if err != nil {

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,9 +22,12 @@ import (
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/robotaccount"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var robotAccountTracer = otelx.Tracer("chainloop-controlplane", "biz/robotaccount")
 
 type RobotAccount struct {
 	Name                 string
@@ -58,6 +61,9 @@ func NewRootAccountUseCase(robotAccountRepo RobotAccountRepo, workflowRepo Workf
 }
 
 func (uc *RobotAccountUseCase) Create(ctx context.Context, name string, orgID, workflowID string) (*RobotAccount, error) {
+	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.Create")
+	defer span.End()
+
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -99,6 +105,9 @@ func (uc *RobotAccountUseCase) Create(ctx context.Context, name string, orgID, w
 }
 
 func (uc *RobotAccountUseCase) List(ctx context.Context, orgID, workflowID string, includeRevoked bool) ([]*RobotAccount, error) {
+	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.List")
+	defer span.End()
+
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -119,6 +128,9 @@ func (uc *RobotAccountUseCase) List(ctx context.Context, orgID, workflowID strin
 }
 
 func (uc *RobotAccountUseCase) FindByID(ctx context.Context, id string) (*RobotAccount, error) {
+	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.FindByID")
+	defer span.End()
+
 	uuid, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -128,6 +140,9 @@ func (uc *RobotAccountUseCase) FindByID(ctx context.Context, id string) (*RobotA
 }
 
 func (uc *RobotAccountUseCase) Revoke(ctx context.Context, orgID, id string) error {
+	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.Revoke")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return NewErrInvalidUUID(err)

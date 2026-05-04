@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
@@ -41,6 +42,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 )
+
+var workflowRunTracer = otelx.Tracer("chainloop-controlplane", "biz/workflowrun")
 
 type WorkflowRun struct {
 	ID                    uuid.UUID
@@ -194,6 +197,9 @@ func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunE
 
 // ExpirationSweep looks for runs older than the provider time and marks them as expired
 func (uc *WorkflowRunExpirerUseCase) ExpirationSweep(ctx context.Context, olderThan time.Time) error {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunExpirerUseCase.ExpirationSweep")
+	defer span.End()
+
 	uc.logger.Debugf("expiration sweep - runs older than %s", olderThan.Format(time.RFC822))
 
 	const maxNumberOfRunsToExpire = 100
@@ -238,6 +244,9 @@ type WorkflowRunRepoCreateOpts struct {
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
 func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreateOpts) (*WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.Create")
+	defer span.End()
+
 	workflowUUID, err := uuid.Parse(opts.WorkflowID)
 	if err != nil {
 		return nil, err
@@ -306,6 +315,9 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 
 // The workflowRun belongs to the provided workflowRun
 func (uc *WorkflowRunUseCase) ExistsInWorkflow(ctx context.Context, workflowID, id string) (bool, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.ExistsInWorkflow")
+	defer span.End()
+
 	runUUID, err := uuid.Parse(id)
 	if err != nil {
 		return false, err
@@ -320,6 +332,9 @@ func (uc *WorkflowRunUseCase) ExistsInWorkflow(ctx context.Context, workflowID, 
 }
 
 func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, status WorkflowRunStatus, reason string) error {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.MarkAsFinished")
+	defer span.End()
+
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -329,6 +344,9 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 }
 
 func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte) (*v1.Hash, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.SaveAttestation")
+	defer span.End()
+
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -411,6 +429,9 @@ type RunListFilters struct {
 
 // List the workflowruns associated with an org and optionally filtered by a workflow
 func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.List")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, "", NewErrInvalidUUID(err)
@@ -425,6 +446,9 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunList
 
 // Returns the workflow run with the provided ID if it belongs to the org or its public
 func (uc *WorkflowRunUseCase) GetByIDInOrgOrPublic(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.GetByIDInOrgOrPublic")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -451,6 +475,9 @@ func (uc *WorkflowRunUseCase) GetByIDInOrgOrPublic(ctx context.Context, orgID, r
 
 // Returns the workflow run with the provided ID if it belongs to the org
 func (uc *WorkflowRunUseCase) GetByIDInOrg(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.GetByIDInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -480,6 +507,9 @@ type VerificationResult struct {
 }
 
 func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (*VerificationResult, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.VerifyRun")
+	defer span.End()
+
 	return uc.verifyBundle(ctx, run.Attestation.Bundle)
 }
 
@@ -536,6 +566,9 @@ func trustedRootBizToVerifier(biztr *TrustedRoot) (*verifier.TrustedRoot, error)
 }
 
 func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.GetByDigestInOrgOrPublic")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)

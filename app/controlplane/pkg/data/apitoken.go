@@ -25,9 +25,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var apiTokenRepoTracer = otelx.Tracer("chainloop-controlplane", "data/apitoken")
 
 type APITokenRepo struct {
 	data *Data
@@ -43,6 +46,9 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 
 // Persist the APIToken to the database.
 func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*biz.APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.Create")
+	defer span.End()
+
 	token, err := r.data.DB.APIToken.Create().
 		SetName(name).
 		SetNillableDescription(description).
@@ -63,6 +69,9 @@ func (r *APITokenRepo) Create(ctx context.Context, name string, description *str
 }
 
 func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.FindByID")
+	defer span.End()
+
 	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id)).WithOrganization().WithProject().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("getting APIToken: %w", err)
@@ -74,6 +83,9 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 }
 
 func (r *APITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*biz.APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.FindByIDInOrg")
+	defer span.End()
+
 	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -87,6 +99,9 @@ func (r *APITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uu
 }
 
 func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.FindByNameInOrg")
+	defer span.End()
+
 	token, err := r.data.DB.APIToken.Query().Where(apitoken.Name(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -100,6 +115,9 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 }
 
 func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.APITokenListFilters) ([]*biz.APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.List")
+	defer span.End()
+
 	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
 
 	if filters == nil {
@@ -146,6 +164,9 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 }
 
 func (r *APITokenRepo) Revoke(ctx context.Context, orgID *uuid.UUID, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.Revoke")
+	defer span.End()
+
 	// Update a token with id = id that has not been revoked yet and its orgID = orgID
 	update := r.data.DB.APIToken.UpdateOneID(id).
 		Where(apitoken.RevokedAtIsNil())
@@ -170,6 +191,9 @@ func (r *APITokenRepo) Revoke(ctx context.Context, orgID *uuid.UUID, id uuid.UUI
 
 // FindInactive returns tokens that have been inactive since the given cutoff.
 func (r *APITokenRepo) FindInactive(ctx context.Context, orgID uuid.UUID, inactiveSince time.Time) ([]*biz.APIToken, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.FindInactive")
+	defer span.End()
+
 	// A token is inactive if last_used_at < inactiveSince (when used before),
 	// or created_at < inactiveSince (when never used).
 	tokens, err := r.data.DB.APIToken.Query().
@@ -197,6 +221,9 @@ func (r *APITokenRepo) FindInactive(ctx context.Context, orgID uuid.UUID, inacti
 }
 
 func (r *APITokenRepo) UpdateExpiration(ctx context.Context, id uuid.UUID, expiresAt time.Time) error {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.UpdateExpiration")
+	defer span.End()
+
 	err := r.data.DB.APIToken.UpdateOneID(id).SetExpiresAt(expiresAt).Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("updating APIToken: %w", err)
@@ -206,6 +233,9 @@ func (r *APITokenRepo) UpdateExpiration(ctx context.Context, id uuid.UUID, expir
 }
 
 func (r *APITokenRepo) UpdateLastUsedAt(ctx context.Context, id uuid.UUID, lastUsedAt time.Time) error {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.UpdateLastUsedAt")
+	defer span.End()
+
 	err := r.data.DB.APIToken.UpdateOneID(id).Where(apitoken.RevokedAtIsNil()).SetLastUsedAt(lastUsedAt).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {

@@ -25,9 +25,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var attestationStateRepoTracer = otelx.Tracer("chainloop-controlplane", "data/attestationstate")
 
 type AttestationStateRepo struct {
 	data *Data
@@ -43,6 +46,9 @@ func NewAttestationStateRepo(data *Data, logger log.Logger) biz.AttestationState
 
 // find the workflow run by its ID and check that it has attestation state
 func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID) (bool, error) {
+	ctx, span := otelx.Start(ctx, attestationStateRepoTracer, "AttestationStateRepo.Initialized")
+	defer span.End()
+
 	exists, err := r.data.DB.WorkflowRun.Query().Where(workflowrun.ID(runID)).Where(workflowrun.AttestationStateNotNil()).Exist(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to check attestation state: %w", err)
@@ -55,6 +61,9 @@ func (r *AttestationStateRepo) Initialized(ctx context.Context, runID uuid.UUID)
 // if the digests do not match, the state has been modified and the caller should retry.
 // It returns the digest of the newly saved state.
 func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state []byte, baseDigest string) (string, error) {
+	ctx, span := otelx.Start(ctx, attestationStateRepoTracer, "AttestationStateRepo.Save")
+	defer span.End()
+
 	err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// compared the provided digest with the digest of the state in the DB
 		// TODO: make digest check mandatory on updates
@@ -101,6 +110,9 @@ func (r *AttestationStateRepo) Save(ctx context.Context, runID uuid.UUID, state 
 }
 
 func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byte, string, error) {
+	ctx, span := otelx.Start(ctx, attestationStateRepoTracer, "AttestationStateRepo.Read")
+	defer span.End()
+
 	run, err := r.data.DB.WorkflowRun.Query().Where(workflowrun.ID(runID)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, "", fmt.Errorf("failed to read attestation state: %w", err)
@@ -118,6 +130,9 @@ func (r *AttestationStateRepo) Read(ctx context.Context, runID uuid.UUID) ([]byt
 }
 
 func (r *AttestationStateRepo) Reset(ctx context.Context, runID uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, attestationStateRepoTracer, "AttestationStateRepo.Reset")
+	defer span.End()
+
 	err := r.data.DB.WorkflowRun.UpdateOneID(runID).ClearAttestationState().Exec(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return fmt.Errorf("failed to clear attestation state: %w", err)

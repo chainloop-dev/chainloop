@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var integrationRepoTracer = otelx.Tracer("chainloop-controlplane", "data/integration")
 
 type IntegrationRepo struct {
 	data *Data
@@ -41,6 +44,9 @@ func NewIntegrationRepo(data *Data, logger log.Logger) biz.IntegrationRepo {
 }
 
 func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreateOpts) (*biz.Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationRepoTracer, "IntegrationRepo.Create")
+	defer span.End()
+
 	integration, err := r.data.DB.Integration.Create().
 		SetName(opts.Name).
 		SetOrganizationID(opts.OrgID).
@@ -62,6 +68,9 @@ func (r *IntegrationRepo) Create(ctx context.Context, opts *biz.IntegrationCreat
 }
 
 func (r *IntegrationRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationRepoTracer, "IntegrationRepo.List")
+	defer span.End()
+
 	integrations, err := orgScopedQuery(r.data.DB, orgID).
 		QueryIntegrations().
 		Where(integration.DeletedAtIsNil()).
@@ -80,6 +89,9 @@ func (r *IntegrationRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.Int
 }
 
 func (r *IntegrationRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationRepoTracer, "IntegrationRepo.FindByIDInOrg")
+	defer span.End()
+
 	integration, err := orgScopedQuery(r.data.DB, orgID).
 		QueryIntegrations().
 		Where(integration.ID(id)).
@@ -95,6 +107,9 @@ func (r *IntegrationRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 }
 
 func (r *IntegrationRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.Integration, error) {
+	ctx, span := otelx.Start(ctx, integrationRepoTracer, "IntegrationRepo.FindByNameInOrg")
+	defer span.End()
+
 	integration, err := orgScopedQuery(r.data.DB, orgID).
 		QueryIntegrations().
 		Where(integration.Name(name)).
@@ -113,6 +128,9 @@ func (r *IntegrationRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, 
 }
 
 func (r *IntegrationRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, integrationRepoTracer, "IntegrationRepo.SoftDelete")
+	defer span.End()
+
 	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		// soft-delete attachments associated with this workflow
 		if err := tx.IntegrationAttachment.Update().Where(integrationattachment.HasIntegrationWith(integration.ID(id))).SetDeletedAt(time.Now()).Exec(ctx); err != nil {

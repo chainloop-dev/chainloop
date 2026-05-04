@@ -40,6 +40,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // wireTestData init testing data
@@ -68,6 +70,7 @@ func WireTestData(context.Context, *TestDatabase, *testing.T, log.Logger, creden
 			biz.NewIndexConfig,
 			newAttestationBundleCache,
 			newNilCASClient,
+			newNoopTracerProvider,
 		),
 	)
 }
@@ -102,6 +105,10 @@ func newJWTConfig(conf *conf.Auth) *biz.APITokenJWTConfig {
 // newNatsReloadableConnection returns nil in tests (NATS is not available).
 func newNatsReloadableConnection() *natsconn.ReloadableConnection {
 	return nil
+}
+
+func newNoopTracerProvider() trace.TracerProvider {
+	return noop.NewTracerProvider()
 }
 
 func newAuthAllowList(conf *conf.Bootstrap) *pkgConf.AllowList {

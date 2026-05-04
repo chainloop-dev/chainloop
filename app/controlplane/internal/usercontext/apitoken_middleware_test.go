@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -119,15 +120,15 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 					wantToken.RevokedAt = toTimePtr(time.Now())
 				}
 
-				apiTokenRepo.On("FindByID", ctx, wantToken.ID).Return(wantToken, nil)
+				apiTokenRepo.On("FindByID", mock.Anything, wantToken.ID).Return(wantToken, nil)
 			} else if tc.receivedToken {
-				apiTokenRepo.On("FindByID", ctx, wantToken.ID).Maybe().Return(nil, nil)
+				apiTokenRepo.On("FindByID", mock.Anything, wantToken.ID).Maybe().Return(nil, nil)
 			}
 
 			if tc.orgExist {
-				orgRepo.On("FindByID", ctx, wantOrgID).Return(wantOrg, nil)
+				orgRepo.On("FindByID", mock.Anything, wantOrgID).Return(wantOrg, nil)
 			} else if tc.receivedToken {
-				orgRepo.On("FindByID", ctx, wantOrgID).Maybe().Return(nil, nil)
+				orgRepo.On("FindByID", mock.Anything, wantOrgID).Maybe().Return(nil, nil)
 			}
 
 			m := WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)

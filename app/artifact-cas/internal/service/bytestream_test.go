@@ -89,7 +89,8 @@ func (s *bytestreamSuite) TestWrite() {
 		ctx := metadata.NewOutgoingContext(ctx, metadata.Pairs("unauthenticated", "true"))
 		stream, err := s.client.Write(ctx)
 		s.NoError(err)
-		s.NoError(stream.Send(&bytestream.WriteRequest{}))
+		// Send may race with the server closing the stream; ignore its error
+		_ = stream.Send(&bytestream.WriteRequest{})
 		_, err = stream.CloseAndRecv()
 		assertGRPCError(t, err, codes.Unauthenticated, "missing authentication")
 	})
@@ -101,7 +102,7 @@ func (s *bytestreamSuite) TestWrite() {
 
 		stream, err := s.client.Write(ctx)
 		s.NoError(err)
-		s.NoError(stream.Send(&bytestream.WriteRequest{}))
+		_ = stream.Send(&bytestream.WriteRequest{})
 		_, err = stream.CloseAndRecv()
 		assertGRPCError(t, err, codes.Unauthenticated, "invalid role")
 	})
@@ -109,7 +110,7 @@ func (s *bytestreamSuite) TestWrite() {
 	s.T().Run("missing resource name", func(t *testing.T) {
 		stream, err := s.client.Write(ctx)
 		s.NoError(err)
-		s.NoError(stream.Send(&bytestream.WriteRequest{}))
+		_ = stream.Send(&bytestream.WriteRequest{})
 		_, err = stream.CloseAndRecv()
 		assertGRPCError(t, err, codes.InvalidArgument, "resourceName must be set")
 	})
@@ -117,7 +118,7 @@ func (s *bytestreamSuite) TestWrite() {
 	s.T().Run("wrong resource name", func(t *testing.T) {
 		stream, err := s.client.Write(ctx)
 		s.NoError(err)
-		s.NoError(stream.Send(&bytestream.WriteRequest{ResourceName: "wrong"}))
+		_ = stream.Send(&bytestream.WriteRequest{ResourceName: "wrong"})
 		_, err = stream.CloseAndRecv()
 		assertGRPCError(t, err, codes.InvalidArgument, "resourceName must be set")
 	})

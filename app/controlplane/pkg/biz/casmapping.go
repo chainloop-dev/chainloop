@@ -22,12 +22,15 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 )
+
+var casMappingTracer = otelx.Tracer("chainloop-controlplane", "biz/casmapping")
 
 type CASMapping struct {
 	ID, OrgID, WorkflowRunID uuid.UUID
@@ -68,6 +71,9 @@ type CASMappingCreateOpts struct {
 
 // Create a mapping with an optional workflow run id
 func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBackendID string, opts *CASMappingCreateOpts) (*CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.Create")
+	defer span.End()
+
 	casBackendUUID, err := uuid.Parse(casBackendID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -82,6 +88,9 @@ func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBacke
 }
 
 func (uc *CASMappingUseCase) FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.FindByDigest")
+	defer span.End()
+
 	return uc.repo.FindByDigest(ctx, digest)
 }
 
@@ -91,6 +100,9 @@ func (uc *CASMappingUseCase) FindByDigest(ctx context.Context, digest string) ([
 // 1.1 If there are multiple mappings, it will pick the default one or the first one.
 // 2 - Any mapping that is public.
 func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context, digest string, userID string) (*CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.FindCASMappingForDownloadByUser")
+	defer span.End()
+
 	uc.logger.Infow("msg", "finding cas mapping for download", "digest", digest, "user", userID)
 
 	userUUID, err := uuid.Parse(userID)
@@ -114,6 +126,9 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 // FindCASMappingForDownloadByOrg looks for the CAS mapping to download the referenced artifact in one of the passed organizations.
 // The result will get filtered out if RBAC is enabled (projectIDs is not Nil)
 func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (result *CASMapping, err error) {
+	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.FindCASMappingForDownloadByOrg")
+	defer span.End()
+
 	if _, err := cr_v1.NewHash(digest); err != nil {
 		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
 	}

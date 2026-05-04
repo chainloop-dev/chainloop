@@ -24,9 +24,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var casMappingRepoTracer = otelx.Tracer("chainloop-controlplane", "data/casmapping")
 
 type CASMappingRepo struct {
 	data           *Data
@@ -43,6 +46,9 @@ func NewCASMappingRepo(data *Data, cbRepo biz.CASBackendRepo, logger log.Logger)
 }
 
 func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID uuid.UUID, opts *biz.CASMappingCreateOpts) (*biz.CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.Create")
+	defer span.End()
+
 	casBackend, err := r.casBackendrepo.FindByID(ctx, casBackendID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cas backend: %w", err)
@@ -69,6 +75,9 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 }
 
 func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*biz.CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.FindByDigest")
+	defer span.End()
+
 	mappings, err := r.data.DB.CASMapping.Query().
 		Where(casmapping.Digest(digest)).
 		WithCasBackend().
@@ -123,6 +132,9 @@ func (r *CASMappingRepo) findByID(ctx context.Context, id uuid.UUID) (*biz.CASMa
 }
 
 func (r *CASMappingRepo) IsPublic(ctx context.Context, client *ent.Client, runID uuid.UUID) (bool, error) {
+	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.IsPublic")
+	defer span.End()
+
 	// If the workflow run id is not set, the mapping is not public
 	if runID == uuid.Nil {
 		return false, nil

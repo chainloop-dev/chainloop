@@ -28,14 +28,20 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/google/uuid"
 )
 
+var currentOrgTracer = otelx.Tracer("chainloop-controlplane", "middleware/currentorganization")
+
 func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC, membershipsCache cache.Cache[*entities.Membership]) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, currentOrgTracer, "WithCurrentMembershipsMiddleware")
+			defer span.End()
+
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
 			u := entities.CurrentUser(ctx)
 			if u == nil {
@@ -57,6 +63,9 @@ func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC, membersh
 func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, orgUC *biz.OrganizationUseCase, logger *log.Helper) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, currentOrgTracer, "WithCurrentOrganizationMiddleware")
+			defer span.End()
+
 			// Get the current user and return if not found, meaning we are probably coming from an API Token
 			u := entities.CurrentUser(ctx)
 			if u == nil {

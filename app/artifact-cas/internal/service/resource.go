@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/errors"
 )
+
+var resourceTracer = otelx.Tracer("chainloop-cas", "cas/service/resource")
 
 type ResourceService struct {
 	v1.UnimplementedResourceServiceServer
@@ -37,6 +40,9 @@ func NewResourceService(bp backend.Providers, opts ...NewOpt) *ResourceService {
 
 // Return the metadata if an artifact referenced by its content digest
 func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceDescribeRequest) (*v1.ResourceServiceDescribeResponse, error) {
+	ctx, span := otelx.Start(ctx, resourceTracer, "ResourceService.Describe")
+	defer span.End()
+
 	info, err := infoFromAuth(ctx)
 	if err != nil {
 		return nil, err

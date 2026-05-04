@@ -76,7 +76,7 @@ func (s *workflowrunExpirerTestSuite) SetupTest() {
 func (s *workflowrunExpirerTestSuite) TestSweepListError() {
 	assert := assert.New(s.T())
 
-	s.repo.On("ListNotFinishedOlderThan", s.ctx, s.threshold, 100).Return(nil, s.err)
+	s.repo.On("ListNotFinishedOlderThan", mock.Anything, s.threshold, 100).Return(nil, s.err)
 	err := s.useCase.ExpirationSweep(s.ctx, s.threshold)
 	assert.ErrorIs(s.err, err)
 }
@@ -84,20 +84,20 @@ func (s *workflowrunExpirerTestSuite) TestSweepListError() {
 func (s *workflowrunExpirerTestSuite) TestSweepExpireError() {
 	assert := assert.New(s.T())
 
-	s.repo.On("ListNotFinishedOlderThan", s.ctx, s.threshold, 100).Return(s.toExpire, nil)
-	s.repo.On("Expire", s.ctx, s.toExpire[0].ID).Return(s.err)
+	s.repo.On("ListNotFinishedOlderThan", mock.Anything, s.threshold, 100).Return(s.toExpire, nil)
+	s.repo.On("Expire", mock.Anything, s.toExpire[0].ID).Return(s.err)
 	err := s.useCase.ExpirationSweep(s.ctx, s.threshold)
 	assert.Error(err)
 }
 func (s *workflowrunExpirerTestSuite) TestSweepExpireOK() {
 	assert := assert.New(s.T())
 
-	s.repo.On("ListNotFinishedOlderThan", s.ctx, s.threshold, 100).Return(s.toExpire, nil)
+	s.repo.On("ListNotFinishedOlderThan", mock.Anything, s.threshold, 100).Return(s.toExpire, nil)
 
-	s.repo.On("Expire", s.ctx, s.toExpire[0].ID).Return(nil)
-	s.repo.On("Expire", s.ctx, s.toExpire[1].ID).Return(nil)
-	s.prometheusRepo.On("ObserveAttestationIfNeeded", s.ctx, s.toExpire[0], biz.WorkflowRunExpired).Return(true)
-	s.prometheusRepo.On("ObserveAttestationIfNeeded", s.ctx, s.toExpire[1], biz.WorkflowRunExpired).Return(true)
+	s.repo.On("Expire", mock.Anything, s.toExpire[0].ID).Return(nil)
+	s.repo.On("Expire", mock.Anything, s.toExpire[1].ID).Return(nil)
+	s.prometheusRepo.On("ObserveAttestationIfNeeded", mock.Anything, s.toExpire[0], biz.WorkflowRunExpired).Return(true)
+	s.prometheusRepo.On("ObserveAttestationIfNeeded", mock.Anything, s.toExpire[1], biz.WorkflowRunExpired).Return(true)
 
 	err := s.useCase.ExpirationSweep(s.ctx, s.threshold)
 	assert.NoError(err)

@@ -25,6 +25,7 @@ var ProviderSet = wire.NewSet(
 	NewHTTPServer,
 	NewHTTPMetricsServer,
 	NewHTTPProfilerServer,
+	NewTracerProvider,
 	wire.Struct(new(Opts), "*"),
 )
 

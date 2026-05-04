@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,11 +23,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var projectTracer = otelx.Tracer("chainloop-controlplane", "biz/project")
 
 // ProjectsRepo is a repository for projects
 type ProjectsRepo interface {
@@ -180,6 +183,9 @@ func NewProjectsUseCase(logger log.Logger, projectsRepository ProjectsRepo, memb
 
 // FindProjectByReference finds a project by reference, which can be either a project name or a project ID.
 func (uc *ProjectUseCase) FindProjectByReference(ctx context.Context, orgID string, reference *IdentityReference) (*Project, error) {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.FindProjectByReference")
+	defer span.End()
+
 	if reference == nil || orgID == "" {
 		return nil, NewErrValidationStr("orgID or project reference are empty")
 	}
@@ -199,6 +205,9 @@ func (uc *ProjectUseCase) FindProjectByReference(ctx context.Context, orgID stri
 }
 
 func (uc *ProjectUseCase) Create(ctx context.Context, orgID, name string) (*Project, error) {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.Create")
+	defer span.End()
+
 	if name == "" || orgID == "" {
 		return nil, NewErrValidationStr("orgID or project name are empty")
 	}
@@ -226,6 +235,9 @@ func (uc *ProjectUseCase) Create(ctx context.Context, orgID, name string) (*Proj
 
 // ListMembers lists the members of a project with pagination.
 func (uc *ProjectUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, projectRef *IdentityReference, paginationOpts *pagination.OffsetPaginationOpts) ([]*ProjectMembership, int, error) {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.ListMembers")
+	defer span.End()
+
 	if orgID == uuid.Nil {
 		return nil, 0, NewErrValidationStr("organization ID cannot be empty")
 	}
@@ -247,6 +259,9 @@ func (uc *ProjectUseCase) ListMembers(ctx context.Context, orgID uuid.UUID, proj
 
 // ListPendingInvitations retrieves a list of pending invitations for a project.
 func (uc *ProjectUseCase) ListPendingInvitations(ctx context.Context, orgID uuid.UUID, projectRef *IdentityReference, paginationOpts *pagination.OffsetPaginationOpts) ([]*OrgInvitation, int, error) {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.ListPendingInvitations")
+	defer span.End()
+
 	if projectRef == nil {
 		return nil, 0, NewErrValidationStr("project reference cannot be nil")
 	}
@@ -274,6 +289,9 @@ func (uc *ProjectUseCase) ListPendingInvitations(ctx context.Context, orgID uuid
 // AddMemberToProject adds a user or group to a project.
 // Returns AddMemberToProjectResult which indicates whether a membership was created or an invitation was sent.
 func (uc *ProjectUseCase) AddMemberToProject(ctx context.Context, orgID uuid.UUID, opts *AddMemberToProjectOpts) (*AddMemberToProjectResult, error) {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.AddMemberToProject")
+	defer span.End()
+
 	if opts == nil {
 		return nil, NewErrValidationStr("options cannot be nil")
 	}
@@ -468,6 +486,9 @@ func (uc *ProjectUseCase) addGroupToProject(ctx context.Context, orgID uuid.UUID
 
 // RemoveMemberFromProject removes a user or group from a project.
 func (uc *ProjectUseCase) RemoveMemberFromProject(ctx context.Context, orgID uuid.UUID, opts *RemoveMemberFromProjectOpts) error {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.RemoveMemberFromProject")
+	defer span.End()
+
 	if opts == nil {
 		return NewErrValidationStr("options cannot be nil")
 	}
@@ -611,6 +632,9 @@ func (uc *ProjectUseCase) validateAndResolveProject(ctx context.Context, orgID u
 
 // ValidateProjectIdentifier validates and resolves the project reference to a project ID.
 func (uc *ProjectUseCase) ValidateProjectIdentifier(ctx context.Context, orgID uuid.UUID, projectRef *IdentityReference) (uuid.UUID, error) {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.ValidateProjectIdentifier")
+	defer span.End()
+
 	if projectRef == nil {
 		return uuid.Nil, NewErrValidationStr("project reference cannot be nil")
 	}
@@ -699,6 +723,9 @@ func getProjectsWithMembershipInOrg(orgID uuid.UUID, memberships []*Membership) 
 
 // UpdateMemberRole updates the role of a user or group in a project.
 func (uc *ProjectUseCase) UpdateMemberRole(ctx context.Context, orgID uuid.UUID, opts *UpdateMemberRoleOpts) error {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.UpdateMemberRole")
+	defer span.End()
+
 	if opts == nil {
 		return NewErrValidationStr("options cannot be nil")
 	}

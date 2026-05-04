@@ -32,9 +32,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var workflowRunRepoTracer = otelx.Tracer("chainloop-controlplane", "data/workflowrun")
 
 type WorkflowRunRepo struct {
 	data *Data
@@ -49,6 +52,9 @@ func NewWorkflowRunRepo(data *Data, logger log.Logger) biz.WorkflowRunRepo {
 }
 
 func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoCreateOpts) (*biz.WorkflowRunRepoCreateResult, error) {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.Create")
+	defer span.End()
+
 	// Make this outside of the transaction to reduce the size of the blocking transaction
 	wf, err := r.data.DB.Workflow.Get(ctx, opts.WorkflowID)
 	if err != nil {
@@ -168,6 +174,9 @@ func eagerLoadWorkflowRun(client *ent.Client) *ent.WorkflowRunQuery {
 }
 
 func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.FindByID")
+	defer span.End()
+
 	run, err := eagerLoadWorkflowRun(r.data.DB).Where(workflowrun.ID(id)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -179,6 +188,9 @@ func (r *WorkflowRunRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Work
 }
 
 func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest string) (*biz.WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.FindByAttestationDigest")
+	defer span.End()
+
 	run, err := eagerLoadWorkflowRun(r.data.DB).Where(workflowrun.AttestationDigest(digest)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -190,6 +202,9 @@ func (r *WorkflowRunRepo) FindByAttestationDigest(ctx context.Context, digest st
 }
 
 func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID) (*biz.WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.FindByIDInOrg")
+	defer span.End()
+
 	run, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().Where(workflowrun.ID(id)).
@@ -207,6 +222,9 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 // SaveAttestationBundle persists the attestation digest on the workflow run and the bundle bytes
 // in the linked attestation row within a single transaction.
 func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUID, digest string, bundle []byte) error {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.SaveAttestationBundle")
+	defer span.End()
+
 	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		if err := tx.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
 			if ent.IsNotFound(err) {
@@ -226,6 +244,9 @@ func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUI
 // legacy has_policy_violations bool (kept populated for back-compat with older
 // clients still reading WorkflowRunItem.has_policy_violations).
 func (r *WorkflowRunRepo) UpdatePolicyStatus(ctx context.Context, id uuid.UUID, summary *chainloop.PolicyStatusSummary) error {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.UpdatePolicyStatus")
+	defer span.End()
+
 	if summary == nil {
 		return errors.New("policy status summary is required")
 	}
@@ -297,6 +318,9 @@ func entToPolicyStatus(s workflowrun.PolicyStatus) chainloop.PolicyStatus {
 }
 
 func (r *WorkflowRunRepo) GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error) {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.GetBundle")
+	defer span.End()
+
 	att, err := r.data.DB.Attestation.Query().Where(attestation.WorkflowrunID(wrID)).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -308,6 +332,9 @@ func (r *WorkflowRunRepo) GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte
 }
 
 func (r *WorkflowRunRepo) MarkAsFinished(ctx context.Context, id uuid.UUID, status biz.WorkflowRunStatus, reason string) error {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.MarkAsFinished")
+	defer span.End()
+
 	run, err := r.data.DB.WorkflowRun.Query().Where(workflowrun.ID(id)).WithWorkflow().First(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to find workflow run: %w", err)
@@ -322,6 +349,9 @@ func (r *WorkflowRunRepo) MarkAsFinished(ctx context.Context, id uuid.UUID, stat
 
 // List the runs in an organization, optionally filtered out by workflow
 func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *biz.RunListFilters, p *pagination.CursorOptions) (result []*biz.WorkflowRun, cursor string, err error) {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.List")
+	defer span.End()
+
 	if p == nil {
 		return nil, "", errors.New("pagination options is required")
 	}
@@ -421,6 +451,9 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 }
 
 func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderThan time.Time, limit int) ([]*biz.WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.ListNotFinishedOlderThan")
+	defer span.End()
+
 	q := r.data.DB.WorkflowRun.Query().WithWorkflow().Where(workflowrun.CreatedAtLTE(olderThan)).Where(workflowrun.StateEQ(biz.WorkflowRunInitialized))
 	if limit > 0 {
 		q = q.Limit(limit)
@@ -447,6 +480,9 @@ func (r *WorkflowRunRepo) ListNotFinishedOlderThan(ctx context.Context, olderTha
 }
 
 func (r *WorkflowRunRepo) Expire(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.Expire")
+	defer span.End()
+
 	return r.data.DB.WorkflowRun.UpdateOneID(id).SetState(biz.WorkflowRunExpired).ClearAttestationState().Exec(ctx)
 }
 

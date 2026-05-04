@@ -23,9 +23,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var projectVersionRepoTracer = otelx.Tracer("chainloop-controlplane", "data/projectversion")
 
 type ProjectVersionRepo struct {
 	data *Data
@@ -40,6 +43,9 @@ func NewProjectVersionRepo(data *Data, logger log.Logger) biz.ProjectVersionRepo
 }
 
 func (r *ProjectVersionRepo) FindByProjectAndVersion(ctx context.Context, projectID uuid.UUID, version string) (*biz.ProjectVersion, error) {
+	ctx, span := otelx.Start(ctx, projectVersionRepoTracer, "ProjectVersionRepo.FindByProjectAndVersion")
+	defer span.End()
+
 	pv, err := r.data.DB.ProjectVersion.Query().Where(projectversion.HasProjectWith(project.ID(projectID)), projectversion.VersionEQ(version)).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -51,6 +57,9 @@ func (r *ProjectVersionRepo) FindByProjectAndVersion(ctx context.Context, projec
 }
 
 func (r *ProjectVersionRepo) Update(ctx context.Context, id uuid.UUID, updates *biz.ProjectVersionUpdateOpts) (*biz.ProjectVersion, error) {
+	ctx, span := otelx.Start(ctx, projectVersionRepoTracer, "ProjectVersionRepo.Update")
+	defer span.End()
+
 	if updates == nil {
 		updates = &biz.ProjectVersionUpdateOpts{}
 	}
@@ -92,6 +101,9 @@ func (r *ProjectVersionRepo) Update(ctx context.Context, id uuid.UUID, updates *
 }
 
 func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, version string, prerelease bool) (*biz.ProjectVersion, error) {
+	ctx, span := otelx.Start(ctx, projectVersionRepoTracer, "ProjectVersionRepo.Create")
+	defer span.End()
+
 	var res *ent.ProjectVersion
 	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		var err error

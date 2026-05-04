@@ -20,9 +20,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var apiTokenStaleRevokerTracer = otelx.Tracer("chainloop-controlplane", "biz/apitoken_stale_revoker")
 
 const defaultSweepInterval = 1 * time.Hour
 
@@ -55,6 +58,9 @@ func NewAPITokenStaleRevoker(orgRepo OrganizationRepo, tokenRepo APITokenRepo, t
 
 // Start begins the periodic sweep loop.
 func (r *APITokenStaleRevoker) Start(ctx context.Context, opts *APITokenStaleRevokerOpts) {
+	ctx, span := otelx.Start(ctx, apiTokenStaleRevokerTracer, "APITokenStaleRevoker.Start")
+	defer span.End()
+
 	interval := defaultSweepInterval
 	if opts != nil && opts.CheckInterval > 0 {
 		interval = opts.CheckInterval
@@ -99,6 +105,9 @@ func (r *APITokenStaleRevoker) Start(ctx context.Context, opts *APITokenStaleRev
 
 // Sweep finds organizations with a token inactivity threshold and revokes their stale tokens.
 func (r *APITokenStaleRevoker) Sweep(ctx context.Context) error {
+	ctx, span := otelx.Start(ctx, apiTokenStaleRevokerTracer, "APITokenStaleRevoker.Sweep")
+	defer span.End()
+
 	orgs, err := r.orgRepo.FindWithTokenInactivityThreshold(ctx)
 	if err != nil {
 		return fmt.Errorf("finding organizations with inactivity threshold: %w", err)

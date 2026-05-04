@@ -23,9 +23,12 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var organizationRepoTracer = otelx.Tracer("chainloop-controlplane", "data/organization")
 
 type OrganizationRepo struct {
 	data *Data
@@ -40,6 +43,9 @@ func NewOrganizationRepo(data *Data, logger log.Logger) biz.OrganizationRepo {
 }
 
 func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationRepoTracer, "OrganizationRepo.Create")
+	defer span.End()
+
 	org, err := r.data.DB.Organization.Create().
 		SetName(name).
 		Save(ctx)
@@ -55,6 +61,9 @@ func (r *OrganizationRepo) Create(ctx context.Context, name string) (*biz.Organi
 }
 
 func (r *OrganizationRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationRepoTracer, "OrganizationRepo.FindByID")
+	defer span.End()
+
 	org, err := r.data.DB.Organization.Query().Where(organization.ID(id), organization.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -67,6 +76,9 @@ func (r *OrganizationRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Org
 
 // FindByName finds an organization by name.
 func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationRepoTracer, "OrganizationRepo.FindByName")
+	defer span.End()
+
 	org, err := r.data.DB.Organization.Query().Where(organization.NameEQ(name), organization.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -78,6 +90,9 @@ func (r *OrganizationRepo) FindByName(ctx context.Context, name string) (*biz.Or
 }
 
 func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, updateOpts *biz.OrganizationUpdateOpts) (*biz.Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationRepoTracer, "OrganizationRepo.Update")
+	defer span.End()
+
 	if updateOpts == nil {
 		updateOpts = &biz.OrganizationUpdateOpts{}
 	}
@@ -112,6 +127,9 @@ func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, updateOpts 
 
 // FindWithTokenInactivityThreshold returns organizations that have the api_token_inactivity_threshold_days set.
 func (r *OrganizationRepo) FindWithTokenInactivityThreshold(ctx context.Context) ([]*biz.Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationRepoTracer, "OrganizationRepo.FindWithTokenInactivityThreshold")
+	defer span.End()
+
 	orgs, err := r.data.DB.Organization.Query().
 		Where(
 			organization.APITokenInactivityThresholdDaysNotNil(),
@@ -131,6 +149,9 @@ func (r *OrganizationRepo) FindWithTokenInactivityThreshold(ctx context.Context)
 
 // Delete soft-deletes an organization by ID.
 func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, organizationRepoTracer, "OrganizationRepo.Delete")
+	defer span.End()
+
 	return r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
 		SetDeletedAt(time.Now()).
@@ -140,6 +161,9 @@ func (r *OrganizationRepo) Delete(ctx context.Context, id uuid.UUID) error {
 
 // SetSuspended sets or clears the suspended flag on an organization.
 func (r *OrganizationRepo) SetSuspended(ctx context.Context, id uuid.UUID, suspended bool) error {
+	ctx, span := otelx.Start(ctx, organizationRepoTracer, "OrganizationRepo.SetSuspended")
+	defer span.End()
+
 	return r.data.DB.Organization.UpdateOneID(id).
 		Where(organization.DeletedAtIsNil()).
 		SetSuspended(suspended).

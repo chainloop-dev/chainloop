@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,11 +29,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )
+
+var workflowContractRepoTracer = otelx.Tracer("chainloop-controlplane", "data/workflowcontract")
 
 type WorkflowContractRepo struct {
 	data *Data
@@ -51,6 +54,9 @@ func NewWorkflowContractRepo(data *Data, logger log.Logger) biz.WorkflowContract
 // If no project filters are provided, we return all the contracts scoped to the organization
 // otherwise we return the global contracts alongside the org scoped projects
 func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.WorkflowContractListFilters) ([]*biz.WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.List")
+	defer span.End()
+
 	wcontractQuery := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflowContracts().
 		Where(workflowcontract.DeletedAtIsNil())
@@ -98,6 +104,9 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID, filter
 }
 
 func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCreateOpts) (*biz.WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.Create")
+	defer span.End()
+
 	var (
 		contract *ent.WorkflowContract
 		version  *ent.WorkflowContractVersion
@@ -145,6 +154,9 @@ func (r *WorkflowContractRepo) addCreateToTx(ctx context.Context, tx *ent.Tx, op
 }
 
 func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uuid.UUID) (*biz.WorkflowContractWithVersion, error) {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.FindVersionByID")
+	defer span.End()
+
 	// .Get(ctx, versionID) is an alias to .Query().Where(workflowcontractversion.ID(versionID)).Only(ctx)
 	version, err := r.data.DB.WorkflowContractVersion.Query().Where(workflowcontractversion.ID(versionID)).WithContract().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -165,6 +177,9 @@ func (r *WorkflowContractRepo) FindVersionByID(ctx context.Context, versionID uu
 }
 
 func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...biz.ContractQueryOpt) (*biz.WorkflowContractWithVersion, error) {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.Describe")
+	defer span.End()
+
 	contract, err := contractInOrg(ctx, r.data.DB, orgID, &contractID, nil, opts...)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -216,6 +231,9 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 // Update will add a new version of the contract.
 // NOTE: ContractVersions are immutable
 func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name string, opts *biz.ContractUpdateOpts) (*biz.WorkflowContractWithVersion, error) {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.Update")
+	defer span.End()
+
 	contract, err := contractInOrg(ctx, r.data.DB, orgID, nil, &name)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -286,6 +304,9 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 }
 
 func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contractID uuid.UUID) (*biz.WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.FindByIDInOrg")
+	defer span.End()
+
 	contract, err := contractInOrg(ctx, r.data.DB, orgID, &contractID, nil)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -307,6 +328,9 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 }
 
 func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.WorkflowContract, error) {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.FindByNameInOrg")
+	defer span.End()
+
 	contract, err := contractInOrg(ctx, r.data.DB, orgID, nil, &name)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to find contract: %w", err)
@@ -328,6 +352,9 @@ func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.U
 }
 
 func (r *WorkflowContractRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.SoftDelete")
+	defer span.End()
+
 	return r.data.DB.WorkflowContract.UpdateOneID(id).SetDeletedAt(time.Now()).SetUpdatedAt(time.Now()).Exec(ctx)
 }
 

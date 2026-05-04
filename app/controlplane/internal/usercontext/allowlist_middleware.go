@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 )
+
+var allowlistTracer = otelx.Tracer("chainloop-controlplane", "middleware/allowlist")
 
 // Middleware that checks that the user has access to the current route
 // Note that the source of truth is in the end the property set in the DB
@@ -34,6 +37,9 @@ import (
 func CheckUserHasAccess(allowList *conf.AllowList, userUC biz.UserOrgFinder) middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx, span := otelx.Start(ctx, allowlistTracer, "CheckUserHasAccess")
+			defer span.End()
+
 			// API tokens skip the allowlist since they are meant to represent a service
 			if token := entities.CurrentAPIToken(ctx); token != nil {
 				return handler(ctx, req)

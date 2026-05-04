@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -29,6 +30,8 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+var workflowTracer = otelx.Tracer("chainloop-controlplane", "biz/workflow")
 
 type Workflow struct {
 	Name, Description, Team, Project string
@@ -134,6 +137,9 @@ func NewWorkflowUsecase(wfr WorkflowRepo, projectsRepo ProjectsRepo, schemaUC *W
 }
 
 func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts) (*Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.Create")
+	defer span.End()
+
 	if opts.Name == "" {
 		return nil, errors.New("workflow name is required")
 	}
@@ -248,6 +254,9 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 }
 
 func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string, opts *WorkflowUpdateOpts) (*Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.Update")
+	defer span.End()
+
 	if opts == nil {
 		return nil, NewErrValidationStr("no updates provided")
 	}
@@ -294,6 +303,7 @@ func (uc *WorkflowUseCase) Update(ctx context.Context, orgID, workflowID string,
 	// Dispatch events to the audit log regarding the workflow
 	uc.handleWorkflowUpdateEvents(ctx, wf, preUpdateWorkflow, opts, wfContract, orgUUID)
 
+	otelx.RecordError(span, err)
 	return wf, err
 }
 
@@ -371,6 +381,9 @@ func (uc *WorkflowUseCase) findOrCreateContract(ctx context.Context, orgID, name
 
 // List returns a list of workflows and the total count of workflows
 func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, filterOpts *WorkflowListOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Workflow, int, error) {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.List")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, 0, NewErrInvalidUUID(err)
@@ -385,6 +398,9 @@ func (uc *WorkflowUseCase) List(ctx context.Context, orgID string, filterOpts *W
 }
 
 func (uc *WorkflowUseCase) IncRunsCounter(ctx context.Context, workflowID string) error {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.IncRunsCounter")
+	defer span.End()
+
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -394,6 +410,9 @@ func (uc *WorkflowUseCase) IncRunsCounter(ctx context.Context, workflowID string
 }
 
 func (uc *WorkflowUseCase) FindByID(ctx context.Context, workflowID string) (*Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.FindByID")
+	defer span.End()
+
 	workflowUUID, err := uuid.Parse(workflowID)
 	if err != nil {
 		return nil, err
@@ -403,6 +422,9 @@ func (uc *WorkflowUseCase) FindByID(ctx context.Context, workflowID string) (*Wo
 }
 
 func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID string) (*Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.FindByIDInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -424,6 +446,9 @@ func (uc *WorkflowUseCase) FindByIDInOrg(ctx context.Context, orgID, workflowID 
 }
 
 func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, projectName, workflowName string) (*Workflow, error) {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.FindByNameInOrg")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -445,6 +470,9 @@ func (uc *WorkflowUseCase) FindByNameInOrg(ctx context.Context, orgID, projectNa
 
 // Delete soft-deletes the entry
 func (uc *WorkflowUseCase) Delete(ctx context.Context, orgID, workflowID string) error {
+	ctx, span := otelx.Start(ctx, workflowTracer, "WorkflowUseCase.Delete")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return NewErrInvalidUUID(err)

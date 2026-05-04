@@ -25,11 +25,14 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/moby/moby/pkg/namesgenerator"
 )
+
+var organizationTracer = otelx.Tracer("chainloop-controlplane", "biz/organization")
 
 type Organization struct {
 	ID, Name  string
@@ -126,6 +129,9 @@ func WithCreateInlineBackend() CreateOpt {
 }
 
 func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ...CreateOpt) (*Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationTracer, "OrganizationUseCase.CreateWithRandomName")
+	defer span.End()
+
 	// Try 10 times to create a random name
 	for i := 0; i < RandomNameMaxTries; i++ {
 		// Create a random name
@@ -153,6 +159,9 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ..
 
 // Create an organization with the given name
 func (uc *OrganizationUseCase) Create(ctx context.Context, name string, opts ...CreateOpt) (*Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationTracer, "OrganizationUseCase.Create")
+	defer span.End()
+
 	org, err := uc.doCreate(ctx, name, opts...)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
@@ -211,6 +220,9 @@ func (uc *OrganizationUseCase) doCreate(ctx context.Context, name string, opts .
 }
 
 func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName string, opts *OrganizationUpdateOpts) (*Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationTracer, "OrganizationUseCase.Update")
+	defer span.End()
+
 	if opts == nil {
 		opts = &OrganizationUpdateOpts{}
 	}
@@ -245,6 +257,9 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 }
 
 func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationTracer, "OrganizationUseCase.FindByID")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
@@ -261,6 +276,9 @@ func (uc *OrganizationUseCase) FindByID(ctx context.Context, id string) (*Organi
 }
 
 func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Organization, error) {
+	ctx, span := otelx.Start(ctx, organizationTracer, "OrganizationUseCase.FindByName")
+	defer span.End()
+
 	org, err := uc.orgRepo.FindByName(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find organization: %w", err)
@@ -273,6 +291,9 @@ func (uc *OrganizationUseCase) FindByName(ctx context.Context, name string) (*Or
 
 // Delete soft-deletes an organization and all relevant data
 func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
+	ctx, span := otelx.Start(ctx, organizationTracer, "OrganizationUseCase.Delete")
+	defer span.End()
+
 	orgUUID, err := uuid.Parse(id)
 	if err != nil {
 		return NewErrInvalidUUID(err)
@@ -306,6 +327,9 @@ func (uc *OrganizationUseCase) Delete(ctx context.Context, id string) error {
 // AutoOnboardOrganizations creates the organizations specified in the onboarding config and assigns the user to them
 // with the specified role if they are not already a member.
 func (uc *OrganizationUseCase) AutoOnboardOrganizations(ctx context.Context, userID string) error {
+	ctx, span := otelx.Start(ctx, organizationTracer, "OrganizationUseCase.AutoOnboardOrganizations")
+	defer span.End()
+
 	// Parse user UUID
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
