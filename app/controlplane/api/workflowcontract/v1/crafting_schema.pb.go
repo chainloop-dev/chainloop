@@ -210,6 +210,15 @@ const (
 	CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG CraftingSchema_Material_MaterialType = 28
 	// AI coding session telemetry collected during attestation
 	CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION CraftingSchema_Material_MaterialType = 29
+	// OpenAPI specification (v3.0, v3.1)
+	// https://spec.openapis.org/oas/latest.html
+	CraftingSchema_Material_OPENAPI_SPEC CraftingSchema_Material_MaterialType = 30
+	// AsyncAPI specification (v2.6, v3.0)
+	// https://www.asyncapi.com/docs/reference/specification/latest
+	CraftingSchema_Material_ASYNCAPI_SPEC CraftingSchema_Material_MaterialType = 31
+	// GraphQL SDL schema
+	// https://spec.graphql.org/
+	CraftingSchema_Material_GRAPHQL_SPEC CraftingSchema_Material_MaterialType = 32
 )
 
 // Enum value maps for CraftingSchema_Material_MaterialType.
@@ -245,6 +254,9 @@ var (
 		27: "GITLEAKS_JSON",
 		28: "CHAINLOOP_AI_AGENT_CONFIG",
 		29: "CHAINLOOP_AI_CODING_SESSION",
+		30: "OPENAPI_SPEC",
+		31: "ASYNCAPI_SPEC",
+		32: "GRAPHQL_SPEC",
 	}
 	CraftingSchema_Material_MaterialType_value = map[string]int32{
 		"MATERIAL_TYPE_UNSPECIFIED":       0,
@@ -277,6 +289,9 @@ var (
 		"GITLEAKS_JSON":                   27,
 		"CHAINLOOP_AI_AGENT_CONFIG":       28,
 		"CHAINLOOP_AI_CODING_SESSION":     29,
+		"OPENAPI_SPEC":                    30,
+		"ASYNCAPI_SPEC":                   31,
+		"GRAPHQL_SPEC":                    32,
 	}
 )
 
@@ -1938,7 +1953,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xea\x0e\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xa1\x0f\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -1960,7 +1975,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0eCIRCLECI_BUILD\x10\x05\x12\x13\n" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
 	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
-	"\x0fTEKTON_PIPELINE\x10\b:\x02\x18\x01\x1a\xcc\b\n" +
+	"\x0fTEKTON_PIPELINE\x10\b:\x02\x18\x01\x1a\x83\t\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
@@ -1969,7 +1984,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\bB\x02\x18\x01R\x06output\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12\x1f\n" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
-	"skipUpload\"\x9e\x05\n" +
+	"skipUpload\"\xd5\x05\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -2004,7 +2019,10 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x11CHAINLOOP_PR_INFO\x10\x1a\x12\x11\n" +
 	"\rGITLEAKS_JSON\x10\x1b\x12\x1d\n" +
 	"\x19CHAINLOOP_AI_AGENT_CONFIG\x10\x1c\x12\x1f\n" +
-	"\x1bCHAINLOOP_AI_CODING_SESSION\x10\x1d:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
+	"\x1bCHAINLOOP_AI_CODING_SESSION\x10\x1d\x12\x10\n" +
+	"\fOPENAPI_SPEC\x10\x1e\x12\x11\n" +
+	"\rASYNCAPI_SPEC\x10\x1f\x12\x10\n" +
+	"\fGRAPHQL_SPEC\x10 :\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
 	"\x10CraftingSchemaV2\x128\n" +
 	"\vapi_version\x18\x01 \x01(\tB\x17\xbaH\x14r\x12\n" +
 	"\x10chainloop.dev/v1R\n" +

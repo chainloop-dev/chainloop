@@ -1,0 +1,24 @@
+directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ENUM_VALUE
+directive @auth(requires: Role!) on FIELD_DEFINITION
+
+enum Role {
+  ADMIN
+  USER
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  role: Role!
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+  author: User!
+  createdAt: String!
+  oldField: String @deprecated(reason: "Use newField instead")
+}

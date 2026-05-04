@@ -65,7 +65,10 @@
             "CHAINLOOP_PR_INFO",
             "GITLEAKS_JSON",
             "CHAINLOOP_AI_AGENT_CONFIG",
-            "CHAINLOOP_AI_CODING_SESSION"
+            "CHAINLOOP_AI_CODING_SESSION",
+            "OPENAPI_SPEC",
+            "ASYNCAPI_SPEC",
+            "GRAPHQL_SPEC"
           ],
           "title": "Material Type",
           "type": "string"

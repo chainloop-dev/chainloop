@@ -315,6 +315,87 @@ func TestValidateAICodingSession(t *testing.T) {
 	}
 }
 
+func TestValidateOpenAPI(t *testing.T) {
+	testCases := []struct {
+		name    string
+		data    any
+		wantErr string
+	}{
+		{
+			name:    "invalid data type",
+			data:    "not a map",
+			wantErr: "expected object, but got string",
+		},
+		{
+			name: "missing required fields",
+			data: map[string]any{
+				"openapi": "3.0.3",
+			},
+			wantErr: "missing properties",
+		},
+		{
+			name: "valid OpenAPI 3.0 spec",
+			data: loadJSONFile(t, "./testdata/openapi-3.0.json"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := schemavalidators.ValidateOpenAPI(tc.data)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestValidateAsyncAPI(t *testing.T) {
+	testCases := []struct {
+		name    string
+		data    any
+		wantErr string
+	}{
+		{
+			name:    "invalid data type",
+			data:    "not a map",
+			wantErr: "expected object, but got string",
+		},
+		{
+			name: "missing required fields",
+			data: map[string]any{
+				"asyncapi": "2.6.0",
+			},
+			wantErr: "missing properties",
+		},
+		{
+			name: "valid AsyncAPI 2.6 spec",
+			data: loadJSONFile(t, "./testdata/asyncapi-2.6.json"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := schemavalidators.ValidateAsyncAPI(tc.data)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func loadJSONFile(t *testing.T, path string) any {
+	t.Helper()
+	f, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var v any
+	require.NoError(t, json.Unmarshal(f, &v))
+	return v
+}
+
 func TestValidateAIAgentConfig(t *testing.T) {
 	testCases := []struct {
 		name     string

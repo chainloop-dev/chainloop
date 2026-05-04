@@ -1,0 +1,35 @@
+{
+  "asyncapi": "2.6.0",
+  "info": {
+    "title": "User Signup Service",
+    "version": "1.0.0",
+    "description": "A sample AsyncAPI spec for testing"
+  },
+  "channels": {
+    "user/signedup": {
+      "subscribe": {
+        "message": {
+          "payload": {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": {
+    "production": {
+      "url": "broker.example.com",
+      "protocol": "amqp",
+      "description": "Production broker"
+    }
+  }
+}

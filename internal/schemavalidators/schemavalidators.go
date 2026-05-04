@@ -36,6 +36,12 @@ type CycloneDXVersion string
 // CSAFVersion represents the version of CSAF schema.
 type CSAFVersion string
 
+// OpenAPIVersion represents the version of OpenAPI schema.
+type OpenAPIVersion string
+
+// AsyncAPIVersion represents the version of AsyncAPI schema.
+type AsyncAPIVersion string
+
 // RunnerContextVersion represents the version of Runner Context schema.
 type RunnerContextVersion string
 
@@ -71,6 +77,14 @@ const (
 	AIAgentConfigVersion0_1 AIAgentConfigVersion = "0.1"
 	// AICodingSessionVersion0_1 represents AI Coding Session version 0.1 schema.
 	AICodingSessionVersion0_1 AICodingSessionVersion = "0.1"
+	// OpenAPIVersion3_0 represents OpenAPI version 3.0 schema.
+	OpenAPIVersion3_0 OpenAPIVersion = "3.0"
+	// OpenAPIVersion3_1 represents OpenAPI version 3.1 schema.
+	OpenAPIVersion3_1 OpenAPIVersion = "3.1"
+	// AsyncAPIVersion2_6 represents AsyncAPI version 2.6 schema.
+	AsyncAPIVersion2_6 AsyncAPIVersion = "2.6"
+	// AsyncAPIVersion3_0 represents AsyncAPI version 3.0 schema.
+	AsyncAPIVersion3_0 AsyncAPIVersion = "3.0"
 )
 
 var (
@@ -119,6 +133,18 @@ var (
 	// AI Coding Session schemas
 	//go:embed internal_schemas/aicodingsession/ai-coding-session-0.1.schema.json
 	aiCodingSessionSpecVersion0_1 string
+
+	// OpenAPI schemas
+	//go:embed external_schemas/openapi/openapi-3.0.schema.json
+	openapiSpecVersion3_0 string
+	//go:embed external_schemas/openapi/openapi-3.1.schema.json
+	openapiSpecVersion3_1 string
+
+	// AsyncAPI schemas
+	//go:embed external_schemas/asyncapi/asyncapi-2.6.0.schema.json
+	asyncapiSpecVersion2_6 string
+	//go:embed external_schemas/asyncapi/asyncapi-3.0.0.schema.json
+	asyncapiSpecVersion3_0 string
 )
 
 var (
@@ -134,6 +160,10 @@ var (
 	aiAgentConfigOnce              sync.Once
 	compiledAICodingSessionSchemas map[AICodingSessionVersion]*jsonschema.Schema
 	aiCodingSessionOnce            sync.Once
+	compiledOpenAPISchemas         map[OpenAPIVersion]*jsonschema.Schema
+	openapiOnce                    sync.Once
+	compiledAsyncAPISchemas        map[AsyncAPIVersion]*jsonschema.Schema
+	asyncapiOnce                   sync.Once
 )
 
 func initCycloneDxSchemas() {
@@ -404,6 +434,92 @@ func ValidateAICodingSession(data any, version AICodingSessionVersion) error {
 			return ErrInvalidJSONPayload
 		}
 		return err
+	}
+
+	return nil
+}
+
+func initOpenAPISchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://spec.openapis.org/oas/3.0/schema/2021-09-28", strings.NewReader(openapiSpecVersion3_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://spec.openapis.org/oas/3.0/schema/2021-09-28", err))
+	}
+	if err := compiler.AddResource("https://spec.openapis.org/oas/3.1/schema/2022-10-07", strings.NewReader(openapiSpecVersion3_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://spec.openapis.org/oas/3.1/schema/2022-10-07", err))
+	}
+
+	compiledOpenAPISchemas = map[OpenAPIVersion]*jsonschema.Schema{
+		OpenAPIVersion3_0: compiler.MustCompile("https://spec.openapis.org/oas/3.0/schema/2021-09-28"),
+		OpenAPIVersion3_1: compiler.MustCompile("https://spec.openapis.org/oas/3.1/schema/2022-10-07"),
+	}
+}
+
+func initAsyncAPISchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://chainloop.dev/schemas/asyncapi/2.6.0.json", strings.NewReader(asyncapiSpecVersion2_6)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://chainloop.dev/schemas/asyncapi/2.6.0.json", err))
+	}
+	if err := compiler.AddResource("https://chainloop.dev/schemas/asyncapi/3.0.0.json", strings.NewReader(asyncapiSpecVersion3_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://chainloop.dev/schemas/asyncapi/3.0.0.json", err))
+	}
+
+	compiledAsyncAPISchemas = map[AsyncAPIVersion]*jsonschema.Schema{
+		AsyncAPIVersion2_6: compiler.MustCompile("https://chainloop.dev/schemas/asyncapi/2.6.0.json"),
+		AsyncAPIVersion3_0: compiler.MustCompile("https://chainloop.dev/schemas/asyncapi/3.0.0.json"),
+	}
+}
+
+// ValidateOpenAPI validates the given object against an OpenAPI schema version.
+// It tries 3.1 first, then falls back to 3.0.
+func ValidateOpenAPI(data interface{}) error {
+	openapiOnce.Do(initOpenAPISchemas)
+
+	var errs error
+	err := compiledOpenAPISchemas[OpenAPIVersion3_1].Validate(data)
+	if err != nil {
+		if err := errorIsJSONFormat(err); err != nil {
+			return err
+		}
+		errs = multierror.Append(errs, err)
+	} else {
+		return nil
+	}
+
+	err = compiledOpenAPISchemas[OpenAPIVersion3_0].Validate(data)
+	if err != nil {
+		if err := errorIsJSONFormat(err); err != nil {
+			errs = multierror.Append(errs, err)
+			return errs
+		}
+		return multierror.Append(errs, err)
+	}
+
+	return nil
+}
+
+// ValidateAsyncAPI validates the given object against an AsyncAPI schema version.
+// It tries 3.0 first, then falls back to 2.6.
+func ValidateAsyncAPI(data interface{}) error {
+	asyncapiOnce.Do(initAsyncAPISchemas)
+
+	var errs error
+	err := compiledAsyncAPISchemas[AsyncAPIVersion3_0].Validate(data)
+	if err != nil {
+		if err := errorIsJSONFormat(err); err != nil {
+			return err
+		}
+		errs = multierror.Append(errs, err)
+	} else {
+		return nil
+	}
+
+	err = compiledAsyncAPISchemas[AsyncAPIVersion2_6].Validate(data)
+	if err != nil {
+		if err := errorIsJSONFormat(err); err != nil {
+			errs = multierror.Append(errs, err)
+			return errs
+		}
+		return multierror.Append(errs, err)
 	}
 
 	return nil
