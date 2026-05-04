@@ -257,15 +257,21 @@ All commits must meet these criteria:
 
 Code reviews are required for all submissions via GitHub pull requests.
 
-### AI Disclosure
+### AI Disclosure (REQUIRED)
 
-If AI assisted in producing any part of a contribution, disclose it in the PR description. Add an `Assisted-by:` trailer to each affected commit:
+**This is mandatory, not optional.** If AI assisted in producing any part of a contribution:
 
-```
-Assisted-by: GitHub Copilot
-Assisted-by: Claude Code
-Assisted-by: ChatGPT o3
-```
+1. **Every affected commit** MUST include an `Assisted-by:` trailer in the message body, e.g.:
+
+   ```
+   Assisted-by: GitHub Copilot
+   Assisted-by: Claude Code
+   Assisted-by: ChatGPT o3
+   ```
+
+2. **The PR description** MUST disclose the AI assistance.
+
+Apply this on the *first* commit/PR you create — do not wait for review feedback to add it. If you amend or rebase a commit that previously lacked the trailer, add it as part of the amend.
 
 See [AI_POLICY.md](AI_POLICY.md) for the full AI contribution policy.
 

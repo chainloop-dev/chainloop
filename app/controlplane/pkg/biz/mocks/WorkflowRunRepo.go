@@ -743,6 +743,69 @@ func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
+// SaveAttestationDigest provides a mock function for the type WorkflowRunRepo
+func (_mock *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, ID uuid.UUID, digest string) error {
+	ret := _mock.Called(ctx, ID, digest)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveAttestationDigest")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, ID, digest)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// WorkflowRunRepo_SaveAttestationDigest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveAttestationDigest'
+type WorkflowRunRepo_SaveAttestationDigest_Call struct {
+	*mock.Call
+}
+
+// SaveAttestationDigest is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ID uuid.UUID
+//   - digest string
+func (_e *WorkflowRunRepo_Expecter) SaveAttestationDigest(ctx interface{}, ID interface{}, digest interface{}) *WorkflowRunRepo_SaveAttestationDigest_Call {
+	return &WorkflowRunRepo_SaveAttestationDigest_Call{Call: _e.mock.On("SaveAttestationDigest", ctx, ID, digest)}
+}
+
+func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string)) *WorkflowRunRepo_SaveAttestationDigest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) Return(err error) *WorkflowRunRepo_SaveAttestationDigest_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string) error) *WorkflowRunRepo_SaveAttestationDigest_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdatePolicyStatus provides a mock function for the type WorkflowRunRepo
 func (_mock *WorkflowRunRepo) UpdatePolicyStatus(ctx context.Context, ID uuid.UUID, summary *chainloop.PolicyStatusSummary) error {
 	ret := _mock.Called(ctx, ID, summary)

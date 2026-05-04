@@ -100,6 +100,10 @@ type WorkflowRunRepo interface {
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
 	SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error
+	// SaveAttestationDigest records the attestation digest on the workflow run
+	// without writing a row in the attestation table. Used when the bundle is
+	// stored exclusively in CAS.
+	SaveAttestationDigest(ctx context.Context, ID uuid.UUID, digest string) error
 	GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error)
 	UpdatePolicyStatus(ctx context.Context, ID uuid.UUID, summary *chainloop.PolicyStatusSummary) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
@@ -343,9 +347,31 @@ func (uc *WorkflowRunUseCase) MarkAsFinished(ctx context.Context, id string, sta
 	return uc.wfRunRepo.MarkAsFinished(ctx, runID, status, reason)
 }
 
-func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte) (*v1.Hash, error) {
+// SaveAttestationOption customises how SaveAttestation persists the bundle.
+type SaveAttestationOption func(*saveAttestationOptions)
+
+type saveAttestationOptions struct {
+	skipBundlePersistence bool
+}
+
+// WithSkipBundlePersistence instructs SaveAttestation to record the digest on
+// the workflow run without writing the bundle bytes to the attestation table.
+// The caller must ensure the bundle is durably stored elsewhere (typically in
+// CAS) before invoking SaveAttestation with this option.
+func WithSkipBundlePersistence() SaveAttestationOption {
+	return func(o *saveAttestationOptions) {
+		o.skipBundlePersistence = true
+	}
+}
+
+func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte, opts ...SaveAttestationOption) (*v1.Hash, error) {
 	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.SaveAttestation")
 	defer span.End()
+
+	options := &saveAttestationOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 
 	runID, err := uuid.Parse(id)
 	if err != nil {
@@ -399,8 +425,14 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		}
 	}
 
-	if err := uc.wfRunRepo.SaveAttestationBundle(ctx, runID, digest.String(), bundle); err != nil {
-		return nil, fmt.Errorf("saving attestation bundle: %w", err)
+	if options.skipBundlePersistence {
+		if err := uc.wfRunRepo.SaveAttestationDigest(ctx, runID, digest.String()); err != nil {
+			return nil, fmt.Errorf("saving attestation digest: %w", err)
+		}
+	} else {
+		if err := uc.wfRunRepo.SaveAttestationBundle(ctx, runID, digest.String(), bundle); err != nil {
+			return nil, fmt.Errorf("saving attestation bundle: %w", err)
+		}
 	}
 
 	// Compute and persist the canonical policy status summary so the list

@@ -178,6 +178,29 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.NoError(err)
 		assert.True(exists)
 	})
+
+	s.Run("WithSkipBundlePersistence stores digest only", func() {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+		})
+		assert.NoError(err)
+
+		d, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), bundleBytes, biz.WithSkipBundlePersistence())
+		assert.NoError(err)
+		assert.Equal(bundleHash, *d)
+
+		// digest is recorded on the workflow run
+		err = s.WorkflowRun.MarkAsFinished(ctx, run.ID.String(), biz.WorkflowRunSuccess, "")
+		assert.NoError(err)
+		stored, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
+		assert.NoError(err)
+		assert.Equal(bundleHash.String(), stored.Attestation.Digest)
+
+		// no row was created in the attestation table
+		exists, err := s.Data.DB.Attestation.Query().Where(attestation2.WorkflowrunID(run.ID)).Exist(ctx)
+		assert.NoError(err)
+		assert.False(exists)
+	})
 }
 
 func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrgOrPublic() {

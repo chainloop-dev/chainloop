@@ -240,6 +240,16 @@ func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUI
 	})
 }
 
+func (r *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, id uuid.UUID, digest string) error {
+	if err := r.data.DB.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
+		if ent.IsNotFound(err) {
+			return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+		}
+		return err
+	}
+	return nil
+}
+
 // UpdatePolicyStatus persists the canonical policy status summary plus the
 // legacy has_policy_violations bool (kept populated for back-compat with older
 // clients still reading WorkflowRunItem.has_policy_violations).

@@ -120,3 +120,6 @@ enable_profiler: true
 #   url: http://localhost:8002/v1/authorize
 
 ui_dashboard_url: http://localhost:3000
+
+attestations:
+  skip_db_storage: true

@@ -123,6 +123,19 @@ message Bootstrap {
 
   // Optional external operation authorization provider
   OperationAuthorizationProvider operation_authorization_provider = 20;
+
+  // Attestation storage and processing options
+  Attestations attestations = 21;
+}
+
+message Attestations {
+  // When true, skip writing the attestation bundle to the per-run row in
+  // the attestation table; the bundle is stored exclusively in the
+  // configured CAS backend. The digest is still recorded on the workflow
+  // run so the bundle can be retrieved from CAS on read. Has no effect
+  // when the workflow run's CAS backend is inline, since inline backends
+  // do not store attestation bundles externally.
+  bool skip_db_storage = 1;
 }
 
 message OperationAuthorizationProvider {
