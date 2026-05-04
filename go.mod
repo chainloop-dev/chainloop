@@ -107,6 +107,8 @@ require (
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20260311181403-84a4fc48630c
 )
 
+require github.com/vektah/gqlparser/v2 v2.5.31
+
 require (
 	cel.dev/expr v0.25.1 // indirect
 	cloud.google.com/go/auth v0.18.2 // indirect
@@ -290,7 +292,6 @@ require (
 	github.com/transparency-dev/formats v0.0.0-20251017110053-404c0d5b696c // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.31 // indirect
 	github.com/wasilibs/go-re2 v1.9.0 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
