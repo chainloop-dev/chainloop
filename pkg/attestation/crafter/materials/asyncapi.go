@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
@@ -124,8 +125,14 @@ func (i *AsyncAPICrafter) injectAnnotations(m *api.Attestation_Material, doc map
 	}
 
 	if servers, ok := doc["servers"].(map[string]interface{}); ok {
-		for _, serverVal := range servers {
-			if server, ok := serverVal.(map[string]interface{}); ok {
+		serverNames := make([]string, 0, len(servers))
+		for name := range servers {
+			serverNames = append(serverNames, name)
+		}
+		sort.Strings(serverNames)
+
+		for _, name := range serverNames {
+			if server, ok := servers[name].(map[string]interface{}); ok {
 				if protocol, ok := server["protocol"].(string); ok && protocol != "" {
 					m.Annotations["chainloop.material.api.protocol"] = protocol
 					break

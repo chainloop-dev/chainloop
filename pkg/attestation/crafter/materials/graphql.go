@@ -73,7 +73,9 @@ func (i *GraphQLCrafter) Craft(ctx context.Context, filepath string) (*api.Attes
 }
 
 func (i *GraphQLCrafter) injectAnnotations(m *api.Attestation_Material, doc *ast.SchemaDocument) {
-	m.Annotations = make(map[string]string)
+	if m.Annotations == nil {
+		m.Annotations = make(map[string]string)
+	}
 
 	m.Annotations["chainloop.material.graphql.type_count"] = strconv.Itoa(len(doc.Definitions))
 

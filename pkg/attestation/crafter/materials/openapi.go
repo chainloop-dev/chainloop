@@ -105,7 +105,9 @@ func (i *OpenAPICrafter) Craft(ctx context.Context, filepath string) (*api.Attes
 }
 
 func (i *OpenAPICrafter) injectAnnotations(m *api.Attestation_Material, doc map[string]interface{}) {
-	m.Annotations = make(map[string]string)
+	if m.Annotations == nil {
+		m.Annotations = make(map[string]string)
+	}
 
 	if specVersion, ok := doc["openapi"].(string); ok && specVersion != "" {
 		m.Annotations[AnnotationToolVersionKey] = specVersion
