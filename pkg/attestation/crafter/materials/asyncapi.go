@@ -112,12 +112,12 @@ func (i *AsyncAPICrafter) injectAnnotations(m *api.Attestation_Material, doc map
 	}
 
 	if specVersion, ok := doc["asyncapi"].(string); ok && specVersion != "" {
-		m.Annotations[AnnotationToolVersionKey] = specVersion
+		m.Annotations["chainloop.material.api.spec_version"] = specVersion
 	}
 
 	if info, ok := doc["info"].(map[string]interface{}); ok {
 		if title, ok := info["title"].(string); ok && title != "" {
-			m.Annotations[AnnotationToolNameKey] = title
+			m.Annotations["chainloop.material.api.name"] = title
 		}
 		if version, ok := info["version"].(string); ok && version != "" {
 			m.Annotations["chainloop.material.api.version"] = version

@@ -116,9 +116,9 @@ func TestOpenAPICraft(t *testing.T) {
 				Type: contractAPI.CraftingSchema_Material_OPENAPI_SPEC,
 			},
 			annotations: map[string]string{
-				"chainloop.material.tool.name":    "Petstore API",
-				"chainloop.material.tool.version": "3.0.3",
-				"chainloop.material.api.version":  "1.0.0",
+				"chainloop.material.api.name":         "Petstore API",
+				"chainloop.material.api.spec_version": "3.0.3",
+				"chainloop.material.api.version":      "1.0.0",
 			},
 		},
 		{
@@ -129,9 +129,9 @@ func TestOpenAPICraft(t *testing.T) {
 				Type: contractAPI.CraftingSchema_Material_OPENAPI_SPEC,
 			},
 			annotations: map[string]string{
-				"chainloop.material.tool.name":    "Bookstore API",
-				"chainloop.material.tool.version": "3.1.0",
-				"chainloop.material.api.version":  "2.0.0",
+				"chainloop.material.api.name":         "Bookstore API",
+				"chainloop.material.api.spec_version": "3.1.0",
+				"chainloop.material.api.version":      "2.0.0",
 			},
 		},
 	}

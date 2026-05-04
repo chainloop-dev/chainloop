@@ -115,10 +115,10 @@ func TestAsyncAPICraft(t *testing.T) {
 				Type: contractAPI.CraftingSchema_Material_ASYNCAPI_SPEC,
 			},
 			annotations: map[string]string{
-				"chainloop.material.tool.name":    "User Signup Service",
-				"chainloop.material.tool.version": "2.6.0",
-				"chainloop.material.api.version":  "1.0.0",
-				"chainloop.material.api.protocol": "amqp",
+				"chainloop.material.api.name":         "User Signup Service",
+				"chainloop.material.api.spec_version": "2.6.0",
+				"chainloop.material.api.version":      "1.0.0",
+				"chainloop.material.api.protocol":     "amqp",
 			},
 		},
 		{
@@ -129,10 +129,10 @@ func TestAsyncAPICraft(t *testing.T) {
 				Type: contractAPI.CraftingSchema_Material_ASYNCAPI_SPEC,
 			},
 			annotations: map[string]string{
-				"chainloop.material.tool.name":    "IoT Sensor Service",
-				"chainloop.material.tool.version": "3.0.0",
-				"chainloop.material.api.version":  "2.0.0",
-				"chainloop.material.api.protocol": "mqtt",
+				"chainloop.material.api.name":         "IoT Sensor Service",
+				"chainloop.material.api.spec_version": "3.0.0",
+				"chainloop.material.api.version":      "2.0.0",
+				"chainloop.material.api.protocol":     "mqtt",
 			},
 		},
 	}
