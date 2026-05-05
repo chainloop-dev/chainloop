@@ -390,7 +390,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	findingType := policy.GetMetadata().GetFindingType()
-	apiViolations, warnings, err := engineEvaluationsToAPIViolations(evalResults, findingType)
+	apiViolations, suppressedFindings, warnings, err := engineEvaluationsToAPIViolations(evalResults, findingType)
 	if err != nil {
 		return nil, NewPolicyError(fmt.Errorf("policy %q: %w", policy.GetMetadata().GetName(), err))
 	}
@@ -405,13 +405,14 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		MaterialName: opts.name,
 		Sources:      evaluationSources,
 		// merge all violations
-		Violations:      apiViolations,
-		Annotations:     policy.GetMetadata().GetAnnotations(),
-		Description:     policy.GetMetadata().GetDescription(),
-		With:            args,
-		Type:            opts.kind,
-		ReferenceName:   ref.GetURI(),
-		ReferenceDigest: ref.GetDigest(),
+		Violations:         apiViolations,
+		SuppressedFindings: suppressedFindings,
+		Annotations:        policy.GetMetadata().GetAnnotations(),
+		Description:        policy.GetMetadata().GetDescription(),
+		With:               args,
+		Type:               opts.kind,
+		ReferenceName:      ref.GetURI(),
+		ReferenceDigest:    ref.GetDigest(),
 		PolicyReference: &v12.PolicyEvaluation_Reference{
 			Name:    policy.GetMetadata().GetName(),
 			Digest:  ref.GetDigest(),
@@ -787,58 +788,87 @@ func splitArgs(s string) []string {
 	return result
 }
 
-func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findingType string) ([]*v12.PolicyEvaluation_Violation, []string, error) {
+func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findingType string) ([]*v12.PolicyEvaluation_Violation, []*v12.PolicyEvaluation_Violation, []string, error) {
 	res := make([]*v12.PolicyEvaluation_Violation, 0)
+	suppressed := make([]*v12.PolicyEvaluation_Violation, 0)
 	var warnings []string
-	warnedNoFindingType := false
-	warnedNoStructuredData := false
+	state := &violationConversionState{}
 
 	for _, r := range results {
 		for _, v := range r.Violations {
-			apiV := &v12.PolicyEvaluation_Violation{
-				Subject: v.Subject,
-				Message: v.Violation,
+			apiV, err := policyViolationToAPI(v, findingType, state, &warnings)
+			if err != nil {
+				return nil, nil, nil, err
 			}
-
-			hasStructuredData := v.RawFinding != nil
-
-			switch {
-			case findingType == "" && !hasStructuredData:
-				// No finding_type, string violation — current behavior
-
-			case findingType == "" && hasStructuredData:
-				if !warnedNoFindingType {
-					warnings = append(warnings,
-						"policy returns structured violation objects but does not declare finding_type in metadata — finding data will be ignored")
-					warnedNoFindingType = true
-				}
-
-			case findingType != "" && !hasStructuredData:
-				// Policy declares a finding type but this violation is a plain string.
-				// This can happen when some evaluation branches do not support structured output yet.
-				// Fall back to treating it as a regular string violation without the typed finding.
-				if !warnedNoStructuredData {
-					warnings = append(warnings,
-						fmt.Sprintf("policy declares finding_type %q but some violations are plain strings — structured finding data will not be available for those", findingType))
-					warnedNoStructuredData = true
-				}
-
-			case findingType != "" && hasStructuredData:
-				finding, err := findings.ValidateFinding(findingType, v.RawFinding)
-				if err != nil {
-					return nil, nil, fmt.Errorf("structured violation validation: %w", err)
-				}
-
-				if err := findings.SetViolationFinding(apiV, findingType, finding); err != nil {
-					return nil, nil, fmt.Errorf("setting violation finding: %w", err)
-				}
-			}
-
 			res = append(res, apiV)
+		}
+
+		// Suppressed findings are disjoint from violations: same per-entry
+		// schema, but kept in their own list so consumers can distinguish
+		// gating violations from informational ones.
+		for _, v := range r.SuppressedFindings {
+			apiV, err := policyViolationToAPI(v, findingType, state, &warnings)
+			if err != nil {
+				return nil, nil, nil, fmt.Errorf("suppressed finding: %w", err)
+			}
+			suppressed = append(suppressed, apiV)
 		}
 	}
 
-	return res, warnings, nil
+	return res, suppressed, warnings, nil
+}
+
+// violationConversionState tracks one-shot warning flags so we don't emit the
+// same advisory message once per violation when converting a result set.
+type violationConversionState struct {
+	warnedNoFindingType    bool
+	warnedNoStructuredData bool
+}
+
+// policyViolationToAPI converts a single engine PolicyViolation to its API
+// counterpart. Used for both regular violations and suppressed findings since
+// the per-entry schema is identical.
+func policyViolationToAPI(v *engine.PolicyViolation, findingType string, state *violationConversionState, warnings *[]string) (*v12.PolicyEvaluation_Violation, error) {
+	apiV := &v12.PolicyEvaluation_Violation{
+		Subject: v.Subject,
+		Message: v.Violation,
+	}
+
+	hasStructuredData := v.RawFinding != nil
+
+	switch {
+	case findingType == "" && !hasStructuredData:
+		// No finding_type, string violation — current behavior
+
+	case findingType == "" && hasStructuredData:
+		if !state.warnedNoFindingType {
+			*warnings = append(*warnings,
+				"policy returns structured violation objects but does not declare finding_type in metadata — finding data will be ignored")
+			state.warnedNoFindingType = true
+		}
+
+	case findingType != "" && !hasStructuredData:
+		// Policy declares a finding type but this violation is a plain string.
+		// This can happen when some evaluation branches do not support structured output yet.
+		// Fall back to treating it as a regular string violation without the typed finding.
+		if !state.warnedNoStructuredData {
+			*warnings = append(*warnings,
+				fmt.Sprintf("policy declares finding_type %q but some violations are plain strings — structured finding data will not be available for those", findingType))
+			state.warnedNoStructuredData = true
+		}
+
+	case findingType != "" && hasStructuredData:
+		finding, err := findings.ValidateFinding(findingType, v.RawFinding)
+		if err != nil {
+			return nil, fmt.Errorf("structured violation validation: %w", err)
+		}
+
+		if err := findings.SetViolationFinding(apiV, findingType, finding); err != nil {
+			return nil, fmt.Errorf("setting violation finding: %w", err)
+		}
+	}
+
+	return apiV, nil
 }
 
 // returns the list of polices to be applied to a material, following these rules:

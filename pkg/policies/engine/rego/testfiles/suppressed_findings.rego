@@ -30,8 +30,12 @@ skipped := false if valid_input
 
 valid_input := true
 
+# A vulnerability becomes a finding (a real violation) only when it is not
+# suppressed. Suppressed entries surface in `suppressed_findings` instead and
+# do NOT appear in `findings`.
 findings contains v if {
 	some vuln in input.vulnerabilities
+	not vuln.suppressed
 	v := {
 		"message": sprintf("Found vulnerability %s", [vuln.id]),
 		"external_id": vuln.id,
@@ -40,10 +44,9 @@ findings contains v if {
 	}
 }
 
-# A finding is suppressed when the input marks it as suppressed; same shape as
-# the corresponding entry in `findings`, plus the chainloop_* correlation fields.
-# The correlation fields are read with object.get so that omitted fields fall
-# back to safe zero values instead of making the whole entry undefined.
+# Suppressed findings: same shape as a finding, plus the chainloop_*
+# correlation fields. Read with object.get so that omitted optional fields
+# fall back to safe zero values instead of making the whole entry undefined.
 suppressed_findings contains v if {
 	some vuln in input.vulnerabilities
 	vuln.suppressed == true

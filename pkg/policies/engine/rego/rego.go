@@ -224,22 +224,6 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 					}
 					result.Violations = append(result.Violations, pv)
 				}
-
-				// Parse the optional "suppressed_findings" array. Each entry must be a
-				// structured finding object using the same schema as `findings`.
-				if suppressedRaw, ok := ruleResult["suppressed_findings"].([]any); ok {
-					for _, f := range suppressedRaw {
-						obj, ok := f.(map[string]any)
-						if !ok {
-							return nil, fmt.Errorf("suppressed finding must be an object, got %T", f)
-						}
-						pv, err := engine.NewStructuredViolation(policy.Name, obj)
-						if err != nil {
-							return nil, fmt.Errorf("suppressed finding in policy %q: %w", policy.Name, err)
-						}
-						result.SuppressedFindings = append(result.SuppressedFindings, pv)
-					}
-				}
 			} else if violations, ok := ruleResult["violations"].([]any); ok {
 				// Fallback: violations (strings or deprecated structured objects).
 				// TODO: remove structured object support once policies are fully migrated to findings.
@@ -259,6 +243,24 @@ func parseResultRule(res rego.ResultSet, policy *engine.Policy, rawData *engine.
 				}
 			}
 			// If neither findings nor violations is present, result has zero violations.
+
+			// Parse the optional "suppressed_findings" array independently of findings.
+			// suppressed_findings are findings that the policy chose not to count as
+			// gating violations — they're disjoint from `findings` and may appear
+			// even when `findings` is empty.
+			if suppressedRaw, ok := ruleResult["suppressed_findings"].([]any); ok {
+				for _, f := range suppressedRaw {
+					obj, ok := f.(map[string]any)
+					if !ok {
+						return nil, fmt.Errorf("suppressed finding must be an object, got %T", f)
+					}
+					pv, err := engine.NewStructuredViolation(policy.Name, obj)
+					if err != nil {
+						return nil, fmt.Errorf("suppressed finding in policy %q: %w", policy.Name, err)
+					}
+					result.SuppressedFindings = append(result.SuppressedFindings, pv)
+				}
+			}
 		}
 	}
 

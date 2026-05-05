@@ -272,6 +272,12 @@ message PolicyEvaluation {
   // Whether the policy evaluation result should block the attestation (inherited from the policy attachment)
   bool gate = 19;
 
+  // Findings that the policy emitted but chose not to count as gating
+  // violations (e.g. because a platform-side assessment matched). Disjoint
+  // from `violations` — a suppressed finding does not also appear in
+  // `violations`. May be populated even when `violations` is empty.
+  repeated Violation suppressed_findings = 20;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];

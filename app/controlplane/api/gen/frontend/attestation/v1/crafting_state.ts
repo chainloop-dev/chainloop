@@ -296,6 +296,13 @@ export interface PolicyEvaluation {
   rawResults: PolicyEvaluation_RawResult[];
   /** Whether the policy evaluation result should block the attestation (inherited from the policy attachment) */
   gate: boolean;
+  /**
+   * Findings that the policy emitted but chose not to count as gating
+   * violations (e.g. because a platform-side assessment matched). Disjoint
+   * from `violations` — a suppressed finding does not also appear in
+   * `violations`. May be populated even when `violations` is empty.
+   */
+  suppressedFindings: PolicyEvaluation_Violation[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -2415,6 +2422,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     requirements: [],
     rawResults: [],
     gate: false,
+    suppressedFindings: [],
   };
 }
 
@@ -2473,6 +2481,9 @@ export const PolicyEvaluation = {
     }
     if (message.gate === true) {
       writer.uint32(152).bool(message.gate);
+    }
+    for (const v of message.suppressedFindings) {
+      PolicyEvaluation_Violation.encode(v!, writer.uint32(162).fork()).ldelim();
     }
     return writer;
   },
@@ -2616,6 +2627,13 @@ export const PolicyEvaluation = {
 
           message.gate = reader.bool();
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.suppressedFindings.push(PolicyEvaluation_Violation.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2665,6 +2683,9 @@ export const PolicyEvaluation = {
         ? object.rawResults.map((e: any) => PolicyEvaluation_RawResult.fromJSON(e))
         : [],
       gate: isSet(object.gate) ? Boolean(object.gate) : false,
+      suppressedFindings: Array.isArray(object?.suppressedFindings)
+        ? object.suppressedFindings.map((e: any) => PolicyEvaluation_Violation.fromJSON(e))
+        : [],
     };
   },
 
@@ -2722,6 +2743,13 @@ export const PolicyEvaluation = {
       obj.rawResults = [];
     }
     message.gate !== undefined && (obj.gate = message.gate);
+    if (message.suppressedFindings) {
+      obj.suppressedFindings = message.suppressedFindings.map((e) =>
+        e ? PolicyEvaluation_Violation.toJSON(e) : undefined
+      );
+    } else {
+      obj.suppressedFindings = [];
+    }
     return obj;
   },
 
@@ -2766,6 +2794,7 @@ export const PolicyEvaluation = {
     message.requirements = object.requirements?.map((e) => e) || [];
     message.rawResults = object.rawResults?.map((e) => PolicyEvaluation_RawResult.fromPartial(e)) || [];
     message.gate = object.gate ?? false;
+    message.suppressedFindings = object.suppressedFindings?.map((e) => PolicyEvaluation_Violation.fromPartial(e)) || [];
     return message;
   },
 };

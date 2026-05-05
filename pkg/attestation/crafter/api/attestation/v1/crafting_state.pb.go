@@ -464,9 +464,14 @@ type PolicyEvaluation struct {
 	// Raw inputs and outputs from the policy engine, preserved for debugging.
 	RawResults []*PolicyEvaluation_RawResult `protobuf:"bytes,18,rep,name=raw_results,json=rawResults,proto3" json:"raw_results,omitempty"`
 	// Whether the policy evaluation result should block the attestation (inherited from the policy attachment)
-	Gate          bool `protobuf:"varint,19,opt,name=gate,proto3" json:"gate,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Gate bool `protobuf:"varint,19,opt,name=gate,proto3" json:"gate,omitempty"`
+	// Findings that the policy emitted but chose not to count as gating
+	// violations (e.g. because a platform-side assessment matched). Disjoint
+	// from `violations` — a suppressed finding does not also appear in
+	// `violations`. May be populated even when `violations` is empty.
+	SuppressedFindings []*PolicyEvaluation_Violation `protobuf:"bytes,20,rep,name=suppressed_findings,json=suppressedFindings,proto3" json:"suppressed_findings,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *PolicyEvaluation) Reset() {
@@ -626,6 +631,13 @@ func (x *PolicyEvaluation) GetGate() bool {
 		return x.Gate
 	}
 	return false
+}
+
+func (x *PolicyEvaluation) GetSuppressedFindings() []*PolicyEvaluation_Violation {
+	if x != nil {
+		return x.SuppressedFindings
+	}
+	return nil
 }
 
 // Bundle of all policy evaluations for an attestation, stored as a CAS object.
@@ -2788,7 +2800,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\venvironment\x18\x02 \x01(\tR\venvironment\x12$\n" +
 	"\rauthenticated\x18\x03 \x01(\bR\rauthenticated\x12I\n" +
 	"\x04type\x18\x04 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeR\x04type\x12\x10\n" +
-	"\x03url\x18\x05 \x01(\tR\x03url\"\x98\x0e\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\"\xf5\x0e\n" +
 	"\x10PolicyEvaluation\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12#\n" +
@@ -2812,7 +2824,8 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\frequirements\x18\x11 \x03(\tR\frequirements\x12K\n" +
 	"\vraw_results\x18\x12 \x03(\v2*.attestation.v1.PolicyEvaluation.RawResultR\n" +
 	"rawResults\x12\x12\n" +
-	"\x04gate\x18\x13 \x01(\bR\x04gate\x1a>\n" +
+	"\x04gate\x18\x13 \x01(\bR\x04gate\x12[\n" +
+	"\x13suppressed_findings\x18\x14 \x03(\v2*.attestation.v1.PolicyEvaluation.ViolationR\x12suppressedFindings\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
@@ -3023,37 +3036,38 @@ var file_attestation_v1_crafting_state_proto_depIdxs = []int32{
 	30, // 18: attestation.v1.PolicyEvaluation.policy_reference:type_name -> attestation.v1.PolicyEvaluation.Reference
 	30, // 19: attestation.v1.PolicyEvaluation.group_reference:type_name -> attestation.v1.PolicyEvaluation.Reference
 	31, // 20: attestation.v1.PolicyEvaluation.raw_results:type_name -> attestation.v1.PolicyEvaluation.RawResult
-	4,  // 21: attestation.v1.PolicyEvaluationBundle.evaluations:type_name -> attestation.v1.PolicyEvaluation
-	35, // 22: attestation.v1.Commit.date:type_name -> google.protobuf.Timestamp
-	32, // 23: attestation.v1.Commit.remotes:type_name -> attestation.v1.Commit.Remote
-	33, // 24: attestation.v1.Commit.platform_verification:type_name -> attestation.v1.Commit.CommitVerification
-	38, // 25: attestation.v1.CraftingState.input_schema:type_name -> workflowcontract.v1.CraftingSchema
-	39, // 26: attestation.v1.CraftingState.schema_v2:type_name -> workflowcontract.v1.CraftingSchemaV2
-	2,  // 27: attestation.v1.CraftingState.attestation:type_name -> attestation.v1.Attestation
-	12, // 28: attestation.v1.WorkflowMetadata.version:type_name -> attestation.v1.ProjectVersion
-	34, // 29: attestation.v1.ResourceDescriptor.digest:type_name -> attestation.v1.ResourceDescriptor.DigestEntry
-	40, // 30: attestation.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
-	16, // 31: attestation.v1.Attestation.MaterialsEntry.value:type_name -> attestation.v1.Attestation.Material
-	22, // 32: attestation.v1.Attestation.Material.string:type_name -> attestation.v1.Attestation.Material.KeyVal
-	23, // 33: attestation.v1.Attestation.Material.container_image:type_name -> attestation.v1.Attestation.Material.ContainerImage
-	24, // 34: attestation.v1.Attestation.Material.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
-	25, // 35: attestation.v1.Attestation.Material.sbom_artifact:type_name -> attestation.v1.Attestation.Material.SBOMArtifact
-	35, // 36: attestation.v1.Attestation.Material.added_at:type_name -> google.protobuf.Timestamp
-	37, // 37: attestation.v1.Attestation.Material.material_type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	21, // 38: attestation.v1.Attestation.Material.annotations:type_name -> attestation.v1.Attestation.Material.AnnotationsEntry
-	0,  // 39: attestation.v1.Attestation.Auth.type:type_name -> attestation.v1.Attestation.Auth.AuthType
-	41, // 40: attestation.v1.Attestation.Material.ContainerImage.has_latest_tag:type_name -> google.protobuf.BoolValue
-	24, // 41: attestation.v1.Attestation.Material.SBOMArtifact.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
-	26, // 42: attestation.v1.Attestation.Material.SBOMArtifact.main_component:type_name -> attestation.v1.Attestation.Material.SBOMArtifact.MainComponent
-	6,  // 43: attestation.v1.PolicyEvaluation.Violation.vulnerability:type_name -> attestation.v1.PolicyVulnerabilityFinding
-	7,  // 44: attestation.v1.PolicyEvaluation.Violation.sast:type_name -> attestation.v1.PolicySASTFinding
-	8,  // 45: attestation.v1.PolicyEvaluation.Violation.license_violation:type_name -> attestation.v1.PolicyLicenseViolationFinding
-	1,  // 46: attestation.v1.Commit.CommitVerification.status:type_name -> attestation.v1.Commit.CommitVerification.VerificationStatus
-	47, // [47:47] is the sub-list for method output_type
-	47, // [47:47] is the sub-list for method input_type
-	47, // [47:47] is the sub-list for extension type_name
-	47, // [47:47] is the sub-list for extension extendee
-	0,  // [0:47] is the sub-list for field type_name
+	29, // 21: attestation.v1.PolicyEvaluation.suppressed_findings:type_name -> attestation.v1.PolicyEvaluation.Violation
+	4,  // 22: attestation.v1.PolicyEvaluationBundle.evaluations:type_name -> attestation.v1.PolicyEvaluation
+	35, // 23: attestation.v1.Commit.date:type_name -> google.protobuf.Timestamp
+	32, // 24: attestation.v1.Commit.remotes:type_name -> attestation.v1.Commit.Remote
+	33, // 25: attestation.v1.Commit.platform_verification:type_name -> attestation.v1.Commit.CommitVerification
+	38, // 26: attestation.v1.CraftingState.input_schema:type_name -> workflowcontract.v1.CraftingSchema
+	39, // 27: attestation.v1.CraftingState.schema_v2:type_name -> workflowcontract.v1.CraftingSchemaV2
+	2,  // 28: attestation.v1.CraftingState.attestation:type_name -> attestation.v1.Attestation
+	12, // 29: attestation.v1.WorkflowMetadata.version:type_name -> attestation.v1.ProjectVersion
+	34, // 30: attestation.v1.ResourceDescriptor.digest:type_name -> attestation.v1.ResourceDescriptor.DigestEntry
+	40, // 31: attestation.v1.ResourceDescriptor.annotations:type_name -> google.protobuf.Struct
+	16, // 32: attestation.v1.Attestation.MaterialsEntry.value:type_name -> attestation.v1.Attestation.Material
+	22, // 33: attestation.v1.Attestation.Material.string:type_name -> attestation.v1.Attestation.Material.KeyVal
+	23, // 34: attestation.v1.Attestation.Material.container_image:type_name -> attestation.v1.Attestation.Material.ContainerImage
+	24, // 35: attestation.v1.Attestation.Material.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
+	25, // 36: attestation.v1.Attestation.Material.sbom_artifact:type_name -> attestation.v1.Attestation.Material.SBOMArtifact
+	35, // 37: attestation.v1.Attestation.Material.added_at:type_name -> google.protobuf.Timestamp
+	37, // 38: attestation.v1.Attestation.Material.material_type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
+	21, // 39: attestation.v1.Attestation.Material.annotations:type_name -> attestation.v1.Attestation.Material.AnnotationsEntry
+	0,  // 40: attestation.v1.Attestation.Auth.type:type_name -> attestation.v1.Attestation.Auth.AuthType
+	41, // 41: attestation.v1.Attestation.Material.ContainerImage.has_latest_tag:type_name -> google.protobuf.BoolValue
+	24, // 42: attestation.v1.Attestation.Material.SBOMArtifact.artifact:type_name -> attestation.v1.Attestation.Material.Artifact
+	26, // 43: attestation.v1.Attestation.Material.SBOMArtifact.main_component:type_name -> attestation.v1.Attestation.Material.SBOMArtifact.MainComponent
+	6,  // 44: attestation.v1.PolicyEvaluation.Violation.vulnerability:type_name -> attestation.v1.PolicyVulnerabilityFinding
+	7,  // 45: attestation.v1.PolicyEvaluation.Violation.sast:type_name -> attestation.v1.PolicySASTFinding
+	8,  // 46: attestation.v1.PolicyEvaluation.Violation.license_violation:type_name -> attestation.v1.PolicyLicenseViolationFinding
+	1,  // 47: attestation.v1.Commit.CommitVerification.status:type_name -> attestation.v1.Commit.CommitVerification.VerificationStatus
+	48, // [48:48] is the sub-list for method output_type
+	48, // [48:48] is the sub-list for method input_type
+	48, // [48:48] is the sub-list for extension type_name
+	48, // [48:48] is the sub-list for extension extendee
+	0,  // [0:48] is the sub-list for field type_name
 }
 
 func init() { file_attestation_v1_crafting_state_proto_init() }

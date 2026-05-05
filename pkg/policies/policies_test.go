@@ -1720,7 +1720,7 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 				{Violations: tc.violations},
 			}
 
-			violations, warnings, err := engineEvaluationsToAPIViolations(results, tc.findingType)
+			violations, _, warnings, err := engineEvaluationsToAPIViolations(results, tc.findingType)
 			if tc.wantErr != "" {
 				s.Require().Error(err)
 				s.Contains(err.Error(), tc.wantErr)
@@ -1735,4 +1735,45 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 			}
 		})
 	}
+}
+
+func (s *testSuite) TestEngineEvaluationsToAPIViolations_SuppressedFindings() {
+	rawSuppressed := map[string]any{
+		"message":                  "vuln found",
+		"external_id":              "CVE-2024-9999",
+		"package_purl":             "pkg:golang/example.com/lib@v1.0.0",
+		"severity":                 "HIGH",
+		"chainloop_finding_id":     "fnd_abc",
+		"chainloop_assessment_ids": []any{"asm_1", "asm_2"},
+	}
+
+	results := []*engine.EvaluationResult{
+		{
+			Violations: []*engine.PolicyViolation{
+				{Subject: "p", Violation: "real violation", RawFinding: map[string]any{
+					"message": "real violation", "external_id": "CVE-2024-1",
+					"package_purl": "pkg:npm/foo@1.0", "severity": "CRITICAL",
+				}},
+			},
+			SuppressedFindings: []*engine.PolicyViolation{
+				{Subject: "p", Violation: "vuln found", RawFinding: rawSuppressed},
+			},
+		},
+	}
+
+	violations, suppressed, warnings, err := engineEvaluationsToAPIViolations(results, "VULNERABILITY")
+	s.Require().NoError(err)
+	s.Empty(warnings)
+	s.Len(violations, 1)
+	s.Len(suppressed, 1)
+
+	v := violations[0].GetVulnerability()
+	s.Require().NotNil(v)
+	s.Equal("CVE-2024-1", v.GetExternalId())
+
+	sf := suppressed[0].GetVulnerability()
+	s.Require().NotNil(sf)
+	s.Equal("CVE-2024-9999", sf.GetExternalId())
+	s.Equal("fnd_abc", sf.GetChainloopFindingId())
+	s.Equal([]string{"asm_1", "asm_2"}, sf.GetChainloopAssessmentIds())
 }

@@ -142,10 +142,11 @@ type PolicyEngine interface {
 
 type EvaluationResult struct {
 	Violations []*PolicyViolation `json:"violations"`
-	// SuppressedFindings holds findings that the policy emitted in `findings`
-	// but flagged as suppressed (e.g. because a platform-side assessment matched).
-	// Every entry here also appears in Violations / findings — this is the
-	// subset that should not contribute to gating decisions.
+	// SuppressedFindings holds findings the policy emitted but chose not to
+	// count as gating violations (e.g. because a platform-side assessment
+	// matched). They are disjoint from Violations / findings — a suppressed
+	// finding does not also appear in findings, and a policy can emit
+	// SuppressedFindings without emitting any findings.
 	SuppressedFindings []*PolicyViolation `json:"suppressedFindings,omitempty"`
 	Skipped            bool               `json:"skipped"`
 	SkipReason         string             `json:"skipReason"`

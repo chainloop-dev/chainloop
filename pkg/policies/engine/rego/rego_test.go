@@ -660,18 +660,18 @@ func TestRego_SuppressedFindings(t *testing.T) {
 		checkSuppressed func(t *testing.T, sf []*engine.PolicyViolation)
 	}{
 		{
-			name:           "no suppressed findings when none flagged",
+			name:           "no suppression — vulnerability becomes a finding",
 			input:          `{"vulnerabilities": [{"id": "CVE-2024-1", "purl": "pkg:npm/foo@1.0", "severity": "HIGH"}]}`,
 			wantFindings:   1,
 			wantSuppressed: 0,
 		},
 		{
-			name: "suppressed entries surface separately and also in findings",
+			name: "suppressed entries are disjoint from findings",
 			input: `{"vulnerabilities": [
 				{"id": "CVE-2024-1", "purl": "pkg:npm/foo@1.0", "severity": "HIGH"},
 				{"id": "CVE-2024-2", "purl": "pkg:npm/bar@2.0", "severity": "LOW", "suppressed": true, "chainloop_finding_id": "fnd_01J", "chainloop_assessment_ids": ["asm_01J", "asm_02K"]}
 			]}`,
-			wantFindings:   2,
+			wantFindings:   1,
 			wantSuppressed: 1,
 			checkSuppressed: func(t *testing.T, sf []*engine.PolicyViolation) {
 				t.Helper()
@@ -685,17 +685,25 @@ func TestRego_SuppressedFindings(t *testing.T) {
 			},
 		},
 		{
-			name: "suppressed entry without correlation fields still surfaces with zero-value defaults",
+			name: "suppressed without any findings",
 			input: `{"vulnerabilities": [
-				{"id": "CVE-2024-3", "purl": "pkg:npm/baz@3.0", "severity": "MEDIUM", "suppressed": true}
+				{"id": "CVE-2024-3", "purl": "pkg:npm/baz@3.0", "severity": "MEDIUM", "suppressed": true, "chainloop_finding_id": "fnd_x", "chainloop_assessment_ids": ["asm_x"]}
 			]}`,
-			wantFindings:   1,
+			wantFindings:   0,
+			wantSuppressed: 1,
+		},
+		{
+			name: "suppressed entry without optional correlation fields surfaces with zero-value defaults",
+			input: `{"vulnerabilities": [
+				{"id": "CVE-2024-4", "purl": "pkg:npm/qux@4.0", "severity": "MEDIUM", "suppressed": true}
+			]}`,
+			wantFindings:   0,
 			wantSuppressed: 1,
 			checkSuppressed: func(t *testing.T, sf []*engine.PolicyViolation) {
 				t.Helper()
 				v := sf[0]
 				require.NotNil(t, v.RawFinding)
-				assert.Equal(t, "CVE-2024-3", v.RawFinding["external_id"])
+				assert.Equal(t, "CVE-2024-4", v.RawFinding["external_id"])
 				assert.Equal(t, "", v.RawFinding["chainloop_finding_id"])
 				ids, ok := v.RawFinding["chainloop_assessment_ids"].([]any)
 				require.True(t, ok, "chainloop_assessment_ids must be a slice, got %T", v.RawFinding["chainloop_assessment_ids"])
@@ -703,12 +711,12 @@ func TestRego_SuppressedFindings(t *testing.T) {
 			},
 		},
 		{
-			name: "every suppressed finding also appears in findings",
+			name: "multiple suppressed entries",
 			input: `{"vulnerabilities": [
 				{"id": "CVE-S-1", "purl": "pkg:npm/a@1", "severity": "LOW", "suppressed": true, "chainloop_finding_id": "fnd_a", "chainloop_assessment_ids": ["asm_a"]},
 				{"id": "CVE-S-2", "purl": "pkg:npm/b@2", "severity": "LOW", "suppressed": true, "chainloop_finding_id": "fnd_b", "chainloop_assessment_ids": ["asm_b"]}
 			]}`,
-			wantFindings:   2,
+			wantFindings:   0,
 			wantSuppressed: 2,
 			checkSuppressed: func(t *testing.T, sf []*engine.PolicyViolation) {
 				t.Helper()
@@ -729,7 +737,7 @@ func TestRego_SuppressedFindings(t *testing.T) {
 			assert.Len(t, result.Violations, tc.wantFindings, "findings count mismatch")
 			assert.Len(t, result.SuppressedFindings, tc.wantSuppressed, "suppressed_findings count mismatch")
 
-			// Invariant: every suppressed entry must also appear in findings (matched by external_id).
+			// Invariant: findings and suppressed_findings are disjoint sets.
 			findingIDs := map[string]bool{}
 			for _, v := range result.Violations {
 				if v.RawFinding != nil {
@@ -741,7 +749,7 @@ func TestRego_SuppressedFindings(t *testing.T) {
 			for _, sv := range result.SuppressedFindings {
 				require.NotNil(t, sv.RawFinding)
 				id, _ := sv.RawFinding["external_id"].(string)
-				assert.True(t, findingIDs[id], "suppressed finding %q must also appear in findings", id)
+				assert.False(t, findingIDs[id], "suppressed finding %q must NOT also appear in findings", id)
 			}
 
 			if tc.checkSuppressed != nil {

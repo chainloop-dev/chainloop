@@ -219,20 +219,6 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 			}
 			evalResult.Violations = append(evalResult.Violations, pv)
 		}
-
-		// Parse the optional "suppressed_findings" array. Each entry uses the same
-		// schema as `findings` and represents a finding the policy chose not to
-		// surface as a gating violation.
-		if len(result.SuppressedFindings) > 0 {
-			evalResult.SuppressedFindings = make([]*engine.PolicyViolation, 0, len(result.SuppressedFindings))
-			for _, raw := range result.SuppressedFindings {
-				pv, err := parseWasmFinding(policy.Name, raw)
-				if err != nil {
-					return nil, fmt.Errorf("suppressed finding in policy %q: %w", policy.Name, err)
-				}
-				evalResult.SuppressedFindings = append(evalResult.SuppressedFindings, pv)
-			}
-		}
 	} else {
 		// Fallback: violations (strings or deprecated structured objects).
 		evalResult.Violations = make([]*engine.PolicyViolation, 0, len(result.Violations))
@@ -242,6 +228,21 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 				return nil, fmt.Errorf("violation in policy %q: %w", policy.Name, err)
 			}
 			evalResult.Violations = append(evalResult.Violations, pv)
+		}
+	}
+
+	// Parse the optional "suppressed_findings" array independently of findings.
+	// suppressed_findings are findings that the policy chose not to count as
+	// gating violations — they're disjoint from `findings` and may appear even
+	// when `findings` is empty.
+	if len(result.SuppressedFindings) > 0 {
+		evalResult.SuppressedFindings = make([]*engine.PolicyViolation, 0, len(result.SuppressedFindings))
+		for _, raw := range result.SuppressedFindings {
+			pv, err := parseWasmFinding(policy.Name, raw)
+			if err != nil {
+				return nil, fmt.Errorf("suppressed finding in policy %q: %w", policy.Name, err)
+			}
+			evalResult.SuppressedFindings = append(evalResult.SuppressedFindings, pv)
 		}
 	}
 

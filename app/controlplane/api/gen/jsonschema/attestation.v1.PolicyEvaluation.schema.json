@@ -34,6 +34,13 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "^(suppressedFindings)$": {
+      "description": "Findings that the policy emitted but chose not to count as gating\n violations (e.g. because a platform-side assessment matched). Disjoint\n from `violations` — a suppressed finding does not also appear in\n `violations`. May be populated even when `violations` is empty.",
+      "items": {
+        "$ref": "attestation.v1.PolicyEvaluation.Violation.schema.json"
+      },
+      "type": "array"
     }
   },
   "properties": {
@@ -107,6 +114,13 @@
       "description": "Base64 representation of run scripts. It might be empty if there is a FQDN reference to the policy",
       "items": {
         "type": "string"
+      },
+      "type": "array"
+    },
+    "suppressed_findings": {
+      "description": "Findings that the policy emitted but chose not to count as gating\n violations (e.g. because a platform-side assessment matched). Disjoint\n from `violations` — a suppressed finding does not also appear in\n `violations`. May be populated even when `violations` is empty.",
+      "items": {
+        "$ref": "attestation.v1.PolicyEvaluation.Violation.schema.json"
       },
       "type": "array"
     },
