@@ -88,7 +88,25 @@ func (p *regoOutputHook) Print(_ print.Context, msg string) error { //nolint:for
 // Force interface
 var _ engine.PolicyEngine = (*Engine)(nil)
 
+// withProjectContext attaches the engine's per-evaluation project name / version
+// to ctx so chainloop.* built-ins can read them from bctx.Context. Skipped when
+// the engine was created without project context (e.g. local dev eval).
+func (r *Engine) withProjectContext(ctx context.Context) context.Context {
+	if r.CommonEngineOptions == nil {
+		return ctx
+	}
+	if r.ProjectName == "" && r.ProjectVersionName == "" {
+		return ctx
+	}
+	return builtins.WithProjectContext(ctx, builtins.ProjectContext{
+		Name:    r.ProjectName,
+		Version: r.ProjectVersionName,
+	})
+}
+
 func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
+	ctx = r.withProjectContext(ctx)
+
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -323,6 +341,8 @@ func getRuleName(packagePath ast.Ref, rule string) string {
 // MatchesParameters evaluates the matches_parameters rule in a rego policy.
 // The function creates an input object with policy parameters and expected parameters.
 func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, evaluationParams, expectedParams map[string]string) (bool, error) {
+	ctx = r.withProjectContext(ctx)
+
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -358,6 +378,8 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 // MatchesEvaluation evaluates the matches_evaluation rule in a rego policy.
 // Creates an input object with expected parameters and policy violations.
 func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, violations []string, expectedParams map[string]string) (bool, error) {
+	ctx = r.withProjectContext(ctx)
+
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {

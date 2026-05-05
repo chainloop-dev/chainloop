@@ -694,6 +694,8 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		return i.MaterialName == m.Name
 	})
 
+	projectName, projectVersion := c.projectContext()
+
 	pgv := policies.NewPolicyGroupVerifier(
 		c.CraftingState.GetPolicyGroups(),
 		c.CraftingState.GetPolicies(),
@@ -701,6 +703,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithProjectContext(projectName, projectVersion),
 	)
 	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
@@ -718,6 +721,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithProjectContext(projectName, projectVersion),
 	)
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {
@@ -745,6 +749,21 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	return mt, nil
 }
 
+// projectContext returns the project name and version from the workflow
+// metadata so policy verifiers can pass them to the engine. Either may be
+// empty (e.g. dry-run before workflow metadata is populated); built-ins
+// must degrade gracefully in that case.
+func (c *Crafter) projectContext() (string, string) {
+	wf := c.CraftingState.GetAttestation().GetWorkflow()
+	version := wf.GetVersion().GetVersion()
+	if version == "" {
+		// Fall back to the deprecated flat field for state written by older clients.
+		//nolint:staticcheck // intentional fallback for backwards compatibility
+		version = wf.GetProjectVersion()
+	}
+	return wf.GetProject(), version
+}
+
 // policyEvalMatches returns true if two policy evaluations refer to the same policy
 // with the same arguments. It treats nil and empty maps as equivalent to handle
 // protojson round-trip serialization where empty maps are omitted.
@@ -755,11 +774,14 @@ func policyEvalMatches(a, b *api.PolicyEvaluation) bool {
 // EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state.
 // The phase parameter controls which policies are evaluated based on their attestation_phases spec field.
 func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement, phase policies.EvalPhase) error {
+	projectName, projectVersion := c.projectContext()
+
 	// evaluate attestation-level policies
 	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithEvalPhase(phase),
+		policies.WithProjectContext(projectName, projectVersion),
 	)
 	policyEvaluations, err := pv.VerifyStatement(ctx, statement)
 	if err != nil {
@@ -770,6 +792,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithEvalPhase(phase),
+		policies.WithProjectContext(projectName, projectVersion),
 	)
 	policyGroupResults, err := pgv.VerifyStatement(ctx, statement)
 	if err != nil {

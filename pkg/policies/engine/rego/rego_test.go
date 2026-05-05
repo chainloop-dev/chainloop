@@ -534,6 +534,61 @@ violations contains msg if {
 	})
 }
 
+func TestRego_ProjectContextPlumbing(t *testing.T) {
+	// Custom built-in that captures the project context attached to bctx.Context
+	// and exposes the result so the policy can pivot on it.
+	var capturedCtx builtins.ProjectContext
+	var capturedOK bool
+
+	require.NoError(t, builtins.Register(&ast.Builtin{
+		Name: "test.capture_project_ctx",
+		Decl: types.NewFunction(types.Args(types.S), types.S),
+	}, func(bctx topdown.BuiltinContext, _ []*ast.Term, iter func(*ast.Term) error) error {
+		capturedCtx, capturedOK = builtins.ProjectContextFromContext(bctx.Context)
+		return iter(ast.StringTerm("ok"))
+	}))
+
+	regoContent := []byte(`package test
+import rego.v1
+
+result := {
+	"violations": violations,
+	"skipped": false
+}
+
+violations contains msg if {
+	val := test.capture_project_ctx("noop")
+	val != "ok"
+	msg := "Capture failed"
+}`)
+
+	policy := &engine.Policy{Name: "ctx-test", Source: regoContent}
+
+	t.Run("engine without project context leaves ctx empty", func(t *testing.T) {
+		capturedCtx, capturedOK = builtins.ProjectContext{}, false
+
+		r := NewEngine()
+		_, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
+		require.NoError(t, err)
+
+		assert.False(t, capturedOK, "no project context should be attached")
+		assert.Empty(t, capturedCtx.Name)
+		assert.Empty(t, capturedCtx.Version)
+	})
+
+	t.Run("engine with project context propagates to builtin", func(t *testing.T) {
+		capturedCtx, capturedOK = builtins.ProjectContext{}, false
+
+		r := NewEngine(engine.WithProjectContext("my-app", "v1.2.3"))
+		_, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
+		require.NoError(t, err)
+
+		require.True(t, capturedOK, "project context should be attached")
+		assert.Equal(t, "my-app", capturedCtx.Name)
+		assert.Equal(t, "v1.2.3", capturedCtx.Version)
+	})
+}
+
 func TestRego_StructuredViolations(t *testing.T) {
 	tests := []struct {
 		name           string

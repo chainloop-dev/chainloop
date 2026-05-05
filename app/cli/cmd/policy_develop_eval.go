@@ -27,12 +27,14 @@ import (
 
 func newPolicyDevelopEvalCmd() *cobra.Command {
 	var (
-		materialPath     string
-		kind             string
-		annotations      []string
-		policyPath       string
-		inputs           []string
-		allowedHostnames []string
+		materialPath       string
+		kind               string
+		annotations        []string
+		policyPath         string
+		inputs             []string
+		allowedHostnames   []string
+		projectName        string
+		projectVersionName string
 	)
 
 	cmd := &cobra.Command{
@@ -41,18 +43,20 @@ func newPolicyDevelopEvalCmd() *cobra.Command {
 		Long: `Perform a full evaluation of the policy against the provided material type.
 The command checks if there is a path in the policy for the specified kind and
 evaluates the policy against the provided material or attestation.`,
-		Example: `  
+		Example: `
   # Evaluate policy against a material file
   chainloop policy develop eval --policy policy.yaml --material sbom.json --kind SBOM_CYCLONEDX_JSON --annotation key1=value1,key2=value2 --input key3=value3`,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			opts := &action.PolicyEvalOpts{
-				MaterialPath:     materialPath,
-				Kind:             kind,
-				Annotations:      parseKeyValue(annotations),
-				PolicyPath:       policyPath,
-				Inputs:           parseKeyValue(inputs),
-				AllowedHostnames: allowedHostnames,
-				Debug:            flagDebug,
+				MaterialPath:       materialPath,
+				Kind:               kind,
+				Annotations:        parseKeyValue(annotations),
+				PolicyPath:         policyPath,
+				Inputs:             parseKeyValue(inputs),
+				AllowedHostnames:   allowedHostnames,
+				Debug:              flagDebug,
+				ProjectName:        projectName,
+				ProjectVersionName: projectVersionName,
 			}
 
 			policyEval, err := action.NewPolicyEval(opts, ActionOpts)
@@ -76,6 +80,8 @@ evaluates the policy against the provided material or attestation.`,
 	cmd.Flags().StringVarP(&policyPath, "policy", "p", "policy.yaml", "Policy reference (./my-policy.yaml, https://my-domain.com/my-policy.yaml, chainloop://my-stored-policy)")
 	cmd.Flags().StringArrayVar(&inputs, "input", []string{}, "Key-value pairs of policy inputs (key=value)")
 	cmd.Flags().StringSliceVar(&allowedHostnames, "allowed-hostnames", []string{}, "Additional hostnames allowed for http.send requests in policies")
+	cmd.Flags().StringVar(&projectName, "project", "", "Project name to use as engine context for chainloop.* built-ins")
+	cmd.Flags().StringVar(&projectVersionName, "project-version", "", "Project version to use as engine context for chainloop.* built-ins")
 
 	return cmd
 }

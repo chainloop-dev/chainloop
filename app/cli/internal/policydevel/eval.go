@@ -37,15 +37,17 @@ const (
 )
 
 type EvalOptions struct {
-	PolicyPath        string
-	MaterialKind      string
-	Annotations       map[string]string
-	MaterialPath      string
-	Inputs            map[string]string
-	AllowedHostnames  []string
-	Debug             bool
-	AttestationClient controlplanev1.AttestationServiceClient
-	ControlPlaneConn  *grpc.ClientConn
+	PolicyPath         string
+	MaterialKind       string
+	Annotations        map[string]string
+	MaterialPath       string
+	Inputs             map[string]string
+	AllowedHostnames   []string
+	Debug              bool
+	AttestationClient  controlplanev1.AttestationServiceClient
+	ControlPlaneConn   *grpc.ClientConn
+	ProjectName        string
+	ProjectVersionName string
 }
 
 type EvalResult struct {
@@ -80,7 +82,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	material.Annotations = opts.Annotations
 
 	// 3. Verify material against policy
-	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, &logger)
+	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, opts.ProjectName, opts.ProjectVersionName, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +110,7 @@ func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, 
 	}, nil
 }
 
-func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, logger *zerolog.Logger) (*EvalSummary, error) {
+func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, projectName, projectVersion string, logger *zerolog.Logger) (*EvalSummary, error) {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
@@ -117,6 +119,9 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	opts = append(opts, policies.WithIncludeRawData(debug))
 	opts = append(opts, policies.WithEnablePrint(enablePrint))
 	opts = append(opts, policies.WithGRPCConn(grpcConn))
+	if projectName != "" || projectVersion != "" {
+		opts = append(opts, policies.WithProjectContext(projectName, projectVersion))
+	}
 
 	v := policies.NewPolicyVerifier(pol, attestationClient, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)

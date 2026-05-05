@@ -37,6 +37,14 @@ type CommonEngineOptions struct {
 	IncludeRawData         bool
 	EnablePrint            bool
 	ControlPlaneConnection *grpc.ClientConn
+	// ProjectName / ProjectVersionName carry the project + version this engine
+	// instance is evaluating policies for. They are surfaced to chainloop.* built-ins
+	// via the per-evaluation context.Context (see builtins.WithProjectContext) so a
+	// built-in like chainloop.findings can scope its query without the rego author
+	// having to pass the values explicitly. Either may be empty (e.g. local dev
+	// eval without flags) — built-ins must degrade gracefully in that case.
+	ProjectName        string
+	ProjectVersionName string
 }
 
 // Option is a unified functional option for configuring policy engines
@@ -103,6 +111,17 @@ func WithLogger(logger *zerolog.Logger) Option {
 func WithGRPCConn(conn *grpc.ClientConn) Option {
 	return func(opts *Options) {
 		opts.ControlPlaneConnection = conn
+	}
+}
+
+// WithProjectContext sets the project name and version that this engine
+// instance is evaluating policies for. The values are propagated to chainloop.*
+// built-ins through the per-evaluation context so they can scope queries
+// (e.g. chainloop.findings) without the rego author passing them explicitly.
+func WithProjectContext(name, version string) Option {
+	return func(opts *Options) {
+		opts.ProjectName = name
+		opts.ProjectVersionName = version
 	}
 }
 

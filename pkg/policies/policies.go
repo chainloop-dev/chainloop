@@ -85,32 +85,36 @@ const (
 var defaultMaxConcurrency = max(runtime.NumCPU(), 5)
 
 type PolicyVerifier struct {
-	policies         *v1.Policies
-	logger           *zerolog.Logger
-	client           v13.AttestationServiceClient
-	grpcConn         *grpc.ClientConn
-	allowedHostnames []string
-	defaultGate      bool
-	includeRawData   bool
-	enablePrint      bool
-	evalPhase        EvalPhase
-	maxConcurrency   int
-	policyCache      cache.Cache[*policyWithReference]
-	groupCache       cache.Cache[*groupWithReference]
+	policies           *v1.Policies
+	logger             *zerolog.Logger
+	client             v13.AttestationServiceClient
+	grpcConn           *grpc.ClientConn
+	allowedHostnames   []string
+	defaultGate        bool
+	includeRawData     bool
+	enablePrint        bool
+	evalPhase          EvalPhase
+	maxConcurrency     int
+	policyCache        cache.Cache[*policyWithReference]
+	groupCache         cache.Cache[*groupWithReference]
+	projectName        string
+	projectVersionName string
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
 
 type PolicyVerifierOptions struct {
-	AllowedHostnames []string
-	DefaultGate      bool
-	IncludeRawData   bool
-	EnablePrint      bool
-	GRPCConn         *grpc.ClientConn
-	EvalPhase        EvalPhase
-	MaxConcurrency   int
-	PolicyCache      cache.Cache[*policyWithReference]
-	GroupCache       cache.Cache[*groupWithReference]
+	AllowedHostnames   []string
+	DefaultGate        bool
+	IncludeRawData     bool
+	EnablePrint        bool
+	GRPCConn           *grpc.ClientConn
+	EvalPhase          EvalPhase
+	MaxConcurrency     int
+	PolicyCache        cache.Cache[*policyWithReference]
+	GroupCache         cache.Cache[*groupWithReference]
+	ProjectName        string
+	ProjectVersionName string
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -169,6 +173,17 @@ func WithGroupCache(c cache.Cache[*groupWithReference]) PolicyVerifierOption {
 	}
 }
 
+// WithProjectContext sets the project name and version that this verifier is
+// evaluating policies for. The values are forwarded to the underlying policy
+// engine so chainloop.* built-ins can scope their queries automatically.
+// Either may be empty, in which case built-ins must degrade gracefully.
+func WithProjectContext(name, version string) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.ProjectName = name
+		o.ProjectVersionName = version
+	}
+}
+
 const defaultPolicyCacheTTL = 5 * time.Minute
 
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
@@ -191,18 +206,20 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 	}
 
 	return &PolicyVerifier{
-		policies:         policies,
-		client:           client,
-		logger:           logger,
-		grpcConn:         options.GRPCConn,
-		allowedHostnames: options.AllowedHostnames,
-		defaultGate:      options.DefaultGate,
-		includeRawData:   options.IncludeRawData,
-		enablePrint:      options.EnablePrint,
-		evalPhase:        options.EvalPhase,
-		maxConcurrency:   maxConcurrency,
-		policyCache:      options.PolicyCache,
-		groupCache:       options.GroupCache,
+		policies:           policies,
+		client:             client,
+		logger:             logger,
+		grpcConn:           options.GRPCConn,
+		allowedHostnames:   options.AllowedHostnames,
+		defaultGate:        options.DefaultGate,
+		includeRawData:     options.IncludeRawData,
+		enablePrint:        options.EnablePrint,
+		evalPhase:          options.EvalPhase,
+		maxConcurrency:     maxConcurrency,
+		policyCache:        options.PolicyCache,
+		groupCache:         options.GroupCache,
+		projectName:        options.ProjectName,
+		projectVersionName: options.ProjectVersionName,
 	}
 }
 
@@ -574,6 +591,10 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Poli
 
 	if pv.grpcConn != nil {
 		opts = append(opts, engine.WithGRPCConn(pv.grpcConn))
+	}
+
+	if pv.projectName != "" || pv.projectVersionName != "" {
+		opts = append(opts, engine.WithProjectContext(pv.projectName, pv.projectVersionName))
 	}
 
 	switch policyType {
