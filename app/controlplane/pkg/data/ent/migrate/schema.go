@@ -105,6 +105,7 @@ var (
 		{Name: "default", Type: field.TypeBool, Default: false},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "fallback", Type: field.TypeBool, Default: false},
+		{Name: "managed", Type: field.TypeBool, Default: false},
 		{Name: "max_blob_size_bytes", Type: field.TypeInt64},
 		{Name: "organization_cas_backends", Type: field.TypeUUID},
 	}
@@ -116,7 +117,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cas_backends_organizations_cas_backends",
-				Columns:    []*schema.Column{CasBackendsColumns[15]},
+				Columns:    []*schema.Column{CasBackendsColumns[16]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -125,7 +126,7 @@ var (
 			{
 				Name:    "casbackend_name_organization_cas_backends",
 				Unique:  true,
-				Columns: []*schema.Column{CasBackendsColumns[2], CasBackendsColumns[15]},
+				Columns: []*schema.Column{CasBackendsColumns[2], CasBackendsColumns[16]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

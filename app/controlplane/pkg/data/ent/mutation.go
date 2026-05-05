@@ -1600,6 +1600,7 @@ type CASBackendMutation struct {
 	_default               *bool
 	deleted_at             *time.Time
 	fallback               *bool
+	managed                *bool
 	max_blob_size_bytes    *int64
 	addmax_blob_size_bytes *int64
 	clearedFields          map[string]struct{}
@@ -2224,6 +2225,42 @@ func (m *CASBackendMutation) ResetFallback() {
 	m.fallback = nil
 }
 
+// SetManaged sets the "managed" field.
+func (m *CASBackendMutation) SetManaged(b bool) {
+	m.managed = &b
+}
+
+// Managed returns the value of the "managed" field in the mutation.
+func (m *CASBackendMutation) Managed() (r bool, exists bool) {
+	v := m.managed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldManaged returns the old "managed" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldManaged(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldManaged is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldManaged requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldManaged: %w", err)
+	}
+	return oldValue.Managed, nil
+}
+
+// ResetManaged resets all changes to the "managed" field.
+func (m *CASBackendMutation) ResetManaged() {
+	m.managed = nil
+}
+
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
 func (m *CASBackendMutation) SetMaxBlobSizeBytes(i int64) {
 	m.max_blob_size_bytes = &i
@@ -2407,7 +2444,7 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.location != nil {
 		fields = append(fields, casbackend.FieldLocation)
 	}
@@ -2447,6 +2484,9 @@ func (m *CASBackendMutation) Fields() []string {
 	if m.fallback != nil {
 		fields = append(fields, casbackend.FieldFallback)
 	}
+	if m.managed != nil {
+		fields = append(fields, casbackend.FieldManaged)
+	}
 	if m.max_blob_size_bytes != nil {
 		fields = append(fields, casbackend.FieldMaxBlobSizeBytes)
 	}
@@ -2484,6 +2524,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case casbackend.FieldFallback:
 		return m.Fallback()
+	case casbackend.FieldManaged:
+		return m.Managed()
 	case casbackend.FieldMaxBlobSizeBytes:
 		return m.MaxBlobSizeBytes()
 	}
@@ -2521,6 +2563,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDeletedAt(ctx)
 	case casbackend.FieldFallback:
 		return m.OldFallback(ctx)
+	case casbackend.FieldManaged:
+		return m.OldManaged(ctx)
 	case casbackend.FieldMaxBlobSizeBytes:
 		return m.OldMaxBlobSizeBytes(ctx)
 	}
@@ -2622,6 +2666,13 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFallback(v)
+		return nil
+	case casbackend.FieldManaged:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetManaged(v)
 		return nil
 	case casbackend.FieldMaxBlobSizeBytes:
 		v, ok := value.(int64)
@@ -2753,6 +2804,9 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldFallback:
 		m.ResetFallback()
+		return nil
+	case casbackend.FieldManaged:
+		m.ResetManaged()
 		return nil
 	case casbackend.FieldMaxBlobSizeBytes:
 		m.ResetMaxBlobSizeBytes()

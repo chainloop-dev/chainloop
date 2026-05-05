@@ -43,6 +43,8 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldFallback holds the string denoting the fallback field in the database.
 	FieldFallback = "fallback"
+	// FieldManaged holds the string denoting the managed field in the database.
+	FieldManaged = "managed"
 	// FieldMaxBlobSizeBytes holds the string denoting the max_blob_size_bytes field in the database.
 	FieldMaxBlobSizeBytes = "max_blob_size_bytes"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -81,6 +83,7 @@ var Columns = []string{
 	FieldDefault,
 	FieldDeletedAt,
 	FieldFallback,
+	FieldManaged,
 	FieldMaxBlobSizeBytes,
 }
 
@@ -124,6 +127,8 @@ var (
 	DefaultDefault bool
 	// DefaultFallback holds the default value on creation for the "fallback" field.
 	DefaultFallback bool
+	// DefaultManaged holds the default value on creation for the "managed" field.
+	DefaultManaged bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -221,6 +226,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByFallback orders the results by the fallback field.
 func ByFallback(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFallback, opts...).ToFunc()
+}
+
+// ByManaged orders the results by the managed field.
+func ByManaged(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldManaged, opts...).ToFunc()
 }
 
 // ByMaxBlobSizeBytes orders the results by the max_blob_size_bytes field.

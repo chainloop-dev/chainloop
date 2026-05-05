@@ -81,6 +81,10 @@ func init() {
 	casbackendDescFallback := casbackendFields[13].Descriptor()
 	// casbackend.DefaultFallback holds the default value on creation for the fallback field.
 	casbackend.DefaultFallback = casbackendDescFallback.Default.(bool)
+	// casbackendDescManaged is the schema descriptor for managed field.
+	casbackendDescManaged := casbackendFields[14].Descriptor()
+	// casbackend.DefaultManaged holds the default value on creation for the managed field.
+	casbackend.DefaultManaged = casbackendDescManaged.Default.(bool)
 	// casbackendDescID is the schema descriptor for id field.
 	casbackendDescID := casbackendFields[0].Descriptor()
 	// casbackend.DefaultID holds the default value on creation for the id field.

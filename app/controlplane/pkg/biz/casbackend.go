@@ -72,6 +72,8 @@ type CASBackend struct {
 	Inline bool
 	// It's a fallback backend, used when the default backend is unreachable
 	Fallback bool
+	// Managed indicates this backend is provisioned and operated by Chainloop
+	Managed bool
 
 	Limits *CASBackendLimits
 }
@@ -88,6 +90,7 @@ type CASBackendOpts struct {
 	Provider             CASBackendProvider
 	Default              *bool
 	Fallback             *bool
+	Managed              *bool
 	ValidationStatus     CASBackendValidationStatus
 	ValidationError      *string
 }
@@ -450,6 +453,11 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 		return nil, NewErrValidationStr("inline backends cannot have their max_bytes updated")
 	}
 
+	// Managed backends are owned and operated by Chainloop and cannot be modified by users.
+	if before.Managed {
+		return nil, NewErrValidationStr("managed CAS backends cannot be modified")
+	}
+
 	// Validate max_bytes if provided
 	if maxBytes != nil && *maxBytes < MinCASBackendMaxBytes {
 		return nil, NewErrValidationStr(fmt.Sprintf("max_bytes must be at least %s", bytefmt.ByteSize(uint64(MinCASBackendMaxBytes))))
@@ -610,6 +618,11 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 	// Prevent deletion of inline backend
 	if backend.Provider == CASBackendInline {
 		return NewErrValidation(errors.New("can't delete the inline CAS backend"))
+	}
+
+	// Prevent deletion of managed backends - they are owned and operated by Chainloop
+	if backend.Managed {
+		return NewErrValidation(errors.New("can't delete a managed CAS backend"))
 	}
 
 	if err := uc.repo.SoftDelete(ctx, backendUUID); err != nil {

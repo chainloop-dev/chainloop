@@ -941,6 +941,8 @@ export interface CASBackendItem {
   updatedAt?: Date;
   /** Wether it's the fallback backend in the organization */
   fallback: boolean;
+  /** Whether this backend is provisioned and operated by Chainloop using */
+  isManaged: boolean;
 }
 
 export enum CASBackendItem_ValidationStatus {
@@ -4492,6 +4494,7 @@ function createBaseCASBackendItem(): CASBackendItem {
     validationError: undefined,
     updatedAt: undefined,
     fallback: false,
+    isManaged: false,
   };
 }
 
@@ -4538,6 +4541,9 @@ export const CASBackendItem = {
     }
     if (message.fallback === true) {
       writer.uint32(112).bool(message.fallback);
+    }
+    if (message.isManaged === true) {
+      writer.uint32(120).bool(message.isManaged);
     }
     return writer;
   },
@@ -4647,6 +4653,13 @@ export const CASBackendItem = {
 
           message.fallback = reader.bool();
           continue;
+        case 15:
+          if (tag !== 120) {
+            break;
+          }
+
+          message.isManaged = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4674,6 +4687,7 @@ export const CASBackendItem = {
       validationError: isSet(object.validationError) ? String(object.validationError) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
       fallback: isSet(object.fallback) ? Boolean(object.fallback) : false,
+      isManaged: isSet(object.isManaged) ? Boolean(object.isManaged) : false,
     };
   },
 
@@ -4695,6 +4709,7 @@ export const CASBackendItem = {
     message.validationError !== undefined && (obj.validationError = message.validationError);
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
     message.fallback !== undefined && (obj.fallback = message.fallback);
+    message.isManaged !== undefined && (obj.isManaged = message.isManaged);
     return obj;
   },
 
@@ -4720,6 +4735,7 @@ export const CASBackendItem = {
     message.validationError = object.validationError ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     message.fallback = object.fallback ?? false;
+    message.isManaged = object.isManaged ?? false;
     return message;
   },
 };

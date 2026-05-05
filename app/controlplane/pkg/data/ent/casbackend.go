@@ -46,6 +46,8 @@ type CASBackend struct {
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Fallback holds the value of the "fallback" field.
 	Fallback bool `json:"fallback,omitempty"`
+	// Managed holds the value of the "managed" field.
+	Managed bool `json:"managed,omitempty"`
 	// MaxBlobSizeBytes holds the value of the "max_blob_size_bytes" field.
 	MaxBlobSizeBytes int64 `json:"max_blob_size_bytes,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -91,7 +93,7 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case casbackend.FieldDefault, casbackend.FieldFallback:
+		case casbackend.FieldDefault, casbackend.FieldFallback, casbackend.FieldManaged:
 			values[i] = new(sql.NullBool)
 		case casbackend.FieldMaxBlobSizeBytes:
 			values[i] = new(sql.NullInt64)
@@ -202,6 +204,12 @@ func (_m *CASBackend) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Fallback = value.Bool
 			}
+		case casbackend.FieldManaged:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field managed", values[i])
+			} else if value.Valid {
+				_m.Managed = value.Bool
+			}
 		case casbackend.FieldMaxBlobSizeBytes:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field max_blob_size_bytes", values[i])
@@ -299,6 +307,9 @@ func (_m *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("fallback=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Fallback))
+	builder.WriteString(", ")
+	builder.WriteString("managed=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Managed))
 	builder.WriteString(", ")
 	builder.WriteString("max_blob_size_bytes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.MaxBlobSizeBytes))
