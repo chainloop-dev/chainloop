@@ -189,11 +189,12 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 
 	// Parse output
 	var result struct {
-		Skipped    bool              `json:"skipped"`
-		Violations []json.RawMessage `json:"violations"`
-		Findings   []json.RawMessage `json:"findings"`
-		SkipReason string            `json:"skip_reason"`
-		Ignore     bool              `json:"ignore"`
+		Skipped            bool              `json:"skipped"`
+		Violations         []json.RawMessage `json:"violations"`
+		Findings           []json.RawMessage `json:"findings"`
+		SuppressedFindings []json.RawMessage `json:"suppressed_findings"`
+		SkipReason         string            `json:"skip_reason"`
+		Ignore             bool              `json:"ignore"`
 	}
 
 	if err := json.Unmarshal(output, &result); err != nil {
@@ -217,6 +218,20 @@ func (e *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 				return nil, fmt.Errorf("finding in policy %q: %w", policy.Name, err)
 			}
 			evalResult.Violations = append(evalResult.Violations, pv)
+		}
+
+		// Parse the optional "suppressed_findings" array. Each entry uses the same
+		// schema as `findings` and represents a finding the policy chose not to
+		// surface as a gating violation.
+		if len(result.SuppressedFindings) > 0 {
+			evalResult.SuppressedFindings = make([]*engine.PolicyViolation, 0, len(result.SuppressedFindings))
+			for _, raw := range result.SuppressedFindings {
+				pv, err := parseWasmFinding(policy.Name, raw)
+				if err != nil {
+					return nil, fmt.Errorf("suppressed finding in policy %q: %w", policy.Name, err)
+				}
+				evalResult.SuppressedFindings = append(evalResult.SuppressedFindings, pv)
+			}
 		}
 	} else {
 		// Fallback: violations (strings or deprecated structured objects).

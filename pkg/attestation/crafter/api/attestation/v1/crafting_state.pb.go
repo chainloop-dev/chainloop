@@ -694,9 +694,15 @@ type PolicyVulnerabilityFinding struct {
 	// Optional longer description of the vulnerability
 	Description string `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
 	// Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1")
-	FixedVersion  string `protobuf:"bytes,9,opt,name=fixed_version,json=fixedVersion,proto3" json:"fixed_version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	FixedVersion string `protobuf:"bytes,9,opt,name=fixed_version,json=fixedVersion,proto3" json:"fixed_version,omitempty"`
+	// Chainloop finding identifier this Rego finding maps to. Populated when the
+	// platform-side correlation is known to the policy at evaluation time.
+	ChainloopFindingId string `protobuf:"bytes,10,opt,name=chainloop_finding_id,json=chainloopFindingId,proto3" json:"chainloop_finding_id,omitempty"`
+	// Chainloop assessment identifiers that drove suppression for this finding.
+	// Only meaningful for entries listed in the suppressed_findings result key.
+	ChainloopAssessmentIds []string `protobuf:"bytes,11,rep,name=chainloop_assessment_ids,json=chainloopAssessmentIds,proto3" json:"chainloop_assessment_ids,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *PolicyVulnerabilityFinding) Reset() {
@@ -792,6 +798,20 @@ func (x *PolicyVulnerabilityFinding) GetFixedVersion() string {
 	return ""
 }
 
+func (x *PolicyVulnerabilityFinding) GetChainloopFindingId() string {
+	if x != nil {
+		return x.ChainloopFindingId
+	}
+	return ""
+}
+
+func (x *PolicyVulnerabilityFinding) GetChainloopAssessmentIds() []string {
+	if x != nil {
+		return x.ChainloopAssessmentIds
+	}
+	return nil
+}
+
 // Output schema for SAST findings from policy evaluation.
 // Used when a policy declares finding_type: SAST.
 type PolicySASTFinding struct {
@@ -812,8 +832,14 @@ type PolicySASTFinding struct {
 	Recommendation string `protobuf:"bytes,7,opt,name=recommendation,proto3" json:"recommendation,omitempty"`
 	// Optional numeric severity score from the scanner (scale is tool-defined)
 	SeverityScore *float64 `protobuf:"fixed64,8,opt,name=severity_score,json=severityScore,proto3,oneof" json:"severity_score,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Chainloop finding identifier this Rego finding maps to. Populated when the
+	// platform-side correlation is known to the policy at evaluation time.
+	ChainloopFindingId string `protobuf:"bytes,9,opt,name=chainloop_finding_id,json=chainloopFindingId,proto3" json:"chainloop_finding_id,omitempty"`
+	// Chainloop assessment identifiers that drove suppression for this finding.
+	// Only meaningful for entries listed in the suppressed_findings result key.
+	ChainloopAssessmentIds []string `protobuf:"bytes,10,rep,name=chainloop_assessment_ids,json=chainloopAssessmentIds,proto3" json:"chainloop_assessment_ids,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *PolicySASTFinding) Reset() {
@@ -902,6 +928,20 @@ func (x *PolicySASTFinding) GetSeverityScore() float64 {
 	return 0
 }
 
+func (x *PolicySASTFinding) GetChainloopFindingId() string {
+	if x != nil {
+		return x.ChainloopFindingId
+	}
+	return ""
+}
+
+func (x *PolicySASTFinding) GetChainloopAssessmentIds() []string {
+	if x != nil {
+		return x.ChainloopAssessmentIds
+	}
+	return nil
+}
+
 // Output schema for license violation findings from policy evaluation.
 // Used when a policy declares finding_type: LICENSE_VIOLATION.
 type PolicyLicenseViolationFinding struct {
@@ -920,8 +960,14 @@ type PolicyLicenseViolationFinding struct {
 	ComponentVersion string `protobuf:"bytes,6,opt,name=component_version,json=componentVersion,proto3" json:"component_version,omitempty"`
 	// Suggested fix
 	Recommendation string `protobuf:"bytes,7,opt,name=recommendation,proto3" json:"recommendation,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Chainloop finding identifier this Rego finding maps to. Populated when the
+	// platform-side correlation is known to the policy at evaluation time.
+	ChainloopFindingId string `protobuf:"bytes,8,opt,name=chainloop_finding_id,json=chainloopFindingId,proto3" json:"chainloop_finding_id,omitempty"`
+	// Chainloop assessment identifiers that drove suppression for this finding.
+	// Only meaningful for entries listed in the suppressed_findings result key.
+	ChainloopAssessmentIds []string `protobuf:"bytes,9,rep,name=chainloop_assessment_ids,json=chainloopAssessmentIds,proto3" json:"chainloop_assessment_ids,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *PolicyLicenseViolationFinding) Reset() {
@@ -1001,6 +1047,20 @@ func (x *PolicyLicenseViolationFinding) GetRecommendation() string {
 		return x.Recommendation
 	}
 	return ""
+}
+
+func (x *PolicyLicenseViolationFinding) GetChainloopFindingId() string {
+	if x != nil {
+		return x.ChainloopFindingId
+	}
+	return ""
+}
+
+func (x *PolicyLicenseViolationFinding) GetChainloopAssessmentIds() []string {
+	if x != nil {
+		return x.ChainloopAssessmentIds
+	}
+	return nil
 }
 
 type Commit struct {
@@ -2776,7 +2836,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x05input\x18\x01 \x01(\fR\x05input\x12\x16\n" +
 	"\x06output\x18\x02 \x01(\fR\x06output\"\\\n" +
 	"\x16PolicyEvaluationBundle\x12B\n" +
-	"\vevaluations\x18\x01 \x03(\v2 .attestation.v1.PolicyEvaluationR\vevaluations\"\xf6\x02\n" +
+	"\vevaluations\x18\x01 \x03(\v2 .attestation.v1.PolicyEvaluationR\vevaluations\"\xe2\x03\n" +
 	"\x1aPolicyVulnerabilityFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12'\n" +
 	"\vexternal_id\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\n" +
@@ -2787,7 +2847,10 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x04cwes\x18\x06 \x03(\tR\x04cwes\x12&\n" +
 	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12 \n" +
 	"\vdescription\x18\b \x01(\tR\vdescription\x12#\n" +
-	"\rfixed_version\x18\t \x01(\tR\ffixedVersion\"\xc9\x02\n" +
+	"\rfixed_version\x18\t \x01(\tR\ffixedVersion\x120\n" +
+	"\x14chainloop_finding_id\x18\n" +
+	" \x01(\tR\x12chainloopFindingId\x128\n" +
+	"\x18chainloop_assessment_ids\x18\v \x03(\tR\x16chainloopAssessmentIds\"\xb5\x03\n" +
 	"\x11PolicySASTFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12\x1f\n" +
 	"\arule_id\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x06ruleId\x12\"\n" +
@@ -2797,8 +2860,11 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"lineNumber\x12!\n" +
 	"\fcode_snippet\x18\x06 \x01(\tR\vcodeSnippet\x12&\n" +
 	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12*\n" +
-	"\x0eseverity_score\x18\b \x01(\x01H\x00R\rseverityScore\x88\x01\x01B\x11\n" +
-	"\x0f_severity_score\"\xb2\x02\n" +
+	"\x0eseverity_score\x18\b \x01(\x01H\x00R\rseverityScore\x88\x01\x01\x120\n" +
+	"\x14chainloop_finding_id\x18\t \x01(\tR\x12chainloopFindingId\x128\n" +
+	"\x18chainloop_assessment_ids\x18\n" +
+	" \x03(\tR\x16chainloopAssessmentIdsB\x11\n" +
+	"\x0f_severity_score\"\x9e\x03\n" +
 	"\x1dPolicyLicenseViolationFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12-\n" +
 	"\x0ecomponent_name\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\rcomponentName\x12!\n" +
@@ -2807,7 +2873,9 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"license_id\x18\x04 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tlicenseId\x12!\n" +
 	"\flicense_name\x18\x05 \x01(\tR\vlicenseName\x12+\n" +
 	"\x11component_version\x18\x06 \x01(\tR\x10componentVersion\x12&\n" +
-	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\"\xce\x06\n" +
+	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x120\n" +
+	"\x14chainloop_finding_id\x18\b \x01(\tR\x12chainloopFindingId\x128\n" +
+	"\x18chainloop_assessment_ids\x18\t \x03(\tR\x16chainloopAssessmentIds\"\xce\x06\n" +
 	"\x06Commit\x12\x1b\n" +
 	"\x04hash\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04hash\x12!\n" +
 	"\fauthor_email\x18\x02 \x01(\tR\vauthorEmail\x12(\n" +

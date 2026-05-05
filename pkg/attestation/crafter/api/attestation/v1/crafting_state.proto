@@ -336,6 +336,12 @@ message PolicyVulnerabilityFinding {
   string description = 8;
   // Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1")
   string fixed_version = 9;
+  // Chainloop finding identifier this Rego finding maps to. Populated when the
+  // platform-side correlation is known to the policy at evaluation time.
+  string chainloop_finding_id = 10;
+  // Chainloop assessment identifiers that drove suppression for this finding.
+  // Only meaningful for entries listed in the suppressed_findings result key.
+  repeated string chainloop_assessment_ids = 11;
 }
 
 // Output schema for SAST findings from policy evaluation.
@@ -357,6 +363,12 @@ message PolicySASTFinding {
   string recommendation = 7;
   // Optional numeric severity score from the scanner (scale is tool-defined)
   optional double severity_score = 8;
+  // Chainloop finding identifier this Rego finding maps to. Populated when the
+  // platform-side correlation is known to the policy at evaluation time.
+  string chainloop_finding_id = 9;
+  // Chainloop assessment identifiers that drove suppression for this finding.
+  // Only meaningful for entries listed in the suppressed_findings result key.
+  repeated string chainloop_assessment_ids = 10;
 }
 
 // Output schema for license violation findings from policy evaluation.
@@ -376,6 +388,12 @@ message PolicyLicenseViolationFinding {
   string component_version = 6;
   // Suggested fix
   string recommendation = 7;
+  // Chainloop finding identifier this Rego finding maps to. Populated when the
+  // platform-side correlation is known to the policy at evaluation time.
+  string chainloop_finding_id = 8;
+  // Chainloop assessment identifiers that drove suppression for this finding.
+  // Only meaningful for entries listed in the suppressed_findings result key.
+  repeated string chainloop_assessment_ids = 9;
 }
 
 message Commit {

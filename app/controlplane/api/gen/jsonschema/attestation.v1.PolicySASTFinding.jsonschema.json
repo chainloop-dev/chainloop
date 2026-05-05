@@ -4,6 +4,17 @@
   "additionalProperties": false,
   "description": "Output schema for SAST findings from policy evaluation.\n Used when a policy declares finding_type: SAST.",
   "patternProperties": {
+    "^(chainloop_assessment_ids)$": {
+      "description": "Chainloop assessment identifiers that drove suppression for this finding.\n Only meaningful for entries listed in the suppressed_findings result key.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(chainloop_finding_id)$": {
+      "description": "Chainloop finding identifier this Rego finding maps to. Populated when the\n platform-side correlation is known to the policy at evaluation time.",
+      "type": "string"
+    },
     "^(code_snippet)$": {
       "description": "Code snippet showing the issue",
       "type": "string"
@@ -39,6 +50,17 @@
     }
   },
   "properties": {
+    "chainloopAssessmentIds": {
+      "description": "Chainloop assessment identifiers that drove suppression for this finding.\n Only meaningful for entries listed in the suppressed_findings result key.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "chainloopFindingId": {
+      "description": "Chainloop finding identifier this Rego finding maps to. Populated when the\n platform-side correlation is known to the policy at evaluation time.",
+      "type": "string"
+    },
     "codeSnippet": {
       "description": "Code snippet showing the issue",
       "type": "string"

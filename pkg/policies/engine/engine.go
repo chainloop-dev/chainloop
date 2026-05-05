@@ -142,10 +142,15 @@ type PolicyEngine interface {
 
 type EvaluationResult struct {
 	Violations []*PolicyViolation `json:"violations"`
-	Skipped    bool               `json:"skipped"`
-	SkipReason string             `json:"skipReason"`
-	Ignore     bool               `json:"ignore"`
-	RawData    *RawData           `json:"rawData"`
+	// SuppressedFindings holds findings that the policy emitted in `findings`
+	// but flagged as suppressed (e.g. because a platform-side assessment matched).
+	// Every entry here also appears in Violations / findings — this is the
+	// subset that should not contribute to gating decisions.
+	SuppressedFindings []*PolicyViolation `json:"suppressedFindings,omitempty"`
+	Skipped            bool               `json:"skipped"`
+	SkipReason         string             `json:"skipReason"`
+	Ignore             bool               `json:"ignore"`
+	RawData            *RawData           `json:"rawData"`
 }
 
 type RawData struct {

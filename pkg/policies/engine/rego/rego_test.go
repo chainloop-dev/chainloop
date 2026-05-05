@@ -642,6 +642,97 @@ func TestRego_StructuredViolations(t *testing.T) {
 	}
 }
 
+func TestRego_SuppressedFindings(t *testing.T) {
+	regoContent, err := os.ReadFile("testfiles/suppressed_findings.rego")
+	require.NoError(t, err)
+
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "suppressed-findings-policy",
+		Source: regoContent,
+	}
+
+	tests := []struct {
+		name            string
+		input           string
+		wantFindings    int
+		wantSuppressed  int
+		checkSuppressed func(t *testing.T, sf []*engine.PolicyViolation)
+	}{
+		{
+			name:           "no suppressed findings when none flagged",
+			input:          `{"vulnerabilities": [{"id": "CVE-2024-1", "purl": "pkg:npm/foo@1.0", "severity": "HIGH"}]}`,
+			wantFindings:   1,
+			wantSuppressed: 0,
+		},
+		{
+			name: "suppressed entries surface separately and also in findings",
+			input: `{"vulnerabilities": [
+				{"id": "CVE-2024-1", "purl": "pkg:npm/foo@1.0", "severity": "HIGH"},
+				{"id": "CVE-2024-2", "purl": "pkg:npm/bar@2.0", "severity": "LOW", "suppressed": true, "chainloop_finding_id": "fnd_01J", "chainloop_assessment_ids": ["asm_01J", "asm_02K"]}
+			]}`,
+			wantFindings:   2,
+			wantSuppressed: 1,
+			checkSuppressed: func(t *testing.T, sf []*engine.PolicyViolation) {
+				t.Helper()
+				v := sf[0]
+				require.NotNil(t, v.RawFinding)
+				assert.Equal(t, "CVE-2024-2", v.RawFinding["external_id"])
+				assert.Equal(t, "fnd_01J", v.RawFinding["chainloop_finding_id"])
+				ids, ok := v.RawFinding["chainloop_assessment_ids"].([]any)
+				require.True(t, ok, "chainloop_assessment_ids must be a slice, got %T", v.RawFinding["chainloop_assessment_ids"])
+				assert.ElementsMatch(t, []any{"asm_01J", "asm_02K"}, ids)
+			},
+		},
+		{
+			name: "every suppressed finding also appears in findings",
+			input: `{"vulnerabilities": [
+				{"id": "CVE-S-1", "purl": "pkg:npm/a@1", "severity": "LOW", "suppressed": true, "chainloop_finding_id": "fnd_a", "chainloop_assessment_ids": ["asm_a"]},
+				{"id": "CVE-S-2", "purl": "pkg:npm/b@2", "severity": "LOW", "suppressed": true, "chainloop_finding_id": "fnd_b", "chainloop_assessment_ids": ["asm_b"]}
+			]}`,
+			wantFindings:   2,
+			wantSuppressed: 2,
+			checkSuppressed: func(t *testing.T, sf []*engine.PolicyViolation) {
+				t.Helper()
+				suppressedIDs := map[string]bool{}
+				for _, v := range sf {
+					require.NotNil(t, v.RawFinding)
+					suppressedIDs[v.RawFinding["external_id"].(string)] = true
+				}
+				assert.Equal(t, map[string]bool{"CVE-S-1": true, "CVE-S-2": true}, suppressedIDs)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := r.Verify(context.TODO(), policy, []byte(tc.input), nil)
+			require.NoError(t, err)
+			assert.Len(t, result.Violations, tc.wantFindings, "findings count mismatch")
+			assert.Len(t, result.SuppressedFindings, tc.wantSuppressed, "suppressed_findings count mismatch")
+
+			// Invariant: every suppressed entry must also appear in findings (matched by external_id).
+			findingIDs := map[string]bool{}
+			for _, v := range result.Violations {
+				if v.RawFinding != nil {
+					if id, ok := v.RawFinding["external_id"].(string); ok {
+						findingIDs[id] = true
+					}
+				}
+			}
+			for _, sv := range result.SuppressedFindings {
+				require.NotNil(t, sv.RawFinding)
+				id, _ := sv.RawFinding["external_id"].(string)
+				assert.True(t, findingIDs[id], "suppressed finding %q must also appear in findings", id)
+			}
+
+			if tc.checkSuppressed != nil {
+				tc.checkSuppressed(t, result.SuppressedFindings)
+			}
+		})
+	}
+}
+
 func TestRego_VulnerabilityBuiltinIntegration(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/structured_vulnerability_builtin.rego")
 	require.NoError(t, err)

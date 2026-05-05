@@ -358,6 +358,16 @@ export interface PolicyVulnerabilityFinding {
   description: string;
   /** Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1") */
   fixedVersion: string;
+  /**
+   * Chainloop finding identifier this Rego finding maps to. Populated when the
+   * platform-side correlation is known to the policy at evaluation time.
+   */
+  chainloopFindingId: string;
+  /**
+   * Chainloop assessment identifiers that drove suppression for this finding.
+   * Only meaningful for entries listed in the suppressed_findings result key.
+   */
+  chainloopAssessmentIds: string[];
 }
 
 /**
@@ -380,7 +390,19 @@ export interface PolicySASTFinding {
   /** Suggested fix */
   recommendation: string;
   /** Optional numeric severity score from the scanner (scale is tool-defined) */
-  severityScore?: number | undefined;
+  severityScore?:
+    | number
+    | undefined;
+  /**
+   * Chainloop finding identifier this Rego finding maps to. Populated when the
+   * platform-side correlation is known to the policy at evaluation time.
+   */
+  chainloopFindingId: string;
+  /**
+   * Chainloop assessment identifiers that drove suppression for this finding.
+   * Only meaningful for entries listed in the suppressed_findings result key.
+   */
+  chainloopAssessmentIds: string[];
 }
 
 /**
@@ -402,6 +424,16 @@ export interface PolicyLicenseViolationFinding {
   componentVersion: string;
   /** Suggested fix */
   recommendation: string;
+  /**
+   * Chainloop finding identifier this Rego finding maps to. Populated when the
+   * platform-side correlation is known to the policy at evaluation time.
+   */
+  chainloopFindingId: string;
+  /**
+   * Chainloop assessment identifiers that drove suppression for this finding.
+   * Only meaningful for entries listed in the suppressed_findings result key.
+   */
+  chainloopAssessmentIds: string[];
 }
 
 export interface Commit {
@@ -3248,6 +3280,8 @@ function createBasePolicyVulnerabilityFinding(): PolicyVulnerabilityFinding {
     recommendation: "",
     description: "",
     fixedVersion: "",
+    chainloopFindingId: "",
+    chainloopAssessmentIds: [],
   };
 }
 
@@ -3279,6 +3313,12 @@ export const PolicyVulnerabilityFinding = {
     }
     if (message.fixedVersion !== "") {
       writer.uint32(74).string(message.fixedVersion);
+    }
+    if (message.chainloopFindingId !== "") {
+      writer.uint32(82).string(message.chainloopFindingId);
+    }
+    for (const v of message.chainloopAssessmentIds) {
+      writer.uint32(90).string(v!);
     }
     return writer;
   },
@@ -3353,6 +3393,20 @@ export const PolicyVulnerabilityFinding = {
 
           message.fixedVersion = reader.string();
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.chainloopFindingId = reader.string();
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.chainloopAssessmentIds.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3373,6 +3427,10 @@ export const PolicyVulnerabilityFinding = {
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
       description: isSet(object.description) ? String(object.description) : "",
       fixedVersion: isSet(object.fixedVersion) ? String(object.fixedVersion) : "",
+      chainloopFindingId: isSet(object.chainloopFindingId) ? String(object.chainloopFindingId) : "",
+      chainloopAssessmentIds: Array.isArray(object?.chainloopAssessmentIds)
+        ? object.chainloopAssessmentIds.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -3391,6 +3449,12 @@ export const PolicyVulnerabilityFinding = {
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
     message.description !== undefined && (obj.description = message.description);
     message.fixedVersion !== undefined && (obj.fixedVersion = message.fixedVersion);
+    message.chainloopFindingId !== undefined && (obj.chainloopFindingId = message.chainloopFindingId);
+    if (message.chainloopAssessmentIds) {
+      obj.chainloopAssessmentIds = message.chainloopAssessmentIds.map((e) => e);
+    } else {
+      obj.chainloopAssessmentIds = [];
+    }
     return obj;
   },
 
@@ -3409,6 +3473,8 @@ export const PolicyVulnerabilityFinding = {
     message.recommendation = object.recommendation ?? "";
     message.description = object.description ?? "";
     message.fixedVersion = object.fixedVersion ?? "";
+    message.chainloopFindingId = object.chainloopFindingId ?? "";
+    message.chainloopAssessmentIds = object.chainloopAssessmentIds?.map((e) => e) || [];
     return message;
   },
 };
@@ -3423,6 +3489,8 @@ function createBasePolicySASTFinding(): PolicySASTFinding {
     codeSnippet: "",
     recommendation: "",
     severityScore: undefined,
+    chainloopFindingId: "",
+    chainloopAssessmentIds: [],
   };
 }
 
@@ -3451,6 +3519,12 @@ export const PolicySASTFinding = {
     }
     if (message.severityScore !== undefined) {
       writer.uint32(65).double(message.severityScore);
+    }
+    if (message.chainloopFindingId !== "") {
+      writer.uint32(74).string(message.chainloopFindingId);
+    }
+    for (const v of message.chainloopAssessmentIds) {
+      writer.uint32(82).string(v!);
     }
     return writer;
   },
@@ -3518,6 +3592,20 @@ export const PolicySASTFinding = {
 
           message.severityScore = reader.double();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.chainloopFindingId = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.chainloopAssessmentIds.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3537,6 +3625,10 @@ export const PolicySASTFinding = {
       codeSnippet: isSet(object.codeSnippet) ? String(object.codeSnippet) : "",
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
       severityScore: isSet(object.severityScore) ? Number(object.severityScore) : undefined,
+      chainloopFindingId: isSet(object.chainloopFindingId) ? String(object.chainloopFindingId) : "",
+      chainloopAssessmentIds: Array.isArray(object?.chainloopAssessmentIds)
+        ? object.chainloopAssessmentIds.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -3550,6 +3642,12 @@ export const PolicySASTFinding = {
     message.codeSnippet !== undefined && (obj.codeSnippet = message.codeSnippet);
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
     message.severityScore !== undefined && (obj.severityScore = message.severityScore);
+    message.chainloopFindingId !== undefined && (obj.chainloopFindingId = message.chainloopFindingId);
+    if (message.chainloopAssessmentIds) {
+      obj.chainloopAssessmentIds = message.chainloopAssessmentIds.map((e) => e);
+    } else {
+      obj.chainloopAssessmentIds = [];
+    }
     return obj;
   },
 
@@ -3567,6 +3665,8 @@ export const PolicySASTFinding = {
     message.codeSnippet = object.codeSnippet ?? "";
     message.recommendation = object.recommendation ?? "";
     message.severityScore = object.severityScore ?? undefined;
+    message.chainloopFindingId = object.chainloopFindingId ?? "";
+    message.chainloopAssessmentIds = object.chainloopAssessmentIds?.map((e) => e) || [];
     return message;
   },
 };
@@ -3580,6 +3680,8 @@ function createBasePolicyLicenseViolationFinding(): PolicyLicenseViolationFindin
     licenseName: "",
     componentVersion: "",
     recommendation: "",
+    chainloopFindingId: "",
+    chainloopAssessmentIds: [],
   };
 }
 
@@ -3605,6 +3707,12 @@ export const PolicyLicenseViolationFinding = {
     }
     if (message.recommendation !== "") {
       writer.uint32(58).string(message.recommendation);
+    }
+    if (message.chainloopFindingId !== "") {
+      writer.uint32(66).string(message.chainloopFindingId);
+    }
+    for (const v of message.chainloopAssessmentIds) {
+      writer.uint32(74).string(v!);
     }
     return writer;
   },
@@ -3665,6 +3773,20 @@ export const PolicyLicenseViolationFinding = {
 
           message.recommendation = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.chainloopFindingId = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.chainloopAssessmentIds.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3683,6 +3805,10 @@ export const PolicyLicenseViolationFinding = {
       licenseName: isSet(object.licenseName) ? String(object.licenseName) : "",
       componentVersion: isSet(object.componentVersion) ? String(object.componentVersion) : "",
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
+      chainloopFindingId: isSet(object.chainloopFindingId) ? String(object.chainloopFindingId) : "",
+      chainloopAssessmentIds: Array.isArray(object?.chainloopAssessmentIds)
+        ? object.chainloopAssessmentIds.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -3695,6 +3821,12 @@ export const PolicyLicenseViolationFinding = {
     message.licenseName !== undefined && (obj.licenseName = message.licenseName);
     message.componentVersion !== undefined && (obj.componentVersion = message.componentVersion);
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
+    message.chainloopFindingId !== undefined && (obj.chainloopFindingId = message.chainloopFindingId);
+    if (message.chainloopAssessmentIds) {
+      obj.chainloopAssessmentIds = message.chainloopAssessmentIds.map((e) => e);
+    } else {
+      obj.chainloopAssessmentIds = [];
+    }
     return obj;
   },
 
@@ -3713,6 +3845,8 @@ export const PolicyLicenseViolationFinding = {
     message.licenseName = object.licenseName ?? "";
     message.componentVersion = object.componentVersion ?? "";
     message.recommendation = object.recommendation ?? "";
+    message.chainloopFindingId = object.chainloopFindingId ?? "";
+    message.chainloopAssessmentIds = object.chainloopAssessmentIds?.map((e) => e) || [];
     return message;
   },
 };
