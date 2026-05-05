@@ -685,6 +685,24 @@ func TestRego_SuppressedFindings(t *testing.T) {
 			},
 		},
 		{
+			name: "suppressed entry without correlation fields still surfaces with zero-value defaults",
+			input: `{"vulnerabilities": [
+				{"id": "CVE-2024-3", "purl": "pkg:npm/baz@3.0", "severity": "MEDIUM", "suppressed": true}
+			]}`,
+			wantFindings:   1,
+			wantSuppressed: 1,
+			checkSuppressed: func(t *testing.T, sf []*engine.PolicyViolation) {
+				t.Helper()
+				v := sf[0]
+				require.NotNil(t, v.RawFinding)
+				assert.Equal(t, "CVE-2024-3", v.RawFinding["external_id"])
+				assert.Equal(t, "", v.RawFinding["chainloop_finding_id"])
+				ids, ok := v.RawFinding["chainloop_assessment_ids"].([]any)
+				require.True(t, ok, "chainloop_assessment_ids must be a slice, got %T", v.RawFinding["chainloop_assessment_ids"])
+				assert.Empty(t, ids)
+			},
+		},
+		{
 			name: "every suppressed finding also appears in findings",
 			input: `{"vulnerabilities": [
 				{"id": "CVE-S-1", "purl": "pkg:npm/a@1", "severity": "LOW", "suppressed": true, "chainloop_finding_id": "fnd_a", "chainloop_assessment_ids": ["asm_a"]},

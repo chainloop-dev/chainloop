@@ -42,6 +42,8 @@ findings contains v if {
 
 # A finding is suppressed when the input marks it as suppressed; same shape as
 # the corresponding entry in `findings`, plus the chainloop_* correlation fields.
+# The correlation fields are read with object.get so that omitted fields fall
+# back to safe zero values instead of making the whole entry undefined.
 suppressed_findings contains v if {
 	some vuln in input.vulnerabilities
 	vuln.suppressed == true
@@ -50,7 +52,7 @@ suppressed_findings contains v if {
 		"external_id": vuln.id,
 		"package_purl": vuln.purl,
 		"severity": vuln.severity,
-		"chainloop_finding_id": vuln.chainloop_finding_id,
-		"chainloop_assessment_ids": vuln.chainloop_assessment_ids,
+		"chainloop_finding_id": object.get(vuln, "chainloop_finding_id", ""),
+		"chainloop_assessment_ids": object.get(vuln, "chainloop_assessment_ids", []),
 	}
 }
