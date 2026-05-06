@@ -81,7 +81,13 @@ func (i *OpenAPICrafter) Craft(ctx context.Context, filepath string) (*api.Attes
 		return nil, fmt.Errorf("invalid OpenAPI spec file: %w", ErrInvalidMaterialType)
 	}
 
-	if _, ok := doc["openapi"].(string); !ok {
+	if fv, ok := doc["swagger"].(float64); ok {
+		doc["swagger"] = fmt.Sprintf("%.1f", fv)
+	}
+
+	_, hasOpenAPI := doc["openapi"].(string)
+	_, hasSwagger := doc["swagger"].(string)
+	if !hasOpenAPI && !hasSwagger {
 		return nil, fmt.Errorf("invalid OpenAPI spec file: %w", ErrInvalidMaterialType)
 	}
 
@@ -110,6 +116,8 @@ func (i *OpenAPICrafter) injectAnnotations(m *api.Attestation_Material, doc map[
 	}
 
 	if specVersion, ok := doc["openapi"].(string); ok && specVersion != "" {
+		m.Annotations["chainloop.material.api.spec_version"] = specVersion
+	} else if specVersion, ok := doc["swagger"].(string); ok && specVersion != "" {
 		m.Annotations["chainloop.material.api.spec_version"] = specVersion
 	}
 

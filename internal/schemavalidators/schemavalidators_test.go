@@ -334,8 +334,23 @@ func TestValidateOpenAPI(t *testing.T) {
 			wantErr: "missing properties",
 		},
 		{
+			name: "valid Swagger 2.0 spec",
+			data: loadJSONFile(t, "./testdata/swagger-2.0.json"),
+		},
+		{
 			name: "valid OpenAPI 3.0 spec",
 			data: loadJSONFile(t, "./testdata/openapi-3.0.json"),
+		},
+		{
+			name: "valid OpenAPI 3.2 spec",
+			data: loadJSONFile(t, "./testdata/openapi-3.2.json"),
+		},
+		{
+			name: "missing required fields for Swagger 2.0",
+			data: map[string]any{
+				"swagger": "2.0",
+			},
+			wantErr: "missing properties",
 		},
 	}
 
