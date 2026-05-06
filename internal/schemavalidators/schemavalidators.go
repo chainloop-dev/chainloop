@@ -77,10 +77,14 @@ const (
 	AIAgentConfigVersion0_1 AIAgentConfigVersion = "0.1"
 	// AICodingSessionVersion0_1 represents AI Coding Session version 0.1 schema.
 	AICodingSessionVersion0_1 AICodingSessionVersion = "0.1"
+	// OpenAPIVersion2_0 represents Swagger/OpenAPI version 2.0 schema.
+	OpenAPIVersion2_0 OpenAPIVersion = "2.0"
 	// OpenAPIVersion3_0 represents OpenAPI version 3.0 schema.
 	OpenAPIVersion3_0 OpenAPIVersion = "3.0"
 	// OpenAPIVersion3_1 represents OpenAPI version 3.1 schema.
 	OpenAPIVersion3_1 OpenAPIVersion = "3.1"
+	// OpenAPIVersion3_2 represents OpenAPI version 3.2 schema.
+	OpenAPIVersion3_2 OpenAPIVersion = "3.2"
 	// AsyncAPIVersion2_6 represents AsyncAPI version 2.6 schema.
 	AsyncAPIVersion2_6 AsyncAPIVersion = "2.6"
 	// AsyncAPIVersion3_0 represents AsyncAPI version 3.0 schema.
@@ -135,10 +139,16 @@ var (
 	aiCodingSessionSpecVersion0_1 string
 
 	// OpenAPI schemas
+	//go:embed external_schemas/openapi/json-schema-draft-04.json
+	jsonSchemaDraft04 string
+	//go:embed external_schemas/openapi/swagger-2.0.schema.json
+	swaggerSpecVersion2_0 string
 	//go:embed external_schemas/openapi/openapi-3.0.schema.json
 	openapiSpecVersion3_0 string
 	//go:embed external_schemas/openapi/openapi-3.1.schema.json
 	openapiSpecVersion3_1 string
+	//go:embed external_schemas/openapi/openapi-3.2.schema.json
+	openapiSpecVersion3_2 string
 
 	// AsyncAPI schemas
 	//go:embed external_schemas/asyncapi/asyncapi-2.6.0.schema.json
@@ -441,16 +451,27 @@ func ValidateAICodingSession(data any, version AICodingSessionVersion) error {
 
 func initOpenAPISchemas() {
 	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("http://json-schema.org/draft-04/schema", strings.NewReader(jsonSchemaDraft04)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "http://json-schema.org/draft-04/schema", err))
+	}
+	if err := compiler.AddResource("http://swagger.io/v2/schema.json", strings.NewReader(swaggerSpecVersion2_0)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "http://swagger.io/v2/schema.json", err))
+	}
 	if err := compiler.AddResource("https://spec.openapis.org/oas/3.0/schema/2021-09-28", strings.NewReader(openapiSpecVersion3_0)); err != nil {
 		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://spec.openapis.org/oas/3.0/schema/2021-09-28", err))
 	}
 	if err := compiler.AddResource("https://spec.openapis.org/oas/3.1/schema/2022-10-07", strings.NewReader(openapiSpecVersion3_1)); err != nil {
 		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://spec.openapis.org/oas/3.1/schema/2022-10-07", err))
 	}
+	if err := compiler.AddResource("https://spec.openapis.org/oas/3.2/schema/2025-02-13", strings.NewReader(openapiSpecVersion3_2)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://spec.openapis.org/oas/3.2/schema/2025-02-13", err))
+	}
 
 	compiledOpenAPISchemas = map[OpenAPIVersion]*jsonschema.Schema{
+		OpenAPIVersion2_0: compiler.MustCompile("http://swagger.io/v2/schema.json"),
 		OpenAPIVersion3_0: compiler.MustCompile("https://spec.openapis.org/oas/3.0/schema/2021-09-28"),
 		OpenAPIVersion3_1: compiler.MustCompile("https://spec.openapis.org/oas/3.1/schema/2022-10-07"),
+		OpenAPIVersion3_2: compiler.MustCompile("https://spec.openapis.org/oas/3.2/schema/2025-02-13"),
 	}
 }
 
@@ -469,13 +490,24 @@ func initAsyncAPISchemas() {
 	}
 }
 
-// ValidateOpenAPI validates the given object against an OpenAPI schema version.
-// It tries 3.1 first, then falls back to 3.0.
+// ValidateOpenAPI validates the given object against an OpenAPI/Swagger schema version.
+// It tries 3.2 first, then falls back to 3.1, 3.0, and finally Swagger 2.0.
 func ValidateOpenAPI(data interface{}) error {
 	openapiOnce.Do(initOpenAPISchemas)
 
 	var errs error
-	err := compiledOpenAPISchemas[OpenAPIVersion3_1].Validate(data)
+
+	err := compiledOpenAPISchemas[OpenAPIVersion3_2].Validate(data)
+	if err != nil {
+		if err := errorIsJSONFormat(err); err != nil {
+			return err
+		}
+		errs = multierror.Append(errs, err)
+	} else {
+		return nil
+	}
+
+	err = compiledOpenAPISchemas[OpenAPIVersion3_1].Validate(data)
 	if err != nil {
 		if err := errorIsJSONFormat(err); err != nil {
 			return err
@@ -486,6 +518,16 @@ func ValidateOpenAPI(data interface{}) error {
 	}
 
 	err = compiledOpenAPISchemas[OpenAPIVersion3_0].Validate(data)
+	if err != nil {
+		if err := errorIsJSONFormat(err); err != nil {
+			return err
+		}
+		errs = multierror.Append(errs, err)
+	} else {
+		return nil
+	}
+
+	err = compiledOpenAPISchemas[OpenAPIVersion2_0].Validate(data)
 	if err != nil {
 		if err := errorIsJSONFormat(err); err != nil {
 			errs = multierror.Append(errs, err)

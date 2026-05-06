@@ -134,6 +134,41 @@ func TestOpenAPICraft(t *testing.T) {
 				"chainloop.material.api.version":      "2.0.0",
 			},
 		},
+		{
+			name:     "valid OpenAPI 3.2 YAML",
+			filePath: "./testdata/openapi-3.2.yaml",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_OPENAPI_SPEC,
+			},
+			annotations: map[string]string{
+				"chainloop.material.api.name":         "Swagger Petstore - OpenAPI 3.2",
+				"chainloop.material.api.spec_version": "3.2.0",
+				"chainloop.material.api.version":      "1.0.13",
+			},
+		},
+		{
+			name:     "valid Swagger 2.0 YAML",
+			filePath: "./testdata/openapi-2.0.yaml",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_OPENAPI_SPEC,
+			},
+			annotations: map[string]string{
+				"chainloop.material.api.name":         "Swagger Petstore 2.0",
+				"chainloop.material.api.spec_version": "2.0",
+				"chainloop.material.api.version":      "1.0.0",
+			},
+		},
+		{
+			name:     "invalid Swagger 2.0 spec",
+			filePath: "./testdata/swagger-2.0-invalid.json",
+			wantErr:  "invalid OpenAPI spec file",
+			schema: &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_OPENAPI_SPEC,
+			},
+		},
 	}
 
 	assert := assert.New(t)
@@ -172,6 +207,30 @@ func TestOpenAPICraft(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOpenAPICraftNoStrictValidationSwagger2(t *testing.T) {
+	l := zerolog.Nop()
+	uploader := mUploader.NewUploader(t)
+	uploader.On("UploadFile", context.TODO(), "./testdata/swagger-2.0-invalid.json").
+		Return(&casclient.UpDownStatus{
+			Digest:   "deadbeef",
+			Filename: "spec.json",
+		}, nil)
+
+	backend := &casclient.CASBackend{Uploader: uploader}
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_OPENAPI_SPEC,
+	}
+
+	crafter, err := materials.NewOpenAPICrafter(schema, backend, &l, materials.WithOpenAPINoStrictValidation(true))
+	require.NoError(t, err)
+
+	got, err := crafter.Craft(context.TODO(), "./testdata/swagger-2.0-invalid.json")
+	require.NoError(t, err)
+	assert.NotNil(t, got)
+	assert.Equal(t, schema.Type.String(), got.MaterialType.String())
 }
 
 func TestOpenAPICraftNoStrictValidation(t *testing.T) {
