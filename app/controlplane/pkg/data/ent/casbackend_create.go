@@ -177,6 +177,20 @@ func (_c *CASBackendCreate) SetNillableFallback(v *bool) *CASBackendCreate {
 	return _c
 }
 
+// SetManaged sets the "managed" field.
+func (_c *CASBackendCreate) SetManaged(v bool) *CASBackendCreate {
+	_c.mutation.SetManaged(v)
+	return _c
+}
+
+// SetNillableManaged sets the "managed" field if the given value is not nil.
+func (_c *CASBackendCreate) SetNillableManaged(v *bool) *CASBackendCreate {
+	if v != nil {
+		_c.SetManaged(*v)
+	}
+	return _c
+}
+
 // SetMaxBlobSizeBytes sets the "max_blob_size_bytes" field.
 func (_c *CASBackendCreate) SetMaxBlobSizeBytes(v int64) *CASBackendCreate {
 	_c.mutation.SetMaxBlobSizeBytes(v)
@@ -282,6 +296,10 @@ func (_c *CASBackendCreate) defaults() {
 		v := casbackend.DefaultFallback
 		_c.mutation.SetFallback(v)
 	}
+	if _, ok := _c.mutation.Managed(); !ok {
+		v := casbackend.DefaultManaged
+		_c.mutation.SetManaged(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := casbackend.DefaultID()
 		_c.mutation.SetID(v)
@@ -329,6 +347,9 @@ func (_c *CASBackendCreate) check() error {
 	}
 	if _, ok := _c.mutation.Fallback(); !ok {
 		return &ValidationError{Name: "fallback", err: errors.New(`ent: missing required field "CASBackend.fallback"`)}
+	}
+	if _, ok := _c.mutation.Managed(); !ok {
+		return &ValidationError{Name: "managed", err: errors.New(`ent: missing required field "CASBackend.managed"`)}
 	}
 	if _, ok := _c.mutation.MaxBlobSizeBytes(); !ok {
 		return &ValidationError{Name: "max_blob_size_bytes", err: errors.New(`ent: missing required field "CASBackend.max_blob_size_bytes"`)}
@@ -423,6 +444,10 @@ func (_c *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Fallback(); ok {
 		_spec.SetField(casbackend.FieldFallback, field.TypeBool, value)
 		_node.Fallback = value
+	}
+	if value, ok := _c.mutation.Managed(); ok {
+		_spec.SetField(casbackend.FieldManaged, field.TypeBool, value)
+		_node.Managed = value
 	}
 	if value, ok := _c.mutation.MaxBlobSizeBytes(); ok {
 		_spec.SetField(casbackend.FieldMaxBlobSizeBytes, field.TypeInt64, value)
@@ -636,6 +661,18 @@ func (u *CASBackendUpsert) SetFallback(v bool) *CASBackendUpsert {
 // UpdateFallback sets the "fallback" field to the value that was provided on create.
 func (u *CASBackendUpsert) UpdateFallback() *CASBackendUpsert {
 	u.SetExcluded(casbackend.FieldFallback)
+	return u
+}
+
+// SetManaged sets the "managed" field.
+func (u *CASBackendUpsert) SetManaged(v bool) *CASBackendUpsert {
+	u.Set(casbackend.FieldManaged, v)
+	return u
+}
+
+// UpdateManaged sets the "managed" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateManaged() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldManaged)
 	return u
 }
 
@@ -861,6 +898,20 @@ func (u *CASBackendUpsertOne) SetFallback(v bool) *CASBackendUpsertOne {
 func (u *CASBackendUpsertOne) UpdateFallback() *CASBackendUpsertOne {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateFallback()
+	})
+}
+
+// SetManaged sets the "managed" field.
+func (u *CASBackendUpsertOne) SetManaged(v bool) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetManaged(v)
+	})
+}
+
+// UpdateManaged sets the "managed" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateManaged() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateManaged()
 	})
 }
 
@@ -1256,6 +1307,20 @@ func (u *CASBackendUpsertBulk) SetFallback(v bool) *CASBackendUpsertBulk {
 func (u *CASBackendUpsertBulk) UpdateFallback() *CASBackendUpsertBulk {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateFallback()
+	})
+}
+
+// SetManaged sets the "managed" field.
+func (u *CASBackendUpsertBulk) SetManaged(v bool) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetManaged(v)
+	})
+}
+
+// UpdateManaged sets the "managed" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateManaged() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateManaged()
 	})
 }
 

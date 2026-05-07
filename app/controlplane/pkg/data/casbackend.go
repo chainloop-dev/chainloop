@@ -155,6 +155,7 @@ func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateO
 			SetNillableFallback(opts.Fallback).
 			SetProvider(opts.Provider).
 			SetNillableDefault(opts.Default).
+			SetNillableManaged(opts.Managed).
 			SetSecretName(opts.SecretName).
 			SetMaxBlobSizeBytes(opts.MaxBytes).
 			Save(ctx)
@@ -404,6 +405,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		Inline:           backend.Provider == biz.CASBackendInline,
 		Limits:           limits,
 		Fallback:         backend.Fallback,
+		Managed:          backend.Managed,
 	}
 
 	if org := backend.Edges.Organization; org != nil {

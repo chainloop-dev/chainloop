@@ -60,6 +60,8 @@ func (CASBackend) Fields() []ent.Field {
 		field.Time("deleted_at").Optional(),
 		// fallback, main cas backend. If true, this backend will be used as a fallback when the default backend is unreachable
 		field.Bool("fallback").Default(false),
+		// managed indicates this backend is provisioned and operated by Chainloop
+		field.Bool("managed").Default(false),
 		field.Int64("max_blob_size_bytes"),
 	}
 }

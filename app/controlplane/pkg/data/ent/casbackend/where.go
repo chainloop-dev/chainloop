@@ -112,6 +112,11 @@ func Fallback(v bool) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldFallback, v))
 }
 
+// Managed applies equality check predicate on the "managed" field. It's identical to ManagedEQ.
+func Managed(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldManaged, v))
+}
+
 // MaxBlobSizeBytes applies equality check predicate on the "max_blob_size_bytes" field. It's identical to MaxBlobSizeBytesEQ.
 func MaxBlobSizeBytes(v int64) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldMaxBlobSizeBytes, v))
@@ -710,6 +715,16 @@ func FallbackEQ(v bool) predicate.CASBackend {
 // FallbackNEQ applies the NEQ predicate on the "fallback" field.
 func FallbackNEQ(v bool) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldNEQ(FieldFallback, v))
+}
+
+// ManagedEQ applies the EQ predicate on the "managed" field.
+func ManagedEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldManaged, v))
+}
+
+// ManagedNEQ applies the NEQ predicate on the "managed" field.
+func ManagedNEQ(v bool) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldManaged, v))
 }
 
 // MaxBlobSizeBytesEQ applies the EQ predicate on the "max_blob_size_bytes" field.

@@ -10,6 +10,10 @@
       "description": "Is it an inline backend?\n inline means that the content is stored in the attestation itself",
       "type": "boolean"
     },
+    "^(isManaged)$": {
+      "description": "Whether this backend is provisioned and operated by Chainloop using",
+      "type": "boolean"
+    },
     "^(updatedAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
@@ -59,6 +63,10 @@
     },
     "is_inline": {
       "description": "Is it an inline backend?\n inline means that the content is stored in the attestation itself",
+      "type": "boolean"
+    },
+    "is_managed": {
+      "description": "Whether this backend is provisioned and operated by Chainloop using",
       "type": "boolean"
     },
     "limits": {
