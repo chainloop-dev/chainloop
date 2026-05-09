@@ -31,7 +31,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.1-0.20210315223345-82c243799c99
 	github.com/hashicorp/vault/api v1.22.0
 	github.com/improbable-eng/grpc-web v0.15.0
-	github.com/in-toto/in-toto-golang v0.9.0
+	github.com/in-toto/in-toto-golang v0.11.0
 	github.com/jedib0t/go-pretty/v6 v6.4.7
 	github.com/joshdk/go-junit v1.0.0
 	github.com/lib/pq v1.10.9
