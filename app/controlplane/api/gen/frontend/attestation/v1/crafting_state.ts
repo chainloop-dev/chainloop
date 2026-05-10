@@ -359,7 +359,7 @@ export interface PolicyVulnerabilityFinding {
   /** Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1") */
   fixedVersion: string;
   /** Optional assessment context. See PolicyAssessmentResult. */
-  assessmentResult?: PolicyAssessmentResult | undefined;
+  assessment?: PolicyAssessmentResult | undefined;
 }
 
 /**
@@ -386,7 +386,7 @@ export interface PolicySASTFinding {
     | number
     | undefined;
   /** Optional assessment context. See PolicyAssessmentResult. */
-  assessmentResult?: PolicyAssessmentResult | undefined;
+  assessment?: PolicyAssessmentResult | undefined;
 }
 
 /**
@@ -409,7 +409,7 @@ export interface PolicyLicenseViolationFinding {
   /** Suggested fix */
   recommendation: string;
   /** Optional assessment context. See PolicyAssessmentResult. */
-  assessmentResult?: PolicyAssessmentResult | undefined;
+  assessment?: PolicyAssessmentResult | undefined;
 }
 
 /**
@@ -3285,7 +3285,7 @@ function createBasePolicyVulnerabilityFinding(): PolicyVulnerabilityFinding {
     recommendation: "",
     description: "",
     fixedVersion: "",
-    assessmentResult: undefined,
+    assessment: undefined,
   };
 }
 
@@ -3318,8 +3318,8 @@ export const PolicyVulnerabilityFinding = {
     if (message.fixedVersion !== "") {
       writer.uint32(74).string(message.fixedVersion);
     }
-    if (message.assessmentResult !== undefined) {
-      PolicyAssessmentResult.encode(message.assessmentResult, writer.uint32(82).fork()).ldelim();
+    if (message.assessment !== undefined) {
+      PolicyAssessmentResult.encode(message.assessment, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -3399,7 +3399,7 @@ export const PolicyVulnerabilityFinding = {
             break;
           }
 
-          message.assessmentResult = PolicyAssessmentResult.decode(reader, reader.uint32());
+          message.assessment = PolicyAssessmentResult.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3421,9 +3421,7 @@ export const PolicyVulnerabilityFinding = {
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
       description: isSet(object.description) ? String(object.description) : "",
       fixedVersion: isSet(object.fixedVersion) ? String(object.fixedVersion) : "",
-      assessmentResult: isSet(object.assessmentResult)
-        ? PolicyAssessmentResult.fromJSON(object.assessmentResult)
-        : undefined,
+      assessment: isSet(object.assessment) ? PolicyAssessmentResult.fromJSON(object.assessment) : undefined,
     };
   },
 
@@ -3442,9 +3440,8 @@ export const PolicyVulnerabilityFinding = {
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
     message.description !== undefined && (obj.description = message.description);
     message.fixedVersion !== undefined && (obj.fixedVersion = message.fixedVersion);
-    message.assessmentResult !== undefined && (obj.assessmentResult = message.assessmentResult
-      ? PolicyAssessmentResult.toJSON(message.assessmentResult)
-      : undefined);
+    message.assessment !== undefined &&
+      (obj.assessment = message.assessment ? PolicyAssessmentResult.toJSON(message.assessment) : undefined);
     return obj;
   },
 
@@ -3463,8 +3460,8 @@ export const PolicyVulnerabilityFinding = {
     message.recommendation = object.recommendation ?? "";
     message.description = object.description ?? "";
     message.fixedVersion = object.fixedVersion ?? "";
-    message.assessmentResult = (object.assessmentResult !== undefined && object.assessmentResult !== null)
-      ? PolicyAssessmentResult.fromPartial(object.assessmentResult)
+    message.assessment = (object.assessment !== undefined && object.assessment !== null)
+      ? PolicyAssessmentResult.fromPartial(object.assessment)
       : undefined;
     return message;
   },
@@ -3480,7 +3477,7 @@ function createBasePolicySASTFinding(): PolicySASTFinding {
     codeSnippet: "",
     recommendation: "",
     severityScore: undefined,
-    assessmentResult: undefined,
+    assessment: undefined,
   };
 }
 
@@ -3510,8 +3507,8 @@ export const PolicySASTFinding = {
     if (message.severityScore !== undefined) {
       writer.uint32(65).double(message.severityScore);
     }
-    if (message.assessmentResult !== undefined) {
-      PolicyAssessmentResult.encode(message.assessmentResult, writer.uint32(74).fork()).ldelim();
+    if (message.assessment !== undefined) {
+      PolicyAssessmentResult.encode(message.assessment, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -3584,7 +3581,7 @@ export const PolicySASTFinding = {
             break;
           }
 
-          message.assessmentResult = PolicyAssessmentResult.decode(reader, reader.uint32());
+          message.assessment = PolicyAssessmentResult.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3605,9 +3602,7 @@ export const PolicySASTFinding = {
       codeSnippet: isSet(object.codeSnippet) ? String(object.codeSnippet) : "",
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
       severityScore: isSet(object.severityScore) ? Number(object.severityScore) : undefined,
-      assessmentResult: isSet(object.assessmentResult)
-        ? PolicyAssessmentResult.fromJSON(object.assessmentResult)
-        : undefined,
+      assessment: isSet(object.assessment) ? PolicyAssessmentResult.fromJSON(object.assessment) : undefined,
     };
   },
 
@@ -3621,9 +3616,8 @@ export const PolicySASTFinding = {
     message.codeSnippet !== undefined && (obj.codeSnippet = message.codeSnippet);
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
     message.severityScore !== undefined && (obj.severityScore = message.severityScore);
-    message.assessmentResult !== undefined && (obj.assessmentResult = message.assessmentResult
-      ? PolicyAssessmentResult.toJSON(message.assessmentResult)
-      : undefined);
+    message.assessment !== undefined &&
+      (obj.assessment = message.assessment ? PolicyAssessmentResult.toJSON(message.assessment) : undefined);
     return obj;
   },
 
@@ -3641,8 +3635,8 @@ export const PolicySASTFinding = {
     message.codeSnippet = object.codeSnippet ?? "";
     message.recommendation = object.recommendation ?? "";
     message.severityScore = object.severityScore ?? undefined;
-    message.assessmentResult = (object.assessmentResult !== undefined && object.assessmentResult !== null)
-      ? PolicyAssessmentResult.fromPartial(object.assessmentResult)
+    message.assessment = (object.assessment !== undefined && object.assessment !== null)
+      ? PolicyAssessmentResult.fromPartial(object.assessment)
       : undefined;
     return message;
   },
@@ -3657,7 +3651,7 @@ function createBasePolicyLicenseViolationFinding(): PolicyLicenseViolationFindin
     licenseName: "",
     componentVersion: "",
     recommendation: "",
-    assessmentResult: undefined,
+    assessment: undefined,
   };
 }
 
@@ -3684,8 +3678,8 @@ export const PolicyLicenseViolationFinding = {
     if (message.recommendation !== "") {
       writer.uint32(58).string(message.recommendation);
     }
-    if (message.assessmentResult !== undefined) {
-      PolicyAssessmentResult.encode(message.assessmentResult, writer.uint32(66).fork()).ldelim();
+    if (message.assessment !== undefined) {
+      PolicyAssessmentResult.encode(message.assessment, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -3751,7 +3745,7 @@ export const PolicyLicenseViolationFinding = {
             break;
           }
 
-          message.assessmentResult = PolicyAssessmentResult.decode(reader, reader.uint32());
+          message.assessment = PolicyAssessmentResult.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3771,9 +3765,7 @@ export const PolicyLicenseViolationFinding = {
       licenseName: isSet(object.licenseName) ? String(object.licenseName) : "",
       componentVersion: isSet(object.componentVersion) ? String(object.componentVersion) : "",
       recommendation: isSet(object.recommendation) ? String(object.recommendation) : "",
-      assessmentResult: isSet(object.assessmentResult)
-        ? PolicyAssessmentResult.fromJSON(object.assessmentResult)
-        : undefined,
+      assessment: isSet(object.assessment) ? PolicyAssessmentResult.fromJSON(object.assessment) : undefined,
     };
   },
 
@@ -3786,9 +3778,8 @@ export const PolicyLicenseViolationFinding = {
     message.licenseName !== undefined && (obj.licenseName = message.licenseName);
     message.componentVersion !== undefined && (obj.componentVersion = message.componentVersion);
     message.recommendation !== undefined && (obj.recommendation = message.recommendation);
-    message.assessmentResult !== undefined && (obj.assessmentResult = message.assessmentResult
-      ? PolicyAssessmentResult.toJSON(message.assessmentResult)
-      : undefined);
+    message.assessment !== undefined &&
+      (obj.assessment = message.assessment ? PolicyAssessmentResult.toJSON(message.assessment) : undefined);
     return obj;
   },
 
@@ -3807,8 +3798,8 @@ export const PolicyLicenseViolationFinding = {
     message.licenseName = object.licenseName ?? "";
     message.componentVersion = object.componentVersion ?? "";
     message.recommendation = object.recommendation ?? "";
-    message.assessmentResult = (object.assessmentResult !== undefined && object.assessmentResult !== null)
-      ? PolicyAssessmentResult.fromPartial(object.assessmentResult)
+    message.assessment = (object.assessment !== undefined && object.assessment !== null)
+      ? PolicyAssessmentResult.fromPartial(object.assessment)
       : undefined;
     return message;
   },

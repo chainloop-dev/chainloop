@@ -696,9 +696,9 @@ type PolicyVulnerabilityFinding struct {
 	// Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1")
 	FixedVersion string `protobuf:"bytes,9,opt,name=fixed_version,json=fixedVersion,proto3" json:"fixed_version,omitempty"`
 	// Optional assessment context. See PolicyAssessmentResult.
-	AssessmentResult *PolicyAssessmentResult `protobuf:"bytes,10,opt,name=assessment_result,json=assessmentResult,proto3,oneof" json:"assessment_result,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	Assessment    *PolicyAssessmentResult `protobuf:"bytes,10,opt,name=assessment,proto3,oneof" json:"assessment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PolicyVulnerabilityFinding) Reset() {
@@ -794,9 +794,9 @@ func (x *PolicyVulnerabilityFinding) GetFixedVersion() string {
 	return ""
 }
 
-func (x *PolicyVulnerabilityFinding) GetAssessmentResult() *PolicyAssessmentResult {
+func (x *PolicyVulnerabilityFinding) GetAssessment() *PolicyAssessmentResult {
 	if x != nil {
-		return x.AssessmentResult
+		return x.Assessment
 	}
 	return nil
 }
@@ -822,9 +822,9 @@ type PolicySASTFinding struct {
 	// Optional numeric severity score from the scanner (scale is tool-defined)
 	SeverityScore *float64 `protobuf:"fixed64,8,opt,name=severity_score,json=severityScore,proto3,oneof" json:"severity_score,omitempty"`
 	// Optional assessment context. See PolicyAssessmentResult.
-	AssessmentResult *PolicyAssessmentResult `protobuf:"bytes,9,opt,name=assessment_result,json=assessmentResult,proto3,oneof" json:"assessment_result,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	Assessment    *PolicyAssessmentResult `protobuf:"bytes,9,opt,name=assessment,proto3,oneof" json:"assessment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PolicySASTFinding) Reset() {
@@ -913,9 +913,9 @@ func (x *PolicySASTFinding) GetSeverityScore() float64 {
 	return 0
 }
 
-func (x *PolicySASTFinding) GetAssessmentResult() *PolicyAssessmentResult {
+func (x *PolicySASTFinding) GetAssessment() *PolicyAssessmentResult {
 	if x != nil {
-		return x.AssessmentResult
+		return x.Assessment
 	}
 	return nil
 }
@@ -939,9 +939,9 @@ type PolicyLicenseViolationFinding struct {
 	// Suggested fix
 	Recommendation string `protobuf:"bytes,7,opt,name=recommendation,proto3" json:"recommendation,omitempty"`
 	// Optional assessment context. See PolicyAssessmentResult.
-	AssessmentResult *PolicyAssessmentResult `protobuf:"bytes,8,opt,name=assessment_result,json=assessmentResult,proto3,oneof" json:"assessment_result,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	Assessment    *PolicyAssessmentResult `protobuf:"bytes,8,opt,name=assessment,proto3,oneof" json:"assessment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PolicyLicenseViolationFinding) Reset() {
@@ -1023,9 +1023,9 @@ func (x *PolicyLicenseViolationFinding) GetRecommendation() string {
 	return ""
 }
 
-func (x *PolicyLicenseViolationFinding) GetAssessmentResult() *PolicyAssessmentResult {
+func (x *PolicyLicenseViolationFinding) GetAssessment() *PolicyAssessmentResult {
 	if x != nil {
-		return x.AssessmentResult
+		return x.Assessment
 	}
 	return nil
 }
@@ -2927,7 +2927,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x05input\x18\x01 \x01(\fR\x05input\x12\x16\n" +
 	"\x06output\x18\x02 \x01(\fR\x06output\"\\\n" +
 	"\x16PolicyEvaluationBundle\x12B\n" +
-	"\vevaluations\x18\x01 \x03(\v2 .attestation.v1.PolicyEvaluationR\vevaluations\"\xe6\x03\n" +
+	"\vevaluations\x18\x01 \x03(\v2 .attestation.v1.PolicyEvaluationR\vevaluations\"\xd2\x03\n" +
 	"\x1aPolicyVulnerabilityFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12'\n" +
 	"\vexternal_id\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\n" +
@@ -2938,10 +2938,12 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x04cwes\x18\x06 \x03(\tR\x04cwes\x12&\n" +
 	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12 \n" +
 	"\vdescription\x18\b \x01(\tR\vdescription\x12#\n" +
-	"\rfixed_version\x18\t \x01(\tR\ffixedVersion\x12X\n" +
-	"\x11assessment_result\x18\n" +
-	" \x01(\v2&.attestation.v1.PolicyAssessmentResultH\x00R\x10assessmentResult\x88\x01\x01B\x14\n" +
-	"\x12_assessment_result\"\xb9\x03\n" +
+	"\rfixed_version\x18\t \x01(\tR\ffixedVersion\x12K\n" +
+	"\n" +
+	"assessment\x18\n" +
+	" \x01(\v2&.attestation.v1.PolicyAssessmentResultH\x00R\n" +
+	"assessment\x88\x01\x01B\r\n" +
+	"\v_assessment\"\xa5\x03\n" +
 	"\x11PolicySASTFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12\x1f\n" +
 	"\arule_id\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x06ruleId\x12\"\n" +
@@ -2951,10 +2953,12 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"lineNumber\x12!\n" +
 	"\fcode_snippet\x18\x06 \x01(\tR\vcodeSnippet\x12&\n" +
 	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12*\n" +
-	"\x0eseverity_score\x18\b \x01(\x01H\x00R\rseverityScore\x88\x01\x01\x12X\n" +
-	"\x11assessment_result\x18\t \x01(\v2&.attestation.v1.PolicyAssessmentResultH\x01R\x10assessmentResult\x88\x01\x01B\x11\n" +
-	"\x0f_severity_scoreB\x14\n" +
-	"\x12_assessment_result\"\xa2\x03\n" +
+	"\x0eseverity_score\x18\b \x01(\x01H\x00R\rseverityScore\x88\x01\x01\x12K\n" +
+	"\n" +
+	"assessment\x18\t \x01(\v2&.attestation.v1.PolicyAssessmentResultH\x01R\n" +
+	"assessment\x88\x01\x01B\x11\n" +
+	"\x0f_severity_scoreB\r\n" +
+	"\v_assessment\"\x8e\x03\n" +
 	"\x1dPolicyLicenseViolationFinding\x12 \n" +
 	"\amessage\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\amessage\x12-\n" +
 	"\x0ecomponent_name\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\rcomponentName\x12!\n" +
@@ -2963,9 +2967,11 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"license_id\x18\x04 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tlicenseId\x12!\n" +
 	"\flicense_name\x18\x05 \x01(\tR\vlicenseName\x12+\n" +
 	"\x11component_version\x18\x06 \x01(\tR\x10componentVersion\x12&\n" +
-	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12X\n" +
-	"\x11assessment_result\x18\b \x01(\v2&.attestation.v1.PolicyAssessmentResultH\x00R\x10assessmentResult\x88\x01\x01B\x14\n" +
-	"\x12_assessment_result\"\x87\x01\n" +
+	"\x0erecommendation\x18\a \x01(\tR\x0erecommendation\x12K\n" +
+	"\n" +
+	"assessment\x18\b \x01(\v2&.attestation.v1.PolicyAssessmentResultH\x00R\n" +
+	"assessment\x88\x01\x01B\r\n" +
+	"\v_assessment\"\x87\x01\n" +
 	"\x16PolicyAssessmentResult\x12)\n" +
 	"\x10effective_status\x18\x01 \x01(\tR\x0feffectiveStatus\x12B\n" +
 	"\vassessments\x18\x02 \x03(\v2 .attestation.v1.PolicyAssessmentR\vassessments\"Z\n" +
@@ -3123,9 +3129,9 @@ var file_attestation_v1_crafting_state_proto_depIdxs = []int32{
 	32, // 19: attestation.v1.PolicyEvaluation.group_reference:type_name -> attestation.v1.PolicyEvaluation.Reference
 	33, // 20: attestation.v1.PolicyEvaluation.raw_results:type_name -> attestation.v1.PolicyEvaluation.RawResult
 	4,  // 21: attestation.v1.PolicyEvaluationBundle.evaluations:type_name -> attestation.v1.PolicyEvaluation
-	9,  // 22: attestation.v1.PolicyVulnerabilityFinding.assessment_result:type_name -> attestation.v1.PolicyAssessmentResult
-	9,  // 23: attestation.v1.PolicySASTFinding.assessment_result:type_name -> attestation.v1.PolicyAssessmentResult
-	9,  // 24: attestation.v1.PolicyLicenseViolationFinding.assessment_result:type_name -> attestation.v1.PolicyAssessmentResult
+	9,  // 22: attestation.v1.PolicyVulnerabilityFinding.assessment:type_name -> attestation.v1.PolicyAssessmentResult
+	9,  // 23: attestation.v1.PolicySASTFinding.assessment:type_name -> attestation.v1.PolicyAssessmentResult
+	9,  // 24: attestation.v1.PolicyLicenseViolationFinding.assessment:type_name -> attestation.v1.PolicyAssessmentResult
 	10, // 25: attestation.v1.PolicyAssessmentResult.assessments:type_name -> attestation.v1.PolicyAssessment
 	37, // 26: attestation.v1.Commit.date:type_name -> google.protobuf.Timestamp
 	34, // 27: attestation.v1.Commit.remotes:type_name -> attestation.v1.Commit.Remote
