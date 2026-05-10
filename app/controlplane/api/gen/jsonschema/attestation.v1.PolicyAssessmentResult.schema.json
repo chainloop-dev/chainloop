@@ -1,0 +1,27 @@
+{
+  "$id": "attestation.v1.PolicyAssessmentResult.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Assessment context attached to a policy finding by the policy engine via\n the chainloop.effective_assessments builtin. Sent to CAS as part of the\n PolicyEvaluationBundle.",
+  "patternProperties": {
+    "^(effectiveStatus)$": {
+      "description": "Precedence-resolved status across `assessments`. Values use the\n platform's AssessmentStatus enum names, e.g.\n \"ASSESSMENT_STATUS_NOT_AFFECTED\".",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "assessments": {
+      "description": "Assessments matching the finding's identity tuple.",
+      "items": {
+        "$ref": "attestation.v1.PolicyAssessment.schema.json"
+      },
+      "type": "array"
+    },
+    "effective_status": {
+      "description": "Precedence-resolved status across `assessments`. Values use the\n platform's AssessmentStatus enum names, e.g.\n \"ASSESSMENT_STATUS_NOT_AFFECTED\".",
+      "type": "string"
+    }
+  },
+  "title": "Policy Assessment Result",
+  "type": "object"
+}

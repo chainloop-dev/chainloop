@@ -4,6 +4,10 @@
   "additionalProperties": false,
   "description": "Output schema for license violation findings from policy evaluation.\n Used when a policy declares finding_type: LICENSE_VIOLATION.",
   "patternProperties": {
+    "^(assessment_result)$": {
+      "$ref": "attestation.v1.PolicyAssessmentResult.jsonschema.json",
+      "description": "Optional assessment context. See PolicyAssessmentResult."
+    },
     "^(component_name)$": {
       "description": "Component name (e.g., \"lodash\")",
       "type": "string"
@@ -26,6 +30,10 @@
     }
   },
   "properties": {
+    "assessmentResult": {
+      "$ref": "attestation.v1.PolicyAssessmentResult.jsonschema.json",
+      "description": "Optional assessment context. See PolicyAssessmentResult."
+    },
     "componentName": {
       "description": "Component name (e.g., \"lodash\")",
       "type": "string"

@@ -4,6 +4,10 @@
   "additionalProperties": false,
   "description": "Output schema for SAST findings from policy evaluation.\n Used when a policy declares finding_type: SAST.",
   "patternProperties": {
+    "^(assessmentResult)$": {
+      "$ref": "attestation.v1.PolicyAssessmentResult.schema.json",
+      "description": "Optional assessment context. See PolicyAssessmentResult."
+    },
     "^(codeSnippet)$": {
       "description": "Code snippet showing the issue",
       "type": "string"
@@ -39,6 +43,10 @@
     }
   },
   "properties": {
+    "assessment_result": {
+      "$ref": "attestation.v1.PolicyAssessmentResult.schema.json",
+      "description": "Optional assessment context. See PolicyAssessmentResult."
+    },
     "code_snippet": {
       "description": "Code snippet showing the issue",
       "type": "string"

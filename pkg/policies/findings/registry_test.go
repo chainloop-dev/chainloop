@@ -220,6 +220,185 @@ func TestValidateFinding(t *testing.T) {
 			},
 		},
 		{
+			name:        "vulnerability finding with full assessment_result",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-1234",
+				"external_id":  "CVE-2024-1234",
+				"package_purl": "pkg:golang/example.com/lib@v1.0.0",
+				"severity":     "CRITICAL",
+				"assessment_result": map[string]any{
+					"effective_status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+					"assessments": []any{
+						map[string]any{
+							"id":     "24e0e054-5cd0-49d3-92bb-908b8f7159d4",
+							"status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+							"scope":  "ASSESSMENT_SCOPE_PROJECT",
+						},
+					},
+				},
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyVulnerabilityFinding)
+				require.True(t, ok)
+				require.NotNil(t, f.AssessmentResult)
+				ar := f.GetAssessmentResult()
+				assert.Equal(t, "ASSESSMENT_STATUS_NOT_AFFECTED", ar.GetEffectiveStatus())
+				require.Len(t, ar.GetAssessments(), 1)
+				a := ar.GetAssessments()[0]
+				assert.Equal(t, "24e0e054-5cd0-49d3-92bb-908b8f7159d4", a.GetId())
+				assert.Equal(t, "ASSESSMENT_STATUS_NOT_AFFECTED", a.GetStatus())
+				assert.Equal(t, "ASSESSMENT_SCOPE_PROJECT", a.GetScope())
+			},
+		},
+		{
+			name:        "vulnerability finding without assessment_result stays nil (backward-compatible)",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-1234",
+				"external_id":  "CVE-2024-1234",
+				"package_purl": "pkg:golang/example.com/lib@v1.0.0",
+				"severity":     "CRITICAL",
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyVulnerabilityFinding)
+				require.True(t, ok)
+				assert.Nil(t, f.AssessmentResult)
+			},
+		},
+		{
+			name:        "SAST finding accepts assessment_result",
+			findingType: "SAST",
+			raw: map[string]any{
+				"message":  "SQL injection in handler",
+				"rule_id":  "java:S1234",
+				"severity": "HIGH",
+				"location": "src/main/Handler.java",
+				"assessment_result": map[string]any{
+					"effective_status": "ASSESSMENT_STATUS_UNDER_INVESTIGATION",
+					"assessments": []any{
+						map[string]any{
+							"id":     "11111111-1111-1111-1111-111111111111",
+							"status": "ASSESSMENT_STATUS_UNDER_INVESTIGATION",
+						},
+					},
+				},
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicySASTFinding)
+				require.True(t, ok)
+				require.NotNil(t, f.AssessmentResult)
+				assert.Equal(t, "ASSESSMENT_STATUS_UNDER_INVESTIGATION", f.GetAssessmentResult().GetEffectiveStatus())
+				require.Len(t, f.GetAssessmentResult().GetAssessments(), 1)
+				assert.Equal(t, "11111111-1111-1111-1111-111111111111", f.GetAssessmentResult().GetAssessments()[0].GetId())
+			},
+		},
+		{
+			name:        "license violation finding accepts assessment_result",
+			findingType: "LICENSE_VIOLATION",
+			raw: map[string]any{
+				"message":        "Banned license GPL-3.0",
+				"component_name": "lodash",
+				"license_id":     "GPL-3.0",
+				"package_purl":   "pkg:npm/lodash@4.17.21",
+				"assessment_result": map[string]any{
+					"effective_status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+					"assessments": []any{
+						map[string]any{
+							"id":     "22222222-2222-2222-2222-222222222222",
+							"status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+							"scope":  "ASSESSMENT_SCOPE_PROJECT_VERSION",
+						},
+					},
+				},
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyLicenseViolationFinding)
+				require.True(t, ok)
+				require.NotNil(t, f.AssessmentResult)
+				require.Len(t, f.GetAssessmentResult().GetAssessments(), 1)
+				a := f.GetAssessmentResult().GetAssessments()[0]
+				assert.Equal(t, "22222222-2222-2222-2222-222222222222", a.GetId())
+				assert.Equal(t, "ASSESSMENT_SCOPE_PROJECT_VERSION", a.GetScope())
+			},
+		},
+		{
+			name:        "assessment with missing required id fails validation",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-1234",
+				"external_id":  "CVE-2024-1234",
+				"package_purl": "pkg:golang/example.com/lib@v1.0.0",
+				"severity":     "CRITICAL",
+				"assessment_result": map[string]any{
+					"effective_status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+					"assessments": []any{
+						map[string]any{
+							// missing "id"
+							"status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+						},
+					},
+				},
+			},
+			wantErr: "finding validation failed",
+		},
+		{
+			name:        "assessment with non-uuid id fails validation",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-1234",
+				"external_id":  "CVE-2024-1234",
+				"package_purl": "pkg:golang/example.com/lib@v1.0.0",
+				"severity":     "CRITICAL",
+				"assessment_result": map[string]any{
+					"effective_status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+					"assessments": []any{
+						map[string]any{
+							"id":     "not-a-uuid",
+							"status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+						},
+					},
+				},
+			},
+			wantErr: "finding validation failed",
+		},
+		{
+			name:        "assessment with unknown ui-only fields is accepted (DiscardUnknown drops them)",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-1234",
+				"external_id":  "CVE-2024-1234",
+				"package_purl": "pkg:golang/example.com/lib@v1.0.0",
+				"severity":     "CRITICAL",
+				"assessment_result": map[string]any{
+					"effective_status": "ASSESSMENT_STATUS_NOT_AFFECTED",
+					"assessments": []any{
+						map[string]any{
+							"id":                 "33333333-3333-3333-3333-333333333333",
+							"status":             "ASSESSMENT_STATUS_NOT_AFFECTED",
+							"scope":              "ASSESSMENT_SCOPE_PROJECT",
+							"remediation_pr_url": "https://github.com/example/repo/pull/42",
+							"confidence_breakdown": map[string]any{
+								"schema_version": "2",
+							},
+						},
+					},
+				},
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyVulnerabilityFinding)
+				require.True(t, ok)
+				require.NotNil(t, f.AssessmentResult)
+				require.Len(t, f.GetAssessmentResult().GetAssessments(), 1)
+				assert.Equal(t, "33333333-3333-3333-3333-333333333333", f.GetAssessmentResult().GetAssessments()[0].GetId())
+			},
+		},
+		{
 			name:        "unknown finding type",
 			findingType: "UNKNOWN",
 			raw:         map[string]any{"message": "test"},
@@ -279,6 +458,35 @@ func TestSetViolationFinding(t *testing.T) {
 				f := v.GetVulnerability()
 				require.NotNil(t, f)
 				assert.Equal(t, "CVE-2024-1", f.GetExternalId())
+			},
+		},
+		{
+			name:        "set vulnerability finding with assessment_result",
+			findingType: "VULNERABILITY",
+			finding: &v1.PolicyVulnerabilityFinding{
+				Message:     "test",
+				ExternalId:  "CVE-2024-1",
+				PackagePurl: "pkg:npm/foo@1.0",
+				Severity:    "HIGH",
+				AssessmentResult: &v1.PolicyAssessmentResult{
+					EffectiveStatus: "ASSESSMENT_STATUS_NOT_AFFECTED",
+					Assessments: []*v1.PolicyAssessment{
+						{
+							Id:     "24e0e054-5cd0-49d3-92bb-908b8f7159d4",
+							Status: "ASSESSMENT_STATUS_NOT_AFFECTED",
+							Scope:  "ASSESSMENT_SCOPE_PROJECT",
+						},
+					},
+				},
+			},
+			checkFn: func(t *testing.T, v *v1.PolicyEvaluation_Violation) {
+				t.Helper()
+				f := v.GetVulnerability()
+				require.NotNil(t, f)
+				require.NotNil(t, f.GetAssessmentResult())
+				assert.Equal(t, "ASSESSMENT_STATUS_NOT_AFFECTED", f.GetAssessmentResult().GetEffectiveStatus())
+				require.Len(t, f.GetAssessmentResult().GetAssessments(), 1)
+				assert.Equal(t, "24e0e054-5cd0-49d3-92bb-908b8f7159d4", f.GetAssessmentResult().GetAssessments()[0].GetId())
 			},
 		},
 		{
