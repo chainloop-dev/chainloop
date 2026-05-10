@@ -38,11 +38,12 @@ type CommonEngineOptions struct {
 	EnablePrint            bool
 	ControlPlaneConnection *grpc.ClientConn
 	// ProjectName / ProjectVersionName carry the project + version this engine
-	// instance is evaluating policies for. They are surfaced to chainloop.* built-ins
-	// via the per-evaluation context.Context (see builtins.WithProjectContext) so a
-	// built-in like chainloop.findings can scope its query without the rego author
-	// having to pass the values explicitly. Either may be empty (e.g. local dev
-	// eval without flags) — built-ins must degrade gracefully in that case.
+	// instance is evaluating policies for. The rego engine merges them into
+	// input.chainloop_metadata.project_name / .project_version_name at evaluation
+	// time so policy authors can read them from input and forward them as operands
+	// to chainloop.* built-ins (e.g. chainloop.effective_assessments). Either may
+	// be empty (e.g. local dev eval without flags); rego authors should treat them
+	// as optional.
 	ProjectName        string
 	ProjectVersionName string
 }
@@ -115,9 +116,10 @@ func WithGRPCConn(conn *grpc.ClientConn) Option {
 }
 
 // WithProjectContext sets the project name and version that this engine
-// instance is evaluating policies for. The values are propagated to chainloop.*
-// built-ins through the per-evaluation context so they can scope queries
-// (e.g. chainloop.findings) without the rego author passing them explicitly.
+// instance is evaluating policies for. The rego engine exposes them on the
+// per-evaluation input as input.chainloop_metadata.project_name /
+// input.chainloop_metadata.project_version_name so policy authors can pass them
+// as operands to chainloop.* built-ins. Either value may be empty.
 func WithProjectContext(name, version string) Option {
 	return func(opts *Options) {
 		opts.ProjectName = name

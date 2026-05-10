@@ -17,6 +17,7 @@ package rego
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -534,20 +535,10 @@ violations contains msg if {
 	})
 }
 
-func TestRego_ProjectContextPlumbing(t *testing.T) {
-	// Custom built-in that captures the project context attached to bctx.Context
-	// and exposes the result so the policy can pivot on it.
-	var capturedCtx builtins.ProjectContext
-	var capturedOK bool
-
-	require.NoError(t, builtins.Register(&ast.Builtin{
-		Name: "test.capture_project_ctx",
-		Decl: types.NewFunction(types.Args(types.S), types.S),
-	}, func(bctx topdown.BuiltinContext, _ []*ast.Term, iter func(*ast.Term) error) error {
-		capturedCtx, capturedOK = builtins.ProjectContextFromContext(bctx.Context)
-		return iter(ast.StringTerm("ok"))
-	}))
-
+func TestRego_InjectProjectMetadataIntoInput(t *testing.T) {
+	// Policy raises a violation per project field that is missing or unequal to
+	// the expected value. RawData is requested so the test can also assert on
+	// the post-injection input shape.
 	regoContent := []byte(`package test
 import rego.v1
 
@@ -557,36 +548,102 @@ result := {
 }
 
 violations contains msg if {
-	val := test.capture_project_ctx("noop")
-	val != "ok"
-	msg := "Capture failed"
+	want_name := input.args.want_name
+	want_name != ""
+	got_name := object.get(input.chainloop_metadata, "project_name", "")
+	got_name != want_name
+	msg := sprintf("project_name mismatch: got %q want %q", [got_name, want_name])
+}
+
+violations contains msg if {
+	want_version := input.args.want_version
+	want_version != ""
+	got_version := object.get(input.chainloop_metadata, "project_version_name", "")
+	got_version != want_version
+	msg := sprintf("project_version_name mismatch: got %q want %q", [got_version, want_version])
+}
+
+violations contains msg if {
+	input.args.expect_existing == "true"
+	got_existing := object.get(input.chainloop_metadata, "digest", {})
+	got_existing.sha256 != "deadbeef"
+	msg := "existing chainloop_metadata.digest was overwritten"
 }`)
 
-	policy := &engine.Policy{Name: "ctx-test", Source: regoContent}
+	policy := &engine.Policy{Name: "inject-metadata-test", Source: regoContent}
 
-	t.Run("engine without project context leaves ctx empty", func(t *testing.T) {
-		capturedCtx, capturedOK = builtins.ProjectContext{}, false
+	tests := []struct {
+		name        string
+		opts        []engine.Option
+		input       string
+		args        map[string]any
+		wantInputCM map[string]any
+	}{
+		{
+			name:  "engine without project context does not touch input",
+			opts:  nil,
+			input: `{"kind": "test"}`,
+			args:  map[string]any{"want_name": "", "want_version": "", "expect_existing": "false"},
+			// chainloop_metadata key not added when engine has no project context
+			wantInputCM: nil,
+		},
+		{
+			name:  "engine with both fields injects them",
+			opts:  []engine.Option{engine.WithProjectContext("my-app", "v1.2.3")},
+			input: `{"kind": "test"}`,
+			args:  map[string]any{"want_name": "my-app", "want_version": "v1.2.3", "expect_existing": "false"},
+			wantInputCM: map[string]any{
+				"project_name":         "my-app",
+				"project_version_name": "v1.2.3",
+			},
+		},
+		{
+			name:  "engine with only project name injects only project_name",
+			opts:  []engine.Option{engine.WithProjectContext("my-app", "")},
+			input: `{"kind": "test"}`,
+			args:  map[string]any{"want_name": "my-app", "want_version": "", "expect_existing": "false"},
+			wantInputCM: map[string]any{
+				"project_name": "my-app",
+			},
+		},
+		{
+			name:  "merge preserves existing chainloop_metadata keys",
+			opts:  []engine.Option{engine.WithProjectContext("my-app", "v1.2.3")},
+			input: `{"kind": "test", "chainloop_metadata": {"digest": {"sha256": "deadbeef"}, "name": "subject"}}`,
+			args:  map[string]any{"want_name": "my-app", "want_version": "v1.2.3", "expect_existing": "true"},
+			wantInputCM: map[string]any{
+				"project_name":         "my-app",
+				"project_version_name": "v1.2.3",
+				"digest":               map[string]any{"sha256": "deadbeef"},
+				"name":                 "subject",
+			},
+		},
+	}
 
-		r := NewEngine()
-		_, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
-		require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := append([]engine.Option{engine.WithIncludeRawData(true)}, tt.opts...)
+			r := NewEngine(opts...)
 
-		assert.False(t, capturedOK, "no project context should be attached")
-		assert.Empty(t, capturedCtx.Name)
-		assert.Empty(t, capturedCtx.Version)
-	})
+			result, err := r.Verify(context.TODO(), policy, []byte(tt.input), tt.args)
+			require.NoError(t, err)
+			assert.Empty(t, result.Violations, "policy reported violations: %v", result.Violations)
 
-	t.Run("engine with project context propagates to builtin", func(t *testing.T) {
-		capturedCtx, capturedOK = builtins.ProjectContext{}, false
+			require.NotNil(t, result.RawData)
+			var rawInput map[string]any
+			require.NoError(t, json.Unmarshal(result.RawData.Input, &rawInput))
 
-		r := NewEngine(engine.WithProjectContext("my-app", "v1.2.3"))
-		_, err := r.Verify(context.TODO(), policy, []byte(`{"kind": "test"}`), nil)
-		require.NoError(t, err)
+			if tt.wantInputCM == nil {
+				_, has := rawInput["chainloop_metadata"]
+				assert.False(t, has, "chainloop_metadata should not be present when engine has no project context")
+				return
+			}
 
-		require.True(t, capturedOK, "project context should be attached")
-		assert.Equal(t, "my-app", capturedCtx.Name)
-		assert.Equal(t, "v1.2.3", capturedCtx.Version)
-	})
+			cm, ok := rawInput["chainloop_metadata"].(map[string]any)
+			require.True(t, ok, "chainloop_metadata missing or wrong type in raw input: %v", rawInput["chainloop_metadata"])
+			assert.Equal(t, tt.wantInputCM, cm)
+		})
+	}
 }
 
 func TestRego_StructuredViolations(t *testing.T) {
