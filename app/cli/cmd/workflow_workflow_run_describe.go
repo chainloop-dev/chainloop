@@ -269,15 +269,23 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 		case len(ev.Violations) == 0:
 			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
 		default:
+			hasActive := false
 			lines := make([]string, 0, len(ev.Violations))
 			for _, v := range ev.Violations {
 				color := text.FgHiRed
 				if v.Suppress {
 					color = text.FgHiYellow
+				} else {
+					hasActive = true
 				}
 				lines = append(lines, text.Colors{color}.Sprint(violationSummary(v)))
 			}
-			if len(lines) == 1 {
+			// When every finding is suppressed the gate passed; lead with
+			// "Ok" so the row carries the same signal as the no-violations
+			// case rather than reading like a failure.
+			if !hasActive {
+				msg = text.Colors{text.FgHiGreen}.Sprint("Ok") + "\n  - " + strings.Join(lines, "\n  - ")
+			} else if len(lines) == 1 {
 				msg = lines[0]
 			} else {
 				msg = "\n  - " + strings.Join(lines, "\n  - ")
