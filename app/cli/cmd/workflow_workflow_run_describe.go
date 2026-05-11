@@ -253,14 +253,13 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 	for _, ev := range evs {
 		msg := ""
 
-		var active []string
-		var suppressed []*action.PolicyViolation
+		var active, suppressed []*action.PolicyViolation
 		for _, v := range ev.Violations {
 			if v.Suppress {
 				suppressed = append(suppressed, v)
-				continue
+			} else {
+				active = append(active, v)
 			}
-			active = append(active, v.Message)
 		}
 
 		switch {
@@ -278,18 +277,15 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
 		default:
 			color := text.Colors{text.FgHiRed}
-			var prefix = ""
-			// For multiple violations, we want to indent the list
-			if len(active) > 1 {
-				prefix = "\n  - "
+			lines := make([]string, 0, len(active))
+			for _, v := range active {
+				lines = append(lines, color.Sprint(violationSummary(v)))
 			}
-
-			// Color the violations text before joining
-			for i, v := range active {
-				active[i] = color.Sprint(v)
+			if len(lines) == 1 {
+				msg = lines[0]
+			} else {
+				msg = "\n  - " + strings.Join(lines, "\n  - ")
 			}
-
-			msg = prefix + strings.Join(active, prefix)
 		}
 
 		if s := renderSuppressed(suppressed); s != "" {
@@ -310,8 +306,8 @@ func renderSuppressed(suppressed []*action.PolicyViolation) string {
 	}
 	parts := make([]string, 0, len(suppressed))
 	for _, v := range suppressed {
-		id, status := suppressedIdentity(v)
-		if status != "" {
+		id := violationID(v)
+		if status := suppressedStatus(v); status != "" {
 			parts = append(parts, fmt.Sprintf("%s (%s)", id, status))
 		} else {
 			parts = append(parts, id)
@@ -320,30 +316,105 @@ func renderSuppressed(suppressed []*action.PolicyViolation) string {
 	return text.Colors{text.FgHiYellow}.Sprintf("Suppressed (%d): %s", len(suppressed), strings.Join(parts, ", "))
 }
 
-// suppressedIdentity returns a compact label for a suppressed violation plus
-// its precedence-resolved assessment status (no scope — keep the row tight).
-// Prefers the structured finding's identifier over Message; vuln policies
-// emit a multi-line markdown blob in Message that breaks row layout.
-func suppressedIdentity(v *action.PolicyViolation) (id, status string) {
+// violationSummary builds a single-line description of an active violation
+// using the structured finding when present: vulnerability gets severity,
+// package, and fix info; SAST gets location; license gets component. Falls
+// back to the first line of Message for unstructured policies — vuln
+// policies typically emit a multi-line markdown report in Message that
+// would otherwise break the row layout.
+func violationSummary(v *action.PolicyViolation) string {
 	switch {
 	case v.Vulnerability != nil:
-		id = v.Vulnerability.GetExternalId()
-		status = prettyAssessmentStatus(v.Vulnerability.GetAssessment().GetEffectiveStatus())
+		f := v.Vulnerability
+		parts := []string{f.GetExternalId()}
+		if s := f.GetSeverity(); s != "" {
+			parts[0] = fmt.Sprintf("%s (%s)", f.GetExternalId(), strings.ToUpper(s))
+		}
+		if pkg := prettyPurl(f.GetPackagePurl()); pkg != "" {
+			parts = append(parts, pkg)
+		}
+		out := strings.Join(parts, " ")
+		if fix := f.GetFixedVersion(); fix != "" {
+			out += " [fix: " + fix + "]"
+		} else {
+			out += " [no fix]"
+		}
+		return out
 	case v.Sast != nil:
-		id = v.Sast.GetRuleId()
-		status = prettyAssessmentStatus(v.Sast.GetAssessment().GetEffectiveStatus())
+		f := v.Sast
+		out := f.GetRuleId()
+		if s := f.GetSeverity(); s != "" {
+			out = fmt.Sprintf("%s (%s)", out, strings.ToUpper(s))
+		}
+		if loc := f.GetLocation(); loc != "" {
+			if ln := f.GetLineNumber(); ln > 0 {
+				out = fmt.Sprintf("%s at %s:%d", out, loc, ln)
+			} else {
+				out = fmt.Sprintf("%s at %s", out, loc)
+			}
+		}
+		return out
 	case v.LicenseViolation != nil:
-		id = v.LicenseViolation.GetLicenseId()
-		status = prettyAssessmentStatus(v.LicenseViolation.GetAssessment().GetEffectiveStatus())
+		f := v.LicenseViolation
+		out := f.GetLicenseId()
+		if c := f.GetComponentName(); c != "" {
+			if ver := f.GetComponentVersion(); ver != "" {
+				out = fmt.Sprintf("%s — %s@%s", out, c, ver)
+			} else {
+				out = fmt.Sprintf("%s — %s", out, c)
+			}
+		}
+		return out
 	}
-	if id == "" {
-		id = strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+	return strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+}
+
+// violationID returns just the identifier portion (CVE id, rule id, license
+// id) — used for the compact suppressed list where the assessment status
+// already carries the qualifying context.
+func violationID(v *action.PolicyViolation) string {
+	switch {
+	case v.Vulnerability != nil:
+		return v.Vulnerability.GetExternalId()
+	case v.Sast != nil:
+		return v.Sast.GetRuleId()
+	case v.LicenseViolation != nil:
+		return v.LicenseViolation.GetLicenseId()
 	}
-	return id, status
+	return strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+}
+
+func suppressedStatus(v *action.PolicyViolation) string {
+	switch {
+	case v.Vulnerability != nil:
+		return prettyAssessmentStatus(v.Vulnerability.GetAssessment().GetEffectiveStatus())
+	case v.Sast != nil:
+		return prettyAssessmentStatus(v.Sast.GetAssessment().GetEffectiveStatus())
+	case v.LicenseViolation != nil:
+		return prettyAssessmentStatus(v.LicenseViolation.GetAssessment().GetEffectiveStatus())
+	}
+	return ""
 }
 
 func prettyAssessmentStatus(s string) string {
 	return strings.TrimPrefix(s, "ASSESSMENT_STATUS_")
+}
+
+// prettyPurl shortens "pkg:type/[namespace/]name@version[?qualifiers][#sub]"
+// to "name@version" — the rest is rarely useful in a one-line summary and
+// has the most variability across ecosystems.
+func prettyPurl(purl string) string {
+	if purl == "" {
+		return ""
+	}
+	s := strings.TrimPrefix(purl, "pkg:")
+	if i := strings.IndexAny(s, "?#"); i >= 0 {
+		s = s[:i]
+	}
+	if i := strings.LastIndex(s, "/"); i >= 0 {
+		s = s[i+1:]
+	}
+	return s
 }
 
 func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) error {
