@@ -1,0 +1,23 @@
+{
+  "$id": "attestation.v1.PolicyAssessment.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Audit-critical subset of an assessment. Full record is reachable via\n AssessmentService.Get on the platform using `id`.",
+  "properties": {
+    "id": {
+      "description": "Platform assessment UUID.",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "scope": {
+      "description": "Platform AssessmentScope enum name, e.g. \"ASSESSMENT_SCOPE_PROJECT\".",
+      "type": "string"
+    },
+    "status": {
+      "description": "Platform AssessmentStatus enum name, e.g. \"ASSESSMENT_STATUS_NOT_AFFECTED\".",
+      "type": "string"
+    }
+  },
+  "title": "Policy Assessment",
+  "type": "object"
+}

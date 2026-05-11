@@ -284,6 +284,13 @@ message PolicyEvaluation {
       PolicySASTFinding sast = 4;
       PolicyLicenseViolationFinding license_violation = 5;
     }
+
+    // Suppression hint set by the policy. When true the gate count
+    // excludes this entry, but it is still stored in CAS and ingested
+    // (audit trail preserved). Set by the policy author (typically based
+    // on `assessment.effective_status`) — the engine reads the bool
+    // without interpreting why.
+    bool suppress = 6;
   }
 
   message Reference {
@@ -336,6 +343,8 @@ message PolicyVulnerabilityFinding {
   string description = 8;
   // Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1")
   string fixed_version = 9;
+  // Optional assessment context. See PolicyAssessmentResult.
+  optional PolicyAssessmentResult assessment = 10;
 }
 
 // Output schema for SAST findings from policy evaluation.
@@ -357,6 +366,8 @@ message PolicySASTFinding {
   string recommendation = 7;
   // Optional numeric severity score from the scanner (scale is tool-defined)
   optional double severity_score = 8;
+  // Optional assessment context. See PolicyAssessmentResult.
+  optional PolicyAssessmentResult assessment = 9;
 }
 
 // Output schema for license violation findings from policy evaluation.
@@ -376,6 +387,31 @@ message PolicyLicenseViolationFinding {
   string component_version = 6;
   // Suggested fix
   string recommendation = 7;
+  // Optional assessment context. See PolicyAssessmentResult.
+  optional PolicyAssessmentResult assessment = 8;
+}
+
+// Assessment context attached to a policy finding by the policy engine via
+// the chainloop.effective_assessments builtin. Sent to CAS as part of the
+// PolicyEvaluationBundle.
+message PolicyAssessmentResult {
+  // Precedence-resolved status across `assessments`. Values use the
+  // platform's AssessmentStatus enum names, e.g.
+  // "ASSESSMENT_STATUS_NOT_AFFECTED".
+  string effective_status = 1;
+  // Assessments matching the finding's identity tuple.
+  repeated PolicyAssessment assessments = 2;
+}
+
+// Audit-critical subset of an assessment. Full record is reachable via
+// AssessmentService.Get on the platform using `id`.
+message PolicyAssessment {
+  // Platform assessment UUID.
+  string id = 1 [(buf.validate.field).string.uuid = true];
+  // Platform AssessmentStatus enum name, e.g. "ASSESSMENT_STATUS_NOT_AFFECTED".
+  string status = 2;
+  // Platform AssessmentScope enum name, e.g. "ASSESSMENT_SCOPE_PROJECT".
+  string scope = 3;
 }
 
 message Commit {

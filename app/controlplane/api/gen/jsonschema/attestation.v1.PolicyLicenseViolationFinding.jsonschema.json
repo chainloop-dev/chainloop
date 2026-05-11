@@ -26,6 +26,10 @@
     }
   },
   "properties": {
+    "assessment": {
+      "$ref": "attestation.v1.PolicyAssessmentResult.jsonschema.json",
+      "description": "Optional assessment context. See PolicyAssessmentResult."
+    },
     "componentName": {
       "description": "Component name (e.g., \"lodash\")",
       "type": "string"

@@ -1712,6 +1712,51 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 			violations:     []*engine.PolicyViolation{},
 			wantViolations: 0,
 		},
+		{
+			name:        "structured violation with suppress=true round-trips to API Violation",
+			findingType: "VULNERABILITY",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
+					"message":      "vuln found",
+					"external_id":  "CVE-2024-1234",
+					"package_purl": "pkg:golang/example.com/lib@v1.0.0",
+					"severity":     "HIGH",
+					"suppress":     true,
+				}},
+			},
+			wantViolations: 1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				s.True(violations[0].GetSuppress())
+				s.Equal("CVE-2024-1234", violations[0].GetVulnerability().GetExternalId())
+			},
+		},
+		{
+			name:        "structured violation without suppress defaults to false",
+			findingType: "VULNERABILITY",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "vuln found", RawFinding: map[string]any{
+					"message":      "vuln found",
+					"external_id":  "CVE-2024-1234",
+					"package_purl": "pkg:golang/example.com/lib@v1.0.0",
+					"severity":     "HIGH",
+				}},
+			},
+			wantViolations: 1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				s.False(violations[0].GetSuppress())
+			},
+		},
+		{
+			name:        "plain string violation has suppress=false",
+			findingType: "",
+			violations: []*engine.PolicyViolation{
+				{Subject: "p1", Violation: "plain string"},
+			},
+			wantViolations: 1,
+			checkFn: func(violations []*v1.PolicyEvaluation_Violation) {
+				s.False(violations[0].GetSuppress())
+			},
+		},
 	}
 
 	for _, tc := range cases {

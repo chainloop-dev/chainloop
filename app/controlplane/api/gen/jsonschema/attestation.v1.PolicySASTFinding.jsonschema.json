@@ -39,6 +39,10 @@
     }
   },
   "properties": {
+    "assessment": {
+      "$ref": "attestation.v1.PolicyAssessmentResult.jsonschema.json",
+      "description": "Optional assessment context. See PolicyAssessmentResult."
+    },
     "codeSnippet": {
       "description": "Code snippet showing the issue",
       "type": "string"
