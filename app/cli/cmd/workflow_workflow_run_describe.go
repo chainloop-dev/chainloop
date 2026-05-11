@@ -221,7 +221,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 			if len(m.Annotations) > 0 {
 				mt.AppendRow(table.Row{"Annotations", "------"})
 				for _, a := range m.Annotations {
-					mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
+					mt.AppendRow(table.Row{"", wrap.String(fmt.Sprintf("%s: %s", a.Name, a.Value), 100)})
 				}
 			}
 			evs := att.PolicyEvaluations[m.Name]
