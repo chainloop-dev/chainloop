@@ -249,6 +249,20 @@ func (_c *WorkflowRunCreate) SetNillablePolicyViolationsCount(v *int32) *Workflo
 	return _c
 }
 
+// SetPolicyViolationsSuppressed sets the "policy_violations_suppressed" field.
+func (_c *WorkflowRunCreate) SetPolicyViolationsSuppressed(v int32) *WorkflowRunCreate {
+	_c.mutation.SetPolicyViolationsSuppressed(v)
+	return _c
+}
+
+// SetNillablePolicyViolationsSuppressed sets the "policy_violations_suppressed" field if the given value is not nil.
+func (_c *WorkflowRunCreate) SetNillablePolicyViolationsSuppressed(v *int32) *WorkflowRunCreate {
+	if v != nil {
+		_c.SetPolicyViolationsSuppressed(*v)
+	}
+	return _c
+}
+
 // SetPolicyHasGates sets the "policy_has_gates" field.
 func (_c *WorkflowRunCreate) SetPolicyHasGates(v bool) *WorkflowRunCreate {
 	_c.mutation.SetPolicyHasGates(v)
@@ -528,6 +542,10 @@ func (_c *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.PolicyViolationsCount(); ok {
 		_spec.SetField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32, value)
 		_node.PolicyViolationsCount = &value
+	}
+	if value, ok := _c.mutation.PolicyViolationsSuppressed(); ok {
+		_spec.SetField(workflowrun.FieldPolicyViolationsSuppressed, field.TypeInt32, value)
+		_node.PolicyViolationsSuppressed = &value
 	}
 	if value, ok := _c.mutation.PolicyHasGates(); ok {
 		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
@@ -986,6 +1004,30 @@ func (u *WorkflowRunUpsert) ClearPolicyViolationsCount() *WorkflowRunUpsert {
 	return u
 }
 
+// SetPolicyViolationsSuppressed sets the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsert) SetPolicyViolationsSuppressed(v int32) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldPolicyViolationsSuppressed, v)
+	return u
+}
+
+// UpdatePolicyViolationsSuppressed sets the "policy_violations_suppressed" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdatePolicyViolationsSuppressed() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldPolicyViolationsSuppressed)
+	return u
+}
+
+// AddPolicyViolationsSuppressed adds v to the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsert) AddPolicyViolationsSuppressed(v int32) *WorkflowRunUpsert {
+	u.Add(workflowrun.FieldPolicyViolationsSuppressed, v)
+	return u
+}
+
+// ClearPolicyViolationsSuppressed clears the value of the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsert) ClearPolicyViolationsSuppressed() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldPolicyViolationsSuppressed)
+	return u
+}
+
 // SetPolicyHasGates sets the "policy_has_gates" field.
 func (u *WorkflowRunUpsert) SetPolicyHasGates(v bool) *WorkflowRunUpsert {
 	u.Set(workflowrun.FieldPolicyHasGates, v)
@@ -1426,6 +1468,34 @@ func (u *WorkflowRunUpsertOne) UpdatePolicyViolationsCount() *WorkflowRunUpsertO
 func (u *WorkflowRunUpsertOne) ClearPolicyViolationsCount() *WorkflowRunUpsertOne {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearPolicyViolationsCount()
+	})
+}
+
+// SetPolicyViolationsSuppressed sets the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsertOne) SetPolicyViolationsSuppressed(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyViolationsSuppressed(v)
+	})
+}
+
+// AddPolicyViolationsSuppressed adds v to the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsertOne) AddPolicyViolationsSuppressed(v int32) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyViolationsSuppressed(v)
+	})
+}
+
+// UpdatePolicyViolationsSuppressed sets the "policy_violations_suppressed" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdatePolicyViolationsSuppressed() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyViolationsSuppressed()
+	})
+}
+
+// ClearPolicyViolationsSuppressed clears the value of the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsertOne) ClearPolicyViolationsSuppressed() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyViolationsSuppressed()
 	})
 }
 
@@ -2039,6 +2109,34 @@ func (u *WorkflowRunUpsertBulk) UpdatePolicyViolationsCount() *WorkflowRunUpsert
 func (u *WorkflowRunUpsertBulk) ClearPolicyViolationsCount() *WorkflowRunUpsertBulk {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearPolicyViolationsCount()
+	})
+}
+
+// SetPolicyViolationsSuppressed sets the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsertBulk) SetPolicyViolationsSuppressed(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetPolicyViolationsSuppressed(v)
+	})
+}
+
+// AddPolicyViolationsSuppressed adds v to the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsertBulk) AddPolicyViolationsSuppressed(v int32) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.AddPolicyViolationsSuppressed(v)
+	})
+}
+
+// UpdatePolicyViolationsSuppressed sets the "policy_violations_suppressed" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdatePolicyViolationsSuppressed() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdatePolicyViolationsSuppressed()
+	})
+}
+
+// ClearPolicyViolationsSuppressed clears the value of the "policy_violations_suppressed" field.
+func (u *WorkflowRunUpsertBulk) ClearPolicyViolationsSuppressed() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearPolicyViolationsSuppressed()
 	})
 }
 

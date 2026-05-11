@@ -63,6 +63,8 @@ type WorkflowRun struct {
 	PolicyEvaluationsSkipped *int32 `json:"policy_evaluations_skipped,omitempty"`
 	// PolicyViolationsCount holds the value of the "policy_violations_count" field.
 	PolicyViolationsCount *int32 `json:"policy_violations_count,omitempty"`
+	// PolicyViolationsSuppressed holds the value of the "policy_violations_suppressed" field.
+	PolicyViolationsSuppressed *int32 `json:"policy_violations_suppressed,omitempty"`
 	// PolicyHasGates holds the value of the "policy_has_gates" field.
 	PolicyHasGates *bool `json:"policy_has_gates,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -151,7 +153,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case workflowrun.FieldHasPolicyViolations, workflowrun.FieldPolicyHasGates:
 			values[i] = new(sql.NullBool)
-		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatest, workflowrun.FieldPolicyEvaluationsTotal, workflowrun.FieldPolicyEvaluationsPassed, workflowrun.FieldPolicyEvaluationsSkipped, workflowrun.FieldPolicyViolationsCount:
+		case workflowrun.FieldContractRevisionUsed, workflowrun.FieldContractRevisionLatest, workflowrun.FieldPolicyEvaluationsTotal, workflowrun.FieldPolicyEvaluationsPassed, workflowrun.FieldPolicyEvaluationsSkipped, workflowrun.FieldPolicyViolationsCount, workflowrun.FieldPolicyViolationsSuppressed:
 			values[i] = new(sql.NullInt64)
 		case workflowrun.FieldState, workflowrun.FieldReason, workflowrun.FieldRunURL, workflowrun.FieldRunnerType, workflowrun.FieldAttestationDigest, workflowrun.FieldPolicyStatus:
 			values[i] = new(sql.NullString)
@@ -304,6 +306,13 @@ func (_m *WorkflowRun) assignValues(columns []string, values []any) error {
 				_m.PolicyViolationsCount = new(int32)
 				*_m.PolicyViolationsCount = int32(value.Int64)
 			}
+		case workflowrun.FieldPolicyViolationsSuppressed:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field policy_violations_suppressed", values[i])
+			} else if value.Valid {
+				_m.PolicyViolationsSuppressed = new(int32)
+				*_m.PolicyViolationsSuppressed = int32(value.Int64)
+			}
 		case workflowrun.FieldPolicyHasGates:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field policy_has_gates", values[i])
@@ -445,6 +454,11 @@ func (_m *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	if v := _m.PolicyViolationsCount; v != nil {
 		builder.WriteString("policy_violations_count=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PolicyViolationsSuppressed; v != nil {
+		builder.WriteString("policy_violations_suppressed=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

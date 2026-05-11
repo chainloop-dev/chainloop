@@ -378,6 +378,33 @@ func (_u *WorkflowRunUpdate) ClearPolicyViolationsCount() *WorkflowRunUpdate {
 	return _u
 }
 
+// SetPolicyViolationsSuppressed sets the "policy_violations_suppressed" field.
+func (_u *WorkflowRunUpdate) SetPolicyViolationsSuppressed(v int32) *WorkflowRunUpdate {
+	_u.mutation.ResetPolicyViolationsSuppressed()
+	_u.mutation.SetPolicyViolationsSuppressed(v)
+	return _u
+}
+
+// SetNillablePolicyViolationsSuppressed sets the "policy_violations_suppressed" field if the given value is not nil.
+func (_u *WorkflowRunUpdate) SetNillablePolicyViolationsSuppressed(v *int32) *WorkflowRunUpdate {
+	if v != nil {
+		_u.SetPolicyViolationsSuppressed(*v)
+	}
+	return _u
+}
+
+// AddPolicyViolationsSuppressed adds value to the "policy_violations_suppressed" field.
+func (_u *WorkflowRunUpdate) AddPolicyViolationsSuppressed(v int32) *WorkflowRunUpdate {
+	_u.mutation.AddPolicyViolationsSuppressed(v)
+	return _u
+}
+
+// ClearPolicyViolationsSuppressed clears the value of the "policy_violations_suppressed" field.
+func (_u *WorkflowRunUpdate) ClearPolicyViolationsSuppressed() *WorkflowRunUpdate {
+	_u.mutation.ClearPolicyViolationsSuppressed()
+	return _u
+}
+
 // SetPolicyHasGates sets the "policy_has_gates" field.
 func (_u *WorkflowRunUpdate) SetPolicyHasGates(v bool) *WorkflowRunUpdate {
 	_u.mutation.SetPolicyHasGates(v)
@@ -670,6 +697,15 @@ func (_u *WorkflowRunUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.PolicyViolationsCountCleared() {
 		_spec.ClearField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyViolationsSuppressed(); ok {
+		_spec.SetField(workflowrun.FieldPolicyViolationsSuppressed, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyViolationsSuppressed(); ok {
+		_spec.AddField(workflowrun.FieldPolicyViolationsSuppressed, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyViolationsSuppressedCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyViolationsSuppressed, field.TypeInt32)
 	}
 	if value, ok := _u.mutation.PolicyHasGates(); ok {
 		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
@@ -1173,6 +1209,33 @@ func (_u *WorkflowRunUpdateOne) ClearPolicyViolationsCount() *WorkflowRunUpdateO
 	return _u
 }
 
+// SetPolicyViolationsSuppressed sets the "policy_violations_suppressed" field.
+func (_u *WorkflowRunUpdateOne) SetPolicyViolationsSuppressed(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.ResetPolicyViolationsSuppressed()
+	_u.mutation.SetPolicyViolationsSuppressed(v)
+	return _u
+}
+
+// SetNillablePolicyViolationsSuppressed sets the "policy_violations_suppressed" field if the given value is not nil.
+func (_u *WorkflowRunUpdateOne) SetNillablePolicyViolationsSuppressed(v *int32) *WorkflowRunUpdateOne {
+	if v != nil {
+		_u.SetPolicyViolationsSuppressed(*v)
+	}
+	return _u
+}
+
+// AddPolicyViolationsSuppressed adds value to the "policy_violations_suppressed" field.
+func (_u *WorkflowRunUpdateOne) AddPolicyViolationsSuppressed(v int32) *WorkflowRunUpdateOne {
+	_u.mutation.AddPolicyViolationsSuppressed(v)
+	return _u
+}
+
+// ClearPolicyViolationsSuppressed clears the value of the "policy_violations_suppressed" field.
+func (_u *WorkflowRunUpdateOne) ClearPolicyViolationsSuppressed() *WorkflowRunUpdateOne {
+	_u.mutation.ClearPolicyViolationsSuppressed()
+	return _u
+}
+
 // SetPolicyHasGates sets the "policy_has_gates" field.
 func (_u *WorkflowRunUpdateOne) SetPolicyHasGates(v bool) *WorkflowRunUpdateOne {
 	_u.mutation.SetPolicyHasGates(v)
@@ -1495,6 +1558,15 @@ func (_u *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowRun
 	}
 	if _u.mutation.PolicyViolationsCountCleared() {
 		_spec.ClearField(workflowrun.FieldPolicyViolationsCount, field.TypeInt32)
+	}
+	if value, ok := _u.mutation.PolicyViolationsSuppressed(); ok {
+		_spec.SetField(workflowrun.FieldPolicyViolationsSuppressed, field.TypeInt32, value)
+	}
+	if value, ok := _u.mutation.AddedPolicyViolationsSuppressed(); ok {
+		_spec.AddField(workflowrun.FieldPolicyViolationsSuppressed, field.TypeInt32, value)
+	}
+	if _u.mutation.PolicyViolationsSuppressedCleared() {
+		_spec.ClearField(workflowrun.FieldPolicyViolationsSuppressed, field.TypeInt32)
 	}
 	if value, ok := _u.mutation.PolicyHasGates(); ok {
 		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)

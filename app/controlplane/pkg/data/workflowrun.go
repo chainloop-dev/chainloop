@@ -273,6 +273,7 @@ func (r *WorkflowRunRepo) UpdatePolicyStatus(ctx context.Context, id uuid.UUID, 
 		SetPolicyEvaluationsPassed(int32(summary.Passed)).
 		SetPolicyEvaluationsSkipped(int32(summary.Skipped)).
 		SetPolicyViolationsCount(int32(summary.Violated)).
+		SetPolicyViolationsSuppressed(int32(summary.Suppressed)).
 		SetPolicyHasGates(summary.HasGates)
 
 	run, err := update.Save(ctx)
@@ -568,6 +569,9 @@ func entWrPolicySummary(wr *ent.WorkflowRun) *chainloop.PolicyStatusSummary {
 	}
 	if wr.PolicyViolationsCount != nil {
 		s.Violated = int(*wr.PolicyViolationsCount)
+	}
+	if wr.PolicyViolationsSuppressed != nil {
+		s.Suppressed = int(*wr.PolicyViolationsSuppressed)
 	}
 	if wr.PolicyHasGates != nil {
 		s.HasGates = *wr.PolicyHasGates

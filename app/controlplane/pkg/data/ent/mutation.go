@@ -17963,48 +17963,50 @@ func (m *WorkflowContractVersionMutation) ResetEdge(name string) error {
 // WorkflowRunMutation represents an operation that mutates the WorkflowRun nodes in the graph.
 type WorkflowRunMutation struct {
 	config
-	op                            Op
-	typ                           string
-	id                            *uuid.UUID
-	created_at                    *time.Time
-	finished_at                   *time.Time
-	state                         *biz.WorkflowRunStatus
-	reason                        *string
-	run_url                       *string
-	runner_type                   *string
-	attestation                   **dsse.Envelope
-	attestation_digest            *string
-	attestation_state             *[]byte
-	contract_revision_used        *int
-	addcontract_revision_used     *int
-	contract_revision_latest      *int
-	addcontract_revision_latest   *int
-	has_policy_violations         *bool
-	policy_status                 *workflowrun.PolicyStatus
-	policy_evaluations_total      *int32
-	addpolicy_evaluations_total   *int32
-	policy_evaluations_passed     *int32
-	addpolicy_evaluations_passed  *int32
-	policy_evaluations_skipped    *int32
-	addpolicy_evaluations_skipped *int32
-	policy_violations_count       *int32
-	addpolicy_violations_count    *int32
-	policy_has_gates              *bool
-	clearedFields                 map[string]struct{}
-	workflow                      *uuid.UUID
-	clearedworkflow               bool
-	contract_version              *uuid.UUID
-	clearedcontract_version       bool
-	cas_backends                  map[uuid.UUID]struct{}
-	removedcas_backends           map[uuid.UUID]struct{}
-	clearedcas_backends           bool
-	version                       *uuid.UUID
-	clearedversion                bool
-	attestation_bundle            *uuid.UUID
-	clearedattestation_bundle     bool
-	done                          bool
-	oldValue                      func(context.Context) (*WorkflowRun, error)
-	predicates                    []predicate.WorkflowRun
+	op                              Op
+	typ                             string
+	id                              *uuid.UUID
+	created_at                      *time.Time
+	finished_at                     *time.Time
+	state                           *biz.WorkflowRunStatus
+	reason                          *string
+	run_url                         *string
+	runner_type                     *string
+	attestation                     **dsse.Envelope
+	attestation_digest              *string
+	attestation_state               *[]byte
+	contract_revision_used          *int
+	addcontract_revision_used       *int
+	contract_revision_latest        *int
+	addcontract_revision_latest     *int
+	has_policy_violations           *bool
+	policy_status                   *workflowrun.PolicyStatus
+	policy_evaluations_total        *int32
+	addpolicy_evaluations_total     *int32
+	policy_evaluations_passed       *int32
+	addpolicy_evaluations_passed    *int32
+	policy_evaluations_skipped      *int32
+	addpolicy_evaluations_skipped   *int32
+	policy_violations_count         *int32
+	addpolicy_violations_count      *int32
+	policy_violations_suppressed    *int32
+	addpolicy_violations_suppressed *int32
+	policy_has_gates                *bool
+	clearedFields                   map[string]struct{}
+	workflow                        *uuid.UUID
+	clearedworkflow                 bool
+	contract_version                *uuid.UUID
+	clearedcontract_version         bool
+	cas_backends                    map[uuid.UUID]struct{}
+	removedcas_backends             map[uuid.UUID]struct{}
+	clearedcas_backends             bool
+	version                         *uuid.UUID
+	clearedversion                  bool
+	attestation_bundle              *uuid.UUID
+	clearedattestation_bundle       bool
+	done                            bool
+	oldValue                        func(context.Context) (*WorkflowRun, error)
+	predicates                      []predicate.WorkflowRun
 }
 
 var _ ent.Mutation = (*WorkflowRunMutation)(nil)
@@ -19088,6 +19090,76 @@ func (m *WorkflowRunMutation) ResetPolicyViolationsCount() {
 	delete(m.clearedFields, workflowrun.FieldPolicyViolationsCount)
 }
 
+// SetPolicyViolationsSuppressed sets the "policy_violations_suppressed" field.
+func (m *WorkflowRunMutation) SetPolicyViolationsSuppressed(i int32) {
+	m.policy_violations_suppressed = &i
+	m.addpolicy_violations_suppressed = nil
+}
+
+// PolicyViolationsSuppressed returns the value of the "policy_violations_suppressed" field in the mutation.
+func (m *WorkflowRunMutation) PolicyViolationsSuppressed() (r int32, exists bool) {
+	v := m.policy_violations_suppressed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPolicyViolationsSuppressed returns the old "policy_violations_suppressed" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldPolicyViolationsSuppressed(ctx context.Context) (v *int32, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPolicyViolationsSuppressed is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPolicyViolationsSuppressed requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPolicyViolationsSuppressed: %w", err)
+	}
+	return oldValue.PolicyViolationsSuppressed, nil
+}
+
+// AddPolicyViolationsSuppressed adds i to the "policy_violations_suppressed" field.
+func (m *WorkflowRunMutation) AddPolicyViolationsSuppressed(i int32) {
+	if m.addpolicy_violations_suppressed != nil {
+		*m.addpolicy_violations_suppressed += i
+	} else {
+		m.addpolicy_violations_suppressed = &i
+	}
+}
+
+// AddedPolicyViolationsSuppressed returns the value that was added to the "policy_violations_suppressed" field in this mutation.
+func (m *WorkflowRunMutation) AddedPolicyViolationsSuppressed() (r int32, exists bool) {
+	v := m.addpolicy_violations_suppressed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPolicyViolationsSuppressed clears the value of the "policy_violations_suppressed" field.
+func (m *WorkflowRunMutation) ClearPolicyViolationsSuppressed() {
+	m.policy_violations_suppressed = nil
+	m.addpolicy_violations_suppressed = nil
+	m.clearedFields[workflowrun.FieldPolicyViolationsSuppressed] = struct{}{}
+}
+
+// PolicyViolationsSuppressedCleared returns if the "policy_violations_suppressed" field was cleared in this mutation.
+func (m *WorkflowRunMutation) PolicyViolationsSuppressedCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldPolicyViolationsSuppressed]
+	return ok
+}
+
+// ResetPolicyViolationsSuppressed resets all changes to the "policy_violations_suppressed" field.
+func (m *WorkflowRunMutation) ResetPolicyViolationsSuppressed() {
+	m.policy_violations_suppressed = nil
+	m.addpolicy_violations_suppressed = nil
+	delete(m.clearedFields, workflowrun.FieldPolicyViolationsSuppressed)
+}
+
 // SetPolicyHasGates sets the "policy_has_gates" field.
 func (m *WorkflowRunMutation) SetPolicyHasGates(b bool) {
 	m.policy_has_gates = &b
@@ -19357,7 +19429,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 21)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -19415,6 +19487,9 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.policy_violations_count != nil {
 		fields = append(fields, workflowrun.FieldPolicyViolationsCount)
 	}
+	if m.policy_violations_suppressed != nil {
+		fields = append(fields, workflowrun.FieldPolicyViolationsSuppressed)
+	}
 	if m.policy_has_gates != nil {
 		fields = append(fields, workflowrun.FieldPolicyHasGates)
 	}
@@ -19464,6 +19539,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.PolicyEvaluationsSkipped()
 	case workflowrun.FieldPolicyViolationsCount:
 		return m.PolicyViolationsCount()
+	case workflowrun.FieldPolicyViolationsSuppressed:
+		return m.PolicyViolationsSuppressed()
 	case workflowrun.FieldPolicyHasGates:
 		return m.PolicyHasGates()
 	}
@@ -19513,6 +19590,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldPolicyEvaluationsSkipped(ctx)
 	case workflowrun.FieldPolicyViolationsCount:
 		return m.OldPolicyViolationsCount(ctx)
+	case workflowrun.FieldPolicyViolationsSuppressed:
+		return m.OldPolicyViolationsSuppressed(ctx)
 	case workflowrun.FieldPolicyHasGates:
 		return m.OldPolicyHasGates(ctx)
 	}
@@ -19657,6 +19736,13 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPolicyViolationsCount(v)
 		return nil
+	case workflowrun.FieldPolicyViolationsSuppressed:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPolicyViolationsSuppressed(v)
+		return nil
 	case workflowrun.FieldPolicyHasGates:
 		v, ok := value.(bool)
 		if !ok {
@@ -19690,6 +19776,9 @@ func (m *WorkflowRunMutation) AddedFields() []string {
 	if m.addpolicy_violations_count != nil {
 		fields = append(fields, workflowrun.FieldPolicyViolationsCount)
 	}
+	if m.addpolicy_violations_suppressed != nil {
+		fields = append(fields, workflowrun.FieldPolicyViolationsSuppressed)
+	}
 	return fields
 }
 
@@ -19710,6 +19799,8 @@ func (m *WorkflowRunMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedPolicyEvaluationsSkipped()
 	case workflowrun.FieldPolicyViolationsCount:
 		return m.AddedPolicyViolationsCount()
+	case workflowrun.FieldPolicyViolationsSuppressed:
+		return m.AddedPolicyViolationsSuppressed()
 	}
 	return nil, false
 }
@@ -19761,6 +19852,13 @@ func (m *WorkflowRunMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddPolicyViolationsCount(v)
 		return nil
+	case workflowrun.FieldPolicyViolationsSuppressed:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPolicyViolationsSuppressed(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun numeric field %s", name)
 }
@@ -19807,6 +19905,9 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(workflowrun.FieldPolicyViolationsCount) {
 		fields = append(fields, workflowrun.FieldPolicyViolationsCount)
+	}
+	if m.FieldCleared(workflowrun.FieldPolicyViolationsSuppressed) {
+		fields = append(fields, workflowrun.FieldPolicyViolationsSuppressed)
 	}
 	if m.FieldCleared(workflowrun.FieldPolicyHasGates) {
 		fields = append(fields, workflowrun.FieldPolicyHasGates)
@@ -19863,6 +19964,9 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 		return nil
 	case workflowrun.FieldPolicyViolationsCount:
 		m.ClearPolicyViolationsCount()
+		return nil
+	case workflowrun.FieldPolicyViolationsSuppressed:
+		m.ClearPolicyViolationsSuppressed()
 		return nil
 	case workflowrun.FieldPolicyHasGates:
 		m.ClearPolicyHasGates()
@@ -19931,6 +20035,9 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldPolicyViolationsCount:
 		m.ResetPolicyViolationsCount()
+		return nil
+	case workflowrun.FieldPolicyViolationsSuppressed:
+		m.ResetPolicyViolationsSuppressed()
 		return nil
 	case workflowrun.FieldPolicyHasGates:
 		m.ResetPolicyHasGates()
