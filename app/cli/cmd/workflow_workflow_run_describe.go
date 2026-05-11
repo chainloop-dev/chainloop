@@ -254,14 +254,6 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 	for _, ev := range evs {
 		msg := ""
 
-		var hasActive bool
-		for _, v := range ev.Violations {
-			if !v.Suppress {
-				hasActive = true
-				break
-			}
-		}
-
 		switch {
 		case ev.Skipped:
 			switch {
@@ -283,10 +275,6 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 					color = text.FgHiYellow
 				}
 				lines = append(lines, text.Colors{color}.Sprint(violationSummary(v)))
-			}
-			if !hasActive && len(lines) > 0 {
-				// All suppressed — material effectively passed; lead with "Ok".
-				lines = append([]string{text.Colors{text.FgHiGreen}.Sprint("Ok")}, lines...)
 			}
 			if len(lines) == 1 {
 				msg = lines[0]
