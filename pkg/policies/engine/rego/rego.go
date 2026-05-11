@@ -88,25 +88,42 @@ func (p *regoOutputHook) Print(_ print.Context, msg string) error { //nolint:for
 // Force interface
 var _ engine.PolicyEngine = (*Engine)(nil)
 
-// withProjectContext attaches the engine's per-evaluation project name / version
-// to ctx so chainloop.* built-ins can read them from bctx.Context. Skipped when
-// the engine was created without project context (e.g. local dev eval).
-func (r *Engine) withProjectContext(ctx context.Context) context.Context {
+// chainloop_metadata input keys. These form a contract with rego authors who
+// read e.g. `input.chainloop_metadata.project_name` and forward it as an
+// operand to chainloop.* built-ins; treat them as stable.
+const (
+	chainloopMetadataKey           = "chainloop_metadata"
+	chainloopProjectNameKey        = "project_name"
+	chainloopProjectVersionNameKey = "project_version_name"
+)
+
+// injectProjectMetadata merges the engine's project name / version (when set)
+// into input.chainloop_metadata. Existing keys (e.g. the intoto descriptor
+// populated by Attestation_Material.GetEvaluableContent) are preserved.
+func (r *Engine) injectProjectMetadata(inputMap map[string]interface{}) map[string]interface{} {
 	if r.CommonEngineOptions == nil {
-		return ctx
+		return inputMap
 	}
 	if r.ProjectName == "" && r.ProjectVersionName == "" {
-		return ctx
+		return inputMap
 	}
-	return builtins.WithProjectContext(ctx, builtins.ProjectContext{
-		Name:    r.ProjectName,
-		Version: r.ProjectVersionName,
-	})
+
+	cm, _ := inputMap[chainloopMetadataKey].(map[string]interface{})
+	if cm == nil {
+		cm = make(map[string]interface{})
+	}
+	if r.ProjectName != "" {
+		cm[chainloopProjectNameKey] = r.ProjectName
+	}
+	if r.ProjectVersionName != "" {
+		cm[chainloopProjectVersionNameKey] = r.ProjectVersionName
+	}
+	inputMap[chainloopMetadataKey] = cm
+
+	return inputMap
 }
 
 func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
-	ctx = r.withProjectContext(ctx)
-
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -126,6 +143,10 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 		inputMap := make(map[string]interface{})
 		inputMap[inputElements] = array
 		decodedInput = inputMap
+	}
+
+	if inputMap, ok := decodedInput.(map[string]interface{}); ok {
+		decodedInput = r.injectProjectMetadata(inputMap)
 	}
 
 	// put arguments embedded in the input object
@@ -341,8 +362,6 @@ func getRuleName(packagePath ast.Ref, rule string) string {
 // MatchesParameters evaluates the matches_parameters rule in a rego policy.
 // The function creates an input object with policy parameters and expected parameters.
 func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, evaluationParams, expectedParams map[string]string) (bool, error) {
-	ctx = r.withProjectContext(ctx)
-
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -361,9 +380,10 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 	} else {
 		inputMap[expectedArgs] = expectedParams
 	}
+	decodedInput := r.injectProjectMetadata(inputMap)
 
 	// Evaluate matches_parameters rule
-	matchesParameters, found, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesParametersRule), parsedModule, inputMap)
+	matchesParameters, found, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesParametersRule), parsedModule, decodedInput)
 	if err != nil {
 		return false, err
 	}
@@ -378,8 +398,6 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 // MatchesEvaluation evaluates the matches_evaluation rule in a rego policy.
 // Creates an input object with expected parameters and policy violations.
 func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, violations []string, expectedParams map[string]string) (bool, error) {
-	ctx = r.withProjectContext(ctx)
-
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -398,9 +416,10 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, v
 	} else {
 		inputMap[violationsResult] = violations
 	}
+	decodedInput := r.injectProjectMetadata(inputMap)
 
 	// Evaluate matches_evaluation rule
-	matchesEvaluation, found, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesEvaluationRule), parsedModule, inputMap)
+	matchesEvaluation, found, err := r.evaluateMatchingRule(ctx, getRuleName(parsedModule.Package.Path, matchesEvaluationRule), parsedModule, decodedInput)
 	if err != nil {
 		return false, err
 	}

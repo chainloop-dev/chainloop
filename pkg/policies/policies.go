@@ -175,8 +175,9 @@ func WithGroupCache(c cache.Cache[*groupWithReference]) PolicyVerifierOption {
 
 // WithProjectContext sets the project name and version that this verifier is
 // evaluating policies for. The values are forwarded to the underlying policy
-// engine so chainloop.* built-ins can scope their queries automatically.
-// Either may be empty, in which case built-ins must degrade gracefully.
+// engine, which exposes them on input.chainloop_metadata.project_name /
+// input.chainloop_metadata.project_version_name so policy authors can forward
+// them as operands to chainloop.* built-ins. Either value may be empty.
 func WithProjectContext(name, version string) PolicyVerifierOption {
 	return func(o *PolicyVerifierOptions) {
 		o.ProjectName = name
