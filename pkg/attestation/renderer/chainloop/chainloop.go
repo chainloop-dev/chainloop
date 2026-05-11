@@ -68,9 +68,7 @@ type PolicyEvaluationStatus struct {
 	SkippedCount int
 	// Number of evaluations that passed: neither skipped nor with violations.
 	PassedCount int
-	// Total number of violations across all evaluations that were suppressed
-	// by the policy. Excluded from ViolationsCount / HasViolations accounting
-	// but surfaced separately so the UI can render a "Suppressed (N)" badge.
+	// Number of suppressed violations across all evaluations.
 	SuppressedCount int
 }
 

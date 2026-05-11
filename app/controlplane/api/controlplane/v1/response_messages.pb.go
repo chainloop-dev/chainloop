@@ -1136,10 +1136,8 @@ type PolicyStatusSummary struct {
 	// the contract using the ENFORCED blocking strategy. Independent of status:
 	// a PASSED run can still have has_gates=true.
 	HasGates bool `protobuf:"varint,6,opt,name=has_gates,json=hasGates,proto3" json:"has_gates,omitempty"`
-	// Total number of violations across all evaluations that were suppressed
-	// by the policy. Suppressed entries are excluded from violated/has_gates
-	// accounting but kept in the CAS audit trail. UI can show a "Suppressed (N)"
-	// badge without partitioning the violations client-side.
+	// Number of suppressed violations across all evaluations. Excluded
+	// from violated; kept in the CAS audit trail.
 	Suppressed    int32 `protobuf:"varint,7,opt,name=suppressed,proto3" json:"suppressed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1538,14 +1536,11 @@ type PolicyViolation struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Subject string                 `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
 	Message string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	// Whether this violation was excluded from the policy gate. Suppressed
-	// entries are part of the audit trail but did not contribute to
-	// PolicyEvaluationStatus.summary.violated or has_gated_violations.
+	// Whether this violation was excluded from the policy gate (still kept
+	// in the CAS audit trail).
 	Suppress bool `protobuf:"varint,3,opt,name=suppress,proto3" json:"suppress,omitempty"`
-	// Structured finding data from the policy. Populated when the policy
-	// declared finding_type and emitted a structured rather than string
-	// violation. Mirrors the oneof on
-	// attestation.v1.PolicyEvaluation.Violation in the CAS-stored bundle.
+	// Structured finding mirroring attestation.v1.PolicyEvaluation.Violation.
+	// Populated when the policy declares finding_type.
 	//
 	// Types that are valid to be assigned to Finding:
 	//

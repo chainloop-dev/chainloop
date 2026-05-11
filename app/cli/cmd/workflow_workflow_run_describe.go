@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -254,9 +255,6 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 	for _, ev := range evs {
 		msg := ""
 
-		// Partition: active violations count toward the gate; suppressed
-		// entries are kept in the CAS bundle for audit and shown separately
-		// so operators can see policy decisions without losing context.
 		var active []string
 		var suppressed []*action.PolicyViolation
 		for _, v := range ev.Violations {
@@ -297,7 +295,7 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 		}
 
 		if s := renderSuppressed(suppressed); s != "" {
-			msg = msg + "\n" + s
+			msg += "\n" + s
 		}
 
 		name := ev.Name
@@ -308,11 +306,6 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 	}
 }
 
-// renderSuppressed formats a "Suppressed (N)" sub-section listing entries the
-// policy excluded from the gate. Each line shows the violation message plus,
-// when a structured finding with an assessment is available, the
-// precedence-resolved status and scope (e.g. "NOT_AFFECTED, PROJECT") so
-// operators can audit suppression decisions without downloading the bundle.
 func renderSuppressed(suppressed []*action.PolicyViolation) string {
 	if len(suppressed) == 0 {
 		return ""
@@ -330,10 +323,6 @@ func renderSuppressed(suppressed []*action.PolicyViolation) string {
 	return header + "\n" + dim.Sprint(strings.Join(lines, "\n"))
 }
 
-// suppressedAssessment extracts the effective assessment status and scope
-// from whichever structured finding is attached to the violation, if any.
-// Returns the empty string when no assessment is available (unstructured
-// policy, or finding without an assessment annotation).
 func suppressedAssessment(v *action.PolicyViolation) string {
 	switch {
 	case v.Vulnerability != nil && v.Vulnerability.Assessment != nil:
@@ -359,16 +348,11 @@ func prettyAssessment(status string, scopes []string) string {
 
 func assessmentScopes(in []*attv1.PolicyAssessment) []string {
 	scopes := make([]string, 0, len(in))
-	seen := make(map[string]struct{}, len(in))
 	for _, a := range in {
 		scope := strings.TrimPrefix(a.GetScope(), "ASSESSMENT_SCOPE_")
-		if scope == "" {
+		if scope == "" || slices.Contains(scopes, scope) {
 			continue
 		}
-		if _, dup := seen[scope]; dup {
-			continue
-		}
-		seen[scope] = struct{}{}
 		scopes = append(scopes, scope)
 	}
 	return scopes

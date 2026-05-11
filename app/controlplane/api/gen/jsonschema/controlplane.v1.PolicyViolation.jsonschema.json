@@ -21,7 +21,7 @@
       "type": "string"
     },
     "suppress": {
-      "description": "Whether this violation was excluded from the policy gate. Suppressed\n entries are part of the audit trail but did not contribute to\n PolicyEvaluationStatus.summary.violated or has_gated_violations.",
+      "description": "Whether this violation was excluded from the policy gate (still kept\n in the CAS audit trail).",
       "type": "boolean"
     },
     "vulnerability": {

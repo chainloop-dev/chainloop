@@ -148,10 +148,8 @@ message PolicyStatusSummary {
   // the contract using the ENFORCED blocking strategy. Independent of status:
   // a PASSED run can still have has_gates=true.
   bool has_gates = 6;
-  // Total number of violations across all evaluations that were suppressed
-  // by the policy. Suppressed entries are excluded from violated/has_gates
-  // accounting but kept in the CAS audit trail. UI can show a "Suppressed (N)"
-  // badge without partitioning the violations client-side.
+  // Number of suppressed violations across all evaluations. Excluded
+  // from violated; kept in the CAS audit trail.
   int32 suppressed = 7;
 }
 
@@ -260,14 +258,11 @@ message PolicyEvaluation {
 message PolicyViolation {
   string subject = 1;
   string message = 2;
-  // Whether this violation was excluded from the policy gate. Suppressed
-  // entries are part of the audit trail but did not contribute to
-  // PolicyEvaluationStatus.summary.violated or has_gated_violations.
+  // Whether this violation was excluded from the policy gate (still kept
+  // in the CAS audit trail).
   bool suppress = 3;
-  // Structured finding data from the policy. Populated when the policy
-  // declared finding_type and emitted a structured rather than string
-  // violation. Mirrors the oneof on
-  // attestation.v1.PolicyEvaluation.Violation in the CAS-stored bundle.
+  // Structured finding mirroring attestation.v1.PolicyEvaluation.Violation.
+  // Populated when the policy declares finding_type.
   oneof finding {
     attestation.v1.PolicyVulnerabilityFinding vulnerability = 4;
     attestation.v1.PolicySASTFinding sast = 5;

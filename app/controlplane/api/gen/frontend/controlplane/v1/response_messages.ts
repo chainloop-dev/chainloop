@@ -584,10 +584,8 @@ export interface PolicyStatusSummary {
    */
   hasGates: boolean;
   /**
-   * Total number of violations across all evaluations that were suppressed
-   * by the policy. Suppressed entries are excluded from violated/has_gates
-   * accounting but kept in the CAS audit trail. UI can show a "Suppressed (N)"
-   * badge without partitioning the violations client-side.
+   * Number of suppressed violations across all evaluations. Excluded
+   * from violated; kept in the CAS audit trail.
    */
   suppressed: number;
 }
@@ -727,9 +725,8 @@ export interface PolicyViolation {
   subject: string;
   message: string;
   /**
-   * Whether this violation was excluded from the policy gate. Suppressed
-   * entries are part of the audit trail but did not contribute to
-   * PolicyEvaluationStatus.summary.violated or has_gated_violations.
+   * Whether this violation was excluded from the policy gate (still kept
+   * in the CAS audit trail).
    */
   suppress: boolean;
   vulnerability?: PolicyVulnerabilityFinding | undefined;

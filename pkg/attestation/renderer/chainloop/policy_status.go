@@ -43,9 +43,8 @@ type PolicyStatusSummary struct {
 	// See PolicyEvaluationStatus.HasGates. Independent of Status — a PASSED
 	// run can still have HasGates=true.
 	HasGates bool
-	// Total number of violations across all evaluations that were suppressed
-	// by the policy. Excluded from Violated. UI can render a "Suppressed (N)"
-	// badge without partitioning the violations client-side.
+	// Number of suppressed violations across all evaluations. Excluded
+	// from Violated.
 	Suppressed int
 }
 

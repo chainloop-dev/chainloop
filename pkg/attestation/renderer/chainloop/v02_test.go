@@ -697,10 +697,6 @@ func TestGroupEvaluationsCounts(t *testing.T) {
 	}
 }
 
-// Documents the two-mode renderer contract: the inline predicate path drops
-// suppressed entries and finding details (signed gate decision), while the
-// CAS bundle path preserves them (audit trail). suppressedCount is tracked
-// independently so callers can surface a badge.
 func TestGroupEvaluationsSuppressed(t *testing.T) {
 	vuln := &api.PolicyVulnerabilityFinding{
 		Message: "CVE-2024-9 in lib", ExternalId: "CVE-2024-9", PackagePurl: "pkg:golang/lib@1", Severity: "HIGH",
