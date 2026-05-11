@@ -21,13 +21,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
-	attv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -310,52 +308,42 @@ func renderSuppressed(suppressed []*action.PolicyViolation) string {
 	if len(suppressed) == 0 {
 		return ""
 	}
-	dim := text.Colors{text.FgHiYellow}
-	lines := make([]string, 0, len(suppressed))
+	parts := make([]string, 0, len(suppressed))
 	for _, v := range suppressed {
-		line := v.Message
-		if a := suppressedAssessment(v); a != "" {
-			line = fmt.Sprintf("%s — %s", line, a)
+		id, status := suppressedIdentity(v)
+		if status != "" {
+			parts = append(parts, fmt.Sprintf("%s (%s)", id, status))
+		} else {
+			parts = append(parts, id)
 		}
-		lines = append(lines, "  - "+line)
 	}
-	header := dim.Sprintf("Suppressed (%d):", len(suppressed))
-	return header + "\n" + dim.Sprint(strings.Join(lines, "\n"))
+	return text.Colors{text.FgHiYellow}.Sprintf("Suppressed (%d): %s", len(suppressed), strings.Join(parts, ", "))
 }
 
-func suppressedAssessment(v *action.PolicyViolation) string {
+// suppressedIdentity returns a compact label for a suppressed violation plus
+// its precedence-resolved assessment status (no scope — keep the row tight).
+// Prefers the structured finding's identifier over Message; vuln policies
+// emit a multi-line markdown blob in Message that breaks row layout.
+func suppressedIdentity(v *action.PolicyViolation) (id, status string) {
 	switch {
-	case v.Vulnerability != nil && v.Vulnerability.Assessment != nil:
-		return prettyAssessment(v.Vulnerability.Assessment.GetEffectiveStatus(), assessmentScopes(v.Vulnerability.Assessment.GetAssessments()))
-	case v.Sast != nil && v.Sast.Assessment != nil:
-		return prettyAssessment(v.Sast.Assessment.GetEffectiveStatus(), assessmentScopes(v.Sast.Assessment.GetAssessments()))
-	case v.LicenseViolation != nil && v.LicenseViolation.Assessment != nil:
-		return prettyAssessment(v.LicenseViolation.Assessment.GetEffectiveStatus(), assessmentScopes(v.LicenseViolation.Assessment.GetAssessments()))
+	case v.Vulnerability != nil:
+		id = v.Vulnerability.GetExternalId()
+		status = prettyAssessmentStatus(v.Vulnerability.GetAssessment().GetEffectiveStatus())
+	case v.Sast != nil:
+		id = v.Sast.GetRuleId()
+		status = prettyAssessmentStatus(v.Sast.GetAssessment().GetEffectiveStatus())
+	case v.LicenseViolation != nil:
+		id = v.LicenseViolation.GetLicenseId()
+		status = prettyAssessmentStatus(v.LicenseViolation.GetAssessment().GetEffectiveStatus())
 	}
-	return ""
+	if id == "" {
+		id = strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+	}
+	return id, status
 }
 
-func prettyAssessment(status string, scopes []string) string {
-	s := strings.TrimPrefix(status, "ASSESSMENT_STATUS_")
-	if s == "" {
-		return ""
-	}
-	if len(scopes) == 0 {
-		return s
-	}
-	return fmt.Sprintf("%s, %s scope", s, strings.Join(scopes, "/"))
-}
-
-func assessmentScopes(in []*attv1.PolicyAssessment) []string {
-	scopes := make([]string, 0, len(in))
-	for _, a := range in {
-		scope := strings.TrimPrefix(a.GetScope(), "ASSESSMENT_SCOPE_")
-		if scope == "" || slices.Contains(scopes, scope) {
-			continue
-		}
-		scopes = append(scopes, scope)
-	}
-	return scopes
+func prettyAssessmentStatus(s string) string {
+	return strings.TrimPrefix(s, "ASSESSMENT_STATUS_")
 }
 
 func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) error {
