@@ -283,11 +283,12 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 			// When every finding is suppressed the gate passed; lead with
 			// "Ok" so the row carries the same signal as the no-violations
 			// case rather than reading like a failure.
-			if !hasActive {
+			switch {
+			case !hasActive:
 				msg = text.Colors{text.FgHiGreen}.Sprint("Ok") + "\n  - " + strings.Join(lines, "\n  - ")
-			} else if len(lines) == 1 {
+			case len(lines) == 1:
 				msg = lines[0]
-			} else {
+			default:
 				msg = "\n  - " + strings.Join(lines, "\n  - ")
 			}
 		}
