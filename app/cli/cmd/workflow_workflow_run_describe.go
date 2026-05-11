@@ -27,6 +27,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	attv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -295,40 +296,34 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 // structured finding when present (CVE id + severity + package + fix info,
 // or SAST rule + location, or license + component). Falls back to the first
 // line of Message — vuln policies emit a multi-line markdown report there
-// which would otherwise break the row layout. Suppressed entries get the
-// resolved assessment status appended inside the same severity-parens so
-// the row reads "CVE-X (HIGH, NOT_AFFECTED) …".
+// which would otherwise break the row layout. The resolved assessment
+// status, if any, is appended inside the same severity-parens regardless
+// of suppression so AFFECTED / UNDER_INVESTIGATION / etc. surface on
+// active findings too.
 func violationSummary(v *action.PolicyViolation) string {
-	suppressTag := ""
-	if v.Suppress {
-		suppressTag = "suppressed"
-		if s := suppressedStatus(v); s != "" {
-			suppressTag = s
-		}
+	statusTag := prettyAssessmentStatus(violationAssessment(v).GetEffectiveStatus())
+	if statusTag == "" && v.Suppress {
+		statusTag = "suppressed"
 	}
 
 	switch {
 	case v.Vulnerability != nil:
 		f := v.Vulnerability
 		head := f.GetExternalId()
-		if tag := joinTag(f.GetSeverity(), suppressTag); tag != "" {
+		if tag := joinTag(f.GetSeverity(), statusTag); tag != "" {
 			head = fmt.Sprintf("%s (%s)", head, tag)
 		}
-		parts := []string{head}
 		if pkg := prettyPurl(f.GetPackagePurl()); pkg != "" {
-			parts = append(parts, pkg)
+			head += " " + pkg
 		}
-		out := strings.Join(parts, " ")
 		if fix := f.GetFixedVersion(); fix != "" {
-			out += " [fix: " + fix + "]"
-		} else {
-			out += " [no fix]"
+			head += " [fix: " + fix + "]"
 		}
-		return out
+		return head
 	case v.Sast != nil:
 		f := v.Sast
 		out := f.GetRuleId()
-		if tag := joinTag(f.GetSeverity(), suppressTag); tag != "" {
+		if tag := joinTag(f.GetSeverity(), statusTag); tag != "" {
 			out = fmt.Sprintf("%s (%s)", out, tag)
 		}
 		if loc := f.GetLocation(); loc != "" {
@@ -342,8 +337,8 @@ func violationSummary(v *action.PolicyViolation) string {
 	case v.LicenseViolation != nil:
 		f := v.LicenseViolation
 		out := f.GetLicenseId()
-		if suppressTag != "" {
-			out = fmt.Sprintf("%s (%s)", out, suppressTag)
+		if statusTag != "" {
+			out = fmt.Sprintf("%s (%s)", out, statusTag)
 		}
 		if c := f.GetComponentName(); c != "" {
 			if ver := f.GetComponentVersion(); ver != "" {
@@ -358,36 +353,38 @@ func violationSummary(v *action.PolicyViolation) string {
 	if head == "" {
 		head = v.Subject
 	}
-	if suppressTag != "" {
-		head = fmt.Sprintf("%s (%s)", head, suppressTag)
+	if statusTag != "" {
+		head = fmt.Sprintf("%s (%s)", head, statusTag)
 	}
 	return head
 }
 
-// joinTag combines severity and the suppression tag (assessment status when
-// available, "suppressed" otherwise) into the comma-separated parenthetical
-// shown after the finding id. Empty inputs are skipped.
-func joinTag(severity, suppress string) string {
-	var parts []string
-	if severity != "" {
-		parts = append(parts, strings.ToUpper(severity))
+// joinTag combines severity and the assessment status into the
+// comma-separated parenthetical shown after the finding id.
+func joinTag(severity, status string) string {
+	sev := strings.ToUpper(severity)
+	switch {
+	case sev != "" && status != "":
+		return sev + ", " + status
+	case sev != "":
+		return sev
+	default:
+		return status
 	}
-	if suppress != "" {
-		parts = append(parts, suppress)
-	}
-	return strings.Join(parts, ", ")
 }
 
-func suppressedStatus(v *action.PolicyViolation) string {
+// violationAssessment returns the assessment attached to whichever structured
+// finding the violation carries, or nil. Centralizes the type dispatch.
+func violationAssessment(v *action.PolicyViolation) *attv1.PolicyAssessmentResult {
 	switch {
 	case v.Vulnerability != nil:
-		return prettyAssessmentStatus(v.Vulnerability.GetAssessment().GetEffectiveStatus())
+		return v.Vulnerability.GetAssessment()
 	case v.Sast != nil:
-		return prettyAssessmentStatus(v.Sast.GetAssessment().GetEffectiveStatus())
+		return v.Sast.GetAssessment()
 	case v.LicenseViolation != nil:
-		return prettyAssessmentStatus(v.LicenseViolation.GetAssessment().GetEffectiveStatus())
+		return v.LicenseViolation.GetAssessment()
 	}
-	return ""
+	return nil
 }
 
 func prettyAssessmentStatus(s string) string {

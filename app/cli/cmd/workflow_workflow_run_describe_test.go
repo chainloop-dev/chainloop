@@ -56,7 +56,7 @@ func TestViolationSummary(t *testing.T) {
 		want      string
 	}{
 		{
-			name: "vulnerability with severity, package, no fix",
+			name: "vulnerability with severity and package, no fix",
 			violation: &action.PolicyViolation{
 				Vulnerability: &attv1.PolicyVulnerabilityFinding{
 					ExternalId:  "CVE-2026-5450",
@@ -64,7 +64,7 @@ func TestViolationSummary(t *testing.T) {
 					PackagePurl: "pkg:deb/debian/libc6@2.41-12%2Bdeb13u2",
 				},
 			},
-			want: "CVE-2026-5450 (CRITICAL) libc6@2.41-12+deb13u2 [no fix]",
+			want: "CVE-2026-5450 (CRITICAL) libc6@2.41-12+deb13u2",
 		},
 		{
 			name: "vulnerability with fix version",
@@ -79,6 +79,34 @@ func TestViolationSummary(t *testing.T) {
 			want: "CVE-2024-9999 (HIGH) lib@v1.0.0 [fix: 1.0.1]",
 		},
 		{
+			name: "active vulnerability surfaces assessment status (AFFECTED)",
+			violation: &action.PolicyViolation{
+				Vulnerability: &attv1.PolicyVulnerabilityFinding{
+					ExternalId:  "CVE-2024-1",
+					Severity:    "high",
+					PackagePurl: "pkg:deb/debian/libc6@2.41",
+					Assessment: &attv1.PolicyAssessmentResult{
+						EffectiveStatus: "ASSESSMENT_STATUS_AFFECTED",
+					},
+				},
+			},
+			want: "CVE-2024-1 (HIGH, AFFECTED) libc6@2.41",
+		},
+		{
+			name: "active vulnerability surfaces assessment status (UNDER_INVESTIGATION)",
+			violation: &action.PolicyViolation{
+				Vulnerability: &attv1.PolicyVulnerabilityFinding{
+					ExternalId:  "CVE-2024-2",
+					Severity:    "medium",
+					PackagePurl: "pkg:deb/debian/libc6@2.41",
+					Assessment: &attv1.PolicyAssessmentResult{
+						EffectiveStatus: "ASSESSMENT_STATUS_UNDER_INVESTIGATION",
+					},
+				},
+			},
+			want: "CVE-2024-2 (MEDIUM, UNDER_INVESTIGATION) libc6@2.41",
+		},
+		{
 			name: "suppressed vulnerability gets assessment status inline",
 			violation: &action.PolicyViolation{
 				Suppress: true,
@@ -91,7 +119,7 @@ func TestViolationSummary(t *testing.T) {
 					},
 				},
 			},
-			want: "CVE-2018-XXXX (LOW, NOT_AFFECTED) libc6@2.41 [no fix]",
+			want: "CVE-2018-XXXX (LOW, NOT_AFFECTED) libc6@2.41",
 		},
 		{
 			name: "SAST with location and line number",
@@ -153,12 +181,12 @@ func TestViolationSummary(t *testing.T) {
 			name: "vulnerability with purl qualifiers strips them",
 			violation: &action.PolicyViolation{
 				Vulnerability: &attv1.PolicyVulnerabilityFinding{
-					ExternalId:  "CVE-2024-1",
+					ExternalId:  "CVE-2024-3",
 					Severity:    "high",
 					PackagePurl: "pkg:deb/debian/libc6@2.41?arch=amd64",
 				},
 			},
-			want: "CVE-2024-1 (HIGH) libc6@2.41 [no fix]",
+			want: "CVE-2024-3 (HIGH) libc6@2.41",
 		},
 	}
 
