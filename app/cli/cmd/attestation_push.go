@@ -186,11 +186,25 @@ func (e *GateError) Error() string {
 	return fmt.Sprintf("the policy %q is configured as a gate and has violations", e.PolicyName)
 }
 
+// hasGatingViolation reports whether any of the supplied violations should
+// count toward the policy gate. Entries flagged Suppress (typically because
+// an assessment renders the finding NOT_AFFECTED) are excluded.
+func hasGatingViolation(violations []*action.PolicyViolation) bool {
+	for _, v := range violations {
+		if !v.Suppress {
+			return true
+		}
+	}
+	return false
+}
+
 func validatePolicyEnforcement(status *action.AttestationStatusResult, bypassPolicyCheck bool) error {
-	// Block if any of the policies has been configured as a gate.
+	// Block if any of the policies has been configured as a gate. Entries
+	// flagged Suppress are excluded from the gate count but remain in
+	// eval.Violations for CAS storage and ingestion (audit trail preserved).
 	for _, evaluations := range status.PolicyEvaluations {
 		for _, eval := range evaluations {
-			if len(eval.Violations) > 0 && eval.Gate {
+			if eval.Gate && hasGatingViolation(eval.Violations) {
 				if bypassPolicyCheck {
 					logger.Warn().Msg(exceptionBypassPolicyCheck)
 					continue

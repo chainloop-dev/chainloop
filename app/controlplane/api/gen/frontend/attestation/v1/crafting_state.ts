@@ -313,7 +313,17 @@ export interface PolicyEvaluation_Violation {
   message: string;
   vulnerability?: PolicyVulnerabilityFinding | undefined;
   sast?: PolicySASTFinding | undefined;
-  licenseViolation?: PolicyLicenseViolationFinding | undefined;
+  licenseViolation?:
+    | PolicyLicenseViolationFinding
+    | undefined;
+  /**
+   * Suppression hint set by the policy. When true the gate count
+   * excludes this entry, but it is still stored in CAS and ingested
+   * (audit trail preserved). Set by the policy author (typically based
+   * on `assessment.effective_status`) — the engine reads the bool
+   * without interpreting why.
+   */
+  suppress: boolean;
 }
 
 export interface PolicyEvaluation_Reference {
@@ -2916,7 +2926,14 @@ export const PolicyEvaluation_WithEntry = {
 };
 
 function createBasePolicyEvaluation_Violation(): PolicyEvaluation_Violation {
-  return { subject: "", message: "", vulnerability: undefined, sast: undefined, licenseViolation: undefined };
+  return {
+    subject: "",
+    message: "",
+    vulnerability: undefined,
+    sast: undefined,
+    licenseViolation: undefined,
+    suppress: false,
+  };
 }
 
 export const PolicyEvaluation_Violation = {
@@ -2935,6 +2952,9 @@ export const PolicyEvaluation_Violation = {
     }
     if (message.licenseViolation !== undefined) {
       PolicyLicenseViolationFinding.encode(message.licenseViolation, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.suppress === true) {
+      writer.uint32(48).bool(message.suppress);
     }
     return writer;
   },
@@ -2981,6 +3001,13 @@ export const PolicyEvaluation_Violation = {
 
           message.licenseViolation = PolicyLicenseViolationFinding.decode(reader, reader.uint32());
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.suppress = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3001,6 +3028,7 @@ export const PolicyEvaluation_Violation = {
       licenseViolation: isSet(object.licenseViolation)
         ? PolicyLicenseViolationFinding.fromJSON(object.licenseViolation)
         : undefined,
+      suppress: isSet(object.suppress) ? Boolean(object.suppress) : false,
     };
   },
 
@@ -3016,6 +3044,7 @@ export const PolicyEvaluation_Violation = {
     message.licenseViolation !== undefined && (obj.licenseViolation = message.licenseViolation
       ? PolicyLicenseViolationFinding.toJSON(message.licenseViolation)
       : undefined);
+    message.suppress !== undefined && (obj.suppress = message.suppress);
     return obj;
   },
 
@@ -3036,6 +3065,7 @@ export const PolicyEvaluation_Violation = {
     message.licenseViolation = (object.licenseViolation !== undefined && object.licenseViolation !== null)
       ? PolicyLicenseViolationFinding.fromPartial(object.licenseViolation)
       : undefined;
+    message.suppress = object.suppress ?? false;
     return message;
   },
 };

@@ -808,6 +808,16 @@ func splitArgs(s string) []string {
 	return result
 }
 
+// extractSuppress pulls the optional "suppress" boolean from a structured
+// rego finding. Returns false for plain-string violations or when absent.
+func extractSuppress(raw map[string]any) bool {
+	if raw == nil {
+		return false
+	}
+	v, _ := raw["suppress"].(bool)
+	return v
+}
+
 func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findingType string) ([]*v12.PolicyEvaluation_Violation, []string, error) {
 	res := make([]*v12.PolicyEvaluation_Violation, 0)
 	var warnings []string
@@ -817,8 +827,9 @@ func engineEvaluationsToAPIViolations(results []*engine.EvaluationResult, findin
 	for _, r := range results {
 		for _, v := range r.Violations {
 			apiV := &v12.PolicyEvaluation_Violation{
-				Subject: v.Subject,
-				Message: v.Violation,
+				Subject:  v.Subject,
+				Message:  v.Violation,
+				Suppress: extractSuppress(v.RawFinding),
 			}
 
 			hasStructuredData := v.RawFinding != nil

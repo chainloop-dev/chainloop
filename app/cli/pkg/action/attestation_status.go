@@ -367,8 +367,9 @@ func policyEvaluationStateToActionForStatus(in *v1.PolicyEvaluation) *PolicyEval
 	violations := make([]*PolicyViolation, 0, len(in.Violations))
 	for _, v := range in.Violations {
 		violations = append(violations, &PolicyViolation{
-			Subject: v.Subject,
-			Message: v.Message,
+			Subject:  v.Subject,
+			Message:  v.Message,
+			Suppress: v.GetSuppress(),
 		})
 	}
 

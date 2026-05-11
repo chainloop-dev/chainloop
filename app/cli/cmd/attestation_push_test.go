@@ -88,4 +88,51 @@ func TestValidatePolicyEnforcement(t *testing.T) {
 		err := validatePolicyEnforcement(status, false)
 		require.NoError(t, err)
 	})
+
+	t.Run("does not block when every violation on a gated policy is suppressed", func(t *testing.T) {
+		status := &action.AttestationStatusResult{
+			PolicyEvaluations: map[string][]*action.PolicyEvaluation{
+				"materials": {
+					{
+						Name: "cdx-fresh",
+						Gate: true,
+						Violations: []*action.PolicyViolation{
+							{Message: "CVE-2024-1 NOT_AFFECTED", Suppress: true},
+							{Message: "CVE-2024-2 NOT_AFFECTED", Suppress: true},
+						},
+					},
+				},
+			},
+			HasPolicyViolations:         true,
+			MustBlockOnPolicyViolations: false,
+		}
+
+		err := validatePolicyEnforcement(status, false)
+		require.NoError(t, err)
+	})
+
+	t.Run("blocks when at least one violation on a gated policy is not suppressed", func(t *testing.T) {
+		status := &action.AttestationStatusResult{
+			PolicyEvaluations: map[string][]*action.PolicyEvaluation{
+				"materials": {
+					{
+						Name: "cdx-fresh",
+						Gate: true,
+						Violations: []*action.PolicyViolation{
+							{Message: "CVE-2024-1 NOT_AFFECTED", Suppress: true},
+							{Message: "CVE-2024-2 active", Suppress: false},
+						},
+					},
+				},
+			},
+			HasPolicyViolations:         true,
+			MustBlockOnPolicyViolations: false,
+		}
+
+		err := validatePolicyEnforcement(status, false)
+		require.Error(t, err)
+		var gateErr *GateError
+		require.ErrorAs(t, err, &gateErr)
+		require.Equal(t, "cdx-fresh", gateErr.PolicyName)
+	})
 }

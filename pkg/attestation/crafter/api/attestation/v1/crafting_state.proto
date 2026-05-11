@@ -284,6 +284,13 @@ message PolicyEvaluation {
       PolicySASTFinding sast = 4;
       PolicyLicenseViolationFinding license_violation = 5;
     }
+
+    // Suppression hint set by the policy. When true the gate count
+    // excludes this entry, but it is still stored in CAS and ingested
+    // (audit trail preserved). Set by the policy author (typically based
+    // on `assessment.effective_status`) — the engine reads the bool
+    // without interpreting why.
+    bool suppress = 6;
   }
 
   message Reference {

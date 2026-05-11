@@ -115,6 +115,10 @@ type PolicyEvaluation struct {
 type PolicyViolation struct {
 	Subject string `json:"subject"`
 	Message string `json:"message"`
+	// Suppress, when true, excludes this entry from the gate count while
+	// keeping it in the CAS-stored bundle (audit trail preserved). Set by
+	// the policy author via the rego "suppress" key.
+	Suppress bool `json:"suppress,omitempty"`
 }
 
 type PolicyReference struct {
