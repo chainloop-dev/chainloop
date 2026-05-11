@@ -367,9 +367,13 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 }
 
 func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
-	// Map violations
-	violations := make([]*PolicyViolation, 0)
+	// Suppressed findings remain in the CAS-stored PolicyEvaluationBundle for
+	// audit but are excluded from the inline predicate (and its counters).
+	violations := make([]*PolicyViolation, 0, len(ev.Violations))
 	for _, vi := range ev.Violations {
+		if vi.GetSuppress() {
+			continue
+		}
 		violations = append(violations, &PolicyViolation{
 			Subject: vi.Subject,
 			Message: vi.Message,

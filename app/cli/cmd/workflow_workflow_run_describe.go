@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -253,6 +253,16 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 	for _, ev := range evs {
 		msg := ""
 
+		// Suppressed violations stay in the CAS-stored bundle for audit but
+		// don't surface here — the terminal output mirrors what the gate counts.
+		violations := make([]string, 0, len(ev.Violations))
+		for _, v := range ev.Violations {
+			if v.Suppress {
+				continue
+			}
+			violations = append(violations, v.Message)
+		}
+
 		switch {
 		case ev.Skipped:
 			switch {
@@ -264,15 +274,11 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 			default:
 				msg = text.Colors{text.FgHiYellow}.Sprint("the policy was skipped in all execution paths")
 			}
-		case len(ev.Violations) == 0:
+		case len(violations) == 0:
 			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
-		case len(ev.Violations) > 0:
+		default:
 			color := text.Colors{text.FgHiRed}
-			var violations []string
 			var prefix = ""
-			for _, v := range ev.Violations {
-				violations = append(violations, v.Message)
-			}
 			// For multiple violations, we want to indent the list
 			if len(violations) > 1 {
 				prefix = "\n  - "
