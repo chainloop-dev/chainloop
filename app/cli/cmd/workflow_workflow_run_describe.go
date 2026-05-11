@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -253,12 +254,11 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 	for _, ev := range evs {
 		msg := ""
 
-		var active, suppressed []*action.PolicyViolation
+		var hasActive bool
 		for _, v := range ev.Violations {
-			if v.Suppress {
-				suppressed = append(suppressed, v)
-			} else {
-				active = append(active, v)
+			if !v.Suppress {
+				hasActive = true
+				break
 			}
 		}
 
@@ -273,23 +273,26 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 			default:
 				msg = text.Colors{text.FgHiYellow}.Sprint("the policy was skipped in all execution paths")
 			}
-		case len(active) == 0:
+		case len(ev.Violations) == 0:
 			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
 		default:
-			color := text.Colors{text.FgHiRed}
-			lines := make([]string, 0, len(active))
-			for _, v := range active {
-				lines = append(lines, color.Sprint(violationSummary(v)))
+			lines := make([]string, 0, len(ev.Violations))
+			for _, v := range ev.Violations {
+				color := text.FgHiRed
+				if v.Suppress {
+					color = text.FgHiYellow
+				}
+				lines = append(lines, text.Colors{color}.Sprint(violationSummary(v)))
+			}
+			if !hasActive && len(lines) > 0 {
+				// All suppressed — material effectively passed; lead with "Ok".
+				lines = append([]string{text.Colors{text.FgHiGreen}.Sprint("Ok")}, lines...)
 			}
 			if len(lines) == 1 {
 				msg = lines[0]
 			} else {
 				msg = "\n  - " + strings.Join(lines, "\n  - ")
 			}
-		}
-
-		if s := renderSuppressed(suppressed); s != "" {
-			msg += "\n" + s
 		}
 
 		name := ev.Name
@@ -300,36 +303,30 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 	}
 }
 
-func renderSuppressed(suppressed []*action.PolicyViolation) string {
-	if len(suppressed) == 0 {
-		return ""
-	}
-	parts := make([]string, 0, len(suppressed))
-	for _, v := range suppressed {
-		id := violationID(v)
-		if status := suppressedStatus(v); status != "" {
-			parts = append(parts, fmt.Sprintf("%s (%s)", id, status))
-		} else {
-			parts = append(parts, id)
+// violationSummary builds a single-line description of a violation using the
+// structured finding when present (CVE id + severity + package + fix info,
+// or SAST rule + location, or license + component). Falls back to the first
+// line of Message — vuln policies emit a multi-line markdown report there
+// which would otherwise break the row layout. Suppressed entries get the
+// resolved assessment status appended inside the same severity-parens so
+// the row reads "CVE-X (HIGH, NOT_AFFECTED) …".
+func violationSummary(v *action.PolicyViolation) string {
+	suppressTag := ""
+	if v.Suppress {
+		suppressTag = "suppressed"
+		if s := suppressedStatus(v); s != "" {
+			suppressTag = s
 		}
 	}
-	return text.Colors{text.FgHiYellow}.Sprintf("Suppressed (%d): %s", len(suppressed), strings.Join(parts, ", "))
-}
 
-// violationSummary builds a single-line description of an active violation
-// using the structured finding when present: vulnerability gets severity,
-// package, and fix info; SAST gets location; license gets component. Falls
-// back to the first line of Message for unstructured policies — vuln
-// policies typically emit a multi-line markdown report in Message that
-// would otherwise break the row layout.
-func violationSummary(v *action.PolicyViolation) string {
 	switch {
 	case v.Vulnerability != nil:
 		f := v.Vulnerability
-		parts := []string{f.GetExternalId()}
-		if s := f.GetSeverity(); s != "" {
-			parts[0] = fmt.Sprintf("%s (%s)", f.GetExternalId(), strings.ToUpper(s))
+		head := f.GetExternalId()
+		if tag := joinTag(f.GetSeverity(), suppressTag); tag != "" {
+			head = fmt.Sprintf("%s (%s)", head, tag)
 		}
+		parts := []string{head}
 		if pkg := prettyPurl(f.GetPackagePurl()); pkg != "" {
 			parts = append(parts, pkg)
 		}
@@ -343,8 +340,8 @@ func violationSummary(v *action.PolicyViolation) string {
 	case v.Sast != nil:
 		f := v.Sast
 		out := f.GetRuleId()
-		if s := f.GetSeverity(); s != "" {
-			out = fmt.Sprintf("%s (%s)", out, strings.ToUpper(s))
+		if tag := joinTag(f.GetSeverity(), suppressTag); tag != "" {
+			out = fmt.Sprintf("%s (%s)", out, tag)
 		}
 		if loc := f.GetLocation(); loc != "" {
 			if ln := f.GetLineNumber(); ln > 0 {
@@ -357,6 +354,9 @@ func violationSummary(v *action.PolicyViolation) string {
 	case v.LicenseViolation != nil:
 		f := v.LicenseViolation
 		out := f.GetLicenseId()
+		if suppressTag != "" {
+			out = fmt.Sprintf("%s (%s)", out, suppressTag)
+		}
 		if c := f.GetComponentName(); c != "" {
 			if ver := f.GetComponentVersion(); ver != "" {
 				out = fmt.Sprintf("%s — %s@%s", out, c, ver)
@@ -366,22 +366,28 @@ func violationSummary(v *action.PolicyViolation) string {
 		}
 		return out
 	}
-	return strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+	head := strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+	if head == "" {
+		head = v.Subject
+	}
+	if suppressTag != "" {
+		head = fmt.Sprintf("%s (%s)", head, suppressTag)
+	}
+	return head
 }
 
-// violationID returns just the identifier portion (CVE id, rule id, license
-// id) — used for the compact suppressed list where the assessment status
-// already carries the qualifying context.
-func violationID(v *action.PolicyViolation) string {
-	switch {
-	case v.Vulnerability != nil:
-		return v.Vulnerability.GetExternalId()
-	case v.Sast != nil:
-		return v.Sast.GetRuleId()
-	case v.LicenseViolation != nil:
-		return v.LicenseViolation.GetLicenseId()
+// joinTag combines severity and the suppression tag (assessment status when
+// available, "suppressed" otherwise) into the comma-separated parenthetical
+// shown after the finding id. Empty inputs are skipped.
+func joinTag(severity, suppress string) string {
+	var parts []string
+	if severity != "" {
+		parts = append(parts, strings.ToUpper(severity))
 	}
-	return strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+	if suppress != "" {
+		parts = append(parts, suppress)
+	}
+	return strings.Join(parts, ", ")
 }
 
 func suppressedStatus(v *action.PolicyViolation) string {
@@ -401,8 +407,8 @@ func prettyAssessmentStatus(s string) string {
 }
 
 // prettyPurl shortens "pkg:type/[namespace/]name@version[?qualifiers][#sub]"
-// to "name@version" — the rest is rarely useful in a one-line summary and
-// has the most variability across ecosystems.
+// to "name@version" with percent-decoding applied — PURL requires `+` in
+// version strings to be encoded as %2B, which is unreadable in CLI output.
 func prettyPurl(purl string) string {
 	if purl == "" {
 		return ""
@@ -413,6 +419,9 @@ func prettyPurl(purl string) string {
 	}
 	if i := strings.LastIndex(s, "/"); i >= 0 {
 		s = s[i+1:]
+	}
+	if decoded, err := url.PathUnescape(s); err == nil {
+		s = decoded
 	}
 	return s
 }
