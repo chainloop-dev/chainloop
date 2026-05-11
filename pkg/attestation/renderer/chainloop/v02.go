@@ -60,6 +60,10 @@ type ProvenancePredicateV02 struct {
 	PolicySkippedCount int `json:"policySkippedCount,omitempty"`
 	// Number of evaluations that passed (no violations and not skipped)
 	PolicyPassedCount int `json:"policyPassedCount,omitempty"`
+	// Number of suppressed violations across all evaluations. Suppressed
+	// entries themselves are not embedded in the predicate — they live in
+	// the CAS-stored PolicyEvaluationBundle.
+	PolicySuppressedCount int `json:"policySuppressedCount,omitempty"`
 	// Whether the attestation has policy violations in gated policies
 	PolicyHasGatedViolations bool `json:"policyHasGatedViolations,omitempty"`
 	PolicyHasGates           bool `json:"policyHasGates,omitempty"`
@@ -105,8 +109,14 @@ type PolicyEvaluation struct {
 }
 
 type PolicyViolation struct {
-	Subject string `json:"subject"`
-	Message string `json:"message"`
+	Subject  string `json:"subject"`
+	Message  string `json:"message"`
+	Suppress bool   `json:"suppress,omitempty"`
+	// Mirrors the oneof on attestation.v1.PolicyEvaluation.Violation. Only
+	// populated on the bundle path; never on the inline predicate.
+	Vulnerability    *v1.PolicyVulnerabilityFinding    `json:"vulnerability,omitempty"`
+	Sast             *v1.PolicySASTFinding             `json:"sast,omitempty"`
+	LicenseViolation *v1.PolicyLicenseViolationFinding `json:"licenseViolation,omitempty"`
 }
 
 type RendererV02 struct {
@@ -271,6 +281,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		PolicyViolationsCount:       evalResult.violationsCount,
 		PolicySkippedCount:          evalResult.skippedCount,
 		PolicyPassedCount:           evalResult.passedCount,
+		PolicySuppressedCount:       evalResult.suppressedCount,
 		PolicyHasGatedViolations:    evalResult.hasGatedViolations,
 		PolicyHasGates:              hasGates,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
@@ -297,18 +308,19 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 }
 
 func mappedPolicyEvaluations(att *v1.Attestation) (*evaluationsResult, error) {
-	return groupEvaluations(att.GetPolicyEvaluations())
+	return groupEvaluations(att.GetPolicyEvaluations(), false)
 }
 
-// PolicyEvaluationsFromBundle deserializes a PolicyEvaluationBundle from protojson bytes
-// and returns evaluations grouped by material name.
+// PolicyEvaluationsFromBundle deserializes a PolicyEvaluationBundle and
+// returns evaluations grouped by material name, preserving suppressed
+// entries and structured finding data for the CP describe API.
 func PolicyEvaluationsFromBundle(data []byte) (map[string][]*PolicyEvaluation, error) {
 	var bundle v1.PolicyEvaluationBundle
 	if err := protojson.Unmarshal(data, &bundle); err != nil {
 		return nil, fmt.Errorf("unmarshaling policy evaluation bundle: %w", err)
 	}
 
-	res, err := groupEvaluations(bundle.GetEvaluations())
+	res, err := groupEvaluations(bundle.GetEvaluations(), true)
 	if err != nil {
 		return nil, err
 	}
@@ -324,9 +336,18 @@ type evaluationsResult struct {
 	violationsCount    int
 	skippedCount       int
 	passedCount        int
+	suppressedCount    int
 }
 
-func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) {
+// groupEvaluations groups a flat list of policy evaluations by material and
+// aggregates counters. When includeSuppressed is true the returned entries
+// keep their suppressed violations and finding data (CAS bundle path); when
+// false they are stripped (in-toto predicate path).
+//
+// Gate counters (violationsCount, hasViolations, hasGatedViolations) always
+// exclude suppressed entries regardless of the flag — suppressedCount is
+// tracked independently.
+func groupEvaluations(evals []*v1.PolicyEvaluation, includeSuppressed bool) (*evaluationsResult, error) {
 	res := &evaluationsResult{
 		evaluations: make(map[string][]*PolicyEvaluation),
 	}
@@ -337,7 +358,16 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 			keyName = AttPolicyEvaluation
 		}
 
-		ev, err := renderEvaluation(p)
+		var active, suppressed int
+		for _, vi := range p.Violations {
+			if vi.GetSuppress() {
+				suppressed++
+			} else {
+				active++
+			}
+		}
+
+		ev, err := renderEvaluation(p, includeSuppressed)
 		if err != nil {
 			return nil, err
 		}
@@ -346,10 +376,12 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 			res.hasGates = true
 		}
 
+		res.suppressedCount += suppressed
+
 		switch {
-		case len(ev.Violations) > 0:
+		case active > 0:
 			res.hasViolations = true
-			res.violationsCount += len(ev.Violations)
+			res.violationsCount += active
 			if ev.Gate {
 				res.hasGatedViolations = true
 			}
@@ -366,14 +398,29 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 	return res, nil
 }
 
-func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
-	// Map violations
-	violations := make([]*PolicyViolation, 0)
+func renderEvaluation(ev *v1.PolicyEvaluation, includeSuppressed bool) (*PolicyEvaluation, error) {
+	violations := make([]*PolicyViolation, 0, len(ev.Violations))
 	for _, vi := range ev.Violations {
-		violations = append(violations, &PolicyViolation{
-			Subject: vi.Subject,
-			Message: vi.Message,
-		})
+		if vi.GetSuppress() && !includeSuppressed {
+			continue
+		}
+
+		out := &PolicyViolation{
+			Subject:  vi.Subject,
+			Message:  vi.Message,
+			Suppress: vi.GetSuppress(),
+		}
+		if includeSuppressed {
+			switch f := vi.GetFinding().(type) {
+			case *v1.PolicyEvaluation_Violation_Vulnerability:
+				out.Vulnerability = f.Vulnerability
+			case *v1.PolicyEvaluation_Violation_Sast:
+				out.Sast = f.Sast
+			case *v1.PolicyEvaluation_Violation_LicenseViolation:
+				out.LicenseViolation = f.LicenseViolation
+			}
+		}
+		violations = append(violations, out)
 	}
 
 	policyRef, err := renderReference(ev.GetPolicyReference())
@@ -521,6 +568,7 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationSt
 		ViolationsCount:    p.PolicyViolationsCount,
 		SkippedCount:       skipped,
 		PassedCount:        passed,
+		SuppressedCount:    p.PolicySuppressedCount,
 	}
 }
 

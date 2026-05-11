@@ -71,6 +71,7 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.Int32("policy_evaluations_passed").Optional().Nillable(),
 		field.Int32("policy_evaluations_skipped").Optional().Nillable(),
 		field.Int32("policy_violations_count").Optional().Nillable(),
+		field.Int32("policy_violations_suppressed").Optional().Nillable(),
 		field.Bool("policy_has_gates").Optional().Nillable(),
 	}
 }

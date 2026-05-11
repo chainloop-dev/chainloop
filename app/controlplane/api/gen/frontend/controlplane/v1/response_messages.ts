@@ -1,6 +1,11 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import {
+  PolicyLicenseViolationFinding,
+  PolicySASTFinding,
+  PolicyVulnerabilityFinding,
+} from "../../attestation/v1/crafting_state";
 import { Timestamp } from "../../google/protobuf/timestamp";
 import {
   CraftingSchema,
@@ -578,6 +583,11 @@ export interface PolicyStatusSummary {
    * a PASSED run can still have has_gates=true.
    */
   hasGates: boolean;
+  /**
+   * Number of suppressed violations across all evaluations. Excluded
+   * from violated; kept in the CAS audit trail.
+   */
+  suppressed: number;
 }
 
 export interface AttestationItem {
@@ -714,6 +724,14 @@ export interface PolicyEvaluation_WithEntry {
 export interface PolicyViolation {
   subject: string;
   message: string;
+  /**
+   * Whether this violation was excluded from the policy gate (still kept
+   * in the CAS audit trail).
+   */
+  suppress: boolean;
+  vulnerability?: PolicyVulnerabilityFinding | undefined;
+  sast?: PolicySASTFinding | undefined;
+  licenseViolation?: PolicyLicenseViolationFinding | undefined;
 }
 
 export interface PolicyReference {
@@ -1604,7 +1622,7 @@ export const ProjectVersion = {
 };
 
 function createBasePolicyStatusSummary(): PolicyStatusSummary {
-  return { status: 0, total: 0, passed: 0, skipped: 0, violated: 0, hasGates: false };
+  return { status: 0, total: 0, passed: 0, skipped: 0, violated: 0, hasGates: false, suppressed: 0 };
 }
 
 export const PolicyStatusSummary = {
@@ -1626,6 +1644,9 @@ export const PolicyStatusSummary = {
     }
     if (message.hasGates === true) {
       writer.uint32(48).bool(message.hasGates);
+    }
+    if (message.suppressed !== 0) {
+      writer.uint32(56).int32(message.suppressed);
     }
     return writer;
   },
@@ -1679,6 +1700,13 @@ export const PolicyStatusSummary = {
 
           message.hasGates = reader.bool();
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.suppressed = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1696,6 +1724,7 @@ export const PolicyStatusSummary = {
       skipped: isSet(object.skipped) ? Number(object.skipped) : 0,
       violated: isSet(object.violated) ? Number(object.violated) : 0,
       hasGates: isSet(object.hasGates) ? Boolean(object.hasGates) : false,
+      suppressed: isSet(object.suppressed) ? Number(object.suppressed) : 0,
     };
   },
 
@@ -1707,6 +1736,7 @@ export const PolicyStatusSummary = {
     message.skipped !== undefined && (obj.skipped = Math.round(message.skipped));
     message.violated !== undefined && (obj.violated = Math.round(message.violated));
     message.hasGates !== undefined && (obj.hasGates = message.hasGates);
+    message.suppressed !== undefined && (obj.suppressed = Math.round(message.suppressed));
     return obj;
   },
 
@@ -1722,6 +1752,7 @@ export const PolicyStatusSummary = {
     message.skipped = object.skipped ?? 0;
     message.violated = object.violated ?? 0;
     message.hasGates = object.hasGates ?? false;
+    message.suppressed = object.suppressed ?? 0;
     return message;
   },
 };
@@ -3135,7 +3166,14 @@ export const PolicyEvaluation_WithEntry = {
 };
 
 function createBasePolicyViolation(): PolicyViolation {
-  return { subject: "", message: "" };
+  return {
+    subject: "",
+    message: "",
+    suppress: false,
+    vulnerability: undefined,
+    sast: undefined,
+    licenseViolation: undefined,
+  };
 }
 
 export const PolicyViolation = {
@@ -3145,6 +3183,18 @@ export const PolicyViolation = {
     }
     if (message.message !== "") {
       writer.uint32(18).string(message.message);
+    }
+    if (message.suppress === true) {
+      writer.uint32(24).bool(message.suppress);
+    }
+    if (message.vulnerability !== undefined) {
+      PolicyVulnerabilityFinding.encode(message.vulnerability, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.sast !== undefined) {
+      PolicySASTFinding.encode(message.sast, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.licenseViolation !== undefined) {
+      PolicyLicenseViolationFinding.encode(message.licenseViolation, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -3170,6 +3220,34 @@ export const PolicyViolation = {
 
           message.message = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.suppress = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.vulnerability = PolicyVulnerabilityFinding.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.sast = PolicySASTFinding.decode(reader, reader.uint32());
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.licenseViolation = PolicyLicenseViolationFinding.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3183,6 +3261,14 @@ export const PolicyViolation = {
     return {
       subject: isSet(object.subject) ? String(object.subject) : "",
       message: isSet(object.message) ? String(object.message) : "",
+      suppress: isSet(object.suppress) ? Boolean(object.suppress) : false,
+      vulnerability: isSet(object.vulnerability)
+        ? PolicyVulnerabilityFinding.fromJSON(object.vulnerability)
+        : undefined,
+      sast: isSet(object.sast) ? PolicySASTFinding.fromJSON(object.sast) : undefined,
+      licenseViolation: isSet(object.licenseViolation)
+        ? PolicyLicenseViolationFinding.fromJSON(object.licenseViolation)
+        : undefined,
     };
   },
 
@@ -3190,6 +3276,15 @@ export const PolicyViolation = {
     const obj: any = {};
     message.subject !== undefined && (obj.subject = message.subject);
     message.message !== undefined && (obj.message = message.message);
+    message.suppress !== undefined && (obj.suppress = message.suppress);
+    message.vulnerability !== undefined &&
+      (obj.vulnerability = message.vulnerability
+        ? PolicyVulnerabilityFinding.toJSON(message.vulnerability)
+        : undefined);
+    message.sast !== undefined && (obj.sast = message.sast ? PolicySASTFinding.toJSON(message.sast) : undefined);
+    message.licenseViolation !== undefined && (obj.licenseViolation = message.licenseViolation
+      ? PolicyLicenseViolationFinding.toJSON(message.licenseViolation)
+      : undefined);
     return obj;
   },
 
@@ -3201,6 +3296,16 @@ export const PolicyViolation = {
     const message = createBasePolicyViolation();
     message.subject = object.subject ?? "";
     message.message = object.message ?? "";
+    message.suppress = object.suppress ?? false;
+    message.vulnerability = (object.vulnerability !== undefined && object.vulnerability !== null)
+      ? PolicyVulnerabilityFinding.fromPartial(object.vulnerability)
+      : undefined;
+    message.sast = (object.sast !== undefined && object.sast !== null)
+      ? PolicySASTFinding.fromPartial(object.sast)
+      : undefined;
+    message.licenseViolation = (object.licenseViolation !== undefined && object.licenseViolation !== null)
+      ? PolicyLicenseViolationFinding.fromPartial(object.licenseViolation)
+      : undefined;
     return message;
   },
 };

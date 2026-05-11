@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	attv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/jedib0t/go-pretty/v6/text"
@@ -221,7 +223,7 @@ func predicateV1Table(att *action.WorkflowRunAttestationItem) {
 			if len(m.Annotations) > 0 {
 				mt.AppendRow(table.Row{"Annotations", "------"})
 				for _, a := range m.Annotations {
-					mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, a.Value)})
+					mt.AppendRow(table.Row{"", wrap.String(fmt.Sprintf("%s: %s", a.Name, a.Value), 100)})
 				}
 			}
 			evs := att.PolicyEvaluations[m.Name]
@@ -266,24 +268,29 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 			}
 		case len(ev.Violations) == 0:
 			msg = text.Colors{text.FgHiGreen}.Sprint("Ok")
-		case len(ev.Violations) > 0:
-			color := text.Colors{text.FgHiRed}
-			var violations []string
-			var prefix = ""
+		default:
+			hasActive := false
+			lines := make([]string, 0, len(ev.Violations))
 			for _, v := range ev.Violations {
-				violations = append(violations, v.Message)
+				color := text.FgHiRed
+				if v.Suppress {
+					color = text.FgHiYellow
+				} else {
+					hasActive = true
+				}
+				lines = append(lines, text.Colors{color}.Sprint(violationSummary(v)))
 			}
-			// For multiple violations, we want to indent the list
-			if len(violations) > 1 {
-				prefix = "\n  - "
+			// When every finding is suppressed the gate passed; lead with
+			// "Ok" so the row carries the same signal as the no-violations
+			// case rather than reading like a failure.
+			switch {
+			case !hasActive:
+				msg = text.Colors{text.FgHiGreen}.Sprint("Ok") + "\n  - " + strings.Join(lines, "\n  - ")
+			case len(lines) == 1:
+				msg = lines[0]
+			default:
+				msg = "\n  - " + strings.Join(lines, "\n  - ")
 			}
-
-			// Color the violations text before joining
-			for i, v := range violations {
-				violations[i] = color.Sprint(v)
-			}
-
-			msg = prefix + strings.Join(violations, prefix)
 		}
 
 		name := ev.Name
@@ -292,6 +299,125 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 		}
 		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", name, msg)})
 	}
+}
+
+// violationSummary builds a single-line description of a violation using the
+// structured finding when present (CVE id + severity + package + fix info,
+// or SAST rule + location, or license + component). Falls back to the first
+// line of Message — vuln policies emit a multi-line markdown report there
+// which would otherwise break the row layout. The resolved assessment
+// status, if any, is appended inside the same severity-parens regardless
+// of suppression so AFFECTED / UNDER_INVESTIGATION / etc. surface on
+// active findings too.
+func violationSummary(v *action.PolicyViolation) string {
+	statusTag := prettyAssessmentStatus(violationAssessment(v).GetEffectiveStatus())
+	if statusTag == "" && v.Suppress {
+		statusTag = "suppressed"
+	}
+
+	switch {
+	case v.Vulnerability != nil:
+		f := v.Vulnerability
+		head := f.GetExternalId()
+		if tag := joinTag(f.GetSeverity(), statusTag); tag != "" {
+			head = fmt.Sprintf("%s (%s)", head, tag)
+		}
+		if pkg := prettyPurl(f.GetPackagePurl()); pkg != "" {
+			head += " " + pkg
+		}
+		if fix := f.GetFixedVersion(); fix != "" {
+			head += " [fix: " + fix + "]"
+		}
+		return head
+	case v.Sast != nil:
+		f := v.Sast
+		out := f.GetRuleId()
+		if tag := joinTag(f.GetSeverity(), statusTag); tag != "" {
+			out = fmt.Sprintf("%s (%s)", out, tag)
+		}
+		if loc := f.GetLocation(); loc != "" {
+			if ln := f.GetLineNumber(); ln > 0 {
+				out = fmt.Sprintf("%s at %s:%d", out, loc, ln)
+			} else {
+				out = fmt.Sprintf("%s at %s", out, loc)
+			}
+		}
+		return out
+	case v.LicenseViolation != nil:
+		f := v.LicenseViolation
+		out := f.GetLicenseId()
+		if statusTag != "" {
+			out = fmt.Sprintf("%s (%s)", out, statusTag)
+		}
+		if c := f.GetComponentName(); c != "" {
+			if ver := f.GetComponentVersion(); ver != "" {
+				out = fmt.Sprintf("%s — %s@%s", out, c, ver)
+			} else {
+				out = fmt.Sprintf("%s — %s", out, c)
+			}
+		}
+		return out
+	}
+	head := strings.SplitN(strings.TrimSpace(v.Message), "\n", 2)[0]
+	if head == "" {
+		head = v.Subject
+	}
+	if statusTag != "" {
+		head = fmt.Sprintf("%s (%s)", head, statusTag)
+	}
+	return head
+}
+
+// joinTag combines severity and the assessment status into the
+// comma-separated parenthetical shown after the finding id.
+func joinTag(severity, status string) string {
+	sev := strings.ToUpper(severity)
+	switch {
+	case sev != "" && status != "":
+		return sev + ", " + status
+	case sev != "":
+		return sev
+	default:
+		return status
+	}
+}
+
+// violationAssessment returns the assessment attached to whichever structured
+// finding the violation carries, or nil. Centralizes the type dispatch.
+func violationAssessment(v *action.PolicyViolation) *attv1.PolicyAssessmentResult {
+	switch {
+	case v.Vulnerability != nil:
+		return v.Vulnerability.GetAssessment()
+	case v.Sast != nil:
+		return v.Sast.GetAssessment()
+	case v.LicenseViolation != nil:
+		return v.LicenseViolation.GetAssessment()
+	}
+	return nil
+}
+
+func prettyAssessmentStatus(s string) string {
+	return strings.TrimPrefix(s, "ASSESSMENT_STATUS_")
+}
+
+// prettyPurl shortens "pkg:type/[namespace/]name@version[?qualifiers][#sub]"
+// to "name@version" with percent-decoding applied — PURL requires `+` in
+// version strings to be encoded as %2B, which is unreadable in CLI output.
+func prettyPurl(purl string) string {
+	if purl == "" {
+		return ""
+	}
+	s := strings.TrimPrefix(purl, "pkg:")
+	if i := strings.IndexAny(s, "?#"); i >= 0 {
+		s = s[:i]
+	}
+	if i := strings.LastIndex(s, "/"); i >= 0 {
+		s = s[i+1:]
+	}
+	if decoded, err := url.PathUnescape(s); err == nil {
+		s = decoded
+	}
+	return s
 }
 
 func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) error {

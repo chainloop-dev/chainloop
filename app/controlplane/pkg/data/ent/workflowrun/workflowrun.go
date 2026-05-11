@@ -55,6 +55,8 @@ const (
 	FieldPolicyEvaluationsSkipped = "policy_evaluations_skipped"
 	// FieldPolicyViolationsCount holds the string denoting the policy_violations_count field in the database.
 	FieldPolicyViolationsCount = "policy_violations_count"
+	// FieldPolicyViolationsSuppressed holds the string denoting the policy_violations_suppressed field in the database.
+	FieldPolicyViolationsSuppressed = "policy_violations_suppressed"
 	// FieldPolicyHasGates holds the string denoting the policy_has_gates field in the database.
 	FieldPolicyHasGates = "policy_has_gates"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
@@ -126,6 +128,7 @@ var Columns = []string{
 	FieldPolicyEvaluationsPassed,
 	FieldPolicyEvaluationsSkipped,
 	FieldPolicyViolationsCount,
+	FieldPolicyViolationsSuppressed,
 	FieldPolicyHasGates,
 }
 
@@ -293,6 +296,11 @@ func ByPolicyEvaluationsSkipped(opts ...sql.OrderTermOption) OrderOption {
 // ByPolicyViolationsCount orders the results by the policy_violations_count field.
 func ByPolicyViolationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPolicyViolationsCount, opts...).ToFunc()
+}
+
+// ByPolicyViolationsSuppressed orders the results by the policy_violations_suppressed field.
+func ByPolicyViolationsSuppressed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPolicyViolationsSuppressed, opts...).ToFunc()
 }
 
 // ByPolicyHasGates orders the results by the policy_has_gates field.

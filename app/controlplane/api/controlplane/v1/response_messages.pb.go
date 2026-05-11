@@ -24,6 +24,7 @@ package v1
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	v11 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	_ "github.com/go-kratos/kratos/v2/errors"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1134,7 +1135,10 @@ type PolicyStatusSummary struct {
 	// Whether this run had gates in effect — any policy marked gate:true or
 	// the contract using the ENFORCED blocking strategy. Independent of status:
 	// a PASSED run can still have has_gates=true.
-	HasGates      bool `protobuf:"varint,6,opt,name=has_gates,json=hasGates,proto3" json:"has_gates,omitempty"`
+	HasGates bool `protobuf:"varint,6,opt,name=has_gates,json=hasGates,proto3" json:"has_gates,omitempty"`
+	// Number of suppressed violations across all evaluations. Excluded
+	// from violated; kept in the CAS audit trail.
+	Suppressed    int32 `protobuf:"varint,7,opt,name=suppressed,proto3" json:"suppressed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1209,6 +1213,13 @@ func (x *PolicyStatusSummary) GetHasGates() bool {
 		return x.HasGates
 	}
 	return false
+}
+
+func (x *PolicyStatusSummary) GetSuppressed() int32 {
+	if x != nil {
+		return x.Suppressed
+	}
+	return 0
 }
 
 type AttestationItem struct {
@@ -1522,9 +1533,21 @@ func (x *PolicyEvaluation) GetGate() bool {
 }
 
 type PolicyViolation struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Subject       string                 `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Subject string                 `protobuf:"bytes,1,opt,name=subject,proto3" json:"subject,omitempty"`
+	Message string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	// Whether this violation was excluded from the policy gate (still kept
+	// in the CAS audit trail).
+	Suppress bool `protobuf:"varint,3,opt,name=suppress,proto3" json:"suppress,omitempty"`
+	// Structured finding mirroring attestation.v1.PolicyEvaluation.Violation.
+	// Populated when the policy declares finding_type.
+	//
+	// Types that are valid to be assigned to Finding:
+	//
+	//	*PolicyViolation_Vulnerability
+	//	*PolicyViolation_Sast
+	//	*PolicyViolation_LicenseViolation
+	Finding       isPolicyViolation_Finding `protobuf_oneof:"finding"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1572,6 +1595,69 @@ func (x *PolicyViolation) GetMessage() string {
 	}
 	return ""
 }
+
+func (x *PolicyViolation) GetSuppress() bool {
+	if x != nil {
+		return x.Suppress
+	}
+	return false
+}
+
+func (x *PolicyViolation) GetFinding() isPolicyViolation_Finding {
+	if x != nil {
+		return x.Finding
+	}
+	return nil
+}
+
+func (x *PolicyViolation) GetVulnerability() *v11.PolicyVulnerabilityFinding {
+	if x != nil {
+		if x, ok := x.Finding.(*PolicyViolation_Vulnerability); ok {
+			return x.Vulnerability
+		}
+	}
+	return nil
+}
+
+func (x *PolicyViolation) GetSast() *v11.PolicySASTFinding {
+	if x != nil {
+		if x, ok := x.Finding.(*PolicyViolation_Sast); ok {
+			return x.Sast
+		}
+	}
+	return nil
+}
+
+func (x *PolicyViolation) GetLicenseViolation() *v11.PolicyLicenseViolationFinding {
+	if x != nil {
+		if x, ok := x.Finding.(*PolicyViolation_LicenseViolation); ok {
+			return x.LicenseViolation
+		}
+	}
+	return nil
+}
+
+type isPolicyViolation_Finding interface {
+	isPolicyViolation_Finding()
+}
+
+type PolicyViolation_Vulnerability struct {
+	Vulnerability *v11.PolicyVulnerabilityFinding `protobuf:"bytes,4,opt,name=vulnerability,proto3,oneof"`
+}
+
+type PolicyViolation_Sast struct {
+	Sast *v11.PolicySASTFinding `protobuf:"bytes,5,opt,name=sast,proto3,oneof"`
+}
+
+type PolicyViolation_LicenseViolation struct {
+	LicenseViolation *v11.PolicyLicenseViolationFinding `protobuf:"bytes,6,opt,name=license_violation,json=licenseViolation,proto3,oneof"`
+}
+
+func (*PolicyViolation_Vulnerability) isPolicyViolation_Finding() {}
+
+func (*PolicyViolation_Sast) isPolicyViolation_Finding() {}
+
+func (*PolicyViolation_LicenseViolation) isPolicyViolation_Finding() {}
 
 type PolicyReference struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2989,7 +3075,7 @@ var File_controlplane_v1_response_messages_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
-	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xb9\x03\n" +
+	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a#attestation/v1/crafting_state.proto\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xb9\x03\n" +
 	"\fWorkflowItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -3037,14 +3123,17 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12;\n" +
 	"\vreleased_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"releasedAt\"\xcd\x01\n" +
+	"releasedAt\"\xed\x01\n" +
 	"\x13PolicyStatusSummary\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.controlplane.v1.PolicyStatusR\x06status\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x16\n" +
 	"\x06passed\x18\x03 \x01(\x05R\x06passed\x12\x18\n" +
 	"\askipped\x18\x04 \x01(\x05R\askipped\x12\x1a\n" +
 	"\bviolated\x18\x05 \x01(\x05R\bviolated\x12\x1b\n" +
-	"\thas_gates\x18\x06 \x01(\bR\bhasGates\"\xa4\f\n" +
+	"\thas_gates\x18\x06 \x01(\bR\bhasGates\x12\x1e\n" +
+	"\n" +
+	"suppressed\x18\a \x01(\x05R\n" +
+	"suppressed\"\xa4\f\n" +
 	"\x0fAttestationItem\x12\x1e\n" +
 	"\benvelope\x18\x03 \x01(\fB\x02\x18\x01R\benvelope\x12\x16\n" +
 	"\x06bundle\x18\n" +
@@ -3114,10 +3203,15 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"E\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd7\x02\n" +
 	"\x0fPolicyViolation\x12\x18\n" +
 	"\asubject\x18\x01 \x01(\tR\asubject\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xdc\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1a\n" +
+	"\bsuppress\x18\x03 \x01(\bR\bsuppress\x12R\n" +
+	"\rvulnerability\x18\x04 \x01(\v2*.attestation.v1.PolicyVulnerabilityFindingH\x00R\rvulnerability\x127\n" +
+	"\x04sast\x18\x05 \x01(\v2!.attestation.v1.PolicySASTFindingH\x00R\x04sast\x12\\\n" +
+	"\x11license_violation\x18\x06 \x01(\v2-.attestation.v1.PolicyLicenseViolationFindingH\x00R\x10licenseViolationB\t\n" +
+	"\afinding\"\xdc\x01\n" +
 	"\x0fPolicyReference\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12D\n" +
 	"\x06digest\x18\x02 \x03(\v2,.controlplane.v1.PolicyReference.DigestEntryR\x06digest\x12\"\n" +
@@ -3362,7 +3456,10 @@ var file_controlplane_v1_response_messages_proto_goTypes = []any{
 	(*CASBackendItem_Limits)(nil),                   // 41: controlplane.v1.CASBackendItem.Limits
 	(*timestamppb.Timestamp)(nil),                   // 42: google.protobuf.Timestamp
 	(v1.CraftingSchema_Runner_RunnerType)(0),        // 43: workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	(*v1.CraftingSchema)(nil),                       // 44: workflowcontract.v1.CraftingSchema
+	(*v11.PolicyVulnerabilityFinding)(nil),          // 44: attestation.v1.PolicyVulnerabilityFinding
+	(*v11.PolicySASTFinding)(nil),                   // 45: attestation.v1.PolicySASTFinding
+	(*v11.PolicyLicenseViolationFinding)(nil),       // 46: attestation.v1.PolicyLicenseViolationFinding
+	(*v1.CraftingSchema)(nil),                       // 47: workflowcontract.v1.CraftingSchema
 }
 var file_controlplane_v1_response_messages_proto_depIdxs = []int32{
 	42, // 0: controlplane.v1.WorkflowItem.created_at:type_name -> google.protobuf.Timestamp
@@ -3389,44 +3486,47 @@ var file_controlplane_v1_response_messages_proto_depIdxs = []int32{
 	20, // 21: controlplane.v1.PolicyEvaluation.violations:type_name -> controlplane.v1.PolicyViolation
 	21, // 22: controlplane.v1.PolicyEvaluation.policy_reference:type_name -> controlplane.v1.PolicyReference
 	21, // 23: controlplane.v1.PolicyEvaluation.group_reference:type_name -> controlplane.v1.PolicyReference
-	39, // 24: controlplane.v1.PolicyReference.digest:type_name -> controlplane.v1.PolicyReference.DigestEntry
-	42, // 25: controlplane.v1.WorkflowContractItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 26: controlplane.v1.WorkflowContractItem.updated_at:type_name -> google.protobuf.Timestamp
-	42, // 27: controlplane.v1.WorkflowContractItem.latest_revision_created_at:type_name -> google.protobuf.Timestamp
-	24, // 28: controlplane.v1.WorkflowContractItem.workflow_refs:type_name -> controlplane.v1.WorkflowRef
-	23, // 29: controlplane.v1.WorkflowContractItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
-	42, // 30: controlplane.v1.WorkflowContractVersionItem.created_at:type_name -> google.protobuf.Timestamp
-	44, // 31: controlplane.v1.WorkflowContractVersionItem.v1:type_name -> workflowcontract.v1.CraftingSchema
-	40, // 32: controlplane.v1.WorkflowContractVersionItem.raw_contract:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody
-	42, // 33: controlplane.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	42, // 34: controlplane.v1.User.updated_at:type_name -> google.protobuf.Timestamp
-	28, // 35: controlplane.v1.OrgMembershipItem.org:type_name -> controlplane.v1.OrgItem
-	26, // 36: controlplane.v1.OrgMembershipItem.user:type_name -> controlplane.v1.User
-	42, // 37: controlplane.v1.OrgMembershipItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 38: controlplane.v1.OrgMembershipItem.updated_at:type_name -> google.protobuf.Timestamp
-	5,  // 39: controlplane.v1.OrgMembershipItem.role:type_name -> controlplane.v1.MembershipRole
-	42, // 40: controlplane.v1.OrgItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 41: controlplane.v1.OrgItem.updated_at:type_name -> google.protobuf.Timestamp
-	11, // 42: controlplane.v1.OrgItem.default_policy_violation_strategy:type_name -> controlplane.v1.OrgItem.PolicyViolationBlockingStrategy
-	42, // 43: controlplane.v1.CASBackendItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 44: controlplane.v1.CASBackendItem.validated_at:type_name -> google.protobuf.Timestamp
-	12, // 45: controlplane.v1.CASBackendItem.validation_status:type_name -> controlplane.v1.CASBackendItem.ValidationStatus
-	41, // 46: controlplane.v1.CASBackendItem.limits:type_name -> controlplane.v1.CASBackendItem.Limits
-	42, // 47: controlplane.v1.CASBackendItem.updated_at:type_name -> google.protobuf.Timestamp
-	23, // 48: controlplane.v1.APITokenItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
-	42, // 49: controlplane.v1.APITokenItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 50: controlplane.v1.APITokenItem.revoked_at:type_name -> google.protobuf.Timestamp
-	42, // 51: controlplane.v1.APITokenItem.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 52: controlplane.v1.APITokenItem.last_used_at:type_name -> google.protobuf.Timestamp
-	18, // 53: controlplane.v1.AttestationItem.PolicyEvaluationsEntry.value:type_name -> controlplane.v1.PolicyEvaluations
-	16, // 54: controlplane.v1.AttestationItem.PolicyEvaluationStatus.summary:type_name -> controlplane.v1.PolicyStatusSummary
-	36, // 55: controlplane.v1.AttestationItem.Material.annotations:type_name -> controlplane.v1.AttestationItem.Material.AnnotationsEntry
-	10, // 56: controlplane.v1.WorkflowContractVersionItem.RawBody.format:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody.Format
-	57, // [57:57] is the sub-list for method output_type
-	57, // [57:57] is the sub-list for method input_type
-	57, // [57:57] is the sub-list for extension type_name
-	57, // [57:57] is the sub-list for extension extendee
-	0,  // [0:57] is the sub-list for field type_name
+	44, // 24: controlplane.v1.PolicyViolation.vulnerability:type_name -> attestation.v1.PolicyVulnerabilityFinding
+	45, // 25: controlplane.v1.PolicyViolation.sast:type_name -> attestation.v1.PolicySASTFinding
+	46, // 26: controlplane.v1.PolicyViolation.license_violation:type_name -> attestation.v1.PolicyLicenseViolationFinding
+	39, // 27: controlplane.v1.PolicyReference.digest:type_name -> controlplane.v1.PolicyReference.DigestEntry
+	42, // 28: controlplane.v1.WorkflowContractItem.created_at:type_name -> google.protobuf.Timestamp
+	42, // 29: controlplane.v1.WorkflowContractItem.updated_at:type_name -> google.protobuf.Timestamp
+	42, // 30: controlplane.v1.WorkflowContractItem.latest_revision_created_at:type_name -> google.protobuf.Timestamp
+	24, // 31: controlplane.v1.WorkflowContractItem.workflow_refs:type_name -> controlplane.v1.WorkflowRef
+	23, // 32: controlplane.v1.WorkflowContractItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
+	42, // 33: controlplane.v1.WorkflowContractVersionItem.created_at:type_name -> google.protobuf.Timestamp
+	47, // 34: controlplane.v1.WorkflowContractVersionItem.v1:type_name -> workflowcontract.v1.CraftingSchema
+	40, // 35: controlplane.v1.WorkflowContractVersionItem.raw_contract:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody
+	42, // 36: controlplane.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	42, // 37: controlplane.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	28, // 38: controlplane.v1.OrgMembershipItem.org:type_name -> controlplane.v1.OrgItem
+	26, // 39: controlplane.v1.OrgMembershipItem.user:type_name -> controlplane.v1.User
+	42, // 40: controlplane.v1.OrgMembershipItem.created_at:type_name -> google.protobuf.Timestamp
+	42, // 41: controlplane.v1.OrgMembershipItem.updated_at:type_name -> google.protobuf.Timestamp
+	5,  // 42: controlplane.v1.OrgMembershipItem.role:type_name -> controlplane.v1.MembershipRole
+	42, // 43: controlplane.v1.OrgItem.created_at:type_name -> google.protobuf.Timestamp
+	42, // 44: controlplane.v1.OrgItem.updated_at:type_name -> google.protobuf.Timestamp
+	11, // 45: controlplane.v1.OrgItem.default_policy_violation_strategy:type_name -> controlplane.v1.OrgItem.PolicyViolationBlockingStrategy
+	42, // 46: controlplane.v1.CASBackendItem.created_at:type_name -> google.protobuf.Timestamp
+	42, // 47: controlplane.v1.CASBackendItem.validated_at:type_name -> google.protobuf.Timestamp
+	12, // 48: controlplane.v1.CASBackendItem.validation_status:type_name -> controlplane.v1.CASBackendItem.ValidationStatus
+	41, // 49: controlplane.v1.CASBackendItem.limits:type_name -> controlplane.v1.CASBackendItem.Limits
+	42, // 50: controlplane.v1.CASBackendItem.updated_at:type_name -> google.protobuf.Timestamp
+	23, // 51: controlplane.v1.APITokenItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
+	42, // 52: controlplane.v1.APITokenItem.created_at:type_name -> google.protobuf.Timestamp
+	42, // 53: controlplane.v1.APITokenItem.revoked_at:type_name -> google.protobuf.Timestamp
+	42, // 54: controlplane.v1.APITokenItem.expires_at:type_name -> google.protobuf.Timestamp
+	42, // 55: controlplane.v1.APITokenItem.last_used_at:type_name -> google.protobuf.Timestamp
+	18, // 56: controlplane.v1.AttestationItem.PolicyEvaluationsEntry.value:type_name -> controlplane.v1.PolicyEvaluations
+	16, // 57: controlplane.v1.AttestationItem.PolicyEvaluationStatus.summary:type_name -> controlplane.v1.PolicyStatusSummary
+	36, // 58: controlplane.v1.AttestationItem.Material.annotations:type_name -> controlplane.v1.AttestationItem.Material.AnnotationsEntry
+	10, // 59: controlplane.v1.WorkflowContractVersionItem.RawBody.format:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody.Format
+	60, // [60:60] is the sub-list for method output_type
+	60, // [60:60] is the sub-list for method input_type
+	60, // [60:60] is the sub-list for extension type_name
+	60, // [60:60] is the sub-list for extension extendee
+	0,  // [0:60] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_response_messages_proto_init() }
@@ -3435,6 +3535,11 @@ func file_controlplane_v1_response_messages_proto_init() {
 		return
 	}
 	file_controlplane_v1_response_messages_proto_msgTypes[1].OneofWrappers = []any{}
+	file_controlplane_v1_response_messages_proto_msgTypes[7].OneofWrappers = []any{
+		(*PolicyViolation_Vulnerability)(nil),
+		(*PolicyViolation_Sast)(nil),
+		(*PolicyViolation_LicenseViolation)(nil),
+	}
 	file_controlplane_v1_response_messages_proto_msgTypes[12].OneofWrappers = []any{
 		(*WorkflowContractVersionItem_V1)(nil),
 	}

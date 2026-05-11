@@ -17,6 +17,7 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "attestation/v1/crafting_state.proto";
 import "buf/validate/validate.proto";
 import "errors/errors.proto";
 import "google/protobuf/timestamp.proto";
@@ -147,6 +148,9 @@ message PolicyStatusSummary {
   // the contract using the ENFORCED blocking strategy. Independent of status:
   // a PASSED run can still have has_gates=true.
   bool has_gates = 6;
+  // Number of suppressed violations across all evaluations. Excluded
+  // from violated; kept in the CAS audit trail.
+  int32 suppressed = 7;
 }
 
 // Server-side filter aligned with PolicyStatusSummary.has_gates.
@@ -254,6 +258,16 @@ message PolicyEvaluation {
 message PolicyViolation {
   string subject = 1;
   string message = 2;
+  // Whether this violation was excluded from the policy gate (still kept
+  // in the CAS audit trail).
+  bool suppress = 3;
+  // Structured finding mirroring attestation.v1.PolicyEvaluation.Violation.
+  // Populated when the policy declares finding_type.
+  oneof finding {
+    attestation.v1.PolicyVulnerabilityFinding vulnerability = 4;
+    attestation.v1.PolicySASTFinding sast = 5;
+    attestation.v1.PolicyLicenseViolationFinding license_violation = 6;
+  }
 }
 
 message PolicyReference {

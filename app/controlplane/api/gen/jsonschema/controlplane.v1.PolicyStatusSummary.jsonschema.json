@@ -48,6 +48,12 @@
         }
       ]
     },
+    "suppressed": {
+      "description": "Number of suppressed violations across all evaluations. Excluded\n from violated; kept in the CAS audit trail.",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
     "total": {
       "description": "Total number of policy evaluations that ran for this attestation",
       "maximum": 2147483647,

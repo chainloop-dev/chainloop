@@ -2,12 +2,30 @@
   "$id": "controlplane.v1.PolicyViolation.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(licenseViolation)$": {
+      "$ref": "attestation.v1.PolicyLicenseViolationFinding.schema.json"
+    }
+  },
   "properties": {
+    "license_violation": {
+      "$ref": "attestation.v1.PolicyLicenseViolationFinding.schema.json"
+    },
     "message": {
       "type": "string"
     },
+    "sast": {
+      "$ref": "attestation.v1.PolicySASTFinding.schema.json"
+    },
     "subject": {
       "type": "string"
+    },
+    "suppress": {
+      "description": "Whether this violation was excluded from the policy gate (still kept\n in the CAS audit trail).",
+      "type": "boolean"
+    },
+    "vulnerability": {
+      "$ref": "attestation.v1.PolicyVulnerabilityFinding.schema.json"
     }
   },
   "title": "Policy Violation",

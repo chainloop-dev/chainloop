@@ -772,6 +772,7 @@ var (
 		{Name: "policy_evaluations_passed", Type: field.TypeInt32, Nullable: true},
 		{Name: "policy_evaluations_skipped", Type: field.TypeInt32, Nullable: true},
 		{Name: "policy_violations_count", Type: field.TypeInt32, Nullable: true},
+		{Name: "policy_violations_suppressed", Type: field.TypeInt32, Nullable: true},
 		{Name: "policy_has_gates", Type: field.TypeBool, Nullable: true},
 		{Name: "version_id", Type: field.TypeUUID},
 		{Name: "workflow_id", Type: field.TypeUUID},
@@ -785,19 +786,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_runs_project_versions_runs",
-				Columns:    []*schema.Column{WorkflowRunsColumns[19]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[20]},
 				RefColumns: []*schema.Column{ProjectVersionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflow_runs_workflows_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[20]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[21]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflow_runs_workflow_contract_versions_contract_version",
-				Columns:    []*schema.Column{WorkflowRunsColumns[21]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[22]},
 				RefColumns: []*schema.Column{WorkflowContractVersionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -816,7 +817,7 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[20], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[21], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -826,7 +827,7 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_state_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[20], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[21], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -851,12 +852,12 @@ var (
 			{
 				Name:    "workflowrun_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[20]},
+				Columns: []*schema.Column{WorkflowRunsColumns[21]},
 			},
 			{
 				Name:    "workflowrun_version_id_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[19], WorkflowRunsColumns[20]},
+				Columns: []*schema.Column{WorkflowRunsColumns[20], WorkflowRunsColumns[21]},
 			},
 			{
 				Name:    "workflowrun_policy_status",
@@ -866,7 +867,7 @@ var (
 			{
 				Name:    "workflowrun_policy_has_gates",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[18]},
+				Columns: []*schema.Column{WorkflowRunsColumns[19]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "policy_has_gates = true",
 				},

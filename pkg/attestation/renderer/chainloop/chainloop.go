@@ -68,6 +68,8 @@ type PolicyEvaluationStatus struct {
 	SkippedCount int
 	// Number of evaluations that passed: neither skipped nor with violations.
 	PassedCount int
+	// Number of suppressed violations across all evaluations.
+	SuppressedCount int
 }
 
 type NormalizedMaterial struct {
