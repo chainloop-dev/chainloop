@@ -402,12 +402,13 @@ func bizPolicyStatusSummaryToPb(s *chainloop.PolicyStatusSummary) *pb.PolicyStat
 		return nil
 	}
 	return &pb.PolicyStatusSummary{
-		Status:   bizPolicyStatusToPb(s.Status),
-		Total:    int32(s.Total),
-		Passed:   int32(s.Passed),
-		Skipped:  int32(s.Skipped),
-		Violated: int32(s.Violated),
-		HasGates: s.HasGates,
+		Status:     bizPolicyStatusToPb(s.Status),
+		Total:      int32(s.Total),
+		Passed:     int32(s.Passed),
+		Skipped:    int32(s.Skipped),
+		Violated:   int32(s.Violated),
+		HasGates:   s.HasGates,
+		Suppressed: int32(s.Suppressed),
 	}
 }
 

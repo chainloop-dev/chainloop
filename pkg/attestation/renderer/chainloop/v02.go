@@ -60,6 +60,11 @@ type ProvenancePredicateV02 struct {
 	PolicySkippedCount int `json:"policySkippedCount,omitempty"`
 	// Number of evaluations that passed (no violations and not skipped)
 	PolicyPassedCount int `json:"policyPassedCount,omitempty"`
+	// Total number of violations across all evaluations that were suppressed
+	// by the policy. Excluded from PolicyViolationsCount / PolicyHasViolations
+	// accounting. Suppressed entries themselves are not embedded in the inline
+	// predicate — they live in the CAS-stored PolicyEvaluationBundle.
+	PolicySuppressedCount int `json:"policySuppressedCount,omitempty"`
 	// Whether the attestation has policy violations in gated policies
 	PolicyHasGatedViolations bool `json:"policyHasGatedViolations,omitempty"`
 	PolicyHasGates           bool `json:"policyHasGates,omitempty"`
@@ -107,6 +112,16 @@ type PolicyEvaluation struct {
 type PolicyViolation struct {
 	Subject string `json:"subject"`
 	Message string `json:"message"`
+	// Suppress, when true, excludes this entry from the gate count while
+	// keeping it in the CAS-stored bundle (audit trail preserved).
+	Suppress bool `json:"suppress,omitempty"`
+	// Structured finding data from the CAS bundle. Mirrors the oneof on
+	// attestation.v1.PolicyEvaluation.Violation. Never populated on the
+	// inline predicate (predicate carries the gate decision; full audit
+	// data lives in the CAS-stored PolicyEvaluationBundle).
+	Vulnerability    *v1.PolicyVulnerabilityFinding    `json:"vulnerability,omitempty"`
+	Sast             *v1.PolicySASTFinding             `json:"sast,omitempty"`
+	LicenseViolation *v1.PolicyLicenseViolationFinding `json:"licenseViolation,omitempty"`
 }
 
 type RendererV02 struct {
@@ -271,6 +286,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		PolicyViolationsCount:       evalResult.violationsCount,
 		PolicySkippedCount:          evalResult.skippedCount,
 		PolicyPassedCount:           evalResult.passedCount,
+		PolicySuppressedCount:       evalResult.suppressedCount,
 		PolicyHasGatedViolations:    evalResult.hasGatedViolations,
 		PolicyHasGates:              hasGates,
 		PolicyCheckBlockingStrategy: policyCheckBlockingStrategy,
@@ -297,18 +313,23 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 }
 
 func mappedPolicyEvaluations(att *v1.Attestation) (*evaluationsResult, error) {
-	return groupEvaluations(att.GetPolicyEvaluations())
+	// Inline predicate path: drop suppressed entries and finding details. The
+	// predicate is the signed gate decision; the CAS-stored bundle is the
+	// audit trail.
+	return groupEvaluations(att.GetPolicyEvaluations(), false)
 }
 
 // PolicyEvaluationsFromBundle deserializes a PolicyEvaluationBundle from protojson bytes
-// and returns evaluations grouped by material name.
+// and returns evaluations grouped by material name. Preserves suppressed
+// entries and structured finding data so server-side consumers (CP describe
+// API) can surface the full audit-trail view.
 func PolicyEvaluationsFromBundle(data []byte) (map[string][]*PolicyEvaluation, error) {
 	var bundle v1.PolicyEvaluationBundle
 	if err := protojson.Unmarshal(data, &bundle); err != nil {
 		return nil, fmt.Errorf("unmarshaling policy evaluation bundle: %w", err)
 	}
 
-	res, err := groupEvaluations(bundle.GetEvaluations())
+	res, err := groupEvaluations(bundle.GetEvaluations(), true)
 	if err != nil {
 		return nil, err
 	}
@@ -324,9 +345,20 @@ type evaluationsResult struct {
 	violationsCount    int
 	skippedCount       int
 	passedCount        int
+	suppressedCount    int
 }
 
-func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) {
+// groupEvaluations turns a flat list of policy evaluations into per-material
+// groups plus aggregate counters. When includeSuppressed is true the returned
+// PolicyEvaluation entries keep their suppressed violations and structured
+// finding data — for the CAS bundle / describe API path. When false they are
+// stripped — for the inline in-toto predicate, which represents the gate
+// decision only.
+//
+// Counters always reflect gate semantics: violationsCount / hasViolations /
+// hasGatedViolations exclude suppressed entries regardless of the flag, and
+// suppressedCount is tracked separately so callers can surface it as a badge.
+func groupEvaluations(evals []*v1.PolicyEvaluation, includeSuppressed bool) (*evaluationsResult, error) {
 	res := &evaluationsResult{
 		evaluations: make(map[string][]*PolicyEvaluation),
 	}
@@ -337,7 +369,7 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 			keyName = AttPolicyEvaluation
 		}
 
-		ev, err := renderEvaluation(p)
+		ev, activeViolations, suppressedCount, err := renderEvaluation(p, includeSuppressed)
 		if err != nil {
 			return nil, err
 		}
@@ -346,10 +378,12 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 			res.hasGates = true
 		}
 
+		res.suppressedCount += suppressedCount
+
 		switch {
-		case len(ev.Violations) > 0:
+		case activeViolations > 0:
 			res.hasViolations = true
-			res.violationsCount += len(ev.Violations)
+			res.violationsCount += activeViolations
 			if ev.Gate {
 				res.hasGatedViolations = true
 			}
@@ -366,28 +400,55 @@ func groupEvaluations(evals []*v1.PolicyEvaluation) (*evaluationsResult, error) 
 	return res, nil
 }
 
-func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
-	// Suppressed findings remain in the CAS-stored PolicyEvaluationBundle for
-	// audit but are excluded from the inline predicate (and its counters).
+// renderEvaluation maps a protobuf PolicyEvaluation to its renderer
+// representation. When includeSuppressed is false the returned struct drops
+// suppressed entries and finding data — used by the inline in-toto predicate,
+// which carries the gate decision only. When true it preserves everything so
+// the CAS bundle path can surface the full audit-trail view.
+//
+// Returns the rendered evaluation, the number of active (non-suppressed)
+// violations, and the number of suppressed violations. The two counts are
+// returned separately because gate accounting must always exclude suppressed
+// entries even on the bundle path where they appear in the slice.
+func renderEvaluation(ev *v1.PolicyEvaluation, includeSuppressed bool) (*PolicyEvaluation, int, int, error) {
 	violations := make([]*PolicyViolation, 0, len(ev.Violations))
+	var active, suppressed int
 	for _, vi := range ev.Violations {
 		if vi.GetSuppress() {
-			continue
+			suppressed++
+			if !includeSuppressed {
+				continue
+			}
+		} else {
+			active++
 		}
-		violations = append(violations, &PolicyViolation{
-			Subject: vi.Subject,
-			Message: vi.Message,
-		})
+
+		out := &PolicyViolation{
+			Subject:  vi.Subject,
+			Message:  vi.Message,
+			Suppress: vi.GetSuppress(),
+		}
+		if includeSuppressed {
+			switch f := vi.GetFinding().(type) {
+			case *v1.PolicyEvaluation_Violation_Vulnerability:
+				out.Vulnerability = f.Vulnerability
+			case *v1.PolicyEvaluation_Violation_Sast:
+				out.Sast = f.Sast
+			case *v1.PolicyEvaluation_Violation_LicenseViolation:
+				out.LicenseViolation = f.LicenseViolation
+			}
+		}
+		violations = append(violations, out)
 	}
 
 	policyRef, err := renderReference(ev.GetPolicyReference())
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	groupRef, err := renderReference(ev.GetGroupReference())
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	return &PolicyEvaluation{
@@ -406,7 +467,7 @@ func renderEvaluation(ev *v1.PolicyEvaluation) (*PolicyEvaluation, error) {
 		GroupReference:  groupRef,
 		Requirements:    ev.Requirements,
 		Gate:            ev.Gate,
-	}, nil
+	}, active, suppressed, nil
 }
 
 func renderReference(ref *v1.PolicyEvaluation_Reference) (*intoto.ResourceDescriptor, error) {
@@ -525,6 +586,7 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationSt
 		ViolationsCount:    p.PolicyViolationsCount,
 		SkippedCount:       skipped,
 		PassedCount:        passed,
+		SuppressedCount:    p.PolicySuppressedCount,
 	}
 }
 

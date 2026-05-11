@@ -26,6 +26,7 @@ import (
 	"unicode/utf8"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	attv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	intoto "github.com/in-toto/attestation/go/v1"
@@ -119,6 +120,12 @@ type PolicyViolation struct {
 	// keeping it in the CAS-stored bundle (audit trail preserved). Set by
 	// the policy author via the rego "suppress" key.
 	Suppress bool `json:"suppress,omitempty"`
+	// Structured finding data from the policy, present when the policy
+	// declared finding_type. Mirrors the oneof on the wire — exactly one
+	// pointer is set per violation, or none for unstructured policies.
+	Vulnerability    *attv1.PolicyVulnerabilityFinding    `json:"vulnerability,omitempty"`
+	Sast             *attv1.PolicySASTFinding             `json:"sast,omitempty"`
+	LicenseViolation *attv1.PolicyLicenseViolationFinding `json:"license_violation,omitempty"`
 }
 
 type PolicyReference struct {
@@ -296,10 +303,20 @@ func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {
 	}
 	violations := make([]*PolicyViolation, 0, len(in.Violations))
 	for _, v := range in.Violations {
-		violations = append(violations, &PolicyViolation{
-			Subject: v.Subject,
-			Message: v.Message,
-		})
+		out := &PolicyViolation{
+			Subject:  v.Subject,
+			Message:  v.Message,
+			Suppress: v.GetSuppress(),
+		}
+		switch f := v.GetFinding().(type) {
+		case *pb.PolicyViolation_Vulnerability:
+			out.Vulnerability = f.Vulnerability
+		case *pb.PolicyViolation_Sast:
+			out.Sast = f.Sast
+		case *pb.PolicyViolation_LicenseViolation:
+			out.LicenseViolation = f.LicenseViolation
+		}
+		violations = append(violations, out)
 	}
 	return &PolicyEvaluation{
 		Name:            in.Name,

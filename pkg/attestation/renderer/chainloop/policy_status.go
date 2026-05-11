@@ -43,6 +43,10 @@ type PolicyStatusSummary struct {
 	// See PolicyEvaluationStatus.HasGates. Independent of Status — a PASSED
 	// run can still have HasGates=true.
 	HasGates bool
+	// Total number of violations across all evaluations that were suppressed
+	// by the policy. Excluded from Violated. UI can render a "Suppressed (N)"
+	// badge without partitioning the violations client-side.
+	Suppressed int
 }
 
 // DerivePolicyStatusSummary is the single source of truth for computing the
@@ -65,11 +69,12 @@ func DerivePolicyStatusSummary(s *PolicyEvaluationStatus) PolicyStatusSummary {
 	}
 
 	summary := PolicyStatusSummary{
-		Total:    s.EvaluationsCount,
-		Passed:   s.PassedCount,
-		Skipped:  s.SkippedCount,
-		Violated: s.ViolationsCount,
-		HasGates: s.HasGates,
+		Total:      s.EvaluationsCount,
+		Passed:     s.PassedCount,
+		Skipped:    s.SkippedCount,
+		Violated:   s.ViolationsCount,
+		HasGates:   s.HasGates,
+		Suppressed: s.SuppressedCount,
 	}
 
 	enforced := s.HasGatedViolations || s.Strategy == PolicyViolationBlockingStrategyEnforced

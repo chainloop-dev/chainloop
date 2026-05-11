@@ -366,11 +366,20 @@ func policyEvaluationStateToActionForStatus(in *v1.PolicyEvaluation) *PolicyEval
 
 	violations := make([]*PolicyViolation, 0, len(in.Violations))
 	for _, v := range in.Violations {
-		violations = append(violations, &PolicyViolation{
+		out := &PolicyViolation{
 			Subject:  v.Subject,
 			Message:  v.Message,
 			Suppress: v.GetSuppress(),
-		})
+		}
+		switch f := v.GetFinding().(type) {
+		case *v1.PolicyEvaluation_Violation_Vulnerability:
+			out.Vulnerability = f.Vulnerability
+		case *v1.PolicyEvaluation_Violation_Sast:
+			out.Sast = f.Sast
+		case *v1.PolicyEvaluation_Violation_LicenseViolation:
+			out.LicenseViolation = f.LicenseViolation
+		}
+		violations = append(violations, out)
 	}
 
 	return &PolicyEvaluation{

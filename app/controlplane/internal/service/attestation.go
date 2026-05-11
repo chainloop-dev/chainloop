@@ -598,10 +598,20 @@ func extractPolicyEvaluations(in map[string][]*chainloop.PolicyEvaluation) map[s
 		for _, ev := range v {
 			violations := make([]*cpAPI.PolicyViolation, 0, len(ev.Violations))
 			for _, vi := range ev.Violations {
-				violations = append(violations, &cpAPI.PolicyViolation{
-					Subject: vi.Subject,
-					Message: vi.Message,
-				})
+				out := &cpAPI.PolicyViolation{
+					Subject:  vi.Subject,
+					Message:  vi.Message,
+					Suppress: vi.Suppress,
+				}
+				switch {
+				case vi.Vulnerability != nil:
+					out.Finding = &cpAPI.PolicyViolation_Vulnerability{Vulnerability: vi.Vulnerability}
+				case vi.Sast != nil:
+					out.Finding = &cpAPI.PolicyViolation_Sast{Sast: vi.Sast}
+				case vi.LicenseViolation != nil:
+					out.Finding = &cpAPI.PolicyViolation_LicenseViolation{LicenseViolation: vi.LicenseViolation}
+				}
+				violations = append(violations, out)
 			}
 
 			eval := &cpAPI.PolicyEvaluation{

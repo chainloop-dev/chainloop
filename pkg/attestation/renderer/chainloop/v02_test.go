@@ -686,7 +686,7 @@ func TestGroupEvaluationsCounts(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := groupEvaluations(tc.evals)
+			res, err := groupEvaluations(tc.evals, false)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantEvalCount, res.evaluationsCount)
 			assert.Equal(t, tc.wantViolCount, res.violationsCount)
@@ -695,6 +695,68 @@ func TestGroupEvaluationsCounts(t *testing.T) {
 			assert.Equal(t, tc.wantGates, res.hasGates)
 		})
 	}
+}
+
+// Documents the two-mode renderer contract: the inline predicate path drops
+// suppressed entries and finding details (signed gate decision), while the
+// CAS bundle path preserves them (audit trail). suppressedCount is tracked
+// independently so callers can surface a badge.
+func TestGroupEvaluationsSuppressed(t *testing.T) {
+	vuln := &api.PolicyVulnerabilityFinding{
+		Message: "CVE-2024-9 in lib", ExternalId: "CVE-2024-9", PackagePurl: "pkg:golang/lib@1", Severity: "HIGH",
+		Assessment: &api.PolicyAssessmentResult{
+			EffectiveStatus: "ASSESSMENT_STATUS_NOT_AFFECTED",
+			Assessments: []*api.PolicyAssessment{
+				{Id: "11111111-1111-1111-1111-111111111111", Status: "ASSESSMENT_STATUS_NOT_AFFECTED", Scope: "ASSESSMENT_SCOPE_PROJECT"},
+			},
+		},
+	}
+	evals := []*api.PolicyEvaluation{
+		{
+			Name:         "vuln-gate",
+			MaterialName: "image",
+			Gate:         true,
+			Violations: []*api.PolicyEvaluation_Violation{
+				{Subject: "CVE-2024-1", Message: "critical"},
+				{Subject: "CVE-2024-9", Message: "suppressed via assessment", Suppress: true, Finding: &api.PolicyEvaluation_Violation_Vulnerability{Vulnerability: vuln}},
+				{Subject: "CVE-2024-2", Message: "high", Suppress: true},
+			},
+		},
+	}
+
+	t.Run("predicate path drops suppressed and finding", func(t *testing.T) {
+		res, err := groupEvaluations(evals, false)
+		require.NoError(t, err)
+		assert.Equal(t, 1, res.violationsCount, "only the active CVE counts toward the gate")
+		assert.True(t, res.hasViolations)
+		assert.True(t, res.hasGatedViolations)
+		assert.Equal(t, 2, res.suppressedCount)
+		ev := res.evaluations["image"][0]
+		require.Len(t, ev.Violations, 1)
+		assert.Equal(t, "CVE-2024-1", ev.Violations[0].Subject)
+		assert.False(t, ev.Violations[0].Suppress)
+		assert.Nil(t, ev.Violations[0].Vulnerability)
+	})
+
+	t.Run("bundle path preserves suppressed and finding", func(t *testing.T) {
+		res, err := groupEvaluations(evals, true)
+		require.NoError(t, err)
+		// Gate-counting is independent of the flag.
+		assert.Equal(t, 1, res.violationsCount)
+		assert.Equal(t, 2, res.suppressedCount)
+		ev := res.evaluations["image"][0]
+		require.Len(t, ev.Violations, 3)
+		// Find the suppressed entry with a vulnerability finding.
+		var suppressedFinding *PolicyViolation
+		for _, v := range ev.Violations {
+			if v.Suppress && v.Vulnerability != nil {
+				suppressedFinding = v
+				break
+			}
+		}
+		require.NotNil(t, suppressedFinding, "bundle path must preserve structured finding on suppressed entries")
+		assert.Equal(t, "ASSESSMENT_STATUS_NOT_AFFECTED", suppressedFinding.Vulnerability.GetAssessment().GetEffectiveStatus())
+	})
 }
 
 func TestPolicyEvaluationStatusCounts(t *testing.T) {
