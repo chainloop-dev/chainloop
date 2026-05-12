@@ -195,6 +195,8 @@ message WorkflowContractItem {
   repeated WorkflowRef workflow_refs = 7;
   // wether the contract is scoped to an entity in the organization
   ScopedEntity scoped_entity = 9;
+  // Whether this contract is provisioned and operated by Chainloop
+  bool is_managed = 11;
 }
 
 message ScopedEntity {

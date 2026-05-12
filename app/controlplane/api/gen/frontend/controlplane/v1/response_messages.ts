@@ -498,6 +498,8 @@ export interface WorkflowContractItem {
   workflowRefs: WorkflowRef[];
   /** wether the contract is scoped to an entity in the organization */
   scopedEntity?: ScopedEntity;
+  /** Whether this contract is provisioned and operated by Chainloop */
+  isManaged: boolean;
 }
 
 export interface ScopedEntity {
@@ -2974,6 +2976,7 @@ function createBaseWorkflowContractItem(): WorkflowContractItem {
     workflowNames: [],
     workflowRefs: [],
     scopedEntity: undefined,
+    isManaged: false,
   };
 }
 
@@ -3008,6 +3011,9 @@ export const WorkflowContractItem = {
     }
     if (message.scopedEntity !== undefined) {
       ScopedEntity.encode(message.scopedEntity, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.isManaged === true) {
+      writer.uint32(88).bool(message.isManaged);
     }
     return writer;
   },
@@ -3089,6 +3095,13 @@ export const WorkflowContractItem = {
 
           message.scopedEntity = ScopedEntity.decode(reader, reader.uint32());
           continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.isManaged = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3114,6 +3127,7 @@ export const WorkflowContractItem = {
         ? object.workflowRefs.map((e: any) => WorkflowRef.fromJSON(e))
         : [],
       scopedEntity: isSet(object.scopedEntity) ? ScopedEntity.fromJSON(object.scopedEntity) : undefined,
+      isManaged: isSet(object.isManaged) ? Boolean(object.isManaged) : false,
     };
   },
 
@@ -3139,6 +3153,7 @@ export const WorkflowContractItem = {
     }
     message.scopedEntity !== undefined &&
       (obj.scopedEntity = message.scopedEntity ? ScopedEntity.toJSON(message.scopedEntity) : undefined);
+    message.isManaged !== undefined && (obj.isManaged = message.isManaged);
     return obj;
   },
 
@@ -3160,6 +3175,7 @@ export const WorkflowContractItem = {
     message.scopedEntity = (object.scopedEntity !== undefined && object.scopedEntity !== null)
       ? ScopedEntity.fromPartial(object.scopedEntity)
       : undefined;
+    message.isManaged = object.isManaged ?? false;
     return message;
   },
 };

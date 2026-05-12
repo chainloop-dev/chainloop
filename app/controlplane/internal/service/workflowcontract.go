@@ -349,6 +349,7 @@ func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractI
 		LatestRevisionCreatedAt: timestamppb.New(*schema.LatestRevisionCreatedAt),
 		WorkflowNames:           workflowNames,
 		WorkflowRefs:            workflowRefs,
+		IsManaged:               schema.Managed,
 		//nolint:staticcheck
 		Description: schema.Description,
 	}

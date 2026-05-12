@@ -693,6 +693,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "scoped_resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"project", "org"}},
 		{Name: "scoped_resource_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "managed", Type: field.TypeBool, Default: false},
 		{Name: "organization_workflow_contracts", Type: field.TypeUUID, Nullable: true},
 	}
 	// WorkflowContractsTable holds the schema information for the "workflow_contracts" table.
@@ -703,7 +704,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "workflow_contracts_organizations_workflow_contracts",
-				Columns:    []*schema.Column{WorkflowContractsColumns[8]},
+				Columns:    []*schema.Column{WorkflowContractsColumns[9]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -712,7 +713,7 @@ var (
 			{
 				Name:    "workflowcontract_name_organization_workflow_contracts",
 				Unique:  true,
-				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[8]},
+				Columns: []*schema.Column{WorkflowContractsColumns[1], WorkflowContractsColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "deleted_at IS NULL",
 				},

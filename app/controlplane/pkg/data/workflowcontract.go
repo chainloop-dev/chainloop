@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -122,7 +122,8 @@ func (r *WorkflowContractRepo) Create(ctx context.Context, opts *biz.ContractCre
 func (r *WorkflowContractRepo) addCreateToTx(ctx context.Context, tx *ent.Tx, opts *biz.ContractCreateOpts) (*ent.WorkflowContract, *ent.WorkflowContractVersion, error) {
 	contractQuery := tx.WorkflowContract.Create().
 		SetName(opts.Name).SetOrganizationID(opts.OrgID).
-		SetNillableDescription(opts.Description)
+		SetNillableDescription(opts.Description).
+		SetNillableManaged(opts.Managed)
 
 	if opts.ProjectID != nil {
 		contractQuery = contractQuery.SetScopedResourceID(*opts.ProjectID).SetScopedResourceType(biz.ContractScopeProject)
@@ -441,6 +442,7 @@ func (r *WorkflowContractRepo) entContractToBizContract(ctx context.Context, w *
 		LatestRevisionCreatedAt: toTimePtr(version.CreatedAt),
 		WorkflowRefs:            workflowReferences,
 		Description:             w.Description,
+		Managed:                 w.Managed,
 	}
 
 	if w.ScopedResourceID != uuid.Nil {

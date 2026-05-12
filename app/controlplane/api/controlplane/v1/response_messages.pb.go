@@ -1358,7 +1358,9 @@ type WorkflowContractItem struct {
 	WorkflowNames []string       `protobuf:"bytes,5,rep,name=workflow_names,json=workflowNames,proto3" json:"workflow_names,omitempty"`
 	WorkflowRefs  []*WorkflowRef `protobuf:"bytes,7,rep,name=workflow_refs,json=workflowRefs,proto3" json:"workflow_refs,omitempty"`
 	// wether the contract is scoped to an entity in the organization
-	ScopedEntity  *ScopedEntity `protobuf:"bytes,9,opt,name=scoped_entity,json=scopedEntity,proto3" json:"scoped_entity,omitempty"`
+	ScopedEntity *ScopedEntity `protobuf:"bytes,9,opt,name=scoped_entity,json=scopedEntity,proto3" json:"scoped_entity,omitempty"`
+	// Whether this contract is provisioned and operated by Chainloop
+	IsManaged     bool `protobuf:"varint,11,opt,name=is_managed,json=isManaged,proto3" json:"is_managed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1463,6 +1465,13 @@ func (x *WorkflowContractItem) GetScopedEntity() *ScopedEntity {
 		return x.ScopedEntity
 	}
 	return nil
+}
+
+func (x *WorkflowContractItem) GetIsManaged() bool {
+	if x != nil {
+		return x.IsManaged
+	}
+	return false
 }
 
 type ScopedEntity struct {
@@ -2771,7 +2780,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x03uri\x18\x04 \x01(\tR\x03uri\x1a9\n" +
 	"\vDigestEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8a\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa9\x04\n" +
 	"\x14WorkflowContractItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12$\n" +
@@ -2785,7 +2794,9 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x1alatest_revision_created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x17latestRevisionCreatedAt\x12)\n" +
 	"\x0eworkflow_names\x18\x05 \x03(\tB\x02\x18\x01R\rworkflowNames\x12A\n" +
 	"\rworkflow_refs\x18\a \x03(\v2\x1c.controlplane.v1.WorkflowRefR\fworkflowRefs\x12B\n" +
-	"\rscoped_entity\x18\t \x01(\v2\x1d.controlplane.v1.ScopedEntityR\fscopedEntity\"F\n" +
+	"\rscoped_entity\x18\t \x01(\v2\x1d.controlplane.v1.ScopedEntityR\fscopedEntity\x12\x1d\n" +
+	"\n" +
+	"is_managed\x18\v \x01(\bR\tisManaged\"F\n" +
 	"\fScopedEntity\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x12\n" +

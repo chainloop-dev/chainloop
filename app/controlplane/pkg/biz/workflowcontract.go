@@ -47,6 +47,8 @@ type WorkflowContract struct {
 	WorkflowRefs []*WorkflowRef
 	// entity the contract is scoped to, if not set it's scoped to the organization
 	ScopedEntity *ScopedEntity
+	// Managed indicates this contract is provisioned and operated by Chainloop
+	Managed bool
 }
 
 type ScopedEntity struct {
@@ -128,6 +130,8 @@ type ContractCreateOpts struct {
 	Contract *Contract
 	// ProjectID indicates the project to be scoped to
 	ProjectID *uuid.UUID
+	// Managed indicates the contract is provisioned and operated by Chainloop
+	Managed *bool
 }
 
 type ContractUpdateOpts struct {
@@ -408,6 +412,11 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		return nil, fmt.Errorf("failed to find contract %s in org %s: %w", name, orgUUID, err)
 	}
 
+	// Managed contracts are owned and operated by Chainloop and cannot be modified by users.
+	if wfContractPreUpdate.Managed {
+		return nil, NewErrValidationStr("managed contracts cannot be modified")
+	}
+
 	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract}
 	c, err := uc.repo.Update(ctx, orgUUID, name, args)
 	if err != nil {
@@ -655,6 +664,11 @@ func (uc *WorkflowContractUseCase) Delete(ctx context.Context, orgID, contractID
 
 	if len(contract.WorkflowRefs) > 0 {
 		return NewErrValidation(errors.New("there are associated workflows with this contract, delete them first"))
+	}
+
+	// Prevent deletion of managed contracts - they are owned and operated by Chainloop
+	if contract.Managed {
+		return NewErrValidation(errors.New("can't delete a managed contract"))
 	}
 
 	// Check that the workflow to delete belongs to the provided organization

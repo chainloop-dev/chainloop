@@ -31,6 +31,8 @@ const (
 	FieldScopedResourceType = "scoped_resource_type"
 	// FieldScopedResourceID holds the string denoting the scoped_resource_id field in the database.
 	FieldScopedResourceID = "scoped_resource_id"
+	// FieldManaged holds the string denoting the managed field in the database.
+	FieldManaged = "managed"
 	// EdgeVersions holds the string denoting the versions edge name in mutations.
 	EdgeVersions = "versions"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -72,6 +74,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldScopedResourceType,
 	FieldScopedResourceID,
+	FieldManaged,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_contracts"
@@ -100,6 +103,8 @@ var (
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
+	// DefaultManaged holds the default value on creation for the "managed" field.
+	DefaultManaged bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -155,6 +160,11 @@ func ByScopedResourceType(opts ...sql.OrderTermOption) OrderOption {
 // ByScopedResourceID orders the results by the scoped_resource_id field.
 func ByScopedResourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldScopedResourceID, opts...).ToFunc()
+}
+
+// ByManaged orders the results by the managed field.
+func ByManaged(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldManaged, opts...).ToFunc()
 }
 
 // ByVersionsCount orders the results by versions count.

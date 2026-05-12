@@ -118,6 +118,20 @@ func (_c *WorkflowContractCreate) SetNillableScopedResourceID(v *uuid.UUID) *Wor
 	return _c
 }
 
+// SetManaged sets the "managed" field.
+func (_c *WorkflowContractCreate) SetManaged(v bool) *WorkflowContractCreate {
+	_c.mutation.SetManaged(v)
+	return _c
+}
+
+// SetNillableManaged sets the "managed" field if the given value is not nil.
+func (_c *WorkflowContractCreate) SetNillableManaged(v *bool) *WorkflowContractCreate {
+	if v != nil {
+		_c.SetManaged(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *WorkflowContractCreate) SetID(v uuid.UUID) *WorkflowContractCreate {
 	_c.mutation.SetID(v)
@@ -224,6 +238,10 @@ func (_c *WorkflowContractCreate) defaults() {
 		v := workflowcontract.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Managed(); !ok {
+		v := workflowcontract.DefaultManaged
+		_c.mutation.SetManaged(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := workflowcontract.DefaultID()
 		_c.mutation.SetID(v)
@@ -245,6 +263,9 @@ func (_c *WorkflowContractCreate) check() error {
 		if err := workflowcontract.ScopedResourceTypeValidator(v); err != nil {
 			return &ValidationError{Name: "scoped_resource_type", err: fmt.Errorf(`ent: validator failed for field "WorkflowContract.scoped_resource_type": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.Managed(); !ok {
+		return &ValidationError{Name: "managed", err: errors.New(`ent: missing required field "WorkflowContract.managed"`)}
 	}
 	return nil
 }
@@ -309,6 +330,10 @@ func (_c *WorkflowContractCreate) createSpec() (*WorkflowContract, *sqlgraph.Cre
 	if value, ok := _c.mutation.ScopedResourceID(); ok {
 		_spec.SetField(workflowcontract.FieldScopedResourceID, field.TypeUUID, value)
 		_node.ScopedResourceID = value
+	}
+	if value, ok := _c.mutation.Managed(); ok {
+		_spec.SetField(workflowcontract.FieldManaged, field.TypeBool, value)
+		_node.Managed = value
 	}
 	if nodes := _c.mutation.VersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -495,6 +520,18 @@ func (u *WorkflowContractUpsert) ClearScopedResourceID() *WorkflowContractUpsert
 	return u
 }
 
+// SetManaged sets the "managed" field.
+func (u *WorkflowContractUpsert) SetManaged(v bool) *WorkflowContractUpsert {
+	u.Set(workflowcontract.FieldManaged, v)
+	return u
+}
+
+// UpdateManaged sets the "managed" field to the value that was provided on create.
+func (u *WorkflowContractUpsert) UpdateManaged() *WorkflowContractUpsert {
+	u.SetExcluded(workflowcontract.FieldManaged)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -644,6 +681,20 @@ func (u *WorkflowContractUpsertOne) UpdateScopedResourceID() *WorkflowContractUp
 func (u *WorkflowContractUpsertOne) ClearScopedResourceID() *WorkflowContractUpsertOne {
 	return u.Update(func(s *WorkflowContractUpsert) {
 		s.ClearScopedResourceID()
+	})
+}
+
+// SetManaged sets the "managed" field.
+func (u *WorkflowContractUpsertOne) SetManaged(v bool) *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetManaged(v)
+	})
+}
+
+// UpdateManaged sets the "managed" field to the value that was provided on create.
+func (u *WorkflowContractUpsertOne) UpdateManaged() *WorkflowContractUpsertOne {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateManaged()
 	})
 }
 
@@ -963,6 +1014,20 @@ func (u *WorkflowContractUpsertBulk) UpdateScopedResourceID() *WorkflowContractU
 func (u *WorkflowContractUpsertBulk) ClearScopedResourceID() *WorkflowContractUpsertBulk {
 	return u.Update(func(s *WorkflowContractUpsert) {
 		s.ClearScopedResourceID()
+	})
+}
+
+// SetManaged sets the "managed" field.
+func (u *WorkflowContractUpsertBulk) SetManaged(v bool) *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.SetManaged(v)
+	})
+}
+
+// UpdateManaged sets the "managed" field to the value that was provided on create.
+func (u *WorkflowContractUpsertBulk) UpdateManaged() *WorkflowContractUpsertBulk {
+	return u.Update(func(s *WorkflowContractUpsert) {
+		s.UpdateManaged()
 	})
 }
 

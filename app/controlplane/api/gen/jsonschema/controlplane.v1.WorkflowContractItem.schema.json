@@ -6,6 +6,10 @@
     "^(createdAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
+    "^(isManaged)$": {
+      "description": "Whether this contract is provisioned and operated by Chainloop",
+      "type": "boolean"
+    },
     "^(latestRevision)$": {
       "maximum": 2147483647,
       "minimum": -2147483648,
@@ -45,6 +49,10 @@
     },
     "id": {
       "type": "string"
+    },
+    "is_managed": {
+      "description": "Whether this contract is provisioned and operated by Chainloop",
+      "type": "boolean"
     },
     "latest_revision": {
       "maximum": 2147483647,

@@ -34,6 +34,8 @@ type WorkflowContract struct {
 	ScopedResourceType biz.ContractScope `json:"scoped_resource_type,omitempty"`
 	// ScopedResourceID holds the value of the "scoped_resource_id" field.
 	ScopedResourceID uuid.UUID `json:"scoped_resource_id,omitempty"`
+	// Managed holds the value of the "managed" field.
+	Managed bool `json:"managed,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowContractQuery when eager-loading is set.
 	Edges                           WorkflowContractEdges `json:"edges"`
@@ -88,6 +90,8 @@ func (*WorkflowContract) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case workflowcontract.FieldManaged:
+			values[i] = new(sql.NullBool)
 		case workflowcontract.FieldName, workflowcontract.FieldDescription, workflowcontract.FieldScopedResourceType:
 			values[i] = new(sql.NullString)
 		case workflowcontract.FieldCreatedAt, workflowcontract.FieldUpdatedAt, workflowcontract.FieldDeletedAt:
@@ -158,6 +162,12 @@ func (_m *WorkflowContract) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field scoped_resource_id", values[i])
 			} else if value != nil {
 				_m.ScopedResourceID = *value
+			}
+		case workflowcontract.FieldManaged:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field managed", values[i])
+			} else if value.Valid {
+				_m.Managed = value.Bool
 			}
 		case workflowcontract.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -237,6 +247,9 @@ func (_m *WorkflowContract) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("scoped_resource_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ScopedResourceID))
+	builder.WriteString(", ")
+	builder.WriteString("managed=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Managed))
 	builder.WriteByte(')')
 	return builder.String()
 }

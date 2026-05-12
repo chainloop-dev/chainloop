@@ -341,6 +341,10 @@ func init() {
 	workflowcontractDescUpdatedAt := workflowcontractFields[3].Descriptor()
 	// workflowcontract.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	workflowcontract.DefaultUpdatedAt = workflowcontractDescUpdatedAt.Default.(func() time.Time)
+	// workflowcontractDescManaged is the schema descriptor for managed field.
+	workflowcontractDescManaged := workflowcontractFields[8].Descriptor()
+	// workflowcontract.DefaultManaged holds the default value on creation for the managed field.
+	workflowcontract.DefaultManaged = workflowcontractDescManaged.Default.(bool)
 	// workflowcontractDescID is the schema descriptor for id field.
 	workflowcontractDescID := workflowcontractFields[0].Descriptor()
 	// workflowcontract.DefaultID holds the default value on creation for the id field.

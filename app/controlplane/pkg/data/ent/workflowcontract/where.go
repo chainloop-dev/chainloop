@@ -87,6 +87,11 @@ func ScopedResourceID(v uuid.UUID) predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldEQ(FieldScopedResourceID, v))
 }
 
+// Managed applies equality check predicate on the "managed" field. It's identical to ManagedEQ.
+func Managed(v bool) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldEQ(FieldManaged, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldEQ(FieldName, v))
@@ -445,6 +450,16 @@ func ScopedResourceIDIsNil() predicate.WorkflowContract {
 // ScopedResourceIDNotNil applies the NotNil predicate on the "scoped_resource_id" field.
 func ScopedResourceIDNotNil() predicate.WorkflowContract {
 	return predicate.WorkflowContract(sql.FieldNotNull(FieldScopedResourceID))
+}
+
+// ManagedEQ applies the EQ predicate on the "managed" field.
+func ManagedEQ(v bool) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldEQ(FieldManaged, v))
+}
+
+// ManagedNEQ applies the NEQ predicate on the "managed" field.
+func ManagedNEQ(v bool) predicate.WorkflowContract {
+	return predicate.WorkflowContract(sql.FieldNEQ(FieldManaged, v))
 }
 
 // HasVersions applies the HasEdge predicate on the "versions" edge.

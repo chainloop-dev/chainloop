@@ -16222,6 +16222,7 @@ type WorkflowContractMutation struct {
 	description          *string
 	scoped_resource_type *biz.ContractScope
 	scoped_resource_id   *uuid.UUID
+	managed              *bool
 	clearedFields        map[string]struct{}
 	versions             map[uuid.UUID]struct{}
 	removedversions      map[uuid.UUID]struct{}
@@ -16644,6 +16645,42 @@ func (m *WorkflowContractMutation) ResetScopedResourceID() {
 	delete(m.clearedFields, workflowcontract.FieldScopedResourceID)
 }
 
+// SetManaged sets the "managed" field.
+func (m *WorkflowContractMutation) SetManaged(b bool) {
+	m.managed = &b
+}
+
+// Managed returns the value of the "managed" field in the mutation.
+func (m *WorkflowContractMutation) Managed() (r bool, exists bool) {
+	v := m.managed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldManaged returns the old "managed" field's value of the WorkflowContract entity.
+// If the WorkflowContract object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowContractMutation) OldManaged(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldManaged is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldManaged requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldManaged: %w", err)
+	}
+	return oldValue.Managed, nil
+}
+
+// ResetManaged resets all changes to the "managed" field.
+func (m *WorkflowContractMutation) ResetManaged() {
+	m.managed = nil
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by ids.
 func (m *WorkflowContractMutation) AddVersionIDs(ids ...uuid.UUID) {
 	if m.versions == nil {
@@ -16825,7 +16862,7 @@ func (m *WorkflowContractMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowContractMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, workflowcontract.FieldName)
 	}
@@ -16846,6 +16883,9 @@ func (m *WorkflowContractMutation) Fields() []string {
 	}
 	if m.scoped_resource_id != nil {
 		fields = append(fields, workflowcontract.FieldScopedResourceID)
+	}
+	if m.managed != nil {
+		fields = append(fields, workflowcontract.FieldManaged)
 	}
 	return fields
 }
@@ -16869,6 +16909,8 @@ func (m *WorkflowContractMutation) Field(name string) (ent.Value, bool) {
 		return m.ScopedResourceType()
 	case workflowcontract.FieldScopedResourceID:
 		return m.ScopedResourceID()
+	case workflowcontract.FieldManaged:
+		return m.Managed()
 	}
 	return nil, false
 }
@@ -16892,6 +16934,8 @@ func (m *WorkflowContractMutation) OldField(ctx context.Context, name string) (e
 		return m.OldScopedResourceType(ctx)
 	case workflowcontract.FieldScopedResourceID:
 		return m.OldScopedResourceID(ctx)
+	case workflowcontract.FieldManaged:
+		return m.OldManaged(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowContract field %s", name)
 }
@@ -16949,6 +16993,13 @@ func (m *WorkflowContractMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetScopedResourceID(v)
+		return nil
+	case workflowcontract.FieldManaged:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetManaged(v)
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)
@@ -17046,6 +17097,9 @@ func (m *WorkflowContractMutation) ResetField(name string) error {
 		return nil
 	case workflowcontract.FieldScopedResourceID:
 		m.ResetScopedResourceID()
+		return nil
+	case workflowcontract.FieldManaged:
+		m.ResetManaged()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowContract field %s", name)

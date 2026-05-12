@@ -128,6 +128,20 @@ func (_u *WorkflowContractUpdate) ClearScopedResourceID() *WorkflowContractUpdat
 	return _u
 }
 
+// SetManaged sets the "managed" field.
+func (_u *WorkflowContractUpdate) SetManaged(v bool) *WorkflowContractUpdate {
+	_u.mutation.SetManaged(v)
+	return _u
+}
+
+// SetNillableManaged sets the "managed" field if the given value is not nil.
+func (_u *WorkflowContractUpdate) SetNillableManaged(v *bool) *WorkflowContractUpdate {
+	if v != nil {
+		_u.SetManaged(*v)
+	}
+	return _u
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by IDs.
 func (_u *WorkflowContractUpdate) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractUpdate {
 	_u.mutation.AddVersionIDs(ids...)
@@ -311,6 +325,9 @@ func (_u *WorkflowContractUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.ScopedResourceIDCleared() {
 		_spec.ClearField(workflowcontract.FieldScopedResourceID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.Managed(); ok {
+		_spec.SetField(workflowcontract.FieldManaged, field.TypeBool, value)
 	}
 	if _u.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -547,6 +564,20 @@ func (_u *WorkflowContractUpdateOne) ClearScopedResourceID() *WorkflowContractUp
 	return _u
 }
 
+// SetManaged sets the "managed" field.
+func (_u *WorkflowContractUpdateOne) SetManaged(v bool) *WorkflowContractUpdateOne {
+	_u.mutation.SetManaged(v)
+	return _u
+}
+
+// SetNillableManaged sets the "managed" field if the given value is not nil.
+func (_u *WorkflowContractUpdateOne) SetNillableManaged(v *bool) *WorkflowContractUpdateOne {
+	if v != nil {
+		_u.SetManaged(*v)
+	}
+	return _u
+}
+
 // AddVersionIDs adds the "versions" edge to the WorkflowContractVersion entity by IDs.
 func (_u *WorkflowContractUpdateOne) AddVersionIDs(ids ...uuid.UUID) *WorkflowContractUpdateOne {
 	_u.mutation.AddVersionIDs(ids...)
@@ -760,6 +791,9 @@ func (_u *WorkflowContractUpdateOne) sqlSave(ctx context.Context) (_node *Workfl
 	}
 	if _u.mutation.ScopedResourceIDCleared() {
 		_spec.ClearField(workflowcontract.FieldScopedResourceID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.Managed(); ok {
+		_spec.SetField(workflowcontract.FieldManaged, field.TypeBool, value)
 	}
 	if _u.mutation.VersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
