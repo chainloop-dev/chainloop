@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,15 +27,17 @@ import (
 var (
 	_ auditor.LogEntry = (*OrgUserJoined)(nil)
 	_ auditor.LogEntry = (*OrgUserLeft)(nil)
+	_ auditor.LogEntry = (*OrgUserRemoved)(nil)
 	_ auditor.LogEntry = (*OrgCreated)(nil)
 )
 
 const (
-	OrgType                    auditor.TargetType = "Organization"
-	userJoinedOrgActionType    string             = "UserJoined"
-	userLeftOrgActionType      string             = "UserLeft"
-	userInvitedToOrgActionType string             = "InvitationCreated"
-	orgCreatedActionType       string             = "OrganizationCreated"
+	OrgType                      auditor.TargetType = "Organization"
+	userJoinedOrgActionType      string             = "UserJoined"
+	userLeftOrgActionType        string             = "UserLeft"
+	userRemovedFromOrgActionType string             = "UserRemoved"
+	userInvitedToOrgActionType   string             = "InvitationCreated"
+	orgCreatedActionType         string             = "OrganizationCreated"
 )
 
 type OrgBase struct {
@@ -114,6 +116,29 @@ func (p *OrgUserLeft) ActionType() string {
 
 func (p *OrgUserLeft) Description() string {
 	return fmt.Sprintf("%s has left the organization %s", auditor.GetActorIdentifier(), p.OrgName)
+}
+
+// OrgUserRemoved is emitted when an admin removes another user from an org.
+type OrgUserRemoved struct {
+	*OrgBase
+	RemovedUserID    uuid.UUID `json:"removed_user_id,omitempty"`
+	RemovedUserEmail string    `json:"removed_user_email,omitempty"`
+}
+
+func (p *OrgUserRemoved) ActionType() string {
+	return userRemovedFromOrgActionType
+}
+
+func (p *OrgUserRemoved) Description() string {
+	return fmt.Sprintf("%s removed %s from the organization %s", auditor.GetActorIdentifier(), p.RemovedUserEmail, p.OrgName)
+}
+
+func (p *OrgUserRemoved) ActionInfo() (json.RawMessage, error) {
+	if p.OrgName == "" || p.OrgID == nil || p.RemovedUserID == uuid.Nil || p.RemovedUserEmail == "" {
+		return nil, errors.New("org name, org id, removed user id and removed user email are required")
+	}
+
+	return json.Marshal(&p)
 }
 
 // user got invited to the organization
