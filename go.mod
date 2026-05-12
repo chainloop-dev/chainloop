@@ -72,7 +72,7 @@ require (
 	github.com/casbin/casbin/v2 v2.103.0
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/extism/go-sdk v1.7.1
-	github.com/go-git/go-git/v6 v6.0.0-alpha.2 // recommended path: https://github.com/go-git/go-git/issues/1943#issuecomment-4232656963
+	github.com/go-git/go-git/v6 v6.0.0-alpha.3 // recommended path: https://github.com/go-git/go-git/issues/1943#issuecomment-4232656963
 	github.com/google/go-github/v66 v66.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
