@@ -1,0 +1,18 @@
+{
+  "ActionType": "UserRemoved",
+  "TargetType": "Organization",
+  "TargetID": "2089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "2089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor removed sarah@cyberdyne.io from the organization cyberdyne",
+  "Info": {
+    "org_id": "2089bb36-e27b-428b-8009-d015c8737c54",
+    "org_name": "cyberdyne",
+    "removed_user_id": "3089bb36-e27b-428b-8009-d015c8737c54",
+    "removed_user_email": "sarah@cyberdyne.io"
+  },
+  "Digest": "sha256:853c98ec28f3280ebf859cbd8e422b5924a7113907922ca5fae1b0628f688ac5"
+}

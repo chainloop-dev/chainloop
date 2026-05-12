@@ -143,6 +143,20 @@ func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, mem
 		return fmt.Errorf("failed to delete membership: %w", err)
 	}
 
+	removedUserUUID, err := uuid.Parse(m.User.ID)
+	if err != nil {
+		uc.logger.Warnw("msg", "could not parse removed user id for audit event", "user_id", m.User.ID, "err", err)
+	} else {
+		uc.auditor.Dispatch(ctx, &events.OrgUserRemoved{
+			OrgBase: &events.OrgBase{
+				OrgID:   &m.OrganizationID,
+				OrgName: m.Org.Name,
+			},
+			RemovedUserID:    removedUserUUID,
+			RemovedUserEmail: m.User.Email,
+		}, &m.OrganizationID)
+	}
+
 	return nil
 }
 
