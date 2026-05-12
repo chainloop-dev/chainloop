@@ -134,8 +134,8 @@ func (p *OrgUserRemoved) Description() string {
 }
 
 func (p *OrgUserRemoved) ActionInfo() (json.RawMessage, error) {
-	if p.OrgName == "" || p.OrgID == nil || p.RemovedUserID == uuid.Nil {
-		return nil, errors.New("org name, org id and removed user id are required")
+	if p.OrgName == "" || p.OrgID == nil || p.RemovedUserID == uuid.Nil || p.RemovedUserEmail == "" {
+		return nil, errors.New("org name, org id, removed user id and removed user email are required")
 	}
 
 	return json.Marshal(&p)
