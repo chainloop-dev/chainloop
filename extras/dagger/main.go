@@ -391,6 +391,12 @@ func (att *Attestation) AddRawEvidence(
 	// "key1=value1,key2=value2"
 	// +optional
 	annotations []string,
+	// Skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC)
+	// +optional
+	noStrictValidation bool,
+	// Enable debug/verbose logging
+	// +optional
+	debug bool,
 ) (*Attestation, error) {
 	args := []string{
 		"attestation", "add",
@@ -414,6 +420,14 @@ func (att *Attestation) AddRawEvidence(
 		args = append(args,
 			"--annotation", annotation,
 		)
+	}
+
+	if noStrictValidation {
+		args = append(args, "--no-strict-validation")
+	}
+
+	if debug {
+		args = append(args, "--debug")
 	}
 
 	_, err := att.
@@ -441,6 +455,12 @@ func (att *Attestation) AddFileEvidence(
 	// "key1=value1,key2=value2"
 	// +optional
 	annotations []string,
+	// Skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC)
+	// +optional
+	noStrictValidation bool,
+	// Enable debug/verbose logging
+	// +optional
+	debug bool,
 ) (*Attestation, error) {
 	filename, err := path.Name(ctx)
 	if err != nil {
@@ -471,6 +491,14 @@ func (att *Attestation) AddFileEvidence(
 		args = append(args,
 			"--name", name,
 		)
+	}
+
+	if noStrictValidation {
+		args = append(args, "--no-strict-validation")
+	}
+
+	if debug {
+		args = append(args, "--debug")
 	}
 
 	_, err = att.
