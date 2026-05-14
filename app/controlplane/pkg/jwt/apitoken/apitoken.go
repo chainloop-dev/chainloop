@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,14 +68,16 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 }
 
 type GenerateJWTOptions struct {
-	OrgID       *uuid.UUID
-	OrgName     *string
-	KeyID       uuid.UUID
-	KeyName     string
-	ProjectID   *uuid.UUID
-	ProjectName *string
-	ExpiresAt   *time.Time
-	Scope       *string
+	OrgID        *uuid.UUID
+	OrgName      *string
+	KeyID        uuid.UUID
+	KeyName      string
+	ProjectID    *uuid.UUID
+	ProjectName  *string
+	WorkflowID   *uuid.UUID
+	WorkflowName *string
+	ExpiresAt    *time.Time
+	Scope        *string
 }
 
 // GenerateJWT creates a new JWT token for the given organization and keyID
@@ -116,6 +118,14 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.ProjectName = *opts.ProjectName
 	}
 
+	if opts.WorkflowID != nil {
+		if opts.WorkflowName == nil {
+			return "", errors.New("workflowName is required when workflowID is set")
+		}
+		claims.WorkflowID = opts.WorkflowID.String()
+		claims.WorkflowName = *opts.WorkflowName
+	}
+
 	// optional expiration value, i.e 30 days
 	if opts.ExpiresAt != nil {
 		claims.ExpiresAt = jwt.NewNumericDate(*opts.ExpiresAt)
@@ -126,11 +136,13 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 }
 
 type CustomClaims struct {
-	OrgID       string `json:"org_id"`
-	OrgName     string `json:"org_name"`
-	KeyName     string `json:"token_name"`
-	ProjectID   string `json:"project_id,omitempty"`
-	ProjectName string `json:"project_name,omitempty"`
-	Scope       string `json:"scope,omitempty"`
+	OrgID        string `json:"org_id"`
+	OrgName      string `json:"org_name"`
+	KeyName      string `json:"token_name"`
+	ProjectID    string `json:"project_id,omitempty"`
+	ProjectName  string `json:"project_name,omitempty"`
+	WorkflowID   string `json:"workflow_id,omitempty"`
+	WorkflowName string `json:"workflow_name,omitempty"`
+	Scope        string `json:"scope,omitempty"`
 	jwt.RegisteredClaims
 }

@@ -96,6 +96,16 @@ func ProjectID(v uuid.UUID) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldProjectID, v))
 }
 
+// WorkflowID applies equality check predicate on the "workflow_id" field. It's identical to WorkflowIDEQ.
+func WorkflowID(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldWorkflowID, v))
+}
+
+// IsSystem applies equality check predicate on the "is_system" field. It's identical to IsSystemEQ.
+func IsSystem(v bool) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldIsSystem, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldName, v))
@@ -486,6 +496,36 @@ func ProjectIDNotNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotNull(FieldProjectID))
 }
 
+// WorkflowIDEQ applies the EQ predicate on the "workflow_id" field.
+func WorkflowIDEQ(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldWorkflowID, v))
+}
+
+// WorkflowIDNEQ applies the NEQ predicate on the "workflow_id" field.
+func WorkflowIDNEQ(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNEQ(FieldWorkflowID, v))
+}
+
+// WorkflowIDIn applies the In predicate on the "workflow_id" field.
+func WorkflowIDIn(vs ...uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldIn(FieldWorkflowID, vs...))
+}
+
+// WorkflowIDNotIn applies the NotIn predicate on the "workflow_id" field.
+func WorkflowIDNotIn(vs ...uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotIn(FieldWorkflowID, vs...))
+}
+
+// WorkflowIDIsNil applies the IsNil predicate on the "workflow_id" field.
+func WorkflowIDIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldWorkflowID))
+}
+
+// WorkflowIDNotNil applies the NotNil predicate on the "workflow_id" field.
+func WorkflowIDNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldWorkflowID))
+}
+
 // PoliciesIsNil applies the IsNil predicate on the "policies" field.
 func PoliciesIsNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldIsNull(FieldPolicies))
@@ -494,6 +534,16 @@ func PoliciesIsNil() predicate.APIToken {
 // PoliciesNotNil applies the NotNil predicate on the "policies" field.
 func PoliciesNotNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotNull(FieldPolicies))
+}
+
+// IsSystemEQ applies the EQ predicate on the "is_system" field.
+func IsSystemEQ(v bool) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldIsSystem, v))
+}
+
+// IsSystemNEQ applies the NEQ predicate on the "is_system" field.
+func IsSystemNEQ(v bool) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNEQ(FieldIsSystem, v))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.
@@ -534,6 +584,29 @@ func HasProject() predicate.APIToken {
 func HasProjectWith(preds ...predicate.Project) predicate.APIToken {
 	return predicate.APIToken(func(s *sql.Selector) {
 		step := newProjectStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasWorkflow applies the HasEdge predicate on the "workflow" edge.
+func HasWorkflow() predicate.APIToken {
+	return predicate.APIToken(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, WorkflowTable, WorkflowColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasWorkflowWith applies the HasEdge predicate on the "workflow" edge with a given conditions (other predicates).
+func HasWorkflowWith(preds ...predicate.Workflow) predicate.APIToken {
+	return predicate.APIToken(func(s *sql.Selector) {
+		step := newWorkflowStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

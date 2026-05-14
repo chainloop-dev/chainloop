@@ -710,22 +710,32 @@ func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Cont
 		return nil, biz.NewErrValidationStr("orgID must be provided")
 	}
 
-	// This is the case when the workflow if found by name
-	if workflowName != "" {
-		return s.workflowUseCase.FindByNameInOrg(ctx, orgID, projectName, workflowName)
-	}
-
-	// This is the case when the workflow is found by its reference to the run
-	if runID != "" {
+	var wf *biz.Workflow
+	switch {
+	case workflowName != "":
+		w, err := s.workflowUseCase.FindByNameInOrg(ctx, orgID, projectName, workflowName)
+		if err != nil {
+			return nil, err
+		}
+		wf = w
+	case runID != "":
 		run, err := s.wrUseCase.GetByIDInOrg(ctx, orgID, runID)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving the workflow run: %w", err)
 		}
-
-		return run.Workflow, nil
+		wf = run.Workflow
+	default:
+		return nil, biz.NewErrValidationStr("workflowName or workflowRunId must be provided")
 	}
 
-	return nil, biz.NewErrValidationStr("workflowName or workflowRunId must be provided")
+	// Workflow-scoped API tokens may only operate on their own workflow.
+	if apiToken := entities.CurrentAPIToken(ctx); apiToken != nil && apiToken.WorkflowID != nil {
+		if wf.ID != *apiToken.WorkflowID {
+			return nil, errors.Forbidden("forbidden", "API token is scoped to a different workflow")
+		}
+	}
+
+	return wf, nil
 }
 
 func checkAuthRequirements(attToken *usercontext.RobotAccount, workflowName string) error {
@@ -745,6 +755,11 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	apiToken := usercontext.CurrentRobotAccount(ctx)
 	if apiToken == nil {
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
+	}
+
+	// Workflow-scoped API tokens cannot create or look up other workflows.
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.WorkflowID != nil {
+		return nil, errors.Forbidden("forbidden", "API token is workflow-scoped and cannot create or look up other workflows")
 	}
 
 	// try to load project and apply RBAC if needed

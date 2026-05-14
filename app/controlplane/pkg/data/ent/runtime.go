@@ -39,6 +39,10 @@ func init() {
 	apitokenDescCreatedAt := apitokenFields[3].Descriptor()
 	// apitoken.DefaultCreatedAt holds the default value on creation for the created_at field.
 	apitoken.DefaultCreatedAt = apitokenDescCreatedAt.Default.(func() time.Time)
+	// apitokenDescIsSystem is the schema descriptor for is_system field.
+	apitokenDescIsSystem := apitokenFields[11].Descriptor()
+	// apitoken.DefaultIsSystem holds the default value on creation for the is_system field.
+	apitoken.DefaultIsSystem = apitokenDescIsSystem.Default.(bool)
 	// apitokenDescID is the schema descriptor for id field.
 	apitokenDescID := apitokenFields[0].Descriptor()
 	// apitoken.DefaultID holds the default value on creation for the id field.

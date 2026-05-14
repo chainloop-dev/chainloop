@@ -73,6 +73,49 @@ func (s *apiTokenTestSuite) TestCreate() {
 		s.Equal(s.p1.Name, *token.ProjectName)
 	})
 
+	s.Run("happy path with workflow", func() {
+		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: randomName(), OrgID: s.org.ID, Project: s.p1.Name})
+		require.NoError(s.T(), err)
+
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+			biz.APITokenWithProject(s.p1),
+			biz.APITokenWithWorkflow(wf),
+		)
+		s.NoError(err)
+		s.Equal(s.p1.ID, *token.ProjectID)
+		s.Equal(wf.ID, *token.WorkflowID)
+		s.Equal(wf.Name, *token.WorkflowName)
+	})
+
+	s.Run("workflow without project is rejected", func() {
+		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: randomName(), OrgID: s.org.ID, Project: s.p1.Name})
+		require.NoError(s.T(), err)
+
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithWorkflow(wf))
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Nil(token)
+	})
+
+	s.Run("workflow whose project does not match is rejected", func() {
+		wfInP2, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: randomName(), OrgID: s.org.ID, Project: s.p2.Name})
+		require.NoError(s.T(), err)
+
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+			biz.APITokenWithProject(s.p1),
+			biz.APITokenWithWorkflow(wfInP2),
+		)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Nil(token)
+	})
+
+	s.Run("system token is persisted with the flag", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenAsSystem())
+		s.NoError(err)
+		s.True(token.IsSystem)
+	})
+
 	s.Run("testing name uniqueness", func() {
 		testCases := []struct {
 			name       string
@@ -351,6 +394,29 @@ func (s *apiTokenTestSuite) TestList() {
 		require.Len(s.T(), tokens, 1)
 		s.Equal(s.t1.ID, tokens[0].ID)
 		s.NotNil(tokens[0].RevokedAt)
+	})
+
+	s.Run("system tokens are hidden by default and returned when opted in", func() {
+		emptyOrg, err := s.Organization.CreateWithRandomName(ctx)
+		require.NoError(s.T(), err)
+
+		regular, err := s.APIToken.Create(ctx, randomName(), nil, nil, &emptyOrg.ID)
+		require.NoError(s.T(), err)
+		system, err := s.APIToken.Create(ctx, randomName(), nil, nil, &emptyOrg.ID, biz.APITokenAsSystem())
+		require.NoError(s.T(), err)
+
+		visible, err := s.APIToken.List(ctx, emptyOrg.ID)
+		s.NoError(err)
+		require.Len(s.T(), visible, 1)
+		s.Equal(regular.ID, visible[0].ID)
+		s.False(visible[0].IsSystem)
+
+		all, err := s.APIToken.List(ctx, emptyOrg.ID, biz.WithIncludeSystemTokens())
+		s.NoError(err)
+		require.Len(s.T(), all, 2)
+		ids := []uuid.UUID{all[0].ID, all[1].ID}
+		s.Contains(ids, regular.ID)
+		s.Contains(ids, system.ID)
 	})
 }
 

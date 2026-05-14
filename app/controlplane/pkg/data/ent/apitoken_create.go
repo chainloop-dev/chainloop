@@ -16,6 +16,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -131,9 +132,37 @@ func (_c *APITokenCreate) SetNillableProjectID(v *uuid.UUID) *APITokenCreate {
 	return _c
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (_c *APITokenCreate) SetWorkflowID(v uuid.UUID) *APITokenCreate {
+	_c.mutation.SetWorkflowID(v)
+	return _c
+}
+
+// SetNillableWorkflowID sets the "workflow_id" field if the given value is not nil.
+func (_c *APITokenCreate) SetNillableWorkflowID(v *uuid.UUID) *APITokenCreate {
+	if v != nil {
+		_c.SetWorkflowID(*v)
+	}
+	return _c
+}
+
 // SetPolicies sets the "policies" field.
 func (_c *APITokenCreate) SetPolicies(v []*authz.Policy) *APITokenCreate {
 	_c.mutation.SetPolicies(v)
+	return _c
+}
+
+// SetIsSystem sets the "is_system" field.
+func (_c *APITokenCreate) SetIsSystem(v bool) *APITokenCreate {
+	_c.mutation.SetIsSystem(v)
+	return _c
+}
+
+// SetNillableIsSystem sets the "is_system" field if the given value is not nil.
+func (_c *APITokenCreate) SetNillableIsSystem(v *bool) *APITokenCreate {
+	if v != nil {
+		_c.SetIsSystem(*v)
+	}
 	return _c
 }
 
@@ -159,6 +188,11 @@ func (_c *APITokenCreate) SetOrganization(v *Organization) *APITokenCreate {
 // SetProject sets the "project" edge to the Project entity.
 func (_c *APITokenCreate) SetProject(v *Project) *APITokenCreate {
 	return _c.SetProjectID(v.ID)
+}
+
+// SetWorkflow sets the "workflow" edge to the Workflow entity.
+func (_c *APITokenCreate) SetWorkflow(v *Workflow) *APITokenCreate {
+	return _c.SetWorkflowID(v.ID)
 }
 
 // Mutation returns the APITokenMutation object of the builder.
@@ -200,6 +234,10 @@ func (_c *APITokenCreate) defaults() {
 		v := apitoken.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
+	if _, ok := _c.mutation.IsSystem(); !ok {
+		v := apitoken.DefaultIsSystem
+		_c.mutation.SetIsSystem(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := apitoken.DefaultID()
 		_c.mutation.SetID(v)
@@ -213,6 +251,9 @@ func (_c *APITokenCreate) check() error {
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "APIToken.created_at"`)}
+	}
+	if _, ok := _c.mutation.IsSystem(); !ok {
+		return &ValidationError{Name: "is_system", err: errors.New(`ent: missing required field "APIToken.is_system"`)}
 	}
 	return nil
 }
@@ -278,6 +319,10 @@ func (_c *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
 		_node.Policies = value
 	}
+	if value, ok := _c.mutation.IsSystem(); ok {
+		_spec.SetField(apitoken.FieldIsSystem, field.TypeBool, value)
+		_node.IsSystem = value
+	}
 	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -310,6 +355,23 @@ func (_c *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.ProjectID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.WorkflowIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.WorkflowTable,
+			Columns: []string{apitoken.WorkflowColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.WorkflowID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -472,6 +534,24 @@ func (u *APITokenUpsert) ClearProjectID() *APITokenUpsert {
 	return u
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (u *APITokenUpsert) SetWorkflowID(v uuid.UUID) *APITokenUpsert {
+	u.Set(apitoken.FieldWorkflowID, v)
+	return u
+}
+
+// UpdateWorkflowID sets the "workflow_id" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateWorkflowID() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldWorkflowID)
+	return u
+}
+
+// ClearWorkflowID clears the value of the "workflow_id" field.
+func (u *APITokenUpsert) ClearWorkflowID() *APITokenUpsert {
+	u.SetNull(apitoken.FieldWorkflowID)
+	return u
+}
+
 // SetPolicies sets the "policies" field.
 func (u *APITokenUpsert) SetPolicies(v []*authz.Policy) *APITokenUpsert {
 	u.Set(apitoken.FieldPolicies, v)
@@ -512,6 +592,9 @@ func (u *APITokenUpsertOne) UpdateNewValues() *APITokenUpsertOne {
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(apitoken.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.IsSystem(); exists {
+			s.SetIgnore(apitoken.FieldIsSystem)
 		}
 	}))
 	return u
@@ -667,6 +750,27 @@ func (u *APITokenUpsertOne) UpdateProjectID() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearProjectID() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearProjectID()
+	})
+}
+
+// SetWorkflowID sets the "workflow_id" field.
+func (u *APITokenUpsertOne) SetWorkflowID(v uuid.UUID) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetWorkflowID(v)
+	})
+}
+
+// UpdateWorkflowID sets the "workflow_id" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateWorkflowID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateWorkflowID()
+	})
+}
+
+// ClearWorkflowID clears the value of the "workflow_id" field.
+func (u *APITokenUpsertOne) ClearWorkflowID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearWorkflowID()
 	})
 }
 
@@ -880,6 +984,9 @@ func (u *APITokenUpsertBulk) UpdateNewValues() *APITokenUpsertBulk {
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(apitoken.FieldCreatedAt)
 			}
+			if _, exists := b.mutation.IsSystem(); exists {
+				s.SetIgnore(apitoken.FieldIsSystem)
+			}
 		}
 	}))
 	return u
@@ -1035,6 +1142,27 @@ func (u *APITokenUpsertBulk) UpdateProjectID() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearProjectID() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearProjectID()
+	})
+}
+
+// SetWorkflowID sets the "workflow_id" field.
+func (u *APITokenUpsertBulk) SetWorkflowID(v uuid.UUID) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetWorkflowID(v)
+	})
+}
+
+// UpdateWorkflowID sets the "workflow_id" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateWorkflowID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateWorkflowID()
+	})
+}
+
+// ClearWorkflowID clears the value of the "workflow_id" field.
+func (u *APITokenUpsertBulk) ClearWorkflowID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearWorkflowID()
 	})
 }
 
