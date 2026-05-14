@@ -10,7 +10,7 @@ See https://docs.chainloop.dev/guides/dependency-track/
 |Field|Type|Required|Description|
 |---|---|---|---|
 |allowAutoCreate|boolean|no|Support of creating projects on demand|
-|apiKey|string|yes|The API key to use for authentication|
+|apiKey|string (password)|yes|The API key to use for authentication|
 |instanceURI|string (uri)|yes|The URL of the Dependency-Track instance|
 
 ```json
@@ -25,6 +25,7 @@ See https://docs.chainloop.dev/guides/dependency-track/
     },
     "apiKey": {
       "type": "string",
+      "format": "password",
       "description": "The API key to use for authentication"
     },
     "allowAutoCreate": {
