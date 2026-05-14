@@ -14,6 +14,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -38,8 +39,12 @@ type APIToken struct {
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
 	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	// WorkflowID holds the value of the "workflow_id" field.
+	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
 	// Policies holds the value of the "policies" field.
 	Policies []*authz.Policy `json:"policies,omitempty"`
+	// IsSystem holds the value of the "is_system" field.
+	IsSystem bool `json:"is_system,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the APITokenQuery when eager-loading is set.
 	Edges        APITokenEdges `json:"edges"`
@@ -52,9 +57,11 @@ type APITokenEdges struct {
 	Organization *Organization `json:"organization,omitempty"`
 	// Project holds the value of the project edge.
 	Project *Project `json:"project,omitempty"`
+	// Workflow holds the value of the workflow edge.
+	Workflow *Workflow `json:"workflow,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // OrganizationOrErr returns the Organization value or an error if the edge
@@ -79,6 +86,17 @@ func (e APITokenEdges) ProjectOrErr() (*Project, error) {
 	return nil, &NotLoadedError{edge: "project"}
 }
 
+// WorkflowOrErr returns the Workflow value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e APITokenEdges) WorkflowOrErr() (*Workflow, error) {
+	if e.Workflow != nil {
+		return e.Workflow, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: workflow.Label}
+	}
+	return nil, &NotLoadedError{edge: "workflow"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*APIToken) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -86,11 +104,13 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case apitoken.FieldPolicies:
 			values[i] = new([]byte)
+		case apitoken.FieldIsSystem:
+			values[i] = new(sql.NullBool)
 		case apitoken.FieldName, apitoken.FieldDescription:
 			values[i] = new(sql.NullString)
 		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt, apitoken.FieldLastUsedAt:
 			values[i] = new(sql.NullTime)
-		case apitoken.FieldID, apitoken.FieldOrganizationID, apitoken.FieldProjectID:
+		case apitoken.FieldID, apitoken.FieldOrganizationID, apitoken.FieldProjectID, apitoken.FieldWorkflowID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -161,6 +181,12 @@ func (_m *APIToken) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.ProjectID = *value
 			}
+		case apitoken.FieldWorkflowID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_id", values[i])
+			} else if value != nil {
+				_m.WorkflowID = *value
+			}
 		case apitoken.FieldPolicies:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field policies", values[i])
@@ -168,6 +194,12 @@ func (_m *APIToken) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.Policies); err != nil {
 					return fmt.Errorf("unmarshal field policies: %w", err)
 				}
+			}
+		case apitoken.FieldIsSystem:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_system", values[i])
+			} else if value.Valid {
+				_m.IsSystem = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -190,6 +222,11 @@ func (_m *APIToken) QueryOrganization() *OrganizationQuery {
 // QueryProject queries the "project" edge of the APIToken entity.
 func (_m *APIToken) QueryProject() *ProjectQuery {
 	return NewAPITokenClient(_m.config).QueryProject(_m)
+}
+
+// QueryWorkflow queries the "workflow" edge of the APIToken entity.
+func (_m *APIToken) QueryWorkflow() *WorkflowQuery {
+	return NewAPITokenClient(_m.config).QueryWorkflow(_m)
 }
 
 // Update returns a builder for updating this APIToken.
@@ -239,8 +276,14 @@ func (_m *APIToken) String() string {
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ProjectID))
 	builder.WriteString(", ")
+	builder.WriteString("workflow_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowID))
+	builder.WriteString(", ")
 	builder.WriteString("policies=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Policies))
+	builder.WriteString(", ")
+	builder.WriteString("is_system=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IsSystem))
 	builder.WriteByte(')')
 	return builder.String()
 }

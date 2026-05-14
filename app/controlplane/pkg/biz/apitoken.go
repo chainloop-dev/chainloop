@@ -65,12 +65,17 @@ type APIToken struct {
 	// If the token is scoped to a project
 	ProjectID   *uuid.UUID
 	ProjectName *string
+	// If the token is scoped to a specific workflow within a project
+	WorkflowID   *uuid.UUID
+	WorkflowName *string
 	// ACL policies for this token
 	Policies []*authz.Policy
+	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
+	IsSystem bool
 }
 
 type APITokenRepo interface {
-	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*APIToken, error)
+	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*APIToken, error)
 	List(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID *uuid.UUID, ID uuid.UUID) error
 	// FindInactive returns tokens in an organization that have been inactive since the given cutoff time.
@@ -143,9 +148,10 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig,
 }
 
 type apiTokenOptions struct {
-	project              *Project
-	showOnlySystemTokens bool
-	policies             []*authz.Policy
+	project  *Project
+	workflow *Workflow
+	policies []*authz.Policy
+	isSystem bool
 }
 
 type APITokenCreateOpt func(*apiTokenOptions)
@@ -156,9 +162,25 @@ func APITokenWithProject(project *Project) APITokenCreateOpt {
 	}
 }
 
+// APITokenWithWorkflow scopes the token to a specific workflow within a project.
+// Must be combined with APITokenWithProject; the workflow's project must match.
+func APITokenWithWorkflow(workflow *Workflow) APITokenCreateOpt {
+	return func(o *apiTokenOptions) {
+		o.workflow = workflow
+	}
+}
+
 func APITokenWithPolicies(policies []*authz.Policy) APITokenCreateOpt {
 	return func(o *apiTokenOptions) {
 		o.policies = policies
+	}
+}
+
+// APITokenAsSystem marks the token as system-managed (internal). System tokens
+// are hidden from the public API.
+func APITokenAsSystem() APITokenCreateOpt {
+	return func(o *apiTokenOptions) {
+		o.isSystem = true
 	}
 }
 
@@ -212,6 +234,17 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		projectID = ToPtr(options.project.ID)
 	}
 
+	var workflowID *uuid.UUID
+	if options.workflow != nil {
+		if options.project == nil {
+			return nil, NewErrValidationStr("workflow scope requires a project scope")
+		}
+		if options.workflow.ProjectID != options.project.ID {
+			return nil, NewErrValidationStr("workflow does not belong to the requested project")
+		}
+		workflowID = ToPtr(options.workflow.ID)
+	}
+
 	// Use provided policies if present, otherwise use defaults
 	policies := options.policies
 	if policies == nil {
@@ -225,7 +258,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID, policies)
+	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID, workflowID, policies, options.isSystem)
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr("name already taken")
@@ -250,6 +283,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	if projectID != nil {
 		generationOpts.ProjectID = ToPtr(options.project.ID)
 		generationOpts.ProjectName = ToPtr(options.project.Name)
+	}
+
+	if options.workflow != nil {
+		generationOpts.WorkflowID = ToPtr(options.workflow.ID)
+		generationOpts.WorkflowName = ToPtr(options.workflow.Name)
 	}
 
 	// generate the JWT
@@ -307,6 +345,16 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
+	// Preserve project / workflow scope claims that the row carries.
+	if token.ProjectID != nil {
+		generationOpts.ProjectID = token.ProjectID
+		generationOpts.ProjectName = token.ProjectName
+	}
+	if token.WorkflowID != nil {
+		generationOpts.WorkflowID = token.WorkflowID
+		generationOpts.WorkflowName = token.WorkflowName
+	}
+
 	// generate the JWT
 	token.JWT, err = uc.jwtBuilder.GenerateJWT(generationOpts)
 	if err != nil {
@@ -338,6 +386,14 @@ func WithAPITokenStatusFilter(filter APITokenStatusFilter) APITokenListOpt {
 func WithAPITokenScope(scope APITokenScope) APITokenListOpt {
 	return func(opts *APITokenListFilters) {
 		opts.FilterByScope = scope
+	}
+}
+
+// WithIncludeSystemTokens opts the listing in to also return system-managed tokens.
+// By default, system tokens are hidden.
+func WithIncludeSystemTokens() APITokenListOpt {
+	return func(opts *APITokenListFilters) {
+		opts.IncludeSystem = true
 	}
 }
 
@@ -376,6 +432,9 @@ type APITokenListFilters struct {
 	StatusFilter APITokenStatusFilter
 	// FilterByScope is used to filter the result by the scope of the token
 	FilterByScope APITokenScope
+	// IncludeSystem controls whether system-managed tokens are returned.
+	// Defaults to false (system tokens are hidden).
+	IncludeSystem bool
 }
 
 func (uc *APITokenUseCase) List(ctx context.Context, orgID string, opts ...APITokenListOpt) ([]*APIToken, error) {

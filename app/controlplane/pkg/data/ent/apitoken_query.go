@@ -16,6 +16,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -28,6 +29,7 @@ type APITokenQuery struct {
 	predicates       []predicate.APIToken
 	withOrganization *OrganizationQuery
 	withProject      *ProjectQuery
+	withWorkflow     *WorkflowQuery
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -102,6 +104,28 @@ func (_q *APITokenQuery) QueryProject() *ProjectQuery {
 			sqlgraph.From(apitoken.Table, apitoken.FieldID, selector),
 			sqlgraph.To(project.Table, project.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.ProjectTable, apitoken.ProjectColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryWorkflow chains the current query on the "workflow" edge.
+func (_q *APITokenQuery) QueryWorkflow() *WorkflowQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apitoken.Table, apitoken.FieldID, selector),
+			sqlgraph.To(workflow.Table, workflow.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.WorkflowTable, apitoken.WorkflowColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -303,6 +327,7 @@ func (_q *APITokenQuery) Clone() *APITokenQuery {
 		predicates:       append([]predicate.APIToken{}, _q.predicates...),
 		withOrganization: _q.withOrganization.Clone(),
 		withProject:      _q.withProject.Clone(),
+		withWorkflow:     _q.withWorkflow.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -329,6 +354,17 @@ func (_q *APITokenQuery) WithProject(opts ...func(*ProjectQuery)) *APITokenQuery
 		opt(query)
 	}
 	_q.withProject = query
+	return _q
+}
+
+// WithWorkflow tells the query-builder to eager-load the nodes that are connected to
+// the "workflow" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *APITokenQuery) WithWorkflow(opts ...func(*WorkflowQuery)) *APITokenQuery {
+	query := (&WorkflowClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withWorkflow = query
 	return _q
 }
 
@@ -410,9 +446,10 @@ func (_q *APITokenQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*API
 	var (
 		nodes       = []*APIToken{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withOrganization != nil,
 			_q.withProject != nil,
+			_q.withWorkflow != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -445,6 +482,12 @@ func (_q *APITokenQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*API
 	if query := _q.withProject; query != nil {
 		if err := _q.loadProject(ctx, query, nodes, nil,
 			func(n *APIToken, e *Project) { n.Edges.Project = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withWorkflow; query != nil {
+		if err := _q.loadWorkflow(ctx, query, nodes, nil,
+			func(n *APIToken, e *Workflow) { n.Edges.Workflow = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -509,6 +552,35 @@ func (_q *APITokenQuery) loadProject(ctx context.Context, query *ProjectQuery, n
 	}
 	return nil
 }
+func (_q *APITokenQuery) loadWorkflow(ctx context.Context, query *WorkflowQuery, nodes []*APIToken, init func(*APIToken), assign func(*APIToken, *Workflow)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*APIToken)
+	for i := range nodes {
+		fk := nodes[i].WorkflowID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(workflow.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "workflow_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *APITokenQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -543,6 +615,9 @@ func (_q *APITokenQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withProject != nil {
 			_spec.Node.AddColumnOnce(apitoken.FieldProjectID)
+		}
+		if _q.withWorkflow != nil {
+			_spec.Node.AddColumnOnce(apitoken.FieldWorkflowID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

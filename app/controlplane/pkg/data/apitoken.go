@@ -45,7 +45,7 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.Create")
 	defer span.End()
 
@@ -55,7 +55,9 @@ func (r *APITokenRepo) Create(ctx context.Context, name string, description *str
 		SetNillableExpiresAt(expiresAt).
 		SetNillableOrganizationID(organizationID).
 		SetNillableProjectID(projectID).
+		SetNillableWorkflowID(workflowID).
 		SetPolicies(policies).
+		SetIsSystem(isSystem).
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
@@ -72,7 +74,7 @@ func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToke
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.FindByID")
 	defer span.End()
 
-	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id)).WithOrganization().WithProject().Only(ctx)
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id)).WithOrganization().WithProject().WithWorkflow().Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("getting APIToken: %w", err)
 	} else if token == nil {
@@ -86,7 +88,7 @@ func (r *APITokenRepo) FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uu
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.FindByIDInOrg")
 	defer span.End()
 
-	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().Only(ctx)
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.ID(id), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().WithWorkflow().Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound("API token")
@@ -102,7 +104,7 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.FindByNameInOrg")
 	defer span.End()
 
-	token, err := r.data.DB.APIToken.Query().Where(apitoken.Name(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().Only(ctx)
+	token, err := r.data.DB.APIToken.Query().Where(apitoken.Name(name), apitoken.HasOrganizationWith(organization.ID(orgID)), apitoken.RevokedAtIsNil()).WithProject().WithWorkflow().Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound("API token")
@@ -118,7 +120,7 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.List")
 	defer span.End()
 
-	query := r.data.DB.APIToken.Query().WithProject().WithOrganization()
+	query := r.data.DB.APIToken.Query().WithProject().WithWorkflow().WithOrganization()
 
 	if filters == nil {
 		filters = &biz.APITokenListFilters{}
@@ -130,6 +132,10 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 
 	if len(filters.FilterByProjects) > 0 {
 		query = query.Where(apitoken.ProjectIDIn(filters.FilterByProjects...))
+	}
+
+	if !filters.IncludeSystem {
+		query = query.Where(apitoken.IsSystem(false))
 	}
 
 	switch filters.FilterByScope {
@@ -207,6 +213,7 @@ func (r *APITokenRepo) FindInactive(ctx context.Context, orgID uuid.UUID, inacti
 		).
 		WithOrganization().
 		WithProject().
+		WithWorkflow().
 		All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying inactive tokens: %w", err)
@@ -257,6 +264,7 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		LastUsedAt:     toTimePtr(t.LastUsedAt),
 		OrganizationID: t.OrganizationID,
 		Policies:       t.Policies,
+		IsSystem:       t.IsSystem,
 	}
 
 	// Add organization name if present
@@ -267,6 +275,11 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	if p := t.Edges.Project; p != nil {
 		result.ProjectID = biz.ToPtr(p.ID)
 		result.ProjectName = biz.ToPtr(p.Name)
+	}
+
+	if w := t.Edges.Workflow; w != nil {
+		result.WorkflowID = biz.ToPtr(w.ID)
+		result.WorkflowName = biz.ToPtr(w.Name)
 	}
 
 	return result

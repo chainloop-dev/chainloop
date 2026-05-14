@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,9 +49,14 @@ func (APIToken) Fields() []ent.Field {
 		// Tokens can be associated with a project
 		// if this value is not set, the token is an organization level token
 		field.UUID("project_id", uuid.UUID{}).Optional(),
+		// Tokens can additionally be scoped to a specific workflow within a project.
+		// Only meaningful when project_id is also set.
+		field.UUID("workflow_id", uuid.UUID{}).Optional(),
 		// ACL policies for this token. NULL means role-based token (future), non-NULL means ACL mode.
 		// When set, contains the list of policies this token is allowed to perform.
 		field.JSON("policies", []*authz.Policy{}).Optional(),
+		// System tokens are minted by internal code paths and hidden from the public API.
+		field.Bool("is_system").Default(false).Immutable(),
 	}
 }
 
@@ -59,6 +64,7 @@ func (APIToken) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("organization", Organization.Type).Field("organization_id").Ref("api_tokens").Unique(),
 		edge.To("project", Project.Type).Field("project_id").Unique(),
+		edge.To("workflow", Workflow.Type).Field("workflow_id").Unique(),
 	}
 }
 

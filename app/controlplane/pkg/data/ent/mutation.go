@@ -84,11 +84,14 @@ type APITokenMutation struct {
 	last_used_at        *time.Time
 	policies            *[]*authz.Policy
 	appendpolicies      []*authz.Policy
+	is_system           *bool
 	clearedFields       map[string]struct{}
 	organization        *uuid.UUID
 	clearedorganization bool
 	project             *uuid.UUID
 	clearedproject      bool
+	workflow            *uuid.UUID
+	clearedworkflow     bool
 	done                bool
 	oldValue            func(context.Context) (*APIToken, error)
 	predicates          []predicate.APIToken
@@ -564,6 +567,55 @@ func (m *APITokenMutation) ResetProjectID() {
 	delete(m.clearedFields, apitoken.FieldProjectID)
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (m *APITokenMutation) SetWorkflowID(u uuid.UUID) {
+	m.workflow = &u
+}
+
+// WorkflowID returns the value of the "workflow_id" field in the mutation.
+func (m *APITokenMutation) WorkflowID() (r uuid.UUID, exists bool) {
+	v := m.workflow
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowID returns the old "workflow_id" field's value of the APIToken entity.
+// If the APIToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APITokenMutation) OldWorkflowID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowID: %w", err)
+	}
+	return oldValue.WorkflowID, nil
+}
+
+// ClearWorkflowID clears the value of the "workflow_id" field.
+func (m *APITokenMutation) ClearWorkflowID() {
+	m.workflow = nil
+	m.clearedFields[apitoken.FieldWorkflowID] = struct{}{}
+}
+
+// WorkflowIDCleared returns if the "workflow_id" field was cleared in this mutation.
+func (m *APITokenMutation) WorkflowIDCleared() bool {
+	_, ok := m.clearedFields[apitoken.FieldWorkflowID]
+	return ok
+}
+
+// ResetWorkflowID resets all changes to the "workflow_id" field.
+func (m *APITokenMutation) ResetWorkflowID() {
+	m.workflow = nil
+	delete(m.clearedFields, apitoken.FieldWorkflowID)
+}
+
 // SetPolicies sets the "policies" field.
 func (m *APITokenMutation) SetPolicies(a []*authz.Policy) {
 	m.policies = &a
@@ -629,6 +681,42 @@ func (m *APITokenMutation) ResetPolicies() {
 	delete(m.clearedFields, apitoken.FieldPolicies)
 }
 
+// SetIsSystem sets the "is_system" field.
+func (m *APITokenMutation) SetIsSystem(b bool) {
+	m.is_system = &b
+}
+
+// IsSystem returns the value of the "is_system" field in the mutation.
+func (m *APITokenMutation) IsSystem() (r bool, exists bool) {
+	v := m.is_system
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsSystem returns the old "is_system" field's value of the APIToken entity.
+// If the APIToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APITokenMutation) OldIsSystem(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsSystem is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsSystem requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsSystem: %w", err)
+	}
+	return oldValue.IsSystem, nil
+}
+
+// ResetIsSystem resets all changes to the "is_system" field.
+func (m *APITokenMutation) ResetIsSystem() {
+	m.is_system = nil
+}
+
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *APITokenMutation) ClearOrganization() {
 	m.clearedorganization = true
@@ -683,6 +771,33 @@ func (m *APITokenMutation) ResetProject() {
 	m.clearedproject = false
 }
 
+// ClearWorkflow clears the "workflow" edge to the Workflow entity.
+func (m *APITokenMutation) ClearWorkflow() {
+	m.clearedworkflow = true
+	m.clearedFields[apitoken.FieldWorkflowID] = struct{}{}
+}
+
+// WorkflowCleared reports if the "workflow" edge to the Workflow entity was cleared.
+func (m *APITokenMutation) WorkflowCleared() bool {
+	return m.WorkflowIDCleared() || m.clearedworkflow
+}
+
+// WorkflowIDs returns the "workflow" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkflowID instead. It exists only for internal usage by the builders.
+func (m *APITokenMutation) WorkflowIDs() (ids []uuid.UUID) {
+	if id := m.workflow; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkflow resets all changes to the "workflow" edge.
+func (m *APITokenMutation) ResetWorkflow() {
+	m.workflow = nil
+	m.clearedworkflow = false
+}
+
 // Where appends a list predicates to the APITokenMutation builder.
 func (m *APITokenMutation) Where(ps ...predicate.APIToken) {
 	m.predicates = append(m.predicates, ps...)
@@ -717,7 +832,7 @@ func (m *APITokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APITokenMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 11)
 	if m.name != nil {
 		fields = append(fields, apitoken.FieldName)
 	}
@@ -742,8 +857,14 @@ func (m *APITokenMutation) Fields() []string {
 	if m.project != nil {
 		fields = append(fields, apitoken.FieldProjectID)
 	}
+	if m.workflow != nil {
+		fields = append(fields, apitoken.FieldWorkflowID)
+	}
 	if m.policies != nil {
 		fields = append(fields, apitoken.FieldPolicies)
+	}
+	if m.is_system != nil {
+		fields = append(fields, apitoken.FieldIsSystem)
 	}
 	return fields
 }
@@ -769,8 +890,12 @@ func (m *APITokenMutation) Field(name string) (ent.Value, bool) {
 		return m.OrganizationID()
 	case apitoken.FieldProjectID:
 		return m.ProjectID()
+	case apitoken.FieldWorkflowID:
+		return m.WorkflowID()
 	case apitoken.FieldPolicies:
 		return m.Policies()
+	case apitoken.FieldIsSystem:
+		return m.IsSystem()
 	}
 	return nil, false
 }
@@ -796,8 +921,12 @@ func (m *APITokenMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldOrganizationID(ctx)
 	case apitoken.FieldProjectID:
 		return m.OldProjectID(ctx)
+	case apitoken.FieldWorkflowID:
+		return m.OldWorkflowID(ctx)
 	case apitoken.FieldPolicies:
 		return m.OldPolicies(ctx)
+	case apitoken.FieldIsSystem:
+		return m.OldIsSystem(ctx)
 	}
 	return nil, fmt.Errorf("unknown APIToken field %s", name)
 }
@@ -863,12 +992,26 @@ func (m *APITokenMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetProjectID(v)
 		return nil
+	case apitoken.FieldWorkflowID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowID(v)
+		return nil
 	case apitoken.FieldPolicies:
 		v, ok := value.([]*authz.Policy)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPolicies(v)
+		return nil
+	case apitoken.FieldIsSystem:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsSystem(v)
 		return nil
 	}
 	return fmt.Errorf("unknown APIToken field %s", name)
@@ -918,6 +1061,9 @@ func (m *APITokenMutation) ClearedFields() []string {
 	if m.FieldCleared(apitoken.FieldProjectID) {
 		fields = append(fields, apitoken.FieldProjectID)
 	}
+	if m.FieldCleared(apitoken.FieldWorkflowID) {
+		fields = append(fields, apitoken.FieldWorkflowID)
+	}
 	if m.FieldCleared(apitoken.FieldPolicies) {
 		fields = append(fields, apitoken.FieldPolicies)
 	}
@@ -952,6 +1098,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 		return nil
 	case apitoken.FieldProjectID:
 		m.ClearProjectID()
+		return nil
+	case apitoken.FieldWorkflowID:
+		m.ClearWorkflowID()
 		return nil
 	case apitoken.FieldPolicies:
 		m.ClearPolicies()
@@ -988,8 +1137,14 @@ func (m *APITokenMutation) ResetField(name string) error {
 	case apitoken.FieldProjectID:
 		m.ResetProjectID()
 		return nil
+	case apitoken.FieldWorkflowID:
+		m.ResetWorkflowID()
+		return nil
 	case apitoken.FieldPolicies:
 		m.ResetPolicies()
+		return nil
+	case apitoken.FieldIsSystem:
+		m.ResetIsSystem()
 		return nil
 	}
 	return fmt.Errorf("unknown APIToken field %s", name)
@@ -997,12 +1152,15 @@ func (m *APITokenMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *APITokenMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.organization != nil {
 		edges = append(edges, apitoken.EdgeOrganization)
 	}
 	if m.project != nil {
 		edges = append(edges, apitoken.EdgeProject)
+	}
+	if m.workflow != nil {
+		edges = append(edges, apitoken.EdgeWorkflow)
 	}
 	return edges
 }
@@ -1019,13 +1177,17 @@ func (m *APITokenMutation) AddedIDs(name string) []ent.Value {
 		if id := m.project; id != nil {
 			return []ent.Value{*id}
 		}
+	case apitoken.EdgeWorkflow:
+		if id := m.workflow; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *APITokenMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -1037,12 +1199,15 @@ func (m *APITokenMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *APITokenMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedorganization {
 		edges = append(edges, apitoken.EdgeOrganization)
 	}
 	if m.clearedproject {
 		edges = append(edges, apitoken.EdgeProject)
+	}
+	if m.clearedworkflow {
+		edges = append(edges, apitoken.EdgeWorkflow)
 	}
 	return edges
 }
@@ -1055,6 +1220,8 @@ func (m *APITokenMutation) EdgeCleared(name string) bool {
 		return m.clearedorganization
 	case apitoken.EdgeProject:
 		return m.clearedproject
+	case apitoken.EdgeWorkflow:
+		return m.clearedworkflow
 	}
 	return false
 }
@@ -1069,6 +1236,9 @@ func (m *APITokenMutation) ClearEdge(name string) error {
 	case apitoken.EdgeProject:
 		m.ClearProject()
 		return nil
+	case apitoken.EdgeWorkflow:
+		m.ClearWorkflow()
+		return nil
 	}
 	return fmt.Errorf("unknown APIToken unique edge %s", name)
 }
@@ -1082,6 +1252,9 @@ func (m *APITokenMutation) ResetEdge(name string) error {
 		return nil
 	case apitoken.EdgeProject:
 		m.ResetProject()
+		return nil
+	case apitoken.EdgeWorkflow:
+		m.ResetWorkflow()
 		return nil
 	}
 	return fmt.Errorf("unknown APIToken edge %s", name)

@@ -160,6 +160,11 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// System tokens are internal and must not be reachable through the public API.
+	if t.IsSystem {
+		return nil, errors.NotFound("not found", "API token not found")
+	}
+
 	// 1 - Only admins can manage global contracts
 	if t.ProjectID == nil && rbacEnabled(ctx) {
 		return nil, errors.BadRequest("invalid", "you can not manage a global API token")

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -107,6 +107,20 @@ func TestGenerateJWT(t *testing.T) {
 			},
 		},
 		{
+			name: "with workflow",
+			opts: &GenerateJWTOptions{
+				OrgID:        toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				OrgName:      toPtr("org-name"),
+				KeyName:      "key-name",
+				KeyID:        uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				ProjectID:    toPtr(uuid.MustParse("223e4567-e89b-12d3-a456-426614174000")),
+				ProjectName:  toPtr("project-name"),
+				WorkflowID:   toPtr(uuid.MustParse("323e4567-e89b-12d3-a456-426614174000")),
+				WorkflowName: toPtr("workflow-name"),
+				ExpiresAt:    toPtr(time.Now().Add(1 * time.Hour)),
+			},
+		},
+		{
 			name: "instance token - no orgID or orgName",
 			opts: &GenerateJWTOptions{
 				KeyName:   "key-name",
@@ -179,6 +193,14 @@ func TestGenerateJWT(t *testing.T) {
 			} else {
 				assert.Empty(t, claims.ProjectID)
 				assert.Empty(t, claims.ProjectName)
+			}
+
+			if tc.opts.WorkflowID != nil {
+				assert.Equal(t, tc.opts.WorkflowID.String(), claims.WorkflowID)
+				assert.Equal(t, *tc.opts.WorkflowName, claims.WorkflowName)
+			} else {
+				assert.Empty(t, claims.WorkflowID)
+				assert.Empty(t, claims.WorkflowName)
 			}
 
 			if tc.opts.Scope != nil {

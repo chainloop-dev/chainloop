@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,11 +26,13 @@ import (
 type APIToken struct {
 	ID string
 	// Token Name
-	Name        string
-	CreatedAt   *time.Time
-	Token       string
-	ProjectID   *uuid.UUID
-	ProjectName *string
+	Name         string
+	CreatedAt    *time.Time
+	Token        string
+	ProjectID    *uuid.UUID
+	ProjectName  *string
+	WorkflowID   *uuid.UUID
+	WorkflowName *string
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
 	Scope    string

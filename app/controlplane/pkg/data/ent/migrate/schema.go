@@ -19,7 +19,9 @@ var (
 		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
 		{Name: "policies", Type: field.TypeJSON, Nullable: true},
+		{Name: "is_system", Type: field.TypeBool, Default: false},
 		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "workflow_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// APITokensTable holds the schema information for the "api_tokens" table.
@@ -30,13 +32,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_tokens_projects_project",
-				Columns:    []*schema.Column{APITokensColumns[8]},
+				Columns:    []*schema.Column{APITokensColumns[9]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
+				Symbol:     "api_tokens_workflows_workflow",
+				Columns:    []*schema.Column{APITokensColumns[10]},
+				RefColumns: []*schema.Column{WorkflowsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
 				Symbol:     "api_tokens_organizations_api_tokens",
-				Columns:    []*schema.Column{APITokensColumns[9]},
+				Columns:    []*schema.Column{APITokensColumns[11]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -45,7 +53,7 @@ var (
 			{
 				Name:    "apitoken_name_organization_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[9]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NULL",
 				},
@@ -53,7 +61,7 @@ var (
 			{
 				Name:    "apitoken_name_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[8]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
 				},
@@ -979,7 +987,8 @@ var (
 
 func init() {
 	APITokensTable.ForeignKeys[0].RefTable = ProjectsTable
-	APITokensTable.ForeignKeys[1].RefTable = OrganizationsTable
+	APITokensTable.ForeignKeys[1].RefTable = WorkflowsTable
+	APITokensTable.ForeignKeys[2].RefTable = OrganizationsTable
 	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable

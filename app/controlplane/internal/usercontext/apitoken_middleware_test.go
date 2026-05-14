@@ -35,19 +35,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type middlewareTestCase struct {
+	name          string
+	receivedToken bool
+	audience      string
+	tokenExists   bool
+	tokenRevoked  bool
+	orgExist      bool
+	// workflowIDClaim, if non-empty, is the workflow_id claim included on the JWT
+	workflowIDClaim string
+	// tokenWorkflowID, if set, is the workflow_id stored on the DB row
+	tokenWorkflowID *uuid.UUID
+	// the middleware logic got skipped
+	skipped         bool
+	wantErr         bool
+	wantErrContains string
+}
+
 func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
-	testCases := []struct {
-		name          string
-		receivedToken bool
-		audience      string
-		tokenExists   bool
-		tokenRevoked  bool
-		orgExist      bool
-		// the middleware logic got skipped
-		skipped bool
-		wantErr bool
-	}{
+	matchingWorkflowID := uuid.New()
+	otherWorkflowID := uuid.New()
+	testCases := []middlewareTestCase{
 		{
 			name:          "invalid audience", // in this case it gets ignored
 			receivedToken: true,
@@ -90,6 +99,34 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			audience:      apitoken.Audience,
 			wantErr:       true,
 		},
+		{
+			name:            "workflow claim matches DB row",
+			receivedToken:   true,
+			audience:        apitoken.Audience,
+			tokenExists:     true,
+			orgExist:        true,
+			workflowIDClaim: matchingWorkflowID.String(),
+			tokenWorkflowID: &matchingWorkflowID,
+		},
+		{
+			name:            "workflow claim does not match DB row",
+			receivedToken:   true,
+			audience:        apitoken.Audience,
+			tokenExists:     true,
+			workflowIDClaim: matchingWorkflowID.String(),
+			tokenWorkflowID: &otherWorkflowID,
+			wantErr:         true,
+			wantErrContains: "workflow mismatch",
+		},
+		{
+			name:            "workflow claim present but DB row has none",
+			receivedToken:   true,
+			audience:        apitoken.Audience,
+			tokenExists:     true,
+			workflowIDClaim: matchingWorkflowID.String(),
+			wantErr:         true,
+			wantErrContains: "workflow mismatch",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -111,6 +148,9 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 					"aud": tc.audience,
 					"jti": wantToken.ID.String(),
 				}
+				if tc.workflowIDClaim != "" {
+					c["workflow_id"] = tc.workflowIDClaim
+				}
 
 				ctx = jwtmiddleware.NewContext(ctx, c)
 			}
@@ -118,6 +158,9 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			if tc.tokenExists {
 				if tc.tokenRevoked {
 					wantToken.RevokedAt = toTimePtr(time.Now())
+				}
+				if tc.tokenWorkflowID != nil {
+					wantToken.WorkflowID = tc.tokenWorkflowID
 				}
 
 				apiTokenRepo.On("FindByID", mock.Anything, wantToken.ID).Return(wantToken, nil)
@@ -150,6 +193,9 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 
 			if tc.wantErr {
 				assert.Error(t, err)
+				if tc.wantErrContains != "" {
+					assert.Contains(t, err.Error(), tc.wantErrContains)
+				}
 			} else {
 				assert.NoError(t, err)
 			}

@@ -17,6 +17,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
 
@@ -154,6 +155,26 @@ func (_u *APITokenUpdate) ClearProjectID() *APITokenUpdate {
 	return _u
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (_u *APITokenUpdate) SetWorkflowID(v uuid.UUID) *APITokenUpdate {
+	_u.mutation.SetWorkflowID(v)
+	return _u
+}
+
+// SetNillableWorkflowID sets the "workflow_id" field if the given value is not nil.
+func (_u *APITokenUpdate) SetNillableWorkflowID(v *uuid.UUID) *APITokenUpdate {
+	if v != nil {
+		_u.SetWorkflowID(*v)
+	}
+	return _u
+}
+
+// ClearWorkflowID clears the value of the "workflow_id" field.
+func (_u *APITokenUpdate) ClearWorkflowID() *APITokenUpdate {
+	_u.mutation.ClearWorkflowID()
+	return _u
+}
+
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdate) SetPolicies(v []*authz.Policy) *APITokenUpdate {
 	_u.mutation.SetPolicies(v)
@@ -182,6 +203,11 @@ func (_u *APITokenUpdate) SetProject(v *Project) *APITokenUpdate {
 	return _u.SetProjectID(v.ID)
 }
 
+// SetWorkflow sets the "workflow" edge to the Workflow entity.
+func (_u *APITokenUpdate) SetWorkflow(v *Workflow) *APITokenUpdate {
+	return _u.SetWorkflowID(v.ID)
+}
+
 // Mutation returns the APITokenMutation object of the builder.
 func (_u *APITokenUpdate) Mutation() *APITokenMutation {
 	return _u.mutation
@@ -196,6 +222,12 @@ func (_u *APITokenUpdate) ClearOrganization() *APITokenUpdate {
 // ClearProject clears the "project" edge to the Project entity.
 func (_u *APITokenUpdate) ClearProject() *APITokenUpdate {
 	_u.mutation.ClearProject()
+	return _u
+}
+
+// ClearWorkflow clears the "workflow" edge to the Workflow entity.
+func (_u *APITokenUpdate) ClearWorkflow() *APITokenUpdate {
+	_u.mutation.ClearWorkflow()
 	return _u
 }
 
@@ -327,6 +359,35 @@ func (_u *APITokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.WorkflowCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.WorkflowTable,
+			Columns: []string{apitoken.WorkflowColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.WorkflowIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.WorkflowTable,
+			Columns: []string{apitoken.WorkflowColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -476,6 +537,26 @@ func (_u *APITokenUpdateOne) ClearProjectID() *APITokenUpdateOne {
 	return _u
 }
 
+// SetWorkflowID sets the "workflow_id" field.
+func (_u *APITokenUpdateOne) SetWorkflowID(v uuid.UUID) *APITokenUpdateOne {
+	_u.mutation.SetWorkflowID(v)
+	return _u
+}
+
+// SetNillableWorkflowID sets the "workflow_id" field if the given value is not nil.
+func (_u *APITokenUpdateOne) SetNillableWorkflowID(v *uuid.UUID) *APITokenUpdateOne {
+	if v != nil {
+		_u.SetWorkflowID(*v)
+	}
+	return _u
+}
+
+// ClearWorkflowID clears the value of the "workflow_id" field.
+func (_u *APITokenUpdateOne) ClearWorkflowID() *APITokenUpdateOne {
+	_u.mutation.ClearWorkflowID()
+	return _u
+}
+
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdateOne) SetPolicies(v []*authz.Policy) *APITokenUpdateOne {
 	_u.mutation.SetPolicies(v)
@@ -504,6 +585,11 @@ func (_u *APITokenUpdateOne) SetProject(v *Project) *APITokenUpdateOne {
 	return _u.SetProjectID(v.ID)
 }
 
+// SetWorkflow sets the "workflow" edge to the Workflow entity.
+func (_u *APITokenUpdateOne) SetWorkflow(v *Workflow) *APITokenUpdateOne {
+	return _u.SetWorkflowID(v.ID)
+}
+
 // Mutation returns the APITokenMutation object of the builder.
 func (_u *APITokenUpdateOne) Mutation() *APITokenMutation {
 	return _u.mutation
@@ -518,6 +604,12 @@ func (_u *APITokenUpdateOne) ClearOrganization() *APITokenUpdateOne {
 // ClearProject clears the "project" edge to the Project entity.
 func (_u *APITokenUpdateOne) ClearProject() *APITokenUpdateOne {
 	_u.mutation.ClearProject()
+	return _u
+}
+
+// ClearWorkflow clears the "workflow" edge to the Workflow entity.
+func (_u *APITokenUpdateOne) ClearWorkflow() *APITokenUpdateOne {
+	_u.mutation.ClearWorkflow()
 	return _u
 }
 
@@ -679,6 +771,35 @@ func (_u *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.WorkflowCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.WorkflowTable,
+			Columns: []string{apitoken.WorkflowColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.WorkflowIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apitoken.WorkflowTable,
+			Columns: []string{apitoken.WorkflowColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

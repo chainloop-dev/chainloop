@@ -31,12 +31,18 @@ const (
 	FieldOrganizationID = "organization_id"
 	// FieldProjectID holds the string denoting the project_id field in the database.
 	FieldProjectID = "project_id"
+	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
+	FieldWorkflowID = "workflow_id"
 	// FieldPolicies holds the string denoting the policies field in the database.
 	FieldPolicies = "policies"
+	// FieldIsSystem holds the string denoting the is_system field in the database.
+	FieldIsSystem = "is_system"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeProject holds the string denoting the project edge name in mutations.
 	EdgeProject = "project"
+	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
+	EdgeWorkflow = "workflow"
 	// Table holds the table name of the apitoken in the database.
 	Table = "api_tokens"
 	// OrganizationTable is the table that holds the organization relation/edge.
@@ -53,6 +59,13 @@ const (
 	ProjectInverseTable = "projects"
 	// ProjectColumn is the table column denoting the project relation/edge.
 	ProjectColumn = "project_id"
+	// WorkflowTable is the table that holds the workflow relation/edge.
+	WorkflowTable = "api_tokens"
+	// WorkflowInverseTable is the table name for the Workflow entity.
+	// It exists in this package in order to avoid circular dependency with the "workflow" package.
+	WorkflowInverseTable = "workflows"
+	// WorkflowColumn is the table column denoting the workflow relation/edge.
+	WorkflowColumn = "workflow_id"
 )
 
 // Columns holds all SQL columns for apitoken fields.
@@ -66,7 +79,9 @@ var Columns = []string{
 	FieldLastUsedAt,
 	FieldOrganizationID,
 	FieldProjectID,
+	FieldWorkflowID,
 	FieldPolicies,
+	FieldIsSystem,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -82,6 +97,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultIsSystem holds the default value on creation for the "is_system" field.
+	DefaultIsSystem bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -134,6 +151,16 @@ func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
 }
 
+// ByWorkflowID orders the results by the workflow_id field.
+func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
+}
+
+// ByIsSystem orders the results by the is_system field.
+func ByIsSystem(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsSystem, opts...).ToFunc()
+}
+
 // ByOrganizationField orders the results by organization field.
 func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -145,6 +172,13 @@ func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption 
 func ByProjectField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newProjectStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByWorkflowField orders the results by workflow field.
+func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newOrganizationStep() *sqlgraph.Step {
@@ -159,5 +193,12 @@ func newProjectStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ProjectInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, ProjectTable, ProjectColumn),
+	)
+}
+func newWorkflowStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, WorkflowTable, WorkflowColumn),
 	)
 }

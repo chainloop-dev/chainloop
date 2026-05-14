@@ -506,6 +506,22 @@ func (c *APITokenClient) QueryProject(_m *APIToken) *ProjectQuery {
 	return query
 }
 
+// QueryWorkflow queries the workflow edge of a APIToken.
+func (c *APITokenClient) QueryWorkflow(_m *APIToken) *WorkflowQuery {
+	query := (&WorkflowClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apitoken.Table, apitoken.FieldID, id),
+			sqlgraph.To(workflow.Table, workflow.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, apitoken.WorkflowTable, apitoken.WorkflowColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *APITokenClient) Hooks() []Hook {
 	return c.hooks.APIToken

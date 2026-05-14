@@ -42,8 +42,8 @@ func (_m *APITokenRepo) EXPECT() *APITokenRepo_Expecter {
 }
 
 // Create provides a mock function for the type APITokenRepo
-func (_mock *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*biz.APIToken, error) {
-	ret := _mock.Called(ctx, name, description, expiresAt, organizationID, projectID, policies)
+func (_mock *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error) {
+	ret := _mock.Called(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -51,18 +51,18 @@ func (_mock *APITokenRepo) Create(ctx context.Context, name string, description 
 
 	var r0 *biz.APIToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, []*authz.Policy) (*biz.APIToken, error)); ok {
-		return returnFunc(ctx, name, description, expiresAt, organizationID, projectID, policies)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, *uuid.UUID, []*authz.Policy, bool) (*biz.APIToken, error)); ok {
+		return returnFunc(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, []*authz.Policy) *biz.APIToken); ok {
-		r0 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID, policies)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, *uuid.UUID, []*authz.Policy, bool) *biz.APIToken); ok {
+		r0 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.APIToken)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, []*authz.Policy) error); ok {
-		r1 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID, policies)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, *uuid.UUID, []*authz.Policy, bool) error); ok {
+		r1 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -81,12 +81,14 @@ type APITokenRepo_Create_Call struct {
 //   - expiresAt *time.Time
 //   - organizationID *uuid.UUID
 //   - projectID *uuid.UUID
+//   - workflowID *uuid.UUID
 //   - policies []*authz.Policy
-func (_e *APITokenRepo_Expecter) Create(ctx interface{}, name interface{}, description interface{}, expiresAt interface{}, organizationID interface{}, projectID interface{}, policies interface{}) *APITokenRepo_Create_Call {
-	return &APITokenRepo_Create_Call{Call: _e.mock.On("Create", ctx, name, description, expiresAt, organizationID, projectID, policies)}
+//   - isSystem bool
+func (_e *APITokenRepo_Expecter) Create(ctx interface{}, name interface{}, description interface{}, expiresAt interface{}, organizationID interface{}, projectID interface{}, workflowID interface{}, policies interface{}, isSystem interface{}) *APITokenRepo_Create_Call {
+	return &APITokenRepo_Create_Call{Call: _e.mock.On("Create", ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)}
 }
 
-func (_c *APITokenRepo_Create_Call) Run(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy)) *APITokenRepo_Create_Call {
+func (_c *APITokenRepo_Create_Call) Run(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool)) *APITokenRepo_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -112,9 +114,17 @@ func (_c *APITokenRepo_Create_Call) Run(run func(ctx context.Context, name strin
 		if args[5] != nil {
 			arg5 = args[5].(*uuid.UUID)
 		}
-		var arg6 []*authz.Policy
+		var arg6 *uuid.UUID
 		if args[6] != nil {
-			arg6 = args[6].([]*authz.Policy)
+			arg6 = args[6].(*uuid.UUID)
+		}
+		var arg7 []*authz.Policy
+		if args[7] != nil {
+			arg7 = args[7].([]*authz.Policy)
+		}
+		var arg8 bool
+		if args[8] != nil {
+			arg8 = args[8].(bool)
 		}
 		run(
 			arg0,
@@ -124,6 +134,8 @@ func (_c *APITokenRepo_Create_Call) Run(run func(ctx context.Context, name strin
 			arg4,
 			arg5,
 			arg6,
+			arg7,
+			arg8,
 		)
 	})
 	return _c
@@ -134,7 +146,7 @@ func (_c *APITokenRepo_Create_Call) Return(aPIToken *biz.APIToken, err error) *A
 	return _c
 }
 
-func (_c *APITokenRepo_Create_Call) RunAndReturn(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, policies []*authz.Policy) (*biz.APIToken, error)) *APITokenRepo_Create_Call {
+func (_c *APITokenRepo_Create_Call) RunAndReturn(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error)) *APITokenRepo_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

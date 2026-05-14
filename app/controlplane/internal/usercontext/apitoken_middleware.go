@@ -80,10 +80,12 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 				// Project ID is optional
 				projectID, _ := genericClaims["project_id"].(string)
 
+				workflowID, _ := genericClaims["workflow_id"].(string)
+
 				// Scope is optional
 				scope, _ := genericClaims["scope"].(string)
 
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, scope)
+				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, workflowID, scope)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
@@ -132,7 +134,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.Scope)
+			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.WorkflowID, claims.Scope)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
@@ -169,7 +171,7 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 }
 
 // Set the current organization and API-Token in the context
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, scope string) (context.Context, error) {
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, workflowIDInClaim, scope string) (context.Context, error) {
 	if tokenID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
@@ -185,6 +187,13 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	// Make sure that the projectID that comes in the token claim matches the one in the DB
 	if projectIDInClaim != "" && token.ProjectID.String() != projectIDInClaim {
 		return nil, errors.New("API token project mismatch")
+	}
+
+	// Same defense in depth for the workflow claim
+	if workflowIDInClaim != "" {
+		if token.WorkflowID == nil || token.WorkflowID.String() != workflowIDInClaim {
+			return nil, errors.New("API token workflow mismatch")
+		}
 	}
 
 	// Note: Expiration time does not need to be checked because that's done at the JWT
@@ -224,14 +233,16 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
-		ID:          token.ID.String(),
-		Name:        token.Name,
-		CreatedAt:   token.CreatedAt,
-		Token:       token.JWT,
-		ProjectID:   token.ProjectID,
-		ProjectName: token.ProjectName,
-		Policies:    token.Policies,
-		Scope:       scope,
+		ID:           token.ID.String(),
+		Name:         token.Name,
+		CreatedAt:    token.CreatedAt,
+		Token:        token.JWT,
+		ProjectID:    token.ProjectID,
+		ProjectName:  token.ProjectName,
+		WorkflowID:   token.WorkflowID,
+		WorkflowName: token.WorkflowName,
+		Policies:     token.Policies,
+		Scope:        scope,
 	})
 
 	// Set the authorization subject that will be used to check the policies
