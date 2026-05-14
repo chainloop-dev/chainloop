@@ -38,7 +38,7 @@ type DependencyTrack struct {
 type registrationRequest struct {
 	// The URL of the Dependency-Track instance
 	InstanceURI string `json:"instanceURI" jsonschema:"format=uri,description=The URL of the Dependency-Track instance"`
-	APIKey      string `json:"apiKey" jsonschema:"description=The API key to use for authentication"`
+	APIKey      string `json:"apiKey" jsonschema:"format=password,description=The API key to use for authentication"`
 	// Support the option to automatically create projects if requested (optional)
 	AllowAutoCreate bool `json:"allowAutoCreate,omitempty" jsonschema:"description=Support of creating projects on demand"`
 }
