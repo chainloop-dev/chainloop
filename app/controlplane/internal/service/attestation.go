@@ -494,7 +494,13 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	// Return the backend information and associated credentials (if applicable)
 	resp := &cpAPI.AttestationServiceGetUploadCredsResponse_Result{Backend: bizCASBackendToPb(backend)}
 	if backend.SecretName != "" {
-		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Uploader, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID.String()}
+		// OrgID comes from the authenticated robot account (the caller),
+		// not the backend's owner. Even though GetByIDInOrgOrPublic above
+		// already scopes the lookup to robotAccount.OrgID, the security
+		// invariant for managed CAS requires the JWT org-id claim to
+		// originate from the caller's identity rather than the row we
+		// happened to resolve.
+		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Uploader, MaxBytes: backend.Limits.MaxBytes, OrgID: robotAccount.OrgID}
 		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
