@@ -56,9 +56,9 @@ const (
 	// default
 	shortLivedDuration = 10 * time.Second
 	// opt-in
-	longLivedDuration = 24 * time.Hour
+	longLivedDuration = 7 * 24 * time.Hour
 	// dev only
-	devUserDuration = 30 * longLivedDuration
+	devUserDuration = 30 * 24 * time.Hour
 )
 
 type oauthResp struct {
