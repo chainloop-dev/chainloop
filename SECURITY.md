@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Chainloop releases is in a pre-1.0 state, we commit to add security patches to latest versions.
+Chainloop is in a 1.x state. Security patches are applied to the latest 1.x versions.
 
 ## Reporting a Vulnerability
 
