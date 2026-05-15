@@ -49,7 +49,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.40.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/zap v1.27.1
-	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/term v0.42.0
 	google.golang.org/api v0.272.0
@@ -72,7 +72,7 @@ require (
 	github.com/casbin/casbin/v2 v2.103.0
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/extism/go-sdk v1.7.1
-	github.com/go-git/go-git/v6 v6.0.0-alpha.2 // recommended path: https://github.com/go-git/go-git/issues/1943#issuecomment-4232656963
+	github.com/go-git/go-git/v6 v6.0.0-alpha.3 // recommended path: https://github.com/go-git/go-git/issues/1943#issuecomment-4232656963
 	github.com/google/go-github/v66 v66.0.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.3
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
@@ -193,8 +193,8 @@ require (
 	github.com/go-chi/chi/v5 v5.2.5 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
-	github.com/go-git/go-billy/v5 v5.8.0 // indirect
-	github.com/go-git/go-billy/v6 v6.0.0-20260328065524-593ae452e14d // indirect
+	github.com/go-git/go-billy/v5 v5.9.0 // indirect
+	github.com/go-git/go-billy/v6 v6.0.0-alpha.1 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -268,7 +268,7 @@ require (
 	github.com/package-url/packageurl-go v0.1.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
-	github.com/pjbgf/sha1cd v0.5.0 // indirect
+	github.com/pjbgf/sha1cd v0.6.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/xattr v0.4.9 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
@@ -366,7 +366,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fsouza/fake-gcs-server v1.47.6
-	github.com/go-git/go-git/v5 v5.18.0 // indirect
+	github.com/go-git/go-git/v5 v5.19.0 // indirect
 	github.com/go-kratos/aegis v0.2.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -454,13 +454,13 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.50.0
-	golang.org/x/mod v0.34.0 // indirect
+	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.43.0 // indirect
+	golang.org/x/tools v0.44.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260401024825-9d38bb4040a9 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.1 // indirect
