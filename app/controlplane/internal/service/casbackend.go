@@ -193,13 +193,25 @@ func (s *CASBackendService) Revalidate(ctx context.Context, req *pb.CASBackendSe
 }
 
 func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
+	// Managed backends hide both Location (AP ARN) and Provider
+	// (AWS-S3-ACCESS-POINT) from API clients — both are implementation
+	// details that tenants don't need to know. The DB and biz layer
+	// still carry the real values; only the wire format is sanitized.
+	// See biz.CASBackendManagedLocationDisplay /
+	// biz.CASBackendManagedProviderDisplay.
+	location := in.Location
+	provider := string(in.Provider)
+	if in.Managed {
+		location = biz.CASBackendManagedLocationDisplay
+		provider = biz.CASBackendManagedProviderDisplay
+	}
 	r := &pb.CASBackendItem{
-		Id: in.ID.String(), Location: in.Location, Description: in.Description,
+		Id: in.ID.String(), Location: location, Description: in.Description,
 		Name:        in.Name,
 		CreatedAt:   timestamppb.New(*in.CreatedAt),
 		UpdatedAt:   timestamppb.New(*in.UpdatedAt),
 		ValidatedAt: timestamppb.New(*in.ValidatedAt),
-		Provider:    string(in.Provider),
+		Provider:    provider,
 		Default:     in.Default,
 		Fallback:    in.Fallback,
 		IsInline:    in.Inline,
