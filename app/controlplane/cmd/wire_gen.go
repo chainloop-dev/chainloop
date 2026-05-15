@@ -480,9 +480,10 @@ func newLoaderOptions(in *conf.BlobBackends, l log.Logger) *loader.Options {
 	}
 	ap := in.GetS3AccessPoint()
 	opts.S3AccessPoint = &s3accesspoint.Config{
-		BaseRoleARN:     ap.GetBaseRoleArn(),
-		Region:          ap.GetRegion(),
-		SessionDuration: ap.GetSessionDuration().AsDuration(),
+		BaseRoleARN:                  ap.GetBaseRoleArn(),
+		Region:                       ap.GetRegion(),
+		SessionDuration:              ap.GetSessionDuration().AsDuration(),
+		DevModeUseAmbientCredentials: ap.GetDevModeUseAmbientCredentials(),
 	}
 	return opts
 }

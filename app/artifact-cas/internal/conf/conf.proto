@@ -94,6 +94,9 @@ message BlobBackends {
     string base_role_arn = 1;
     string region = 2;
     google.protobuf.Duration session_duration = 3;
+    // DEV ONLY — see controlplane proto for full doc. Bypasses
+    // sts:AssumeRole and uses the pod's ambient AWS identity directly.
+    bool dev_mode_use_ambient_credentials = 4;
   }
 }
 

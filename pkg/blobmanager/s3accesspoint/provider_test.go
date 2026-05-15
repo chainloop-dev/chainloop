@@ -32,7 +32,6 @@ func validCreds() Credentials {
 	return Credentials{
 		AccessPointARN: "arn:aws:s3:us-east-1:123456789012:accesspoint/chainloop-org-abc",
 		Region:         "us-east-1",
-		KeyPrefix:      "org/abc",
 	}
 }
 
@@ -78,21 +77,6 @@ func TestCredentials_Validate(t *testing.T) {
 			name:    "not an AP arn",
 			mutate:  func(c *Credentials) { c.AccessPointARN = "arn:aws:s3:::some-bucket" },
 			wantErr: "not an S3 access point ARN",
-		},
-		{
-			name:    "missing prefix",
-			mutate:  func(c *Credentials) { c.KeyPrefix = "" },
-			wantErr: "missing key_prefix",
-		},
-		{
-			name:    "prefix leading slash",
-			mutate:  func(c *Credentials) { c.KeyPrefix = "/org/abc" },
-			wantErr: "must not start or end with",
-		},
-		{
-			name:    "prefix trailing slash",
-			mutate:  func(c *Credentials) { c.KeyPrefix = "org/abc/" },
-			wantErr: "must not start or end with",
 		},
 	}
 	for _, tc := range tests {
@@ -145,7 +129,7 @@ func TestValidateAndExtractCredentials(t *testing.T) {
 			creds, ok := out.(*Credentials)
 			require.True(t, ok, "expected *Credentials, got %T", out)
 			assert.Equal(t, good.AccessPointARN, creds.AccessPointARN)
-			assert.Equal(t, good.KeyPrefix, creds.KeyPrefix)
+			assert.Equal(t, good.Region, creds.Region)
 		})
 	}
 }
@@ -189,6 +173,25 @@ func TestNewBackendProvider_FailsOnBadConfig(t *testing.T) {
 
 	_, err = NewBackendProvider(&Config{BaseRoleARN: "arn:aws:iam::1:role/r", Region: "us-east-1"}, nil)
 	assert.ErrorContains(t, err, "credentials reader is required")
+}
+
+// Dev mode relaxes the base_role_arn requirement because nothing on the
+// hot path will actually call sts:AssumeRole. Region is still required —
+// the SDK config needs it to construct any S3 client at all.
+func TestConfig_Validate_DevModeRelaxesBaseRoleARN(t *testing.T) {
+	t.Parallel()
+
+	// Without dev mode: empty base role rejected.
+	err := (&Config{Region: "us-east-1"}).Validate()
+	require.ErrorContains(t, err, "base_role_arn is required")
+
+	// With dev mode: empty base role accepted.
+	err = (&Config{Region: "us-east-1", DevModeUseAmbientCredentials: true}).Validate()
+	require.NoError(t, err)
+
+	// Region is still mandatory in dev mode.
+	err = (&Config{DevModeUseAmbientCredentials: true}).Validate()
+	require.ErrorContains(t, err, "region is required")
 }
 
 // stubReader is the minimal credentials.Reader implementation needed to

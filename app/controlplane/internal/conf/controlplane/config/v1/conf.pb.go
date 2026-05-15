@@ -1347,15 +1347,22 @@ type BlobBackends_S3AccessPoint struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// IAM role the controlplane / artifact-cas pod assumes per request
 	// via sts:AssumeRole. Must allow s3:{Get,Put,Delete}Object on every
-	// access point in the account.
+	// access point in the account. Required in production; may be empty
+	// when dev_mode_use_ambient_credentials is true.
 	BaseRoleArn string `protobuf:"bytes,1,opt,name=base_role_arn,json=baseRoleArn,proto3" json:"base_role_arn,omitempty"`
 	// Default AWS region for the underlying bucket and access points.
 	// Individual managed CASBackend rows can override per-tenant.
 	Region string `protobuf:"bytes,2,opt,name=region,proto3" json:"region,omitempty"`
-	// STS token lifetime. Defaults to 1h when unset.
+	// STS token lifetime. Defaults to 1h when unset. Ignored in dev mode.
 	SessionDuration *durationpb.Duration `protobuf:"bytes,3,opt,name=session_duration,json=sessionDuration,proto3" json:"session_duration,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// dev_mode_use_ambient_credentials short-circuits sts:AssumeRole and
+	// routes S3 calls through whatever ambient AWS identity the SDK's
+	// default credential chain produced (env vars, ~/.aws/credentials,
+	// instance profile, IRSA, …). DEV ONLY — this bypasses per-tenant
+	// isolation and MUST NOT be set in multi-tenant deployments.
+	DevModeUseAmbientCredentials bool `protobuf:"varint,4,opt,name=dev_mode_use_ambient_credentials,json=devModeUseAmbientCredentials,proto3" json:"dev_mode_use_ambient_credentials,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *BlobBackends_S3AccessPoint) Reset() {
@@ -1407,6 +1414,13 @@ func (x *BlobBackends_S3AccessPoint) GetSessionDuration() *durationpb.Duration {
 		return x.SessionDuration
 	}
 	return nil
+}
+
+func (x *BlobBackends_S3AccessPoint) GetDevModeUseAmbientCredentials() bool {
+	if x != nil {
+		return x.DevModeUseAmbientCredentials
+	}
+	return false
 }
 
 type Server_HTTP struct {
@@ -1969,13 +1983,14 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x03uri\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03uri\x12\x1f\n" +
 	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x05token\x12\x1a\n" +
 	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
-	"\x0eauthentication\"\x90\x02\n" +
+	"\x0eauthentication\"\xcf\x02\n" +
 	"\fBlobBackends\x12Z\n" +
-	"\x0fs3_access_point\x18\x01 \x01(\v22.controlplane.config.v1.BlobBackends.S3AccessPointR\rs3AccessPoint\x1a\xa3\x01\n" +
-	"\rS3AccessPoint\x12+\n" +
-	"\rbase_role_arn\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vbaseRoleArn\x12\x1f\n" +
+	"\x0fs3_access_point\x18\x01 \x01(\v22.controlplane.config.v1.BlobBackends.S3AccessPointR\rs3AccessPoint\x1a\xe2\x01\n" +
+	"\rS3AccessPoint\x12\"\n" +
+	"\rbase_role_arn\x18\x01 \x01(\tR\vbaseRoleArn\x12\x1f\n" +
 	"\x06region\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06region\x12D\n" +
-	"\x10session_duration\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x0fsessionDuration\"6\n" +
+	"\x10session_duration\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x0fsessionDuration\x12F\n" +
+	" dev_mode_use_ambient_credentials\x18\x04 \x01(\bR\x1cdevModeUseAmbientCredentials\"6\n" +
 	"\fAttestations\x12&\n" +
 	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\"V\n" +
 	"\x1eOperationAuthorizationProvider\x12\x1a\n" +

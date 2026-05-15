@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,31 +68,30 @@ func TestBackend_FailClosedWithoutRequestingOrg(t *testing.T) {
 	})
 }
 
-// TestBackend_ResourceNameUsesPerTenantPrefix verifies the bucket-layer
+// TestBackend_KeyDerivedFromRequestingOrg verifies the bucket-layer
 // isolation property: every object the backend reads or writes is
-// addressed under the tenant's KeyPrefix. Two tenants pushing the same
-// blob digest must produce distinct keys at the underlying bucket level.
-//
-// Uses stub Backend values directly because resourceName depends only
-// on the creds field — no need to spin up SDK clients.
-func TestBackend_ResourceNameUsesPerTenantPrefix(t *testing.T) {
+// addressed under a prefix derived from the requesting org in ctx.
+// One Backend invoked with two different ctx-orgs must produce distinct
+// keys for the same digest, and an empty ctx must error out.
+func TestBackend_KeyDerivedFromRequestingOrg(t *testing.T) {
 	t.Parallel()
 
-	bA := &Backend{creds: &Credentials{
+	b := &Backend{creds: &Credentials{
 		AccessPointARN: "arn:aws:s3:us-east-1:111:accesspoint/ap-a",
-		KeyPrefix:      "org/A",
 	}}
-	bB := &Backend{creds: &Credentials{
-		AccessPointARN: "arn:aws:s3:us-east-1:111:accesspoint/ap-b",
-		KeyPrefix:      "org/B",
-	}}
-
 	digest := "deadbeef"
-	keyA := bA.resourceName(digest)
-	keyB := bB.resourceName(digest)
-	assert.Equal(t, "org/A/sha256:deadbeef", keyA)
-	assert.Equal(t, "org/B/sha256:deadbeef", keyB)
+
+	keyA, err := b.keyFor(WithRequestingOrg(context.Background(), "org-A"), digest)
+	require.NoError(t, err)
+	keyB, err := b.keyFor(WithRequestingOrg(context.Background(), "org-B"), digest)
+	require.NoError(t, err)
+
+	assert.Equal(t, "org-A/sha256:deadbeef", keyA)
+	assert.Equal(t, "org-B/sha256:deadbeef", keyB)
 	assert.NotEqual(t, keyA, keyB, "same digest must produce distinct keys across tenants")
+
+	_, err = b.keyFor(context.Background(), digest)
+	require.ErrorIs(t, err, ErrMissingRequestingOrg)
 }
 
 // TestSessionPolicy_ScopesToTenantPrefix locks down the session-policy
@@ -120,6 +120,57 @@ func TestRoleSessionName_DerivedFromOrg(t *testing.T) {
 	assert.Equal(t, "cas-abc-123", roleSessionName("abc-123"))
 }
 
+// TestSessionCredentialsProvider_DevModeShortCircuit verifies that the
+// dev-mode bypass calls the ambient credentials provider instead of STS,
+// and crucially that the missing-org fail-closed check still fires even
+// in dev mode — so developers don't accidentally let an obvious bug
+// through.
+func TestSessionCredentialsProvider_DevModeShortCircuit(t *testing.T) {
+	t.Parallel()
+
+	ambient := &countingCredsProvider{
+		creds: aws.Credentials{AccessKeyID: "AKDEV", SecretAccessKey: "secret", Source: "test"},
+	}
+	p := &sessionCredentialsProvider{
+		ambientCreds:          ambient,
+		useAmbientForRetrieve: true,
+		creds: &Credentials{
+			AccessPointARN: "arn:aws:s3:us-east-1:111:accesspoint/ap-a",
+		},
+		// stsClient deliberately nil; if dev mode short-circuits properly
+		// it should never be touched. A non-nil pointer here would mask
+		// regressions.
+	}
+
+	t.Run("returns ambient credentials when org is set", func(t *testing.T) {
+		ctx := WithRequestingOrg(context.Background(), "org-A")
+		got, err := p.Retrieve(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, "AKDEV", got.AccessKeyID)
+		assert.Equal(t, 1, ambient.calls)
+	})
+
+	t.Run("still fails closed without requesting org", func(t *testing.T) {
+		ambient.calls = 0
+		_, err := p.Retrieve(context.Background())
+		require.ErrorIs(t, err, ErrMissingRequestingOrg)
+		assert.Equal(t, 0, ambient.calls, "ambient provider must not be hit when org is missing")
+	})
+}
+
+// countingCredsProvider is the minimum aws.CredentialsProvider needed to
+// observe whether the dev-mode short-circuit invoked it. Used in the
+// dev-mode test above and nowhere else.
+type countingCredsProvider struct {
+	creds aws.Credentials
+	calls int
+}
+
+func (c *countingCredsProvider) Retrieve(_ context.Context) (aws.Credentials, error) {
+	c.calls++
+	return c.creds, nil
+}
+
 // --- helpers -----------------------------------------------------------
 
 // newTestBackend constructs a fully wired *Backend that uses static dummy
@@ -131,7 +182,6 @@ func newTestBackend(t *testing.T) *Backend {
 	t.Helper()
 	return backendForCreds(t, &Credentials{
 		AccessPointARN: "arn:aws:s3:us-east-1:123456789012:accesspoint/chainloop-org-abc",
-		KeyPrefix:      "org/abc",
 	})
 }
 

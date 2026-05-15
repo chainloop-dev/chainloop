@@ -703,8 +703,11 @@ type BlobBackends_S3AccessPoint struct {
 	BaseRoleArn     string                 `protobuf:"bytes,1,opt,name=base_role_arn,json=baseRoleArn,proto3" json:"base_role_arn,omitempty"`
 	Region          string                 `protobuf:"bytes,2,opt,name=region,proto3" json:"region,omitempty"`
 	SessionDuration *durationpb.Duration   `protobuf:"bytes,3,opt,name=session_duration,json=sessionDuration,proto3" json:"session_duration,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// DEV ONLY — see controlplane proto for full doc. Bypasses
+	// sts:AssumeRole and uses the pod's ambient AWS identity directly.
+	DevModeUseAmbientCredentials bool `protobuf:"varint,4,opt,name=dev_mode_use_ambient_credentials,json=devModeUseAmbientCredentials,proto3" json:"dev_mode_use_ambient_credentials,omitempty"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *BlobBackends_S3AccessPoint) Reset() {
@@ -758,6 +761,13 @@ func (x *BlobBackends_S3AccessPoint) GetSessionDuration() *durationpb.Duration {
 	return nil
 }
 
+func (x *BlobBackends_S3AccessPoint) GetDevModeUseAmbientCredentials() bool {
+	if x != nil {
+		return x.DevModeUseAmbientCredentials
+	}
+	return false
+}
+
 var File_conf_proto protoreflect.FileDescriptor
 
 const file_conf_proto_rawDesc = "" +
@@ -802,13 +812,14 @@ const file_conf_proto_rawDesc = "" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x123\n" +
 	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12*\n" +
 	"\n" +
-	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfig\"\xe7\x01\n" +
+	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfig\"\xaf\x02\n" +
 	"\fBlobBackends\x12C\n" +
-	"\x0fs3_access_point\x18\x01 \x01(\v2\x1b.BlobBackends.S3AccessPointR\rs3AccessPoint\x1a\x91\x01\n" +
+	"\x0fs3_access_point\x18\x01 \x01(\v2\x1b.BlobBackends.S3AccessPointR\rs3AccessPoint\x1a\xd9\x01\n" +
 	"\rS3AccessPoint\x12\"\n" +
 	"\rbase_role_arn\x18\x01 \x01(\tR\vbaseRoleArn\x12\x16\n" +
 	"\x06region\x18\x02 \x01(\tR\x06region\x12D\n" +
-	"\x10session_duration\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x0fsessionDuration\"t\n" +
+	"\x10session_duration\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x0fsessionDuration\x12F\n" +
+	" dev_mode_use_ambient_credentials\x18\x04 \x01(\bR\x1cdevModeUseAmbientCredentials\"t\n" +
 	"\x04Auth\x12D\n" +
 	"\x1drobot_account_public_key_path\x18\x01 \x01(\tB\x02\x18\x01R\x19robotAccountPublicKeyPath\x12&\n" +
 	"\x0fpublic_key_path\x18\x02 \x01(\tR\rpublicKeyPathBHZFgithub.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf;confb\x06proto3"

@@ -25,9 +25,12 @@
 //     resource policy enforces a StringEquals on aws:userid so that a
 //     session minted for org A cannot read or write to org B's AP — even if
 //     org A's secret blob has been tampered with to point at org B's ARN.
-//  3. A KeyPrefix that namespaces every object under <KeyPrefix>/sha256:<digest>
-//     and is also referenced in the session policy's Resource field, so that
-//     no tenant's request can address keys outside its own prefix.
+//  3. A per-tenant key prefix derived from the requesting org UUID: every
+//     object is keyed as <orgUUID>/sha256:<digest> and the AssumeRole
+//     session policy's Resource is scoped to ${apARN}/object/<orgUUID>/*.
+//     The prefix shares its source of truth with the session name, so a
+//     tampered secret cannot reroute a tenant's writes into a different
+//     namespace.
 //
 // The session name MUST come from the request context, not from the secret
 // blob: a secrets-store compromise alone must not let an attacker reroute
@@ -39,6 +42,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -67,25 +71,48 @@ type Config struct {
 	// allow s3:{Get,Put,Delete,Head}Object against every access point in
 	// the account; the per-call session policy narrows that down to one
 	// AP + one prefix.
+	//
+	// Required in production. Ignored (and may be empty) when
+	// DevModeUseAmbientCredentials is true.
 	BaseRoleARN string
 	// Region is the default region for the underlying bucket and the
 	// access points. Individual managed rows may override this via
 	// Credentials.Region.
 	Region string
 	// SessionDuration is the STS token lifetime. Defaults to
-	// DefaultSessionDuration when zero.
+	// DefaultSessionDuration when zero. Ignored when
+	// DevModeUseAmbientCredentials is true.
 	SessionDuration time.Duration
+
+	// DevModeUseAmbientCredentials short-circuits sts:AssumeRole and
+	// routes S3 calls through whatever ambient AWS identity the SDK's
+	// default credential chain produced (env vars, ~/.aws/credentials,
+	// instance profile, IRSA, …). The fail-closed check on a missing
+	// requesting-org context is still enforced so callers that forget
+	// WithRequestingOrg get the same error locally as they would in
+	// production.
+	//
+	// DEV ONLY. This bypasses the per-tenant isolation guarantees that
+	// the AssumeRole + session-policy + AP-policy chain provides; objects
+	// addressed via this backend are limited only by whatever the
+	// developer's IAM identity allows. NEVER set this in a multi-tenant
+	// deployment.
+	DevModeUseAmbientCredentials bool
 }
 
 func (c *Config) Validate() error {
 	if c == nil {
 		return errors.New("s3accesspoint: nil config")
 	}
-	if c.BaseRoleARN == "" {
-		return errors.New("s3accesspoint: base_role_arn is required")
-	}
-	if !strings.HasPrefix(c.BaseRoleARN, "arn:aws:iam::") {
-		return fmt.Errorf("s3accesspoint: base_role_arn %q is not a valid IAM role ARN", c.BaseRoleARN)
+	// Base role is only required when we actually plan to assume it.
+	// In dev mode the SDK's default credential chain stands in for it.
+	if !c.DevModeUseAmbientCredentials {
+		if c.BaseRoleARN == "" {
+			return errors.New("s3accesspoint: base_role_arn is required (or set dev_mode_use_ambient_credentials in dev)")
+		}
+		if !strings.HasPrefix(c.BaseRoleARN, "arn:aws:iam::") {
+			return fmt.Errorf("s3accesspoint: base_role_arn %q is not a valid IAM role ARN", c.BaseRoleARN)
+		}
 	}
 	if c.Region == "" {
 		return errors.New("s3accesspoint: region is required")
@@ -96,6 +123,14 @@ func (c *Config) Validate() error {
 // Credentials is the per-tenant blob stashed in the secrets manager under
 // CASBackend.SecretName. Despite the name it carries no access keys — only
 // tenant-identifying coordinates used to construct a scoped S3 client.
+//
+// The per-tenant key prefix is intentionally NOT a field here: it's
+// derived at request time from the authenticated requesting org carried
+// in ctx via WithRequestingOrg. Both the bucket-layer key namespace and
+// the AssumeRole session-name binding therefore come from the same
+// untamperable source, so a secrets-store compromise that rewrites this
+// blob still can't reroute a tenant's writes into another tenant's
+// namespace.
 //
 // The platform reconciler is responsible for writing this blob in lockstep
 // with the AWS-side AP creation and policy.
@@ -108,12 +143,6 @@ type Credentials struct {
 	// Region overrides Config.Region for this tenant. Optional; useful if
 	// the deployment grows multi-region without rolling a new config.
 	Region string
-	// KeyPrefix is the per-tenant key namespace inside the underlying
-	// bucket, e.g. "org/<uuid>". The provider keys every object under
-	// "<KeyPrefix>/sha256:<digest>" and the session policy's Resource is
-	// scoped to "${apARN}/object/${KeyPrefix}/*". The AP's resource policy
-	// is expected to enforce the same prefix via an s3:prefix condition.
-	KeyPrefix string
 }
 
 func (c *Credentials) Validate() error {
@@ -125,12 +154,6 @@ func (c *Credentials) Validate() error {
 	}
 	if !strings.HasPrefix(c.AccessPointARN, "arn:aws:s3:") || !strings.Contains(c.AccessPointARN, ":accesspoint/") {
 		return fmt.Errorf("%w: access_point_arn %q is not an S3 access point ARN", backend.ErrValidation, c.AccessPointARN)
-	}
-	if c.KeyPrefix == "" {
-		return fmt.Errorf("%w: missing key_prefix", backend.ErrValidation)
-	}
-	if strings.HasPrefix(c.KeyPrefix, "/") || strings.HasSuffix(c.KeyPrefix, "/") {
-		return fmt.Errorf("%w: key_prefix %q must not start or end with '/'", backend.ErrValidation, c.KeyPrefix)
 	}
 	return nil
 }
@@ -160,6 +183,12 @@ func NewBackendProvider(cfg *Config, cReader credentials.Reader) (*BackendProvid
 	// non-zero value without re-checking everywhere.
 	if cfg.SessionDuration == 0 {
 		cfg.SessionDuration = DefaultSessionDuration
+	}
+	// Loud warning at startup so misconfiguration is obvious in logs. We
+	// use the std log here because the kratos logger isn't plumbed down
+	// to this package by design — keeping the provider portable.
+	if cfg.DevModeUseAmbientCredentials {
+		log.Printf("WARNING: s3accesspoint provider configured with DevModeUseAmbientCredentials=true; sts:AssumeRole is bypassed and per-tenant isolation is NOT enforced — DEV USE ONLY")
 	}
 	return &BackendProvider{cfg: cfg, cReader: cReader}, nil
 }

@@ -98,11 +98,17 @@ func NewBackend(ctx context.Context, cfg *Config, creds *Credentials) (*Backend,
 	// can build the session policy from the AP ARN and key prefix every
 	// time AWS asks for fresh credentials. NewCredentialsCache handles
 	// proactive refresh and concurrent-call deduplication.
+	//
+	// In dev mode we hand the provider the ambient credentials so it can
+	// return them directly without calling STS. The provider still
+	// enforces the requesting-org context discipline.
 	credProvider := aws.NewCredentialsCache(&sessionCredentialsProvider{
-		stsClient:       stsClient,
-		baseRoleARN:     cfg.BaseRoleARN,
-		sessionDuration: cfg.SessionDuration,
-		creds:           creds,
+		stsClient:             stsClient,
+		ambientCreds:          awsCfg.Credentials,
+		baseRoleARN:           cfg.BaseRoleARN,
+		sessionDuration:       cfg.SessionDuration,
+		useAmbientForRetrieve: cfg.DevModeUseAmbientCredentials,
+		creds:                 creds,
 	})
 
 	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
@@ -117,11 +123,18 @@ func NewBackend(ctx context.Context, cfg *Config, creds *Credentials) (*Backend,
 	}, nil
 }
 
-// resourceName builds the bucket-level S3 key. Every tenant's objects
-// live under their own KeyPrefix so two tenants pushing the same digest
-// don't collide at the bucket layer.
-func (b *Backend) resourceName(digest string) string {
-	return fmt.Sprintf("%s/sha256:%s", b.creds.KeyPrefix, digest)
+// keyFor builds the bucket-level S3 key for a digest. Every tenant's
+// objects live under a prefix derived from the requesting org carried in
+// ctx, so two tenants pushing the same digest don't collide at the bucket
+// layer. The function fails closed when the org is missing — same
+// invariant the credentials provider enforces, just surfaced earlier
+// with a clearer error.
+func (b *Backend) keyFor(ctx context.Context, digest string) (string, error) {
+	orgUUID := requestingOrgFromContext(ctx)
+	if orgUUID == "" {
+		return "", ErrMissingRequestingOrg
+	}
+	return fmt.Sprintf("%s/sha256:%s", orgUUID, digest), nil
 }
 
 func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
@@ -133,10 +146,14 @@ func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
 }
 
 func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
+	key, err := b.keyFor(ctx, resource.Digest)
+	if err != nil {
+		return err
+	}
 	uploader := manager.NewUploader(b.s3Client)
-	_, err := uploader.Upload(ctx, &s3.PutObjectInput{
+	_, err = uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(b.creds.AccessPointARN),
-		Key:    aws.String(b.resourceName(resource.Digest)),
+		Key:    aws.String(key),
 		Body:   r,
 		Metadata: map[string]string{
 			annotationNameAuthor:   backend.AuthorAnnotation,
@@ -150,9 +167,13 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 }
 
 func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource, error) {
+	key, err := b.keyFor(ctx, digest)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := b.s3Client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket:       aws.String(b.creds.AccessPointARN),
-		Key:          aws.String(b.resourceName(digest)),
+		Key:          aws.String(key),
 		ChecksumMode: s3types.ChecksumModeEnabled,
 	})
 	if err != nil {
@@ -194,6 +215,10 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 		return backend.NewErrNotFound("artifact")
 	}
 
+	key, err := b.keyFor(ctx, digest)
+	if err != nil {
+		return err
+	}
 	downloader := manager.NewDownloader(b.s3Client, func(d *manager.Downloader) {
 		// Force sequential downloads so the fakeWriterAt below can
 		// safely ignore the offset argument.
@@ -201,7 +226,7 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 	})
 	_, err = downloader.Download(ctx, fakeWriterAt{w}, &s3.GetObjectInput{
 		Bucket: aws.String(b.creds.AccessPointARN),
-		Key:    aws.String(b.resourceName(digest)),
+		Key:    aws.String(key),
 	})
 	return err
 }
@@ -211,11 +236,12 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 // s3 backend's variant this MUST be invoked with a context carrying
 // WithRequestingOrg; otherwise it fails closed.
 func (b *Backend) CheckWritePermissions(ctx context.Context) error {
-	if requestingOrgFromContext(ctx) == "" {
+	orgUUID := requestingOrgFromContext(ctx)
+	if orgUUID == "" {
 		return ErrMissingRequestingOrg
 	}
 	const testObject = "healthcheck"
-	key := fmt.Sprintf("%s/%s", b.creds.KeyPrefix, testObject)
+	key := fmt.Sprintf("%s/%s", orgUUID, testObject)
 
 	if _, err := b.s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Body:   strings.NewReader("healthcheckdata"),
@@ -246,6 +272,15 @@ type sessionCredentialsProvider struct {
 	baseRoleARN     string
 	sessionDuration time.Duration
 
+	// ambientCreds is the SDK-default credentials provider captured from
+	// awsCfg at construction time. Only consulted when
+	// useAmbientForRetrieve is true (dev mode).
+	ambientCreds aws.CredentialsProvider
+	// useAmbientForRetrieve short-circuits Retrieve to return the pod's
+	// ambient AWS credentials directly without calling sts:AssumeRole.
+	// DEV ONLY — see Config.DevModeUseAmbientCredentials.
+	useAmbientForRetrieve bool
+
 	creds *Credentials
 }
 
@@ -258,13 +293,24 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 		return aws.Credentials{}, ErrMissingRequestingOrg
 	}
 
+	// Dev mode: skip the per-request AssumeRole entirely and use the
+	// SDK's default credential chain directly. We still required the
+	// org-from-ctx check above so callers that forget WithRequestingOrg
+	// fail the same way they would in production.
+	if p.useAmbientForRetrieve {
+		if p.ambientCreds == nil {
+			return aws.Credentials{}, errors.New("s3accesspoint: dev mode requested but no ambient credentials available")
+		}
+		return p.ambientCreds.Retrieve(ctx)
+	}
+
 	// Session policy intersects with the base role's permissions; even
 	// if the role grants accesspoint/*, this session can only touch the
-	// caller's AP and prefix. If either field is rewritten by a
-	// secret-store attacker, the AP's own resource policy (with its
-	// aws:userid condition matching this orgUUID) is the second line of
-	// defense.
-	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN, p.creds.KeyPrefix)
+	// caller's AP and prefix. The prefix is the requesting-org UUID
+	// straight from ctx — same source as the session name — so a
+	// tampered AccessPointARN in the secret blob can't widen the prefix
+	// scope to escape into another tenant's namespace.
+	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN, orgUUID)
 
 	durSecs := int32(p.sessionDuration / time.Second)
 	if durSecs <= 0 {

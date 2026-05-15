@@ -135,3 +135,7 @@ attestations:
 #     base_role_arn: arn:aws:iam::123456789012:role/chainloop-cas-tenant
 #     region: us-east-1
 #     session_duration: 1h
+#     # DEV ONLY: bypass sts:AssumeRole and use whatever AWS identity the
+#     # SDK default credential chain produces (env vars, ~/.aws/credentials,
+#     # IRSA, …). Skips per-tenant isolation; never enable in production.
+#     # dev_mode_use_ambient_credentials: true
