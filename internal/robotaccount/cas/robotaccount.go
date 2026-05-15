@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,13 @@ type Claims struct {
 	StoredSecretID string `json:"secret-id"` // path to the OCI secret in the vault
 	BackendType    string `json:"backend"`   // backend to use, i.e OCI
 	MaxBytes       int64  `json:"maxbytes"`  // max bytes to upload
+	// OrgID identifies the authenticated org this token was minted for.
+	// Required for managed providers (AWS-S3-ACCESS-POINT) that need to
+	// scope per-tenant STS sessions; carried as a separate claim from
+	// StoredSecretID so the binding can't be tampered with by rewriting
+	// just the secret store. Empty for legacy tokens or providers that
+	// don't need per-tenant attribution.
+	OrgID string `json:"org-id,omitempty"`
 }
 
 type Role string
@@ -103,7 +110,12 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64) (string, error) {
+// GenerateJWT mints a CAS token. orgID is required for tokens that will
+// touch managed providers (e.g. AWS-S3-ACCESS-POINT) and otherwise
+// optional — pass "" if the targeted backend doesn't need per-tenant
+// attribution. The token always carries the CAS audience and a short
+// expiry window.
+func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64, orgID string) (string, error) {
 	if backendType == "" {
 		return "", fmt.Errorf("backend type is required")
 	}
@@ -126,6 +138,7 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 		StoredSecretID: secretID,
 		// Identifier for the backend, i.e OCI
 		BackendType: backendType,
+		OrgID:       orgID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:   ra.issuer,
 			Audience: jwt.ClaimStrings{audience},

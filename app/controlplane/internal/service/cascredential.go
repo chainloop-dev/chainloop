@@ -149,7 +149,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		return nil, errors.BadRequest("invalid argument", "cannot upload or download artifacts from an inline CAS backend")
 	}
 
-	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes}
+	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID.String()}
 	t, err := s.casUC.GenerateTemporaryCredentials(ref)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)

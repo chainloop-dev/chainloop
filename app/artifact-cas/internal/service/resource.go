@@ -48,7 +48,7 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 		return nil, err
 	}
 
-	b, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
+	ctx, b, err := s.loadBackendForClaims(ctx, info)
 	if err != nil && errors.IsNotFound(err) {
 		return nil, err
 	} else if err != nil {

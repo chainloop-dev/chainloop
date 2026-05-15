@@ -44,8 +44,12 @@ type Bootstrap struct {
 	Auth               *Auth                    `protobuf:"bytes,2,opt,name=auth,proto3" json:"auth,omitempty"`
 	Observability      *Bootstrap_Observability `protobuf:"bytes,3,opt,name=observability,proto3" json:"observability,omitempty"`
 	CredentialsService *v1.Credentials          `protobuf:"bytes,4,opt,name=credentials_service,json=credentialsService,proto3" json:"credentials_service,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Deployment-level configuration for storage backend providers that
+	// need ambient knobs beyond what's stored per-CASBackend. Optional —
+	// omitting a sub-block keeps the corresponding provider unregistered.
+	BlobBackends  *BlobBackends `protobuf:"bytes,5,opt,name=blob_backends,json=blobBackends,proto3" json:"blob_backends,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Bootstrap) Reset() {
@@ -102,6 +106,13 @@ func (x *Bootstrap) GetObservability() *Bootstrap_Observability {
 func (x *Bootstrap) GetCredentialsService() *v1.Credentials {
 	if x != nil {
 		return x.CredentialsService
+	}
+	return nil
+}
+
+func (x *Bootstrap) GetBlobBackends() *BlobBackends {
+	if x != nil {
+		return x.BlobBackends
 	}
 	return nil
 }
@@ -169,6 +180,54 @@ func (x *Server) GetHttpMetrics() *Server_HTTP {
 	return nil
 }
 
+// BlobBackends mirrors the controlplane's `BlobBackends` block. Defined
+// independently here so the artifact-cas binary doesn't depend on the
+// controlplane's protobuf package. Keep field numbering in sync across
+// both definitions.
+type BlobBackends struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	S3AccessPoint *BlobBackends_S3AccessPoint `protobuf:"bytes,1,opt,name=s3_access_point,json=s3AccessPoint,proto3" json:"s3_access_point,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlobBackends) Reset() {
+	*x = BlobBackends{}
+	mi := &file_conf_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlobBackends) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlobBackends) ProtoMessage() {}
+
+func (x *BlobBackends) ProtoReflect() protoreflect.Message {
+	mi := &file_conf_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlobBackends.ProtoReflect.Descriptor instead.
+func (*BlobBackends) Descriptor() ([]byte, []int) {
+	return file_conf_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *BlobBackends) GetS3AccessPoint() *BlobBackends_S3AccessPoint {
+	if x != nil {
+		return x.S3AccessPoint
+	}
+	return nil
+}
+
 type Auth struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Public key used to verify the received JWT token
@@ -184,7 +243,7 @@ type Auth struct {
 
 func (x *Auth) Reset() {
 	*x = Auth{}
-	mi := &file_conf_proto_msgTypes[2]
+	mi := &file_conf_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -196,7 +255,7 @@ func (x *Auth) String() string {
 func (*Auth) ProtoMessage() {}
 
 func (x *Auth) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[2]
+	mi := &file_conf_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -209,7 +268,7 @@ func (x *Auth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Auth.ProtoReflect.Descriptor instead.
 func (*Auth) Descriptor() ([]byte, []int) {
-	return file_conf_proto_rawDescGZIP(), []int{2}
+	return file_conf_proto_rawDescGZIP(), []int{3}
 }
 
 // Deprecated: Marked as deprecated in conf.proto.
@@ -237,7 +296,7 @@ type Bootstrap_Observability struct {
 
 func (x *Bootstrap_Observability) Reset() {
 	*x = Bootstrap_Observability{}
-	mi := &file_conf_proto_msgTypes[3]
+	mi := &file_conf_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -249,7 +308,7 @@ func (x *Bootstrap_Observability) String() string {
 func (*Bootstrap_Observability) ProtoMessage() {}
 
 func (x *Bootstrap_Observability) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[3]
+	mi := &file_conf_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -290,7 +349,7 @@ type Bootstrap_Observability_Sentry struct {
 
 func (x *Bootstrap_Observability_Sentry) Reset() {
 	*x = Bootstrap_Observability_Sentry{}
-	mi := &file_conf_proto_msgTypes[4]
+	mi := &file_conf_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -302,7 +361,7 @@ func (x *Bootstrap_Observability_Sentry) String() string {
 func (*Bootstrap_Observability_Sentry) ProtoMessage() {}
 
 func (x *Bootstrap_Observability_Sentry) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[4]
+	mi := &file_conf_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -349,7 +408,7 @@ type Bootstrap_Observability_Tracing struct {
 
 func (x *Bootstrap_Observability_Tracing) Reset() {
 	*x = Bootstrap_Observability_Tracing{}
-	mi := &file_conf_proto_msgTypes[5]
+	mi := &file_conf_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -361,7 +420,7 @@ func (x *Bootstrap_Observability_Tracing) String() string {
 func (*Bootstrap_Observability_Tracing) ProtoMessage() {}
 
 func (x *Bootstrap_Observability_Tracing) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[5]
+	mi := &file_conf_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -414,7 +473,7 @@ type Server_CORS struct {
 
 func (x *Server_CORS) Reset() {
 	*x = Server_CORS{}
-	mi := &file_conf_proto_msgTypes[6]
+	mi := &file_conf_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -426,7 +485,7 @@ func (x *Server_CORS) String() string {
 func (*Server_CORS) ProtoMessage() {}
 
 func (x *Server_CORS) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[6]
+	mi := &file_conf_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -462,7 +521,7 @@ type Server_HTTP struct {
 
 func (x *Server_HTTP) Reset() {
 	*x = Server_HTTP{}
-	mi := &file_conf_proto_msgTypes[7]
+	mi := &file_conf_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -474,7 +533,7 @@ func (x *Server_HTTP) String() string {
 func (*Server_HTTP) ProtoMessage() {}
 
 func (x *Server_HTTP) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[7]
+	mi := &file_conf_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -529,7 +588,7 @@ type Server_TLS struct {
 
 func (x *Server_TLS) Reset() {
 	*x = Server_TLS{}
-	mi := &file_conf_proto_msgTypes[8]
+	mi := &file_conf_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -541,7 +600,7 @@ func (x *Server_TLS) String() string {
 func (*Server_TLS) ProtoMessage() {}
 
 func (x *Server_TLS) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[8]
+	mi := &file_conf_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -583,7 +642,7 @@ type Server_GRPC struct {
 
 func (x *Server_GRPC) Reset() {
 	*x = Server_GRPC{}
-	mi := &file_conf_proto_msgTypes[9]
+	mi := &file_conf_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -595,7 +654,7 @@ func (x *Server_GRPC) String() string {
 func (*Server_GRPC) ProtoMessage() {}
 
 func (x *Server_GRPC) ProtoReflect() protoreflect.Message {
-	mi := &file_conf_proto_msgTypes[9]
+	mi := &file_conf_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -639,17 +698,78 @@ func (x *Server_GRPC) GetTlsConfig() *Server_TLS {
 	return nil
 }
 
+type BlobBackends_S3AccessPoint struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	BaseRoleArn     string                 `protobuf:"bytes,1,opt,name=base_role_arn,json=baseRoleArn,proto3" json:"base_role_arn,omitempty"`
+	Region          string                 `protobuf:"bytes,2,opt,name=region,proto3" json:"region,omitempty"`
+	SessionDuration *durationpb.Duration   `protobuf:"bytes,3,opt,name=session_duration,json=sessionDuration,proto3" json:"session_duration,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *BlobBackends_S3AccessPoint) Reset() {
+	*x = BlobBackends_S3AccessPoint{}
+	mi := &file_conf_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlobBackends_S3AccessPoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlobBackends_S3AccessPoint) ProtoMessage() {}
+
+func (x *BlobBackends_S3AccessPoint) ProtoReflect() protoreflect.Message {
+	mi := &file_conf_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlobBackends_S3AccessPoint.ProtoReflect.Descriptor instead.
+func (*BlobBackends_S3AccessPoint) Descriptor() ([]byte, []int) {
+	return file_conf_proto_rawDescGZIP(), []int{2, 0}
+}
+
+func (x *BlobBackends_S3AccessPoint) GetBaseRoleArn() string {
+	if x != nil {
+		return x.BaseRoleArn
+	}
+	return ""
+}
+
+func (x *BlobBackends_S3AccessPoint) GetRegion() string {
+	if x != nil {
+		return x.Region
+	}
+	return ""
+}
+
+func (x *BlobBackends_S3AccessPoint) GetSessionDuration() *durationpb.Duration {
+	if x != nil {
+		return x.SessionDuration
+	}
+	return nil
+}
+
 var File_conf_proto protoreflect.FileDescriptor
 
 const file_conf_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb7\x04\n" +
+	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xeb\x04\n" +
 	"\tBootstrap\x12\x1f\n" +
 	"\x06server\x18\x01 \x01(\v2\a.ServerR\x06server\x12\x19\n" +
 	"\x04auth\x18\x02 \x01(\v2\x05.AuthR\x04auth\x12>\n" +
 	"\robservability\x18\x03 \x01(\v2\x18.Bootstrap.ObservabilityR\robservability\x12L\n" +
-	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x1a\xdf\x02\n" +
+	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x122\n" +
+	"\rblob_backends\x18\x05 \x01(\v2\r.BlobBackendsR\fblobBackends\x1a\xdf\x02\n" +
 	"\rObservability\x127\n" +
 	"\x06sentry\x18\x01 \x01(\v2\x1f.Bootstrap.Observability.SentryR\x06sentry\x12:\n" +
 	"\atracing\x18\x02 \x01(\v2 .Bootstrap.Observability.TracingR\atracing\x1a<\n" +
@@ -682,7 +802,13 @@ const file_conf_proto_rawDesc = "" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x123\n" +
 	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12*\n" +
 	"\n" +
-	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfig\"t\n" +
+	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfig\"\xe7\x01\n" +
+	"\fBlobBackends\x12C\n" +
+	"\x0fs3_access_point\x18\x01 \x01(\v2\x1b.BlobBackends.S3AccessPointR\rs3AccessPoint\x1a\x91\x01\n" +
+	"\rS3AccessPoint\x12\"\n" +
+	"\rbase_role_arn\x18\x01 \x01(\tR\vbaseRoleArn\x12\x16\n" +
+	"\x06region\x18\x02 \x01(\tR\x06region\x12D\n" +
+	"\x10session_duration\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x0fsessionDuration\"t\n" +
 	"\x04Auth\x12D\n" +
 	"\x1drobot_account_public_key_path\x18\x01 \x01(\tB\x02\x18\x01R\x19robotAccountPublicKeyPath\x12&\n" +
 	"\x0fpublic_key_path\x18\x02 \x01(\tR\rpublicKeyPathBHZFgithub.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf;confb\x06proto3"
@@ -699,40 +825,45 @@ func file_conf_proto_rawDescGZIP() []byte {
 	return file_conf_proto_rawDescData
 }
 
-var file_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_conf_proto_goTypes = []any{
 	(*Bootstrap)(nil),                       // 0: Bootstrap
 	(*Server)(nil),                          // 1: Server
-	(*Auth)(nil),                            // 2: Auth
-	(*Bootstrap_Observability)(nil),         // 3: Bootstrap.Observability
-	(*Bootstrap_Observability_Sentry)(nil),  // 4: Bootstrap.Observability.Sentry
-	(*Bootstrap_Observability_Tracing)(nil), // 5: Bootstrap.Observability.Tracing
-	(*Server_CORS)(nil),                     // 6: Server.CORS
-	(*Server_HTTP)(nil),                     // 7: Server.HTTP
-	(*Server_TLS)(nil),                      // 8: Server.TLS
-	(*Server_GRPC)(nil),                     // 9: Server.GRPC
-	(*v1.Credentials)(nil),                  // 10: credentials.v1.Credentials
-	(*durationpb.Duration)(nil),             // 11: google.protobuf.Duration
+	(*BlobBackends)(nil),                    // 2: BlobBackends
+	(*Auth)(nil),                            // 3: Auth
+	(*Bootstrap_Observability)(nil),         // 4: Bootstrap.Observability
+	(*Bootstrap_Observability_Sentry)(nil),  // 5: Bootstrap.Observability.Sentry
+	(*Bootstrap_Observability_Tracing)(nil), // 6: Bootstrap.Observability.Tracing
+	(*Server_CORS)(nil),                     // 7: Server.CORS
+	(*Server_HTTP)(nil),                     // 8: Server.HTTP
+	(*Server_TLS)(nil),                      // 9: Server.TLS
+	(*Server_GRPC)(nil),                     // 10: Server.GRPC
+	(*BlobBackends_S3AccessPoint)(nil),      // 11: BlobBackends.S3AccessPoint
+	(*v1.Credentials)(nil),                  // 12: credentials.v1.Credentials
+	(*durationpb.Duration)(nil),             // 13: google.protobuf.Duration
 }
 var file_conf_proto_depIdxs = []int32{
 	1,  // 0: Bootstrap.server:type_name -> Server
-	2,  // 1: Bootstrap.auth:type_name -> Auth
-	3,  // 2: Bootstrap.observability:type_name -> Bootstrap.Observability
-	10, // 3: Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
-	7,  // 4: Server.http:type_name -> Server.HTTP
-	9,  // 5: Server.grpc:type_name -> Server.GRPC
-	7,  // 6: Server.http_metrics:type_name -> Server.HTTP
-	4,  // 7: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
-	5,  // 8: Bootstrap.Observability.tracing:type_name -> Bootstrap.Observability.Tracing
-	11, // 9: Server.HTTP.timeout:type_name -> google.protobuf.Duration
-	6,  // 10: Server.HTTP.cors:type_name -> Server.CORS
-	11, // 11: Server.GRPC.timeout:type_name -> google.protobuf.Duration
-	8,  // 12: Server.GRPC.tls_config:type_name -> Server.TLS
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	3,  // 1: Bootstrap.auth:type_name -> Auth
+	4,  // 2: Bootstrap.observability:type_name -> Bootstrap.Observability
+	12, // 3: Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
+	2,  // 4: Bootstrap.blob_backends:type_name -> BlobBackends
+	8,  // 5: Server.http:type_name -> Server.HTTP
+	10, // 6: Server.grpc:type_name -> Server.GRPC
+	8,  // 7: Server.http_metrics:type_name -> Server.HTTP
+	11, // 8: BlobBackends.s3_access_point:type_name -> BlobBackends.S3AccessPoint
+	5,  // 9: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
+	6,  // 10: Bootstrap.Observability.tracing:type_name -> Bootstrap.Observability.Tracing
+	13, // 11: Server.HTTP.timeout:type_name -> google.protobuf.Duration
+	7,  // 12: Server.HTTP.cors:type_name -> Server.CORS
+	13, // 13: Server.GRPC.timeout:type_name -> google.protobuf.Duration
+	9,  // 14: Server.GRPC.tls_config:type_name -> Server.TLS
+	13, // 15: BlobBackends.S3AccessPoint.session_duration:type_name -> google.protobuf.Duration
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_conf_proto_init() }
@@ -740,14 +871,14 @@ func file_conf_proto_init() {
 	if File_conf_proto != nil {
 		return
 	}
-	file_conf_proto_msgTypes[5].OneofWrappers = []any{}
+	file_conf_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_conf_proto_rawDesc), len(file_conf_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

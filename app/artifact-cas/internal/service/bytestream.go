@@ -80,7 +80,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
-	storageBackend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
+	ctx, storageBackend, err := s.loadBackendForClaims(ctx, info)
 	if err != nil && kerrors.IsNotFound(err) {
 		return err
 	} else if err != nil {
@@ -161,7 +161,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 		return kerrors.BadRequest("resource name", "empty resource name")
 	}
 
-	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
+	ctx, backend, err := s.loadBackendForClaims(ctx, info)
 	if err != nil && kerrors.IsNotFound(err) {
 		return err
 	} else if err != nil {

@@ -150,7 +150,7 @@ func TestGenerateJWT(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader, 123)
+	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader, 123, "org-uuid")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
@@ -167,12 +167,13 @@ func TestGenerateJWT(t *testing.T) {
 	assert.Equal(t, "my-issuer", claims.Issuer)
 	assert.Contains(t, claims.Audience, "artifact-cas.chainloop")
 	assert.Equal(t, claims.MaxBytes, int64(123))
+	assert.Equal(t, "org-uuid", claims.OrgID)
 	assert.WithinDuration(t, time.Now(), claims.ExpiresAt.Time, 10*time.Second)
 }
 
 // load key for verification
 func loadPublicKey(rawKey []byte) jwt.Keyfunc {
-	return func(token *jwt.Token) (interface{}, error) {
+	return func(_ *jwt.Token) (any, error) {
 		return jwt.ParseECPublicKeyFromPEM(rawKey)
 	}
 }

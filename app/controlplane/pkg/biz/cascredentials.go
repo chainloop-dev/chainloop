@@ -48,8 +48,12 @@ type CASCredsOpts struct {
 	SecretPath  string // path to for example the OCI secret in the vault
 	Role        robotaccount.Role
 	MaxBytes    int64
+	// OrgID is the requesting organization's UUID. Required for managed
+	// backends (e.g. AWS-S3-ACCESS-POINT) that need to scope per-tenant
+	// STS sessions; optional for the others (OCI, S3, AzureBlob).
+	OrgID string
 }
 
 func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(backendRef *CASCredsOpts) (string, error) {
-	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role, backendRef.MaxBytes)
+	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role, backendRef.MaxBytes, backendRef.OrgID)
 }

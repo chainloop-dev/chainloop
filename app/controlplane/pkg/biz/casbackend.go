@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -827,7 +828,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) e
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (CASBackendProvider) Values() (kinds []string) {
-	for _, s := range []CASBackendProvider{azureblob.ProviderID, oci.ProviderID, CASBackendInline, s3.ProviderID} {
+	for _, s := range []CASBackendProvider{azureblob.ProviderID, oci.ProviderID, CASBackendInline, s3.ProviderID, s3accesspoint.ProviderID} {
 		kinds = append(kinds, string(s))
 	}
 

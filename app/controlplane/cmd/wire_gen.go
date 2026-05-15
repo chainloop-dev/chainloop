@@ -21,6 +21,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
 	"github.com/chainloop-dev/chainloop/pkg/cache/policyevalbundle"
@@ -64,7 +65,9 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	membershipRepo := data.NewMembershipRepo(dataData, groupRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
-	providers := loader.LoadProviders(readerWriter)
+	blobBackends := bootstrap.BlobBackends
+	options := newLoaderOptions(blobBackends, logger)
+	providers := loader.LoadProviders(readerWriter, options)
 	bootstrap_CASServer := bootstrap.CasServer
 	casServerDefaultOpts := newCASServerOptions(bootstrap_CASServer)
 	bootstrap_NatsServer := bootstrap.NatsServer
@@ -463,6 +466,25 @@ func newPolicyProviderConfig(in []*conf.PolicyProvider) []*policies.NewRegistryC
 
 func serviceOpts(l log.Logger, authzUC *biz.AuthzUseCase, pUC *biz.ProjectUseCase, gUC *biz.GroupUseCase) []service.NewOpt {
 	return []service.NewOpt{service.WithLogger(l), service.WithEnforcer(authzUC), service.WithProjectUseCase(pUC), service.WithGroupUseCase(gUC)}
+}
+
+// newLoaderOptions builds the loader.Options struct from the deployment
+// Bootstrap. When `blob_backends.s3_access_point` is absent (the common
+// case for on-prem) S3AccessPoint stays nil and the provider is not
+// registered, leaving the binary's behaviour identical to the pre-managed
+// CAS world.
+func newLoaderOptions(in *conf.BlobBackends, l log.Logger) *loader.Options {
+	opts := &loader.Options{Logger: l}
+	if in == nil || in.GetS3AccessPoint() == nil {
+		return opts
+	}
+	ap := in.GetS3AccessPoint()
+	opts.S3AccessPoint = &s3accesspoint.Config{
+		BaseRoleARN:     ap.GetBaseRoleArn(),
+		Region:          ap.GetRegion(),
+		SessionDuration: ap.GetSessionDuration().AsDuration(),
+	}
+	return opts
 }
 
 func newCASServerOptions(in *conf.Bootstrap_CASServer) *biz.CASServerDefaultOpts {

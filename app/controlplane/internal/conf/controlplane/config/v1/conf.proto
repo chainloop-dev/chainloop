@@ -126,6 +126,35 @@ message Bootstrap {
 
   // Attestation storage and processing options
   Attestations attestations = 21;
+
+  // Deployment-level configuration for storage backend providers that
+  // need ambient knobs beyond what's stored per-CASBackend. Optional —
+  // omitting a sub-block keeps the corresponding provider unregistered.
+  BlobBackends blob_backends = 22;
+}
+
+// BlobBackends groups the additive, deployment-level config blocks for
+// CAS storage backends. New providers append a nested message rather
+// than adding top-level fields to Bootstrap, so the surface stays
+// organised as more backends are added.
+message BlobBackends {
+  // S3 Access Point provider — used by SaaS managed CAS to share one
+  // physical bucket across tenants. Authentication uses the pod's
+  // ambient AWS identity (IRSA / instance profile / env vars); no static
+  // credentials live in this block by design.
+  S3AccessPoint s3_access_point = 1;
+
+  message S3AccessPoint {
+    // IAM role the controlplane / artifact-cas pod assumes per request
+    // via sts:AssumeRole. Must allow s3:{Get,Put,Delete}Object on every
+    // access point in the account.
+    string base_role_arn = 1 [(buf.validate.field).string.min_len = 1];
+    // Default AWS region for the underlying bucket and access points.
+    // Individual managed CASBackend rows can override per-tenant.
+    string region = 2 [(buf.validate.field).string.min_len = 1];
+    // STS token lifetime. Defaults to 1h when unset.
+    google.protobuf.Duration session_duration = 3;
+  }
 }
 
 message Attestations {

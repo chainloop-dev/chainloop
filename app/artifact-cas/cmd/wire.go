@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
@@ -37,11 +38,32 @@ func wireApp(*conf.Bootstrap, *conf.Server, *conf.Auth, credentials.Reader, log.
 			server.ProviderSet,
 			service.ProviderSet,
 			loader.LoadProviders,
+			newLoaderOptions,
+			wire.FieldsOf(new(*conf.Bootstrap), "BlobBackends"),
 			newApp,
 			serviceOpts,
 			newProtoValidator,
 		),
 	)
+}
+
+// newLoaderOptions builds the loader.Options struct from the deployment
+// Bootstrap. When `blob_backends.s3_access_point` is absent (the common
+// case for on-prem) S3AccessPoint stays nil and the provider is not
+// registered, leaving the binary's behaviour identical to the pre-managed
+// CAS world.
+func newLoaderOptions(in *conf.BlobBackends, l log.Logger) *loader.Options {
+	opts := &loader.Options{Logger: l}
+	if in == nil || in.GetS3AccessPoint() == nil {
+		return opts
+	}
+	ap := in.GetS3AccessPoint()
+	opts.S3AccessPoint = &s3accesspoint.Config{
+		BaseRoleARN:     ap.GetBaseRoleArn(),
+		Region:          ap.GetRegion(),
+		SessionDuration: ap.GetSessionDuration().AsDuration(),
+	}
+	return opts
 }
 
 func serviceOpts(l log.Logger) []service.NewOpt {

@@ -23,6 +23,7 @@ import (
 
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
@@ -49,13 +50,39 @@ func (s *commonService) loadBackend(ctx context.Context, providerType, secretID 
 
 	s.log.Infow("msg", "selected provider", "provider", providerType)
 
-	// Retrieve the OCI backend from where to download the file
+	// Retrieve the backend from where to download the file. The context
+	// passed here is what the backend's STS-backed credentials provider
+	// will see; the caller is responsible for having enriched it with
+	// s3accesspoint.WithRequestingOrg when the request came in via an
+	// authenticated CAS JWT. See loadBackendForClaims.
 	backend, err := p.FromCredentials(ctx, secretID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve backend: %w", err)
 	}
 
 	return backend, nil
+}
+
+// loadBackendForClaims is the request-scoped wrapper around loadBackend.
+// It pulls the requesting-org UUID out of the CAS JWT claims and stamps
+// it onto the context so providers that need per-tenant attribution
+// (currently AWS-S3-ACCESS-POINT) can mint correctly-scoped sessions.
+//
+// The OrgID claim is empty for legacy tokens minted before this PR; in
+// that case WithRequestingOrg sets an empty value and only managed
+// providers (which fail closed) will reject the request — every existing
+// provider ignores the key entirely, so non-managed flows stay unchanged.
+//
+// Returns the loaded backend together with the enriched context so the
+// caller can reuse it for the subsequent Upload/Download calls. Callers
+// MUST use the returned context, not the original one.
+func (s *commonService) loadBackendForClaims(ctx context.Context, claims *casJWT.Claims) (context.Context, backend.UploaderDownloader, error) {
+	ctx = s3accesspoint.WithRequestingOrg(ctx, claims.OrgID)
+	b, err := s.loadBackend(ctx, claims.BackendType, claims.StoredSecretID)
+	if err != nil {
+		return ctx, nil, err
+	}
+	return ctx, b, nil
 }
 
 type NewOpt func(s *commonService)
