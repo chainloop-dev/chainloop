@@ -136,16 +136,40 @@ const tokenPageHTML = `<!DOCTYPE html>
     </div>
   </main>
   <script>
+    function legacyCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
     async function copyToken() {
       const token = document.getElementById('token').textContent;
       const status = document.getElementById('status');
-      try {
-        await navigator.clipboard.writeText(token);
-        status.textContent = 'Copied to clipboard';
-        status.classList.add('ok');
+      const flash = (msg, ok) => {
+        status.textContent = msg;
+        status.classList.toggle('ok', !!ok);
         setTimeout(() => { status.textContent = ''; status.classList.remove('ok'); }, 2000);
-      } catch (e) {
-        status.textContent = 'Copy failed — select the token and copy manually';
+      };
+      // navigator.clipboard requires a secure context (HTTPS or localhost).
+      // Fall back to document.execCommand('copy') on insecure origins.
+      if (window.isSecureContext && navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText(token);
+          flash('Copied to clipboard', true);
+          return;
+        } catch (e) { /* fall through */ }
+      }
+      if (legacyCopy(token)) {
+        flash('Copied to clipboard', true);
+      } else {
+        flash('Copy failed — select the token and copy manually', false);
       }
     }
   </script>
