@@ -156,6 +156,63 @@ func (s *workflowRunIntegrationTestSuite) TestListExcludesSoftDeletedWorkflows()
 	}
 }
 
+func (s *workflowRunIntegrationTestSuite) TestListIsolatedByOrg() {
+	ctx := context.Background()
+
+	// org1 has runOrg1; org2 has runOrg2 + runOrg2Public (see setupWorkflowRunTestData).
+	// Regression guard for the org-scoping switch from the workflows edge to
+	// the denormalized organization_id column on workflow_runs.
+	got, _, err := s.WorkflowRun.List(ctx, s.org.ID, &biz.RunListFilters{}, &pagination.CursorOptions{Limit: 10})
+	s.Require().NoError(err)
+	gotIDs := make([]uuid.UUID, 0, len(got))
+	for _, r := range got {
+		gotIDs = append(gotIDs, r.ID)
+	}
+	s.ElementsMatch([]uuid.UUID{s.runOrg1.ID}, gotIDs, "org1 List leaked runs from another org")
+
+	got, _, err = s.WorkflowRun.List(ctx, s.org2.ID, &biz.RunListFilters{}, &pagination.CursorOptions{Limit: 10})
+	s.Require().NoError(err)
+	gotIDs = gotIDs[:0]
+	for _, r := range got {
+		gotIDs = append(gotIDs, r.ID)
+	}
+	s.ElementsMatch([]uuid.UUID{s.runOrg2.ID, s.runOrg2Public.ID}, gotIDs, "org2 List did not return its own runs")
+}
+
+func (s *workflowRunIntegrationTestSuite) TestListFilterByProjectIDs() {
+	ctx := context.Background()
+
+	// Create a second workflow in a different project in org2 and a run for it.
+	// Filtering by the original project's ID should exclude this run.
+	otherProjectWF, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+		Name: "wf-other-project", OrgID: s.org2.ID, Project: "other-project",
+	})
+	s.Require().NoError(err)
+
+	otherProjectRun, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+		WorkflowID: otherProjectWF.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+	})
+	s.Require().NoError(err)
+
+	// With no project filter, all org2 runs (including the new one) are returned.
+	allRuns, _, err := s.WorkflowRun.List(ctx, s.org2.ID, &biz.RunListFilters{}, &pagination.CursorOptions{Limit: 10})
+	s.Require().NoError(err)
+	allIDs := make([]uuid.UUID, 0, len(allRuns))
+	for _, r := range allRuns {
+		allIDs = append(allIDs, r.ID)
+	}
+	s.Contains(allIDs, otherProjectRun.ID)
+
+	// Filtering by the original project's ID excludes runs from other projects.
+	filtered, _, err := s.WorkflowRun.List(ctx, s.org2.ID,
+		&biz.RunListFilters{ProjectIDs: []uuid.UUID{s.workflowOrg2.ProjectID}},
+		&pagination.CursorOptions{Limit: 10})
+	s.Require().NoError(err)
+	for _, r := range filtered {
+		s.NotEqual(otherProjectRun.ID, r.ID, "run from non-selected project leaked into List")
+	}
+}
+
 func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
