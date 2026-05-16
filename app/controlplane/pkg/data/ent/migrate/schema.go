@@ -782,6 +782,7 @@ var (
 		{Name: "policy_violations_count", Type: field.TypeInt32, Nullable: true},
 		{Name: "policy_violations_suppressed", Type: field.TypeInt32, Nullable: true},
 		{Name: "policy_has_gates", Type: field.TypeBool, Nullable: true},
+		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "version_id", Type: field.TypeUUID},
 		{Name: "workflow_id", Type: field.TypeUUID},
 		{Name: "workflow_run_contract_version", Type: field.TypeUUID, Nullable: true},
@@ -793,20 +794,26 @@ var (
 		PrimaryKey: []*schema.Column{WorkflowRunsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "workflow_runs_project_versions_runs",
+				Symbol:     "workflow_runs_organizations_workflowruns",
 				Columns:    []*schema.Column{WorkflowRunsColumns[20]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "workflow_runs_project_versions_runs",
+				Columns:    []*schema.Column{WorkflowRunsColumns[21]},
 				RefColumns: []*schema.Column{ProjectVersionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "workflow_runs_workflows_workflowruns",
-				Columns:    []*schema.Column{WorkflowRunsColumns[21]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[22]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workflow_runs_workflow_contract_versions_contract_version",
-				Columns:    []*schema.Column{WorkflowRunsColumns[22]},
+				Columns:    []*schema.Column{WorkflowRunsColumns[23]},
 				RefColumns: []*schema.Column{WorkflowContractVersionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -825,7 +832,7 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[21], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[22], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -835,7 +842,17 @@ var (
 			{
 				Name:    "workflowrun_workflow_id_state_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[21], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
+				Columns: []*schema.Column{WorkflowRunsColumns[22], WorkflowRunsColumns[3], WorkflowRunsColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						WorkflowRunsColumns[1].Name: true,
+					},
+				},
+			},
+			{
+				Name:    "workflowrun_organization_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{WorkflowRunsColumns[20], WorkflowRunsColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						WorkflowRunsColumns[1].Name: true,
@@ -860,12 +877,12 @@ var (
 			{
 				Name:    "workflowrun_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[21]},
+				Columns: []*schema.Column{WorkflowRunsColumns[22]},
 			},
 			{
 				Name:    "workflowrun_version_id_workflow_id",
 				Unique:  false,
-				Columns: []*schema.Column{WorkflowRunsColumns[20], WorkflowRunsColumns[21]},
+				Columns: []*schema.Column{WorkflowRunsColumns[21], WorkflowRunsColumns[22]},
 			},
 			{
 				Name:    "workflowrun_policy_status",
@@ -1014,9 +1031,10 @@ func init() {
 	WorkflowsTable.ForeignKeys[3].RefTable = WorkflowRunsTable
 	WorkflowContractsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowContractVersionsTable.ForeignKeys[0].RefTable = WorkflowContractsTable
-	WorkflowRunsTable.ForeignKeys[0].RefTable = ProjectVersionsTable
-	WorkflowRunsTable.ForeignKeys[1].RefTable = WorkflowsTable
-	WorkflowRunsTable.ForeignKeys[2].RefTable = WorkflowContractVersionsTable
+	WorkflowRunsTable.ForeignKeys[0].RefTable = OrganizationsTable
+	WorkflowRunsTable.ForeignKeys[1].RefTable = ProjectVersionsTable
+	WorkflowRunsTable.ForeignKeys[2].RefTable = WorkflowsTable
+	WorkflowRunsTable.ForeignKeys[3].RefTable = WorkflowContractVersionsTable
 	ReferrerReferencesTable.ForeignKeys[0].RefTable = ReferrersTable
 	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
 	ReferrerWorkflowsTable.ForeignKeys[0].RefTable = ReferrersTable

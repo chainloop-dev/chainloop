@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -36,6 +37,7 @@ type OrganizationQuery struct {
 	withMemberships       *MembershipQuery
 	withWorkflowContracts *WorkflowContractQuery
 	withWorkflows         *WorkflowQuery
+	withWorkflowruns      *WorkflowRunQuery
 	withCasBackends       *CASBackendQuery
 	withIntegrations      *IntegrationQuery
 	withAPITokens         *APITokenQuery
@@ -137,6 +139,28 @@ func (_q *OrganizationQuery) QueryWorkflows() *WorkflowQuery {
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, organization.WorkflowsTable, organization.WorkflowsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryWorkflowruns chains the current query on the "workflowruns" edge.
+func (_q *OrganizationQuery) QueryWorkflowruns() *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, selector),
+			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, organization.WorkflowrunsTable, organization.WorkflowrunsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -449,6 +473,7 @@ func (_q *OrganizationQuery) Clone() *OrganizationQuery {
 		withMemberships:       _q.withMemberships.Clone(),
 		withWorkflowContracts: _q.withWorkflowContracts.Clone(),
 		withWorkflows:         _q.withWorkflows.Clone(),
+		withWorkflowruns:      _q.withWorkflowruns.Clone(),
 		withCasBackends:       _q.withCasBackends.Clone(),
 		withIntegrations:      _q.withIntegrations.Clone(),
 		withAPITokens:         _q.withAPITokens.Clone(),
@@ -491,6 +516,17 @@ func (_q *OrganizationQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *Organi
 		opt(query)
 	}
 	_q.withWorkflows = query
+	return _q
+}
+
+// WithWorkflowruns tells the query-builder to eager-load the nodes that are connected to
+// the "workflowruns" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *OrganizationQuery) WithWorkflowruns(opts ...func(*WorkflowRunQuery)) *OrganizationQuery {
+	query := (&WorkflowRunClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withWorkflowruns = query
 	return _q
 }
 
@@ -627,10 +663,11 @@ func (_q *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*Organization{}
 		_spec       = _q.querySpec()
-		loadedTypes = [8]bool{
+		loadedTypes = [9]bool{
 			_q.withMemberships != nil,
 			_q.withWorkflowContracts != nil,
 			_q.withWorkflows != nil,
+			_q.withWorkflowruns != nil,
 			_q.withCasBackends != nil,
 			_q.withIntegrations != nil,
 			_q.withAPITokens != nil,
@@ -679,6 +716,13 @@ func (_q *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := _q.loadWorkflows(ctx, query, nodes,
 			func(n *Organization) { n.Edges.Workflows = []*Workflow{} },
 			func(n *Organization, e *Workflow) { n.Edges.Workflows = append(n.Edges.Workflows, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withWorkflowruns; query != nil {
+		if err := _q.loadWorkflowruns(ctx, query, nodes,
+			func(n *Organization) { n.Edges.Workflowruns = []*WorkflowRun{} },
+			func(n *Organization, e *WorkflowRun) { n.Edges.Workflowruns = append(n.Edges.Workflowruns, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -798,6 +842,37 @@ func (_q *OrganizationQuery) loadWorkflows(ctx context.Context, query *WorkflowQ
 	}
 	query.Where(predicate.Workflow(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(organization.WorkflowsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OrganizationID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *OrganizationQuery) loadWorkflowruns(ctx context.Context, query *WorkflowRunQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *WorkflowRun)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Organization)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(workflowrun.FieldOrganizationID)
+	}
+	query.Where(predicate.WorkflowRun(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(organization.WorkflowrunsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

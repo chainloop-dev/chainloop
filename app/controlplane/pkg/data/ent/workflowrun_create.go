@@ -15,6 +15,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -165,6 +166,12 @@ func (_c *WorkflowRunCreate) SetWorkflowID(v uuid.UUID) *WorkflowRunCreate {
 	return _c
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (_c *WorkflowRunCreate) SetOrganizationID(v uuid.UUID) *WorkflowRunCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
+}
+
 // SetHasPolicyViolations sets the "has_policy_violations" field.
 func (_c *WorkflowRunCreate) SetHasPolicyViolations(v bool) *WorkflowRunCreate {
 	_c.mutation.SetHasPolicyViolations(v)
@@ -294,6 +301,11 @@ func (_c *WorkflowRunCreate) SetNillableID(v *uuid.UUID) *WorkflowRunCreate {
 // SetWorkflow sets the "workflow" edge to the Workflow entity.
 func (_c *WorkflowRunCreate) SetWorkflow(v *Workflow) *WorkflowRunCreate {
 	return _c.SetWorkflowID(v.ID)
+}
+
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (_c *WorkflowRunCreate) SetOrganization(v *Organization) *WorkflowRunCreate {
+	return _c.SetOrganizationID(v.ID)
 }
 
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
@@ -428,6 +440,9 @@ func (_c *WorkflowRunCreate) check() error {
 	if _, ok := _c.mutation.WorkflowID(); !ok {
 		return &ValidationError{Name: "workflow_id", err: errors.New(`ent: missing required field "WorkflowRun.workflow_id"`)}
 	}
+	if _, ok := _c.mutation.OrganizationID(); !ok {
+		return &ValidationError{Name: "organization_id", err: errors.New(`ent: missing required field "WorkflowRun.organization_id"`)}
+	}
 	if v, ok := _c.mutation.PolicyStatus(); ok {
 		if err := workflowrun.PolicyStatusValidator(v); err != nil {
 			return &ValidationError{Name: "policy_status", err: fmt.Errorf(`ent: validator failed for field "WorkflowRun.policy_status": %w`, err)}
@@ -435,6 +450,9 @@ func (_c *WorkflowRunCreate) check() error {
 	}
 	if len(_c.mutation.WorkflowIDs()) == 0 {
 		return &ValidationError{Name: "workflow", err: errors.New(`ent: missing required edge "WorkflowRun.workflow"`)}
+	}
+	if len(_c.mutation.OrganizationIDs()) == 0 {
+		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "WorkflowRun.organization"`)}
 	}
 	if len(_c.mutation.VersionIDs()) == 0 {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required edge "WorkflowRun.version"`)}
@@ -566,6 +584,23 @@ func (_c *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.WorkflowID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   workflowrun.OrganizationTable,
+			Columns: []string{workflowrun.OrganizationColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.OrganizationID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.ContractVersionIDs(); len(nodes) > 0 {
@@ -1068,6 +1103,9 @@ func (u *WorkflowRunUpsertOne) UpdateNewValues() *WorkflowRunUpsertOne {
 		}
 		if _, exists := u.create.mutation.WorkflowID(); exists {
 			s.SetIgnore(workflowrun.FieldWorkflowID)
+		}
+		if _, exists := u.create.mutation.OrganizationID(); exists {
+			s.SetIgnore(workflowrun.FieldOrganizationID)
 		}
 	}))
 	return u
@@ -1708,6 +1746,9 @@ func (u *WorkflowRunUpsertBulk) UpdateNewValues() *WorkflowRunUpsertBulk {
 			}
 			if _, exists := b.mutation.WorkflowID(); exists {
 				s.SetIgnore(workflowrun.FieldWorkflowID)
+			}
+			if _, exists := b.mutation.OrganizationID(); exists {
+				s.SetIgnore(workflowrun.FieldOrganizationID)
 			}
 		}
 	}))

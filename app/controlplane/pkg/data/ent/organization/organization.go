@@ -43,6 +43,8 @@ const (
 	EdgeWorkflowContracts = "workflow_contracts"
 	// EdgeWorkflows holds the string denoting the workflows edge name in mutations.
 	EdgeWorkflows = "workflows"
+	// EdgeWorkflowruns holds the string denoting the workflowruns edge name in mutations.
+	EdgeWorkflowruns = "workflowruns"
 	// EdgeCasBackends holds the string denoting the cas_backends edge name in mutations.
 	EdgeCasBackends = "cas_backends"
 	// EdgeIntegrations holds the string denoting the integrations edge name in mutations.
@@ -76,6 +78,13 @@ const (
 	WorkflowsInverseTable = "workflows"
 	// WorkflowsColumn is the table column denoting the workflows relation/edge.
 	WorkflowsColumn = "organization_id"
+	// WorkflowrunsTable is the table that holds the workflowruns relation/edge.
+	WorkflowrunsTable = "workflow_runs"
+	// WorkflowrunsInverseTable is the table name for the WorkflowRun entity.
+	// It exists in this package in order to avoid circular dependency with the "workflowrun" package.
+	WorkflowrunsInverseTable = "workflow_runs"
+	// WorkflowrunsColumn is the table column denoting the workflowruns relation/edge.
+	WorkflowrunsColumn = "organization_id"
 	// CasBackendsTable is the table that holds the cas_backends relation/edge.
 	CasBackendsTable = "cas_backends"
 	// CasBackendsInverseTable is the table name for the CASBackend entity.
@@ -258,6 +267,20 @@ func ByWorkflows(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByWorkflowrunsCount orders the results by workflowruns count.
+func ByWorkflowrunsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newWorkflowrunsStep(), opts...)
+	}
+}
+
+// ByWorkflowruns orders the results by workflowruns terms.
+func ByWorkflowruns(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkflowrunsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByCasBackendsCount orders the results by cas_backends count.
 func ByCasBackendsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -346,6 +369,13 @@ func newWorkflowsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, WorkflowsTable, WorkflowsColumn),
+	)
+}
+func newWorkflowrunsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkflowrunsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
 	)
 }
 func newCasBackendsStep() *sqlgraph.Step {

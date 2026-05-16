@@ -8987,6 +8987,9 @@ type OrganizationMutation struct {
 	workflows                                map[uuid.UUID]struct{}
 	removedworkflows                         map[uuid.UUID]struct{}
 	clearedworkflows                         bool
+	workflowruns                             map[uuid.UUID]struct{}
+	removedworkflowruns                      map[uuid.UUID]struct{}
+	clearedworkflowruns                      bool
 	cas_backends                             map[uuid.UUID]struct{}
 	removedcas_backends                      map[uuid.UUID]struct{}
 	clearedcas_backends                      bool
@@ -9745,6 +9748,60 @@ func (m *OrganizationMutation) ResetWorkflows() {
 	m.removedworkflows = nil
 }
 
+// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by ids.
+func (m *OrganizationMutation) AddWorkflowrunIDs(ids ...uuid.UUID) {
+	if m.workflowruns == nil {
+		m.workflowruns = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.workflowruns[ids[i]] = struct{}{}
+	}
+}
+
+// ClearWorkflowruns clears the "workflowruns" edge to the WorkflowRun entity.
+func (m *OrganizationMutation) ClearWorkflowruns() {
+	m.clearedworkflowruns = true
+}
+
+// WorkflowrunsCleared reports if the "workflowruns" edge to the WorkflowRun entity was cleared.
+func (m *OrganizationMutation) WorkflowrunsCleared() bool {
+	return m.clearedworkflowruns
+}
+
+// RemoveWorkflowrunIDs removes the "workflowruns" edge to the WorkflowRun entity by IDs.
+func (m *OrganizationMutation) RemoveWorkflowrunIDs(ids ...uuid.UUID) {
+	if m.removedworkflowruns == nil {
+		m.removedworkflowruns = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.workflowruns, ids[i])
+		m.removedworkflowruns[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedWorkflowruns returns the removed IDs of the "workflowruns" edge to the WorkflowRun entity.
+func (m *OrganizationMutation) RemovedWorkflowrunsIDs() (ids []uuid.UUID) {
+	for id := range m.removedworkflowruns {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// WorkflowrunsIDs returns the "workflowruns" edge IDs in the mutation.
+func (m *OrganizationMutation) WorkflowrunsIDs() (ids []uuid.UUID) {
+	for id := range m.workflowruns {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetWorkflowruns resets all changes to the "workflowruns" edge.
+func (m *OrganizationMutation) ResetWorkflowruns() {
+	m.workflowruns = nil
+	m.clearedworkflowruns = false
+	m.removedworkflowruns = nil
+}
+
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by ids.
 func (m *OrganizationMutation) AddCasBackendIDs(ids ...uuid.UUID) {
 	if m.cas_backends == nil {
@@ -10354,7 +10411,7 @@ func (m *OrganizationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *OrganizationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.memberships != nil {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -10363,6 +10420,9 @@ func (m *OrganizationMutation) AddedEdges() []string {
 	}
 	if m.workflows != nil {
 		edges = append(edges, organization.EdgeWorkflows)
+	}
+	if m.workflowruns != nil {
+		edges = append(edges, organization.EdgeWorkflowruns)
 	}
 	if m.cas_backends != nil {
 		edges = append(edges, organization.EdgeCasBackends)
@@ -10404,6 +10464,12 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case organization.EdgeWorkflowruns:
+		ids := make([]ent.Value, 0, len(m.workflowruns))
+		for id := range m.workflowruns {
+			ids = append(ids, id)
+		}
+		return ids
 	case organization.EdgeCasBackends:
 		ids := make([]ent.Value, 0, len(m.cas_backends))
 		for id := range m.cas_backends {
@@ -10440,7 +10506,7 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *OrganizationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.removedmemberships != nil {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -10449,6 +10515,9 @@ func (m *OrganizationMutation) RemovedEdges() []string {
 	}
 	if m.removedworkflows != nil {
 		edges = append(edges, organization.EdgeWorkflows)
+	}
+	if m.removedworkflowruns != nil {
+		edges = append(edges, organization.EdgeWorkflowruns)
 	}
 	if m.removedcas_backends != nil {
 		edges = append(edges, organization.EdgeCasBackends)
@@ -10490,6 +10559,12 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case organization.EdgeWorkflowruns:
+		ids := make([]ent.Value, 0, len(m.removedworkflowruns))
+		for id := range m.removedworkflowruns {
+			ids = append(ids, id)
+		}
+		return ids
 	case organization.EdgeCasBackends:
 		ids := make([]ent.Value, 0, len(m.removedcas_backends))
 		for id := range m.removedcas_backends {
@@ -10526,7 +10601,7 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *OrganizationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.clearedmemberships {
 		edges = append(edges, organization.EdgeMemberships)
 	}
@@ -10535,6 +10610,9 @@ func (m *OrganizationMutation) ClearedEdges() []string {
 	}
 	if m.clearedworkflows {
 		edges = append(edges, organization.EdgeWorkflows)
+	}
+	if m.clearedworkflowruns {
+		edges = append(edges, organization.EdgeWorkflowruns)
 	}
 	if m.clearedcas_backends {
 		edges = append(edges, organization.EdgeCasBackends)
@@ -10564,6 +10642,8 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 		return m.clearedworkflow_contracts
 	case organization.EdgeWorkflows:
 		return m.clearedworkflows
+	case organization.EdgeWorkflowruns:
+		return m.clearedworkflowruns
 	case organization.EdgeCasBackends:
 		return m.clearedcas_backends
 	case organization.EdgeIntegrations:
@@ -10598,6 +10678,9 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 		return nil
 	case organization.EdgeWorkflows:
 		m.ResetWorkflows()
+		return nil
+	case organization.EdgeWorkflowruns:
+		m.ResetWorkflowruns()
 		return nil
 	case organization.EdgeCasBackends:
 		m.ResetCasBackends()
@@ -18168,6 +18251,8 @@ type WorkflowRunMutation struct {
 	clearedFields                   map[string]struct{}
 	workflow                        *uuid.UUID
 	clearedworkflow                 bool
+	organization                    *uuid.UUID
+	clearedorganization             bool
 	contract_version                *uuid.UUID
 	clearedcontract_version         bool
 	cas_backends                    map[uuid.UUID]struct{}
@@ -18885,6 +18970,42 @@ func (m *WorkflowRunMutation) ResetWorkflowID() {
 	m.workflow = nil
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (m *WorkflowRunMutation) SetOrganizationID(u uuid.UUID) {
+	m.organization = &u
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *WorkflowRunMutation) OrganizationID() (r uuid.UUID, exists bool) {
+	v := m.organization
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationID returns the old "organization_id" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldOrganizationID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationID: %w", err)
+	}
+	return oldValue.OrganizationID, nil
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *WorkflowRunMutation) ResetOrganizationID() {
+	m.organization = nil
+}
+
 // SetHasPolicyViolations sets the "has_policy_violations" field.
 func (m *WorkflowRunMutation) SetHasPolicyViolations(b bool) {
 	m.has_policy_violations = &b
@@ -19409,6 +19530,33 @@ func (m *WorkflowRunMutation) ResetWorkflow() {
 	m.clearedworkflow = false
 }
 
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (m *WorkflowRunMutation) ClearOrganization() {
+	m.clearedorganization = true
+	m.clearedFields[workflowrun.FieldOrganizationID] = struct{}{}
+}
+
+// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
+func (m *WorkflowRunMutation) OrganizationCleared() bool {
+	return m.clearedorganization
+}
+
+// OrganizationIDs returns the "organization" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OrganizationID instead. It exists only for internal usage by the builders.
+func (m *WorkflowRunMutation) OrganizationIDs() (ids []uuid.UUID) {
+	if id := m.organization; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOrganization resets all changes to the "organization" edge.
+func (m *WorkflowRunMutation) ResetOrganization() {
+	m.organization = nil
+	m.clearedorganization = false
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by id.
 func (m *WorkflowRunMutation) SetContractVersionID(id uuid.UUID) {
 	m.contract_version = &id
@@ -19602,7 +19750,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 22)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -19641,6 +19789,9 @@ func (m *WorkflowRunMutation) Fields() []string {
 	}
 	if m.workflow != nil {
 		fields = append(fields, workflowrun.FieldWorkflowID)
+	}
+	if m.organization != nil {
+		fields = append(fields, workflowrun.FieldOrganizationID)
 	}
 	if m.has_policy_violations != nil {
 		fields = append(fields, workflowrun.FieldHasPolicyViolations)
@@ -19700,6 +19851,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.VersionID()
 	case workflowrun.FieldWorkflowID:
 		return m.WorkflowID()
+	case workflowrun.FieldOrganizationID:
+		return m.OrganizationID()
 	case workflowrun.FieldHasPolicyViolations:
 		return m.HasPolicyViolations()
 	case workflowrun.FieldPolicyStatus:
@@ -19751,6 +19904,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldVersionID(ctx)
 	case workflowrun.FieldWorkflowID:
 		return m.OldWorkflowID(ctx)
+	case workflowrun.FieldOrganizationID:
+		return m.OldOrganizationID(ctx)
 	case workflowrun.FieldHasPolicyViolations:
 		return m.OldHasPolicyViolations(ctx)
 	case workflowrun.FieldPolicyStatus:
@@ -19866,6 +20021,13 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetWorkflowID(v)
+		return nil
+	case workflowrun.FieldOrganizationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
 		return nil
 	case workflowrun.FieldHasPolicyViolations:
 		v, ok := value.(bool)
@@ -20191,6 +20353,9 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 	case workflowrun.FieldWorkflowID:
 		m.ResetWorkflowID()
 		return nil
+	case workflowrun.FieldOrganizationID:
+		m.ResetOrganizationID()
+		return nil
 	case workflowrun.FieldHasPolicyViolations:
 		m.ResetHasPolicyViolations()
 		return nil
@@ -20221,9 +20386,12 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkflowRunMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.workflow != nil {
 		edges = append(edges, workflowrun.EdgeWorkflow)
+	}
+	if m.organization != nil {
+		edges = append(edges, workflowrun.EdgeOrganization)
 	}
 	if m.contract_version != nil {
 		edges = append(edges, workflowrun.EdgeContractVersion)
@@ -20246,6 +20414,10 @@ func (m *WorkflowRunMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case workflowrun.EdgeWorkflow:
 		if id := m.workflow; id != nil {
+			return []ent.Value{*id}
+		}
+	case workflowrun.EdgeOrganization:
+		if id := m.organization; id != nil {
 			return []ent.Value{*id}
 		}
 	case workflowrun.EdgeContractVersion:
@@ -20272,7 +20444,7 @@ func (m *WorkflowRunMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkflowRunMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedcas_backends != nil {
 		edges = append(edges, workflowrun.EdgeCasBackends)
 	}
@@ -20295,9 +20467,12 @@ func (m *WorkflowRunMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkflowRunMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedworkflow {
 		edges = append(edges, workflowrun.EdgeWorkflow)
+	}
+	if m.clearedorganization {
+		edges = append(edges, workflowrun.EdgeOrganization)
 	}
 	if m.clearedcontract_version {
 		edges = append(edges, workflowrun.EdgeContractVersion)
@@ -20320,6 +20495,8 @@ func (m *WorkflowRunMutation) EdgeCleared(name string) bool {
 	switch name {
 	case workflowrun.EdgeWorkflow:
 		return m.clearedworkflow
+	case workflowrun.EdgeOrganization:
+		return m.clearedorganization
 	case workflowrun.EdgeContractVersion:
 		return m.clearedcontract_version
 	case workflowrun.EdgeCasBackends:
@@ -20338,6 +20515,9 @@ func (m *WorkflowRunMutation) ClearEdge(name string) error {
 	switch name {
 	case workflowrun.EdgeWorkflow:
 		m.ClearWorkflow()
+		return nil
+	case workflowrun.EdgeOrganization:
+		m.ClearOrganization()
 		return nil
 	case workflowrun.EdgeContractVersion:
 		m.ClearContractVersion()
@@ -20358,6 +20538,9 @@ func (m *WorkflowRunMutation) ResetEdge(name string) error {
 	switch name {
 	case workflowrun.EdgeWorkflow:
 		m.ResetWorkflow()
+		return nil
+	case workflowrun.EdgeOrganization:
+		m.ResetOrganization()
 		return nil
 	case workflowrun.EdgeContractVersion:
 		m.ResetContractVersion()

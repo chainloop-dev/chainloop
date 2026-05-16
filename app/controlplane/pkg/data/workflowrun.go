@@ -25,7 +25,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -102,6 +101,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		// Create workflow run
 		p, err = tx.WorkflowRun.Create().
 			SetWorkflowID(opts.WorkflowID).
+			SetOrganizationID(wf.OrganizationID).
 			SetVersionID(version.ID).
 			SetContractVersionID(opts.SchemaVersionID).
 			SetRunURL(opts.RunURL).
@@ -367,31 +367,24 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		return nil, "", errors.New("pagination options is required")
 	}
 
-	// workflow filters
-	wfPredicates := []predicate.Workflow{
-		workflow.DeletedAtIsNil(),
-		workflow.OrganizationID(orgID),
-	}
-	if filters.ProjectIDs != nil {
-		wfPredicates = append(wfPredicates, workflow.ProjectIDIn(filters.ProjectIDs...))
-	}
-
-	// query first for workflows to avoid joining the workflow_runs table
-	wfExist, err := r.data.DB.Workflow.Query().Where(wfPredicates...).Exist(ctx)
-	if err != nil {
-		return nil, "", fmt.Errorf("getting workflows: %w", err)
-	}
-	if !wfExist {
-		// No workflows in the org, no runs
-		return nil, "", nil
-	}
-
-	// Query workflow runs by joining with workflows
-	q := r.data.DB.WorkflowRun.Query().Where(
-		workflowrun.HasWorkflowWith(wfPredicates...)).
+	// Org-scoped query uses the denormalized organization_id column for a
+	// sargable range scan via the (organization_id, created_at DESC) index.
+	// See PFM-5839 — the prior HasWorkflowWith form compiled to a correlated
+	// EXISTS that let the planner pick a bad ORDER BY created_at DESC plan.
+	q := r.data.DB.WorkflowRun.Query().
+		Where(workflowrun.OrganizationID(orgID)).
 		Order(ent.Desc(workflowrun.FieldCreatedAt)).
 		WithWorkflowAndProject().WithVersion().
 		Limit(p.Limit + 1)
+
+	// Project filter still goes via the workflows edge — narrows after the
+	// org-scoped index lookup.
+	if filters != nil && filters.ProjectIDs != nil {
+		q = q.Where(workflowrun.HasWorkflowWith(
+			workflow.DeletedAtIsNil(),
+			workflow.ProjectIDIn(filters.ProjectIDs...),
+		))
+	}
 
 	// Append the workflow filter if present
 	if filters != nil && filters.WorkflowID != nil {

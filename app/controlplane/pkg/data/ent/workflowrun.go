@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontractversion"
@@ -51,6 +52,8 @@ type WorkflowRun struct {
 	VersionID uuid.UUID `json:"version_id,omitempty"`
 	// WorkflowID holds the value of the "workflow_id" field.
 	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// HasPolicyViolations holds the value of the "has_policy_violations" field.
 	HasPolicyViolations *bool `json:"has_policy_violations,omitempty"`
 	// PolicyStatus holds the value of the "policy_status" field.
@@ -78,6 +81,8 @@ type WorkflowRun struct {
 type WorkflowRunEdges struct {
 	// Workflow holds the value of the workflow edge.
 	Workflow *Workflow `json:"workflow,omitempty"`
+	// Organization holds the value of the organization edge.
+	Organization *Organization `json:"organization,omitempty"`
 	// ContractVersion holds the value of the contract_version edge.
 	ContractVersion *WorkflowContractVersion `json:"contract_version,omitempty"`
 	// CasBackends holds the value of the cas_backends edge.
@@ -88,7 +93,7 @@ type WorkflowRunEdges struct {
 	AttestationBundle *Attestation `json:"attestation_bundle,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // WorkflowOrErr returns the Workflow value or an error if the edge
@@ -102,12 +107,23 @@ func (e WorkflowRunEdges) WorkflowOrErr() (*Workflow, error) {
 	return nil, &NotLoadedError{edge: "workflow"}
 }
 
+// OrganizationOrErr returns the Organization value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e WorkflowRunEdges) OrganizationOrErr() (*Organization, error) {
+	if e.Organization != nil {
+		return e.Organization, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: organization.Label}
+	}
+	return nil, &NotLoadedError{edge: "organization"}
+}
+
 // ContractVersionOrErr returns the ContractVersion value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e WorkflowRunEdges) ContractVersionOrErr() (*WorkflowContractVersion, error) {
 	if e.ContractVersion != nil {
 		return e.ContractVersion, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: workflowcontractversion.Label}
 	}
 	return nil, &NotLoadedError{edge: "contract_version"}
@@ -116,7 +132,7 @@ func (e WorkflowRunEdges) ContractVersionOrErr() (*WorkflowContractVersion, erro
 // CasBackendsOrErr returns the CasBackends value or an error if the edge
 // was not loaded in eager-loading.
 func (e WorkflowRunEdges) CasBackendsOrErr() ([]*CASBackend, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.CasBackends, nil
 	}
 	return nil, &NotLoadedError{edge: "cas_backends"}
@@ -127,7 +143,7 @@ func (e WorkflowRunEdges) CasBackendsOrErr() ([]*CASBackend, error) {
 func (e WorkflowRunEdges) VersionOrErr() (*ProjectVersion, error) {
 	if e.Version != nil {
 		return e.Version, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[4] {
 		return nil, &NotFoundError{label: projectversion.Label}
 	}
 	return nil, &NotLoadedError{edge: "version"}
@@ -138,7 +154,7 @@ func (e WorkflowRunEdges) VersionOrErr() (*ProjectVersion, error) {
 func (e WorkflowRunEdges) AttestationBundleOrErr() (*Attestation, error) {
 	if e.AttestationBundle != nil {
 		return e.AttestationBundle, nil
-	} else if e.loadedTypes[4] {
+	} else if e.loadedTypes[5] {
 		return nil, &NotFoundError{label: attestation.Label}
 	}
 	return nil, &NotLoadedError{edge: "attestation_bundle"}
@@ -159,7 +175,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case workflowrun.FieldCreatedAt, workflowrun.FieldFinishedAt:
 			values[i] = new(sql.NullTime)
-		case workflowrun.FieldID, workflowrun.FieldVersionID, workflowrun.FieldWorkflowID:
+		case workflowrun.FieldID, workflowrun.FieldVersionID, workflowrun.FieldWorkflowID, workflowrun.FieldOrganizationID:
 			values[i] = new(uuid.UUID)
 		case workflowrun.ForeignKeys[0]: // workflow_run_contract_version
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -264,6 +280,12 @@ func (_m *WorkflowRun) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.WorkflowID = *value
 			}
+		case workflowrun.FieldOrganizationID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+			} else if value != nil {
+				_m.OrganizationID = *value
+			}
 		case workflowrun.FieldHasPolicyViolations:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field has_policy_violations", values[i])
@@ -343,6 +365,11 @@ func (_m *WorkflowRun) Value(name string) (ent.Value, error) {
 // QueryWorkflow queries the "workflow" edge of the WorkflowRun entity.
 func (_m *WorkflowRun) QueryWorkflow() *WorkflowQuery {
 	return NewWorkflowRunClient(_m.config).QueryWorkflow(_m)
+}
+
+// QueryOrganization queries the "organization" edge of the WorkflowRun entity.
+func (_m *WorkflowRun) QueryOrganization() *OrganizationQuery {
+	return NewWorkflowRunClient(_m.config).QueryOrganization(_m)
 }
 
 // QueryContractVersion queries the "contract_version" edge of the WorkflowRun entity.
@@ -426,6 +453,9 @@ func (_m *WorkflowRun) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("workflow_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowID))
+	builder.WriteString(", ")
+	builder.WriteString("organization_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationID))
 	builder.WriteString(", ")
 	if v := _m.HasPolicyViolations; v != nil {
 		builder.WriteString("has_policy_violations=")

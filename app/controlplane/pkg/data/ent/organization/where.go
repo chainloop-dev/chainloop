@@ -480,6 +480,29 @@ func HasWorkflowsWith(preds ...predicate.Workflow) predicate.Organization {
 	})
 }
 
+// HasWorkflowruns applies the HasEdge predicate on the "workflowruns" edge.
+func HasWorkflowruns() predicate.Organization {
+	return predicate.Organization(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, WorkflowrunsTable, WorkflowrunsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasWorkflowrunsWith applies the HasEdge predicate on the "workflowruns" edge with a given conditions (other predicates).
+func HasWorkflowrunsWith(preds ...predicate.WorkflowRun) predicate.Organization {
+	return predicate.Organization(func(s *sql.Selector) {
+		step := newWorkflowrunsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasCasBackends applies the HasEdge predicate on the "cas_backends" edge.
 func HasCasBackends() predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {

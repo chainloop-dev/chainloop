@@ -22,6 +22,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -247,6 +248,21 @@ func (_u *OrganizationUpdate) AddWorkflows(v ...*Workflow) *OrganizationUpdate {
 	return _u.AddWorkflowIDs(ids...)
 }
 
+// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
+func (_u *OrganizationUpdate) AddWorkflowrunIDs(ids ...uuid.UUID) *OrganizationUpdate {
+	_u.mutation.AddWorkflowrunIDs(ids...)
+	return _u
+}
+
+// AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
+func (_u *OrganizationUpdate) AddWorkflowruns(v ...*WorkflowRun) *OrganizationUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddWorkflowrunIDs(ids...)
+}
+
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
 func (_u *OrganizationUpdate) AddCasBackendIDs(ids ...uuid.UUID) *OrganizationUpdate {
 	_u.mutation.AddCasBackendIDs(ids...)
@@ -388,6 +404,27 @@ func (_u *OrganizationUpdate) RemoveWorkflows(v ...*Workflow) *OrganizationUpdat
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveWorkflowIDs(ids...)
+}
+
+// ClearWorkflowruns clears all "workflowruns" edges to the WorkflowRun entity.
+func (_u *OrganizationUpdate) ClearWorkflowruns() *OrganizationUpdate {
+	_u.mutation.ClearWorkflowruns()
+	return _u
+}
+
+// RemoveWorkflowrunIDs removes the "workflowruns" edge to WorkflowRun entities by IDs.
+func (_u *OrganizationUpdate) RemoveWorkflowrunIDs(ids ...uuid.UUID) *OrganizationUpdate {
+	_u.mutation.RemoveWorkflowrunIDs(ids...)
+	return _u
+}
+
+// RemoveWorkflowruns removes "workflowruns" edges to WorkflowRun entities.
+func (_u *OrganizationUpdate) RemoveWorkflowruns(v ...*WorkflowRun) *OrganizationUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveWorkflowrunIDs(ids...)
 }
 
 // ClearCasBackends clears all "cas_backends" edges to the CASBackend entity.
@@ -712,6 +749,51 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.WorkflowrunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.WorkflowrunsTable,
+			Columns: []string{organization.WorkflowrunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowrunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.WorkflowrunsTable,
+			Columns: []string{organization.WorkflowrunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.WorkflowrunsTable,
+			Columns: []string{organization.WorkflowrunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1174,6 +1256,21 @@ func (_u *OrganizationUpdateOne) AddWorkflows(v ...*Workflow) *OrganizationUpdat
 	return _u.AddWorkflowIDs(ids...)
 }
 
+// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
+func (_u *OrganizationUpdateOne) AddWorkflowrunIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
+	_u.mutation.AddWorkflowrunIDs(ids...)
+	return _u
+}
+
+// AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
+func (_u *OrganizationUpdateOne) AddWorkflowruns(v ...*WorkflowRun) *OrganizationUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddWorkflowrunIDs(ids...)
+}
+
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
 func (_u *OrganizationUpdateOne) AddCasBackendIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
 	_u.mutation.AddCasBackendIDs(ids...)
@@ -1315,6 +1412,27 @@ func (_u *OrganizationUpdateOne) RemoveWorkflows(v ...*Workflow) *OrganizationUp
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveWorkflowIDs(ids...)
+}
+
+// ClearWorkflowruns clears all "workflowruns" edges to the WorkflowRun entity.
+func (_u *OrganizationUpdateOne) ClearWorkflowruns() *OrganizationUpdateOne {
+	_u.mutation.ClearWorkflowruns()
+	return _u
+}
+
+// RemoveWorkflowrunIDs removes the "workflowruns" edge to WorkflowRun entities by IDs.
+func (_u *OrganizationUpdateOne) RemoveWorkflowrunIDs(ids ...uuid.UUID) *OrganizationUpdateOne {
+	_u.mutation.RemoveWorkflowrunIDs(ids...)
+	return _u
+}
+
+// RemoveWorkflowruns removes "workflowruns" edges to WorkflowRun entities.
+func (_u *OrganizationUpdateOne) RemoveWorkflowruns(v ...*WorkflowRun) *OrganizationUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveWorkflowrunIDs(ids...)
 }
 
 // ClearCasBackends clears all "cas_backends" edges to the CASBackend entity.
@@ -1669,6 +1787,51 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.WorkflowrunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.WorkflowrunsTable,
+			Columns: []string{organization.WorkflowrunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedWorkflowrunsIDs(); len(nodes) > 0 && !_u.mutation.WorkflowrunsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.WorkflowrunsTable,
+			Columns: []string{organization.WorkflowrunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.WorkflowrunsTable,
+			Columns: []string{organization.WorkflowrunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
