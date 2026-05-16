@@ -370,9 +370,9 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 
 	// Org-scoped query uses the denormalized organization_id column for a
 	// sargable range scan via the (organization_id, created_at DESC) index.
-	// See PFM-5839 — the prior HasWorkflowWith form compiled to a correlated
-	// EXISTS that let the planner pick a bad ORDER BY created_at DESC plan.
-	// The deleted_at filter still goes via the workflows edge: it's a per-row
+	// The prior HasWorkflowWith form compiled to a correlated EXISTS that
+	// let the planner pick a bad ORDER BY created_at DESC plan. The
+	// deleted_at filter still goes via the workflows edge: it's a per-row
 	// PK lookup applied after the index narrows the candidate set, so it
 	// doesn't reintroduce the planner ambiguity.
 	wfPredicates := []predicate.Workflow{workflow.DeletedAtIsNil()}

@@ -1,7 +1,7 @@
 -- atlas:txmode none
 
 -- Denormalize organization_id onto workflow_runs so org-scoped list/aggregate
--- queries become sargable without joining workflows. See PFM-5839.
+-- queries become sargable without joining workflows.
 --
 -- Why a trigger?
 --
