@@ -130,6 +130,32 @@ func (s *workflowRunIntegrationTestSuite) TestList() {
 	}
 }
 
+func (s *workflowRunIntegrationTestSuite) TestListExcludesSoftDeletedWorkflows() {
+	ctx := context.Background()
+
+	// Create a fresh workflow + run, soft-delete the workflow, and make sure
+	// the run is excluded from List. Regression guard for the case where
+	// org-scoped reads use the denormalized organization_id column on
+	// workflow_runs and could otherwise leak runs from deleted workflows.
+	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+		Name: "to-be-deleted", OrgID: s.org2.ID, Project: "test-project",
+	})
+	s.Require().NoError(err)
+
+	_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+		WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+	})
+	s.Require().NoError(err)
+
+	s.Require().NoError(s.Workflow.Delete(ctx, s.org2.ID, wf.ID.String()))
+
+	got, _, err := s.WorkflowRun.List(ctx, s.org2.ID, &biz.RunListFilters{}, &pagination.CursorOptions{Limit: 10})
+	s.Require().NoError(err)
+	for _, r := range got {
+		s.NotEqual(wf.ID, r.Workflow.ID, "run from soft-deleted workflow leaked into List")
+	}
+}
+
 func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	assert := assert.New(s.T())
 	ctx := context.Background()

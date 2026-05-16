@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/attestation"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -371,20 +372,22 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 	// sargable range scan via the (organization_id, created_at DESC) index.
 	// See PFM-5839 — the prior HasWorkflowWith form compiled to a correlated
 	// EXISTS that let the planner pick a bad ORDER BY created_at DESC plan.
+	// The deleted_at filter still goes via the workflows edge: it's a per-row
+	// PK lookup applied after the index narrows the candidate set, so it
+	// doesn't reintroduce the planner ambiguity.
+	wfPredicates := []predicate.Workflow{workflow.DeletedAtIsNil()}
+	if filters != nil && filters.ProjectIDs != nil {
+		wfPredicates = append(wfPredicates, workflow.ProjectIDIn(filters.ProjectIDs...))
+	}
+
 	q := r.data.DB.WorkflowRun.Query().
-		Where(workflowrun.OrganizationID(orgID)).
+		Where(
+			workflowrun.OrganizationID(orgID),
+			workflowrun.HasWorkflowWith(wfPredicates...),
+		).
 		Order(ent.Desc(workflowrun.FieldCreatedAt)).
 		WithWorkflowAndProject().WithVersion().
 		Limit(p.Limit + 1)
-
-	// Project filter still goes via the workflows edge — narrows after the
-	// org-scoped index lookup.
-	if filters != nil && filters.ProjectIDs != nil {
-		q = q.Where(workflowrun.HasWorkflowWith(
-			workflow.DeletedAtIsNil(),
-			workflow.ProjectIDIn(filters.ProjectIDs...),
-		))
-	}
 
 	// Append the workflow filter if present
 	if filters != nil && filters.WorkflowID != nil {
