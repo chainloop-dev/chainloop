@@ -1,0 +1,19 @@
+app/controlplane/Dockerfile.migrations
+  s_f53881c86c55ec::t_56cd649d10cdf0 3-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "8eee27e80d48dab4cfaa602be5828c21e30e6a1e",
+  "prompts": {},
+  "sessions": {
+    "s_f53881c86c55ec": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f286dba9-20ad-4039-8d7c-7677510fec29",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Miguel Martinez <miguel@chainloop.dev>"
+    }
+  }
+}
