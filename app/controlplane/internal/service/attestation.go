@@ -757,8 +757,8 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		return nil, errors.NotFound("not found", "neither robot account nor API token found")
 	}
 
-	// Workflow-scoped API tokens cannot create or look up other workflows.
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.WorkflowID != nil {
+	// Workflow-scoped API tokens may only target their own workflow.
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.WorkflowName != nil && *token.WorkflowName != req.GetWorkflowName() {
 		return nil, errors.Forbidden("forbidden", "API token is workflow-scoped and cannot create or look up other workflows")
 	}
 
