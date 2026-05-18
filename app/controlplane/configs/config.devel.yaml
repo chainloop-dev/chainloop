@@ -130,7 +130,7 @@ attestations:
 # deployments that don't use managed CAS — the pod's ambient AWS
 # identity (IRSA / instance profile / AWS_* env vars) is what calls
 # sts:AssumeRole on base_role_arn; no static credentials live here.
-# blob_backends:
+# managed_cas_backends:
 #   s3_access_point:
 #     base_role_arn: arn:aws:iam::123456789012:role/chainloop-cas-tenant
 #     region: us-east-1

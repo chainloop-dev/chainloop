@@ -25,10 +25,10 @@ message Bootstrap {
   Auth auth = 2;
   Observability observability = 3;
   credentials.v1.Credentials credentials_service = 4;
-  // Deployment-level configuration for storage backend providers that
-  // need ambient knobs beyond what's stored per-CASBackend. Optional —
+  // Deployment-level configuration for managed CAS storage backends
+  // (provisioned and operated by Chainloop, not by tenants). Optional —
   // omitting a sub-block keeps the corresponding provider unregistered.
-  BlobBackends blob_backends = 5;
+  ManagedCASBackends managed_cas_backends = 5;
 
   message Observability {
     Sentry sentry = 1;
@@ -83,11 +83,11 @@ message Server {
   HTTP http_metrics = 3;
 }
 
-// BlobBackends mirrors the controlplane's `BlobBackends` block. Defined
-// independently here so the artifact-cas binary doesn't depend on the
-// controlplane's protobuf package. Keep field numbering in sync across
-// both definitions.
-message BlobBackends {
+// ManagedCASBackends mirrors the controlplane's `ManagedCASBackends`
+// block. Defined independently here so the artifact-cas binary doesn't
+// depend on the controlplane's protobuf package. Keep field numbering
+// in sync across both definitions.
+message ManagedCASBackends {
   S3AccessPoint s3_access_point = 1;
 
   message S3AccessPoint {

@@ -127,17 +127,19 @@ message Bootstrap {
   // Attestation storage and processing options
   Attestations attestations = 21;
 
-  // Deployment-level configuration for storage backend providers that
-  // need ambient knobs beyond what's stored per-CASBackend. Optional —
-  // omitting a sub-block keeps the corresponding provider unregistered.
-  BlobBackends blob_backends = 22;
+  // Deployment-level configuration for managed CAS storage backends
+  // (provisioned and operated by Chainloop, not by tenants). Optional —
+  // omitting a sub-block keeps the corresponding provider unregistered,
+  // so on-prem deployments without managed CAS are unaffected.
+  ManagedCASBackends managed_cas_backends = 22;
 }
 
-// BlobBackends groups the additive, deployment-level config blocks for
-// CAS storage backends. New providers append a nested message rather
+// ManagedCASBackends groups the additive, deployment-level config
+// blocks for the storage providers that back Chainloop-managed CAS
+// backends. New managed providers append a nested message rather
 // than adding top-level fields to Bootstrap, so the surface stays
 // organised as more backends are added.
-message BlobBackends {
+message ManagedCASBackends {
   // S3 Access Point provider — used by SaaS managed CAS to share one
   // physical bucket across tenants. Authentication uses the pod's
   // ambient AWS identity (IRSA / instance profile / env vars); no static

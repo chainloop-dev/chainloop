@@ -24,8 +24,8 @@ import (
 
 // wireApp init kratos application.
 func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth, reader credentials.Reader, logger log.Logger) (*app, func(), error) {
-	blobBackends := bootstrap.BlobBackends
-	options := newLoaderOptions(blobBackends, logger)
+	managedCASBackends := bootstrap.ManagedCasBackends
+	options := newLoaderOptions(managedCASBackends, logger)
 	providers := loader.LoadProviders(reader, options)
 	v := serviceOpts(logger)
 	byteStreamService := service.NewByteStreamService(providers, v...)
@@ -60,11 +60,11 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 // wire.go:
 
 // newLoaderOptions builds the loader.Options struct from the deployment
-// Bootstrap. When `blob_backends.s3_access_point` is absent (the common
-// case for on-prem) S3AccessPoint stays nil and the provider is not
-// registered, leaving the binary's behaviour identical to the pre-managed
-// CAS world.
-func newLoaderOptions(in *conf.BlobBackends, l log.Logger) *loader.Options {
+// Bootstrap. When `managed_cas_backends.s3_access_point` is absent (the
+// common case for on-prem) S3AccessPoint stays nil and the provider is
+// not registered, leaving the binary's behaviour identical to the
+// pre-managed-CAS world.
+func newLoaderOptions(in *conf.ManagedCASBackends, l log.Logger) *loader.Options {
 	opts := &loader.Options{Logger: l}
 	if in == nil || in.GetS3AccessPoint() == nil {
 		return opts

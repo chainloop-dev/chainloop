@@ -65,8 +65,8 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	membershipRepo := data.NewMembershipRepo(dataData, groupRepo, logger)
 	organizationRepo := data.NewOrganizationRepo(dataData, logger)
 	casBackendRepo := data.NewCASBackendRepo(dataData, logger)
-	blobBackends := bootstrap.BlobBackends
-	options := newLoaderOptions(blobBackends, logger)
+	managedCASBackends := bootstrap.ManagedCasBackends
+	options := newLoaderOptions(managedCASBackends, logger)
 	providers := loader.LoadProviders(readerWriter, options)
 	bootstrap_CASServer := bootstrap.CasServer
 	casServerDefaultOpts := newCASServerOptions(bootstrap_CASServer)
@@ -469,11 +469,11 @@ func serviceOpts(l log.Logger, authzUC *biz.AuthzUseCase, pUC *biz.ProjectUseCas
 }
 
 // newLoaderOptions builds the loader.Options struct from the deployment
-// Bootstrap. When `blob_backends.s3_access_point` is absent (the common
-// case for on-prem) S3AccessPoint stays nil and the provider is not
-// registered, leaving the binary's behaviour identical to the pre-managed
-// CAS world.
-func newLoaderOptions(in *conf.BlobBackends, l log.Logger) *loader.Options {
+// Bootstrap. When `managed_cas_backends.s3_access_point` is absent (the
+// common case for on-prem) S3AccessPoint stays nil and the provider is
+// not registered, leaving the binary's behaviour identical to the
+// pre-managed-CAS world.
+func newLoaderOptions(in *conf.ManagedCASBackends, l log.Logger) *loader.Options {
 	opts := &loader.Options{Logger: l}
 	if in == nil || in.GetS3AccessPoint() == nil {
 		return opts

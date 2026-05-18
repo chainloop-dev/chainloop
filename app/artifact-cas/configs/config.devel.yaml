@@ -41,10 +41,10 @@ auth:
   public_key_path: ${PUBLIC_KEY_PATH:../../devel/devkeys/cas.pub}
 
 # Optional managed CAS provider (S3 Access Points). Mirrors the
-# controlplane's blob_backends block — both binaries must agree on the
-# settings since each independently instantiates the provider. Leave
-# commented out for on-prem deployments that don't use managed CAS.
-# blob_backends:
+# controlplane's managed_cas_backends block — both binaries must agree
+# on the settings since each independently instantiates the provider.
+# Leave commented out for on-prem deployments that don't use managed CAS.
+# managed_cas_backends:
 #   s3_access_point:
 #     base_role_arn: arn:aws:iam::123456789012:role/chainloop-cas-tenant
 #     region: us-east-1

@@ -84,12 +84,13 @@ type Bootstrap struct {
 	OperationAuthorizationProvider *OperationAuthorizationProvider `protobuf:"bytes,20,opt,name=operation_authorization_provider,json=operationAuthorizationProvider,proto3" json:"operation_authorization_provider,omitempty"`
 	// Attestation storage and processing options
 	Attestations *Attestations `protobuf:"bytes,21,opt,name=attestations,proto3" json:"attestations,omitempty"`
-	// Deployment-level configuration for storage backend providers that
-	// need ambient knobs beyond what's stored per-CASBackend. Optional —
-	// omitting a sub-block keeps the corresponding provider unregistered.
-	BlobBackends  *BlobBackends `protobuf:"bytes,22,opt,name=blob_backends,json=blobBackends,proto3" json:"blob_backends,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Deployment-level configuration for managed CAS storage backends
+	// (provisioned and operated by Chainloop, not by tenants). Optional —
+	// omitting a sub-block keeps the corresponding provider unregistered,
+	// so on-prem deployments without managed CAS are unaffected.
+	ManagedCasBackends *ManagedCASBackends `protobuf:"bytes,22,opt,name=managed_cas_backends,json=managedCasBackends,proto3" json:"managed_cas_backends,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Bootstrap) Reset() {
@@ -270,42 +271,43 @@ func (x *Bootstrap) GetAttestations() *Attestations {
 	return nil
 }
 
-func (x *Bootstrap) GetBlobBackends() *BlobBackends {
+func (x *Bootstrap) GetManagedCasBackends() *ManagedCASBackends {
 	if x != nil {
-		return x.BlobBackends
+		return x.ManagedCasBackends
 	}
 	return nil
 }
 
-// BlobBackends groups the additive, deployment-level config blocks for
-// CAS storage backends. New providers append a nested message rather
+// ManagedCASBackends groups the additive, deployment-level config
+// blocks for the storage providers that back Chainloop-managed CAS
+// backends. New managed providers append a nested message rather
 // than adding top-level fields to Bootstrap, so the surface stays
 // organised as more backends are added.
-type BlobBackends struct {
+type ManagedCASBackends struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// S3 Access Point provider — used by SaaS managed CAS to share one
 	// physical bucket across tenants. Authentication uses the pod's
 	// ambient AWS identity (IRSA / instance profile / env vars); no static
 	// credentials live in this block by design.
-	S3AccessPoint *BlobBackends_S3AccessPoint `protobuf:"bytes,1,opt,name=s3_access_point,json=s3AccessPoint,proto3" json:"s3_access_point,omitempty"`
+	S3AccessPoint *ManagedCASBackends_S3AccessPoint `protobuf:"bytes,1,opt,name=s3_access_point,json=s3AccessPoint,proto3" json:"s3_access_point,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BlobBackends) Reset() {
-	*x = BlobBackends{}
+func (x *ManagedCASBackends) Reset() {
+	*x = ManagedCASBackends{}
 	mi := &file_controlplane_config_v1_conf_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BlobBackends) String() string {
+func (x *ManagedCASBackends) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BlobBackends) ProtoMessage() {}
+func (*ManagedCASBackends) ProtoMessage() {}
 
-func (x *BlobBackends) ProtoReflect() protoreflect.Message {
+func (x *ManagedCASBackends) ProtoReflect() protoreflect.Message {
 	mi := &file_controlplane_config_v1_conf_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -317,12 +319,12 @@ func (x *BlobBackends) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BlobBackends.ProtoReflect.Descriptor instead.
-func (*BlobBackends) Descriptor() ([]byte, []int) {
+// Deprecated: Use ManagedCASBackends.ProtoReflect.Descriptor instead.
+func (*ManagedCASBackends) Descriptor() ([]byte, []int) {
 	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *BlobBackends) GetS3AccessPoint() *BlobBackends_S3AccessPoint {
+func (x *ManagedCASBackends) GetS3AccessPoint() *ManagedCASBackends_S3AccessPoint {
 	if x != nil {
 		return x.S3AccessPoint
 	}
@@ -1343,7 +1345,7 @@ func (x *Bootstrap_Observability_Tracing) GetSamplingRatio() float64 {
 	return 0
 }
 
-type BlobBackends_S3AccessPoint struct {
+type ManagedCASBackends_S3AccessPoint struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// IAM role the controlplane / artifact-cas pod assumes per request
 	// via sts:AssumeRole. Must allow s3:{Get,Put,Delete}Object on every
@@ -1366,20 +1368,20 @@ type BlobBackends_S3AccessPoint struct {
 	sizeCache                    protoimpl.SizeCache
 }
 
-func (x *BlobBackends_S3AccessPoint) Reset() {
-	*x = BlobBackends_S3AccessPoint{}
+func (x *ManagedCASBackends_S3AccessPoint) Reset() {
+	*x = ManagedCASBackends_S3AccessPoint{}
 	mi := &file_controlplane_config_v1_conf_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BlobBackends_S3AccessPoint) String() string {
+func (x *ManagedCASBackends_S3AccessPoint) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BlobBackends_S3AccessPoint) ProtoMessage() {}
+func (*ManagedCASBackends_S3AccessPoint) ProtoMessage() {}
 
-func (x *BlobBackends_S3AccessPoint) ProtoReflect() protoreflect.Message {
+func (x *ManagedCASBackends_S3AccessPoint) ProtoReflect() protoreflect.Message {
 	mi := &file_controlplane_config_v1_conf_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1391,33 +1393,33 @@ func (x *BlobBackends_S3AccessPoint) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BlobBackends_S3AccessPoint.ProtoReflect.Descriptor instead.
-func (*BlobBackends_S3AccessPoint) Descriptor() ([]byte, []int) {
+// Deprecated: Use ManagedCASBackends_S3AccessPoint.ProtoReflect.Descriptor instead.
+func (*ManagedCASBackends_S3AccessPoint) Descriptor() ([]byte, []int) {
 	return file_controlplane_config_v1_conf_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (x *BlobBackends_S3AccessPoint) GetBaseRoleArn() string {
+func (x *ManagedCASBackends_S3AccessPoint) GetBaseRoleArn() string {
 	if x != nil {
 		return x.BaseRoleArn
 	}
 	return ""
 }
 
-func (x *BlobBackends_S3AccessPoint) GetRegion() string {
+func (x *ManagedCASBackends_S3AccessPoint) GetRegion() string {
 	if x != nil {
 		return x.Region
 	}
 	return ""
 }
 
-func (x *BlobBackends_S3AccessPoint) GetSessionDuration() *durationpb.Duration {
+func (x *ManagedCASBackends_S3AccessPoint) GetSessionDuration() *durationpb.Duration {
 	if x != nil {
 		return x.SessionDuration
 	}
 	return nil
 }
 
-func (x *BlobBackends_S3AccessPoint) GetDevModeUseAmbientCredentials() bool {
+func (x *ManagedCASBackends_S3AccessPoint) GetDevModeUseAmbientCredentials() bool {
 	if x != nil {
 		return x.DevModeUseAmbientCredentials
 	}
@@ -1932,7 +1934,7 @@ var File_controlplane_config_v1_conf_proto protoreflect.FileDescriptor
 
 const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\n" +
-	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xc0\x12\n" +
+	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xd3\x12\n" +
 	"\tBootstrap\x126\n" +
 	"\x06server\x18\x01 \x01(\v2\x1e.controlplane.config.v1.ServerR\x06server\x120\n" +
 	"\x04data\x18\x02 \x01(\v2\x1c.controlplane.config.v1.DataR\x04data\x120\n" +
@@ -1960,8 +1962,8 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x15restrict_org_creation\x18\x12 \x01(\bR\x13restrictOrgCreation\x12(\n" +
 	"\x10ui_dashboard_url\x18\x13 \x01(\tR\x0euiDashboardUrl\x12\x80\x01\n" +
 	" operation_authorization_provider\x18\x14 \x01(\v26.controlplane.config.v1.OperationAuthorizationProviderR\x1eoperationAuthorizationProvider\x12H\n" +
-	"\fattestations\x18\x15 \x01(\v2$.controlplane.config.v1.AttestationsR\fattestations\x12I\n" +
-	"\rblob_backends\x18\x16 \x01(\v2$.controlplane.config.v1.BlobBackendsR\fblobBackends\x1a\x8d\x03\n" +
+	"\fattestations\x18\x15 \x01(\v2$.controlplane.config.v1.AttestationsR\fattestations\x12\\\n" +
+	"\x14managed_cas_backends\x18\x16 \x01(\v2*.controlplane.config.v1.ManagedCASBackendsR\x12managedCasBackends\x1a\x8d\x03\n" +
 	"\rObservability\x12N\n" +
 	"\x06sentry\x18\x01 \x01(\v26.controlplane.config.v1.Bootstrap.Observability.SentryR\x06sentry\x12Q\n" +
 	"\atracing\x18\x02 \x01(\v27.controlplane.config.v1.Bootstrap.Observability.TracingR\atracing\x1a<\n" +
@@ -1984,9 +1986,9 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x03uri\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03uri\x12\x1f\n" +
 	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x05token\x12\x1a\n" +
 	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
-	"\x0eauthentication\"\x9a\x04\n" +
-	"\fBlobBackends\x12Z\n" +
-	"\x0fs3_access_point\x18\x01 \x01(\v22.controlplane.config.v1.BlobBackends.S3AccessPointR\rs3AccessPoint\x1a\xad\x03\n" +
+	"\x0eauthentication\"\xa6\x04\n" +
+	"\x12ManagedCASBackends\x12`\n" +
+	"\x0fs3_access_point\x18\x01 \x01(\v28.controlplane.config.v1.ManagedCASBackends.S3AccessPointR\rs3AccessPoint\x1a\xad\x03\n" +
 	"\rS3AccessPoint\x12\"\n" +
 	"\rbase_role_arn\x18\x01 \x01(\tR\vbaseRoleArn\x12\x1f\n" +
 	"\x06region\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06region\x12D\n" +
@@ -2090,36 +2092,36 @@ func file_controlplane_config_v1_conf_proto_rawDescGZIP() []byte {
 
 var file_controlplane_config_v1_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_controlplane_config_v1_conf_proto_goTypes = []any{
-	(*Bootstrap)(nil),                       // 0: controlplane.config.v1.Bootstrap
-	(*BlobBackends)(nil),                    // 1: controlplane.config.v1.BlobBackends
-	(*Attestations)(nil),                    // 2: controlplane.config.v1.Attestations
-	(*OperationAuthorizationProvider)(nil),  // 3: controlplane.config.v1.OperationAuthorizationProvider
-	(*FederatedAuthentication)(nil),         // 4: controlplane.config.v1.FederatedAuthentication
-	(*PolicyProvider)(nil),                  // 5: controlplane.config.v1.PolicyProvider
-	(*ReferrerSharedIndex)(nil),             // 6: controlplane.config.v1.ReferrerSharedIndex
-	(*Server)(nil),                          // 7: controlplane.config.v1.Server
-	(*Data)(nil),                            // 8: controlplane.config.v1.Data
-	(*Auth)(nil),                            // 9: controlplane.config.v1.Auth
-	(*TSA)(nil),                             // 10: controlplane.config.v1.TSA
-	(*CA)(nil),                              // 11: controlplane.config.v1.CA
-	(*PrometheusIntegrationSpec)(nil),       // 12: controlplane.config.v1.PrometheusIntegrationSpec
-	(*Bootstrap_Observability)(nil),         // 13: controlplane.config.v1.Bootstrap.Observability
-	(*Bootstrap_CASServer)(nil),             // 14: controlplane.config.v1.Bootstrap.CASServer
-	(*Bootstrap_NatsServer)(nil),            // 15: controlplane.config.v1.Bootstrap.NatsServer
-	(*Bootstrap_Observability_Sentry)(nil),  // 16: controlplane.config.v1.Bootstrap.Observability.Sentry
-	(*Bootstrap_Observability_Tracing)(nil), // 17: controlplane.config.v1.Bootstrap.Observability.Tracing
-	(*BlobBackends_S3AccessPoint)(nil),      // 18: controlplane.config.v1.BlobBackends.S3AccessPoint
-	(*Server_HTTP)(nil),                     // 19: controlplane.config.v1.Server.HTTP
-	(*Server_TLS)(nil),                      // 20: controlplane.config.v1.Server.TLS
-	(*Server_GRPC)(nil),                     // 21: controlplane.config.v1.Server.GRPC
-	(*Data_Database)(nil),                   // 22: controlplane.config.v1.Data.Database
-	(*Auth_OIDC)(nil),                       // 23: controlplane.config.v1.Auth.OIDC
-	(*CA_FileCA)(nil),                       // 24: controlplane.config.v1.CA.FileCA
-	(*CA_EJBCA)(nil),                        // 25: controlplane.config.v1.CA.EJBCA
-	(*v1.Credentials)(nil),                  // 26: credentials.v1.Credentials
-	(*v11.OnboardingSpec)(nil),              // 27: controlplane.config.v1.OnboardingSpec
-	(*v11.AllowList)(nil),                   // 28: controlplane.config.v1.AllowList
-	(*durationpb.Duration)(nil),             // 29: google.protobuf.Duration
+	(*Bootstrap)(nil),                        // 0: controlplane.config.v1.Bootstrap
+	(*ManagedCASBackends)(nil),               // 1: controlplane.config.v1.ManagedCASBackends
+	(*Attestations)(nil),                     // 2: controlplane.config.v1.Attestations
+	(*OperationAuthorizationProvider)(nil),   // 3: controlplane.config.v1.OperationAuthorizationProvider
+	(*FederatedAuthentication)(nil),          // 4: controlplane.config.v1.FederatedAuthentication
+	(*PolicyProvider)(nil),                   // 5: controlplane.config.v1.PolicyProvider
+	(*ReferrerSharedIndex)(nil),              // 6: controlplane.config.v1.ReferrerSharedIndex
+	(*Server)(nil),                           // 7: controlplane.config.v1.Server
+	(*Data)(nil),                             // 8: controlplane.config.v1.Data
+	(*Auth)(nil),                             // 9: controlplane.config.v1.Auth
+	(*TSA)(nil),                              // 10: controlplane.config.v1.TSA
+	(*CA)(nil),                               // 11: controlplane.config.v1.CA
+	(*PrometheusIntegrationSpec)(nil),        // 12: controlplane.config.v1.PrometheusIntegrationSpec
+	(*Bootstrap_Observability)(nil),          // 13: controlplane.config.v1.Bootstrap.Observability
+	(*Bootstrap_CASServer)(nil),              // 14: controlplane.config.v1.Bootstrap.CASServer
+	(*Bootstrap_NatsServer)(nil),             // 15: controlplane.config.v1.Bootstrap.NatsServer
+	(*Bootstrap_Observability_Sentry)(nil),   // 16: controlplane.config.v1.Bootstrap.Observability.Sentry
+	(*Bootstrap_Observability_Tracing)(nil),  // 17: controlplane.config.v1.Bootstrap.Observability.Tracing
+	(*ManagedCASBackends_S3AccessPoint)(nil), // 18: controlplane.config.v1.ManagedCASBackends.S3AccessPoint
+	(*Server_HTTP)(nil),                      // 19: controlplane.config.v1.Server.HTTP
+	(*Server_TLS)(nil),                       // 20: controlplane.config.v1.Server.TLS
+	(*Server_GRPC)(nil),                      // 21: controlplane.config.v1.Server.GRPC
+	(*Data_Database)(nil),                    // 22: controlplane.config.v1.Data.Database
+	(*Auth_OIDC)(nil),                        // 23: controlplane.config.v1.Auth.OIDC
+	(*CA_FileCA)(nil),                        // 24: controlplane.config.v1.CA.FileCA
+	(*CA_EJBCA)(nil),                         // 25: controlplane.config.v1.CA.EJBCA
+	(*v1.Credentials)(nil),                   // 26: credentials.v1.Credentials
+	(*v11.OnboardingSpec)(nil),               // 27: controlplane.config.v1.OnboardingSpec
+	(*v11.AllowList)(nil),                    // 28: controlplane.config.v1.AllowList
+	(*durationpb.Duration)(nil),              // 29: google.protobuf.Duration
 }
 var file_controlplane_config_v1_conf_proto_depIdxs = []int32{
 	7,  // 0: controlplane.config.v1.Bootstrap.server:type_name -> controlplane.config.v1.Server
@@ -2139,8 +2141,8 @@ var file_controlplane_config_v1_conf_proto_depIdxs = []int32{
 	4,  // 14: controlplane.config.v1.Bootstrap.federated_authentication:type_name -> controlplane.config.v1.FederatedAuthentication
 	3,  // 15: controlplane.config.v1.Bootstrap.operation_authorization_provider:type_name -> controlplane.config.v1.OperationAuthorizationProvider
 	2,  // 16: controlplane.config.v1.Bootstrap.attestations:type_name -> controlplane.config.v1.Attestations
-	1,  // 17: controlplane.config.v1.Bootstrap.blob_backends:type_name -> controlplane.config.v1.BlobBackends
-	18, // 18: controlplane.config.v1.BlobBackends.s3_access_point:type_name -> controlplane.config.v1.BlobBackends.S3AccessPoint
+	1,  // 17: controlplane.config.v1.Bootstrap.managed_cas_backends:type_name -> controlplane.config.v1.ManagedCASBackends
+	18, // 18: controlplane.config.v1.ManagedCASBackends.s3_access_point:type_name -> controlplane.config.v1.ManagedCASBackends.S3AccessPoint
 	19, // 19: controlplane.config.v1.Server.http:type_name -> controlplane.config.v1.Server.HTTP
 	21, // 20: controlplane.config.v1.Server.grpc:type_name -> controlplane.config.v1.Server.GRPC
 	19, // 21: controlplane.config.v1.Server.http_metrics:type_name -> controlplane.config.v1.Server.HTTP
@@ -2152,7 +2154,7 @@ var file_controlplane_config_v1_conf_proto_depIdxs = []int32{
 	16, // 27: controlplane.config.v1.Bootstrap.Observability.sentry:type_name -> controlplane.config.v1.Bootstrap.Observability.Sentry
 	17, // 28: controlplane.config.v1.Bootstrap.Observability.tracing:type_name -> controlplane.config.v1.Bootstrap.Observability.Tracing
 	21, // 29: controlplane.config.v1.Bootstrap.CASServer.grpc:type_name -> controlplane.config.v1.Server.GRPC
-	29, // 30: controlplane.config.v1.BlobBackends.S3AccessPoint.session_duration:type_name -> google.protobuf.Duration
+	29, // 30: controlplane.config.v1.ManagedCASBackends.S3AccessPoint.session_duration:type_name -> google.protobuf.Duration
 	29, // 31: controlplane.config.v1.Server.HTTP.timeout:type_name -> google.protobuf.Duration
 	29, // 32: controlplane.config.v1.Server.GRPC.timeout:type_name -> google.protobuf.Duration
 	20, // 33: controlplane.config.v1.Server.GRPC.tls_config:type_name -> controlplane.config.v1.Server.TLS

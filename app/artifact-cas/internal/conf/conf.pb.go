@@ -44,12 +44,12 @@ type Bootstrap struct {
 	Auth               *Auth                    `protobuf:"bytes,2,opt,name=auth,proto3" json:"auth,omitempty"`
 	Observability      *Bootstrap_Observability `protobuf:"bytes,3,opt,name=observability,proto3" json:"observability,omitempty"`
 	CredentialsService *v1.Credentials          `protobuf:"bytes,4,opt,name=credentials_service,json=credentialsService,proto3" json:"credentials_service,omitempty"`
-	// Deployment-level configuration for storage backend providers that
-	// need ambient knobs beyond what's stored per-CASBackend. Optional —
+	// Deployment-level configuration for managed CAS storage backends
+	// (provisioned and operated by Chainloop, not by tenants). Optional —
 	// omitting a sub-block keeps the corresponding provider unregistered.
-	BlobBackends  *BlobBackends `protobuf:"bytes,5,opt,name=blob_backends,json=blobBackends,proto3" json:"blob_backends,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ManagedCasBackends *ManagedCASBackends `protobuf:"bytes,5,opt,name=managed_cas_backends,json=managedCasBackends,proto3" json:"managed_cas_backends,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Bootstrap) Reset() {
@@ -110,9 +110,9 @@ func (x *Bootstrap) GetCredentialsService() *v1.Credentials {
 	return nil
 }
 
-func (x *Bootstrap) GetBlobBackends() *BlobBackends {
+func (x *Bootstrap) GetManagedCasBackends() *ManagedCASBackends {
 	if x != nil {
-		return x.BlobBackends
+		return x.ManagedCasBackends
 	}
 	return nil
 }
@@ -180,31 +180,31 @@ func (x *Server) GetHttpMetrics() *Server_HTTP {
 	return nil
 }
 
-// BlobBackends mirrors the controlplane's `BlobBackends` block. Defined
-// independently here so the artifact-cas binary doesn't depend on the
-// controlplane's protobuf package. Keep field numbering in sync across
-// both definitions.
-type BlobBackends struct {
-	state         protoimpl.MessageState      `protogen:"open.v1"`
-	S3AccessPoint *BlobBackends_S3AccessPoint `protobuf:"bytes,1,opt,name=s3_access_point,json=s3AccessPoint,proto3" json:"s3_access_point,omitempty"`
+// ManagedCASBackends mirrors the controlplane's `ManagedCASBackends`
+// block. Defined independently here so the artifact-cas binary doesn't
+// depend on the controlplane's protobuf package. Keep field numbering
+// in sync across both definitions.
+type ManagedCASBackends struct {
+	state         protoimpl.MessageState            `protogen:"open.v1"`
+	S3AccessPoint *ManagedCASBackends_S3AccessPoint `protobuf:"bytes,1,opt,name=s3_access_point,json=s3AccessPoint,proto3" json:"s3_access_point,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BlobBackends) Reset() {
-	*x = BlobBackends{}
+func (x *ManagedCASBackends) Reset() {
+	*x = ManagedCASBackends{}
 	mi := &file_conf_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BlobBackends) String() string {
+func (x *ManagedCASBackends) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BlobBackends) ProtoMessage() {}
+func (*ManagedCASBackends) ProtoMessage() {}
 
-func (x *BlobBackends) ProtoReflect() protoreflect.Message {
+func (x *ManagedCASBackends) ProtoReflect() protoreflect.Message {
 	mi := &file_conf_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -216,12 +216,12 @@ func (x *BlobBackends) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BlobBackends.ProtoReflect.Descriptor instead.
-func (*BlobBackends) Descriptor() ([]byte, []int) {
+// Deprecated: Use ManagedCASBackends.ProtoReflect.Descriptor instead.
+func (*ManagedCASBackends) Descriptor() ([]byte, []int) {
 	return file_conf_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *BlobBackends) GetS3AccessPoint() *BlobBackends_S3AccessPoint {
+func (x *ManagedCASBackends) GetS3AccessPoint() *ManagedCASBackends_S3AccessPoint {
 	if x != nil {
 		return x.S3AccessPoint
 	}
@@ -698,7 +698,7 @@ func (x *Server_GRPC) GetTlsConfig() *Server_TLS {
 	return nil
 }
 
-type BlobBackends_S3AccessPoint struct {
+type ManagedCASBackends_S3AccessPoint struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	BaseRoleArn     string                 `protobuf:"bytes,1,opt,name=base_role_arn,json=baseRoleArn,proto3" json:"base_role_arn,omitempty"`
 	Region          string                 `protobuf:"bytes,2,opt,name=region,proto3" json:"region,omitempty"`
@@ -710,20 +710,20 @@ type BlobBackends_S3AccessPoint struct {
 	sizeCache                    protoimpl.SizeCache
 }
 
-func (x *BlobBackends_S3AccessPoint) Reset() {
-	*x = BlobBackends_S3AccessPoint{}
+func (x *ManagedCASBackends_S3AccessPoint) Reset() {
+	*x = ManagedCASBackends_S3AccessPoint{}
 	mi := &file_conf_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BlobBackends_S3AccessPoint) String() string {
+func (x *ManagedCASBackends_S3AccessPoint) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BlobBackends_S3AccessPoint) ProtoMessage() {}
+func (*ManagedCASBackends_S3AccessPoint) ProtoMessage() {}
 
-func (x *BlobBackends_S3AccessPoint) ProtoReflect() protoreflect.Message {
+func (x *ManagedCASBackends_S3AccessPoint) ProtoReflect() protoreflect.Message {
 	mi := &file_conf_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -735,33 +735,33 @@ func (x *BlobBackends_S3AccessPoint) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BlobBackends_S3AccessPoint.ProtoReflect.Descriptor instead.
-func (*BlobBackends_S3AccessPoint) Descriptor() ([]byte, []int) {
+// Deprecated: Use ManagedCASBackends_S3AccessPoint.ProtoReflect.Descriptor instead.
+func (*ManagedCASBackends_S3AccessPoint) Descriptor() ([]byte, []int) {
 	return file_conf_proto_rawDescGZIP(), []int{2, 0}
 }
 
-func (x *BlobBackends_S3AccessPoint) GetBaseRoleArn() string {
+func (x *ManagedCASBackends_S3AccessPoint) GetBaseRoleArn() string {
 	if x != nil {
 		return x.BaseRoleArn
 	}
 	return ""
 }
 
-func (x *BlobBackends_S3AccessPoint) GetRegion() string {
+func (x *ManagedCASBackends_S3AccessPoint) GetRegion() string {
 	if x != nil {
 		return x.Region
 	}
 	return ""
 }
 
-func (x *BlobBackends_S3AccessPoint) GetSessionDuration() *durationpb.Duration {
+func (x *ManagedCASBackends_S3AccessPoint) GetSessionDuration() *durationpb.Duration {
 	if x != nil {
 		return x.SessionDuration
 	}
 	return nil
 }
 
-func (x *BlobBackends_S3AccessPoint) GetDevModeUseAmbientCredentials() bool {
+func (x *ManagedCASBackends_S3AccessPoint) GetDevModeUseAmbientCredentials() bool {
 	if x != nil {
 		return x.DevModeUseAmbientCredentials
 	}
@@ -773,13 +773,13 @@ var File_conf_proto protoreflect.FileDescriptor
 const file_conf_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xeb\x04\n" +
+	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xfe\x04\n" +
 	"\tBootstrap\x12\x1f\n" +
 	"\x06server\x18\x01 \x01(\v2\a.ServerR\x06server\x12\x19\n" +
 	"\x04auth\x18\x02 \x01(\v2\x05.AuthR\x04auth\x12>\n" +
 	"\robservability\x18\x03 \x01(\v2\x18.Bootstrap.ObservabilityR\robservability\x12L\n" +
-	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x122\n" +
-	"\rblob_backends\x18\x05 \x01(\v2\r.BlobBackendsR\fblobBackends\x1a\xdf\x02\n" +
+	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x12E\n" +
+	"\x14managed_cas_backends\x18\x05 \x01(\v2\x13.ManagedCASBackendsR\x12managedCasBackends\x1a\xdf\x02\n" +
 	"\rObservability\x127\n" +
 	"\x06sentry\x18\x01 \x01(\v2\x1f.Bootstrap.Observability.SentryR\x06sentry\x12:\n" +
 	"\atracing\x18\x02 \x01(\v2 .Bootstrap.Observability.TracingR\atracing\x1a<\n" +
@@ -812,9 +812,9 @@ const file_conf_proto_rawDesc = "" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x123\n" +
 	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12*\n" +
 	"\n" +
-	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfig\"\xaf\x02\n" +
-	"\fBlobBackends\x12C\n" +
-	"\x0fs3_access_point\x18\x01 \x01(\v2\x1b.BlobBackends.S3AccessPointR\rs3AccessPoint\x1a\xd9\x01\n" +
+	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfig\"\xbb\x02\n" +
+	"\x12ManagedCASBackends\x12I\n" +
+	"\x0fs3_access_point\x18\x01 \x01(\v2!.ManagedCASBackends.S3AccessPointR\rs3AccessPoint\x1a\xd9\x01\n" +
 	"\rS3AccessPoint\x12\"\n" +
 	"\rbase_role_arn\x18\x01 \x01(\tR\vbaseRoleArn\x12\x16\n" +
 	"\x06region\x18\x02 \x01(\tR\x06region\x12D\n" +
@@ -838,38 +838,38 @@ func file_conf_proto_rawDescGZIP() []byte {
 
 var file_conf_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_conf_proto_goTypes = []any{
-	(*Bootstrap)(nil),                       // 0: Bootstrap
-	(*Server)(nil),                          // 1: Server
-	(*BlobBackends)(nil),                    // 2: BlobBackends
-	(*Auth)(nil),                            // 3: Auth
-	(*Bootstrap_Observability)(nil),         // 4: Bootstrap.Observability
-	(*Bootstrap_Observability_Sentry)(nil),  // 5: Bootstrap.Observability.Sentry
-	(*Bootstrap_Observability_Tracing)(nil), // 6: Bootstrap.Observability.Tracing
-	(*Server_CORS)(nil),                     // 7: Server.CORS
-	(*Server_HTTP)(nil),                     // 8: Server.HTTP
-	(*Server_TLS)(nil),                      // 9: Server.TLS
-	(*Server_GRPC)(nil),                     // 10: Server.GRPC
-	(*BlobBackends_S3AccessPoint)(nil),      // 11: BlobBackends.S3AccessPoint
-	(*v1.Credentials)(nil),                  // 12: credentials.v1.Credentials
-	(*durationpb.Duration)(nil),             // 13: google.protobuf.Duration
+	(*Bootstrap)(nil),                        // 0: Bootstrap
+	(*Server)(nil),                           // 1: Server
+	(*ManagedCASBackends)(nil),               // 2: ManagedCASBackends
+	(*Auth)(nil),                             // 3: Auth
+	(*Bootstrap_Observability)(nil),          // 4: Bootstrap.Observability
+	(*Bootstrap_Observability_Sentry)(nil),   // 5: Bootstrap.Observability.Sentry
+	(*Bootstrap_Observability_Tracing)(nil),  // 6: Bootstrap.Observability.Tracing
+	(*Server_CORS)(nil),                      // 7: Server.CORS
+	(*Server_HTTP)(nil),                      // 8: Server.HTTP
+	(*Server_TLS)(nil),                       // 9: Server.TLS
+	(*Server_GRPC)(nil),                      // 10: Server.GRPC
+	(*ManagedCASBackends_S3AccessPoint)(nil), // 11: ManagedCASBackends.S3AccessPoint
+	(*v1.Credentials)(nil),                   // 12: credentials.v1.Credentials
+	(*durationpb.Duration)(nil),              // 13: google.protobuf.Duration
 }
 var file_conf_proto_depIdxs = []int32{
 	1,  // 0: Bootstrap.server:type_name -> Server
 	3,  // 1: Bootstrap.auth:type_name -> Auth
 	4,  // 2: Bootstrap.observability:type_name -> Bootstrap.Observability
 	12, // 3: Bootstrap.credentials_service:type_name -> credentials.v1.Credentials
-	2,  // 4: Bootstrap.blob_backends:type_name -> BlobBackends
+	2,  // 4: Bootstrap.managed_cas_backends:type_name -> ManagedCASBackends
 	8,  // 5: Server.http:type_name -> Server.HTTP
 	10, // 6: Server.grpc:type_name -> Server.GRPC
 	8,  // 7: Server.http_metrics:type_name -> Server.HTTP
-	11, // 8: BlobBackends.s3_access_point:type_name -> BlobBackends.S3AccessPoint
+	11, // 8: ManagedCASBackends.s3_access_point:type_name -> ManagedCASBackends.S3AccessPoint
 	5,  // 9: Bootstrap.Observability.sentry:type_name -> Bootstrap.Observability.Sentry
 	6,  // 10: Bootstrap.Observability.tracing:type_name -> Bootstrap.Observability.Tracing
 	13, // 11: Server.HTTP.timeout:type_name -> google.protobuf.Duration
 	7,  // 12: Server.HTTP.cors:type_name -> Server.CORS
 	13, // 13: Server.GRPC.timeout:type_name -> google.protobuf.Duration
 	9,  // 14: Server.GRPC.tls_config:type_name -> Server.TLS
-	13, // 15: BlobBackends.S3AccessPoint.session_duration:type_name -> google.protobuf.Duration
+	13, // 15: ManagedCASBackends.S3AccessPoint.session_duration:type_name -> google.protobuf.Duration
 	16, // [16:16] is the sub-list for method output_type
 	16, // [16:16] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
