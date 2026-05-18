@@ -52,7 +52,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx, span := otelx.Start(ctx, downloadTracer, "DownloadService.ServeHTTP")
 	defer span.End()
-	auth, err := infoFromAuth(ctx)
+	auth, err := casJWT.InfoFromAuth(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return

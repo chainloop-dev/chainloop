@@ -70,35 +70,3 @@ type Providers map[string]Provider
 func DetectedMediaType(b []byte) types.MediaType {
 	return types.MediaType(strings.Split(http.DetectContentType(b), ";")[0])
 }
-
-// requestingOrgCtxKey is unexported so callers must go through
-// WithRequestingOrg / RequestingOrgFromContext; no risk of accidental
-// collision with another package's keys.
-type requestingOrgCtxKey struct{}
-
-// WithRequestingOrg returns a derived context that carries the
-// authenticated requesting organization's UUID. Managed backends
-// (currently AWS-S3-ACCESS-POINT) consume this value to scope per-
-// tenant STS sessions; non-managed backends ignore it.
-//
-// The value MUST come from the verified caller identity (e.g. a CAS
-// JWT claim), NOT from a resolved CASBackend row or its secret blob.
-// The whole secret-tampering defense for managed CAS depends on this
-// being a source the attacker can't rewrite together with the secret
-// store.
-//
-// Callers typically set this once at the auth boundary (the CAS
-// server's JWT middleware) and let the value flow through ctx into
-// the backend's request handlers.
-func WithRequestingOrg(ctx context.Context, orgUUID string) context.Context {
-	return context.WithValue(ctx, requestingOrgCtxKey{}, orgUUID)
-}
-
-// RequestingOrgFromContext extracts the requesting org UUID previously
-// stamped by WithRequestingOrg. Empty string means "no caller set the
-// key" — backends that need a tenant identifier (e.g. managed CAS)
-// should treat that as a fail-closed condition.
-func RequestingOrgFromContext(ctx context.Context) string {
-	v, _ := ctx.Value(requestingOrgCtxKey{}).(string)
-	return v
-}

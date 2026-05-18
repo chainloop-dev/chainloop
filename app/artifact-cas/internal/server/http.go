@@ -65,11 +65,7 @@ func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.Dow
 
 	srv := http.NewServer(opts...)
 
-	// AuthFromQueryParam verifies the JWT and stashes the claims in
-	// ctx; requestingOrgHTTPMiddleware then promotes the org-id claim
-	// into a value consumable by managed CAS providers (mirrors the
-	// gRPC chains).
-	downloadHandler := middlewares_http.AuthFromQueryParam(loadPublicKey(rawKey), claimsFunc(), casJWT.SigningMethod, requestingOrgHTTPMiddleware(downloadSvc))
+	downloadHandler := middlewares_http.AuthFromQueryParam(loadPublicKey(rawKey), claimsFunc(), casJWT.SigningMethod, downloadSvc)
 	srv.Handle(service.DownloadPath, CORSMiddleware(c.GetHttp().GetCors().GetAllowOrigins(), downloadHandler))
 	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version, providers))
 	return srv, nil

@@ -33,6 +33,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 )
 
@@ -130,11 +131,14 @@ func NewBackend(ctx context.Context, cfg *Config, creds *Credentials) (*Backend,
 // invariant the credentials provider enforces, just surfaced earlier
 // with a clearer error.
 func (b *Backend) keyFor(ctx context.Context, digest string) (string, error) {
-	orgUUID := backend.RequestingOrgFromContext(ctx)
-	if orgUUID == "" {
+	claims, err := robotaccount.InfoFromAuth(ctx)
+	if err != nil {
+		return "", err
+	}
+	if claims.OrgID == "" {
 		return "", ErrMissingRequestingOrg
 	}
-	return fmt.Sprintf("%s/sha256:%s", orgUUID, digest), nil
+	return fmt.Sprintf("%s/sha256:%s", claims.OrgID, digest), nil
 }
 
 func (b *Backend) Exists(ctx context.Context, digest string) (bool, error) {
@@ -236,12 +240,15 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 // s3 backend's variant this MUST be invoked with a context carrying
 // WithRequestingOrg; otherwise it fails closed.
 func (b *Backend) CheckWritePermissions(ctx context.Context) error {
-	orgUUID := backend.RequestingOrgFromContext(ctx)
-	if orgUUID == "" {
+	info, err := robotaccount.InfoFromAuth(ctx)
+	if err != nil {
+		return err
+	}
+	if info.OrgID == "" {
 		return ErrMissingRequestingOrg
 	}
 	const testObject = "healthcheck"
-	key := fmt.Sprintf("%s/%s", orgUUID, testObject)
+	key := fmt.Sprintf("%s/%s", info.OrgID, testObject)
 
 	if _, err := b.s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Body:   strings.NewReader("healthcheckdata"),
@@ -288,8 +295,11 @@ type sessionCredentialsProvider struct {
 // be cheap to call (the cache wrapper deduplicates concurrent misses and
 // caches valid creds until ExpiresIn).
 func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
-	orgUUID := backend.RequestingOrgFromContext(ctx)
-	if orgUUID == "" {
+	info, err := robotaccount.InfoFromAuth(ctx)
+	if err != nil {
+		return aws.Credentials{}, err
+	}
+	if info.OrgID == "" {
 		return aws.Credentials{}, ErrMissingRequestingOrg
 	}
 
@@ -310,7 +320,7 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 	// straight from ctx — same source as the session name — so a
 	// tampered AccessPointARN in the secret blob can't widen the prefix
 	// scope to escape into another tenant's namespace.
-	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN, orgUUID)
+	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN, info.OrgID)
 
 	durSecs := int32(p.sessionDuration / time.Second)
 	if durSecs <= 0 {
@@ -319,12 +329,12 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 
 	out, err := p.stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
 		RoleArn:         aws.String(p.baseRoleARN),
-		RoleSessionName: aws.String(roleSessionName(orgUUID)),
+		RoleSessionName: aws.String(roleSessionName(info.OrgID)),
 		Policy:          aws.String(sessionPolicy),
 		DurationSeconds: aws.Int32(durSecs),
 	})
 	if err != nil {
-		return aws.Credentials{}, fmt.Errorf("sts:AssumeRole for org %s: %w", orgUUID, err)
+		return aws.Credentials{}, fmt.Errorf("sts:AssumeRole for org %s: %w", info.OrgID, err)
 	}
 	if out.Credentials == nil {
 		return aws.Credentials{}, errors.New("sts:AssumeRole returned no credentials")

@@ -16,12 +16,15 @@
 package robotaccount
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"os"
 	"time"
 
+	kerrors "github.com/go-kratos/kratos/v2/errors"
+	kratosjwt "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -40,10 +43,7 @@ type Claims struct {
 	MaxBytes       int64  `json:"maxbytes"`  // max bytes to upload
 	// OrgID identifies the authenticated org this token was minted for.
 	// Required for managed providers (AWS-S3-ACCESS-POINT) that need to
-	// scope per-tenant STS sessions; carried as a separate claim from
-	// StoredSecretID so the binding can't be tampered with by rewriting
-	// just the secret store. Empty for legacy tokens or providers that
-	// don't need per-tenant attribution.
+	// scope per-tenant STS sessions;
 	OrgID string `json:"org-id,omitempty"`
 }
 
@@ -185,4 +185,31 @@ func (c *Claims) CheckRole(r Role) error {
 	}
 
 	return nil
+}
+
+// InfoFromAuth extracts the JWT claims from the context, note that the JWT verification has happened in the middleware
+func InfoFromAuth(ctx context.Context) (*Claims, error) {
+	rawClaims, ok := kratosjwt.FromContext(ctx)
+	if !ok {
+		return nil, kerrors.Unauthorized("cas", "missing authentication information")
+	}
+
+	claims, ok := rawClaims.(*Claims)
+	if !ok {
+		return nil, kerrors.Unauthorized("cas", "invalid authentication information")
+	}
+
+	if claims.StoredSecretID == "" {
+		return nil, kerrors.Unauthorized("cas", "missing secret reference")
+	}
+
+	if claims.BackendType == "" {
+		return nil, kerrors.Unauthorized("cas", "missing backend type")
+	}
+
+	if claims.Role != Uploader && claims.Role != Downloader {
+		return nil, kerrors.Unauthorized("cas", "invalid role")
+	}
+
+	return claims, nil
 }

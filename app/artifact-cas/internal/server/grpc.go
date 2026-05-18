@@ -86,11 +86,6 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 					loadPublicKey(rawKey),
 					jwtMiddleware.WithSigningMethod(casJWT.SigningMethod),
 					jwtMiddleware.WithClaims(func() jwt.Claims { return &casJWT.Claims{} })),
-				// Runs after the JWT middleware on authenticated unary
-				// RPCs; stamps the requesting-org UUID from the verified
-				// claims onto ctx so managed CAS providers can scope STS
-				// sessions per tenant.
-				requestingOrgMiddleware(),
 			).Match(requireAuthentication()).Build(),
 		),
 
@@ -188,9 +183,7 @@ func jwtAuthFunc(keyFunc jwt.Keyfunc, signingMethod jwt.SigningMethod) grpc_auth
 			return nil, err
 		}
 
-		ctx = jwtMiddleware.NewContext(ctx, claims)
-		// Same enrichment the unary chain does via requestingOrgMiddleware.
-		return withRequestingOrgFromClaims(ctx), nil
+		return jwtMiddleware.NewContext(ctx, claims), nil
 	}
 }
 

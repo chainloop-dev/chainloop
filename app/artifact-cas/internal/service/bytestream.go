@@ -64,7 +64,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	defer span.End()
 
 	// Get auth info and check that it's an uploader token
-	info, err := infoFromAuth(ctx)
+	info, err := casJWT.InfoFromAuth(ctx)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	ctx := stream.Context()
 	ctx, span := otelx.Start(ctx, byteStreamTracer, "ByteStreamService.Read")
 	defer span.End()
-	info, err := infoFromAuth(ctx)
+	info, err := casJWT.InfoFromAuth(ctx)
 	if err != nil {
 		return err
 	}
