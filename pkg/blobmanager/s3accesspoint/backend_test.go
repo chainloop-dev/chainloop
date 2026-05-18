@@ -22,7 +22,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
-	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +39,7 @@ import (
 // credential chain.
 func TestBackend_FailClosedWithoutRequestingOrg(t *testing.T) {
 	b := newTestBackend(t)
-	ctx := context.Background() // intentionally no backend.WithRequestingOrg
+	ctx := jwtmiddleware.NewContext(context.Background(), &robotaccount.Claims{StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Downloader})
 
 	t.Run("upload", func(t *testing.T) {
 		err := b.Upload(ctx, bytes.NewReader([]byte("data")),
@@ -82,16 +83,19 @@ func TestBackend_KeyDerivedFromRequestingOrg(t *testing.T) {
 	}}
 	digest := "deadbeef"
 
-	keyA, err := b.keyFor(backend.WithRequestingOrg(context.Background(), "org-A"), digest)
+	ctxA := jwtmiddleware.NewContext(context.Background(), &robotaccount.Claims{OrgID: "org-A", StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Downloader})
+	keyA, err := b.keyFor(ctxA, digest)
 	require.NoError(t, err)
-	keyB, err := b.keyFor(backend.WithRequestingOrg(context.Background(), "org-B"), digest)
+	ctxB := jwtmiddleware.NewContext(context.Background(), &robotaccount.Claims{OrgID: "org-B", StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Downloader})
+	keyB, err := b.keyFor(ctxB, digest)
 	require.NoError(t, err)
 
 	assert.Equal(t, "org-A/sha256:deadbeef", keyA)
 	assert.Equal(t, "org-B/sha256:deadbeef", keyB)
 	assert.NotEqual(t, keyA, keyB, "same digest must produce distinct keys across tenants")
 
-	_, err = b.keyFor(context.Background(), digest)
+	ctx := jwtmiddleware.NewContext(context.Background(), &robotaccount.Claims{StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Downloader})
+	_, err = b.keyFor(ctx, digest)
 	require.ErrorIs(t, err, ErrMissingRequestingOrg)
 }
 
@@ -144,7 +148,7 @@ func TestSessionCredentialsProvider_DevModeShortCircuit(t *testing.T) {
 	}
 
 	t.Run("returns ambient credentials when org is set", func(t *testing.T) {
-		ctx := backend.WithRequestingOrg(context.Background(), "org-A")
+		ctx := jwtmiddleware.NewContext(context.Background(), &robotaccount.Claims{OrgID: "org-A", StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Downloader})
 		got, err := p.Retrieve(ctx)
 		require.NoError(t, err)
 		assert.Equal(t, "AKDEV", got.AccessKeyID)
@@ -153,7 +157,8 @@ func TestSessionCredentialsProvider_DevModeShortCircuit(t *testing.T) {
 
 	t.Run("still fails closed without requesting org", func(t *testing.T) {
 		ambient.calls = 0
-		_, err := p.Retrieve(context.Background())
+		_, err := p.Retrieve(jwtmiddleware.NewContext(context.Background(),
+			&robotaccount.Claims{StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Downloader}))
 		require.ErrorIs(t, err, ErrMissingRequestingOrg)
 		assert.Equal(t, 0, ambient.calls, "ambient provider must not be hit when org is missing")
 	})

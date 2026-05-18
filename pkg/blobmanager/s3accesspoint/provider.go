@@ -131,9 +131,6 @@ func (c *Config) Validate() error {
 // untamperable source, so a secrets-store compromise that rewrites this
 // blob still can't reroute a tenant's writes into another tenant's
 // namespace.
-//
-// The platform reconciler is responsible for writing this blob in lockstep
-// with the AWS-side AP creation and policy.
 type Credentials struct {
 	// AccessPointARN, e.g.
 	//   arn:aws:s3:us-east-1:123456789012:accesspoint/chainloop-org-<uuid>
