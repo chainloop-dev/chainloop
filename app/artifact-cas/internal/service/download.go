@@ -76,7 +76,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, b, err := s.loadBackendForClaims(ctx, auth)
+	b, err := s.loadBackend(ctx, auth.BackendType, auth.StoredSecretID)
 	if err != nil && kerrors.IsNotFound(err) {
 		http.Error(w, "backend not found", http.StatusNotFound)
 		return

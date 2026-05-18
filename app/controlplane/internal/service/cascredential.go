@@ -149,12 +149,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		return nil, errors.BadRequest("invalid argument", "cannot upload or download artifacts from an inline CAS backend")
 	}
 
-	// OrgID MUST come from the authenticated caller, not the resolved backend.
-	// For managed CAS the JWT's org-id claim drives the AssumeRole session
-	// name and AP-policy aws:userid match; pulling it from backend.OrganizationID
-	// would short-circuit that check against the very row a tampered secret
-	// could redirect.
-	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: currentOrg.ID}
+	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID}
 	t, err := s.casUC.GenerateTemporaryCredentials(ref)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)

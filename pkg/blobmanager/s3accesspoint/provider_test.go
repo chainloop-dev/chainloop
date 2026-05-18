@@ -152,21 +152,6 @@ func TestNewBackendProvider_NormalizesSessionDuration(t *testing.T) {
 	assert.Equal(t, custom, p2.cfg.SessionDuration)
 }
 
-func TestWithRequestingOrg_RoundTrip(t *testing.T) {
-	// Empty by default.
-	assert.Empty(t, requestingOrgFromContext(context.Background()))
-
-	ctx := WithRequestingOrg(context.Background(), "org-abc")
-	assert.Equal(t, "org-abc", requestingOrgFromContext(ctx))
-
-	// Overwrite is allowed and uses the most recent value (mirrors
-	// context.WithValue semantics — important so a middleware that sets
-	// the org doesn't get silently overridden by a stale value further
-	// down the stack).
-	ctx = WithRequestingOrg(ctx, "org-xyz")
-	assert.Equal(t, "org-xyz", requestingOrgFromContext(ctx))
-}
-
 func TestNewBackendProvider_FailsOnBadConfig(t *testing.T) {
 	_, err := NewBackendProvider(&Config{Region: "us-east-1"}, stubReader{})
 	assert.ErrorContains(t, err, "base_role_arn")

@@ -130,7 +130,7 @@ func NewBackend(ctx context.Context, cfg *Config, creds *Credentials) (*Backend,
 // invariant the credentials provider enforces, just surfaced earlier
 // with a clearer error.
 func (b *Backend) keyFor(ctx context.Context, digest string) (string, error) {
-	orgUUID := requestingOrgFromContext(ctx)
+	orgUUID := backend.RequestingOrgFromContext(ctx)
 	if orgUUID == "" {
 		return "", ErrMissingRequestingOrg
 	}
@@ -236,7 +236,7 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 // s3 backend's variant this MUST be invoked with a context carrying
 // WithRequestingOrg; otherwise it fails closed.
 func (b *Backend) CheckWritePermissions(ctx context.Context) error {
-	orgUUID := requestingOrgFromContext(ctx)
+	orgUUID := backend.RequestingOrgFromContext(ctx)
 	if orgUUID == "" {
 		return ErrMissingRequestingOrg
 	}
@@ -288,7 +288,7 @@ type sessionCredentialsProvider struct {
 // be cheap to call (the cache wrapper deduplicates concurrent misses and
 // caches valid creds until ExpiresIn).
 func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials, error) {
-	orgUUID := requestingOrgFromContext(ctx)
+	orgUUID := backend.RequestingOrgFromContext(ctx)
 	if orgUUID == "" {
 		return aws.Credentials{}, ErrMissingRequestingOrg
 	}

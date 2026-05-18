@@ -22,6 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +30,7 @@ import (
 // TestBackend_FailClosedWithoutRequestingOrg is the load-bearing fail-
 // closed test: any backend operation that would normally hit AWS must
 // refuse to even attempt the call when the caller forgot to enrich the
-// context with WithRequestingOrg. This test does NOT need LocalStack —
+// context with backend.WithRequestingOrg. This test does NOT need LocalStack —
 // the credential provider rejects the request before any AWS SDK code
 // runs.
 //
@@ -37,7 +38,7 @@ import (
 // credential chain.
 func TestBackend_FailClosedWithoutRequestingOrg(t *testing.T) {
 	b := newTestBackend(t)
-	ctx := context.Background() // intentionally no WithRequestingOrg
+	ctx := context.Background() // intentionally no backend.WithRequestingOrg
 
 	t.Run("upload", func(t *testing.T) {
 		err := b.Upload(ctx, bytes.NewReader([]byte("data")),
@@ -81,9 +82,9 @@ func TestBackend_KeyDerivedFromRequestingOrg(t *testing.T) {
 	}}
 	digest := "deadbeef"
 
-	keyA, err := b.keyFor(WithRequestingOrg(context.Background(), "org-A"), digest)
+	keyA, err := b.keyFor(backend.WithRequestingOrg(context.Background(), "org-A"), digest)
 	require.NoError(t, err)
-	keyB, err := b.keyFor(WithRequestingOrg(context.Background(), "org-B"), digest)
+	keyB, err := b.keyFor(backend.WithRequestingOrg(context.Background(), "org-B"), digest)
 	require.NoError(t, err)
 
 	assert.Equal(t, "org-A/sha256:deadbeef", keyA)
@@ -143,7 +144,7 @@ func TestSessionCredentialsProvider_DevModeShortCircuit(t *testing.T) {
 	}
 
 	t.Run("returns ambient credentials when org is set", func(t *testing.T) {
-		ctx := WithRequestingOrg(context.Background(), "org-A")
+		ctx := backend.WithRequestingOrg(context.Background(), "org-A")
 		got, err := p.Retrieve(ctx)
 		require.NoError(t, err)
 		assert.Equal(t, "AKDEV", got.AccessKeyID)

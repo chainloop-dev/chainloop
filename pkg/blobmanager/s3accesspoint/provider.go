@@ -243,28 +243,3 @@ func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJS
 	}
 	return &creds, nil
 }
-
-// requestingOrgCtxKey is unexported so callers must go through
-// WithRequestingOrg / requestingOrgFromContext; no risk of accidental
-// collision with another package's keys.
-type requestingOrgCtxKey struct{}
-
-// WithRequestingOrg returns a derived context that carries the
-// authenticated requesting organization's UUID. Every biz/service path
-// that hands a managed-AP backend off to Upload/Download MUST enrich the
-// ctx via this helper; without it the backend fails closed.
-//
-// The value MUST come from the request's authenticated identity (e.g.
-// usercontext.CurrentOrg(ctx).ID), NOT from the resolved CASBackend or its
-// secret blob. The whole secret-tampering defense depends on this being a
-// source the attacker can't rewrite together with the secret store.
-func WithRequestingOrg(ctx context.Context, orgUUID string) context.Context {
-	return context.WithValue(ctx, requestingOrgCtxKey{}, orgUUID)
-}
-
-// requestingOrgFromContext extracts the requesting org UUID. Empty string
-// means "no caller set the key" — the backend treats this as a hard error.
-func requestingOrgFromContext(ctx context.Context) string {
-	v, _ := ctx.Value(requestingOrgCtxKey{}).(string)
-	return v
-}
