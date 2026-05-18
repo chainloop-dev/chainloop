@@ -31,7 +31,7 @@ Starting now, every time a workflow run occurs, an email notification will be se
 |---|---|---|---|
 |from|string (email)|yes|The email address of the sender.|
 |host|string|yes|The host to use for the SMTP authentication.|
-|password|string|yes|The password to use for the SMTP authentication.|
+|password|string (password)|yes|The password to use for the SMTP authentication.|
 |port|string|yes|The port to use for the SMTP authentication|
 |to|string (email)|yes|The email address to send the email to.|
 |user|string|yes|The username to use for the SMTP authentication.|
@@ -58,6 +58,7 @@ Starting now, every time a workflow run occurs, an email notification will be se
     },
     "password": {
       "type": "string",
+      "format": "password",
       "description": "The password to use for the SMTP authentication."
     },
     "host": {
