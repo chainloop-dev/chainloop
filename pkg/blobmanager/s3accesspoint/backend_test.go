@@ -28,15 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestBackend_FailClosedWithoutRequestingOrg is the load-bearing fail-
-// closed test: any backend operation that would normally hit AWS must
-// refuse to even attempt the call when the caller forgot to enrich the
-// context with backend.WithRequestingOrg. This test does NOT need LocalStack —
-// the credential provider rejects the request before any AWS SDK code
-// runs.
-//
-// Not parallel: uses t.Setenv to fence the AWS SDK off from the real
-// credential chain.
 func TestBackend_FailClosedWithoutRequestingOrg(t *testing.T) {
 	b := newTestBackend(t)
 	ctx := jwtmiddleware.NewContext(context.Background(), &robotaccount.Claims{StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Downloader})
