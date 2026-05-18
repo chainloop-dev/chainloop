@@ -102,6 +102,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		// Create workflow run
 		p, err = tx.WorkflowRun.Create().
 			SetWorkflowID(opts.WorkflowID).
+			SetOrganizationID(wf.OrganizationID).
 			SetVersionID(version.ID).
 			SetContractVersionID(opts.SchemaVersionID).
 			SetRunURL(opts.RunURL).
@@ -367,28 +368,23 @@ func (r *WorkflowRunRepo) List(ctx context.Context, orgID uuid.UUID, filters *bi
 		return nil, "", errors.New("pagination options is required")
 	}
 
-	// workflow filters
-	wfPredicates := []predicate.Workflow{
-		workflow.DeletedAtIsNil(),
-		workflow.OrganizationID(orgID),
-	}
-	if filters.ProjectIDs != nil {
+	// Org-scoped query uses the denormalized organization_id column for a
+	// sargable range scan via the (organization_id, created_at DESC) index.
+	// The prior HasWorkflowWith form compiled to a correlated EXISTS that
+	// let the planner pick a bad ORDER BY created_at DESC plan. The
+	// deleted_at filter still goes via the workflows edge: it's a per-row
+	// PK lookup applied after the index narrows the candidate set, so it
+	// doesn't reintroduce the planner ambiguity.
+	wfPredicates := []predicate.Workflow{workflow.DeletedAtIsNil()}
+	if filters != nil && filters.ProjectIDs != nil {
 		wfPredicates = append(wfPredicates, workflow.ProjectIDIn(filters.ProjectIDs...))
 	}
 
-	// query first for workflows to avoid joining the workflow_runs table
-	wfExist, err := r.data.DB.Workflow.Query().Where(wfPredicates...).Exist(ctx)
-	if err != nil {
-		return nil, "", fmt.Errorf("getting workflows: %w", err)
-	}
-	if !wfExist {
-		// No workflows in the org, no runs
-		return nil, "", nil
-	}
-
-	// Query workflow runs by joining with workflows
-	q := r.data.DB.WorkflowRun.Query().Where(
-		workflowrun.HasWorkflowWith(wfPredicates...)).
+	q := r.data.DB.WorkflowRun.Query().
+		Where(
+			workflowrun.OrganizationID(orgID),
+			workflowrun.HasWorkflowWith(wfPredicates...),
+		).
 		Order(ent.Desc(workflowrun.FieldCreatedAt)).
 		WithWorkflowAndProject().WithVersion().
 		Limit(p.Limit + 1)

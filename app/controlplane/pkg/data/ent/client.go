@@ -2220,6 +2220,22 @@ func (c *OrganizationClient) QueryWorkflows(_m *Organization) *WorkflowQuery {
 	return query
 }
 
+// QueryWorkflowruns queries the workflowruns edge of a Organization.
+func (c *OrganizationClient) QueryWorkflowruns(_m *Organization) *WorkflowRunQuery {
+	query := (&WorkflowRunClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, id),
+			sqlgraph.To(workflowrun.Table, workflowrun.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, organization.WorkflowrunsTable, organization.WorkflowrunsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryCasBackends queries the cas_backends edge of a Organization.
 func (c *OrganizationClient) QueryCasBackends(_m *Organization) *CASBackendQuery {
 	query := (&CASBackendClient{config: c.config}).Query()
@@ -3874,6 +3890,22 @@ func (c *WorkflowRunClient) QueryWorkflow(_m *WorkflowRun) *WorkflowQuery {
 			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.WorkflowTable, workflowrun.WorkflowColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOrganization queries the organization edge of a WorkflowRun.
+func (c *WorkflowRunClient) QueryOrganization(_m *WorkflowRun) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(workflowrun.Table, workflowrun.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, workflowrun.OrganizationTable, workflowrun.OrganizationColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

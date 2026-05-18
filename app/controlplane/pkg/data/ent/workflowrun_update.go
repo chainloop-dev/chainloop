@@ -569,6 +569,9 @@ func (_u *WorkflowRunUpdate) check() error {
 	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
 	}
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.organization"`)
+	}
 	if _u.mutation.VersionCleared() && len(_u.mutation.VersionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)
 	}
@@ -1412,6 +1415,9 @@ func (_u *WorkflowRunUpdateOne) check() error {
 	}
 	if _u.mutation.WorkflowCleared() && len(_u.mutation.WorkflowIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.workflow"`)
+	}
+	if _u.mutation.OrganizationCleared() && len(_u.mutation.OrganizationIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "WorkflowRun.organization"`)
 	}
 	if _u.mutation.VersionCleared() && len(_u.mutation.VersionIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkflowRun.version"`)

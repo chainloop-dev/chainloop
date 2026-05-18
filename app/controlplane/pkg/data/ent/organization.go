@@ -55,6 +55,8 @@ type OrganizationEdges struct {
 	WorkflowContracts []*WorkflowContract `json:"workflow_contracts,omitempty"`
 	// Workflows holds the value of the workflows edge.
 	Workflows []*Workflow `json:"workflows,omitempty"`
+	// Workflowruns holds the value of the workflowruns edge.
+	Workflowruns []*WorkflowRun `json:"workflowruns,omitempty"`
 	// CasBackends holds the value of the cas_backends edge.
 	CasBackends []*CASBackend `json:"cas_backends,omitempty"`
 	// Integrations holds the value of the integrations edge.
@@ -67,7 +69,7 @@ type OrganizationEdges struct {
 	Groups []*Group `json:"groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [8]bool
+	loadedTypes [9]bool
 }
 
 // MembershipsOrErr returns the Memberships value or an error if the edge
@@ -97,10 +99,19 @@ func (e OrganizationEdges) WorkflowsOrErr() ([]*Workflow, error) {
 	return nil, &NotLoadedError{edge: "workflows"}
 }
 
+// WorkflowrunsOrErr returns the Workflowruns value or an error if the edge
+// was not loaded in eager-loading.
+func (e OrganizationEdges) WorkflowrunsOrErr() ([]*WorkflowRun, error) {
+	if e.loadedTypes[3] {
+		return e.Workflowruns, nil
+	}
+	return nil, &NotLoadedError{edge: "workflowruns"}
+}
+
 // CasBackendsOrErr returns the CasBackends value or an error if the edge
 // was not loaded in eager-loading.
 func (e OrganizationEdges) CasBackendsOrErr() ([]*CASBackend, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.CasBackends, nil
 	}
 	return nil, &NotLoadedError{edge: "cas_backends"}
@@ -109,7 +120,7 @@ func (e OrganizationEdges) CasBackendsOrErr() ([]*CASBackend, error) {
 // IntegrationsOrErr returns the Integrations value or an error if the edge
 // was not loaded in eager-loading.
 func (e OrganizationEdges) IntegrationsOrErr() ([]*Integration, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[5] {
 		return e.Integrations, nil
 	}
 	return nil, &NotLoadedError{edge: "integrations"}
@@ -118,7 +129,7 @@ func (e OrganizationEdges) IntegrationsOrErr() ([]*Integration, error) {
 // APITokensOrErr returns the APITokens value or an error if the edge
 // was not loaded in eager-loading.
 func (e OrganizationEdges) APITokensOrErr() ([]*APIToken, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.APITokens, nil
 	}
 	return nil, &NotLoadedError{edge: "api_tokens"}
@@ -127,7 +138,7 @@ func (e OrganizationEdges) APITokensOrErr() ([]*APIToken, error) {
 // ProjectsOrErr returns the Projects value or an error if the edge
 // was not loaded in eager-loading.
 func (e OrganizationEdges) ProjectsOrErr() ([]*Project, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.Projects, nil
 	}
 	return nil, &NotLoadedError{edge: "projects"}
@@ -136,7 +147,7 @@ func (e OrganizationEdges) ProjectsOrErr() ([]*Project, error) {
 // GroupsOrErr returns the Groups value or an error if the edge
 // was not loaded in eager-loading.
 func (e OrganizationEdges) GroupsOrErr() ([]*Group, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[8] {
 		return e.Groups, nil
 	}
 	return nil, &NotLoadedError{edge: "groups"}
@@ -275,6 +286,11 @@ func (_m *Organization) QueryWorkflowContracts() *WorkflowContractQuery {
 // QueryWorkflows queries the "workflows" edge of the Organization entity.
 func (_m *Organization) QueryWorkflows() *WorkflowQuery {
 	return NewOrganizationClient(_m.config).QueryWorkflows(_m)
+}
+
+// QueryWorkflowruns queries the "workflowruns" edge of the Organization entity.
+func (_m *Organization) QueryWorkflowruns() *WorkflowRunQuery {
+	return NewOrganizationClient(_m.config).QueryWorkflowruns(_m)
 }
 
 // QueryCasBackends queries the "cas_backends" edge of the Organization entity.

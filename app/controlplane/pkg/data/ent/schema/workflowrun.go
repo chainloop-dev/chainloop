@@ -59,6 +59,13 @@ func (WorkflowRun) Fields() []ent.Field {
 		// We have runs without data
 		field.UUID("version_id", uuid.UUID{}),
 		field.UUID("workflow_id", uuid.UUID{}).Immutable(),
+		// Denormalized organization scope to make org-level list/aggregate queries
+		// sargable without joining workflows. Immutable: a workflow run never
+		// changes orgs (the parent workflow doesn't either). The migration
+		// installs a BEFORE INSERT trigger that fills this from workflow_id so
+		// the rolling-deploy window is safe; a second migration in the same
+		// release drops the trigger once schema is enforced.
+		field.UUID("organization_id", uuid.UUID{}).Immutable(),
 		// Whether the run has policy violations (nullable for backward compatibility)
 		field.Bool("has_policy_violations").Optional().Nillable(),
 		// Canonical policy status summary — all fields nullable so pre-existing
@@ -82,6 +89,9 @@ func (WorkflowRun) Edges() []ent.Edge {
 		edge.From("workflow", Workflow.Type).Field("workflow_id").
 			Ref("workflowruns").Required().Immutable().
 			Unique(),
+		edge.From("organization", Organization.Type).Field("organization_id").
+			Ref("workflowruns").Required().Immutable().
+			Unique(),
 		edge.To("contract_version", WorkflowContractVersion.Type).Unique().Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 		// A WorkflowRun can have multiple CASBackends associated to it
 		edge.To("cas_backends", CASBackend.Type),
@@ -97,6 +107,9 @@ func (WorkflowRun) Indexes() []ent.Index {
 		index.Fields("created_at").Annotations(entsql.DescColumns("created_at")),
 		index.Fields("workflow_id", "created_at").Annotations(entsql.DescColumns("created_at")),
 		index.Fields("workflow_id", "state", "created_at").Annotations(entsql.DescColumns("created_at")),
+		// Org-scoped list (used by WorkflowRunRepo.List). Replaces the planner's
+		// EXISTS-vs-JOIN ambiguity with a single sargable range scan.
+		index.Fields("organization_id", "created_at").Annotations(entsql.DescColumns("created_at")),
 		// Expiration job
 		index.Fields("state", "created_at"),
 		// search and order by finish date

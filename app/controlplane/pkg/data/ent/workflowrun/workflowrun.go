@@ -43,6 +43,8 @@ const (
 	FieldVersionID = "version_id"
 	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
 	FieldWorkflowID = "workflow_id"
+	// FieldOrganizationID holds the string denoting the organization_id field in the database.
+	FieldOrganizationID = "organization_id"
 	// FieldHasPolicyViolations holds the string denoting the has_policy_violations field in the database.
 	FieldHasPolicyViolations = "has_policy_violations"
 	// FieldPolicyStatus holds the string denoting the policy_status field in the database.
@@ -61,6 +63,8 @@ const (
 	FieldPolicyHasGates = "policy_has_gates"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
+	// EdgeOrganization holds the string denoting the organization edge name in mutations.
+	EdgeOrganization = "organization"
 	// EdgeContractVersion holds the string denoting the contract_version edge name in mutations.
 	EdgeContractVersion = "contract_version"
 	// EdgeCasBackends holds the string denoting the cas_backends edge name in mutations.
@@ -78,6 +82,13 @@ const (
 	WorkflowInverseTable = "workflows"
 	// WorkflowColumn is the table column denoting the workflow relation/edge.
 	WorkflowColumn = "workflow_id"
+	// OrganizationTable is the table that holds the organization relation/edge.
+	OrganizationTable = "workflow_runs"
+	// OrganizationInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OrganizationInverseTable = "organizations"
+	// OrganizationColumn is the table column denoting the organization relation/edge.
+	OrganizationColumn = "organization_id"
 	// ContractVersionTable is the table that holds the contract_version relation/edge.
 	ContractVersionTable = "workflow_runs"
 	// ContractVersionInverseTable is the table name for the WorkflowContractVersion entity.
@@ -122,6 +133,7 @@ var Columns = []string{
 	FieldContractRevisionLatest,
 	FieldVersionID,
 	FieldWorkflowID,
+	FieldOrganizationID,
 	FieldHasPolicyViolations,
 	FieldPolicyStatus,
 	FieldPolicyEvaluationsTotal,
@@ -268,6 +280,11 @@ func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
 }
 
+// ByOrganizationID orders the results by the organization_id field.
+func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
+}
+
 // ByHasPolicyViolations orders the results by the has_policy_violations field.
 func ByHasPolicyViolations(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHasPolicyViolations, opts...).ToFunc()
@@ -315,6 +332,13 @@ func ByWorkflowField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByOrganizationField orders the results by organization field.
+func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByContractVersionField orders the results by contract_version field.
 func ByContractVersionField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -354,6 +378,13 @@ func newWorkflowStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, WorkflowTable, WorkflowColumn),
+	)
+}
+func newOrganizationStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrganizationInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, OrganizationTable, OrganizationColumn),
 	)
 }
 func newContractVersionStep() *sqlgraph.Step {

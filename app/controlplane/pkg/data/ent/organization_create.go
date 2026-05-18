@@ -21,6 +21,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/google/uuid"
 )
 
@@ -227,6 +228,21 @@ func (_c *OrganizationCreate) AddWorkflows(v ...*Workflow) *OrganizationCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddWorkflowIDs(ids...)
+}
+
+// AddWorkflowrunIDs adds the "workflowruns" edge to the WorkflowRun entity by IDs.
+func (_c *OrganizationCreate) AddWorkflowrunIDs(ids ...uuid.UUID) *OrganizationCreate {
+	_c.mutation.AddWorkflowrunIDs(ids...)
+	return _c
+}
+
+// AddWorkflowruns adds the "workflowruns" edges to the WorkflowRun entity.
+func (_c *OrganizationCreate) AddWorkflowruns(v ...*WorkflowRun) *OrganizationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddWorkflowrunIDs(ids...)
 }
 
 // AddCasBackendIDs adds the "cas_backends" edge to the CASBackend entity by IDs.
@@ -520,6 +536,22 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(workflow.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.WorkflowrunsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   organization.WorkflowrunsTable,
+			Columns: []string{organization.WorkflowrunsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workflowrun.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
