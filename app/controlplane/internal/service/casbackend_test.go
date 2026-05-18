@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -66,4 +67,29 @@ func TestBizCASBackendToPb_HidesManagedDetails(t *testing.T) {
 			"managed rows must never leak the backing provider ID")
 		assert.True(t, got.IsManaged)
 	})
+}
+
+// TestIsManagedOnlyProvider locks down which provider IDs are reserved
+// for the platform reconciler. If a new managed provider is added but
+// this list isn't updated, users would be able to create the row
+// directly via CASBackendService.Create — a privilege escalation against
+// the managed-CAS trust model.
+func TestIsManagedOnlyProvider(t *testing.T) {
+	tests := []struct {
+		id       string
+		expected bool
+	}{
+		{s3accesspoint.ProviderID, true},
+		{"AWS-S3", false},
+		{"OCI", false},
+		{"AzureBlob", false},
+		{"INLINE", false},
+		{"", false},
+		{"unknown-provider", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.id, func(t *testing.T) {
+			assert.Equal(t, tc.expected, isManagedOnlyProvider(tc.id))
+		})
+	}
 }

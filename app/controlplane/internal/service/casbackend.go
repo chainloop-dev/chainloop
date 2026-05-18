@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -64,6 +65,16 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Managed-only providers (currently AWS-S3-ACCESS-POINT) are
+	// reserved for the platform reconciler, which provisions them via
+	// the biz layer directly. Reject any attempt to create one through
+	// the public RPC so a user can't end up with a half-provisioned row
+	// pointing at an AP they don't own.
+	if isManagedOnlyProvider(req.Provider) {
+		return nil, errors.BadRequest("invalid CAS backend",
+			"managed CAS backends cannot be created via this API")
 	}
 
 	backendP, ok := s.providers[req.Provider]
@@ -236,4 +247,13 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	}
 
 	return r
+}
+
+// isManagedOnlyProvider returns true when the supplied provider ID can
+// only be instantiated by the platform reconciler — never by a user via
+// the public CASBackendService.Create RPC. Today that's just the S3
+// Access Point provider; if more managed providers land later, list
+// them here.
+func isManagedOnlyProvider(id string) bool {
+	return id == s3accesspoint.ProviderID
 }
