@@ -68,7 +68,7 @@ services:
 
   # Optional Minio S3 backend. Run it with `--profile optional`
   minio:
-    image: quay.io/minio/minio
+    image: minio/minio@sha256:2f5049ec2e993621e8beed610fe381d92e6775c54a1b67ecaa866fc4b72e2935
     ports:
       - 9002:9000
       - 9003:9001
