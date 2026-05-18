@@ -354,9 +354,11 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 
 	callbackValue := callbackURLFromCookie.Value
 
-	// There is no callback, just render the token
+	// There is no callback, render the token in an HTML page with a copy button
 	if callbackValue == "" {
-		fmt.Fprintf(w, "copy this token and paste it in your terminal window\n\n%s", userToken)
+		if err := renderTokenPage(w, userToken); err != nil {
+			return newOauthResp(http.StatusInternalServerError, err, false)
+		}
 		return newOauthResp(http.StatusOK, nil, false)
 	}
 
