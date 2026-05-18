@@ -24,89 +24,14 @@ import (
 	"syscall"
 	"testing"
 
-	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
-	jwtm "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-func TestInfoFromAuth(t *testing.T) {
-	testCases := []struct {
-		name string
-		// input
-		claims  jwt.Claims
-		wantErr bool
-	}{
-		{
-			name: "valid claims downloader",
-			claims: &casJWT.Claims{
-				Role:           casJWT.Downloader,
-				StoredSecretID: "test",
-				BackendType:    "backend-type",
-			},
-		},
-		{
-			name: "valid claims uploader",
-			claims: &casJWT.Claims{
-				Role:           casJWT.Uploader,
-				StoredSecretID: "test",
-				BackendType:    "backend-type",
-			},
-		},
-		{
-			name: "invalid role",
-			claims: &casJWT.Claims{
-				Role:           "invalid",
-				StoredSecretID: "test",
-				BackendType:    "backend-type",
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing secretID",
-			claims: &casJWT.Claims{
-				Role:        "test",
-				BackendType: "backend-type",
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing role",
-			claims: &casJWT.Claims{
-				StoredSecretID: "test",
-				BackendType:    "backend-type",
-			},
-			wantErr: true,
-		},
-		{
-			name: "missing backend type",
-			claims: &casJWT.Claims{
-				StoredSecretID: "test",
-				Role:           "test",
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			info, err := infoFromAuth(jwtm.NewContext(context.Background(), tc.claims))
-			if tc.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
-			assert.Equal(t, tc.claims, info)
-		})
-	}
-}
 
 func TestLoadBackend(t *testing.T) {
 	testCases := []struct {

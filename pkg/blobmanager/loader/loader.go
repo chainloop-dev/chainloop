@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,18 +20,26 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 )
 
+// LoadProviders builds the registry of CAS backend providers consumed by
+// both the controlplane and the artifact-cas binaries. All providers are
+// registered unconditionally — the s3accesspoint provider has no
+// deployment-level config of its own (everything per-tenant lives in the
+// secret blob), so on-prem deployments without managed CAS simply never
+// have managed rows and the provider is dormant.
 func LoadProviders(creader credentials.Reader) backends.Providers {
-	// Initialize CAS backend providers
 	ociProvider := oci.NewBackendProvider(creader)
 	azureBlobProvider := azureblob.NewBackendProvider(creader)
 	s3Provider := s3.NewBackendProvider(creader)
+	apProvider := s3accesspoint.NewBackendProvider(creader)
 
 	return backends.Providers{
 		ociProvider.ID():       ociProvider,
 		azureBlobProvider.ID(): azureBlobProvider,
 		s3Provider.ID():        s3Provider,
+		apProvider.ID():        apProvider,
 	}
 }

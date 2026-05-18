@@ -19,6 +19,7 @@ import (
 	"context"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -43,7 +44,7 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 	ctx, span := otelx.Start(ctx, resourceTracer, "ResourceService.Describe")
 	defer span.End()
 
-	info, err := infoFromAuth(ctx)
+	info, err := casJWT.InfoFromAuth(ctx)
 	if err != nil {
 		return nil, err
 	}

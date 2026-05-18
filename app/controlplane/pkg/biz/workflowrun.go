@@ -708,7 +708,7 @@ func (uc *WorkflowRunUseCase) downloadBundleFromCAS(ctx context.Context, digest 
 	}
 
 	var buf bytes.Buffer
-	if err := uc.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, &buf, digest); err != nil {
+	if err := uc.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, &buf, digest); err != nil {
 		return nil, fmt.Errorf("downloading attestation bundle: %w", err)
 	}
 

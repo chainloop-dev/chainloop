@@ -21,12 +21,10 @@ import (
 	"fmt"
 	"syscall"
 
-	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/google/wire"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -103,31 +101,4 @@ func isClientDisconnect(err error) bool {
 	}
 
 	return false
-}
-
-// Extract the JWT claims from the context, note that the JWT verification has happened in the middleware
-func infoFromAuth(ctx context.Context) (*casJWT.Claims, error) {
-	rawClaims, ok := jwt.FromContext(ctx)
-	if !ok {
-		return nil, kerrors.Unauthorized("cas", "missing authentication information")
-	}
-
-	claims, ok := rawClaims.(*casJWT.Claims)
-	if !ok {
-		return nil, kerrors.Unauthorized("cas", "invalid authentication information")
-	}
-
-	if claims.StoredSecretID == "" {
-		return nil, kerrors.Unauthorized("cas", "missing secret reference")
-	}
-
-	if claims.BackendType == "" {
-		return nil, kerrors.Unauthorized("cas", "missing backend type")
-	}
-
-	if claims.Role != casJWT.Uploader && claims.Role != casJWT.Downloader {
-		return nil, kerrors.Unauthorized("cas", "invalid role")
-	}
-
-	return claims, nil
 }

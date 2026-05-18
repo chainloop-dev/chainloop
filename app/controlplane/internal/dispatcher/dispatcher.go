@@ -92,7 +92,7 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 	}
 
 	// 2. Hydrate the dispatch queue with the actual inputs
-	if err := d.loadInputs(ctx, queue, opts.Envelope, opts.DownloadBackendType, opts.DownloadSecretName); err != nil {
+	if err := d.loadInputs(ctx, queue, opts.Envelope, opts.DownloadBackendType, opts.DownloadSecretName, opts.OrgID); err != nil {
 		return fmt.Errorf("loading materials: %w", err)
 	}
 
@@ -198,7 +198,7 @@ func (d *FanOutDispatcher) initDispatchQueue(ctx context.Context, orgID, workflo
 }
 
 // Load the inputs for the dispatchItem, both materials and attestation
-func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, att *dsse.Envelope, backendType, secretName string) error {
+func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, att *dsse.Envelope, backendType, secretName, orgID string) error {
 	if att == nil {
 		return fmt.Errorf("attestation is nil")
 	}
@@ -252,8 +252,12 @@ func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, 
 			if item.plugin.IsSubscribedTo(material.Type) {
 				// It's a downloadable and has not been downloaded yet
 				if !downloaded && material.Hash != nil && material.UploadedToCAS {
+					orgUUID, err := uuid.Parse(orgID)
+					if err != nil {
+						return fmt.Errorf("parsing org id: %w", err)
+					}
 					buf := bytes.NewBuffer(nil)
-					if err := d.casClient.Download(ctx, backendType, secretName, buf, material.Hash.String()); err != nil {
+					if err := d.casClient.Download(ctx, backendType, secretName, orgUUID, buf, material.Hash.String()); err != nil {
 						return fmt.Errorf("downloading from CAS: %w", err)
 					}
 

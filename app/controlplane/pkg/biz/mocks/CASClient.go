@@ -6,6 +6,7 @@ import (
 	context "context"
 	io "io"
 
+	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -14,17 +15,17 @@ type CASClient struct {
 	mock.Mock
 }
 
-// Download provides a mock function with given fields: ctx, backendType, secretID, w, digest
-func (_m *CASClient) Download(ctx context.Context, backendType string, secretID string, w io.Writer, digest string) error {
-	ret := _m.Called(ctx, backendType, secretID, w, digest)
+// Download provides a mock function with given fields: ctx, backendType, secretID, orgID, w, digest
+func (_m *CASClient) Download(ctx context.Context, backendType string, secretID string, orgID uuid.UUID, w io.Writer, digest string) error {
+	ret := _m.Called(ctx, backendType, secretID, orgID, w, digest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Download")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, io.Writer, string) error); ok {
-		r0 = rf(ctx, backendType, secretID, w, digest)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, uuid.UUID, io.Writer, string) error); ok {
+		r0 = rf(ctx, backendType, secretID, orgID, w, digest)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -32,17 +33,17 @@ func (_m *CASClient) Download(ctx context.Context, backendType string, secretID 
 	return r0
 }
 
-// Upload provides a mock function with given fields: ctx, backendType, secretID, content, filename, digest
-func (_m *CASClient) Upload(ctx context.Context, backendType string, secretID string, content io.Reader, filename string, digest string) error {
-	ret := _m.Called(ctx, backendType, secretID, content, filename, digest)
+// Upload provides a mock function with given fields: ctx, backendType, secretID, orgID, content, filename, digest
+func (_m *CASClient) Upload(ctx context.Context, backendType string, secretID string, orgID uuid.UUID, content io.Reader, filename string, digest string) error {
+	ret := _m.Called(ctx, backendType, secretID, orgID, content, filename, digest)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Upload")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string, io.Reader, string, string) error); ok {
-		r0 = rf(ctx, backendType, secretID, content, filename, digest)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string, uuid.UUID, io.Reader, string, string) error); ok {
+		r0 = rf(ctx, backendType, secretID, orgID, content, filename, digest)
 	} else {
 		r0 = ret.Error(0)
 	}

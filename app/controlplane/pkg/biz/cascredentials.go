@@ -16,11 +16,13 @@
 package biz
 
 import (
+	"fmt"
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	"github.com/google/uuid"
 )
 
 type CASCredentialsUseCase struct {
@@ -48,8 +50,16 @@ type CASCredsOpts struct {
 	SecretPath  string // path to for example the OCI secret in the vault
 	Role        robotaccount.Role
 	MaxBytes    int64
+	// OrgID identifies the org the CAS backend belongs to. Required for
+	// every CAS JWT — managed providers (e.g. AWS-S3-ACCESS-POINT) need
+	// it to scope per-tenant STS sessions, and non-managed providers
+	// still carry it for audit traceability.
+	OrgID uuid.UUID
 }
 
 func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(backendRef *CASCredsOpts) (string, error) {
-	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role, backendRef.MaxBytes)
+	if backendRef.OrgID == uuid.Nil {
+		return "", fmt.Errorf("org id is required")
+	}
+	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role, backendRef.MaxBytes, backendRef.OrgID.String())
 }

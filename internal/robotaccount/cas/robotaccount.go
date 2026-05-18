@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 package robotaccount
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"os"
 	"time"
 
+	kerrors "github.com/go-kratos/kratos/v2/errors"
+	kratosjwt "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -38,6 +41,11 @@ type Claims struct {
 	StoredSecretID string `json:"secret-id"` // path to the OCI secret in the vault
 	BackendType    string `json:"backend"`   // backend to use, i.e OCI
 	MaxBytes       int64  `json:"maxbytes"`  // max bytes to upload
+	// OrgID identifies the authenticated org this token was minted for.
+	// Managed providers (e.g. AWS-S3-ACCESS-POINT) require it to scope
+	// per-tenant STS sessions; the non-managed providers ignore it but
+	// it is still carried for audit traceability.
+	OrgID string `json:"org-id"`
 }
 
 type Role string
@@ -103,7 +111,12 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64) (string, error) {
+// GenerateJWT mints a CAS token. All fields are required, including
+// orgID — managed providers (e.g. AWS-S3-ACCESS-POINT) need it to scope
+// per-tenant STS sessions and other providers still record it for
+// audit. The token always carries the CAS audience and a short expiry
+// window.
+func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64, orgID string) (string, error) {
 	if backendType == "" {
 		return "", fmt.Errorf("backend type is required")
 	}
@@ -116,6 +129,10 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 		return "", fmt.Errorf("audience is required")
 	}
 
+	if orgID == "" {
+		return "", fmt.Errorf("org id is required")
+	}
+
 	if role != Downloader && role != Uploader {
 		return "", fmt.Errorf("invalid role")
 	}
@@ -126,6 +143,7 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 		StoredSecretID: secretID,
 		// Identifier for the backend, i.e OCI
 		BackendType: backendType,
+		OrgID:       orgID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:   ra.issuer,
 			Audience: jwt.ClaimStrings{audience},
@@ -172,4 +190,31 @@ func (c *Claims) CheckRole(r Role) error {
 	}
 
 	return nil
+}
+
+// InfoFromAuth extracts the JWT claims from the context, note that the JWT verification has happened in the middleware
+func InfoFromAuth(ctx context.Context) (*Claims, error) {
+	rawClaims, ok := kratosjwt.FromContext(ctx)
+	if !ok {
+		return nil, kerrors.Unauthorized("cas", "missing authentication information")
+	}
+
+	claims, ok := rawClaims.(*Claims)
+	if !ok {
+		return nil, kerrors.Unauthorized("cas", "invalid authentication information")
+	}
+
+	if claims.StoredSecretID == "" {
+		return nil, kerrors.Unauthorized("cas", "missing secret reference")
+	}
+
+	if claims.BackendType == "" {
+		return nil, kerrors.Unauthorized("cas", "missing backend type")
+	}
+
+	if claims.Role != Uploader && claims.Role != Downloader {
+		return nil, kerrors.Unauthorized("cas", "invalid role")
+	}
+
+	return claims, nil
 }

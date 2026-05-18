@@ -21,6 +21,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -64,6 +65,12 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Managed-only providers (currently AWS-S3-ACCESS-POINT) are reserved
+	if isManagedOnlyProvider(req.Provider) {
+		return nil, errors.BadRequest("invalid CAS backend",
+			"managed CAS backends cannot be created via this API")
 	}
 
 	backendP, ok := s.providers[req.Provider]
@@ -193,13 +200,25 @@ func (s *CASBackendService) Revalidate(ctx context.Context, req *pb.CASBackendSe
 }
 
 func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
+	// Managed backends hide both Location (AP ARN) and Provider
+	// (AWS-S3-ACCESS-POINT) from API clients — both are implementation
+	// details that tenants don't need to know. The DB and biz layer
+	// still carry the real values; only the wire format is sanitized.
+	// See biz.CASBackendManagedLocationDisplay /
+	// biz.CASBackendManagedProviderDisplay.
+	location := in.Location
+	provider := string(in.Provider)
+	if in.Managed {
+		location = biz.CASBackendManagedLocationDisplay
+		provider = biz.CASBackendManagedProviderDisplay
+	}
 	r := &pb.CASBackendItem{
-		Id: in.ID.String(), Location: in.Location, Description: in.Description,
+		Id: in.ID.String(), Location: location, Description: in.Description,
 		Name:        in.Name,
 		CreatedAt:   timestamppb.New(*in.CreatedAt),
 		UpdatedAt:   timestamppb.New(*in.UpdatedAt),
 		ValidatedAt: timestamppb.New(*in.ValidatedAt),
-		Provider:    string(in.Provider),
+		Provider:    provider,
 		Default:     in.Default,
 		Fallback:    in.Fallback,
 		IsInline:    in.Inline,
@@ -224,4 +243,9 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	}
 
 	return r
+}
+
+// isManagedOnlyProvider returns true when the supplied provider is managed
+func isManagedOnlyProvider(id string) bool {
+	return id == s3accesspoint.ProviderID
 }

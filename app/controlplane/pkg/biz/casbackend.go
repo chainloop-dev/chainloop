@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3"
+	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
@@ -47,7 +48,53 @@ const (
 	MinCASBackendMaxBytes           int64              = 10 * 1024 * 1024 // 10MB minimum
 	errMsgCredentialsAccess                            = "Failed to access CAS backend credentials in external Secrets Manager"
 	errMsgCredentialsFormat                            = "Invalid CAS backend credentials format from external Secrets Manager"
+
+	// CASBackendManagedLocationDisplay is the placeholder substituted for
+	// CASBackend.Location whenever a managed backend is exposed beyond
+	// the controlplane's trust boundary (API responses, audit events).
+	// The real ARN remains in the DB so PerformValidation, the platform
+	// reconciler, and forensic joins by CASBackendID still work — only
+	// the wire-format Location is sanitized.
+	CASBackendManagedLocationDisplay = "managed by Chainloop"
+
+	// CASBackendManagedProviderDisplay is the placeholder substituted
+	// for CASBackend.Provider on managed backends. The underlying
+	// provider ID ("AWS-S3-ACCESS-POINT" today, possibly other managed
+	// providers tomorrow) is itself an implementation detail that
+	// tenants shouldn't see; "Chainloop" tells them everything they
+	// need to know about ownership without revealing the backing
+	// technology.
+	CASBackendManagedProviderDisplay = "Chainloop"
 )
+
+// displayLocation returns the location string we expose outside the
+// controlplane's trust boundary. Managed backends get a stable
+// placeholder; everything else passes through verbatim. Use this for
+// any path that emits a CASBackend.Location to API clients or to the
+// audit event bus.
+func displayLocation(b *CASBackend) string {
+	if b != nil && b.Managed {
+		return CASBackendManagedLocationDisplay
+	}
+	if b == nil {
+		return ""
+	}
+	return b.Location
+}
+
+// displayProvider returns the provider string we expose outside the
+// controlplane's trust boundary. Managed backends report a generic
+// "Chainloop" provider name so the specific backing technology stays
+// internal. Non-managed backends pass through their provider ID.
+func displayProvider(b *CASBackend) string {
+	if b == nil {
+		return ""
+	}
+	if b.Managed {
+		return CASBackendManagedProviderDisplay
+	}
+	return string(b.Provider)
+}
 
 var CASBackendInlineDescription = "Embed artifacts content in the attestation (fallback)"
 
@@ -410,8 +457,8 @@ func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, 
 			CASBackendBase: &events.CASBackendBase{
 				CASBackendID:   &backend.ID,
 				CASBackendName: backend.Name,
-				Provider:       string(backend.Provider),
-				Location:       backend.Location,
+				Provider:       displayProvider(backend),
+				Location:       displayLocation(backend),
 				Default:        backend.Default,
 			},
 			CASBackendDescription: description,
@@ -532,8 +579,8 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 			CASBackendBase: &events.CASBackendBase{
 				CASBackendID:   &after.ID,
 				CASBackendName: after.Name,
-				Provider:       string(after.Provider),
-				Location:       after.Location,
+				Provider:       displayProvider(after),
+				Location:       displayLocation(after),
 				Default:        after.Default,
 			},
 			NewDescription:     description,
@@ -642,8 +689,8 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 			CASBackendBase: &events.CASBackendBase{
 				CASBackendID:   &backend.ID,
 				CASBackendName: backend.Name,
-				Provider:       string(backend.Provider),
-				Location:       backend.Location,
+				Provider:       displayProvider(backend),
+				Location:       displayLocation(backend),
 				Default:        backend.Default,
 			},
 		}, &orgUUID)
@@ -691,8 +738,8 @@ func (uc *CASBackendUseCase) Delete(ctx context.Context, id string) error {
 			CASBackendBase: &events.CASBackendBase{
 				CASBackendID:   &backend.ID,
 				CASBackendName: backend.Name,
-				Provider:       string(backend.Provider),
-				Location:       backend.Location,
+				Provider:       displayProvider(backend),
+				Location:       displayLocation(backend),
 				Default:        backend.Default,
 			},
 		}, &backend.OrganizationID)
@@ -781,8 +828,8 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) e
 				CASBackendBase: &events.CASBackendBase{
 					CASBackendID:   &backend.ID,
 					CASBackendName: backend.Name,
-					Provider:       string(backend.Provider),
-					Location:       backend.Location,
+					Provider:       displayProvider(backend),
+					Location:       displayLocation(backend),
 					Default:        backend.Default,
 				},
 				PreviousStatus: string(previousStatus),
@@ -827,7 +874,7 @@ func (uc *CASBackendUseCase) PerformValidation(ctx context.Context, id string) e
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues
 func (CASBackendProvider) Values() (kinds []string) {
-	for _, s := range []CASBackendProvider{azureblob.ProviderID, oci.ProviderID, CASBackendInline, s3.ProviderID} {
+	for _, s := range []CASBackendProvider{azureblob.ProviderID, oci.ProviderID, CASBackendInline, s3.ProviderID, s3accesspoint.ProviderID} {
 		kinds = append(kinds, string(s))
 	}
 

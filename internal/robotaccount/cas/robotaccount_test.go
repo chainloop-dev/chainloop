@@ -16,10 +16,12 @@
 package robotaccount
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
 
+	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -150,7 +152,7 @@ func TestGenerateJWT(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader, 123)
+	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader, 123, "org-uuid")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
@@ -167,12 +169,85 @@ func TestGenerateJWT(t *testing.T) {
 	assert.Equal(t, "my-issuer", claims.Issuer)
 	assert.Contains(t, claims.Audience, "artifact-cas.chainloop")
 	assert.Equal(t, claims.MaxBytes, int64(123))
+	assert.Equal(t, "org-uuid", claims.OrgID)
 	assert.WithinDuration(t, time.Now(), claims.ExpiresAt.Time, 10*time.Second)
 }
 
 // load key for verification
 func loadPublicKey(rawKey []byte) jwt.Keyfunc {
-	return func(token *jwt.Token) (interface{}, error) {
+	return func(_ *jwt.Token) (any, error) {
 		return jwt.ParseECPublicKeyFromPEM(rawKey)
+	}
+}
+
+func TestInfoFromAuth(t *testing.T) {
+	testCases := []struct {
+		name string
+		// input
+		claims  jwt.Claims
+		wantErr bool
+	}{
+		{
+			name: "valid claims downloader",
+			claims: &Claims{
+				Role:           Downloader,
+				StoredSecretID: "test",
+				BackendType:    "backend-type",
+			},
+		},
+		{
+			name: "valid claims uploader",
+			claims: &Claims{
+				Role:           Uploader,
+				StoredSecretID: "test",
+				BackendType:    "backend-type",
+			},
+		},
+		{
+			name: "invalid role",
+			claims: &Claims{
+				Role:           "invalid",
+				StoredSecretID: "test",
+				BackendType:    "backend-type",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing secretID",
+			claims: &Claims{
+				Role:        "test",
+				BackendType: "backend-type",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing role",
+			claims: &Claims{
+				StoredSecretID: "test",
+				BackendType:    "backend-type",
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing backend type",
+			claims: &Claims{
+				StoredSecretID: "test",
+				Role:           "test",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			info, err := InfoFromAuth(jwtmiddleware.NewContext(context.Background(), tc.claims))
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.claims, info)
+		})
 	}
 }
