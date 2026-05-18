@@ -25,10 +25,6 @@ message Bootstrap {
   Auth auth = 2;
   Observability observability = 3;
   credentials.v1.Credentials credentials_service = 4;
-  // Deployment-level configuration for managed CAS storage backends
-  // (provisioned and operated by Chainloop, not by tenants). Optional —
-  // omitting a sub-block keeps the corresponding provider unregistered.
-  ManagedCASBackends managed_cas_backends = 5;
 
   message Observability {
     Sentry sentry = 1;
@@ -81,23 +77,6 @@ message Server {
   GRPC grpc = 2;
   // hHTTP server where the prometheus metrics will get exposed
   HTTP http_metrics = 3;
-}
-
-// ManagedCASBackends mirrors the controlplane's `ManagedCASBackends`
-// block. Defined independently here so the artifact-cas binary doesn't
-// depend on the controlplane's protobuf package. Keep field numbering
-// in sync across both definitions.
-message ManagedCASBackends {
-  S3AccessPoint s3_access_point = 1;
-
-  message S3AccessPoint {
-    string base_role_arn = 1;
-    string region = 2;
-    google.protobuf.Duration session_duration = 3;
-    // DEV ONLY — see controlplane proto for full doc. Bypasses
-    // sts:AssumeRole and uses the pod's ambient AWS identity directly.
-    bool dev_mode_use_ambient_credentials = 4;
-  }
 }
 
 message Auth {

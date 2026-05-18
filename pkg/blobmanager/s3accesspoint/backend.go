@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -52,7 +51,6 @@ var ErrMissingRequestingOrg = errors.New("s3accesspoint: requesting org missing 
 // bound to one access point; the actual AWS credentials are minted
 // per-request via STS using the org UUID found in the request context.
 type Backend struct {
-	cfg   *Config
 	creds *Credentials
 
 	// stsClient is built once at construction using the pod's ambient
@@ -72,32 +70,24 @@ var _ backend.UploaderDownloader = (*Backend)(nil)
 // NewBackend constructs a *Backend wired to an STS-backed credentials
 // provider. ctx is used only for the initial AWS config load (DNS lookups,
 // IMDS, IRSA token reads); it is not retained for later operations.
-func NewBackend(ctx context.Context, cfg *Config, creds *Credentials) (*Backend, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
+func NewBackend(ctx context.Context, creds *Credentials) (*Backend, error) {
 	if err := creds.Validate(); err != nil {
 		return nil, err
-	}
-
-	region := cfg.Region
-	if creds.Region != "" {
-		region = creds.Region
 	}
 
 	// Load the pod's ambient AWS identity once. Subsequent SDK calls
 	// reuse the resulting config; no per-request credential lookup
 	// against the pod identity is necessary.
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(region))
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(creds.Region))
 	if err != nil {
 		return nil, fmt.Errorf("loading aws config: %w", err)
 	}
 
 	stsClient := sts.NewFromConfig(awsCfg)
 
-	// The per-request credential provider closes over cfg + creds so it
-	// can build the session policy from the AP ARN and key prefix every
-	// time AWS asks for fresh credentials. NewCredentialsCache handles
+	// The per-request credential provider closes over creds so it can
+	// build the session policy from the AP ARN and key prefix every time
+	// AWS asks for fresh credentials. NewCredentialsCache handles
 	// proactive refresh and concurrent-call deduplication.
 	//
 	// In dev mode we hand the provider the ambient credentials so it can
@@ -106,9 +96,7 @@ func NewBackend(ctx context.Context, cfg *Config, creds *Credentials) (*Backend,
 	credProvider := aws.NewCredentialsCache(&sessionCredentialsProvider{
 		stsClient:             stsClient,
 		ambientCreds:          awsCfg.Credentials,
-		baseRoleARN:           cfg.BaseRoleARN,
-		sessionDuration:       cfg.SessionDuration,
-		useAmbientForRetrieve: cfg.DevModeUseAmbientCredentials,
+		useAmbientForRetrieve: devModeEnabled(),
 		creds:                 creds,
 	})
 
@@ -117,7 +105,6 @@ func NewBackend(ctx context.Context, cfg *Config, creds *Credentials) (*Backend,
 	})
 
 	return &Backend{
-		cfg:       cfg,
 		creds:     creds,
 		stsClient: stsClient,
 		s3Client:  s3Client,
@@ -275,9 +262,7 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 // reusing the temporary credentials across consecutive calls until the
 // expiration window approaches.
 type sessionCredentialsProvider struct {
-	stsClient       *sts.Client
-	baseRoleARN     string
-	sessionDuration time.Duration
+	stsClient *sts.Client
 
 	// ambientCreds is the SDK-default credentials provider captured from
 	// awsCfg at construction time. Only consulted when
@@ -285,7 +270,7 @@ type sessionCredentialsProvider struct {
 	ambientCreds aws.CredentialsProvider
 	// useAmbientForRetrieve short-circuits Retrieve to return the pod's
 	// ambient AWS credentials directly without calling sts:AssumeRole.
-	// DEV ONLY — see Config.DevModeUseAmbientCredentials.
+	// DEV ONLY — see DevModeEnvVar.
 	useAmbientForRetrieve bool
 
 	creds *Credentials
@@ -322,16 +307,11 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 	// scope to escape into another tenant's namespace.
 	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN, info.OrgID)
 
-	durSecs := int32(p.sessionDuration / time.Second)
-	if durSecs <= 0 {
-		durSecs = int32(DefaultSessionDuration / time.Second)
-	}
-
 	out, err := p.stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
-		RoleArn:         aws.String(p.baseRoleARN),
+		RoleArn:         aws.String(p.creds.BaseRoleARN),
 		RoleSessionName: aws.String(roleSessionName(info.OrgID)),
 		Policy:          aws.String(sessionPolicy),
-		DurationSeconds: aws.Int32(durSecs),
+		DurationSeconds: aws.Int32(int32(SessionDuration.Seconds())),
 	})
 	if err != nil {
 		return aws.Credentials{}, fmt.Errorf("sts:AssumeRole for org %s: %w", info.OrgID, err)

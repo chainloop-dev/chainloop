@@ -27,44 +27,16 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/s3accesspoint"
 )
 
-// stubReader satisfies credentials.Reader; never invoked by the registry
-// builder.
 type stubReader struct{}
 
 func (stubReader) ReadCredentials(_ context.Context, _ string, _ any) error { return nil }
 
-func TestLoadProviders_UnconditionalProvidersAlwaysRegistered(t *testing.T) {
+func TestLoadProviders_AllRegistered(t *testing.T) {
 	t.Parallel()
 
-	for _, opts := range []*Options{nil, {}, {S3AccessPoint: nil}} {
-		ps := LoadProviders(stubReader{}, opts)
-		assert.Contains(t, ps, oci.ProviderID)
-		assert.Contains(t, ps, azureblob.ProviderID)
-		assert.Contains(t, ps, s3.ProviderID)
-		assert.NotContains(t, ps, s3accesspoint.ProviderID,
-			"s3accesspoint must stay off unless explicitly enabled")
-	}
-}
-
-func TestLoadProviders_RegistersS3AccessPointWhenConfigured(t *testing.T) {
-	t.Parallel()
-
-	ps := LoadProviders(stubReader{}, &Options{S3AccessPoint: &s3accesspoint.Config{
-		BaseRoleARN: "arn:aws:iam::123456789012:role/chainloop-cas-tenant",
-		Region:      "us-east-1",
-	}})
-	assert.Contains(t, ps, s3accesspoint.ProviderID)
-}
-
-func TestLoadProviders_SkipsS3AccessPointOnBadConfig(t *testing.T) {
-	t.Parallel()
-
-	// Missing required field — provider construction returns an error,
-	// loader logs a warning and continues without the provider rather
-	// than panicking. The remaining three providers must still be there.
-	ps := LoadProviders(stubReader{}, &Options{S3AccessPoint: &s3accesspoint.Config{
-		Region: "us-east-1",
-	}})
-	assert.NotContains(t, ps, s3accesspoint.ProviderID)
+	ps := LoadProviders(stubReader{})
+	assert.Contains(t, ps, oci.ProviderID)
+	assert.Contains(t, ps, azureblob.ProviderID)
 	assert.Contains(t, ps, s3.ProviderID)
+	assert.Contains(t, ps, s3accesspoint.ProviderID)
 }

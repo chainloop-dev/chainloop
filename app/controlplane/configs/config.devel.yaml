@@ -123,19 +123,3 @@ ui_dashboard_url: http://localhost:3000
 
 attestations:
   skip_db_storage: true
-
-# Optional managed CAS provider (S3 Access Points). When set, the
-# controlplane registers AWS-S3-ACCESS-POINT alongside the always-on
-# providers (OCI, S3, AzureBlob). Leave commented out for on-prem
-# deployments that don't use managed CAS — the pod's ambient AWS
-# identity (IRSA / instance profile / AWS_* env vars) is what calls
-# sts:AssumeRole on base_role_arn; no static credentials live here.
-# managed_cas_backends:
-#   s3_access_point:
-#     base_role_arn: arn:aws:iam::123456789012:role/chainloop-cas-tenant
-#     region: us-east-1
-#     session_duration: 1h
-#     # DEV ONLY: bypass sts:AssumeRole and use whatever AWS identity the
-#     # SDK default credential chain produces (env vars, ~/.aws/credentials,
-#     # IRSA, …). Skips per-tenant isolation; never enable in production.
-#     # dev_mode_use_ambient_credentials: true

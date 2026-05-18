@@ -16,8 +16,6 @@
 package loader
 
 import (
-	"github.com/go-kratos/kratos/v2/log"
-
 	backends "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/azureblob"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
@@ -26,55 +24,27 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 )
 
-// Options gathers the optional, deployment-level config blocks that some
-// providers need at startup. New providers should add a nilable field
-// here, keeping the zero value equivalent to "don't register this
-// provider". Passed by pointer so wire can supply it as a normal value.
-type Options struct {
-	// S3AccessPoint enables the AWS-S3-ACCESS-POINT provider. Nil = off.
-	S3AccessPoint *s3accesspoint.Config
-	// Logger is used to surface non-fatal provider-init warnings.
-	// Optional; loader logs to the default kratos logger when nil.
-	Logger log.Logger
-}
-
 // LoadProviders builds the registry of CAS backend providers consumed by
-// both the controlplane and the artifact-cas binaries. The three always-on
-// providers (oci, azureblob, s3) are registered unconditionally; the
-// access-point provider is only registered when Options.S3AccessPoint is
-// non-nil and validates.
-//
-// A failure to construct a conditional provider logs a warning and is
-// otherwise ignored — this keeps a misconfigured s3accesspoint block from
-// preventing the binary from starting at all.
-//
-// Passing a nil Options is valid and equivalent to "register only the
-// unconditional providers", so existing test setups don't need to change.
-func LoadProviders(creader credentials.Reader, opts *Options) backends.Providers {
-	if opts == nil {
-		opts = &Options{}
-	}
-
+// both the controlplane and the artifact-cas binaries. All providers are
+// registered unconditionally — the s3accesspoint provider has no
+// deployment-level config of its own (everything per-tenant lives in the
+// secret blob), so on-prem deployments without managed CAS simply never
+// have managed rows and the provider is dormant.
+func LoadProviders(creader credentials.Reader) backends.Providers {
 	ociProvider := oci.NewBackendProvider(creader)
 	azureBlobProvider := azureblob.NewBackendProvider(creader)
 	s3Provider := s3.NewBackendProvider(creader)
+	apProvider, err := s3accesspoint.NewBackendProvider(creader)
+	if err != nil {
+		// Only fails on a nil credentials reader, which is a programmer
+		// error caught at startup wiring just like the other providers.
+		panic(err)
+	}
 
-	providers := backends.Providers{
+	return backends.Providers{
 		ociProvider.ID():       ociProvider,
 		azureBlobProvider.ID(): azureBlobProvider,
 		s3Provider.ID():        s3Provider,
+		apProvider.ID():        apProvider,
 	}
-
-	if opts.S3AccessPoint != nil {
-		apProvider, err := s3accesspoint.NewBackendProvider(opts.S3AccessPoint, creader)
-		if err != nil {
-			if opts.Logger != nil {
-				log.NewHelper(opts.Logger).Warnf("s3accesspoint provider not registered: %v", err)
-			}
-		} else {
-			providers[apProvider.ID()] = apProvider
-		}
-	}
-
-	return providers
 }

@@ -126,56 +126,6 @@ message Bootstrap {
 
   // Attestation storage and processing options
   Attestations attestations = 21;
-
-  // Deployment-level configuration for managed CAS storage backends
-  // (provisioned and operated by Chainloop, not by tenants). Optional —
-  // omitting a sub-block keeps the corresponding provider unregistered,
-  // so on-prem deployments without managed CAS are unaffected.
-  ManagedCASBackends managed_cas_backends = 22;
-}
-
-// ManagedCASBackends groups the additive, deployment-level config
-// blocks for the storage providers that back Chainloop-managed CAS
-// backends. New managed providers append a nested message rather
-// than adding top-level fields to Bootstrap, so the surface stays
-// organised as more backends are added.
-message ManagedCASBackends {
-  // S3 Access Point provider — used by SaaS managed CAS to share one
-  // physical bucket across tenants. Authentication uses the pod's
-  // ambient AWS identity (IRSA / instance profile / env vars); no static
-  // credentials live in this block by design.
-  S3AccessPoint s3_access_point = 1;
-
-  message S3AccessPoint {
-    // base_role_arn is conditionally required: production deployments
-    // (dev_mode_use_ambient_credentials=false) must specify a role to
-    // assume; dev-mode deployments may leave it empty. Enforced at
-    // config-load time rather than only at first upload so bad config
-    // surfaces immediately.
-    option (buf.validate.message).cel = {
-      id: "s3_access_point.base_role_arn_required_in_prod"
-      message: "base_role_arn is required when dev_mode_use_ambient_credentials is false"
-      expression: "this.dev_mode_use_ambient_credentials || size(this.base_role_arn) > 0"
-    };
-
-    // IAM role the controlplane / artifact-cas pod assumes per request
-    // via sts:AssumeRole. Must allow s3:{Get,Put,Delete}Object on every
-    // access point in the account. Required in production; may be empty
-    // when dev_mode_use_ambient_credentials is true (see CEL constraint
-    // above).
-    string base_role_arn = 1;
-    // Default AWS region for the underlying bucket and access points.
-    // Individual managed CASBackend rows can override per-tenant.
-    string region = 2 [(buf.validate.field).string.min_len = 1];
-    // STS token lifetime. Defaults to 1h when unset. Ignored in dev mode.
-    google.protobuf.Duration session_duration = 3;
-    // dev_mode_use_ambient_credentials short-circuits sts:AssumeRole and
-    // routes S3 calls through whatever ambient AWS identity the SDK's
-    // default credential chain produced (env vars, ~/.aws/credentials,
-    // instance profile, IRSA, …). DEV ONLY — this bypasses per-tenant
-    // isolation and MUST NOT be set in multi-tenant deployments.
-    bool dev_mode_use_ambient_credentials = 4;
-  }
 }
 
 message Attestations {

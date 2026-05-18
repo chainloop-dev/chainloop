@@ -43,6 +43,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -55,69 +56,35 @@ import (
 // the regular s3 one.
 const ProviderID = "AWS-S3-ACCESS-POINT"
 
-// DefaultSessionDuration is the STS token lifetime used when the deployment
-// config doesn't specify one. STS allows up to 12h; 1h keeps blast radius
-// of a leaked token small while still giving the credential cache useful
-// reuse across consecutive uploads.
-const DefaultSessionDuration = time.Hour
+// SessionDuration is the STS token lifetime. STS allows up to 12h; 1h keeps
+// blast radius of a leaked token small while still giving the credential
+// cache useful reuse across consecutive uploads.
+const SessionDuration = time.Hour
 
-// Config carries the deployment-wide settings the provider needs to mint
-// scoped per-tenant credentials. It does NOT contain AWS access keys — the
-// pod's ambient IAM identity (IRSA / Pod Identity / instance profile /
-// AWS_* env vars) is used to call sts:AssumeRole on BaseRoleARN.
-type Config struct {
-	// BaseRoleARN is the IAM role the controlplane / artifact-cas pod
-	// assumes via STS at each upload/download. Its permission policy must
-	// allow s3:{Get,Put,Delete,Head}Object against every access point in
-	// the account; the per-call session policy narrows that down to one
-	// AP + one prefix.
-	//
-	// Required in production. Ignored (and may be empty) when
-	// DevModeUseAmbientCredentials is true.
-	BaseRoleARN string
-	// Region is the default region for the underlying bucket and the
-	// access points. Individual managed rows may override this via
-	// Credentials.Region.
-	Region string
-	// SessionDuration is the STS token lifetime. Defaults to
-	// DefaultSessionDuration when zero. Ignored when
-	// DevModeUseAmbientCredentials is true.
-	SessionDuration time.Duration
+// DevModeEnvVar when set to a truthy value, short-circuits sts:AssumeRole
+// and routes S3 calls through whatever ambient AWS identity the SDK's
+// default credential chain produced (env vars, ~/.aws/credentials, instance
+// profile, IRSA, …). The fail-closed check on a missing requesting-org
+// context is still enforced so callers that forget WithRequestingOrg get
+// the same error locally as they would in production.
+//
+// DEV ONLY. This bypasses the per-tenant isolation guarantees that the
+// AssumeRole + session-policy + AP-policy chain provides; objects
+// addressed via this backend are limited only by whatever the developer's
+// IAM identity allows. NEVER set this in a multi-tenant deployment.
+const DevModeEnvVar = "CHAINLOOP_S3_ACCESS_POINT_DEV_MODE"
 
-	// DevModeUseAmbientCredentials short-circuits sts:AssumeRole and
-	// routes S3 calls through whatever ambient AWS identity the SDK's
-	// default credential chain produced (env vars, ~/.aws/credentials,
-	// instance profile, IRSA, …). The fail-closed check on a missing
-	// requesting-org context is still enforced so callers that forget
-	// WithRequestingOrg get the same error locally as they would in
-	// production.
-	//
-	// DEV ONLY. This bypasses the per-tenant isolation guarantees that
-	// the AssumeRole + session-policy + AP-policy chain provides; objects
-	// addressed via this backend are limited only by whatever the
-	// developer's IAM identity allows. NEVER set this in a multi-tenant
-	// deployment.
-	DevModeUseAmbientCredentials bool
-}
-
-func (c *Config) Validate() error {
-	if c == nil {
-		return errors.New("s3accesspoint: nil config")
+// devModeEnabled reads DevModeEnvVar and returns true for the usual truthy
+// spellings. Kept as a package-level function so tests can swap the env
+// var with t.Setenv.
+func devModeEnabled() bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(DevModeEnvVar)))
+	switch v {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
 	}
-	// Base role is only required when we actually plan to assume it.
-	// In dev mode the SDK's default credential chain stands in for it.
-	if !c.DevModeUseAmbientCredentials {
-		if c.BaseRoleARN == "" {
-			return errors.New("s3accesspoint: base_role_arn is required (or set dev_mode_use_ambient_credentials in dev)")
-		}
-		if !strings.HasPrefix(c.BaseRoleARN, "arn:aws:iam::") {
-			return fmt.Errorf("s3accesspoint: base_role_arn %q is not a valid IAM role ARN", c.BaseRoleARN)
-		}
-	}
-	if c.Region == "" {
-		return errors.New("s3accesspoint: region is required")
-	}
-	return nil
 }
 
 // Credentials is the per-tenant blob stashed in the secrets manager under
@@ -137,9 +104,14 @@ type Credentials struct {
 	// The provider passes this string verbatim as the Bucket parameter on
 	// every S3 SDK call.
 	AccessPointARN string
-	// Region overrides Config.Region for this tenant. Optional; useful if
-	// the deployment grows multi-region without rolling a new config.
+	// Region the AP lives in.
 	Region string
+	// BaseRoleARN is the IAM role assumed via STS to mint per-request,
+	// per-tenant scoped credentials. Stored per-tenant (not per-deployment)
+	// so a single chainloop install can serve tenants across multiple AWS
+	// accounts without a config change. Required unless DevModeEnvVar is
+	// set on the running binary.
+	BaseRoleARN string
 }
 
 func (c *Credentials) Validate() error {
@@ -152,42 +124,39 @@ func (c *Credentials) Validate() error {
 	if !strings.HasPrefix(c.AccessPointARN, "arn:aws:s3:") || !strings.Contains(c.AccessPointARN, ":accesspoint/") {
 		return fmt.Errorf("%w: access_point_arn %q is not an S3 access point ARN", backend.ErrValidation, c.AccessPointARN)
 	}
+	if c.Region == "" {
+		return fmt.Errorf("%w: missing region", backend.ErrValidation)
+	}
+	if !devModeEnabled() {
+		if c.BaseRoleARN == "" {
+			return fmt.Errorf("%w: missing base_role_arn", backend.ErrValidation)
+		}
+		if !strings.HasPrefix(c.BaseRoleARN, "arn:aws:iam::") {
+			return fmt.Errorf("%w: base_role_arn %q is not a valid IAM role ARN", backend.ErrValidation, c.BaseRoleARN)
+		}
+	}
 	return nil
 }
 
 // BackendProvider implements backend.Provider for the access-point-backed
-// managed CAS. Construction validates the deployment Config so a
-// misconfigured controlplane fails at startup rather than at first upload.
+// managed CAS. Construction takes only the credentials reader; everything
+// the provider needs at request time lives in the per-tenant secret blob.
 type BackendProvider struct {
-	cfg     *Config
 	cReader credentials.Reader
 }
 
 var _ backend.Provider = (*BackendProvider)(nil)
 
-// NewBackendProvider constructs the provider. It returns an error if cfg
-// is missing required fields; callers (typically loader.LoadProviders) are
-// expected to skip registration on error so on-prem deployments without
-// managed CAS aren't affected.
-func NewBackendProvider(cfg *Config, cReader credentials.Reader) (*BackendProvider, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
+// NewBackendProvider constructs the provider. A nil credentials reader is
+// a programmer error and surfaces as a startup failure.
+func NewBackendProvider(cReader credentials.Reader) (*BackendProvider, error) {
 	if cReader == nil {
 		return nil, errors.New("s3accesspoint: credentials reader is required")
 	}
-	// Normalize default session duration so downstream code can rely on a
-	// non-zero value without re-checking everywhere.
-	if cfg.SessionDuration == 0 {
-		cfg.SessionDuration = DefaultSessionDuration
+	if devModeEnabled() {
+		log.Printf("WARNING: s3accesspoint provider running with %s=true; sts:AssumeRole is bypassed and per-tenant isolation is NOT enforced — DEV USE ONLY", DevModeEnvVar)
 	}
-	// Loud warning at startup so misconfiguration is obvious in logs. We
-	// use the std log here because the kratos logger isn't plumbed down
-	// to this package by design — keeping the provider portable.
-	if cfg.DevModeUseAmbientCredentials {
-		log.Printf("WARNING: s3accesspoint provider configured with DevModeUseAmbientCredentials=true; sts:AssumeRole is bypassed and per-tenant isolation is NOT enforced — DEV USE ONLY")
-	}
-	return &BackendProvider{cfg: cfg, cReader: cReader}, nil
+	return &BackendProvider{cReader: cReader}, nil
 }
 
 func (p *BackendProvider) ID() string {
@@ -208,7 +177,7 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 	if err := creds.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid credentials retrieved from storage: %w", err)
 	}
-	return NewBackend(ctx, p.cfg, creds)
+	return NewBackend(ctx, creds)
 }
 
 // ValidateAndExtractCredentials decodes credsJSON into a Credentials struct
@@ -231,9 +200,6 @@ func (p *BackendProvider) ValidateAndExtractCredentials(location string, credsJS
 	if err := creds.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
-	// If the caller supplied a location, it must agree with the blob.
-	// This is a denormalization sanity check, not a security boundary —
-	// the security boundary is the AP resource policy on the AWS side.
 	if location != "" && location != creds.AccessPointARN {
 		return nil, fmt.Errorf("%w: location %q does not match access_point_arn %q",
 			backend.ErrValidation, location, creds.AccessPointARN)

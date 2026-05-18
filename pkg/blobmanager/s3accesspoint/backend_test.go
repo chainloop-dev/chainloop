@@ -188,6 +188,8 @@ func newTestBackend(t *testing.T) *Backend {
 	t.Helper()
 	return backendForCreds(t, &Credentials{
 		AccessPointARN: "arn:aws:s3:us-east-1:123456789012:accesspoint/chainloop-org-abc",
+		Region:         "us-east-1",
+		BaseRoleARN:    "arn:aws:iam::123456789012:role/chainloop-cas-tenant",
 	})
 }
 
@@ -201,11 +203,7 @@ func backendForCreds(t *testing.T, creds *Credentials) *Backend {
 	// up — defensive in case the env-var pickup order changes.
 	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 
-	b, err := NewBackend(context.Background(), &Config{
-		BaseRoleARN:     "arn:aws:iam::123456789012:role/chainloop-cas-tenant",
-		Region:          "us-east-1",
-		SessionDuration: DefaultSessionDuration,
-	}, creds)
+	b, err := NewBackend(context.Background(), creds)
 	require.NoError(t, err)
 	return b
 }
