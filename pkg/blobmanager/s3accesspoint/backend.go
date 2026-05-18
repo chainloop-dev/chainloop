@@ -45,7 +45,7 @@ const (
 // without an org UUID in its context. The backend fails closed in this
 // case rather than minting a session with a default/empty name that would
 // be useless against an AP policy condition.
-var ErrMissingRequestingOrg = errors.New("s3accesspoint: requesting org missing from context (call WithRequestingOrg before upload/download)")
+var ErrMissingRequestingOrg = errors.New("s3accesspoint: requesting org missing from claims")
 
 // Backend is the per-tenant uploader/downloader. One *Backend instance is
 // bound to one access point; the actual AWS credentials are minted
@@ -224,8 +224,7 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 
 // CheckWritePermissions verifies that the calling org can actually mint a
 // scoped session and put/get an object through its AP. Unlike the regular
-// s3 backend's variant this MUST be invoked with a context carrying
-// WithRequestingOrg; otherwise it fails closed.
+// s3 backend's variant this MUST be invoked with a context carrying the org
 func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 	info, err := robotaccount.InfoFromAuth(ctx)
 	if err != nil {
@@ -289,9 +288,7 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 	}
 
 	// Dev mode: skip the per-request AssumeRole entirely and use the
-	// SDK's default credential chain directly. We still required the
-	// org-from-ctx check above so callers that forget WithRequestingOrg
-	// fail the same way they would in production.
+	// SDK's default credential chain directly.
 	if p.useAmbientForRetrieve {
 		if p.ambientCreds == nil {
 			return aws.Credentials{}, errors.New("s3accesspoint: dev mode requested but no ambient credentials available")

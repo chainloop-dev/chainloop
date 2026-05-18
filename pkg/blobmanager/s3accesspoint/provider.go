@@ -20,8 +20,7 @@
 //  1. The Access Point's resource policy, which gates who can address the AP
 //     and may further restrict s3:prefix.
 //  2. A per-request sts:AssumeRole that mints a scoped session whose
-//     RoleSessionName is derived from the authenticated requesting org
-//     (carried in the request context via WithRequestingOrg). The AP's
+//     RoleSessionName is derived from the authenticated requesting org. The AP's
 //     resource policy enforces a StringEquals on aws:userid so that a
 //     session minted for org A cannot read or write to org B's AP — even if
 //     org A's secret blob has been tampered with to point at org B's ARN.
@@ -34,7 +33,7 @@
 //
 // The session name MUST come from the request context, not from the secret
 // blob: a secrets-store compromise alone must not let an attacker reroute
-// uploads to another tenant's AP. See WithRequestingOrg.
+// uploads to another tenant's AP.
 package s3accesspoint
 
 import (
@@ -65,8 +64,7 @@ const SessionDuration = time.Hour
 // and routes S3 calls through whatever ambient AWS identity the SDK's
 // default credential chain produced (env vars, ~/.aws/credentials, instance
 // profile, IRSA, …). The fail-closed check on a missing requesting-org
-// context is still enforced so callers that forget WithRequestingOrg get
-// the same error locally as they would in production.
+// context is still enforced.
 //
 // DEV ONLY. This bypasses the per-tenant isolation guarantees that the
 // AssumeRole + session-policy + AP-policy chain provides; objects
@@ -93,7 +91,7 @@ func devModeEnabled() bool {
 //
 // The per-tenant key prefix is intentionally NOT a field here: it's
 // derived at request time from the authenticated requesting org carried
-// in ctx via WithRequestingOrg. Both the bucket-layer key namespace and
+// in ctx via org claim. Both the bucket-layer key namespace and
 // the AssumeRole session-name binding therefore come from the same
 // untamperable source, so a secrets-store compromise that rewrites this
 // blob still can't reroute a tenant's writes into another tenant's
@@ -167,7 +165,7 @@ func (p *BackendProvider) ID() string {
 // manager and constructs a *Backend bound to that tenant's AP.
 //
 // The returned UploaderDownloader is safe to reuse across requests; each
-// request must enrich its context with WithRequestingOrg so the STS-minted
+// request must enrich its context with org claim so the STS-minted
 // session name matches the AP's resource-policy condition.
 func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string) (backend.UploaderDownloader, error) {
 	creds := &Credentials{}
@@ -188,7 +186,7 @@ func (p *BackendProvider) FromCredentials(ctx context.Context, secretName string
 //
 // Unlike the regular s3 provider, this does NOT exercise live S3
 // permissions during validation: the credentials by themselves can't be
-// tested without a request-context org UUID (see WithRequestingOrg), so a
+// tested without a request-context org UUID, so a
 // proper end-to-end check belongs in the upload path. PerformValidation in
 // the controlplane still calls this method for managed rows; it will
 // succeed as long as the blob is well-formed.
