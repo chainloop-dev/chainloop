@@ -49,7 +49,7 @@ func (uc *AttestationUseCase) UploadAttestationToCAS(ctx context.Context, conten
 	ctx, span := otelx.Start(ctx, attestationTracer, "AttestationUseCase.UploadAttestationToCAS")
 	defer span.End()
 
-	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, bytes.NewBuffer(content), fmt.Sprintf("attestation-%s.json", workflowRunID), digest.String()); err != nil {
+	if err := uc.CASClient.Upload(ctx, string(backend.Provider), backend.SecretName, backend.OrganizationID, bytes.NewBuffer(content), fmt.Sprintf("attestation-%s.json", workflowRunID), digest.String()); err != nil {
 		otelx.RecordError(span, err)
 		return err
 	}

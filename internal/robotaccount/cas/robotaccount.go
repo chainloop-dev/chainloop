@@ -42,9 +42,10 @@ type Claims struct {
 	BackendType    string `json:"backend"`   // backend to use, i.e OCI
 	MaxBytes       int64  `json:"maxbytes"`  // max bytes to upload
 	// OrgID identifies the authenticated org this token was minted for.
-	// Required for managed providers (AWS-S3-ACCESS-POINT) that need to
-	// scope per-tenant STS sessions;
-	OrgID string `json:"org-id,omitempty"`
+	// Managed providers (e.g. AWS-S3-ACCESS-POINT) require it to scope
+	// per-tenant STS sessions; the non-managed providers ignore it but
+	// it is still carried for audit traceability.
+	OrgID string `json:"org-id"`
 }
 
 type Role string
@@ -110,11 +111,11 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
-// GenerateJWT mints a CAS token. orgID is required for tokens that will
-// touch managed providers (e.g. AWS-S3-ACCESS-POINT) and otherwise
-// optional — pass "" if the targeted backend doesn't need per-tenant
-// attribution. The token always carries the CAS audience and a short
-// expiry window.
+// GenerateJWT mints a CAS token. All fields are required, including
+// orgID — managed providers (e.g. AWS-S3-ACCESS-POINT) need it to scope
+// per-tenant STS sessions and other providers still record it for
+// audit. The token always carries the CAS audience and a short expiry
+// window.
 func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64, orgID string) (string, error) {
 	if backendType == "" {
 		return "", fmt.Errorf("backend type is required")
@@ -126,6 +127,10 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 
 	if audience == "" {
 		return "", fmt.Errorf("audience is required")
+	}
+
+	if orgID == "" {
+		return "", fmt.Errorf("org id is required")
 	}
 
 	if role != Downloader && role != Uploader {

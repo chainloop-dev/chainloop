@@ -109,7 +109,7 @@ func (s *WorkflowRunService) resolvePolicyEvaluations(
 	}
 
 	var buf bytes.Buffer
-	if err := s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, &buf, digest); err != nil {
+	if err := s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, &buf, digest); err != nil {
 		return nil, fmt.Errorf("downloading policy eval bundle: %w", err)
 	}
 

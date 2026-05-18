@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	mockedSDK "github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1/mocks"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
@@ -57,7 +58,7 @@ func (s *dispatcherTestSuite) TestLoadInputsEnvelope() {
 	s.ociIntegrationBackend.(*mockedSDK.FanOut).On("IsSubscribedTo", "SBOM_CYCLONEDX_JSON").Return(false)
 	s.ociIntegrationBackend.(*mockedSDK.FanOut).On("String").Return("mocked-integration")
 
-	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "backend-type", "secret-name")
+	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "backend-type", "secret-name", uuid.NewString())
 	assert.NoError(s.T(), err)
 
 	// Only one integration is registered
@@ -101,14 +102,14 @@ func (s *dispatcherTestSuite) TestLoadInputsMaterials() {
 	require.NoError(s.T(), err)
 
 	// Simulate SBOM download
-	s.casClient.On("Download", mock.Anything, "backend-type", "secret-name", mock.Anything, mock.Anything).
+	s.casClient.On("Download", mock.Anything, "backend-type", "secret-name", mock.Anything, mock.Anything, mock.Anything).
 		Return(nil).Run(func(args mock.Arguments) {
 		buf := bytes.NewBuffer([]byte("SBOM Content"))
-		_, err := io.Copy(args.Get(3).(io.Writer), buf)
+		_, err := io.Copy(args.Get(4).(io.Writer), buf)
 		s.NoError(err)
 	})
 
-	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "backend-type", "secret-name")
+	err = s.dispatcher.loadInputs(context.TODO(), queue, envelope, "backend-type", "secret-name", uuid.NewString())
 	assert.NoError(s.T(), err)
 	require.Len(s.T(), queue, 3)
 

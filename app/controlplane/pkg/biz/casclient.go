@@ -30,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/uuid"
 )
 
 var casClientTracer = otelx.Tracer("chainloop-controlplane", "biz/casclient")
@@ -45,11 +46,11 @@ type CASClientUseCase struct {
 }
 
 type CASUploader interface {
-	Upload(ctx context.Context, backendType, secretID string, content io.Reader, filename, digest string) error
+	Upload(ctx context.Context, backendType, secretID string, orgID uuid.UUID, content io.Reader, filename, digest string) error
 }
 
 type CASDownloader interface {
-	Download(ctx context.Context, backendType, secretID string, w io.Writer, digest string) error
+	Download(ctx context.Context, backendType, secretID string, orgID uuid.UUID, w io.Writer, digest string) error
 }
 
 type CASClient interface {
@@ -102,14 +103,14 @@ func NewCASClientUseCase(credsProvider *CASCredentialsUseCase, config *conf.Boot
 }
 
 // The secretID is embedded in the JWT token and is used to identify the secret by the CAS server
-func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID string, content io.Reader, filename, digest string) error {
+func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID string, orgID uuid.UUID, content io.Reader, filename, digest string) error {
 	ctx, span := otelx.Start(ctx, casClientTracer, "CASClientUseCase.Upload")
 	defer span.End()
 
 	uc.logger.Infow("msg", "upload initialized", "filename", filename, "digest", digest)
 
 	// client with temporary set of credentials
-	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Uploader})
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Uploader, OrgID: orgID})
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}
@@ -125,13 +126,13 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID st
 	return nil
 }
 
-func (uc *CASClientUseCase) Download(ctx context.Context, backendType, secretID string, w io.Writer, digest string) error {
+func (uc *CASClientUseCase) Download(ctx context.Context, backendType, secretID string, orgID uuid.UUID, w io.Writer, digest string) error {
 	ctx, span := otelx.Start(ctx, casClientTracer, "CASClientUseCase.Download")
 	defer span.End()
 
 	uc.logger.Infow("msg", "download initialized", "digest", digest)
 
-	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Downloader})
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Downloader, OrgID: orgID})
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}
