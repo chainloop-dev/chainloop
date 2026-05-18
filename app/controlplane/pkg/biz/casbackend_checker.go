@@ -30,7 +30,27 @@ var casBackendCheckerTracer = otelx.Tracer("chainloop-controlplane", "biz/casbac
 const (
 	defaultInterval          = 30 * time.Minute
 	defaultValidationTimeout = 10 * time.Second
+	// Upper bound on how long a single tick is allowed to hold the
+	// distributed lock. Defends against a hung validation pinning the lock
+	// past one tick; the next tick will retry.
+	defaultMaxTickDuration = 25 * time.Minute
+
+	// Separate keys per scope so the two checker goroutines (defaults vs all backends)
+	// don't block each other.
+	lockKeyDefaultsScope = "cas-backend-checker:defaults"
+	lockKeyAllScope      = "cas-backend-checker:all"
 )
+
+// DistributedLock is a best-effort, cluster-wide mutex used to make sure
+// background jobs that should run on a single replica at a time aren't
+// duplicated across pods.
+type DistributedLock interface {
+	// TryAcquire attempts to acquire the lock identified by key without
+	// blocking. If acquired is true, the caller MUST invoke release when
+	// done. The lock is also released automatically if the underlying
+	// session is lost (e.g. pod crash).
+	TryAcquire(ctx context.Context, key string) (acquired bool, release func(), err error)
+}
 
 type CASBackendChecker struct {
 	logger             *log.Helper
@@ -38,6 +58,7 @@ type CASBackendChecker struct {
 	caseBackendUseCase *CASBackendUseCase
 	// Validation timeout for each backend check
 	validationTimeout time.Duration
+	lock              DistributedLock
 }
 
 type CASBackendCheckerOpts struct {
@@ -53,12 +74,13 @@ type CASBackendCheckerOpts struct {
 
 // NewCASBackendChecker creates a new CAS backend checker that will periodically validate
 // the status of CAS backends
-func NewCASBackendChecker(logger log.Logger, casBackendRepo CASBackendRepo, casBackendUseCase *CASBackendUseCase) *CASBackendChecker {
+func NewCASBackendChecker(logger log.Logger, casBackendRepo CASBackendRepo, casBackendUseCase *CASBackendUseCase, lock DistributedLock) *CASBackendChecker {
 	return &CASBackendChecker{
 		logger:             log.NewHelper(log.With(logger, "component", "biz/CASBackendChecker")),
 		casBackendRepo:     casBackendRepo,
 		caseBackendUseCase: casBackendUseCase,
 		validationTimeout:  defaultValidationTimeout,
+		lock:               lock,
 	}
 }
 
@@ -120,6 +142,25 @@ func (c *CASBackendChecker) Start(ctx context.Context, opts *CASBackendCheckerOp
 // checkBackends validates all CAS backends (or just default and fallback ones based on configuration)
 // using a worker pool for parallel processing with timeouts
 func (c *CASBackendChecker) checkBackends(ctx context.Context, defaultsOrFallbacks bool) error {
+	key := lockKeyAllScope
+	if defaultsOrFallbacks {
+		key = lockKeyDefaultsScope
+	}
+	acquired, release, err := c.lock.TryAcquire(ctx, key)
+	if err != nil {
+		return fmt.Errorf("acquiring checker lock: %w", err)
+	}
+	if !acquired {
+		c.logger.Debugw("msg", "another replica is running the CAS backend check, skipping", "scope", key)
+		return nil
+	}
+	defer release()
+
+	// Cap how long we can hold the lock. If validations hang, the next tick
+	// retries instead of one stuck pod pinning the lock indefinitely.
+	ctx, cancel := context.WithTimeout(ctx, defaultMaxTickDuration)
+	defer cancel()
+
 	ctx, span := otelx.Start(ctx, casBackendCheckerTracer, "CASBackendChecker.checkBackends")
 	defer span.End()
 

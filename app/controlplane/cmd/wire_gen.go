@@ -410,7 +410,8 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		return nil, nil, err
 	}
 	workflowRunExpirerUseCase := biz.NewWorkflowRunExpirerUseCase(workflowRunRepo, prometheusUseCase, logger)
-	casBackendChecker := biz.NewCASBackendChecker(logger, casBackendRepo, casBackendUseCase)
+	distributedLock := data.NewPostgresLock(dataData, logger)
+	casBackendChecker := biz.NewCASBackendChecker(logger, casBackendRepo, casBackendUseCase, distributedLock)
 	apiTokenStaleRevoker := biz.NewAPITokenStaleRevoker(organizationRepo, apiTokenRepo, apiTokenUseCase, logger)
 	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, apiTokenStaleRevoker, bootstrap)
 	return mainApp, func() {

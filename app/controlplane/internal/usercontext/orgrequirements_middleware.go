@@ -30,7 +30,10 @@ import (
 
 var orgRequirementsTracer = otelx.Tracer("chainloop-controlplane", "middleware/orgrequirements")
 
-const validationTimeOffset = 5 * time.Minute
+// Slightly larger than the background CAS backend checker cadence for default/fallback
+// backends (30 min, see cmd/main.go), so the request path doesn't re-validate ahead of
+// the background loop while it's still finishing a tick.
+const validationTimeOffset = 35 * time.Minute
 
 // ValidateCASBackend checks that the current organization has a valid CAS Backend configured
 // If the last validation happened more than validationTimeOffset ago it will re-run the validation

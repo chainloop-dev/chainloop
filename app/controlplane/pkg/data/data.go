@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"time"
@@ -59,11 +60,15 @@ var ProviderSet = wire.NewSet(
 	NewProjectVersionRepo,
 	NewProjectsRepo,
 	NewGroupRepo,
+	NewPostgresLock,
 )
 
 // Data .
 type Data struct {
 	DB *ent.Client
+	// Exposed for code paths that need raw SQL features ent doesn't surface,
+	// e.g. session-scoped advisory locks (pg_try_advisory_lock).
+	SQLDB *sql.DB
 }
 
 // Load DB schema
@@ -80,7 +85,7 @@ func NewData(c *config.DatabaseConfig, tp trace.TracerProvider, logger log.Logge
 	}
 
 	log := log.NewHelper(logger)
-	db, err := initSQLDatabase(c, tp, log)
+	db, sqlDB, err := initSQLDatabase(c, tp, log)
 	if err != nil {
 		log.Errorf("error initialing the DB : %v", err)
 		return nil, nil, fmt.Errorf("failed to initialized db: %w", err)
@@ -93,12 +98,12 @@ func NewData(c *config.DatabaseConfig, tp trace.TracerProvider, logger log.Logge
 		}
 	}
 
-	return &Data{DB: db}, cleanup, nil
+	return &Data{DB: db, SQLDB: sqlDB}, cleanup, nil
 }
 
-func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log.Helper) (*ent.Client, error) {
+func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log.Helper) (*ent.Client, *sql.DB, error) {
 	if c.Driver != "pgx" {
-		return nil, fmt.Errorf("unsupported driver: %s", c.Driver)
+		return nil, nil, fmt.Errorf("unsupported driver: %s", c.Driver)
 	}
 
 	log.Debugf("connecting to db: driver=%s", c.Driver)
@@ -115,7 +120,7 @@ func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log
 		}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error opening the connection, driver=%s: %w", c.Driver, err)
+		return nil, nil, fmt.Errorf("error opening the connection, driver=%s: %w", c.Driver, err)
 	}
 
 	if c.MaxOpenConns > 0 {
@@ -139,7 +144,7 @@ func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log
 
 	// NOTE: We do not run migrations automatically anymore
 	// Instead we leverage atlas cli to run migrations
-	return client, nil
+	return client, db, nil
 }
 
 func toTimePtr(t time.Time) *time.Time {
