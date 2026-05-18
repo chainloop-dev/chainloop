@@ -5,3 +5,6 @@ app/controlplane/pkg/data/ent/migrate/** linguist-detectable=true
 app/controlplane/pkg/data/ent/schema/* linguist-generated=false
 app/controlplane/pkg/data/ent/schema/* linguist-detectable=true
 app/controlplane/api/gen/jsonschema/** linguist-generated=true
+*.pb.go linguist-generated=true
+*.pb.validate.go linguist-generated=true
+wire_gen.go linguist-generated=true
