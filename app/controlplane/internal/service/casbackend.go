@@ -67,11 +67,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 		return nil, err
 	}
 
-	// Managed-only providers (currently AWS-S3-ACCESS-POINT) are
-	// reserved for the platform reconciler, which provisions them via
-	// the biz layer directly. Reject any attempt to create one through
-	// the public RPC so a user can't end up with a half-provisioned row
-	// pointing at an AP they don't own.
+	// Managed-only providers (currently AWS-S3-ACCESS-POINT) are reserved
 	if isManagedOnlyProvider(req.Provider) {
 		return nil, errors.BadRequest("invalid CAS backend",
 			"managed CAS backends cannot be created via this API")
@@ -249,11 +245,7 @@ func bizCASBackendToPb(in *biz.CASBackend) *pb.CASBackendItem {
 	return r
 }
 
-// isManagedOnlyProvider returns true when the supplied provider ID can
-// only be instantiated by the platform reconciler — never by a user via
-// the public CASBackendService.Create RPC. Today that's just the S3
-// Access Point provider; if more managed providers land later, list
-// them here.
+// isManagedOnlyProvider returns true when the supplied provider is managed
 func isManagedOnlyProvider(id string) bool {
 	return id == s3accesspoint.ProviderID
 }
