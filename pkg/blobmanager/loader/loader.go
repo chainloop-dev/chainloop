@@ -34,12 +34,7 @@ func LoadProviders(creader credentials.Reader) backends.Providers {
 	ociProvider := oci.NewBackendProvider(creader)
 	azureBlobProvider := azureblob.NewBackendProvider(creader)
 	s3Provider := s3.NewBackendProvider(creader)
-	apProvider, err := s3accesspoint.NewBackendProvider(creader)
-	if err != nil {
-		// Only fails on a nil credentials reader, which is a programmer
-		// error caught at startup wiring just like the other providers.
-		panic(err)
-	}
+	apProvider := s3accesspoint.NewBackendProvider(creader)
 
 	return backends.Providers{
 		ociProvider.ID():       ociProvider,

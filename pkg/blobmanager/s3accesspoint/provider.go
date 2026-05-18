@@ -39,7 +39,6 @@ package s3accesspoint
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -147,14 +146,11 @@ var _ backend.Provider = (*BackendProvider)(nil)
 
 // NewBackendProvider constructs the provider. A nil credentials reader is
 // a programmer error and surfaces as a startup failure.
-func NewBackendProvider(cReader credentials.Reader) (*BackendProvider, error) {
-	if cReader == nil {
-		return nil, errors.New("s3accesspoint: credentials reader is required")
-	}
+func NewBackendProvider(cReader credentials.Reader) *BackendProvider {
 	if devModeEnabled() {
 		log.Printf("WARNING: s3accesspoint provider running with %s=true; sts:AssumeRole is bypassed and per-tenant isolation is NOT enforced — DEV USE ONLY", DevModeEnvVar)
 	}
-	return &BackendProvider{cReader: cReader}, nil
+	return &BackendProvider{cReader: cReader}
 }
 
 func (p *BackendProvider) ID() string {

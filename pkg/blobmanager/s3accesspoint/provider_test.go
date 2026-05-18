@@ -143,12 +143,8 @@ func TestValidateAndExtractCredentials(t *testing.T) {
 func TestNewBackendProvider(t *testing.T) {
 	t.Parallel()
 
-	p, err := NewBackendProvider(stubReader{})
-	require.NoError(t, err)
+	p := NewBackendProvider(stubReader{})
 	assert.Equal(t, ProviderID, p.ID())
-
-	_, err = NewBackendProvider(nil)
-	assert.ErrorContains(t, err, "credentials reader is required")
 }
 
 // stubReader is the minimal credentials.Reader implementation needed to
