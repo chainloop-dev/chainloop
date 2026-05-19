@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -106,7 +107,7 @@ func (a *ArtifactDownload) Run(downloadPath, outputFile, digest string) error {
 		return errors.New("problem downloading file")
 	}
 
-	if got, want := fmt.Sprintf("%x", hash.Sum(nil)), h.Hex; got != want {
+	if got, want := hex.EncodeToString(hash.Sum(nil)), h.Hex; got != want {
 		return fmt.Errorf("checksums mismatch: got: %s, expected: %s", got, want)
 	}
 

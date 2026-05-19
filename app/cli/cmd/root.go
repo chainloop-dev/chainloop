@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -490,7 +491,8 @@ func extractCmdLineFromCommand(cmd *cobra.Command) string {
 // hashControlPlaneURL returns a hash of the control plane URL
 func hashControlPlaneURL() (url string, hash string) {
 	url = viper.GetString(confOptions.controlplaneAPI.viperKey)
-	return url, fmt.Sprintf("%x", sha256.Sum256([]byte(url)))
+	sum := sha256.Sum256([]byte(url))
+	return url, hex.EncodeToString(sum[:])
 }
 
 func apiInsecure() bool {

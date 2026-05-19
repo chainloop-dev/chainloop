@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -326,5 +327,5 @@ func (sw *streamWriter) Write(data []byte) (int, error) {
 
 // GetChecksum retrieves the sha256 checksum of the read contents
 func (sw *streamWriter) GetChecksum() string {
-	return fmt.Sprintf("%x", sw.gotChecksum.Sum(nil))
+	return hex.EncodeToString(sw.gotChecksum.Sum(nil))
 }

@@ -22,6 +22,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
@@ -229,7 +230,8 @@ func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, erro
 		if len(chain) == 0 {
 			continue
 		}
-		keyID := fmt.Sprintf("%x", sha256.Sum256(chain[0].SubjectKeyId))
+		keyIDSum := sha256.Sum256(chain[0].SubjectKeyId)
+		keyID := hex.EncodeToString(keyIDSum[:])
 		for _, cert := range chain {
 			pemCert, err := cryptoutils.MarshalCertificateToPEM(cert)
 			if err != nil {
@@ -244,7 +246,8 @@ func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, erro
 			if len(authority.CertChain) == 0 {
 				continue
 			}
-			authorityKeyID := fmt.Sprintf("%x", sha256.Sum256(authority.CertChain[0].SubjectKeyId))
+			authorityKeyIDSum := sha256.Sum256(authority.CertChain[0].SubjectKeyId)
+			authorityKeyID := hex.EncodeToString(authorityKeyIDSum[:])
 			for _, cert := range authority.CertChain {
 				pemCert, err := cryptoutils.MarshalCertificateToPEM(cert)
 				if err != nil {

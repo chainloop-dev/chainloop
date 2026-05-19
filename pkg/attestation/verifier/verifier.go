@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -67,7 +68,8 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		hasVerificationMaterial = true
 		signingCert := vc.Certificate()
 
-		aki := fmt.Sprintf("%x", sha256.Sum256(signingCert.AuthorityKeyId))
+		akiSum := sha256.Sum256(signingCert.AuthorityKeyId)
+		aki := hex.EncodeToString(akiSum[:])
 		chain, ok := tr.Keys[aki]
 		if !ok {
 			return fmt.Errorf("trusted root not found for signing key with AKI %s", aki)

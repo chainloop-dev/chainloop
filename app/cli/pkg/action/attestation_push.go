@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -348,8 +349,9 @@ func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.Policy
 		return nil, fmt.Errorf("marshaling policy evaluation bundle: %w", err)
 	}
 
-	hexDigest := fmt.Sprintf("%x", sha256.Sum256(data))
-	digest := fmt.Sprintf("sha256:%s", hexDigest)
+	sum := sha256.Sum256(data)
+	hexDigest := hex.EncodeToString(sum[:])
+	digest := "sha256:" + hexDigest
 
 	if _, err := uploader.Upload(ctx, bytes.NewReader(data), "policy-evaluations.json", digest); err != nil {
 		return nil, fmt.Errorf("uploading policy evaluation bundle: %w", err)
