@@ -47,6 +47,8 @@ const (
 	FieldManaged = "managed"
 	// FieldMaxBlobSizeBytes holds the string denoting the max_blob_size_bytes field in the database.
 	FieldMaxBlobSizeBytes = "max_blob_size_bytes"
+	// FieldOrganizationCasBackends holds the string denoting the organization_cas_backends field in the database.
+	FieldOrganizationCasBackends = "organization_cas_backends"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeWorkflowRun holds the string denoting the workflow_run edge name in mutations.
@@ -85,12 +87,7 @@ var Columns = []string{
 	FieldFallback,
 	FieldManaged,
 	FieldMaxBlobSizeBytes,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "cas_backends"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"organization_cas_backends",
+	FieldOrganizationCasBackends,
 }
 
 var (
@@ -103,11 +100,6 @@ var (
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -236,6 +228,11 @@ func ByManaged(opts ...sql.OrderTermOption) OrderOption {
 // ByMaxBlobSizeBytes orders the results by the max_blob_size_bytes field.
 func ByMaxBlobSizeBytes(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMaxBlobSizeBytes, opts...).ToFunc()
+}
+
+// ByOrganizationCasBackends orders the results by the organization_cas_backends field.
+func ByOrganizationCasBackends(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrganizationCasBackends, opts...).ToFunc()
 }
 
 // ByOrganizationField orders the results by organization field.

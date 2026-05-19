@@ -2490,6 +2490,42 @@ func (m *CASBackendMutation) ResetMaxBlobSizeBytes() {
 	m.addmax_blob_size_bytes = nil
 }
 
+// SetOrganizationCasBackends sets the "organization_cas_backends" field.
+func (m *CASBackendMutation) SetOrganizationCasBackends(u uuid.UUID) {
+	m.organization = &u
+}
+
+// OrganizationCasBackends returns the value of the "organization_cas_backends" field in the mutation.
+func (m *CASBackendMutation) OrganizationCasBackends() (r uuid.UUID, exists bool) {
+	v := m.organization
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationCasBackends returns the old "organization_cas_backends" field's value of the CASBackend entity.
+// If the CASBackend object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASBackendMutation) OldOrganizationCasBackends(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationCasBackends is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationCasBackends requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationCasBackends: %w", err)
+	}
+	return oldValue.OrganizationCasBackends, nil
+}
+
+// ResetOrganizationCasBackends resets all changes to the "organization_cas_backends" field.
+func (m *CASBackendMutation) ResetOrganizationCasBackends() {
+	m.organization = nil
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by id.
 func (m *CASBackendMutation) SetOrganizationID(id uuid.UUID) {
 	m.organization = &id
@@ -2498,6 +2534,7 @@ func (m *CASBackendMutation) SetOrganizationID(id uuid.UUID) {
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *CASBackendMutation) ClearOrganization() {
 	m.clearedorganization = true
+	m.clearedFields[casbackend.FieldOrganizationCasBackends] = struct{}{}
 }
 
 // OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
@@ -2617,7 +2654,7 @@ func (m *CASBackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASBackendMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.location != nil {
 		fields = append(fields, casbackend.FieldLocation)
 	}
@@ -2663,6 +2700,9 @@ func (m *CASBackendMutation) Fields() []string {
 	if m.max_blob_size_bytes != nil {
 		fields = append(fields, casbackend.FieldMaxBlobSizeBytes)
 	}
+	if m.organization != nil {
+		fields = append(fields, casbackend.FieldOrganizationCasBackends)
+	}
 	return fields
 }
 
@@ -2701,6 +2741,8 @@ func (m *CASBackendMutation) Field(name string) (ent.Value, bool) {
 		return m.Managed()
 	case casbackend.FieldMaxBlobSizeBytes:
 		return m.MaxBlobSizeBytes()
+	case casbackend.FieldOrganizationCasBackends:
+		return m.OrganizationCasBackends()
 	}
 	return nil, false
 }
@@ -2740,6 +2782,8 @@ func (m *CASBackendMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldManaged(ctx)
 	case casbackend.FieldMaxBlobSizeBytes:
 		return m.OldMaxBlobSizeBytes(ctx)
+	case casbackend.FieldOrganizationCasBackends:
+		return m.OldOrganizationCasBackends(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASBackend field %s", name)
 }
@@ -2853,6 +2897,13 @@ func (m *CASBackendMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetMaxBlobSizeBytes(v)
+		return nil
+	case casbackend.FieldOrganizationCasBackends:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationCasBackends(v)
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)
@@ -2983,6 +3034,9 @@ func (m *CASBackendMutation) ResetField(name string) error {
 		return nil
 	case casbackend.FieldMaxBlobSizeBytes:
 		m.ResetMaxBlobSizeBytes()
+		return nil
+	case casbackend.FieldOrganizationCasBackends:
+		m.ResetOrganizationCasBackends()
 		return nil
 	}
 	return fmt.Errorf("unknown CASBackend field %s", name)

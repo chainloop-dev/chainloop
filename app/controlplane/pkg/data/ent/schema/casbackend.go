@@ -63,12 +63,13 @@ func (CASBackend) Fields() []ent.Field {
 		// managed indicates this backend is provisioned and operated by Chainloop
 		field.Bool("managed").Default(false),
 		field.Int64("max_blob_size_bytes"),
+		field.UUID("organization_cas_backends", uuid.UUID{}),
 	}
 }
 
 func (CASBackend) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("organization", Organization.Type).Ref("cas_backends").Unique().Required(),
+		edge.From("organization", Organization.Type).Ref("cas_backends").Unique().Field("organization_cas_backends").Required(),
 		// WorkflowRuns might be associated with multiple CASBackends
 		edge.From("workflow_run", WorkflowRun.Type).Ref("cas_backends"),
 	}

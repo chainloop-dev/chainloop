@@ -50,11 +50,12 @@ type CASBackend struct {
 	Managed bool `json:"managed,omitempty"`
 	// MaxBlobSizeBytes holds the value of the "max_blob_size_bytes" field.
 	MaxBlobSizeBytes int64 `json:"max_blob_size_bytes,omitempty"`
+	// OrganizationCasBackends holds the value of the "organization_cas_backends" field.
+	OrganizationCasBackends uuid.UUID `json:"organization_cas_backends,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASBackendQuery when eager-loading is set.
-	Edges                     CASBackendEdges `json:"edges"`
-	organization_cas_backends *uuid.UUID
-	selectValues              sql.SelectValues
+	Edges        CASBackendEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // CASBackendEdges holds the relations/edges for other nodes in the graph.
@@ -101,10 +102,8 @@ func (*CASBackend) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case casbackend.FieldCreatedAt, casbackend.FieldUpdatedAt, casbackend.FieldValidatedAt, casbackend.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case casbackend.FieldID:
+		case casbackend.FieldID, casbackend.FieldOrganizationCasBackends:
 			values[i] = new(uuid.UUID)
-		case casbackend.ForeignKeys[0]: // organization_cas_backends
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -216,12 +215,11 @@ func (_m *CASBackend) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.MaxBlobSizeBytes = value.Int64
 			}
-		case casbackend.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
+		case casbackend.FieldOrganizationCasBackends:
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field organization_cas_backends", values[i])
-			} else if value.Valid {
-				_m.organization_cas_backends = new(uuid.UUID)
-				*_m.organization_cas_backends = *value.S.(*uuid.UUID)
+			} else if value != nil {
+				_m.OrganizationCasBackends = *value
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -313,6 +311,9 @@ func (_m *CASBackend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("max_blob_size_bytes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.MaxBlobSizeBytes))
+	builder.WriteString(", ")
+	builder.WriteString("organization_cas_backends=")
+	builder.WriteString(fmt.Sprintf("%v", _m.OrganizationCasBackends))
 	builder.WriteByte(')')
 	return builder.String()
 }

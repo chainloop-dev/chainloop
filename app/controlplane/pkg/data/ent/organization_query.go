@@ -898,7 +898,9 @@ func (_q *OrganizationQuery) loadCasBackends(ctx context.Context, query *CASBack
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(casbackend.FieldOrganizationCasBackends)
+	}
 	query.Where(predicate.CASBackend(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(organization.CasBackendsColumn), fks...))
 	}))
@@ -907,13 +909,10 @@ func (_q *OrganizationQuery) loadCasBackends(ctx context.Context, query *CASBack
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.organization_cas_backends
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "organization_cas_backends" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
+		fk := n.OrganizationCasBackends
+		node, ok := nodeids[fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "organization_cas_backends" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "organization_cas_backends" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

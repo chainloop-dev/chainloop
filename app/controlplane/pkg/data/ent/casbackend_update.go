@@ -204,6 +204,20 @@ func (_u *CASBackendUpdate) AddMaxBlobSizeBytes(v int64) *CASBackendUpdate {
 	return _u
 }
 
+// SetOrganizationCasBackends sets the "organization_cas_backends" field.
+func (_u *CASBackendUpdate) SetOrganizationCasBackends(v uuid.UUID) *CASBackendUpdate {
+	_u.mutation.SetOrganizationCasBackends(v)
+	return _u
+}
+
+// SetNillableOrganizationCasBackends sets the "organization_cas_backends" field if the given value is not nil.
+func (_u *CASBackendUpdate) SetNillableOrganizationCasBackends(v *uuid.UUID) *CASBackendUpdate {
+	if v != nil {
+		_u.SetOrganizationCasBackends(*v)
+	}
+	return _u
+}
+
 // SetOrganizationID sets the "organization" edge to the Organization entity by ID.
 func (_u *CASBackendUpdate) SetOrganizationID(id uuid.UUID) *CASBackendUpdate {
 	_u.mutation.SetOrganizationID(id)
@@ -638,6 +652,20 @@ func (_u *CASBackendUpdateOne) SetNillableMaxBlobSizeBytes(v *int64) *CASBackend
 // AddMaxBlobSizeBytes adds value to the "max_blob_size_bytes" field.
 func (_u *CASBackendUpdateOne) AddMaxBlobSizeBytes(v int64) *CASBackendUpdateOne {
 	_u.mutation.AddMaxBlobSizeBytes(v)
+	return _u
+}
+
+// SetOrganizationCasBackends sets the "organization_cas_backends" field.
+func (_u *CASBackendUpdateOne) SetOrganizationCasBackends(v uuid.UUID) *CASBackendUpdateOne {
+	_u.mutation.SetOrganizationCasBackends(v)
+	return _u
+}
+
+// SetNillableOrganizationCasBackends sets the "organization_cas_backends" field if the given value is not nil.
+func (_u *CASBackendUpdateOne) SetNillableOrganizationCasBackends(v *uuid.UUID) *CASBackendUpdateOne {
+	if v != nil {
+		_u.SetOrganizationCasBackends(*v)
+	}
 	return _u
 }
 

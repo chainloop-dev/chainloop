@@ -197,6 +197,12 @@ func (_c *CASBackendCreate) SetMaxBlobSizeBytes(v int64) *CASBackendCreate {
 	return _c
 }
 
+// SetOrganizationCasBackends sets the "organization_cas_backends" field.
+func (_c *CASBackendCreate) SetOrganizationCasBackends(v uuid.UUID) *CASBackendCreate {
+	_c.mutation.SetOrganizationCasBackends(v)
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *CASBackendCreate) SetID(v uuid.UUID) *CASBackendCreate {
 	_c.mutation.SetID(v)
@@ -354,6 +360,9 @@ func (_c *CASBackendCreate) check() error {
 	if _, ok := _c.mutation.MaxBlobSizeBytes(); !ok {
 		return &ValidationError{Name: "max_blob_size_bytes", err: errors.New(`ent: missing required field "CASBackend.max_blob_size_bytes"`)}
 	}
+	if _, ok := _c.mutation.OrganizationCasBackends(); !ok {
+		return &ValidationError{Name: "organization_cas_backends", err: errors.New(`ent: missing required field "CASBackend.organization_cas_backends"`)}
+	}
 	if len(_c.mutation.OrganizationIDs()) == 0 {
 		return &ValidationError{Name: "organization", err: errors.New(`ent: missing required edge "CASBackend.organization"`)}
 	}
@@ -467,7 +476,7 @@ func (_c *CASBackendCreate) createSpec() (*CASBackend, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.organization_cas_backends = &nodes[0]
+		_node.OrganizationCasBackends = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.WorkflowRunIDs(); len(nodes) > 0 {
@@ -691,6 +700,18 @@ func (u *CASBackendUpsert) UpdateMaxBlobSizeBytes() *CASBackendUpsert {
 // AddMaxBlobSizeBytes adds v to the "max_blob_size_bytes" field.
 func (u *CASBackendUpsert) AddMaxBlobSizeBytes(v int64) *CASBackendUpsert {
 	u.Add(casbackend.FieldMaxBlobSizeBytes, v)
+	return u
+}
+
+// SetOrganizationCasBackends sets the "organization_cas_backends" field.
+func (u *CASBackendUpsert) SetOrganizationCasBackends(v uuid.UUID) *CASBackendUpsert {
+	u.Set(casbackend.FieldOrganizationCasBackends, v)
+	return u
+}
+
+// UpdateOrganizationCasBackends sets the "organization_cas_backends" field to the value that was provided on create.
+func (u *CASBackendUpsert) UpdateOrganizationCasBackends() *CASBackendUpsert {
+	u.SetExcluded(casbackend.FieldOrganizationCasBackends)
 	return u
 }
 
@@ -933,6 +954,20 @@ func (u *CASBackendUpsertOne) AddMaxBlobSizeBytes(v int64) *CASBackendUpsertOne 
 func (u *CASBackendUpsertOne) UpdateMaxBlobSizeBytes() *CASBackendUpsertOne {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateMaxBlobSizeBytes()
+	})
+}
+
+// SetOrganizationCasBackends sets the "organization_cas_backends" field.
+func (u *CASBackendUpsertOne) SetOrganizationCasBackends(v uuid.UUID) *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetOrganizationCasBackends(v)
+	})
+}
+
+// UpdateOrganizationCasBackends sets the "organization_cas_backends" field to the value that was provided on create.
+func (u *CASBackendUpsertOne) UpdateOrganizationCasBackends() *CASBackendUpsertOne {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateOrganizationCasBackends()
 	})
 }
 
@@ -1342,6 +1377,20 @@ func (u *CASBackendUpsertBulk) AddMaxBlobSizeBytes(v int64) *CASBackendUpsertBul
 func (u *CASBackendUpsertBulk) UpdateMaxBlobSizeBytes() *CASBackendUpsertBulk {
 	return u.Update(func(s *CASBackendUpsert) {
 		s.UpdateMaxBlobSizeBytes()
+	})
+}
+
+// SetOrganizationCasBackends sets the "organization_cas_backends" field.
+func (u *CASBackendUpsertBulk) SetOrganizationCasBackends(v uuid.UUID) *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.SetOrganizationCasBackends(v)
+	})
+}
+
+// UpdateOrganizationCasBackends sets the "organization_cas_backends" field to the value that was provided on create.
+func (u *CASBackendUpsertBulk) UpdateOrganizationCasBackends() *CASBackendUpsertBulk {
+	return u.Update(func(s *CASBackendUpsert) {
+		s.UpdateOrganizationCasBackends()
 	})
 }
 
