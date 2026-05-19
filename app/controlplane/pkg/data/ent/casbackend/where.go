@@ -122,6 +122,11 @@ func MaxBlobSizeBytes(v int64) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldMaxBlobSizeBytes, v))
 }
 
+// OrganizationCasBackends applies equality check predicate on the "organization_cas_backends" field. It's identical to OrganizationCasBackendsEQ.
+func OrganizationCasBackends(v uuid.UUID) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldOrganizationCasBackends, v))
+}
+
 // LocationEQ applies the EQ predicate on the "location" field.
 func LocationEQ(v string) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldEQ(FieldLocation, v))
@@ -765,6 +770,26 @@ func MaxBlobSizeBytesLT(v int64) predicate.CASBackend {
 // MaxBlobSizeBytesLTE applies the LTE predicate on the "max_blob_size_bytes" field.
 func MaxBlobSizeBytesLTE(v int64) predicate.CASBackend {
 	return predicate.CASBackend(sql.FieldLTE(FieldMaxBlobSizeBytes, v))
+}
+
+// OrganizationCasBackendsEQ applies the EQ predicate on the "organization_cas_backends" field.
+func OrganizationCasBackendsEQ(v uuid.UUID) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldEQ(FieldOrganizationCasBackends, v))
+}
+
+// OrganizationCasBackendsNEQ applies the NEQ predicate on the "organization_cas_backends" field.
+func OrganizationCasBackendsNEQ(v uuid.UUID) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNEQ(FieldOrganizationCasBackends, v))
+}
+
+// OrganizationCasBackendsIn applies the In predicate on the "organization_cas_backends" field.
+func OrganizationCasBackendsIn(vs ...uuid.UUID) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldIn(FieldOrganizationCasBackends, vs...))
+}
+
+// OrganizationCasBackendsNotIn applies the NotIn predicate on the "organization_cas_backends" field.
+func OrganizationCasBackendsNotIn(vs ...uuid.UUID) predicate.CASBackend {
+	return predicate.CASBackend(sql.FieldNotIn(FieldOrganizationCasBackends, vs...))
 }
 
 // HasOrganization applies the HasEdge predicate on the "organization" edge.

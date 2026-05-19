@@ -29,7 +29,6 @@ type CASBackendQuery struct {
 	predicates       []predicate.CASBackend
 	withOrganization *OrganizationQuery
 	withWorkflowRun  *WorkflowRunQuery
-	withFKs          bool
 	modifiers        []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -411,19 +410,12 @@ func (_q *CASBackendQuery) prepareQuery(ctx context.Context) error {
 func (_q *CASBackendQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*CASBackend, error) {
 	var (
 		nodes       = []*CASBackend{}
-		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [2]bool{
 			_q.withOrganization != nil,
 			_q.withWorkflowRun != nil,
 		}
 	)
-	if _q.withOrganization != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, casbackend.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*CASBackend).scanValues(nil, columns)
 	}
@@ -465,10 +457,7 @@ func (_q *CASBackendQuery) loadOrganization(ctx context.Context, query *Organiza
 	ids := make([]uuid.UUID, 0, len(nodes))
 	nodeids := make(map[uuid.UUID][]*CASBackend)
 	for i := range nodes {
-		if nodes[i].organization_cas_backends == nil {
-			continue
-		}
-		fk := *nodes[i].organization_cas_backends
+		fk := nodes[i].OrganizationCasBackends
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -582,6 +571,9 @@ func (_q *CASBackendQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != casbackend.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withOrganization != nil {
+			_spec.Node.AddColumnOnce(casbackend.FieldOrganizationCasBackends)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

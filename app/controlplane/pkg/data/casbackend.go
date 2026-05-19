@@ -47,7 +47,7 @@ func (r *CASBackendRepo) List(ctx context.Context, orgID uuid.UUID) ([]*biz.CASB
 	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.List")
 	defer span.End()
 
-	backends, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
+	backends, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().
 		Where(casbackend.DeletedAtIsNil()).
 		Order(ent.Desc(casbackend.FieldCreatedAt)).
 		All(ctx)
@@ -68,7 +68,7 @@ func (r *CASBackendRepo) FindDefaultBackend(ctx context.Context, orgID uuid.UUID
 	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindDefaultBackend")
 	defer span.End()
 
-	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().
 		Where(casbackend.Default(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -83,7 +83,7 @@ func (r *CASBackendRepo) FindFallbackBackend(ctx context.Context, orgID uuid.UUI
 	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindFallbackBackend")
 	defer span.End()
 
-	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().
 		Where(casbackend.Fallback(true), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -98,7 +98,7 @@ func (r *CASBackendRepo) FindInlineBackend(ctx context.Context, orgID uuid.UUID)
 	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindInlineBackend")
 	defer span.End()
 
-	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().
 		Where(casbackend.ProviderEQ(biz.CASBackendInline), casbackend.DeletedAtIsNil()).
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
@@ -264,7 +264,7 @@ func (r *CASBackendRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.CASBa
 	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindByID")
 	defer span.End()
 
-	backend, err := r.data.DB.CASBackend.Query().WithOrganization().
+	backend, err := r.data.DB.CASBackend.Query().
 		Where(casbackend.ID(id), casbackend.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -281,7 +281,7 @@ func (r *CASBackendRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID)
 	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindByIDInOrg")
 	defer span.End()
 
-	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().WithOrganization().
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().
 		Where(casbackend.ID(id), casbackend.DeletedAtIsNil()).Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
@@ -298,7 +298,6 @@ func (r *CASBackendRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, n
 
 	backend, err := orgScopedQuery(r.data.DB, orgID).
 		QueryCasBackends().
-		WithOrganization().
 		Where(casbackend.Name(name), casbackend.DeletedAtIsNil()).Only(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -352,7 +351,6 @@ func (r *CASBackendRepo) ListBackends(ctx context.Context, defaultsOrFallbacks b
 	defer span.End()
 
 	query := r.data.DB.CASBackend.Query().
-		WithOrganization().
 		Where(casbackend.DeletedAtIsNil(),
 			casbackend.ProviderNEQ(biz.CASBackendInline),
 			casbackend.HasOrganizationWith(
@@ -406,10 +404,7 @@ func entCASBackendToBiz(backend *ent.CASBackend) *biz.CASBackend {
 		Limits:           limits,
 		Fallback:         backend.Fallback,
 		Managed:          backend.Managed,
-	}
-
-	if org := backend.Edges.Organization; org != nil {
-		r.OrganizationID = org.ID
+		OrganizationID:   backend.OrganizationCasBackends,
 	}
 
 	return r
