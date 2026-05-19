@@ -18,6 +18,7 @@ package service
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -125,7 +126,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify the checksum
-	if got, want := fmt.Sprintf("%x", gotChecksum.Sum(nil)), wantChecksum.Hex; got != want {
+	if got, want := hex.EncodeToString(gotChecksum.Sum(nil)), wantChecksum.Hex; got != want {
 		msg := fmt.Sprintf("checksums mismatch: got: %s, want: %s", got, want)
 		s.log.Info(msg)
 		http.Error(w, msg, http.StatusUnauthorized)

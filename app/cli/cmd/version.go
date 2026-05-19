@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -88,7 +89,7 @@ func executableInfo() (*info, error) {
 
 	return &info{
 		Version: Version,
-		Digest:  fmt.Sprintf("sha256:%x", h.Sum(nil)),
+		Digest:  "sha256:" + hex.EncodeToString(h.Sum(nil)),
 	}, nil
 }
 
