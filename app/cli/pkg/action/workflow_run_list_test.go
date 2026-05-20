@@ -69,6 +69,10 @@ func (s *workflowRunListSuite) TestHumanizedRunnerType() {
 			testInput:      v1.CraftingSchema_Runner_TEKTON_PIPELINE,
 			expectedOutput: "Tekton Pipeline",
 		}, {
+			name:           "chainloop sandbox runner",
+			testInput:      v1.CraftingSchema_Runner_CHAINLOOP_SANDBOX,
+			expectedOutput: "Chainloop Sandbox",
+		}, {
 			name:           "unknown runner",
 			testInput:      -34,
 			expectedOutput: "Unknown",
