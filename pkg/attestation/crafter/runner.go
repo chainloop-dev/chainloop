@@ -101,6 +101,9 @@ var RunnerFactories = map[schemaapi.CraftingSchema_Runner_RunnerType]RunnerFacto
 	schemaapi.CraftingSchema_Runner_TEKTON_PIPELINE: func(_ string, logger *zerolog.Logger) SupportedRunner {
 		return runners.NewTektonPipeline(timeoutCtx, logger)
 	},
+	schemaapi.CraftingSchema_Runner_CHAINLOOP_SANDBOX: func(_ string, _ *zerolog.Logger) SupportedRunner {
+		return runners.NewChainloopSandbox()
+	},
 }
 
 // Load a specific runner
