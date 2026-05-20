@@ -17,10 +17,13 @@ package runners
 
 import (
 	"context"
+	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
+
+const chainloopSandboxEnvVar = "CHAINLOOP_SANDBOX"
 
 type ChainloopSandbox struct {
 	*Generic
@@ -37,7 +40,7 @@ func (r *ChainloopSandbox) ID() schemaapi.CraftingSchema_Runner_RunnerType {
 }
 
 func (r *ChainloopSandbox) CheckEnv() bool {
-	return false
+	return os.Getenv(chainloopSandboxEnvVar) != ""
 }
 
 func (r *ChainloopSandbox) ListEnvVars() []*EnvVarDefinition {
