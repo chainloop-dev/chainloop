@@ -30,7 +30,8 @@
             "CIRCLECI_BUILD",
             "DAGGER_PIPELINE",
             "TEAMCITY_PIPELINE",
-            "TEKTON_PIPELINE"
+            "TEKTON_PIPELINE",
+            "CHAINLOOP_SANDBOX"
           ],
           "title": "Runner Type",
           "type": "string"

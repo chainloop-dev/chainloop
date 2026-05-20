@@ -64,6 +64,7 @@ message CraftingSchema {
       DAGGER_PIPELINE = 6;
       TEAMCITY_PIPELINE = 7;
       TEKTON_PIPELINE = 8;
+      CHAINLOOP_SANDBOX = 9;
     }
   }
 
