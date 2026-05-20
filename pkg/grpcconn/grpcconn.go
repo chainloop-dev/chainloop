@@ -30,6 +30,12 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// DefaultMaxRecvMsgSize is the client-side cap applied to incoming unary
+// messages when no override is supplied. It sits above gRPC's 4 MiB built-in
+// default so large responses (e.g. `workflow run describe` with many
+// materials/policies) aren't rejected, while still bounding client memory.
+const DefaultMaxRecvMsgSize = 32 * 1024 * 1024
+
 // CLIVersionHeader is the request header key the CLI uses to advertise its
 // version (and edition flavor) on every request to the Control Plane and CAS.
 // Both gRPC and HTTP treat header keys as case-insensitive, so the same
@@ -38,11 +44,12 @@ import (
 const CLIVersionHeader = "Chainloop-Cli-Version"
 
 type newOptionalArg struct {
-	caFilePath string
-	caContent  string
-	insecure   bool
-	orgName    string
-	cliVersion string
+	caFilePath     string
+	caContent      string
+	insecure       bool
+	orgName        string
+	cliVersion     string
+	maxRecvMsgSize int
 }
 
 type Option func(*newOptionalArg)
@@ -77,6 +84,14 @@ func WithOrgName(orgName string) Option {
 func WithCLIVersion(version string) Option {
 	return func(opt *newOptionalArg) {
 		opt.cliVersion = version
+	}
+}
+
+// WithMaxRecvMsgSize overrides the client-side cap on incoming unary message
+// size. Values <= 0 fall back to DefaultMaxRecvMsgSize.
+func WithMaxRecvMsgSize(size int) Option {
+	return func(opt *newOptionalArg) {
+		opt.maxRecvMsgSize = size
 	}
 }
 
@@ -152,6 +167,12 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 
 	opts = append(opts, tlsDialOption)
 	opts = append(opts, grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+
+	maxRecvMsgSize := optionalArgs.maxRecvMsgSize
+	if maxRecvMsgSize <= 0 {
+		maxRecvMsgSize = DefaultMaxRecvMsgSize
+	}
+	opts = append(opts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxRecvMsgSize)))
 
 	conn, err := grpc.Dial(uri, opts...)
 	if err != nil {

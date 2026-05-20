@@ -56,6 +56,10 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 		grpcconn.WithCLIVersion(fullVersion()),
 	}
 
+	if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
+		opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
+	}
+
 	if caValue := viper.GetString(confOptions.CASCA.viperKey); caValue != "" {
 		if _, err := os.Stat(caValue); err == nil {
 			opts = append(opts, grpcconn.WithCAFile(caValue))

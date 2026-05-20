@@ -52,6 +52,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -78,6 +79,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -111,6 +113,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
 -y, --yes                       Skip confirmation
@@ -145,6 +148,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -176,6 +180,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -210,6 +215,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -267,6 +273,7 @@ Options inherited from parent commands
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -304,6 +311,7 @@ Options inherited from parent commands
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -348,6 +356,7 @@ Options inherited from parent commands
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -411,6 +420,7 @@ Options inherited from parent commands
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -446,6 +456,7 @@ Options inherited from parent commands
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -480,6 +491,7 @@ Options inherited from parent commands
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -527,6 +539,7 @@ Options inherited from parent commands
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -553,6 +566,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -583,6 +597,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -618,6 +633,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -649,6 +665,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -675,6 +692,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -706,6 +724,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -745,6 +764,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -786,6 +806,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -826,6 +847,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -864,6 +886,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -896,6 +919,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -931,6 +955,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -962,6 +987,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -993,6 +1019,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1031,6 +1058,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1069,6 +1097,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1108,6 +1137,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -1144,6 +1174,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1181,6 +1212,7 @@ Options inherited from parent commands
 --fallback                  set the backend as fallback in your organization
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1207,6 +1239,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1242,6 +1275,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1272,6 +1306,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1303,6 +1338,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1338,6 +1374,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1373,6 +1410,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1403,6 +1441,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1433,6 +1472,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1469,6 +1509,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1499,6 +1540,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1534,6 +1576,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1560,6 +1603,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1586,6 +1630,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1630,6 +1675,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1661,6 +1707,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1696,6 +1743,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1728,6 +1776,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1754,6 +1803,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1786,6 +1836,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1821,6 +1872,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1851,6 +1903,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1886,6 +1939,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1912,6 +1966,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1951,6 +2006,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -1982,6 +2038,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2017,6 +2074,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2047,6 +2105,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2073,6 +2132,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2103,6 +2163,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2137,6 +2198,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             output format, valid options are table, json, token (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2172,6 +2234,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2205,6 +2268,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2236,6 +2300,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2267,6 +2332,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2302,6 +2368,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2332,6 +2399,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2367,6 +2435,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2398,6 +2467,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2428,6 +2498,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2454,6 +2525,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2485,6 +2557,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2520,6 +2593,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2546,6 +2620,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2578,6 +2653,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2613,6 +2689,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2643,6 +2720,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2674,6 +2752,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2732,6 +2811,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2764,6 +2844,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2808,6 +2889,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2845,6 +2927,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2871,6 +2954,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2902,6 +2986,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2954,6 +3039,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -2989,6 +3075,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3040,6 +3127,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3079,6 +3167,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3114,6 +3203,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3144,6 +3234,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3170,6 +3261,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3196,6 +3288,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3240,6 +3333,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3271,6 +3365,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3306,6 +3401,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3338,6 +3434,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3364,6 +3461,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3398,6 +3496,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3429,6 +3528,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3461,6 +3561,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             output format, valid options are table, json or schema (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3496,6 +3597,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3526,6 +3628,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3559,6 +3662,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3613,6 +3717,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3645,6 +3750,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3677,6 +3783,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3712,6 +3819,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3762,6 +3870,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3798,6 +3907,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3824,6 +3934,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3860,6 +3971,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             output format, valid options are table, json, attestation, statement or payload-pae (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3895,6 +4007,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
@@ -3932,6 +4045,7 @@ Options inherited from parent commands
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
