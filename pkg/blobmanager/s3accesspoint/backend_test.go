@@ -90,21 +90,27 @@ func TestBackend_KeyDerivedFromRequestingOrg(t *testing.T) {
 	require.ErrorIs(t, err, ErrMissingRequestingOrg)
 }
 
-// TestSessionPolicy_ScopesToTenantPrefix locks down the session-policy
-// generator: the IAM policy minted at AssumeRole time must reference
-// both the AP ARN and the tenant key prefix, so a leaked token can't
-// touch keys outside its tenant's namespace.
-func TestSessionPolicy_ScopesToTenantPrefix(t *testing.T) {
+// TestSessionPolicy_ScopesToAccessPoint locks down the session-policy
+// generator: the IAM policy minted at AssumeRole time must scope to the
+// AP ARN (the tenant boundary lives in the AP resource policy, not
+// here), and must not include S3 actions the backend never calls — that
+// keeps the inline policy small so STS's packed-policy budget has
+// headroom for tags inherited from the caller principal.
+func TestSessionPolicy_ScopesToAccessPoint(t *testing.T) {
 	t.Parallel()
 
-	policy := buildSessionPolicy("arn:aws:s3:us-east-1:111:accesspoint/ap-a", "org/A")
+	policy := buildSessionPolicy("arn:aws:s3:us-east-1:111:accesspoint/ap-a")
 
-	assert.Contains(t, policy, `"arn:aws:s3:us-east-1:111:accesspoint/ap-a/object/org/A/*"`,
-		"policy Resource must be the AP ARN + tenant prefix")
+	assert.Contains(t, policy, `"arn:aws:s3:us-east-1:111:accesspoint/ap-a/object/*"`,
+		"policy Resource must be the AP ARN scoped to /object/*")
 	assert.NotContains(t, policy, `"*"`,
 		"session policy must not wildcard the Resource")
 	assert.Contains(t, policy, `"s3:GetObject"`)
 	assert.Contains(t, policy, `"s3:PutObject"`)
+	assert.NotContains(t, policy, `"s3:DeleteObject"`,
+		"backend never deletes — re-adding s3:DeleteObject grows the packed-policy footprint without need")
+	assert.NotContains(t, policy, `"s3:GetObjectAttributes"`,
+		"backend never calls GetObjectAttributes — re-adding it grows the packed-policy footprint without need")
 }
 
 // TestRoleSessionName_DerivedFromOrg pins the session-name shape that

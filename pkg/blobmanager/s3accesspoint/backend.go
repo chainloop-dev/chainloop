@@ -296,13 +296,14 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 		return p.ambientCreds.Retrieve(ctx)
 	}
 
-	// Session policy intersects with the base role's permissions; even
-	// if the role grants accesspoint/*, this session can only touch the
-	// caller's AP and prefix. The prefix is the requesting-org UUID
-	// straight from ctx — same source as the session name — so a
-	// tampered AccessPointARN in the secret blob can't widen the prefix
-	// scope to escape into another tenant's namespace.
-	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN, info.OrgID)
+	// Session policy intersects with the base role's permissions and
+	// pins this session to the caller's AP ARN. Cross-tenant defense
+	// against a tampered AccessPointARN in the secret blob lives in the
+	// AP's resource policy (aws:userid StringEquals on the role session
+	// name minted from the request-context org UUID), not here — keeping
+	// the inline policy small leaves headroom in STS's packed-policy
+	// budget for tags inherited from the caller principal.
+	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN)
 
 	out, err := p.stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
 		RoleArn:         aws.String(p.creds.BaseRoleARN),
@@ -334,15 +335,15 @@ func roleSessionName(orgUUID string) string {
 	return "cas-" + orgUUID
 }
 
-// buildSessionPolicy returns an IAM policy document that allows only the
-// operations the backend actually performs, and only against this
-// tenant's AP + key prefix. The Resource ARNs use the AP form
-// "${apARN}/object/${keyPrefix}/*".
-func buildSessionPolicy(apARN, keyPrefix string) string {
-	// Minimal, hand-written JSON — keeping it small reduces request
-	// payload (STS limits session policies to 2048 chars by default).
-	return fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject","s3:GetObjectAttributes"],"Resource":"%s/object/%s/*"}]}`,
-		apARN, keyPrefix)
+// buildSessionPolicy returns an IAM policy document allowing only the
+// S3 actions the backend actually performs (Get/Head/Put — HeadObject
+// is authorized as s3:GetObject) and scoped to this tenant's AP ARN.
+// Cross-tenant isolation is enforced by the AP resource policy's
+// aws:userid check against the role session name, not by this policy;
+// keeping the inline document minimal preserves headroom in the STS
+// packed-policy budget against tags inherited from the caller.
+func buildSessionPolicy(apARN string) string {
+	return fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject"],"Resource":"%s/object/*"}]}`, apARN)
 }
 
 // hexSha256ToBinaryB64 decodes the hex sha and re-encodes as base64. S3
