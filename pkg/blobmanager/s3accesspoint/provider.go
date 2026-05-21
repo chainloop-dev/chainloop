@@ -24,12 +24,16 @@
 //     resource policy enforces a StringEquals on aws:userid so that a
 //     session minted for org A cannot read or write to org B's AP — even if
 //     org A's secret blob has been tampered with to point at org B's ARN.
+//     This is the actual cross-tenant boundary.
 //  3. A per-tenant key prefix derived from the requesting org UUID: every
-//     object is keyed as <orgUUID>/sha256:<digest> and the AssumeRole
-//     session policy's Resource is scoped to ${apARN}/object/<orgUUID>/*.
-//     The prefix shares its source of truth with the session name, so a
-//     tampered secret cannot reroute a tenant's writes into a different
-//     namespace.
+//     object is keyed as <orgUUID>/sha256:<digest>, sharing its source of
+//     truth (the request-context org claim) with the role session name.
+//     This avoids cross-tenant collisions at the bucket layer; it is not
+//     load-bearing for tenant isolation, which is enforced by (1) and (2).
+//     The AssumeRole session policy's Resource scopes to the AP ARN only
+//     (${apARN}/object/*), keeping the inline document small so STS's
+//     packed-policy budget isn't consumed by chainloop before tags
+//     inherited from the caller principal are even accounted for.
 //
 // The session name MUST come from the request context, not from the secret
 // blob: a secrets-store compromise alone must not let an attacker reroute
