@@ -148,7 +148,9 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	case backend.Uploader != nil:
 		l.Debug().Str("backend", backend.Name).Msg("uploading")
 
-		_, err = backend.Uploader.UploadFile(ctx, artifactPath)
+		// Reuse the already-open, already-hashed reader from fileStats
+		// to avoid a redundant SHA256 pass inside Uploader.UploadFile.
+		_, err = backend.Uploader.Upload(ctx, result.r, result.filename, result.digest)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, fmt.Errorf("uploading material: %w", err))
 		}
@@ -193,6 +195,7 @@ func fileStats(filepath string) (*fileInfo, error) {
 
 	hash, _, err := cr_v1.SHA256(f)
 	if err != nil {
+		f.Close()
 		return nil, fmt.Errorf("generating digest: %w", err)
 	}
 
@@ -200,6 +203,7 @@ func fileStats(filepath string) (*fileInfo, error) {
 	// we need to rewind the file pointer
 	_, err = f.Seek(0, io.SeekStart)
 	if err != nil {
+		f.Close()
 		return nil, fmt.Errorf("rewinding file pointer: %w", err)
 	}
 

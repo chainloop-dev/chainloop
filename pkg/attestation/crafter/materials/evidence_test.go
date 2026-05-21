@@ -28,6 +28,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -76,7 +77,7 @@ func TestEvidenceCraft(t *testing.T) {
 
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), "./testdata/simple.txt").
+	uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "simple.txt",
@@ -213,7 +214,7 @@ func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
 
 			// Create a new mock uploader for each test case
 			uploader := mUploader.NewUploader(t)
-			uploader.On("UploadFile", context.TODO(), tc.filePath).
+			uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 				Return(&casclient.UpDownStatus{
 					Digest:   "deadbeef",
 					Filename: tc.filePath,

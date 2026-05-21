@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import (
 	"github.com/go-git/go-git/v6/config"
 	"github.com/go-git/go-git/v6/plumbing/object"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -609,7 +610,7 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			uploader := mUploader.NewUploader(s.T())
 
 			if !tc.uploadArtifact {
-				uploader.On("UploadFile", context.Background(), tc.materialPath).
+				uploader.On("Upload", context.Background(), mock.Anything, mock.Anything, mock.Anything).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "simple.txt",

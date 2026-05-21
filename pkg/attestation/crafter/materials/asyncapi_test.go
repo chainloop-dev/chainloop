@@ -27,6 +27,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -143,7 +144,7 @@ func TestAsyncAPICraft(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("UploadFile", context.TODO(), tc.filePath).
+				uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "spec.json",
@@ -178,7 +179,7 @@ func TestAsyncAPICraft(t *testing.T) {
 func TestAsyncAPICraftNoStrictValidation(t *testing.T) {
 	l := zerolog.Nop()
 	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), "./testdata/asyncapi-invalid.json").
+	uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "spec.json",

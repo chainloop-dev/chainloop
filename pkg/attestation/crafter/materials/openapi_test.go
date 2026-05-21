@@ -27,6 +27,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -177,7 +178,7 @@ func TestOpenAPICraft(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("UploadFile", context.TODO(), tc.filePath).
+				uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "spec.json",
@@ -212,7 +213,7 @@ func TestOpenAPICraft(t *testing.T) {
 func TestOpenAPICraftNoStrictValidationSwagger2(t *testing.T) {
 	l := zerolog.Nop()
 	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), "./testdata/swagger-2.0-invalid.json").
+	uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "spec.json",
@@ -236,7 +237,7 @@ func TestOpenAPICraftNoStrictValidationSwagger2(t *testing.T) {
 func TestOpenAPICraftNoStrictValidation(t *testing.T) {
 	l := zerolog.Nop()
 	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), "./testdata/openapi-invalid.json").
+	uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "spec.json",
