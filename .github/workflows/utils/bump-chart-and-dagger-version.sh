@@ -53,3 +53,9 @@ sed -i "s/tag: .*/tag: \"${semVer}\"/g" "${values_yaml}"
 ## Update Dagger version
 sed -i "s/chainloopVersion = \"v.*\"/chainloopVersion = \"${semVer}\"/" "${dagger_main}"
 
+## Update platform (enterprise) CLI version from infoz endpoint
+platform_version=$(curl -sf https://api.app.chainloop.dev/infoz | jq -r '.version')
+if [[ -n "${platform_version}" && "${platform_version}" != "null" ]]; then
+    sed -i "s/platformVersion  = \"v.*\"/platformVersion  = \"${platform_version}\"/" "${dagger_main}"
+fi
+

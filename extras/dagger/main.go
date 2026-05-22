@@ -11,6 +11,7 @@ import (
 
 const (
 	chainloopVersion = "v1.98.4"
+	platformVersion  = "v1.77.8"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
@@ -20,6 +21,25 @@ var execOpts = dagger.ContainerWithExecOpts{
 type Chainloop struct {
 	// +private
 	Instance InstanceInfo
+	// +private
+	Enterprise bool
+	// +private
+	CLIVersion string
+}
+
+// New creates a new Chainloop module client.
+func New(
+	// Use the enterprise CLI image (ghcr.io/chainloop-dev/platform/cli)
+	// +optional
+	enterprise bool,
+	// Pin a specific CLI version (overrides the built-in default)
+	// +optional
+	cliVersion string,
+) *Chainloop {
+	return &Chainloop{
+		Enterprise: enterprise,
+		CLIVersion: cliVersion,
+	}
 }
 
 // A Chainloop attestation
@@ -515,13 +535,23 @@ func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
 
-func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI *ParentCIContext, githubEventFile *dagger.File) *dagger.Container {
+func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI *ParentCIContext, githubEventFile *dagger.File, enterprise bool, cliVersionOverride string) *dagger.Container {
+	image := "ghcr.io/chainloop-dev/chainloop/cli"
+	version := chainloopVersion
+	if enterprise {
+		image = "ghcr.io/chainloop-dev/platform/cli"
+		version = platformVersion
+	}
+	if cliVersionOverride != "" {
+		version = cliVersionOverride
+	}
+
 	ctr := dag.Container().
-		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
-		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
-		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).
-		WithUser("").                                                                                     // Our images come with pre-defined user set, so we need to reset it
-		WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String()) // Cache TTL
+		From(fmt.Sprintf("%s:%s", image, version)).
+		WithEntrypoint([]string{"/chainloop"}).
+		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", version).
+		WithUser("").
+		WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String())
 
 	// Inject parent CI context if provided
 	if parentCI != nil {
@@ -631,7 +661,7 @@ func (att *Attestation) Container(
 	// +default=0
 	ttl int,
 ) *dagger.Container {
-	ctr := cliContainer(ttl, att.Token, att.Client.Instance, att.parentCIContext, att.githubEventFile)
+	ctr := cliContainer(ttl, att.Token, att.Client.Instance, att.parentCIContext, att.githubEventFile, att.Client.Enterprise, att.Client.CLIVersion)
 	if att.repository != nil {
 		ctr = ctr.WithDirectory(".", att.repository)
 	}
@@ -778,7 +808,7 @@ func (m *Chainloop) WorkflowCreate(
 	// +optional
 	skipIfExists bool,
 ) (string, error) {
-	return cliContainer(0, token, m.Instance, nil, nil).
+	return cliContainer(0, token, m.Instance, nil, nil, m.Enterprise, m.CLIVersion).
 		WithExec([]string{
 			"workflow", "create",
 			"--name", name,
