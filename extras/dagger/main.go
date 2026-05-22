@@ -548,7 +548,7 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 
 	ctr := dag.Container().
 		From(fmt.Sprintf("%s:%s", image, version)).
-		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prerare for possible API change
+		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
 		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", version).
 		WithUser("").                                                                                     // Our images come with pre-defined user set, so we need to reset it
 		WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String()) // Cache TTL
