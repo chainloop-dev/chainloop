@@ -34,6 +34,13 @@
 //     (${apARN}/object/*), keeping the inline document small so STS's
 //     packed-policy budget isn't consumed by chainloop before tags
 //     inherited from the caller principal are even accounted for.
+//  4. Optionally, a customer-managed IAM policy referenced via
+//     Credentials.SessionPolicyARN. When set, the per-request AssumeRole
+//     call passes that ARN through PolicyArns instead of an inline Policy
+//     document; only the ~60-char ARN counts against the packed-policy
+//     budget, leaving more headroom for caller-inherited session tags.
+//     The managed policy is the action allowlist in that mode, so it
+//     MUST be at least as restrictive as the inline default.
 //
 // The session name MUST come from the request context, not from the secret
 // blob: a secrets-store compromise alone must not let an attacker reroute
@@ -49,6 +56,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 )
@@ -113,6 +121,15 @@ type Credentials struct {
 	// accounts without a config change. Required unless DevModeEnvVar is
 	// set on the running binary.
 	BaseRoleARN string
+	// SessionPolicyARN is optional. When non-empty, the per-request
+	// AssumeRole call passes this ARN via PolicyArns instead of an
+	// inline Policy document, trimming chainloop's contribution to
+	// STS's packed-policy budget down to the ARN string itself. The
+	// IAM policy at this ARN MUST be at least as restrictive as the
+	// inline default (s3:GetObject + s3:PutObject scoped to the AP's
+	// /object/* prefix). When empty, the backend falls back to the
+	// inline session policy.
+	SessionPolicyARN string
 }
 
 func (c *Credentials) Validate() error {
@@ -134,6 +151,21 @@ func (c *Credentials) Validate() error {
 		}
 		if !strings.HasPrefix(c.BaseRoleARN, "arn:aws:iam::") {
 			return fmt.Errorf("%w: base_role_arn %q is not a valid IAM role ARN", backend.ErrValidation, c.BaseRoleARN)
+		}
+	}
+	// SessionPolicyARN is optional. When set it must be a syntactically
+	// valid IAM managed policy ARN — anything else (an S3 ARN, a role
+	// ARN, a policy ARN with no name, a role ARN that happens to embed
+	// ":policy/" in its path) would be silently rejected by STS at
+	// request time, surfacing as opaque errors deep in the upload path.
+	// Fail loudly here instead.
+	if c.SessionPolicyARN != "" {
+		a, err := arn.Parse(c.SessionPolicyARN)
+		if err != nil ||
+			a.Service != "iam" ||
+			!strings.HasPrefix(a.Resource, "policy/") ||
+			a.Resource == "policy/" {
+			return fmt.Errorf("%w: session_policy_arn %q is not a valid IAM managed policy ARN", backend.ErrValidation, c.SessionPolicyARN)
 		}
 	}
 	return nil

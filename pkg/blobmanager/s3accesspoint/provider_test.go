@@ -67,6 +67,58 @@ func TestCredentials_Validate(t *testing.T) {
 			mutate:  func(c *Credentials) { c.BaseRoleARN = "not-an-arn" },
 			wantErr: "not a valid IAM role ARN",
 		},
+		{
+			name:    "session policy arn empty is allowed",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "" },
+			wantErr: "",
+		},
+		{
+			name:    "session policy arn valid",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam::123456789012:policy/chainloop-cas-session" },
+			wantErr: "",
+		},
+		{
+			name:    "session policy arn pointing at s3 ARN rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:s3:::some-bucket" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn pointing at role rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam::123456789012:role/some-role" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn garbage rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "not-an-arn-at-all" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn for AWS-managed policy accepted",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam::aws:policy/AdministratorAccess" },
+			wantErr: "",
+		},
+		{
+			// previously the loose substring check would accept this because
+			// the string both starts with arn:aws:iam:: and contains :policy/
+			name:    "session policy arn embedded in role path rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam::123456789012:role/foo:policy/bar" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn with empty name rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam::123456789012:policy/" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn missing service rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws::us-east-1:123456789012:policy/foo" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn structurally malformed rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
