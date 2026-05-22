@@ -56,6 +56,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 )
@@ -152,12 +153,18 @@ func (c *Credentials) Validate() error {
 			return fmt.Errorf("%w: base_role_arn %q is not a valid IAM role ARN", backend.ErrValidation, c.BaseRoleARN)
 		}
 	}
-	// SessionPolicyARN is optional. When set it must look like a managed
-	// IAM policy ARN — anything else (an S3 ARN, a role ARN) would be
-	// silently rejected by STS at request time, surfacing as opaque
-	// errors deep in the upload path. Fail loudly here instead.
+	// SessionPolicyARN is optional. When set it must be a syntactically
+	// valid IAM managed policy ARN — anything else (an S3 ARN, a role
+	// ARN, a policy ARN with no name, a role ARN that happens to embed
+	// ":policy/" in its path) would be silently rejected by STS at
+	// request time, surfacing as opaque errors deep in the upload path.
+	// Fail loudly here instead.
 	if c.SessionPolicyARN != "" {
-		if !strings.HasPrefix(c.SessionPolicyARN, "arn:aws:iam::") || !strings.Contains(c.SessionPolicyARN, ":policy/") {
+		a, err := arn.Parse(c.SessionPolicyARN)
+		if err != nil ||
+			a.Service != "iam" ||
+			!strings.HasPrefix(a.Resource, "policy/") ||
+			a.Resource == "policy/" {
 			return fmt.Errorf("%w: session_policy_arn %q is not a valid IAM managed policy ARN", backend.ErrValidation, c.SessionPolicyARN)
 		}
 	}
