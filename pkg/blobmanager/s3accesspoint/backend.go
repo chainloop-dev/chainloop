@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
@@ -47,6 +48,13 @@ const (
 // be useless against an AP policy condition.
 var ErrMissingRequestingOrg = errors.New("s3accesspoint: requesting org missing from claims")
 
+// stsAssumer is the subset of *sts.Client that the credentials provider
+// actually uses. Keeping the dependency at interface-level lets tests
+// inject a fake without spinning up a real AWS config.
+type stsAssumer interface {
+	AssumeRole(ctx context.Context, in *sts.AssumeRoleInput, optFns ...func(*sts.Options)) (*sts.AssumeRoleOutput, error)
+}
+
 // Backend is the per-tenant uploader/downloader. One *Backend instance is
 // bound to one access point; the actual AWS credentials are minted
 // per-request via STS using the org UUID found in the request context.
@@ -56,7 +64,7 @@ type Backend struct {
 	// stsClient is built once at construction using the pod's ambient
 	// IAM identity. The credential chain (IRSA → IMDS → env →
 	// ~/.aws/credentials) picks up the identity automatically.
-	stsClient *sts.Client
+	stsClient stsAssumer
 
 	// s3Client uses a custom CredentialsProvider that mints a scoped
 	// session per request (cached in-process per requesting-org so back-
@@ -261,7 +269,7 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 // reusing the temporary credentials across consecutive calls until the
 // expiration window approaches.
 type sessionCredentialsProvider struct {
-	stsClient *sts.Client
+	stsClient stsAssumer
 
 	// ambientCreds is the SDK-default credentials provider captured from
 	// awsCfg at construction time. Only consulted when
@@ -296,21 +304,34 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 		return p.ambientCreds.Retrieve(ctx)
 	}
 
-	// Session policy intersects with the base role's permissions and
-	// pins this session to the caller's AP ARN. Cross-tenant defense
-	// against a tampered AccessPointARN in the secret blob lives in the
-	// AP's resource policy (aws:userid StringEquals on the role session
-	// name minted from the request-context org UUID), not here — keeping
-	// the inline policy small leaves headroom in STS's packed-policy
-	// budget for tags inherited from the caller principal.
-	sessionPolicy := buildSessionPolicy(p.creds.AccessPointARN)
-
-	out, err := p.stsClient.AssumeRole(ctx, &sts.AssumeRoleInput{
+	// The session policy intersects with the base role's permissions and
+	// pins this session to the caller's AP. Cross-tenant defense against
+	// a tampered AccessPointARN in the secret blob lives in the AP's
+	// resource policy (aws:userid StringEquals on the role session name
+	// minted from the request-context org UUID), not here.
+	//
+	// When the operator has provisioned a managed IAM policy and
+	// recorded its ARN in SessionPolicyARN, reference it via PolicyArns
+	// instead of inlining a JSON document. Only the ARN counts against
+	// STS's packed-policy budget that way, leaving more headroom for
+	// session tags inherited from the caller principal (IRSA / Pod
+	// Identity). When SessionPolicyARN is empty we fall back to the
+	// inline default — a missing ARN must NOT degrade to an unscoped
+	// session that inherits the full BaseRoleARN permissions.
+	input := &sts.AssumeRoleInput{
 		RoleArn:         aws.String(p.creds.BaseRoleARN),
 		RoleSessionName: aws.String(roleSessionName(info.OrgID)),
-		Policy:          aws.String(sessionPolicy),
 		DurationSeconds: aws.Int32(int32(SessionDuration.Seconds())),
-	})
+	}
+	if p.creds.SessionPolicyARN != "" {
+		input.PolicyArns = []ststypes.PolicyDescriptorType{
+			{Arn: aws.String(p.creds.SessionPolicyARN)},
+		}
+	} else {
+		input.Policy = aws.String(buildSessionPolicy(p.creds.AccessPointARN))
+	}
+
+	out, err := p.stsClient.AssumeRole(ctx, input)
 	if err != nil {
 		return aws.Credentials{}, fmt.Errorf("sts:AssumeRole for org %s: %w", info.OrgID, err)
 	}

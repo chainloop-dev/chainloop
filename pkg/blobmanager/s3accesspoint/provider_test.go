@@ -67,6 +67,31 @@ func TestCredentials_Validate(t *testing.T) {
 			mutate:  func(c *Credentials) { c.BaseRoleARN = "not-an-arn" },
 			wantErr: "not a valid IAM role ARN",
 		},
+		{
+			name:    "session policy arn empty is allowed",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "" },
+			wantErr: "",
+		},
+		{
+			name:    "session policy arn valid",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam::123456789012:policy/chainloop-cas-session" },
+			wantErr: "",
+		},
+		{
+			name:    "session policy arn pointing at s3 ARN rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:s3:::some-bucket" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn pointing at role rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "arn:aws:iam::123456789012:role/some-role" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
+		{
+			name:    "session policy arn garbage rejected",
+			mutate:  func(c *Credentials) { c.SessionPolicyARN = "not-an-arn-at-all" },
+			wantErr: "not a valid IAM managed policy ARN",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

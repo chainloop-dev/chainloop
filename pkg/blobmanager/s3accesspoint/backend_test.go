@@ -19,8 +19,11 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
@@ -172,6 +175,83 @@ type countingCredsProvider struct {
 func (c *countingCredsProvider) Retrieve(_ context.Context) (aws.Credentials, error) {
 	c.calls++
 	return c.creds, nil
+}
+
+// fakeSTSAssumer captures the AssumeRoleInput passed by the credentials
+// provider so tests can lock down the AssumeRole call shape (inline
+// policy vs PolicyArns) without making a real AWS call.
+type fakeSTSAssumer struct {
+	lastInput *sts.AssumeRoleInput
+}
+
+func (f *fakeSTSAssumer) AssumeRole(_ context.Context, in *sts.AssumeRoleInput, _ ...func(*sts.Options)) (*sts.AssumeRoleOutput, error) {
+	f.lastInput = in
+	return &sts.AssumeRoleOutput{
+		Credentials: &ststypes.Credentials{
+			AccessKeyId:     aws.String("AKFAKE"),
+			SecretAccessKey: aws.String("secret"),
+			SessionToken:    aws.String("token"),
+			Expiration:      aws.Time(time.Now().Add(time.Hour)),
+		},
+	}, nil
+}
+
+// TestAssumeRoleInput_DefaultsToInlinePolicy locks down the fallback
+// path: with an empty SessionPolicyARN the AssumeRole call must carry an
+// inline Policy and must NOT pass PolicyArns — otherwise an upgrade
+// that forgets to set the new field would silently degrade to a session
+// scoped only by the BaseRoleARN's identity policies.
+func TestAssumeRoleInput_DefaultsToInlinePolicy(t *testing.T) {
+	t.Parallel()
+
+	fake := &fakeSTSAssumer{}
+	p := &sessionCredentialsProvider{
+		stsClient: fake,
+		creds: &Credentials{
+			AccessPointARN: "arn:aws:s3:us-east-1:111:accesspoint/ap-a",
+			BaseRoleARN:    "arn:aws:iam::111:role/r",
+		},
+	}
+	ctx := jwtmiddleware.NewContext(context.Background(),
+		&robotaccount.Claims{OrgID: "org-A", StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Uploader})
+
+	_, err := p.Retrieve(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, fake.lastInput, "stub STS must have been invoked")
+
+	require.NotNil(t, fake.lastInput.Policy, "empty SessionPolicyARN must produce an inline Policy")
+	assert.Contains(t, *fake.lastInput.Policy, "arn:aws:s3:us-east-1:111:accesspoint/ap-a/object/*")
+	assert.Empty(t, fake.lastInput.PolicyArns, "inline path must not also pass PolicyArns")
+}
+
+// TestAssumeRoleInput_UsesPolicyArnsWhenSet locks down the opt-in path:
+// a configured SessionPolicyARN must reach STS via PolicyArns, and the
+// inline Policy must be omitted so we don't double-count against the
+// packed-policy budget.
+func TestAssumeRoleInput_UsesPolicyArnsWhenSet(t *testing.T) {
+	t.Parallel()
+
+	const managedARN = "arn:aws:iam::111:policy/chainloop-cas-session"
+	fake := &fakeSTSAssumer{}
+	p := &sessionCredentialsProvider{
+		stsClient: fake,
+		creds: &Credentials{
+			AccessPointARN:   "arn:aws:s3:us-east-1:111:accesspoint/ap-a",
+			BaseRoleARN:      "arn:aws:iam::111:role/r",
+			SessionPolicyARN: managedARN,
+		},
+	}
+	ctx := jwtmiddleware.NewContext(context.Background(),
+		&robotaccount.Claims{OrgID: "org-A", StoredSecretID: "foo", BackendType: "BT", Role: robotaccount.Uploader})
+
+	_, err := p.Retrieve(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, fake.lastInput, "stub STS must have been invoked")
+
+	assert.Nil(t, fake.lastInput.Policy, "PolicyArns path must NOT also send an inline Policy")
+	require.Len(t, fake.lastInput.PolicyArns, 1, "expected exactly one PolicyArn descriptor")
+	require.NotNil(t, fake.lastInput.PolicyArns[0].Arn)
+	assert.Equal(t, managedARN, *fake.lastInput.PolicyArns[0].Arn)
 }
 
 // --- helpers -----------------------------------------------------------
