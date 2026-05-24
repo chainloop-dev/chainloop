@@ -78,6 +78,10 @@ type InstanceInfo struct {
 	CASAPI string
 	// path to a custom CA for the CAS API
 	CASCAPath *dagger.File
+	// hostname for the Platform API i.e api.app.chainloop.dev:443
+	PlatformAPI string
+	// path to a custom CA for the Platform API
+	PlatformCAPath *dagger.File
 	// Password to use when authenticating to the registry
 	Insecure bool
 }
@@ -373,6 +377,11 @@ func (m *Chainloop) WithInstance(
 	// Path to custom CA certificate for the Control Plane API
 	// +optional
 	controlplaneCA *dagger.File,
+	// Example: "api.app.chainloop.dev:443"
+	platformAPI string,
+	// Path to custom CA certificate for the Platform API
+	// +optional
+	platformCA *dagger.File,
 	// Whether to skip TLS verification
 	// +optional
 	insecure bool,
@@ -383,6 +392,8 @@ func (m *Chainloop) WithInstance(
 		Insecure:           insecure,
 		CASCAPath:          casCA,
 		ControlplaneCAPath: controlplaneCA,
+		PlatformAPI:        platformAPI,
+		PlatformCAPath:     platformCA,
 	}
 
 	return m
@@ -633,6 +644,14 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 
 	if cas := instance.CASAPI; cas != "" {
 		ctr = ctr.WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API", cas)
+	}
+
+	if platformAPI := instance.PlatformAPI; platformAPI != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_PLATFORM_API", platformAPI)
+	}
+
+	if ca := instance.PlatformCAPath; ca != nil {
+		ctr = ctr.WithFile("/platform-ca.pem", ca).WithEnvVariable("CHAINLOOP_PLATFORM_API_CA", "/platform-ca.pem")
 	}
 
 	if instance.Insecure {
