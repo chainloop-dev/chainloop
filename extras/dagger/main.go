@@ -23,8 +23,6 @@ type Chainloop struct {
 	Instance InstanceInfo
 	// +private
 	Enterprise bool
-	// +private
-	CLIVersion string
 }
 
 // New creates a new Chainloop module client.
@@ -32,13 +30,10 @@ func New(
 	// Use the enterprise CLI image (ghcr.io/chainloop-dev/platform/cli)
 	// +optional
 	enterprise bool,
-	// Pin a specific CLI version (overrides the built-in default)
-	// +optional
-	cliVersion string,
+
 ) *Chainloop {
 	return &Chainloop{
 		Enterprise: enterprise,
-		CLIVersion: cliVersion,
 	}
 }
 
@@ -535,15 +530,12 @@ func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
 
-func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI *ParentCIContext, githubEventFile *dagger.File, enterprise bool, cliVersionOverride string) *dagger.Container {
+func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI *ParentCIContext, githubEventFile *dagger.File, enterprise bool) *dagger.Container {
 	image := "ghcr.io/chainloop-dev/chainloop/cli"
 	version := chainloopVersion
 	if enterprise {
 		image = "ghcr.io/chainloop-dev/platform/cli"
 		version = platformVersion
-	}
-	if cliVersionOverride != "" {
-		version = cliVersionOverride
 	}
 
 	ctr := dag.Container().
@@ -661,7 +653,7 @@ func (att *Attestation) Container(
 	// +default=0
 	ttl int,
 ) *dagger.Container {
-	ctr := cliContainer(ttl, att.Token, att.Client.Instance, att.parentCIContext, att.githubEventFile, att.Client.Enterprise, att.Client.CLIVersion)
+	ctr := cliContainer(ttl, att.Token, att.Client.Instance, att.parentCIContext, att.githubEventFile, att.Client.Enterprise)
 	if att.repository != nil {
 		ctr = ctr.WithDirectory(".", att.repository)
 	}
@@ -808,7 +800,7 @@ func (m *Chainloop) WorkflowCreate(
 	// +optional
 	skipIfExists bool,
 ) (string, error) {
-	return cliContainer(0, token, m.Instance, nil, nil, m.Enterprise, m.CLIVersion).
+	return cliContainer(0, token, m.Instance, nil, nil, m.Enterprise).
 		WithExec([]string{
 			"workflow", "create",
 			"--name", name,
