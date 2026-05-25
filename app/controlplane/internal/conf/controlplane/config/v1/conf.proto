@@ -143,6 +143,8 @@ message OperationAuthorizationProvider {
   string url = 1 [(buf.validate.field).string.uri = true];
   // Whether to enable the operation authorization
   bool enabled = 2;
+  // authorized operations list
+  repeated string operations = 3;
 }
 
 message FederatedAuthentication {

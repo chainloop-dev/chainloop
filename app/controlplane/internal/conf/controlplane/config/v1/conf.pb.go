@@ -321,7 +321,9 @@ type OperationAuthorizationProvider struct {
 	// URL of the authorization endpoint
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// Whether to enable the operation authorization
-	Enabled       bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Enabled bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// authorized operations list
+	Operations    []string `protobuf:"bytes,3,rep,name=operations,proto3" json:"operations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -368,6 +370,13 @@ func (x *OperationAuthorizationProvider) GetEnabled() bool {
 		return x.Enabled
 	}
 	return false
+}
+
+func (x *OperationAuthorizationProvider) GetOperations() []string {
+	if x != nil {
+		return x.Operations
+	}
+	return nil
 }
 
 type FederatedAuthentication struct {
@@ -1841,10 +1850,13 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
 	"\x0eauthentication\"6\n" +
 	"\fAttestations\x12&\n" +
-	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\"V\n" +
+	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\"v\n" +
 	"\x1eOperationAuthorizationProvider\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
-	"\aenabled\x18\x02 \x01(\bR\aenabled\"O\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1e\n" +
+	"\n" +
+	"operations\x18\x03 \x03(\tR\n" +
+	"operations\"O\n" +
 	"\x17FederatedAuthentication\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\"\xee\x01\n" +
