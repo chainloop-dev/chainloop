@@ -118,6 +118,8 @@ enable_profiler: true
 # operation_authorization_provider:
 #   enabled: true
 #   url: http://localhost:8002/v1/authorize
+#   operations:
+#     - /controlplane.v1.WorkflowRunService/Create
 
 ui_dashboard_url: http://localhost:3000
 
