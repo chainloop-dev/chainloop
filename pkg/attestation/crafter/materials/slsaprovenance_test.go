@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ func TestSLSAProvenanceCraft(t *testing.T) {
 
 	// Mock uploader
 	uploader := mUploader.NewUploader(t)
-	uploader.On("UploadFile", context.TODO(), mock.Anything).
+	uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 		Return(&casclient.UpDownStatus{
 			Digest:   "deadbeef",
 			Filename: "attestation.json",

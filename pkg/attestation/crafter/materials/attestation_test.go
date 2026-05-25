@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@ func TestAttestationCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if !tc.expectErr {
-				uploader.On("UploadFile", context.Background(), mock.Anything).
+				uploader.On("Upload", context.Background(), mock.Anything, mock.Anything, mock.Anything).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "attestation.json",

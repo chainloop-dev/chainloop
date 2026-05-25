@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -100,7 +101,7 @@ func TestSARIFCraft(t *testing.T) {
 			// Mock uploader
 			uploader := mUploader.NewUploader(t)
 			if tc.wantErr == "" {
-				uploader.On("UploadFile", context.TODO(), tc.filePath).
+				uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "report.sarif",
@@ -163,7 +164,7 @@ func TestSARIFCraft_SkipUpload(t *testing.T) {
 			// Mock uploader - only expect upload call if not skipped
 			uploader := mUploader.NewUploader(t)
 			if tc.wantUpload {
-				uploader.On("UploadFile", context.TODO(), filePath).
+				uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
 						Filename: "report.sarif",
