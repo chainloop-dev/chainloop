@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -127,6 +127,36 @@ func TestDoSync(t *testing.T) {
 	assert.Equal(t, "bar", got[0][0])
 	assert.Equal(t, "integration_attached", got[0][1])
 	assert.Equal(t, "delete", got[0][2])
+}
+
+func TestRequiresExternalAuthz(t *testing.T) {
+	testCases := []struct {
+		name      string
+		operation string
+		want      bool
+	}{
+		{
+			name:      "CAS backend creation is forwarded to the external authorizer",
+			operation: "/controlplane.v1.CASBackendService/Create",
+			want:      true,
+		},
+		{
+			name:      "operations without external authz flag are not forwarded",
+			operation: "/controlplane.v1.WorkflowService/List",
+			want:      false,
+		},
+		{
+			name:      "unknown operations are not forwarded",
+			operation: "/controlplane.v1.UnknownService/Unknown",
+			want:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, RequiresExternalAuthz(tc.operation))
+		})
+	}
 }
 
 func testEnforcer(t *testing.T) (*CasbinEnforcer, io.Closer) {
