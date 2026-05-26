@@ -183,9 +183,11 @@ controlplane:
   ## @extra controlplane.operationAuthorizationProvider Enable external operation authorization
   ## @param controlplane.operationAuthorizationProvider.enabled Enable operation authorization
   ## @param controlplane.operationAuthorizationProvider.url URL of the authorization endpoint
+  ## @param controlplane.operationAuthorizationProvider.operations List of gRPC operations that require external authorization (e.g. "/controlplane.v1.WorkflowRunService/Create")
   operationAuthorizationProvider:
     enabled: false
     url: ""
+    operations: []
 
   ## @skip controlplane.restrictOrgCreation Restrict organization creation to instance admins
   restrictOrgCreation: false

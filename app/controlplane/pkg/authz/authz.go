@@ -23,10 +23,8 @@ type Policy struct {
 }
 
 // OperationPolicy describes both the local Casbin policies required for an operation
-// and whether the operation also requires external authorization.
 type OperationPolicy struct {
-	Policies      []*Policy
-	ExternalAuthz bool
+	Policies []*Policy
 }
 
 type Role string
@@ -375,7 +373,7 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List":       {Policies: []*Policy{PolicyCASBackendList}},
 	"/controlplane.v1.CASBackendService/Revalidate": {Policies: []*Policy{PolicyCASBackendUpdate}},
-	"/controlplane.v1.CASBackendService/Create":     {Policies: []*Policy{PolicyCASBackendCreate}, ExternalAuthz: true},
+	"/controlplane.v1.CASBackendService/Create":     {Policies: []*Policy{PolicyCASBackendCreate}},
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {Policies: []*Policy{PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead}},
 	// Registered integrations
@@ -457,14 +455,6 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 
 	// Org invitations
 	"/controlplane.v1.OrgInvitationService/Create": {Policies: []*Policy{PolicyOrganizationInvitationsCreate}},
-}
-
-// RequiresExternalAuthz returns whether the given operation requires external authorization.
-func RequiresExternalAuthz(operation string) bool {
-	if entry, ok := ServerOperationsMap[operation]; ok {
-		return entry.ExternalAuthz
-	}
-	return false
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

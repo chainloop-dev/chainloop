@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
@@ -32,14 +31,6 @@ import (
 )
 
 const testExternalAuthzOp = "/test.v1.ExternalAuthzTestService/Target"
-
-func registerTestExternalAuthzOp(t *testing.T) {
-	t.Helper()
-	authz.ServerOperationsMap[testExternalAuthzOp] = &authz.OperationPolicy{ExternalAuthz: true}
-	t.Cleanup(func() {
-		delete(authz.ServerOperationsMap, testExternalAuthzOp)
-	})
-}
 
 // fakeTransport implements transport.Transporter for testing middleware operation matching.
 type fakeTransport struct {
@@ -106,7 +97,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("target operation allowed", func(t *testing.T) {
-		registerTestExternalAuthzOp(t)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var req operationAuthRequest
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
@@ -117,7 +107,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
+		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL, Operations: []string{testExternalAuthzOp}}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
@@ -128,14 +118,13 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("target operation denied", func(t *testing.T) {
-		registerTestExternalAuthzOp(t)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(operationAuthResponse{Allowed: false, Reason: "org limit reached"}) //nolint:errcheck
 		}))
 		defer srv.Close()
 
-		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
+		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL, Operations: []string{testExternalAuthzOp}}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
@@ -147,8 +136,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("provider unreachable is fail-closed", func(t *testing.T) {
-		registerTestExternalAuthzOp(t)
-		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: "http://127.0.0.1:1"}
+		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: "http://127.0.0.1:1", Operations: []string{testExternalAuthzOp}}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
@@ -160,13 +148,12 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("provider returns 500 is fail-closed", func(t *testing.T) {
-		registerTestExternalAuthzOp(t)
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}))
 		defer srv.Close()
 
-		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
+		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL, Operations: []string{testExternalAuthzOp}}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ctx := ctxWithOperation(context.Background(), testExternalAuthzOp)
@@ -178,7 +165,6 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 	})
 
 	t.Run("bearer token is forwarded", func(t *testing.T) {
-		registerTestExternalAuthzOp(t)
 		var gotAuth string
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotAuth = r.Header.Get("Authorization")
@@ -187,7 +173,7 @@ func TestWithOperationAuthorizationMiddleware(t *testing.T) {
 		}))
 		defer srv.Close()
 
-		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL}
+		cfg := &conf.OperationAuthorizationProvider{Enabled: true, Url: srv.URL, Operations: []string{testExternalAuthzOp}}
 		m := WithOperationAuthorizationMiddleware(cfg, logHelper)
 
 		ft := &fakeTransport{

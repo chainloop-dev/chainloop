@@ -129,36 +129,6 @@ func TestDoSync(t *testing.T) {
 	assert.Equal(t, "delete", got[0][2])
 }
 
-func TestRequiresExternalAuthz(t *testing.T) {
-	testCases := []struct {
-		name      string
-		operation string
-		want      bool
-	}{
-		{
-			name:      "CAS backend creation is forwarded to the external authorizer",
-			operation: "/controlplane.v1.CASBackendService/Create",
-			want:      true,
-		},
-		{
-			name:      "operations without external authz flag are not forwarded",
-			operation: "/controlplane.v1.WorkflowService/List",
-			want:      false,
-		},
-		{
-			name:      "unknown operations are not forwarded",
-			operation: "/controlplane.v1.UnknownService/Unknown",
-			want:      false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, RequiresExternalAuthz(tc.operation))
-		})
-	}
-}
-
 func testEnforcer(t *testing.T) (*CasbinEnforcer, io.Closer) {
 	f, err := os.CreateTemp(t.TempDir(), "policy*.csv")
 	if err != nil {

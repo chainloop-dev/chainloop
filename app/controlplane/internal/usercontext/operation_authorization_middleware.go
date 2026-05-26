@@ -21,11 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -61,7 +61,7 @@ func WithOperationAuthorizationMiddleware(conf *conf.OperationAuthorizationProvi
 			}
 
 			operation := info.Operation()
-			if !authz.RequiresExternalAuthz(operation) {
+			if !slices.Contains(conf.GetOperations(), operation) {
 				return handler(ctx, req)
 			}
 
