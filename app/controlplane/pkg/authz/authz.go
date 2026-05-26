@@ -375,7 +375,7 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	// CAS Backend listing
 	"/controlplane.v1.CASBackendService/List":       {Policies: []*Policy{PolicyCASBackendList}},
 	"/controlplane.v1.CASBackendService/Revalidate": {Policies: []*Policy{PolicyCASBackendUpdate}},
-	"/controlplane.v1.CASBackendService/Create":     {Policies: []*Policy{PolicyCASBackendCreate}},
+	"/controlplane.v1.CASBackendService/Create":     {Policies: []*Policy{PolicyCASBackendCreate}, ExternalAuthz: true},
 	// Available integrations
 	"/controlplane.v1.IntegrationsService/ListAvailable": {Policies: []*Policy{PolicyAvailableIntegrationList, PolicyAvailableIntegrationRead}},
 	// Registered integrations
