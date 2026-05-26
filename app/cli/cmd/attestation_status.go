@@ -307,10 +307,11 @@ func versionStringAttFinal(p *action.ProjectVersion) string {
 	return p.Version
 }
 
-// removeAnsiCharactersFromBytes removes ANSI escape codes from bytes slices.
+// ansiPattern matches ANSI escape codes.
 // Credits to: https://github.com/acarl005/stripansi
+var ansiPattern = regexp.MustCompile("[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))")
+
+// removeAnsiCharactersFromBytes removes ANSI escape codes from bytes slices.
 func removeAnsiCharactersFromBytes(input []byte) []byte {
-	const ansiPattern = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
-	re := regexp.MustCompile(ansiPattern)
-	return re.ReplaceAll(input, []byte(""))
+	return ansiPattern.ReplaceAll(input, nil)
 }
