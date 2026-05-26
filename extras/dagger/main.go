@@ -11,6 +11,7 @@ import (
 
 const (
 	chainloopVersion = "v1.98.4"
+	platformVersion  = "v1.77.8"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
@@ -20,6 +21,20 @@ var execOpts = dagger.ContainerWithExecOpts{
 type Chainloop struct {
 	// +private
 	Instance InstanceInfo
+	// +private
+	Enterprise bool
+}
+
+// New creates a new Chainloop module client.
+func New(
+	// Use the enterprise CLI image (ghcr.io/chainloop-dev/platform/cli)
+	// +optional
+	enterprise bool,
+
+) *Chainloop {
+	return &Chainloop{
+		Enterprise: enterprise,
+	}
 }
 
 // A Chainloop attestation
@@ -63,6 +78,10 @@ type InstanceInfo struct {
 	CASAPI string
 	// path to a custom CA for the CAS API
 	CASCAPath *dagger.File
+	// hostname for the Platform API i.e api.app.chainloop.dev:443
+	PlatformAPI string
+	// path to a custom CA for the Platform API
+	PlatformCAPath *dagger.File
 	// Password to use when authenticating to the registry
 	Insecure bool
 }
@@ -358,6 +377,11 @@ func (m *Chainloop) WithInstance(
 	// Path to custom CA certificate for the Control Plane API
 	// +optional
 	controlplaneCA *dagger.File,
+	// Example: "api.app.chainloop.dev:443"
+	platformAPI string,
+	// Path to custom CA certificate for the Platform API
+	// +optional
+	platformCA *dagger.File,
 	// Whether to skip TLS verification
 	// +optional
 	insecure bool,
@@ -368,6 +392,8 @@ func (m *Chainloop) WithInstance(
 		Insecure:           insecure,
 		CASCAPath:          casCA,
 		ControlplaneCAPath: controlplaneCA,
+		PlatformAPI:        platformAPI,
+		PlatformCAPath:     platformCA,
 	}
 
 	return m
@@ -515,11 +541,18 @@ func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
 
-func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI *ParentCIContext, githubEventFile *dagger.File) *dagger.Container {
+func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI *ParentCIContext, githubEventFile *dagger.File, enterprise bool) *dagger.Container {
+	image := "ghcr.io/chainloop-dev/chainloop/cli"
+	version := chainloopVersion
+	if enterprise {
+		image = "ghcr.io/chainloop-dev/platform/cli"
+		version = platformVersion
+	}
+
 	ctr := dag.Container().
-		From(fmt.Sprintf("ghcr.io/chainloop-dev/chainloop/cli:%s", chainloopVersion)).
+		From(fmt.Sprintf("%s:%s", image, version)).
 		WithEntrypoint([]string{"/chainloop"}). // Be explicit to prepare for possible API change
-		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", chainloopVersion).
+		WithEnvVariable("CHAINLOOP_DAGGER_CLIENT", version).
 		WithUser("").                                                                                     // Our images come with pre-defined user set, so we need to reset it
 		WithEnvVariable("DAGGER_CACHE_KEY", time.Now().Truncate(time.Duration(ttl)*time.Second).String()) // Cache TTL
 
@@ -613,6 +646,14 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 		ctr = ctr.WithEnvVariable("CHAINLOOP_ARTIFACT_CAS_API", cas)
 	}
 
+	if platformAPI := instance.PlatformAPI; platformAPI != "" {
+		ctr = ctr.WithEnvVariable("CHAINLOOP_PLATFORM_API", platformAPI)
+	}
+
+	if ca := instance.PlatformCAPath; ca != nil {
+		ctr = ctr.WithFile("/platform-ca.pem", ca).WithEnvVariable("CHAINLOOP_PLATFORM_API_CA", "/platform-ca.pem")
+	}
+
 	if instance.Insecure {
 		ctr = ctr.WithEnvVariable("CHAINLOOP_API_INSECURE", "true")
 	}
@@ -631,7 +672,7 @@ func (att *Attestation) Container(
 	// +default=0
 	ttl int,
 ) *dagger.Container {
-	ctr := cliContainer(ttl, att.Token, att.Client.Instance, att.parentCIContext, att.githubEventFile)
+	ctr := cliContainer(ttl, att.Token, att.Client.Instance, att.parentCIContext, att.githubEventFile, att.Client.Enterprise)
 	if att.repository != nil {
 		ctr = ctr.WithDirectory(".", att.repository)
 	}
@@ -778,7 +819,7 @@ func (m *Chainloop) WorkflowCreate(
 	// +optional
 	skipIfExists bool,
 ) (string, error) {
-	return cliContainer(0, token, m.Instance, nil, nil).
+	return cliContainer(0, token, m.Instance, nil, nil, m.Enterprise).
 		WithExec([]string{
 			"workflow", "create",
 			"--name", name,
