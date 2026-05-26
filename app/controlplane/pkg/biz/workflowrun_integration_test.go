@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -599,6 +600,52 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		s.Require().Error(err)
 		s.True(biz.IsErrValidation(err))
 		s.Contains(err.Error(), "cannot promote a released version")
+	})
+
+	s.T().Run("mark-as-latest true re-reads version inside transaction", func(_ *testing.T) {
+		// Create a pre-release version
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-reread-test",
+		})
+		s.Require().NoError(err)
+		s.True(run.ProjectVersion.Prerelease)
+
+		// Release the version — simulates a concurrent release between lookup and tx
+		_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+		s.Require().NoError(err)
+
+		// Attempt to promote with mark-as-latest=true — the in-tx re-read should catch the release
+		markTrue := true
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-reread-test", MarkAsLatest: &markTrue,
+		})
+		s.Require().Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "cannot promote a released version")
+	})
+
+	s.T().Run("mark-as-latest true on soft-deleted version returns not found", func(_ *testing.T) {
+		// Create a version
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-deleted-test",
+		})
+		s.Require().NoError(err)
+
+		// Soft-delete the version — simulates concurrent deletion between lookup and tx
+		_, err = s.Data.DB.ProjectVersion.UpdateOneID(run.ProjectVersion.ID).
+			SetDeletedAt(time.Now()).Save(ctx)
+		s.Require().NoError(err)
+
+		markTrue := true
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-deleted-test", MarkAsLatest: &markTrue,
+		})
+		// The pre-tx lookup won't find the soft-deleted version, so it creates a new one — this is fine
+		s.Require().NoError(err)
 	})
 
 	s.T().Run("mark-as-latest false on existing version — no promotion change", func(_ *testing.T) {
