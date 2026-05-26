@@ -108,6 +108,23 @@ func (r *CASBackendRepo) FindInlineBackend(ctx context.Context, orgID uuid.UUID)
 	return entCASBackendToBiz(backend), nil
 }
 
+// FindManagedBackend finds the managed CAS backend for the given organization.
+// Managed backends are provisioned and operated by Chainloop. Only one is
+// expected per organization.
+func (r *CASBackendRepo) FindManagedBackend(ctx context.Context, orgID uuid.UUID) (*biz.CASBackend, error) {
+	ctx, span := otelx.Start(ctx, casBackendRepoTracer, "CASBackendRepo.FindManagedBackend")
+	defer span.End()
+
+	backend, err := orgScopedQuery(r.data.DB, orgID).QueryCasBackends().
+		Where(casbackend.Managed(true), casbackend.DeletedAtIsNil()).
+		Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	return entCASBackendToBiz(backend), nil
+}
+
 // Create creates a new CAS backend in the given organization
 // If it's set as default, it will unset the previous default backend
 func (r *CASBackendRepo) Create(ctx context.Context, opts *biz.CASBackendCreateOpts) (*biz.CASBackend, error) {
