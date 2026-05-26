@@ -353,6 +353,121 @@ func (s *casBackendTestSuite) TestUpdateRotatesCredentialsInPlace() {
 	}
 }
 
+// TestSoftDeletePromotesNextBackend verifies the priority of the promotion
+// logic when the current default backend is soft-deleted. The expected order
+// is fallback > managed > inline.
+func (s *casBackendTestSuite) TestSoftDeletePromotesNextBackend() {
+	ctx := context.Background()
+
+	fallbackID := uuid.New()
+	managedID := uuid.New()
+	inlineID := uuid.New()
+
+	fallback := &biz.CASBackend{ID: fallbackID, Provider: backendType, Fallback: true}
+	managed := &biz.CASBackend{ID: managedID, Provider: backendType, Managed: true}
+	inline := &biz.CASBackend{ID: inlineID, Provider: biz.CASBackendInline, Inline: true}
+
+	tests := []struct {
+		name           string
+		fallback       *biz.CASBackend
+		managed        *biz.CASBackend
+		inline         *biz.CASBackend
+		expectPromoted *uuid.UUID
+	}{
+		{
+			name:           "fallback wins over managed and inline",
+			fallback:       fallback,
+			managed:        managed,
+			inline:         inline,
+			expectPromoted: &fallbackID,
+		},
+		{
+			name:           "managed wins over inline when no fallback",
+			fallback:       nil,
+			managed:        managed,
+			inline:         inline,
+			expectPromoted: &managedID,
+		},
+		{
+			name:           "inline is last resort",
+			fallback:       nil,
+			managed:        nil,
+			inline:         inline,
+			expectPromoted: &inlineID,
+		},
+		{
+			name:           "no candidates means no promotion",
+			fallback:       nil,
+			managed:        nil,
+			inline:         nil,
+			expectPromoted: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			s.resetMock()
+
+			deletedID := uuid.New()
+			toDelete := &biz.CASBackend{ID: deletedID, Provider: backendType, Default: true}
+
+			s.repo.On("FindByIDInOrg", mock.Anything, s.validUUID, deletedID).Return(toDelete, nil)
+			s.repo.On("SoftDelete", mock.Anything, deletedID).Return(nil)
+			s.repo.On("FindFallbackBackend", mock.Anything, s.validUUID).Return(tc.fallback, nil)
+			if tc.fallback == nil {
+				s.repo.On("FindManagedBackend", mock.Anything, s.validUUID).Return(tc.managed, nil)
+				if tc.managed == nil {
+					s.repo.On("FindInlineBackend", mock.Anything, s.validUUID).Return(tc.inline, nil)
+				}
+			}
+			if tc.expectPromoted != nil {
+				promoted := &biz.CASBackend{ID: *tc.expectPromoted, Default: true}
+				s.repo.On("Update", mock.Anything, mock.MatchedBy(func(opts *biz.CASBackendUpdateOpts) bool {
+					return opts.ID == *tc.expectPromoted && opts.Default != nil && *opts.Default
+				})).Return(promoted, nil)
+			}
+
+			err := s.useCase.SoftDelete(ctx, s.validUUID.String(), deletedID.String())
+			s.Require().NoError(err)
+		})
+	}
+}
+
+// TestUpdateDemoteToFallbackPromotesManaged verifies that when the user
+// demotes the current default by setting fallback=true, the promotion logic
+// excludes the just-updated backend and promotes the managed backend instead
+// of looping back onto itself.
+func (s *casBackendTestSuite) TestUpdateDemoteToFallbackPromotesManaged() {
+	ctx := context.Background()
+
+	demotedID := uuid.New()
+	managedID := uuid.New()
+
+	before := &biz.CASBackend{ID: demotedID, Provider: backendType, Default: true}
+	// After the repo Update, the demoted backend is fallback=true, default=false.
+	afterUpdate := &biz.CASBackend{ID: demotedID, Provider: backendType, Default: false, Fallback: true}
+	managed := &biz.CASBackend{ID: managedID, Provider: backendType, Managed: true}
+
+	s.repo.On("FindByIDInOrg", mock.Anything, s.validUUID, demotedID).Return(before, nil)
+	// First Update call: the demote itself. Match on the demote opts.
+	s.repo.On("Update", mock.Anything, mock.MatchedBy(func(opts *biz.CASBackendUpdateOpts) bool {
+		return opts.ID == demotedID && opts.Fallback != nil && *opts.Fallback
+	})).Return(afterUpdate, nil).Once()
+
+	// Promotion finds the just-updated backend as the fallback, but
+	// excludeID skips it, so we fall through to FindManagedBackend.
+	s.repo.On("FindFallbackBackend", mock.Anything, s.validUUID).Return(afterUpdate, nil)
+	s.repo.On("FindManagedBackend", mock.Anything, s.validUUID).Return(managed, nil)
+	// Second Update call: the promotion of the managed backend.
+	promoted := &biz.CASBackend{ID: managedID, Default: true}
+	s.repo.On("Update", mock.Anything, mock.MatchedBy(func(opts *biz.CASBackendUpdateOpts) bool {
+		return opts.ID == managedID && opts.Default != nil && *opts.Default
+	})).Return(promoted, nil).Once()
+
+	_, err := s.useCase.Update(ctx, s.validUUID.String(), demotedID.String(), nil, nil, nil, toPtrBool(true), nil)
+	s.Require().NoError(err)
+}
+
 // Run all the tests
 func TestCASBackend(t *testing.T) {
 	suite.Run(t, new(casBackendTestSuite))

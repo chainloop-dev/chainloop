@@ -158,6 +158,7 @@ type CASBackendRepo interface {
 	FindDefaultBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindFallbackBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindInlineBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
+	FindManagedBackend(ctx context.Context, orgID uuid.UUID) (*CASBackend, error)
 	FindByID(ctx context.Context, ID uuid.UUID) (*CASBackend, error)
 	FindByIDInOrg(ctx context.Context, OrgID, ID uuid.UUID) (*CASBackend, error)
 	FindByNameInOrg(ctx context.Context, OrgID uuid.UUID, name string) (*CASBackend, error)
@@ -371,30 +372,52 @@ func (uc *CASBackendUseCase) CreateInlineBackend(ctx context.Context, orgID stri
 }
 
 // promoteNextAvailableBackend promotes the next available backend to default.
-// Promotion priority: try fallback backend first, then inline backend if no fallback exists.
-func (uc *CASBackendUseCase) promoteNextAvailableBackend(ctx context.Context, orgID string) (*CASBackend, error) {
+// Promotion priority: fallback > managed > inline. excludeID, when non-nil,
+// is skipped during the lookup so the just-demoted backend cannot be
+// re-promoted to itself (e.g. when the caller is demoting the current
+// default to fallback in the same transaction).
+func (uc *CASBackendUseCase) promoteNextAvailableBackend(ctx context.Context, orgID string, excludeID *uuid.UUID) (*CASBackend, error) {
 	orgUUID, err := uuid.Parse(orgID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	backend, err := uc.repo.FindFallbackBackend(ctx, orgUUID)
+	candidate, err := uc.findPromotionCandidate(ctx, orgUUID, excludeID)
 	if err != nil {
 		return nil, err
 	}
+	if candidate == nil {
+		return nil, nil
+	}
 
-	if backend == nil {
-		// If there is no fallback backend, try to find and use inline backend
-		backend, err = uc.repo.FindInlineBackend(ctx, orgUUID)
+	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: candidate.ID, CASBackendOpts: &CASBackendOpts{Default: ToPtr(true)}})
+}
+
+// findPromotionCandidate returns the backend that should become the new
+// default, applying the fallback > managed > inline priority order and
+// honoring excludeID.
+func (uc *CASBackendUseCase) findPromotionCandidate(ctx context.Context, orgUUID uuid.UUID, excludeID *uuid.UUID) (*CASBackend, error) {
+	finders := []func(context.Context, uuid.UUID) (*CASBackend, error){
+		uc.repo.FindFallbackBackend,
+		uc.repo.FindManagedBackend,
+		uc.repo.FindInlineBackend,
+	}
+
+	for _, find := range finders {
+		backend, err := find(ctx, orgUUID)
 		if err != nil {
 			return nil, err
 		}
 		if backend == nil {
-			return nil, nil
+			continue
 		}
+		if excludeID != nil && backend.ID == *excludeID {
+			continue
+		}
+		return backend, nil
 	}
 
-	return uc.repo.Update(ctx, &CASBackendUpdateOpts{ID: backend.ID, CASBackendOpts: &CASBackendOpts{Default: ToPtr(true)}})
+	return nil, nil
 }
 
 func (uc *CASBackendUseCase) Create(ctx context.Context, orgID, name, location, description string, provider CASBackendProvider, creds any, defaultB bool, fallbackB bool, maxBytes *int64) (*CASBackend, error) {
@@ -566,9 +589,11 @@ func (uc *CASBackendUseCase) Update(ctx context.Context, orgID, id string, descr
 		}
 	}
 
-	// If we just updated the backend from default=true => default=false, we need to promote the next available backend
+	// If we just updated the backend from default=true => default=false, we need to promote the next available backend.
+	// Exclude the just-updated backend to avoid self-promotion when the
+	// caller demoted it to fallback in the same call.
 	if before.Default && !after.Default {
-		if _, err := uc.promoteNextAvailableBackend(ctx, orgID); err != nil {
+		if _, err := uc.promoteNextAvailableBackend(ctx, orgID, &after.ID); err != nil {
 			return nil, fmt.Errorf("promoting next available backend to default: %w", err)
 		}
 	}
@@ -676,9 +701,11 @@ func (uc *CASBackendUseCase) SoftDelete(ctx context.Context, orgID, id string) e
 		return err
 	}
 
-	// If we just deleted the default backend, we need to promote the next available backend
+	// If we just deleted the default backend, we need to promote the next available backend.
+	// The deleted backend is filtered out by DeletedAtIsNil in the finders,
+	// so no exclusion needed here.
 	if backend.Default {
-		if _, err := uc.promoteNextAvailableBackend(ctx, orgID); err != nil {
+		if _, err := uc.promoteNextAvailableBackend(ctx, orgID, nil); err != nil {
 			return fmt.Errorf("promoting next available backend to default: %w", err)
 		}
 	}
