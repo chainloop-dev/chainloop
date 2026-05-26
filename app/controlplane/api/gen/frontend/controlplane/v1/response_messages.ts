@@ -559,6 +559,7 @@ export interface ProjectVersion {
   createdAt?: Date;
   /** when it was marked as released */
   releasedAt?: Date;
+  latest: boolean;
 }
 
 /**
@@ -1512,7 +1513,7 @@ export const WorkflowRunItem = {
 };
 
 function createBaseProjectVersion(): ProjectVersion {
-  return { id: "", version: "", prerelease: false, createdAt: undefined, releasedAt: undefined };
+  return { id: "", version: "", prerelease: false, createdAt: undefined, releasedAt: undefined, latest: false };
 }
 
 export const ProjectVersion = {
@@ -1531,6 +1532,9 @@ export const ProjectVersion = {
     }
     if (message.releasedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.releasedAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.latest === true) {
+      writer.uint32(48).bool(message.latest);
     }
     return writer;
   },
@@ -1577,6 +1581,13 @@ export const ProjectVersion = {
 
           message.releasedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.latest = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1593,6 +1604,7 @@ export const ProjectVersion = {
       prerelease: isSet(object.prerelease) ? Boolean(object.prerelease) : false,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       releasedAt: isSet(object.releasedAt) ? fromJsonTimestamp(object.releasedAt) : undefined,
+      latest: isSet(object.latest) ? Boolean(object.latest) : false,
     };
   },
 
@@ -1603,6 +1615,7 @@ export const ProjectVersion = {
     message.prerelease !== undefined && (obj.prerelease = message.prerelease);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.releasedAt !== undefined && (obj.releasedAt = message.releasedAt.toISOString());
+    message.latest !== undefined && (obj.latest = message.latest);
     return obj;
   },
 
@@ -1617,6 +1630,7 @@ export const ProjectVersion = {
     message.prerelease = object.prerelease ?? false;
     message.createdAt = object.createdAt ?? undefined;
     message.releasedAt = object.releasedAt ?? undefined;
+    message.latest = object.latest ?? false;
     return message;
   },
 };

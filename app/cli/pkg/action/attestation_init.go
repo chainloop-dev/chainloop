@@ -103,7 +103,8 @@ type AttestationInitRunOpts struct {
 	WorkflowName                 string
 	NewWorkflowContractRef       string
 	// Collectors is a list of additional collector names to enable (e.g. "aiconfig")
-	Collectors []string
+	Collectors   []string
+	MarkAsLatest *bool
 }
 
 func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
@@ -218,6 +219,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 				ProjectVersion:         opts.ProjectVersion,
 				UseLatestVersion:       opts.UseLatestVersion,
 				RequireExistingVersion: opts.RequireExistingVersion,
+				MarkAsLatest:           opts.MarkAsLatest,
 			},
 		)
 		if err != nil {

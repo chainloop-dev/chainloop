@@ -40,6 +40,7 @@ func newAttestationInitCmd() *cobra.Command {
 		existingVersion       bool
 		newWorkflowcontract   string
 		collectors            []string
+		markAsLatest          bool
 	)
 
 	cmd := &cobra.Command{
@@ -50,7 +51,7 @@ func newAttestationInitCmd() *cobra.Command {
 			supportsFederatedAuthAnnotation: trueString,
 			confirmWhenUserToken:            trueString,
 		},
-		PreRunE: func(_ *cobra.Command, _ []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			if workflowName == "" {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
@@ -72,6 +73,10 @@ func newAttestationInitCmd() *cobra.Command {
 
 			if useLatestVersion && projectVersion != "" {
 				return errors.New("--latest-version and --version are mutually exclusive")
+			}
+
+			if cmd.Flags().Changed("mark-latest") && useLatestVersion {
+				return errors.New("--mark-latest and --latest-version are mutually exclusive")
 			}
 
 			if projectVersion == "" && projectVersionRelease {
@@ -107,6 +112,11 @@ func newAttestationInitCmd() *cobra.Command {
 				return fmt.Errorf("failed to initialize attestation: %w", err)
 			}
 
+			var markAsLatestPtr *bool
+			if cmd.Flags().Changed("mark-latest") {
+				markAsLatestPtr = &markAsLatest
+			}
+
 			var attestationID string
 			err = runWithBackoffRetry(
 				func() error {
@@ -121,6 +131,7 @@ func newAttestationInitCmd() *cobra.Command {
 						ProjectVersionMarkAsReleased: projectVersionRelease,
 						RequireExistingVersion:       existingVersion,
 						Collectors:                   collectors,
+						MarkAsLatest:                 markAsLatestPtr,
 					})
 
 					return err
@@ -182,6 +193,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&projectVersionRelease, "release", false, "promote the provided version as a release")
 	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "return an error if the version doesn't exist in the project")
 	cmd.Flags().StringSliceVar(&collectors, "collectors", nil, "comma-separated list of additional collectors to enable (e.g. aiconfig)")
+	cmd.Flags().BoolVar(&markAsLatest, "mark-latest", true, "explicitly mark the project version as latest (default: automatic for new versions; use =false to skip promotion)")
 
 	return cmd
 }

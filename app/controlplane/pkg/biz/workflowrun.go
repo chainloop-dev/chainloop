@@ -234,6 +234,7 @@ type WorkflowRunCreateOpts struct {
 	ProjectVersion         string
 	UseLatestVersion       bool
 	RequireExistingVersion bool
+	MarkAsLatest           *bool
 }
 
 type WorkflowRunRepoCreateOpts struct {
@@ -244,6 +245,7 @@ type WorkflowRunRepoCreateOpts struct {
 	ProjectVersion               string
 	UseLatestVersion             bool
 	RequireExistingVersion       bool
+	MarkAsLatest                 *bool
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -268,6 +270,10 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 
 	if opts.UseLatestVersion && opts.ProjectVersion != "" {
 		return nil, NewErrValidationStr("cannot specify both a project version and use-latest-version")
+	}
+
+	if opts.MarkAsLatest != nil && opts.UseLatestVersion {
+		return nil, NewErrValidationStr("--mark-latest and --latest-version are mutually exclusive")
 	}
 
 	// Treat empty version as the default for backward compatibility with old clients
@@ -296,6 +302,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			ProjectVersion:         opts.ProjectVersion,
 			UseLatestVersion:       opts.UseLatestVersion,
 			RequireExistingVersion: opts.RequireExistingVersion,
+			MarkAsLatest:           opts.MarkAsLatest,
 		})
 	if err != nil {
 		return nil, err

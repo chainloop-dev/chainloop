@@ -107,7 +107,7 @@ func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, ve
 	var res *ent.ProjectVersion
 	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		var err error
-		res, err = createProjectVersionWithTx(ctx, tx, projectID, version, prerelease)
+		res, err = createProjectVersionWithTx(ctx, tx, projectID, version, prerelease, nil)
 		return err
 	}); err != nil {
 		return nil, err
@@ -116,27 +116,71 @@ func (r *ProjectVersionRepo) Create(ctx context.Context, projectID uuid.UUID, ve
 	return entProjectVersionToBiz(res), nil
 }
 
-func createProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.UUID, version string, prerelease bool) (*ent.ProjectVersion, error) {
+func createProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.UUID, version string, prerelease bool, markAsLatest *bool) (*ent.ProjectVersion, error) {
 	if version == "" {
 		return nil, biz.NewErrValidationStr("version must not be empty")
 	}
 
-	// Update all existing versions of this project to not be the latest
-	if err := tx.ProjectVersion.Update().
-		Where(
-			projectversion.ProjectID(projectID),
-			projectversion.DeletedAtIsNil(),
-			projectversion.Latest(true),
-		).SetLatest(false).Exec(ctx); err != nil {
-		return nil, err
+	// nil means the caller didn't opt in/out, so new versions default to latest (preserves original behavior)
+	shouldBeLatest := markAsLatest == nil || *markAsLatest
+
+	if shouldBeLatest {
+		// Update all existing versions of this project to not be the latest
+		if err := tx.ProjectVersion.Update().
+			Where(
+				projectversion.ProjectID(projectID),
+				projectversion.DeletedAtIsNil(),
+				projectversion.Latest(true),
+			).SetLatest(false).Exec(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	return tx.ProjectVersion.Create().
 		SetProjectID(projectID).
 		SetVersion(version).
 		SetPrerelease(prerelease).
-		SetLatest(true).
+		SetLatest(shouldBeLatest).
 		Save(ctx)
+}
+
+func (r *ProjectVersionRepo) MarkAsLatest(ctx context.Context, projectID, versionID uuid.UUID) error {
+	ctx, span := otelx.Start(ctx, projectVersionRepoTracer, "ProjectVersionRepo.MarkAsLatest")
+	defer span.End()
+
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		v, err := tx.ProjectVersion.Query().
+			Where(projectversion.ID(versionID), projectversion.ProjectID(projectID), projectversion.DeletedAtIsNil()).
+			Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound("Version")
+			}
+			return err
+		}
+
+		if !v.Prerelease {
+			return biz.NewErrValidationStr("cannot promote a released version to latest")
+		}
+
+		return promoteVersionToLatestWithTx(ctx, tx, projectID, versionID)
+	})
+}
+
+func promoteVersionToLatestWithTx(ctx context.Context, tx *ent.Tx, projectID, versionID uuid.UUID) error {
+	if err := tx.ProjectVersion.Update().
+		Where(
+			projectversion.ProjectID(projectID),
+			projectversion.DeletedAtIsNil(),
+			projectversion.Latest(true),
+		).SetLatest(false).Exec(ctx); err != nil {
+		return err
+	}
+
+	return tx.ProjectVersion.UpdateOneID(versionID).
+		SetLatest(true).
+		SetUpdatedAt(time.Now()).
+		Exec(ctx)
 }
 
 func findProjectVersionWithClient(ctx context.Context, client *ent.Client, projectID uuid.UUID, version string) (*ent.ProjectVersion, error) {
@@ -153,6 +197,7 @@ func entProjectVersionToBiz(v *ent.ProjectVersion) *biz.ProjectVersion {
 		ID:                v.ID,
 		Version:           v.Version,
 		Prerelease:        v.Prerelease,
+		Latest:            v.Latest,
 		TotalWorkflowRuns: v.WorkflowRunCount,
 		CreatedAt:         toTimePtr(v.CreatedAt),
 		ReleasedAt:        toTimePtr(v.ReleasedAt),
