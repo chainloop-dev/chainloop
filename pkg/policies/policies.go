@@ -705,15 +705,9 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 }
 
 func validateResource(m proto.Message) error {
-	validator, err := protovalidate.New()
-	if err != nil {
+	if err := protovalidate.Validate(m); err != nil {
 		return fmt.Errorf("validating policy spec: %w", err)
 	}
-	err = validator.Validate(m)
-	if err != nil {
-		return fmt.Errorf("validating policy spec: %w", err)
-	}
-
 	return nil
 }
 

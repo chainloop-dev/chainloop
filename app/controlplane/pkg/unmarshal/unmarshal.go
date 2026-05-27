@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,17 +56,11 @@ func (v *validatorAdapter) Validate(msg proto.Message) error {
 	return v.validator.Validate(msg)
 }
 
+// yamlValidator wraps the protovalidate global Validator for use with protoyaml,
+// initialised once and reused across calls.
+var yamlValidator = &validatorAdapter{validator: protovalidate.GlobalValidator}
+
 func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) error {
-	var validator protovalidate.Validator
-	var err error
-
-	if doValidate {
-		validator, err = protovalidate.New()
-		if err != nil {
-			return fmt.Errorf("could not create validator: %w", err)
-		}
-	}
-
 	switch format {
 	case RawFormatJSON:
 		if err := protojson.Unmarshal(body, out); err != nil {
@@ -76,7 +70,7 @@ func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) 
 		// protoyaml allows validating the contract while unmarshalling
 		yamlOpts := protoyaml.UnmarshalOptions{}
 		if doValidate {
-			yamlOpts.Validator = &validatorAdapter{validator: validator}
+			yamlOpts.Validator = yamlValidator
 		}
 
 		if err := yamlOpts.Unmarshal(body, out); err != nil {
@@ -97,9 +91,8 @@ func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) 
 		return fmt.Errorf("unsupported format: %s", format)
 	}
 
-	if validator != nil {
-		err = validator.Validate(out)
-		if err != nil {
+	if doValidate {
+		if err := protovalidate.Validate(out); err != nil {
 			return fmt.Errorf("error validating raw message: %w", err)
 		}
 	}
