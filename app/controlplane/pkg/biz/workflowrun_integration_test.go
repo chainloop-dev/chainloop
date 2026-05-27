@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -496,6 +497,364 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		s.Require().Error(err)
 		s.True(biz.IsErrValidation(err))
 		s.Contains(err.Error(), "cannot specify both")
+	})
+
+	s.T().Run("mark-as-latest nil — new version becomes latest (default behavior)", func(_ *testing.T) {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nil-test",
+		})
+		s.Require().NoError(err)
+		s.True(run.ProjectVersion.Latest)
+	})
+
+	s.T().Run("mark-as-latest true — new version becomes latest", func(_ *testing.T) {
+		markTrue := true
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-true-test", MarkAsLatest: &markTrue,
+		})
+		s.Require().NoError(err)
+		s.True(run.ProjectVersion.Latest)
+	})
+
+	s.T().Run("mark-as-latest false — new version does NOT become latest", func(_ *testing.T) {
+		// Create a version that IS latest first
+		runLatest, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-false-before",
+		})
+		s.Require().NoError(err)
+		s.True(runLatest.ProjectVersion.Latest)
+
+		markFalse := false
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-false-test", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(run.ProjectVersion.Latest)
+
+		// Verify the previous version is still latest
+		prevVersion, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), "ml-false-before")
+		s.Require().NoError(err)
+		s.True(prevVersion.Latest)
+	})
+
+	s.T().Run("mark-as-latest true with existing pre-release version — promotes it", func(_ *testing.T) {
+		// Create two versions, the second one is latest
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-promote-v1",
+		})
+		s.Require().NoError(err)
+
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-promote-v2",
+		})
+		s.Require().NoError(err)
+
+		// Now re-attest against v1 with mark-as-latest=true to promote it
+		markTrue := true
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-promote-v1", MarkAsLatest: &markTrue,
+		})
+		s.Require().NoError(err)
+		s.True(run.ProjectVersion.Latest)
+
+		// v2 should no longer be latest
+		v2, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), "ml-promote-v2")
+		s.Require().NoError(err)
+		s.False(v2.Latest)
+	})
+
+	s.T().Run("mark-as-latest and use-latest-version are mutually exclusive", func(_ *testing.T) {
+		markTrue := true
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", UseLatestVersion: true, MarkAsLatest: &markTrue,
+		})
+		s.Require().Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "mutually exclusive")
+	})
+
+	s.T().Run("mark-as-latest true on released version returns error", func(_ *testing.T) {
+		// Create a version and release it
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-released",
+		})
+		s.Require().NoError(err)
+
+		_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+		s.Require().NoError(err)
+
+		markTrue := true
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-released", MarkAsLatest: &markTrue,
+		})
+		s.Require().Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "cannot promote a released version")
+	})
+
+	s.T().Run("mark-as-latest true re-reads version inside transaction", func(_ *testing.T) {
+		// Create a pre-release version
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-reread-test",
+		})
+		s.Require().NoError(err)
+		s.True(run.ProjectVersion.Prerelease)
+
+		// Release the version — simulates a concurrent release between lookup and tx
+		_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+		s.Require().NoError(err)
+
+		// Attempt to promote with mark-as-latest=true — the in-tx re-read should catch the release
+		markTrue := true
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-reread-test", MarkAsLatest: &markTrue,
+		})
+		s.Require().Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "cannot promote a released version")
+	})
+
+	s.T().Run("mark-as-latest true on soft-deleted version returns not found", func(_ *testing.T) {
+		// Create a version
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-deleted-test",
+		})
+		s.Require().NoError(err)
+
+		// Soft-delete the version — simulates concurrent deletion between lookup and tx
+		_, err = s.Data.DB.ProjectVersion.UpdateOneID(run.ProjectVersion.ID).
+			SetDeletedAt(time.Now()).Save(ctx)
+		s.Require().NoError(err)
+
+		markTrue := true
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-deleted-test", MarkAsLatest: &markTrue,
+		})
+		// The pre-tx lookup won't find the soft-deleted version, so it creates a new one — this is fine
+		s.Require().NoError(err)
+	})
+
+	s.T().Run("mark-as-latest false on existing version — no promotion change", func(_ *testing.T) {
+		// Create two versions — v2 is latest
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nochange-v1",
+		})
+		s.Require().NoError(err)
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nochange-v2",
+		})
+		s.Require().NoError(err)
+
+		// Re-attest v1 with mark-as-latest=false — should NOT promote v1
+		markFalse := false
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nochange-v1", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(run.ProjectVersion.Latest)
+
+		// v2 should still be latest
+		v2, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), "ml-nochange-v2")
+		s.Require().NoError(err)
+		s.True(v2.Latest)
+	})
+
+	s.T().Run("mark-as-latest nil on existing version — no promotion change", func(_ *testing.T) {
+		// Create two versions — v2 is latest
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nilexist-v1",
+		})
+		s.Require().NoError(err)
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nilexist-v2",
+		})
+		s.Require().NoError(err)
+
+		// Re-attest v1 with mark-as-latest=nil (omitted) — should NOT promote v1
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nilexist-v1",
+		})
+		s.Require().NoError(err)
+		s.False(run.ProjectVersion.Latest)
+
+		// v2 should still be latest
+		v2, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.workflowOrg1.ProjectID.String(), "ml-nilexist-v2")
+		s.Require().NoError(err)
+		s.True(v2.Latest)
+	})
+
+	s.T().Run("multiple new versions with mark-as-latest=false — none are latest", func(_ *testing.T) {
+		// Use a fresh workflow/project to start with a clean slate
+		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			Name: "ml-none-latest-wf", OrgID: s.org.ID, Project: "ml-none-latest-project",
+		})
+		s.Require().NoError(err)
+
+		// Delete the auto-created default version so we start with zero latest
+		_, err = s.Data.DB.ProjectVersion.Delete().
+			Where(entProjectVersion.ProjectID(wf.ProjectID)).Exec(ctx)
+		s.Require().NoError(err)
+
+		markFalse := false
+		run1, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "a1", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(run1.ProjectVersion.Latest)
+
+		run2, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "a2", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(run2.ProjectVersion.Latest)
+
+		// Verify neither is latest
+		v1, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "a1")
+		s.Require().NoError(err)
+		s.False(v1.Latest)
+
+		v2, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "a2")
+		s.Require().NoError(err)
+		s.False(v2.Latest)
+	})
+
+	s.T().Run("mark-as-latest=false then mark-as-latest=true on second version", func(_ *testing.T) {
+		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			Name: "ml-false-then-true-wf", OrgID: s.org.ID, Project: "ml-false-then-true-project",
+		})
+		s.Require().NoError(err)
+
+		_, err = s.Data.DB.ProjectVersion.Delete().
+			Where(entProjectVersion.ProjectID(wf.ProjectID)).Exec(ctx)
+		s.Require().NoError(err)
+
+		// First version: not latest
+		markFalse := false
+		run1, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "b1", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(run1.ProjectVersion.Latest)
+
+		// Second version: explicitly latest
+		markTrue := true
+		run2, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "b2", MarkAsLatest: &markTrue,
+		})
+		s.Require().NoError(err)
+		s.True(run2.ProjectVersion.Latest)
+
+		// First version should still not be latest
+		v1, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "b1")
+		s.Require().NoError(err)
+		s.False(v1.Latest)
+	})
+
+	s.T().Run("mark-as-latest nil on existing released version — no change", func(_ *testing.T) {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nil-released",
+		})
+		s.Require().NoError(err)
+
+		_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+		s.Require().NoError(err)
+
+		// Re-attest with nil (omitted) — should succeed, no promotion change
+		run2, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-nil-released",
+		})
+		s.Require().NoError(err)
+		// The version was latest before release and remains so — nil doesn't touch it
+		s.NotNil(run2.ProjectVersion)
+	})
+
+	s.T().Run("mark-as-latest false on existing released version — no change", func(_ *testing.T) {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-false-released",
+		})
+		s.Require().NoError(err)
+
+		_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+		s.Require().NoError(err)
+
+		// Re-attest with mark-as-latest=false — should succeed, no promotion change
+		markFalse := false
+		run2, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-false-released", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.NotNil(run2.ProjectVersion)
+	})
+
+	s.T().Run("mark-as-latest false combined with require-existing-version", func(_ *testing.T) {
+		// Create a version first — it becomes latest by default
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-require-existing",
+		})
+		s.Require().NoError(err)
+
+		// Re-attest requiring existing version + mark-as-latest=false
+		// "false" means "don't promote" — the version keeps its current status (latest=true)
+		markFalse := false
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-require-existing",
+			RequireExistingVersion: true, MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		// Version was already latest, mark-as-latest=false means "no change" — it stays latest
+		s.True(run.ProjectVersion.Latest)
+	})
+
+	s.T().Run("mark-as-latest true combined with require-existing-version on non-existent version", func(_ *testing.T) {
+		markTrue := true
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-does-not-exist",
+			RequireExistingVersion: true, MarkAsLatest: &markTrue,
+		})
+		s.Require().Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Contains(err.Error(), "not found")
+	})
+
+	s.T().Run("mark-as-latest false with use-latest-version false is allowed", func(_ *testing.T) {
+		markFalse := false
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "ml-false-no-latest-ver", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(run.ProjectVersion.Latest)
 	})
 }
 

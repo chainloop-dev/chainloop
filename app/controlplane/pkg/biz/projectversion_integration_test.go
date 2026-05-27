@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -111,6 +111,91 @@ func (s *ProjectVersionIntegrationTestSuite) SetupTest() {
 	require.NoError(t, err)
 	s.project, err = s.Project.Create(ctx, s.org.ID, "project1")
 	require.NoError(t, err)
+}
+
+func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatest() {
+	t := s.T()
+	ctx := context.Background()
+
+	// Create two pre-release versions — the second one becomes latest by default
+	v1, err := s.ProjectVersion.Create(ctx, s.project.ID.String(), "1.0.0", true)
+	require.NoError(t, err)
+	require.True(t, v1.Latest)
+
+	v2, err := s.ProjectVersion.Create(ctx, s.project.ID.String(), "2.0.0", true)
+	require.NoError(t, err)
+	require.True(t, v2.Latest)
+
+	// v1 should no longer be latest after v2 was created
+	v1After, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.project.ID.String(), "1.0.0")
+	require.NoError(t, err)
+	require.False(t, v1After.Latest)
+
+	// Promote v1 back to latest
+	err = s.ProjectVersion.MarkAsLatest(ctx, s.project.ID.String(), v1.ID.String())
+	require.NoError(t, err)
+
+	// Verify v1 is now latest
+	v1Promoted, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.project.ID.String(), "1.0.0")
+	require.NoError(t, err)
+	require.True(t, v1Promoted.Latest)
+
+	// Verify v2 was demoted
+	v2Demoted, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.project.ID.String(), "2.0.0")
+	require.NoError(t, err)
+	require.False(t, v2Demoted.Latest)
+}
+
+func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatestReleasedVersionError() {
+	t := s.T()
+	ctx := context.Background()
+
+	// Create a version and release it
+	v, err := s.ProjectVersion.Create(ctx, s.project.ID.String(), "1.0.0", true)
+	require.NoError(t, err)
+
+	_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, v.ID.String(), true)
+	require.NoError(t, err)
+
+	// Attempting to mark a released version as latest should fail
+	err = s.ProjectVersion.MarkAsLatest(ctx, s.project.ID.String(), v.ID.String())
+	require.Error(t, err)
+	require.True(t, biz.IsErrValidation(err))
+}
+
+func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatestIdempotent() {
+	t := s.T()
+	ctx := context.Background()
+
+	v, err := s.ProjectVersion.Create(ctx, s.project.ID.String(), "1.0.0", true)
+	require.NoError(t, err)
+	require.True(t, v.Latest)
+
+	// Promoting a version that is already latest should succeed (idempotent)
+	err = s.ProjectVersion.MarkAsLatest(ctx, s.project.ID.String(), v.ID.String())
+	require.NoError(t, err)
+
+	reloaded, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.project.ID.String(), "1.0.0")
+	require.NoError(t, err)
+	require.True(t, reloaded.Latest)
+}
+
+func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatestNonExistentVersion() {
+	t := s.T()
+	ctx := context.Background()
+
+	nonExistentID := "00000000-0000-0000-0000-000000000099"
+	err := s.ProjectVersion.MarkAsLatest(ctx, s.project.ID.String(), nonExistentID)
+	require.Error(t, err)
+	require.True(t, biz.IsNotFound(err))
+}
+
+func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatestInvalidUUID() {
+	t := s.T()
+	ctx := context.Background()
+
+	err := s.ProjectVersion.MarkAsLatest(ctx, "invalid", "invalid")
+	require.Error(t, err)
 }
 
 func TestProjectVersionUseCase(t *testing.T) {

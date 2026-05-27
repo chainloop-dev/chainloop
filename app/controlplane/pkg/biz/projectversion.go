@@ -38,6 +38,8 @@ type ProjectVersion struct {
 	Version string
 	// Prerelease indicates whether the version is a prerelease.
 	Prerelease bool
+	// Latest indicates whether this is the latest version of the project.
+	Latest bool
 	// TotalWorkflowRuns is the total number of workflow runs for this version.
 	TotalWorkflowRuns int
 	// CreatedAt is the time when the project version was created.
@@ -53,6 +55,7 @@ type ProjectVersionRepo interface {
 	FindByProjectAndVersion(ctx context.Context, projectID uuid.UUID, version string) (*ProjectVersion, error)
 	Update(ctx context.Context, versionID uuid.UUID, updates *ProjectVersionUpdateOpts) (*ProjectVersion, error)
 	Create(ctx context.Context, projectID uuid.UUID, version string, prerelease bool) (*ProjectVersion, error)
+	MarkAsLatest(ctx context.Context, projectID, versionID uuid.UUID) error
 }
 
 type ProjectVersionUseCase struct {
@@ -95,6 +98,25 @@ func (uc *ProjectVersionUseCase) UpdateReleaseStatus(ctx context.Context, versio
 
 	preReleaseValue := !isRelease
 	return uc.projectRepo.Update(ctx, versionUUID, &ProjectVersionUpdateOpts{Prerelease: &preReleaseValue})
+}
+
+// MarkAsLatest promotes a pre-release version to latest. The platform repo builds the
+// "project version mark-latest" CLI command and service endpoint on top of this method.
+func (uc *ProjectVersionUseCase) MarkAsLatest(ctx context.Context, projectID, versionID string) error {
+	ctx, span := otelx.Start(ctx, projectVersionTracer, "ProjectVersionUseCase.MarkAsLatest")
+	defer span.End()
+
+	projectUUID, err := uuid.Parse(projectID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	versionUUID, err := uuid.Parse(versionID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	return uc.projectRepo.MarkAsLatest(ctx, projectUUID, versionUUID)
 }
 
 func (uc *ProjectVersionUseCase) Create(ctx context.Context, projectID, version string, prerelease bool) (*ProjectVersion, error) {

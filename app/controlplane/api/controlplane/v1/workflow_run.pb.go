@@ -603,8 +603,14 @@ type AttestationServiceInitRequest struct {
 	// Use the latest project version instead of specifying one explicitly.
 	// Mutually exclusive with project_version.
 	UseLatestVersion bool `protobuf:"varint,8,opt,name=use_latest_version,json=useLatestVersion,proto3" json:"use_latest_version,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Optional flag to control whether the version should be marked as the latest.
+	// Omitted: default behavior (new versions become latest).
+	// true: force promote to latest (only pre-release versions).
+	// false: skip latest promotion.
+	// Mutually exclusive with use_latest_version.
+	MarkAsLatest  *bool `protobuf:"varint,9,opt,name=mark_as_latest,json=markAsLatest,proto3,oneof" json:"mark_as_latest,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AttestationServiceInitRequest) Reset() {
@@ -689,6 +695,13 @@ func (x *AttestationServiceInitRequest) GetRequireExistingVersion() bool {
 func (x *AttestationServiceInitRequest) GetUseLatestVersion() bool {
 	if x != nil {
 		return x.UseLatestVersion
+	}
+	return false
+}
+
+func (x *AttestationServiceInitRequest) GetMarkAsLatest() bool {
+	if x != nil && x.MarkAsLatest != nil {
+		return *x.MarkAsLatest
 	}
 	return false
 }
@@ -1794,7 +1807,7 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x06result\x18\x01 \x01(\v2=.controlplane.v1.AttestationServiceGetContractResponse.ResultR\x06result\x1a\x8d\x01\n" +
 	"\x06Result\x129\n" +
 	"\bworkflow\x18\x01 \x01(\v2\x1d.controlplane.v1.WorkflowItemR\bworkflow\x12H\n" +
-	"\bcontract\x18\x02 \x01(\v2,.controlplane.v1.WorkflowContractVersionItemR\bcontract\"\x9f\x03\n" +
+	"\bcontract\x18\x02 \x01(\v2,.controlplane.v1.WorkflowContractVersionItemR\bcontract\"\xdd\x03\n" +
 	"\x1dAttestationServiceInitRequest\x12+\n" +
 	"\x11contract_revision\x18\x01 \x01(\x05R\x10contractRevision\x12\x17\n" +
 	"\ajob_url\x18\x02 \x01(\tR\x06jobUrl\x12M\n" +
@@ -1803,7 +1816,9 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\fproject_name\x18\x05 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vprojectName\x12'\n" +
 	"\x0fproject_version\x18\x06 \x01(\tR\x0eprojectVersion\x128\n" +
 	"\x18require_existing_version\x18\a \x01(\bR\x16requireExistingVersion\x12,\n" +
-	"\x12use_latest_version\x18\b \x01(\bR\x10useLatestVersion\"\x94\x05\n" +
+	"\x12use_latest_version\x18\b \x01(\bR\x10useLatestVersion\x12)\n" +
+	"\x0emark_as_latest\x18\t \x01(\bH\x00R\fmarkAsLatest\x88\x01\x01B\x11\n" +
+	"\x0f_mark_as_latest\"\x94\x05\n" +
 	"\x1eAttestationServiceInitResponse\x12N\n" +
 	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xb8\x03\n" +
 	"\x06Result\x12C\n" +
@@ -2010,6 +2025,7 @@ func file_controlplane_v1_workflow_run_proto_init() {
 	}
 	file_controlplane_v1_pagination_proto_init()
 	file_controlplane_v1_response_messages_proto_init()
+	file_controlplane_v1_workflow_run_proto_msgTypes[9].OneofWrappers = []any{}
 	file_controlplane_v1_workflow_run_proto_msgTypes[11].OneofWrappers = []any{}
 	file_controlplane_v1_workflow_run_proto_msgTypes[17].OneofWrappers = []any{
 		(*WorkflowRunServiceViewRequest_Id)(nil),

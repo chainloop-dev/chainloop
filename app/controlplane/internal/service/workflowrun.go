@@ -363,6 +363,7 @@ func bizProjectVersionToPb(v *biz.ProjectVersion) *pb.ProjectVersion {
 		Id:         v.ID.String(),
 		Version:    v.Version,
 		Prerelease: v.Prerelease,
+		Latest:     v.Latest,
 	}
 
 	if v.CreatedAt != nil {

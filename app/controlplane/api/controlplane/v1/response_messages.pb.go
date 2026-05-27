@@ -1048,6 +1048,7 @@ type ProjectVersion struct {
 	CreatedAt  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// when it was marked as released
 	ReleasedAt    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=released_at,json=releasedAt,proto3" json:"released_at,omitempty"`
+	Latest        bool                   `protobuf:"varint,6,opt,name=latest,proto3" json:"latest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1115,6 +1116,13 @@ func (x *ProjectVersion) GetReleasedAt() *timestamppb.Timestamp {
 		return x.ReleasedAt
 	}
 	return nil
+}
+
+func (x *ProjectVersion) GetLatest() bool {
+	if x != nil {
+		return x.Latest
+	}
+	return false
 }
 
 // PolicyStatusSummary bundles the canonical PolicyStatus with per-evaluation
@@ -3113,7 +3121,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\aversion\x18\r \x01(\v2\x1f.controlplane.v1.ProjectVersionR\aversion\x12;\n" +
 	"\x15has_policy_violations\x18\x0e \x01(\bB\x02\x18\x01H\x00R\x13hasPolicyViolations\x88\x01\x01\x12K\n" +
 	"\x0epolicy_summary\x18\x0f \x01(\v2$.controlplane.v1.PolicyStatusSummaryR\rpolicySummaryB\x18\n" +
-	"\x16_has_policy_violations\"\xd2\x01\n" +
+	"\x16_has_policy_violations\"\xea\x01\n" +
 	"\x0eProjectVersion\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12\x1e\n" +
@@ -3123,7 +3131,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12;\n" +
 	"\vreleased_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"releasedAt\"\xed\x01\n" +
+	"releasedAt\x12\x16\n" +
+	"\x06latest\x18\x06 \x01(\bR\x06latest\"\xed\x01\n" +
 	"\x13PolicyStatusSummary\x125\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1d.controlplane.v1.PolicyStatusR\x06status\x12\x14\n" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x16\n" +

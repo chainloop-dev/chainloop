@@ -127,6 +127,12 @@ message AttestationServiceInitRequest {
   // Use the latest project version instead of specifying one explicitly.
   // Mutually exclusive with project_version.
   bool use_latest_version = 8;
+  // Optional flag to control whether the version should be marked as the latest.
+  // Omitted: default behavior (new versions become latest).
+  // true: force promote to latest (only pre-release versions).
+  // false: skip latest promotion.
+  // Mutually exclusive with use_latest_version.
+  optional bool mark_as_latest = 9;
 }
 
 message AttestationServiceInitResponse {

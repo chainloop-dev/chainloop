@@ -11,6 +11,10 @@
     "^(job_url)$": {
       "type": "string"
     },
+    "^(mark_as_latest)$": {
+      "description": "Optional flag to control whether the version should be marked as the latest.\n Omitted: default behavior (new versions become latest).\n true: force promote to latest (only pre-release versions).\n false: skip latest promotion.\n Mutually exclusive with use_latest_version.",
+      "type": "boolean"
+    },
     "^(project_name)$": {
       "minLength": 1,
       "type": "string"
@@ -40,6 +44,10 @@
     },
     "jobUrl": {
       "type": "string"
+    },
+    "markAsLatest": {
+      "description": "Optional flag to control whether the version should be marked as the latest.\n Omitted: default behavior (new versions become latest).\n true: force promote to latest (only pre-release versions).\n false: skip latest promotion.\n Mutually exclusive with use_latest_version.",
+      "type": "boolean"
     },
     "projectName": {
       "minLength": 1,

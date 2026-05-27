@@ -110,6 +110,14 @@ export interface AttestationServiceInitRequest {
    * Mutually exclusive with project_version.
    */
   useLatestVersion: boolean;
+  /**
+   * Optional flag to control whether the version should be marked as the latest.
+   * Omitted: default behavior (new versions become latest).
+   * true: force promote to latest (only pre-release versions).
+   * false: skip latest promotion.
+   * Mutually exclusive with use_latest_version.
+   */
+  markAsLatest?: boolean | undefined;
 }
 
 export interface AttestationServiceInitResponse {
@@ -1094,6 +1102,7 @@ function createBaseAttestationServiceInitRequest(): AttestationServiceInitReques
     projectVersion: "",
     requireExistingVersion: false,
     useLatestVersion: false,
+    markAsLatest: undefined,
   };
 }
 
@@ -1122,6 +1131,9 @@ export const AttestationServiceInitRequest = {
     }
     if (message.useLatestVersion === true) {
       writer.uint32(64).bool(message.useLatestVersion);
+    }
+    if (message.markAsLatest !== undefined) {
+      writer.uint32(72).bool(message.markAsLatest);
     }
     return writer;
   },
@@ -1189,6 +1201,13 @@ export const AttestationServiceInitRequest = {
 
           message.useLatestVersion = reader.bool();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.markAsLatest = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1208,6 +1227,7 @@ export const AttestationServiceInitRequest = {
       projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
       requireExistingVersion: isSet(object.requireExistingVersion) ? Boolean(object.requireExistingVersion) : false,
       useLatestVersion: isSet(object.useLatestVersion) ? Boolean(object.useLatestVersion) : false,
+      markAsLatest: isSet(object.markAsLatest) ? Boolean(object.markAsLatest) : undefined,
     };
   },
 
@@ -1221,6 +1241,7 @@ export const AttestationServiceInitRequest = {
     message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
     message.requireExistingVersion !== undefined && (obj.requireExistingVersion = message.requireExistingVersion);
     message.useLatestVersion !== undefined && (obj.useLatestVersion = message.useLatestVersion);
+    message.markAsLatest !== undefined && (obj.markAsLatest = message.markAsLatest);
     return obj;
   },
 
@@ -1240,6 +1261,7 @@ export const AttestationServiceInitRequest = {
     message.projectVersion = object.projectVersion ?? "";
     message.requireExistingVersion = object.requireExistingVersion ?? false;
     message.useLatestVersion = object.useLatestVersion ?? false;
+    message.markAsLatest = object.markAsLatest ?? undefined;
     return message;
   },
 };

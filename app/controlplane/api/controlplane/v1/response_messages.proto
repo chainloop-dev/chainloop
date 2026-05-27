@@ -87,6 +87,7 @@ message ProjectVersion {
   google.protobuf.Timestamp created_at = 4;
   // when it was marked as released
   google.protobuf.Timestamp released_at = 5;
+  bool latest = 6;
 }
 
 enum RunStatus {

@@ -18,6 +18,9 @@
     "id": {
       "type": "string"
     },
+    "latest": {
+      "type": "boolean"
+    },
     "prerelease": {
       "type": "boolean"
     },
