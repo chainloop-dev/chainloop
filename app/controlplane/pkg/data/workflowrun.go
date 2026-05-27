@@ -98,8 +98,8 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 			}
 			versionCreated = true
 		} else if opts.MarkAsLatest != nil && *opts.MarkAsLatest {
-			// Re-read version inside the transaction to avoid promoting a concurrently released version
-			fresh, err := tx.ProjectVersion.Query().
+			// Re-read version inside the transaction with a row lock to avoid promoting a concurrently released version
+			fresh, err := tx.ProjectVersion.Query().ForUpdate().
 				Where(projectversion.ID(version.ID), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).
 				Only(ctx)
 			if err != nil {
