@@ -47,6 +47,8 @@ type Workflow struct {
 	// This field is also used to calculate if an user can download attestations/materials from the CAS
 	Public    bool
 	ProjectID uuid.UUID
+	// WorkflowTemplateID references the platform workflow template this workflow was created from
+	WorkflowTemplateID *uuid.UUID
 }
 
 // WorkflowRef is a reference to a workflow
@@ -88,6 +90,8 @@ type WorkflowCreateOpts struct {
 	UserIsOrgAdmin bool
 	// OrgRestrictContractCreationToAdmins is the organization's setting for restricting contract creation
 	OrgRestrictContractCreationToAdmins bool
+	// WorkflowTemplateID optionally references the platform workflow template this workflow is created from
+	WorkflowTemplateID *uuid.UUID
 }
 
 type WorkflowUpdateOpts struct {
