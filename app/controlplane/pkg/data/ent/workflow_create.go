@@ -181,6 +181,20 @@ func (_c *WorkflowCreate) SetMetadata(v map[string]interface{}) *WorkflowCreate 
 	return _c
 }
 
+// SetWorkflowTemplateID sets the "workflow_template_id" field.
+func (_c *WorkflowCreate) SetWorkflowTemplateID(v uuid.UUID) *WorkflowCreate {
+	_c.mutation.SetWorkflowTemplateID(v)
+	return _c
+}
+
+// SetNillableWorkflowTemplateID sets the "workflow_template_id" field if the given value is not nil.
+func (_c *WorkflowCreate) SetNillableWorkflowTemplateID(v *uuid.UUID) *WorkflowCreate {
+	if v != nil {
+		_c.SetWorkflowTemplateID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *WorkflowCreate) SetID(v uuid.UUID) *WorkflowCreate {
 	_c.mutation.SetID(v)
@@ -459,6 +473,10 @@ func (_c *WorkflowCreate) createSpec() (*Workflow, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Metadata(); ok {
 		_spec.SetField(workflow.FieldMetadata, field.TypeJSON, value)
 		_node.Metadata = value
+	}
+	if value, ok := _c.mutation.WorkflowTemplateID(); ok {
+		_spec.SetField(workflow.FieldWorkflowTemplateID, field.TypeUUID, value)
+		_node.WorkflowTemplateID = &value
 	}
 	if nodes := _c.mutation.RobotaccountsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -818,6 +836,24 @@ func (u *WorkflowUpsert) ClearMetadata() *WorkflowUpsert {
 	return u
 }
 
+// SetWorkflowTemplateID sets the "workflow_template_id" field.
+func (u *WorkflowUpsert) SetWorkflowTemplateID(v uuid.UUID) *WorkflowUpsert {
+	u.Set(workflow.FieldWorkflowTemplateID, v)
+	return u
+}
+
+// UpdateWorkflowTemplateID sets the "workflow_template_id" field to the value that was provided on create.
+func (u *WorkflowUpsert) UpdateWorkflowTemplateID() *WorkflowUpsert {
+	u.SetExcluded(workflow.FieldWorkflowTemplateID)
+	return u
+}
+
+// ClearWorkflowTemplateID clears the value of the "workflow_template_id" field.
+func (u *WorkflowUpsert) ClearWorkflowTemplateID() *WorkflowUpsert {
+	u.SetNull(workflow.FieldWorkflowTemplateID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1072,6 +1108,27 @@ func (u *WorkflowUpsertOne) UpdateMetadata() *WorkflowUpsertOne {
 func (u *WorkflowUpsertOne) ClearMetadata() *WorkflowUpsertOne {
 	return u.Update(func(s *WorkflowUpsert) {
 		s.ClearMetadata()
+	})
+}
+
+// SetWorkflowTemplateID sets the "workflow_template_id" field.
+func (u *WorkflowUpsertOne) SetWorkflowTemplateID(v uuid.UUID) *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetWorkflowTemplateID(v)
+	})
+}
+
+// UpdateWorkflowTemplateID sets the "workflow_template_id" field to the value that was provided on create.
+func (u *WorkflowUpsertOne) UpdateWorkflowTemplateID() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateWorkflowTemplateID()
+	})
+}
+
+// ClearWorkflowTemplateID clears the value of the "workflow_template_id" field.
+func (u *WorkflowUpsertOne) ClearWorkflowTemplateID() *WorkflowUpsertOne {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearWorkflowTemplateID()
 	})
 }
 
@@ -1496,6 +1553,27 @@ func (u *WorkflowUpsertBulk) UpdateMetadata() *WorkflowUpsertBulk {
 func (u *WorkflowUpsertBulk) ClearMetadata() *WorkflowUpsertBulk {
 	return u.Update(func(s *WorkflowUpsert) {
 		s.ClearMetadata()
+	})
+}
+
+// SetWorkflowTemplateID sets the "workflow_template_id" field.
+func (u *WorkflowUpsertBulk) SetWorkflowTemplateID(v uuid.UUID) *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.SetWorkflowTemplateID(v)
+	})
+}
+
+// UpdateWorkflowTemplateID sets the "workflow_template_id" field to the value that was provided on create.
+func (u *WorkflowUpsertBulk) UpdateWorkflowTemplateID() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.UpdateWorkflowTemplateID()
+	})
+}
+
+// ClearWorkflowTemplateID clears the value of the "workflow_template_id" field.
+func (u *WorkflowUpsertBulk) ClearWorkflowTemplateID() *WorkflowUpsertBulk {
+	return u.Update(func(s *WorkflowUpsert) {
+		s.ClearWorkflowTemplateID()
 	})
 }
 

@@ -41,6 +41,8 @@ const (
 	FieldDescription = "description"
 	// FieldMetadata holds the string denoting the metadata field in the database.
 	FieldMetadata = "metadata"
+	// FieldWorkflowTemplateID holds the string denoting the workflow_template_id field in the database.
+	FieldWorkflowTemplateID = "workflow_template_id"
 	// EdgeRobotaccounts holds the string denoting the robotaccounts edge name in mutations.
 	EdgeRobotaccounts = "robotaccounts"
 	// EdgeWorkflowruns holds the string denoting the workflowruns edge name in mutations.
@@ -131,6 +133,7 @@ var Columns = []string{
 	FieldLatestRun,
 	FieldDescription,
 	FieldMetadata,
+	FieldWorkflowTemplateID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflows"
@@ -239,6 +242,11 @@ func ByLatestRun(opts ...sql.OrderTermOption) OrderOption {
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByWorkflowTemplateID orders the results by the workflow_template_id field.
+func ByWorkflowTemplateID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWorkflowTemplateID, opts...).ToFunc()
 }
 
 // ByRobotaccountsCount orders the results by robotaccounts count.

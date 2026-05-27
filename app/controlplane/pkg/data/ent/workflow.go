@@ -49,6 +49,8 @@ type Workflow struct {
 	Description string `json:"description,omitempty"`
 	// Metadata holds the value of the "metadata" field.
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	// WorkflowTemplateID holds the value of the "workflow_template_id" field.
+	WorkflowTemplateID *uuid.UUID `json:"workflow_template_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowQuery when eager-loading is set.
 	Edges             WorkflowEdges `json:"edges"`
@@ -164,7 +166,7 @@ func (*Workflow) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case workflow.FieldLatestRun:
+		case workflow.FieldLatestRun, workflow.FieldWorkflowTemplateID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case workflow.FieldMetadata:
 			values[i] = new([]byte)
@@ -281,6 +283,13 @@ func (_m *Workflow) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
 					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
+			}
+		case workflow.FieldWorkflowTemplateID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field workflow_template_id", values[i])
+			} else if value.Valid {
+				_m.WorkflowTemplateID = new(uuid.UUID)
+				*_m.WorkflowTemplateID = *value.S.(*uuid.UUID)
 			}
 		case workflow.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -405,6 +414,11 @@ func (_m *Workflow) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("metadata=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
+	builder.WriteString(", ")
+	if v := _m.WorkflowTemplateID; v != nil {
+		builder.WriteString("workflow_template_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }
