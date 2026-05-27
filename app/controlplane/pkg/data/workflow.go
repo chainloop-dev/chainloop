@@ -209,6 +209,7 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			SetContractID(contractUUID).
 			SetOrganizationID(orgUUID).
 			SetDescription(opts.Description).
+			SetNillableWorkflowTemplateID(opts.WorkflowTemplateID).
 			Save(ctx)
 		if err != nil {
 			if ent.IsConstraintError(err) {
@@ -492,12 +493,13 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error)
 
 func entWFToBizWF(ctx context.Context, w *ent.Workflow) (*biz.Workflow, error) {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
-		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
-		RunsCounter: w.RunsCount,
-		Public:      w.Public,
-		Description: w.Description,
-		OrgID:       w.OrganizationID,
-		ProjectID:   w.ProjectID,
+		CreatedAt:          toTimePtr(w.CreatedAt), Team: w.Team,
+		RunsCounter:        w.RunsCount,
+		Public:             w.Public,
+		Description:        w.Description,
+		OrgID:              w.OrganizationID,
+		ProjectID:          w.ProjectID,
+		WorkflowTemplateID: w.WorkflowTemplateID,
 	}
 
 	// Set p either pre-loaded or queried
