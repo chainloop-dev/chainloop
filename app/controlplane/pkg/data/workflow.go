@@ -493,7 +493,7 @@ func (r *WorkflowRepo) SoftDelete(ctx context.Context, id uuid.UUID) (err error)
 
 func entWFToBizWF(ctx context.Context, w *ent.Workflow) (*biz.Workflow, error) {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
-		CreatedAt:          toTimePtr(w.CreatedAt), Team: w.Team,
+		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
 		RunsCounter:        w.RunsCount,
 		Public:             w.Public,
 		Description:        w.Description,
