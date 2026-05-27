@@ -18,9 +18,24 @@ export interface ReferrerServiceDiscoverPrivateRequest {
   kind: string;
   /** Pagination options for the references list */
   pagination?: CursorPaginationRequest;
+  /**
+   * ProjectName optionally scopes the discovery to a project by name. Can be set on its own
+   * (project-wide filter) or together with project_version (project + version filter).
+   */
+  projectName: string;
+  /**
+   * ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).
+   * Requires project_name, since a version name is unique only within a project.
+   */
+  projectVersion: string;
 }
 
-/** DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method */
+/**
+ * DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method
+ * Deprecated: the public shared index is being retired.
+ *
+ * @deprecated
+ */
 export interface DiscoverPublicSharedRequest {
   /** Digest is the unique identifier of the referrer to discover */
   digest: string;
@@ -80,7 +95,7 @@ export interface ReferrerItem_AnnotationsEntry {
 }
 
 function createBaseReferrerServiceDiscoverPrivateRequest(): ReferrerServiceDiscoverPrivateRequest {
-  return { digest: "", kind: "", pagination: undefined };
+  return { digest: "", kind: "", pagination: undefined, projectName: "", projectVersion: "" };
 }
 
 export const ReferrerServiceDiscoverPrivateRequest = {
@@ -93,6 +108,12 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     }
     if (message.pagination !== undefined) {
       CursorPaginationRequest.encode(message.pagination, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.projectName !== "") {
+      writer.uint32(34).string(message.projectName);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(42).string(message.projectVersion);
     }
     return writer;
   },
@@ -125,6 +146,20 @@ export const ReferrerServiceDiscoverPrivateRequest = {
 
           message.pagination = CursorPaginationRequest.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -139,6 +174,8 @@ export const ReferrerServiceDiscoverPrivateRequest = {
       digest: isSet(object.digest) ? String(object.digest) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
     };
   },
 
@@ -148,6 +185,8 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     message.kind !== undefined && (obj.kind = message.kind);
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
+    message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
     return obj;
   },
 
@@ -166,6 +205,8 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationRequest.fromPartial(object.pagination)
       : undefined;
+    message.projectName = object.projectName ?? "";
+    message.projectVersion = object.projectVersion ?? "";
     return message;
   },
 };
@@ -758,7 +799,12 @@ export interface ReferrerService {
     request: DeepPartial<ReferrerServiceDiscoverPrivateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<ReferrerServiceDiscoverPrivateResponse>;
-  /** DiscoverPublicShared returns the referrer item for a given digest in the public shared index */
+  /**
+   * DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+   * Deprecated: the public shared index is being retired.
+   *
+   * @deprecated
+   */
   DiscoverPublicShared(
     request: DeepPartial<DiscoverPublicSharedRequest>,
     metadata?: grpc.Metadata,

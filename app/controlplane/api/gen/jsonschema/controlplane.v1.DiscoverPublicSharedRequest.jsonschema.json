@@ -2,7 +2,7 @@
   "$id": "controlplane.v1.DiscoverPublicSharedRequest.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method",
+  "description": "DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method\n Deprecated: the public shared index is being retired.",
   "properties": {
     "digest": {
       "description": "Digest is the unique identifier of the referrer to discover",

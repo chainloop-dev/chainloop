@@ -49,9 +49,15 @@ type ReferrerServiceDiscoverPrivateRequest struct {
 	// Used to filter and resolve ambiguities
 	Kind string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
 	// Pagination options for the references list
-	Pagination    *CursorPaginationRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Pagination *CursorPaginationRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	// ProjectName optionally scopes the discovery to a project by name. Can be set on its own
+	// (project-wide filter) or together with project_version (project + version filter).
+	ProjectName string `protobuf:"bytes,4,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
+	// ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).
+	// Requires project_name, since a version name is unique only within a project.
+	ProjectVersion string `protobuf:"bytes,5,opt,name=project_version,json=projectVersion,proto3" json:"project_version,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ReferrerServiceDiscoverPrivateRequest) Reset() {
@@ -105,7 +111,24 @@ func (x *ReferrerServiceDiscoverPrivateRequest) GetPagination() *CursorPaginatio
 	return nil
 }
 
+func (x *ReferrerServiceDiscoverPrivateRequest) GetProjectName() string {
+	if x != nil {
+		return x.ProjectName
+	}
+	return ""
+}
+
+func (x *ReferrerServiceDiscoverPrivateRequest) GetProjectVersion() string {
+	if x != nil {
+		return x.ProjectVersion
+	}
+	return ""
+}
+
 // DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method
+// Deprecated: the public shared index is being retired.
+//
+// Deprecated: Marked as deprecated in controlplane/v1/referrer.proto.
 type DiscoverPublicSharedRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Digest is the unique identifier of the referrer to discover
@@ -393,21 +416,24 @@ var File_controlplane_v1_referrer_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_referrer_proto_rawDesc = "" +
 	"\n" +
-	"\x1econtrolplane/v1/referrer.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xfc\x01\n" +
+	"\x1econtrolplane/v1/referrer.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a.protoc-gen-openapiv2/options/annotations.proto\"\xf0\x03\n" +
 	"%ReferrerServiceDiscoverPrivateRequest\x12\x1f\n" +
 	"\x06digest\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06digest\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12H\n" +
 	"\n" +
 	"pagination\x18\x03 \x01(\v2(.controlplane.v1.CursorPaginationRequestR\n" +
-	"pagination:T\x92AQ\n" +
-	"O*%ReferrerServiceDiscoverPrivateRequest2&Request to discover a private referrer\"\xee\x01\n" +
+	"pagination\x12!\n" +
+	"\fproject_name\x18\x04 \x01(\tR\vprojectName\x12'\n" +
+	"\x0fproject_version\x18\x05 \x01(\tR\x0eprojectVersion:\xfb\x01\x92AQ\n" +
+	"O*%ReferrerServiceDiscoverPrivateRequest2&Request to discover a private referrer\xbaH\xa3\x01\x1a\xa0\x01\n" +
+	".discover_project_version_requires_project_name\x124project_name must be set when project_version is set\x1a8!(this.project_version != '' && this.project_name == '')\"\xf0\x01\n" +
 	"\x1bDiscoverPublicSharedRequest\x12\x1f\n" +
 	"\x06digest\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06digest\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12H\n" +
 	"\n" +
 	"pagination\x18\x03 \x01(\v2(.controlplane.v1.CursorPaginationRequestR\n" +
-	"pagination:P\x92AM\n" +
-	"K*\x1bDiscoverPublicSharedRequest2,Request to discover a public shared referrer\"\xf3\x01\n" +
+	"pagination:R\x92AM\n" +
+	"K*\x1bDiscoverPublicSharedRequest2,Request to discover a public shared referrer\x18\x01\"\xf3\x01\n" +
 	"\x1cDiscoverPublicSharedResponse\x125\n" +
 	"\x06result\x18\x01 \x01(\v2\x1d.controlplane.v1.ReferrerItemR\x06result\x12I\n" +
 	"\n" +
@@ -438,10 +464,10 @@ const file_controlplane_v1_referrer_proto_rawDesc = "" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:B\x92A?\n" +
-	"=*\fReferrerItem2-It represents a referrer object in the system2\xa9\x05\n" +
+	"=*\fReferrerItem2-It represents a referrer object in the system2\xac\x05\n" +
 	"\x0fReferrerService\x12\xa9\x02\n" +
-	"\x0fDiscoverPrivate\x126.controlplane.v1.ReferrerServiceDiscoverPrivateRequest\x1a7.controlplane.v1.ReferrerServiceDiscoverPrivateResponse\"\xa4\x01\x92A\x86\x01\x12\x19Discover private referrer\x1aWReturns the referrer item for a given digest in the organizations of the logged-in user:\x10application/json\x82\xd3\xe4\x93\x02\x14\x12\x12/discover/{digest}\x12\x96\x02\n" +
-	"\x14DiscoverPublicShared\x12,.controlplane.v1.DiscoverPublicSharedRequest\x1a-.controlplane.v1.DiscoverPublicSharedResponse\"\xa0\x01\x92A|\x12\x1fDiscover public shared referrer\x1aGReturns the referrer item for a given digest in the public shared index:\x10application/json\x82\xd3\xe4\x93\x02\x1b\x12\x19/discover/shared/{digest}\x1aQ\x92AN\n" +
+	"\x0fDiscoverPrivate\x126.controlplane.v1.ReferrerServiceDiscoverPrivateRequest\x1a7.controlplane.v1.ReferrerServiceDiscoverPrivateResponse\"\xa4\x01\x92A\x86\x01\x12\x19Discover private referrer\x1aWReturns the referrer item for a given digest in the organizations of the logged-in user:\x10application/json\x82\xd3\xe4\x93\x02\x14\x12\x12/discover/{digest}\x12\x99\x02\n" +
+	"\x14DiscoverPublicShared\x12,.controlplane.v1.DiscoverPublicSharedRequest\x1a-.controlplane.v1.DiscoverPublicSharedResponse\"\xa3\x01\x92A|\x12\x1fDiscover public shared referrer\x1aGReturns the referrer item for a given digest in the public shared index:\x10application/json\x82\xd3\xe4\x93\x02\x1b\x12\x19/discover/shared/{digest}\x88\x02\x01\x1aQ\x92AN\n" +
 	"\x0fReferrerService\x12;Referrer service for discovering referred content by digestBLZJgithub.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1b\x06proto3"
 
 var (

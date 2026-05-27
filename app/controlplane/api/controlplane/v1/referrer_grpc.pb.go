@@ -44,7 +44,9 @@ const (
 type ReferrerServiceClient interface {
 	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(ctx context.Context, in *ReferrerServiceDiscoverPrivateRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverPrivateResponse, error)
+	// Deprecated: Do not use.
 	// DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+	// Deprecated: the public shared index is being retired.
 	DiscoverPublicShared(ctx context.Context, in *DiscoverPublicSharedRequest, opts ...grpc.CallOption) (*DiscoverPublicSharedResponse, error)
 }
 
@@ -65,6 +67,7 @@ func (c *referrerServiceClient) DiscoverPrivate(ctx context.Context, in *Referre
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *referrerServiceClient) DiscoverPublicShared(ctx context.Context, in *DiscoverPublicSharedRequest, opts ...grpc.CallOption) (*DiscoverPublicSharedResponse, error) {
 	out := new(DiscoverPublicSharedResponse)
 	err := c.cc.Invoke(ctx, ReferrerService_DiscoverPublicShared_FullMethodName, in, out, opts...)
@@ -80,7 +83,9 @@ func (c *referrerServiceClient) DiscoverPublicShared(ctx context.Context, in *Di
 type ReferrerServiceServer interface {
 	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
+	// Deprecated: Do not use.
 	// DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+	// Deprecated: the public shared index is being retired.
 	DiscoverPublicShared(context.Context, *DiscoverPublicSharedRequest) (*DiscoverPublicSharedResponse, error)
 	mustEmbedUnimplementedReferrerServiceServer()
 }

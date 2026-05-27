@@ -3,6 +3,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "ReferrerServiceDiscoverPrivateRequest is the request for the DiscoverPrivate method",
+  "patternProperties": {
+    "^(projectName)$": {
+      "description": "ProjectName optionally scopes the discovery to a project by name. Can be set on its own\n (project-wide filter) or together with project_version (project + version filter).",
+      "type": "string"
+    },
+    "^(projectVersion)$": {
+      "description": "ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).\n Requires project_name, since a version name is unique only within a project.",
+      "type": "string"
+    }
+  },
   "properties": {
     "digest": {
       "description": "Digest is the unique identifier of the referrer to discover",
@@ -16,6 +26,14 @@
     "pagination": {
       "$ref": "controlplane.v1.CursorPaginationRequest.schema.json",
       "description": "Pagination options for the references list"
+    },
+    "project_name": {
+      "description": "ProjectName optionally scopes the discovery to a project by name. Can be set on its own\n (project-wide filter) or together with project_version (project + version filter).",
+      "type": "string"
+    },
+    "project_version": {
+      "description": "ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).\n Requires project_name, since a version name is unique only within a project.",
+      "type": "string"
     }
   },
   "title": "Referrer Service Discover Private Request",

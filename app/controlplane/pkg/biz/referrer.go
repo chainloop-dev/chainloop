@@ -132,6 +132,10 @@ type GetFromRootFilters struct {
 	// ProjectIDs stores visible projects by org for the requesting user.
 	// If an org entry doesn't exist, it means that RBAC is not applied, hence all projects in that org are visible
 	ProjectIDs map[OrgID][]ProjectID
+	// ProjectName and ProjectVersion scope the discovery to a specific project version.
+	// Both must be set together (a version name is unique only within a project).
+	ProjectName    *string
+	ProjectVersion *string
 }
 
 type GetFromRootFilter func(*GetFromRootFilters)
@@ -139,6 +143,15 @@ type GetFromRootFilter func(*GetFromRootFilters)
 func WithKind(kind string) func(*GetFromRootFilters) {
 	return func(o *GetFromRootFilters) {
 		o.RootKind = &kind
+	}
+}
+
+// WithProjectScope scopes the discovery to the given project, optionally narrowed to a
+// specific version. Pass an empty projectVersion to scope across all versions of the project.
+func WithProjectScope(projectName, projectVersion string) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.ProjectName = &projectName
+		o.ProjectVersion = &projectVersion
 	}
 }
 
@@ -188,7 +201,7 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 // GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references.
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
 // It only returns referrers that belong to organizations the user is member of.
-func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
+func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
 	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootUser")
 	defer span.End()
 
@@ -205,10 +218,10 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 	// We pass the list of organizationsIDs from where to look for the referrer
 	// For now we just pass the list of organizations the user is member of
 	// in the future we will expand this to publicly available orgs and so on.
-	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs, p)
+	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs, p, extraFilters...)
 }
 
-func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
+func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
 	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRoot")
 	defer span.End()
 
@@ -219,6 +232,7 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 	if projectIDs != nil {
 		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
+	filters = append(filters, extraFilters...)
 
 	ref, nextCursor, err := s.repo.GetFromRoot(ctx, digest, orgIDs, p, filters...)
 	if err != nil {
@@ -276,7 +290,8 @@ func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, di
 }
 
 const (
-	referrerAttestationType = "ATTESTATION"
+	// ReferrerAttestationType is the kind of the referrer that represents an attestation.
+	ReferrerAttestationType = "ATTESTATION"
 	referrerGitHeadType     = "GIT_HEAD_COMMIT"
 )
 
@@ -302,11 +317,11 @@ func extractReferrers(att *dsse.Envelope, digest cr_v1.Hash, repo ReferrerRepo) 
 	attestationHash := digest.String()
 	attestationReferrer := &Referrer{
 		Digest:       attestationHash,
-		Kind:         referrerAttestationType,
+		Kind:         ReferrerAttestationType,
 		Downloadable: true,
 	}
 
-	referrersMap[newRef(attestationHash, referrerAttestationType)] = attestationReferrer
+	referrersMap[newRef(attestationHash, ReferrerAttestationType)] = attestationReferrer
 
 	// 2 - Predicate that's referenced from the attestation
 	predicate, err := chainloop.ExtractPredicate(att)
@@ -344,8 +359,8 @@ func extractReferrers(att *dsse.Envelope, digest cr_v1.Hash, repo ReferrerRepo) 
 		// If we are inserting an attestation as a dependent, we want to make sure it already exists
 		// stored in the system. This is so we can ensure that the attestations nodes are created through
 		// an attestation process, not as a referenced provided by the user
-		if material.Type == referrerAttestationType {
-			if exists, err := repo.Exist(context.Background(), material.Hash.String(), WithKind(referrerAttestationType)); err != nil {
+		if material.Type == ReferrerAttestationType {
+			if exists, err := repo.Exist(context.Background(), material.Hash.String(), WithKind(ReferrerAttestationType)); err != nil {
 				return nil, fmt.Errorf("checking if attestation exists: %w", err)
 			} else if !exists {
 				return nil, fmt.Errorf("attestation material does not exist %q", material.Hash.String())

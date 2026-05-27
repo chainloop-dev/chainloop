@@ -56,12 +56,20 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 		return nil, err
 	}
 
+	// Optionally scope the discovery by project, optionally narrowed to a project version.
+	// project_version requires project_name (enforced at the proto validation layer); a
+	// project_name on its own scopes to every version of that project.
+	var extraFilters []biz.GetFromRootFilter
+	if req.GetProjectName() != "" {
+		extraFilters = append(extraFilters, biz.WithProjectScope(req.GetProjectName(), req.GetProjectVersion()))
+	}
+
 	// if we are logged in as user we find the referrer from the user
 	// otherwise for the current organization associated with the API token
 	var referrer *biz.StoredReferrer
 	var nextCursor string
 	if currentUser != nil {
-		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, paginationOpts)
+		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, paginationOpts, extraFilters...)
 	} else if currentToken != nil {
 		var orgUUID uuid.UUID
 		orgUUID, err = uuid.Parse(currentOrg.ID)
@@ -76,7 +84,7 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 			orgsProjectsMap[orgUUID] = visibleProjects
 		}
 
-		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap, paginationOpts)
+		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap, paginationOpts, extraFilters...)
 	}
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
@@ -88,6 +96,9 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 	}, nil
 }
 
+// DiscoverPublicShared implements the deprecated public shared index RPC, kept for backwards compatibility.
+//
+//nolint:staticcheck // the RPC is deprecated but still served
 func (s *ReferrerService) DiscoverPublicShared(ctx context.Context, req *pb.DiscoverPublicSharedRequest) (*pb.DiscoverPublicSharedResponse, error) {
 	paginationOpts, err := referrerPaginationOptsFromProto(req.GetPagination())
 	if err != nil {
