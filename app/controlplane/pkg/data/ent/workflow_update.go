@@ -226,6 +226,26 @@ func (_u *WorkflowUpdate) ClearMetadata() *WorkflowUpdate {
 	return _u
 }
 
+// SetWorkflowTemplateID sets the "workflow_template_id" field.
+func (_u *WorkflowUpdate) SetWorkflowTemplateID(v uuid.UUID) *WorkflowUpdate {
+	_u.mutation.SetWorkflowTemplateID(v)
+	return _u
+}
+
+// SetNillableWorkflowTemplateID sets the "workflow_template_id" field if the given value is not nil.
+func (_u *WorkflowUpdate) SetNillableWorkflowTemplateID(v *uuid.UUID) *WorkflowUpdate {
+	if v != nil {
+		_u.SetWorkflowTemplateID(*v)
+	}
+	return _u
+}
+
+// ClearWorkflowTemplateID clears the value of the "workflow_template_id" field.
+func (_u *WorkflowUpdate) ClearWorkflowTemplateID() *WorkflowUpdate {
+	_u.mutation.ClearWorkflowTemplateID()
+	return _u
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (_u *WorkflowUpdate) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdate {
 	_u.mutation.AddRobotaccountIDs(ids...)
@@ -539,6 +559,12 @@ func (_u *WorkflowUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(workflow.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.WorkflowTemplateID(); ok {
+		_spec.SetField(workflow.FieldWorkflowTemplateID, field.TypeUUID, value)
+	}
+	if _u.mutation.WorkflowTemplateIDCleared() {
+		_spec.ClearField(workflow.FieldWorkflowTemplateID, field.TypeUUID)
 	}
 	if _u.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1047,6 +1073,26 @@ func (_u *WorkflowUpdateOne) ClearMetadata() *WorkflowUpdateOne {
 	return _u
 }
 
+// SetWorkflowTemplateID sets the "workflow_template_id" field.
+func (_u *WorkflowUpdateOne) SetWorkflowTemplateID(v uuid.UUID) *WorkflowUpdateOne {
+	_u.mutation.SetWorkflowTemplateID(v)
+	return _u
+}
+
+// SetNillableWorkflowTemplateID sets the "workflow_template_id" field if the given value is not nil.
+func (_u *WorkflowUpdateOne) SetNillableWorkflowTemplateID(v *uuid.UUID) *WorkflowUpdateOne {
+	if v != nil {
+		_u.SetWorkflowTemplateID(*v)
+	}
+	return _u
+}
+
+// ClearWorkflowTemplateID clears the value of the "workflow_template_id" field.
+func (_u *WorkflowUpdateOne) ClearWorkflowTemplateID() *WorkflowUpdateOne {
+	_u.mutation.ClearWorkflowTemplateID()
+	return _u
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by IDs.
 func (_u *WorkflowUpdateOne) AddRobotaccountIDs(ids ...uuid.UUID) *WorkflowUpdateOne {
 	_u.mutation.AddRobotaccountIDs(ids...)
@@ -1390,6 +1436,12 @@ func (_u *WorkflowUpdateOne) sqlSave(ctx context.Context) (_node *Workflow, err 
 	}
 	if _u.mutation.MetadataCleared() {
 		_spec.ClearField(workflow.FieldMetadata, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.WorkflowTemplateID(); ok {
+		_spec.SetField(workflow.FieldWorkflowTemplateID, field.TypeUUID, value)
+	}
+	if _u.mutation.WorkflowTemplateIDCleared() {
+		_spec.ClearField(workflow.FieldWorkflowTemplateID, field.TypeUUID)
 	}
 	if _u.mutation.RobotaccountsCleared() {
 		edge := &sqlgraph.EdgeSpec{

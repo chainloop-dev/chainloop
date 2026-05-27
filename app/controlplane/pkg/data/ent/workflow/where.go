@@ -116,6 +116,11 @@ func Description(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldDescription, v))
 }
 
+// WorkflowTemplateID applies equality check predicate on the "workflow_template_id" field. It's identical to WorkflowTemplateIDEQ.
+func WorkflowTemplateID(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldWorkflowTemplateID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Workflow {
 	return predicate.Workflow(sql.FieldEQ(FieldName, v))
@@ -664,6 +669,56 @@ func MetadataIsNil() predicate.Workflow {
 // MetadataNotNil applies the NotNil predicate on the "metadata" field.
 func MetadataNotNil() predicate.Workflow {
 	return predicate.Workflow(sql.FieldNotNull(FieldMetadata))
+}
+
+// WorkflowTemplateIDEQ applies the EQ predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldEQ(FieldWorkflowTemplateID, v))
+}
+
+// WorkflowTemplateIDNEQ applies the NEQ predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDNEQ(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNEQ(FieldWorkflowTemplateID, v))
+}
+
+// WorkflowTemplateIDIn applies the In predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldIn(FieldWorkflowTemplateID, vs...))
+}
+
+// WorkflowTemplateIDNotIn applies the NotIn predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDNotIn(vs ...uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotIn(FieldWorkflowTemplateID, vs...))
+}
+
+// WorkflowTemplateIDGT applies the GT predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDGT(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldGT(FieldWorkflowTemplateID, v))
+}
+
+// WorkflowTemplateIDGTE applies the GTE predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDGTE(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldGTE(FieldWorkflowTemplateID, v))
+}
+
+// WorkflowTemplateIDLT applies the LT predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDLT(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldLT(FieldWorkflowTemplateID, v))
+}
+
+// WorkflowTemplateIDLTE applies the LTE predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDLTE(v uuid.UUID) predicate.Workflow {
+	return predicate.Workflow(sql.FieldLTE(FieldWorkflowTemplateID, v))
+}
+
+// WorkflowTemplateIDIsNil applies the IsNil predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDIsNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldIsNull(FieldWorkflowTemplateID))
+}
+
+// WorkflowTemplateIDNotNil applies the NotNil predicate on the "workflow_template_id" field.
+func WorkflowTemplateIDNotNil() predicate.Workflow {
+	return predicate.Workflow(sql.FieldNotNull(FieldWorkflowTemplateID))
 }
 
 // HasRobotaccounts applies the HasEdge predicate on the "robotaccounts" edge.

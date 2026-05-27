@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ func (Workflow) Fields() []ent.Field {
 		field.UUID("latest_run", uuid.UUID{}).Optional().Nillable(),
 		field.String("description").Optional(),
 		field.JSON("metadata", map[string]interface{}{}).Optional(),
+		field.UUID("workflow_template_id", uuid.UUID{}).Optional().Nillable(),
 	}
 }
 

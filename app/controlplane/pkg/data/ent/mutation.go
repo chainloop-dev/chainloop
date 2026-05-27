@@ -14959,6 +14959,7 @@ type WorkflowMutation struct {
 	public                         *bool
 	description                    *string
 	metadata                       *map[string]interface{}
+	workflow_template_id           *uuid.UUID
 	clearedFields                  map[string]struct{}
 	robotaccounts                  map[uuid.UUID]struct{}
 	removedrobotaccounts           map[uuid.UUID]struct{}
@@ -15655,6 +15656,55 @@ func (m *WorkflowMutation) ResetMetadata() {
 	delete(m.clearedFields, workflow.FieldMetadata)
 }
 
+// SetWorkflowTemplateID sets the "workflow_template_id" field.
+func (m *WorkflowMutation) SetWorkflowTemplateID(u uuid.UUID) {
+	m.workflow_template_id = &u
+}
+
+// WorkflowTemplateID returns the value of the "workflow_template_id" field in the mutation.
+func (m *WorkflowMutation) WorkflowTemplateID() (r uuid.UUID, exists bool) {
+	v := m.workflow_template_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkflowTemplateID returns the old "workflow_template_id" field's value of the Workflow entity.
+// If the Workflow object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowMutation) OldWorkflowTemplateID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkflowTemplateID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkflowTemplateID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkflowTemplateID: %w", err)
+	}
+	return oldValue.WorkflowTemplateID, nil
+}
+
+// ClearWorkflowTemplateID clears the value of the "workflow_template_id" field.
+func (m *WorkflowMutation) ClearWorkflowTemplateID() {
+	m.workflow_template_id = nil
+	m.clearedFields[workflow.FieldWorkflowTemplateID] = struct{}{}
+}
+
+// WorkflowTemplateIDCleared returns if the "workflow_template_id" field was cleared in this mutation.
+func (m *WorkflowMutation) WorkflowTemplateIDCleared() bool {
+	_, ok := m.clearedFields[workflow.FieldWorkflowTemplateID]
+	return ok
+}
+
+// ResetWorkflowTemplateID resets all changes to the "workflow_template_id" field.
+func (m *WorkflowMutation) ResetWorkflowTemplateID() {
+	m.workflow_template_id = nil
+	delete(m.clearedFields, workflow.FieldWorkflowTemplateID)
+}
+
 // AddRobotaccountIDs adds the "robotaccounts" edge to the RobotAccount entity by ids.
 func (m *WorkflowMutation) AddRobotaccountIDs(ids ...uuid.UUID) {
 	if m.robotaccounts == nil {
@@ -16038,7 +16088,7 @@ func (m *WorkflowMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.name != nil {
 		fields = append(fields, workflow.FieldName)
 	}
@@ -16078,6 +16128,9 @@ func (m *WorkflowMutation) Fields() []string {
 	if m.metadata != nil {
 		fields = append(fields, workflow.FieldMetadata)
 	}
+	if m.workflow_template_id != nil {
+		fields = append(fields, workflow.FieldWorkflowTemplateID)
+	}
 	return fields
 }
 
@@ -16112,6 +16165,8 @@ func (m *WorkflowMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case workflow.FieldMetadata:
 		return m.Metadata()
+	case workflow.FieldWorkflowTemplateID:
+		return m.WorkflowTemplateID()
 	}
 	return nil, false
 }
@@ -16147,6 +16202,8 @@ func (m *WorkflowMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldDescription(ctx)
 	case workflow.FieldMetadata:
 		return m.OldMetadata(ctx)
+	case workflow.FieldWorkflowTemplateID:
+		return m.OldWorkflowTemplateID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Workflow field %s", name)
 }
@@ -16247,6 +16304,13 @@ func (m *WorkflowMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetMetadata(v)
 		return nil
+	case workflow.FieldWorkflowTemplateID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkflowTemplateID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)
 }
@@ -16310,6 +16374,9 @@ func (m *WorkflowMutation) ClearedFields() []string {
 	if m.FieldCleared(workflow.FieldMetadata) {
 		fields = append(fields, workflow.FieldMetadata)
 	}
+	if m.FieldCleared(workflow.FieldWorkflowTemplateID) {
+		fields = append(fields, workflow.FieldWorkflowTemplateID)
+	}
 	return fields
 }
 
@@ -16341,6 +16408,9 @@ func (m *WorkflowMutation) ClearField(name string) error {
 		return nil
 	case workflow.FieldMetadata:
 		m.ClearMetadata()
+		return nil
+	case workflow.FieldWorkflowTemplateID:
+		m.ClearWorkflowTemplateID()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow nullable field %s", name)
@@ -16388,6 +16458,9 @@ func (m *WorkflowMutation) ResetField(name string) error {
 		return nil
 	case workflow.FieldMetadata:
 		m.ResetMetadata()
+		return nil
+	case workflow.FieldWorkflowTemplateID:
+		m.ResetWorkflowTemplateID()
 		return nil
 	}
 	return fmt.Errorf("unknown Workflow field %s", name)
