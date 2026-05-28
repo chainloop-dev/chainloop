@@ -1,3 +1,8 @@
 Keypair used for development
 
 DO NOT USE IN PRODUCTION
+
+Regenerate with:
+
+openssl ecparam -name secp384r1 -genkey -noout | openssl ec -aes256 -out ca.pem
+openssl req -x509 -new -key ca.pem -out ca.pub -days 3650 -sha384 -config ca_config.cnf
