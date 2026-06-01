@@ -224,12 +224,7 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	var crafter Craftable
 	var err error
 
-	validator, err := protovalidate.New()
-	if err != nil {
-		return nil, fmt.Errorf("could not create validator: %w", err)
-	}
-
-	if err := validator.Validate(materialSchema); err != nil {
+	if err := protovalidate.Validate(materialSchema); err != nil {
 		return nil, fmt.Errorf("validating material: %w", err)
 	}
 

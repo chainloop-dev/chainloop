@@ -167,12 +167,7 @@ func (uc *CASClientUseCase) IsReady(ctx context.Context) (bool, error) {
 		return false, errors.New("missing CAS server configuration")
 	}
 
-	v, err := protovalidate.New()
-	if err != nil {
-		return false, fmt.Errorf("failed to create validator: %w", err)
-	}
-
-	if err := v.Validate(uc.casServerConf); err != nil {
+	if err := protovalidate.Validate(uc.casServerConf); err != nil {
 		return false, fmt.Errorf("invalid CAS client configuration: %w", err)
 	}
 

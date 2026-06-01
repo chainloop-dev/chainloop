@@ -67,7 +67,6 @@ type Crafter struct {
 	stateManager  StateManager
 	// Authn is used to authenticate with the OCI registry
 	ociRegistryAuth authn.Keychain
-	validator       protovalidate.Validator
 
 	// attestation client is used to load chainloop policies
 	attClient v1.AttestationServiceClient
@@ -166,11 +165,6 @@ func (c *Crafter) RunCollectors(ctx context.Context, attestationID string, casBa
 func NewCrafter(stateManager StateManager, attClient v1.AttestationServiceClient, opts ...NewOpt) (*Crafter, error) {
 	noopLogger := zerolog.Nop()
 
-	validator, err := protovalidate.New()
-	if err != nil {
-		return nil, fmt.Errorf("creating proto validator: %w", err)
-	}
-
 	cw, _ := os.Getwd()
 	c := &Crafter{
 		Logger:       &noopLogger,
@@ -178,7 +172,6 @@ func NewCrafter(stateManager StateManager, attClient v1.AttestationServiceClient
 		stateManager: stateManager,
 		// By default we authenticate with the current user's keychain (i.e ~/.docker/config.json)
 		ociRegistryAuth: authn.DefaultKeychain,
-		validator:       validator,
 		attClient:       attClient,
 	}
 
@@ -684,7 +677,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		}
 	}
 
-	if err := c.validator.Validate(mt); err != nil {
+	if err := protovalidate.Validate(mt); err != nil {
 		return nil, fmt.Errorf("validation error: %w", err)
 	}
 

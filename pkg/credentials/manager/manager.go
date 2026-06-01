@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,12 +56,7 @@ func NewFromConfig(conf *api.Credentials, role credentials.Role, l log.Logger) (
 }
 
 func validateConfig(msg protoreflect.ProtoMessage) error {
-	validator, err := protovalidate.New()
-	if err != nil {
-		return fmt.Errorf("creating validator: %w", err)
-	}
-
-	return validator.Validate(msg)
+	return protovalidate.Validate(msg)
 }
 
 func newAzureKBManager(conf *api.Credentials_AzureKeyVault, prefix string, r credentials.Role, l log.Logger) (*azurekv.Manager, error) {

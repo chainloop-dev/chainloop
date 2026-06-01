@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,15 +27,10 @@ import (
 // ValidateComplete makes sure that the crafting state has been completed
 // before it gets passed to the renderer
 func (state *CraftingState) ValidateComplete(dryRun bool) error {
-	validator, err := protovalidate.New()
-	if err != nil {
-		return fmt.Errorf("could not create validator: %w", err)
-	}
-
 	// We do not want to validate the schema of the state if we are just doing a dry run
 	// since it's known to not to contain the workflow metadata information
 	if !dryRun {
-		if err := validator.Validate(state); err != nil {
+		if err := protovalidate.Validate(state); err != nil {
 			return fmt.Errorf("invalid crafting state: %w", err)
 		}
 	}
