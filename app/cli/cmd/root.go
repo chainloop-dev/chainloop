@@ -138,6 +138,10 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				grpcconn.WithCLIVersion(fullVersion()),
 			}
 
+			if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
+				opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
+			}
+
 			if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
 				// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
 				if _, err := os.Stat(caValue); err == nil {
@@ -264,6 +268,11 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	rootCmd.PersistentFlags().BoolP("insecure", "i", false, fmt.Sprintf("Skip TLS transport during connection to the control plane ($%s)", CalculateEnvVarName(confOptions.insecure.viperKey)))
 	cobra.CheckErr(viper.BindPFlag(confOptions.insecure.viperKey, rootCmd.PersistentFlags().Lookup("insecure")))
 	cobra.CheckErr(viper.BindEnv(confOptions.insecure.viperKey, CalculateEnvVarName(confOptions.insecure.viperKey)))
+
+	// Override the gRPC client-side max receive message size in bytes (0 = use default)
+	rootCmd.PersistentFlags().Int(confOptions.maxRecvMsgSize.flagName, 0, fmt.Sprintf("Max size in bytes for incoming gRPC messages (0 = default %d) ($%s)", grpcconn.DefaultMaxRecvMsgSize, CalculateEnvVarName(confOptions.maxRecvMsgSize.viperKey)))
+	cobra.CheckErr(viper.BindPFlag(confOptions.maxRecvMsgSize.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.maxRecvMsgSize.flagName)))
+	cobra.CheckErr(viper.BindEnv(confOptions.maxRecvMsgSize.viperKey, CalculateEnvVarName(confOptions.maxRecvMsgSize.viperKey)))
 
 	rootCmd.PersistentFlags().BoolVar(&flagDebug, "debug", false, "Enable debug/verbose logging mode")
 	rootCmd.PersistentFlags().StringVarP(&flagOutputFormat, "output", "o", "table", "Output format, valid options are json and table")
@@ -497,6 +506,12 @@ func hashControlPlaneURL() (url string, hash string) {
 
 func apiInsecure() bool {
 	return viper.GetBool(confOptions.insecure.viperKey)
+}
+
+// apiMaxRecvMsgSize returns the configured gRPC max receive message size for
+// the CLI's outbound connections, in bytes. 0 means "use grpcconn's default".
+func apiMaxRecvMsgSize() int {
+	return viper.GetInt(confOptions.maxRecvMsgSize.viperKey)
 }
 
 // setLocalOrganization updates the local organization configuration

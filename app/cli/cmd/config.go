@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 
 // Map of all the possible configuration options that we expect viper to handle
 var confOptions = struct {
-	authToken, controlplaneAPI, CASAPI, controlplaneCA, CASCA, insecure, organization, platformAPI *confOpt
+	authToken, controlplaneAPI, CASAPI, controlplaneCA, CASCA, insecure, organization, platformAPI, maxRecvMsgSize *confOpt
 }{
 	insecure: &confOpt{
 		viperKey: "api-insecure",
@@ -53,6 +53,10 @@ var confOptions = struct {
 	organization: &confOpt{
 		viperKey: "organization",
 		flagName: "org",
+	},
+	maxRecvMsgSize: &confOpt{
+		viperKey: "api-max-recv-msg-size",
+		flagName: "max-recv-msg-size",
 	},
 }
 
