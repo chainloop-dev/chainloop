@@ -67,6 +67,9 @@ func NewReferrerDiscoverPublicIndex(cfg *ActionsOpts) *ReferrerDiscoverPublic {
 	return &ReferrerDiscoverPublic{cfg}
 }
 
+// Run calls the deprecated public shared index RPC, kept for backwards compatibility.
+//
+//nolint:staticcheck // the RPC is deprecated but still supported
 func (action *ReferrerDiscoverPublic) Run(ctx context.Context, digest, kind string, p *PaginationOpts) (*ReferrerDiscoverResult, error) {
 	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
 	resp, err := client.DiscoverPublicShared(ctx, &pb.DiscoverPublicSharedRequest{

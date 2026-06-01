@@ -20,8 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
@@ -528,6 +530,191 @@ func (s *referrerIntegrationTestSuite) TestPagination() {
 			s.False(seen[d], "duplicate digest found: %s", d)
 			seen[d] = true
 		}
+	})
+}
+
+func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
+	// Load attestation and persist its referrers under workflow1 (project "test")
+	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	h, _, err := v1.SHA256(bytes.NewReader(envBytes))
+	require.NoError(s.T(), err)
+	ctx := context.Background()
+
+	err = s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
+	require.NoError(s.T(), err)
+
+	// The SBOM is one of the materials referenced by the attestation
+	const sbomDigest = "sha256:16159bb881eb4ab7eb5d8afc5350b0feeed1e31c0a268e355e74f9ccbe885e0c"
+
+	// Create a workflow run for project version "v1.0.0" on workflow1 and link the attestation digest to it
+	contractVersion, err := s.WorkflowContract.Describe(ctx, s.org1.ID, s.workflow1.ContractID.String(), 0)
+	require.NoError(s.T(), err)
+	casBackend, err := s.CASBackend.CreateOrUpdate(ctx, s.org1.ID, "repo", "username", "pass", backendType, true)
+	require.NoError(s.T(), err)
+	run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+		WorkflowID: s.workflow1.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
+		ProjectVersion: "v1.0.0",
+	})
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, run.ID, h.String()))
+
+	s.Run("attestation root is returned when project+version match", func() {
+		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("test", "v1.0.0"))
+		s.NoError(err)
+		s.Require().NotNil(got)
+		s.Equal(h.String(), got.Digest)
+		// children (materials) are still returned
+		s.NotEmpty(got.References)
+	})
+
+	s.Run("attestation root is not found for a different version", func() {
+		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("test", "v9.9.9"))
+		s.True(biz.IsNotFound(err))
+		s.Nil(got)
+	})
+
+	s.Run("attestation root is not found for a different project", func() {
+		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("does-not-exist", "v1.0.0"))
+		s.True(biz.IsNotFound(err))
+		s.Nil(got)
+	})
+
+	s.Run("material root is returned when reachable from an in-version attestation", func() {
+		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("test", "v1.0.0"))
+		s.NoError(err)
+		s.Require().NotNil(got)
+		s.Equal(sbomDigest, got.Digest)
+		// its parent attestation (in version) is returned as a reference
+		require.Len(s.T(), got.References, 1)
+		s.Equal(h.String(), got.References[0].Digest)
+	})
+
+	s.Run("material root is not found for a different version", func() {
+		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("test", "v9.9.9"))
+		s.True(biz.IsNotFound(err))
+		s.Nil(got)
+	})
+
+	s.Run("without the filter the referrer is returned regardless of version", func() {
+		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
+		s.NoError(err)
+		s.Require().NotNil(got)
+		s.Equal(h.String(), got.Digest)
+	})
+
+	s.Run("project_name alone returns the referrer across all versions of that project", func() {
+		// A second run on workflow1 at v3.0.0 with a fresh attestation digest. With a project-only
+		// filter, the SBOM must be reachable through either v1.0.0 (via h) or v3.0.0 (via newH).
+		const newH = "sha256:" + "b" + "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		runV3, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflow1.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
+			ProjectVersion: "v3.0.0",
+		})
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runV3.ID, newH))
+
+		// project_name only (empty version) → SBOM returned via its in-project attestation.
+		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("test", ""))
+		s.NoError(err)
+		s.Require().NotNil(got)
+		s.Equal(sbomDigest, got.Digest)
+
+		// Attestation root: returned when its digest belongs to any version of the project.
+		got, _, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("test", ""))
+		s.NoError(err)
+		s.Require().NotNil(got)
+		s.Equal(h.String(), got.Digest)
+
+		// Unknown project still NotFound.
+		got, _, err = s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("does-not-exist", ""))
+		s.True(biz.IsNotFound(err))
+		s.Nil(got)
+	})
+
+	s.Run("RBAC: project filter must respect the caller's visible projects", func() {
+		// A second workflow in org1 under a different project. Persisting the same envelope on
+		// it links the existing materials (including the SBOM) to that project too — so the
+		// material is technically visible to the user via the original "test" project even when
+		// the second project is not in their visible set.
+		wfOther, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			Name: "wf-other", Team: "team", OrgID: s.org1.ID, Project: "other-proj",
+		})
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, h, wfOther.ID.String()))
+
+		// A v1.0.0 run on the second workflow whose attestation digest points at the same
+		// attestation, so "other-proj" v1.0.0 contains h.
+		contractOther, err := s.WorkflowContract.Describe(ctx, s.org1.ID, wfOther.ContractID.String(), 0)
+		require.NoError(s.T(), err)
+		runOther, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wfOther.ID.String(), ContractRevision: contractOther, CASBackendID: casBackend.ID,
+			ProjectVersion: "v1.0.0",
+		})
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runOther.ID, h.String()))
+
+		// RBAC: caller can see project "test" in org1 only — NOT "other-proj".
+		rbac := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
+
+		got, _, err := s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, rbac, nil, biz.WithProjectScope("other-proj", "v1.0.0"))
+		s.True(biz.IsNotFound(err), "expected NotFound when filtering by a project the caller cannot see")
+		s.Nil(got)
+
+		// Sanity: with the visible project, the same material is returned scoped to its version,
+		// proving the test setup is sound and the fix isn't over-blocking.
+		got, _, err = s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, rbac, nil, biz.WithProjectScope("test", "v1.0.0"))
+		s.NoError(err)
+		s.Require().NotNil(got)
+		s.Equal(sbomDigest, got.Digest)
+	})
+
+	s.Run("public workflow stays visible under the version filter regardless of RBAC", func() {
+		// A workflow whose project is NOT in the caller's RBAC-visible set, but which is public —
+		// matching isReferrerVisible's InPublicWorkflow short-circuit. The version filter must
+		// honor the same convention or it silently hides referrers that are otherwise visible.
+		wfPublic, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			Name: "wf-public", Team: "team", OrgID: s.org1.ID, Project: "public-proj",
+		})
+		require.NoError(s.T(), err)
+		_, err = s.Workflow.Update(ctx, s.org1.ID, wfPublic.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, h, wfPublic.ID.String()))
+
+		contractPublic, err := s.WorkflowContract.Describe(ctx, s.org1.ID, wfPublic.ContractID.String(), 0)
+		require.NoError(s.T(), err)
+		runPublic, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wfPublic.ID.String(), ContractRevision: contractPublic, CASBackendID: casBackend.ID,
+			ProjectVersion: "v1.0.0",
+		})
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runPublic.ID, h.String()))
+
+		// RBAC restricts the caller to project "test" — "public-proj" is NOT in their set.
+		rbac := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
+
+		got, _, err := s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, rbac, nil, biz.WithProjectScope("public-proj", "v1.0.0"))
+		s.NoError(err, "public workflow must remain discoverable even when RBAC excludes its project")
+		s.Require().NotNil(got)
+		s.Equal(sbomDigest, got.Digest)
+	})
+
+	s.Run("material root cannot bypass version scoping by supplying a cursor", func() {
+		// A second project version whose run points to an unrelated attestation digest, so the
+		// SBOM (only referenced by the v1.0.0 attestation) does not belong to it.
+		run2, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflow1.ID.String(), ContractRevision: contractVersion, CASBackendID: casBackend.ID,
+			ProjectVersion: "v2.0.0",
+		})
+		require.NoError(s.T(), err)
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, run2.ID, "sha256:"+strings.Repeat("a", 64)))
+
+		// Paging past the first page must not skip the membership check (regression for the
+		// firstPage gate that allowed a cursor to bypass version scoping).
+		cursor, err := pagination.NewCursor(pagination.EncodeCursor(time.Now(), uuid.New()), 10)
+		require.NoError(s.T(), err)
+		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, cursor, biz.WithProjectScope("test", "v2.0.0"))
+		s.True(biz.IsNotFound(err))
+		s.Nil(got)
 	})
 }
 

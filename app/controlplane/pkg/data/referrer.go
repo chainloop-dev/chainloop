@@ -25,8 +25,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
@@ -176,6 +179,24 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	// Attach the workflow predicate
 	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
 
+	// If a project filter is requested, attach it as a subquery predicate. An attestation root
+	// matches only when its digest is one of the attestation_digests produced by a workflow run
+	// in the requested project (and, when set, version). Non-attestation roots pass through here
+	// and are validated later through their references. The cost is independent of how many
+	// runs the project has — Postgres executes it as a single semi-join, no Go-side digest list.
+	var projectPred predicate.Referrer
+	if opts.ProjectName != nil && *opts.ProjectName != "" {
+		version := ""
+		if opts.ProjectVersion != nil {
+			version = *opts.ProjectVersion
+		}
+		projectPred = r.projectScopePredicate(*opts.ProjectName, version, orgIDs, opts.ProjectIDs, opts.Public)
+		predicateReferrer = append(predicateReferrer, referrer.Or(
+			referrer.KindNEQ(biz.ReferrerAttestationType),
+			projectPred,
+		))
+	}
+
 	refs, err := r.data.DB.Referrer.Query().Where(predicateReferrer...).WithWorkflows().All(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to query referrer: %w", err)
@@ -194,7 +215,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	}
 
 	// Find the referrer recursively starting from the root
-	res, nextCursor, err := r.doGet(ctx, refs[0], orgIDs, opts.ProjectIDs, opts.Public, p, 0)
+	res, nextCursor, err := r.doGet(ctx, refs[0], orgIDs, opts.ProjectIDs, opts.Public, projectPred, p, 0)
 	if err != nil && !biz.IsErrUnauthorized(err) {
 		return nil, "", fmt.Errorf("failed to get referrer: %w", err)
 	}
@@ -202,12 +223,99 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	return res, nextCursor, nil
 }
 
+// projectScopePredicate returns a predicate matching referrers whose digest is the attestation
+// digest of a workflow run in the requested project (and, when non-empty, version), visible to
+// the caller. The predicate compiles to a SQL subquery — no digest list is materialized in Go,
+// so the cost is independent of how many runs the project has. Postgres plans this as a
+// semi-join via the index on workflow_run.attestation_digest, which is what makes the filter
+// scale at thousands of runs per project.
+//
+// Visibility mirrors isReferrerVisible: a run is included when its workflow is either public
+// (regardless of RBAC) or its project is in the caller's RBAC-visible set. visibleProjectsMap
+// follows the existing convention — an org entry present means RBAC applies for that org and
+// only the listed project IDs are visible; an org absent means no RBAC restriction. When
+// public != nil, the run's workflow visibility is additionally constrained to that value.
+// The public-workflow short-circuit is tracked for removal in chainloop-dev/chainloop#3163.
+func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool) predicate.Referrer {
+	versionPredicates := []predicate.ProjectVersion{
+		projectversion.DeletedAtIsNil(),
+		projectversion.HasProjectWith(
+			project.NameEQ(projectName),
+			project.DeletedAtIsNil(),
+		),
+	}
+	if version != "" {
+		versionPredicates = append(versionPredicates, projectversion.VersionEQ(version))
+	}
+	runPredicates := []predicate.WorkflowRun{
+		workflowrun.AttestationDigestNEQ(""),
+		workflowrun.HasVersionWith(versionPredicates...),
+	}
+
+	// Visibility OR — same semantics as isReferrerVisible: a public workflow is visible to any
+	// caller in its org, otherwise the project must be in the caller's RBAC-visible set.
+	visibility := []predicate.WorkflowRun{
+		workflowrun.HasWorkflowWith(
+			workflow.DeletedAtIsNil(),
+			workflow.Public(true),
+			workflow.HasOrganizationWith(organization.IDIn(orgIDs...)),
+		),
+	}
+	if rbacScope := projectVisibilityPredicate(orgIDs, visibleProjectsMap); rbacScope != nil {
+		visibility = append(visibility, workflowrun.HasWorkflowWith(
+			workflow.DeletedAtIsNil(),
+			workflow.HasProjectWith(rbacScope),
+		))
+	}
+	runPredicates = append(runPredicates, workflowrun.Or(visibility...))
+
+	// If the caller explicitly scopes by public/private, layer that on top.
+	if public != nil {
+		runPredicates = append(runPredicates, workflowrun.HasWorkflowWith(workflow.Public(*public)))
+	}
+
+	return func(s *sql.Selector) {
+		t := sql.Table(workflowrun.Table)
+		sub := sql.Select(t.C(workflowrun.FieldAttestationDigest)).From(t)
+		for _, p := range runPredicates {
+			p(sub)
+		}
+		s.Where(sql.In(s.C(referrer.FieldDigest), sub))
+	}
+}
+
+// projectVisibilityPredicate builds a project predicate that accepts a project iff it belongs to
+// one of the allowed orgs AND, when RBAC applies to that org, the project is in the caller's
+// visible set. Returns nil when no org grants any project visibility, so callers can fall back
+// to other visibility paths (e.g. public workflows).
+func projectVisibilityPredicate(orgIDs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) predicate.Project {
+	perOrg := make([]predicate.Project, 0, len(orgIDs))
+	for _, orgID := range orgIDs {
+		visible, hasRBAC := visibleProjectsMap[orgID]
+		if !hasRBAC {
+			perOrg = append(perOrg, project.HasOrganizationWith(organization.ID(orgID)))
+			continue
+		}
+		if len(visible) == 0 {
+			continue // RBAC applies but no project is visible in this org
+		}
+		perOrg = append(perOrg, project.And(
+			project.HasOrganizationWith(organization.ID(orgID)),
+			project.IDIn(visible...),
+		))
+	}
+	if len(perOrg) == 0 {
+		return nil
+	}
+	return project.Or(perOrg...)
+}
+
 // max number of recursive levels to traverse
 // we just care about 1 level, i.e att -> commit, or commit -> attestation
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool, p *pagination.CursorOptions, level int) (*biz.StoredReferrer, string, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool, projectPred predicate.Referrer, p *pagination.CursorOptions, level int) (*biz.StoredReferrer, string, error) {
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
 		ID:        root.ID,
@@ -229,6 +337,13 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 		return nil, "", biz.NewErrUnauthorizedStr("referrer not allowed")
 	}
 
+	// When a project filter is active, an attestation root has already been filtered by the
+	// initial referrer lookup (the projectPred subquery), so it is guaranteed to belong to the
+	// requested project here. A material root passes that lookup unconditionally and is
+	// validated through its references below (or via the pagination-independent existence
+	// check after the references query).
+	projectFilterActive := projectPred != nil
+
 	// Next: We'll find the references recursively up to a max of maxTraverseLevels levels
 	if level >= maxTraverseLevels {
 		return res, "", nil
@@ -249,6 +364,16 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Attach the workflow predicate
 	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
+
+	// When scoping to a project, attestation references must belong to that project (optionally
+	// narrowed to a version). Non-attestation references (materials/subjects) are kept as-is:
+	// they inherit the project through the attestation that references them.
+	if projectFilterActive {
+		predicateReferrer = append(predicateReferrer, referrer.Or(
+			referrer.KindNEQ(biz.ReferrerAttestationType),
+			projectPred,
+		))
+	}
 
 	// Defense-in-depth: if the caller did not supply pagination options, fall back
 	// to the package-wide default instead of emitting an unbounded query. This
@@ -289,13 +414,34 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// Add the references to the result
 	for _, reference := range refs {
 		// Call recursively the function — pagination only applies to the first level
-		ref, _, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, public, nil, level+1)
+		ref, _, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, public, projectPred, nil, level+1)
 		if err != nil && !biz.IsErrUnauthorized(err) {
 			return nil, "", fmt.Errorf("failed to get referrer: %w", err)
 		}
 
 		if ref != nil {
 			res.References = append(res.References, ref)
+		}
+	}
+
+	// A non-attestation root (a material/subject) belongs to the requested project only if it
+	// is referenced by at least one attestation in that project (or in the specific version,
+	// if one was requested). When the current page yields no references we cannot conclude
+	// absence from the page alone (a later page can be empty simply because we paged past the
+	// results), so we run a pagination-independent existence check before rejecting the root.
+	if projectFilterActive && level == 0 && root.Kind != biz.ReferrerAttestationType && len(res.References) == 0 {
+		inProject, err := root.QueryReferences().
+			Where(
+				referrer.KindEQ(biz.ReferrerAttestationType),
+				projectPred,
+				referrer.HasWorkflowsWith(predicateWF...),
+			).
+			Exist(ctx)
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to validate project membership: %w", err)
+		}
+		if !inProject {
+			return nil, "", biz.NewErrUnauthorizedStr("referrer not part of the requested project")
 		}
 	}
 

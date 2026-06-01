@@ -102,6 +102,26 @@ paths:
           schema:
             format: int32
             type: integer
+        - description: >-
+            ProjectName optionally scopes the discovery to a project by name.
+            Can be set on its own
+
+            (project-wide filter) or together with project_version (project +
+            version filter).
+          in: query
+          name: project_name
+          schema:
+            type: string
+        - description: >-
+            ProjectVersion optionally scopes the discovery to a project version
+            (by name, e.g. v1.2.0).
+
+            Requires project_name, since a version name is unique only within a
+            project.
+          in: query
+          name: project_version
+          schema:
+            type: string
       responses:
         '200':
           content:

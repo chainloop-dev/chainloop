@@ -36,7 +36,9 @@ service ReferrerService {
     };
   }
   // DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+  // Deprecated: the public shared index is being retired.
   rpc DiscoverPublicShared(DiscoverPublicSharedRequest) returns (DiscoverPublicSharedResponse) {
+    option deprecated = true;
     option (google.api.http) = {get: "/discover/shared/{digest}"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       summary: "Discover public shared referrer"
@@ -60,6 +62,20 @@ message ReferrerServiceDiscoverPrivateRequest {
   string kind = 2;
   // Pagination options for the references list
   CursorPaginationRequest pagination = 3;
+  // ProjectName optionally scopes the discovery to a project by name. Can be set on its own
+  // (project-wide filter) or together with project_version (project + version filter).
+  string project_name = 4;
+  // ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).
+  // Requires project_name, since a version name is unique only within a project.
+  string project_version = 5;
+
+  // project_version requires project_name (a version name is unique only within a project);
+  // project_name on its own is allowed.
+  option (buf.validate.message).cel = {
+    id: "discover_project_version_requires_project_name"
+    expression: "!(this.project_version != '' && this.project_name == '')"
+    message: "project_name must be set when project_version is set"
+  };
 
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
@@ -70,7 +86,10 @@ message ReferrerServiceDiscoverPrivateRequest {
 }
 
 // DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method
+// Deprecated: the public shared index is being retired.
 message DiscoverPublicSharedRequest {
+  option deprecated = true;
+
   // Digest is the unique identifier of the referrer to discover
   string digest = 1 [(buf.validate.field).string = {min_len: 1}];
   // Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...

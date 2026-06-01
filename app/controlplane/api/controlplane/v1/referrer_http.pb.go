@@ -26,6 +26,7 @@ type ReferrerServiceHTTPServer interface {
 	// DiscoverPrivate DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
 	// DiscoverPublicShared DiscoverPublicShared returns the referrer item for a given digest in the public shared index
+	// Deprecated: the public shared index is being retired.
 	DiscoverPublicShared(context.Context, *DiscoverPublicSharedRequest) (*DiscoverPublicSharedResponse, error)
 }
 
