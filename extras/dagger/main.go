@@ -156,6 +156,10 @@ func (m *Chainloop) Init(
 	// mark the version as release
 	// +optional
 	release bool,
+	// Explicitly mark the project version as latest (use =false to skip promotion).
+	// When unset, the server decides automatically (defaults to latest for new versions).
+	// +optional
+	markLatest *bool,
 	// Github event file for PR detection (when running in Github Actions)
 	// +optional
 	githubEventFile *dagger.File,
@@ -281,6 +285,10 @@ func (m *Chainloop) Init(
 		args = append(args,
 			"--release",
 		)
+	}
+
+	if markLatest != nil {
+		args = append(args, fmt.Sprintf("--mark-latest=%t", *markLatest))
 	}
 
 	info, err := att.
