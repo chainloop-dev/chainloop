@@ -19,9 +19,12 @@ import (
 	"context"
 	"fmt"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
@@ -74,38 +77,104 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 	return r.findByID(ctx, mapping.ID)
 }
 
-func (r *CASMappingRepo) FindByDigest(ctx context.Context, digest string) ([]*biz.CASMapping, error) {
-	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.FindByDigest")
+// FindByDigestInOrgs returns a single CAS mapping for the digest that is reachable through one of
+// the given organizations, honouring project-level RBAC when projectIDs is provided for an org. The
+// mapping stored in the default backend is preferred; ties break on the oldest mapping for a stable
+// result. It returns (nil, nil) when no accessible mapping exists.
+//
+// The selection is performed entirely in the database with a LIMIT 1, so the cost is independent of
+// how many mappings a digest accumulates (e.g. the same artifact pushed across thousands of runs).
+func (r *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (*biz.CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.FindByDigestInOrgs")
 	defer span.End()
 
-	mappings, err := r.data.DB.CASMapping.Query().
-		Where(casmapping.Digest(digest)).
+	if len(orgs) == 0 {
+		return nil, nil
+	}
+
+	// Build an OR of per-org predicates. When an org has RBAC enabled (its key is present in
+	// projectIDs) the mapping's project must be one of the visible projects; otherwise the whole org
+	// is accessible.
+	orgPreds := make([]predicate.CASMapping, 0, len(orgs))
+	for _, o := range orgs {
+		if visibleProjects, ok := projectIDs[o]; ok {
+			orgPreds = append(orgPreds, casmapping.And(
+				casmapping.OrganizationID(o),
+				casmapping.ProjectIDIn(visibleProjects...),
+			))
+		} else {
+			orgPreds = append(orgPreds, casmapping.OrganizationID(o))
+		}
+	}
+
+	m, err := r.findOnePreferringDefault(ctx, casmapping.Digest(digest), casmapping.Or(orgPreds...))
+	if err != nil || m == nil {
+		return nil, err
+	}
+
+	// Access is granted through org membership, independent of the workflow's public visibility.
+	return entCASMappingToBiz(m, false)
+}
+
+// FindPublicByDigest returns a single CAS mapping for the digest that was produced by a public
+// workflow, preferring the default backend. It returns (nil, nil) when no public mapping exists.
+//
+// A public mapping can live in any organization, so visibility is matched on the mapping's workflow
+// rather than on org membership. As there is no ent edge from a mapping to its workflow run, the
+// match is expressed as a subquery on workflow_run_id. The selection is bounded with a LIMIT 1.
+func (r *CASMappingRepo) FindPublicByDigest(ctx context.Context, digest string) (*biz.CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.FindPublicByDigest")
+	defer span.End()
+
+	publicWorkflowRun := func(s *sql.Selector) {
+		wr := sql.Table(workflowrun.Table)
+		wf := sql.Table(workflow.Table)
+		s.Where(sql.In(
+			s.C(casmapping.FieldWorkflowRunID),
+			sql.Select(wr.C(workflowrun.FieldID)).
+				From(wr).
+				Join(wf).On(wr.C(workflowrun.FieldWorkflowID), wf.C(workflow.FieldID)).
+				// The workflow must be public and not (soft) deleted.
+				Where(sql.And(
+					sql.EQ(wf.C(workflow.FieldPublic), true),
+					sql.IsNull(wf.C(workflow.FieldDeletedAt)),
+				)),
+		))
+	}
+
+	m, err := r.findOnePreferringDefault(ctx, casmapping.Digest(digest), publicWorkflowRun)
+	if err != nil || m == nil {
+		return nil, err
+	}
+
+	return entCASMappingToBiz(m, true)
+}
+
+// findOnePreferringDefault returns the first CAS mapping matching the given predicates, preferring
+// the one stored in the default backend and breaking ties on the oldest mapping. It returns
+// (nil, nil) when nothing matches.
+func (r *CASMappingRepo) findOnePreferringDefault(ctx context.Context, preds ...predicate.CASMapping) (*ent.CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.findOnePreferringDefault")
+	defer span.End()
+
+	m, err := r.data.DB.CASMapping.Query().
+		Where(preds...).
+		// Never return a mapping whose backend has been (soft) deleted; it cannot serve downloads.
+		Where(casmapping.HasCasBackendWith(casbackend.DeletedAtIsNil())).
+		Order(
+			casmapping.ByCasBackendField(casbackend.FieldDefault, sql.OrderDesc()),
+			casmapping.ByCreatedAt(sql.OrderAsc()),
+		).
 		WithCasBackend().
-		WithOrganization().
-		All(ctx)
+		First(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to find cas mapping: %w", err)
 	}
 
-	res := make([]*biz.CASMapping, 0, len(mappings))
-	for _, m := range mappings {
-		public, err := r.IsPublic(ctx, r.data.DB, m.WorkflowRunID)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				continue
-			}
-
-			return nil, fmt.Errorf("failed to check if workflow is public: %w", err)
-		}
-		r, err := entCASMappingToBiz(m, public)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert cas mapping: %w", err)
-		}
-
-		res = append(res, r)
-	}
-
-	return res, nil
+	return m, nil
 }
 
 // FindByID finds a CAS Mapping by ID
