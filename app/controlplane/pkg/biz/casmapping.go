@@ -18,7 +18,6 @@ package biz
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -50,8 +49,12 @@ type CASMappingFindOptions struct {
 type CASMappingRepo interface {
 	// Create a mapping with an optional workflow run id
 	Create(ctx context.Context, digest string, casBackendID uuid.UUID, opts *CASMappingCreateOpts) (*CASMapping, error)
-	// List all the CAS mappings for the given digest
-	FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error)
+	// FindByDigestInOrgs returns a single accessible mapping for the digest within the given orgs
+	// (honouring project RBAC), preferring the default backend. Returns (nil, nil) when none exists.
+	FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (*CASMapping, error)
+	// FindPublicByDigest returns a single public mapping for the digest, preferring the default
+	// backend. Returns (nil, nil) when no public mapping exists.
+	FindPublicByDigest(ctx context.Context, digest string) (*CASMapping, error)
 }
 
 type CASMappingUseCase struct {
@@ -85,13 +88,6 @@ func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBacke
 	}
 
 	return uc.repo.Create(ctx, digest, casBackendUUID, opts)
-}
-
-func (uc *CASMappingUseCase) FindByDigest(ctx context.Context, digest string) ([]*CASMapping, error) {
-	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.FindByDigest")
-	defer span.End()
-
-	return uc.repo.FindByDigest(ctx, digest)
 }
 
 // FindCASMappingForDownloadByUser returns the CASMapping appropriate for the given digest and user.
@@ -146,84 +142,27 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context,
 		return nil, NewErrValidationStr("no organizations provided")
 	}
 
-	// 1 - All CAS mappings for the given digest
-	mappings, err := uc.repo.FindByDigest(ctx, digest)
+	// 1 - A mapping reachable through one of the user's orgs (honouring project RBAC), selected and
+	// bounded in the database. This is the common path and stays cheap regardless of how many
+	// mappings a digest has accumulated.
+	mapping, err := uc.repo.FindByDigestInOrgs(ctx, digest, orgs, projectIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list cas mappings: %w", err)
+		return nil, fmt.Errorf("failed to find cas mapping in orgs: %w", err)
+	} else if mapping != nil {
+		return mapping, nil
 	}
 
-	uc.logger.Debugw("msg", fmt.Sprintf("found %d entries globally", len(mappings)), "digest", digest, "orgs", orgs)
-	if len(mappings) == 0 {
-		return nil, NewErrNotFound("digest not found in any mapping")
-	}
-
-	// 2 - CAS mappings associated with the given list of orgs and project IDs
-	orgMappings, err := filterByOrgs(mappings, orgs, projectIDs)
+	// 2 - Otherwise, fall back to a public mapping. This only runs when the requester has no
+	// org-level access to the digest.
+	mapping, err = uc.repo.FindPublicByDigest(ctx, digest)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load mappings associated to an user: %w", err)
-	} else if len(orgMappings) > 0 {
-		return defaultOrFirst(orgMappings), nil
-	}
-
-	// 3 - mappings that are public
-	publicMappings := filterByPublic(mappings)
-	// The user has not access to neither proprietary nor public mappings
-	if len(publicMappings) == 0 {
+		return nil, fmt.Errorf("failed to find public cas mapping: %w", err)
+	} else if mapping == nil {
 		uc.logger.Warnw("msg", "digest exist but user does not have access to it", "digest", digest, "orgs", orgs)
 		return nil, NewErrNotFound("digest not found in any mapping")
 	}
 
-	// Pick the appropriate mapping from multiple ones
-	return defaultOrFirst(publicMappings), nil
-}
-
-// Extract only the mappings associated with a list of orgs and optionally a list of projects
-func filterByOrgs(mappings []*CASMapping, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) ([]*CASMapping, error) {
-	result := make([]*CASMapping, 0)
-
-	for _, mapping := range mappings {
-		for _, o := range orgs {
-			if mapping.OrgID == o {
-				if visibleProjects, ok := projectIDs[mapping.OrgID]; ok {
-					if slices.Contains(visibleProjects, mapping.ProjectID) {
-						result = append(result, mapping)
-					}
-				} else {
-					result = append(result, mapping)
-				}
-			}
-		}
-	}
-
-	return result, nil
-}
-
-func filterByPublic(mappings []*CASMapping) []*CASMapping {
-	result := make([]*CASMapping, 0)
-
-	for _, mapping := range mappings {
-		if mapping.Public {
-			result = append(result, mapping)
-		}
-	}
-
-	return result
-}
-
-func defaultOrFirst(mappings []*CASMapping) *CASMapping {
-	if len(mappings) == 0 {
-		return nil
-	}
-
-	result := mappings[0]
-	for _, mapping := range mappings {
-		if mapping.CASBackend.Default {
-			result = mapping
-			break
-		}
-	}
-
-	return result
+	return mapping, nil
 }
 
 type CASMappingLookupRef struct {

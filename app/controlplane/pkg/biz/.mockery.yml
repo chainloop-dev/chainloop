@@ -16,5 +16,6 @@ packages:
     interfaces:
       APITokenRepo:
       CASBackendRepo:
+      CASMappingRepo:
       OrganizationRepo:
       WorkflowRunRepo:

@@ -158,89 +158,131 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadByOrg() {
 	})
 }
 
-func (s *casMappingIntegrationSuite) TestFindByDigest() {
-	// 1. Digest: validDigest, CASBackend: casBackend1, WorkflowRunID: workflowRun
-	// 2. Digest: validDigest2, CASBackend: casBackend1, WorkflowRunID: workflowRun
-	// 3. Digest: validDigest, CASBackend: casBackend2, WorkflowRunID: workflowRun
-	// 4. Digest: validDigest, CASBackend: casBackend3, WorkflowRunID: publicWorkflowRun
-	_, err := s.CASMapping.Create(context.TODO(), validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
+// When a digest is reachable through several CAS backends, the download lookup must return the
+// mapping stored in the default backend, regardless of the order the mappings were created in.
+// This locks in the defaultOrFirst behaviour for both the org-scoped and the public fallback paths.
+func (s *casMappingIntegrationSuite) TestCASMappingForDownloadPrefersDefaultBackend() {
+	ctx := context.Background()
+
+	// org1 already has casBackend1 as its default backend. Add a second, non-default backend.
+	nonDefaultBackend, err := s.CASBackend.Create(ctx, s.org1.ID, randomName(), "my-location", "non-default backend", backendType, nil, false, false, nil)
 	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest2, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
-	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend2.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
-	require.NoError(s.T(), err)
-	_, err = s.CASMapping.Create(context.TODO(), validDigest, s.casBackend3.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
+	s.Require().False(nonDefaultBackend.Default)
+
+	s.Run("org download returns the default backend even when it is mapped last", func() {
+		// Map the digest to the non-default backend FIRST, then to the default one.
+		_, err := s.CASMapping.Create(ctx, validDigest, nonDefaultBackend.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
+		require.NoError(s.T(), err)
+		_, err = s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
+		require.NoError(s.T(), err)
+
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{uuid.MustParse(s.org1.ID)}, nil)
+		s.NoError(err)
+		s.Require().NotNil(mapping)
+		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("org download returns the non-default backend when no default mapping exists", func() {
+		_, err := s.CASMapping.Create(ctx, validDigest2, nonDefaultBackend.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
+		require.NoError(s.T(), err)
+
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest2, []uuid.UUID{uuid.MustParse(s.org1.ID)}, nil)
+		s.NoError(err)
+		s.Require().NotNil(mapping)
+		s.Equal(nonDefaultBackend.ID, mapping.CASBackend.ID)
+	})
+
+	s.Run("public download returns the default backend even when it is mapped last", func() {
+		// Public mappings (workflow is public) across two backends, non-default created first.
+		_, err := s.CASMapping.Create(ctx, validDigestPublic, nonDefaultBackend.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
+		require.NoError(s.T(), err)
+		_, err = s.CASMapping.Create(ctx, validDigestPublic, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
+		require.NoError(s.T(), err)
+
+		// A requester with no access to org1 falls back to the public mappings.
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestPublic, []uuid.UUID{uuid.New()}, nil)
+		s.NoError(err)
+		s.Require().NotNil(mapping)
+		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
+	})
+}
+
+// When RBAC is enabled for an org (projectIDs carries an entry for it), only mappings whose project
+// is in the visible set are reachable through that org.
+func (s *casMappingIntegrationSuite) TestCASMappingForDownloadRBAC() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org1.ID)
+
+	// A mapping in org1 scoped to a specific project.
+	_, err := s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{
+		WorkflowRunID: &s.workflowRun.ID,
+		ProjectID:     &s.projectID,
+	})
 	require.NoError(s.T(), err)
 
-	testcases := []struct {
-		name    string
-		digest  string
-		want    []*biz.CASMapping
-		wantErr bool
-	}{
-		{
-			name:   "validDigest",
-			digest: validDigest,
-			want: []*biz.CASMapping{
-				{
-					Digest:        validDigest,
-					CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
-					WorkflowRunID: s.workflowRun.ID,
-					OrgID:         s.casBackend1.OrganizationID,
-					Public:        false,
-				},
-				{
-					Digest:        validDigest,
-					CASBackend:    &biz.CASBackend{ID: s.casBackend2.ID},
-					WorkflowRunID: s.workflowRun.ID,
-					OrgID:         s.casBackend2.OrganizationID,
-					Public:        false,
-				},
-				{
-					Digest:        validDigest,
-					CASBackend:    &biz.CASBackend{ID: s.casBackend3.ID},
-					WorkflowRunID: s.publicWorkflowRun.ID,
-					OrgID:         s.casBackend3.OrganizationID,
-					Public:        true,
-				},
-			},
-		},
-		{
-			name:   "validDigest2",
-			digest: validDigest2,
-			want: []*biz.CASMapping{
-				{
-					Digest:        validDigest2,
-					CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
-					WorkflowRunID: s.workflowRun.ID,
-					OrgID:         s.casBackend1.OrganizationID,
-					Public:        false,
-				},
-			},
-		},
-		{
-			name:   "invalidDigest",
-			digest: invalidDigest,
-			want:   []*biz.CASMapping{},
-		},
-	}
+	s.Run("returned when the project is visible", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{orgUUID},
+			map[uuid.UUID][]uuid.UUID{orgUUID: {s.projectID}})
+		s.NoError(err)
+		s.Require().NotNil(mapping)
+		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
+	})
 
-	for _, tc := range testcases {
-		s.Run(tc.name, func() {
-			got, err := s.CASMapping.FindByDigest(context.Background(), tc.digest)
-			if tc.wantErr {
-				s.Error(err)
-			} else {
-				s.NoError(err)
-				if diff := cmp.Diff(tc.want, got,
-					cmpopts.IgnoreFields(biz.CASMapping{}, "CreatedAt", "ID"),
-					cmpopts.IgnoreTypes(biz.CASBackend{}),
-				); diff != "" {
-					assert.Failf(s.T(), "mismatch (-want +got):\n%s", diff)
-				}
-			}
-		})
-	}
+	s.Run("not returned when the project is not visible", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{orgUUID},
+			map[uuid.UUID][]uuid.UUID{orgUUID: {uuid.New()}})
+		s.Error(err)
+		s.Nil(mapping)
+	})
+
+	s.Run("not returned when RBAC is enabled with no visible projects", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{orgUUID},
+			map[uuid.UUID][]uuid.UUID{orgUUID: {}})
+		s.Error(err)
+		s.Nil(mapping)
+	})
+}
+
+// Mappings pointing to a soft-deleted backend, or produced by a soft-deleted workflow, must not be
+// served for download.
+func (s *casMappingIntegrationSuite) TestCASMappingForDownloadSkipsSoftDeleted() {
+	ctx := context.Background()
+
+	s.Run("org download skips a mapping whose backend is soft-deleted", func() {
+		backend, err := s.CASBackend.Create(ctx, s.org1.ID, randomName(), "my-location", "to be deleted", backendType, nil, false, false, nil)
+		require.NoError(s.T(), err)
+		_, err = s.CASMapping.Create(ctx, validDigest3, backend.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.workflowRun.ID})
+		require.NoError(s.T(), err)
+
+		// Reachable before the backend is deleted.
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest3, []uuid.UUID{uuid.MustParse(s.org1.ID)}, nil)
+		s.NoError(err)
+		s.Require().NotNil(mapping)
+
+		require.NoError(s.T(), s.CASBackend.SoftDelete(ctx, s.org1.ID, backend.ID.String()))
+
+		// The only mapping points to a deleted backend, so it is no longer served.
+		mapping, err = s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest3, []uuid.UUID{uuid.MustParse(s.org1.ID)}, nil)
+		s.Error(err)
+		s.Nil(mapping)
+	})
+
+	s.Run("public download skips a mapping whose workflow is soft-deleted", func() {
+		_, err := s.CASMapping.Create(ctx, validDigest2, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
+		require.NoError(s.T(), err)
+
+		// A non-member can reach it through the public fallback while the workflow is public.
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest2, []uuid.UUID{uuid.New()}, nil)
+		s.NoError(err)
+		s.Require().NotNil(mapping)
+
+		require.NoError(s.T(), s.Workflow.Delete(ctx, s.org1.ID, s.publicWorkflow.ID.String()))
+
+		// Once the workflow is soft-deleted the mapping is no longer public.
+		mapping, err = s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest2, []uuid.UUID{uuid.New()}, nil)
+		s.Error(err)
+		s.Nil(mapping)
+	})
 }
 
 func (s *casMappingIntegrationSuite) TestCreate() {
@@ -342,6 +384,8 @@ type casMappingIntegrationSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	casBackend1, casBackend2, casBackend3 *biz.CASBackend
 	workflowRun, publicWorkflowRun        *biz.WorkflowRun
+	publicWorkflow                        *biz.Workflow
+	projectID                             uuid.UUID
 	userOrg1And2, userOrg2                *biz.User
 	org1, org2, orgNoUsers                *biz.Organization
 }
@@ -379,8 +423,11 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	workflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org1.ID, Project: "test-project"})
 	assert.NoError(err)
 
+	s.projectID = workflow.ProjectID
+
 	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow-public", OrgID: s.org1.ID, Public: true, Project: "test-project"})
 	assert.NoError(err)
+	s.publicWorkflow = publicWorkflow
 
 	// Find contract revision
 	contractVersion, err := s.WorkflowContract.Describe(ctx, s.org1.ID, workflow.ContractID.String(), 0)
