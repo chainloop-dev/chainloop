@@ -29,14 +29,15 @@ type MembershipList struct {
 }
 
 type OrgItem struct {
-	ID                              string     `json:"id"`
-	Name                            string     `json:"name"`
-	CreatedAt                       *time.Time `json:"createdAt"`
-	PolicyViolationBlockingStrategy string     `json:"policyViolationBlockingStrategy"`
-	PolicyAllowedHostnames          []string   `json:"policyAllowedHostnames,omitempty"`
-	PreventImplicitWorkflowCreation bool       `json:"preventImplicitWorkflowCreation"`
-	APITokenMaxDaysInactive         *string    `json:"apiTokenMaxDaysInactive,omitempty"`
-	EnableAIAgentCollector          bool       `json:"enableAiAgentCollector"`
+	ID                                  string     `json:"id"`
+	Name                                string     `json:"name"`
+	CreatedAt                           *time.Time `json:"createdAt"`
+	PolicyViolationBlockingStrategy     string     `json:"policyViolationBlockingStrategy"`
+	PolicyAllowedHostnames              []string   `json:"policyAllowedHostnames,omitempty"`
+	PreventImplicitWorkflowCreation     bool       `json:"preventImplicitWorkflowCreation"`
+	APITokenMaxDaysInactive             *string    `json:"apiTokenMaxDaysInactive,omitempty"`
+	EnableAIAgentCollector              bool       `json:"enableAiAgentCollector"`
+	BlockAttestationsOnReleasedVersions bool       `json:"blockAttestationsOnReleasedVersions"`
 }
 
 type MembershipItem struct {
@@ -134,12 +135,13 @@ func (action *MembershipList) ListMembers(ctx context.Context, page int, pageSiz
 
 func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 	i := &OrgItem{
-		ID:                              in.Id,
-		Name:                            in.Name,
-		CreatedAt:                       toTimePtr(in.CreatedAt.AsTime()),
-		PolicyAllowedHostnames:          in.PolicyAllowedHostnames,
-		PreventImplicitWorkflowCreation: in.PreventImplicitWorkflowCreation,
-		EnableAIAgentCollector:          in.EnableAiAgentCollector,
+		ID:                                  in.Id,
+		Name:                                in.Name,
+		CreatedAt:                           toTimePtr(in.CreatedAt.AsTime()),
+		PolicyAllowedHostnames:              in.PolicyAllowedHostnames,
+		PreventImplicitWorkflowCreation:     in.PreventImplicitWorkflowCreation,
+		EnableAIAgentCollector:              in.EnableAiAgentCollector,
+		BlockAttestationsOnReleasedVersions: in.BlockAttestationsOnReleasedVersions,
 	}
 
 	if in.DefaultPolicyViolationStrategy == pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK {

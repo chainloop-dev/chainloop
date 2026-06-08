@@ -116,6 +116,7 @@ type WorkflowRunRepo interface {
 type WorkflowRunUseCase struct {
 	wfRunRepo WorkflowRunRepo
 	wfRepo    WorkflowRepo
+	orgRepo   OrganizationRepo
 	logger    *log.Helper
 	auditorUC *AuditorUseCase
 
@@ -128,6 +129,7 @@ type WorkflowRunUseCase struct {
 type WorkflowRunUseCaseOpts struct {
 	WfrRepo      WorkflowRunRepo
 	WfRepo       WorkflowRepo
+	OrgRepo      OrganizationRepo
 	SigningUC    *SigningUseCase
 	AuditorUC    *AuditorUseCase
 	Logger       log.Logger
@@ -145,6 +147,7 @@ func NewWorkflowRunUseCase(opts *WorkflowRunUseCaseOpts) (*WorkflowRunUseCase, e
 	return &WorkflowRunUseCase{
 		wfRunRepo:      opts.WfrRepo,
 		wfRepo:         opts.WfRepo,
+		orgRepo:        opts.OrgRepo,
 		auditorUC:      opts.AuditorUC,
 		signingUseCase: opts.SigningUC,
 		logger:         log.NewHelper(logger),
@@ -235,6 +238,9 @@ type WorkflowRunCreateOpts struct {
 	UseLatestVersion       bool
 	RequireExistingVersion bool
 	MarkAsLatest           *bool
+	// BlockReleasedVersions rejects creating a run against an already-released
+	// (prerelease == false) project version. Set from the org-level setting.
+	BlockReleasedVersions bool
 }
 
 type WorkflowRunRepoCreateOpts struct {
@@ -246,6 +252,9 @@ type WorkflowRunRepoCreateOpts struct {
 	UseLatestVersion             bool
 	RequireExistingVersion       bool
 	MarkAsLatest                 *bool
+	// BlockReleasedVersions rejects creating a run against an already-released
+	// (prerelease == false) project version.
+	BlockReleasedVersions bool
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -303,6 +312,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			UseLatestVersion:       opts.UseLatestVersion,
 			RequireExistingVersion: opts.RequireExistingVersion,
 			MarkAsLatest:           opts.MarkAsLatest,
+			BlockReleasedVersions:  opts.BlockReleasedVersions,
 		})
 	if err != nil {
 		return nil, err
@@ -371,6 +381,34 @@ func WithSkipBundlePersistence() SaveAttestationOption {
 	}
 }
 
+// enforceReleasedVersionImmutability rejects pushing an attestation to a
+// project version that is already released (prerelease == false) when the
+// owning organization has enabled BlockAttestationsOnReleasedVersions. It is a
+// no-op when the setting is disabled or the run lacks the required context.
+func (uc *WorkflowRunUseCase) enforceReleasedVersionImmutability(ctx context.Context, run *WorkflowRun) error {
+	if run.Workflow == nil || run.ProjectVersion == nil {
+		return nil
+	}
+
+	// A prerelease version is still mutable, no need to look up the org setting.
+	if run.ProjectVersion.Prerelease {
+		return nil
+	}
+
+	org, err := uc.orgRepo.FindByID(ctx, run.Workflow.OrgID)
+	if err != nil {
+		return fmt.Errorf("finding organization: %w", err)
+	} else if org == nil {
+		return NewErrNotFound("organization")
+	}
+
+	if org.BlockAttestationsOnReleasedVersions {
+		return NewErrReleasedVersionImmutable(run.ProjectVersion.Version)
+	}
+
+	return nil
+}
+
 func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte, opts ...SaveAttestationOption) (*v1.Hash, error) {
 	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.SaveAttestation")
 	defer span.End()
@@ -383,6 +421,19 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 	runID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
+	}
+
+	// Resolve the run so we can enforce the released-version immutability guard
+	// before doing any expensive work or persistence.
+	run, err := uc.wfRunRepo.FindByID(ctx, runID)
+	if err != nil {
+		return nil, fmt.Errorf("finding workflow run: %w", err)
+	} else if run == nil {
+		return nil, NewErrNotFound("workflow run")
+	}
+
+	if err := uc.enforceReleasedVersionImmutability(ctx, run); err != nil {
+		return nil, err
 	}
 
 	// calculate the content digest

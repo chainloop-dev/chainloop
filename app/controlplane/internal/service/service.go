@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -419,6 +419,8 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 		return status.Error(codes.Unimplemented, err.Error())
 	case biz.IsErrAlreadyExists(err):
 		return status.Error(codes.AlreadyExists, err.Error())
+	case biz.IsErrReleasedVersionImmutable(err):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		return servicelogger.LogAndMaskErr(err, l)
 	}

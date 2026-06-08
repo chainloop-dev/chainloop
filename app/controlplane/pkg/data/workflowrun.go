@@ -91,14 +91,17 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	versionCreated := false
 	// Create version and workflow in a transaction
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-		if version == nil {
+		markAsLatest := opts.MarkAsLatest != nil && *opts.MarkAsLatest
+		switch {
+		case version == nil:
 			version, err = createProjectVersionWithTx(ctx, tx, wf.ProjectID, opts.ProjectVersion, true, opts.MarkAsLatest)
 			if err != nil {
 				return fmt.Errorf("creating version: %w", err)
 			}
 			versionCreated = true
-		} else if opts.MarkAsLatest != nil && *opts.MarkAsLatest {
-			// Re-read version inside the transaction with a row lock to avoid promoting a concurrently released version
+		case opts.BlockReleasedVersions || markAsLatest:
+			// Re-read the version inside the transaction with a row lock so a
+			// concurrent release can't slip past these checks.
 			fresh, err := tx.ProjectVersion.Query().ForUpdate().
 				Where(projectversion.ID(version.ID), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).
 				Only(ctx)
@@ -106,15 +109,22 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 				if ent.IsNotFound(err) {
 					return biz.NewErrNotFound("Version")
 				}
-				return fmt.Errorf("loading version for promotion: %w", err)
+				return fmt.Errorf("loading version: %w", err)
 			}
 
-			if !fresh.Prerelease {
-				return biz.NewErrValidationStr("cannot promote a released version to latest")
+			// Reject new attestations against an already-released (immutable) version.
+			if opts.BlockReleasedVersions && !fresh.Prerelease {
+				return biz.NewErrReleasedVersionImmutable(fresh.Version)
 			}
 
-			if err := promoteVersionToLatestWithTx(ctx, tx, wf.ProjectID, fresh.ID); err != nil {
-				return fmt.Errorf("promoting version to latest: %w", err)
+			if markAsLatest {
+				if !fresh.Prerelease {
+					return biz.NewErrValidationStr("cannot promote a released version to latest")
+				}
+
+				if err := promoteVersionToLatestWithTx(ctx, tx, wf.ProjectID, fresh.ID); err != nil {
+					return fmt.Errorf("promoting version to latest: %w", err)
+				}
 			}
 		}
 

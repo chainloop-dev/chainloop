@@ -103,6 +103,7 @@ func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, updateOpts 
 		SetNillablePreventImplicitWorkflowCreation(updateOpts.PreventImplicitWorkflowCreation).
 		SetNillableRestrictContractCreationToOrgAdmins(updateOpts.RestrictContractCreationToOrgAdmins).
 		SetNillableEnableAiAgentCollector(updateOpts.EnableAIAgentCollector).
+		SetNillableBlockAttestationsOnReleasedVersions(updateOpts.BlockAttestationsOnReleasedVersions).
 		SetUpdatedAt(time.Now())
 
 	if updateOpts.PoliciesAllowedHostnames != nil {
@@ -182,6 +183,7 @@ func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 		RestrictContractCreationToOrgAdmins: eu.RestrictContractCreationToOrgAdmins,
 		APITokenInactivityThresholdDays:     eu.APITokenInactivityThresholdDays,
 		EnableAIAgentCollector:              eu.EnableAiAgentCollector,
+		BlockAttestationsOnReleasedVersions: eu.BlockAttestationsOnReleasedVersions,
 		Suspended:                           eu.Suspended,
 	}
 }

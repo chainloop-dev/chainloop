@@ -51,6 +51,8 @@ type Organization struct {
 	APITokenInactivityThresholdDays *int
 	// EnableAIAgentCollector enables automatic AI agent config collection during attestation init
 	EnableAIAgentCollector bool
+	// BlockAttestationsOnReleasedVersions rejects new attestations pushed to project versions that are already released (prerelease == false)
+	BlockAttestationsOnReleasedVersions bool
 	// Suspended indicates whether the organization is suspended
 	Suspended bool
 }
@@ -65,6 +67,7 @@ type OrganizationUpdateOpts struct {
 	RestrictContractCreationToOrgAdmins *bool
 	APITokenInactivityThresholdDays     *int
 	EnableAIAgentCollector              *bool
+	BlockAttestationsOnReleasedVersions *bool
 }
 
 type OrganizationRepo interface {

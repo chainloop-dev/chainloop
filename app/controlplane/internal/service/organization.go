@@ -109,6 +109,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		RestrictContractCreationToOrgAdmins: req.RestrictContractCreationToOrgAdmins,
 		APITokenInactivityThresholdDays:     apiTokenMaxDaysInactive,
 		EnableAIAgentCollector:              req.EnableAiAgentCollector,
+		BlockAttestationsOnReleasedVersions: req.BlockAttestationsOnReleasedVersions,
 	})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)

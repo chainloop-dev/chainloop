@@ -9,6 +9,10 @@
       "minimum": -2147483648,
       "type": "integer"
     },
+    "^(blockAttestationsOnReleasedVersions)$": {
+      "description": "Whether new attestations are rejected on project versions that are already released (prerelease == false)",
+      "type": "boolean"
+    },
     "^(createdAt)$": {
       "$ref": "google.protobuf.Timestamp.schema.json"
     },
@@ -58,6 +62,10 @@
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
+    },
+    "block_attestations_on_released_versions": {
+      "description": "Whether new attestations are rejected on project versions that are already released (prerelease == false)",
+      "type": "boolean"
     },
     "created_at": {
       "$ref": "google.protobuf.Timestamp.schema.json"

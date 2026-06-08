@@ -157,6 +157,20 @@ func (_c *OrganizationCreate) SetNillableEnableAiAgentCollector(v *bool) *Organi
 	return _c
 }
 
+// SetBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field.
+func (_c *OrganizationCreate) SetBlockAttestationsOnReleasedVersions(v bool) *OrganizationCreate {
+	_c.mutation.SetBlockAttestationsOnReleasedVersions(v)
+	return _c
+}
+
+// SetNillableBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field if the given value is not nil.
+func (_c *OrganizationCreate) SetNillableBlockAttestationsOnReleasedVersions(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetBlockAttestationsOnReleasedVersions(*v)
+	}
+	return _c
+}
+
 // SetSuspended sets the "suspended" field.
 func (_c *OrganizationCreate) SetSuspended(v bool) *OrganizationCreate {
 	_c.mutation.SetSuspended(v)
@@ -379,6 +393,10 @@ func (_c *OrganizationCreate) defaults() {
 		v := organization.DefaultEnableAiAgentCollector
 		_c.mutation.SetEnableAiAgentCollector(v)
 	}
+	if _, ok := _c.mutation.BlockAttestationsOnReleasedVersions(); !ok {
+		v := organization.DefaultBlockAttestationsOnReleasedVersions
+		_c.mutation.SetBlockAttestationsOnReleasedVersions(v)
+	}
 	if _, ok := _c.mutation.Suspended(); !ok {
 		v := organization.DefaultSuspended
 		_c.mutation.SetSuspended(v)
@@ -411,6 +429,9 @@ func (_c *OrganizationCreate) check() error {
 	}
 	if _, ok := _c.mutation.EnableAiAgentCollector(); !ok {
 		return &ValidationError{Name: "enable_ai_agent_collector", err: errors.New(`ent: missing required field "Organization.enable_ai_agent_collector"`)}
+	}
+	if _, ok := _c.mutation.BlockAttestationsOnReleasedVersions(); !ok {
+		return &ValidationError{Name: "block_attestations_on_released_versions", err: errors.New(`ent: missing required field "Organization.block_attestations_on_released_versions"`)}
 	}
 	if _, ok := _c.mutation.Suspended(); !ok {
 		return &ValidationError{Name: "suspended", err: errors.New(`ent: missing required field "Organization.suspended"`)}
@@ -490,6 +511,10 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.EnableAiAgentCollector(); ok {
 		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
 		_node.EnableAiAgentCollector = value
+	}
+	if value, ok := _c.mutation.BlockAttestationsOnReleasedVersions(); ok {
+		_spec.SetField(organization.FieldBlockAttestationsOnReleasedVersions, field.TypeBool, value)
+		_node.BlockAttestationsOnReleasedVersions = value
 	}
 	if value, ok := _c.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
@@ -823,6 +848,18 @@ func (u *OrganizationUpsert) UpdateEnableAiAgentCollector() *OrganizationUpsert 
 	return u
 }
 
+// SetBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field.
+func (u *OrganizationUpsert) SetBlockAttestationsOnReleasedVersions(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldBlockAttestationsOnReleasedVersions, v)
+	return u
+}
+
+// UpdateBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateBlockAttestationsOnReleasedVersions() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldBlockAttestationsOnReleasedVersions)
+	return u
+}
+
 // SetSuspended sets the "suspended" field.
 func (u *OrganizationUpsert) SetSuspended(v bool) *OrganizationUpsert {
 	u.Set(organization.FieldSuspended, v)
@@ -1037,6 +1074,20 @@ func (u *OrganizationUpsertOne) SetEnableAiAgentCollector(v bool) *OrganizationU
 func (u *OrganizationUpsertOne) UpdateEnableAiAgentCollector() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateEnableAiAgentCollector()
+	})
+}
+
+// SetBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field.
+func (u *OrganizationUpsertOne) SetBlockAttestationsOnReleasedVersions(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetBlockAttestationsOnReleasedVersions(v)
+	})
+}
+
+// UpdateBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateBlockAttestationsOnReleasedVersions() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateBlockAttestationsOnReleasedVersions()
 	})
 }
 
@@ -1423,6 +1474,20 @@ func (u *OrganizationUpsertBulk) SetEnableAiAgentCollector(v bool) *Organization
 func (u *OrganizationUpsertBulk) UpdateEnableAiAgentCollector() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateEnableAiAgentCollector()
+	})
+}
+
+// SetBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field.
+func (u *OrganizationUpsertBulk) SetBlockAttestationsOnReleasedVersions(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetBlockAttestationsOnReleasedVersions(v)
+	})
+}
+
+// UpdateBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateBlockAttestationsOnReleasedVersions() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateBlockAttestationsOnReleasedVersions()
 	})
 }
 

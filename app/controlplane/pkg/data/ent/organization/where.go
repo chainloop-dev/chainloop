@@ -101,6 +101,11 @@ func EnableAiAgentCollector(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldEnableAiAgentCollector, v))
 }
 
+// BlockAttestationsOnReleasedVersions applies equality check predicate on the "block_attestations_on_released_versions" field. It's identical to BlockAttestationsOnReleasedVersionsEQ.
+func BlockAttestationsOnReleasedVersions(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldBlockAttestationsOnReleasedVersions, v))
+}
+
 // Suspended applies equality check predicate on the "suspended" field. It's identical to SuspendedEQ.
 func Suspended(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldSuspended, v))
@@ -399,6 +404,16 @@ func EnableAiAgentCollectorEQ(v bool) predicate.Organization {
 // EnableAiAgentCollectorNEQ applies the NEQ predicate on the "enable_ai_agent_collector" field.
 func EnableAiAgentCollectorNEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldNEQ(FieldEnableAiAgentCollector, v))
+}
+
+// BlockAttestationsOnReleasedVersionsEQ applies the EQ predicate on the "block_attestations_on_released_versions" field.
+func BlockAttestationsOnReleasedVersionsEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldBlockAttestationsOnReleasedVersions, v))
+}
+
+// BlockAttestationsOnReleasedVersionsNEQ applies the NEQ predicate on the "block_attestations_on_released_versions" field.
+func BlockAttestationsOnReleasedVersionsNEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldBlockAttestationsOnReleasedVersions, v))
 }
 
 // SuspendedEQ applies the EQ predicate on the "suspended" field.

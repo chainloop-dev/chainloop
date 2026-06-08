@@ -220,6 +220,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	workflowRunUseCaseOpts := &biz.WorkflowRunUseCaseOpts{
 		WfrRepo:      workflowRunRepo,
 		WfRepo:       workflowRepo,
+		OrgRepo:      organizationRepo,
 		SigningUC:    signingUseCase,
 		AuditorUC:    auditorUseCase,
 		Logger:       logger,

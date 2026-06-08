@@ -894,6 +894,8 @@ export interface OrgItem {
     | undefined;
   /** Whether AI agent config collection is automatically enabled during attestation init */
   enableAiAgentCollector: boolean;
+  /** Whether new attestations are rejected on project versions that are already released (prerelease == false) */
+  blockAttestationsOnReleasedVersions: boolean;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -4403,6 +4405,7 @@ function createBaseOrgItem(): OrgItem {
     restrictContractCreationToOrgAdmins: false,
     apiTokenMaxDaysInactive: undefined,
     enableAiAgentCollector: false,
+    blockAttestationsOnReleasedVersions: false,
   };
 }
 
@@ -4437,6 +4440,9 @@ export const OrgItem = {
     }
     if (message.enableAiAgentCollector === true) {
       writer.uint32(80).bool(message.enableAiAgentCollector);
+    }
+    if (message.blockAttestationsOnReleasedVersions === true) {
+      writer.uint32(88).bool(message.blockAttestationsOnReleasedVersions);
     }
     return writer;
   },
@@ -4518,6 +4524,13 @@ export const OrgItem = {
 
           message.enableAiAgentCollector = reader.bool();
           continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.blockAttestationsOnReleasedVersions = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4549,6 +4562,9 @@ export const OrgItem = {
         ? Number(object.apiTokenMaxDaysInactive)
         : undefined,
       enableAiAgentCollector: isSet(object.enableAiAgentCollector) ? Boolean(object.enableAiAgentCollector) : false,
+      blockAttestationsOnReleasedVersions: isSet(object.blockAttestationsOnReleasedVersions)
+        ? Boolean(object.blockAttestationsOnReleasedVersions)
+        : false,
     };
   },
 
@@ -4574,6 +4590,8 @@ export const OrgItem = {
     message.apiTokenMaxDaysInactive !== undefined &&
       (obj.apiTokenMaxDaysInactive = Math.round(message.apiTokenMaxDaysInactive));
     message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
+    message.blockAttestationsOnReleasedVersions !== undefined &&
+      (obj.blockAttestationsOnReleasedVersions = message.blockAttestationsOnReleasedVersions);
     return obj;
   },
 
@@ -4593,6 +4611,7 @@ export const OrgItem = {
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? false;
     message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? false;
+    message.blockAttestationsOnReleasedVersions = object.blockAttestationsOnReleasedVersions ?? false;
     return message;
   },
 };

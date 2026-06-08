@@ -452,8 +452,10 @@ type OrganizationServiceUpdateRequest struct {
 	ApiTokenMaxDaysInactive *int32 `protobuf:"varint,7,opt,name=api_token_max_days_inactive,json=apiTokenMaxDaysInactive,proto3,oneof" json:"api_token_max_days_inactive,omitempty"`
 	// Enable automatic AI agent config collection during attestation init
 	EnableAiAgentCollector *bool `protobuf:"varint,8,opt,name=enable_ai_agent_collector,json=enableAiAgentCollector,proto3,oneof" json:"enable_ai_agent_collector,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Reject new attestations pushed to project versions that are already released (prerelease == false)
+	BlockAttestationsOnReleasedVersions *bool `protobuf:"varint,9,opt,name=block_attestations_on_released_versions,json=blockAttestationsOnReleasedVersions,proto3,oneof" json:"block_attestations_on_released_versions,omitempty"`
+	unknownFields                       protoimpl.UnknownFields
+	sizeCache                           protoimpl.SizeCache
 }
 
 func (x *OrganizationServiceUpdateRequest) Reset() {
@@ -538,6 +540,13 @@ func (x *OrganizationServiceUpdateRequest) GetApiTokenMaxDaysInactive() int32 {
 func (x *OrganizationServiceUpdateRequest) GetEnableAiAgentCollector() bool {
 	if x != nil && x.EnableAiAgentCollector != nil {
 		return *x.EnableAiAgentCollector
+	}
+	return false
+}
+
+func (x *OrganizationServiceUpdateRequest) GetBlockAttestationsOnReleasedVersions() bool {
+	if x != nil && x.BlockAttestationsOnReleasedVersions != nil {
+		return *x.BlockAttestationsOnReleasedVersions
 	}
 	return false
 }
@@ -700,7 +709,7 @@ const file_controlplane_v1_organization_proto_rawDesc = "" +
 	" OrganizationServiceCreateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"U\n" +
 	"!OrganizationServiceCreateResponse\x120\n" +
-	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\xe9\x05\n" +
+	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\xf0\x06\n" +
 	" OrganizationServiceUpdateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12>\n" +
 	"\x19block_on_policy_violation\x18\x02 \x01(\bH\x00R\x16blockOnPolicyViolation\x88\x01\x01\x12<\n" +
@@ -709,12 +718,14 @@ const file_controlplane_v1_organization_proto_rawDesc = "" +
 	"\"prevent_implicit_workflow_creation\x18\x05 \x01(\bH\x01R\x1fpreventImplicitWorkflowCreation\x88\x01\x01\x12Z\n" +
 	"(restrict_contract_creation_to_org_admins\x18\x06 \x01(\bH\x02R#restrictContractCreationToOrgAdmins\x88\x01\x01\x12A\n" +
 	"\x1bapi_token_max_days_inactive\x18\a \x01(\x05H\x03R\x17apiTokenMaxDaysInactive\x88\x01\x01\x12>\n" +
-	"\x19enable_ai_agent_collector\x18\b \x01(\bH\x04R\x16enableAiAgentCollector\x88\x01\x01B\x1c\n" +
+	"\x19enable_ai_agent_collector\x18\b \x01(\bH\x04R\x16enableAiAgentCollector\x88\x01\x01\x12Y\n" +
+	"'block_attestations_on_released_versions\x18\t \x01(\bH\x05R#blockAttestationsOnReleasedVersions\x88\x01\x01B\x1c\n" +
 	"\x1a_block_on_policy_violationB%\n" +
 	"#_prevent_implicit_workflow_creationB+\n" +
 	")_restrict_contract_creation_to_org_adminsB\x1e\n" +
 	"\x1c_api_token_max_days_inactiveB\x1c\n" +
-	"\x1a_enable_ai_agent_collector\"U\n" +
+	"\x1a_enable_ai_agent_collectorB*\n" +
+	"(_block_attestations_on_released_versions\"U\n" +
 	"!OrganizationServiceUpdateResponse\x120\n" +
 	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"?\n" +
 	" OrganizationServiceDeleteRequest\x12\x1b\n" +
