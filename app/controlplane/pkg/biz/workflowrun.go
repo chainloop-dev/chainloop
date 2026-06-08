@@ -476,10 +476,10 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunList
 		return nil, "", NewErrInvalidUUID(err)
 	}
 
-	if f.WorkflowID != nil && f.VersionID != nil {
-		return nil, "", NewErrValidation(errors.New("cannot filter by workflow and version at the same time"))
-	}
-
+	// Workflow and version filters are independent dimensions and compose as an
+	// AND: a run carries both a workflow edge and a version_id column, so
+	// "runs of workflow X at version Y" is a well-formed query. The version is
+	// a globally-unique UUID, so it doesn't need a project to disambiguate it.
 	return uc.wfRunRepo.List(ctx, orgUUID, f, p)
 }
 

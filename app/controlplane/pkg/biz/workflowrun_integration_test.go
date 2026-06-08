@@ -85,9 +85,14 @@ func (s *workflowRunIntegrationTestSuite) TestList() {
 			want:    []*biz.WorkflowRun{finishedRun},
 		},
 		{
-			name:    "can not filter by workflow and version",
+			name:    "filter by workflow and version returns their intersection",
+			filters: &biz.RunListFilters{VersionID: &s.version1.ID, WorkflowID: &s.workflowOrg2.ID},
+			want:    []*biz.WorkflowRun{s.runOrg2},
+		},
+		{
+			name:    "filter by workflow and version with no overlap returns nothing",
 			filters: &biz.RunListFilters{VersionID: &s.version2.ID, WorkflowID: &s.workflowOrg2.ID},
-			wantErr: true,
+			want:    []*biz.WorkflowRun{},
 		},
 		{
 			name:    "filter by version no results",
