@@ -1,0 +1,31 @@
+# Dependabot configuration for version updates.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+
+updates:
+  # Go modules. The root go.mod is a single module covering the control plane,
+  # CLI, artifact CAS, and the shared pkg/ libraries.
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    # Wait 7 days after a version is published before proposing it. This limits
+    # exposure to freshly released (and potentially compromised) versions.
+    cooldown:
+      default-days: 7
+    # Bundle minor and patch bumps into a single PR to cut noise; majors stay
+    # as individual PRs so they get reviewed on their own.
+    groups:
+      go-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "go"
+    commit-message:
+      prefix: "chore(deps)"
