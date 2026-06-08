@@ -961,8 +961,16 @@ type WorkflowRunServiceListRequest struct {
 	ProjectName string `protobuf:"bytes,4,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
 	// by run status
 	Status RunStatus `protobuf:"varint,3,opt,name=status,proto3,enum=controlplane.v1.RunStatus" json:"status,omitempty"`
-	// by project version
+	// by project version (UUID).
+	// Deprecated: use project_version_name together with project_name. A version
+	// name is unique only within a project, so filtering by name is the canonical
+	// and discoverable path; the UUID is kept for backward compatibility.
+	//
+	// Deprecated: Marked as deprecated in controlplane/v1/workflow_run.proto.
 	ProjectVersion string `protobuf:"bytes,5,opt,name=project_version,json=projectVersion,proto3" json:"project_version,omitempty"`
+	// by project version name (e.g. v1.2.0). Requires project_name, since a
+	// version name is unique only within a project.
+	ProjectVersionName string `protobuf:"bytes,9,opt,name=project_version_name,json=projectVersionName,proto3" json:"project_version_name,omitempty"`
 	// by policy violations status
 	// Deprecated: use policy_status (PolicyStatusFilter), which aligns 1:1 with
 	// the canonical PolicyStatus enum. When both are set, policy_status wins.
@@ -1031,9 +1039,17 @@ func (x *WorkflowRunServiceListRequest) GetStatus() RunStatus {
 	return RunStatus_RUN_STATUS_UNSPECIFIED
 }
 
+// Deprecated: Marked as deprecated in controlplane/v1/workflow_run.proto.
 func (x *WorkflowRunServiceListRequest) GetProjectVersion() string {
 	if x != nil {
 		return x.ProjectVersion
+	}
+	return ""
+}
+
+func (x *WorkflowRunServiceListRequest) GetProjectVersionName() string {
+	if x != nil {
+		return x.ProjectVersionName
 	}
 	return ""
 }
@@ -1850,20 +1866,22 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x18TRIGGER_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14TRIGGER_TYPE_FAILURE\x10\x01\x12\x1d\n" +
 	"\x19TRIGGER_TYPE_CANCELLATION\x10\x02\"\"\n" +
-	" AttestationServiceCancelResponse\"\xa1\x06\n" +
+	" AttestationServiceCancelResponse\"\x83\b\n" +
 	"\x1dWorkflowRunServiceListRequest\x12\xac\x01\n" +
 	"\rworkflow_name\x18\x01 \x01(\tB\x86\x01\xbaH\x82\x01\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')\xd8\x01\x01R\fworkflowName\x12!\n" +
 	"\fproject_name\x18\x04 \x01(\tR\vprojectName\x122\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x1a.controlplane.v1.RunStatusR\x06status\x124\n" +
-	"\x0fproject_version\x18\x05 \x01(\tB\v\xbaH\b\xd8\x01\x01r\x03\xb0\x01\x01R\x0eprojectVersion\x12X\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x1a.controlplane.v1.RunStatusR\x06status\x126\n" +
+	"\x0fproject_version\x18\x05 \x01(\tB\r\xbaH\b\xd8\x01\x01r\x03\xb0\x01\x01\x18\x01R\x0eprojectVersion\x120\n" +
+	"\x14project_version_name\x18\t \x01(\tR\x12projectVersionName\x12X\n" +
 	"\x11policy_violations\x18\x06 \x01(\x0e2'.controlplane.v1.PolicyViolationsFilterB\x02\x18\x01R\x10policyViolations\x12H\n" +
 	"\rpolicy_status\x18\a \x01(\x0e2#.controlplane.v1.PolicyStatusFilterR\fpolicyStatus\x12E\n" +
 	"\fpolicy_gates\x18\b \x01(\x0e2\".controlplane.v1.PolicyGatesFilterR\vpolicyGates\x12H\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2(.controlplane.v1.CursorPaginationRequestR\n" +
-	"pagination:\x8e\x01\xbaH\x8a\x01\x1a\x87\x01\n" +
-	"\x1bworkflow_project_dependency\x120project_name must be set if workflow_name is set\x1a6!(this.workflow_name != '' && this.project_name == '')\"\xa5\x01\n" +
+	"pagination:\xbc\x02\xbaH\xb8\x02\x1a\x87\x01\n" +
+	"\x1bworkflow_project_dependency\x120project_name must be set if workflow_name is set\x1a6!(this.workflow_name != '' && this.project_name == '')\x1a\xab\x01\n" +
+	"/list_project_version_name_requires_project_name\x129project_name must be set when project_version_name is set\x1a=!(this.project_version_name != '' && this.project_name == '')\"\xa5\x01\n" +
 	"\x1eWorkflowRunServiceListResponse\x128\n" +
 	"\x06result\x18\x01 \x03(\v2 .controlplane.v1.WorkflowRunItemR\x06result\x12I\n" +
 	"\n" +

@@ -234,6 +234,8 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		cleanup()
 		return nil, nil, err
 	}
+	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
+	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
 	policyevalbundleCache, err := policyevalbundle.New(contextContext, reloadableConnection, logger)
 	if err != nil {
 		cleanup3()
@@ -246,6 +248,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		WorkflowUC:         workflowUseCase,
 		WorkflowContractUC: workflowContractUseCase,
 		ProjectUC:          projectUseCase,
+		ProjectVersionUC:   projectVersionUseCase,
 		CredsReader:        readerWriter,
 		CASClient:          casClientUseCase,
 		CASMappingUC:       casMappingUseCase,
@@ -265,8 +268,6 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		return nil, nil, err
 	}
 	prometheusUseCase := biz.NewPrometheusUseCase(v6, organizationUseCase, orgMetricsUseCase, logger)
-	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
-	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
 	newAttestationServiceOpts := &service.NewAttestationServiceOpts{
 		WorkflowRunUC:      workflowRunUseCase,
 		WorkflowUC:         workflowUseCase,

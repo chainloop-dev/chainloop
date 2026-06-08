@@ -215,11 +215,20 @@ message WorkflowRunServiceListRequest {
   string project_name = 4;
   // by run status
   RunStatus status = 3;
-  // by project version
-  string project_version = 5 [(buf.validate.field) = {
-    string: {uuid: true}
-    ignore: IGNORE_IF_ZERO_VALUE
-  }];
+  // by project version (UUID).
+  // Deprecated: use project_version_name together with project_name. A version
+  // name is unique only within a project, so filtering by name is the canonical
+  // and discoverable path; the UUID is kept for backward compatibility.
+  string project_version = 5 [
+    deprecated = true,
+    (buf.validate.field) = {
+      string: {uuid: true}
+      ignore: IGNORE_IF_ZERO_VALUE
+    }
+  ];
+  // by project version name (e.g. v1.2.0). Requires project_name, since a
+  // version name is unique only within a project.
+  string project_version_name = 9;
   // by policy violations status
   // Deprecated: use policy_status (PolicyStatusFilter), which aligns 1:1 with
   // the canonical PolicyStatus enum. When both are set, policy_status wins.
@@ -237,6 +246,14 @@ message WorkflowRunServiceListRequest {
     id: "workflow_project_dependency"
     expression: "!(this.workflow_name != '' && this.project_name == '')"
     message: "project_name must be set if workflow_name is set"
+  };
+
+  // project_version_name requires project_name (a version name is unique only
+  // within a project).
+  option (buf.validate.message).cel = {
+    id: "list_project_version_name_requires_project_name"
+    expression: "!(this.project_version_name != '' && this.project_name == '')"
+    message: "project_name must be set when project_version_name is set"
   };
 }
 

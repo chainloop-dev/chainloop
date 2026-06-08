@@ -226,8 +226,20 @@ export interface WorkflowRunServiceListRequest {
   projectName: string;
   /** by run status */
   status: RunStatus;
-  /** by project version */
+  /**
+   * by project version (UUID).
+   * Deprecated: use project_version_name together with project_name. A version
+   * name is unique only within a project, so filtering by name is the canonical
+   * and discoverable path; the UUID is kept for backward compatibility.
+   *
+   * @deprecated
+   */
   projectVersion: string;
+  /**
+   * by project version name (e.g. v1.2.0). Requires project_name, since a
+   * version name is unique only within a project.
+   */
+  projectVersionName: string;
   /**
    * by policy violations status
    * Deprecated: use policy_status (PolicyStatusFilter), which aligns 1:1 with
@@ -1919,6 +1931,7 @@ function createBaseWorkflowRunServiceListRequest(): WorkflowRunServiceListReques
     projectName: "",
     status: 0,
     projectVersion: "",
+    projectVersionName: "",
     policyViolations: 0,
     policyStatus: 0,
     policyGates: 0,
@@ -1939,6 +1952,9 @@ export const WorkflowRunServiceListRequest = {
     }
     if (message.projectVersion !== "") {
       writer.uint32(42).string(message.projectVersion);
+    }
+    if (message.projectVersionName !== "") {
+      writer.uint32(74).string(message.projectVersionName);
     }
     if (message.policyViolations !== 0) {
       writer.uint32(48).int32(message.policyViolations);
@@ -1990,6 +2006,13 @@ export const WorkflowRunServiceListRequest = {
 
           message.projectVersion = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.projectVersionName = reader.string();
+          continue;
         case 6:
           if (tag !== 48) {
             break;
@@ -2033,6 +2056,7 @@ export const WorkflowRunServiceListRequest = {
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       status: isSet(object.status) ? runStatusFromJSON(object.status) : 0,
       projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+      projectVersionName: isSet(object.projectVersionName) ? String(object.projectVersionName) : "",
       policyViolations: isSet(object.policyViolations) ? policyViolationsFilterFromJSON(object.policyViolations) : 0,
       policyStatus: isSet(object.policyStatus) ? policyStatusFilterFromJSON(object.policyStatus) : 0,
       policyGates: isSet(object.policyGates) ? policyGatesFilterFromJSON(object.policyGates) : 0,
@@ -2046,6 +2070,7 @@ export const WorkflowRunServiceListRequest = {
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.status !== undefined && (obj.status = runStatusToJSON(message.status));
     message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    message.projectVersionName !== undefined && (obj.projectVersionName = message.projectVersionName);
     message.policyViolations !== undefined &&
       (obj.policyViolations = policyViolationsFilterToJSON(message.policyViolations));
     message.policyStatus !== undefined && (obj.policyStatus = policyStatusFilterToJSON(message.policyStatus));
@@ -2067,6 +2092,7 @@ export const WorkflowRunServiceListRequest = {
     message.projectName = object.projectName ?? "";
     message.status = object.status ?? 0;
     message.projectVersion = object.projectVersion ?? "";
+    message.projectVersionName = object.projectVersionName ?? "";
     message.policyViolations = object.policyViolations ?? 0;
     message.policyStatus = object.policyStatus ?? 0;
     message.policyGates = object.policyGates ?? 0;
