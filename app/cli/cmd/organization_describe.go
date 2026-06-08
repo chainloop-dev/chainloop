@@ -51,7 +51,7 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 	gt.AppendSeparator()
 
 	if m := config.CurrentMembership; m != nil {
-		orgInfo := fmt.Sprintf("%s (role=%s)\nPolicy strategy=%s", m.Org.Name, m.Role, m.Org.PolicyViolationBlockingStrategy)
+		orgInfo := fmt.Sprintf("%s (role=%s)\nPolicy strategy: %s", m.Org.Name, m.Role, m.Org.PolicyViolationBlockingStrategy)
 		if len(m.Org.PolicyAllowedHostnames) > 0 {
 			orgInfo += fmt.Sprintf("\nPolicy allowed hostnames: %v", strings.Join(m.Org.PolicyAllowedHostnames, ", "))
 		}

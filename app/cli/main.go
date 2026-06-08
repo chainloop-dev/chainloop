@@ -67,6 +67,7 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		if errors.As(err, &gs) {
 			knownCodes := []codes.Code{
 				codes.AlreadyExists, codes.InvalidArgument, codes.NotFound, codes.PermissionDenied,
+				codes.FailedPrecondition,
 			}
 
 			grpcStatus := gs.GRPCStatus()
