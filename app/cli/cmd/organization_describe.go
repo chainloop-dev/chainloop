@@ -60,6 +60,10 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 			orgInfo += fmt.Sprintf("\nAPI token auto-revoke after: %s days inactive", *m.Org.APITokenMaxDaysInactive)
 		}
 
+		if m.Org.BlockAttestationsOnReleasedVersions {
+			orgInfo += "\nBlock attestations on released versions: enabled"
+		}
+
 		gt.AppendRow(table.Row{"Organization", orgInfo})
 	}
 
