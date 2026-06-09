@@ -69,8 +69,12 @@
       "type": "string"
     },
     "^(project_version)$": {
-      "description": "by project version",
+      "description": "by project version (UUID).\n Deprecated: use project_version_name together with project_name. A version\n name is unique only within a project, so filtering by name is the canonical\n and discoverable path; the UUID is kept for backward compatibility.",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "^(project_version_name)$": {
+      "description": "by project version name (e.g. v1.2.0). Requires project_name, since a\n version name is unique only within a project.",
       "type": "string"
     },
     "^(workflow_name)$": {
@@ -149,8 +153,12 @@
       "type": "string"
     },
     "projectVersion": {
-      "description": "by project version",
+      "description": "by project version (UUID).\n Deprecated: use project_version_name together with project_name. A version\n name is unique only within a project, so filtering by name is the canonical\n and discoverable path; the UUID is kept for backward compatibility.",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
+    },
+    "projectVersionName": {
+      "description": "by project version name (e.g. v1.2.0). Requires project_name, since a\n version name is unique only within a project.",
       "type": "string"
     },
     "status": {

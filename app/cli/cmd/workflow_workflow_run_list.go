@@ -33,7 +33,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 		DefaultLimit: 50,
 	}
 
-	var workflowName, projectName, status, policyStatus string
+	var workflowName, projectName, projectVersion, status, policyStatus string
 
 	cmd := &cobra.Command{
 		Use:     "list",
@@ -48,13 +48,20 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 				return fmt.Errorf("invalid policy-status %q, please chose one of: all, failed, passed", policyStatus)
 			}
 
+			// A version name is unique only within a project, so filtering by
+			// version requires the project to be set.
+			if projectVersion != "" && projectName == "" {
+				return fmt.Errorf("--project is required when --version is set")
+			}
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			res, err := action.NewWorkflowRunList(ActionOpts).Run(
 				&action.WorkflowRunListOpts{
-					WorkflowName: workflowName,
-					ProjectName:  projectName,
+					WorkflowName:       workflowName,
+					ProjectName:        projectName,
+					ProjectVersionName: projectVersion,
 					Pagination: &action.PaginationOpts{
 						Limit:      paginationOpts.Limit,
 						NextCursor: paginationOpts.NextCursor,
@@ -88,6 +95,7 @@ func newWorkflowWorkflowRunListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&workflowName, "workflow", "", "workflow name")
 	cmd.Flags().StringVar(&projectName, "project", "", "project name")
+	cmd.Flags().StringVar(&projectVersion, "version", "", "project version name, e.g. v1.2.0 (requires --project)")
 	cmd.Flags().BoolVar(&full, "full", false, "full report")
 	cmd.Flags().StringVar(&status, "status", "", fmt.Sprintf("filter by workflow run status: %v", listAvailableWorkflowStatusFlag()))
 	cmd.Flags().StringVar(&policyStatus, "policy-status", "", "filter by policy violations status: all, failed, passed")

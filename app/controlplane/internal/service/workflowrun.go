@@ -43,6 +43,7 @@ type WorkflowRunService struct {
 	workflowUseCase         *biz.WorkflowUseCase
 	workflowContractUseCase *biz.WorkflowContractUseCase
 	projectUseCase          *biz.ProjectUseCase
+	projectVersionUseCase   *biz.ProjectVersionUseCase
 	credsReader             credentials.Reader
 	casClient               biz.CASClient
 	casMappingUC            *biz.CASMappingUseCase
@@ -54,6 +55,7 @@ type NewWorkflowRunServiceOpts struct {
 	WorkflowUC         *biz.WorkflowUseCase
 	WorkflowContractUC *biz.WorkflowContractUseCase
 	ProjectUC          *biz.ProjectUseCase
+	ProjectVersionUC   *biz.ProjectVersionUseCase
 	CredsReader        credentials.Reader
 	CASClient          biz.CASClient
 	CASMappingUC       *biz.CASMappingUseCase
@@ -68,6 +70,7 @@ func NewWorkflowRunService(opts *NewWorkflowRunServiceOpts) *WorkflowRunService 
 		workflowUseCase:         opts.WorkflowUC,
 		workflowContractUseCase: opts.WorkflowContractUC,
 		projectUseCase:          opts.ProjectUC,
+		projectVersionUseCase:   opts.ProjectVersionUC,
 		credsReader:             opts.CredsReader,
 		casClient:               opts.CASClient,
 		casMappingUC:            opts.CASMappingUC,
@@ -132,6 +135,9 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	visibleProjectIDs := s.visibleProjects(ctx)
 	filters.ProjectIDs = visibleProjectIDs
 
+	// Track the resolved project so a project version can be looked up by name.
+	var projectID *uuid.UUID
+
 	// by workflow and project name
 	if req.GetWorkflowName() != "" && req.GetProjectName() != "" {
 		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetProjectName(), req.GetWorkflowName())
@@ -142,24 +148,46 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		}
 
 		filters.WorkflowID = &wf.ID
+		projectID = &wf.ProjectID
 	} else if req.GetProjectName() != "" {
 		// by project name only
-		projectID, err := s.validateAndGetProjectID(ctx, currentOrg.ID, req.GetProjectName(), visibleProjectIDs)
+		pID, err := s.validateAndGetProjectID(ctx, currentOrg.ID, req.GetProjectName(), visibleProjectIDs)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 
 		// Override the filter to only include this specific project
-		filters.ProjectIDs = []uuid.UUID{projectID}
+		filters.ProjectIDs = []uuid.UUID{pID}
+		projectID = &pID
 	}
 
-	if req.GetProjectVersion() != "" {
-		projectUUID, err := uuid.Parse(req.GetProjectVersion())
-		if err != nil {
-			return nil, errors.BadRequest("invalid", "invalid project version")
+	// by project version
+	switch {
+	case req.GetProjectVersionName() != "":
+		// A version name is unique only within a project, so project_name is
+		// required. Enforced at the API layer (CEL) and re-checked here.
+		if projectID == nil {
+			return nil, errors.BadRequest("invalid", "project_name must be set when project_version_name is set")
 		}
 
-		filters.VersionID = &projectUUID
+		pv, err := s.projectVersionUseCase.FindByProjectAndVersion(ctx, projectID.String(), req.GetProjectVersionName())
+		if err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
+		filters.VersionID = &pv.ID
+	default:
+		// Deprecated: honor the project_version UUID for clients that have not
+		// migrated to project_version_name.
+		//nolint:staticcheck // honoring the deprecated field for older clients
+		if rawVersion := req.GetProjectVersion(); rawVersion != "" {
+			projectUUID, err := uuid.Parse(rawVersion)
+			if err != nil {
+				return nil, errors.BadRequest("invalid", "invalid project version")
+			}
+
+			filters.VersionID = &projectUUID
+		}
 	}
 
 	// by run status

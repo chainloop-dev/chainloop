@@ -73,9 +73,12 @@ func NewWorkflowRunList(cfg *ActionsOpts) *WorkflowRunList {
 
 type WorkflowRunListOpts struct {
 	WorkflowName, ProjectName string
-	Pagination                *PaginationOpts
-	Status                    string
-	PolicyStatus              string
+	// ProjectVersionName filters by project version name (e.g. v1.2.0). It requires
+	// ProjectName, since a version name is unique only within a project.
+	ProjectVersionName string
+	Pagination         *PaginationOpts
+	Status             string
+	PolicyStatus       string
 }
 type PaginationOpts struct {
 	Limit      int
@@ -85,8 +88,9 @@ type PaginationOpts struct {
 func (action *WorkflowRunList) Run(opts *WorkflowRunListOpts) (*PaginatedWorkflowRunItem, error) {
 	client := pb.NewWorkflowRunServiceClient(action.cfg.CPConnection)
 	req := &pb.WorkflowRunServiceListRequest{
-		WorkflowName: opts.WorkflowName,
-		ProjectName:  opts.ProjectName,
+		WorkflowName:       opts.WorkflowName,
+		ProjectName:        opts.ProjectName,
+		ProjectVersionName: opts.ProjectVersionName,
 		Pagination: &pb.CursorPaginationRequest{
 			Limit:  int32(opts.Pagination.Limit),
 			Cursor: opts.Pagination.NextCursor,
