@@ -126,6 +126,7 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 		PreventImplicitWorkflowCreation:     m.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: m.RestrictContractCreationToOrgAdmins,
 		EnableAiAgentCollector:              m.EnableAIAgentCollector,
+		BlockAttestationsOnReleasedVersions: m.BlockAttestationsOnReleasedVersions,
 	}
 
 	if m.APITokenInactivityThresholdDays != nil {

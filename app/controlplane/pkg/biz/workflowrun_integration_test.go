@@ -287,6 +287,121 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 	})
 }
 
+// setOrgBlockReleasedVersions toggles the org-level
+// BlockAttestationsOnReleasedVersions setting directly through the repo.
+func (s *workflowRunIntegrationTestSuite) setOrgBlockReleasedVersions(ctx context.Context, orgID string, enabled bool) {
+	orgUUID, err := uuid.Parse(orgID)
+	s.Require().NoError(err)
+	_, err = s.Repos.OrganizationRepo.Update(ctx, orgUUID, &biz.OrganizationUpdateOpts{
+		BlockAttestationsOnReleasedVersions: &enabled,
+	})
+	s.Require().NoError(err)
+}
+
+// createReleasedVersion creates a run targeting versionName and then marks the
+// resulting project version as released (prerelease == false).
+func (s *workflowRunIntegrationTestSuite) createReleasedVersion(ctx context.Context, versionName string) *biz.WorkflowRun {
+	run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+		WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+		RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: versionName,
+	})
+	s.Require().NoError(err)
+	s.Require().True(run.ProjectVersion.Prerelease)
+
+	_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+	s.Require().NoError(err)
+
+	return run
+}
+
+// TestReleasedVersionImmutability covers the org-level guard that rejects new
+// attestations targeting already-released (immutable) project versions, both
+// at init (WorkflowRun.Create) and at push (SaveAttestation).
+func (s *workflowRunIntegrationTestSuite) TestReleasedVersionImmutability() {
+	ctx := context.Background()
+	_, bundleBytes := testBundle(s.T(), "testdata/attestations/bundle.json")
+
+	initCases := []struct {
+		name     string
+		version  string
+		released bool // pre-create and release the version before the run
+		block    bool // value of the BlockReleasedVersions guard
+		wantErr  bool
+	}{
+		{"rejects a released version when enabled", "rv-init-blocked", true, true, true},
+		{"allows a pre-release version when enabled", "rv-init-prerelease", false, true, false},
+		{"allows a released version when disabled", "rv-init-allowed", true, false, false},
+	}
+	for _, tc := range initCases {
+		s.Run("init: "+tc.name, func() {
+			if tc.released {
+				s.createReleasedVersion(ctx, tc.version)
+			}
+
+			run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+				WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+				RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: tc.version,
+				BlockReleasedVersions: tc.block,
+			})
+
+			if tc.wantErr {
+				s.Require().Error(err)
+				s.True(biz.IsErrReleasedVersionImmutable(err))
+				s.Contains(err.Error(), "released and immutable")
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(!tc.released, run.ProjectVersion.Prerelease)
+		})
+	}
+
+	s.Run("push: rejects saving an attestation to a released version when enabled", func() {
+		run := s.createReleasedVersion(ctx, "rv-push-blocked")
+		s.setOrgBlockReleasedVersions(ctx, s.org.ID, true)
+		defer s.setOrgBlockReleasedVersions(ctx, s.org.ID, false)
+
+		_, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), bundleBytes)
+		s.Require().Error(err)
+		s.True(biz.IsErrReleasedVersionImmutable(err))
+	})
+
+	s.Run("push: allows saving an attestation to a pre-release version when enabled", func() {
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "rv-push-prerelease",
+		})
+		s.Require().NoError(err)
+
+		s.setOrgBlockReleasedVersions(ctx, s.org.ID, true)
+		defer s.setOrgBlockReleasedVersions(ctx, s.org.ID, false)
+
+		_, err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), bundleBytes)
+		s.Require().NoError(err)
+	})
+
+	s.Run("push: rejects when the version is released between init and push", func() {
+		// Run is created while the version is still a pre-release (passes the
+		// init guard), then the version is released before the push.
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "rv-push-race",
+			BlockReleasedVersions: true,
+		})
+		s.Require().NoError(err)
+
+		_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+		s.Require().NoError(err)
+
+		s.setOrgBlockReleasedVersions(ctx, s.org.ID, true)
+		defer s.setOrgBlockReleasedVersions(ctx, s.org.ID, false)
+
+		_, err = s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), bundleBytes)
+		s.Require().Error(err)
+		s.True(biz.IsErrReleasedVersionImmutable(err))
+	})
+}
+
 func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrgOrPublic() {
 	assert := assert.New(s.T())
 	ctx := context.Background()

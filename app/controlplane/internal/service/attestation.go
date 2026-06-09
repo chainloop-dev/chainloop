@@ -206,6 +206,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		UseLatestVersion:       req.GetUseLatestVersion(),
 		RequireExistingVersion: req.GetRequireExistingVersion(),
 		MarkAsLatest:           req.MarkAsLatest,
+		BlockReleasedVersions:  org.BlockAttestationsOnReleasedVersions,
 	}
 
 	run, err := s.wrUseCase.Create(ctx, opts)

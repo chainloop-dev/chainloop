@@ -106,6 +106,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 	workflowRunUseCaseOpts := &biz.WorkflowRunUseCaseOpts{
 		WfrRepo:      workflowRunRepo,
 		WfRepo:       workflowRepo,
+		OrgRepo:      organizationRepo,
 		SigningUC:    signingUseCase,
 		AuditorUC:    auditorUseCase,
 		Logger:       logger,

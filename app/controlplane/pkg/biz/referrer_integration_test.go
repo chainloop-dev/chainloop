@@ -556,7 +556,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 		ProjectVersion: "v1.0.0",
 	})
 	require.NoError(s.T(), err)
-	require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, run.ID, h.String()))
+	require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, run.ID, h.String(), false))
 
 	s.Run("attestation root is returned when project+version match", func() {
 		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("test", "v1.0.0"))
@@ -611,7 +611,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 			ProjectVersion: "v3.0.0",
 		})
 		require.NoError(s.T(), err)
-		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runV3.ID, newH))
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runV3.ID, newH, false))
 
 		// project_name only (empty version) → SBOM returned via its in-project attestation.
 		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("test", ""))
@@ -651,7 +651,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 			ProjectVersion: "v1.0.0",
 		})
 		require.NoError(s.T(), err)
-		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runOther.ID, h.String()))
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runOther.ID, h.String(), false))
 
 		// RBAC: caller can see project "test" in org1 only — NOT "other-proj".
 		rbac := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
@@ -687,7 +687,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 			ProjectVersion: "v1.0.0",
 		})
 		require.NoError(s.T(), err)
-		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runPublic.ID, h.String()))
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runPublic.ID, h.String(), false))
 
 		// RBAC restricts the caller to project "test" — "public-proj" is NOT in their set.
 		rbac := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
@@ -706,7 +706,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 			ProjectVersion: "v2.0.0",
 		})
 		require.NoError(s.T(), err)
-		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, run2.ID, "sha256:"+strings.Repeat("a", 64)))
+		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, run2.ID, "sha256:"+strings.Repeat("a", 64), false))
 
 		// Paging past the first page must not skip the membership check (regression for the
 		// firstPage gate that allowed a cursor to bypass version scoping).

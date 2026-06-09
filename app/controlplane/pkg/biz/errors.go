@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -158,6 +158,26 @@ func (e *ErrAttestationStateConflict) Error() string {
 
 func IsErrAttestationStateConflict(err error) bool {
 	var e *ErrAttestationStateConflict
+	return errors.As(err, &e)
+}
+
+// ErrReleasedVersionImmutable is returned when the organization blocks new
+// attestations on already-released (immutable) project versions and a push
+// targets such a version.
+type ErrReleasedVersionImmutable struct {
+	version string
+}
+
+func NewErrReleasedVersionImmutable(version string) error {
+	return &ErrReleasedVersionImmutable{version}
+}
+
+func (e *ErrReleasedVersionImmutable) Error() string {
+	return fmt.Sprintf("version %q is released and immutable: attestations cannot be added", e.version)
+}
+
+func IsErrReleasedVersionImmutable(err error) bool {
+	var e *ErrReleasedVersionImmutable
 	return errors.As(err, &e)
 }
 

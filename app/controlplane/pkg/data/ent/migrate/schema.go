@@ -443,6 +443,7 @@ var (
 		{Name: "restrict_contract_creation_to_org_admins", Type: field.TypeBool, Default: false},
 		{Name: "api_token_inactivity_threshold_days", Type: field.TypeInt, Nullable: true},
 		{Name: "enable_ai_agent_collector", Type: field.TypeBool, Default: false},
+		{Name: "block_attestations_on_released_versions", Type: field.TypeBool, Default: false},
 		{Name: "suspended", Type: field.TypeBool, Default: false},
 	}
 	// OrganizationsTable holds the schema information for the "organizations" table.

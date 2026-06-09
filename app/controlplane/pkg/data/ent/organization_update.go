@@ -189,6 +189,20 @@ func (_u *OrganizationUpdate) SetNillableEnableAiAgentCollector(v *bool) *Organi
 	return _u
 }
 
+// SetBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field.
+func (_u *OrganizationUpdate) SetBlockAttestationsOnReleasedVersions(v bool) *OrganizationUpdate {
+	_u.mutation.SetBlockAttestationsOnReleasedVersions(v)
+	return _u
+}
+
+// SetNillableBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field if the given value is not nil.
+func (_u *OrganizationUpdate) SetNillableBlockAttestationsOnReleasedVersions(v *bool) *OrganizationUpdate {
+	if v != nil {
+		_u.SetBlockAttestationsOnReleasedVersions(*v)
+	}
+	return _u
+}
+
 // SetSuspended sets the "suspended" field.
 func (_u *OrganizationUpdate) SetSuspended(v bool) *OrganizationUpdate {
 	_u.mutation.SetSuspended(v)
@@ -617,6 +631,9 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.EnableAiAgentCollector(); ok {
 		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.BlockAttestationsOnReleasedVersions(); ok {
+		_spec.SetField(organization.FieldBlockAttestationsOnReleasedVersions, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
@@ -1197,6 +1214,20 @@ func (_u *OrganizationUpdateOne) SetNillableEnableAiAgentCollector(v *bool) *Org
 	return _u
 }
 
+// SetBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field.
+func (_u *OrganizationUpdateOne) SetBlockAttestationsOnReleasedVersions(v bool) *OrganizationUpdateOne {
+	_u.mutation.SetBlockAttestationsOnReleasedVersions(v)
+	return _u
+}
+
+// SetNillableBlockAttestationsOnReleasedVersions sets the "block_attestations_on_released_versions" field if the given value is not nil.
+func (_u *OrganizationUpdateOne) SetNillableBlockAttestationsOnReleasedVersions(v *bool) *OrganizationUpdateOne {
+	if v != nil {
+		_u.SetBlockAttestationsOnReleasedVersions(*v)
+	}
+	return _u
+}
+
 // SetSuspended sets the "suspended" field.
 func (_u *OrganizationUpdateOne) SetSuspended(v bool) *OrganizationUpdateOne {
 	_u.mutation.SetSuspended(v)
@@ -1655,6 +1686,9 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 	}
 	if value, ok := _u.mutation.EnableAiAgentCollector(); ok {
 		_spec.SetField(organization.FieldEnableAiAgentCollector, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.BlockAttestationsOnReleasedVersions(); ok {
+		_spec.SetField(organization.FieldBlockAttestationsOnReleasedVersions, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)

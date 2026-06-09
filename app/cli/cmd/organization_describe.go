@@ -51,13 +51,17 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 	gt.AppendSeparator()
 
 	if m := config.CurrentMembership; m != nil {
-		orgInfo := fmt.Sprintf("%s (role=%s)\nPolicy strategy=%s", m.Org.Name, m.Role, m.Org.PolicyViolationBlockingStrategy)
+		orgInfo := fmt.Sprintf("%s (role=%s)\nPolicy strategy: %s", m.Org.Name, m.Role, m.Org.PolicyViolationBlockingStrategy)
 		if len(m.Org.PolicyAllowedHostnames) > 0 {
 			orgInfo += fmt.Sprintf("\nPolicy allowed hostnames: %v", strings.Join(m.Org.PolicyAllowedHostnames, ", "))
 		}
 
 		if m.Org.APITokenMaxDaysInactive != nil {
 			orgInfo += fmt.Sprintf("\nAPI token auto-revoke after: %s days inactive", *m.Org.APITokenMaxDaysInactive)
+		}
+
+		if m.Org.BlockAttestationsOnReleasedVersions {
+			orgInfo += "\nBlock attestations on released versions: enabled"
 		}
 
 		gt.AppendRow(table.Row{"Organization", orgInfo})

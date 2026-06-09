@@ -89,7 +89,11 @@ export interface OrganizationServiceUpdateRequest {
     | number
     | undefined;
   /** Enable automatic AI agent config collection during attestation init */
-  enableAiAgentCollector?: boolean | undefined;
+  enableAiAgentCollector?:
+    | boolean
+    | undefined;
+  /** Reject new attestations pushed to project versions that are already released (prerelease == false) */
+  blockAttestationsOnReleasedVersions?: boolean | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -681,6 +685,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     restrictContractCreationToOrgAdmins: undefined,
     apiTokenMaxDaysInactive: undefined,
     enableAiAgentCollector: undefined,
+    blockAttestationsOnReleasedVersions: undefined,
   };
 }
 
@@ -709,6 +714,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.enableAiAgentCollector !== undefined) {
       writer.uint32(64).bool(message.enableAiAgentCollector);
+    }
+    if (message.blockAttestationsOnReleasedVersions !== undefined) {
+      writer.uint32(72).bool(message.blockAttestationsOnReleasedVersions);
     }
     return writer;
   },
@@ -776,6 +784,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.enableAiAgentCollector = reader.bool();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.blockAttestationsOnReleasedVersions = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -805,6 +820,9 @@ export const OrganizationServiceUpdateRequest = {
         ? Number(object.apiTokenMaxDaysInactive)
         : undefined,
       enableAiAgentCollector: isSet(object.enableAiAgentCollector) ? Boolean(object.enableAiAgentCollector) : undefined,
+      blockAttestationsOnReleasedVersions: isSet(object.blockAttestationsOnReleasedVersions)
+        ? Boolean(object.blockAttestationsOnReleasedVersions)
+        : undefined,
     };
   },
 
@@ -826,6 +844,8 @@ export const OrganizationServiceUpdateRequest = {
     message.apiTokenMaxDaysInactive !== undefined &&
       (obj.apiTokenMaxDaysInactive = Math.round(message.apiTokenMaxDaysInactive));
     message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
+    message.blockAttestationsOnReleasedVersions !== undefined &&
+      (obj.blockAttestationsOnReleasedVersions = message.blockAttestationsOnReleasedVersions);
     return obj;
   },
 
@@ -847,6 +867,7 @@ export const OrganizationServiceUpdateRequest = {
     message.restrictContractCreationToOrgAdmins = object.restrictContractCreationToOrgAdmins ?? undefined;
     message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? undefined;
+    message.blockAttestationsOnReleasedVersions = object.blockAttestationsOnReleasedVersions ?? undefined;
     return message;
   },
 };

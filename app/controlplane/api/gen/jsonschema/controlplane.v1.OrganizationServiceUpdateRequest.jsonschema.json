@@ -9,6 +9,10 @@
       "minimum": -2147483648,
       "type": "integer"
     },
+    "^(block_attestations_on_released_versions)$": {
+      "description": "Reject new attestations pushed to project versions that are already released (prerelease == false)",
+      "type": "boolean"
+    },
     "^(block_on_policy_violation)$": {
       "description": "\"optional\" allow us to detect if the value is explicitly set",
       "type": "boolean"
@@ -43,6 +47,10 @@
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
+    },
+    "blockAttestationsOnReleasedVersions": {
+      "description": "Reject new attestations pushed to project versions that are already released (prerelease == false)",
+      "type": "boolean"
     },
     "blockOnPolicyViolation": {
       "description": "\"optional\" allow us to detect if the value is explicitly set",

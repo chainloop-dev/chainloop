@@ -91,14 +91,17 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	versionCreated := false
 	// Create version and workflow in a transaction
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-		if version == nil {
+		markAsLatest := opts.MarkAsLatest != nil && *opts.MarkAsLatest
+		switch {
+		case version == nil:
 			version, err = createProjectVersionWithTx(ctx, tx, wf.ProjectID, opts.ProjectVersion, true, opts.MarkAsLatest)
 			if err != nil {
 				return fmt.Errorf("creating version: %w", err)
 			}
 			versionCreated = true
-		} else if opts.MarkAsLatest != nil && *opts.MarkAsLatest {
-			// Re-read version inside the transaction with a row lock to avoid promoting a concurrently released version
+		case opts.BlockReleasedVersions || markAsLatest:
+			// Re-read the version inside the transaction with a row lock so a
+			// concurrent release can't slip past these checks.
 			fresh, err := tx.ProjectVersion.Query().ForUpdate().
 				Where(projectversion.ID(version.ID), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).
 				Only(ctx)
@@ -106,15 +109,22 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 				if ent.IsNotFound(err) {
 					return biz.NewErrNotFound("Version")
 				}
-				return fmt.Errorf("loading version for promotion: %w", err)
+				return fmt.Errorf("loading version: %w", err)
 			}
 
-			if !fresh.Prerelease {
-				return biz.NewErrValidationStr("cannot promote a released version to latest")
+			// Reject new attestations against an already-released (immutable) version.
+			if opts.BlockReleasedVersions && !fresh.Prerelease {
+				return biz.NewErrReleasedVersionImmutable(fresh.Version)
 			}
 
-			if err := promoteVersionToLatestWithTx(ctx, tx, wf.ProjectID, fresh.ID); err != nil {
-				return fmt.Errorf("promoting version to latest: %w", err)
+			if markAsLatest {
+				if !fresh.Prerelease {
+					return biz.NewErrValidationStr("cannot promote a released version to latest")
+				}
+
+				if err := promoteVersionToLatestWithTx(ctx, tx, wf.ProjectID, fresh.ID); err != nil {
+					return fmt.Errorf("promoting version to latest: %w", err)
+				}
 			}
 		}
 
@@ -241,11 +251,15 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 
 // SaveAttestationBundle persists the attestation digest on the workflow run and the bundle bytes
 // in the linked attestation row within a single transaction.
-func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUID, digest string, bundle []byte) error {
+func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUID, digest string, bundle []byte, blockReleasedVersions bool) error {
 	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.SaveAttestationBundle")
 	defer span.End()
 
 	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		if err := assertVersionAcceptsAttestationWithTx(ctx, tx, id, blockReleasedVersions); err != nil {
+			return err
+		}
+
 		if err := tx.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
 			if ent.IsNotFound(err) {
 				return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
@@ -260,13 +274,52 @@ func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUI
 	})
 }
 
-func (r *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, id uuid.UUID, digest string) error {
-	if err := r.data.DB.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
-		if ent.IsNotFound(err) {
-			return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+func (r *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, id uuid.UUID, digest string, blockReleasedVersions bool) error {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.SaveAttestationDigest")
+	defer span.End()
+
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		if err := assertVersionAcceptsAttestationWithTx(ctx, tx, id, blockReleasedVersions); err != nil {
+			return err
 		}
-		return err
+
+		if err := tx.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+			}
+			return err
+		}
+		return nil
+	})
+}
+
+// assertVersionAcceptsAttestationWithTx rejects persisting an attestation when
+// blockReleasedVersions is set and the run's project version is already
+// released (prerelease == false). It locks the version row (FOR UPDATE) so the
+// check is atomic with the attestation write that follows in the same
+// transaction, serializing against a concurrent release. It is a no-op when
+// blockReleasedVersions is false.
+func assertVersionAcceptsAttestationWithTx(ctx context.Context, tx *ent.Tx, runID uuid.UUID, blockReleasedVersions bool) error {
+	if !blockReleasedVersions {
+		return nil
 	}
+
+	version, err := tx.WorkflowRun.Query().
+		Where(workflowrun.ID(runID)).
+		QueryVersion().
+		ForUpdate().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", runID))
+		}
+		return fmt.Errorf("locking project version: %w", err)
+	}
+
+	if !version.Prerelease {
+		return biz.NewErrReleasedVersionImmutable(version.Version)
+	}
+
 	return nil
 }
 

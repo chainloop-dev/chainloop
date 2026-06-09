@@ -105,6 +105,9 @@ message OrganizationServiceUpdateRequest {
 
   // Enable automatic AI agent config collection during attestation init
   optional bool enable_ai_agent_collector = 8;
+
+  // Reject new attestations pushed to project versions that are already released (prerelease == false)
+  optional bool block_attestations_on_released_versions = 9;
 }
 
 message OrganizationServiceUpdateResponse {

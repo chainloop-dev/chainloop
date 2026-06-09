@@ -35,6 +35,8 @@ const (
 	FieldAPITokenInactivityThresholdDays = "api_token_inactivity_threshold_days"
 	// FieldEnableAiAgentCollector holds the string denoting the enable_ai_agent_collector field in the database.
 	FieldEnableAiAgentCollector = "enable_ai_agent_collector"
+	// FieldBlockAttestationsOnReleasedVersions holds the string denoting the block_attestations_on_released_versions field in the database.
+	FieldBlockAttestationsOnReleasedVersions = "block_attestations_on_released_versions"
 	// FieldSuspended holds the string denoting the suspended field in the database.
 	FieldSuspended = "suspended"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
@@ -135,6 +137,7 @@ var Columns = []string{
 	FieldRestrictContractCreationToOrgAdmins,
 	FieldAPITokenInactivityThresholdDays,
 	FieldEnableAiAgentCollector,
+	FieldBlockAttestationsOnReleasedVersions,
 	FieldSuspended,
 }
 
@@ -161,6 +164,8 @@ var (
 	DefaultRestrictContractCreationToOrgAdmins bool
 	// DefaultEnableAiAgentCollector holds the default value on creation for the "enable_ai_agent_collector" field.
 	DefaultEnableAiAgentCollector bool
+	// DefaultBlockAttestationsOnReleasedVersions holds the default value on creation for the "block_attestations_on_released_versions" field.
+	DefaultBlockAttestationsOnReleasedVersions bool
 	// DefaultSuspended holds the default value on creation for the "suspended" field.
 	DefaultSuspended bool
 	// DefaultID holds the default value on creation for the "id" field.
@@ -218,6 +223,11 @@ func ByAPITokenInactivityThresholdDays(opts ...sql.OrderTermOption) OrderOption 
 // ByEnableAiAgentCollector orders the results by the enable_ai_agent_collector field.
 func ByEnableAiAgentCollector(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEnableAiAgentCollector, opts...).ToFunc()
+}
+
+// ByBlockAttestationsOnReleasedVersions orders the results by the block_attestations_on_released_versions field.
+func ByBlockAttestationsOnReleasedVersions(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBlockAttestationsOnReleasedVersions, opts...).ToFunc()
 }
 
 // BySuspended orders the results by the suspended field.

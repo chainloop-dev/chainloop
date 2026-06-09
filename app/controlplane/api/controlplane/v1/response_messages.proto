@@ -391,6 +391,8 @@ message OrgItem {
   optional int32 api_token_max_days_inactive = 9;
   // Whether AI agent config collection is automatically enabled during attestation init
   bool enable_ai_agent_collector = 10;
+  // Whether new attestations are rejected on project versions that are already released (prerelease == false)
+  bool block_attestations_on_released_versions = 11;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;

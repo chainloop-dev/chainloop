@@ -40,6 +40,8 @@ type NewOrgUpdateOpts struct {
 	APITokenMaxDaysInactive *int
 	// EnableAIAgentCollector enables automatic AI agent config collection during attestation init
 	EnableAIAgentCollector *bool
+	// BlockAttestationsOnReleasedVersions rejects new attestations pushed to project versions that are already released
+	BlockAttestationsOnReleasedVersions *bool
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -51,6 +53,7 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 		PreventImplicitWorkflowCreation:     opts.PreventImplicitWorkflowCreation,
 		RestrictContractCreationToOrgAdmins: opts.RestrictContractCreation,
 		EnableAiAgentCollector:              opts.EnableAIAgentCollector,
+		BlockAttestationsOnReleasedVersions: opts.BlockAttestationsOnReleasedVersions,
 	}
 
 	if opts.PoliciesAllowedHostnames != nil {
