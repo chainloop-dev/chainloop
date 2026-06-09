@@ -675,16 +675,16 @@ func (_c *WorkflowRunRepo_MarkAsFinished_Call) RunAndReturn(run func(ctx context
 }
 
 // SaveAttestationBundle provides a mock function for the type WorkflowRunRepo
-func (_mock *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error {
-	ret := _mock.Called(ctx, ID, digest, bundle)
+func (_mock *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte, blockReleasedVersions bool) error {
+	ret := _mock.Called(ctx, ID, digest, bundle, blockReleasedVersions)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveAttestationBundle")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, []byte) error); ok {
-		r0 = returnFunc(ctx, ID, digest, bundle)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, []byte, bool) error); ok {
+		r0 = returnFunc(ctx, ID, digest, bundle, blockReleasedVersions)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -701,11 +701,12 @@ type WorkflowRunRepo_SaveAttestationBundle_Call struct {
 //   - ID uuid.UUID
 //   - digest string
 //   - bundle []byte
-func (_e *WorkflowRunRepo_Expecter) SaveAttestationBundle(ctx interface{}, ID interface{}, digest interface{}, bundle interface{}) *WorkflowRunRepo_SaveAttestationBundle_Call {
-	return &WorkflowRunRepo_SaveAttestationBundle_Call{Call: _e.mock.On("SaveAttestationBundle", ctx, ID, digest, bundle)}
+//   - blockReleasedVersions bool
+func (_e *WorkflowRunRepo_Expecter) SaveAttestationBundle(ctx interface{}, ID interface{}, digest interface{}, bundle interface{}, blockReleasedVersions interface{}) *WorkflowRunRepo_SaveAttestationBundle_Call {
+	return &WorkflowRunRepo_SaveAttestationBundle_Call{Call: _e.mock.On("SaveAttestationBundle", ctx, ID, digest, bundle, blockReleasedVersions)}
 }
 
-func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string, bundle []byte)) *WorkflowRunRepo_SaveAttestationBundle_Call {
+func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string, bundle []byte, blockReleasedVersions bool)) *WorkflowRunRepo_SaveAttestationBundle_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -723,11 +724,16 @@ func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) Run(run func(ctx context.C
 		if args[3] != nil {
 			arg3 = args[3].([]byte)
 		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -738,22 +744,22 @@ func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) Return(err error) *Workflo
 	return _c
 }
 
-func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error) *WorkflowRunRepo_SaveAttestationBundle_Call {
+func (_c *WorkflowRunRepo_SaveAttestationBundle_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string, bundle []byte, blockReleasedVersions bool) error) *WorkflowRunRepo_SaveAttestationBundle_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SaveAttestationDigest provides a mock function for the type WorkflowRunRepo
-func (_mock *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, ID uuid.UUID, digest string) error {
-	ret := _mock.Called(ctx, ID, digest)
+func (_mock *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, ID uuid.UUID, digest string, blockReleasedVersions bool) error {
+	ret := _mock.Called(ctx, ID, digest, blockReleasedVersions)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveAttestationDigest")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
-		r0 = returnFunc(ctx, ID, digest)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, bool) error); ok {
+		r0 = returnFunc(ctx, ID, digest, blockReleasedVersions)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -769,11 +775,12 @@ type WorkflowRunRepo_SaveAttestationDigest_Call struct {
 //   - ctx context.Context
 //   - ID uuid.UUID
 //   - digest string
-func (_e *WorkflowRunRepo_Expecter) SaveAttestationDigest(ctx interface{}, ID interface{}, digest interface{}) *WorkflowRunRepo_SaveAttestationDigest_Call {
-	return &WorkflowRunRepo_SaveAttestationDigest_Call{Call: _e.mock.On("SaveAttestationDigest", ctx, ID, digest)}
+//   - blockReleasedVersions bool
+func (_e *WorkflowRunRepo_Expecter) SaveAttestationDigest(ctx interface{}, ID interface{}, digest interface{}, blockReleasedVersions interface{}) *WorkflowRunRepo_SaveAttestationDigest_Call {
+	return &WorkflowRunRepo_SaveAttestationDigest_Call{Call: _e.mock.On("SaveAttestationDigest", ctx, ID, digest, blockReleasedVersions)}
 }
 
-func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string)) *WorkflowRunRepo_SaveAttestationDigest_Call {
+func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) Run(run func(ctx context.Context, ID uuid.UUID, digest string, blockReleasedVersions bool)) *WorkflowRunRepo_SaveAttestationDigest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -787,10 +794,15 @@ func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) Run(run func(ctx context.C
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -801,7 +813,7 @@ func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) Return(err error) *Workflo
 	return _c
 }
 
-func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string) error) *WorkflowRunRepo_SaveAttestationDigest_Call {
+func (_c *WorkflowRunRepo_SaveAttestationDigest_Call) RunAndReturn(run func(ctx context.Context, ID uuid.UUID, digest string, blockReleasedVersions bool) error) *WorkflowRunRepo_SaveAttestationDigest_Call {
 	_c.Call.Return(run)
 	return _c
 }

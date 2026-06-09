@@ -251,11 +251,15 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 
 // SaveAttestationBundle persists the attestation digest on the workflow run and the bundle bytes
 // in the linked attestation row within a single transaction.
-func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUID, digest string, bundle []byte) error {
+func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUID, digest string, bundle []byte, blockReleasedVersions bool) error {
 	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.SaveAttestationBundle")
 	defer span.End()
 
 	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		if err := assertVersionAcceptsAttestationWithTx(ctx, tx, id, blockReleasedVersions); err != nil {
+			return err
+		}
+
 		if err := tx.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
 			if ent.IsNotFound(err) {
 				return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
@@ -270,13 +274,52 @@ func (r *WorkflowRunRepo) SaveAttestationBundle(ctx context.Context, id uuid.UUI
 	})
 }
 
-func (r *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, id uuid.UUID, digest string) error {
-	if err := r.data.DB.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
-		if ent.IsNotFound(err) {
-			return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+func (r *WorkflowRunRepo) SaveAttestationDigest(ctx context.Context, id uuid.UUID, digest string, blockReleasedVersions bool) error {
+	ctx, span := otelx.Start(ctx, workflowRunRepoTracer, "WorkflowRunRepo.SaveAttestationDigest")
+	defer span.End()
+
+	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		if err := assertVersionAcceptsAttestationWithTx(ctx, tx, id, blockReleasedVersions); err != nil {
+			return err
 		}
-		return err
+
+		if err := tx.WorkflowRun.UpdateOneID(id).SetAttestationDigest(digest).Exec(ctx); err != nil {
+			if ent.IsNotFound(err) {
+				return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", id))
+			}
+			return err
+		}
+		return nil
+	})
+}
+
+// assertVersionAcceptsAttestationWithTx rejects persisting an attestation when
+// blockReleasedVersions is set and the run's project version is already
+// released (prerelease == false). It locks the version row (FOR UPDATE) so the
+// check is atomic with the attestation write that follows in the same
+// transaction, serializing against a concurrent release. It is a no-op when
+// blockReleasedVersions is false.
+func assertVersionAcceptsAttestationWithTx(ctx context.Context, tx *ent.Tx, runID uuid.UUID, blockReleasedVersions bool) error {
+	if !blockReleasedVersions {
+		return nil
 	}
+
+	version, err := tx.WorkflowRun.Query().
+		Where(workflowrun.ID(runID)).
+		QueryVersion().
+		ForUpdate().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return biz.NewErrNotFound(fmt.Sprintf("workflow run with id %s not found", runID))
+		}
+		return fmt.Errorf("locking project version: %w", err)
+	}
+
+	if !version.Prerelease {
+		return biz.NewErrReleasedVersionImmutable(version.Version)
+	}
+
 	return nil
 }
 

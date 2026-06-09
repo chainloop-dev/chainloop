@@ -99,11 +99,16 @@ type WorkflowRunRepo interface {
 	FindByAttestationDigest(ctx context.Context, digest string) (*WorkflowRun, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowRun, error)
 	MarkAsFinished(ctx context.Context, ID uuid.UUID, status WorkflowRunStatus, reason string) error
-	SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte) error
+	// SaveAttestationBundle persists the digest and bundle. When
+	// blockReleasedVersions is set it transactionally rejects the write if the
+	// run's project version is already released (prerelease == false), locking
+	// the version row so the check is atomic with the write.
+	SaveAttestationBundle(ctx context.Context, ID uuid.UUID, digest string, bundle []byte, blockReleasedVersions bool) error
 	// SaveAttestationDigest records the attestation digest on the workflow run
 	// without writing a row in the attestation table. Used when the bundle is
-	// stored exclusively in CAS.
-	SaveAttestationDigest(ctx context.Context, ID uuid.UUID, digest string) error
+	// stored exclusively in CAS. blockReleasedVersions behaves as in
+	// SaveAttestationBundle.
+	SaveAttestationDigest(ctx context.Context, ID uuid.UUID, digest string, blockReleasedVersions bool) error
 	GetBundle(ctx context.Context, wrID uuid.UUID) ([]byte, error)
 	UpdatePolicyStatus(ctx context.Context, ID uuid.UUID, summary *chainloop.PolicyStatusSummary) error
 	List(ctx context.Context, orgID uuid.UUID, f *RunListFilters, p *pagination.CursorOptions) ([]*WorkflowRun, string, error)
@@ -381,32 +386,24 @@ func WithSkipBundlePersistence() SaveAttestationOption {
 	}
 }
 
-// enforceReleasedVersionImmutability rejects pushing an attestation to a
-// project version that is already released (prerelease == false) when the
-// owning organization has enabled BlockAttestationsOnReleasedVersions. It is a
-// no-op when the setting is disabled or the run lacks the required context.
-func (uc *WorkflowRunUseCase) enforceReleasedVersionImmutability(ctx context.Context, run *WorkflowRun) error {
-	if run.Workflow == nil || run.ProjectVersion == nil {
-		return nil
-	}
-
-	// A prerelease version is still mutable, no need to look up the org setting.
-	if run.ProjectVersion.Prerelease {
-		return nil
+// orgBlocksReleasedVersions reports whether the run's organization rejects new
+// attestations targeting already-released (immutable) project versions. The
+// actual prerelease check happens transactionally at persistence time (see the
+// repo SaveAttestation* methods) so it is atomic with the write and can't be
+// bypassed by a concurrent release.
+func (uc *WorkflowRunUseCase) orgBlocksReleasedVersions(ctx context.Context, run *WorkflowRun) (bool, error) {
+	if run.Workflow == nil {
+		return false, nil
 	}
 
 	org, err := uc.orgRepo.FindByID(ctx, run.Workflow.OrgID)
 	if err != nil {
-		return fmt.Errorf("finding organization: %w", err)
+		return false, fmt.Errorf("finding organization: %w", err)
 	} else if org == nil {
-		return NewErrNotFound("organization")
+		return false, NewErrNotFound("organization")
 	}
 
-	if org.BlockAttestationsOnReleasedVersions {
-		return NewErrReleasedVersionImmutable(run.ProjectVersion.Version)
-	}
-
-	return nil
+	return org.BlockAttestationsOnReleasedVersions, nil
 }
 
 func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte, opts ...SaveAttestationOption) (*v1.Hash, error) {
@@ -423,8 +420,9 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// Resolve the run so we can enforce the released-version immutability guard
-	// before doing any expensive work or persistence.
+	// Resolve the run so we can tell whether the owning organization blocks
+	// attestations on released versions. The actual prerelease check is done
+	// transactionally at persistence time so it is atomic with the write.
 	run, err := uc.wfRunRepo.FindByID(ctx, runID)
 	if err != nil {
 		return nil, fmt.Errorf("finding workflow run: %w", err)
@@ -432,7 +430,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		return nil, NewErrNotFound("workflow run")
 	}
 
-	if err := uc.enforceReleasedVersionImmutability(ctx, run); err != nil {
+	blockReleasedVersions, err := uc.orgBlocksReleasedVersions(ctx, run)
+	if err != nil {
 		return nil, err
 	}
 
@@ -484,11 +483,11 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 	}
 
 	if options.skipBundlePersistence {
-		if err := uc.wfRunRepo.SaveAttestationDigest(ctx, runID, digest.String()); err != nil {
+		if err := uc.wfRunRepo.SaveAttestationDigest(ctx, runID, digest.String(), blockReleasedVersions); err != nil {
 			return nil, fmt.Errorf("saving attestation digest: %w", err)
 		}
 	} else {
-		if err := uc.wfRunRepo.SaveAttestationBundle(ctx, runID, digest.String(), bundle); err != nil {
+		if err := uc.wfRunRepo.SaveAttestationBundle(ctx, runID, digest.String(), bundle, blockReleasedVersions); err != nil {
 			return nil, fmt.Errorf("saving attestation bundle: %w", err)
 		}
 	}
