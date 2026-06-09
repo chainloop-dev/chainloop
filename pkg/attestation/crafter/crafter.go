@@ -204,6 +204,8 @@ type InitOpts struct {
 	Auth *api.Attestation_Auth
 	// array of hostnames that are allowed to be used in the policies
 	PoliciesAllowedHostnames []string
+	// opt out of storing the environment variables automatically discovered by the CI runner
+	SkipRunnerEnvVars bool
 	// CAS backend information
 	CASBackend *api.Attestation_CASBackend
 	// UIDashboardURL is the base URL to build the attestation view link
@@ -451,6 +453,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			},
 			Auth:                     opts.Auth,
 			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
+			SkipRunnerEnvVars:        opts.SkipRunnerEnvVars,
 			CasBackend:               opts.CASBackend,
 		},
 		DryRun:         opts.DryRun,
@@ -485,20 +488,30 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 		return fmt.Errorf("%s - %w", errorStr, ErrRunnerContextNotFound)
 	}
 
-	// Workflow run environment variables
-	varNames := make([]string, len(c.Runner.ListEnvVars()))
-	for index, envVarDef := range c.Runner.ListEnvVars() {
-		varNames[index] = envVarDef.Name
-	}
-	c.Logger.Debug().Str("runnerType", c.Runner.ID().String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
-
-	outputEnvVars, errors := c.Runner.ResolveEnvVars()
-	if len(errors) > 0 {
-		var combinedErrs string
-		for _, err := range errors {
-			combinedErrs += (*err).Error() + "\n"
+	// The org can opt out of storing the environment variables that the runner discovers
+	// automatically. The contract's env allow list below is still honored since it is an
+	// explicit, user-defined opt-in.
+	var outputEnvVars map[string]string
+	if c.CraftingState.GetAttestation().GetSkipRunnerEnvVars() {
+		c.Logger.Debug().Str("runnerType", c.Runner.ID().String()).Msg("skipping automatically discovered runner env variables")
+		outputEnvVars = make(map[string]string)
+	} else {
+		// Workflow run environment variables
+		varNames := make([]string, len(c.Runner.ListEnvVars()))
+		for index, envVarDef := range c.Runner.ListEnvVars() {
+			varNames[index] = envVarDef.Name
 		}
-		return fmt.Errorf("error while resolving runner environment variables: %s", combinedErrs)
+		c.Logger.Debug().Str("runnerType", c.Runner.ID().String()).Strs("variables", varNames).Msg("list of env variables to automatically extract")
+
+		var errs []*error
+		outputEnvVars, errs = c.Runner.ResolveEnvVars()
+		if len(errs) > 0 {
+			var combinedErrs string
+			for _, err := range errs {
+				combinedErrs += (*err).Error() + "\n"
+			}
+			return fmt.Errorf("error while resolving runner environment variables: %s", combinedErrs)
+		}
 	}
 
 	// User-defined environment vars

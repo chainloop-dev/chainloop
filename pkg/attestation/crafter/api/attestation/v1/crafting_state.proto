@@ -162,6 +162,10 @@ message Attestation {
   // CAS backend information used during attestation
   CASBackend cas_backend = 19;
 
+  // skip storing the environment variables automatically discovered by the CI runner.
+  // The contract's env_allow_list is not affected by this flag.
+  bool skip_runner_env_vars = 20;
+
   message Auth {
     AuthType type = 1 [(buf.validate.field).enum = {
       not_in: [0]

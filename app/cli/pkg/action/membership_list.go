@@ -38,6 +38,7 @@ type OrgItem struct {
 	APITokenMaxDaysInactive             *string    `json:"apiTokenMaxDaysInactive,omitempty"`
 	EnableAIAgentCollector              bool       `json:"enableAiAgentCollector"`
 	BlockAttestationsOnReleasedVersions bool       `json:"blockAttestationsOnReleasedVersions"`
+	SkipRunnerEnvVars                   bool       `json:"skipRunnerEnvVars"`
 }
 
 type MembershipItem struct {
@@ -142,6 +143,7 @@ func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 		PreventImplicitWorkflowCreation:     in.PreventImplicitWorkflowCreation,
 		EnableAIAgentCollector:              in.EnableAiAgentCollector,
 		BlockAttestationsOnReleasedVersions: in.BlockAttestationsOnReleasedVersions,
+		SkipRunnerEnvVars:                   in.SkipRunnerEnvVars,
 	}
 
 	if in.DefaultPolicyViolationStrategy == pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK {

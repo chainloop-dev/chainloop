@@ -171,6 +171,20 @@ func (_c *OrganizationCreate) SetNillableBlockAttestationsOnReleasedVersions(v *
 	return _c
 }
 
+// SetSkipRunnerEnvVars sets the "skip_runner_env_vars" field.
+func (_c *OrganizationCreate) SetSkipRunnerEnvVars(v bool) *OrganizationCreate {
+	_c.mutation.SetSkipRunnerEnvVars(v)
+	return _c
+}
+
+// SetNillableSkipRunnerEnvVars sets the "skip_runner_env_vars" field if the given value is not nil.
+func (_c *OrganizationCreate) SetNillableSkipRunnerEnvVars(v *bool) *OrganizationCreate {
+	if v != nil {
+		_c.SetSkipRunnerEnvVars(*v)
+	}
+	return _c
+}
+
 // SetSuspended sets the "suspended" field.
 func (_c *OrganizationCreate) SetSuspended(v bool) *OrganizationCreate {
 	_c.mutation.SetSuspended(v)
@@ -397,6 +411,10 @@ func (_c *OrganizationCreate) defaults() {
 		v := organization.DefaultBlockAttestationsOnReleasedVersions
 		_c.mutation.SetBlockAttestationsOnReleasedVersions(v)
 	}
+	if _, ok := _c.mutation.SkipRunnerEnvVars(); !ok {
+		v := organization.DefaultSkipRunnerEnvVars
+		_c.mutation.SetSkipRunnerEnvVars(v)
+	}
 	if _, ok := _c.mutation.Suspended(); !ok {
 		v := organization.DefaultSuspended
 		_c.mutation.SetSuspended(v)
@@ -432,6 +450,9 @@ func (_c *OrganizationCreate) check() error {
 	}
 	if _, ok := _c.mutation.BlockAttestationsOnReleasedVersions(); !ok {
 		return &ValidationError{Name: "block_attestations_on_released_versions", err: errors.New(`ent: missing required field "Organization.block_attestations_on_released_versions"`)}
+	}
+	if _, ok := _c.mutation.SkipRunnerEnvVars(); !ok {
+		return &ValidationError{Name: "skip_runner_env_vars", err: errors.New(`ent: missing required field "Organization.skip_runner_env_vars"`)}
 	}
 	if _, ok := _c.mutation.Suspended(); !ok {
 		return &ValidationError{Name: "suspended", err: errors.New(`ent: missing required field "Organization.suspended"`)}
@@ -515,6 +536,10 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.BlockAttestationsOnReleasedVersions(); ok {
 		_spec.SetField(organization.FieldBlockAttestationsOnReleasedVersions, field.TypeBool, value)
 		_node.BlockAttestationsOnReleasedVersions = value
+	}
+	if value, ok := _c.mutation.SkipRunnerEnvVars(); ok {
+		_spec.SetField(organization.FieldSkipRunnerEnvVars, field.TypeBool, value)
+		_node.SkipRunnerEnvVars = value
 	}
 	if value, ok := _c.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
@@ -860,6 +885,18 @@ func (u *OrganizationUpsert) UpdateBlockAttestationsOnReleasedVersions() *Organi
 	return u
 }
 
+// SetSkipRunnerEnvVars sets the "skip_runner_env_vars" field.
+func (u *OrganizationUpsert) SetSkipRunnerEnvVars(v bool) *OrganizationUpsert {
+	u.Set(organization.FieldSkipRunnerEnvVars, v)
+	return u
+}
+
+// UpdateSkipRunnerEnvVars sets the "skip_runner_env_vars" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateSkipRunnerEnvVars() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldSkipRunnerEnvVars)
+	return u
+}
+
 // SetSuspended sets the "suspended" field.
 func (u *OrganizationUpsert) SetSuspended(v bool) *OrganizationUpsert {
 	u.Set(organization.FieldSuspended, v)
@@ -1088,6 +1125,20 @@ func (u *OrganizationUpsertOne) SetBlockAttestationsOnReleasedVersions(v bool) *
 func (u *OrganizationUpsertOne) UpdateBlockAttestationsOnReleasedVersions() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockAttestationsOnReleasedVersions()
+	})
+}
+
+// SetSkipRunnerEnvVars sets the "skip_runner_env_vars" field.
+func (u *OrganizationUpsertOne) SetSkipRunnerEnvVars(v bool) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetSkipRunnerEnvVars(v)
+	})
+}
+
+// UpdateSkipRunnerEnvVars sets the "skip_runner_env_vars" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateSkipRunnerEnvVars() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateSkipRunnerEnvVars()
 	})
 }
 
@@ -1488,6 +1539,20 @@ func (u *OrganizationUpsertBulk) SetBlockAttestationsOnReleasedVersions(v bool) 
 func (u *OrganizationUpsertBulk) UpdateBlockAttestationsOnReleasedVersions() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateBlockAttestationsOnReleasedVersions()
+	})
+}
+
+// SetSkipRunnerEnvVars sets the "skip_runner_env_vars" field.
+func (u *OrganizationUpsertBulk) SetSkipRunnerEnvVars(v bool) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetSkipRunnerEnvVars(v)
+	})
+}
+
+// UpdateSkipRunnerEnvVars sets the "skip_runner_env_vars" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateSkipRunnerEnvVars() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateSkipRunnerEnvVars()
 	})
 }
 

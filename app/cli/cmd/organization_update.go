@@ -33,6 +33,7 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		apiTokenMaxDaysInactive             string
 		enableAIAgentCollector              bool
 		blockAttestationsOnReleasedVersions bool
+		skipRunnerEnvVars                   bool
 	)
 
 	cmd := &cobra.Command{
@@ -62,6 +63,10 @@ func newOrganizationUpdateCmd() *cobra.Command {
 
 			if cmd.Flags().Changed("block-attestations-on-released-versions") {
 				opts.BlockAttestationsOnReleasedVersions = &blockAttestationsOnReleasedVersions
+			}
+
+			if cmd.Flags().Changed("skip-runner-env-vars") {
+				opts.SkipRunnerEnvVars = &skipRunnerEnvVars
 			}
 
 			if cmd.Flags().Changed("api-token-max-days-inactive") {
@@ -96,5 +101,6 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&apiTokenMaxDaysInactive, "api-token-max-days-inactive", "", "maximum days of inactivity before API tokens are auto-revoked (e.g. '90', '0' to disable)")
 	cmd.Flags().BoolVar(&enableAIAgentCollector, "enable-ai-agent-collector", false, "enable automatic AI agent config collection during attestation init")
 	cmd.Flags().BoolVar(&blockAttestationsOnReleasedVersions, "block-attestations-on-released-versions", false, "reject new attestations pushed to project versions that are already released")
+	cmd.Flags().BoolVar(&skipRunnerEnvVars, "skip-runner-env-vars", false, "opt out of storing the environment variables automatically discovered by the CI runner in the attestation")
 	return cmd
 }

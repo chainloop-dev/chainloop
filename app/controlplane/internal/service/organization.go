@@ -110,6 +110,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		APITokenInactivityThresholdDays:     apiTokenMaxDaysInactive,
 		EnableAIAgentCollector:              req.EnableAiAgentCollector,
 		BlockAttestationsOnReleasedVersions: req.BlockAttestationsOnReleasedVersions,
+		SkipRunnerEnvVars:                   req.SkipRunnerEnvVars,
 	})
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)

@@ -355,6 +355,9 @@ func (s *crafterSuite) TestResolveEnvVars() {
 		inGithubEnv  bool
 		inJenkinsEnv bool
 
+		// opt out of storing the auto-discovered runner env vars
+		skipRunnerEnvVars bool
+
 		expectedError   string
 		expectedEnvVars map[string]string
 	}{
@@ -409,6 +412,33 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				"WORKSPACE":    "/some/home/dir",
 				"NODE_NAME":    "some-node",
 			},
+		}, {
+			name:              "skip runner env vars stores only the contract allow-list",
+			inGithubEnv:       true,
+			skipRunnerEnvVars: true,
+			envVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			},
+			// the auto-discovered GITHUB_* vars are not stored, only the explicit allow-list
+			expectedEnvVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			},
+		}, {
+			name:              "skip runner env vars does not fail on missing runner vars",
+			inGithubEnv:       true,
+			skipRunnerEnvVars: true,
+			envVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+				// A required runner var is missing, but it must not fail since runner vars are skipped
+				"GITHUB_ACTOR": "",
+			},
+			expectedEnvVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			},
 		},
 	}
 
@@ -440,6 +470,8 @@ func (s *crafterSuite) TestResolveEnvVars() {
 
 			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, false, "", runner)
 			require.NoError(s.T(), err)
+
+			c.CraftingState.Attestation.SkipRunnerEnvVars = tc.skipRunnerEnvVars
 
 			err = c.ResolveEnvVars(context.Background(), "")
 

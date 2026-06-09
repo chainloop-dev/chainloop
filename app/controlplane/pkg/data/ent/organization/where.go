@@ -106,6 +106,11 @@ func BlockAttestationsOnReleasedVersions(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldBlockAttestationsOnReleasedVersions, v))
 }
 
+// SkipRunnerEnvVars applies equality check predicate on the "skip_runner_env_vars" field. It's identical to SkipRunnerEnvVarsEQ.
+func SkipRunnerEnvVars(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldSkipRunnerEnvVars, v))
+}
+
 // Suspended applies equality check predicate on the "suspended" field. It's identical to SuspendedEQ.
 func Suspended(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldSuspended, v))
@@ -414,6 +419,16 @@ func BlockAttestationsOnReleasedVersionsEQ(v bool) predicate.Organization {
 // BlockAttestationsOnReleasedVersionsNEQ applies the NEQ predicate on the "block_attestations_on_released_versions" field.
 func BlockAttestationsOnReleasedVersionsNEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldNEQ(FieldBlockAttestationsOnReleasedVersions, v))
+}
+
+// SkipRunnerEnvVarsEQ applies the EQ predicate on the "skip_runner_env_vars" field.
+func SkipRunnerEnvVarsEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldSkipRunnerEnvVars, v))
+}
+
+// SkipRunnerEnvVarsNEQ applies the NEQ predicate on the "skip_runner_env_vars" field.
+func SkipRunnerEnvVarsNEQ(v bool) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldSkipRunnerEnvVars, v))
 }
 
 // SuspendedEQ applies the EQ predicate on the "suspended" field.

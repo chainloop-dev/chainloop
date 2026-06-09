@@ -37,6 +37,8 @@ const (
 	FieldEnableAiAgentCollector = "enable_ai_agent_collector"
 	// FieldBlockAttestationsOnReleasedVersions holds the string denoting the block_attestations_on_released_versions field in the database.
 	FieldBlockAttestationsOnReleasedVersions = "block_attestations_on_released_versions"
+	// FieldSkipRunnerEnvVars holds the string denoting the skip_runner_env_vars field in the database.
+	FieldSkipRunnerEnvVars = "skip_runner_env_vars"
 	// FieldSuspended holds the string denoting the suspended field in the database.
 	FieldSuspended = "suspended"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
@@ -138,6 +140,7 @@ var Columns = []string{
 	FieldAPITokenInactivityThresholdDays,
 	FieldEnableAiAgentCollector,
 	FieldBlockAttestationsOnReleasedVersions,
+	FieldSkipRunnerEnvVars,
 	FieldSuspended,
 }
 
@@ -166,6 +169,8 @@ var (
 	DefaultEnableAiAgentCollector bool
 	// DefaultBlockAttestationsOnReleasedVersions holds the default value on creation for the "block_attestations_on_released_versions" field.
 	DefaultBlockAttestationsOnReleasedVersions bool
+	// DefaultSkipRunnerEnvVars holds the default value on creation for the "skip_runner_env_vars" field.
+	DefaultSkipRunnerEnvVars bool
 	// DefaultSuspended holds the default value on creation for the "suspended" field.
 	DefaultSuspended bool
 	// DefaultID holds the default value on creation for the "id" field.
@@ -228,6 +233,11 @@ func ByEnableAiAgentCollector(opts ...sql.OrderTermOption) OrderOption {
 // ByBlockAttestationsOnReleasedVersions orders the results by the block_attestations_on_released_versions field.
 func ByBlockAttestationsOnReleasedVersions(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBlockAttestationsOnReleasedVersions, opts...).ToFunc()
+}
+
+// BySkipRunnerEnvVars orders the results by the skip_runner_env_vars field.
+func BySkipRunnerEnvVars(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSkipRunnerEnvVars, opts...).ToFunc()
 }
 
 // BySuspended orders the results by the suspended field.

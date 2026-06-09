@@ -80,6 +80,10 @@
     "^(signingOptions)$": {
       "$ref": "attestation.v1.Attestation.SigningOptions.schema.json",
       "description": "Signing options"
+    },
+    "^(skipRunnerEnvVars)$": {
+      "description": "skip storing the environment variables automatically discovered by the CI runner.\n The contract's env_allow_list is not affected by this flag.",
+      "type": "boolean"
     }
   },
   "properties": {
@@ -188,6 +192,10 @@
     "signing_options": {
       "$ref": "attestation.v1.Attestation.SigningOptions.schema.json",
       "description": "Signing options"
+    },
+    "skip_runner_env_vars": {
+      "description": "skip storing the environment variables automatically discovered by the CI runner.\n The contract's env_allow_list is not affected by this flag.",
+      "type": "boolean"
     },
     "workflow": {
       "$ref": "attestation.v1.WorkflowMetadata.schema.json"

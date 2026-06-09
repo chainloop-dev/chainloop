@@ -169,6 +169,20 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 		s.False(got.EnableAIAgentCollector)
 	})
 
+	s.Run("valid skip runner env vars update", func() {
+		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, &biz.OrganizationUpdateOpts{
+			SkipRunnerEnvVars: toPtrBool(true),
+		})
+		s.NoError(err)
+		s.True(got.SkipRunnerEnvVars)
+
+		got, err = s.Organization.Update(ctx, s.user.ID, s.org.Name, &biz.OrganizationUpdateOpts{
+			SkipRunnerEnvVars: toPtrBool(false),
+		})
+		s.NoError(err)
+		s.False(got.SkipRunnerEnvVars)
+	})
+
 	s.Run("but not passing a value doesn't clear the hostnames value", func() {
 		got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, &biz.OrganizationUpdateOpts{
 			PoliciesAllowedHostnames: []string{"foo.com", "bar.com"},

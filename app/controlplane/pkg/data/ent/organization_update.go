@@ -203,6 +203,20 @@ func (_u *OrganizationUpdate) SetNillableBlockAttestationsOnReleasedVersions(v *
 	return _u
 }
 
+// SetSkipRunnerEnvVars sets the "skip_runner_env_vars" field.
+func (_u *OrganizationUpdate) SetSkipRunnerEnvVars(v bool) *OrganizationUpdate {
+	_u.mutation.SetSkipRunnerEnvVars(v)
+	return _u
+}
+
+// SetNillableSkipRunnerEnvVars sets the "skip_runner_env_vars" field if the given value is not nil.
+func (_u *OrganizationUpdate) SetNillableSkipRunnerEnvVars(v *bool) *OrganizationUpdate {
+	if v != nil {
+		_u.SetSkipRunnerEnvVars(*v)
+	}
+	return _u
+}
+
 // SetSuspended sets the "suspended" field.
 func (_u *OrganizationUpdate) SetSuspended(v bool) *OrganizationUpdate {
 	_u.mutation.SetSuspended(v)
@@ -634,6 +648,9 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.BlockAttestationsOnReleasedVersions(); ok {
 		_spec.SetField(organization.FieldBlockAttestationsOnReleasedVersions, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.SkipRunnerEnvVars(); ok {
+		_spec.SetField(organization.FieldSkipRunnerEnvVars, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
@@ -1228,6 +1245,20 @@ func (_u *OrganizationUpdateOne) SetNillableBlockAttestationsOnReleasedVersions(
 	return _u
 }
 
+// SetSkipRunnerEnvVars sets the "skip_runner_env_vars" field.
+func (_u *OrganizationUpdateOne) SetSkipRunnerEnvVars(v bool) *OrganizationUpdateOne {
+	_u.mutation.SetSkipRunnerEnvVars(v)
+	return _u
+}
+
+// SetNillableSkipRunnerEnvVars sets the "skip_runner_env_vars" field if the given value is not nil.
+func (_u *OrganizationUpdateOne) SetNillableSkipRunnerEnvVars(v *bool) *OrganizationUpdateOne {
+	if v != nil {
+		_u.SetSkipRunnerEnvVars(*v)
+	}
+	return _u
+}
+
 // SetSuspended sets the "suspended" field.
 func (_u *OrganizationUpdateOne) SetSuspended(v bool) *OrganizationUpdateOne {
 	_u.mutation.SetSuspended(v)
@@ -1689,6 +1720,9 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 	}
 	if value, ok := _u.mutation.BlockAttestationsOnReleasedVersions(); ok {
 		_spec.SetField(organization.FieldBlockAttestationsOnReleasedVersions, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.SkipRunnerEnvVars(); ok {
+		_spec.SetField(organization.FieldSkipRunnerEnvVars, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)

@@ -393,6 +393,8 @@ message OrgItem {
   bool enable_ai_agent_collector = 10;
   // Whether new attestations are rejected on project versions that are already released (prerelease == false)
   bool block_attestations_on_released_versions = 11;
+  // Whether the environment variables automatically discovered by the CI runner are skipped from the attestation
+  bool skip_runner_env_vars = 12;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;

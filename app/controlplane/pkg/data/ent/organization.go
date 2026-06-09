@@ -41,6 +41,8 @@ type Organization struct {
 	EnableAiAgentCollector bool `json:"enable_ai_agent_collector,omitempty"`
 	// BlockAttestationsOnReleasedVersions holds the value of the "block_attestations_on_released_versions" field.
 	BlockAttestationsOnReleasedVersions bool `json:"block_attestations_on_released_versions,omitempty"`
+	// SkipRunnerEnvVars holds the value of the "skip_runner_env_vars" field.
+	SkipRunnerEnvVars bool `json:"skip_runner_env_vars,omitempty"`
 	// Suspended holds the value of the "suspended" field.
 	Suspended bool `json:"suspended,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -162,7 +164,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case organization.FieldPoliciesAllowedHostnames:
 			values[i] = new([]byte)
-		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins, organization.FieldEnableAiAgentCollector, organization.FieldBlockAttestationsOnReleasedVersions, organization.FieldSuspended:
+		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins, organization.FieldEnableAiAgentCollector, organization.FieldBlockAttestationsOnReleasedVersions, organization.FieldSkipRunnerEnvVars, organization.FieldSuspended:
 			values[i] = new(sql.NullBool)
 		case organization.FieldAPITokenInactivityThresholdDays:
 			values[i] = new(sql.NullInt64)
@@ -261,6 +263,12 @@ func (_m *Organization) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field block_attestations_on_released_versions", values[i])
 			} else if value.Valid {
 				_m.BlockAttestationsOnReleasedVersions = value.Bool
+			}
+		case organization.FieldSkipRunnerEnvVars:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field skip_runner_env_vars", values[i])
+			} else if value.Valid {
+				_m.SkipRunnerEnvVars = value.Bool
 			}
 		case organization.FieldSuspended:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -383,6 +391,9 @@ func (_m *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("block_attestations_on_released_versions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.BlockAttestationsOnReleasedVersions))
+	builder.WriteString(", ")
+	builder.WriteString("skip_runner_env_vars=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SkipRunnerEnvVars))
 	builder.WriteString(", ")
 	builder.WriteString("suspended=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Suspended))

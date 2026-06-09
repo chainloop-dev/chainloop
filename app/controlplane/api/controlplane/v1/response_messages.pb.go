@@ -2305,8 +2305,10 @@ type OrgItem struct {
 	EnableAiAgentCollector bool `protobuf:"varint,10,opt,name=enable_ai_agent_collector,json=enableAiAgentCollector,proto3" json:"enable_ai_agent_collector,omitempty"`
 	// Whether new attestations are rejected on project versions that are already released (prerelease == false)
 	BlockAttestationsOnReleasedVersions bool `protobuf:"varint,11,opt,name=block_attestations_on_released_versions,json=blockAttestationsOnReleasedVersions,proto3" json:"block_attestations_on_released_versions,omitempty"`
-	unknownFields                       protoimpl.UnknownFields
-	sizeCache                           protoimpl.SizeCache
+	// Whether the environment variables automatically discovered by the CI runner are skipped from the attestation
+	SkipRunnerEnvVars bool `protobuf:"varint,12,opt,name=skip_runner_env_vars,json=skipRunnerEnvVars,proto3" json:"skip_runner_env_vars,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *OrgItem) Reset() {
@@ -2412,6 +2414,13 @@ func (x *OrgItem) GetEnableAiAgentCollector() bool {
 func (x *OrgItem) GetBlockAttestationsOnReleasedVersions() bool {
 	if x != nil {
 		return x.BlockAttestationsOnReleasedVersions
+	}
+	return false
+}
+
+func (x *OrgItem) GetSkipRunnerEnvVars() bool {
+	if x != nil {
+		return x.SkipRunnerEnvVars
 	}
 	return false
 }
@@ -3301,7 +3310,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x123\n" +
-	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xb2\a\n" +
+	"\x04role\x18\x06 \x01(\x0e2\x1f.controlplane.v1.MembershipRoleR\x04role\"\xe3\a\n" +
 	"\aOrgItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
@@ -3316,7 +3325,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x1bapi_token_max_days_inactive\x18\t \x01(\x05H\x00R\x17apiTokenMaxDaysInactive\x88\x01\x01\x129\n" +
 	"\x19enable_ai_agent_collector\x18\n" +
 	" \x01(\bR\x16enableAiAgentCollector\x12T\n" +
-	"'block_attestations_on_released_versions\x18\v \x01(\bR#blockAttestationsOnReleasedVersions\"\xb4\x01\n" +
+	"'block_attestations_on_released_versions\x18\v \x01(\bR#blockAttestationsOnReleasedVersions\x12/\n" +
+	"\x14skip_runner_env_vars\x18\f \x01(\bR\x11skipRunnerEnvVars\"\xb4\x01\n" +
 	"\x1fPolicyViolationBlockingStrategy\x122\n" +
 	".POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED\x10\x00\x12,\n" +
 	"(POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK\x10\x01\x12/\n" +

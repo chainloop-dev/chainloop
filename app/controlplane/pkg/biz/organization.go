@@ -53,6 +53,8 @@ type Organization struct {
 	EnableAIAgentCollector bool
 	// BlockAttestationsOnReleasedVersions rejects new attestations pushed to project versions that are already released (prerelease == false)
 	BlockAttestationsOnReleasedVersions bool
+	// SkipRunnerEnvVars opts out of storing the environment variables automatically discovered by the CI runner in the attestation
+	SkipRunnerEnvVars bool
 	// Suspended indicates whether the organization is suspended
 	Suspended bool
 }
@@ -68,6 +70,7 @@ type OrganizationUpdateOpts struct {
 	APITokenInactivityThresholdDays     *int
 	EnableAIAgentCollector              *bool
 	BlockAttestationsOnReleasedVersions *bool
+	SkipRunnerEnvVars                   *bool
 }
 
 type OrganizationRepo interface {
