@@ -152,6 +152,8 @@ message AttestationServiceInitResponse {
     string ui_dashboard_url = 7;
     // Whether AI agent config collection is enabled at the org level
     bool enable_ai_agent_collector = 8;
+    // Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation
+    bool skip_runner_env_vars = 9;
   }
 
   message SigningOptions {

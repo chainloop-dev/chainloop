@@ -36,6 +36,10 @@
       "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
       "type": "boolean"
     },
+    "^(skipRunnerEnvVars)$": {
+      "description": "Opt out of storing the environment variables automatically discovered by the CI runner in the attestation",
+      "type": "boolean"
+    },
     "^(updatePoliciesAllowedHostnames)$": {
       "description": "flag that allows us to detect if the value is explicitly set\n since repeated fields can not be optional",
       "type": "boolean"
@@ -77,6 +81,10 @@
     },
     "restrict_contract_creation_to_org_admins": {
       "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
+      "type": "boolean"
+    },
+    "skip_runner_env_vars": {
+      "description": "Opt out of storing the environment variables automatically discovered by the CI runner in the attestation",
       "type": "boolean"
     },
     "update_policies_allowed_hostnames": {

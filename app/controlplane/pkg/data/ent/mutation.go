@@ -9031,6 +9031,7 @@ type OrganizationMutation struct {
 	addapi_token_inactivity_threshold_days   *int
 	enable_ai_agent_collector                *bool
 	block_attestations_on_released_versions  *bool
+	skip_runner_env_vars                     *bool
 	suspended                                *bool
 	clearedFields                            map[string]struct{}
 	memberships                              map[uuid.UUID]struct{}
@@ -9641,6 +9642,42 @@ func (m *OrganizationMutation) ResetBlockAttestationsOnReleasedVersions() {
 	m.block_attestations_on_released_versions = nil
 }
 
+// SetSkipRunnerEnvVars sets the "skip_runner_env_vars" field.
+func (m *OrganizationMutation) SetSkipRunnerEnvVars(b bool) {
+	m.skip_runner_env_vars = &b
+}
+
+// SkipRunnerEnvVars returns the value of the "skip_runner_env_vars" field in the mutation.
+func (m *OrganizationMutation) SkipRunnerEnvVars() (r bool, exists bool) {
+	v := m.skip_runner_env_vars
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSkipRunnerEnvVars returns the old "skip_runner_env_vars" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldSkipRunnerEnvVars(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSkipRunnerEnvVars is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSkipRunnerEnvVars requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSkipRunnerEnvVars: %w", err)
+	}
+	return oldValue.SkipRunnerEnvVars, nil
+}
+
+// ResetSkipRunnerEnvVars resets all changes to the "skip_runner_env_vars" field.
+func (m *OrganizationMutation) ResetSkipRunnerEnvVars() {
+	m.skip_runner_env_vars = nil
+}
+
 // SetSuspended sets the "suspended" field.
 func (m *OrganizationMutation) SetSuspended(b bool) {
 	m.suspended = &b
@@ -10197,7 +10234,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -10230,6 +10267,9 @@ func (m *OrganizationMutation) Fields() []string {
 	}
 	if m.block_attestations_on_released_versions != nil {
 		fields = append(fields, organization.FieldBlockAttestationsOnReleasedVersions)
+	}
+	if m.skip_runner_env_vars != nil {
+		fields = append(fields, organization.FieldSkipRunnerEnvVars)
 	}
 	if m.suspended != nil {
 		fields = append(fields, organization.FieldSuspended)
@@ -10264,6 +10304,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.EnableAiAgentCollector()
 	case organization.FieldBlockAttestationsOnReleasedVersions:
 		return m.BlockAttestationsOnReleasedVersions()
+	case organization.FieldSkipRunnerEnvVars:
+		return m.SkipRunnerEnvVars()
 	case organization.FieldSuspended:
 		return m.Suspended()
 	}
@@ -10297,6 +10339,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldEnableAiAgentCollector(ctx)
 	case organization.FieldBlockAttestationsOnReleasedVersions:
 		return m.OldBlockAttestationsOnReleasedVersions(ctx)
+	case organization.FieldSkipRunnerEnvVars:
+		return m.OldSkipRunnerEnvVars(ctx)
 	case organization.FieldSuspended:
 		return m.OldSuspended(ctx)
 	}
@@ -10384,6 +10428,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBlockAttestationsOnReleasedVersions(v)
+		return nil
+	case organization.FieldSkipRunnerEnvVars:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSkipRunnerEnvVars(v)
 		return nil
 	case organization.FieldSuspended:
 		v, ok := value.(bool)
@@ -10509,6 +10560,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldBlockAttestationsOnReleasedVersions:
 		m.ResetBlockAttestationsOnReleasedVersions()
+		return nil
+	case organization.FieldSkipRunnerEnvVars:
+		m.ResetSkipRunnerEnvVars()
 		return nil
 	case organization.FieldSuspended:
 		m.ResetSuspended()

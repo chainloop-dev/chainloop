@@ -108,6 +108,9 @@ message OrganizationServiceUpdateRequest {
 
   // Reject new attestations pushed to project versions that are already released (prerelease == false)
   optional bool block_attestations_on_released_versions = 9;
+
+  // Opt out of storing the environment variables automatically discovered by the CI runner in the attestation
+  optional bool skip_runner_env_vars = 10;
 }
 
 message OrganizationServiceUpdateResponse {

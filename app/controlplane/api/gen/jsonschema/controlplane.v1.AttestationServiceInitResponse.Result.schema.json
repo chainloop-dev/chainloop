@@ -22,6 +22,10 @@
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",
       "description": "Signing options"
     },
+    "^(skipRunnerEnvVars)$": {
+      "description": "Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation",
+      "type": "boolean"
+    },
     "^(uiDashboardUrl)$": {
       "description": "URL pointing to the web dashboard. It might be empty if not available",
       "type": "string"
@@ -53,6 +57,10 @@
     "signing_options": {
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",
       "description": "Signing options"
+    },
+    "skip_runner_env_vars": {
+      "description": "Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation",
+      "type": "boolean"
     },
     "ui_dashboard_url": {
       "description": "URL pointing to the web dashboard. It might be empty if not available",

@@ -229,8 +229,12 @@ func init() {
 	organizationDescBlockAttestationsOnReleasedVersions := organizationFields[11].Descriptor()
 	// organization.DefaultBlockAttestationsOnReleasedVersions holds the default value on creation for the block_attestations_on_released_versions field.
 	organization.DefaultBlockAttestationsOnReleasedVersions = organizationDescBlockAttestationsOnReleasedVersions.Default.(bool)
+	// organizationDescSkipRunnerEnvVars is the schema descriptor for skip_runner_env_vars field.
+	organizationDescSkipRunnerEnvVars := organizationFields[12].Descriptor()
+	// organization.DefaultSkipRunnerEnvVars holds the default value on creation for the skip_runner_env_vars field.
+	organization.DefaultSkipRunnerEnvVars = organizationDescSkipRunnerEnvVars.Default.(bool)
 	// organizationDescSuspended is the schema descriptor for suspended field.
-	organizationDescSuspended := organizationFields[12].Descriptor()
+	organizationDescSuspended := organizationFields[13].Descriptor()
 	// organization.DefaultSuspended holds the default value on creation for the suspended field.
 	organization.DefaultSuspended = organizationDescSuspended.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.

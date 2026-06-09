@@ -1427,8 +1427,10 @@ type AttestationServiceInitResponse_Result struct {
 	UiDashboardUrl string `protobuf:"bytes,7,opt,name=ui_dashboard_url,json=uiDashboardUrl,proto3" json:"ui_dashboard_url,omitempty"`
 	// Whether AI agent config collection is enabled at the org level
 	EnableAiAgentCollector bool `protobuf:"varint,8,opt,name=enable_ai_agent_collector,json=enableAiAgentCollector,proto3" json:"enable_ai_agent_collector,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation
+	SkipRunnerEnvVars bool `protobuf:"varint,9,opt,name=skip_runner_env_vars,json=skipRunnerEnvVars,proto3" json:"skip_runner_env_vars,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *AttestationServiceInitResponse_Result) Reset() {
@@ -1506,6 +1508,13 @@ func (x *AttestationServiceInitResponse_Result) GetUiDashboardUrl() string {
 func (x *AttestationServiceInitResponse_Result) GetEnableAiAgentCollector() bool {
 	if x != nil {
 		return x.EnableAiAgentCollector
+	}
+	return false
+}
+
+func (x *AttestationServiceInitResponse_Result) GetSkipRunnerEnvVars() bool {
+	if x != nil {
+		return x.SkipRunnerEnvVars
 	}
 	return false
 }
@@ -1834,9 +1843,9 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x18require_existing_version\x18\a \x01(\bR\x16requireExistingVersion\x12,\n" +
 	"\x12use_latest_version\x18\b \x01(\bR\x10useLatestVersion\x12)\n" +
 	"\x0emark_as_latest\x18\t \x01(\bH\x00R\fmarkAsLatest\x88\x01\x01B\x11\n" +
-	"\x0f_mark_as_latest\"\x94\x05\n" +
+	"\x0f_mark_as_latest\"\xc5\x05\n" +
 	"\x1eAttestationServiceInitResponse\x12N\n" +
-	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xb8\x03\n" +
+	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xe9\x03\n" +
 	"\x06Result\x12C\n" +
 	"\fworkflow_run\x18\x02 \x01(\v2 .controlplane.v1.WorkflowRunItemR\vworkflowRun\x12\"\n" +
 	"\forganization\x18\x03 \x01(\tR\forganization\x129\n" +
@@ -1844,7 +1853,8 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x0fsigning_options\x18\x05 \x01(\v2>.controlplane.v1.AttestationServiceInitResponse.SigningOptionsR\x0esigningOptions\x12<\n" +
 	"\x1apolicies_allowed_hostnames\x18\x06 \x03(\tR\x18policiesAllowedHostnames\x12(\n" +
 	"\x10ui_dashboard_url\x18\a \x01(\tR\x0euiDashboardUrl\x129\n" +
-	"\x19enable_ai_agent_collector\x18\b \x01(\bR\x16enableAiAgentCollector\x1ag\n" +
+	"\x19enable_ai_agent_collector\x18\b \x01(\bR\x16enableAiAgentCollector\x12/\n" +
+	"\x14skip_runner_env_vars\x18\t \x01(\bR\x11skipRunnerEnvVars\x1ag\n" +
 	"\x0eSigningOptions\x126\n" +
 	"\x17timestamp_authority_url\x18\x01 \x01(\tR\x15timestampAuthorityUrl\x12\x1d\n" +
 	"\n" +

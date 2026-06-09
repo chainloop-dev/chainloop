@@ -896,6 +896,8 @@ export interface OrgItem {
   enableAiAgentCollector: boolean;
   /** Whether new attestations are rejected on project versions that are already released (prerelease == false) */
   blockAttestationsOnReleasedVersions: boolean;
+  /** Whether the environment variables automatically discovered by the CI runner are skipped from the attestation */
+  skipRunnerEnvVars: boolean;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -4406,6 +4408,7 @@ function createBaseOrgItem(): OrgItem {
     apiTokenMaxDaysInactive: undefined,
     enableAiAgentCollector: false,
     blockAttestationsOnReleasedVersions: false,
+    skipRunnerEnvVars: false,
   };
 }
 
@@ -4443,6 +4446,9 @@ export const OrgItem = {
     }
     if (message.blockAttestationsOnReleasedVersions === true) {
       writer.uint32(88).bool(message.blockAttestationsOnReleasedVersions);
+    }
+    if (message.skipRunnerEnvVars === true) {
+      writer.uint32(96).bool(message.skipRunnerEnvVars);
     }
     return writer;
   },
@@ -4531,6 +4537,13 @@ export const OrgItem = {
 
           message.blockAttestationsOnReleasedVersions = reader.bool();
           continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.skipRunnerEnvVars = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4565,6 +4578,7 @@ export const OrgItem = {
       blockAttestationsOnReleasedVersions: isSet(object.blockAttestationsOnReleasedVersions)
         ? Boolean(object.blockAttestationsOnReleasedVersions)
         : false,
+      skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : false,
     };
   },
 
@@ -4592,6 +4606,7 @@ export const OrgItem = {
     message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
     message.blockAttestationsOnReleasedVersions !== undefined &&
       (obj.blockAttestationsOnReleasedVersions = message.blockAttestationsOnReleasedVersions);
+    message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
     return obj;
   },
 
@@ -4612,6 +4627,7 @@ export const OrgItem = {
     message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? false;
     message.blockAttestationsOnReleasedVersions = object.blockAttestationsOnReleasedVersions ?? false;
+    message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? false;
     return message;
   },
 };

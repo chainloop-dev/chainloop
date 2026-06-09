@@ -42,6 +42,8 @@ type NewOrgUpdateOpts struct {
 	EnableAIAgentCollector *bool
 	// BlockAttestationsOnReleasedVersions rejects new attestations pushed to project versions that are already released
 	BlockAttestationsOnReleasedVersions *bool
+	// SkipRunnerEnvVars opts out of storing the environment variables automatically discovered by the CI runner in the attestation
+	SkipRunnerEnvVars *bool
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -54,6 +56,7 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 		RestrictContractCreationToOrgAdmins: opts.RestrictContractCreation,
 		EnableAiAgentCollector:              opts.EnableAIAgentCollector,
 		BlockAttestationsOnReleasedVersions: opts.BlockAttestationsOnReleasedVersions,
+		SkipRunnerEnvVars:                   opts.SkipRunnerEnvVars,
 	}
 
 	if opts.PoliciesAllowedHostnames != nil {

@@ -45,6 +45,11 @@ export interface Attestation {
   policiesAllowedHostnames: string[];
   /** CAS backend information used during attestation */
   casBackend?: Attestation_CASBackend;
+  /**
+   * skip storing the environment variables automatically discovered by the CI runner.
+   * The contract's env_allow_list is not affected by this flag.
+   */
+  skipRunnerEnvVars: boolean;
 }
 
 export interface Attestation_MaterialsEntry {
@@ -634,6 +639,7 @@ function createBaseAttestation(): Attestation {
     auth: undefined,
     policiesAllowedHostnames: [],
     casBackend: undefined,
+    skipRunnerEnvVars: false,
   };
 }
 
@@ -689,6 +695,9 @@ export const Attestation = {
     }
     if (message.casBackend !== undefined) {
       Attestation_CASBackend.encode(message.casBackend, writer.uint32(154).fork()).ldelim();
+    }
+    if (message.skipRunnerEnvVars === true) {
+      writer.uint32(160).bool(message.skipRunnerEnvVars);
     }
     return writer;
   },
@@ -828,6 +837,13 @@ export const Attestation = {
 
           message.casBackend = Attestation_CASBackend.decode(reader, reader.uint32());
           continue;
+        case 20:
+          if (tag !== 160) {
+            break;
+          }
+
+          message.skipRunnerEnvVars = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -879,6 +895,7 @@ export const Attestation = {
         ? object.policiesAllowedHostnames.map((e: any) => String(e))
         : [],
       casBackend: isSet(object.casBackend) ? Attestation_CASBackend.fromJSON(object.casBackend) : undefined,
+      skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : false,
     };
   },
 
@@ -930,6 +947,7 @@ export const Attestation = {
     }
     message.casBackend !== undefined &&
       (obj.casBackend = message.casBackend ? Attestation_CASBackend.toJSON(message.casBackend) : undefined);
+    message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
     return obj;
   },
 
@@ -987,6 +1005,7 @@ export const Attestation = {
     message.casBackend = (object.casBackend !== undefined && object.casBackend !== null)
       ? Attestation_CASBackend.fromPartial(object.casBackend)
       : undefined;
+    message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? false;
     return message;
   },
 };

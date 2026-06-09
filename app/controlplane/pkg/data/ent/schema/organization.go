@@ -62,6 +62,9 @@ func (Organization) Fields() []ent.Field {
 		field.Bool("enable_ai_agent_collector").Default(false),
 		// block_attestations_on_released_versions rejects new attestations pushed to project versions that are already released (prerelease == false)
 		field.Bool("block_attestations_on_released_versions").Default(false),
+		// skip_runner_env_vars opts out of storing the environment variables automatically
+		// discovered by the CI runner in the attestation. The contract's env_allow_list is not affected.
+		field.Bool("skip_runner_env_vars").Default(false),
 		// Suspended orgs are blocked from all operations.
 		field.Bool("suspended").Default(false),
 	}

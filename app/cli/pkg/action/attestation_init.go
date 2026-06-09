@@ -200,6 +200,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		blockOnPolicyViolation   bool
 		policiesAllowedHostnames []string
 		enableAIAgentCollector   bool
+		skipRunnerEnvVars        bool
 		// Timestamp Authority URL for new attestations
 		timestampAuthorityURL, signingCAName string
 		uiDashboardURL                       string
@@ -233,6 +234,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		blockOnPolicyViolation = result.GetBlockOnPolicyViolation()
 		policiesAllowedHostnames = result.GetPoliciesAllowedHostnames()
 		enableAIAgentCollector = result.GetEnableAiAgentCollector()
+		skipRunnerEnvVars = result.GetSkipRunnerEnvVars()
 		signingOpts := result.GetSigningOptions()
 		timestampAuthorityURL = signingOpts.GetTimestampAuthorityUrl()
 		signingCAName = signingOpts.GetSigningCa()
@@ -291,6 +293,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		Runner:                   discoveredRunner,
 		BlockOnPolicyViolation:   blockOnPolicyViolation,
 		PoliciesAllowedHostnames: policiesAllowedHostnames,
+		SkipRunnerEnvVars:        skipRunnerEnvVars,
 		SigningOptions: &crafter.SigningOpts{
 			TimestampAuthorityURL: timestampAuthorityURL,
 			SigningCAName:         signingCAName,

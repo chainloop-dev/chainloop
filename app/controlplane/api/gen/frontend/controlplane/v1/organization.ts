@@ -93,7 +93,11 @@ export interface OrganizationServiceUpdateRequest {
     | boolean
     | undefined;
   /** Reject new attestations pushed to project versions that are already released (prerelease == false) */
-  blockAttestationsOnReleasedVersions?: boolean | undefined;
+  blockAttestationsOnReleasedVersions?:
+    | boolean
+    | undefined;
+  /** Opt out of storing the environment variables automatically discovered by the CI runner in the attestation */
+  skipRunnerEnvVars?: boolean | undefined;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -686,6 +690,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     apiTokenMaxDaysInactive: undefined,
     enableAiAgentCollector: undefined,
     blockAttestationsOnReleasedVersions: undefined,
+    skipRunnerEnvVars: undefined,
   };
 }
 
@@ -717,6 +722,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.blockAttestationsOnReleasedVersions !== undefined) {
       writer.uint32(72).bool(message.blockAttestationsOnReleasedVersions);
+    }
+    if (message.skipRunnerEnvVars !== undefined) {
+      writer.uint32(80).bool(message.skipRunnerEnvVars);
     }
     return writer;
   },
@@ -791,6 +799,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.blockAttestationsOnReleasedVersions = reader.bool();
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.skipRunnerEnvVars = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -823,6 +838,7 @@ export const OrganizationServiceUpdateRequest = {
       blockAttestationsOnReleasedVersions: isSet(object.blockAttestationsOnReleasedVersions)
         ? Boolean(object.blockAttestationsOnReleasedVersions)
         : undefined,
+      skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : undefined,
     };
   },
 
@@ -846,6 +862,7 @@ export const OrganizationServiceUpdateRequest = {
     message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
     message.blockAttestationsOnReleasedVersions !== undefined &&
       (obj.blockAttestationsOnReleasedVersions = message.blockAttestationsOnReleasedVersions);
+    message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
     return obj;
   },
 
@@ -868,6 +885,7 @@ export const OrganizationServiceUpdateRequest = {
     message.apiTokenMaxDaysInactive = object.apiTokenMaxDaysInactive ?? undefined;
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? undefined;
     message.blockAttestationsOnReleasedVersions = object.blockAttestationsOnReleasedVersions ?? undefined;
+    message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? undefined;
     return message;
   },
 };

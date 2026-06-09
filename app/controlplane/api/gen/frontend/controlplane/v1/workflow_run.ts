@@ -138,6 +138,8 @@ export interface AttestationServiceInitResponse_Result {
   uiDashboardUrl: string;
   /** Whether AI agent config collection is enabled at the org level */
   enableAiAgentCollector: boolean;
+  /** Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation */
+  skipRunnerEnvVars: boolean;
 }
 
 export interface AttestationServiceInitResponse_SigningOptions {
@@ -1348,6 +1350,7 @@ function createBaseAttestationServiceInitResponse_Result(): AttestationServiceIn
     policiesAllowedHostnames: [],
     uiDashboardUrl: "",
     enableAiAgentCollector: false,
+    skipRunnerEnvVars: false,
   };
 }
 
@@ -1373,6 +1376,9 @@ export const AttestationServiceInitResponse_Result = {
     }
     if (message.enableAiAgentCollector === true) {
       writer.uint32(64).bool(message.enableAiAgentCollector);
+    }
+    if (message.skipRunnerEnvVars === true) {
+      writer.uint32(72).bool(message.skipRunnerEnvVars);
     }
     return writer;
   },
@@ -1433,6 +1439,13 @@ export const AttestationServiceInitResponse_Result = {
 
           message.enableAiAgentCollector = reader.bool();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.skipRunnerEnvVars = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1455,6 +1468,7 @@ export const AttestationServiceInitResponse_Result = {
         : [],
       uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
       enableAiAgentCollector: isSet(object.enableAiAgentCollector) ? Boolean(object.enableAiAgentCollector) : false,
+      skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : false,
     };
   },
 
@@ -1474,6 +1488,7 @@ export const AttestationServiceInitResponse_Result = {
     }
     message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
     message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
+    message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
     return obj;
   },
 
@@ -1498,6 +1513,7 @@ export const AttestationServiceInitResponse_Result = {
     message.policiesAllowedHostnames = object.policiesAllowedHostnames?.map((e) => e) || [];
     message.uiDashboardUrl = object.uiDashboardUrl ?? "";
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? false;
+    message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? false;
     return message;
   },
 };

@@ -52,6 +52,10 @@
       "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
       "type": "boolean"
     },
+    "^(skip_runner_env_vars)$": {
+      "description": "Whether the environment variables automatically discovered by the CI runner are skipped from the attestation",
+      "type": "boolean"
+    },
     "^(updated_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json"
     }
@@ -110,6 +114,10 @@
     },
     "restrictContractCreationToOrgAdmins": {
       "description": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)",
+      "type": "boolean"
+    },
+    "skipRunnerEnvVars": {
+      "description": "Whether the environment variables automatically discovered by the CI runner are skipped from the attestation",
       "type": "boolean"
     },
     "updatedAt": {
