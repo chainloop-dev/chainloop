@@ -422,6 +422,19 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 	case biz.IsErrReleasedVersionImmutable(err):
 		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
+		// Business precondition failures (e.g. adding attestations to a released project version)
+		// are client errors: propagate them instead of masking and reporting them to Sentry.
+		// They can reach this point as gRPC status errors when an error already converted by
+		// this function is processed again (e.g. Store wrapping storeAttestation).
+		// We extract the status via GRPCStatus() instead of status.FromError because the latter
+		// rewrites the message of wrapped errors with the "rpc error: ..." prefix.
+		var gs interface{ GRPCStatus() *status.Status }
+		if errors.As(err, &gs) {
+			if s := gs.GRPCStatus(); s.Code() == codes.FailedPrecondition {
+				return s.Err()
+			}
+		}
+
 		return servicelogger.LogAndMaskErr(err, l)
 	}
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,79 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+func TestHandleUseCaseErr(t *testing.T) {
+	t.Parallel()
+
+	immutableErr := status.Error(codes.FailedPrecondition, `version "v1.83.2+next" is released and immutable: attestations cannot be added`)
+
+	testCases := []struct {
+		name        string
+		err         error
+		wantCode    codes.Code
+		wantMessage string
+	}{
+		{
+			name:        "failed precondition status error is propagated",
+			err:         immutableErr,
+			wantCode:    codes.FailedPrecondition,
+			wantMessage: `version "v1.83.2+next" is released and immutable: attestations cannot be added`,
+		},
+		{
+			name:        "wrapped failed precondition keeps code and original message",
+			err:         fmt.Errorf("saving attestation digest: %w", immutableErr),
+			wantCode:    codes.FailedPrecondition,
+			wantMessage: `version "v1.83.2+next" is released and immutable: attestations cannot be added`,
+		},
+		{
+			name:        "released version immutable biz error maps to failed precondition",
+			err:         fmt.Errorf("saving attestation digest: %w", biz.NewErrReleasedVersionImmutable("v1.83.2+next")),
+			wantCode:    codes.FailedPrecondition,
+			wantMessage: `saving attestation digest: version "v1.83.2+next" is released and immutable: attestations cannot be added`,
+		},
+		{
+			name:        "already converted error is propagated unchanged when processed again",
+			err:         handleUseCaseErr(fmt.Errorf("saving attestation digest: %w", biz.NewErrReleasedVersionImmutable("v1.83.2+next")), nil),
+			wantCode:    codes.FailedPrecondition,
+			wantMessage: `saving attestation digest: version "v1.83.2+next" is released and immutable: attestations cannot be added`,
+		},
+		{
+			name:        "validation error maps to bad request",
+			err:         biz.NewErrValidationStr("invalid input"),
+			wantCode:    codes.InvalidArgument,
+			wantMessage: "validation error: invalid input",
+		},
+		{
+			name:        "unknown error is masked as internal server error",
+			err:         errors.New("sensitive details"),
+			wantCode:    codes.Internal,
+			wantMessage: "server error",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := handleUseCaseErr(tc.err, nil)
+			require.Error(t, got)
+			assert.Equal(t, tc.wantCode, status.Code(got))
+			assert.Equal(t, tc.wantMessage, kerrors.FromError(got).GetMessage())
+		})
+	}
+}
 
 func TestRequireCurrentUser(t *testing.T) {
 	t.Parallel()
