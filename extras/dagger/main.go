@@ -156,6 +156,12 @@ func (m *Chainloop) Init(
 	// mark the version as release
 	// +optional
 	release bool,
+	// Control whether this project version is promoted to "latest".
+	// ON_CREATE (default): new versions become latest, existing ones are untouched.
+	// TRUE: force-promote a pre-release version. FALSE: skip promotion entirely.
+	// +optional
+	// +default="ON_CREATE"
+	markLatest MarkLatest,
 	// Github event file for PR detection (when running in Github Actions)
 	// +optional
 	githubEventFile *dagger.File,
@@ -281,6 +287,19 @@ func (m *Chainloop) Init(
 		args = append(args,
 			"--release",
 		)
+	}
+
+	// Map the tri-state enum onto the CLI's --mark-latest flag. ON_CREATE omits
+	// the flag so the server applies its default behavior. An enum (non-empty
+	// string) is used instead of *bool because Dagger v0.19.11 collapses *bool
+	// to bool in the generated SDK and drops the false value (see PFM-6269).
+	switch markLatest {
+	case MarkLatestTrue:
+		args = append(args, "--mark-latest=true")
+	case MarkLatestFalse:
+		args = append(args, "--mark-latest=false")
+	case MarkLatestOnCreate:
+		// omit the flag → CLI sends no value → server applies its default
 	}
 
 	info, err := att.
@@ -697,6 +716,23 @@ type OutputFormat string
 const (
 	OutputFormatTable OutputFormat = "table"
 	OutputFormatJSON  OutputFormat = "json"
+)
+
+// MarkLatest controls whether a project version is promoted to "latest" during
+// attestation init. It is modelled as an enum rather than a *bool because the
+// Dagger v0.19.11 SDK collapses *bool parameters to bool and drops the false
+// value before it reaches the wire, making the "skip promotion" state
+// unreachable (see PFM-6269). A non-empty string survives that check.
+type MarkLatest string
+
+const (
+	// MarkLatestOnCreate keeps the server default: a newly created version
+	// becomes latest, while existing/pre-release versions are left unchanged.
+	MarkLatestOnCreate MarkLatest = "ON_CREATE"
+	// MarkLatestTrue force-promotes a pre-release version to latest.
+	MarkLatestTrue MarkLatest = "TRUE"
+	// MarkLatestFalse skips latest promotion, even for newly created versions.
+	MarkLatestFalse MarkLatest = "FALSE"
 )
 
 // Generate, sign and push the attestation to the chainloop control plane
