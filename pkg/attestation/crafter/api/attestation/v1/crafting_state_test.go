@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -198,6 +198,19 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			},
 			filename:  "testdata/sbom.cyclonedx.json",
 			testField: "bomFormat",
+		},
+		{
+			name: "sigcheck csv material",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_SYSINTERNALS_SIGCHECK,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+					},
+				},
+			},
+			filename:  "testdata/sigcheck-report.csv",
+			testField: "elements",
 		},
 	}
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/sigcheck"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -142,6 +143,15 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 		rawMaterial, err = json.Marshal(&report)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal to json Jacoco report file: %w", err)
+		}
+	case v1.CraftingSchema_Material_SYSINTERNALS_SIGCHECK:
+		report, ierr := sigcheck.Parse(rawMaterial)
+		if ierr != nil {
+			return nil, fmt.Errorf("failed to ingest sigcheck report: %w", ierr)
+		}
+		rawMaterial, err = report.JSON()
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal sigcheck report: %w", err)
 		}
 	}
 

@@ -165,6 +165,9 @@ message CraftingSchema {
       GRAPHQL_SPEC = 32;
       // detect-secrets baseline file https://github.com/Yelp/detect-secrets
       YELP_DETECT_SECRETS_BASELINE = 33;
+      // Sysinternals sigcheck output in CSV format
+      // https://learn.microsoft.com/en-us/sysinternals/downloads/sigcheck
+      SYSINTERNALS_SIGCHECK = 34;
     }
   }
 }
