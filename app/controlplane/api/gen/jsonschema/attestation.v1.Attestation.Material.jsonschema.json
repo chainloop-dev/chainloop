@@ -49,7 +49,8 @@
             "CHAINLOOP_AI_CODING_SESSION",
             "OPENAPI_SPEC",
             "ASYNCAPI_SPEC",
-            "GRAPHQL_SPEC"
+            "GRAPHQL_SPEC",
+            "YELP_DETECT_SECRETS_BASELINE"
           ],
           "title": "Material Type",
           "type": "string"
@@ -134,7 +135,8 @@
             "CHAINLOOP_AI_CODING_SESSION",
             "OPENAPI_SPEC",
             "ASYNCAPI_SPEC",
-            "GRAPHQL_SPEC"
+            "GRAPHQL_SPEC",
+            "YELP_DETECT_SECRETS_BASELINE"
           ],
           "title": "Material Type",
           "type": "string"

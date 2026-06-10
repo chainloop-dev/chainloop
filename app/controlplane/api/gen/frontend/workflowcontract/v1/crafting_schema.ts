@@ -278,6 +278,8 @@ export enum CraftingSchema_Material_MaterialType {
    * https://spec.graphql.org/
    */
   GRAPHQL_SPEC = 32,
+  /** YELP_DETECT_SECRETS_BASELINE - detect-secrets baseline file https://github.com/Yelp/detect-secrets */
+  YELP_DETECT_SECRETS_BASELINE = 33,
   UNRECOGNIZED = -1,
 }
 
@@ -382,6 +384,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 32:
     case "GRAPHQL_SPEC":
       return CraftingSchema_Material_MaterialType.GRAPHQL_SPEC;
+    case 33:
+    case "YELP_DETECT_SECRETS_BASELINE":
+      return CraftingSchema_Material_MaterialType.YELP_DETECT_SECRETS_BASELINE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -457,6 +462,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "ASYNCAPI_SPEC";
     case CraftingSchema_Material_MaterialType.GRAPHQL_SPEC:
       return "GRAPHQL_SPEC";
+    case CraftingSchema_Material_MaterialType.YELP_DETECT_SECRETS_BASELINE:
+      return "YELP_DETECT_SECRETS_BASELINE";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
