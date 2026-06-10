@@ -287,6 +287,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewChainloopPRInfoCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_GITLEAKS_JSON:
 		crafter, err = NewGitleaksReportCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_YELP_DETECT_SECRETS_BASELINE:
+		crafter, err = NewDetectSecretsCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG:
 		crafter, err = NewChainloopAIAgentConfigCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION:
