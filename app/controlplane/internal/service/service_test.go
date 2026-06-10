@@ -66,6 +66,24 @@ func TestHandleUseCaseErr(t *testing.T) {
 			wantMessage: `saving attestation digest: version "v1.83.2+next" is released and immutable: attestations cannot be added`,
 		},
 		{
+			name:        "already converted not found error is propagated unchanged when processed again",
+			err:         handleUseCaseErr(biz.NewErrNotFound("workflow"), nil),
+			wantCode:    codes.NotFound,
+			wantMessage: "workflow not found",
+		},
+		{
+			name:        "already converted already exists error is propagated unchanged when processed again",
+			err:         handleUseCaseErr(biz.NewErrAlreadyExists(errors.New("name taken")), nil),
+			wantCode:    codes.AlreadyExists,
+			wantMessage: "duplicated: name taken",
+		},
+		{
+			name:        "server-side status error is still masked",
+			err:         status.Error(codes.Unavailable, "connection to database lost"),
+			wantCode:    codes.Internal,
+			wantMessage: "server error",
+		},
+		{
 			name:        "validation error maps to bad request",
 			err:         biz.NewErrValidationStr("invalid input"),
 			wantCode:    codes.InvalidArgument,
