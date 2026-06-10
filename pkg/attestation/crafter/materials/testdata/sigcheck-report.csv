@@ -1,0 +1,3 @@
+"Path","Verified","Date","Publisher","Company","Description","Product","Product Version","File Version","Machine Type"
+"c:\windows\system32\ntdll.dll","Signed","10:00 AM 1/1/2026","Microsoft Windows","Microsoft Corporation","NT Layer DLL","Microsoft Windows Operating System","10.0.19041.1","10.0.19041.1 (WinBuild.160101.0800)","64-bit"
+"c:\app\unsigned.exe","Unsigned","11:00 AM 1/1/2026","n/a","n/a","Sample App","n/a","n/a","n/a","32-bit"

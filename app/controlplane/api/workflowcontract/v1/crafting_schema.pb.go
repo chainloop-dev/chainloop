@@ -224,6 +224,9 @@ const (
 	CraftingSchema_Material_GRAPHQL_SPEC CraftingSchema_Material_MaterialType = 32
 	// detect-secrets baseline file https://github.com/Yelp/detect-secrets
 	CraftingSchema_Material_YELP_DETECT_SECRETS_BASELINE CraftingSchema_Material_MaterialType = 33
+	// Sysinternals sigcheck output in CSV format
+	// https://learn.microsoft.com/en-us/sysinternals/downloads/sigcheck
+	CraftingSchema_Material_SYSINTERNALS_SIGCHECK CraftingSchema_Material_MaterialType = 34
 )
 
 // Enum value maps for CraftingSchema_Material_MaterialType.
@@ -263,6 +266,7 @@ var (
 		31: "ASYNCAPI_SPEC",
 		32: "GRAPHQL_SPEC",
 		33: "YELP_DETECT_SECRETS_BASELINE",
+		34: "SYSINTERNALS_SIGCHECK",
 	}
 	CraftingSchema_Material_MaterialType_value = map[string]int32{
 		"MATERIAL_TYPE_UNSPECIFIED":       0,
@@ -299,6 +303,7 @@ var (
 		"ASYNCAPI_SPEC":                   31,
 		"GRAPHQL_SPEC":                    32,
 		"YELP_DETECT_SECRETS_BASELINE":    33,
+		"SYSINTERNALS_SIGCHECK":           34,
 	}
 )
 
@@ -1960,7 +1965,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xda\x0f\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xf5\x0f\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -1983,7 +1988,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
 	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
 	"\x0fTEKTON_PIPELINE\x10\b\x12\x15\n" +
-	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xa5\t\n" +
+	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xc0\t\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
@@ -1992,7 +1997,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\bB\x02\x18\x01R\x06output\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12\x1f\n" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
-	"skipUpload\"\xf7\x05\n" +
+	"skipUpload\"\x92\x06\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -2031,7 +2036,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\fOPENAPI_SPEC\x10\x1e\x12\x11\n" +
 	"\rASYNCAPI_SPEC\x10\x1f\x12\x10\n" +
 	"\fGRAPHQL_SPEC\x10 \x12 \n" +
-	"\x1cYELP_DETECT_SECRETS_BASELINE\x10!:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
+	"\x1cYELP_DETECT_SECRETS_BASELINE\x10!\x12\x19\n" +
+	"\x15SYSINTERNALS_SIGCHECK\x10\":\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
 	"\x10CraftingSchemaV2\x128\n" +
 	"\vapi_version\x18\x01 \x01(\tB\x17\xbaH\x14r\x12\n" +
 	"\x10chainloop.dev/v1R\n" +

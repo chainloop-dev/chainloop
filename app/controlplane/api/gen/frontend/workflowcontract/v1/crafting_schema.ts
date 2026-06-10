@@ -280,6 +280,11 @@ export enum CraftingSchema_Material_MaterialType {
   GRAPHQL_SPEC = 32,
   /** YELP_DETECT_SECRETS_BASELINE - detect-secrets baseline file https://github.com/Yelp/detect-secrets */
   YELP_DETECT_SECRETS_BASELINE = 33,
+  /**
+   * SYSINTERNALS_SIGCHECK - Sysinternals sigcheck output in CSV format
+   * https://learn.microsoft.com/en-us/sysinternals/downloads/sigcheck
+   */
+  SYSINTERNALS_SIGCHECK = 34,
   UNRECOGNIZED = -1,
 }
 
@@ -387,6 +392,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 33:
     case "YELP_DETECT_SECRETS_BASELINE":
       return CraftingSchema_Material_MaterialType.YELP_DETECT_SECRETS_BASELINE;
+    case 34:
+    case "SYSINTERNALS_SIGCHECK":
+      return CraftingSchema_Material_MaterialType.SYSINTERNALS_SIGCHECK;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -464,6 +472,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "GRAPHQL_SPEC";
     case CraftingSchema_Material_MaterialType.YELP_DETECT_SECRETS_BASELINE:
       return "YELP_DETECT_SECRETS_BASELINE";
+    case CraftingSchema_Material_MaterialType.SYSINTERNALS_SIGCHECK:
+      return "SYSINTERNALS_SIGCHECK";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

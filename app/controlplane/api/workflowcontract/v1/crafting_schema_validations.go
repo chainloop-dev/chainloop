@@ -41,6 +41,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_GITLAB_SECURITY_REPORT,
 	CraftingSchema_Material_GITLEAKS_JSON,
 	CraftingSchema_Material_YELP_DETECT_SECRETS_BASELINE,
+	CraftingSchema_Material_SYSINTERNALS_SIGCHECK,
 	CraftingSchema_Material_OPENAPI_SPEC,
 	CraftingSchema_Material_ASYNCAPI_SPEC,
 	CraftingSchema_Material_GRAPHQL_SPEC,

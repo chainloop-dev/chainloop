@@ -90,7 +90,8 @@
             "OPENAPI_SPEC",
             "ASYNCAPI_SPEC",
             "GRAPHQL_SPEC",
-            "YELP_DETECT_SECRETS_BASELINE"
+            "YELP_DETECT_SECRETS_BASELINE",
+            "SYSINTERNALS_SIGCHECK"
           ],
           "title": "Material Type",
           "type": "string"
