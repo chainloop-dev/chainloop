@@ -422,6 +422,30 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 	case biz.IsErrReleasedVersionImmutable(err):
 		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
+		// Client errors already converted by this function can be processed again
+		// (e.g. AttestationService.Store wraps storeAttestation, which converts internally).
+		// Propagate them instead of masking and reporting them to Sentry.
+		// We extract the status via GRPCStatus() instead of status.FromError because the latter
+		// rewrites the message of wrapped errors with the "rpc error: ..." prefix.
+		var gs interface{ GRPCStatus() *status.Status }
+		if errors.As(err, &gs) {
+			if s := gs.GRPCStatus(); isClientErrorCode(s.Code()) {
+				return s.Err()
+			}
+		}
+
 		return servicelogger.LogAndMaskErr(err, l)
+	}
+}
+
+// isClientErrorCode returns true for the gRPC client-error codes that handleUseCaseErr
+// produces, making its conversion idempotent: server-side codes keep being masked
+func isClientErrorCode(c codes.Code) bool {
+	switch c {
+	case codes.Canceled, codes.InvalidArgument, codes.NotFound, codes.PermissionDenied,
+		codes.Unimplemented, codes.AlreadyExists, codes.FailedPrecondition:
+		return true
+	default:
+		return false
 	}
 }
