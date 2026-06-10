@@ -76,6 +76,24 @@ dagger call -m github.com/chainloop-dev/chainloop \
   --contract-name my-existing-contract \ # optional flag to specify an existing contract that will be used during the creation of a workflow
 ```
 
+##### Controlling "latest" promotion
+
+The optional `--mark-latest` flag controls whether the project version is promoted to `latest`. It is an enum with three values:
+
+- `ON_CREATE` (default): newly created versions become `latest`; existing/pre-release versions are left unchanged.
+- `TRUE`: force-promote a pre-release version to `latest`.
+- `FALSE`: skip `latest` promotion entirely, even for newly created versions.
+
+```sh
+dagger call -m github.com/chainloop-dev/chainloop \
+  init \
+  --token env:CHAINLOOP_TOKEN \
+  --workflow-name the-name-of-the-workflow \
+  --project-name the-name-of-the-project \
+  --version 1.0.0 \
+  --mark-latest FALSE # create the version without promoting it to latest
+```
+
 #### 2 - Get the status ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#inspecting-the-crafting-status))
 
 Resuming a previous attestation
