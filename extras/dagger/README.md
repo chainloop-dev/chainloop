@@ -80,9 +80,11 @@ dagger call -m github.com/chainloop-dev/chainloop \
 
 The optional `--mark-latest` flag controls whether the project version is promoted to `latest`. It is an enum with three values:
 
-- `ON_CREATE` (default): newly created versions become `latest`; existing/pre-release versions are left unchanged.
+- `ON_CREATE` (default): newly created versions become `latest`; existing versions are left unchanged.
 - `TRUE`: force-promote a pre-release version to `latest`.
-- `FALSE`: skip `latest` promotion entirely, even for newly created versions.
+- `FALSE`: do not promote the version to `latest`.
+
+`TRUE` and `FALSE` only affect promotion: they never demote a version that is already `latest`. In particular, `FALSE` prevents a newly created version from becoming `latest`, but it has no effect on an existing version (its `latest` status is left untouched).
 
 ```sh
 dagger call -m github.com/chainloop-dev/chainloop \
@@ -91,7 +93,7 @@ dagger call -m github.com/chainloop-dev/chainloop \
   --workflow-name the-name-of-the-workflow \
   --project-name the-name-of-the-project \
   --version 1.0.0 \
-  --mark-latest FALSE # create the version without promoting it to latest
+  --mark-latest FALSE # create the new version 1.0.0 without making it latest
 ```
 
 #### 2 - Get the status ([docs](https://docs.chainloop.dev/getting-started/attestation-crafting#inspecting-the-crafting-status))
