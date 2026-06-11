@@ -119,10 +119,10 @@ func TestAuditDispatcherDispatch(t *testing.T) {
 			// must never panic nor return an error
 			tc.dispatcher.Dispatch(tc.entry, tc.claims)
 
-			fake, ok := publisherAsFake(tc.dispatcher)
-			if !ok {
+			if tc.dispatcher == nil || tc.dispatcher.publisher == nil {
 				return
 			}
+			fake := tc.dispatcher.publisher.(*fakePublisher)
 
 			require.Len(t, fake.published, tc.wantPublished)
 			if tc.wantPublished == 0 {
@@ -159,15 +159,6 @@ func TestAuditDispatcherShouldEmit(t *testing.T) {
 			assert.Equal(t, tc.want, tc.dispatcher.shouldEmit(tc.claims))
 		})
 	}
-}
-
-func publisherAsFake(d *AuditDispatcher) (*fakePublisher, bool) {
-	if d == nil || d.publisher == nil {
-		return nil, false
-	}
-
-	fake, ok := d.publisher.(*fakePublisher)
-	return fake, ok
 }
 
 // artifactEventInfo mirrors the action info payload of CAS artifact events for assertions
