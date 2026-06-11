@@ -1024,6 +1024,17 @@ cas:
   ##   allowedOrigins: "https://app.chainloop.dev,https://console.example.com"
   allowedOrigins: []
 
+  ## @extra cas.nats optional NATS configuration for audit events publishing. The stream is owned and configured by the control plane, the CAS only publishes to it.
+  ## @param cas.nats.enabled Enable audit events publishing through a Nats stream
+  ## @param cas.nats.host NATS Host
+  ## @param cas.nats.port NATS Port
+  ## @param cas.nats.token NATS Client authentication token
+  nats:
+    enabled: false
+    host: ""
+    port: 4222
+    token: ""
+
   ## @param cas.image.registry [default: REGISTRY_NAME] Image registry
   ## @param cas.image.repository [default: REPOSITORY_NAME] Image repository
   ## @skip cas.image.tag

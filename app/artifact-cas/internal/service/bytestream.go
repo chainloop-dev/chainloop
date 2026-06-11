@@ -29,6 +29,7 @@ import (
 	"errors"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
@@ -93,6 +94,23 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return sl.LogAndMaskErr(err, s.log)
 	} else if exists {
 		s.log.Infow("msg", "artifact already exists", "digest", req.resource.Digest)
+		if s.audit.shouldEmit(info) {
+			// the stored size is not known at the dedup point, look it up best-effort
+			var size int64
+			if r, err := storageBackend.Describe(ctx, req.resource.Digest); err == nil {
+				size = r.Size
+			}
+
+			s.audit.Dispatch(&events.CASArtifactUploaded{
+				CASArtifactBase: &events.CASArtifactBase{
+					Digest:      req.resource.Digest,
+					SizeBytes:   size,
+					FileName:    req.resource.FileName,
+					BackendType: info.BackendType,
+				},
+				Skipped: true,
+			}, info)
+		}
 		return stream.SendAndClose(&bytestream.WriteResponse{})
 	}
 
@@ -136,6 +154,15 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	}
 
 	s.log.Infow("msg", "upload finished", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
+	s.audit.Dispatch(&events.CASArtifactUploaded{
+		CASArtifactBase: &events.CASArtifactBase{
+			Digest:      req.resource.Digest,
+			SizeBytes:   buffer.size,
+			FileName:    req.resource.FileName,
+			BackendType: info.BackendType,
+		},
+	}, info)
+
 	return stream.SendAndClose(&bytestream.WriteResponse{CommittedSize: buffer.size})
 }
 
@@ -170,7 +197,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	}
 
 	// streamwriter will stream chunks of data to the client
-	sw := &streamWriter{stream, s.log, req.ResourceName, sha256.New()}
+	sw := &streamWriter{stream: stream, log: s.log, wantChecksum: req.ResourceName, gotChecksum: sha256.New()}
 	if err := backend.Download(ctx, sw, req.ResourceName); err != nil {
 		if isClientDisconnect(err) {
 			s.log.Infow("msg", "download canceled", "digest", req.ResourceName)
@@ -186,6 +213,13 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	}
 
 	s.log.Infow("msg", "download finished", "digest", req.ResourceName)
+	s.audit.Dispatch(&events.CASArtifactDownloaded{
+		CASArtifactBase: &events.CASArtifactBase{
+			Digest:      req.ResourceName,
+			SizeBytes:   sw.size,
+			BackendType: info.BackendType,
+		},
+	}, info)
 
 	return nil
 }
@@ -312,6 +346,8 @@ type streamWriter struct {
 	wantChecksum string
 	// calculated gotChecksum of the data sent
 	gotChecksum hash.Hash
+	// total number of bytes sent
+	size int64
 }
 
 // Send the chunk of data through the bytestream
@@ -322,6 +358,8 @@ func (sw *streamWriter) Write(data []byte) (int, error) {
 	if _, err := sw.gotChecksum.Write(data); err != nil {
 		return 0, err
 	}
+
+	sw.size += int64(len(data))
 	return len(data), sw.stream.Send(&bytestream.ReadResponse{Data: data})
 }
 

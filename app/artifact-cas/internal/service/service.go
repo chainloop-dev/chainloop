@@ -36,6 +36,8 @@ var ProviderSet = wire.NewSet(NewByteStreamService, NewResourceService, NewDownl
 type commonService struct {
 	log      *log.Helper
 	backends backend.Providers
+	// best-effort audit events publisher, nil-safe
+	audit *AuditDispatcher
 }
 
 func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {
@@ -61,6 +63,12 @@ type NewOpt func(s *commonService)
 func WithLogger(logger log.Logger) NewOpt {
 	return func(s *commonService) {
 		s.log = servicelogger.ScopedHelper(logger, "service")
+	}
+}
+
+func WithAuditDispatcher(d *AuditDispatcher) NewOpt {
+	return func(s *commonService) {
+		s.audit = d
 	}
 }
 

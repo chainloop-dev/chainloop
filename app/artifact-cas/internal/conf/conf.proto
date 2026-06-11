@@ -25,6 +25,17 @@ message Bootstrap {
   Auth auth = 2;
   Observability observability = 3;
   credentials.v1.Credentials credentials_service = 4;
+  // Optional NATS server configuration to publish audit events to the
+  // control-plane-owned stream. When unset, event publishing is disabled.
+  NatsServer nats_server = 5;
+
+  message NatsServer {
+    // NATS server URI, e.g. "nats://localhost:4222"
+    string uri = 1;
+    oneof authentication {
+      string token = 2;
+    }
+  }
 
   message Observability {
     Sentry sentry = 1;

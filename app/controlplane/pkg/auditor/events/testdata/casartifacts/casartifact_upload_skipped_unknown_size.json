@@ -1,0 +1,18 @@
+{
+  "ActionType": "CASArtifactUploaded",
+  "TargetType": "CASArtifact",
+  "TargetID": null,
+  "ActorType": "SYSTEM",
+  "ActorID": null,
+  "ActorEmail": "",
+  "ActorName": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "upload of artifact b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9 skipped, already exists",
+  "Info": {
+    "digest": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+    "size_bytes": 0,
+    "backend_type": "OCI",
+    "skipped": true
+  },
+  "Digest": "sha256:53267f375f5380485824fb9b9894df38ac0abeb286c8213aa201dc42b6c08627"
+}

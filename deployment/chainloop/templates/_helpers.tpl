@@ -483,3 +483,12 @@ Return the Nats connection string
 {{- printf "nats://%s:%d" $host ($port | int) }}
 {{- end -}}
 
+
+{{/*
+Return the Nats connection string for the CAS
+*/}}
+{{- define "cas.nats.connection_string" -}}
+{{- $host := required "nats server hostname not set" .Values.cas.nats.host }}
+{{- $port := required "nats server port not set" .Values.cas.nats.port }}
+{{- printf "nats://%s:%d" $host ($port | int) }}
+{{- end -}}

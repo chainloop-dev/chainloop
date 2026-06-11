@@ -21,11 +21,15 @@
 package main
 
 import (
+	"context"
+
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
@@ -40,12 +44,42 @@ func wireApp(*conf.Bootstrap, *conf.Server, *conf.Auth, credentials.Reader, log.
 			newApp,
 			serviceOpts,
 			newProtoValidator,
+			newNatsConfig,
+			natsconn.New,
+			newAuditLogPublisher,
+			service.NewAuditDispatcher,
 		),
 	)
 }
 
-func serviceOpts(l log.Logger) []service.NewOpt {
+func serviceOpts(l log.Logger, audit *service.AuditDispatcher) []service.NewOpt {
 	return []service.NewOpt{
 		service.WithLogger(l),
+		service.WithAuditDispatcher(audit),
 	}
+}
+
+// newNatsConfig converts the proto config to a plain natsconn.Config, nil when unset
+func newNatsConfig(bc *conf.Bootstrap) *natsconn.Config {
+	c := bc.GetNatsServer()
+	if c.GetUri() == "" {
+		return nil
+	}
+
+	cfg := &natsconn.Config{
+		URI:  c.GetUri(),
+		Name: "chainloop-artifact-cas",
+	}
+
+	if c.GetToken() != "" {
+		cfg.Token = c.GetToken()
+	}
+
+	return cfg
+}
+
+// newAuditLogPublisher creates a publish-only audit log publisher: the control
+// plane owns the chainloop-audit stream configuration, the CAS only publishes to it
+func newAuditLogPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) (*auditor.AuditLogPublisher, error) {
+	return auditor.NewAuditLogPublisher(context.Background(), rc, logger, auditor.WithoutStreamManagement())
 }

@@ -1,0 +1,19 @@
+{
+  "ActionType": "CASArtifactUploaded",
+  "TargetType": "CASArtifact",
+  "TargetID": null,
+  "ActorType": "SYSTEM",
+  "ActorID": null,
+  "ActorEmail": "",
+  "ActorName": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "upload of artifact b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9 skipped, already exists",
+  "Info": {
+    "digest": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+    "size_bytes": 1024,
+    "file_name": "sbom.cyclonedx.json",
+    "backend_type": "OCI",
+    "skipped": true
+  },
+  "Digest": "sha256:ad38191fe0592e1856981ea6d7d6e5fa3b0d4c0eca95f006d195c28aca5cc253"
+}
