@@ -87,7 +87,7 @@ require (
 	github.com/open-policy-agent/opa v1.12.1
 	github.com/openvex/go-vex v0.2.5
 	github.com/owenrumney/go-sarif/v3 v3.3.0
-	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
+	github.com/posthog/posthog-go v1.14.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/sigstore/cosign/v3 v3.0.4
 	github.com/sigstore/fulcio v1.8.5
