@@ -10,6 +10,11 @@ export interface CASCredentialsServiceGetRequest {
   role: CASCredentialsServiceGetRequest_Role;
   /** during the download we need the digest to find the proper cas backend */
   digest: string;
+  /**
+   * flag the minted token as internal platform traffic so the CAS skips audit
+   * event emission for it. Only honored for system API tokens, rejected otherwise.
+   */
+  sourceInternal: boolean;
 }
 
 export enum CASCredentialsServiceGetRequest_Role {
@@ -61,7 +66,7 @@ export interface CASCredentialsServiceGetResponse_Result {
 }
 
 function createBaseCASCredentialsServiceGetRequest(): CASCredentialsServiceGetRequest {
-  return { role: 0, digest: "" };
+  return { role: 0, digest: "", sourceInternal: false };
 }
 
 export const CASCredentialsServiceGetRequest = {
@@ -71,6 +76,9 @@ export const CASCredentialsServiceGetRequest = {
     }
     if (message.digest !== "") {
       writer.uint32(18).string(message.digest);
+    }
+    if (message.sourceInternal === true) {
+      writer.uint32(24).bool(message.sourceInternal);
     }
     return writer;
   },
@@ -96,6 +104,13 @@ export const CASCredentialsServiceGetRequest = {
 
           message.digest = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.sourceInternal = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -109,6 +124,7 @@ export const CASCredentialsServiceGetRequest = {
     return {
       role: isSet(object.role) ? cASCredentialsServiceGetRequest_RoleFromJSON(object.role) : 0,
       digest: isSet(object.digest) ? String(object.digest) : "",
+      sourceInternal: isSet(object.sourceInternal) ? Boolean(object.sourceInternal) : false,
     };
   },
 
@@ -116,6 +132,7 @@ export const CASCredentialsServiceGetRequest = {
     const obj: any = {};
     message.role !== undefined && (obj.role = cASCredentialsServiceGetRequest_RoleToJSON(message.role));
     message.digest !== undefined && (obj.digest = message.digest);
+    message.sourceInternal !== undefined && (obj.sourceInternal = message.sourceInternal);
     return obj;
   },
 
@@ -129,6 +146,7 @@ export const CASCredentialsServiceGetRequest = {
     const message = createBaseCASCredentialsServiceGetRequest();
     message.role = object.role ?? 0;
     message.digest = object.digest ?? "";
+    message.sourceInternal = object.sourceInternal ?? false;
     return message;
   },
 };
