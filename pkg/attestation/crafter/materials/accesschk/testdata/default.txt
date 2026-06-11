@@ -1,0 +1,8 @@
+Accesschk v6.15 - Reports effective permissions for securable objects
+Copyright (C) 2006-2023 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+c:\windows\system32\notepad.exe
+  RW NT AUTHORITY\SYSTEM
+  RW BUILTIN\Administrators
+  R  BUILTIN\Users

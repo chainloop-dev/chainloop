@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/accesschk"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
@@ -152,6 +153,18 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 		rawMaterial, err = report.JSON()
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal sigcheck report: %w", err)
+		}
+	case v1.CraftingSchema_Material_SYSINTERNALS_ACCESSCHK:
+		// AccessChk emits plain text; project it to JSON so the policy engine,
+		// which only consumes JSON, can evaluate it. The raw text is preserved
+		// in the projection's "raw" field for string-matching fallbacks.
+		report, perr := accesschk.Parse(rawMaterial)
+		if perr != nil {
+			return nil, fmt.Errorf("invalid accesschk material: %w", perr)
+		}
+		rawMaterial, err = json.Marshal(report)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal accesschk material: %w", err)
 		}
 	}
 

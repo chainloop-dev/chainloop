@@ -212,6 +212,20 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			filename:  "testdata/sigcheck-report.csv",
 			testField: "elements",
 		},
+		{
+			name: "accesschk text material projected to json",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_SYSINTERNALS_ACCESSCHK,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+						Content: []byte("c:\\windows\\system32\\notepad.exe\n  RW BUILTIN\\Administrators\n"),
+					},
+				},
+				InlineCas: true,
+			},
+			testField: "objects",
+		},
 	}
 
 	for _, tc := range cases {

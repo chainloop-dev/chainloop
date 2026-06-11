@@ -1,0 +1,10 @@
+Accesschk v6.15 - Reports effective permissions for securable objects
+Copyright (C) 2006-2023 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+spooler
+  RW NT AUTHORITY\SYSTEM
+        SERVICE_ALL_ACCESS
+  R  NT AUTHORITY\INTERACTIVE
+        SERVICE_QUERY_STATUS
+        SERVICE_QUERY_CONFIG
