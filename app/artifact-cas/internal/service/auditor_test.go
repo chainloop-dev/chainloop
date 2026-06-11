@@ -44,8 +44,18 @@ func (f *fakePublisher) Publish(data *auditor.EventPayload) error {
 	return nil
 }
 
-func newTestDispatcher(p eventPublisher) *AuditDispatcher {
-	return &AuditDispatcher{publisher: p, log: servicelogger.ScopedHelper(log.DefaultLogger, "test")}
+// newTestDispatcher builds an AuditDispatcher backed by the given fake. A nil
+// fake leaves the underlying publisher disabled, mirroring NewAuditDispatcher.
+func newTestDispatcher(p *fakePublisher) *AuditDispatcher {
+	var pub auditor.Publisher
+	if p != nil {
+		pub = p
+	}
+
+	return &AuditDispatcher{
+		dispatcher: auditor.NewDispatcher(pub, log.DefaultLogger),
+		log:        servicelogger.ScopedHelper(log.DefaultLogger, "test"),
+	}
 }
 
 func testUploadedEntry() auditor.LogEntry {
@@ -63,51 +73,53 @@ const testOrgID = "1089bb36-e27b-428b-8009-d015c8737c54"
 
 func TestAuditDispatcherDispatch(t *testing.T) {
 	tests := []struct {
-		name          string
-		dispatcher    *AuditDispatcher
+		name string
+		// publisher is the fake backing the dispatcher; nil means the dispatcher
+		// is disabled (no NATS). nilDispatcher exercises the nil-receiver path.
+		publisher     *fakePublisher
+		nilDispatcher bool
 		entry         auditor.LogEntry
 		claims        *casJWT.Claims
 		wantPublished int
 	}{
 		{
-			name:       "nil dispatcher is a no-op",
-			dispatcher: nil,
-			entry:      testUploadedEntry(),
-			claims:     &casJWT.Claims{OrgID: testOrgID},
+			name:          "nil dispatcher is a no-op",
+			nilDispatcher: true,
+			entry:         testUploadedEntry(),
+			claims:        &casJWT.Claims{OrgID: testOrgID},
 		},
 		{
-			name:       "nil publisher is a no-op",
-			dispatcher: newTestDispatcher(nil),
-			entry:      testUploadedEntry(),
-			claims:     &casJWT.Claims{OrgID: testOrgID},
+			name:   "nil publisher is a no-op",
+			entry:  testUploadedEntry(),
+			claims: &casJWT.Claims{OrgID: testOrgID},
 		},
 		{
-			name:       "internal control plane traffic is skipped",
-			dispatcher: newTestDispatcher(&fakePublisher{}),
-			entry:      testUploadedEntry(),
-			claims:     &casJWT.Claims{OrgID: testOrgID, SourceInternal: true},
+			name:      "internal control plane traffic is skipped",
+			publisher: &fakePublisher{},
+			entry:     testUploadedEntry(),
+			claims:    &casJWT.Claims{OrgID: testOrgID, SourceInternal: true},
 		},
 		{
-			name:       "invalid org id is skipped",
-			dispatcher: newTestDispatcher(&fakePublisher{}),
-			entry:      testUploadedEntry(),
-			claims:     &casJWT.Claims{OrgID: "not-an-uuid"},
+			name:      "invalid org id is skipped",
+			publisher: &fakePublisher{},
+			entry:     testUploadedEntry(),
+			claims:    &casJWT.Claims{OrgID: "not-an-uuid"},
 		},
 		{
-			name:       "invalid entry is skipped",
-			dispatcher: newTestDispatcher(&fakePublisher{}),
-			entry:      &events.CASArtifactUploaded{CASArtifactBase: &events.CASArtifactBase{}},
-			claims:     &casJWT.Claims{OrgID: testOrgID},
+			name:      "invalid entry is skipped",
+			publisher: &fakePublisher{},
+			entry:     &events.CASArtifactUploaded{CASArtifactBase: &events.CASArtifactBase{}},
+			claims:    &casJWT.Claims{OrgID: testOrgID},
 		},
 		{
-			name:       "publish errors are swallowed",
-			dispatcher: newTestDispatcher(&fakePublisher{err: errors.New("nats is down")}),
-			entry:      testUploadedEntry(),
-			claims:     &casJWT.Claims{OrgID: testOrgID},
+			name:      "publish errors are swallowed",
+			publisher: &fakePublisher{err: errors.New("nats is down")},
+			entry:     testUploadedEntry(),
+			claims:    &casJWT.Claims{OrgID: testOrgID},
 		},
 		{
 			name:          "client traffic is published",
-			dispatcher:    newTestDispatcher(&fakePublisher{}),
+			publisher:     &fakePublisher{},
 			entry:         testUploadedEntry(),
 			claims:        &casJWT.Claims{OrgID: testOrgID},
 			wantPublished: 1,
@@ -116,20 +128,24 @@ func TestAuditDispatcherDispatch(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// must never panic nor return an error
-			tc.dispatcher.Dispatch(tc.entry, tc.claims)
+			var d *AuditDispatcher
+			if !tc.nilDispatcher {
+				d = newTestDispatcher(tc.publisher)
+			}
 
-			if tc.dispatcher == nil || tc.dispatcher.publisher == nil {
+			// must never panic nor return an error
+			d.Dispatch(tc.entry, tc.claims)
+
+			if tc.publisher == nil {
 				return
 			}
-			fake := tc.dispatcher.publisher.(*fakePublisher)
 
-			require.Len(t, fake.published, tc.wantPublished)
+			require.Len(t, tc.publisher.published, tc.wantPublished)
 			if tc.wantPublished == 0 {
 				return
 			}
 
-			got := fake.published[0]
+			got := tc.publisher.published[0]
 			assert.Equal(t, auditor.AuditEventType, got.EventType)
 			assert.Equal(t, events.CASArtifactUploadedActionType, got.Data.ActionType)
 			assert.Equal(t, events.CASArtifactType, got.Data.TargetType)
