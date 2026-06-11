@@ -1,0 +1,3 @@
+this is not accesschk output
+just some random text
+hello world

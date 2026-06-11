@@ -1,0 +1,15 @@
+Accesschk v6.15 - Reports effective permissions for securable objects
+Copyright (C) 2006-2023 Mark Russinovich
+Sysinternals - www.sysinternals.com
+
+c:\windows\system32\notepad.exe
+  DESCRIPTOR FLAGS:
+      SE_DACL_PRESENT
+      SE_SACL_PRESENT
+      SE_SELF_RELATIVE
+  OWNER: NT SERVICE\TrustedInstaller
+  [0] ACCESS_ALLOWED_ACE_TYPE: NT AUTHORITY\SYSTEM
+        FILE_ALL_ACCESS
+  [1] ACCESS_ALLOWED_ACE_TYPE: BUILTIN\Users
+        FILE_GENERIC_READ
+        FILE_GENERIC_EXECUTE

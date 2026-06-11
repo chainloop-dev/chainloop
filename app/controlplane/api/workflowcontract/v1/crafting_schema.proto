@@ -168,6 +168,8 @@ message CraftingSchema {
       // Sysinternals sigcheck output in CSV format
       // https://learn.microsoft.com/en-us/sysinternals/downloads/sigcheck
       SYSINTERNALS_SIGCHECK = 34;
+      // Sysinternals AccessChk text output https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk
+      SYSINTERNALS_ACCESSCHK = 35;
     }
   }
 }

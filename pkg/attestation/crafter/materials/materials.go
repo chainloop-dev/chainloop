@@ -301,6 +301,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewAsyncAPICrafter(materialSchema, casBackend, logger, WithAsyncAPINoStrictValidation(opts.NoStrictValidation))
 	case schemaapi.CraftingSchema_Material_GRAPHQL_SPEC:
 		crafter, err = NewGraphQLCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_SYSINTERNALS_ACCESSCHK:
+		crafter, err = NewAccessChkCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
