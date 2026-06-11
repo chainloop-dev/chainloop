@@ -149,6 +149,7 @@ func TestAuditDispatcherShouldEmit(t *testing.T) {
 	}{
 		{name: "nil dispatcher", dispatcher: nil, claims: &casJWT.Claims{}, want: false},
 		{name: "nil publisher", dispatcher: newTestDispatcher(nil), claims: &casJWT.Claims{}, want: false},
+		{name: "nil claims", dispatcher: newTestDispatcher(&fakePublisher{}), claims: nil, want: false},
 		{name: "internal traffic", dispatcher: newTestDispatcher(&fakePublisher{}), claims: &casJWT.Claims{SourceInternal: true}, want: false},
 		{name: "client traffic", dispatcher: newTestDispatcher(&fakePublisher{}), claims: &casJWT.Claims{}, want: true},
 	}

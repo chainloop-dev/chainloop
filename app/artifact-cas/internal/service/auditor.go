@@ -53,7 +53,7 @@ func NewAuditDispatcher(publisher *auditor.AuditLogPublisher, logger log.Logger)
 // shouldEmit returns true when Dispatch would actually publish an event for the
 // given claims. Hooks use it to skip extra work (e.g. backend Describe round-trips).
 func (d *AuditDispatcher) shouldEmit(claims *casJWT.Claims) bool {
-	return d != nil && d.publisher != nil && !claims.SourceInternal
+	return d != nil && d.publisher != nil && claims != nil && !claims.SourceInternal
 }
 
 // Dispatch generates and publishes an audit event with a SYSTEM actor and the
