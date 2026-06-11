@@ -36,6 +36,8 @@ type APIToken struct {
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
 	Scope    string
+	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
+	IsSystem bool
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {

@@ -243,6 +243,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		WorkflowName: token.WorkflowName,
 		Policies:     token.Policies,
 		Scope:        scope,
+		IsSystem:     token.IsSystem,
 	})
 
 	// Set the authorization subject that will be used to check the policies

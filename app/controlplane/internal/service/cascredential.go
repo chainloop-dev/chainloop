@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
@@ -52,6 +53,12 @@ func NewCASCredentialsService(casUC *biz.CASCredentialsUseCase, casmUC *biz.CASM
 // Get will generate temporary credentials to be used against the CAS service for the current organization
 func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsServiceGetRequest) (*pb.CASCredentialsServiceGetResponse, error) {
 	currentUser, currentAPIToken, err := requireCurrentUserOrAPIToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Internal platform traffic can be flagged so the CAS skips audit event emission for it
+	sourceInternal, err := resolveSourceInternal(req.GetSourceInternal(), currentAPIToken)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +156,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		return nil, errors.BadRequest("invalid argument", "cannot upload or download artifacts from an inline CAS backend")
 	}
 
-	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID}
+	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID, SourceInternal: sourceInternal}
 	t, err := s.casUC.GenerateTemporaryCredentials(ref)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
@@ -158,5 +165,19 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	return &pb.CASCredentialsServiceGetResponse{
 		Result: &pb.CASCredentialsServiceGetResponse_Result{Token: t, Backend: bizCASBackendToPb(backend)},
 	}, nil
+}
 
+// resolveSourceInternal returns whether the minted CAS token must be flagged as internal
+// platform traffic. Only system API tokens can request it since they are minted exclusively
+// by internal code paths; any other caller asking for it is rejected.
+func resolveSourceInternal(requested bool, token *entities.APIToken) (bool, error) {
+	if !requested {
+		return false, nil
+	}
+
+	if token == nil || !token.IsSystem {
+		return false, errors.Forbidden("forbidden", "source_internal is restricted to system API tokens")
+	}
+
+	return true, nil
 }
