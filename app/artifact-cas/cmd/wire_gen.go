@@ -7,7 +7,6 @@
 package main
 
 import (
-	"context"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
@@ -32,7 +31,7 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 	if err != nil {
 		return nil, nil, err
 	}
-	auditLogPublisher, err := newAuditLogPublisher(reloadableConnection, logger)
+	auditLogPublisher, err := auditor.NewPublishOnlyAuditLogPublisher(reloadableConnection, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -97,10 +96,4 @@ func newNatsConfig(bc *conf.Bootstrap) *natsconn.Config {
 	}
 
 	return cfg
-}
-
-// newAuditLogPublisher creates a publish-only audit log publisher: the control
-// plane owns the chainloop-audit stream configuration, the CAS only publishes to it
-func newAuditLogPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) (*auditor.AuditLogPublisher, error) {
-	return auditor.NewAuditLogPublisher(context.Background(), rc, logger, auditor.WithoutStreamManagement())
 }

@@ -27,21 +27,26 @@ import (
 
 func TestNewAuditLogPublisher(t *testing.T) {
 	tests := []struct {
-		name string
-		rc   *natsconn.ReloadableConnection
-		opts []PublisherOption
+		name        string
+		rc          *natsconn.ReloadableConnection
+		constructor func(*natsconn.ReloadableConnection) (*AuditLogPublisher, error)
 		// nil publisher means disabled (no NATS configured)
 		wantNil bool
 	}{
 		{
-			name:    "nil connection disables the publisher",
-			rc:      nil,
+			name: "nil connection disables the publisher",
+			rc:   nil,
+			constructor: func(rc *natsconn.ReloadableConnection) (*AuditLogPublisher, error) {
+				return NewAuditLogPublisher(context.Background(), rc, log.DefaultLogger)
+			},
 			wantNil: true,
 		},
 		{
-			name:    "nil connection with options still disables the publisher",
-			rc:      nil,
-			opts:    []PublisherOption{WithoutStreamManagement()},
+			name: "nil connection disables the publish-only publisher",
+			rc:   nil,
+			constructor: func(rc *natsconn.ReloadableConnection) (*AuditLogPublisher, error) {
+				return NewPublishOnlyAuditLogPublisher(rc, log.DefaultLogger)
+			},
 			wantNil: true,
 		},
 		{
@@ -49,13 +54,15 @@ func TestNewAuditLogPublisher(t *testing.T) {
 			// need a live JetStream context at construction time
 			name: "publish-only mode skips stream management",
 			rc:   &natsconn.ReloadableConnection{},
-			opts: []PublisherOption{WithoutStreamManagement()},
+			constructor: func(rc *natsconn.ReloadableConnection) (*AuditLogPublisher, error) {
+				return NewPublishOnlyAuditLogPublisher(rc, log.DefaultLogger)
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			p, err := NewAuditLogPublisher(context.Background(), tc.rc, log.DefaultLogger, tc.opts...)
+			p, err := tc.constructor(tc.rc)
 			require.NoError(t, err)
 			if tc.wantNil {
 				assert.Nil(t, p)

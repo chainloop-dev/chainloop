@@ -41,39 +41,12 @@ type AuditLogPublisher struct {
 	logger *log.Helper
 }
 
-type PublisherOption func(*publisherOptions)
-
-type publisherOptions struct {
-	withoutStreamManagement bool
-}
-
-// WithoutStreamManagement makes the publisher publish-only: it never creates or
-// updates the JetStream stream. Meant for components (e.g. the Artifact CAS) that
-// publish to the stream owned and configured by the control plane, so they can't
-// accidentally override its configuration (e.g. downgrade the replica count).
-func WithoutStreamManagement() PublisherOption {
-	return func(o *publisherOptions) {
-		o.withoutStreamManagement = true
-	}
-}
-
-func NewAuditLogPublisher(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger, opts ...PublisherOption) (*AuditLogPublisher, error) {
-	l := log.NewHelper(log.With(logger, "component", "natsAuditLogPublisher"))
-	if rc == nil {
-		l.Infow("msg", "NATS connection not set, audit log publisher disabled")
+// NewAuditLogPublisher creates a publisher that owns the JetStream stream:
+// it creates or updates it on boot and after every NATS reconnection.
+func NewAuditLogPublisher(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (*AuditLogPublisher, error) {
+	p := newPublisher(rc, logger)
+	if p == nil {
 		return nil, nil
-	}
-
-	options := &publisherOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	p := &AuditLogPublisher{rc: rc, logger: l}
-
-	if options.withoutStreamManagement {
-		l.Infow("msg", "stream management disabled, running in publish-only mode")
-		return p, nil
 	}
 
 	if err := p.initJetStream(); err != nil {
@@ -83,6 +56,30 @@ func NewAuditLogPublisher(ctx context.Context, rc *natsconn.ReloadableConnection
 	go p.watchReconnect(rc.Subscribe(ctx))
 
 	return p, nil
+}
+
+// NewPublishOnlyAuditLogPublisher creates a publisher that never creates or
+// updates the JetStream stream. Meant for components (e.g. the Artifact CAS)
+// that publish to the stream owned and configured by the control plane, so they
+// can't accidentally override its configuration (e.g. downgrade the replica count).
+func NewPublishOnlyAuditLogPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) (*AuditLogPublisher, error) {
+	p := newPublisher(rc, logger)
+	if p != nil {
+		p.logger.Infow("msg", "stream management disabled, running in publish-only mode")
+	}
+
+	return p, nil
+}
+
+// newPublisher returns nil when NATS is not configured (the publisher is disabled)
+func newPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) *AuditLogPublisher {
+	l := log.NewHelper(log.With(logger, "component", "natsAuditLogPublisher"))
+	if rc == nil {
+		l.Infow("msg", "NATS connection not set, audit log publisher disabled")
+		return nil
+	}
+
+	return &AuditLogPublisher{rc: rc, logger: l}
 }
 
 func (p *AuditLogPublisher) initJetStream() error {
