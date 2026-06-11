@@ -146,6 +146,9 @@ func (s *bytestreamSuite) TestWrite() {
 // NOTE: separated test cases for each error case to make sure the context and stubs are re-set
 func (s *bytestreamSuite) TestWriteExist() {
 	s.ociBackend.On("Exists", mock.Anything, s.resource.Digest).Return(true, nil)
+	s.ociBackend.On("Describe", mock.Anything, s.resource.Digest).Return(&v1.CASResource{
+		FileName: s.resource.FileName, Digest: s.resource.Digest, Size: 1024,
+	}, nil)
 
 	stream, err := s.client.Write(s.upCtx)
 	s.NoError(err)
@@ -156,6 +159,51 @@ func (s *bytestreamSuite) TestWriteExist() {
 	got, err := stream.CloseAndRecv()
 	s.NoError(err)
 	s.Equal(int64(0), got.CommittedSize)
+
+	// a skipped upload event is emitted with the stored size
+	s.Require().Len(s.audit.published, 1)
+	info := decodeArtifactEvent(s.T(), s.audit.published[0])
+	s.True(info.Skipped)
+	s.Equal(s.resource.Digest, info.Digest)
+	s.Equal(int64(1024), info.SizeBytes)
+	s.Equal(s.resource.FileName, info.FileName)
+}
+
+func (s *bytestreamSuite) TestWriteExistDescribeFails() {
+	s.ociBackend.On("Exists", mock.Anything, s.resource.Digest).Return(true, nil)
+	s.ociBackend.On("Describe", mock.Anything, s.resource.Digest).Return(nil, errors.New("describe failed"))
+
+	stream, err := s.client.Write(s.upCtx)
+	s.NoError(err)
+	s.NoError(stream.Send(&bytestream.WriteRequest{
+		ResourceName: encodeResource(s.T(), s.resource),
+	}))
+
+	_, err = stream.CloseAndRecv()
+	s.NoError(err)
+
+	// the event is still emitted, with unknown (0) size
+	s.Require().Len(s.audit.published, 1)
+	info := decodeArtifactEvent(s.T(), s.audit.published[0])
+	s.True(info.Skipped)
+	s.Equal(int64(0), info.SizeBytes)
+}
+
+func (s *bytestreamSuite) TestWriteExistInternalTraffic() {
+	// internal control plane traffic emits no events nor extra Describe calls
+	s.ociBackend.On("Exists", mock.Anything, s.resource.Digest).Return(true, nil)
+
+	ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("role", "uploader", "source-internal", "true"))
+	stream, err := s.client.Write(ctx)
+	s.NoError(err)
+	s.NoError(stream.Send(&bytestream.WriteRequest{
+		ResourceName: encodeResource(s.T(), s.resource),
+	}))
+
+	_, err = stream.CloseAndRecv()
+	s.NoError(err)
+	s.Empty(s.audit.published)
+	s.ociBackend.AssertNotCalled(s.T(), "Describe")
 }
 
 func (s *bytestreamSuite) TestWriteOK() {
@@ -179,6 +227,14 @@ func (s *bytestreamSuite) TestWriteOK() {
 	got, err := stream.CloseAndRecv()
 	s.NoError(err)
 	s.Equal(int64(len(data)), got.CommittedSize)
+
+	// an upload event is emitted with the uploaded size
+	s.Require().Len(s.audit.published, 1)
+	info := decodeArtifactEvent(s.T(), s.audit.published[0])
+	s.False(info.Skipped)
+	s.Equal(s.resource.Digest, info.Digest)
+	s.Equal(int64(len(data)), info.SizeBytes)
+	s.Equal(s.resource.FileName, info.FileName)
 }
 
 func (s *bytestreamSuite) TestWriteErrorUploading() {
@@ -194,6 +250,8 @@ func (s *bytestreamSuite) TestWriteErrorUploading() {
 
 	_, err = stream.CloseAndRecv()
 	assertGRPCError(s.T(), err, codes.Internal, "")
+	// failed uploads emit no events
+	s.Empty(s.audit.published)
 }
 
 func (s *bytestreamSuite) TestRead() {
@@ -235,14 +293,15 @@ func (s *bytestreamSuite) TestReadErrorDownloading() {
 }
 
 func (s *bytestreamSuite) TestDownloadOk() {
-	s.ociBackend.On("Download", mock.Anything, mock.Anything, "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9").
+	const digest = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+	s.ociBackend.On("Download", mock.Anything, mock.Anything, digest).
 		Return(nil).Run(func(args mock.Arguments) {
 		buf := bytes.NewBuffer([]byte("hello world"))
 		_, err := io.Copy(args.Get(1).(io.Writer), buf)
 		s.NoError(err)
 	})
 
-	reader, err := s.client.Read(s.downCtx, &bytestream.ReadRequest{ResourceName: "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"})
+	reader, err := s.client.Read(s.downCtx, &bytestream.ReadRequest{ResourceName: digest})
 	s.NoError(err)
 
 	// receive the data, it should contain all of it since the buffer is server side is 1MB
@@ -253,6 +312,13 @@ func (s *bytestreamSuite) TestDownloadOk() {
 	got, err = reader.Recv()
 	s.ErrorIs(err, io.EOF)
 	s.Nil(got)
+
+	// a download event is emitted with the transferred size
+	s.Require().Len(s.audit.published, 1)
+	info := decodeArtifactEvent(s.T(), s.audit.published[0])
+	s.Equal(digest, info.Digest)
+	s.Equal(int64(len("hello world")), info.SizeBytes)
+	s.False(info.Skipped)
 }
 
 func (s *bytestreamSuite) TestDownloadFoundMistmathedDigest() {
@@ -274,6 +340,8 @@ func (s *bytestreamSuite) TestDownloadFoundMistmathedDigest() {
 	got, err = reader.Recv()
 	s.ErrorContains(err, "checksum mismatch:")
 	s.Nil(got)
+	// tampered downloads emit no events
+	s.Empty(s.audit.published)
 }
 
 func assertGRPCError(t *testing.T, err error, code codes.Code, errMsg string) {
@@ -293,6 +361,7 @@ type bytestreamSuite struct {
 	client     bytestream.ByteStreamClient
 	ociBackend *mocks.UploaderDownloader
 	resource   *v1.CASResource
+	audit      *fakePublisher
 	upCtx      context.Context
 	downCtx    context.Context
 }
@@ -318,7 +387,10 @@ func (s *bytestreamSuite) SetupTest() {
 					}
 
 					claims := &casJWT.Claims{
-						StoredSecretID: "secret-id", BackendType: backendType,
+						StoredSecretID: "secret-id", BackendType: backendType, OrgID: testOrgID,
+					}
+					if v := md.Get("source-internal"); len(v) > 0 {
+						claims.SourceInternal = true
 					}
 					if maxBytes := md.Get("max-bytes"); len(maxBytes) > 0 {
 						parsedMaxBytes, err := strconv.ParseInt(maxBytes[0], 10, 64)
@@ -327,9 +399,10 @@ func (s *bytestreamSuite) SetupTest() {
 					}
 
 					if roles := md.Get("role"); len(roles) > 0 {
-						if roles[0] == "downloader" {
+						switch roles[0] {
+						case "downloader":
 							claims.Role = casJWT.Downloader
-						} else if roles[0] == "uploader" {
+						case "uploader":
 							claims.Role = casJWT.Uploader
 						}
 					}
@@ -343,11 +416,12 @@ func (s *bytestreamSuite) SetupTest() {
 	ociBackend := mocks.NewUploaderDownloader(s.T())
 	ociBackendProvider.On("FromCredentials", mock.Anything, mock.Anything).Maybe().Return(ociBackend, nil)
 
+	s.audit = &fakePublisher{}
 	bytestream.RegisterByteStreamServer(
 		server,
 		NewByteStreamService(backend.Providers{
 			backendType: ociBackendProvider,
-		}, WithLogger(log.DefaultLogger)),
+		}, WithLogger(log.DefaultLogger), WithAuditDispatcher(newTestDispatcher(s.audit))),
 	)
 	go func() {
 		_ = server.Serve(l)

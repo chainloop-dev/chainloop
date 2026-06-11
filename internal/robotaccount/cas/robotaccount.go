@@ -46,6 +46,11 @@ type Claims struct {
 	// per-tenant STS sessions; the non-managed providers ignore it but
 	// it is still carried for audit traceability.
 	OrgID string `json:"org-id"`
+	// SourceInternal is true when the token was minted for the control plane's
+	// own CAS client (e.g. attestation storage, policy material reads).
+	// The CAS skips audit event emission for this traffic so it doesn't
+	// pollute per-org usage numbers. The zero value (false) means client traffic.
+	SourceInternal bool `json:"source-internal,omitempty"`
 }
 
 type Role string
@@ -111,12 +116,23 @@ func NewBuilder(opts ...NewOpt) (*Builder, error) {
 	return b, nil
 }
 
+// GenerateOpt tweaks optional claims of the minted token
+type GenerateOpt func(c *Claims)
+
+// WithSourceInternal flags the token as minted for the control plane's own
+// CAS client, so the CAS can tell internal traffic apart from client traffic
+func WithSourceInternal() GenerateOpt {
+	return func(c *Claims) {
+		c.SourceInternal = true
+	}
+}
+
 // GenerateJWT mints a CAS token. All fields are required, including
 // orgID — managed providers (e.g. AWS-S3-ACCESS-POINT) need it to scope
 // per-tenant STS sessions and other providers still record it for
 // audit. The token always carries the CAS audience and a short expiry
 // window.
-func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64, orgID string) (string, error) {
+func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role, maxBytes int64, orgID string, opts ...GenerateOpt) (string, error) {
 	if backendType == "" {
 		return "", fmt.Errorf("backend type is required")
 	}
@@ -157,6 +173,10 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 
 	if ra.expiration != nil {
 		claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(*ra.expiration))
+	}
+
+	for _, opt := range opts {
+		opt(claims)
 	}
 
 	resultToken := jwt.NewWithClaims(SigningMethod, claims)

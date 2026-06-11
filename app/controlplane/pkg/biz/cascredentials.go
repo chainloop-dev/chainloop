@@ -55,11 +55,20 @@ type CASCredsOpts struct {
 	// it to scope per-tenant STS sessions, and non-managed providers
 	// still carry it for audit traceability.
 	OrgID uuid.UUID
+	// SourceInternal flags tokens minted for the control plane's own CAS
+	// client so the CAS can skip audit events for internal traffic
+	SourceInternal bool
 }
 
 func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(backendRef *CASCredsOpts) (string, error) {
 	if backendRef.OrgID == uuid.Nil {
 		return "", fmt.Errorf("org id is required")
 	}
-	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role, backendRef.MaxBytes, backendRef.OrgID.String())
+
+	var opts []robotaccount.GenerateOpt
+	if backendRef.SourceInternal {
+		opts = append(opts, robotaccount.WithSourceInternal())
+	}
+
+	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role, backendRef.MaxBytes, backendRef.OrgID.String(), opts...)
 }

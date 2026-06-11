@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -150,27 +150,41 @@ func TestGenerateJWT(t *testing.T) {
 		WithPrivateKey("testdata/test-key.ec.pem"),
 		WithExpiration(5*time.Second),
 	)
-
-	require.NoError(t, err)
-	token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader, 123, "org-uuid")
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
-
-	// Verify signature and check claims
-	rawKey, err := os.ReadFile("testdata/test-key.ec.pub")
 	require.NoError(t, err)
 
-	claims := &Claims{}
-	tokenInfo, err := jwt.ParseWithClaims(token, claims, loadPublicKey(rawKey))
-	require.NoError(t, err)
-	assert.True(t, tokenInfo.Valid)
-	assert.Equal(t, "secret-id", claims.StoredSecretID)
-	assert.Equal(t, Uploader, claims.Role)
-	assert.Equal(t, "my-issuer", claims.Issuer)
-	assert.Contains(t, claims.Audience, "artifact-cas.chainloop")
-	assert.Equal(t, claims.MaxBytes, int64(123))
-	assert.Equal(t, "org-uuid", claims.OrgID)
-	assert.WithinDuration(t, time.Now(), claims.ExpiresAt.Time, 10*time.Second)
+	tests := []struct {
+		name               string
+		opts               []GenerateOpt
+		wantSourceInternal bool
+	}{
+		{name: "default, client traffic"},
+		{name: "internal controlplane traffic", opts: []GenerateOpt{WithSourceInternal()}, wantSourceInternal: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, Uploader, 123, "org-uuid", tc.opts...)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, token)
+
+			// Verify signature and check claims
+			rawKey, err := os.ReadFile("testdata/test-key.ec.pub")
+			require.NoError(t, err)
+
+			claims := &Claims{}
+			tokenInfo, err := jwt.ParseWithClaims(token, claims, loadPublicKey(rawKey))
+			require.NoError(t, err)
+			assert.True(t, tokenInfo.Valid)
+			assert.Equal(t, "secret-id", claims.StoredSecretID)
+			assert.Equal(t, Uploader, claims.Role)
+			assert.Equal(t, "my-issuer", claims.Issuer)
+			assert.Contains(t, claims.Audience, "artifact-cas.chainloop")
+			assert.Equal(t, claims.MaxBytes, int64(123))
+			assert.Equal(t, "org-uuid", claims.OrgID)
+			assert.Equal(t, tc.wantSourceInternal, claims.SourceInternal)
+			assert.WithinDuration(t, time.Now(), claims.ExpiresAt.Time, 10*time.Second)
+		})
+	}
 }
 
 // load key for verification

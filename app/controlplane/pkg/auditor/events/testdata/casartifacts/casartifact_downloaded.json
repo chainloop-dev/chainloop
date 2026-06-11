@@ -1,0 +1,18 @@
+{
+  "ActionType": "CASArtifactDownloaded",
+  "TargetType": "CASArtifact",
+  "TargetID": null,
+  "ActorType": "SYSTEM",
+  "ActorID": null,
+  "ActorEmail": "",
+  "ActorName": "",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "artifact b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9 (1024 bytes) was downloaded",
+  "Info": {
+    "digest": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+    "size_bytes": 1024,
+    "file_name": "sbom.cyclonedx.json",
+    "backend_type": "OCI"
+  },
+  "Digest": "sha256:10edea2ce083e958285ccfae58b3d07e5697f74d3f87b32950b9dc821aa74baf"
+}

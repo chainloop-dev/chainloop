@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"code.cloudfoundry.org/bytefmt"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
@@ -132,6 +133,16 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, msg, http.StatusUnauthorized)
 		return
 	}
+
+	// the backend egress completed and the content was verified, record the download
+	s.audit.Dispatch(&events.CASArtifactDownloaded{
+		CASArtifactBase: &events.CASArtifactBase{
+			Digest:      wantChecksum.Hex,
+			SizeBytes:   info.Size,
+			FileName:    filename,
+			BackendType: auth.BackendType,
+		},
+	}, auth)
 
 	if _, err := io.Copy(w, buf); err != nil {
 		if isClientDisconnect(err) {

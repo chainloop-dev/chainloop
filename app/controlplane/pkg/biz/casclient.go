@@ -110,7 +110,8 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID st
 	uc.logger.Infow("msg", "upload initialized", "filename", filename, "digest", digest)
 
 	// client with temporary set of credentials
-	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Uploader, OrgID: orgID})
+	// SourceInternal flags this as the control plane's own traffic so the CAS doesn't emit audit events for it
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Uploader, OrgID: orgID, SourceInternal: true})
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}
@@ -132,7 +133,8 @@ func (uc *CASClientUseCase) Download(ctx context.Context, backendType, secretID 
 
 	uc.logger.Infow("msg", "download initialized", "digest", digest)
 
-	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Downloader, OrgID: orgID})
+	// SourceInternal flags this as the control plane's own traffic so the CAS doesn't emit audit events for it
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Downloader, OrgID: orgID, SourceInternal: true})
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}

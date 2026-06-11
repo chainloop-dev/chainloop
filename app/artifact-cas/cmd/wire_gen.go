@@ -10,8 +10,10 @@ import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -24,38 +26,74 @@ import (
 // wireApp init kratos application.
 func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth, reader credentials.Reader, logger log.Logger) (*app, func(), error) {
 	providers := loader.LoadProviders(reader)
-	v := serviceOpts(logger)
+	config := newNatsConfig(bootstrap)
+	reloadableConnection, cleanup, err := natsconn.New(config, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	auditLogPublisher, err := auditor.NewPublishOnlyAuditLogPublisher(reloadableConnection, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	auditDispatcher := service.NewAuditDispatcher(auditLogPublisher, logger)
+	v := serviceOpts(logger, auditDispatcher)
 	byteStreamService := service.NewByteStreamService(providers, v...)
 	resourceService := service.NewResourceService(providers, v...)
 	validator, err := newProtoValidator()
 	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
 	grpcServer, err := server.NewGRPCServer(confServer, auth, byteStreamService, resourceService, providers, validator, logger)
 	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
 	downloadService := service.NewDownloadService(providers, v...)
 	httpServer, err := server.NewHTTPServer(confServer, auth, downloadService, providers, logger)
 	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
 	httpMetricsServer, err := server.NewHTTPMetricsServer(confServer)
 	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
-	tracerProvider, cleanup, err := server.NewTracerProvider(bootstrap, logger)
+	tracerProvider, cleanup2, err := server.NewTracerProvider(bootstrap, logger)
 	if err != nil {
+		cleanup()
 		return nil, nil, err
 	}
 	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, providers, tracerProvider)
 	return mainApp, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }
 
 // wire.go:
 
-func serviceOpts(l log.Logger) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l)}
+func serviceOpts(l log.Logger, audit *service.AuditDispatcher) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithAuditDispatcher(audit)}
+}
+
+// newNatsConfig converts the proto config to a plain natsconn.Config, nil when unset
+func newNatsConfig(bc *conf.Bootstrap) *natsconn.Config {
+	c := bc.GetNatsServer()
+	if c.GetUri() == "" {
+		return nil
+	}
+
+	cfg := &natsconn.Config{
+		URI:  c.GetUri(),
+		Name: "chainloop-artifact-cas",
+	}
+
+	if c.GetToken() != "" {
+		cfg.Token = c.GetToken()
+	}
+
+	return cfg
 }
