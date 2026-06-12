@@ -23,7 +23,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
-	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -31,18 +30,27 @@ import (
 var auditorTracer = otelx.Tracer("chainloop-controlplane", "biz/auditor")
 
 type AuditorUseCase struct {
-	log       *log.Helper
-	publisher *auditor.AuditLogPublisher
+	log        *log.Helper
+	dispatcher *auditor.Dispatcher
 }
 
 func NewAuditorUseCase(p *auditor.AuditLogPublisher, logger log.Logger) *AuditorUseCase {
+	// keep the Publisher interface nil when the publisher is disabled so the
+	// dispatcher short-circuits instead of holding a typed-nil interface
+	var publisher auditor.Publisher
+	if p != nil {
+		publisher = p
+	}
+
 	return &AuditorUseCase{
-		log:       log.NewHelper(log.With(logger, "component", "biz/auditor")),
-		publisher: p,
+		log:        log.NewHelper(log.With(logger, "component", "biz/auditor")),
+		dispatcher: auditor.NewDispatcher(publisher, logger),
 	}
 }
 
-// Dispatch logs an entry to the audit log asynchronously.
+// Dispatch logs an entry to the audit log asynchronously. The actor is resolved
+// from the request context (user, API token or system); the generation and
+// publishing is delegated to the shared auditor.Dispatcher.
 func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, orgID *uuid.UUID) {
 	ctx, span := otelx.Start(ctx, auditorTracer, "AuditorUseCase.Dispatch")
 	defer span.End()
@@ -77,16 +85,5 @@ func (uc *AuditorUseCase) Dispatch(ctx context.Context, entry auditor.LogEntry, 
 		opts = append(opts, auditor.WithOrgID(*orgID))
 	}
 
-	payload, err := auditor.GenerateAuditEvent(entry, opts...)
-	if err != nil {
-		uc.log.Error("failed to generate audit event", "error", err)
-		sentry.CaptureException(fmt.Errorf("failed to generate audit event: %w", err))
-		return
-	}
-
-	// Send event to event bus
-	if err := uc.publisher.Publish(payload); err != nil {
-		uc.log.Error("failed to publish event", "error", err)
-		sentry.CaptureException(fmt.Errorf("failed to publish event: %w", err))
-	}
+	uc.dispatcher.Dispatch(entry, opts...)
 }
