@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -115,20 +115,24 @@ func (s *testSuite) TestUniqueFilename() {
 
 type testSuite struct {
 	suite.Suite
+	server *fakestorage.Server
 	client *storage.Client
 	bucket string
 }
 
 func (s *testSuite) SetupTest() {
-	server := fakestorage.NewServer([]fakestorage.Object{
+	s.server = fakestorage.NewServer([]fakestorage.Object{
 		{
 			ObjectAttrs: fakestorage.ObjectAttrs{BucketName: "existing-bucket"},
 		},
 	})
-	defer server.Stop()
 
-	s.client = server.Client()
+	s.client = s.server.Client()
 	s.bucket = "existing-bucket"
+}
+
+func (s *testSuite) TearDownTest() {
+	s.server.Stop()
 }
 
 // Run all the tests
