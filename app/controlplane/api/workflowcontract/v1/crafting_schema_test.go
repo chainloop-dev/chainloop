@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ func TestPolicyAttachment(t *testing.T) {
 				Requirements: []string{"foo bar", "foo@bar@1.2.3", "foo @1.2", "123@123 ", "foo"},
 			},
 			nviolations:    5,
-			firstViolation: "requirements[0]: value does not match regex pattern `^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$`",
+			firstViolation: "requirements[0]: does not match regex pattern `^([a-z0-9-]+\\/)?([^\\s\\/]+\\/)([^\\s@\\/]+)(@[^\\s@]+)?$`",
 			wantErr:        true,
 		},
 	}
