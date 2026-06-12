@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ func NewClient(apiKey string, endpointURL string) (*Tracker, error) {
 	noopLogger := log.New(io.Discard, "", 0)
 	client, err := posthog.NewWithConfig(apiKey, posthog.Config{
 		Endpoint: endpointURL,
-		Logger:   posthog.StdLogger(noopLogger),
+		Logger:   posthog.StdLogger(noopLogger, false),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PostHog client: %w", err)
