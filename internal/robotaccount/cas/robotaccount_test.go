@@ -22,7 +22,7 @@ import (
 	"time"
 
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,7 +81,7 @@ func TestValid(t *testing.T) {
 				},
 			}
 
-			err := c.Valid()
+			err := c.Validate()
 			if tc.wantError {
 				assert.Error(err)
 			} else {

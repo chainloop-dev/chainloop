@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccoun
 
 			// Do not accept tokens that are crafted for a different audience in this system
 			// NOTE: we allow deprecated audience to not to break compatibility with previously issued robot-accounts
-			if !claims.VerifyAudience(robotaccount.Audience, true) && !claims.VerifyAudience(robotaccount.DeprecatedAudience, true) {
+			if !claimsHaveAudience(claims, robotaccount.Audience) && !claimsHaveAudience(claims, robotaccount.DeprecatedAudience) {
 				return nil, errors.New("unexpected token, invalid audience")
 			}
 

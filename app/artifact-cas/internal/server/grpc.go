@@ -31,7 +31,7 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/middleware/selector"
-	jwt "github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/genproto/googleapis/bytestream"
 
@@ -194,24 +194,14 @@ func verifyAndMarshalJWT(token string, keyFunc jwt.Keyfunc, signingMethod jwt.Si
 
 	tokenInfo, err := jwt.ParseWithClaims(token, claims, keyFunc)
 	if err != nil {
-		var ve *jwt.ValidationError
-		if !errors.As(err, &ve) {
+		switch {
+		case errors.Is(err, jwt.ErrTokenMalformed):
+			return nil, jwtMiddleware.ErrTokenInvalid
+		case errors.Is(err, jwt.ErrTokenExpired), errors.Is(err, jwt.ErrTokenNotValidYet):
+			return nil, jwtMiddleware.ErrTokenExpired
+		default:
 			return nil, errors.Unauthorized("UNAUTHORIZED", err.Error())
 		}
-
-		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-			return nil, jwtMiddleware.ErrTokenInvalid
-		}
-
-		if ve.Errors&(jwt.ValidationErrorExpired) != 0 {
-			return nil, jwtMiddleware.ErrTokenExpired
-		}
-
-		if ve.Errors&(jwt.ValidationErrorNotValidYet) != 0 {
-			return nil, jwtMiddleware.ErrTokenExpired
-		}
-
-		return nil, err
 	}
 
 	if !tokenInfo.Valid {

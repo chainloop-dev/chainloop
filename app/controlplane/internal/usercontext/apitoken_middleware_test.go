@@ -28,7 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

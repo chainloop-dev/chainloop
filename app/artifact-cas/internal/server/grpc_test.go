@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
-	jwt "github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors"
 	"github.com/stretchr/testify/assert"
@@ -126,7 +126,7 @@ func TestJWTAuthFunc(t *testing.T) {
 				assert.NoError(t, err)
 				// Validate and extract the claims
 				claims := infoFromAuth(ctx, t)
-				assert.NoError(t, claims.Valid())
+				assert.NoError(t, claims.Validate())
 				assert.Equal(t, "secret-id", claims.StoredSecretID)
 				assert.Equal(t, "backend-type", claims.BackendType)
 				assert.Equal(t, robotaccount.Downloader, claims.Role)

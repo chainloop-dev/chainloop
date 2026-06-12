@@ -37,7 +37,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -98,7 +98,7 @@ func NewRobotAccountProvider(signingSecret string) JWTOption {
 				return false
 			}
 			for _, aud := range []string{robotaccount.Audience, robotaccount.DeprecatedAudience} {
-				if claims.VerifyAudience(aud, true) {
+				if claimsHaveAudience(claims, aud) {
 					return true
 				}
 			}
@@ -123,7 +123,7 @@ func NewAPITokenProvider(signingSecret string) JWTOption {
 				return false
 			}
 
-			return claims.VerifyAudience(apitoken.Audience, true)
+			return claimsHaveAudience(claims, apitoken.Audience)
 		}),
 		WithSigningMethod(user.SigningMethod),
 		WithKeyFunc(func(_ *jwt.Token) (interface{}, error) {
@@ -141,7 +141,7 @@ func NewUserTokenProvider(signingSecret string) JWTOption {
 				return false
 			}
 
-			return genericClaims.VerifyAudience(user.Audience, true)
+			return claimsHaveAudience(genericClaims, user.Audience)
 		}),
 		WithSigningMethod(user.SigningMethod),
 		WithKeyFunc(func(_ *jwt.Token) (interface{}, error) {
@@ -427,21 +427,14 @@ func runProviderValidator(provider providerOption, jwtToken string) (*jwt.Token,
 	tokenInfo, err = jwt.ParseWithClaims(jwtToken, claimsFunc(), provider.keyFunc)
 
 	if err != nil {
-		var ve *jwt.ValidationError
-		ok := errors.As(err, &ve)
-		if !ok {
+		switch {
+		case errors.Is(err, jwt.ErrTokenMalformed):
+			return nil, ErrTokenInvalid
+		case errors.Is(err, jwt.ErrTokenExpired), errors.Is(err, jwt.ErrTokenNotValidYet):
+			return nil, ErrTokenExpired
+		default:
 			return nil, errorsAPI.Unauthorized(reason, err.Error())
 		}
-		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-			return nil, ErrTokenInvalid
-		}
-		if ve.Errors&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0 {
-			return nil, ErrTokenExpired
-		}
-		if ve.Inner != nil {
-			return nil, ve.Inner
-		}
-		return nil, ErrTokenParseFail
 	}
 	if !tokenInfo.Valid {
 		return nil, ErrTokenInvalid
@@ -469,4 +462,22 @@ func newJWTAuthContext(ctx context.Context, authContext JWTAuthContext) context.
 func FromJWTAuthContext(ctx context.Context) (authContext JWTAuthContext, ok bool) {
 	authContext, ok = ctx.Value(authzContextKey{}).(JWTAuthContext)
 	return
+}
+
+// claimsHaveAudience reports whether the JWT claims include the expected
+// audience. It replaces the Claims.VerifyAudience helper that golang-jwt
+// removed in v5.
+func claimsHaveAudience(claims jwt.Claims, expected string) bool {
+	audiences, err := claims.GetAudience()
+	if err != nil {
+		return false
+	}
+
+	for _, aud := range audiences {
+		if aud == expected {
+			return true
+		}
+	}
+
+	return false
 }

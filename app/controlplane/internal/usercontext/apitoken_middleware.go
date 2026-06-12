@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
@@ -70,7 +70,7 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 			}
 
 			// We've received an API-token
-			if genericClaims.VerifyAudience(apitoken.Audience, true) {
+			if claimsHaveAudience(genericClaims, apitoken.Audience) {
 				var err error
 				tokenID, ok := genericClaims["jti"].(string)
 				if !ok || tokenID == "" {
@@ -120,7 +120,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 			}
 
 			// We've received an API-token, double check its audience
-			if !claims.VerifyAudience(apitoken.Audience, true) {
+			if !claimsHaveAudience(claims, apitoken.Audience) {
 				return nil, errors.New("unexpected token, invalid audience")
 			}
 
