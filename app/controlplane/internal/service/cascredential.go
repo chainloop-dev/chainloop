@@ -58,10 +58,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	// Internal platform traffic can be flagged so the CAS skips audit event emission for it
-	sourceInternal, err := resolveSourceInternal(req.GetSourceInternal(), currentAPIToken)
-	if err != nil {
-		return nil, err
-	}
+	sourceInternal := resolveSourceInternal(req.GetSourceInternal(), currentAPIToken)
 
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
@@ -167,17 +164,12 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}, nil
 }
 
-// resolveSourceInternal returns whether the minted CAS token must be flagged as internal
-// platform traffic. Only system API tokens can request it since they are minted exclusively
-// by internal code paths; any other caller asking for it is rejected.
-func resolveSourceInternal(requested bool, token *entities.APIToken) (bool, error) {
-	if !requested {
-		return false, nil
-	}
-
-	if token == nil || !token.IsSystem {
-		return false, errors.Forbidden("forbidden", "source_internal is restricted to system API tokens")
-	}
-
-	return true, nil
+// resolveSourceInternal returns whether the minted CAS token should be flagged as internal
+// platform traffic. It is only flagged when a system API token explicitly requests it, since
+// these tokens are minted exclusively by internal code paths.
+//
+// This is best-effort: any other caller requesting it (for example an outdated system whose
+// token store does not yet mark its tokens as system) is simply not flagged rather than rejected.
+func resolveSourceInternal(requested bool, token *entities.APIToken) bool {
+	return requested && token != nil && token.IsSystem
 }

@@ -19,9 +19,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
-	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestResolveSourceInternal(t *testing.T) {
@@ -30,7 +28,6 @@ func TestResolveSourceInternal(t *testing.T) {
 		requested bool
 		token     *entities.APIToken
 		want      bool
-		wantErr   bool
 	}{
 		{
 			name:      "not requested, no token (user auth)",
@@ -57,29 +54,24 @@ func TestResolveSourceInternal(t *testing.T) {
 			want:      true,
 		},
 		{
-			name:      "requested by regular API token is forbidden",
+			// best-effort: a non-system token requesting it is ignored, not rejected,
+			// to tolerate outdated systems whose tokens are not yet marked as system
+			name:      "requested by regular API token falls back to false",
 			requested: true,
 			token:     &entities.APIToken{},
-			wantErr:   true,
+			want:      false,
 		},
 		{
-			name:      "requested by user auth is forbidden",
+			name:      "requested by user auth falls back to false",
 			requested: true,
 			token:     nil,
-			wantErr:   true,
+			want:      false,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := resolveSourceInternal(tc.requested, tc.token)
-			if tc.wantErr {
-				require.Error(t, err)
-				assert.True(t, errors.IsForbidden(err))
-				return
-			}
-
-			require.NoError(t, err)
+			got := resolveSourceInternal(tc.requested, tc.token)
 			assert.Equal(t, tc.want, got)
 		})
 	}
