@@ -25,7 +25,7 @@ import (
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	kratosjwt "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var SigningMethod = jwt.SigningMethodES512
@@ -185,19 +185,23 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 
 const JWTAudience = "artifact-cas.chainloop"
 
-// Additional validation checks
-func (c *Claims) Valid() error {
-	// Default validation checks
-	// expiration, not before, issuer, subject
-	if err := c.RegisteredClaims.Valid(); err != nil {
+// Validate implements the jwt/v5 ClaimsValidator interface and is invoked by
+// the parser after the standard registered-claim checks (expiration, not
+// before, issuer) have run automatically. Here we enforce that the token
+// carries the expected CAS audience.
+func (c *Claims) Validate() error {
+	audiences, err := c.GetAudience()
+	if err != nil {
 		return err
 	}
 
-	if valid := c.VerifyAudience(JWTAudience, true); !valid {
-		return jwt.NewValidationError("invalid audience", jwt.ValidationErrorAudience)
+	for _, aud := range audiences {
+		if aud == JWTAudience {
+			return nil
+		}
 	}
 
-	return nil
+	return jwt.ErrTokenInvalidAudience
 }
 
 func (c *Claims) CheckRole(r Role) error {

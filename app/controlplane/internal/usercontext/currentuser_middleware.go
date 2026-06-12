@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
@@ -56,7 +56,7 @@ func WithCurrentUserMiddleware(userUseCase biz.UserOrgFinder, logger *log.Helper
 
 			// Check wether the token is for a user or an API-token and handle accordingly
 			// We've received a token for a user
-			if genericClaims.VerifyAudience(user.Audience, true) {
+			if claimsHaveAudience(genericClaims, user.Audience) {
 				userID, ok := genericClaims["user_id"].(string)
 				if !ok || userID == "" {
 					return nil, errors.New("error mapping the user claims")
@@ -147,4 +147,22 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, orgUC *biz.Organiza
 			})(ctx, req)
 		}
 	}
+}
+
+// claimsHaveAudience reports whether the JWT claims include the expected
+// audience. It replaces the Claims.VerifyAudience helper that golang-jwt
+// removed in v5.
+func claimsHaveAudience(claims jwt.Claims, expected string) bool {
+	audiences, err := claims.GetAudience()
+	if err != nil {
+		return false
+	}
+
+	for _, aud := range audiences {
+		if aud == expected {
+			return true
+		}
+	}
+
+	return false
 }

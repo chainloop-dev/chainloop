@@ -21,7 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	middlewares_http "github.com/chainloop-dev/chainloop/pkg/middlewares/http"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 
 	"buf.build/go/protovalidate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"

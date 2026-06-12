@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"github.com/go-kratos/kratos/v2/errors"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/go-kratos/kratos/v2/transport/http"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -90,24 +90,14 @@ func verifyAndMarshalJWT(token string, keyFunc jwt.Keyfunc, claimsFunc ClaimsFun
 
 	tokenInfo, err := jwt.ParseWithClaims(token, claimsFunc(), keyFunc)
 	if err != nil {
-		var ve *jwt.ValidationError
-		if !errors.As(err, &ve) {
+		switch {
+		case errors.Is(err, jwt.ErrTokenMalformed):
+			return nil, jwtMiddleware.ErrTokenInvalid
+		case errors.Is(err, jwt.ErrTokenExpired), errors.Is(err, jwt.ErrTokenNotValidYet):
+			return nil, jwtMiddleware.ErrTokenExpired
+		default:
 			return nil, errors.Unauthorized("UNAUTHORIZED", err.Error())
 		}
-
-		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
-			return nil, jwtMiddleware.ErrTokenInvalid
-		}
-
-		if ve.Errors&(jwt.ValidationErrorExpired) != 0 {
-			return nil, jwtMiddleware.ErrTokenExpired
-		}
-
-		if ve.Errors&(jwt.ValidationErrorNotValidYet) != 0 {
-			return nil, jwtMiddleware.ErrTokenExpired
-		}
-
-		return nil, err
 	}
 
 	if !tokenInfo.Valid {

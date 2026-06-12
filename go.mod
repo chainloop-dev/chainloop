@@ -21,7 +21,6 @@ require (
 	github.com/getsentry/sentry-go v0.46.2
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230823024326-a09f4d8ebba9
 	github.com/go-kratos/kratos/v2 v2.9.2
-	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-containerregistry v0.21.6
 	github.com/google/subcommands v1.2.0
 	github.com/google/uuid v1.6.0
@@ -111,6 +110,7 @@ require github.com/vektah/gqlparser/v2 v2.5.33
 
 require (
 	github.com/XSAM/otelsql v0.42.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.44.0
 	go.opentelemetry.io/otel/sdk v1.44.0
@@ -214,7 +214,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/cel-go v0.28.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-github/v73 v73.0.0 // indirect
