@@ -281,7 +281,10 @@ func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.Wo
 	wfQuery := baseQuery.Where(workflow.DeletedAtIsNil())
 
 	// Apply additional filters to the Workflow query based on the provided options
-	wfQuery = applyWorkflowFilters(wfQuery, filter)
+	wfQuery, err := applyWorkflowFilters(wfQuery, filter)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	// Get the count of all filtered rows without the limit and offset
 	count, err := wfQuery.Count(ctx)
@@ -339,7 +342,7 @@ func applyWorkflowRunFilters(baseQuery *ent.WorkflowQuery, opts *biz.WorkflowLis
 }
 
 // applyWorkflowFilters applies filters to the Workflow query based on the provided options
-func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts) *ent.WorkflowQuery {
+func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts) (*ent.WorkflowQuery, error) {
 	if opts != nil {
 		if opts.WorkflowPublic != nil {
 			wfQuery = wfQuery.Where(workflow.Public(*opts.WorkflowPublic))
@@ -364,16 +367,21 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 
 		// Append the JSON Filters to the query
 		if len(opts.JSONFilters) != 0 {
-			wfQuery = wfQuery.Where(func(selector *sql.Selector) {
-				// Build the predicates for each JSON filter
-				predicates := make([]*sql.Predicate, 0, len(opts.JSONFilters))
-				for _, filter := range opts.JSONFilters {
-					// Include the column where the filter is applied
-					filter.Column = workflow.FieldMetadata
-					jsonPredicate, _ := jsonfilter.BuildEntSelectorFromJSONFilter(filter)
-					predicates = append(predicates, jsonPredicate)
+			// Build the predicates for each JSON filter up front so that any
+			// validation error (e.g. an unsafe field path) is surfaced instead
+			// of being silently ignored inside the query builder closure.
+			predicates := make([]*sql.Predicate, 0, len(opts.JSONFilters))
+			for _, filter := range opts.JSONFilters {
+				// Include the column where the filter is applied
+				filter.Column = workflow.FieldMetadata
+				jsonPredicate, err := jsonfilter.BuildEntSelectorFromJSONFilter(filter)
+				if err != nil {
+					return nil, biz.NewErrValidation(fmt.Errorf("invalid JSON filter: %w", err))
 				}
-				// Combine the predicates using OR logic
+				predicates = append(predicates, jsonPredicate)
+			}
+			wfQuery = wfQuery.Where(func(selector *sql.Selector) {
+				// Combine the predicates using AND logic
 				selector.Where(sql.And(predicates...))
 			})
 		}
@@ -396,7 +404,7 @@ func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts
 		}
 	}
 
-	return wfQuery
+	return wfQuery, nil
 }
 
 // GetOrgScoped Gets a workflow making sure it belongs to a given org
