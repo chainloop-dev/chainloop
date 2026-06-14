@@ -78,7 +78,7 @@ type IdentityReference struct {
 	Name *string
 }
 
-// generate a DNS1123-valid random name using moby's namesgenerator
+// generate a DNS1123-valid random name from the given prefix
 // plus an additional random number
 func generateValidDNS1123WithSuffix(prefix string) (string, error) {
 	// Append a random number to it
