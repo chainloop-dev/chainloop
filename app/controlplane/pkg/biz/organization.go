@@ -29,7 +29,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
-	"github.com/moby/moby/pkg/namesgenerator"
 )
 
 var organizationTracer = otelx.Tracer("chainloop-controlplane", "biz/organization")
@@ -140,8 +139,8 @@ func (uc *OrganizationUseCase) CreateWithRandomName(ctx context.Context, opts ..
 
 	// Try 10 times to create a random name
 	for i := 0; i < RandomNameMaxTries; i++ {
-		// Create a random name
-		prefix := namesgenerator.GetRandomName(0)
+		// Create a random name using a short unique prefix
+		prefix := "org-" + uuid.NewString()[:8]
 		name, err := generateValidDNS1123WithSuffix(prefix)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate random name: %w", err)
