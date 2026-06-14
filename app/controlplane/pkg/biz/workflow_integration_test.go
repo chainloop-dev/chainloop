@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
+	"github.com/chainloop-dev/chainloop/pkg/jsonfilter"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
@@ -560,6 +561,35 @@ func (s *workflowListIntegrationTestSuite) TestList() {
 		s.NoError(err)
 		s.Len(workflows, 1)
 		s.Equal(2, count)
+	})
+
+	s.Run("rejects a JSON filter with an unsafe field path as a validation error", func() {
+		opts := &biz.WorkflowListOpts{
+			JSONFilters: []*jsonfilter.JSONFilter{
+				{
+					// SQL injection attempt: a single quote breaks out of the JSON path literal.
+					FieldPath: "x'='x' OR (SELECT 1 FROM pg_sleep(2)) IS NOT NULL OR 'z",
+					Operator:  jsonfilter.OpEQ,
+					Value:     "true",
+				},
+			},
+		}
+
+		workflows, _, err := s.Workflow.List(ctx, s.org.ID, opts, nil)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err), "unsafe field path must surface as a validation error, got: %v", err)
+		s.Nil(workflows)
+	})
+
+	s.Run("accepts a JSON filter with a safe field path", func() {
+		opts := &biz.WorkflowListOpts{
+			JSONFilters: []*jsonfilter.JSONFilter{
+				{FieldPath: "needsAttention", Operator: jsonfilter.OpEQ, Value: "true"},
+			},
+		}
+
+		_, _, err := s.Workflow.List(ctx, s.org.ID, opts, nil)
+		s.NoError(err)
 	})
 }
 

@@ -22,6 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// errInvalidFieldPath is the common prefix returned when a field path fails validation.
+const errInvalidFieldPath = "invalid field path"
+
 func TestBuildEntSelectorFromJSONFilter(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -81,13 +84,52 @@ func TestBuildEntSelectorFromJSONFilter(t *testing.T) {
 			filter:  &JSONFilter{Column: "metadata", FieldPath: "env", Operator: OpIN, Value: []string{"prod", "dev"}},
 			wantErr: "invalid value for 'in' operator: must be a slice of strings",
 		},
+		{
+			name:   "field path with array index",
+			filter: &JSONFilter{Column: "metadata", FieldPath: "items[0].name", Operator: OpEQ, Value: "foo"},
+		},
+		{
+			name:    "field path with single quote breaks out of literal",
+			filter:  &JSONFilter{Column: "metadata", FieldPath: "x'='x' OR (SELECT 1 FROM pg_sleep(2)) IS NOT NULL OR 'z", Operator: OpEQ, Value: "true"},
+			wantErr: errInvalidFieldPath,
+		},
+		{
+			name:    "field path with double quote",
+			filter:  &JSONFilter{Column: "metadata", FieldPath: `name"`, Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidFieldPath,
+		},
+		{
+			name:    "field path with semicolon",
+			filter:  &JSONFilter{Column: "metadata", FieldPath: "name;DROP TABLE workflows", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidFieldPath,
+		},
+		{
+			name:    "field path with whitespace",
+			filter:  &JSONFilter{Column: "metadata", FieldPath: "name OR 1=1", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidFieldPath,
+		},
+		{
+			name:    "field path with parenthesis",
+			filter:  &JSONFilter{Column: "metadata", FieldPath: "pg_sleep(2)", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidFieldPath,
+		},
+		{
+			name:    "field path with leading digit segment",
+			filter:  &JSONFilter{Column: "metadata", FieldPath: "1name", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidFieldPath,
+		},
+		{
+			name:    "field path with trailing dot",
+			filter:  &JSONFilter{Column: "metadata", FieldPath: "name.", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidFieldPath,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			pred, err := BuildEntSelectorFromJSONFilter(tc.filter)
 			if tc.wantErr != "" {
-				require.EqualError(t, err, tc.wantErr)
+				require.ErrorContains(t, err, tc.wantErr)
 				assert.Nil(t, pred)
 			} else {
 				require.NoError(t, err)
