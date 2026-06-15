@@ -16,44 +16,42 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
-	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
 
-// eventPublisher is the subset of auditor.AuditLogPublisher used by the dispatcher
-type eventPublisher interface {
-	Publish(data *auditor.EventPayload) error
-}
-
-// AuditDispatcher publishes CAS audit events. Unlike the control plane's
-// biz.AuditorUseCase, the actor is always SYSTEM (CAS JWTs carry no user
-// identity) and the org comes from the JWT claims instead of the request context.
+// AuditDispatcher publishes CAS audit events. It delegates the shared
+// generate -> publish -> error-reporting flow to the control plane's
+// auditor.Dispatcher and only owns the CAS-specific actor/org policy: unlike
+// the control plane's biz.AuditorUseCase, the actor is always SYSTEM (CAS JWTs
+// carry no user identity) and the org comes from the JWT claims instead of the
+// request context.
 type AuditDispatcher struct {
-	// nil when NATS is not configured, making the dispatcher a no-op
-	publisher eventPublisher
-	log       *log.Helper
+	dispatcher *auditor.Dispatcher
+	log        *log.Helper
 }
 
 func NewAuditDispatcher(publisher *auditor.AuditLogPublisher, logger log.Logger) *AuditDispatcher {
-	d := &AuditDispatcher{log: servicelogger.ScopedHelper(logger, "audit-dispatcher")}
-	// keep the interface nil when the publisher is disabled so shouldEmit short-circuits
+	// keep the Publisher interface nil when the publisher is disabled so the
+	// dispatcher short-circuits instead of holding a typed-nil interface
+	var p auditor.Publisher
 	if publisher != nil {
-		d.publisher = publisher
+		p = publisher
 	}
 
-	return d
+	return &AuditDispatcher{
+		dispatcher: auditor.NewDispatcher(p, logger),
+		log:        servicelogger.ScopedHelper(logger, "audit-dispatcher"),
+	}
 }
 
 // shouldEmit returns true when Dispatch would actually publish an event for the
 // given claims. Hooks use it to skip extra work (e.g. backend Describe round-trips).
 func (d *AuditDispatcher) shouldEmit(claims *casJWT.Claims) bool {
-	return d != nil && d.publisher != nil && claims != nil && !claims.SourceInternal
+	return d != nil && d.dispatcher.Enabled() && claims != nil && !claims.SourceInternal
 }
 
 // Dispatch generates and publishes an audit event with a SYSTEM actor and the
@@ -70,18 +68,8 @@ func (d *AuditDispatcher) Dispatch(entry auditor.LogEntry, claims *casJWT.Claims
 		return
 	}
 
-	payload, err := auditor.GenerateAuditEvent(entry,
+	d.dispatcher.Dispatch(entry,
 		auditor.WithActor(auditor.ActorTypeSystem, uuid.Nil, "", ""),
 		auditor.WithOrgID(orgID),
 	)
-	if err != nil {
-		d.log.Errorw("msg", "failed to generate audit event", "error", err)
-		sentry.CaptureException(fmt.Errorf("failed to generate audit event: %w", err))
-		return
-	}
-
-	if err := d.publisher.Publish(payload); err != nil {
-		d.log.Errorw("msg", "failed to publish audit event", "error", err)
-		sentry.CaptureException(fmt.Errorf("failed to publish audit event: %w", err))
-	}
 }
