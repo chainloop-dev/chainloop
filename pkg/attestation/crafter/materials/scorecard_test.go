@@ -151,9 +151,11 @@ func TestOSSFScorecardCrafter_Craft(t *testing.T) {
 // rejects arbitrary JSON, so non-Scorecard files are not misclassified.
 func TestOSSFScorecardCrafter_Craft_NoStrictValidation(t *testing.T) {
 	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
+		name string
+		// noScoreAnnotation asserts the score annotation is absent (report had no score).
+		filePath          string
+		wantErr           string
+		noScoreAnnotation bool
 	}{
 		{
 			name:     "non-scorecard json still rejected",
@@ -163,6 +165,11 @@ func TestOSSFScorecardCrafter_Craft_NoStrictValidation(t *testing.T) {
 		{
 			name:     "valid scorecard accepted",
 			filePath: "./testdata/scorecard-chainloop.json",
+		},
+		{
+			name:              "report without score is not annotated as score 0",
+			filePath:          "./testdata/scorecard-no-score.json",
+			noScoreAnnotation: true,
 		},
 	}
 
@@ -184,13 +191,17 @@ func TestOSSFScorecardCrafter_Craft_NoStrictValidation(t *testing.T) {
 			crafter, err := materials.NewOSSFScorecardCrafter(schema, backend, &l, materials.WithOSSFScorecardNoStrictValidation(true))
 			require.NoError(t, err)
 
-			_, err = crafter.Craft(context.TODO(), tc.filePath)
+			got, err := crafter.Craft(context.TODO(), tc.filePath)
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
 			}
 
 			require.NoError(t, err)
+			if tc.noScoreAnnotation {
+				_, ok := got.Annotations["chainloop.material.scorecard.score"]
+				assert.False(t, ok, "score annotation should be absent when report has no score")
+			}
 		})
 	}
 }

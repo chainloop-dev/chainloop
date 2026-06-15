@@ -40,8 +40,10 @@ type OSSFScorecardCrafter struct {
 // detection and annotations. Deep structural validation is delegated to the
 // embedded JSON Schema via schemavalidators.ValidateOSSFScorecard.
 type scorecardReport struct {
-	Date  string  `json:"date"`
-	Score float64 `json:"score"`
+	Date string `json:"date"`
+	// Score is a pointer so an absent aggregate score is distinguishable from a
+	// legitimate 0.0, avoiding misrepresenting a nonconformant report as score 0.
+	Score *float64 `json:"score"`
 	Repo  struct {
 		Name   string `json:"name"`
 		Commit string `json:"commit"`
@@ -142,5 +144,7 @@ func (i *OSSFScorecardCrafter) injectAnnotations(m *api.Attestation_Material, re
 		m.Annotations[AnnotationToolVersionKey] = report.Scorecard.Version
 	}
 
-	m.Annotations["chainloop.material.scorecard.score"] = strconv.FormatFloat(report.Score, 'f', -1, 64)
+	if report.Score != nil {
+		m.Annotations["chainloop.material.scorecard.score"] = strconv.FormatFloat(*report.Score, 'f', -1, 64)
+	}
 }
