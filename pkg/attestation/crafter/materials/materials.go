@@ -303,6 +303,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewGraphQLCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_SYSINTERNALS_ACCESSCHK:
 		crafter, err = NewAccessChkCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_CERTCC_DRANZER:
+		crafter, err = NewDranzerCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

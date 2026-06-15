@@ -226,6 +226,20 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			},
 			testField: "objects",
 		},
+		{
+			name: "dranzer text material projected to json",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_CERTCC_DRANZER,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+						Content: []byte("Testing COM Object - {11111111-2222-3333-4444-555555555555} Example.WidgetControl\nCOM Object Filename : example.ocx\n"),
+					},
+				},
+				InlineCas: true,
+			},
+			testField: "objects",
+		},
 	}
 
 	for _, tc := range cases {

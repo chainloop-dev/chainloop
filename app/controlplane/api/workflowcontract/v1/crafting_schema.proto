@@ -170,6 +170,8 @@ message CraftingSchema {
       SYSINTERNALS_SIGCHECK = 34;
       // Sysinternals AccessChk text output https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk
       SYSINTERNALS_ACCESSCHK = 35;
+      // CERT/CC dranzer ActiveX/COM control test report (plain text) https://github.com/CERTCC/dranzer
+      CERTCC_DRANZER = 36;
     }
   }
 }

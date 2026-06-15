@@ -1,0 +1,11 @@
+*******************************************************************************
+Test Engine Version: $Rev: 96 $
+*******************************************************************************
+Number of COM Objects                   2
+Number of COM Objects With Kill Bit     0
+Number of COM Objects Without Kill Bit  2
+Number of COM Objects Passed Test       2
+Number of COM Objects Failed Test       0
+Number of COM Objects Hung During Test  0
+Number of COM Objects Misc Errors       0
+*******************************************************************************

@@ -1,0 +1,27 @@
+*******************************************************************************
+Testing COM Object - {99999999-8888-7777-6666-555555555555} Example.CrashControl
+*******************************************************************************
+COM Object Filename : crash.ocx
+Major Version       : 3
+Product Name        : Example Suite
+Company Name        : Example Corp
+*******************************************************************************
+*******************************************************************************
+Invoking Method                 - IExampleCrash::void Trigger([in] BSTR data<xxxx.....{10240}>)
+*****************************
+***   Access Violation    ***
+*****************************
+Invoked Method                 - IExampleCrash::void Trigger([in] BSTR data<xxxx.....{10240}>)
+Access violation at 0x41414141 :Bad write on 0x41414141
+
+*******************************************************************************
+Test Engine Version: $Rev: 96 $
+*******************************************************************************
+Number of COM Objects                   1
+Number of COM Objects With Kill Bit     0
+Number of COM Objects Without Kill Bit  1
+Number of COM Objects Passed Test       0
+Number of COM Objects Failed Test       1
+Number of COM Objects Hung During Test  0
+Number of COM Objects Misc Errors       0
+*******************************************************************************
