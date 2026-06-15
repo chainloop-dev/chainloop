@@ -150,7 +150,8 @@
             "YELP_DETECT_SECRETS_BASELINE",
             "SYSINTERNALS_SIGCHECK",
             "SYSINTERNALS_ACCESSCHK",
-            "CERTCC_DRANZER"
+            "CERTCC_DRANZER",
+            "OSSF_SCORECARD_JSON"
           ],
           "title": "Material Type",
           "type": "string"

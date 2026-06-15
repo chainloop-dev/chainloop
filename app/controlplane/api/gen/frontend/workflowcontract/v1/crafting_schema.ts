@@ -289,6 +289,11 @@ export enum CraftingSchema_Material_MaterialType {
   SYSINTERNALS_ACCESSCHK = 35,
   /** CERTCC_DRANZER - CERT/CC dranzer ActiveX/COM control test report (plain text) https://github.com/CERTCC/dranzer */
   CERTCC_DRANZER = 36,
+  /**
+   * OSSF_SCORECARD_JSON - OpenSSF Scorecard result in JSON format
+   * https://github.com/ossf/scorecard
+   */
+  OSSF_SCORECARD_JSON = 37,
   UNRECOGNIZED = -1,
 }
 
@@ -405,6 +410,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 36:
     case "CERTCC_DRANZER":
       return CraftingSchema_Material_MaterialType.CERTCC_DRANZER;
+    case 37:
+    case "OSSF_SCORECARD_JSON":
+      return CraftingSchema_Material_MaterialType.OSSF_SCORECARD_JSON;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -488,6 +496,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "SYSINTERNALS_ACCESSCHK";
     case CraftingSchema_Material_MaterialType.CERTCC_DRANZER:
       return "CERTCC_DRANZER";
+    case CraftingSchema_Material_MaterialType.OSSF_SCORECARD_JSON:
+      return "OSSF_SCORECARD_JSON";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

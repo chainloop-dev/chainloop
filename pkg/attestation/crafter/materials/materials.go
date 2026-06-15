@@ -305,6 +305,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewAccessChkCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CERTCC_DRANZER:
 		crafter, err = NewDranzerCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_OSSF_SCORECARD_JSON:
+		crafter, err = NewOSSFScorecardCrafter(materialSchema, casBackend, logger, WithOSSFScorecardNoStrictValidation(opts.NoStrictValidation))
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
