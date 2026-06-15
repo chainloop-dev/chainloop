@@ -1,0 +1,4 @@
+This is not a dranzer report.
+Just some random text that happens to be a file.
+key: value
+nothing to see here.

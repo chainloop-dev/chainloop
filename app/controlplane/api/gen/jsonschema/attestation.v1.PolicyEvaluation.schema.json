@@ -149,7 +149,8 @@
             "GRAPHQL_SPEC",
             "YELP_DETECT_SECRETS_BASELINE",
             "SYSINTERNALS_SIGCHECK",
-            "SYSINTERNALS_ACCESSCHK"
+            "SYSINTERNALS_ACCESSCHK",
+            "CERTCC_DRANZER"
           ],
           "title": "Material Type",
           "type": "string"

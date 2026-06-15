@@ -287,6 +287,8 @@ export enum CraftingSchema_Material_MaterialType {
   SYSINTERNALS_SIGCHECK = 34,
   /** SYSINTERNALS_ACCESSCHK - Sysinternals AccessChk text output https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk */
   SYSINTERNALS_ACCESSCHK = 35,
+  /** CERTCC_DRANZER - CERT/CC dranzer ActiveX/COM control test report (plain text) https://github.com/CERTCC/dranzer */
+  CERTCC_DRANZER = 36,
   UNRECOGNIZED = -1,
 }
 
@@ -400,6 +402,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 35:
     case "SYSINTERNALS_ACCESSCHK":
       return CraftingSchema_Material_MaterialType.SYSINTERNALS_ACCESSCHK;
+    case 36:
+    case "CERTCC_DRANZER":
+      return CraftingSchema_Material_MaterialType.CERTCC_DRANZER;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -481,6 +486,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "SYSINTERNALS_SIGCHECK";
     case CraftingSchema_Material_MaterialType.SYSINTERNALS_ACCESSCHK:
       return "SYSINTERNALS_ACCESSCHK";
+    case CraftingSchema_Material_MaterialType.CERTCC_DRANZER:
+      return "CERTCC_DRANZER";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -1,0 +1,35 @@
+*******************************************************************************
+{11111111-2222-3333-4444-555555555555}-Example.WidgetControl
+ERROR - [Unknown Error] (0xe0434352)
+*******************************************************************************
+*******************************************************************************
+Testing COM Object - {11111111-2222-3333-4444-555555555555} Example.WidgetControl
+*******************************************************************************
+COM Object Filename : example.ocx
+Major Version       : 1
+Minor Version       : 0
+Build Number        : 100
+Product Version     : 1.0.100.0
+Product Name        : Example Suite
+Company Name        : Example Corp
+File Description    : Example Widget Control
+Language            : not found
+*******************************************************************************
+*******************************************************************************
+Invoking Method                 - IExampleWidget::void DoThing([in] BSTR path<xxxx.....{10240}>)
+Invoking Method                 - IExampleWidget::BSTR GetName()
+Invoking Method                 - IExampleWidget::void SetMode([in] VARIANT_BOOL enabled<10000>)
+
+*******************************************************************************
+Test Engine Version: $Rev: 96 $
+*******************************************************************************
+Number of COM Objects                   2
+Number of COM Objects With Kill Bit     0
+Number of COM Objects Without Kill Bit  2
+Number of COM Objects Not Script Safe   0
+Number of COM Objects Passed Test       1
+Number of COM Objects Failed Test       1
+Number of COM Objects Hung During Test  0
+Number of COM Objects with No Type Info 0
+Number of COM Objects Misc Errors       0
+*******************************************************************************

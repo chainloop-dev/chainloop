@@ -27,6 +27,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/accesschk"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/dranzer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/sigcheck"
@@ -124,48 +125,11 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 		}
 	}
 
-	// For XML based materials, we need to ingest them and read as json-like structure
-	switch m.MaterialType {
-	case v1.CraftingSchema_Material_JUNIT_XML:
-		suites, err := materialsjunit.Ingest(value)
-		if err != nil {
-			return nil, fmt.Errorf("failed to ingest junit xml: %w", err)
-		}
-		// this will render a json array
-		rawMaterial, err = json.Marshal(suites)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal junit xml: %w", err)
-		}
-	case v1.CraftingSchema_Material_JACOCO_XML:
-		var report jacoco.Report
-		if err := xml.Unmarshal(rawMaterial, &report); err != nil {
-			return nil, fmt.Errorf("invalid Jacoco report file: %w", err)
-		}
-		rawMaterial, err = json.Marshal(&report)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal to json Jacoco report file: %w", err)
-		}
-	case v1.CraftingSchema_Material_SYSINTERNALS_SIGCHECK:
-		report, ierr := sigcheck.Parse(rawMaterial)
-		if ierr != nil {
-			return nil, fmt.Errorf("failed to ingest sigcheck report: %w", ierr)
-		}
-		rawMaterial, err = report.JSON()
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal sigcheck report: %w", err)
-		}
-	case v1.CraftingSchema_Material_SYSINTERNALS_ACCESSCHK:
-		// AccessChk emits plain text; project it to JSON so the policy engine,
-		// which only consumes JSON, can evaluate it. The raw text is preserved
-		// in the projection's "raw" field for string-matching fallbacks.
-		report, perr := accesschk.Parse(rawMaterial)
-		if perr != nil {
-			return nil, fmt.Errorf("invalid accesschk material: %w", perr)
-		}
-		rawMaterial, err = json.Marshal(report)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal accesschk material: %w", err)
-		}
+	// Non-JSON materials (XML- or text-based formats) are projected to the JSON
+	// the policy engine consumes; JSON-native materials pass through unchanged.
+	rawMaterial, err = m.ingestMaterialToJSON(rawMaterial, value)
+	if err != nil {
+		return nil, err
 	}
 
 	// if raw material is empty (container images, for example), let's create an empty json
@@ -204,6 +168,53 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	}
 
 	return result, nil
+}
+
+// ingestMaterialToJSON projects materials that are not natively JSON (XML- or
+// text-based formats) into the JSON structure the policy engine consumes.
+// Materials that are already JSON are returned unchanged.
+func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value string) ([]byte, error) {
+	switch m.MaterialType {
+	case v1.CraftingSchema_Material_JUNIT_XML:
+		suites, err := materialsjunit.Ingest(value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to ingest junit xml: %w", err)
+		}
+		// this will render a json array
+		return json.Marshal(suites)
+	case v1.CraftingSchema_Material_JACOCO_XML:
+		var report jacoco.Report
+		if err := xml.Unmarshal(rawMaterial, &report); err != nil {
+			return nil, fmt.Errorf("invalid Jacoco report file: %w", err)
+		}
+		return json.Marshal(&report)
+	case v1.CraftingSchema_Material_SYSINTERNALS_SIGCHECK:
+		report, err := sigcheck.Parse(rawMaterial)
+		if err != nil {
+			return nil, fmt.Errorf("failed to ingest sigcheck report: %w", err)
+		}
+		return report.JSON()
+	case v1.CraftingSchema_Material_SYSINTERNALS_ACCESSCHK:
+		// AccessChk emits plain text; project it to JSON so the policy engine,
+		// which only consumes JSON, can evaluate it. The raw text is preserved
+		// in the projection's "raw" field for string-matching fallbacks.
+		report, err := accesschk.Parse(rawMaterial)
+		if err != nil {
+			return nil, fmt.Errorf("invalid accesschk material: %w", err)
+		}
+		return json.Marshal(report)
+	case v1.CraftingSchema_Material_CERTCC_DRANZER:
+		// dranzer emits plain text; project it to JSON so the policy engine,
+		// which only consumes JSON, can evaluate it. The raw text is preserved
+		// in the projection's "raw" field for string-matching fallbacks.
+		report, err := dranzer.Parse(rawMaterial)
+		if err != nil {
+			return nil, fmt.Errorf("invalid dranzer material: %w", err)
+		}
+		return json.Marshal(report)
+	}
+
+	return rawMaterial, nil
 }
 
 // CraftingStateToIntotoDescriptor creates an intoto descriptor from a material in crafting state
