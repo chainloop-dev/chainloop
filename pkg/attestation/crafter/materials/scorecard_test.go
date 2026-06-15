@@ -145,3 +145,52 @@ func TestOSSFScorecardCrafter_Craft(t *testing.T) {
 		})
 	}
 }
+
+// TestOSSFScorecardCrafter_Craft_NoStrictValidation ensures that even with
+// strict schema validation disabled, the discriminating-field guard still
+// rejects arbitrary JSON, so non-Scorecard files are not misclassified.
+func TestOSSFScorecardCrafter_Craft_NoStrictValidation(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filePath string
+		wantErr  string
+	}{
+		{
+			name:     "non-scorecard json still rejected",
+			filePath: "./testdata/sbom-spdx.json",
+			wantErr:  "invalid OpenSSF Scorecard report file",
+		},
+		{
+			name:     "valid scorecard accepted",
+			filePath: "./testdata/scorecard-chainloop.json",
+		},
+	}
+
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_OSSF_SCORECARD_JSON,
+	}
+
+	l := zerolog.Nop()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			uploader := mUploader.NewUploader(t)
+			if tc.wantErr == "" {
+				uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
+					Return(&casclient.UpDownStatus{}, nil)
+			}
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewOSSFScorecardCrafter(schema, backend, &l, materials.WithOSSFScorecardNoStrictValidation(true))
+			require.NoError(t, err)
+
+			_, err = crafter.Craft(context.TODO(), tc.filePath)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}

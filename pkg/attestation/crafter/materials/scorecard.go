@@ -35,6 +35,27 @@ type OSSFScorecardCrafter struct {
 	*crafterCommon
 }
 
+// scorecardReport is the typed subset of the OpenSSF Scorecard V2 JSON output
+// (https://github.com/ossf/scorecard) that this crafter needs for material-type
+// detection and annotations. Deep structural validation is delegated to the
+// embedded JSON Schema via schemavalidators.ValidateOSSFScorecard.
+type scorecardReport struct {
+	Date  string  `json:"date"`
+	Score float64 `json:"score"`
+	Repo  struct {
+		Name   string `json:"name"`
+		Commit string `json:"commit"`
+	} `json:"repo"`
+	Scorecard struct {
+		Version string `json:"version"`
+		Commit  string `json:"commit"`
+	} `json:"scorecard"`
+	Checks []struct {
+		Name  string `json:"name"`
+		Score int    `json:"score"`
+	} `json:"checks"`
+}
+
 type OSSFScorecardCraftOpt func(*OSSFScorecardCrafter)
 
 func WithOSSFScorecardNoStrictValidation(noStrict bool) OSSFScorecardCraftOpt {
@@ -68,18 +89,29 @@ func (i *OSSFScorecardCrafter) Craft(ctx context.Context, filepath string) (*api
 		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
-	var v interface{}
-	if err := json.Unmarshal(data, &v); err != nil {
+	var report scorecardReport
+	if err := json.Unmarshal(data, &report); err != nil {
 		i.logger.Debug().Err(err).Msg("error decoding file")
 		return nil, fmt.Errorf("invalid OpenSSF Scorecard report file: %w", ErrInvalidMaterialType)
 	}
 
-	doc, ok := v.(map[string]interface{})
-	if !ok {
+	// Discriminating field: a Scorecard report always carries the tool stamp
+	// under "scorecard.version". This guard is enforced even when strict schema
+	// validation is disabled, so arbitrary JSON is never misclassified as a
+	// Scorecard report.
+	if report.Scorecard.Version == "" {
 		return nil, fmt.Errorf("invalid OpenSSF Scorecard report file: %w", ErrInvalidMaterialType)
 	}
 
-	if err := schemavalidators.ValidateOSSFScorecard(v, schemavalidators.ScorecardVersionV2); err != nil {
+	// Deep structural validation against the embedded JSON Schema. The shared
+	// validator consumes generically-decoded JSON, so decode into `any` solely
+	// to feed it (the typed report above is used for everything else).
+	var generic any
+	if err := json.Unmarshal(data, &generic); err != nil {
+		return nil, fmt.Errorf("invalid OpenSSF Scorecard report file: %w", ErrInvalidMaterialType)
+	}
+
+	if err := schemavalidators.ValidateOSSFScorecard(generic, schemavalidators.ScorecardVersionV2); err != nil {
 		if i.noStrictValidation {
 			i.logger.Warn().Err(err).Msg("error validating OpenSSF Scorecard report, strict validation disabled, continuing")
 		} else {
@@ -94,25 +126,21 @@ func (i *OSSFScorecardCrafter) Craft(ctx context.Context, filepath string) (*api
 		return nil, err
 	}
 
-	i.injectAnnotations(m, doc)
+	i.injectAnnotations(m, &report)
 
 	return m, nil
 }
 
-func (i *OSSFScorecardCrafter) injectAnnotations(m *api.Attestation_Material, doc map[string]interface{}) {
+func (i *OSSFScorecardCrafter) injectAnnotations(m *api.Attestation_Material, report *scorecardReport) {
 	if m.Annotations == nil {
 		m.Annotations = make(map[string]string)
 	}
 
 	m.Annotations[AnnotationToolNameKey] = "scorecard"
 
-	if scorecard, ok := doc["scorecard"].(map[string]interface{}); ok {
-		if version, ok := scorecard["version"].(string); ok && version != "" {
-			m.Annotations[AnnotationToolVersionKey] = version
-		}
+	if report.Scorecard.Version != "" {
+		m.Annotations[AnnotationToolVersionKey] = report.Scorecard.Version
 	}
 
-	if score, ok := doc["score"].(float64); ok {
-		m.Annotations["chainloop.material.scorecard.score"] = strconv.FormatFloat(score, 'f', -1, 64)
-	}
+	m.Annotations["chainloop.material.scorecard.score"] = strconv.FormatFloat(report.Score, 'f', -1, 64)
 }
