@@ -1,0 +1,10 @@
+{
+  "date": "2026-06-15T14:27:17+02:00",
+  "repo": { "name": "github.com/chainloop-dev/chainloop", "commit": "892e78c" },
+  "scorecard": { "version": "v5.5.0", "commit": "c395761" },
+  "checks": [
+    { "details": null, "score": 10, "reason": "license file detected", "name": "License",
+      "documentation": { "url": "https://example.com", "short": "x" } }
+  ],
+  "metadata": null
+}

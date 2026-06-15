@@ -279,6 +279,7 @@ See [AI_POLICY.md](AI_POLICY.md) for the full AI contribution policy.
 - do not add co-author signoff lines — use `Assisted-by:` trailers for AI disclosure instead
 - when the schema is changed, run make generate, do not create a migration explicitly
 - If you are writing go code, adhere to best practices such as the ones in effective-go, or others. This could include, error handling patterns, interface design, package organization, concurrency patterns, etc.
+- avoid unmarshalling JSON/YAML into empty interfaces (`interface{}`/`any`) for data access — prefer typed structs, which give type safety and don't let unexpected fields pass through silently. The one accepted exception is feeding a JSON-Schema validator (e.g. `internal/schemavalidators`), which consumes generically-decoded JSON; decode into `any` only for that call and use a typed struct for everything else.
 - When writing tests, use table-driven tests whenever possible
 - When implementing new functionality, follow TDD: write failing tests first, then implement the code to make them pass
 - do not change previous migrations, they are immutable

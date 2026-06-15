@@ -54,6 +54,8 @@ type AIAgentConfigVersion string
 // AICodingSessionVersion represents the version of AI Coding Session schema.
 type AICodingSessionVersion string
 
+type ScorecardVersion string
+
 const (
 	// RunnerContextVersion0_1 represents Runner Context version 0.1 schema.
 	RunnerContextVersion0_1 RunnerContextVersion = "0.1"
@@ -77,6 +79,8 @@ const (
 	AIAgentConfigVersion0_1 AIAgentConfigVersion = "0.1"
 	// AICodingSessionVersion0_1 represents AI Coding Session version 0.1 schema.
 	AICodingSessionVersion0_1 AICodingSessionVersion = "0.1"
+	// ScorecardVersionV2 represents the OpenSSF Scorecard V2 JSON result schema.
+	ScorecardVersionV2 ScorecardVersion = "v2"
 	// OpenAPIVersion2_0 represents Swagger/OpenAPI version 2.0 schema.
 	OpenAPIVersion2_0 OpenAPIVersion = "2.0"
 	// OpenAPIVersion3_0 represents OpenAPI version 3.0 schema.
@@ -155,6 +159,10 @@ var (
 	asyncapiSpecVersion2_6 string
 	//go:embed external_schemas/asyncapi/asyncapi-3.0.0.schema.json
 	asyncapiSpecVersion3_0 string
+
+	// OpenSSF Scorecard schemas
+	//go:embed external_schemas/scorecard/scorecard-v2.schema.json
+	scorecardSpecVersionV2 string
 )
 
 var (
@@ -174,6 +182,8 @@ var (
 	openapiOnce                    sync.Once
 	compiledAsyncAPISchemas        map[AsyncAPIVersion]*jsonschema.Schema
 	asyncapiOnce                   sync.Once
+	compiledScorecardSchemas       map[ScorecardVersion]*jsonschema.Schema
+	scorecardOnce                  sync.Once
 )
 
 func initCycloneDxSchemas() {
@@ -436,6 +446,41 @@ func ValidateAICodingSession(data any, version AICodingSessionVersion) error {
 	schema, ok := compiledAICodingSessionSchemas[version]
 	if !ok {
 		return errors.New("invalid AI coding session schema version")
+	}
+
+	if err := schema.Validate(data); err != nil {
+		var invalidJSONTypeError jsonschema.InvalidJSONTypeError
+		if errors.As(err, &invalidJSONTypeError) {
+			return ErrInvalidJSONPayload
+		}
+		return err
+	}
+
+	return nil
+}
+
+func initScorecardSchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("https://chainloop.dev/schemas/scorecard/v2.json", strings.NewReader(scorecardSpecVersionV2)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://chainloop.dev/schemas/scorecard/v2.json", err))
+	}
+
+	compiledScorecardSchemas = map[ScorecardVersion]*jsonschema.Schema{
+		ScorecardVersionV2: compiler.MustCompile("https://chainloop.dev/schemas/scorecard/v2.json"),
+	}
+}
+
+// ValidateOSSFScorecard validates the given object against the OpenSSF Scorecard V2 JSON schema.
+func ValidateOSSFScorecard(data any, version ScorecardVersion) error {
+	scorecardOnce.Do(initScorecardSchemas)
+
+	if version == "" {
+		version = ScorecardVersionV2
+	}
+
+	schema, ok := compiledScorecardSchemas[version]
+	if !ok {
+		return errors.New("invalid OpenSSF Scorecard schema version")
 	}
 
 	if err := schema.Validate(data); err != nil {

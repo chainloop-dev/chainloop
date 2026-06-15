@@ -172,6 +172,9 @@ message CraftingSchema {
       SYSINTERNALS_ACCESSCHK = 35;
       // CERT/CC dranzer ActiveX/COM control test report (plain text) https://github.com/CERTCC/dranzer
       CERTCC_DRANZER = 36;
+      // OpenSSF Scorecard result in JSON format
+      // https://github.com/ossf/scorecard
+      OSSF_SCORECARD_JSON = 37;
     }
   }
 }

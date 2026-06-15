@@ -1,0 +1,101 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://chainloop.dev/schemas/scorecard/v2.json",
+    "title": "OpenSSF Scorecard result (V2 JSON)",
+    "description": "Schema for the JSON output produced by `scorecard --format json`. Derived from https://github.com/ossf/scorecard/blob/main/pkg/scorecard/json.v2.schema with details/metadata relaxed to allow null, matching real-world output.",
+    "type": "object",
+    "properties": {
+        "checks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "details": {
+                        "type": ["array", "null"],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "documentation": {
+                        "type": "object",
+                        "properties": {
+                            "short": {
+                                "type": "string"
+                            },
+                            "url": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "url",
+                            "short"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "reason": {
+                        "type": "string"
+                    },
+                    "score": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "score",
+                    "reason",
+                    "name",
+                    "documentation"
+                ]
+            }
+        },
+        "date": {
+            "type": "string"
+        },
+        "metadata": {
+            "type": ["array", "null"],
+            "items": {
+                "type": "string"
+            }
+        },
+        "repo": {
+            "type": "object",
+            "properties": {
+                "commit": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "score": {
+            "type": "number"
+        },
+        "scorecard": {
+            "type": "object",
+            "properties": {
+                "commit": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "version",
+                "commit"
+            ]
+        }
+    },
+    "required": [
+        "date",
+        "repo",
+        "scorecard",
+        "score",
+        "checks"
+    ]
+}

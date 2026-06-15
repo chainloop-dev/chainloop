@@ -436,7 +436,7 @@ func (att *Attestation) AddRawEvidence(
 	// "key1=value1,key2=value2"
 	// +optional
 	annotations []string,
-	// Skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC)
+	// Skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)
 	// +optional
 	noStrictValidation bool,
 	// Enable debug logging
@@ -500,7 +500,7 @@ func (att *Attestation) AddFileEvidence(
 	// "key1=value1,key2=value2"
 	// +optional
 	annotations []string,
-	// Skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC)
+	// Skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)
 	// +optional
 	noStrictValidation bool,
 	// Enable debug logging

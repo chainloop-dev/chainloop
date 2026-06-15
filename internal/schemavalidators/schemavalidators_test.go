@@ -469,3 +469,39 @@ func TestValidateAIAgentConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateOSSFScorecard(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filePath string
+		wantErr  string
+	}{
+		{
+			name:     "valid scorecard report",
+			filePath: "./testdata/scorecard_valid.json",
+		},
+		{
+			name:     "completely wrong format",
+			filePath: "./testdata/sbom-spdx.json",
+			wantErr:  "missing properties",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := os.ReadFile(tc.filePath)
+			require.NoError(t, err)
+
+			var v any
+			require.NoError(t, json.Unmarshal(f, &v))
+
+			err = schemavalidators.ValidateOSSFScorecard(v, "")
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}

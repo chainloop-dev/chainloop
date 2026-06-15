@@ -1,0 +1,25 @@
+{
+  "date": "2026-06-15T14:24:56+02:00",
+  "repo": {
+    "name": "github.com/ossf-tests/scorecard-check-branch-protection-e2e",
+    "commit": "12ae42962014ee9aeb01d991ee2cd799ad6de659"
+  },
+  "scorecard": {
+    "version": "v5.5.0",
+    "commit": "c395761df6afe1a69e476bc60a013a94bcbc153f"
+  },
+  "score": 2.9,
+  "checks": [
+    {
+      "details": null,
+      "score": -1,
+      "reason": "internal error: error during branchesHandler.setup",
+      "name": "Branch-Protection",
+      "documentation": {
+        "url": "https://github.com/ossf/scorecard/blob/c395761df6afe1a69e476bc60a013a94bcbc153f/docs/checks.md#branch-protection",
+        "short": "Determines if the default and release branches are protected with GitHub's branch protection settings."
+      }
+    }
+  ],
+  "metadata": null
+}
