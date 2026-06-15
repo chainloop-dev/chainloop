@@ -36,6 +36,16 @@ import (
 // quote) would allow breaking out of the literal and injecting arbitrary SQL.
 var fieldPathRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*|\[[0-9]+\])*$`)
 
+// columnRegexp matches a safe SQL column identifier (a single unqualified
+// identifier such as "metadata").
+//
+// This allowlist is security-critical: the underlying ent sqljson helpers emit
+// the column verbatim into the query and, for PostgreSQL, a column containing a
+// double quote bypasses ent's identifier quoting entirely and is written raw,
+// allowing SQL injection identical to the field-path case. Restricting the
+// column to a bare identifier removes every character an injection would need.
+var columnRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
 // JSONOperator represents supported JSON filter operators.
 type JSONOperator string
 
@@ -64,6 +74,13 @@ type JSONFilter struct {
 func BuildEntSelectorFromJSONFilter(jsonFilter *JSONFilter) (*entsql.Predicate, error) {
 	if jsonFilter.Column == "" || jsonFilter.Operator == "" {
 		return nil, errors.New("invalid filter: column and operator are required")
+	}
+
+	// Validate the column before it reaches the SQL builder. Like the field
+	// path, the column is emitted into the query by the ent sqljson helpers
+	// without reliable escaping, so an unsafe value would allow SQL injection.
+	if err := validateColumn(jsonFilter.Column); err != nil {
+		return nil, err
 	}
 
 	// Validate the field path before it reaches the SQL builder. The ent
@@ -103,6 +120,18 @@ func BuildEntSelectorFromJSONFilter(jsonFilter *JSONFilter) (*entsql.Predicate, 
 	default:
 		return nil, fmt.Errorf("unsupported operator: %s", jsonFilter.Operator)
 	}
+}
+
+// validateColumn ensures the JSON column is a bare SQL identifier before it is
+// emitted into the query by the ent sqljson helpers. Callers are expected to set
+// it to a known column constant, but validating here keeps safety from depending
+// on every caller remembering to do so.
+func validateColumn(column string) error {
+	if !columnRegexp.MatchString(column) {
+		return fmt.Errorf("invalid column %q: must be a valid identifier", column)
+	}
+
+	return nil
 }
 
 // validateFieldPath ensures the JSON field path only contains safe characters
