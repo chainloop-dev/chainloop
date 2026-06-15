@@ -25,6 +25,9 @@ import (
 // errInvalidFieldPath is the common prefix returned when a field path fails validation.
 const errInvalidFieldPath = "invalid field path"
 
+// errInvalidColumn is the common prefix returned when a column fails validation.
+const errInvalidColumn = "invalid column"
+
 func TestBuildEntSelectorFromJSONFilter(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -45,6 +48,38 @@ func TestBuildEntSelectorFromJSONFilter(t *testing.T) {
 			name:    "unsupported operator",
 			filter:  &JSONFilter{Column: "metadata", Operator: "gt", Value: "foo"},
 			wantErr: "unsupported operator: gt",
+		},
+		{
+			// A double quote in the column breaks out of the identifier quoting
+			// performed by ent's builder, allowing raw SQL injection.
+			name:    "column with double quote breaks out of identifier",
+			filter:  &JSONFilter{Column: `metadata" OR "1"="1`, FieldPath: "name", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidColumn,
+		},
+		{
+			name:    "column with single quote",
+			filter:  &JSONFilter{Column: `metadata' OR '1'='1`, FieldPath: "name", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidColumn,
+		},
+		{
+			name:    "column with whitespace",
+			filter:  &JSONFilter{Column: "metadata OR 1=1", FieldPath: "name", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidColumn,
+		},
+		{
+			name:    "column with parenthesis",
+			filter:  &JSONFilter{Column: "pg_sleep(2)", FieldPath: "name", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidColumn,
+		},
+		{
+			name:    "column starting with digit",
+			filter:  &JSONFilter{Column: "1metadata", FieldPath: "name", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidColumn,
+		},
+		{
+			name:    "column with dot qualifier",
+			filter:  &JSONFilter{Column: "workflow.metadata", FieldPath: "name", Operator: OpEQ, Value: "foo"},
+			wantErr: errInvalidColumn,
 		},
 		{
 			name:   "eq operator with string value",
