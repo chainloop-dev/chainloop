@@ -23,9 +23,12 @@ import (
 	"os"
 	"testing"
 
+	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
+	sigstorebundle "github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestVerifyBundle(t *testing.T) {
@@ -42,6 +45,9 @@ func TestVerifyBundle(t *testing.T) {
 		roots     *TrustedRoot
 		bundle    string
 		expectErr string
+		// expectSentinel, when set, is asserted with errors.Is in addition to
+		// (or instead of) the substring match.
+		expectSentinel error
 	}{
 		{
 			name:   "invalid bundle, but still verifiable",
@@ -54,10 +60,11 @@ func TestVerifyBundle(t *testing.T) {
 			bundle: "testdata/bundle_valid.json",
 		},
 		{
-			name:      "valid bundle without verification material",
-			roots:     roots,
-			bundle:    "testdata/bundle_valid_nomaterial.json",
-			expectErr: "missing material",
+			name:           "valid bundle without verification material",
+			roots:          roots,
+			bundle:         "testdata/bundle_valid_nomaterial.json",
+			expectErr:      "missing material",
+			expectSentinel: ErrMissingVerificationMaterial,
 		},
 		{
 			name:      "corrupted bundle",
@@ -71,6 +78,26 @@ func TestVerifyBundle(t *testing.T) {
 			bundle:    "testdata/dsse_envelope.json",
 			expectErr: "invalid bundle",
 		},
+		{
+			// a cert-less bundle carrying only a timestamp must never be reported as verified.
+			// It is rejected at the mandatory-signature gate before timestamp validation runs,
+			// so the timestamp can never be the deciding factor.
+			name:           "timestamp-only bundle (no signing key) is rejected",
+			roots:          roots,
+			bundle:         "testdata/bundle_with_bad_timestamp.json",
+			expectErr:      "missing material",
+			expectSentinel: ErrMissingVerificationMaterial,
+		},
+		{
+			// public-key bundles have no trusted key
+			// set to verify against and must fail rather than fall through to
+			// the timestamp-only path.
+			name:           "public key bundle is rejected as unsupported",
+			roots:          roots,
+			bundle:         "testdata/bundle_with_publickey.json",
+			expectErr:      "unsupported verification material",
+			expectSentinel: ErrUnsupportedVerificationMaterial,
+		},
 	}
 
 	for _, tc := range cases {
@@ -81,6 +108,10 @@ func TestVerifyBundle(t *testing.T) {
 			if tc.expectErr != "" {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tc.expectErr)
+				if tc.expectSentinel != nil {
+					assert.True(t, errors.Is(err, tc.expectSentinel),
+						"expected %v, got: %v", tc.expectSentinel, err)
+				}
 				return
 			}
 			assert.NoError(t, err)
@@ -118,9 +149,16 @@ func TestVerifyTimestamps_TypedErrors(t *testing.T) {
 	bundleBytes, err := os.ReadFile("testdata/bundle_with_bad_timestamp.json")
 	require.NoError(t, err)
 
+	// VerifyTimestamps is exercised directly: the bad-timestamp fixture is a
+	// cert-less bundle, which VerifyBundle now rejects at the mandatory-signature
+	// gate before timestamp validation would run.
+	bundle := new(protobundle.Bundle)
+	require.NoError(t, protojson.Unmarshal(bundleBytes, bundle))
+	sb := &sigstorebundle.Bundle{Bundle: bundle}
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := VerifyBundle(context.TODO(), bundleBytes, tc.roots)
+			err := VerifyTimestamps(sb, tc.roots)
 			require.Error(t, err)
 			assert.True(t, errors.Is(err, tc.expectSentinel),
 				"expected %v, got: %v", tc.expectSentinel, err)
