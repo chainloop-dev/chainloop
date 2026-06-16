@@ -398,7 +398,7 @@ func cleanup(conn *grpc.ClientConn) error {
 // 2. If the command does not require an API token, we
 // 2.1 Return the token explicitly provided via the flag
 // 2.2 Load the token from the environment variable and from the auth login config file
-// 2.3 if they both exist, we default to the user token
+// 2.3 if they both exist, we default to the API token from the environment variable
 // 2.4 otherwise to the one that's set
 func loadAuthToken(cmd *cobra.Command) (string, bool, error) {
 	// Load the APIToken from the env variable
@@ -423,11 +423,13 @@ func loadAuthToken(cmd *cobra.Command) (string, bool, error) {
 		return apiToken, false, nil
 	}
 
-	// If both the user authentication and the API token en var are set, we default to user authentication
-	if userToken != "" && apiTokenFromVar != "" {
-		logger.Warn().Msgf("Both user credentials and $%s set. Ignoring $%s.", tokenEnvVarName, tokenEnvVarName)
-		return userToken, true, nil
-	} else if apiTokenFromVar != "" {
+	// If the API token env var is set we default to it. An explicitly exported $CHAINLOOP_TOKEN is a
+	// stronger signal of intent than a (possibly stale) login session, and API tokens can now perform
+	// the same operations as user credentials. We warn if user credentials are also present.
+	if apiTokenFromVar != "" {
+		if userToken != "" {
+			logger.Warn().Msgf("Both user credentials and $%s set. Ignoring user credentials.", tokenEnvVarName)
+		}
 		return apiTokenFromVar, false, nil
 	}
 
