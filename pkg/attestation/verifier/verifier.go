@@ -41,6 +41,11 @@ type TrustedRoot struct {
 var ErrMissingVerificationMaterial = errors.New("missing material")
 var ErrInvalidBundle = errors.New("invalid bundle")
 
+// ErrUnsupportedVerificationMaterial indicates the bundle carries verification
+// material we cannot verify a signature against (e.g. a bare public key with no
+// trusted key set). It is treated as a verification failure, never ignored.
+var ErrUnsupportedVerificationMaterial = errors.New("unsupported verification material")
+
 func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) error {
 	if bundleBytes == nil {
 		return ErrMissingVerificationMaterial
@@ -55,7 +60,6 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 	// fix for old attestations
 	attestation.FixSignatureInBundle(bundle)
 
-	hasVerificationMaterial := false
 	sb := &sigstorebundle.Bundle{Bundle: bundle}
 	vc, err := sb.VerificationContent()
 	if err != nil {
@@ -64,44 +68,52 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		}
 	}
 
-	if vc != nil && vc.Certificate() != nil {
-		hasVerificationMaterial = true
-		signingCert := vc.Certificate()
-
-		akiSum := sha256.Sum256(signingCert.AuthorityKeyId)
-		aki := hex.EncodeToString(akiSum[:])
-		chain, ok := tr.Keys[aki]
-		if !ok {
-			return fmt.Errorf("trusted root not found for signing key with AKI %s", aki)
+	// Signature verification is MANDATORY
+	switch {
+	case vc != nil && vc.Certificate() != nil:
+		if err := verifyCertSignature(ctx, bundle, vc.Certificate(), tr); err != nil {
+			return err
 		}
-
-		verifier, err := cosign.ValidateAndUnpackCertWithChain(signingCert, chain, &cosign.CheckOpts{IgnoreSCT: true})
-		if err != nil {
-			return fmt.Errorf("validating the certificate: %w", err)
-		}
-
-		dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
-		if err != nil {
-			return fmt.Errorf("creating DSSE verifier: %w", err)
-		}
-
-		_, err = dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(bundle))
-		if err != nil {
-			return fmt.Errorf("validating the DSSE envelope: %w", err)
-		}
-	}
-
-	// Even with no cert (using a local key), we can still validate the timestamp
-	if err = VerifyTimestamps(sb, tr); err != nil {
-		if !errors.Is(err, ErrMissingVerificationMaterial) {
-			return fmt.Errorf("could not verify timestamps: %w", err)
-		}
-	} else {
-		hasVerificationMaterial = true
-	}
-
-	if !hasVerificationMaterial {
+	case bundle.GetVerificationMaterial().GetPublicKey() != nil:
+		// Public-key bundles are not supported at this time
+		return fmt.Errorf("%w: public key verification material", ErrUnsupportedVerificationMaterial)
+	default:
+		// No certificate and no public key: nothing to verify the signature against.
 		return ErrMissingVerificationMaterial
+	}
+
+	// The signature has been verified against a trusted certificate. The timestamp
+	// (if present) only validates the signing window; it can never be the sole
+	// verification material.
+	if err := VerifyTimestamps(sb, tr); err != nil && !errors.Is(err, ErrMissingVerificationMaterial) {
+		return fmt.Errorf("could not verify timestamps: %w", err)
+	}
+
+	return nil
+}
+
+// verifyCertSignature validates the signing certificate against the trusted root
+// chain and verifies the DSSE envelope signature with the certificate's key.
+func verifyCertSignature(ctx context.Context, bundle *protobundle.Bundle, signingCert *x509.Certificate, tr *TrustedRoot) error {
+	akiSum := sha256.Sum256(signingCert.AuthorityKeyId)
+	aki := hex.EncodeToString(akiSum[:])
+	chain, ok := tr.Keys[aki]
+	if !ok {
+		return fmt.Errorf("trusted root not found for signing key with AKI %s", aki)
+	}
+
+	verifier, err := cosign.ValidateAndUnpackCertWithChain(signingCert, chain, &cosign.CheckOpts{IgnoreSCT: true})
+	if err != nil {
+		return fmt.Errorf("validating the certificate: %w", err)
+	}
+
+	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
+	if err != nil {
+		return fmt.Errorf("creating DSSE verifier: %w", err)
+	}
+
+	if _, err := dsseVerifier.Verify(ctx, attestation.DSSEEnvelopeFromBundle(bundle)); err != nil {
+		return fmt.Errorf("validating the DSSE envelope: %w", err)
 	}
 
 	return nil
