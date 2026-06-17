@@ -234,6 +234,11 @@ const (
 	// OpenSSF Scorecard result in JSON format
 	// https://github.com/ossf/scorecard
 	CraftingSchema_Material_OSSF_SCORECARD_JSON CraftingSchema_Material_MaterialType = 37
+	// radamsa -M metadata log, one record per generated iteration
+	// https://gitlab.com/akihe/radamsa
+	CraftingSchema_Material_RADAMSA_REPORT CraftingSchema_Material_MaterialType = 38
+	// radamsa crashing inputs, a single file or a crashes/ archive (tar.gz or zip)
+	CraftingSchema_Material_RADAMSA_CRASHES CraftingSchema_Material_MaterialType = 39
 )
 
 // Enum value maps for CraftingSchema_Material_MaterialType.
@@ -277,6 +282,8 @@ var (
 		35: "SYSINTERNALS_ACCESSCHK",
 		36: "CERTCC_DRANZER",
 		37: "OSSF_SCORECARD_JSON",
+		38: "RADAMSA_REPORT",
+		39: "RADAMSA_CRASHES",
 	}
 	CraftingSchema_Material_MaterialType_value = map[string]int32{
 		"MATERIAL_TYPE_UNSPECIFIED":       0,
@@ -317,6 +324,8 @@ var (
 		"SYSINTERNALS_ACCESSCHK":          35,
 		"CERTCC_DRANZER":                  36,
 		"OSSF_SCORECARD_JSON":             37,
+		"RADAMSA_REPORT":                  38,
+		"RADAMSA_CRASHES":                 39,
 	}
 )
 
@@ -1978,7 +1987,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xbe\x10\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xe7\x10\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -2001,7 +2010,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
 	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
 	"\x0fTEKTON_PIPELINE\x10\b\x12\x15\n" +
-	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\x89\n" +
+	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xb2\n" +
 	"\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
@@ -2011,7 +2020,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\bB\x02\x18\x01R\x06output\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12\x1f\n" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
-	"skipUpload\"\xdb\x06\n" +
+	"skipUpload\"\x84\a\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -2054,7 +2063,9 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x15SYSINTERNALS_SIGCHECK\x10\"\x12\x1a\n" +
 	"\x16SYSINTERNALS_ACCESSCHK\x10#\x12\x12\n" +
 	"\x0eCERTCC_DRANZER\x10$\x12\x17\n" +
-	"\x13OSSF_SCORECARD_JSON\x10%:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
+	"\x13OSSF_SCORECARD_JSON\x10%\x12\x12\n" +
+	"\x0eRADAMSA_REPORT\x10&\x12\x13\n" +
+	"\x0fRADAMSA_CRASHES\x10':\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
 	"\x10CraftingSchemaV2\x128\n" +
 	"\vapi_version\x18\x01 \x01(\tB\x17\xbaH\x14r\x12\n" +
 	"\x10chainloop.dev/v1R\n" +

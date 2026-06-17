@@ -151,7 +151,9 @@
             "SYSINTERNALS_SIGCHECK",
             "SYSINTERNALS_ACCESSCHK",
             "CERTCC_DRANZER",
-            "OSSF_SCORECARD_JSON"
+            "OSSF_SCORECARD_JSON",
+            "RADAMSA_REPORT",
+            "RADAMSA_CRASHES"
           ],
           "title": "Material Type",
           "type": "string"

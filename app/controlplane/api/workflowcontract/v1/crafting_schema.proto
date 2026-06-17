@@ -175,6 +175,11 @@ message CraftingSchema {
       // OpenSSF Scorecard result in JSON format
       // https://github.com/ossf/scorecard
       OSSF_SCORECARD_JSON = 37;
+      // radamsa -M metadata log, one record per generated iteration
+      // https://gitlab.com/akihe/radamsa
+      RADAMSA_REPORT = 38;
+      // radamsa crashing inputs, a single file or a crashes/ archive (tar.gz or zip)
+      RADAMSA_CRASHES = 39;
     }
   }
 }

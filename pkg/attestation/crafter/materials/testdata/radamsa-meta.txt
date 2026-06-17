@@ -1,0 +1,3 @@
+seed: 705693910129640559698481
+muta-num: 1, generator: file, checksum: "CF5DA754A292766FAA5465FD", nth: 1, path: "/tmp/m/sample_1.eds", output: file-writer, length: 16892, pattern: many-dec
+byte-dec: 1, generator: jump, head: "/tmp/t/sample.eds", checksum: "F2F767F4D2E28596BD5BD982", nth: 2, output: file-writer, length: 17199, pattern: many-dec
