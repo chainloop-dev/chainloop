@@ -48,6 +48,10 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_GRAPHQL_SPEC,
 	CraftingSchema_Material_JUNIT_XML,
 	CraftingSchema_Material_JACOCO_XML,
+	// NOTE: RADAMSA_REPORT and RADAMSA_CRASHES are intentionally omitted from
+	// auto-detection. RADAMSA_CRASHES single-file mode accepts almost any
+	// non-empty file and would eagerly shadow other types; both work fine when
+	// referenced with an explicit kind in a workflow contract.
 	CraftingSchema_Material_HELM_CHART,
 	CraftingSchema_Material_SARIF,
 	CraftingSchema_Material_BLACKDUCK_SCA_JSON,

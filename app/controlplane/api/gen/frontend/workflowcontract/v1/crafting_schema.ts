@@ -294,6 +294,13 @@ export enum CraftingSchema_Material_MaterialType {
    * https://github.com/ossf/scorecard
    */
   OSSF_SCORECARD_JSON = 37,
+  /**
+   * RADAMSA_REPORT - radamsa -M metadata log, one record per generated iteration
+   * https://gitlab.com/akihe/radamsa
+   */
+  RADAMSA_REPORT = 38,
+  /** RADAMSA_CRASHES - radamsa crashing inputs, a single file or a crashes/ archive (tar.gz or zip) */
+  RADAMSA_CRASHES = 39,
   UNRECOGNIZED = -1,
 }
 
@@ -413,6 +420,12 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 37:
     case "OSSF_SCORECARD_JSON":
       return CraftingSchema_Material_MaterialType.OSSF_SCORECARD_JSON;
+    case 38:
+    case "RADAMSA_REPORT":
+      return CraftingSchema_Material_MaterialType.RADAMSA_REPORT;
+    case 39:
+    case "RADAMSA_CRASHES":
+      return CraftingSchema_Material_MaterialType.RADAMSA_CRASHES;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -498,6 +511,10 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "CERTCC_DRANZER";
     case CraftingSchema_Material_MaterialType.OSSF_SCORECARD_JSON:
       return "OSSF_SCORECARD_JSON";
+    case CraftingSchema_Material_MaterialType.RADAMSA_REPORT:
+      return "RADAMSA_REPORT";
+    case CraftingSchema_Material_MaterialType.RADAMSA_CRASHES:
+      return "RADAMSA_CRASHES";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

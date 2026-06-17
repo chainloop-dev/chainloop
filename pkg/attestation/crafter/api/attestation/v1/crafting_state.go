@@ -30,6 +30,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/dranzer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
+	materialsradamsa "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/radamsa"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/sigcheck"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -102,8 +103,10 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 		} else if value == "" {
 			return nil, errors.New("artifact path required")
 		} else if m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
-			m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML {
-			// read content from local filesystem (except for tgz charts)
+			m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML &&
+			m.MaterialType != v1.CraftingSchema_Material_RADAMSA_CRASHES {
+			// read content from local filesystem (except for tgz charts and
+			// metadata-only materials like radamsa crashes)
 			rawMaterial, err = os.ReadFile(value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read material content: %w", err)
@@ -182,6 +185,19 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 		}
 		// this will render a json array
 		return json.Marshal(suites)
+	case v1.CraftingSchema_Material_RADAMSA_REPORT:
+		// radamsa's -M metadata log is one record per generated iteration; render
+		// it as a JSON array so the policy engine exposes it as input.elements.
+		records, err := materialsradamsa.Parse(bytes.NewReader(rawMaterial))
+		if err != nil {
+			return nil, fmt.Errorf("invalid radamsa -M metadata log: %w", err)
+		}
+		return json.Marshal(records)
+	case v1.CraftingSchema_Material_RADAMSA_CRASHES:
+		// metadata-only: the crash content (single binary file or archive) is
+		// never evaluated. Discard it so inline content is not parsed as JSON;
+		// policies read the crash count from chainloop_metadata.annotations.
+		return []byte("{}"), nil
 	case v1.CraftingSchema_Material_JACOCO_XML:
 		var report jacoco.Report
 		if err := xml.Unmarshal(rawMaterial, &report); err != nil {

@@ -240,6 +240,49 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			},
 			testField: "objects",
 		},
+		{
+			name: "radamsa report -M log projected to elements",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_RADAMSA_REPORT,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+					},
+				},
+			},
+			filename:  "testdata/radamsa-meta.txt",
+			testField: "elements",
+		},
+		{
+			// metadata-only: the (non-existent) crashes path must NOT be read.
+			name: "radamsa crashes metadata only",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_RADAMSA_CRASHES,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+					},
+				},
+				Annotations: map[string]string{"chainloop.material.radamsa.crashes.count": "0"},
+			},
+			filename: "testdata/this-crashes-file-does-not-exist.tar.gz",
+		},
+		{
+			// inline binary crash content must NOT be parsed as JSON; it is
+			// metadata-only regardless of how the content is sourced.
+			name: "radamsa crashes inline binary content",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_RADAMSA_CRASHES,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+						Content: []byte("\x1f\x8b\x08\x00rawcrashingbytes"),
+					},
+				},
+				InlineCas:   true,
+				Annotations: map[string]string{"chainloop.material.radamsa.crashes.count": "1"},
+			},
+		},
 	}
 
 	for _, tc := range cases {
