@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -119,6 +119,8 @@ message WorkflowContractServiceDeleteResponse {}
 message WorkflowContractServiceApplyRequest {
   // Raw representation of the contract in json, yaml or cue
   bytes raw_schema = 1;
+  // When true, validate and compute the result without persisting any change
+  bool dry_run = 2;
 }
 
 message WorkflowContractServiceApplyResponse {
@@ -127,4 +129,22 @@ message WorkflowContractServiceApplyResponse {
   bool unchanged = 2 [deprecated = true];
   // Whether the resource was changed
   bool changed = 3;
+  // Detailed outcome of the apply operation
+  ApplyStatus status = 4;
+  // Current revision of the contract after the apply.
+  // For a newly created contract this is the first revision; for an
+  // unchanged contract it stays at the existing revision; for dry runs it
+  // reflects the existing revision (0 when the contract does not exist yet).
+  int32 current_revision = 5;
+
+  // ApplyStatus describes how the applied resource changed
+  enum ApplyStatus {
+    APPLY_STATUS_UNSPECIFIED = 0;
+    // The resource did not exist and was created
+    APPLY_STATUS_CREATED = 1;
+    // The resource existed and its content changed
+    APPLY_STATUS_UPDATED = 2;
+    // The resource existed and its content was identical
+    APPLY_STATUS_UNCHANGED = 3;
+  }
 }

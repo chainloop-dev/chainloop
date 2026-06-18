@@ -16,6 +16,7 @@
 package biz
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -462,6 +463,41 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	c.Changed = changed
 
 	return c, nil
+}
+
+// RevisionWouldChange reports whether applying rawSchema to the contract
+// identified by contractID would create a new revision, without persisting
+// anything. It mirrors the change detection performed by the data layer on
+// Update (a new revision is created only when the stored raw body differs from
+// the incoming one), so dry-run apply and real apply agree on the outcome.
+func (uc *WorkflowContractUseCase) RevisionWouldChange(ctx context.Context, orgID, contractID string, rawSchema []byte) (bool, error) {
+	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.RevisionWouldChange")
+	defer span.End()
+
+	orgUUID, err := uuid.Parse(orgID)
+	if err != nil {
+		return false, err
+	}
+
+	contractUUID, err := uuid.Parse(contractID)
+	if err != nil {
+		return false, err
+	}
+
+	incoming, err := identifyUnMarshalAndValidateRawContract(rawSchema)
+	if err != nil {
+		return false, fmt.Errorf("failed to load contract: %w", err)
+	}
+
+	// revision 0 means the latest version
+	latest, err := uc.repo.Describe(ctx, orgUUID, contractUUID, 0)
+	if err != nil {
+		return false, err
+	}
+
+	// Same rule used by the data layer on Update: a new revision is created
+	// only when the stored raw body differs from the incoming one.
+	return !bytes.Equal(latest.Version.Schema.Raw, incoming.Raw), nil
 }
 
 func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string) error {

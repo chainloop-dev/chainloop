@@ -240,6 +240,8 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		return nil, err
 	}
 
+	dryRun := req.GetDryRun()
+
 	// Validate and extract contract name and description from the raw schema
 	contractName, description, err := validateAndExtractMetadata(req.RawSchema, "", "")
 	if err != nil {
@@ -267,6 +269,26 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 			return nil, err
 		}
 
+		// On a dry run we only compute whether the revision would change, without persisting
+		if dryRun {
+			changed, err := s.contractUseCase.RevisionWouldChange(ctx, currentOrg.ID, contract.ID.String(), req.RawSchema)
+			if err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			}
+
+			status := pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_UNCHANGED
+			if changed {
+				status = pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_UPDATED
+			}
+
+			return &pb.WorkflowContractServiceApplyResponse{
+				Result:          bizWorkFlowContractToPb(contract),
+				Changed:         changed,
+				Status:          status,
+				CurrentRevision: int32(contract.LatestRevision),
+			}, nil
+		}
+
 		schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, contractName,
 			&biz.WorkflowContractUpdateOpts{
 				Description: description,
@@ -276,9 +298,16 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 			return nil, handleUseCaseErr(err, s.log)
 		}
 
+		status := pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_UNCHANGED
+		if schemaWithVersion.Changed {
+			status = pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_UPDATED
+		}
+
 		return &pb.WorkflowContractServiceApplyResponse{
-			Result:  bizWorkFlowContractToPb(schemaWithVersion.Contract),
-			Changed: schemaWithVersion.Changed,
+			Result:          bizWorkFlowContractToPb(schemaWithVersion.Contract),
+			Changed:         schemaWithVersion.Changed,
+			Status:          status,
+			CurrentRevision: int32(schemaWithVersion.Contract.LatestRevision),
 		}, nil
 	}
 
@@ -295,6 +324,15 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		}
 	}
 
+	// On a dry run we report that the contract would be created, without persisting it
+	if dryRun {
+		return &pb.WorkflowContractServiceApplyResponse{
+			Changed:         true,
+			Status:          pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_CREATED,
+			CurrentRevision: 0,
+		}, nil
+	}
+
 	schema, err := s.contractUseCase.Create(ctx, &biz.WorkflowContractCreateOpts{
 		OrgID:       currentOrg.ID,
 		Name:        contractName,
@@ -305,7 +343,12 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	return &pb.WorkflowContractServiceApplyResponse{Result: bizWorkFlowContractToPb(schema), Changed: true}, nil
+	return &pb.WorkflowContractServiceApplyResponse{
+		Result:          bizWorkFlowContractToPb(schema),
+		Changed:         true,
+		Status:          pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_CREATED,
+		CurrentRevision: int32(schema.LatestRevision),
+	}, nil
 }
 
 func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowContractServiceDeleteRequest) (*pb.WorkflowContractServiceDeleteResponse, error) {

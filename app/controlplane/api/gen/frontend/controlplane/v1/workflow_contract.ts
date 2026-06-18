@@ -69,6 +69,8 @@ export interface WorkflowContractServiceDeleteResponse {
 export interface WorkflowContractServiceApplyRequest {
   /** Raw representation of the contract in json, yaml or cue */
   rawSchema: Uint8Array;
+  /** When true, validate and compute the result without persisting any change */
+  dryRun: boolean;
 }
 
 export interface WorkflowContractServiceApplyResponse {
@@ -81,6 +83,68 @@ export interface WorkflowContractServiceApplyResponse {
   unchanged: boolean;
   /** Whether the resource was changed */
   changed: boolean;
+  /** Detailed outcome of the apply operation */
+  status: WorkflowContractServiceApplyResponse_ApplyStatus;
+  /**
+   * Current revision of the contract after the apply.
+   * For a newly created contract this is the first revision; for an
+   * unchanged contract it stays at the existing revision; for dry runs it
+   * reflects the existing revision (0 when the contract does not exist yet).
+   */
+  currentRevision: number;
+}
+
+/** ApplyStatus describes how the applied resource changed */
+export enum WorkflowContractServiceApplyResponse_ApplyStatus {
+  APPLY_STATUS_UNSPECIFIED = 0,
+  /** APPLY_STATUS_CREATED - The resource did not exist and was created */
+  APPLY_STATUS_CREATED = 1,
+  /** APPLY_STATUS_UPDATED - The resource existed and its content changed */
+  APPLY_STATUS_UPDATED = 2,
+  /** APPLY_STATUS_UNCHANGED - The resource existed and its content was identical */
+  APPLY_STATUS_UNCHANGED = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function workflowContractServiceApplyResponse_ApplyStatusFromJSON(
+  object: any,
+): WorkflowContractServiceApplyResponse_ApplyStatus {
+  switch (object) {
+    case 0:
+    case "APPLY_STATUS_UNSPECIFIED":
+      return WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_UNSPECIFIED;
+    case 1:
+    case "APPLY_STATUS_CREATED":
+      return WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_CREATED;
+    case 2:
+    case "APPLY_STATUS_UPDATED":
+      return WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_UPDATED;
+    case 3:
+    case "APPLY_STATUS_UNCHANGED":
+      return WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_UNCHANGED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return WorkflowContractServiceApplyResponse_ApplyStatus.UNRECOGNIZED;
+  }
+}
+
+export function workflowContractServiceApplyResponse_ApplyStatusToJSON(
+  object: WorkflowContractServiceApplyResponse_ApplyStatus,
+): string {
+  switch (object) {
+    case WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_UNSPECIFIED:
+      return "APPLY_STATUS_UNSPECIFIED";
+    case WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_CREATED:
+      return "APPLY_STATUS_CREATED";
+    case WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_UPDATED:
+      return "APPLY_STATUS_UPDATED";
+    case WorkflowContractServiceApplyResponse_ApplyStatus.APPLY_STATUS_UNCHANGED:
+      return "APPLY_STATUS_UNCHANGED";
+    case WorkflowContractServiceApplyResponse_ApplyStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 function createBaseWorkflowContractServiceListRequest(): WorkflowContractServiceListRequest {
@@ -937,13 +1001,16 @@ export const WorkflowContractServiceDeleteResponse = {
 };
 
 function createBaseWorkflowContractServiceApplyRequest(): WorkflowContractServiceApplyRequest {
-  return { rawSchema: new Uint8Array(0) };
+  return { rawSchema: new Uint8Array(0), dryRun: false };
 }
 
 export const WorkflowContractServiceApplyRequest = {
   encode(message: WorkflowContractServiceApplyRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.rawSchema.length !== 0) {
       writer.uint32(10).bytes(message.rawSchema);
+    }
+    if (message.dryRun === true) {
+      writer.uint32(16).bool(message.dryRun);
     }
     return writer;
   },
@@ -962,6 +1029,13 @@ export const WorkflowContractServiceApplyRequest = {
 
           message.rawSchema = reader.bytes();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.dryRun = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -972,13 +1046,17 @@ export const WorkflowContractServiceApplyRequest = {
   },
 
   fromJSON(object: any): WorkflowContractServiceApplyRequest {
-    return { rawSchema: isSet(object.rawSchema) ? bytesFromBase64(object.rawSchema) : new Uint8Array(0) };
+    return {
+      rawSchema: isSet(object.rawSchema) ? bytesFromBase64(object.rawSchema) : new Uint8Array(0),
+      dryRun: isSet(object.dryRun) ? Boolean(object.dryRun) : false,
+    };
   },
 
   toJSON(message: WorkflowContractServiceApplyRequest): unknown {
     const obj: any = {};
     message.rawSchema !== undefined &&
       (obj.rawSchema = base64FromBytes(message.rawSchema !== undefined ? message.rawSchema : new Uint8Array(0)));
+    message.dryRun !== undefined && (obj.dryRun = message.dryRun);
     return obj;
   },
 
@@ -993,12 +1071,13 @@ export const WorkflowContractServiceApplyRequest = {
   ): WorkflowContractServiceApplyRequest {
     const message = createBaseWorkflowContractServiceApplyRequest();
     message.rawSchema = object.rawSchema ?? new Uint8Array(0);
+    message.dryRun = object.dryRun ?? false;
     return message;
   },
 };
 
 function createBaseWorkflowContractServiceApplyResponse(): WorkflowContractServiceApplyResponse {
-  return { result: undefined, unchanged: false, changed: false };
+  return { result: undefined, unchanged: false, changed: false, status: 0, currentRevision: 0 };
 }
 
 export const WorkflowContractServiceApplyResponse = {
@@ -1011,6 +1090,12 @@ export const WorkflowContractServiceApplyResponse = {
     }
     if (message.changed === true) {
       writer.uint32(24).bool(message.changed);
+    }
+    if (message.status !== 0) {
+      writer.uint32(32).int32(message.status);
+    }
+    if (message.currentRevision !== 0) {
+      writer.uint32(40).int32(message.currentRevision);
     }
     return writer;
   },
@@ -1043,6 +1128,20 @@ export const WorkflowContractServiceApplyResponse = {
 
           message.changed = reader.bool();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.status = reader.int32() as any;
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.currentRevision = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1057,6 +1156,8 @@ export const WorkflowContractServiceApplyResponse = {
       result: isSet(object.result) ? WorkflowContractItem.fromJSON(object.result) : undefined,
       unchanged: isSet(object.unchanged) ? Boolean(object.unchanged) : false,
       changed: isSet(object.changed) ? Boolean(object.changed) : false,
+      status: isSet(object.status) ? workflowContractServiceApplyResponse_ApplyStatusFromJSON(object.status) : 0,
+      currentRevision: isSet(object.currentRevision) ? Number(object.currentRevision) : 0,
     };
   },
 
@@ -1066,6 +1167,9 @@ export const WorkflowContractServiceApplyResponse = {
       (obj.result = message.result ? WorkflowContractItem.toJSON(message.result) : undefined);
     message.unchanged !== undefined && (obj.unchanged = message.unchanged);
     message.changed !== undefined && (obj.changed = message.changed);
+    message.status !== undefined &&
+      (obj.status = workflowContractServiceApplyResponse_ApplyStatusToJSON(message.status));
+    message.currentRevision !== undefined && (obj.currentRevision = Math.round(message.currentRevision));
     return obj;
   },
 
@@ -1084,6 +1188,8 @@ export const WorkflowContractServiceApplyResponse = {
       : undefined;
     message.unchanged = object.unchanged ?? false;
     message.changed = object.changed ?? false;
+    message.status = object.status ?? 0;
+    message.currentRevision = object.currentRevision ?? 0;
     return message;
   },
 };
