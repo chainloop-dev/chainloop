@@ -3,6 +3,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(dryRun)$": {
+      "description": "When true, validate and compute the result without persisting any change",
+      "type": "boolean"
+    },
     "^(rawSchema)$": {
       "description": "Raw representation of the contract in json, yaml or cue",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
@@ -10,6 +14,10 @@
     }
   },
   "properties": {
+    "dry_run": {
+      "description": "When true, validate and compute the result without persisting any change",
+      "type": "boolean"
+    },
     "raw_schema": {
       "description": "Raw representation of the contract in json, yaml or cue",
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",

@@ -2,13 +2,47 @@
   "$id": "controlplane.v1.WorkflowContractServiceApplyResponse.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(current_revision)$": {
+      "description": "Current revision of the contract after the apply.\n For a newly created contract this is the first revision; for an\n unchanged contract it stays at the existing revision; for dry runs it\n reflects the existing revision (0 when the contract does not exist yet).",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
   "properties": {
     "changed": {
       "description": "Whether the resource was changed",
       "type": "boolean"
     },
+    "currentRevision": {
+      "description": "Current revision of the contract after the apply.\n For a newly created contract this is the first revision; for an\n unchanged contract it stays at the existing revision; for dry runs it\n reflects the existing revision (0 when the contract does not exist yet).",
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
     "result": {
       "$ref": "controlplane.v1.WorkflowContractItem.jsonschema.json"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "APPLY_STATUS_UNSPECIFIED",
+            "APPLY_STATUS_CREATED",
+            "APPLY_STATUS_UPDATED",
+            "APPLY_STATUS_UNCHANGED"
+          ],
+          "title": "Apply Status",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Detailed outcome of the apply operation"
     },
     "unchanged": {
       "description": "Deprecated: use changed instead",

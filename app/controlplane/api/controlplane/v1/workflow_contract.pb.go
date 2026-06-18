@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,62 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// ApplyStatus describes how the applied resource changed
+type WorkflowContractServiceApplyResponse_ApplyStatus int32
+
+const (
+	WorkflowContractServiceApplyResponse_APPLY_STATUS_UNSPECIFIED WorkflowContractServiceApplyResponse_ApplyStatus = 0
+	// The resource did not exist and was created
+	WorkflowContractServiceApplyResponse_APPLY_STATUS_CREATED WorkflowContractServiceApplyResponse_ApplyStatus = 1
+	// The resource existed and its content changed
+	WorkflowContractServiceApplyResponse_APPLY_STATUS_UPDATED WorkflowContractServiceApplyResponse_ApplyStatus = 2
+	// The resource existed and its content was identical
+	WorkflowContractServiceApplyResponse_APPLY_STATUS_UNCHANGED WorkflowContractServiceApplyResponse_ApplyStatus = 3
+)
+
+// Enum value maps for WorkflowContractServiceApplyResponse_ApplyStatus.
+var (
+	WorkflowContractServiceApplyResponse_ApplyStatus_name = map[int32]string{
+		0: "APPLY_STATUS_UNSPECIFIED",
+		1: "APPLY_STATUS_CREATED",
+		2: "APPLY_STATUS_UPDATED",
+		3: "APPLY_STATUS_UNCHANGED",
+	}
+	WorkflowContractServiceApplyResponse_ApplyStatus_value = map[string]int32{
+		"APPLY_STATUS_UNSPECIFIED": 0,
+		"APPLY_STATUS_CREATED":     1,
+		"APPLY_STATUS_UPDATED":     2,
+		"APPLY_STATUS_UNCHANGED":   3,
+	}
+)
+
+func (x WorkflowContractServiceApplyResponse_ApplyStatus) Enum() *WorkflowContractServiceApplyResponse_ApplyStatus {
+	p := new(WorkflowContractServiceApplyResponse_ApplyStatus)
+	*p = x
+	return p
+}
+
+func (x WorkflowContractServiceApplyResponse_ApplyStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkflowContractServiceApplyResponse_ApplyStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_controlplane_v1_workflow_contract_proto_enumTypes[0].Descriptor()
+}
+
+func (WorkflowContractServiceApplyResponse_ApplyStatus) Type() protoreflect.EnumType {
+	return &file_controlplane_v1_workflow_contract_proto_enumTypes[0]
+}
+
+func (x WorkflowContractServiceApplyResponse_ApplyStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkflowContractServiceApplyResponse_ApplyStatus.Descriptor instead.
+func (WorkflowContractServiceApplyResponse_ApplyStatus) EnumDescriptor() ([]byte, []int) {
+	return file_controlplane_v1_workflow_contract_proto_rawDescGZIP(), []int{11, 0}
+}
 
 type WorkflowContractServiceListRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -515,7 +571,9 @@ func (*WorkflowContractServiceDeleteResponse) Descriptor() ([]byte, []int) {
 type WorkflowContractServiceApplyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Raw representation of the contract in json, yaml or cue
-	RawSchema     []byte `protobuf:"bytes,1,opt,name=raw_schema,json=rawSchema,proto3" json:"raw_schema,omitempty"`
+	RawSchema []byte `protobuf:"bytes,1,opt,name=raw_schema,json=rawSchema,proto3" json:"raw_schema,omitempty"`
+	// When true, validate and compute the result without persisting any change
+	DryRun        bool `protobuf:"varint,2,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -557,6 +615,13 @@ func (x *WorkflowContractServiceApplyRequest) GetRawSchema() []byte {
 	return nil
 }
 
+func (x *WorkflowContractServiceApplyRequest) GetDryRun() bool {
+	if x != nil {
+		return x.DryRun
+	}
+	return false
+}
+
 type WorkflowContractServiceApplyResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Result *WorkflowContractItem  `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
@@ -565,9 +630,16 @@ type WorkflowContractServiceApplyResponse struct {
 	// Deprecated: Marked as deprecated in controlplane/v1/workflow_contract.proto.
 	Unchanged bool `protobuf:"varint,2,opt,name=unchanged,proto3" json:"unchanged,omitempty"`
 	// Whether the resource was changed
-	Changed       bool `protobuf:"varint,3,opt,name=changed,proto3" json:"changed,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Changed bool `protobuf:"varint,3,opt,name=changed,proto3" json:"changed,omitempty"`
+	// Detailed outcome of the apply operation
+	Status WorkflowContractServiceApplyResponse_ApplyStatus `protobuf:"varint,4,opt,name=status,proto3,enum=controlplane.v1.WorkflowContractServiceApplyResponse_ApplyStatus" json:"status,omitempty"`
+	// Current revision of the contract after the apply.
+	// For a newly created contract this is the first revision; for an
+	// unchanged contract it stays at the existing revision; for dry runs it
+	// reflects the existing revision (0 when the contract does not exist yet).
+	CurrentRevision int32 `protobuf:"varint,5,opt,name=current_revision,json=currentRevision,proto3" json:"current_revision,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *WorkflowContractServiceApplyResponse) Reset() {
@@ -620,6 +692,20 @@ func (x *WorkflowContractServiceApplyResponse) GetChanged() bool {
 		return x.Changed
 	}
 	return false
+}
+
+func (x *WorkflowContractServiceApplyResponse) GetStatus() WorkflowContractServiceApplyResponse_ApplyStatus {
+	if x != nil {
+		return x.Status
+	}
+	return WorkflowContractServiceApplyResponse_APPLY_STATUS_UNSPECIFIED
+}
+
+func (x *WorkflowContractServiceApplyResponse) GetCurrentRevision() int32 {
+	if x != nil {
+		return x.CurrentRevision
+	}
+	return 0
 }
 
 type WorkflowContractServiceUpdateResponse_Result struct {
@@ -766,14 +852,22 @@ const file_controlplane_v1_workflow_contract_proto_rawDesc = "" +
 	"$WorkflowContractServiceDeleteRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\"'\n" +
-	"%WorkflowContractServiceDeleteResponse\"D\n" +
+	"%WorkflowContractServiceDeleteResponse\"]\n" +
 	"#WorkflowContractServiceApplyRequest\x12\x1d\n" +
 	"\n" +
-	"raw_schema\x18\x01 \x01(\fR\trawSchema\"\xa1\x01\n" +
+	"raw_schema\x18\x01 \x01(\fR\trawSchema\x12\x17\n" +
+	"\adry_run\x18\x02 \x01(\bR\x06dryRun\"\xa4\x03\n" +
 	"$WorkflowContractServiceApplyResponse\x12=\n" +
 	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12 \n" +
 	"\tunchanged\x18\x02 \x01(\bB\x02\x18\x01R\tunchanged\x12\x18\n" +
-	"\achanged\x18\x03 \x01(\bR\achanged2\xec\x05\n" +
+	"\achanged\x18\x03 \x01(\bR\achanged\x12Y\n" +
+	"\x06status\x18\x04 \x01(\x0e2A.controlplane.v1.WorkflowContractServiceApplyResponse.ApplyStatusR\x06status\x12)\n" +
+	"\x10current_revision\x18\x05 \x01(\x05R\x0fcurrentRevision\"{\n" +
+	"\vApplyStatus\x12\x1c\n" +
+	"\x18APPLY_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14APPLY_STATUS_CREATED\x10\x01\x12\x18\n" +
+	"\x14APPLY_STATUS_UPDATED\x10\x02\x12\x1a\n" +
+	"\x16APPLY_STATUS_UNCHANGED\x10\x032\xec\x05\n" +
 	"\x17WorkflowContractService\x12q\n" +
 	"\x04List\x123.controlplane.v1.WorkflowContractServiceListRequest\x1a4.controlplane.v1.WorkflowContractServiceListResponse\x12w\n" +
 	"\x06Create\x125.controlplane.v1.WorkflowContractServiceCreateRequest\x1a6.controlplane.v1.WorkflowContractServiceCreateResponse\x12w\n" +
@@ -794,54 +888,57 @@ func file_controlplane_v1_workflow_contract_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_workflow_contract_proto_rawDescData
 }
 
+var file_controlplane_v1_workflow_contract_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_controlplane_v1_workflow_contract_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_controlplane_v1_workflow_contract_proto_goTypes = []any{
-	(*WorkflowContractServiceListRequest)(nil),             // 0: controlplane.v1.WorkflowContractServiceListRequest
-	(*WorkflowContractServiceListResponse)(nil),            // 1: controlplane.v1.WorkflowContractServiceListResponse
-	(*WorkflowContractServiceCreateRequest)(nil),           // 2: controlplane.v1.WorkflowContractServiceCreateRequest
-	(*WorkflowContractServiceCreateResponse)(nil),          // 3: controlplane.v1.WorkflowContractServiceCreateResponse
-	(*WorkflowContractServiceUpdateRequest)(nil),           // 4: controlplane.v1.WorkflowContractServiceUpdateRequest
-	(*WorkflowContractServiceUpdateResponse)(nil),          // 5: controlplane.v1.WorkflowContractServiceUpdateResponse
-	(*WorkflowContractServiceDescribeRequest)(nil),         // 6: controlplane.v1.WorkflowContractServiceDescribeRequest
-	(*WorkflowContractServiceDescribeResponse)(nil),        // 7: controlplane.v1.WorkflowContractServiceDescribeResponse
-	(*WorkflowContractServiceDeleteRequest)(nil),           // 8: controlplane.v1.WorkflowContractServiceDeleteRequest
-	(*WorkflowContractServiceDeleteResponse)(nil),          // 9: controlplane.v1.WorkflowContractServiceDeleteResponse
-	(*WorkflowContractServiceApplyRequest)(nil),            // 10: controlplane.v1.WorkflowContractServiceApplyRequest
-	(*WorkflowContractServiceApplyResponse)(nil),           // 11: controlplane.v1.WorkflowContractServiceApplyResponse
-	(*WorkflowContractServiceUpdateResponse_Result)(nil),   // 12: controlplane.v1.WorkflowContractServiceUpdateResponse.Result
-	(*WorkflowContractServiceDescribeResponse_Result)(nil), // 13: controlplane.v1.WorkflowContractServiceDescribeResponse.Result
-	(*WorkflowContractItem)(nil),                           // 14: controlplane.v1.WorkflowContractItem
-	(*IdentityReference)(nil),                              // 15: controlplane.v1.IdentityReference
-	(*WorkflowContractVersionItem)(nil),                    // 16: controlplane.v1.WorkflowContractVersionItem
+	(WorkflowContractServiceApplyResponse_ApplyStatus)(0),  // 0: controlplane.v1.WorkflowContractServiceApplyResponse.ApplyStatus
+	(*WorkflowContractServiceListRequest)(nil),             // 1: controlplane.v1.WorkflowContractServiceListRequest
+	(*WorkflowContractServiceListResponse)(nil),            // 2: controlplane.v1.WorkflowContractServiceListResponse
+	(*WorkflowContractServiceCreateRequest)(nil),           // 3: controlplane.v1.WorkflowContractServiceCreateRequest
+	(*WorkflowContractServiceCreateResponse)(nil),          // 4: controlplane.v1.WorkflowContractServiceCreateResponse
+	(*WorkflowContractServiceUpdateRequest)(nil),           // 5: controlplane.v1.WorkflowContractServiceUpdateRequest
+	(*WorkflowContractServiceUpdateResponse)(nil),          // 6: controlplane.v1.WorkflowContractServiceUpdateResponse
+	(*WorkflowContractServiceDescribeRequest)(nil),         // 7: controlplane.v1.WorkflowContractServiceDescribeRequest
+	(*WorkflowContractServiceDescribeResponse)(nil),        // 8: controlplane.v1.WorkflowContractServiceDescribeResponse
+	(*WorkflowContractServiceDeleteRequest)(nil),           // 9: controlplane.v1.WorkflowContractServiceDeleteRequest
+	(*WorkflowContractServiceDeleteResponse)(nil),          // 10: controlplane.v1.WorkflowContractServiceDeleteResponse
+	(*WorkflowContractServiceApplyRequest)(nil),            // 11: controlplane.v1.WorkflowContractServiceApplyRequest
+	(*WorkflowContractServiceApplyResponse)(nil),           // 12: controlplane.v1.WorkflowContractServiceApplyResponse
+	(*WorkflowContractServiceUpdateResponse_Result)(nil),   // 13: controlplane.v1.WorkflowContractServiceUpdateResponse.Result
+	(*WorkflowContractServiceDescribeResponse_Result)(nil), // 14: controlplane.v1.WorkflowContractServiceDescribeResponse.Result
+	(*WorkflowContractItem)(nil),                           // 15: controlplane.v1.WorkflowContractItem
+	(*IdentityReference)(nil),                              // 16: controlplane.v1.IdentityReference
+	(*WorkflowContractVersionItem)(nil),                    // 17: controlplane.v1.WorkflowContractVersionItem
 }
 var file_controlplane_v1_workflow_contract_proto_depIdxs = []int32{
-	14, // 0: controlplane.v1.WorkflowContractServiceListResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	15, // 1: controlplane.v1.WorkflowContractServiceCreateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	14, // 2: controlplane.v1.WorkflowContractServiceCreateResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	12, // 3: controlplane.v1.WorkflowContractServiceUpdateResponse.result:type_name -> controlplane.v1.WorkflowContractServiceUpdateResponse.Result
-	13, // 4: controlplane.v1.WorkflowContractServiceDescribeResponse.result:type_name -> controlplane.v1.WorkflowContractServiceDescribeResponse.Result
-	14, // 5: controlplane.v1.WorkflowContractServiceApplyResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	14, // 6: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
-	16, // 7: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
-	14, // 8: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
-	16, // 9: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
-	0,  // 10: controlplane.v1.WorkflowContractService.List:input_type -> controlplane.v1.WorkflowContractServiceListRequest
-	2,  // 11: controlplane.v1.WorkflowContractService.Create:input_type -> controlplane.v1.WorkflowContractServiceCreateRequest
-	4,  // 12: controlplane.v1.WorkflowContractService.Update:input_type -> controlplane.v1.WorkflowContractServiceUpdateRequest
-	6,  // 13: controlplane.v1.WorkflowContractService.Describe:input_type -> controlplane.v1.WorkflowContractServiceDescribeRequest
-	8,  // 14: controlplane.v1.WorkflowContractService.Delete:input_type -> controlplane.v1.WorkflowContractServiceDeleteRequest
-	10, // 15: controlplane.v1.WorkflowContractService.Apply:input_type -> controlplane.v1.WorkflowContractServiceApplyRequest
-	1,  // 16: controlplane.v1.WorkflowContractService.List:output_type -> controlplane.v1.WorkflowContractServiceListResponse
-	3,  // 17: controlplane.v1.WorkflowContractService.Create:output_type -> controlplane.v1.WorkflowContractServiceCreateResponse
-	5,  // 18: controlplane.v1.WorkflowContractService.Update:output_type -> controlplane.v1.WorkflowContractServiceUpdateResponse
-	7,  // 19: controlplane.v1.WorkflowContractService.Describe:output_type -> controlplane.v1.WorkflowContractServiceDescribeResponse
-	9,  // 20: controlplane.v1.WorkflowContractService.Delete:output_type -> controlplane.v1.WorkflowContractServiceDeleteResponse
-	11, // 21: controlplane.v1.WorkflowContractService.Apply:output_type -> controlplane.v1.WorkflowContractServiceApplyResponse
-	16, // [16:22] is the sub-list for method output_type
-	10, // [10:16] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	15, // 0: controlplane.v1.WorkflowContractServiceListResponse.result:type_name -> controlplane.v1.WorkflowContractItem
+	16, // 1: controlplane.v1.WorkflowContractServiceCreateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	15, // 2: controlplane.v1.WorkflowContractServiceCreateResponse.result:type_name -> controlplane.v1.WorkflowContractItem
+	13, // 3: controlplane.v1.WorkflowContractServiceUpdateResponse.result:type_name -> controlplane.v1.WorkflowContractServiceUpdateResponse.Result
+	14, // 4: controlplane.v1.WorkflowContractServiceDescribeResponse.result:type_name -> controlplane.v1.WorkflowContractServiceDescribeResponse.Result
+	15, // 5: controlplane.v1.WorkflowContractServiceApplyResponse.result:type_name -> controlplane.v1.WorkflowContractItem
+	0,  // 6: controlplane.v1.WorkflowContractServiceApplyResponse.status:type_name -> controlplane.v1.WorkflowContractServiceApplyResponse.ApplyStatus
+	15, // 7: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
+	17, // 8: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
+	15, // 9: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
+	17, // 10: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
+	1,  // 11: controlplane.v1.WorkflowContractService.List:input_type -> controlplane.v1.WorkflowContractServiceListRequest
+	3,  // 12: controlplane.v1.WorkflowContractService.Create:input_type -> controlplane.v1.WorkflowContractServiceCreateRequest
+	5,  // 13: controlplane.v1.WorkflowContractService.Update:input_type -> controlplane.v1.WorkflowContractServiceUpdateRequest
+	7,  // 14: controlplane.v1.WorkflowContractService.Describe:input_type -> controlplane.v1.WorkflowContractServiceDescribeRequest
+	9,  // 15: controlplane.v1.WorkflowContractService.Delete:input_type -> controlplane.v1.WorkflowContractServiceDeleteRequest
+	11, // 16: controlplane.v1.WorkflowContractService.Apply:input_type -> controlplane.v1.WorkflowContractServiceApplyRequest
+	2,  // 17: controlplane.v1.WorkflowContractService.List:output_type -> controlplane.v1.WorkflowContractServiceListResponse
+	4,  // 18: controlplane.v1.WorkflowContractService.Create:output_type -> controlplane.v1.WorkflowContractServiceCreateResponse
+	6,  // 19: controlplane.v1.WorkflowContractService.Update:output_type -> controlplane.v1.WorkflowContractServiceUpdateResponse
+	8,  // 20: controlplane.v1.WorkflowContractService.Describe:output_type -> controlplane.v1.WorkflowContractServiceDescribeResponse
+	10, // 21: controlplane.v1.WorkflowContractService.Delete:output_type -> controlplane.v1.WorkflowContractServiceDeleteResponse
+	12, // 22: controlplane.v1.WorkflowContractService.Apply:output_type -> controlplane.v1.WorkflowContractServiceApplyResponse
+	17, // [17:23] is the sub-list for method output_type
+	11, // [11:17] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_workflow_contract_proto_init() }
@@ -858,13 +955,14 @@ func file_controlplane_v1_workflow_contract_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_workflow_contract_proto_rawDesc), len(file_controlplane_v1_workflow_contract_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_controlplane_v1_workflow_contract_proto_goTypes,
 		DependencyIndexes: file_controlplane_v1_workflow_contract_proto_depIdxs,
+		EnumInfos:         file_controlplane_v1_workflow_contract_proto_enumTypes,
 		MessageInfos:      file_controlplane_v1_workflow_contract_proto_msgTypes,
 	}.Build()
 	File_controlplane_v1_workflow_contract_proto = out.File

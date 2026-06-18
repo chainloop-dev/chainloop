@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -139,6 +139,46 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 			s.Equal(tc.wantRevision, contract.Version.Revision)
 		})
 	}
+}
+
+func (s *workflowContractIntegrationTestSuite) TestRevisionWouldChange() {
+	ctx := context.Background()
+
+	// Grab the current (latest) raw body of the existing contract
+	current, err := s.WorkflowContract.Describe(ctx, s.org.ID, s.contractOrg1.ID.String(), 0)
+	require.NoError(s.T(), err)
+	currentRaw := current.Version.Schema.Raw
+	currentRevision := current.Version.Revision
+
+	updatedSchema := &schemav1.CraftingSchema{SchemaVersion: "v1", Runner: &schemav1.CraftingSchema_Runner{Type: schemav1.CraftingSchema_Runner_AZURE_PIPELINE}}
+	updatedRaw, err := biz.SchemaToRawContract(updatedSchema)
+	require.NoError(s.T(), err)
+
+	s.Run("identical schema would not change the revision", func() {
+		changed, err := s.WorkflowContract.RevisionWouldChange(ctx, s.org.ID, s.contractOrg1.ID.String(), currentRaw)
+		require.NoError(s.T(), err)
+		s.False(changed)
+	})
+
+	s.Run("different schema would change the revision", func() {
+		changed, err := s.WorkflowContract.RevisionWouldChange(ctx, s.org.ID, s.contractOrg1.ID.String(), updatedRaw.Raw)
+		require.NoError(s.T(), err)
+		s.True(changed)
+	})
+
+	s.Run("it does not persist any change", func() {
+		_, err := s.WorkflowContract.RevisionWouldChange(ctx, s.org.ID, s.contractOrg1.ID.String(), updatedRaw.Raw)
+		require.NoError(s.T(), err)
+
+		after, err := s.WorkflowContract.Describe(ctx, s.org.ID, s.contractOrg1.ID.String(), 0)
+		require.NoError(s.T(), err)
+		s.Equal(currentRevision, after.Version.Revision)
+	})
+
+	s.Run("non-existing contract returns not found", func() {
+		_, err := s.WorkflowContract.RevisionWouldChange(ctx, s.org.ID, uuid.NewString(), updatedRaw.Raw)
+		s.ErrorContains(err, "not found")
+	})
 }
 
 func (s *workflowContractIntegrationTestSuite) TestCreateDuplicatedName() {
