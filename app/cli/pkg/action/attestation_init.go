@@ -188,6 +188,28 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		return "", ErrRunnerContextNotFound{err.Error()}
 	}
 
+	// Parse the raw contract to get V2 schema if available
+	var schemaV2 *v1.CraftingSchemaV2
+	if contractVersion.GetRawContract() != nil {
+		schemaV2 = parseContractV2(contractVersion.GetRawContract())
+	}
+
+	// Enrich the contract with the materials declared by its attached policy
+	// groups, so they show up during attestation. See issue #3222.
+	// Only the schema that the crafter will actually store needs enriching: it
+	// prefers the V2 schema when present and falls back to V1 otherwise.
+	// Done before the control-plane Init below so a policy-group load failure
+	// fails fast, before a workflow run is created.
+	if schemaV2 != nil {
+		err = enrichContractMaterialsV2(ctx, schemaV2, client, &action.Logger)
+	} else {
+		//nolint:staticcheck // TODO: Migrate to new contract version API
+		err = enrichContractMaterials(ctx, contractVersion.GetV1(), client, &action.Logger)
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to apply materials from policy groups: %w", err)
+	}
+
 	var (
 		// Identifier of this attestation instance
 		attestationID            string
@@ -266,26 +288,6 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 			// Do not fail since we might be using federated auth for which we do can't extract info yet
 			action.Logger.Warn().Msgf("can't extract info for the auth token: %v", err)
 		}
-	}
-
-	// Parse the raw contract to get V2 schema if available
-	var schemaV2 *v1.CraftingSchemaV2
-	if contractVersion.GetRawContract() != nil {
-		schemaV2 = parseContractV2(contractVersion.GetRawContract())
-	}
-
-	// Enrich the contract with the materials declared by its attached policy
-	// groups, so they show up during attestation. See issue #3222.
-	// Only the schema that the crafter will actually store needs enriching: it
-	// prefers the V2 schema when present and falls back to V1 otherwise.
-	if schemaV2 != nil {
-		err = enrichContractMaterialsV2(ctx, schemaV2, client, &action.Logger)
-	} else {
-		//nolint:staticcheck // TODO: Migrate to new contract version API
-		err = enrichContractMaterials(ctx, contractVersion.GetV1(), client, &action.Logger)
-	}
-	if err != nil {
-		return "", fmt.Errorf("failed to apply materials from policy groups: %w", err)
 	}
 
 	// Initialize the local attestation crafter
