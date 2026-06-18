@@ -181,12 +181,6 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 	action.Logger.Debug().Msg("workflow contract and metadata retrieved from the control plane")
 
-	// 3. enrich contract with group materials and policies
-	err = enrichContractMaterials(ctx, contractVersion.GetV1(), client, &action.Logger)
-	if err != nil {
-		return "", fmt.Errorf("failed to apply materials from policy groups: %w", err)
-	}
-
 	// Auto discover the runner context and enforce against the one in the contract if needed
 	// nolint:staticcheck
 	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.AuthTokenRaw, action.Logger)
@@ -280,6 +274,20 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		schemaV2 = parseContractV2(contractVersion.GetRawContract())
 	}
 
+	// Enrich the contract with the materials declared by its attached policy
+	// groups, so they show up during attestation. See issue #3222.
+	// Only the schema that the crafter will actually store needs enriching: it
+	// prefers the V2 schema when present and falls back to V1 otherwise.
+	if schemaV2 != nil {
+		err = enrichContractMaterialsV2(ctx, schemaV2, client, &action.Logger)
+	} else {
+		//nolint:staticcheck // TODO: Migrate to new contract version API
+		err = enrichContractMaterials(ctx, contractVersion.GetV1(), client, &action.Logger)
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to apply materials from policy groups: %w", err)
+	}
+
 	// Initialize the local attestation crafter
 	// NOTE: important to run this initialization here since workflowMeta is populated
 	// with the workflowRunId that comes from the control plane
@@ -357,28 +365,61 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	return attestationID, nil
 }
 
+// enrichContractMaterials augments a V1 contract schema with the materials
+// declared by its attached policy groups.
 func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, client pb.AttestationServiceClient, logger *zerolog.Logger) error {
-	contractMaterials := schema.GetMaterials()
-	for _, pgAtt := range schema.GetPolicyGroups() {
+	merged, err := mergePolicyGroupMaterials(ctx, schema.GetPolicyGroups(), schema.GetMaterials(), client, logger)
+	if err != nil {
+		return err
+	}
+
+	schema.Materials = merged
+
+	return nil
+}
+
+// enrichContractMaterialsV2 augments a V2 contract schema with the materials
+// declared by its attached policy groups. The V2 schema is the one stored in
+// the crafting state (and thus surfaced during `attestation status`/`add`)
+// whenever it is present, so it must be enriched too. See issue #3222.
+func enrichContractMaterialsV2(ctx context.Context, schema *v1.CraftingSchemaV2, client pb.AttestationServiceClient, logger *zerolog.Logger) error {
+	spec := schema.GetSpec()
+	if spec == nil {
+		return nil
+	}
+
+	merged, err := mergePolicyGroupMaterials(ctx, spec.GetPolicyGroups(), spec.GetMaterials(), client, logger)
+	if err != nil {
+		return err
+	}
+
+	spec.Materials = merged
+
+	return nil
+}
+
+// mergePolicyGroupMaterials returns the contract materials augmented with the
+// materials contributed by the attached policy groups. Materials already
+// declared in the contract take precedence and are not duplicated.
+func mergePolicyGroupMaterials(ctx context.Context, policyGroups []*v1.PolicyGroupAttachment, materials []*v1.CraftingSchema_Material, client pb.AttestationServiceClient, logger *zerolog.Logger) ([]*v1.CraftingSchema_Material, error) {
+	for _, pgAtt := range policyGroups {
 		group, _, err := policies.LoadPolicyGroup(ctx, pgAtt, &policies.LoadPolicyGroupOptions{
 			Client: client,
 			Logger: logger,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to load policy group: %w", err)
+			return nil, fmt.Errorf("failed to load policy group: %w", err)
 		}
 		logger.Debug().Msgf("adding materials from policy group '%s'", group.GetMetadata().GetName())
 
-		toAdd, err := getGroupMaterialsToAdd(group, pgAtt, contractMaterials, logger)
+		toAdd, err := getGroupMaterialsToAdd(group, pgAtt, materials, logger)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		contractMaterials = append(contractMaterials, toAdd...)
+		materials = append(materials, toAdd...)
 	}
 
-	schema.Materials = contractMaterials
-
-	return nil
+	return materials, nil
 }
 
 // merge existing materials with group ones, taking the contract's one in case of conflict
@@ -400,13 +441,22 @@ func getGroupMaterialsToAdd(group *v1.PolicyGroup, pgAtt *v1.PolicyGroupAttachme
 			continue
 		}
 
-		// check if material already exists in the contract and skip it in that case
+		// If the material is already declared in the contract, keep the contract
+		// definition and don't add a duplicate. Declaring the same material in
+		// both the contract and a policy group is a legitimate, expected case, so
+		// it's merged silently when the definitions are compatible; we only warn
+		// when the types genuinely conflict.
 		ignore := false
 		for _, mat := range fromContract {
-			if mat.GetName() == csm.GetName() {
-				logger.Warn().Msgf("material '%s' from policy group '%s' is also present in the contract and will be ignored", mat.GetName(), group.GetMetadata().GetName())
-				ignore = true
+			if mat.GetName() != csm.GetName() {
+				continue
 			}
+			ignore = true
+			if mat.GetType() != csm.GetType() {
+				logger.Warn().Msgf("material '%s' is declared in both the contract (%s) and policy group '%s' (%s); using the contract definition",
+					mat.GetName(), mat.GetType(), group.GetMetadata().GetName(), csm.GetType())
+			}
+			break
 		}
 		if !ignore {
 			toAdd = append(toAdd, csm)
