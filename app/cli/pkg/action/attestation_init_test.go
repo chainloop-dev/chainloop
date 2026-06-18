@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	craftingv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,6 +104,82 @@ func TestEnrichMaterials(t *testing.T) {
 					return m.Name == "sbom"
 				}))
 			}
+		})
+	}
+}
+
+// TestEnrichMaterialsV2Schema reproduces issue #3222.
+//
+// When the contract is in V2 format, materials contributed by an attached
+// policy group must end up in the schema that is actually stored in the
+// crafting state (the V2 schema), so they are surfaced during
+// `attestation status`/`add` and validated as expected.
+//
+// The crafter stores the V2 schema whenever it is present (see crafter.go:
+// SchemaV2 wins over SchemaV1), so the policy-group materials must reach the V2
+// schema to show up in `CraftingState.GetMaterials()`, which is what the status
+// command displays.
+func TestEnrichMaterialsV2Schema(t *testing.T) {
+	l := zerolog.Nop()
+
+	// policy_group.yaml contributes the "sbom" and "container" materials.
+	newV2Schema := func(materials []*v1.CraftingSchema_Material) *v1.CraftingSchemaV2 {
+		return &v1.CraftingSchemaV2{
+			ApiVersion: "chainloop.dev/v1",
+			Kind:       "Contract",
+			Metadata:   &v1.Metadata{Name: "test-contract-v2"},
+			Spec: &v1.CraftingSchemaV2Spec{
+				Materials: materials,
+				Runner:    &v1.CraftingSchema_Runner{Type: v1.CraftingSchema_Runner_GITHUB_ACTION},
+				PolicyGroups: []*v1.PolicyGroupAttachment{
+					{Ref: "file://testdata/policy_group.yaml"},
+				},
+			},
+		}
+	}
+
+	cases := []struct {
+		name          string
+		materials     []*v1.CraftingSchema_Material
+		wantMaterials []string
+	}{
+		{
+			name: "policy group materials are surfaced in the stored V2 schema",
+			materials: []*v1.CraftingSchema_Material{
+				{Type: v1.CraftingSchema_Material_ARTIFACT, Name: "rootfs"},
+			},
+			wantMaterials: []string{"rootfs", "sbom", "container"},
+		},
+		{
+			name: "material present in both contract and policy group is merged once",
+			materials: []*v1.CraftingSchema_Material{
+				{Type: v1.CraftingSchema_Material_SBOM_SPDX_JSON, Name: "sbom"},
+			},
+			wantMaterials: []string{"sbom", "container"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			schemaV2 := newV2Schema(tc.materials)
+
+			// Mirror what Initialize does: enrich the V2 schema, which is the one
+			// stored in the crafting state.
+			require.NoError(t, enrichContractMaterialsV2(context.TODO(), schemaV2, nil, &l))
+
+			// The crafter stores the V2 schema (it takes precedence when present),
+			// and `attestation status` reads expected materials from the stored
+			// schema via CraftingState.GetMaterials().
+			state := &craftingv1.CraftingState{
+				Schema: &craftingv1.CraftingState_SchemaV2{SchemaV2: schemaV2},
+			}
+
+			gotNames := make([]string, 0, len(state.GetMaterials()))
+			for _, m := range state.GetMaterials() {
+				gotNames = append(gotNames, m.GetName())
+			}
+
+			assert.ElementsMatch(t, tc.wantMaterials, gotNames)
 		})
 	}
 }
