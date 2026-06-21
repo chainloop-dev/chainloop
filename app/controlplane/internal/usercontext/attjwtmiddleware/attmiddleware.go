@@ -275,6 +275,20 @@ func WithJWTMulti(l log.Logger, opts ...JWTOption) middleware.Middleware {
 
 					// Check if it's the last provider and still failed
 					if err != nil {
+						// A well-formed, correctly-signed Chainloop token that has simply
+						// expired must surface as an expiry error. Trying the remaining
+						// providers or falling back to the federated path would only mask
+						// the real reason (e.g. "no issuers configured"), leaving the user
+						// with a misleading message instead of "token has expired".
+						//
+						// runProviderValidator returns the ErrTokenExpired sentinel directly,
+						// so we compare by identity. We intentionally avoid errors.Is here:
+						// kratos errors compare only Code and Reason, so every 401/UNAUTHORIZED
+						// error (e.g. an invalid signature) would wrongly match ErrTokenExpired.
+						if err == ErrTokenExpired { //nolint:errorlint // sentinel identity, see comment above
+							return nil, ErrTokenExpired
+						}
+
 						if idx < tokenProviderLen-1 {
 							continue
 						}
