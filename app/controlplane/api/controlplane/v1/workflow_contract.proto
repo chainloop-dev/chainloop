@@ -121,6 +121,12 @@ message WorkflowContractServiceApplyRequest {
   bytes raw_schema = 1;
   // When true, validate and compute the result without persisting any change
   bool dry_run = 2;
+  // Names of policies created/updated in the same batch apply. References to these are
+  // treated as known instead of being resolved against the registry (they may not be
+  // persisted yet, e.g. during dry-run). Remote references are still validated.
+  repeated string batch_policy_names = 3;
+  // Same as batch_policy_names, for policy groups created/updated in the same batch.
+  repeated string batch_policy_group_names = 4;
 }
 
 message WorkflowContractServiceApplyResponse {

@@ -146,7 +146,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	if len(req.RawContract) != 0 {
-		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token); err != nil {
+		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	}
@@ -212,7 +212,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	// Validate the contract policies if the raw contract is provided
 	if len(req.RawContract) != 0 {
-		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token); err != nil {
+		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	}
@@ -253,7 +253,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		return nil, err
 	}
 
-	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token); err != nil {
+	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, req.GetBatchPolicyNames(), req.GetBatchPolicyGroupNames()); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
