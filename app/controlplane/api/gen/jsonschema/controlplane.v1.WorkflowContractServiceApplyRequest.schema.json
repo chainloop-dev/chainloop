@@ -3,6 +3,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(batchPolicyGroupNames)$": {
+      "description": "Same as batch_policy_names, for policy groups created/updated in the same batch.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "^(batchPolicyNames)$": {
+      "description": "Names of policies created/updated in the same batch apply. References to these are\n treated as known instead of being resolved against the registry (they may not be\n persisted yet, e.g. during dry-run). Remote references are still validated.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "^(dryRun)$": {
       "description": "When true, validate and compute the result without persisting any change",
       "type": "boolean"
@@ -14,6 +28,20 @@
     }
   },
   "properties": {
+    "batch_policy_group_names": {
+      "description": "Same as batch_policy_names, for policy groups created/updated in the same batch.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "batch_policy_names": {
+      "description": "Names of policies created/updated in the same batch apply. References to these are\n treated as known instead of being resolved against the registry (they may not be\n persisted yet, e.g. during dry-run). Remote references are still validated.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "dry_run": {
       "description": "When true, validate and compute the result without persisting any change",
       "type": "boolean"

@@ -573,9 +573,15 @@ type WorkflowContractServiceApplyRequest struct {
 	// Raw representation of the contract in json, yaml or cue
 	RawSchema []byte `protobuf:"bytes,1,opt,name=raw_schema,json=rawSchema,proto3" json:"raw_schema,omitempty"`
 	// When true, validate and compute the result without persisting any change
-	DryRun        bool `protobuf:"varint,2,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	DryRun bool `protobuf:"varint,2,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
+	// Names of policies created/updated in the same batch apply. References to these are
+	// treated as known instead of being resolved against the registry (they may not be
+	// persisted yet, e.g. during dry-run). Remote references are still validated.
+	BatchPolicyNames []string `protobuf:"bytes,3,rep,name=batch_policy_names,json=batchPolicyNames,proto3" json:"batch_policy_names,omitempty"`
+	// Same as batch_policy_names, for policy groups created/updated in the same batch.
+	BatchPolicyGroupNames []string `protobuf:"bytes,4,rep,name=batch_policy_group_names,json=batchPolicyGroupNames,proto3" json:"batch_policy_group_names,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *WorkflowContractServiceApplyRequest) Reset() {
@@ -620,6 +626,20 @@ func (x *WorkflowContractServiceApplyRequest) GetDryRun() bool {
 		return x.DryRun
 	}
 	return false
+}
+
+func (x *WorkflowContractServiceApplyRequest) GetBatchPolicyNames() []string {
+	if x != nil {
+		return x.BatchPolicyNames
+	}
+	return nil
+}
+
+func (x *WorkflowContractServiceApplyRequest) GetBatchPolicyGroupNames() []string {
+	if x != nil {
+		return x.BatchPolicyGroupNames
+	}
+	return nil
 }
 
 type WorkflowContractServiceApplyResponse struct {
@@ -852,11 +872,13 @@ const file_controlplane_v1_workflow_contract_proto_rawDesc = "" +
 	"$WorkflowContractServiceDeleteRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\"'\n" +
-	"%WorkflowContractServiceDeleteResponse\"]\n" +
+	"%WorkflowContractServiceDeleteResponse\"\xc4\x01\n" +
 	"#WorkflowContractServiceApplyRequest\x12\x1d\n" +
 	"\n" +
 	"raw_schema\x18\x01 \x01(\fR\trawSchema\x12\x17\n" +
-	"\adry_run\x18\x02 \x01(\bR\x06dryRun\"\xa4\x03\n" +
+	"\adry_run\x18\x02 \x01(\bR\x06dryRun\x12,\n" +
+	"\x12batch_policy_names\x18\x03 \x03(\tR\x10batchPolicyNames\x127\n" +
+	"\x18batch_policy_group_names\x18\x04 \x03(\tR\x15batchPolicyGroupNames\"\xa4\x03\n" +
 	"$WorkflowContractServiceApplyResponse\x12=\n" +
 	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12 \n" +
 	"\tunchanged\x18\x02 \x01(\bB\x02\x18\x01R\tunchanged\x12\x18\n" +
