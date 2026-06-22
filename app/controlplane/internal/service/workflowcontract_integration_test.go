@@ -171,11 +171,11 @@ spec:
 `
 }
 
-// TestApplyBatchExemption verifies that references to resources declared as part of the same
-// batch apply are treated as known (not resolved against the registry), while references to
-// resources not in the batch are still validated - in dry-run as well as on a real apply.
-// No policy provider is configured in this harness, so any non-exempt provider-scheme reference
-// fails resolution, which is exactly what proves remote references are still validated.
+// TestApplyBatchExemption verifies that, on a dry-run, bare references to resources declared as
+// part of the same batch apply are treated as known (not resolved against the registry), while
+// remote references, explicitly scoped references, and any reference on a real apply are still
+// validated. No policy provider is configured in this harness, so any non-exempt provider-scheme
+// reference fails resolution, which is exactly what proves those references are still validated.
 func (s *workflowContractApplyIntegrationTestSuite) TestApplyBatchExemption() {
 	testCases := []struct {
 		name                  string
@@ -192,16 +192,28 @@ func (s *workflowContractApplyIntegrationTestSuite) TestApplyBatchExemption() {
 			dryRun:           true,
 		},
 		{
-			name:             "batch-local policy exempted on real apply",
-			rawSchema:        contractWithPolicyRef("svc-apply-batch-pol-real", "chainloop://batch-pol"),
-			batchPolicyNames: []string{"batch-pol"},
-			dryRun:           false,
-		},
-		{
 			name:                  "batch-local policy group exempted in dry-run",
 			rawSchema:             contractWithPolicyGroupRef("svc-apply-batch-grp-dry", "chainloop://batch-grp"),
 			batchPolicyGroupNames: []string{"batch-grp"},
 			dryRun:                true,
+		},
+		{
+			// A real apply persists batch resources before the contract, so it must validate
+			// fully and never trust the client-supplied batch list.
+			name:             "batch list not trusted on real apply",
+			rawSchema:        contractWithPolicyRef("svc-apply-batch-pol-real", "chainloop://batch-pol"),
+			batchPolicyNames: []string{"batch-pol"},
+			dryRun:           false,
+			wantErr:          true,
+		},
+		{
+			// An org-scoped reference is unambiguously remote and must not be exempted by a
+			// bare-name collision with a batch-local policy.
+			name:             "org-scoped ref not exempted by name collision",
+			rawSchema:        contractWithPolicyRef("svc-apply-scoped-pol-dry", "chainloop://acme/batch-pol"),
+			batchPolicyNames: []string{"batch-pol"},
+			dryRun:           true,
+			wantErr:          true,
 		},
 		{
 			name:      "non-batch policy still validated in dry-run",

@@ -253,7 +253,16 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		return nil, err
 	}
 
-	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, req.GetBatchPolicyNames(), req.GetBatchPolicyGroupNames()); err != nil {
+	// Batch-local references are only exempted from registry resolution on a dry-run, where
+	// the resources may not be persisted yet. A real apply persists batch resources before the
+	// contract, so it must always validate fully and never trust the client-supplied batch lists.
+	var batchPolicyNames, batchPolicyGroupNames []string
+	if dryRun {
+		batchPolicyNames = req.GetBatchPolicyNames()
+		batchPolicyGroupNames = req.GetBatchPolicyGroupNames()
+	}
+
+	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, batchPolicyNames, batchPolicyGroupNames); err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}
 

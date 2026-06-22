@@ -588,8 +588,10 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 	if loader.IsProviderScheme(att.GetRef()) {
 		pr := loader.ProviderParts(att.GetRef())
 		// Policies created/updated in the same batch apply may not be persisted yet, so
-		// treat references to them as known instead of resolving against the registry.
-		if slices.Contains(batchPolicyNames, pr.Name) {
+		// treat references to them as known instead of resolving against the registry. Only
+		// bare references (no provider/org) can name a batch-local policy; references that
+		// explicitly target a remote provider or org are always validated.
+		if pr.Provider == "" && pr.OrgName == "" && slices.Contains(batchPolicyNames, pr.Name) {
 			return nil, nil
 		}
 		// Validate attachment
@@ -629,8 +631,10 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(ctx context.Contex
 	// [chainloop://][provider/]name
 	pr := loader.ProviderParts(att.GetRef())
 	// Policy groups created/updated in the same batch apply may not be persisted yet, so
-	// treat references to them as known instead of resolving against the registry.
-	if slices.Contains(batchPolicyGroupNames, pr.Name) {
+	// treat references to them as known instead of resolving against the registry. Only bare
+	// references (no provider/org) can name a batch-local group; references that explicitly
+	// target a remote provider or org are always validated.
+	if pr.Provider == "" && pr.OrgName == "" && slices.Contains(batchPolicyGroupNames, pr.Name) {
 		return nil, nil
 	}
 	remoteGroup, err := uc.GetPolicyGroup(ctx, pr.Provider, pr.Name, pr.OrgName, "", token)
