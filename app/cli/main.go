@@ -33,8 +33,16 @@ import (
 )
 
 func main() {
-	// Couldn't find an easier way to disable the timestamp
-	logger := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, FormatTimestamp: func(interface{}) string { return "" }})
+	// Couldn't find an easier way to disable the timestamp.
+	// Enable color on interactive terminals and CI systems that render ANSI,
+	// and disable it for ANSI-incapable consumers (e.g. a Jenkins console
+	// without the AnsiColor plugin, piped output) to avoid leaking raw escape
+	// codes. See cmd.LogColorDisabled.
+	logger := zerolog.New(zerolog.ConsoleWriter{
+		Out:             os.Stderr,
+		NoColor:         cmd.LogColorDisabled(),
+		FormatTimestamp: func(interface{}) string { return "" },
+	})
 	rootCmd := cmd.NewRootCmd(logger)
 	if err := cmd.Execute(rootCmd); err != nil {
 		msg, exitCode := errorInfo(err, logger)
