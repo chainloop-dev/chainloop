@@ -16,6 +16,10 @@
       },
       "type": "array"
     },
+    "group": {
+      "description": "Choke group: materials sharing the same non-empty group value form an\n \"at least one of\" set, meaning at least one member must be present in the\n attestation. Materials without a group keep their individual required/optional behavior.",
+      "type": "string"
+    },
     "name": {
       "type": "string"
     },

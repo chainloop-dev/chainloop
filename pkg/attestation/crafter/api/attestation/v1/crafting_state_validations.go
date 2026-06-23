@@ -16,6 +16,7 @@
 package v1
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -40,15 +41,48 @@ func (state *CraftingState) ValidateComplete(dryRun bool) error {
 	var missing []string
 	expectedMaterials := state.GetMaterials()
 	craftedMaterials := state.GetAttestation().GetMaterials()
+
+	// Choke groups: materials sharing the same non-empty group form an
+	// "at least one of" set. We track the members of each group and whether
+	// at least one of them has been crafted.
+	groupMembers := make(map[string][]string)
+	groupSatisfied := make(map[string]bool)
+	// Preserve a stable order of groups for deterministic error messages
+	var groupOrder []string
+
 	// Iterate on the expected materials
 	for _, m := range expectedMaterials {
-		if _, ok := craftedMaterials[m.Name]; !ok && !m.Optional {
+		_, crafted := craftedMaterials[m.Name]
+
+		// Grouped materials are enforced at the group level, not individually.
+		if m.Group != "" {
+			if _, seen := groupMembers[m.Group]; !seen {
+				groupOrder = append(groupOrder, m.Group)
+			}
+			groupMembers[m.Group] = append(groupMembers[m.Group], m.Name)
+			if crafted {
+				groupSatisfied[m.Group] = true
+			}
+			continue
+		}
+
+		if !crafted && !m.Optional {
 			missing = append(missing, m.Name)
 		}
 	}
 
+	var errs []string
 	if len(missing) > 0 {
-		return fmt.Errorf("some materials have not been crafted yet: %s", strings.Join(missing, ", "))
+		errs = append(errs, fmt.Sprintf("some materials have not been crafted yet: %s", strings.Join(missing, ", ")))
+	}
+	for _, group := range groupOrder {
+		if !groupSatisfied[group] {
+			errs = append(errs, fmt.Sprintf("at least one material from group %q is required: %s", group, strings.Join(groupMembers[group], ", ")))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.New(strings.Join(errs, "; "))
 	}
 
 	return nil

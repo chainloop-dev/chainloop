@@ -203,6 +203,9 @@ func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bo
 		mt.AppendRow(table.Row{"Type", m.Type})
 		mt.AppendRow(table.Row{"Set", hBool(m.Set)})
 		mt.AppendRow(table.Row{"Required", hBool(m.Required)})
+		if m.Group != "" {
+			mt.AppendRow(table.Row{"Group", fmt.Sprintf("%s (at least one of the group required)", m.Group)})
+		}
 		if m.IsOutput {
 			mt.AppendRow(table.Row{"Is output", "Yes"})
 		}

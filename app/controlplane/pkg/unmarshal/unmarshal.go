@@ -61,14 +61,19 @@ func (v *validatorAdapter) Validate(msg proto.Message) error {
 var yamlValidator = &validatorAdapter{validator: protovalidate.GlobalValidator}
 
 func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) error {
+	// DiscardUnknown allows contracts to include fields added in newer proto
+	// versions without breaking older CLIs that haven't been updated yet. Unlike
+	// the binary wire format, protojson/protoyaml error on unknown fields by default.
+	jsonOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
+
 	switch format {
 	case RawFormatJSON:
-		if err := protojson.Unmarshal(body, out); err != nil {
+		if err := jsonOpts.Unmarshal(body, out); err != nil {
 			return fmt.Errorf("error unmarshalling raw message: %w", err)
 		}
 	case RawFormatYAML:
 		// protoyaml allows validating the contract while unmarshalling
-		yamlOpts := protoyaml.UnmarshalOptions{}
+		yamlOpts := protoyaml.UnmarshalOptions{DiscardUnknown: true}
 		if doValidate {
 			yamlOpts.Validator = yamlValidator
 		}
@@ -84,7 +89,7 @@ func FromRaw(body []byte, format RawFormat, out proto.Message, doValidate bool) 
 			return fmt.Errorf("error unmarshalling raw message: %w", err)
 		}
 
-		if err := protojson.Unmarshal(jsonRawData, out); err != nil {
+		if err := jsonOpts.Unmarshal(jsonRawData, out); err != nil {
 			return fmt.Errorf("error unmarshalling raw message: %w", err)
 		}
 	default:

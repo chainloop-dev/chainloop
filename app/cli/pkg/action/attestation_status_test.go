@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -114,4 +114,43 @@ func TestPopulateContractMaterials(t *testing.T) {
 			assert.Equal(t, tc.totalMaterials, len(tc.attRes.Materials))
 		})
 	}
+}
+
+func TestPopulateContractMaterialsGroups(t *testing.T) {
+	state := &v1.CraftingState{
+		Schema: &v1.CraftingState_InputSchema{
+			InputSchema: &craftingpb.CraftingSchema{
+				SchemaVersion: "v1",
+				Materials: []*craftingpb.CraftingSchema_Material{
+					{Type: craftingpb.CraftingSchema_Material_ARTIFACT, Name: "required-one"},
+					{Type: craftingpb.CraftingSchema_Material_ARTIFACT, Name: "optional-one", Optional: true},
+					{Type: craftingpb.CraftingSchema_Material_SBOM_CYCLONEDX_JSON, Name: "sbom-cyclonedx", Group: "sbom"},
+					{Type: craftingpb.CraftingSchema_Material_SBOM_SPDX_JSON, Name: "sbom-spdx", Group: "sbom"},
+				},
+			},
+		},
+	}
+
+	res := &AttestationStatusResult{}
+	err := populateMaterials(state, res)
+	assert.NoError(t, err)
+
+	byName := make(map[string]AttestationStatusMaterial, len(res.Materials))
+	for _, m := range res.Materials {
+		byName[m.Name] = m
+	}
+
+	// Ungrouped required material: Required, no group
+	assert.True(t, byName["required-one"].Required)
+	assert.Empty(t, byName["required-one"].Group)
+
+	// Ungrouped optional material: not required, no group
+	assert.False(t, byName["optional-one"].Required)
+	assert.Empty(t, byName["optional-one"].Group)
+
+	// Grouped materials: carry the group and are NOT individually required
+	assert.Equal(t, "sbom", byName["sbom-cyclonedx"].Group)
+	assert.False(t, byName["sbom-cyclonedx"].Required)
+	assert.Equal(t, "sbom", byName["sbom-spdx"].Group)
+	assert.False(t, byName["sbom-spdx"].Required)
 }

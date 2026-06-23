@@ -1680,7 +1680,11 @@ type CraftingSchema_Material struct {
 	Annotations []*Annotation `protobuf:"bytes,5,rep,name=annotations,proto3" json:"annotations,omitempty"`
 	// If true, skip uploading the material to CAS (only record metadata)
 	// Defaults to false (material will be uploaded)
-	SkipUpload    bool `protobuf:"varint,6,opt,name=skip_upload,json=skipUpload,proto3" json:"skip_upload,omitempty"`
+	SkipUpload bool `protobuf:"varint,6,opt,name=skip_upload,json=skipUpload,proto3" json:"skip_upload,omitempty"`
+	// Choke group: materials sharing the same non-empty group value form an
+	// "at least one of" set, meaning at least one member must be present in the
+	// attestation. Materials without a group keep their individual required/optional behavior.
+	Group         string `protobuf:"bytes,7,opt,name=group,proto3" json:"group,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1760,6 +1764,13 @@ func (x *CraftingSchema_Material) GetSkipUpload() bool {
 		return x.SkipUpload
 	}
 	return false
+}
+
+func (x *CraftingSchema_Material) GetGroup() string {
+	if x != nil {
+		return x.Group
+	}
+	return ""
 }
 
 type PolicyAttachment_MaterialSelector struct {
@@ -1987,7 +1998,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xe7\x10\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\x94\x12\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -2010,8 +2021,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
 	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
 	"\x0fTEKTON_PIPELINE\x10\b\x12\x15\n" +
-	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xb2\n" +
-	"\n" +
+	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xdf\v\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
@@ -2020,7 +2030,9 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06output\x18\x04 \x01(\bB\x02\x18\x01R\x06output\x12E\n" +
 	"\vannotations\x18\x05 \x03(\v2\x1f.workflowcontract.v1.AnnotationB\x02\x18\x01R\vannotations\x12\x1f\n" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
-	"skipUpload\"\x84\a\n" +
+	"skipUpload\x12\xaa\x01\n" +
+	"\x05group\x18\a \x01(\tB\x93\x01\xbaH\x8f\x01\xba\x01\x8b\x01\n" +
+	"\x0egroup.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a=this == '' || this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x05group\"\x84\a\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +

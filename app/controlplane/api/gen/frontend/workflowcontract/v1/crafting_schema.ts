@@ -200,6 +200,12 @@ export interface CraftingSchema_Material {
    * Defaults to false (material will be uploaded)
    */
   skipUpload: boolean;
+  /**
+   * Choke group: materials sharing the same non-empty group value form an
+   * "at least one of" set, meaning at least one member must be present in the
+   * attestation. Materials without a group keep their individual required/optional behavior.
+   */
+  group: string;
 }
 
 export enum CraftingSchema_Material_MaterialType {
@@ -1010,7 +1016,7 @@ export const CraftingSchema_Runner = {
 };
 
 function createBaseCraftingSchema_Material(): CraftingSchema_Material {
-  return { type: 0, name: "", optional: false, output: false, annotations: [], skipUpload: false };
+  return { type: 0, name: "", optional: false, output: false, annotations: [], skipUpload: false, group: "" };
 }
 
 export const CraftingSchema_Material = {
@@ -1032,6 +1038,9 @@ export const CraftingSchema_Material = {
     }
     if (message.skipUpload === true) {
       writer.uint32(48).bool(message.skipUpload);
+    }
+    if (message.group !== "") {
+      writer.uint32(58).string(message.group);
     }
     return writer;
   },
@@ -1085,6 +1094,13 @@ export const CraftingSchema_Material = {
 
           message.skipUpload = reader.bool();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.group = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1102,6 +1118,7 @@ export const CraftingSchema_Material = {
       output: isSet(object.output) ? Boolean(object.output) : false,
       annotations: Array.isArray(object?.annotations) ? object.annotations.map((e: any) => Annotation.fromJSON(e)) : [],
       skipUpload: isSet(object.skipUpload) ? Boolean(object.skipUpload) : false,
+      group: isSet(object.group) ? String(object.group) : "",
     };
   },
 
@@ -1117,6 +1134,7 @@ export const CraftingSchema_Material = {
       obj.annotations = [];
     }
     message.skipUpload !== undefined && (obj.skipUpload = message.skipUpload);
+    message.group !== undefined && (obj.group = message.group);
     return obj;
   },
 
@@ -1132,6 +1150,7 @@ export const CraftingSchema_Material = {
     message.output = object.output ?? false;
     message.annotations = object.annotations?.map((e) => Annotation.fromPartial(e)) || [];
     message.skipUpload = object.skipUpload ?? false;
+    message.group = object.group ?? "";
     return message;
   },
 };
