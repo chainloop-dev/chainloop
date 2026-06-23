@@ -1,0 +1,27 @@
+# This contract demonstrates "at least one of" material semantics using choke groups.
+#
+# Materials that share the same non-empty `group` value form a choke group:
+# at least one member of the group must be present in the attestation, otherwise
+# the attestation cannot be pushed. This makes the "one or another" intent explicit,
+# instead of marking every material as `optional` and enforcing presence with a
+# separate gated policy.
+#
+# In the example below the attestation must contain an SBOM in EITHER CycloneDX
+# OR SPDX format (at least one of them), plus a mandatory container image.
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: material-groups-contract
+  description: Example contract requiring at least one SBOM format via a choke group
+spec:
+  materials:
+    # Regular required material (no group): must always be present.
+    - name: container
+      type: CONTAINER_IMAGE
+    # Choke group "sbom": at least one of the following must be present.
+    - name: sbom-cyclonedx
+      type: SBOM_CYCLONEDX_JSON
+      group: sbom
+    - name: sbom-spdx
+      type: SBOM_SPDX_JSON
+      group: sbom
