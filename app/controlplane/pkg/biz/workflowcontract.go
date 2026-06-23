@@ -36,6 +36,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 var workflowContractTracer = otelx.Tracer("chainloop-controlplane", "biz/workflowcontract")
@@ -497,8 +498,10 @@ func (uc *WorkflowContractUseCase) RevisionWouldChange(ctx context.Context, orgI
 	}
 
 	// Same rule used by the data layer on Update: a new revision is created
-	// only when the stored raw body differs from the incoming one.
-	return !bytes.Equal(latest.Version.Schema.Raw, incoming.Raw), nil
+	// only when the stored contract differs from the incoming one. The
+	// comparison is semantic (formatting-insensitive) so dry-run apply and real
+	// apply agree regardless of which client serialized the bytes.
+	return !ContractRawEqual(latest.Version.Schema.Raw, incoming.Raw), nil
 }
 
 // ValidateContractPolicies checks that policies and policy groups referenced by the contract
@@ -875,6 +878,47 @@ func UnmarshalAndValidateRawContract(raw []byte, format unmarshal.RawFormat) (*C
 	// Both parsing attempts failed
 	// Best effort: provide errors for both schemas
 	return nil, NewErrValidation(fmt.Errorf("contract validation failed:\n  v2 Contract format error: %w\n  v1 CraftingSchema format error: %w", v2Err, v1Err))
+}
+
+// ContractRawEqual reports whether two raw contract bodies represent the same
+// contract once parsed, ignoring serialization/formatting differences such as
+// indentation, key ordering, or YAML vs JSON. This is the canonical
+// change-detection comparison: re-applying the same contract through any client
+// path (verbatim `wf contract apply` or the batch `apply` splitter, which
+// re-marshals YAML) must compare equal, while a genuine content edit must not.
+//
+// Identical bytes are trivially equal. If either body cannot be parsed and
+// validated, it falls back to a raw byte comparison so a malformed body never
+// silently compares equal to a different one.
+func ContractRawEqual(a, b []byte) bool {
+	// Fast path: identical bytes are trivially equal.
+	if bytes.Equal(a, b) {
+		return true
+	}
+
+	ca, err := identifyUnMarshalAndValidateRawContract(a)
+	if err != nil {
+		return false
+	}
+
+	cb, err := identifyUnMarshalAndValidateRawContract(b)
+	if err != nil {
+		return false
+	}
+
+	return ca.semanticEqual(cb)
+}
+
+// semanticEqual compares two parsed contracts by their canonical proto form,
+// so formatting-only differences do not register as changes. When both sides
+// use the v2 schema the v2 messages are compared; otherwise the v1
+// representation (always populated by UnmarshalAndValidateRawContract) is used.
+func (c *Contract) semanticEqual(other *Contract) bool {
+	if c.isV2Schema() && other.isV2Schema() {
+		return proto.Equal(c.Schemav2, other.Schemav2)
+	}
+
+	return proto.Equal(c.Schema, other.Schema)
 }
 
 // Will try to figure out the format of the raw contract and validate it
