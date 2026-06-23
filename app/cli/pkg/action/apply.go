@@ -18,9 +18,7 @@ package action
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -163,22 +161,16 @@ func CollectYAMLFiles(path string) ([]string, error) {
 // SplitYAMLDocuments splits a potentially multi-document YAML file into individual documents,
 // extracting kind and name from each.
 func SplitYAMLDocuments(rawData []byte) ([]*YAMLDoc, error) {
-	decoder := yaml.NewDecoder(bytes.NewReader(rawData))
-
 	var docs []*YAMLDoc
-	for {
+	for _, raw := range splitYAMLOnDocumentMarkers(rawData) {
+		// Detect empty or comment-only documents so leading/trailing separators
+		// and stray comments do not produce spurious resources.
 		var node yaml.Node
-		if err := decoder.Decode(&node); err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
+		if err := yaml.Unmarshal(raw, &node); err != nil {
 			return nil, fmt.Errorf("decoding YAML document: %w", err)
 		}
-
-		// Marshal node back to bytes for the per-resource apply
-		docBytes, err := yaml.Marshal(&node)
-		if err != nil {
-			return nil, fmt.Errorf("marshalling YAML node: %w", err)
+		if node.Kind == 0 {
+			continue
 		}
 
 		// Extract kind and name via partial unmarshal
@@ -188,7 +180,7 @@ func SplitYAMLDocuments(rawData []byte) ([]*YAMLDoc, error) {
 				Name string `yaml:"name"`
 			} `yaml:"metadata"`
 		}
-		if err := yaml.Unmarshal(docBytes, &header); err != nil {
+		if err := yaml.Unmarshal(raw, &header); err != nil {
 			return nil, fmt.Errorf("extracting document kind: %w", err)
 		}
 
@@ -200,12 +192,41 @@ func SplitYAMLDocuments(rawData []byte) ([]*YAMLDoc, error) {
 			return nil, fmt.Errorf("missing 'metadata.name' field in YAML document of kind %q", header.Kind)
 		}
 
+		// Keep the document's original bytes verbatim (no re-indenting, comment
+		// loss, or reflow) so the batch apply path sends exactly what the user
+		// authored — identical to the bytes `wf contract apply` sends. Otherwise
+		// the server sees different bytes for the same file and reports spurious
+		// contract revisions.
 		docs = append(docs, &YAMLDoc{
 			Kind:    header.Kind,
 			Name:    header.Metadata.Name,
-			RawData: docBytes,
+			RawData: raw,
 		})
 	}
 
 	return docs, nil
+}
+
+// splitYAMLOnDocumentMarkers splits a multi-document YAML stream into its
+// individual documents, returning each document's original bytes verbatim.
+// Documents are separated by a "---" marker on its own line (per the YAML
+// spec, a directives-end marker at column 0); the marker line itself is not
+// part of any document.
+func splitYAMLOnDocumentMarkers(rawData []byte) [][]byte {
+	var docs [][]byte
+	var cur []byte
+	for _, line := range bytes.SplitAfter(rawData, []byte("\n")) {
+		if len(line) == 0 {
+			continue
+		}
+		if bytes.Equal(bytes.TrimRight(line, " \t\r\n"), []byte("---")) {
+			docs = append(docs, cur)
+			cur = nil
+			continue
+		}
+		cur = append(cur, line...)
+	}
+	docs = append(docs, cur)
+
+	return docs
 }
