@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package server
 
 import (
+	middlewares_http "github.com/chainloop-dev/chainloop/pkg/middlewares/http"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -28,6 +29,8 @@ type HTTPMetricsServer struct {
 // NewHTTPMetricsServer exposes the metrics endpoint in another port
 func NewHTTPMetricsServer(opts *Opts) (*HTTPMetricsServer, error) {
 	var serverOpts = []http.ServerOption{}
+	// Stop unmatched routes from falling through to http.DefaultServeMux (CVE-2026-6993).
+	serverOpts = append(serverOpts, middlewares_http.DenyDefaultMuxFallthrough()...)
 
 	if v := opts.ServerConfig.HttpMetrics.Network; v != "" {
 		serverOpts = append(serverOpts, http.Network(v))

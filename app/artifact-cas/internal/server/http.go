@@ -40,6 +40,9 @@ func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.Dow
 			logging.Server(logger),
 		),
 	}
+	// Stop unmatched routes from falling through to http.DefaultServeMux,
+	// which would expose /debug/vars and /debug/requests (CVE-2026-6993).
+	opts = append(opts, middlewares_http.DenyDefaultMuxFallthrough()...)
 	if c.Http.Network != "" {
 		opts = append(opts, http.Network(c.Http.Network))
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package server
 
 import (
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
+	middlewares_http "github.com/chainloop-dev/chainloop/pkg/middlewares/http"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -34,6 +35,8 @@ func NewHTTPMetricsServer(c *conf.Server) (*HTTPMetricsServer, error) {
 			recovery.Recovery(),
 		),
 	}
+	// Stop unmatched routes from falling through to http.DefaultServeMux (CVE-2026-6993).
+	opts = append(opts, middlewares_http.DenyDefaultMuxFallthrough()...)
 
 	if c.HttpMetrics.Network != "" {
 		opts = append(opts, http.Network(c.HttpMetrics.Network))

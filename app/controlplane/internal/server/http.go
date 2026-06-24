@@ -47,6 +47,9 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	var serverOpts = []http.ServerOption{
 		http.Middleware(middlewares...),
 	}
+	// Stop unmatched routes from falling through to http.DefaultServeMux,
+	// which would expose /debug/pprof, /debug/vars and /debug/requests (CVE-2026-6993).
+	serverOpts = append(serverOpts, middlewares_http.DenyDefaultMuxFallthrough()...)
 
 	if v := opts.ServerConfig.Http.Network; v != "" {
 		serverOpts = append(serverOpts, http.Network(v))
