@@ -21,7 +21,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
@@ -46,7 +45,7 @@ func (r *ProjectVersionRepo) FindByProjectAndVersion(ctx context.Context, projec
 	ctx, span := otelx.Start(ctx, projectVersionRepoTracer, "ProjectVersionRepo.FindByProjectAndVersion")
 	defer span.End()
 
-	pv, err := r.data.DB.ProjectVersion.Query().Where(projectversion.HasProjectWith(project.ID(projectID)), projectversion.VersionEQ(version)).Only(ctx)
+	pv, err := findProjectVersionWithClient(ctx, r.data.DB, projectID, version)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err
 	} else if pv == nil {
