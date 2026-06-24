@@ -198,6 +198,35 @@ func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatestInvalidUUID() {
 	require.Error(t, err)
 }
 
+// Regression test for PFM-6470: a version that was deleted and recreated with the
+// same name leaves a soft-deleted row alongside the active one. Looking the version
+// up by name must return the active row instead of crashing because the query matched
+// more than one row.
+func (s *ProjectVersionIntegrationTestSuite) TestFindByProjectAndVersionIgnoresSoftDeleted() {
+	t := s.T()
+	ctx := context.Background()
+
+	// Create a version and soft-delete it, simulating a delete from the UI/API.
+	deleted, err := s.ProjectVersion.Create(ctx, s.project.ID.String(), "v17", true)
+	require.NoError(t, err)
+
+	_, err = s.Data.DB.ProjectVersion.UpdateOneID(deleted.ID).SetDeletedAt(time.Now()).Save(ctx)
+	require.NoError(t, err)
+
+	// Recreate a version with the same name; now two rows share version "v17"
+	// (one soft-deleted, one active).
+	recreated, err := s.ProjectVersion.Create(ctx, s.project.ID.String(), "v17", true)
+	require.NoError(t, err)
+	require.NotEqual(t, deleted.ID, recreated.ID)
+
+	// Looking up "v17" must return the active row, not error out because the query
+	// matched both the soft-deleted and the active row.
+	found, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.project.ID.String(), "v17")
+	require.NoError(t, err)
+	require.NotNil(t, found)
+	require.Equal(t, recreated.ID, found.ID)
+}
+
 func TestProjectVersionUseCase(t *testing.T) {
 	suite.Run(t, new(ProjectVersionIntegrationTestSuite))
 }
