@@ -190,66 +190,117 @@ func materialsTable(status *action.AttestationStatusResult, w io.Writer, full bo
 		return nil
 	}
 
-	// Sort materials by name for consistent output
-	slices.SortFunc(status.Materials, func(a, b action.AttestationStatusMaterial) int {
-		return strings.Compare(a.Name, b.Name)
-	})
+	// Partition materials into standalone (ungrouped) ones and choke groups.
+	// Grouped materials are rendered together under a group header so it is
+	// clear they form an "at least one of" set rather than independent materials.
+	var ungrouped []action.AttestationStatusMaterial
+	groupedBy := make(map[string][]action.AttestationStatusMaterial)
+	var groupOrder []string
+	for _, m := range status.Materials {
+		if m.Group == "" {
+			ungrouped = append(ungrouped, m)
+			continue
+		}
+		if _, ok := groupedBy[m.Group]; !ok {
+			groupOrder = append(groupOrder, m.Group)
+		}
+		groupedBy[m.Group] = append(groupedBy[m.Group], m)
+	}
+
+	byName := func(a, b action.AttestationStatusMaterial) int { return strings.Compare(a.Name, b.Name) }
+	slices.SortFunc(ungrouped, byName)
+	slices.Sort(groupOrder)
 
 	mt := output.NewTableWriterWithWriter(w)
 	mt.SetTitle("Materials")
 
-	for _, m := range status.Materials {
-		mt.AppendRow(table.Row{"Name", m.Name})
-		mt.AppendRow(table.Row{"Type", m.Type})
-		mt.AppendRow(table.Row{"Set", hBool(m.Set)})
-		mt.AppendRow(table.Row{"Required", hBool(m.Required)})
-		if m.Group != "" {
-			mt.AppendRow(table.Row{"Group", fmt.Sprintf("%s (at least one of the group required)", m.Group)})
-		}
-		if m.IsOutput {
-			mt.AppendRow(table.Row{"Is output", "Yes"})
-		}
-		if m.SkipUpload {
-			mt.AppendRow(table.Row{"Skip upload", "Yes"})
-		}
-
-		if full {
-			if m.Value != "" {
-				v := m.Value
-				if m.Tag != "" {
-					v = fmt.Sprintf("%s:%s", v, m.Tag)
-				}
-				mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
-			}
-
-			if m.Hash != "" {
-				mt.AppendRow(table.Row{"Digest", m.Hash})
-			}
-		}
-
-		if len(m.Annotations) > 0 {
-			mt.AppendRow(table.Row{"Annotations", "------"})
-			for _, a := range m.Annotations {
-				value := a.Value
-				if value == "" {
-					value = NotSet
-				}
-
-				mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
-			}
-		}
-
-		evs := status.PolicyEvaluations[m.Name]
-		if len(evs) > 0 {
-			mt.AppendRow(table.Row{"Policies", "------"})
-			policiesTable(evs, mt, flagDebug)
-		}
-
+	for _, m := range ungrouped {
+		appendMaterialRows(mt, m, status, full, false)
 		mt.AppendSeparator()
 	}
+
+	for _, g := range groupOrder {
+		members := groupedBy[g]
+		slices.SortFunc(members, byName)
+
+		// A choke group is satisfied as soon as one of its members is set.
+		satisfied := false
+		for _, m := range members {
+			if m.Set {
+				satisfied = true
+				break
+			}
+		}
+
+		mt.AppendRow(table.Row{"Group", g})
+		mt.AppendRow(table.Row{"Rule", fmt.Sprintf("at least one of %d required", len(members))})
+		mt.AppendRow(table.Row{"Satisfied", hBool(satisfied)})
+		mt.AppendSeparator()
+
+		for _, m := range members {
+			appendMaterialRows(mt, m, status, full, true)
+			mt.AppendSeparator()
+		}
+	}
+
 	mt.Render()
 
 	return nil
+}
+
+// appendMaterialRows renders a single material as a block of rows. When the
+// material belongs to a choke group, its name is indented under the group
+// header and the per-material "Required" row is omitted (the group header
+// carries the "at least one of" requirement instead).
+func appendMaterialRows(mt table.Writer, m action.AttestationStatusMaterial, status *action.AttestationStatusResult, full, grouped bool) {
+	name := m.Name
+	if grouped {
+		name = "↳ " + name
+	}
+	mt.AppendRow(table.Row{"Name", name})
+	mt.AppendRow(table.Row{"Type", m.Type})
+	mt.AppendRow(table.Row{"Set", hBool(m.Set)})
+	if !grouped {
+		mt.AppendRow(table.Row{"Required", hBool(m.Required)})
+	}
+	if m.IsOutput {
+		mt.AppendRow(table.Row{"Is output", "Yes"})
+	}
+	if m.SkipUpload {
+		mt.AppendRow(table.Row{"Skip upload", "Yes"})
+	}
+
+	if full {
+		if m.Value != "" {
+			v := m.Value
+			if m.Tag != "" {
+				v = fmt.Sprintf("%s:%s", v, m.Tag)
+			}
+			mt.AppendRow(table.Row{"Value", wrap.String(v, 100)})
+		}
+
+		if m.Hash != "" {
+			mt.AppendRow(table.Row{"Digest", m.Hash})
+		}
+	}
+
+	if len(m.Annotations) > 0 {
+		mt.AppendRow(table.Row{"Annotations", "------"})
+		for _, a := range m.Annotations {
+			value := a.Value
+			if value == "" {
+				value = NotSet
+			}
+
+			mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", a.Name, value)})
+		}
+	}
+
+	evs := status.PolicyEvaluations[m.Name]
+	if len(evs) > 0 {
+		mt.AppendRow(table.Row{"Policies", "------"})
+		policiesTable(evs, mt, flagDebug)
+	}
 }
 
 func hBool(b bool) string {
