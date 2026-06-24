@@ -97,6 +97,14 @@ message CraftingSchema {
     // If true, skip uploading the material to CAS (only record metadata)
     // Defaults to false (material will be uploaded)
     bool skip_upload = 6;
+    // Choke group: materials sharing the same non-empty group value form an
+    // "at least one of" set, meaning at least one member must be present in the
+    // attestation. Materials without a group keep their individual required/optional behavior.
+    string group = 7 [(buf.validate.field).cel = {
+      message: "must contain only lowercase letters, numbers, and hyphens."
+      expression: "this == '' || this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')"
+      id: "group.dns-1123"
+    }];
 
     enum MaterialType {
       MATERIAL_TYPE_UNSPECIFIED = 0;

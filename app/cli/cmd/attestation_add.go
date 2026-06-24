@@ -179,6 +179,11 @@ func displayMaterialInfo(status *action.AttestationStatusMaterial, policyEvaluat
 	mt.AppendRow(table.Row{"Type", status.Type})
 	mt.AppendRow(table.Row{"Required", hBool(status.Required)})
 
+	if status.Group != "" {
+		mt.AppendRow(table.Row{"Group", status.Group})
+		mt.AppendRow(table.Row{"Rule", "at least one of the group required"})
+	}
+
 	if status.IsOutput {
 		mt.AppendRow(table.Row{"Is output", "Yes"})
 	}

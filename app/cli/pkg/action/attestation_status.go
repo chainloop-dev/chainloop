@@ -75,6 +75,9 @@ type AttestationStatusWorkflowMeta struct {
 type AttestationStatusMaterial struct {
 	*Material
 	Set, IsOutput, Required, SkipUpload bool
+	// Group is the choke group this material belongs to. Materials sharing a
+	// non-empty group form an "at least one of" set.
+	Group string `json:"group,omitempty"`
 }
 
 func NewAttestationStatus(cfg *AttestationStatusOpts) (*AttestationStatus, error) {
@@ -225,12 +228,15 @@ func populateMaterials(craftingState *v1.CraftingState, res *AttestationStatusRe
 func populateContractMaterials(inputSchemaMaterials []*pbc.CraftingSchema_Material, attsMaterial map[string]*v1.Attestation_Material, res *AttestationStatusResult, visitedMaterials map[string]struct{}) error {
 	for _, m := range inputSchemaMaterials {
 		// This one need to be crafter manually because it might not be in the attestation yet
+		// Grouped materials are enforced at the group level ("at least one of"),
+		// so they are not individually required.
 		materialResult := &AttestationStatusMaterial{
 			Material: &Material{
 				Name: m.Name, Type: m.Type.String(),
 				Annotations: pbAnnotationsToAction(m.Annotations),
 			},
-			IsOutput: m.Output, Required: !m.Optional, SkipUpload: m.SkipUpload,
+			IsOutput: m.Output, Required: !m.Optional && m.Group == "", SkipUpload: m.SkipUpload,
+			Group: m.Group,
 		}
 
 		if cm, found := attsMaterial[m.Name]; found {

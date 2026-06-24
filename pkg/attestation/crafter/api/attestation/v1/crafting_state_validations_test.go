@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,128 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestCraftingStateValidateComplete(t *testing.T) {
+	// helper to build a state from a list of contract materials and the set of crafted material names
+	newState := func(materials []*workflowcontract.CraftingSchema_Material, crafted ...string) *CraftingState {
+		craftedMap := make(map[string]*Attestation_Material, len(crafted))
+		for _, name := range crafted {
+			craftedMap[name] = &Attestation_Material{}
+		}
+		return &CraftingState{
+			Schema: &CraftingState_InputSchema{
+				InputSchema: &workflowcontract.CraftingSchema{Materials: materials},
+			},
+			Attestation: &Attestation{Materials: craftedMap},
+		}
+	}
+
+	art := workflowcontract.CraftingSchema_Material_ARTIFACT
+
+	testCases := []struct {
+		name      string
+		materials []*workflowcontract.CraftingSchema_Material
+		crafted   []string
+		wantErr   bool
+		// substrings expected in the error message (when wantErr)
+		errContains []string
+	}{
+		{
+			name: "required material present",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "a"},
+			},
+			crafted: []string{"a"},
+		},
+		{
+			name: "required material missing",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "a"},
+			},
+			wantErr:     true,
+			errContains: []string{"a"},
+		},
+		{
+			name: "optional material missing is allowed",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "a", Optional: true},
+			},
+		},
+		{
+			name: "group satisfied with one member",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "a", Group: "choice"},
+				{Type: art, Name: "b", Group: "choice"},
+			},
+			crafted: []string{"b"},
+		},
+		{
+			name: "group unsatisfied when no member present",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "a", Group: "choice"},
+				{Type: art, Name: "b", Group: "choice"},
+			},
+			wantErr:     true,
+			errContains: []string{"choice", "a", "b"},
+		},
+		{
+			name: "group enforced even if members are marked optional",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "a", Group: "choice", Optional: true},
+				{Type: art, Name: "b", Group: "choice", Optional: true},
+			},
+			wantErr:     true,
+			errContains: []string{"choice"},
+		},
+		{
+			name: "multiple groups: only the unsatisfied one is reported",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "a", Group: "g1"},
+				{Type: art, Name: "b", Group: "g1"},
+				{Type: art, Name: "c", Group: "g2"},
+				{Type: art, Name: "d", Group: "g2"},
+			},
+			crafted:     []string{"a"},
+			wantErr:     true,
+			errContains: []string{"g2", "c", "d"},
+		},
+		{
+			name: "mixed grouped and ungrouped, all satisfied",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "req"},
+				{Type: art, Name: "opt", Optional: true},
+				{Type: art, Name: "a", Group: "choice"},
+				{Type: art, Name: "b", Group: "choice"},
+			},
+			crafted: []string{"req", "a"},
+		},
+		{
+			name: "mixed grouped and ungrouped, ungrouped required missing",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "req"},
+				{Type: art, Name: "a", Group: "choice"},
+				{Type: art, Name: "b", Group: "choice"},
+			},
+			crafted:     []string{"a"},
+			wantErr:     true,
+			errContains: []string{"req"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := newState(tc.materials, tc.crafted...).ValidateComplete(true)
+			if !tc.wantErr {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			for _, sub := range tc.errContains {
+				assert.ErrorContains(t, err, sub)
+			}
+		})
+	}
+}
 
 func TestCraftingStateGetEnvAllowList(t *testing.T) {
 	testCases := []struct {

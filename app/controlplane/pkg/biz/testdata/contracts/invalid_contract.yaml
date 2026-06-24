@@ -1,2 +1,4 @@
 schemaVersion: v1
-notAContract: true
+materials:
+  - type: CONTAINER_IMAGE
+    name: INVALID_NAME
