@@ -36,9 +36,14 @@ const (
 	validateAction   = "validate"
 	groupsEndpoint   = "groups"
 
-	digestParam        = "digest"
-	orgNameParam       = "organization_name"
-	organizationHeader = "Chainloop-Organization"
+	digestParam  = "digest"
+	orgNameParam = "organization_name"
+	// includeAllVersionsParam is the provider's query parameter that, when set,
+	// makes the provider skip CLI-version compatibility resolution and return the
+	// true latest revision. The wire name is "include_all_versions" but its real
+	// effect is "ignore CLI compatibility gating" (see WithIgnoreCLICompatibility).
+	includeAllVersionsParam = "include_all_versions"
+	organizationHeader      = "Chainloop-Organization"
 )
 
 // PolicyProvider represents an external policy provider
@@ -88,8 +93,37 @@ var (
 	ErrUnauthorized = fmt.Errorf("unauthorized request to policy provider")
 )
 
-// Resolve calls the remote provider for retrieving a policy
-func (p *PolicyProvider) Resolve(policyName, policyOrgName string, authOpts ProviderAuthOpts) (*schemaapi.Policy, *PolicyReference, error) {
+// ResolveOption configures a policy or policy-group resolution request.
+type ResolveOption func(*resolveOptions)
+
+type resolveOptions struct {
+	ignoreCLICompatibility bool
+}
+
+func newResolveOptions(opts []ResolveOption) resolveOptions {
+	var o resolveOptions
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&o)
+		}
+	}
+	return o
+}
+
+// WithIgnoreCLICompatibility makes the provider skip CLI-version compatibility
+// resolution and return the true latest revision instead of the latest revision
+// compatible with the requesting CLI version. It is meant for non-CLI callers
+// such as the web UI or the control plane. On the wire this sets the
+// include_all_versions query parameter.
+func WithIgnoreCLICompatibility() ResolveOption {
+	return func(o *resolveOptions) {
+		o.ignoreCLICompatibility = true
+	}
+}
+
+// Resolve calls the remote provider for retrieving a policy.
+// See WithIgnoreCLICompatibility for the available resolution options.
+func (p *PolicyProvider) Resolve(policyName, policyOrgName string, authOpts ProviderAuthOpts, opts ...ResolveOption) (*schemaapi.Policy, *PolicyReference, error) {
 	if policyName == "" || authOpts.Token == "" {
 		return nil, nil, fmt.Errorf("both policyname and auth opts are mandatory")
 	}
@@ -108,7 +142,7 @@ func (p *PolicyProvider) Resolve(policyName, policyOrgName string, authOpts Prov
 	}
 	// we want to override the orgName with the one in the response
 	// since we might have resolved it implicitly
-	providerDigest, orgName, err := p.queryProvider(url, digest, policyOrgName, authOpts, &policy)
+	providerDigest, orgName, err := p.queryProvider(url, digest, policyOrgName, authOpts, &policy, opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve policy: %w", err)
 	}
@@ -189,8 +223,9 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, aut
 	return nil
 }
 
-// ResolveGroup calls remote provider for retrieving a policy group definition
-func (p *PolicyProvider) ResolveGroup(groupName, groupOrgName string, authOpts ProviderAuthOpts) (*schemaapi.PolicyGroup, *PolicyReference, error) {
+// ResolveGroup calls remote provider for retrieving a policy group definition.
+// See WithIgnoreCLICompatibility for the available resolution options.
+func (p *PolicyProvider) ResolveGroup(groupName, groupOrgName string, authOpts ProviderAuthOpts, opts ...ResolveOption) (*schemaapi.PolicyGroup, *PolicyReference, error) {
 	if groupName == "" || authOpts.Token == "" {
 		return nil, nil, fmt.Errorf("both policyname and token are mandatory")
 	}
@@ -209,7 +244,7 @@ func (p *PolicyProvider) ResolveGroup(groupName, groupOrgName string, authOpts P
 	}
 	// we want to override the orgName with the one in the response
 	// since we might have resolved it implicitly
-	providerDigest, orgName, err := p.queryProvider(url, digest, groupOrgName, authOpts, &group)
+	providerDigest, orgName, err := p.queryProvider(url, digest, groupOrgName, authOpts, &group, opts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to resolve group: %w", err)
 	}
@@ -218,7 +253,9 @@ func (p *PolicyProvider) ResolveGroup(groupName, groupOrgName string, authOpts P
 }
 
 // returns digest, orgname, error
-func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, authOpts ProviderAuthOpts, out proto.Message) (string, string, error) {
+func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, authOpts ProviderAuthOpts, out proto.Message, opts ...ResolveOption) (string, string, error) {
+	options := newResolveOptions(opts)
+
 	query := url.Query()
 	if digest != "" {
 		query.Set(digestParam, digest)
@@ -226,6 +263,10 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 
 	if orgName != "" {
 		query.Set(orgNameParam, orgName)
+	}
+
+	if options.ignoreCLICompatibility {
+		query.Set(includeAllVersionsParam, "true")
 	}
 
 	url.RawQuery = query.Encode()
