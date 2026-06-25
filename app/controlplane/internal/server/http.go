@@ -47,6 +47,10 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	var serverOpts = []http.ServerOption{
 		http.Middleware(middlewares...),
 	}
+	// Prevent unmatched routes from falling through to http.DefaultServeMux,
+	// which would otherwise expose net/http/pprof's /debug/pprof/* endpoints
+	// unauthenticated on the public API listener.
+	serverOpts = append(serverOpts, hardenedRouteOptions()...)
 
 	if v := opts.ServerConfig.Http.Network; v != "" {
 		serverOpts = append(serverOpts, http.Network(v))

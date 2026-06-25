@@ -32,10 +32,6 @@ import (
 	"time"
 )
 
-import (
-	_ "net/http/pprof"
-)
-
 // Injectors from wire.go:
 
 func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWriter credentials.ReaderWriter, logger log.Logger, availablePlugins sdk.AvailablePlugins) (*app, func(), error) {
