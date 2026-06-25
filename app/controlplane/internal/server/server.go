@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 package server
 
 import (
+	nethttp "net/http"
+
+	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/google/wire"
 )
 
@@ -30,3 +33,28 @@ var ProviderSet = wire.NewSet(
 )
 
 var Version = "dev"
+
+// hardenedRouteOptions returns kratos HTTP server options that stop the server
+// from delegating unmatched routes to http.DefaultServeMux.
+//
+// By default go-kratos sets every server's NotFoundHandler and
+// MethodNotAllowedHandler to http.DefaultServeMux. Anything registered on that
+// process-wide mux -- most notably net/http/pprof's /debug/pprof/* handlers,
+// which register themselves at init time -- then becomes reachable, without
+// authentication, on every kratos HTTP listener (including the public API and
+// metrics ports). These options replace that fallthrough with plain 404/405
+// responses so debug endpoints are only ever served where we register them
+// explicitly.
+func hardenedRouteOptions() []http.ServerOption {
+	notFound := nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		nethttp.NotFound(w, r)
+	})
+	methodNotAllowed := nethttp.HandlerFunc(func(w nethttp.ResponseWriter, _ *nethttp.Request) {
+		nethttp.Error(w, nethttp.StatusText(nethttp.StatusMethodNotAllowed), nethttp.StatusMethodNotAllowed)
+	})
+
+	return []http.ServerOption{
+		http.NotFoundHandler(notFound),
+		http.MethodNotAllowedHandler(methodNotAllowed),
+	}
+}

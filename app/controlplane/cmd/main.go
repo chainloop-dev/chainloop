@@ -18,7 +18,6 @@ package main
 import (
 	"context"
 	"math/rand"
-	_ "net/http/pprof"
 	"os"
 	"time"
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,11 @@ func NewHTTPMetricsServer(opts *Opts) (*HTTPMetricsServer, error) {
 	if v := opts.ServerConfig.HttpMetrics.Timeout; v != nil {
 		serverOpts = append(serverOpts, http.Timeout(v.AsDuration()))
 	}
+
+	// Prevent unmatched routes from falling through to http.DefaultServeMux,
+	// which would otherwise expose net/http/pprof's /debug/pprof/* endpoints
+	// unauthenticated on the metrics listener.
+	serverOpts = append(serverOpts, hardenedRouteOptions()...)
 
 	httpSrv := http.NewServer(serverOpts...)
 	// NOTE: promhttp.Handler() is a singleton that returns the default metrics repository
