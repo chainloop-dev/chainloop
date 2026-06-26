@@ -31,7 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
 	materialsradamsa "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/radamsa"
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/sigcheck"
+	"github.com/chainloop-dev/chainloop/pkg/tabular"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -205,7 +205,7 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 		}
 		return json.Marshal(&report)
 	case v1.CraftingSchema_Material_SYSINTERNALS_SIGCHECK:
-		report, err := sigcheck.Parse(rawMaterial)
+		report, err := tabular.Parse(rawMaterial)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ingest sigcheck report: %w", err)
 		}

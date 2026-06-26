@@ -41,6 +41,12 @@ const (
 	AnnotationToolVersionKey = "chainloop.material.tool.version"
 	AnnotationToolsKey       = "chainloop.material.tools"
 	AnnotationMaterialSize   = "chainloop.material.size"
+	// AnnotationMaterialReferences links a material to one or more other
+	// materials in the same attestation by their name (comma-separated).
+	// Modeled on the OCI referrers API: the edge is stored on the referrer
+	// (e.g. the EVIDENCE file) pointing at its subject(s); the reverse
+	// direction is resolved by lookup. Generic across material kinds.
+	AnnotationMaterialReferences = "chainloop.material.references"
 )
 
 // IsLegacyAnnotation returns true if the annotation key is a legacy annotation

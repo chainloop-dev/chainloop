@@ -28,6 +28,13 @@
     "^(referenceName)$": {
       "type": "string"
     },
+    "^(runtimeInputOverrides)$": {
+      "description": "Names of policy inputs whose values were supplied or overridden at runtime\n (e.g. via --policy-input-from-file) rather than coming solely from the\n contract. The effective merged values live in `with`; this only records\n which input names were touched at runtime. Empty means no runtime override.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "^(skipReasons)$": {
       "description": "Evaluation messages, intended to communicate evaluation errors (invalid input)",
       "items": {
@@ -87,6 +94,13 @@
     },
     "requirements": {
       "description": "List of requirements this policy contributes to satisfy",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "runtime_input_overrides": {
+      "description": "Names of policy inputs whose values were supplied or overridden at runtime\n (e.g. via --policy-input-from-file) rather than coming solely from the\n contract. The effective merged values live in `with`; this only records\n which input names were touched at runtime. Empty means no runtime override.",
       "items": {
         "type": "string"
       },
