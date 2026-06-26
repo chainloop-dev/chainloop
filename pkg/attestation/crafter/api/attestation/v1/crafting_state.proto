@@ -276,6 +276,12 @@ message PolicyEvaluation {
   // Whether the policy evaluation result should block the attestation (inherited from the policy attachment)
   bool gate = 19;
 
+  // Names of policy inputs whose values were supplied or overridden at runtime
+  // (e.g. via --policy-input-from-file) rather than coming solely from the
+  // contract. The effective merged values live in `with`; this only records
+  // which input names were touched at runtime. Empty means no runtime override.
+  repeated string runtime_input_overrides = 20;
+
   message Violation {
     string subject = 1 [(buf.validate.field).required = true];
     string message = 2 [(buf.validate.field).required = true];

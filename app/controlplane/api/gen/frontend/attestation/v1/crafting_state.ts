@@ -301,6 +301,13 @@ export interface PolicyEvaluation {
   rawResults: PolicyEvaluation_RawResult[];
   /** Whether the policy evaluation result should block the attestation (inherited from the policy attachment) */
   gate: boolean;
+  /**
+   * Names of policy inputs whose values were supplied or overridden at runtime
+   * (e.g. via --policy-input-from-file) rather than coming solely from the
+   * contract. The effective merged values live in `with`; this only records
+   * which input names were touched at runtime. Empty means no runtime override.
+   */
+  runtimeInputOverrides: string[];
 }
 
 export interface PolicyEvaluation_AnnotationsEntry {
@@ -2449,6 +2456,7 @@ function createBasePolicyEvaluation(): PolicyEvaluation {
     requirements: [],
     rawResults: [],
     gate: false,
+    runtimeInputOverrides: [],
   };
 }
 
@@ -2507,6 +2515,9 @@ export const PolicyEvaluation = {
     }
     if (message.gate === true) {
       writer.uint32(152).bool(message.gate);
+    }
+    for (const v of message.runtimeInputOverrides) {
+      writer.uint32(162).string(v!);
     }
     return writer;
   },
@@ -2650,6 +2661,13 @@ export const PolicyEvaluation = {
 
           message.gate = reader.bool();
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.runtimeInputOverrides.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2699,6 +2717,9 @@ export const PolicyEvaluation = {
         ? object.rawResults.map((e: any) => PolicyEvaluation_RawResult.fromJSON(e))
         : [],
       gate: isSet(object.gate) ? Boolean(object.gate) : false,
+      runtimeInputOverrides: Array.isArray(object?.runtimeInputOverrides)
+        ? object.runtimeInputOverrides.map((e: any) => String(e))
+        : [],
     };
   },
 
@@ -2756,6 +2777,11 @@ export const PolicyEvaluation = {
       obj.rawResults = [];
     }
     message.gate !== undefined && (obj.gate = message.gate);
+    if (message.runtimeInputOverrides) {
+      obj.runtimeInputOverrides = message.runtimeInputOverrides.map((e) => e);
+    } else {
+      obj.runtimeInputOverrides = [];
+    }
     return obj;
   },
 
@@ -2800,6 +2826,7 @@ export const PolicyEvaluation = {
     message.requirements = object.requirements?.map((e) => e) || [];
     message.rawResults = object.rawResults?.map((e) => PolicyEvaluation_RawResult.fromPartial(e)) || [];
     message.gate = object.gate ?? false;
+    message.runtimeInputOverrides = object.runtimeInputOverrides?.map((e) => e) || [];
     return message;
   },
 };

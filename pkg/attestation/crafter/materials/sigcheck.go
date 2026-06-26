@@ -22,8 +22,8 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/sigcheck"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	"github.com/chainloop-dev/chainloop/pkg/tabular"
 	"github.com/rs/zerolog"
 )
 
@@ -46,7 +46,7 @@ func (i *SigcheckCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
-	report, err := sigcheck.Parse(data)
+	report, err := tabular.Parse(data)
 	if err != nil {
 		return nil, fmt.Errorf("invalid sigcheck report: %w", ErrInvalidMaterialType)
 	}
