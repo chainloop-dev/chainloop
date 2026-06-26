@@ -599,7 +599,9 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 			return nil, err
 		}
 
-		remotePolicy, err := uc.GetPolicy(ctx, pr.Provider, pr.Name, pr.OrgName, "", token)
+		// The control plane is a non-CLI caller, so resolve the true latest revision
+		// and skip CLI-version compatibility gating.
+		remotePolicy, err := uc.GetPolicy(ctx, pr.Provider, pr.Name, pr.OrgName, "", token, policies.WithIgnoreCLICompatibility())
 		if err != nil {
 			return nil, err
 		}
@@ -637,7 +639,9 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(ctx context.Contex
 	if pr.Provider == "" && pr.OrgName == "" && slices.Contains(batchPolicyGroupNames, pr.Name) {
 		return nil, nil
 	}
-	remoteGroup, err := uc.GetPolicyGroup(ctx, pr.Provider, pr.Name, pr.OrgName, "", token)
+	// The control plane is a non-CLI caller, so resolve the true latest revision
+	// and skip CLI-version compatibility gating.
+	remoteGroup, err := uc.GetPolicyGroup(ctx, pr.Provider, pr.Name, pr.OrgName, "", token, policies.WithIgnoreCLICompatibility())
 	if err != nil {
 		return nil, NewErrValidation(fmt.Errorf("failed to get policy group: %w", err))
 	}
@@ -779,14 +783,15 @@ func providerAuthOpts(ctx context.Context, token, currentOrgName string) policie
 	}
 }
 
-// GetPolicy retrieves a policy from a policy provider
-func (uc *WorkflowContractUseCase) GetPolicy(ctx context.Context, providerName, policyName, policyOrgName, currentOrgName, token string) (*RemotePolicy, error) {
+// GetPolicy retrieves a policy from a policy provider.
+// See policies.WithIgnoreCLICompatibility for the available resolution options.
+func (uc *WorkflowContractUseCase) GetPolicy(ctx context.Context, providerName, policyName, policyOrgName, currentOrgName, token string, opts ...policies.ResolveOption) (*RemotePolicy, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	policy, ref, err := provider.Resolve(policyName, policyOrgName, providerAuthOpts(ctx, token, currentOrgName))
+	policy, ref, err := provider.Resolve(policyName, policyOrgName, providerAuthOpts(ctx, token, currentOrgName), opts...)
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy %q", policyName))
@@ -801,13 +806,15 @@ func (uc *WorkflowContractUseCase) GetPolicy(ctx context.Context, providerName, 
 	return &RemotePolicy{Policy: policy, ProviderRef: ref}, nil
 }
 
-func (uc *WorkflowContractUseCase) GetPolicyGroup(ctx context.Context, providerName, groupName, groupOrgName, currentOrgName, token string) (*RemotePolicyGroup, error) {
+// GetPolicyGroup retrieves a policy group from a policy provider.
+// See policies.WithIgnoreCLICompatibility for the available resolution options.
+func (uc *WorkflowContractUseCase) GetPolicyGroup(ctx context.Context, providerName, groupName, groupOrgName, currentOrgName, token string, opts ...policies.ResolveOption) (*RemotePolicyGroup, error) {
 	provider, err := uc.findProvider(providerName)
 	if err != nil {
 		return nil, err
 	}
 
-	group, ref, err := provider.ResolveGroup(groupName, groupOrgName, providerAuthOpts(ctx, token, currentOrgName))
+	group, ref, err := provider.ResolveGroup(groupName, groupOrgName, providerAuthOpts(ctx, token, currentOrgName), opts...)
 	if err != nil {
 		if errors.Is(err, policies.ErrNotFound) {
 			return nil, NewErrNotFound(fmt.Sprintf("policy group %q", groupName))

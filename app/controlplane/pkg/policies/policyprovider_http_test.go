@@ -214,6 +214,58 @@ func TestProviderForwardsCLIVersionHeader(t *testing.T) {
 	}
 }
 
+func TestResolveForwardsIgnoreCLICompatibility(t *testing.T) {
+	testCases := []struct {
+		name      string
+		opts      []ResolveOption
+		wantParam string
+	}{
+		{
+			name:      "include_all_versions set when ignoring CLI compatibility",
+			opts:      []ResolveOption{WithIgnoreCLICompatibility()},
+			wantParam: "true",
+		},
+		{
+			name:      "param omitted when no options passed",
+			opts:      nil,
+			wantParam: "",
+		},
+		{
+			name:      "nil option is ignored without panicking",
+			opts:      []ResolveOption{nil},
+			wantParam: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var policyParam, groupParam string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				got := r.URL.Query().Get("include_all_versions")
+				if strings.Contains(r.URL.Path, "/groups/") {
+					groupParam = got
+				} else {
+					policyParam = got
+				}
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{}`))
+			}))
+			defer server.Close()
+
+			provider := &PolicyProvider{name: "test", url: server.URL}
+			authOpts := ProviderAuthOpts{Token: "test-token"}
+
+			_, _, err := provider.Resolve("p1", "", authOpts, tc.opts...)
+			require.NoError(t, err)
+			_, _, err = provider.ResolveGroup("g1", "", authOpts, tc.opts...)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.wantParam, policyParam, "Resolve")
+			assert.Equal(t, tc.wantParam, groupParam, "ResolveGroup")
+		})
+	}
+}
+
 func TestValidateAttachmentHTTPStatusHandling(t *testing.T) {
 	testCases := []struct {
 		name       string
