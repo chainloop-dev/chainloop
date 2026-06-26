@@ -305,11 +305,6 @@ func (s *crafterSuite) TestLoadSchema() {
 			want:         want,
 		},
 		{
-			name:         "cue",
-			contractPath: "testdata/contracts/empty_github.cue",
-			want:         want,
-		},
-		{
 			name:         "unsupported",
 			contractPath: "testdata/contracts/invalid.xml",
 			wantErr:      true,

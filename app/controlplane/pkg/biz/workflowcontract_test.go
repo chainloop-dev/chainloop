@@ -32,10 +32,6 @@ func TestIdentifyAndValidateRawContract(t *testing.T) {
 		wantFormatErr     bool
 	}{
 		{
-			filename:   "contract.cue",
-			wantFormat: unmarshal.RawFormatCUE,
-		},
-		{
 			filename:   "contract.json",
 			wantFormat: unmarshal.RawFormatJSON,
 		},

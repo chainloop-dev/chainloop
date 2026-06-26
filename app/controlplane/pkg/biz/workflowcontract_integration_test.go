@@ -350,11 +350,6 @@ func (s *workflowContractIntegrationTestSuite) TestCreateWithCustomContract() {
 		format       unmarshal.RawFormat
 	}{
 		{
-			name:         "from-cue",
-			contractPath: "testdata/contracts/contract.cue",
-			format:       unmarshal.RawFormatCUE,
-		},
-		{
 			name:         "from-yaml",
 			contractPath: "testdata/contracts/contract.yaml",
 			format:       unmarshal.RawFormatYAML,

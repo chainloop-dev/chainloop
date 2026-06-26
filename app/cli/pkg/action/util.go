@@ -123,11 +123,6 @@ func extractNameFromMetadata(content []byte) (string, error) {
 		if err != nil {
 			return "", err
 		}
-	case unmarshal.RawFormatCUE:
-		jsonData, err = unmarshal.LoadJSONBytes(content, ".cue")
-		if err != nil {
-			return "", err
-		}
 	default:
 		return "", fmt.Errorf("unsupported format: %s", format)
 	}
