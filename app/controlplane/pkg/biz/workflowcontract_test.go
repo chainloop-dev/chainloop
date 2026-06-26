@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,6 +90,127 @@ func TestIdentifyAndValidateRawContract(t *testing.T) {
 
 			assert.Equal(t, tc.wantFormat, contract.Format)
 			assert.Equal(t, data, contract.Raw)
+		})
+	}
+}
+
+func TestContractRawEqual(t *testing.T) {
+	// v2 contract with 2-space indented sequences, as a user would hand-write it
+	v2TwoSpace := []byte(`apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: my-contract
+spec:
+  materials:
+  - name: my-image
+    type: CONTAINER_IMAGE
+    optional: false
+  - name: source-code
+    type: ARTIFACT
+    optional: true
+  envAllowList:
+  - NODE_ENV
+`)
+
+	// Same semantic contract, but re-indented the way yaml.v3 reflows sequences
+	// (4-space indentation under the key). This mimics what the batch apply path
+	// produces after round-tripping through a yaml.v3 Node.
+	v2Reindented := []byte(`apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+    name: my-contract
+spec:
+    materials:
+        - name: my-image
+          type: CONTAINER_IMAGE
+          optional: false
+        - name: source-code
+          type: ARTIFACT
+          optional: true
+    envAllowList:
+        - NODE_ENV
+`)
+
+	// Same semantic contract expressed as JSON.
+	v2JSON := []byte(`{
+  "apiVersion": "chainloop.dev/v1",
+  "kind": "Contract",
+  "metadata": {"name": "my-contract"},
+  "spec": {
+    "materials": [
+      {"name": "my-image", "type": "CONTAINER_IMAGE", "optional": false},
+      {"name": "source-code", "type": "ARTIFACT", "optional": true}
+    ],
+    "envAllowList": ["NODE_ENV"]
+  }
+}`)
+
+	// A genuine content change: a material type differs.
+	v2Changed := []byte(`apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: my-contract
+spec:
+  materials:
+  - name: my-image
+    type: SBOM_CYCLONEDX_JSON
+    optional: false
+  - name: source-code
+    type: ARTIFACT
+    optional: true
+  envAllowList:
+  - NODE_ENV
+`)
+
+	testCases := []struct {
+		name      string
+		a         []byte
+		b         []byte
+		wantEqual bool
+	}{
+		{
+			name:      "identical bytes",
+			a:         v2TwoSpace,
+			b:         v2TwoSpace,
+			wantEqual: true,
+		},
+		{
+			name:      "same contract, different YAML indentation",
+			a:         v2TwoSpace,
+			b:         v2Reindented,
+			wantEqual: true,
+		},
+		{
+			name:      "same contract, YAML vs JSON",
+			a:         v2TwoSpace,
+			b:         v2JSON,
+			wantEqual: true,
+		},
+		{
+			name:      "genuine content change is detected",
+			a:         v2TwoSpace,
+			b:         v2Changed,
+			wantEqual: false,
+		},
+		{
+			name:      "unparseable input falls back to raw byte comparison (equal)",
+			a:         []byte("not a contract"),
+			b:         []byte("not a contract"),
+			wantEqual: true,
+		},
+		{
+			name:      "unparseable input falls back to raw byte comparison (different)",
+			a:         []byte("not a contract"),
+			b:         []byte("also not a contract"),
+			wantEqual: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.wantEqual, ContractRawEqual(tc.a, tc.b))
+			// equality must be symmetric
+			assert.Equal(t, tc.wantEqual, ContractRawEqual(tc.b, tc.a))
 		})
 	}
 }
