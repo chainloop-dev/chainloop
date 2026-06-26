@@ -385,7 +385,9 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	"/controlplane.v1.IntegrationsService/Attach":          {Policies: []*Policy{PolicyAttachedIntegrationAttach}},
 	"/controlplane.v1.IntegrationsService/Detach":          {Policies: []*Policy{PolicyAttachedIntegrationDetach}},
 	// Metrics
-	"/controlplane.v1.OrgMetricsService/.*": {Policies: []*Policy{PolicyOrgMetricsRead}},
+	"/controlplane.v1.OrgMetricsService/Totals":                  {Policies: []*Policy{PolicyOrgMetricsRead}},
+	"/controlplane.v1.OrgMetricsService/TopWorkflowsByRunsCount": {Policies: []*Policy{PolicyOrgMetricsRead}},
+	"/controlplane.v1.OrgMetricsService/DailyRunsCount":          {Policies: []*Policy{PolicyOrgMetricsRead}},
 	// Robot Account
 	"/controlplane.v1.RobotAccountService/List":   {Policies: []*Policy{PolicyRobotAccountList}},
 	"/controlplane.v1.RobotAccountService/Create": {Policies: []*Policy{PolicyRobotAccountCreate}},

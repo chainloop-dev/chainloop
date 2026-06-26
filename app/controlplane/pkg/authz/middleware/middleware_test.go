@@ -193,20 +193,25 @@ func TestPoliciesLookup(t *testing.T) {
 			operation: "/controlplane.v1.WorkflowContractService/List",
 		},
 		{
-			name:      "operation found with regexp",
-			operation: "/controlplane.v1.OrgMetricsService/List",
+			name:      "org metrics operation found",
+			operation: "/controlplane.v1.OrgMetricsService/Totals",
 		},
 		{
-			name:      "operation found with regexp 2",
+			name:      "org metrics operation found 2",
+			operation: "/controlplane.v1.OrgMetricsService/DailyRunsCount",
+		},
+		{
+			name:      "non-existing org metrics operation, error not found",
 			operation: "/controlplane.v1.OrgMetricsService/boom",
+			wantErr:   true,
 		},
 		{
-			name:      "operation found with regexp, error wrong prefix",
+			name:      "operation error wrong prefix",
 			operation: "/boom/controlplane.v1.OrgMetricsService",
 			wantErr:   true,
 		},
 		{
-			name:      "operation found with regexp, error not found",
+			name:      "operation error not found",
 			operation: "/controlplane.v1.OrgMetricsService",
 			wantErr:   true,
 		},
