@@ -214,6 +214,14 @@ func TestPoliciesLookup(t *testing.T) {
 			name:      "contract apply operation found",
 			operation: "/controlplane.v1.WorkflowContractService/Apply",
 		},
+		{
+			name:      "organization delete membership operation found",
+			operation: "/controlplane.v1.OrganizationService/DeleteMembership",
+		},
+		{
+			name:      "organization update membership operation found",
+			operation: "/controlplane.v1.OrganizationService/UpdateMembership",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -233,4 +241,48 @@ func TestPoliciesLookupContractApply(t *testing.T) {
 	policies, err := policiesLookup("/controlplane.v1.WorkflowContractService/Apply")
 	assert.NoError(t, err)
 	assert.Equal(t, []*authz.Policy{authz.PolicyWorkflowContractCreate, authz.PolicyWorkflowContractUpdate}, policies)
+}
+
+func TestPoliciesLookupDeleteMembership(t *testing.T) {
+	policies, err := policiesLookup("/controlplane.v1.OrganizationService/DeleteMembership")
+	assert.NoError(t, err)
+	assert.Equal(t, []*authz.Policy{authz.PolicyOrganizationMembershipsDelete}, policies)
+}
+
+func TestPoliciesLookupUpdateMembership(t *testing.T) {
+	policies, err := policiesLookup("/controlplane.v1.OrganizationService/UpdateMembership")
+	assert.NoError(t, err)
+	assert.Equal(t, []*authz.Policy{authz.PolicyOrganizationMembershipsUpdate}, policies)
+}
+
+func TestViewerDeniedDeleteMembership(t *testing.T) {
+	logger := log.NewHelper(log.NewStdLogger(io.Discard))
+
+	ctx := context.Background()
+	ctx = usercontext.WithAuthzSubject(ctx, string(authz.RoleViewer))
+	ctx = transport.NewServerContext(ctx, &mockTransport{operation: "/controlplane.v1.OrganizationService/DeleteMembership"})
+
+	e := NewMockEnforcer(t)
+	e.On("Enforce", mock.Anything, string(authz.RoleViewer), authz.PolicyOrganizationMembershipsDelete).Return(false, nil)
+
+	m := WithAuthzMiddleware(e, logger)
+	_, err := m(emptyHandler)(ctx, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsForbidden(err))
+}
+
+func TestViewerDeniedUpdateMembership(t *testing.T) {
+	logger := log.NewHelper(log.NewStdLogger(io.Discard))
+
+	ctx := context.Background()
+	ctx = usercontext.WithAuthzSubject(ctx, string(authz.RoleViewer))
+	ctx = transport.NewServerContext(ctx, &mockTransport{operation: "/controlplane.v1.OrganizationService/UpdateMembership"})
+
+	e := NewMockEnforcer(t)
+	e.On("Enforce", mock.Anything, string(authz.RoleViewer), authz.PolicyOrganizationMembershipsUpdate).Return(false, nil)
+
+	m := WithAuthzMiddleware(e, logger)
+	_, err := m(emptyHandler)(ctx, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsForbidden(err))
 }
