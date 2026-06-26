@@ -160,8 +160,10 @@ var (
 	PolicyOrganizationCreate = &Policy{Organization, ActionCreate}
 	PolicyOrganizationDelete = &Policy{Organization, ActionDelete}
 	// User Membership
-	PolicyOrganizationRead            = &Policy{Organization, ActionRead}
-	PolicyOrganizationListMemberships = &Policy{OrganizationMemberships, ActionList}
+	PolicyOrganizationRead              = &Policy{Organization, ActionRead}
+	PolicyOrganizationListMemberships   = &Policy{OrganizationMemberships, ActionList}
+	PolicyOrganizationMembershipsDelete = &Policy{OrganizationMemberships, ActionDelete}
+	PolicyOrganizationMembershipsUpdate = &Policy{OrganizationMemberships, ActionUpdate}
 
 	// Group Memberships
 	PolicyGroupListPendingInvitations = &Policy{ResourceGroup, ActionList}
@@ -203,6 +205,8 @@ var RolesMap = map[Role][]*Policy{
 	RoleOwner: {
 		PolicyOrganizationDelete,
 		PolicyOrganizationManageOwners,
+		PolicyOrganizationMembershipsDelete,
+		PolicyOrganizationMembershipsUpdate,
 	},
 	// RoleAdmin is an org-scoped role that provides super admin privileges (it's the higher role)
 	RoleAdmin: {
@@ -213,6 +217,8 @@ var RolesMap = map[Role][]*Policy{
 		PolicyOrganizationInvitationsCreate,
 		// Being able to read from the default backend
 		PolicyDefaultBackendArtifactRead,
+		PolicyOrganizationMembershipsDelete,
+		PolicyOrganizationMembershipsUpdate,
 		// + all the policies from the viewer role inherited automatically
 	},
 	// RoleViewer is an org-scoped role that provides read-only access to all resources
@@ -417,7 +423,9 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	"/controlplane.v1.OrganizationService/Delete": {},
 
 	// List global memberships
-	"/controlplane.v1.OrganizationService/ListMemberships": {Policies: []*Policy{PolicyOrganizationListMemberships}},
+	"/controlplane.v1.OrganizationService/ListMemberships":  {Policies: []*Policy{PolicyOrganizationListMemberships}},
+	"/controlplane.v1.OrganizationService/DeleteMembership": {Policies: []*Policy{PolicyOrganizationMembershipsDelete}},
+	"/controlplane.v1.OrganizationService/UpdateMembership": {Policies: []*Policy{PolicyOrganizationMembershipsUpdate}},
 
 	// NOTE: this is about listing my own memberships, not about listing all the memberships in the organization
 	"/controlplane.v1.UserService/ListMemberships": {},
