@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sigcheck_test
+package tabular_test
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/sigcheck"
+	"github.com/chainloop-dev/chainloop/pkg/tabular"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -89,26 +89,26 @@ func TestParse(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			report, err := sigcheck.Parse(tc.raw)
+			table, err := tabular.Parse(tc.raw)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tc.wantHeader, report.Header)
-			assert.Len(t, report.Rows, tc.wantRows)
+			assert.Equal(t, tc.wantHeader, table.Header)
+			assert.Len(t, table.Rows, tc.wantRows)
 			for k, v := range tc.wantFirst {
-				assert.Equal(t, v, report.Rows[0][k])
+				assert.Equal(t, v, table.Rows[0][k])
 			}
 		})
 	}
 }
 
-func TestReportJSON(t *testing.T) {
-	report, err := sigcheck.Parse([]byte("Path,Verified\nc:\\a.dll,Signed\n"))
+func TestTableJSON(t *testing.T) {
+	table, err := tabular.Parse([]byte("Path,Verified\nc:\\a.dll,Signed\n"))
 	require.NoError(t, err)
 
-	out, err := report.JSON()
+	out, err := table.JSON()
 	require.NoError(t, err)
 
 	var rows []map[string]string
@@ -117,21 +117,35 @@ func TestReportJSON(t *testing.T) {
 	assert.Equal(t, "Signed", rows[0][colVerified])
 }
 
-func TestReportJSONEmptyIsArray(t *testing.T) {
-	report, err := sigcheck.Parse([]byte("Path,Verified\n"))
+func TestTableJSONEmptyIsArray(t *testing.T) {
+	table, err := tabular.Parse([]byte("Path,Verified\n"))
 	require.NoError(t, err)
 
-	out, err := report.JSON()
+	out, err := table.JSON()
 	require.NoError(t, err)
 	assert.Equal(t, "[]", string(out))
 }
 
 func TestHasColumns(t *testing.T) {
-	report, err := sigcheck.Parse([]byte("Path,Verified,Company\nc:\\a.dll,Signed,MS\n"))
+	table, err := tabular.Parse([]byte("Path,Verified,Company\nc:\\a.dll,Signed,MS\n"))
 	require.NoError(t, err)
 
-	assert.True(t, report.HasColumns(colPath, colVerified))
-	assert.False(t, report.HasColumns(colPath, "Nonexistent"))
+	assert.True(t, table.HasColumns(colPath, colVerified))
+	assert.False(t, table.HasColumns(colPath, "Nonexistent"))
+}
+
+func TestColumn(t *testing.T) {
+	table, err := tabular.Parse([]byte("Path,Verified\nc:\\a.dll,Signed\n,Unsigned\nc:\\b.dll,Signed\n"))
+	require.NoError(t, err)
+
+	// Case-insensitive match, empty cells dropped.
+	values, ok := table.Column("path")
+	require.True(t, ok)
+	assert.Equal(t, []string{"c:\\a.dll", "c:\\b.dll"}, values)
+
+	// Missing column reports not found.
+	_, ok = table.Column("Nonexistent")
+	assert.False(t, ok)
 }
 
 // utf16LE encodes s as UTF-16 little-endian with a BOM, mimicking PowerShell redirection.

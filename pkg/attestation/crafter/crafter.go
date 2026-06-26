@@ -561,10 +561,29 @@ func (c *Crafter) resolveRunnerInfo() {
 	}
 }
 
+// AddOpt customizes a material add operation.
+type AddOpt func(*addOpts)
+
+type addOpts struct {
+	// runtimeInputs holds policy input values supplied at runtime (e.g. sourced
+	// from a file via --policy-input-from-file). They are merged additively onto
+	// the contract arguments when evaluating the standalone material policies.
+	runtimeInputs map[string]string
+}
+
+// WithRuntimeInputs supplies policy input values that are merged additively onto
+// the contract arguments when evaluating the standalone material policies for
+// this add. Used by --policy-input-from-file.
+func WithRuntimeInputs(inputs map[string]string) AddOpt {
+	return func(o *addOpts) {
+		o.runtimeInputs = inputs
+	}
+}
+
 // AddMaterialContractFree adds a material to the crafting state without checking the contract schema.
 // This is useful for adding materials that are not defined in the schema.
 // The name of the material is automatically calculated to conform the API contract if not provided.
-func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, kind, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
+func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, kind, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
 	if err := c.requireStateLoaded(); err != nil {
 		return nil, fmt.Errorf("adding materials outisde the contract: %w", err)
 	}
@@ -585,12 +604,12 @@ func (c *Crafter) AddMaterialContractFree(ctx context.Context, attestationID, ki
 	}
 
 	// 3 - Craft resulting material
-	return c.addMaterial(ctx, &m, attestationID, value, casBackend, runtimeAnnotations)
+	return c.addMaterial(ctx, &m, attestationID, value, casBackend, runtimeAnnotations, opts...)
 }
 
 // AddMaterialFromContract adds a material to the crafting state checking the incoming materials is
 // in the schema and has not been set yet
-func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
+func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, key, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
 	if err := c.requireStateLoaded(); err != nil {
 		return nil, fmt.Errorf("adding materials outisde from contract: %w", err)
 	}
@@ -613,7 +632,7 @@ func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, ke
 	}
 
 	// 3 - Craft resulting material
-	return c.addMaterial(ctx, m, attestationID, value, casBackend, runtimeAnnotations)
+	return c.addMaterial(ctx, m, attestationID, value, casBackend, runtimeAnnotations, opts...)
 }
 
 // IsMaterialInContract checks if the material is in the contract schema
@@ -633,10 +652,10 @@ func (c *Crafter) IsMaterialInContract(key string) bool {
 
 // AddMaterialContactFreeWithAutoDetectedKind adds a material to the crafting state checking the incoming material matches any of the
 // supported types in validation order. If the material is not found it will return an error.
-func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
+func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context, attestationID, name, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
 	var err error
 	for _, kind := range schemaapi.CraftingMaterialInValidationOrder {
-		m, err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations)
+		m, err := c.AddMaterialContractFree(ctx, attestationID, kind.String(), name, value, casBackend, runtimeAnnotations, opts...)
 		if err == nil {
 			// Successfully added material, return the kind
 			return m, nil
@@ -662,7 +681,12 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 }
 
 // addMaterials adds the incoming material m to the crafting state
-func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string) (*api.Attestation_Material, error) {
+func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
+	addOptions := &addOpts{}
+	for _, opt := range opts {
+		opt(addOptions)
+	}
+
 	// 3- Craft resulting material
 	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger, &materials.CraftingOpts{
 		NoStrictValidation: c.noStrictValidation,
@@ -731,7 +755,9 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	// log group policy violations
 	policies.LogPolicyEvaluations(policyGroupResults, c.Logger)
 
-	// Validate policies
+	// Validate policies. Runtime-supplied inputs (e.g. from
+	// --policy-input-from-file) are merged additively onto contract arguments;
+	// policy groups deliberately do not receive them.
 	pv := policies.NewPolicyVerifier(
 		c.CraftingState.GetPolicies(),
 		c.attClient,
@@ -739,6 +765,7 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithProjectContext(projectName, projectVersion),
+		policies.WithRuntimeInputs(addOptions.runtimeInputs),
 	)
 	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
 	if err != nil {

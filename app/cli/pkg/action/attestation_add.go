@@ -19,10 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"google.golang.org/grpc"
 )
@@ -77,11 +80,18 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string) (*AttestationStatusMaterial, error) {
+func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string, policyInputFiles []*PolicyInputFromFile) (*AttestationStatusMaterial, error) {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
 	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
+	}
+
+	// Resolve runtime policy inputs from the provided files before adding the
+	// material, so a malformed file aborts the add early.
+	runtimeInputs, err := buildRuntimeInputs(policyInputFiles)
+	if err != nil {
+		return nil, err
 	}
 
 	if initialized, err := crafter.AlreadyInitialized(ctx, attestationID); err != nil {
@@ -120,10 +130,12 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	// 2. If materialName is not empty, check if the material is in the contract. If it is, add material from contract
 	// 2.1. If materialType is empty, try to guess the material kind with auto-detected kind and materialName
 	// 3. If materialType is not empty, add material contract free with materialType and materialName
+	addOpts := runtimeInputAddOpts(runtimeInputs)
+
 	var mt *api.Attestation_Material
 	switch {
 	case materialName == "" && materialType == "":
-		mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, "", materialValue, casBackend, annotations)
+		mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, "", materialValue, casBackend, annotations, addOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("adding material: %w", err)
 		}
@@ -132,24 +144,30 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		switch {
 		// If the material is in the contract, add it from the contract
 		case crafter.IsMaterialInContract(materialName):
-			mt, err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+			mt, err = crafter.AddMaterialFromContract(ctx, attestationID, materialName, materialValue, casBackend, annotations, addOpts...)
 		// If the material is not in the contract and the materialType is not provided, add material contract free with auto-detected kind, guessing the kind
 		case materialType == "":
-			mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, materialName, materialValue, casBackend, annotations)
+			mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, materialName, materialValue, casBackend, annotations, addOpts...)
 			if err != nil {
 				return nil, fmt.Errorf("adding material: %w", err)
 			}
 			action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 		// If the material is not in the contract and has a materialType, add material contract free with the provided materialType
 		default:
-			mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
+			mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations, addOpts...)
 		}
 	default:
-		mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations)
+		mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations, addOpts...)
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("adding material: %w", err)
+	}
+
+	// Record each source file as an EVIDENCE material, cross-linked to the
+	// evaluated material so the exemption set itself is attested.
+	if err := action.addPolicyInputEvidence(ctx, crafter, attestationID, mt.GetId(), policyInputFiles, casBackend); err != nil {
+		return nil, fmt.Errorf("recording policy input evidence: %w", err)
 	}
 
 	materialResult, err := attMaterialToAction(mt)
@@ -158,6 +176,88 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 
 	return materialResult, nil
+}
+
+// runtimeInputAddOpts wraps the runtime inputs as crafter add options, or
+// returns nil when there are none. Defined at package scope so it can name the
+// crafter package type (the Run method shadows it with a local variable).
+func runtimeInputAddOpts(runtimeInputs map[string]string) []crafter.AddOpt {
+	if len(runtimeInputs) == 0 {
+		return nil
+	}
+	return []crafter.AddOpt{crafter.WithRuntimeInputs(runtimeInputs)}
+}
+
+// buildRuntimeInputs reads each policy input file and returns a map of policy
+// input name to its extracted values, ready to be merged onto contract
+// arguments. Values are newline-joined, matching the engine's existing
+// multi-value encoding (it splits inputs back on newlines and commas). As with
+// contract-declared arguments, individual values must not embed those
+// delimiters; path globs, the intended use, never do.
+func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile) (map[string]string, error) {
+	if len(policyInputFiles) == 0 {
+		return nil, nil
+	}
+
+	runtimeInputs := make(map[string]string, len(policyInputFiles))
+	for _, pif := range policyInputFiles {
+		values, err := ExtractColumnValues(pif.File, pif.Column)
+		if err != nil {
+			return nil, fmt.Errorf("extracting %q from %q: %w", pif.Column, pif.File, err)
+		}
+		joined := strings.Join(values, "\n")
+		if existing := runtimeInputs[pif.Input]; existing != "" {
+			runtimeInputs[pif.Input] = existing + "\n" + joined
+		} else {
+			runtimeInputs[pif.Input] = joined
+		}
+	}
+
+	return runtimeInputs, nil
+}
+
+// addPolicyInputEvidence adds each policy input file as an EVIDENCE material,
+// linked back to the evaluated material via the chainloop.material.references
+// annotation. The evidence material name is derived as "<material>-<input>";
+// when the same input is fed by more than one file, a "-<n>" suffix keeps the
+// names unique so no evidence record is silently overwritten.
+func (action *AttestationAdd) addPolicyInputEvidence(ctx context.Context, c *crafter.Crafter, attestationID, materialName string, policyInputFiles []*PolicyInputFromFile, casBackend *casclient.CASBackend) error {
+	names := policyInputEvidenceNames(materialName, policyInputFiles)
+	for i, pif := range policyInputFiles {
+		annotations := map[string]string{
+			materials.AnnotationMaterialReferences: materialName,
+		}
+
+		if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_EVIDENCE.String(), names[i], pif.File, casBackend, annotations); err != nil {
+			return fmt.Errorf("adding evidence material %q: %w", names[i], err)
+		}
+	}
+
+	return nil
+}
+
+// policyInputEvidenceNames returns the evidence material name for each policy
+// input file, in order. Names are "<material>-<input>"; when the same input is
+// fed by more than one file, a "-<n>" suffix keeps them unique so no evidence
+// record is silently overwritten in the attestation.
+func policyInputEvidenceNames(materialName string, policyInputFiles []*PolicyInputFromFile) []string {
+	inputCount := make(map[string]int, len(policyInputFiles))
+	for _, pif := range policyInputFiles {
+		inputCount[pif.Input]++
+	}
+
+	names := make([]string, len(policyInputFiles))
+	seen := make(map[string]int, len(policyInputFiles))
+	for i, pif := range policyInputFiles {
+		name := fmt.Sprintf("%s-%s", materialName, pif.Input)
+		if inputCount[pif.Input] > 1 {
+			seen[pif.Input]++
+			name = fmt.Sprintf("%s-%d", name, seen[pif.Input])
+		}
+		names[i] = name
+	}
+
+	return names
 }
 
 // GetPolicyEvaluations is a Wrapper around the getPolicyEvaluations

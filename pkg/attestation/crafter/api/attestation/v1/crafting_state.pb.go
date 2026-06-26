@@ -474,9 +474,14 @@ type PolicyEvaluation struct {
 	// Raw inputs and outputs from the policy engine, preserved for debugging.
 	RawResults []*PolicyEvaluation_RawResult `protobuf:"bytes,18,rep,name=raw_results,json=rawResults,proto3" json:"raw_results,omitempty"`
 	// Whether the policy evaluation result should block the attestation (inherited from the policy attachment)
-	Gate          bool `protobuf:"varint,19,opt,name=gate,proto3" json:"gate,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Gate bool `protobuf:"varint,19,opt,name=gate,proto3" json:"gate,omitempty"`
+	// Names of policy inputs whose values were supplied or overridden at runtime
+	// (e.g. via --policy-input-from-file) rather than coming solely from the
+	// contract. The effective merged values live in `with`; this only records
+	// which input names were touched at runtime. Empty means no runtime override.
+	RuntimeInputOverrides []string `protobuf:"bytes,20,rep,name=runtime_input_overrides,json=runtimeInputOverrides,proto3" json:"runtime_input_overrides,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *PolicyEvaluation) Reset() {
@@ -636,6 +641,13 @@ func (x *PolicyEvaluation) GetGate() bool {
 		return x.Gate
 	}
 	return false
+}
+
+func (x *PolicyEvaluation) GetRuntimeInputOverrides() []string {
+	if x != nil {
+		return x.RuntimeInputOverrides
+	}
+	return nil
 }
 
 // Bundle of all policy evaluations for an attestation, stored as a CAS object.
@@ -2903,7 +2915,7 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\venvironment\x18\x02 \x01(\tR\venvironment\x12$\n" +
 	"\rauthenticated\x18\x03 \x01(\bR\rauthenticated\x12I\n" +
 	"\x04type\x18\x04 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeR\x04type\x12\x10\n" +
-	"\x03url\x18\x05 \x01(\tR\x03url\"\xb4\x0e\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\"\xec\x0e\n" +
 	"\x10PolicyEvaluation\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12#\n" +
@@ -2927,7 +2939,8 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\frequirements\x18\x11 \x03(\tR\frequirements\x12K\n" +
 	"\vraw_results\x18\x12 \x03(\v2*.attestation.v1.PolicyEvaluation.RawResultR\n" +
 	"rawResults\x12\x12\n" +
-	"\x04gate\x18\x13 \x01(\bR\x04gate\x1a>\n" +
+	"\x04gate\x18\x13 \x01(\bR\x04gate\x126\n" +
+	"\x17runtime_input_overrides\x18\x14 \x03(\tR\x15runtimeInputOverrides\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
