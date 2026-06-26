@@ -270,3 +270,19 @@ func TestViewerDeniedDeleteMembership(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, errors.IsForbidden(err))
 }
+
+func TestViewerDeniedUpdateMembership(t *testing.T) {
+	logger := log.NewHelper(log.NewStdLogger(io.Discard))
+
+	ctx := context.Background()
+	ctx = usercontext.WithAuthzSubject(ctx, string(authz.RoleViewer))
+	ctx = transport.NewServerContext(ctx, &mockTransport{operation: "/controlplane.v1.OrganizationService/UpdateMembership"})
+
+	e := NewMockEnforcer(t)
+	e.On("Enforce", mock.Anything, string(authz.RoleViewer), authz.PolicyOrganizationMembershipsUpdate).Return(false, nil)
+
+	m := WithAuthzMiddleware(e, logger)
+	_, err := m(emptyHandler)(ctx, nil)
+	assert.Error(t, err)
+	assert.True(t, errors.IsForbidden(err))
+}
