@@ -48,15 +48,6 @@ spec:
     {"name": "b", "type": "ARTIFACT", "group": "choice"}
   ]}
 }`)
-	cueContract := []byte(`apiVersion: "chainloop.dev/v1"
-kind: "Contract"
-metadata: name: "test-contract"
-spec: materials: [
-	{name: "a", type: "ARTIFACT", group: "choice"},
-	{name: "b", type: "ARTIFACT", group: "choice"},
-]
-`)
-
 	formats := []struct {
 		name   string
 		format RawFormat
@@ -64,7 +55,6 @@ spec: materials: [
 	}{
 		{"yaml", RawFormatYAML, yamlContract},
 		{"json", RawFormatJSON, jsonContract},
-		{"cue", RawFormatCUE, cueContract},
 	}
 
 	t.Run("group round-trips", func(t *testing.T) {
@@ -124,10 +114,6 @@ func TestIdentifyFormat(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			filename:   "contract.cue",
-			wantFormat: RawFormatCUE,
-		},
-		{
 			filename:   "contract.json",
 			wantFormat: RawFormatJSON,
 		},
@@ -165,4 +151,28 @@ func TestIdentifyFormat(t *testing.T) {
 			assert.Equal(t, tt.wantFormat, format)
 		})
 	}
+}
+
+// TestCUEIsRejected locks in the removal of CUE support: the DoS payload from the
+// security finding (a tiny CUE document whose evaluation is unbounded) must be
+// rejected immediately, without ever being compiled or evaluated.
+func TestCUEIsRejected(t *testing.T) {
+	// ~55-byte CUE bomb: evaluating it used to allocate a multi-million-element list.
+	cuePayload := []byte("import \"list\"\na: [for x in list.Range(0,1000000,1) {x}]\n")
+
+	t.Run("IdentifyFormat no longer detects CUE", func(t *testing.T) {
+		_, err := IdentifyFormat(cuePayload)
+		require.Error(t, err)
+	})
+
+	t.Run("FromRaw rejects the CUE format", func(t *testing.T) {
+		out := &schemav1.CraftingSchemaV2{}
+		err := FromRaw(cuePayload, RawFormatCUE, out, false)
+		require.ErrorIs(t, err, errCUENotSupported)
+	})
+
+	t.Run("LoadJSONBytes rejects .cue", func(t *testing.T) {
+		_, err := LoadJSONBytes(cuePayload, ".cue")
+		require.ErrorIs(t, err, errCUENotSupported)
+	})
 }
