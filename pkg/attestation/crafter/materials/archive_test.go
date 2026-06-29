@@ -18,8 +18,10 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -99,4 +101,51 @@ func mustRead(t *testing.T, p string) []byte {
 	b, err := os.ReadFile(p)
 	require.NoError(t, err)
 	return b
+}
+
+func TestWalkArchiveEntries(t *testing.T) {
+	dir := t.TempDir()
+
+	t.Run("yields regular files, skips dirs", func(t *testing.T) {
+		// Build a zip with a directory entry + two files.
+		p := filepath.Join(dir, "files.zip")
+		f, err := os.Create(p)
+		require.NoError(t, err)
+		zw := zip.NewWriter(f)
+		_, err = zw.Create("nested/") // directory entry
+		require.NoError(t, err)
+		for _, n := range []string{"a.json", "nested/b.json"} {
+			w, err := zw.Create(n)
+			require.NoError(t, err)
+			_, err = w.Write([]byte("{}"))
+			require.NoError(t, err)
+		}
+		require.NoError(t, zw.Close())
+		require.NoError(t, f.Close())
+
+		var got []string
+		err = WalkArchiveEntries(p, ArchiveZip, DefaultArchiveLimits(), func(name string, r io.Reader) error {
+			b, _ := io.ReadAll(r)
+			assert.Equal(t, "{}", string(b))
+			got = append(got, name)
+			return nil
+		})
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{"a.json", "nested/b.json"}, got)
+	})
+
+	t.Run("max entries exceeded", func(t *testing.T) {
+		p := writeTarGz(t, dir, "many.tar.gz", map[string]string{"a": "1", "b": "2", "c": "3"})
+		err := WalkArchiveEntries(p, ArchiveTarGz, ArchiveLimits{MaxEntries: 2, MaxTotalSize: 1 << 30}, func(string, io.Reader) error { return nil })
+		require.ErrorIs(t, err, ErrTooManyEntries)
+	})
+
+	t.Run("max total size exceeded while streaming", func(t *testing.T) {
+		p := writeTarGz(t, dir, "big.tar.gz", map[string]string{"a": strings.Repeat("x", 1000)})
+		err := WalkArchiveEntries(p, ArchiveTarGz, ArchiveLimits{MaxEntries: 100, MaxTotalSize: 100}, func(_ string, r io.Reader) error {
+			_, err := io.ReadAll(r)
+			return err
+		})
+		require.ErrorIs(t, err, ErrArchiveTooLarge)
+	})
 }
