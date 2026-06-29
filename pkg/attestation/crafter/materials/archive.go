@@ -154,7 +154,17 @@ func WalkArchiveEntries(path string, format ArchiveFormat, limits ArchiveLimits,
 // safeArchivePath rejects absolute paths and any path that escapes the
 // extraction root via "..".
 func safeArchivePath(name string) bool {
-	clean := path.Clean("/" + strings.ReplaceAll(name, "\\", "/"))
+	normalized := strings.ReplaceAll(name, "\\", "/")
+	// Reject absolute paths
+	if strings.HasPrefix(normalized, "/") {
+		return false
+	}
+	// Reject any path containing ".." which could escape the root
+	if strings.Contains(normalized, "..") {
+		return false
+	}
+	// Further validation: ensure no traversal after normalization
+	clean := path.Clean("/" + normalized)
 	return !strings.Contains(clean, "/../") && clean != "/.."
 }
 
