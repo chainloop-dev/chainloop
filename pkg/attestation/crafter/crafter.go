@@ -889,9 +889,10 @@ func (c *Crafter) AddMaterialsFromArchive(
 		base := filepath.Base(name)
 		matName := allocator.Allocate(namePrefix, base)
 
-		// Write the entry to a temp file named after the entry basename so
-		// material crafters can identify it by name when opening it by path.
-		tmpPath := filepath.Join(tmpDir, filepath.Base(name))
+		// Use the allocated unique material name for the temp file so that two
+		// archive entries with the same basename (e.g. "a/x.json" and "b/x.json")
+		// never collide in the shared tmpDir.
+		tmpPath := filepath.Join(tmpDir, matName)
 		tmp, err := os.Create(tmpPath)
 		if err != nil {
 			return fmt.Errorf("creating temp file for entry %q: %w", name, err)
@@ -910,6 +911,9 @@ func (c *Crafter) AddMaterialsFromArchive(
 		}
 
 		mt, err := c.stageMaterial(ctx, m, tmpPath, casBackend, runtimeAnnotations, opts...)
+		// Remove the temp file immediately after staging to keep disk usage bounded;
+		// the deferred os.RemoveAll(tmpDir) is the safety net.
+		os.Remove(tmpPath) //nolint:errcheck // best-effort cleanup
 		if err != nil {
 			return fmt.Errorf("staging entry %q as material %q: %w", name, matName, err)
 		}

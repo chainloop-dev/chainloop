@@ -62,6 +62,10 @@ func TestShouldExplode(t *testing.T) {
 		{"archive-native kind", "ZAP_DAST_ZIP", zipPath, false},
 		{"no kind", "", zipPath, false},
 		{"kind + non-archive", "ARTIFACT", plainPath, false},
+		// Non-file values must never return an error — STRING and CONTAINER_IMAGE
+		// carry values that are not file paths at all.
+		{"kind STRING non-file value", "STRING", "hello world", false},
+		{"kind CONTAINER_IMAGE non-file value", "CONTAINER_IMAGE", "registry.example.com/app:v1", false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
