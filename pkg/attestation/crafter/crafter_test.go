@@ -672,6 +672,73 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 	}
 }
 
+func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
+	const zipFixture = "testdata/two-files.zip"
+
+	s.Run("happy path: two files produce two materials", func() {
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), "testdata/contracts/empty_generic.yaml", &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		// Nil uploader causes inline storage — no network required.
+		backend := &casclient.CASBackend{}
+
+		mts, err := c.AddMaterialsFromArchive(
+			context.Background(),
+			"",
+			"ARTIFACT",
+			"entry",
+			zipFixture,
+			materials.ArchiveZip,
+			backend,
+			nil,
+			materials.DefaultArchiveLimits(),
+		)
+
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 2)
+
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Len(s.T(), stateMap, 2)
+
+		// Both derived names must be present (sanitized base names with prefix).
+		_, hasAlpha := stateMap["entry-alpha-txt"]
+		_, hasBeta := stateMap["entry-beta-txt"]
+		assert.True(s.T(), hasAlpha, "expected material entry-alpha-txt in state")
+		assert.True(s.T(), hasBeta, "expected material entry-beta-txt in state")
+	})
+
+	s.Run("atomicity: over-tight limit leaves state empty", func() {
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), "testdata/contracts/empty_generic.yaml", &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		backend := &casclient.CASBackend{}
+
+		// MaxEntries:1 causes ErrTooManyEntries after the second entry.
+		tightLimits := materials.ArchiveLimits{MaxEntries: 1, MaxTotalSize: 1 << 30}
+
+		_, err = c.AddMaterialsFromArchive(
+			context.Background(),
+			"",
+			"ARTIFACT",
+			"entry",
+			zipFixture,
+			materials.ArchiveZip,
+			backend,
+			nil,
+			tightLimits,
+		)
+
+		require.Error(s.T(), err)
+		assert.ErrorIs(s.T(), err, materials.ErrTooManyEntries)
+
+		// Atomicity: no materials must have been committed.
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Empty(s.T(), stateMap, "state must be empty after a failed archive expansion")
+	})
+}
+
 func loadSchema(path string) (*schemaapi.CraftingSchema, error) {
 	// Extract json formatted data
 	content, err := os.ReadFile(filepath.Clean(path))
