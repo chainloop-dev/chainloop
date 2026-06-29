@@ -246,7 +246,7 @@ func (db *vaultInstance) ConnectionString(t *testing.T) string {
 	p, err := db.instance.MappedPort(ctx, "8200")
 	assert.NoError(t, err)
 
-	return fmt.Sprintf("http://0.0.0.0:%d", p.Int())
+	return fmt.Sprintf("http://0.0.0.0:%d", p.Num())
 }
 
 type vaultInstance struct {
