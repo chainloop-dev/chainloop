@@ -90,6 +90,8 @@ var (
 	// ErrArchiveTooLarge is returned when the running uncompressed size of an
 	// archive exceeds the configured maximum.
 	ErrArchiveTooLarge = errors.New("archive exceeds the maximum uncompressed size")
+	// ErrUnsafeEntry is returned when an archive entry's path is absolute or escapes the extraction root.
+	ErrUnsafeEntry = errors.New("unsafe entry path in archive")
 )
 
 // ArchiveLimits bounds archive expansion to guard against zip bombs.
@@ -129,7 +131,7 @@ func WalkArchiveEntries(path string, format ArchiveFormat, limits ArchiveLimits,
 	count := 0
 	visit := func(name string, size int64, r io.Reader) error {
 		if !safeArchivePath(name) {
-			return fmt.Errorf("unsafe entry path %q in archive", name)
+			return fmt.Errorf("%w: %q", ErrUnsafeEntry, name)
 		}
 		count++
 		if count > limits.MaxEntries {
