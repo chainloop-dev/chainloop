@@ -19,9 +19,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"net/url"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -823,6 +825,114 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 
 	c.Logger.Debug().Str("key", m.Name).Msg("added to state")
 	return mt, nil
+}
+
+// AddMaterialsFromArchive expands an archive and stages every entry as an
+// independent material, committing all of them atomically in a single
+// stateManager.Write call. If any entry fails, no state is persisted and the
+// in-memory materials map is rolled back.
+//
+// Parameters:
+//   - kind: the material type string for every entry (must be a valid
+//     CraftingSchema_Material_MaterialType name).
+//   - namePrefix: optional prefix prepended to each derived entry name.
+//   - archivePath: path to the archive on disk.
+//   - format: archive format (ArchiveZip / ArchiveTar / ArchiveTarGz).
+//   - limits: guard against zip-bomb expansion.
+func (c *Crafter) AddMaterialsFromArchive(
+	ctx context.Context,
+	attestationID, kind, namePrefix, archivePath string,
+	format materials.ArchiveFormat,
+	casBackend *casclient.CASBackend,
+	runtimeAnnotations map[string]string,
+	limits materials.ArchiveLimits,
+	opts ...AddOpt,
+) ([]*api.Attestation_Material, error) {
+	if err := c.requireStateLoaded(); err != nil {
+		return nil, fmt.Errorf("adding materials from archive: %w", err)
+	}
+
+	// Validate kind up front so we fail fast before touching disk.
+	kindVal, found := schemaapi.CraftingSchema_Material_MaterialType_value[kind]
+	if !found {
+		return nil, fmt.Errorf("%q kind not found. Available options are %q", kind, schemaapi.ListAvailableMaterialKind())
+	}
+	materialKind := schemaapi.CraftingSchema_Material_MaterialType(kindVal)
+
+	// Seed the name allocator with existing material keys so we never collide.
+	existingKeys := make([]string, 0, len(c.CraftingState.Attestation.GetMaterials()))
+	for k := range c.CraftingState.Attestation.GetMaterials() {
+		existingKeys = append(existingKeys, k)
+	}
+	allocator := materials.NewNameAllocator(existingKeys)
+
+	// Create a temporary directory for per-entry files; cleaned up on return.
+	tmpDir, err := os.MkdirTemp("", "chainloop-archive-*")
+	if err != nil {
+		return nil, fmt.Errorf("creating temp dir for archive expansion: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Track which material names we staged so we can roll back on error.
+	var stagedNames []string
+	var result []*api.Attestation_Material
+
+	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
+		base := filepath.Base(name)
+		matName := allocator.Allocate(namePrefix, base)
+
+		// Write the entry to a temp file so material crafters can open it by path.
+		tmp, err := os.CreateTemp(tmpDir, "entry-*")
+		if err != nil {
+			return fmt.Errorf("creating temp file for entry %q: %w", name, err)
+		}
+		tmpPath := tmp.Name()
+
+		if _, err := io.Copy(tmp, r); err != nil {
+			tmp.Close()
+			return fmt.Errorf("writing entry %q to temp file: %w", name, err)
+		}
+		tmp.Close()
+
+		m := &schemaapi.CraftingSchema_Material{
+			Optional: true,
+			Type:     materialKind,
+			Name:     matName,
+		}
+
+		mt, err := c.stageMaterial(ctx, m, tmpPath, casBackend, runtimeAnnotations, opts...)
+		if err != nil {
+			return fmt.Errorf("staging entry %q as material %q: %w", name, matName, err)
+		}
+
+		stagedNames = append(stagedNames, matName)
+		result = append(result, mt)
+		return nil
+	})
+
+	if walkErr != nil {
+		// Roll back any in-memory staging: remove the material map entries we just added.
+		for _, n := range stagedNames {
+			delete(c.CraftingState.Attestation.Materials, n)
+		}
+		return nil, fmt.Errorf("expanding archive %q: %w", archivePath, walkErr)
+	}
+
+	if len(result) == 0 {
+		return nil, fmt.Errorf("archive %q contains no processable entries", archivePath)
+	}
+
+	// All entries staged successfully; persist once.
+	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
+		// Roll back in-memory state.
+		for _, n := range stagedNames {
+			delete(c.CraftingState.Attestation.Materials, n)
+		}
+		return nil, fmt.Errorf("failed to persist crafting state: %w", err)
+	}
+
+	c.Logger.Debug().Int("count", len(result)).Str("archive", archivePath).Msg("added archive materials to state")
+	return result, nil
 }
 
 // projectContext returns the project name and version from the workflow
