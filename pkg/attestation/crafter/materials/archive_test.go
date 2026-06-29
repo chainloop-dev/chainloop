@@ -148,4 +148,43 @@ func TestWalkArchiveEntries(t *testing.T) {
 		})
 		require.ErrorIs(t, err, ErrArchiveTooLarge)
 	})
+
+	t.Run("rejects traversal via tar with .. entries", func(t *testing.T) {
+		// tar allows .. in header, so we can test via tar.
+		p := filepath.Join(dir, "evil.tar.gz")
+		f, err := os.Create(p)
+		require.NoError(t, err)
+		gw := gzip.NewWriter(f)
+		tw := tar.NewWriter(gw)
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: "../escape.txt", Mode: 0o600, Size: 1, Typeflag: tar.TypeReg}))
+		_, err = tw.Write([]byte("x"))
+		require.NoError(t, err)
+		require.NoError(t, tw.Close())
+		require.NoError(t, gw.Close())
+		require.NoError(t, f.Close())
+
+		err = WalkArchiveEntries(p, ArchiveTarGz, DefaultArchiveLimits(), func(string, io.Reader) error { return nil })
+		require.Error(t, err, "entry ../escape.txt must be rejected")
+	})
+}
+
+func TestSafeArchivePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"absolute path", "/etc/passwd", false},
+		{"path traversal", "../escape.txt", false},
+		{"nested path traversal", "foo/../../../etc/passwd", false},
+		{"valid nested path", "a/b.txt", true},
+		{"valid simple path", "file.txt", true},
+		{"valid with subdirs", "nested/dir/file.txt", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := safeArchivePath(tc.path)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
