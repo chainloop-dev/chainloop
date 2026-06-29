@@ -61,7 +61,11 @@ func DetectArchive(path string) (ArchiveFormat, error) {
 func detectByMagic(path string) (ArchiveFormat, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return ArchiveNone, fmt.Errorf("opening %q: %w", path, err)
+		// If the file doesn't exist, the value is not a file path at all (e.g.
+		// "hello world" for STRING or "registry/app:v1" for CONTAINER_IMAGE).
+		// Treat it as a non-archive rather than propagating the error so callers
+		// that pass non-file values are not surprised.
+		return ArchiveNone, nil
 	}
 	defer f.Close()
 
@@ -156,20 +160,23 @@ func WalkArchiveEntries(path string, format ArchiveFormat, limits ArchiveLimits,
 }
 
 // safeArchivePath rejects absolute paths and any path that escapes the
-// extraction root via "..".
+// extraction root via ".." path components. A filename that merely contains
+// ".." as a substring (e.g. "foo..bar.json") is accepted; only actual path
+// components equal to ".." are rejected.
 func safeArchivePath(name string) bool {
 	normalized := strings.ReplaceAll(name, "\\", "/")
-	// Reject absolute paths
+	// Reject absolute paths.
 	if strings.HasPrefix(normalized, "/") {
 		return false
 	}
-	// Reject any path containing ".." which could escape the root
-	if strings.Contains(normalized, "..") {
-		return false
-	}
-	// Further validation: ensure no traversal after normalization
-	clean := path.Clean("/" + normalized)
-	return !strings.Contains(clean, "/../") && clean != "/.."
+	// Canonicalise against a virtual root and check that the result stays
+	// within it. path.Clean will resolve ".." components so a path like
+	// "a/../../etc/passwd" becomes "/etc/passwd" which does not start with
+	// the virtual prefix "/root/"; a safe path like "a/b.txt" becomes
+	// "/root/a/b.txt" which does.
+	const root = "/root"
+	clean := path.Clean(root + "/" + normalized)
+	return strings.HasPrefix(clean, root+"/") || clean == root
 }
 
 func walkZip(p string, visit func(name string, size int64, r io.Reader) error) error {

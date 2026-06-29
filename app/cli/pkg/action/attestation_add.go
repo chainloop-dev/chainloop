@@ -158,6 +158,9 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		return nil, fmt.Errorf("detecting archive: %w", err)
 	}
 	if explode {
+		if len(policyInputFiles) > 0 {
+			action.Logger.Warn().Msg("--policy-input-from-file is ignored when expanding an archive; evidence cross-links are not recorded for exploded materials")
+		}
 		limits := materials.ArchiveLimits{MaxEntries: action.maxExtractEntries, MaxTotalSize: action.maxExtractSize}
 		mts, err := crafter.AddMaterialsFromArchive(ctx, attestationID, materialType, materialName, materialValue, format, casBackend, annotations, limits, addOpts...)
 		if err != nil {

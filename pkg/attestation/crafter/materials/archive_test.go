@@ -65,10 +65,29 @@ func writeTarGz(t *testing.T, dir, name string, files map[string]string) string 
 	return p
 }
 
+// writeTar creates an uncompressed .tar at dir/name containing the given regular files.
+func writeTar(t *testing.T, dir, name string, files map[string]string) string {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	f, err := os.Create(p)
+	require.NoError(t, err)
+	defer f.Close()
+	tw := tar.NewWriter(f)
+	for n, c := range files {
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: n, Mode: 0o600, Size: int64(len(c)), Typeflag: tar.TypeReg}))
+		_, err = tw.Write([]byte(c))
+		require.NoError(t, err)
+	}
+	require.NoError(t, tw.Close())
+	return p
+}
+
 func TestDetectArchive(t *testing.T) {
 	dir := t.TempDir()
 	zipPath := writeZip(t, dir, "a.zip", map[string]string{"x.txt": "hi"})
 	tgzPath := writeTarGz(t, dir, "a.tar.gz", map[string]string{"x.txt": "hi"})
+	tarPath := writeTar(t, dir, "a.tar", map[string]string{"x.txt": "hi"})
+	tgzShortPath := writeTarGz(t, dir, "a.tgz", map[string]string{"x.txt": "hi"})
 
 	plain := filepath.Join(dir, "app.bin")
 	require.NoError(t, os.WriteFile(plain, []byte("not an archive"), 0o600))
@@ -84,6 +103,8 @@ func TestDetectArchive(t *testing.T) {
 	}{
 		{"zip by extension", zipPath, ArchiveZip},
 		{"tar.gz by extension", tgzPath, ArchiveTarGz},
+		{"tar by extension", tarPath, ArchiveTar},
+		{"tgz by extension", tgzShortPath, ArchiveTarGz},
 		{"plain file", plain, ArchiveNone},
 		{"zip without extension via magic", noExt, ArchiveZip},
 	}
@@ -177,6 +198,8 @@ func TestSafeArchivePath(t *testing.T) {
 		{"absolute path", "/etc/passwd", false},
 		{"path traversal", "../escape.txt", false},
 		{"nested path traversal", "foo/../../../etc/passwd", false},
+		{"double dot in filename is ok", "foo..bar.json", true},
+		{"escape via nested double dot", "a/../../etc/passwd", false},
 		{"valid nested path", "a/b.txt", true},
 		{"valid simple path", "file.txt", true},
 		{"valid with subdirs", "nested/dir/file.txt", true},
