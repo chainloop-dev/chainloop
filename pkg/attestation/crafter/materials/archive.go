@@ -16,9 +16,15 @@
 package materials
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"bytes"
+	"compress/gzip"
+	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -73,4 +79,140 @@ func detectByMagic(path string) (ArchiveFormat, error) {
 	}
 
 	return ArchiveNone, nil
+}
+
+var (
+	// ErrTooManyEntries is returned when an archive has more qualifying entries
+	// than the configured maximum.
+	ErrTooManyEntries = errors.New("archive exceeds the maximum number of entries")
+	// ErrArchiveTooLarge is returned when the running uncompressed size of an
+	// archive exceeds the configured maximum.
+	ErrArchiveTooLarge = errors.New("archive exceeds the maximum uncompressed size")
+)
+
+// ArchiveLimits bounds archive expansion to guard against zip bombs.
+type ArchiveLimits struct {
+	MaxEntries   int
+	MaxTotalSize int64
+}
+
+// DefaultArchiveLimits returns the safe defaults: 10000 entries and 1 GiB
+// total uncompressed size.
+func DefaultArchiveLimits() ArchiveLimits {
+	return ArchiveLimits{MaxEntries: 10000, MaxTotalSize: 1 << 30}
+}
+
+// capReader wraps a reader and fails once the shared running total exceeds max,
+// so we never trust an archive's declared sizes.
+type capReader struct {
+	r     io.Reader
+	total *int64
+	max   int64
+}
+
+func (c *capReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	*c.total += int64(n)
+	if *c.total > c.max {
+		return n, ErrArchiveTooLarge
+	}
+	return n, err
+}
+
+// WalkArchiveEntries calls yield for every regular file in the archive,
+// enforcing the limits and skipping directories, symlinks, hardlinks, empty
+// entries, and path-traversal entries.
+func WalkArchiveEntries(path string, format ArchiveFormat, limits ArchiveLimits, yield func(name string, r io.Reader) error) error {
+	var total int64
+	count := 0
+	visit := func(name string, size int64, r io.Reader) error {
+		if !safeArchivePath(name) {
+			return fmt.Errorf("unsafe entry path %q in archive", name)
+		}
+		count++
+		if count > limits.MaxEntries {
+			return ErrTooManyEntries
+		}
+		if err := yield(name, &capReader{r: r, total: &total, max: limits.MaxTotalSize}); err != nil {
+			return fmt.Errorf("processing entry %q: %w", name, err)
+		}
+		return nil
+	}
+
+	switch format {
+	case ArchiveZip:
+		return walkZip(path, visit)
+	case ArchiveTar:
+		return walkTar(path, false, visit)
+	case ArchiveTarGz:
+		return walkTar(path, true, visit)
+	default:
+		return fmt.Errorf("unsupported archive format")
+	}
+}
+
+// safeArchivePath rejects absolute paths and any path that escapes the
+// extraction root via "..".
+func safeArchivePath(name string) bool {
+	clean := path.Clean("/" + strings.ReplaceAll(name, "\\", "/"))
+	return !strings.Contains(clean, "/../") && clean != "/.."
+}
+
+func walkZip(p string, visit func(name string, size int64, r io.Reader) error) error {
+	zr, err := zip.OpenReader(p)
+	if err != nil {
+		return fmt.Errorf("opening zip: %w", err)
+	}
+	defer zr.Close()
+
+	for _, f := range zr.File {
+		if f.FileInfo().IsDir() || f.Mode()&os.ModeSymlink != 0 || f.UncompressedSize64 == 0 {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return fmt.Errorf("opening entry %q: %w", f.Name, err)
+		}
+		err = visit(f.Name, int64(f.UncompressedSize64), rc)
+		rc.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func walkTar(p string, gzipped bool, visit func(name string, size int64, r io.Reader) error) error {
+	f, err := os.Open(p)
+	if err != nil {
+		return fmt.Errorf("opening tar: %w", err)
+	}
+	defer f.Close()
+
+	var src io.Reader = f
+	if gzipped {
+		gz, err := gzip.NewReader(f)
+		if err != nil {
+			return fmt.Errorf("opening gzip: %w", err)
+		}
+		defer gz.Close()
+		src = gz
+	}
+
+	tr := tar.NewReader(src)
+	for {
+		hdr, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("reading tar: %w", err)
+		}
+		if hdr.Typeflag != tar.TypeReg || hdr.Size == 0 {
+			continue
+		}
+		if err := visit(hdr.Name, hdr.Size, tr); err != nil {
+			return err
+		}
+	}
 }
