@@ -858,6 +858,7 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 		assert.Len(s.T(), mts, 1)
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Len(s.T(), stateMap, 1)
 		_, found := stateMap["sboms-a-json"]
 		assert.True(s.T(), found, "expected material sboms-a-json in state")
 	})
@@ -909,6 +910,7 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 			materials.DefaultArchiveLimits(),
 		)
 		require.Error(s.T(), err, "path-traversal entry must cause an error")
+		assert.ErrorIs(s.T(), err, materials.ErrUnsafeEntry)
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Empty(s.T(), stateMap, "state must be empty after traversal rejection (atomic rollback)")
