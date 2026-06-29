@@ -736,6 +736,9 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
 		// Atomicity: no materials must have been committed.
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Empty(s.T(), stateMap, "state must be empty after a failed archive expansion")
+
+		// Atomicity: policy evaluations must also be rolled back.
+		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetPolicyEvaluations(), "policy evaluations must be rolled back after a failed archive expansion")
 	})
 }
 

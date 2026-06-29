@@ -852,20 +852,29 @@ func (c *Crafter) AddMaterialsFromArchive(
 	}
 	defer os.RemoveAll(tmpDir)
 
-	// Track which material names we staged so we can roll back on error.
+	// Snapshot checkpoints for atomic rollback on any error path.
 	var stagedNames []string
 	var result []*api.Attestation_Material
+	policyEvalCheckpoint := len(c.CraftingState.Attestation.PolicyEvaluations)
+
+	rollback := func() {
+		for _, n := range stagedNames {
+			delete(c.CraftingState.Attestation.Materials, n)
+		}
+		c.CraftingState.Attestation.PolicyEvaluations = c.CraftingState.Attestation.PolicyEvaluations[:policyEvalCheckpoint]
+	}
 
 	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
 		base := filepath.Base(name)
 		matName := allocator.Allocate(namePrefix, base)
 
-		// Write the entry to a temp file so material crafters can open it by path.
-		tmp, err := os.CreateTemp(tmpDir, "entry-*")
+		// Write the entry to a temp file named after the entry basename so
+		// material crafters can identify it by name when opening it by path.
+		tmpPath := filepath.Join(tmpDir, filepath.Base(name))
+		tmp, err := os.Create(tmpPath)
 		if err != nil {
 			return fmt.Errorf("creating temp file for entry %q: %w", name, err)
 		}
-		tmpPath := tmp.Name()
 
 		if _, err := io.Copy(tmp, r); err != nil {
 			tmp.Close()
@@ -890,10 +899,9 @@ func (c *Crafter) AddMaterialsFromArchive(
 	})
 
 	if walkErr != nil {
-		// Roll back any in-memory staging: remove the material map entries we just added.
-		for _, n := range stagedNames {
-			delete(c.CraftingState.Attestation.Materials, n)
-		}
+		// Roll back any in-memory staging: remove material map entries and
+		// truncate policy evaluations back to the pre-call checkpoint.
+		rollback()
 		return nil, fmt.Errorf("expanding archive %q: %w", archivePath, walkErr)
 	}
 
@@ -903,10 +911,8 @@ func (c *Crafter) AddMaterialsFromArchive(
 
 	// All entries staged successfully; persist once.
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
-		// Roll back in-memory state.
-		for _, n := range stagedNames {
-			delete(c.CraftingState.Attestation.Materials, n)
-		}
+		// Roll back in-memory state including policy evaluations.
+		rollback()
 		return nil, fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
