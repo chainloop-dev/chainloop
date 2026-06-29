@@ -1,4 +1,4 @@
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
-	"github.com/docker/go-connections/nat"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/assert"
@@ -343,12 +342,11 @@ func newMinioInstance(t *testing.T) *minioInstance {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	port, err := nat.NewPort("", "9000")
-	require.NoError(t, err)
+	const port = "9000/tcp"
 
 	req := testcontainers.ContainerRequest{
 		Image:        "minio/minio:RELEASE.2023-09-04T19-57-37Z",
-		ExposedPorts: []string{port.Port()},
+		ExposedPorts: []string{port},
 		Env: map[string]string{
 			"MINIO_ROOT_USER":     "root",
 			"MINIO_ROOT_PASSWORD": "test-password",
@@ -372,7 +370,7 @@ func (c *minioInstance) ConnectionString(t *testing.T) string {
 	p, err := c.instance.MappedPort(ctx, "9000")
 	assert.NoError(t, err)
 
-	return fmt.Sprintf("0.0.0.0:%d", p.Int())
+	return fmt.Sprintf("0.0.0.0:%d", p.Num())
 }
 
 type minioInstance struct {

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -292,7 +292,7 @@ func (db *vaultInstance) ConnectionString(t *testing.T) string {
 	p, err := db.instance.MappedPort(ctx, "8200")
 	assert.NoError(t, err)
 
-	return fmt.Sprintf("http://0.0.0.0:%d", p.Int())
+	return fmt.Sprintf("http://0.0.0.0:%d", p.Num())
 }
 
 type vaultInstance struct {

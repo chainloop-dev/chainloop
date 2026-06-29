@@ -38,8 +38,8 @@ import (
 	backendsm "github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
-	"github.com/docker/go-connections/nat"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -167,7 +167,7 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 	defer cancel()
 
 	const port = "5432/tcp"
-	dbURL := func(host string, port nat.Port) string {
+	dbURL := func(host string, port network.Port) string {
 		return fmt.Sprintf("postgres://postgres:postgres@%s:%s/postgres?sslmode=disable", host, port.Port())
 	}
 
@@ -180,7 +180,7 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 			"POSTGRES_PASSWORD": "postgres",
 			"POSTGRES_DB":       "controlplane_test",
 		},
-		WaitingFor: wait.ForSQL(nat.Port(port), "postgres", dbURL).WithStartupTimeout(time.Second * 5),
+		WaitingFor: wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second * 5),
 	}
 
 	postgres, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -198,7 +198,7 @@ func (db *TestDatabase) Port(t *testing.T) int {
 	defer cancel()
 	p, err := db.instance.MappedPort(ctx, "5432")
 	require.NoError(t, err)
-	return p.Int()
+	return int(p.Num())
 }
 
 func (db *TestDatabase) ConnectionString(t *testing.T) string {
