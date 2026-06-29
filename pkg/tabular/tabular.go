@@ -13,10 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sigcheck parses Sysinternals sigcheck CSV/TSV output into a
-// JSON-friendly structure for policy evaluation.
-// https://learn.microsoft.com/en-us/sysinternals/downloads/sigcheck
-package sigcheck
+// Package tabular parses delimited tabular text (CSV or TSV) into a
+// header-plus-rows structure. It decodes UTF-8/UTF-16 byte-order marks and
+// auto-detects whether the delimiter is a comma or a tab, so it handles output
+// from tools like Sysinternals sigcheck as well as generic CSV/TSV files.
+package tabular
 
 import (
 	"bytes"
@@ -30,25 +31,25 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// Report is a parsed sigcheck report: the CSV header columns and one map per
-// data row, keyed by header column.
-type Report struct {
+// Table is parsed tabular data: the header columns and one map per data row,
+// keyed by header column.
+type Table struct {
 	Header []string
 	// Rows holds one map per data row, keyed by header column. If the header
 	// contains duplicate column names, the last column wins.
 	Rows []map[string]string
 }
 
-// Parse decodes sigcheck CSV/TSV output. It strips/decodes UTF-8 and UTF-16
+// Parse decodes delimited CSV/TSV text. It strips/decodes UTF-8 and UTF-16
 // byte-order marks and auto-detects whether the delimiter is a comma or a tab.
-func Parse(raw []byte) (*Report, error) {
+func Parse(raw []byte) (*Table, error) {
 	data, err := decode(raw)
 	if err != nil {
-		return nil, fmt.Errorf("decoding sigcheck output: %w", err)
+		return nil, fmt.Errorf("decoding tabular input: %w", err)
 	}
 
 	if len(bytes.TrimSpace(data)) == 0 {
-		return nil, errors.New("empty sigcheck report")
+		return nil, errors.New("empty tabular input")
 	}
 
 	r := csv.NewReader(bytes.NewReader(data))
@@ -58,14 +59,14 @@ func Parse(raw []byte) (*Report, error) {
 
 	records, err := r.ReadAll()
 	if err != nil {
-		return nil, fmt.Errorf("parsing sigcheck CSV: %w", err)
+		return nil, fmt.Errorf("parsing CSV/TSV: %w", err)
 	}
 	if len(records) == 0 {
-		return nil, errors.New("sigcheck report has no header row")
+		return nil, errors.New("tabular input has no header row")
 	}
 
 	header := records[0]
-	report := &Report{Header: header, Rows: make([]map[string]string, 0, len(records)-1)}
+	table := &Table{Header: header, Rows: make([]map[string]string, 0, len(records)-1)}
 	for _, rec := range records[1:] {
 		row := make(map[string]string, len(header))
 		for i, col := range header {
@@ -75,25 +76,25 @@ func Parse(raw []byte) (*Report, error) {
 				row[col] = ""
 			}
 		}
-		report.Rows = append(report.Rows, row)
+		table.Rows = append(table.Rows, row)
 	}
 
-	return report, nil
+	return table, nil
 }
 
-// JSON marshals the report rows as a JSON array. A header-only report marshals
+// JSON marshals the table rows as a JSON array. A header-only table marshals
 // to "[]".
-func (r *Report) JSON() ([]byte, error) {
-	if r.Rows == nil {
+func (t *Table) JSON() ([]byte, error) {
+	if t.Rows == nil {
 		return []byte("[]"), nil
 	}
-	return json.Marshal(r.Rows)
+	return json.Marshal(t.Rows)
 }
 
 // HasColumns reports whether every named column is present in the header.
-func (r *Report) HasColumns(cols ...string) bool {
-	set := make(map[string]struct{}, len(r.Header))
-	for _, h := range r.Header {
+func (t *Table) HasColumns(cols ...string) bool {
+	set := make(map[string]struct{}, len(t.Header))
+	for _, h := range t.Header {
 		set[strings.TrimSpace(h)] = struct{}{}
 	}
 	for _, c := range cols {
@@ -102,6 +103,32 @@ func (r *Report) HasColumns(cols ...string) bool {
 		}
 	}
 	return true
+}
+
+// Column returns the values of the column whose header matches name
+// case-insensitively (trimming surrounding whitespace), with empty and
+// whitespace-only cells dropped, and whether such a column exists.
+func (t *Table) Column(name string) ([]string, bool) {
+	var header string
+	found := false
+	for _, h := range t.Header {
+		if strings.EqualFold(strings.TrimSpace(h), strings.TrimSpace(name)) {
+			header = h
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, false
+	}
+
+	values := make([]string, 0, len(t.Rows))
+	for _, row := range t.Rows {
+		if v := strings.TrimSpace(row[header]); v != "" {
+			values = append(values, v)
+		}
+	}
+	return values, true
 }
 
 // decode normalizes the input to UTF-8, using the BOM (if any) to detect
@@ -117,10 +144,7 @@ func decode(raw []byte) ([]byte, error) {
 // output quotes every field, so a tab inside a quoted path or description must
 // not be mistaken for a TSV separator. Defaults to comma.
 func detectDelimiter(data []byte) rune {
-	line := data
-	if i := bytes.IndexByte(data, '\n'); i >= 0 {
-		line = data[:i]
-	}
+	line, _, _ := bytes.Cut(data, []byte{'\n'})
 
 	var commas, tabs int
 	inQuotes := false

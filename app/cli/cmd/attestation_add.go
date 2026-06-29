@@ -39,6 +39,7 @@ func newAttestationAddCmd() *cobra.Command {
 	var artifactCASConn *grpc.ClientConn
 	var annotationsFlag []string
 	var noStrictValidation bool
+	var policyInputFromFileFlag []string
 
 	// OCI registry credentials can be passed as flags or environment variables
 	var registryServer, registryUsername, registryPassword string
@@ -66,7 +67,12 @@ func newAttestationAddCmd() *cobra.Command {
   chainloop attestation add --value <material-value>
 
   # Add a material by also providing a URL pointing to the material. It will be downloaded to a temporary folder first
-  chainloop attestation add --value https://example.com/sbom.json`,
+  chainloop attestation add --value https://example.com/sbom.json
+
+  # Feed a policy input from a column of a CSV/JSON file (e.g. the ignored_paths exclusion list for the sigcheck binary-signing policies).
+  # The :column suffix selects the column; it defaults to the input name when omitted. The file is also recorded as EVIDENCE.
+  chainloop attestation add --name sigcheck --value sigcheckResult.csv --kind SYSINTERNALS_SIGCHECK \
+    --policy-input-from-file ignored_paths=exception.csv:Path`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
@@ -91,6 +97,13 @@ func newAttestationAddCmd() *cobra.Command {
 				return err
 			}
 
+			// Parse and resolve the policy input files (column -> policy input).
+			// Done once here; the resolved local paths are reused across retries.
+			policyInputFiles, err := resolvePolicyInputFiles(policyInputFromFileFlag)
+			if err != nil {
+				return err
+			}
+
 			// In some cases, the attestation state is stored remotely. To control concurrency we use
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
 			return runWithBackoffRetry(
@@ -110,7 +123,7 @@ func newAttestationAddCmd() *cobra.Command {
 						}
 					}
 					// TODO: take the material output and show render it
-					resp, err := a.Run(cmd.Context(), attestationID, name, rawValuePath, kind, annotations)
+					resp, err := a.Run(cmd.Context(), attestationID, name, rawValuePath, kind, annotations, policyInputFiles)
 					if err != nil {
 						return err
 					}
@@ -146,6 +159,7 @@ func newAttestationAddCmd() *cobra.Command {
 	flagAttestationID(cmd)
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
 	cmd.Flags().BoolVar(&noStrictValidation, "no-strict-validation", false, "skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)")
+	cmd.Flags().StringArrayVar(&policyInputFromFileFlag, "policy-input-from-file", nil, "feed a policy input from a column of a CSV or JSON file, in the format <input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.")
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
@@ -165,6 +179,38 @@ func newAttestationAddCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// resolvePolicyInputFiles parses each --policy-input-from-file value and
+// resolves its file reference to a local path (downloading URLs to a temporary
+// file, mirroring how --value is handled).
+func resolvePolicyInputFiles(raw []string) ([]*action.PolicyInputFromFile, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+
+	result := make([]*action.PolicyInputFromFile, 0, len(raw))
+	for _, r := range raw {
+		pif, err := action.ParsePolicyInputFromFile(r)
+		if err != nil {
+			return nil, err
+		}
+
+		path, err := resourceloader.GetPathForResource(pif.File)
+		if err != nil {
+			var uerr *resourceloader.UnrecognizedSchemeError
+			if errors.As(err, &uerr) {
+				path = pif.File
+			} else {
+				return nil, fmt.Errorf("loading policy input file: %w", err)
+			}
+		}
+		pif.File = path
+
+		result = append(result, pif)
+	}
+
+	return result, nil
 }
 
 // displayMaterialInfo prints the material information in a table format.
