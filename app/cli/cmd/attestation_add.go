@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/muesli/reflow/wrap"
 	"github.com/spf13/cobra"
@@ -40,6 +41,8 @@ func newAttestationAddCmd() *cobra.Command {
 	var annotationsFlag []string
 	var noStrictValidation bool
 	var policyInputFromFileFlag []string
+	var maxExtractEntries int
+	var maxExtractSize string
 
 	// OCI registry credentials can be passed as flags or environment variables
 	var registryServer, registryUsername, registryPassword string
@@ -79,6 +82,11 @@ func newAttestationAddCmd() *cobra.Command {
     --policy-input-from-file trusted-binaries-signed:ignored_paths=exception.csv:Path \
     --policy-input-from-file trusted-binaries-vendor-keys:third_party_paths=exception.csv:Path`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			maxExtractSizeBytes, err := bytefmt.ToBytes(maxExtractSize)
+			if err != nil {
+				return fmt.Errorf("invalid --max-extract-size %q: %w", maxExtractSize, err)
+			}
+
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
 					ActionsOpts:        ActionOpts,
@@ -90,6 +98,8 @@ func newAttestationAddCmd() *cobra.Command {
 					RegistryPassword:   registryPassword,
 					LocalStatePath:     attestationLocalStatePath,
 					NoStrictValidation: noStrictValidation,
+					MaxExtractEntries:  maxExtractEntries,
+					MaxExtractSize:     int64(maxExtractSizeBytes),
 				},
 			)
 			if err != nil {
@@ -127,22 +137,26 @@ func newAttestationAddCmd() *cobra.Command {
 							return fmt.Errorf("loading resource: %w", err)
 						}
 					}
-					// TODO: take the material output and show render it
 					resp, err := a.Run(cmd.Context(), attestationID, name, rawValuePath, kind, annotations, policyInputFiles)
 					if err != nil {
 						return err
 					}
 
-					logger.Info().Msg("material added to attestation")
+					logger.Info().Int("materials", len(resp)).Msg("material(s) added to attestation")
 
 					policies, err := a.GetPolicyEvaluations(cmd.Context(), attestationID)
 					if err != nil {
 						return err
 					}
 
-					return output.EncodeOutput(flagOutputFormat, resp, func(s *action.AttestationStatusMaterial) error {
-						return displayMaterialInfo(s, policies[resp.Name])
-					})
+					for _, m := range resp {
+						if err := output.EncodeOutput(flagOutputFormat, m, func(s *action.AttestationStatusMaterial) error {
+							return displayMaterialInfo(s, policies[m.Name])
+						}); err != nil {
+							return err
+						}
+					}
+					return nil
 				},
 			)
 		},
@@ -170,6 +184,10 @@ func newAttestationAddCmd() *cobra.Command {
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
 	cmd.Flags().StringVar(&registryUsername, "registry-username", "", fmt.Sprintf("registry username, ($%s)", registryUsernameEnvVarName))
 	cmd.Flags().StringVar(&registryPassword, "registry-password", "", fmt.Sprintf("registry password, ($%s)", registryPasswordEnvVarName))
+
+	// Archive extraction guards
+	cmd.Flags().IntVar(&maxExtractEntries, "max-extract-entries", 10000, "max number of files to extract when --value is an archive")
+	cmd.Flags().StringVar(&maxExtractSize, "max-extract-size", "1GB", "max total uncompressed size to extract when --value is an archive")
 
 	if registryServer == "" {
 		registryServer = os.Getenv(registryServerEnvVarName)
