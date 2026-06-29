@@ -188,3 +188,31 @@ func TestSafeArchivePath(t *testing.T) {
 		})
 	}
 }
+
+func TestSanitizeMaterialName(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"scan.json", "scan-json"},
+		{"results.XML", "results-xml"},
+		{"weird__name!!", "weird-name"},
+		{"___", "material"},
+	}
+	for _, tc := range tests {
+		assert.Equal(t, tc.want, SanitizeMaterialName(tc.in))
+	}
+}
+
+func TestNameAllocator(t *testing.T) {
+	a := NewNameAllocator([]string{"existing"})
+
+	assert.Equal(t, "scan-json", a.Allocate("", "scan.json"))
+	assert.Equal(t, "scan-json-1", a.Allocate("", "scan.json")) // collision
+	assert.Equal(t, "results-xml", a.Allocate("", "results.xml"))
+	assert.Equal(t, "existing-1", a.Allocate("", "existing"))      // collides with pre-existing
+	assert.Equal(t, "sboms-a-json", a.Allocate("sboms", "a.json")) // prefix
+}
+
+func TestIsArchiveNativeKind(t *testing.T) {
+	assert.True(t, IsArchiveNativeKind("ZAP_DAST_ZIP"))
+	assert.False(t, IsArchiveNativeKind("SBOM_CYCLONEDX_JSON"))
+	assert.False(t, IsArchiveNativeKind("ARTIFACT"))
+}

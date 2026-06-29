@@ -26,6 +26,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 // ArchiveFormat identifies a supported archive container.
@@ -224,5 +226,76 @@ func walkTar(p string, gzipped bool, visit func(name string, size int64, r io.Re
 		if err := visit(hdr.Name, hdr.Size, tr); err != nil {
 			return err
 		}
+	}
+}
+
+// archiveNativeKinds lists material kinds whose value is the archive itself.
+// For these, --kind short-circuits the explode path and the archive is
+// recorded whole. Extend this set as new "the archive is the material" kinds
+// are added.
+var archiveNativeKinds = map[string]struct{}{
+	schemaapi.CraftingSchema_Material_ZAP_DAST_ZIP.String(): {},
+}
+
+// IsArchiveNativeKind reports whether kind treats the archive as a single
+// material (recorded whole) rather than something to explode.
+func IsArchiveNativeKind(kind string) bool {
+	_, ok := archiveNativeKinds[kind]
+	return ok
+}
+
+// SanitizeMaterialName converts s into a valid DNS-1123 material name:
+// lowercase, with every run of characters outside [a-z0-9] collapsed to a
+// single "-" and leading/trailing "-" trimmed. Falls back to "material".
+func SanitizeMaterialName(s string) string {
+	var b strings.Builder
+	pendingHyphen := false
+	for _, r := range strings.ToLower(s) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			if pendingHyphen && b.Len() > 0 {
+				b.WriteByte('-')
+			}
+			b.WriteRune(r)
+			pendingHyphen = false
+		} else {
+			pendingHyphen = true
+		}
+	}
+	if b.Len() == 0 {
+		return "material"
+	}
+	return b.String()
+}
+
+// NameAllocator hands out unique DNS-1123 material names, suffixing collisions
+// with -1, -2, …. It is seeded with names already present in the attestation
+// so derived names never overwrite existing materials.
+type NameAllocator struct {
+	used map[string]struct{}
+}
+
+// NewNameAllocator seeds the allocator with existing material names.
+func NewNameAllocator(existing []string) *NameAllocator {
+	used := make(map[string]struct{}, len(existing))
+	for _, e := range existing {
+		used[e] = struct{}{}
+	}
+	return &NameAllocator{used: used}
+}
+
+// Allocate returns a unique name derived from base (and optional prefix).
+func (a *NameAllocator) Allocate(prefix, base string) string {
+	name := SanitizeMaterialName(base)
+	if prefix != "" {
+		name = SanitizeMaterialName(prefix) + "-" + name
+	}
+
+	candidate := name
+	for i := 1; ; i++ {
+		if _, taken := a.used[candidate]; !taken {
+			a.used[candidate] = struct{}{}
+			return candidate
+		}
+		candidate = fmt.Sprintf("%s-%d", name, i)
 	}
 }
