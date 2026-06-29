@@ -680,8 +680,10 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 	return nil, fmt.Errorf("failed to auto-discover material kind: %w", err)
 }
 
-// addMaterials adds the incoming material m to the crafting state
-func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
+// stageMaterial crafts a material into the in-memory crafting state WITHOUT
+// persisting it. Callers must call stateManager.Write to commit. Splitting the
+// write out lets the archive explode path craft many entries and commit once.
+func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
 	addOptions := &addOpts{}
 	for _, opt := range opts {
 		opt(addOptions)
@@ -784,7 +786,16 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	}
 	c.CraftingState.Attestation.Materials[m.Name] = mt
 
-	// 6 - Persist state
+	return mt, nil
+}
+
+// addMaterial crafts a single material and persists the crafting state.
+func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
+	mt, err := c.stageMaterial(ctx, m, value, casBackend, runtimeAnnotations, opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
 		return nil, fmt.Errorf("failed to persist crafting state: %w", err)
 	}
