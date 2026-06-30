@@ -896,10 +896,10 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 1)
-		real, hasReal := stateMap["material-0"]
+		realMat, hasReal := stateMap["material-0"]
 		assert.True(s.T(), hasReal, "expected material material-0 in state")
 		// The original filename is still preserved in the artifact metadata.
-		assert.Equal(s.T(), "real.txt", real.GetArtifact().GetName())
+		assert.Equal(s.T(), "real.txt", realMat.GetArtifact().GetName())
 	})
 
 	s.Run("traversal rejection: ../escape.txt entry causes error and empty state", func() {
