@@ -107,6 +107,11 @@ func TestDetectArchive(t *testing.T) {
 		{"tgz by extension", tgzShortPath, ArchiveTarGz},
 		{"plain file", plain, ArchiveNone},
 		{"zip without extension via magic", noExt, ArchiveZip},
+		// Non-file values must detect as non-archive without erroring.
+		{"non-existent value", filepath.Join(dir, "nope"), ArchiveNone},
+		// A value whose first path segment is an existing regular file yields
+		// ENOTDIR on open (e.g. CONTAINER_IMAGE "registry/app:v1"); still a non-archive.
+		{"path segment is a file (ENOTDIR)", filepath.Join(plain, "app:v1"), ArchiveNone},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
