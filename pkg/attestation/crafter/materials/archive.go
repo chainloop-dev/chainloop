@@ -291,6 +291,10 @@ func ArchiveEntryBaseName(name string) string {
 	return path.Base(strings.ReplaceAll(name, "\\", "/"))
 }
 
+// defaultMaterialName is the fallback base used when a name cannot be derived
+// (empty/symbol-only input or prefix).
+const defaultMaterialName = "material"
+
 // SanitizeMaterialName converts s into a valid DNS-1123 material name:
 // lowercase, with every run of characters outside [a-z0-9] collapsed to a
 // single "-" and leading/trailing "-" trimmed. Falls back to "material".
@@ -309,7 +313,7 @@ func SanitizeMaterialName(s string) string {
 		}
 	}
 	if b.Len() == 0 {
-		return "material"
+		return defaultMaterialName
 	}
 	return b.String()
 }
@@ -336,7 +340,7 @@ func NewNameAllocator(existing []string) *NameAllocator {
 // in use. prefix is sanitized to DNS-1123; an empty or symbol-only prefix yields
 // the base "material" (so entries are named material-0, material-1, …).
 func (a *NameAllocator) AllocateSequential(prefix string) string {
-	base := "material"
+	base := defaultMaterialName
 	if prefix != "" {
 		base = SanitizeMaterialName(prefix)
 	}
