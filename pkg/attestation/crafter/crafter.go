@@ -886,10 +886,12 @@ func (c *Crafter) AddMaterialsFromArchive(
 	}
 
 	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
-		// Derive the basename with archive ("/") semantics so it is identical on
-		// every OS, regardless of separators embedded in the entry name.
+		// Material names are sequential ("<prefix>-1", "<prefix>-2", … or
+		// "material-N" with no prefix). The original basename is still derived
+		// (with archive "/" semantics, OS-independently) and used for the temp
+		// file so the recorded artifact filename preserves the real name.
 		base := materials.ArchiveEntryBaseName(name)
-		matName := allocator.Allocate(namePrefix, base)
+		matName := allocator.AllocateSequential(namePrefix)
 
 		// Give each entry its own temp subdirectory (named by the unique material
 		// name) so two entries sharing a basename (e.g. "a/x.json" and "b/x.json")
