@@ -314,11 +314,12 @@ func SanitizeMaterialName(s string) string {
 	return b.String()
 }
 
-// NameAllocator hands out unique DNS-1123 material names, suffixing collisions
-// with -1, -2, …. It is seeded with names already present in the attestation
-// so derived names never overwrite existing materials.
+// NameAllocator hands out sequential, unique DNS-1123 material names of the
+// form "<prefix>-<n>" (n starting at 1). It is seeded with names already present
+// in the attestation so derived names never overwrite existing materials.
 type NameAllocator struct {
 	used map[string]struct{}
+	seq  int
 }
 
 // NewNameAllocator seeds the allocator with existing material names.
@@ -330,19 +331,22 @@ func NewNameAllocator(existing []string) *NameAllocator {
 	return &NameAllocator{used: used}
 }
 
-// Allocate returns a unique name derived from base (and optional prefix).
-func (a *NameAllocator) Allocate(prefix, base string) string {
-	name := SanitizeMaterialName(base)
+// AllocateSequential returns the next unused "<prefix>-<n>" material name, where
+// n is a counter that advances across calls and skips names already in use.
+// prefix is sanitized to DNS-1123; an empty or symbol-only prefix yields the
+// base "material" (so entries are named material-1, material-2, …).
+func (a *NameAllocator) AllocateSequential(prefix string) string {
+	base := "material"
 	if prefix != "" {
-		name = SanitizeMaterialName(prefix) + "-" + name
+		base = SanitizeMaterialName(prefix)
 	}
 
-	candidate := name
-	for i := 1; ; i++ {
+	for {
+		a.seq++
+		candidate := fmt.Sprintf("%s-%d", base, a.seq)
 		if _, taken := a.used[candidate]; !taken {
 			a.used[candidate] = struct{}{}
 			return candidate
 		}
-		candidate = fmt.Sprintf("%s-%d", name, i)
 	}
 }

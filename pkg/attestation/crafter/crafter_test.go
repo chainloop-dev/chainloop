@@ -706,16 +706,17 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
 
-		// Both derived names must be present (sanitized base names with prefix).
-		alpha, hasAlpha := stateMap["entry-alpha-txt"]
-		beta, hasBeta := stateMap["entry-beta-txt"]
-		assert.True(s.T(), hasAlpha, "expected material entry-alpha-txt in state")
-		assert.True(s.T(), hasBeta, "expected material entry-beta-txt in state")
+		// Material names are sequential with the --name value as prefix,
+		// independent of the entry order.
+		m1, has1 := stateMap["entry-1"]
+		m2, has2 := stateMap["entry-2"]
+		assert.True(s.T(), has1, "expected material entry-1 in state")
+		assert.True(s.T(), has2, "expected material entry-2 in state")
 
-		// The recorded artifact filename must preserve the original entry
-		// basename, not the sanitized material key.
-		assert.Equal(s.T(), "alpha.txt", alpha.GetArtifact().GetName())
-		assert.Equal(s.T(), "beta.txt", beta.GetArtifact().GetName())
+		// The recorded artifact filename must preserve each original entry
+		// basename, not the sequential material key.
+		gotFilenames := []string{m1.GetArtifact().GetName(), m2.GetArtifact().GetName()}
+		assert.ElementsMatch(s.T(), []string{"alpha.txt", "beta.txt"}, gotFilenames)
 	})
 
 	s.Run("atomicity: over-tight limit leaves state empty", func() {
@@ -838,13 +839,14 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
-		_, hasScanJSON := stateMap["scan-json"]
-		_, hasScanJSON1 := stateMap["scan-json-1"]
-		assert.True(s.T(), hasScanJSON, "expected material scan-json in state")
-		assert.True(s.T(), hasScanJSON1, "expected material scan-json-1 in state (collision suffix)")
+		// Entries sharing a basename still get distinct sequential names.
+		_, hasMat1 := stateMap["material-1"]
+		_, hasMat2 := stateMap["material-2"]
+		assert.True(s.T(), hasMat1, "expected material material-1 in state")
+		assert.True(s.T(), hasMat2, "expected material material-2 in state")
 	})
 
-	s.Run("name prefix: prefix prepended to sanitized entry name", func() {
+	s.Run("name prefix: used as the sequential name prefix", func() {
 		dir := s.T().TempDir()
 		p := filepath.Join(dir, "prefix.zip")
 		buildZip(s.T(), p, map[string]string{
@@ -866,8 +868,8 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 1)
-		_, found := stateMap["sboms-a-json"]
-		assert.True(s.T(), found, "expected material sboms-a-json in state")
+		_, found := stateMap["sboms-1"]
+		assert.True(s.T(), found, "expected material sboms-1 in state")
 	})
 
 	s.Run("skip dirs and symlinks in tar.gz: only regular file becomes material", func() {
@@ -894,8 +896,10 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 1)
-		_, hasReal := stateMap["real-txt"]
-		assert.True(s.T(), hasReal, "expected material real-txt in state")
+		real, hasReal := stateMap["material-1"]
+		assert.True(s.T(), hasReal, "expected material material-1 in state")
+		// The original filename is still preserved in the artifact metadata.
+		assert.Equal(s.T(), "real.txt", real.GetArtifact().GetName())
 	})
 
 	s.Run("traversal rejection: ../escape.txt entry causes error and empty state", func() {
@@ -949,10 +953,13 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
-		_, hasAlpha := stateMap["alpha-txt"]
-		_, hasBeta := stateMap["beta-txt"]
-		assert.True(s.T(), hasAlpha, "expected material alpha-txt in state")
-		assert.True(s.T(), hasBeta, "expected material beta-txt in state")
+		m1, has1 := stateMap["material-1"]
+		m2, has2 := stateMap["material-2"]
+		assert.True(s.T(), has1, "expected material material-1 in state")
+		assert.True(s.T(), has2, "expected material material-2 in state")
+		// Original filenames preserved regardless of the sequential keys.
+		gotFilenames := []string{m1.GetArtifact().GetName(), m2.GetArtifact().GetName()}
+		assert.ElementsMatch(s.T(), []string{"alpha.txt", "beta.txt"}, gotFilenames)
 	})
 }
 
