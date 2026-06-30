@@ -282,6 +282,15 @@ func IsArchiveNativeKind(kind string) bool {
 	return ok
 }
 
+// ArchiveEntryBaseName returns the final element of an archive entry name using
+// archive ("/") path semantics, independent of the host OS. Archive entry names
+// are "/"-separated by spec; backslashes are normalized first so names produced
+// on Windows resolve to the same basename everywhere (filepath.Base would treat
+// "\\" as a separator only on Windows, yielding OS-dependent results).
+func ArchiveEntryBaseName(name string) string {
+	return path.Base(strings.ReplaceAll(name, "\\", "/"))
+}
+
 // SanitizeMaterialName converts s into a valid DNS-1123 material name:
 // lowercase, with every run of characters outside [a-z0-9] collapsed to a
 // single "-" and leading/trailing "-" trimmed. Falls back to "material".
