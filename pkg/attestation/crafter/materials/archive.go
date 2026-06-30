@@ -27,6 +27,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"syscall"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
@@ -62,11 +63,13 @@ func DetectArchive(path string) (ArchiveFormat, error) {
 func detectByMagic(path string) (ArchiveFormat, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		// A not-found error means the value is not a file path at all (e.g.
-		// "hello world" for STRING or "registry/app:v1" for CONTAINER_IMAGE);
-		// treat that as a non-archive so callers passing non-file values are not
-		// surprised. Any other error (permissions, I/O) is real and must surface.
-		if errors.Is(err, fs.ErrNotExist) {
+		// These errors mean the value is not a file path at all (e.g. "hello
+		// world" for STRING, or "registry/app:v1" for CONTAINER_IMAGE where
+		// "registry" happens to be a regular file in the working directory, which
+		// yields ENOTDIR); treat them as a non-archive so callers passing non-file
+		// values are not surprised. Any other error (permissions, I/O) is real and
+		// must surface.
+		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR) {
 			return ArchiveNone, nil
 		}
 		return ArchiveNone, fmt.Errorf("opening %q: %w", path, err)
