@@ -332,9 +332,9 @@ func NewNameAllocator(existing []string) *NameAllocator {
 }
 
 // AllocateSequential returns the next unused "<prefix>-<n>" material name, where
-// n is a counter that advances across calls and skips names already in use.
-// prefix is sanitized to DNS-1123; an empty or symbol-only prefix yields the
-// base "material" (so entries are named material-1, material-2, …).
+// n is a zero-based counter that advances across calls and skips names already
+// in use. prefix is sanitized to DNS-1123; an empty or symbol-only prefix yields
+// the base "material" (so entries are named material-0, material-1, …).
 func (a *NameAllocator) AllocateSequential(prefix string) string {
 	base := "material"
 	if prefix != "" {
@@ -342,8 +342,8 @@ func (a *NameAllocator) AllocateSequential(prefix string) string {
 	}
 
 	for {
-		a.seq++
 		candidate := fmt.Sprintf("%s-%d", base, a.seq)
+		a.seq++
 		if _, taken := a.used[candidate]; !taken {
 			a.used[candidate] = struct{}{}
 			return candidate

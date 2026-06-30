@@ -706,12 +706,12 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
 
-		// Material names are sequential with the --name value as prefix,
-		// independent of the entry order.
-		m1, has1 := stateMap["entry-1"]
-		m2, has2 := stateMap["entry-2"]
-		assert.True(s.T(), has1, "expected material entry-1 in state")
-		assert.True(s.T(), has2, "expected material entry-2 in state")
+		// Material names are sequential (0-indexed) with the --name value as
+		// prefix, independent of the entry order.
+		m1, has1 := stateMap["entry-0"]
+		m2, has2 := stateMap["entry-1"]
+		assert.True(s.T(), has1, "expected material entry-0 in state")
+		assert.True(s.T(), has2, "expected material entry-1 in state")
 
 		// The recorded artifact filename must preserve each original entry
 		// basename, not the sequential material key.
@@ -840,10 +840,10 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
 		// Entries sharing a basename still get distinct sequential names.
+		_, hasMat0 := stateMap["material-0"]
 		_, hasMat1 := stateMap["material-1"]
-		_, hasMat2 := stateMap["material-2"]
+		assert.True(s.T(), hasMat0, "expected material material-0 in state")
 		assert.True(s.T(), hasMat1, "expected material material-1 in state")
-		assert.True(s.T(), hasMat2, "expected material material-2 in state")
 	})
 
 	s.Run("name prefix: used as the sequential name prefix", func() {
@@ -868,8 +868,8 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 1)
-		_, found := stateMap["sboms-1"]
-		assert.True(s.T(), found, "expected material sboms-1 in state")
+		_, found := stateMap["sboms-0"]
+		assert.True(s.T(), found, "expected material sboms-0 in state")
 	})
 
 	s.Run("skip dirs and symlinks in tar.gz: only regular file becomes material", func() {
@@ -896,8 +896,8 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 1)
-		real, hasReal := stateMap["material-1"]
-		assert.True(s.T(), hasReal, "expected material material-1 in state")
+		real, hasReal := stateMap["material-0"]
+		assert.True(s.T(), hasReal, "expected material material-0 in state")
 		// The original filename is still preserved in the artifact metadata.
 		assert.Equal(s.T(), "real.txt", real.GetArtifact().GetName())
 	})
@@ -953,10 +953,10 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
-		m1, has1 := stateMap["material-1"]
-		m2, has2 := stateMap["material-2"]
-		assert.True(s.T(), has1, "expected material material-1 in state")
-		assert.True(s.T(), has2, "expected material material-2 in state")
+		m1, has1 := stateMap["material-0"]
+		m2, has2 := stateMap["material-1"]
+		assert.True(s.T(), has1, "expected material material-0 in state")
+		assert.True(s.T(), has2, "expected material material-1 in state")
 		// Original filenames preserved regardless of the sequential keys.
 		gotFilenames := []string{m1.GetArtifact().GetName(), m2.GetArtifact().GetName()}
 		assert.ElementsMatch(s.T(), []string{"alpha.txt", "beta.txt"}, gotFilenames)
