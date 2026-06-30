@@ -79,11 +79,11 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 
 	defaults := materials.DefaultArchiveLimits()
 	maxEntries := cfg.MaxExtractEntries
-	if maxEntries == 0 {
+	if maxEntries <= 0 {
 		maxEntries = defaults.MaxEntries
 	}
 	maxSize := cfg.MaxExtractSize
-	if maxSize == 0 {
+	if maxSize <= 0 {
 		maxSize = defaults.MaxTotalSize
 	}
 

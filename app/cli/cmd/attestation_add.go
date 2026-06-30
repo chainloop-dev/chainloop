@@ -18,6 +18,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 
 	"code.cloudfoundry.org/bytefmt"
@@ -85,6 +86,11 @@ func newAttestationAddCmd() *cobra.Command {
 			maxExtractSizeBytes, err := bytefmt.ToBytes(maxExtractSize)
 			if err != nil {
 				return fmt.Errorf("invalid --max-extract-size %q: %w", maxExtractSize, err)
+			}
+			// Guard against the uint64->int64 cast wrapping negative, which would
+			// later surface as a misleading "archive too large" error.
+			if maxExtractSizeBytes > math.MaxInt64 {
+				return fmt.Errorf("--max-extract-size %q is too large", maxExtractSize)
 			}
 
 			a, err := action.NewAttestationAdd(

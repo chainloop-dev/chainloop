@@ -774,10 +774,15 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
 		assert.Len(s.T(), stateMap, 2)
 
 		// Both derived names must be present (sanitized base names with prefix).
-		_, hasAlpha := stateMap["entry-alpha-txt"]
-		_, hasBeta := stateMap["entry-beta-txt"]
+		alpha, hasAlpha := stateMap["entry-alpha-txt"]
+		beta, hasBeta := stateMap["entry-beta-txt"]
 		assert.True(s.T(), hasAlpha, "expected material entry-alpha-txt in state")
 		assert.True(s.T(), hasBeta, "expected material entry-beta-txt in state")
+
+		// The recorded artifact filename must preserve the original entry
+		// basename, not the sanitized material key.
+		assert.Equal(s.T(), "alpha.txt", alpha.GetArtifact().GetName())
+		assert.Equal(s.T(), "beta.txt", beta.GetArtifact().GetName())
 	})
 
 	s.Run("atomicity: over-tight limit leaves state empty", func() {

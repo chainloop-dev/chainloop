@@ -889,10 +889,15 @@ func (c *Crafter) AddMaterialsFromArchive(
 		base := filepath.Base(name)
 		matName := allocator.Allocate(namePrefix, base)
 
-		// Use the allocated unique material name for the temp file so that two
-		// archive entries with the same basename (e.g. "a/x.json" and "b/x.json")
-		// never collide in the shared tmpDir.
-		tmpPath := filepath.Join(tmpDir, matName)
+		// Give each entry its own temp subdirectory (named by the unique material
+		// name) so two entries sharing a basename (e.g. "a/x.json" and "b/x.json")
+		// never collide, while the temp file itself keeps the original basename so
+		// the recorded material metadata preserves the real filename.
+		entryDir, err := os.MkdirTemp(tmpDir, matName+"-*")
+		if err != nil {
+			return fmt.Errorf("creating temp dir for entry %q: %w", name, err)
+		}
+		tmpPath := filepath.Join(entryDir, base)
 		tmp, err := os.Create(tmpPath)
 		if err != nil {
 			return fmt.Errorf("creating temp file for entry %q: %w", name, err)
@@ -902,7 +907,10 @@ func (c *Crafter) AddMaterialsFromArchive(
 			tmp.Close()
 			return fmt.Errorf("writing entry %q to temp file: %w", name, err)
 		}
-		tmp.Close()
+		// Check the Close error so a failed flush does not stage an incomplete file.
+		if err := tmp.Close(); err != nil {
+			return fmt.Errorf("closing temp file for entry %q: %w", name, err)
+		}
 
 		m := &schemaapi.CraftingSchema_Material{
 			Optional: true,
@@ -911,9 +919,9 @@ func (c *Crafter) AddMaterialsFromArchive(
 		}
 
 		mt, err := c.stageMaterial(ctx, m, tmpPath, casBackend, runtimeAnnotations, opts...)
-		// Remove the temp file immediately after staging to keep disk usage bounded;
-		// the deferred os.RemoveAll(tmpDir) is the safety net.
-		os.Remove(tmpPath) //nolint:errcheck // best-effort cleanup
+		// Remove the entry's temp subdir immediately after staging to keep disk
+		// usage bounded; the deferred os.RemoveAll(tmpDir) is the safety net.
+		os.RemoveAll(entryDir) //nolint:errcheck // best-effort cleanup
 		if err != nil {
 			return fmt.Errorf("staging entry %q as material %q: %w", name, matName, err)
 		}

@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"strings"
@@ -61,11 +62,14 @@ func DetectArchive(path string) (ArchiveFormat, error) {
 func detectByMagic(path string) (ArchiveFormat, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		// If the file doesn't exist, the value is not a file path at all (e.g.
-		// "hello world" for STRING or "registry/app:v1" for CONTAINER_IMAGE).
-		// Treat it as a non-archive rather than propagating the error so callers
-		// that pass non-file values are not surprised.
-		return ArchiveNone, nil
+		// A not-found error means the value is not a file path at all (e.g.
+		// "hello world" for STRING or "registry/app:v1" for CONTAINER_IMAGE);
+		// treat that as a non-archive so callers passing non-file values are not
+		// surprised. Any other error (permissions, I/O) is real and must surface.
+		if errors.Is(err, fs.ErrNotExist) {
+			return ArchiveNone, nil
+		}
+		return ArchiveNone, fmt.Errorf("opening %q: %w", path, err)
 	}
 	defer f.Close()
 
@@ -165,8 +169,9 @@ func WalkArchiveEntries(path string, format ArchiveFormat, limits ArchiveLimits,
 // components equal to ".." are rejected.
 func safeArchivePath(name string) bool {
 	normalized := strings.ReplaceAll(name, "\\", "/")
-	// Reject absolute paths.
-	if strings.HasPrefix(normalized, "/") {
+	// Reject absolute paths, including Windows drive-letter (e.g. "C:/x") and
+	// UNC paths (which normalize to a leading "/").
+	if strings.HasPrefix(normalized, "/") || hasWindowsDriveLetter(normalized) {
 		return false
 	}
 	// Canonicalise against a virtual root and check that the result stays
@@ -177,6 +182,16 @@ func safeArchivePath(name string) bool {
 	const root = "/root"
 	clean := path.Clean(root + "/" + normalized)
 	return strings.HasPrefix(clean, root+"/") || clean == root
+}
+
+// hasWindowsDriveLetter reports whether name begins with a Windows drive-letter
+// prefix such as "C:" or "c:/", which denotes an absolute path on Windows.
+func hasWindowsDriveLetter(name string) bool {
+	if len(name) < 2 || name[1] != ':' {
+		return false
+	}
+	c := name[0]
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 func walkZip(p string, visit func(name string, r io.Reader) error) error {

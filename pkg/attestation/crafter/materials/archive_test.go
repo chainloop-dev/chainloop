@@ -196,6 +196,8 @@ func TestSafeArchivePath(t *testing.T) {
 		want bool
 	}{
 		{"absolute path", "/etc/passwd", false},
+		{"windows drive-letter backslash", "C:\\Windows\\system32", false},
+		{"windows drive-letter forward slash", "c:/windows/system32", false},
 		{"path traversal", "../escape.txt", false},
 		{"nested path traversal", "foo/../../../etc/passwd", false},
 		{"double dot in filename is ok", "foo..bar.json", true},

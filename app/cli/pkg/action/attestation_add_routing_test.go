@@ -57,15 +57,16 @@ func TestShouldExplode(t *testing.T) {
 		kind        string
 		value       string
 		wantExplode bool
+		wantFormat  materials.ArchiveFormat
 	}{
-		{"kind + archive", "SBOM_CYCLONEDX_JSON", zipPath, true},
-		{"archive-native kind", "ZAP_DAST_ZIP", zipPath, false},
-		{"no kind", "", zipPath, false},
-		{"kind + non-archive", "ARTIFACT", plainPath, false},
+		{"kind + archive", "SBOM_CYCLONEDX_JSON", zipPath, true, materials.ArchiveZip},
+		{"archive-native kind", "ZAP_DAST_ZIP", zipPath, false, materials.ArchiveNone},
+		{"no kind", "", zipPath, false, materials.ArchiveNone},
+		{"kind + non-archive", "ARTIFACT", plainPath, false, materials.ArchiveNone},
 		// Non-file values must never return an error — STRING and CONTAINER_IMAGE
 		// carry values that are not file paths at all.
-		{"kind STRING non-file value", "STRING", "hello world", false},
-		{"kind CONTAINER_IMAGE non-file value", "CONTAINER_IMAGE", "registry.example.com/app:v1", false},
+		{"kind STRING non-file value", "STRING", "hello world", false, materials.ArchiveNone},
+		{"kind CONTAINER_IMAGE non-file value", "CONTAINER_IMAGE", "registry.example.com/app:v1", false, materials.ArchiveNone},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -73,7 +74,7 @@ func TestShouldExplode(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantExplode, explode)
 			if explode {
-				assert.NotEqual(t, materials.ArchiveNone, format)
+				assert.Equal(t, tc.wantFormat, format)
 			}
 		})
 	}
