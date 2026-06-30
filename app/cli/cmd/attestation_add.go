@@ -144,14 +144,22 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					for _, m := range resp {
-						if err := output.EncodeOutput(flagOutputFormat, m, func(s *action.AttestationStatusMaterial) error {
-							return displayMaterialInfo(s, policies[m.Name])
-						}); err != nil {
-							return err
+					// The explode path can return several materials. Render JSON as a
+					// single array so the output stays a parseable document; only the
+					// table renderer is emitted per material.
+					switch flagOutputFormat {
+					case output.FormatJSON:
+						return output.EncodeJSON(resp)
+					case output.FormatTable:
+						for _, m := range resp {
+							if err := displayMaterialInfo(m, policies[m.Name]); err != nil {
+								return err
+							}
 						}
+						return nil
+					default:
+						return output.ErrOutputFormatNotImplemented
 					}
-					return nil
 				},
 			)
 		},
@@ -182,7 +190,7 @@ func newAttestationAddCmd() *cobra.Command {
 
 	// Archive extraction guards
 	cmd.Flags().IntVar(&maxExtractEntries, "max-extract-entries", 10000, "max number of files to extract when --value is an archive")
-	cmd.Flags().StringVar(&maxExtractSize, "max-extract-size", "1GB", "max total uncompressed size to extract when --value is an archive")
+	cmd.Flags().StringVar(&maxExtractSize, "max-extract-size", "1GiB", "max total uncompressed size to extract when --value is an archive")
 
 	if registryServer == "" {
 		registryServer = os.Getenv(registryServerEnvVarName)

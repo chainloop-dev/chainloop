@@ -133,7 +133,7 @@ func (c *capReader) Read(p []byte) (int, error) {
 func WalkArchiveEntries(path string, format ArchiveFormat, limits ArchiveLimits, yield func(name string, r io.Reader) error) error {
 	var total int64
 	count := 0
-	visit := func(name string, size int64, r io.Reader) error {
+	visit := func(name string, r io.Reader) error {
 		if !safeArchivePath(name) {
 			return fmt.Errorf("%w: %q", ErrUnsafeEntry, name)
 		}
@@ -179,7 +179,7 @@ func safeArchivePath(name string) bool {
 	return strings.HasPrefix(clean, root+"/") || clean == root
 }
 
-func walkZip(p string, visit func(name string, size int64, r io.Reader) error) error {
+func walkZip(p string, visit func(name string, r io.Reader) error) error {
 	zr, err := zip.OpenReader(p)
 	if err != nil {
 		return fmt.Errorf("opening zip: %w", err)
@@ -187,6 +187,14 @@ func walkZip(p string, visit func(name string, size int64, r io.Reader) error) e
 	defer zr.Close()
 
 	for _, f := range zr.File {
+		// Skip directories, symlinks, and empty entries: they carry no file
+		// content worth recording as a material. Empty-entry skipping is
+		// intentional per the explode design (an empty evidence file produces
+		// no material). Note: symlink detection relies on Unix mode bits stored
+		// in the zip; archives written without Unix metadata won't carry the
+		// symlink bit, so such a symlink would be treated as a regular file
+		// (its content being the stored target path). Tar symlinks are detected
+		// reliably via the typeflag below.
 		if f.FileInfo().IsDir() || f.Mode()&os.ModeSymlink != 0 || f.UncompressedSize64 == 0 {
 			continue
 		}
@@ -194,7 +202,7 @@ func walkZip(p string, visit func(name string, size int64, r io.Reader) error) e
 		if err != nil {
 			return fmt.Errorf("opening entry %q: %w", f.Name, err)
 		}
-		err = visit(f.Name, int64(f.UncompressedSize64), rc)
+		err = visit(f.Name, rc)
 		rc.Close()
 		if err != nil {
 			return err
@@ -203,7 +211,7 @@ func walkZip(p string, visit func(name string, size int64, r io.Reader) error) e
 	return nil
 }
 
-func walkTar(p string, gzipped bool, visit func(name string, size int64, r io.Reader) error) error {
+func walkTar(p string, gzipped bool, visit func(name string, r io.Reader) error) error {
 	f, err := os.Open(p)
 	if err != nil {
 		return fmt.Errorf("opening tar: %w", err)
@@ -229,10 +237,13 @@ func walkTar(p string, gzipped bool, visit func(name string, size int64, r io.Re
 		if err != nil {
 			return fmt.Errorf("reading tar: %w", err)
 		}
+		// Only regular files become materials; directories, symlinks, hardlinks
+		// and other special entries are skipped via the typeflag. Empty entries
+		// are skipped intentionally (an empty evidence file produces no material).
 		if hdr.Typeflag != tar.TypeReg || hdr.Size == 0 {
 			continue
 		}
-		if err := visit(hdr.Name, hdr.Size, tr); err != nil {
+		if err := visit(hdr.Name, tr); err != nil {
 			return err
 		}
 	}
