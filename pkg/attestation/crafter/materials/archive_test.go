@@ -247,28 +247,28 @@ func TestSanitizeMaterialName(t *testing.T) {
 }
 
 func TestNameAllocatorSequential(t *testing.T) {
-	t.Run("default prefix numbers from 1", func(t *testing.T) {
+	t.Run("default prefix numbers from 0", func(t *testing.T) {
 		a := NewNameAllocator(nil)
+		assert.Equal(t, "material-0", a.AllocateSequential(""))
 		assert.Equal(t, "material-1", a.AllocateSequential(""))
 		assert.Equal(t, "material-2", a.AllocateSequential(""))
-		assert.Equal(t, "material-3", a.AllocateSequential(""))
 	})
 
 	t.Run("custom prefix is sanitized and numbered", func(t *testing.T) {
 		a := NewNameAllocator(nil)
+		assert.Equal(t, "q3-scans-0", a.AllocateSequential("Q3 Scans"))
 		assert.Equal(t, "q3-scans-1", a.AllocateSequential("Q3 Scans"))
-		assert.Equal(t, "q3-scans-2", a.AllocateSequential("Q3 Scans"))
 	})
 
 	t.Run("skips names already present in the attestation", func(t *testing.T) {
-		a := NewNameAllocator([]string{"material-1", "material-2"})
+		a := NewNameAllocator([]string{"material-0", "material-1"})
+		assert.Equal(t, "material-2", a.AllocateSequential(""))
 		assert.Equal(t, "material-3", a.AllocateSequential(""))
-		assert.Equal(t, "material-4", a.AllocateSequential(""))
 	})
 
 	t.Run("symbol-only prefix falls back to material", func(t *testing.T) {
 		a := NewNameAllocator(nil)
-		assert.Equal(t, "material-1", a.AllocateSequential("!!!"))
+		assert.Equal(t, "material-0", a.AllocateSequential("!!!"))
 	})
 }
 
