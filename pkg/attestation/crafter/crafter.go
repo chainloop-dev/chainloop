@@ -886,7 +886,9 @@ func (c *Crafter) AddMaterialsFromArchive(
 	}
 
 	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
-		base := filepath.Base(name)
+		// Derive the basename with archive ("/") semantics so it is identical on
+		// every OS, regardless of separators embedded in the entry name.
+		base := materials.ArchiveEntryBaseName(name)
 		matName := allocator.Allocate(namePrefix, base)
 
 		// Give each entry its own temp subdirectory (named by the unique material

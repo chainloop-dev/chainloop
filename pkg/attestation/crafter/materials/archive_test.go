@@ -219,6 +219,21 @@ func TestSafeArchivePath(t *testing.T) {
 	}
 }
 
+func TestArchiveEntryBaseName(t *testing.T) {
+	tests := []struct{ name, in, want string }{
+		{"simple", "scan.json", "scan.json"},
+		{"forward-slash path", "nested/dir/scan.json", "scan.json"},
+		{"backslash path resolves the same on any OS", "nested\\dir\\scan.json", "scan.json"},
+		{"mixed separators", "a/b\\c.json", "c.json"},
+		{"no directory", "report.sarif", "report.sarif"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, ArchiveEntryBaseName(tc.in))
+		})
+	}
+}
+
 func TestSanitizeMaterialName(t *testing.T) {
 	tests := []struct{ in, want string }{
 		{"scan.json", "scan-json"},
