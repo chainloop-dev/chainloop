@@ -743,7 +743,9 @@ func (s *crafterSuite) TestAddMaterialsAutomaticInvalidNameSurfacesValidationErr
 }
 
 func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
-	const zipFixture = "testdata/two-files.zip"
+	// Build the fixture in-process so no binary blob is checked in.
+	zipFixture := filepath.Join(s.T().TempDir(), "two-files.zip")
+	buildZip(s.T(), zipFixture, map[string]string{"alpha.txt": "alpha", "beta.txt": "beta"})
 
 	s.Run("happy path: two files produce two materials", func() {
 		runner := runners.NewGeneric()
