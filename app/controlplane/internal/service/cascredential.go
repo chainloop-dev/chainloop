@@ -130,7 +130,10 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		}
 
 		if mapping != nil {
-			backend = mapping.CASBackend
+			backend, err = s.casBackendUC.FindDownloadBackend(ctx, mapping.CASBackend)
+			if err != nil {
+				return nil, handleUseCaseErr(err, s.log)
+			}
 		} else {
 			// fallback to default backend if the user or the token is allowed to
 			if ok, err := s.authzUC.Enforce(ctx, currentAuthzSubject, authz.PolicyDefaultBackendArtifactRead); err != nil {
