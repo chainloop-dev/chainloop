@@ -16,9 +16,6 @@
 package server
 
 import (
-	"fmt"
-	"os"
-
 	api "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
@@ -50,22 +47,16 @@ func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.Dow
 		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
 	}
 
-	// Load the key on initialization instead of on every request
+	// Parse the public key once on initialization instead of on every request
 	// TODO: implement jwks endpoint
-	publicKeyPath := authConf.GetPublicKeyPath()
-	if publicKeyPath == "" {
-		// Maintain backwards compatibility
-		publicKeyPath = authConf.RobotAccountPublicKeyPath
-	}
-
-	rawKey, err := os.ReadFile(publicKeyPath)
+	publicKey, err := parsePublicKey(authConf, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load public key: %w", err)
+		return nil, err
 	}
 
 	srv := http.NewServer(opts...)
 
-	downloadHandler := middlewares_http.AuthFromQueryParam(loadPublicKey(rawKey), claimsFunc(), casJWT.SigningMethod, downloadSvc)
+	downloadHandler := middlewares_http.AuthFromQueryParam(loadPublicKey(publicKey), claimsFunc(), casJWT.SigningMethod, downloadSvc)
 	srv.Handle(service.DownloadPath, CORSMiddleware(c.GetHttp().GetCors().GetAllowOrigins(), downloadHandler))
 	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version, providers))
 	return srv, nil
