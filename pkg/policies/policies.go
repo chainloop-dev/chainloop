@@ -773,22 +773,19 @@ func getInputArguments(inputs map[string]string) map[string]any {
 	args := make(map[string]any)
 
 	for k, v := range inputs {
-		// scan for multiple values
+		// Normalize consistently: split on newlines first (multi-value inputs,
+		// e.g. a comma-separated contract value merged with runtime values by
+		// mergeRuntimeInputs), then split each line on commas. Doing both means a
+		// comma-separated segment is always expanded into separate values,
+		// regardless of whether it arrived as a single line or as one of several
+		// merged lines.
 		lines := strings.Split(strings.TrimRight(v, "\n"), "\n")
-		value := getValue(lines)
-
-		if value == nil {
-			continue
-		}
-		s, ok := value.(string)
-		if !ok {
-			// case for multivalued argument
-			args[k] = value
+		values := make([]string, 0, len(lines))
+		for _, line := range lines {
+			values = append(values, splitArgs(line)...)
 		}
 
-		// Single string, let's check for CSV and escaped commas `\,`
-		lines = splitArgs(s)
-		value = getValue(lines)
+		value := getValue(values)
 		if value == nil {
 			continue
 		}

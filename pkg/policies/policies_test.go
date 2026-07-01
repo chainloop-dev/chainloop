@@ -800,6 +800,33 @@ func (s *testSuite) TestGetInputArguments() {
 			expected: map[string]any{"foo": []string{"bar1", "bar2", "bar3"}},
 		},
 		{
+			// A comma-separated contract value merged with runtime values (which
+			// mergeRuntimeInputs joins with newlines) must still split the
+			// comma-joined line into separate values instead of collapsing it into
+			// a single literal glob containing commas.
+			name:     "multiline input where a line is comma-separated",
+			inputs:   map[string]string{"foo": "**/vendor/**,**/redist/**\nC:/a\nC:/b"},
+			expected: map[string]any{"foo": []string{"**/vendor/**", "**/redist/**", "C:/a", "C:/b"}},
+		},
+		{
+			name:     "multiline input where several lines are comma-separated",
+			inputs:   map[string]string{"foo": "a,b\nc,d\ne"},
+			expected: map[string]any{"foo": []string{"a", "b", "c", "d", "e"}},
+		},
+		{
+			name:     "multiline input with escaped comma on a line",
+			inputs:   map[string]string{"foo": "a\\,b,c\nd"},
+			expected: map[string]any{"foo": []string{"a,b", "c", "d"}},
+		},
+		{
+			// A multiline input that reduces to a single non-empty value after
+			// blank-line filtering must return a plain string, not a one-element
+			// slice, so the two-stage split never over-wraps single values.
+			name:     "multiline input collapsing to a single value",
+			inputs:   map[string]string{"foo": "\nbar\n"},
+			expected: map[string]any{"foo": "bar"},
+		},
+		{
 			name:     "no input",
 			inputs:   nil,
 			expected: map[string]any{},
