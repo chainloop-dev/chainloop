@@ -350,6 +350,20 @@ func (uc *CASBackendUseCase) FindDefaultOrFallbackBackend(ctx context.Context, o
 	return fallbackBackend, nil
 }
 
+// FindDownloadBackend returns the mapped backend, or the org default/fallback when the mapped backend is invalid.
+func (uc *CASBackendUseCase) FindDownloadBackend(ctx context.Context, mapped *CASBackend) (*CASBackend, error) {
+	if mapped == nil {
+		return nil, NewErrNotFound("CAS Backend")
+	}
+
+	if mapped.ValidationStatus == CASBackendValidationOK {
+		return mapped, nil
+	}
+
+	uc.logger.Infow("msg", "mapped CAS backend validation failed, attempting default/fallback", "backend", mapped.Name, "status", mapped.ValidationStatus, "orgID", mapped.OrganizationID)
+	return uc.FindDefaultOrFallbackBackend(ctx, mapped.OrganizationID.String())
+}
+
 func (uc *CASBackendUseCase) CreateInlineBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.CreateInlineBackend")
 	defer span.End()
