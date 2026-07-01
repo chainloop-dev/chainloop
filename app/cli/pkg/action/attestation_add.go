@@ -224,10 +224,14 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 }
 
 // shouldExplode decides whether an att-add should explode the value into many
-// materials: only when --kind is set, the value is a supported archive, and the
-// kind is not archive-native (e.g. ZAP_DAST_ZIP, which is recorded whole).
+// materials: only when the kind is explodable (SBOM/SARIF) and the value is a
+// supported archive. It returns ArchiveNone for every other kind so a regular
+// zip provided as e.g. ARTIFACT or EVIDENCE is recorded whole.
 func shouldExplode(materialType, value string) (materials.ArchiveFormat, error) {
-	if materialType == "" || materials.IsArchiveNativeKind(materialType) {
+	// Only explode kinds that have a meaningful "bundle of the same kind"
+	// archive form (SBOM, SARIF). Any other kind — including ARTIFACT and
+	// EVIDENCE — records the archive whole even when the value is a zip/tar.
+	if !materials.IsExplodableKind(materialType) {
 		return materials.ArchiveNone, nil
 	}
 	return materials.DetectArchive(value)
@@ -360,29 +364,14 @@ func policyInputEvidenceNames(materialName string, policyInputFiles []*PolicyInp
 	return names
 }
 
-// sanitizeMaterialNamePart lower-cases s and collapses every run of characters
-// outside [a-z0-9] into a single "-", trimming leading/trailing "-", so the
-// result is a valid material-name component. Falls back to "input" if nothing
-// usable remains.
+// sanitizeMaterialNamePart sanitizes s into a valid material-name component via
+// materials.SanitizeMaterialName, falling back to "input" if nothing usable
+// remains.
 func sanitizeMaterialNamePart(s string) string {
-	var b strings.Builder
-	pendingHyphen := false
-	for _, r := range strings.ToLower(s) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			if pendingHyphen && b.Len() > 0 {
-				b.WriteByte('-')
-			}
-			b.WriteRune(r)
-			pendingHyphen = false
-		} else {
-			pendingHyphen = true
-		}
+	if name := materials.SanitizeMaterialName(s); name != "" {
+		return name
 	}
-
-	if b.Len() == 0 {
-		return "input"
-	}
-	return b.String()
+	return "input"
 }
 
 // GetPolicyEvaluations is a Wrapper around the getPolicyEvaluations

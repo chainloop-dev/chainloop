@@ -239,7 +239,8 @@ func TestSanitizeMaterialName(t *testing.T) {
 		{"scan.json", "scan-json"},
 		{"results.XML", "results-xml"},
 		{"weird__name!!", "weird-name"},
-		{"___", "material"},
+		{"___", ""}, // nothing usable -> empty; callers supply their own fallback
+		{"", ""},
 	}
 	for _, tc := range tests {
 		assert.Equal(t, tc.want, SanitizeMaterialName(tc.in))
@@ -272,8 +273,14 @@ func TestNameAllocatorSequential(t *testing.T) {
 	})
 }
 
-func TestIsArchiveNativeKind(t *testing.T) {
-	assert.True(t, IsArchiveNativeKind("ZAP_DAST_ZIP"))
-	assert.False(t, IsArchiveNativeKind("SBOM_CYCLONEDX_JSON"))
-	assert.False(t, IsArchiveNativeKind("ARTIFACT"))
+func TestIsExplodableKind(t *testing.T) {
+	// Explodable: SBOM and SARIF bundles.
+	assert.True(t, IsExplodableKind("SBOM_CYCLONEDX_JSON"))
+	assert.True(t, IsExplodableKind("SBOM_SPDX_JSON"))
+	assert.True(t, IsExplodableKind("SARIF"))
+	// Not explodable: recorded whole even when a zip/tar is provided.
+	assert.False(t, IsExplodableKind("ARTIFACT"))
+	assert.False(t, IsExplodableKind("EVIDENCE"))
+	assert.False(t, IsExplodableKind("ZAP_DAST_ZIP"))
+	assert.False(t, IsExplodableKind(""))
 }

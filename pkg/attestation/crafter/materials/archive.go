@@ -267,18 +267,21 @@ func walkTar(p string, gzipped bool, visit func(name string, r io.Reader) error)
 	}
 }
 
-// archiveNativeKinds lists material kinds whose value is the archive itself.
-// For these, --kind short-circuits the explode path and the archive is
-// recorded whole. Extend this set as new "the archive is the material" kinds
-// are added.
-var archiveNativeKinds = map[string]struct{}{
-	schemaapi.CraftingSchema_Material_ZAP_DAST_ZIP.String(): {},
+// explodableKinds is the allowlist of material kinds whose archive value is
+// expanded into one material per entry. Every other kind (ARTIFACT, EVIDENCE,
+// ZAP_DAST_ZIP, …) records the archive whole, so a customer can still provide a
+// regular zip as a single material. Extend this set as more kinds gain a
+// meaningful "bundle of the same kind" archive form.
+var explodableKinds = map[string]struct{}{
+	schemaapi.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String(): {},
+	schemaapi.CraftingSchema_Material_SBOM_SPDX_JSON.String():      {},
+	schemaapi.CraftingSchema_Material_SARIF.String():               {},
 }
 
-// IsArchiveNativeKind reports whether kind treats the archive as a single
-// material (recorded whole) rather than something to explode.
-func IsArchiveNativeKind(kind string) bool {
-	_, ok := archiveNativeKinds[kind]
+// IsExplodableKind reports whether an archive provided for kind should be
+// expanded into one material per entry (true) or recorded whole (false).
+func IsExplodableKind(kind string) bool {
+	_, ok := explodableKinds[kind]
 	return ok
 }
 
@@ -295,9 +298,10 @@ func ArchiveEntryBaseName(name string) string {
 // (empty/symbol-only input or prefix).
 const defaultMaterialName = "material"
 
-// SanitizeMaterialName converts s into a valid DNS-1123 material name:
-// lowercase, with every run of characters outside [a-z0-9] collapsed to a
-// single "-" and leading/trailing "-" trimmed. Falls back to "material".
+// SanitizeMaterialName converts s into a valid DNS-1123 material-name component:
+// lowercase, with every run of characters outside [a-z0-9] collapsed to a single
+// "-" and leading/trailing "-" trimmed. It returns "" when nothing usable
+// remains; callers supply their own fallback.
 func SanitizeMaterialName(s string) string {
 	var b strings.Builder
 	pendingHyphen := false
@@ -311,9 +315,6 @@ func SanitizeMaterialName(s string) string {
 		} else {
 			pendingHyphen = true
 		}
-	}
-	if b.Len() == 0 {
-		return defaultMaterialName
 	}
 	return b.String()
 }
@@ -341,8 +342,8 @@ func NewNameAllocator(existing []string) *NameAllocator {
 // the base "material" (so entries are named material-0, material-1, …).
 func (a *NameAllocator) AllocateSequential(prefix string) string {
 	base := defaultMaterialName
-	if prefix != "" {
-		base = SanitizeMaterialName(prefix)
+	if s := SanitizeMaterialName(prefix); s != "" {
+		base = s
 	}
 
 	for {
