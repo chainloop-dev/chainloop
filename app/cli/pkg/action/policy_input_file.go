@@ -30,6 +30,9 @@ import (
 // PolicyInputFromFile describes a single --policy-input-from-file flag value: a
 // policy input name fed from a named column of a CSV or JSON file.
 type PolicyInputFromFile struct {
+	// Policy optionally scopes the input to a specific policy (its name or ref).
+	// Empty means the input is global and applies to every declaring policy.
+	Policy string
 	// Input is the destination policy input name (e.g. "ignored_paths").
 	Input string
 	// Column is the file column/field to extract. Defaults to Input.
@@ -38,20 +41,53 @@ type PolicyInputFromFile struct {
 	File string
 }
 
+// scopeDelimiter separates an optional policy scope from the input name on the
+// left-hand side of a --policy-input-from-file value. It is ":" (shell-inert in
+// bash, sh and zsh). A policy ref can itself contain ":" (in a "://" scheme or
+// an "@sha256:" digest) while an input name never can, so the scope is split off
+// at the *last* ":" of the left-hand side.
+const scopeDelimiter = ":"
+
+// digestScheme is the digest prefix used in versioned policy refs
+// (<policy>@sha256:<digest>). Used to detect a versioned scope whose input name
+// was omitted, which would otherwise be mistaken for the digest.
+const digestScheme = "@sha256"
+
 // ParsePolicyInputFromFile parses a single flag value of the form
-// "<input>=<file>[:<column>]". The column is optional and defaults to the input
-// name. A column is always a single, top-level field/header name — never a path
-// or a nested key. The column is the segment after the last ":"; since a column
-// name never contains a path separator, a trailing ":<...>" whose ":" belongs to
-// the file (a Windows drive letter like C:\data\... or a URL scheme like
-// https://) is not mistaken for a column.
+// "[<policy>:]<input>=<file>[:<column>]". The optional "<policy>:" prefix scopes
+// the input to a single policy (matched against its name or ref); without it the
+// input is global. Because a policy ref may itself contain ":" but an input name
+// never does, the scope is taken as everything before the *last* ":" on the
+// left of "=". The column is optional and defaults to the input name. A column
+// is always a single, top-level field/header name — never a path or a nested
+// key. The column is the segment after the last ":"; since a column name never
+// contains a path separator, a trailing ":<...>" whose ":" belongs to the file
+// (a Windows drive letter like C:\data\... or a URL scheme like https://) is not
+// mistaken for a column.
 func ParsePolicyInputFromFile(raw string) (*PolicyInputFromFile, error) {
-	input, rhs, found := strings.Cut(raw, "=")
+	lhs, rhs, found := strings.Cut(raw, "=")
 	if !found {
-		return nil, fmt.Errorf("invalid --policy-input-from-file %q: expected <input>=<file>[:<column>]", raw)
+		return nil, fmt.Errorf("invalid --policy-input-from-file %q: expected [<policy>:]<input>=<file>[:<column>]", raw)
 	}
 
-	input = strings.TrimSpace(input)
+	// Split off the optional "<policy>:" scope prefix at the last ":": a policy
+	// ref may contain colons (scheme, digest) but the input name never does.
+	var policy, input string
+	if i := strings.LastIndex(lhs, scopeDelimiter); i >= 0 {
+		policy = strings.TrimSpace(lhs[:i])
+		input = strings.TrimSpace(lhs[i+1:])
+		if policy == "" {
+			return nil, fmt.Errorf("invalid --policy-input-from-file %q: missing policy scope before %q", raw, scopeDelimiter)
+		}
+		// A bare "<policy>@sha256:<digest>" (no input) would be mis-split into
+		// policy "<policy>@sha256" and input "<digest>"; reject it with guidance.
+		if strings.HasSuffix(policy, digestScheme) {
+			return nil, fmt.Errorf("invalid --policy-input-from-file %q: versioned policy scope is missing an input name; expected <policy>@sha256:<digest>:<input>=<file>", raw)
+		}
+	} else {
+		input = strings.TrimSpace(lhs)
+	}
+
 	rhs = strings.TrimSpace(rhs)
 	if input == "" {
 		return nil, fmt.Errorf("invalid --policy-input-from-file %q: missing input name", raw)
@@ -75,7 +111,7 @@ func ParsePolicyInputFromFile(raw string) (*PolicyInputFromFile, error) {
 		return nil, fmt.Errorf("invalid --policy-input-from-file %q: missing file path", raw)
 	}
 
-	return &PolicyInputFromFile{Input: input, Column: column, File: file}, nil
+	return &PolicyInputFromFile{Policy: policy, Input: input, Column: column, File: file}, nil
 }
 
 // ExtractColumnValues reads the given CSV or JSON file and returns the values of

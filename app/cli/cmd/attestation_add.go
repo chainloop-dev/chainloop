@@ -72,7 +72,12 @@ func newAttestationAddCmd() *cobra.Command {
   # Feed a policy input from a column of a CSV/JSON file (e.g. the ignored_paths exclusion list for the sigcheck binary-signing policies).
   # The :column suffix selects the column; it defaults to the input name when omitted. The file is also recorded as EVIDENCE.
   chainloop attestation add --name sigcheck --value sigcheckResult.csv --kind SYSINTERNALS_SIGCHECK \
-    --policy-input-from-file ignored_paths=exception.csv:Path`,
+    --policy-input-from-file ignored_paths=exception.csv:Path
+
+  # Scope an input to a specific policy with a <policy>: prefix so it only applies to that policy attachment.
+  chainloop attestation add --name sigcheck --value sigcheckResult.csv --kind SYSINTERNALS_SIGCHECK \
+    --policy-input-from-file trusted-binaries-signed:ignored_paths=exception.csv:Path \
+    --policy-input-from-file trusted-binaries-vendor-keys:third_party_paths=exception.csv:Path`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
@@ -159,7 +164,7 @@ func newAttestationAddCmd() *cobra.Command {
 	flagAttestationID(cmd)
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
 	cmd.Flags().BoolVar(&noStrictValidation, "no-strict-validation", false, "skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)")
-	cmd.Flags().StringArrayVar(&policyInputFromFileFlag, "policy-input-from-file", nil, "feed a policy input from a column of a CSV or JSON file, in the format <input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.")
+	cmd.Flags().StringArrayVar(&policyInputFromFileFlag, "policy-input-from-file", nil, "feed a policy input from a column of a CSV or JSON file, in the format [<policy>:]<input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); an optional <policy>: prefix scopes the input to a single policy (matched by name or ref), otherwise it applies to every declaring policy; <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.")
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))

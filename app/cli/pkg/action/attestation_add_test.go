@@ -16,12 +16,16 @@
 package action
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // materialNameRe mirrors the DNS-1123-style constraint enforced on material
@@ -111,4 +115,56 @@ func TestBuildRuntimeInputsNil(t *testing.T) {
 	got, err := buildRuntimeInputs(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, got)
+}
+
+func TestBuildRuntimeInputs(t *testing.T) {
+	dir := t.TempDir()
+	// A single file with two columns reused across inputs.
+	path := filepath.Join(dir, "exception.csv")
+	require.NoError(t, os.WriteFile(path, []byte("Path,Extra\na.dll,x\nb.dll,y\n"), 0600))
+
+	t.Run("unscoped inputs land in Global", func(t *testing.T) {
+		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
+			{Input: "ignored_paths", Column: "Path", File: path},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, &policies.RuntimeInputs{
+			Global: map[string]string{"ignored_paths": "a.dll\nb.dll"},
+			Scoped: map[string]map[string]string{},
+		}, got)
+	})
+
+	t.Run("scoped inputs land under their policy", func(t *testing.T) {
+		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
+			{Policy: "trusted-binaries-signed", Input: "ignored_paths", Column: "Path", File: path},
+			{Policy: "trusted-binaries-vendor-keys", Input: "third_party_paths", Column: "Path", File: path},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, &policies.RuntimeInputs{
+			Global: map[string]string{},
+			Scoped: map[string]map[string]string{
+				"trusted-binaries-signed":      {"ignored_paths": "a.dll\nb.dll"},
+				"trusted-binaries-vendor-keys": {"third_party_paths": "a.dll\nb.dll"},
+			},
+		}, got)
+	})
+
+	t.Run("repeated scope+input merges additively", func(t *testing.T) {
+		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
+			{Policy: "p", Input: "ignored_paths", Column: "Path", File: path},
+			{Policy: "p", Input: "ignored_paths", Column: "Extra", File: path},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"ignored_paths": "a.dll\nb.dll\nx\ny"}, got.Scoped["p"])
+	})
+
+	t.Run("global and scoped coexist", func(t *testing.T) {
+		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
+			{Input: "ignored_paths", Column: "Path", File: path},
+			{Policy: "p", Input: "ignored_paths", Column: "Extra", File: path},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"ignored_paths": "a.dll\nb.dll"}, got.Global)
+		assert.Equal(t, map[string]string{"ignored_paths": "x\ny"}, got.Scoped["p"])
+	})
 }
