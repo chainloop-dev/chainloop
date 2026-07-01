@@ -16,7 +16,6 @@
 package data
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -263,8 +262,11 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 			return handleError(err)
 		}
 
-		// Create a revision only if we are providing a new contract and it has changed
-		if opts.Contract != nil && !bytes.Equal(lv.RawBody, opts.Contract.Raw) {
+		// Create a revision only if we are providing a new contract and it has changed.
+		// The comparison is semantic (formatting-insensitive) so re-applying the same
+		// contract serialized differently (e.g. the batch apply path re-marshals YAML)
+		// does not create a spurious revision.
+		if opts.Contract != nil && !biz.ContractRawEqual(lv.RawBody, opts.Contract.Raw) {
 			// TODO: Add pessimist locking to make sure we are incrementing the latest revision
 			lv, err = tx.WorkflowContractVersion.Create().
 				SetRawBody(opts.Contract.Raw).

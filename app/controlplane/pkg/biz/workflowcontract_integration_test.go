@@ -16,6 +16,7 @@
 package biz_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	yaml "gopkg.in/yaml.v3"
 )
 
 func (s *workflowContractIntegrationTestSuite) TestUpdate() {
@@ -156,6 +158,27 @@ func (s *workflowContractIntegrationTestSuite) TestRevisionWouldChange() {
 
 	s.Run("identical schema would not change the revision", func() {
 		changed, err := s.WorkflowContract.RevisionWouldChange(ctx, s.org.ID, s.contractOrg1.ID.String(), currentRaw)
+		require.NoError(s.T(), err)
+		s.False(changed)
+	})
+
+	s.Run("semantically identical schema with different serialization would not change the revision", func() {
+		// Re-serialize the stored contract through a yaml.v3 Node with a different
+		// indentation, mirroring what the batch apply path (SplitYAMLDocuments)
+		// does: the bytes differ (re-indented/reflowed) but the contract is
+		// semantically unchanged. This is the exact dry-run drift bug.
+		var node yaml.Node
+		require.NoError(s.T(), yaml.Unmarshal(currentRaw, &node))
+		var buf bytes.Buffer
+		enc := yaml.NewEncoder(&buf)
+		enc.SetIndent(2)
+		require.NoError(s.T(), enc.Encode(&node))
+		require.NoError(s.T(), enc.Close())
+		reSerialized := buf.Bytes()
+		// Sanity check: the reproduction is only meaningful if the bytes differ.
+		s.NotEqual(currentRaw, reSerialized)
+
+		changed, err := s.WorkflowContract.RevisionWouldChange(ctx, s.org.ID, s.contractOrg1.ID.String(), reSerialized)
 		require.NoError(s.T(), err)
 		s.False(changed)
 	})
