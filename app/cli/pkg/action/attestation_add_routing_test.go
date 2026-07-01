@@ -58,15 +58,19 @@ func TestShouldExplode(t *testing.T) {
 		value      string
 		wantFormat materials.ArchiveFormat
 	}{
-		// A non-ArchiveNone format means the value will be exploded.
-		{"kind + archive", "SBOM_CYCLONEDX_JSON", zipPath, materials.ArchiveZip},
-		{"archive-native kind", "ZAP_DAST_ZIP", zipPath, materials.ArchiveNone},
+		// A non-ArchiveNone format means the value will be exploded. Only
+		// explodable kinds (SBOM, SARIF) explode; everything else is recorded
+		// whole even when the value is an archive.
+		{"explodable SBOM + archive", "SBOM_CYCLONEDX_JSON", zipPath, materials.ArchiveZip},
+		{"explodable SARIF + archive", "SARIF", zipPath, materials.ArchiveZip},
+		{"non-explodable ARTIFACT + archive", "ARTIFACT", zipPath, materials.ArchiveNone},
+		{"non-explodable EVIDENCE + archive", "EVIDENCE", zipPath, materials.ArchiveNone},
+		{"archive-native ZAP + archive", "ZAP_DAST_ZIP", zipPath, materials.ArchiveNone},
 		{"no kind", "", zipPath, materials.ArchiveNone},
-		{"kind + non-archive", "ARTIFACT", plainPath, materials.ArchiveNone},
-		// Non-file values must never return an error — STRING and CONTAINER_IMAGE
-		// carry values that are not file paths at all.
-		{"kind STRING non-file value", "STRING", "hello world", materials.ArchiveNone},
-		{"kind CONTAINER_IMAGE non-file value", "CONTAINER_IMAGE", "registry.example.com/app:v1", materials.ArchiveNone},
+		{"explodable kind + non-archive", "SBOM_CYCLONEDX_JSON", plainPath, materials.ArchiveNone},
+		// Non-file values must never return an error — even for an explodable kind
+		// the value here is not a file path at all.
+		{"explodable kind STRING-like non-file value", "SARIF", "hello world", materials.ArchiveNone},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
