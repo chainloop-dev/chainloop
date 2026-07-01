@@ -154,11 +154,11 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	addOpts := runtimeInputAddOpts(runtimeInputs)
 
 	// Explode path: --kind set, value is a (non-archive-native) archive.
-	format, explode, err := shouldExplode(materialType, materialValue)
+	format, err := shouldExplode(materialType, materialValue)
 	if err != nil {
 		return nil, fmt.Errorf("detecting archive: %w", err)
 	}
-	if explode {
+	if format != materials.ArchiveNone {
 		if len(policyInputFiles) > 0 {
 			action.Logger.Warn().Msg("--policy-input-from-file is ignored when expanding an archive; evidence cross-links are not recorded for exploded materials")
 		}
@@ -227,15 +227,11 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 // shouldExplode decides whether an att-add should explode the value into many
 // materials: only when --kind is set, the value is a supported archive, and the
 // kind is not archive-native (e.g. ZAP_DAST_ZIP, which is recorded whole).
-func shouldExplode(materialType, value string) (materials.ArchiveFormat, bool, error) {
+func shouldExplode(materialType, value string) (materials.ArchiveFormat, error) {
 	if materialType == "" || materials.IsArchiveNativeKind(materialType) {
-		return materials.ArchiveNone, false, nil
+		return materials.ArchiveNone, nil
 	}
-	format, err := materials.DetectArchive(value)
-	if err != nil {
-		return materials.ArchiveNone, false, err
-	}
-	return format, format != materials.ArchiveNone, nil
+	return materials.DetectArchive(value)
 }
 
 // runtimeInputAddOpts wraps the runtime inputs as crafter add options, or

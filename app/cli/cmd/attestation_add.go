@@ -155,22 +155,17 @@ func newAttestationAddCmd() *cobra.Command {
 						return err
 					}
 
-					// The explode path can return several materials. Render JSON as a
-					// single array so the output stays a parseable document; only the
-					// table renderer is emitted per material.
-					switch flagOutputFormat {
-					case output.FormatJSON:
-						return output.EncodeJSON(resp)
-					case output.FormatTable:
-						for _, m := range resp {
+					// The explode path can return several materials. EncodeOutput
+					// renders the whole slice as a single JSON array (a parseable
+					// document) and the table renderer per material.
+					return output.EncodeOutput(flagOutputFormat, resp, func(mats []*action.AttestationStatusMaterial) error {
+						for _, m := range mats {
 							if err := displayMaterialInfo(m, policies[m.Name]); err != nil {
 								return err
 							}
 						}
 						return nil
-					default:
-						return output.ErrOutputFormatNotImplemented
-					}
+					})
 				},
 			)
 		},

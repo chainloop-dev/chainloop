@@ -53,29 +53,26 @@ func TestShouldExplode(t *testing.T) {
 	require.NoError(t, os.WriteFile(plainPath, []byte("not an archive"), 0600))
 
 	tests := []struct {
-		name        string
-		kind        string
-		value       string
-		wantExplode bool
-		wantFormat  materials.ArchiveFormat
+		name       string
+		kind       string
+		value      string
+		wantFormat materials.ArchiveFormat
 	}{
-		{"kind + archive", "SBOM_CYCLONEDX_JSON", zipPath, true, materials.ArchiveZip},
-		{"archive-native kind", "ZAP_DAST_ZIP", zipPath, false, materials.ArchiveNone},
-		{"no kind", "", zipPath, false, materials.ArchiveNone},
-		{"kind + non-archive", "ARTIFACT", plainPath, false, materials.ArchiveNone},
+		// A non-ArchiveNone format means the value will be exploded.
+		{"kind + archive", "SBOM_CYCLONEDX_JSON", zipPath, materials.ArchiveZip},
+		{"archive-native kind", "ZAP_DAST_ZIP", zipPath, materials.ArchiveNone},
+		{"no kind", "", zipPath, materials.ArchiveNone},
+		{"kind + non-archive", "ARTIFACT", plainPath, materials.ArchiveNone},
 		// Non-file values must never return an error — STRING and CONTAINER_IMAGE
 		// carry values that are not file paths at all.
-		{"kind STRING non-file value", "STRING", "hello world", false, materials.ArchiveNone},
-		{"kind CONTAINER_IMAGE non-file value", "CONTAINER_IMAGE", "registry.example.com/app:v1", false, materials.ArchiveNone},
+		{"kind STRING non-file value", "STRING", "hello world", materials.ArchiveNone},
+		{"kind CONTAINER_IMAGE non-file value", "CONTAINER_IMAGE", "registry.example.com/app:v1", materials.ArchiveNone},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			format, explode, err := shouldExplode(tc.kind, tc.value)
+			format, err := shouldExplode(tc.kind, tc.value)
 			require.NoError(t, err)
-			assert.Equal(t, tc.wantExplode, explode)
-			if explode {
-				assert.Equal(t, tc.wantFormat, format)
-			}
+			assert.Equal(t, tc.wantFormat, format)
 		})
 	}
 }
