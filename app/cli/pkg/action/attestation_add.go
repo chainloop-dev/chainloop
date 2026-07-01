@@ -42,6 +42,12 @@ type AttestationAddOpts struct {
 	LocalStatePath                                     string
 	// NoStrictValidation skips strict schema validation
 	NoStrictValidation bool
+	// MaxExtractEntries limits the number of entries extracted from an archive.
+	// Zero defaults to materials.DefaultArchiveLimits().MaxEntries.
+	MaxExtractEntries int
+	// MaxExtractSize limits the total uncompressed bytes extracted from an archive.
+	// Zero defaults to materials.DefaultArchiveLimits().MaxTotalSize.
+	MaxExtractSize int64
 }
 
 type newCrafterOpts struct {
@@ -56,6 +62,8 @@ type AttestationAdd struct {
 	casCAPath          string
 	connectionInsecure bool
 	localStatePath     string
+	maxExtractEntries  int
+	maxExtractSize     int64
 	*newCrafterOpts
 }
 
@@ -69,6 +77,16 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 		opts = append(opts, crafter.WithNoStrictValidation(cfg.NoStrictValidation))
 	}
 
+	defaults := materials.DefaultArchiveLimits()
+	maxEntries := cfg.MaxExtractEntries
+	if maxEntries <= 0 {
+		maxEntries = defaults.MaxEntries
+	}
+	maxSize := cfg.MaxExtractSize
+	if maxSize <= 0 {
+		maxSize = defaults.MaxTotalSize
+	}
+
 	return &AttestationAdd{
 		ActionsOpts:        cfg.ActionsOpts,
 		newCrafterOpts:     &newCrafterOpts{cpConnection: cfg.CPConnection, opts: opts},
@@ -76,12 +94,14 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 		casCAPath:          cfg.CASCAPath,
 		connectionInsecure: cfg.ConnectionInsecure,
 		localStatePath:     cfg.LocalStatePath,
+		maxExtractEntries:  maxEntries,
+		maxExtractSize:     maxSize,
 	}, nil
 }
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string, policyInputFiles []*PolicyInputFromFile) (*AttestationStatusMaterial, error) {
+func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string, policyInputFiles []*PolicyInputFromFile) ([]*AttestationStatusMaterial, error) {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
 	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
 	if err != nil {
@@ -133,6 +153,31 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	// 3. If materialType is not empty, add material contract free with materialType and materialName
 	addOpts := runtimeInputAddOpts(runtimeInputs)
 
+	// Explode path: --kind set, value is a (non-archive-native) archive.
+	format, err := shouldExplode(materialType, materialValue)
+	if err != nil {
+		return nil, fmt.Errorf("detecting archive: %w", err)
+	}
+	if format != materials.ArchiveNone {
+		if len(policyInputFiles) > 0 {
+			action.Logger.Warn().Msg("--policy-input-from-file is ignored when expanding an archive; evidence cross-links are not recorded for exploded materials")
+		}
+		limits := materials.ArchiveLimits{MaxEntries: action.maxExtractEntries, MaxTotalSize: action.maxExtractSize}
+		mts, err := crafter.AddMaterialsFromArchive(ctx, attestationID, materialType, materialName, materialValue, format, casBackend, annotations, limits, addOpts...)
+		if err != nil {
+			return nil, fmt.Errorf("adding materials from archive: %w", err)
+		}
+		results := make([]*AttestationStatusMaterial, 0, len(mts))
+		for _, mt := range mts {
+			r, err := attMaterialToAction(mt)
+			if err != nil {
+				return nil, fmt.Errorf("converting material to action: %w", err)
+			}
+			results = append(results, r)
+		}
+		return results, nil
+	}
+
 	var mt *api.Attestation_Material
 	switch {
 	case materialName == "" && materialType == "":
@@ -176,7 +221,21 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		return nil, fmt.Errorf("converting material to action: %w", err)
 	}
 
-	return materialResult, nil
+	return []*AttestationStatusMaterial{materialResult}, nil
+}
+
+// shouldExplode decides whether an att-add should explode the value into many
+// materials: only when the kind is explodable (SBOM/SARIF) and the value is a
+// supported archive. It returns ArchiveNone for every other kind so a regular
+// zip provided as e.g. ARTIFACT or EVIDENCE is recorded whole.
+func shouldExplode(materialType, value string) (materials.ArchiveFormat, error) {
+	// Only explode kinds that have a meaningful "bundle of the same kind"
+	// archive form (SBOM, SARIF). Any other kind — including ARTIFACT and
+	// EVIDENCE — records the archive whole even when the value is a zip/tar.
+	if !materials.IsExplodableKind(materialType) {
+		return materials.ArchiveNone, nil
+	}
+	return materials.DetectArchive(value)
 }
 
 // runtimeInputAddOpts wraps the runtime inputs as crafter add options, or
@@ -315,29 +374,14 @@ func policyInputEvidenceNames(materialName string, policyInputFiles []*PolicyInp
 	return names
 }
 
-// sanitizeMaterialNamePart lower-cases s and collapses every run of characters
-// outside [a-z0-9] into a single "-", trimming leading/trailing "-", so the
-// result is a valid material-name component. Falls back to "input" if nothing
-// usable remains.
+// sanitizeMaterialNamePart sanitizes s into a valid material-name component via
+// materials.SanitizeMaterialName, falling back to "input" if nothing usable
+// remains.
 func sanitizeMaterialNamePart(s string) string {
-	var b strings.Builder
-	pendingHyphen := false
-	for _, r := range strings.ToLower(s) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			if pendingHyphen && b.Len() > 0 {
-				b.WriteByte('-')
-			}
-			b.WriteRune(r)
-			pendingHyphen = false
-		} else {
-			pendingHyphen = true
-		}
+	if name := materials.SanitizeMaterialName(s); name != "" {
+		return name
 	}
-
-	if b.Len() == 0 {
-		return "input"
-	}
-	return b.String()
+	return "input"
 }
 
 // GetPolicyEvaluations is a Wrapper around the getPolicyEvaluations

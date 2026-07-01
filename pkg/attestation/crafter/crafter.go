@@ -19,9 +19,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"net/url"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -681,8 +683,10 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 	return nil, fmt.Errorf("failed to auto-discover material kind: %w", err)
 }
 
-// addMaterials adds the incoming material m to the crafting state
-func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
+// stageMaterial crafts a material into the in-memory crafting state WITHOUT
+// persisting it. Callers must call stateManager.Write to commit. Splitting the
+// write out lets the archive explode path craft many entries and commit once.
+func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
 	addOptions := &addOpts{}
 	for _, opt := range opts {
 		opt(addOptions)
@@ -785,13 +789,152 @@ func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_M
 	}
 	c.CraftingState.Attestation.Materials[m.Name] = mt
 
-	// 6 - Persist state
+	return mt, nil
+}
+
+// addMaterial crafts a single material and persists the crafting state.
+func (c *Crafter) addMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, attestationID, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
+	mt, err := c.stageMaterial(ctx, m, value, casBackend, runtimeAnnotations, opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
 		return nil, fmt.Errorf("failed to persist crafting state: %w", err)
 	}
 
 	c.Logger.Debug().Str("key", m.Name).Msg("added to state")
 	return mt, nil
+}
+
+// AddMaterialsFromArchive expands an archive and stages every entry as an
+// independent material, committing all of them atomically in a single
+// stateManager.Write call. If any entry fails, no state is persisted and the
+// in-memory materials map is rolled back.
+//
+// Parameters:
+//   - kind: the material type string for every entry (must be a valid
+//     CraftingSchema_Material_MaterialType name).
+//   - namePrefix: optional prefix prepended to each derived entry name.
+//   - archivePath: path to the archive on disk.
+//   - format: archive format (ArchiveZip / ArchiveTar / ArchiveTarGz).
+//   - limits: guard against zip-bomb expansion.
+func (c *Crafter) AddMaterialsFromArchive(
+	ctx context.Context,
+	attestationID, kind, namePrefix, archivePath string,
+	format materials.ArchiveFormat,
+	casBackend *casclient.CASBackend,
+	runtimeAnnotations map[string]string,
+	limits materials.ArchiveLimits,
+	opts ...AddOpt,
+) ([]*api.Attestation_Material, error) {
+	if err := c.requireStateLoaded(); err != nil {
+		return nil, fmt.Errorf("adding materials from archive: %w", err)
+	}
+
+	// Validate kind up front so we fail fast before touching disk.
+	kindVal, found := schemaapi.CraftingSchema_Material_MaterialType_value[kind]
+	if !found {
+		return nil, fmt.Errorf("%q kind not found. Available options are %q", kind, schemaapi.ListAvailableMaterialKind())
+	}
+	materialKind := schemaapi.CraftingSchema_Material_MaterialType(kindVal)
+
+	// Seed the name allocator with existing material keys so we never collide.
+	existingKeys := make([]string, 0, len(c.CraftingState.Attestation.GetMaterials()))
+	for k := range c.CraftingState.Attestation.GetMaterials() {
+		existingKeys = append(existingKeys, k)
+	}
+	allocator := materials.NewNameAllocator(existingKeys)
+
+	// Create a temporary directory for per-entry files; cleaned up on return.
+	tmpDir, err := os.MkdirTemp("", "chainloop-archive-*")
+	if err != nil {
+		return nil, fmt.Errorf("creating temp dir for archive expansion: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Snapshot checkpoints for atomic rollback on any error path.
+	var stagedNames []string
+	var result []*api.Attestation_Material
+	policyEvalCheckpoint := len(c.CraftingState.Attestation.PolicyEvaluations)
+
+	rollback := func() {
+		for _, n := range stagedNames {
+			delete(c.CraftingState.Attestation.Materials, n)
+		}
+		c.CraftingState.Attestation.PolicyEvaluations = c.CraftingState.Attestation.PolicyEvaluations[:policyEvalCheckpoint]
+	}
+
+	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
+		// Material names are sequential ("<prefix>-1", "<prefix>-2", … or
+		// "material-N" with no prefix). The original basename is still derived
+		// (with archive "/" semantics, OS-independently) and used for the temp
+		// file so the recorded artifact filename preserves the real name.
+		base := materials.ArchiveEntryBaseName(name)
+		matName := allocator.AllocateSequential(namePrefix)
+
+		// Give each entry its own temp subdirectory (named by the unique material
+		// name) so two entries sharing a basename (e.g. "a/x.json" and "b/x.json")
+		// never collide, while the temp file itself keeps the original basename so
+		// the recorded material metadata preserves the real filename.
+		entryDir, err := os.MkdirTemp(tmpDir, matName+"-*")
+		if err != nil {
+			return fmt.Errorf("creating temp dir for entry %q: %w", name, err)
+		}
+		tmpPath := filepath.Join(entryDir, base)
+		tmp, err := os.Create(tmpPath)
+		if err != nil {
+			return fmt.Errorf("creating temp file for entry %q: %w", name, err)
+		}
+
+		if _, err := io.Copy(tmp, r); err != nil {
+			tmp.Close()
+			return fmt.Errorf("writing entry %q to temp file: %w", name, err)
+		}
+		// Check the Close error so a failed flush does not stage an incomplete file.
+		if err := tmp.Close(); err != nil {
+			return fmt.Errorf("closing temp file for entry %q: %w", name, err)
+		}
+
+		m := &schemaapi.CraftingSchema_Material{
+			Optional: true,
+			Type:     materialKind,
+			Name:     matName,
+		}
+
+		mt, err := c.stageMaterial(ctx, m, tmpPath, casBackend, runtimeAnnotations, opts...)
+		// Remove the entry's temp subdir immediately after staging to keep disk
+		// usage bounded; the deferred os.RemoveAll(tmpDir) is the safety net.
+		os.RemoveAll(entryDir) //nolint:errcheck // best-effort cleanup
+		if err != nil {
+			return fmt.Errorf("staging entry %q as material %q: %w", name, matName, err)
+		}
+
+		stagedNames = append(stagedNames, matName)
+		result = append(result, mt)
+		return nil
+	})
+
+	if walkErr != nil {
+		// Roll back any in-memory staging: remove material map entries and
+		// truncate policy evaluations back to the pre-call checkpoint.
+		rollback()
+		return nil, fmt.Errorf("expanding archive %q: %w", archivePath, walkErr)
+	}
+
+	if len(result) == 0 {
+		return nil, fmt.Errorf("archive %q contains no processable entries", archivePath)
+	}
+
+	// All entries staged successfully; persist once.
+	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
+		// Roll back in-memory state including policy evaluations.
+		rollback()
+		return nil, fmt.Errorf("failed to persist crafting state: %w", err)
+	}
+
+	c.Logger.Debug().Int("count", len(result)).Str("archive", archivePath).Msg("added archive materials to state")
+	return result, nil
 }
 
 // projectContext returns the project name and version from the workflow

@@ -1,0 +1,286 @@
+// Copyright 2026 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package materials
+
+import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// writeZip creates a zip at dir/name containing the given files (name->content).
+func writeZip(t *testing.T, dir, name string, files map[string]string) string {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	f, err := os.Create(p)
+	require.NoError(t, err)
+	defer f.Close()
+	zw := zip.NewWriter(f)
+	for n, c := range files {
+		w, err := zw.Create(n)
+		require.NoError(t, err)
+		_, err = w.Write([]byte(c))
+		require.NoError(t, err)
+	}
+	require.NoError(t, zw.Close())
+	return p
+}
+
+// writeTarGz creates a .tar.gz at dir/name containing the given regular files.
+func writeTarGz(t *testing.T, dir, name string, files map[string]string) string {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	f, err := os.Create(p)
+	require.NoError(t, err)
+	defer f.Close()
+	gw := gzip.NewWriter(f)
+	tw := tar.NewWriter(gw)
+	for n, c := range files {
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: n, Mode: 0o600, Size: int64(len(c)), Typeflag: tar.TypeReg}))
+		_, err = tw.Write([]byte(c))
+		require.NoError(t, err)
+	}
+	require.NoError(t, tw.Close())
+	require.NoError(t, gw.Close())
+	return p
+}
+
+// writeTar creates an uncompressed .tar at dir/name containing the given regular files.
+func writeTar(t *testing.T, dir, name string, files map[string]string) string {
+	t.Helper()
+	p := filepath.Join(dir, name)
+	f, err := os.Create(p)
+	require.NoError(t, err)
+	defer f.Close()
+	tw := tar.NewWriter(f)
+	for n, c := range files {
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: n, Mode: 0o600, Size: int64(len(c)), Typeflag: tar.TypeReg}))
+		_, err = tw.Write([]byte(c))
+		require.NoError(t, err)
+	}
+	require.NoError(t, tw.Close())
+	return p
+}
+
+func TestDetectArchive(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := writeZip(t, dir, "a.zip", map[string]string{"x.txt": "hi"})
+	tgzPath := writeTarGz(t, dir, "a.tar.gz", map[string]string{"x.txt": "hi"})
+	tarPath := writeTar(t, dir, "a.tar", map[string]string{"x.txt": "hi"})
+	tgzShortPath := writeTarGz(t, dir, "a.tgz", map[string]string{"x.txt": "hi"})
+
+	plain := filepath.Join(dir, "app.bin")
+	require.NoError(t, os.WriteFile(plain, []byte("not an archive"), 0o600))
+
+	// A .zip renamed without extension — magic bytes must still detect it.
+	noExt := filepath.Join(dir, "noext")
+	require.NoError(t, os.WriteFile(noExt, mustRead(t, zipPath), 0o600))
+
+	tests := []struct {
+		name string
+		path string
+		want ArchiveFormat
+	}{
+		{"zip by extension", zipPath, ArchiveZip},
+		{"tar.gz by extension", tgzPath, ArchiveTarGz},
+		{"tar by extension", tarPath, ArchiveTar},
+		{"tgz by extension", tgzShortPath, ArchiveTarGz},
+		{"plain file", plain, ArchiveNone},
+		{"zip without extension via magic", noExt, ArchiveZip},
+		// Non-file values must detect as non-archive without erroring.
+		{"non-existent value", filepath.Join(dir, "nope"), ArchiveNone},
+		// A value whose first path segment is an existing regular file yields
+		// ENOTDIR on open (e.g. CONTAINER_IMAGE "registry/app:v1"); still a non-archive.
+		{"path segment is a file (ENOTDIR)", filepath.Join(plain, "app:v1"), ArchiveNone},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := DetectArchive(tc.path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func mustRead(t *testing.T, p string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(p)
+	require.NoError(t, err)
+	return b
+}
+
+func TestWalkArchiveEntries(t *testing.T) {
+	dir := t.TempDir()
+
+	t.Run("yields regular files, skips dirs", func(t *testing.T) {
+		// Build a zip with a directory entry + two files.
+		p := filepath.Join(dir, "files.zip")
+		f, err := os.Create(p)
+		require.NoError(t, err)
+		zw := zip.NewWriter(f)
+		_, err = zw.Create("nested/") // directory entry
+		require.NoError(t, err)
+		for _, n := range []string{"a.json", "nested/b.json"} {
+			w, err := zw.Create(n)
+			require.NoError(t, err)
+			_, err = w.Write([]byte("{}"))
+			require.NoError(t, err)
+		}
+		require.NoError(t, zw.Close())
+		require.NoError(t, f.Close())
+
+		var got []string
+		err = WalkArchiveEntries(p, ArchiveZip, DefaultArchiveLimits(), func(name string, r io.Reader) error {
+			b, _ := io.ReadAll(r)
+			assert.Equal(t, "{}", string(b))
+			got = append(got, name)
+			return nil
+		})
+		require.NoError(t, err)
+		assert.ElementsMatch(t, []string{"a.json", "nested/b.json"}, got)
+	})
+
+	t.Run("max entries exceeded", func(t *testing.T) {
+		p := writeTarGz(t, dir, "many.tar.gz", map[string]string{"a": "1", "b": "2", "c": "3"})
+		err := WalkArchiveEntries(p, ArchiveTarGz, ArchiveLimits{MaxEntries: 2, MaxTotalSize: 1 << 30}, func(string, io.Reader) error { return nil })
+		require.ErrorIs(t, err, ErrTooManyEntries)
+	})
+
+	t.Run("max total size exceeded while streaming", func(t *testing.T) {
+		p := writeTarGz(t, dir, "big.tar.gz", map[string]string{"a": strings.Repeat("x", 1000)})
+		err := WalkArchiveEntries(p, ArchiveTarGz, ArchiveLimits{MaxEntries: 100, MaxTotalSize: 100}, func(_ string, r io.Reader) error {
+			_, err := io.ReadAll(r)
+			return err
+		})
+		require.ErrorIs(t, err, ErrArchiveTooLarge)
+	})
+
+	t.Run("rejects traversal via tar with .. entries", func(t *testing.T) {
+		// tar allows .. in header, so we can test via tar.
+		p := filepath.Join(dir, "evil.tar.gz")
+		f, err := os.Create(p)
+		require.NoError(t, err)
+		gw := gzip.NewWriter(f)
+		tw := tar.NewWriter(gw)
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: "../escape.txt", Mode: 0o600, Size: 1, Typeflag: tar.TypeReg}))
+		_, err = tw.Write([]byte("x"))
+		require.NoError(t, err)
+		require.NoError(t, tw.Close())
+		require.NoError(t, gw.Close())
+		require.NoError(t, f.Close())
+
+		err = WalkArchiveEntries(p, ArchiveTarGz, DefaultArchiveLimits(), func(string, io.Reader) error { return nil })
+		require.Error(t, err, "entry ../escape.txt must be rejected")
+	})
+}
+
+func TestSafeArchivePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"absolute path", "/etc/passwd", false},
+		{"windows drive-letter backslash", "C:\\Windows\\system32", false},
+		{"windows drive-letter forward slash", "c:/windows/system32", false},
+		{"path traversal", "../escape.txt", false},
+		{"nested path traversal", "foo/../../../etc/passwd", false},
+		{"double dot in filename is ok", "foo..bar.json", true},
+		{"escape via nested double dot", "a/../../etc/passwd", false},
+		{"valid nested path", "a/b.txt", true},
+		{"valid simple path", "file.txt", true},
+		{"valid with subdirs", "nested/dir/file.txt", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := safeArchivePath(tc.path)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestArchiveEntryBaseName(t *testing.T) {
+	tests := []struct{ name, in, want string }{
+		{"simple", "scan.json", "scan.json"},
+		{"forward-slash path", "nested/dir/scan.json", "scan.json"},
+		{"backslash path resolves the same on any OS", "nested\\dir\\scan.json", "scan.json"},
+		{"mixed separators", "a/b\\c.json", "c.json"},
+		{"no directory", "report.sarif", "report.sarif"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, ArchiveEntryBaseName(tc.in))
+		})
+	}
+}
+
+func TestSanitizeMaterialName(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"scan.json", "scan-json"},
+		{"results.XML", "results-xml"},
+		{"weird__name!!", "weird-name"},
+		{"___", ""}, // nothing usable -> empty; callers supply their own fallback
+		{"", ""},
+	}
+	for _, tc := range tests {
+		assert.Equal(t, tc.want, SanitizeMaterialName(tc.in))
+	}
+}
+
+func TestNameAllocatorSequential(t *testing.T) {
+	t.Run("default prefix numbers from 0", func(t *testing.T) {
+		a := NewNameAllocator(nil)
+		assert.Equal(t, "material-0", a.AllocateSequential(""))
+		assert.Equal(t, "material-1", a.AllocateSequential(""))
+		assert.Equal(t, "material-2", a.AllocateSequential(""))
+	})
+
+	t.Run("custom prefix is sanitized and numbered", func(t *testing.T) {
+		a := NewNameAllocator(nil)
+		assert.Equal(t, "q3-scans-0", a.AllocateSequential("Q3 Scans"))
+		assert.Equal(t, "q3-scans-1", a.AllocateSequential("Q3 Scans"))
+	})
+
+	t.Run("skips names already present in the attestation", func(t *testing.T) {
+		a := NewNameAllocator([]string{"material-0", "material-1"})
+		assert.Equal(t, "material-2", a.AllocateSequential(""))
+		assert.Equal(t, "material-3", a.AllocateSequential(""))
+	})
+
+	t.Run("symbol-only prefix falls back to material", func(t *testing.T) {
+		a := NewNameAllocator(nil)
+		assert.Equal(t, "material-0", a.AllocateSequential("!!!"))
+	})
+}
+
+func TestIsExplodableKind(t *testing.T) {
+	// Explodable: SBOM and SARIF bundles.
+	assert.True(t, IsExplodableKind("SBOM_CYCLONEDX_JSON"))
+	assert.True(t, IsExplodableKind("SBOM_SPDX_JSON"))
+	assert.True(t, IsExplodableKind("SARIF"))
+	// Not explodable: recorded whole even when a zip/tar is provided.
+	assert.False(t, IsExplodableKind("ARTIFACT"))
+	assert.False(t, IsExplodableKind("EVIDENCE"))
+	assert.False(t, IsExplodableKind("ZAP_DAST_ZIP"))
+	assert.False(t, IsExplodableKind(""))
+}
