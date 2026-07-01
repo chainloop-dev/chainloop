@@ -567,14 +567,15 @@ type AddOpt func(*addOpts)
 type addOpts struct {
 	// runtimeInputs holds policy input values supplied at runtime (e.g. sourced
 	// from a file via --policy-input-from-file). They are merged additively onto
-	// the contract arguments when evaluating the standalone material policies.
-	runtimeInputs map[string]string
+	// the contract arguments when evaluating the standalone material policies,
+	// either globally or scoped to a specific policy.
+	runtimeInputs *policies.RuntimeInputs
 }
 
 // WithRuntimeInputs supplies policy input values that are merged additively onto
 // the contract arguments when evaluating the standalone material policies for
 // this add. Used by --policy-input-from-file.
-func WithRuntimeInputs(inputs map[string]string) AddOpt {
+func WithRuntimeInputs(inputs *policies.RuntimeInputs) AddOpt {
 	return func(o *addOpts) {
 		o.runtimeInputs = inputs
 	}

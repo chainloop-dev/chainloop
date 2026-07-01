@@ -1,0 +1,19 @@
+apiVersion: chainloop.dev/v1
+kind: Policy
+metadata:
+  name: trusted-binaries-vendor-keys
+spec:
+  inputs:
+    - name: ignored_paths
+  policies:
+    - kind: SBOM_SPDX_JSON
+      embedded: |
+        package main
+
+        import rego.v1
+
+        result := {
+          "skipped": true,
+          "violations": [],
+          "skip_reason": "",
+        }

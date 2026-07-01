@@ -27,6 +27,7 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/grpc"
 )
 
@@ -181,39 +182,48 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 // runtimeInputAddOpts wraps the runtime inputs as crafter add options, or
 // returns nil when there are none. Defined at package scope so it can name the
 // crafter package type (the Run method shadows it with a local variable).
-func runtimeInputAddOpts(runtimeInputs map[string]string) []crafter.AddOpt {
-	if len(runtimeInputs) == 0 {
+func runtimeInputAddOpts(runtimeInputs *policies.RuntimeInputs) []crafter.AddOpt {
+	if runtimeInputs == nil || (len(runtimeInputs.Global) == 0 && len(runtimeInputs.Scoped) == 0) {
 		return nil
 	}
 	return []crafter.AddOpt{crafter.WithRuntimeInputs(runtimeInputs)}
 }
 
-// buildRuntimeInputs reads each policy input file and returns a map of policy
-// input name to its extracted values, ready to be merged onto contract
-// arguments. Values are newline-joined, matching the engine's existing
-// multi-value encoding (it splits inputs back on newlines and commas). As with
-// contract-declared arguments, individual values must not embed those
-// delimiters; path globs, the intended use, never do.
-func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile) (map[string]string, error) {
+// buildRuntimeInputs reads each policy input file and returns the extracted
+// values grouped for the policy engine: unscoped entries under Global and
+// policy-scoped entries under Scoped[policy]. Values are newline-joined and
+// accumulated via policies.MergeRuntimeInputs so repeated inputs merge using the
+// same multi-value encoding the engine expects (it splits inputs back on
+// newlines and commas). As with contract-declared arguments, individual values
+// must not embed those delimiters; path globs, the intended use, never do.
+func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile) (*policies.RuntimeInputs, error) {
 	if len(policyInputFiles) == 0 {
 		return nil, nil
 	}
 
-	runtimeInputs := make(map[string]string, len(policyInputFiles))
+	ri := &policies.RuntimeInputs{
+		Global: map[string]string{},
+		Scoped: map[string]map[string]string{},
+	}
 	for _, pif := range policyInputFiles {
 		values, err := ExtractColumnValues(pif.File, pif.Column)
 		if err != nil {
 			return nil, fmt.Errorf("extracting %q from %q: %w", pif.Column, pif.File, err)
 		}
-		joined := strings.Join(values, "\n")
-		if existing := runtimeInputs[pif.Input]; existing != "" {
-			runtimeInputs[pif.Input] = existing + "\n" + joined
+
+		// Unscoped entries go to Global; policy-scoped entries to their own
+		// Scoped[policy] map. Because global and scoped values live in separate
+		// maps, they never collide here even when they share an input name;
+		// forPolicy is what later merges a policy's scoped values over Global.
+		add := map[string]string{pif.Input: strings.Join(values, "\n")}
+		if pif.Policy == "" {
+			ri.Global = policies.MergeRuntimeInputs(ri.Global, add)
 		} else {
-			runtimeInputs[pif.Input] = joined
+			ri.Scoped[pif.Policy] = policies.MergeRuntimeInputs(ri.Scoped[pif.Policy], add)
 		}
 	}
 
-	return runtimeInputs, nil
+	return ri, nil
 }
 
 // addPolicyInputEvidence adds each policy input file as an EVIDENCE material,

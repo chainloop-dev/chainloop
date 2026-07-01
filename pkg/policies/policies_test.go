@@ -593,6 +593,55 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 	s.Equal("Not made with syft", res[0].Violations[0].Message)
 }
 
+// TestVerifyMaterialScopedRuntimeInputs reproduces the trusted-binaries scenario
+// from PFM-6530: two policies both declare `ignored_paths`, and a runtime input
+// scoped to one of them must land only on that policy, not the other.
+func (s *testSuite) TestVerifyMaterialScopedRuntimeInputs() {
+	schema := &v12.CraftingSchema{
+		Policies: &v12.Policies{
+			Materials: []*v12.PolicyAttachment{
+				{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/scoped_signed.yaml"}},
+				{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/scoped_vendor_keys.yaml"}},
+			},
+		},
+	}
+	material := &v1.Attestation_Material{
+		M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+			Content: []byte(`{}`),
+		}},
+		MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+		InlineCas:    true,
+	}
+
+	runtimeInputs := &RuntimeInputs{
+		Scoped: map[string]map[string]string{
+			"trusted-binaries-signed": {"ignored_paths": "a.dll\nb.dll"},
+		},
+	}
+
+	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger, WithRuntimeInputs(runtimeInputs))
+
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	s.Require().NoError(err)
+	s.Require().Len(res, 2)
+
+	byName := make(map[string]*v1.PolicyEvaluation, len(res))
+	for _, r := range res {
+		byName[r.GetName()] = r
+	}
+
+	signed := byName["trusted-binaries-signed"]
+	s.Require().NotNil(signed)
+	s.Equal("a.dll\nb.dll", signed.GetWith()["ignored_paths"])
+	s.Equal([]string{"ignored_paths"}, signed.GetRuntimeInputOverrides())
+
+	// The scoped input must NOT leak onto the other policy.
+	vendor := byName["trusted-binaries-vendor-keys"]
+	s.Require().NotNil(vendor)
+	s.Empty(vendor.GetWith()["ignored_paths"])
+	s.Empty(vendor.GetRuntimeInputOverrides())
+}
+
 func (s *testSuite) TestLoadPolicySpec() {
 	var cases = []struct {
 		name             string

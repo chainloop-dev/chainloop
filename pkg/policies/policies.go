@@ -20,7 +20,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"maps"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -100,7 +99,7 @@ type PolicyVerifier struct {
 	groupCache         cache.Cache[*groupWithReference]
 	projectName        string
 	projectVersionName string
-	runtimeInputs      map[string]string
+	runtimeInputs      *RuntimeInputs
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
@@ -117,7 +116,7 @@ type PolicyVerifierOptions struct {
 	GroupCache         cache.Cache[*groupWithReference]
 	ProjectName        string
 	ProjectVersionName string
-	RuntimeInputs      map[string]string
+	RuntimeInputs      *RuntimeInputs
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -191,7 +190,8 @@ func WithProjectContext(name, version string) PolicyVerifierOption {
 // WithRuntimeInputs sets policy input values supplied at runtime (e.g. sourced
 // from a file via --policy-input-from-file). They are merged additively onto
 // the contract-declared arguments during standalone material policy evaluation.
-func WithRuntimeInputs(inputs map[string]string) PolicyVerifierOption {
+// Inputs can be global or scoped to a specific policy; see RuntimeInputs.
+func WithRuntimeInputs(inputs *RuntimeInputs) PolicyVerifierOption {
 	return func(o *PolicyVerifierOptions) {
 		o.RuntimeInputs = inputs
 	}
@@ -256,6 +256,10 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 		return nil, NewPolicyError(err)
 	}
 
+	// Track which scoped runtime inputs matched a policy so we can warn about
+	// scopes that matched nothing (e.g. a typo in the policy name).
+	tracker := newScopeTracker()
+
 	results := make([]*v12.PolicyEvaluation, len(attachments))
 	g, gCtx := errgroup.WithContext(ctx)
 	g.SetLimit(pv.maxConcurrency)
@@ -263,7 +267,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	for i, attachment := range attachments {
 		g.Go(func() error {
 			ev, err := pv.evaluatePolicyAttachment(gCtx, attachment, subject,
-				&evalOpts{kind: material.MaterialType, name: material.GetId(), runtimeInputs: pv.runtimeInputs},
+				&evalOpts{kind: material.MaterialType, name: material.GetId(), runtimeInputs: pv.runtimeInputs, scopeTracker: tracker},
 			)
 			if err != nil {
 				return NewPolicyError(err)
@@ -275,6 +279,11 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 
 	if err := g.Wait(); err != nil {
 		return nil, err
+	}
+
+	for _, scope := range tracker.unmatched(pv.runtimeInputs) {
+		pv.logger.Warn().Str("scope", scope).Str("material", material.GetId()).
+			Msg("policy input scoped to a policy that matched no attachment for this material — check the policy name")
 	}
 
 	// Filter nil entries (skipped policies)
@@ -296,30 +305,10 @@ type evalOpts struct {
 	// file via --policy-input-from-file). They are merged additively onto the
 	// contract-declared arguments, kept separate from bindings so policy-group
 	// argument resolution is never mis-flagged as a runtime override.
-	runtimeInputs map[string]string
-}
-
-// mergeRuntimeInputs returns the contract arguments with the runtime inputs
-// merged in additively: when both define the same key, the runtime value is
-// appended after the contract value (newline-separated) so file-sourced
-// exemptions add to, rather than replace, contract-declared ones. The input
-// maps are not mutated.
-func mergeRuntimeInputs(with, runtimeInputs map[string]string) map[string]string {
-	if len(runtimeInputs) == 0 {
-		return with
-	}
-
-	merged := make(map[string]string, len(with)+len(runtimeInputs))
-	maps.Copy(merged, with)
-	for k, v := range runtimeInputs {
-		if existing := merged[k]; existing != "" {
-			merged[k] = existing + "\n" + v
-		} else {
-			merged[k] = v
-		}
-	}
-
-	return merged
+	runtimeInputs *RuntimeInputs
+	// scopeTracker records which scoped runtime inputs matched a policy so the
+	// caller can warn about scopes that matched nothing. May be nil.
+	scopeTracker *scopeTracker
 }
 
 // shouldEvaluateAtPhase checks if a policy should be evaluated at the given phase.
@@ -396,9 +385,12 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 		pv.logger.Debug().Msgf("evaluating policy %s against attestation", policy.Metadata.Name)
 	}
 
-	// Merge runtime-supplied inputs additively onto the contract arguments
-	// before computing the effective values.
-	with := mergeRuntimeInputs(attachment.GetWith(), opts.runtimeInputs)
+	// Resolve the runtime-supplied inputs that apply to this policy (global plus
+	// any scoped to its name/ref) and merge them additively onto the contract
+	// arguments before computing the effective values.
+	effectiveRuntime, matchedScopes := opts.runtimeInputs.forPolicy(policy.GetMetadata().GetName(), attachment.GetRef())
+	opts.scopeTracker.mark(matchedScopes...)
+	with := MergeRuntimeInputs(attachment.GetWith(), effectiveRuntime)
 
 	args, err := ComputeArguments(policy.GetMetadata().GetName(), policy.GetSpec().GetInputs(), with, opts.bindings, pv.logger)
 	if err != nil {
@@ -409,7 +401,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	// into the computed args because the policy declares them). The values
 	// themselves live in `with`; this only flags the overridden input names.
 	var runtimeInputOverrides []string
-	for k := range opts.runtimeInputs {
+	for k := range effectiveRuntime {
 		if _, ok := args[k]; ok {
 			runtimeInputOverrides = append(runtimeInputOverrides, k)
 		}

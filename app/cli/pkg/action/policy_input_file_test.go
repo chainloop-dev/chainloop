@@ -62,6 +62,46 @@ func TestParsePolicyInputFromFile(t *testing.T) {
 			want: &PolicyInputFromFile{Input: "versions", Column: "Product Version", File: "exception.csv"},
 		},
 		{
+			name: "policy-scoped input",
+			raw:  "trusted-binaries-signed:ignored_paths=exception.csv:Path",
+			want: &PolicyInputFromFile{Policy: "trusted-binaries-signed", Input: "ignored_paths", Column: "Path", File: "exception.csv"},
+		},
+		{
+			name: "policy-scoped input defaults the column to the input",
+			raw:  "trusted-binaries-signed:ignored_paths=exception.csv",
+			want: &PolicyInputFromFile{Policy: "trusted-binaries-signed", Input: "ignored_paths", Column: "ignored_paths", File: "exception.csv"},
+		},
+		{
+			name: "policy-scoped input pinned to a version",
+			raw:  "trusted-binaries-signed@sha256:deadbeef:ignored_paths=exception.csv:Path",
+			want: &PolicyInputFromFile{Policy: "trusted-binaries-signed@sha256:deadbeef", Input: "ignored_paths", Column: "Path", File: "exception.csv"},
+		},
+		{
+			name: "provider-style scope keeps its colon",
+			raw:  "builtin:trusted-binaries-signed:ignored_paths=exception.csv:Path",
+			want: &PolicyInputFromFile{Policy: "builtin:trusted-binaries-signed", Input: "ignored_paths", Column: "Path", File: "exception.csv"},
+		},
+		{
+			name: "policy scope surrounding whitespace trimmed",
+			raw:  " trusted-binaries-signed : ignored_paths = exception.csv : Path ",
+			want: &PolicyInputFromFile{Policy: "trusted-binaries-signed", Input: "ignored_paths", Column: "Path", File: "exception.csv"},
+		},
+		{
+			name:    "empty policy scope",
+			raw:     ":ignored_paths=exception.csv",
+			wantErr: true,
+		},
+		{
+			name:    "policy scope with empty input",
+			raw:     "trusted-binaries-signed:=exception.csv",
+			wantErr: true,
+		},
+		{
+			name:    "versioned scope missing an input name",
+			raw:     "trusted-binaries-signed@sha256:deadbeef=exception.csv",
+			wantErr: true,
+		},
+		{
 			name: "surrounding whitespace trimmed",
 			raw:  " ignored_paths = exception.csv : Path ",
 			want: &PolicyInputFromFile{Input: "ignored_paths", Column: "Path", File: "exception.csv"},
