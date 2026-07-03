@@ -17,6 +17,8 @@ jobs:
       id-token: write # required for SLSA provenance
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
 
       - name: Install Chainloop
         run: |
@@ -69,6 +71,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
 
       - name: Initialize Attestation
         id: init_attestation
@@ -92,6 +96,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version-file: 'go.mod'
+          cache: false
 
       # install qemu binaries for multiarch builds (needed by goreleaser/buildx)
       - name: Setup qemu
@@ -125,6 +130,7 @@ jobs:
         env:
           SYFT_GOLANG_SEARCH_REMOTE_LICENSES: "true"
           ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           # goreleaser output resides in dist/artifacts.json
           # Attest all built containers and manifests
@@ -162,7 +168,7 @@ jobs:
               chainloop attestation add --name $sbom_name --value /tmp/sbom-$material_name.cyclonedx.json --kind SBOM_CYCLONEDX_JSON --attestation-id ${{ env.ATTESTATION_ID }}
 
               # Upload the SBOM to the release
-              gh release upload ${{ github.ref_name }} /tmp/sbom-$material_name.cyclonedx.json --clobber
+              gh release upload $RELEASE_TAG /tmp/sbom-$material_name.cyclonedx.json --clobber
 
               # Run Grype vulnerability scan and attest result
               grype --only-fixed -o sarif --file ./vuln-${container_name}.json $entry
@@ -188,10 +194,11 @@ jobs:
       - name: Include source code on attestation
         env:
           ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           # This needs to run AFTER goreleaser to make sure the source code is available
 
-          gh release download ${{ github.ref_name }} -A tar.gz -O /tmp/source-code.tar.gz
+          gh release download $RELEASE_TAG -A tar.gz -O /tmp/source-code.tar.gz
           chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Read current project version
@@ -201,9 +208,13 @@ jobs:
           echo "current_version=$current_version" >> $GITHUB_OUTPUT
 
       - name: Bump Chart and Dagger Version
-        run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger ${{ github.ref_name }}
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: .github/workflows/utils/bump-chart-and-dagger-version.sh deployment/chainloop extras/dagger $RELEASE_TAG
       - name: Bump Project Version
-        run: .github/workflows/utils/bump-project-version.sh ${{ github.ref_name }}
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: .github/workflows/utils/bump-project-version.sh $RELEASE_TAG
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
@@ -248,9 +259,10 @@ jobs:
         if: ${{ success() }}
         env:
           ATTESTATION_SHA: ${{ steps.attestation_push.outputs.attestation_sha }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ env.ATTESTATION_SHA }})"
-          current_notes=$(gh release view ${{github.ref_name}} --json body -q '.body')
+          current_notes=$(gh release view $RELEASE_TAG --json body -q '.body')
 
           if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
             # Replace the existing Chainloop Attestation section with the new URL
@@ -261,7 +273,7 @@ jobs:
           fi
 
           # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
-          gh release edit ${{github.ref_name}} -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
+          gh release edit $RELEASE_TAG -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
