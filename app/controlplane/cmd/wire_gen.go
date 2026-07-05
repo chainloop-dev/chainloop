@@ -176,7 +176,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		return nil, nil, err
 	}
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
-	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
+	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, authzUseCase, logger)
 	if err != nil {
 		cleanup3()
 		cleanup2()

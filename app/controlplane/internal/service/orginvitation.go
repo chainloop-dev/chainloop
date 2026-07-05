@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import (
 	"context"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -58,8 +60,13 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 		opts = append(opts, biz.WithSender(userID))
 	}
 
+	// Pass the caller's authz subject (org role for users, "api-token:<id>"
+	// for API tokens) so the biz layer can enforce that only owners may invite
+	// owners (audit finding CP-1).
+	callerRole := authz.Role(usercontext.CurrentAuthzSubject(ctx))
+
 	// Validations are done in the biz layer
-	i, err := s.useCase.Create(ctx, org.ID, req.ReceiverEmail, opts...)
+	i, err := s.useCase.Create(ctx, org.ID, req.ReceiverEmail, callerRole, opts...)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	}

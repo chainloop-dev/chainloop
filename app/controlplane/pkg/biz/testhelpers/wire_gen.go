@@ -142,7 +142,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
 	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
-	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, logger)
+	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, authzUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

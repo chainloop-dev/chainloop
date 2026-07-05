@@ -591,7 +591,7 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 	}
 
 	// Create an invitation for the user to join the organization
-	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.UserEmail,
+	if _, err := uc.orgInvitationUC.Create(ctx, orgID.String(), opts.UserEmail, requesterMembership.Role,
 		WithSender(opts.RequesterID),
 		WithInvitationRole(authz.RoleOrgContributor),
 		WithInvitationContext(invitationContext)); err != nil {

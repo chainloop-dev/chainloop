@@ -45,6 +45,7 @@ type OrgInvitationUseCase struct {
 	projectRepo ProjectsRepo
 	// Use cases
 	auditor *AuditorUseCase
+	authzUC *AuthzUseCase
 }
 
 type OrgInvitation struct {
@@ -83,10 +84,10 @@ type OrgInvitationRepo interface {
 	ChangeStatus(ctx context.Context, ID uuid.UUID, status OrgInvitationStatus) error
 }
 
-func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, auditorUC *AuditorUseCase, groupRepo GroupRepo, projectRepo ProjectsRepo, l log.Logger) (*OrgInvitationUseCase, error) {
+func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, auditorUC *AuditorUseCase, groupRepo GroupRepo, projectRepo ProjectsRepo, authzUC *AuthzUseCase, l log.Logger) (*OrgInvitationUseCase, error) {
 	return &OrgInvitationUseCase{
 		logger: servicelogger.ScopedHelper(l, "biz/orgInvitation"),
-		repo:   r, mRepo: mRepo, userRepo: uRepo, auditor: auditorUC, groupRepo: groupRepo, projectRepo: projectRepo,
+		repo:   r, mRepo: mRepo, userRepo: uRepo, auditor: auditorUC, groupRepo: groupRepo, projectRepo: projectRepo, authzUC: authzUC,
 	}, nil
 }
 
@@ -118,7 +119,7 @@ func WithSender(senderID uuid.UUID) InvitationCreateOpt {
 	}
 }
 
-func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail string, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
+func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail string, callerRole authz.Role, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
 	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.Create")
 	defer span.End()
 
@@ -141,6 +142,14 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail
 	// If it has ben overrode by the user, validate it
 	if opts.role == "" {
 		return nil, NewErrValidationStr("role is required")
+	}
+
+	// Only owners can send owner invitations. This closes the Admin→Owner
+	// invite bypass of PolicyOrganizationManageOwners (audit finding CP-1).
+	if opts.role == authz.RoleOwner {
+		if err := uc.enforceManageOwners(ctx, callerRole); err != nil {
+			return nil, err
+		}
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
@@ -457,6 +466,22 @@ func (uc *OrgInvitationUseCase) processProjectMembership(ctx context.Context, in
 	}, &orgUUID)
 
 	uc.logger.Infow("msg", "User added to project successfully", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID.String(), "project_id", projectID.String())
+
+	return nil
+}
+
+// enforceManageOwners checks that the caller has the manage_owners policy,
+// which is granted only to organization owners. It is the same check used by
+// MembershipUseCase.UpdateRole / DeleteOther to guard owner-scoped mutations.
+func (uc *OrgInvitationUseCase) enforceManageOwners(ctx context.Context, callerRole authz.Role) error {
+	ok, err := uc.authzUC.Enforce(ctx, string(callerRole), authz.PolicyOrganizationManageOwners)
+	if err != nil {
+		return fmt.Errorf("failed to enforce manage owners policy: %w", err)
+	}
+
+	if !ok {
+		return NewErrUnauthorizedStr("only organization owners can invite owners")
+	}
 
 	return nil
 }

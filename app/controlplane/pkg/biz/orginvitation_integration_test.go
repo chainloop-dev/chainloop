@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,12 +34,12 @@ const receiverEmail = "sarah@cyberdyne.io"
 
 func (s *OrgInvitationIntegrationTestSuite) TestList() {
 	ctx := context.Background()
-	inviteOrg1A, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+	inviteOrg1A, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 	s.NoError(err)
 	// same org but another user
-	inviteOrg1B, err := s.OrgInvitation.Create(ctx, s.org1.ID, "another-email@cyberdyne.io", biz.WithSender(uuid.MustParse(s.user2.ID)))
+	inviteOrg1B, err := s.OrgInvitation.Create(ctx, s.org1.ID, "another-email@cyberdyne.io", authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user2.ID)))
 	s.NoError(err)
-	inviteOrg2A, err := s.OrgInvitation.Create(ctx, s.org2.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+	inviteOrg2A, err := s.OrgInvitation.Create(ctx, s.org2.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 	s.NoError(err)
 
 	testCases := []struct {
@@ -76,21 +76,21 @@ func (s *OrgInvitationIntegrationTestSuite) TestList() {
 func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	ctx := context.Background()
 	s.T().Run("invalid org ID", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, "deadbeef", receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, "deadbeef", receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.True(biz.IsErrInvalidUUID(err))
 		s.Nil(invite)
 	})
 
 	s.T().Run("missing receiver email", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "", biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "", authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.True(biz.IsErrValidation(err))
 		s.Nil(invite)
 	})
 
 	s.T().Run("receiver email same than sender", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.Email, biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user.Email, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.ErrorContains(err, "sender and receiver emails cannot be the same")
 		s.True(biz.IsErrValidation(err))
@@ -98,7 +98,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	})
 
 	s.T().Run("receiver is already a member", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user2.Email, biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, s.user2.Email, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.ErrorContains(err, "user already exists in the org")
 		s.True(biz.IsErrValidation(err))
@@ -106,7 +106,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	})
 
 	s.T().Run("org not found", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.Nil))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.Nil))
 		s.Error(err)
 		s.True(biz.IsNotFound(err))
 		s.Nil(invite)
@@ -114,7 +114,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 
 	s.T().Run("can create invites for org1 and 2", func(_ *testing.T) {
 		for _, org := range []*biz.Organization{s.org1, s.org2} {
-			invite, err := s.OrgInvitation.Create(ctx, org.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+			invite, err := s.OrgInvitation.Create(ctx, org.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 			s.NoError(err)
 			s.Equal(org, invite.Org)
 			s.Equal(s.user, invite.Sender)
@@ -125,7 +125,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	})
 
 	s.T().Run("but can't create if there is one pending", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Error(err)
 		s.ErrorContains(err, "already exists")
 		s.True(biz.IsErrValidation(err))
@@ -133,30 +133,134 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	})
 
 	s.T().Run("but it can if it's another email", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "anotheremail@cyberdyne.io", biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "anotheremail@cyberdyne.io", authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.Equal("anotheremail@cyberdyne.io", invite.ReceiverEmail)
 		s.Equal(s.org1, invite.Org)
 		s.NoError(err)
 	})
 
 	s.T().Run("the default role is viewer", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "viewer@cyberdyne.io", biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "viewer@cyberdyne.io", authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.NoError(err)
 		s.Equal(authz.RoleViewer, invite.Role)
 	})
 
 	s.T().Run("but can have other roles", func(_ *testing.T) {
 		for _, r := range []authz.Role{authz.RoleOwner, authz.RoleAdmin, authz.RoleViewer} {
-			invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, fmt.Sprintf("%s@cyberdyne.io", r), biz.WithInvitationRole(r), biz.WithSender(uuid.MustParse(s.user.ID)))
+			invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, fmt.Sprintf("%s@cyberdyne.io", r), authz.RoleOwner, biz.WithInvitationRole(r), biz.WithSender(uuid.MustParse(s.user.ID)))
 			s.NoError(err)
 			s.Equal(r, invite.Role)
 		}
 	})
 
 	s.Run("and the email address is downcased", func() {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "WasCamelCase@cyberdyne.io", biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, "WasCamelCase@cyberdyne.io", authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.NoError(err)
 		s.Equal("wascamelcase@cyberdyne.io", invite.ReceiverEmail)
+	})
+}
+
+// TestCreateOwnerGuard covers audit finding CP-1: only organization owners may
+// send owner-role invitations. Admins (and lower roles) must not be able to
+// bootstrap a fresh Owner via the invitation path, which would bypass
+// PolicyOrganizationManageOwners (the Owner-only manage-owners gate).
+func (s *OrgInvitationIntegrationTestSuite) TestCreateOwnerGuard() {
+	ctx := context.Background()
+
+	owner, err := s.User.UpsertByEmail(ctx, "guard-owner@test.com", nil)
+	s.NoError(err)
+	admin, err := s.User.UpsertByEmail(ctx, "guard-admin@test.com", nil)
+	s.NoError(err)
+
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+
+	_, err = s.Membership.Create(ctx, org.ID, owner.ID, biz.WithMembershipRole(authz.RoleOwner))
+	s.NoError(err)
+	_, err = s.Membership.Create(ctx, org.ID, admin.ID, biz.WithMembershipRole(authz.RoleAdmin))
+	s.NoError(err)
+
+	s.Run("owner can invite owner", func() {
+		invite, err := s.OrgInvitation.Create(ctx, org.ID, "owner-invite-1@cyberdyne.io", authz.RoleOwner, biz.WithInvitationRole(authz.RoleOwner))
+		s.NoError(err)
+		s.Equal(authz.RoleOwner, invite.Role)
+	})
+
+	s.Run("admin cannot invite owner", func() {
+		_, err := s.OrgInvitation.Create(ctx, org.ID, "admin-invite-owner@cyberdyne.io", authz.RoleAdmin, biz.WithInvitationRole(authz.RoleOwner))
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+		s.Contains(err.Error(), "only organization owners can invite owners")
+	})
+
+	s.Run("viewer cannot invite owner", func() {
+		_, err := s.OrgInvitation.Create(ctx, org.ID, "viewer-invite-owner@cyberdyne.io", authz.RoleViewer, biz.WithInvitationRole(authz.RoleOwner))
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+	})
+
+	s.Run("empty callerRole cannot invite owner", func() {
+		_, err := s.OrgInvitation.Create(ctx, org.ID, "empty-role-invite-owner@cyberdyne.io", "", biz.WithInvitationRole(authz.RoleOwner))
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+	})
+
+	s.Run("admin can invite admin", func() {
+		invite, err := s.OrgInvitation.Create(ctx, org.ID, "admin-invite-admin@cyberdyne.io", authz.RoleAdmin, biz.WithInvitationRole(authz.RoleAdmin))
+		s.NoError(err)
+		s.Equal(authz.RoleAdmin, invite.Role)
+	})
+
+	s.Run("admin can invite viewer", func() {
+		invite, err := s.OrgInvitation.Create(ctx, org.ID, "admin-invite-viewer@cyberdyne.io", authz.RoleAdmin, biz.WithInvitationRole(authz.RoleViewer))
+		s.NoError(err)
+		s.Equal(authz.RoleViewer, invite.Role)
+	})
+
+	s.Run("viewer can invite viewer (guard only applies to owner role)", func() {
+		invite, err := s.OrgInvitation.Create(ctx, org.ID, "viewer-invite-viewer@cyberdyne.io", authz.RoleViewer, biz.WithInvitationRole(authz.RoleViewer))
+		s.NoError(err)
+		s.Equal(authz.RoleViewer, invite.Role)
+	})
+
+	// RBAC-enabled org roles (Member / Contributor) are denied owner invitations
+	// at the Casbin middleware before reaching the biz layer, but the biz guard
+	// must also fail-closed if they ever did reach it. This verifies the
+	// defense-in-depth invariant without depending on the middleware.
+	s.Run("org member cannot invite owner", func() {
+		_, err := s.OrgInvitation.Create(ctx, org.ID, "member-invite-owner@cyberdyne.io", authz.RoleOrgMember, biz.WithInvitationRole(authz.RoleOwner))
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+	})
+
+	s.Run("org contributor cannot invite owner", func() {
+		_, err := s.OrgInvitation.Create(ctx, org.ID, "contributor-invite-owner@cyberdyne.io", authz.RoleOrgContributor, biz.WithInvitationRole(authz.RoleOwner))
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+	})
+
+	// API-token caller path. AuthzUseCase.Enforce resolves the token's stored
+	// DB policies when the subject is "api-token:<id>". A default API token
+	// does NOT carry PolicyOrganizationManageOwners, so it must be rejected.
+	// A token explicitly granted that policy must be admitted.
+	s.Run("default API token cannot invite owner", func() {
+		token, err := s.APIToken.Create(ctx, "guard-default-token", nil, nil, &org.ID)
+		s.NoError(err)
+		subject := fmt.Sprintf("api-token:%s", token.ID)
+		_, err = s.OrgInvitation.Create(ctx, org.ID, "default-token-invite-owner@cyberdyne.io", authz.Role(subject), biz.WithInvitationRole(authz.RoleOwner))
+		s.Error(err)
+		s.True(biz.IsErrUnauthorized(err))
+	})
+
+	s.Run("API token with manage-owners policy can invite owner", func() {
+		token, err := s.APIToken.Create(ctx, "guard-owner-token", nil, nil, &org.ID,
+			biz.APITokenWithPolicies([]*authz.Policy{authz.PolicyOrganizationManageOwners}),
+		)
+		s.NoError(err)
+		subject := fmt.Sprintf("api-token:%s", token.ID)
+		invite, err := s.OrgInvitation.Create(ctx, org.ID, "owner-token-invite-owner@cyberdyne.io", authz.Role(subject), biz.WithInvitationRole(authz.RoleOwner))
+		s.NoError(err)
+		s.Equal(authz.RoleOwner, invite.Role)
 	})
 }
 
@@ -180,7 +284,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 	})
 
 	s.T().Run("user is invited to org 1 as viewer", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		require.NoError(s.T(), err)
 		err = s.OrgInvitation.AcceptPendingInvitations(ctx, receiverEmail)
 		s.NoError(err)
@@ -204,7 +308,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestAcceptPendingInvitations() {
 			receiverEmail := fmt.Sprintf("user%d@cyberdyne.io", i)
 			receiver, err := s.User.UpsertByEmail(ctx, receiverEmail, nil)
 			s.NoError(err)
-			invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithInvitationRole(r), biz.WithSender(uuid.MustParse(s.user.ID)))
+			invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, authz.RoleOwner, biz.WithInvitationRole(r), biz.WithSender(uuid.MustParse(s.user.ID)))
 			s.NoError(err)
 			s.Equal(r, invite.Role)
 			// accept the invite and make sure the new membership has the role
@@ -234,7 +338,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 	})
 
 	s.T().Run("invitation in another org", func(_ *testing.T) {
-		_, err := s.OrgInvitation.Create(ctx, s.org2.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+		_, err := s.OrgInvitation.Create(ctx, s.org2.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		s.NoError(err)
 		err = s.OrgInvitation.Revoke(ctx, s.org1.ID, uuid.NewString())
 		s.Error(err)
@@ -242,7 +346,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 	})
 
 	s.T().Run("invitation not in pending state", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		require.NoError(s.T(), err)
 		err = s.OrgInvitation.AcceptInvitation(ctx, invite.ID.String())
 		require.NoError(s.T(), err)
@@ -255,7 +359,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestRevoke() {
 	})
 
 	s.T().Run("happy path", func(_ *testing.T) {
-		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, biz.WithSender(uuid.MustParse(s.user.ID)))
+		invite, err := s.OrgInvitation.Create(ctx, s.org1.ID, receiverEmail, authz.RoleOwner, biz.WithSender(uuid.MustParse(s.user.ID)))
 		require.NoError(s.T(), err)
 		err = s.OrgInvitation.Revoke(ctx, s.org1.ID, invite.ID.String())
 		s.NoError(err)
@@ -300,6 +404,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
 			ctx,
 			s.org1.ID,
 			receiverForGroupEmail,
+			authz.RoleOwner,
 			biz.WithInvitationRole(authz.RoleViewer),
 			biz.WithInvitationContext(invitationContext),
 			biz.WithSender(uuid.MustParse(s.user.ID)),
@@ -366,6 +471,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithGroupContext() {
 			ctx,
 			s.org1.ID,
 			anotherReceiverEmail,
+			authz.RoleOwner,
 			biz.WithInvitationRole(authz.RoleViewer),
 			biz.WithInvitationContext(invitationContext),
 			biz.WithSender(uuid.MustParse(s.user.ID)),
@@ -433,6 +539,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 			ctx,
 			s.org1.ID,
 			receiverForProjectEmail,
+			authz.RoleOwner,
 			biz.WithInvitationRole(authz.RoleViewer),
 			biz.WithSender(uuid.MustParse(s.user.ID)),
 			biz.WithInvitationContext(invitationContext),
@@ -497,6 +604,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 			ctx,
 			s.org1.ID,
 			anotherReceiverEmail,
+			authz.RoleOwner,
 			biz.WithSender(uuid.MustParse(s.user.ID)),
 			biz.WithInvitationRole(authz.RoleViewer),
 			biz.WithInvitationContext(invitationContext),
@@ -558,6 +666,7 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 			ctx,
 			s.org1.ID,
 			combinedReceiverEmail,
+			authz.RoleOwner,
 			biz.WithSender(uuid.MustParse(s.user.ID)),
 			biz.WithInvitationRole(authz.RoleViewer),
 			biz.WithInvitationContext(invitationContext),
