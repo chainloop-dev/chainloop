@@ -130,7 +130,7 @@ func (uc *MembershipUseCase) DeleteOther(ctx context.Context, orgID, userID, mem
 
 	// Only owners can remove other owners
 	if m.Role == authz.RoleOwner {
-		if err := uc.enforceManageOwners(ctx, callerRole); err != nil {
+		if err := enforceManageOwners(ctx, uc.authzUC, callerRole, errMsgOnlyOwnersManageOwners); err != nil {
 			return err
 		}
 	}
@@ -194,7 +194,7 @@ func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, memb
 
 	// Only owners can modify owner memberships or promote users to owner
 	if m.Role == authz.RoleOwner || role == authz.RoleOwner {
-		if err := uc.enforceManageOwners(ctx, callerRole); err != nil {
+		if err := enforceManageOwners(ctx, uc.authzUC, callerRole, errMsgOnlyOwnersManageOwners); err != nil {
 			return nil, err
 		}
 	}
@@ -226,15 +226,24 @@ func (uc *MembershipUseCase) UpdateRole(ctx context.Context, orgID, userID, memb
 	return updatedMembership, nil
 }
 
-// enforceManageOwners checks that the caller has the manage_owners policy.
-func (uc *MembershipUseCase) enforceManageOwners(ctx context.Context, callerRole authz.Role) error {
-	ok, err := uc.authzUC.Enforce(ctx, string(callerRole), authz.PolicyOrganizationManageOwners)
+// Denial messages for the owner-scoped guards, kept here so each wording has
+// a single home shared by all enforceManageOwners call sites.
+const (
+	errMsgOnlyOwnersManageOwners = "only organization owners can manage owner memberships"
+	errMsgOnlyOwnersInviteOwners = "only organization owners can invite owners"
+)
+
+// enforceManageOwners checks that the caller has the manage_owners policy,
+// which is granted only to organization owners. It guards every owner-scoped
+// mutation (membership role changes, owner removal, owner invitations).
+func enforceManageOwners(ctx context.Context, authzUC *AuthzUseCase, callerRole authz.Role, deniedMsg string) error {
+	ok, err := authzUC.Enforce(ctx, string(callerRole), authz.PolicyOrganizationManageOwners)
 	if err != nil {
 		return fmt.Errorf("failed to enforce manage owners policy: %w", err)
 	}
 
 	if !ok {
-		return NewErrUnauthorizedStr("only organization owners can manage owner memberships")
+		return NewErrUnauthorizedStr(deniedMsg)
 	}
 
 	return nil

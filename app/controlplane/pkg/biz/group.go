@@ -569,10 +569,16 @@ func (uc *GroupUseCase) handleNonExistingUser(ctx context.Context, orgID, groupI
 		return nil, NewErrAlreadyExistsStr("user is already invited to the organization")
 	}
 
-	// Check if the requester is an admin or owner of the organization
+	// Check if the requester is an admin or owner of the organization.
+	// The repo returns (nil, nil) when no membership exists, so guard against
+	// a requester without a membership in the org.
 	requesterMembership, err := uc.membershipRepo.FindByOrgAndUser(ctx, orgID, opts.RequesterID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check requester's role: %w", err)
+	}
+
+	if requesterMembership == nil {
+		return nil, NewErrNotFound("membership")
 	}
 
 	pass, err := uc.authz.Enforce(ctx, string(requesterMembership.Role), authz.PolicyOrganizationInvitationsCreate)

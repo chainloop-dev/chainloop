@@ -147,7 +147,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail
 	// Only owners can send owner invitations. This closes the Admin→Owner
 	// invite bypass of PolicyOrganizationManageOwners (audit finding CP-1).
 	if opts.role == authz.RoleOwner {
-		if err := uc.enforceManageOwners(ctx, callerRole); err != nil {
+		if err := enforceManageOwners(ctx, uc.authzUC, callerRole, errMsgOnlyOwnersInviteOwners); err != nil {
 			return nil, err
 		}
 	}
@@ -466,22 +466,6 @@ func (uc *OrgInvitationUseCase) processProjectMembership(ctx context.Context, in
 	}, &orgUUID)
 
 	uc.logger.Infow("msg", "User added to project successfully", "invitation_id", invitation.ID.String(), "org_id", invitation.Org.ID, "user_id", userUUID.String(), "project_id", projectID.String())
-
-	return nil
-}
-
-// enforceManageOwners checks that the caller has the manage_owners policy,
-// which is granted only to organization owners. It is the same check used by
-// MembershipUseCase.UpdateRole / DeleteOther to guard owner-scoped mutations.
-func (uc *OrgInvitationUseCase) enforceManageOwners(ctx context.Context, callerRole authz.Role) error {
-	ok, err := uc.authzUC.Enforce(ctx, string(callerRole), authz.PolicyOrganizationManageOwners)
-	if err != nil {
-		return fmt.Errorf("failed to enforce manage owners policy: %w", err)
-	}
-
-	if !ok {
-		return NewErrUnauthorizedStr("only organization owners can invite owners")
-	}
 
 	return nil
 }
