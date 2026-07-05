@@ -25,6 +25,8 @@ jobs:
           - artifact-cas
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
@@ -51,7 +53,7 @@ jobs:
 
       # Check that the generated ent code is up to date
       # see https://entgo.io/docs/ci/
-      - uses: ent/contrib/ci@e38dfb6484dfbe64b8bd060fe6a219a1aa5da770 # master
+      - uses: ent/contrib/ci@4ec197664a206890a44245f5c0cbcb8110d68cb5 # v0.5.0
         name: "Check all ent generated code is checked in"
         if: ${{ matrix.app != 'main-module' }}
         with:

@@ -80,6 +80,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Checkout Bitnami containers repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -89,6 +91,7 @@ jobs:
           ref: ${{ matrix.image.ref }}
           sparse-checkout: ${{ matrix.image.sparse_checkout }}
           sparse-checkout-cone-mode: false
+          persist-credentials: false
 
       - name: Extract version from Bitnami Dockerfile
         id: extract_version
