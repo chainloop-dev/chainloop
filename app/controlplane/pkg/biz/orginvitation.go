@@ -45,6 +45,7 @@ type OrgInvitationUseCase struct {
 	projectRepo ProjectsRepo
 	// Use cases
 	auditor *AuditorUseCase
+	authzUC *AuthzUseCase
 }
 
 type OrgInvitation struct {
@@ -83,10 +84,10 @@ type OrgInvitationRepo interface {
 	ChangeStatus(ctx context.Context, ID uuid.UUID, status OrgInvitationStatus) error
 }
 
-func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, auditorUC *AuditorUseCase, groupRepo GroupRepo, projectRepo ProjectsRepo, l log.Logger) (*OrgInvitationUseCase, error) {
+func NewOrgInvitationUseCase(r OrgInvitationRepo, mRepo MembershipRepo, uRepo UserRepo, auditorUC *AuditorUseCase, groupRepo GroupRepo, projectRepo ProjectsRepo, authzUC *AuthzUseCase, l log.Logger) (*OrgInvitationUseCase, error) {
 	return &OrgInvitationUseCase{
 		logger: servicelogger.ScopedHelper(l, "biz/orgInvitation"),
-		repo:   r, mRepo: mRepo, userRepo: uRepo, auditor: auditorUC, groupRepo: groupRepo, projectRepo: projectRepo,
+		repo:   r, mRepo: mRepo, userRepo: uRepo, auditor: auditorUC, groupRepo: groupRepo, projectRepo: projectRepo, authzUC: authzUC,
 	}, nil
 }
 
@@ -118,7 +119,7 @@ func WithSender(senderID uuid.UUID) InvitationCreateOpt {
 	}
 }
 
-func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail string, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
+func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail string, callerRole authz.Role, createOpts ...InvitationCreateOpt) (*OrgInvitation, error) {
 	ctx, span := otelx.Start(ctx, orgInvitationTracer, "OrgInvitationUseCase.Create")
 	defer span.End()
 
@@ -141,6 +142,14 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail
 	// If it has ben overrode by the user, validate it
 	if opts.role == "" {
 		return nil, NewErrValidationStr("role is required")
+	}
+
+	// Only owners can send owner invitations. This closes the Admin→Owner
+	// invite bypass of PolicyOrganizationManageOwners.
+	if opts.role == authz.RoleOwner {
+		if err := enforceManageOwners(ctx, uc.authzUC, callerRole, errMsgOnlyOwnersInviteOwners); err != nil {
+			return nil, err
+		}
 	}
 
 	orgUUID, err := uuid.Parse(orgID)
