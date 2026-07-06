@@ -21,12 +21,15 @@ import (
 	"slices"
 	"testing"
 
-	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	craftingv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	craftingv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
 )
 
 func TestEnrichMaterials(t *testing.T) {
@@ -337,4 +340,118 @@ func TestParseContractV2(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExplicitMarkAsLatestTrue(t *testing.T) {
+	cases := []struct {
+		name string
+		v    *bool
+		want bool
+	}{
+		{
+			name: "nil pointer (flag not set) is not explicit-true",
+			v:    nil,
+			want: false,
+		},
+		{
+			name: "explicit false is not explicit-true",
+			v:    boolPtr(false),
+			want: false,
+		},
+		{
+			name: "explicit true is explicit-true",
+			v:    boolPtr(true),
+			want: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, explicitMarkAsLatestTrue(tc.v))
+		})
+	}
+}
+
+func TestResolvePRMode(t *testing.T) {
+	// resolvePRMode uses the override when provided (explicit --pr flag),
+	// otherwise falls back to DetectPRContext from the runner environment.
+	// A generic runner with no PR env vars yields false from auto-detection.
+	var genericRunner crafter.SupportedRunner = runners.NewGeneric()
+
+	l := zerolog.Nop()
+	action := &AttestationInit{ActionsOpts: &ActionsOpts{Logger: l}}
+
+	cases := []struct {
+		name     string
+		override *bool
+		// useGitHubPREnv sets up a GitHub Actions pull_request environment so
+		// that auto-detection returns true.
+		useGitHubPREnv bool
+		want           bool
+	}{
+		{
+			name:     "explicit --pr=true overrides auto-detection",
+			override: boolPtr(true),
+			want:     true,
+		},
+		{
+			name:     "explicit --pr=false overrides auto-detection even in PR env",
+			override: boolPtr(false),
+			want:     false,
+		},
+		{
+			name:           "nil override auto-detects false in non-PR env",
+			override:       nil,
+			useGitHubPREnv: false,
+			want:           false,
+		},
+		{
+			name:           "nil override auto-detects true in GitHub PR env",
+			override:       nil,
+			useGitHubPREnv: true,
+			want:           true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runner := genericRunner
+			if tc.useGitHubPREnv {
+				setupGitHubPREnv(t)
+				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
+				runner = runners.NewGithubAction(context.Background(), &testLogger)
+			}
+
+			got, err := action.resolvePRMode(context.Background(), runner, tc.override)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func boolPtr(v bool) *bool {
+	return &v
+}
+
+// setupGitHubPREnv sets the env vars needed for GitHub Actions PR detection
+// (GITHUB_EVENT_NAME=pull_request and a minimal event payload file).
+func setupGitHubPREnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("GITHUB_EVENT_NAME", "pull_request")
+
+	// Minimal event payload with a pull_request object
+	payload := `{"pull_request":{"number":42,"title":"test","body":"","html_url":"https://github.com/chainloop/chainloop/pull/42","user":{"login":"testuser","type":"User"}}}`
+	tmpFile := t.TempDir() + "/event.json"
+	require.NoError(t, os.WriteFile(tmpFile, []byte(payload), 0o600))
+	t.Setenv("GITHUB_EVENT_PATH", tmpFile)
+	t.Setenv("GITHUB_REPOSITORY", "chainloop/chainloop")
+	t.Setenv("GITHUB_REPOSITORY_OWNER", "chainloop")
+
+	// Required by GitHubAction.ResolveEnvVars
+	t.Setenv("GITHUB_RUN_ID", "123")
+	t.Setenv("GITHUB_ACTOR", "chainloop")
+	t.Setenv("GITHUB_REF", "refs/heads/main")
+	t.Setenv("GITHUB_SHA", "1234567890")
+	t.Setenv("RUNNER_NAME", "chainloop-runner")
+	t.Setenv("RUNNER_OS", "linux")
 }

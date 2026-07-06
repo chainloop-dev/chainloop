@@ -105,6 +105,11 @@ type AttestationInitRunOpts struct {
 	// Collectors is a list of additional collector names to enable (e.g. "aiconfig")
 	Collectors   []string
 	MarkAsLatest *bool
+	// PRMode overrides PR/MR auto-detection.
+	// nil  → auto-detect from the CI runner environment.
+	// true → force PR mode on.
+	// false → force PR mode off.
+	PRMode *bool
 }
 
 func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRunOpts) (string, error) {
@@ -186,6 +191,18 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	discoveredRunner, err := crafter.DiscoverAndEnforceRunner(contractVersion.GetV1().GetRunner().GetType(), action.dryRun, action.AuthTokenRaw, action.Logger)
 	if err != nil {
 		return "", ErrRunnerContextNotFound{err.Error()}
+	}
+
+	// Resolve PR mode: explicit --pr flag wins, otherwise auto-detect from the
+	// CI runner environment. When in PR mode, default mark-latest=false unless
+	// the user explicitly passed --mark-latest=true.
+	isPR, err := action.resolvePRMode(ctx, discoveredRunner, opts.PRMode)
+	if err != nil {
+		action.Logger.Warn().Err(err).Msg("failed to detect PR context")
+	}
+	if isPR && !explicitMarkAsLatestTrue(opts.MarkAsLatest) {
+		falseVal := false
+		opts.MarkAsLatest = &falseVal
 	}
 
 	// Parse the raw contract to get V2 schema if available
@@ -312,6 +329,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		CASBackend:     casBackendInfo,
 		Logger:         &action.Logger,
 		UIDashboardURL: uiDashboardURL,
+		PRMode:         isPR,
 	}
 
 	if err := action.c.Init(ctx, initOpts); err != nil {
@@ -535,4 +553,26 @@ func parseContractV2(rawContract *pb.WorkflowContractVersionItem_RawBody) *v1.Cr
 	}
 
 	return schemaV2
+}
+
+// resolvePRMode determines the final PR mode value.
+// If override is non-nil it wins (explicit --pr flag); otherwise the CI runner
+// environment is auto-detected via DetectPRContext.
+func (action *AttestationInit) resolvePRMode(ctx context.Context, runner crafter.SupportedRunner, override *bool) (bool, error) {
+	if override != nil {
+		return *override, nil
+	}
+
+	detected, _, err := crafter.DetectPRContext(ctx, runner)
+	if err != nil {
+		return false, err
+	}
+	return detected, nil
+}
+
+// explicitMarkAsLatestTrue returns true only when the user explicitly passed
+// --mark-latest=true. A nil pointer (flag not set) or an explicit false do not
+// count, so PR mode can safely override them to false.
+func explicitMarkAsLatestTrue(v *bool) bool {
+	return v != nil && *v
 }
