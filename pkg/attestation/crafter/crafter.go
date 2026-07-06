@@ -86,6 +86,10 @@ type VersionedCraftingState struct {
 
 var ErrAttestationStateNotLoaded = errors.New("crafting state not loaded")
 
+// AnnotationIsPullRequest is the well-known attestation annotation key that
+// marks an attestation as originating from a pull/merge request build.
+const AnnotationIsPullRequest = "chainloop.dev/is-pull-request"
+
 type NewOpt func(c *Crafter) error
 
 func WithAuthRawToken(token string) NewOpt {
@@ -212,6 +216,11 @@ type InitOpts struct {
 	UIDashboardURL string
 	// Logger for verification logging
 	Logger *zerolog.Logger
+	// PRMode indicates the attestation is running in pull/merge request mode.
+	// When true, the well-known annotation chainloop.dev/is-pull-request=true
+	// is set on the attestation so downstream consumers can detect PR-originated
+	// attestations.
+	PRMode bool
 }
 
 type SigningOpts struct {
@@ -469,6 +478,15 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		},
 		DryRun:         opts.DryRun,
 		UiDashboardUrl: opts.UIDashboardURL,
+	}
+
+	// Tag PR-mode attestations with a well-known annotation so downstream
+	// consumers (e.g. findings processing) can detect and skip them.
+	if opts.PRMode {
+		if craftingState.Attestation.Annotations == nil {
+			craftingState.Attestation.Annotations = make(map[string]string)
+		}
+		craftingState.Attestation.Annotations[AnnotationIsPullRequest] = "true"
 	}
 
 	// Set the appropriate schema

@@ -210,6 +210,59 @@ func (s *crafterSuite) TestInit() {
 	}
 }
 
+func (s *crafterSuite) TestInitPRMode() {
+	// PR mode sets the chainloop.dev/is-pull-request=true annotation on the
+	// attestation. When PR mode is off, no such annotation is present.
+	testCases := []struct {
+		name           string
+		prMode         bool
+		wantAnnotation bool
+	}{
+		{
+			name:           "PR mode on sets the is-pull-request annotation",
+			prMode:         true,
+			wantAnnotation: true,
+		},
+		{
+			name:           "PR mode off does not set the annotation",
+			prMode:         false,
+			wantAnnotation: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			contract, err := loadSchema("testdata/contracts/empty_generic.yaml")
+			require.NoError(s.T(), err)
+
+			statePath := fmt.Sprintf("%s/attestation.json", s.T().TempDir())
+			c, err := crafter.NewCrafter(testingStateManager(s.T(), statePath), nil)
+			require.NoError(s.T(), err)
+
+			testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
+			runner := crafter.NewRunner(schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED, "", &testLogger)
+
+			require.NoError(s.T(), c.Init(context.Background(), &crafter.InitOpts{
+				SchemaV1:      contract,
+				SchemaV2:      nil,
+				WfInfo:        s.workflowMetadata,
+				DryRun:        true,
+				AttestationID: "",
+				Runner:        runner,
+				PRMode:        tc.prMode,
+			}))
+
+			annotations := c.CraftingState.GetAttestation().GetAnnotations()
+			if tc.wantAnnotation {
+				s.Contains(annotations, crafter.AnnotationIsPullRequest)
+				s.Equal("true", annotations[crafter.AnnotationIsPullRequest])
+			} else {
+				s.NotContains(annotations, crafter.AnnotationIsPullRequest)
+			}
+		})
+	}
+}
+
 type testingCrafter struct {
 	*crafter.Crafter
 }

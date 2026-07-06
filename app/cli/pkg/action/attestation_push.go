@@ -133,6 +133,13 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		craftedAnnotations[v.Name] = v.Value
 	}
 
+	// 1b - Preserve annotations already set on the attestation (e.g. the
+	// chainloop.dev/is-pull-request marker from PR mode). These are treated
+	// as non-overridable, same as contract annotations.
+	for k, v := range crafter.CraftingState.GetAttestation().GetAnnotations() {
+		craftedAnnotations[k] = v
+	}
+
 	// 2 - Populate annotation values from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
 	// b) we allow runtime annotations not specified in the contract
