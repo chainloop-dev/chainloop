@@ -60,9 +60,6 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 		opts = append(opts, biz.WithSender(userID))
 	}
 
-	// Pass the caller's authz subject (org role for users, "api-token:<id>"
-	// for API tokens) so the biz layer can enforce that only owners may invite
-	// owners (audit finding CP-1).
 	callerRole := authz.Role(usercontext.CurrentAuthzSubject(ctx))
 
 	// Validations are done in the biz layer

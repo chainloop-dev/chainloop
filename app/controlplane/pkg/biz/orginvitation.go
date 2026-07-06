@@ -145,7 +145,7 @@ func (uc *OrgInvitationUseCase) Create(ctx context.Context, orgID, receiverEmail
 	}
 
 	// Only owners can send owner invitations. This closes the Admin→Owner
-	// invite bypass of PolicyOrganizationManageOwners (audit finding CP-1).
+	// invite bypass of PolicyOrganizationManageOwners.
 	if opts.role == authz.RoleOwner {
 		if err := enforceManageOwners(ctx, uc.authzUC, callerRole, errMsgOnlyOwnersInviteOwners); err != nil {
 			return nil, err

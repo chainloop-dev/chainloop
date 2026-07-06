@@ -159,9 +159,9 @@ func (s *OrgInvitationIntegrationTestSuite) TestCreate() {
 	})
 }
 
-// TestCreateOwnerGuard covers audit finding CP-1: only organization owners may
-// send owner-role invitations. Admins (and lower roles) must not be able to
-// bootstrap a fresh Owner via the invitation path, which would bypass
+// TestCreateOwnerGuard verifies only organization owners may send owner-role
+// invitations. Admins (and lower roles) must not be able to bootstrap a fresh
+// Owner via the invitation path, which would bypass
 // PolicyOrganizationManageOwners (the Owner-only manage-owners gate).
 func (s *OrgInvitationIntegrationTestSuite) TestCreateOwnerGuard() {
 	ctx := context.Background()
@@ -506,7 +506,6 @@ func (s *OrgInvitationIntegrationTestSuite) TestInvitationWithProjectContext() {
 
 	// Create a new receiver that isn't a member of any org yet
 	receiverForProjectEmail := "project-receiver@cyberdyne.io"
-	// Receiver shared by the combined-context and nil-UUID subtests below
 	combinedReceiverEmail := "combined-receiver@cyberdyne.io"
 	receiver, err := s.User.UpsertByEmail(ctx, receiverForProjectEmail, nil)
 	s.Require().NoError(err)
