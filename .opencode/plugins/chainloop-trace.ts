@@ -1,6 +1,11 @@
 import type { Plugin } from "@opencode-ai/plugin"
 
 export const ChainloopTrace: Plugin = async ({ $ }) => {
+  // The commit-msg hook links sessions to commits by cross-referencing
+  // staged files against AI line attributions recorded by post-tool-use.
+  // If no file-writing tools (edit, write, apply_patch) are invoked during
+  // the session, there will be no attributions and the commit will not be
+  // marked as AI-assisted.
   const fileWritingTools = ["edit","write","apply_patch"]
 
   function filePathFromArgs(args: any): string {
