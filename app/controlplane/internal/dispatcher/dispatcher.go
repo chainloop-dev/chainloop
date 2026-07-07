@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,6 +47,17 @@ type FanOutDispatcher struct {
 	l                   log.Logger
 	loaded              sdk.AvailablePlugins
 }
+
+// maxDispatchElapsedTime bounds the total time the dispatcher will keep
+// retrying a single integration delivery. With the default exponential
+// backoff (500ms initial, ×1.5 multiplier, 60s max interval) this yields
+// roughly 12-15 attempts — enough to ride out a transient blip or a brief
+// endpoint restart, while staying short enough not to leak goroutines in
+// the current in-process, fire-and-forget dispatch model.
+//
+// It is a var (not a const) so tests can shrink it to avoid waiting for
+// the real 5m budget. Production code must not mutate it.
+var maxDispatchElapsedTime = 5 * time.Minute
 
 func New(integrationUC *biz.IntegrationUseCase, wfUC *biz.WorkflowUseCase, wfRunUC *biz.WorkflowRunUseCase, creds credentials.ReaderWriter, c biz.CASClient, registered sdk.AvailablePlugins, l log.Logger) *FanOutDispatcher {
 	return &FanOutDispatcher{integrationUC, wfUC, wfRunUC, creds, c, servicelogger.ScopedHelper(l, "fanout-dispatcher"), l, registered}
@@ -280,7 +291,7 @@ func (d *FanOutDispatcher) loadInputs(ctx context.Context, queue dispatchQueue, 
 
 func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest, logger *log.Helper) error {
 	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = 10 * time.Second
+	b.MaxElapsedTime = maxDispatchElapsedTime
 
 	var inputType string
 	switch {
@@ -299,16 +310,21 @@ func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest
 
 	return backoff.RetryNotify(
 		func() error {
+			// Each attempt gets its own deadline so a single hung request
+			// cannot consume the entire retry budget.
+			attemptCtx, cancel := context.WithTimeout(ctx, sdk.PerAttemptTimeout)
+			defer cancel()
+
 			logger.Infow("msg", "executing integration", "integration", plugin.String(), "input", inputType)
 
-			err := plugin.Execute(ctx, opts)
+			err := plugin.Execute(attemptCtx, opts)
 			if err == nil {
 				logger.Infow("msg", "execution OK!", "integration", plugin.String(), "input", inputType)
 			}
 
 			return err
 		},
-		b,
+		backoff.WithContext(b, ctx),
 		func(err error, delay time.Duration) {
 			logger.Warnf("error executing integration %s, will retry in %s - %s", plugin.String(), delay, err)
 		},

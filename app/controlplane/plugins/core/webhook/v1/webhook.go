@@ -1,4 +1,4 @@
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -87,7 +87,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 
 	return &Integration{
 		FanOutIntegration: base,
-		client:            &http.Client{},
+		client:            &http.Client{Timeout: sdk.PerAttemptTimeout},
 	}, nil
 }
 
@@ -259,7 +259,7 @@ func (i *Integration) sendWebhook(ctx context.Context, url, kind string, payload
 	}()
 
 	// Read response body for more detailed error messages
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		i.Logger.Warnw("failed to read response body", "error", err)
 	}
