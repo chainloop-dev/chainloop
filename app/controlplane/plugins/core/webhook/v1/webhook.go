@@ -69,7 +69,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "webhook",
-			Version:     "1.1",
+			Version:     "1.2",
 			Description: "Send Attestation and SBOMs to a generic POST webhook URL",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
