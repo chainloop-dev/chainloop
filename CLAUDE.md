@@ -267,7 +267,10 @@ Code reviews are required for all submissions via GitHub pull requests.
    Assisted-by: GitHub Copilot
    Assisted-by: Claude Code
    Assisted-by: ChatGPT o3
+   Assisted-by: OpenCode
    ```
+
+   Use the name of the AI coding tool that actually produced the work (e.g. `OpenCode`, `Claude Code`, `GitHub Copilot`), not the underlying model. Do not blindly copy an example — pick the value that matches the tool you are running.
 
 2. **The PR description** MUST disclose the AI assistance.
 
