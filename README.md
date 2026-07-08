@@ -42,7 +42,7 @@ Compliance and Security teams can [craft](https://docs.chainloop.dev/guides/cust
 
 ### We meet you where you are with third-party integrations
 
-Operators can set up third-party integrations such as [Dependency-Track](https://docs.chainloop.dev/guides/dependency-track), or [Guac](https://docs.chainloop.dev/guides/guac/) for SBOM analysis or a storage backend such as an OCI registry, or cloud blob storage to place the received artifacts, pieces of evidence and attestation metadata.
+Operators can set up third-party integrations such as [Dependency-Track](https://docs.chainloop.dev/guides/dependency-track), or [Guac](https://github.com/chainloop-dev/chainloop/blob/main/app/controlplane/plugins/core/guac/v1/README.md) for SBOM analysis or a storage backend such as an OCI registry, or cloud blob storage to place the received artifacts, pieces of evidence and attestation metadata.
 
 ![Chainloop Overview](./docs/img/overview-2.png)
 
