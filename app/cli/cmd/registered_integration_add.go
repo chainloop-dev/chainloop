@@ -33,7 +33,7 @@ func newRegisteredIntegrationAddCmd() *cobra.Command {
 	var integrationDescription, integrationName string
 
 	cmd := &cobra.Command{
-		Use:     "add INTEGRATION_ID --name [registration-name] --options key=value,key=value",
+		Use:     "add INTEGRATION_ID --name [registration-name] --opt key=value",
 		Short:   "Register a new instance of an integration",
 		Example: `  chainloop integration registered add dependencytrack --name send-to-prod --opt instance=https://deptrack.company.com,apiKey=1234567890 --opt username=chainloop`,
 		Args:    cobra.ExactArgs(1),
