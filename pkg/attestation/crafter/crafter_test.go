@@ -725,6 +725,20 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 	}
 }
 
+func (s *crafterSuite) TestAddMaterialsAutomaticInvalidNameSurfacesValidationError() {
+	var runner crafter.SupportedRunner = runners.NewGeneric()
+	uploader := mUploader.NewUploader(s.T())
+
+	c, err := newInitializedCrafter(s.T(), "testdata/contracts/empty_generic.yaml", &v1.WorkflowMetadata{}, false, "", runner)
+	require.NoError(s.T(), err)
+
+	m, err := c.AddMaterialContactFreeWithAutoDetectedKind(context.Background(), "random-id", "invalid_name", "./materials/testdata/junit.xml", &casclient.CASBackend{Uploader: uploader}, nil)
+	require.Error(s.T(), err)
+	assert.Nil(s.T(), m)
+	assert.Contains(s.T(), err.Error(), "must contain only lowercase letters, numbers, and hyphens")
+	assert.NotContains(s.T(), err.Error(), "failed to auto-discover material kind")
+}
+
 func loadSchema(path string) (*schemaapi.CraftingSchema, error) {
 	// Extract json formatted data
 	content, err := os.ReadFile(filepath.Clean(path))
