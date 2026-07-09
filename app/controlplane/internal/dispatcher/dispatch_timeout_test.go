@@ -39,58 +39,6 @@ func setMaxDispatchElapsedTimeForTest(d time.Duration) func() {
 	return func() { maxDispatchElapsedTime = prev }
 }
 
-// TestDispatchPerAttemptTimeout verifies that each Execute call runs under
-// a per-attempt deadline rather than the unbounded context.TODO() that was
-// previously passed through. The mock always fails so the retry loop fires
-// multiple attempts; every observed context must carry a deadline within
-// the perAttemptTimeout ballpark.
-func TestDispatchPerAttemptTimeout(t *testing.T) {
-	// MaxElapsedTime must exceed the first backoff interval (~500ms ± jitter)
-	// so the retry loop fires at least 2 attempts. 2s yields 2-3 attempts
-	// with enough headroom to avoid flakes on loaded CI runners.
-	restore := setMaxDispatchElapsedTimeForTest(2 * time.Second)
-	t.Cleanup(restore)
-
-	plugin := mockedSDK.NewFanOut(t)
-	plugin.On("String", mock.Anything).Return("test-plugin").Maybe()
-
-	type attemptInfo struct {
-		hasDeadline bool
-		deadline    time.Duration
-	}
-	var observed []attemptInfo
-
-	plugin.On("Execute", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-		ctx := args.Get(0).(context.Context)
-		deadline, ok := ctx.Deadline()
-		observed = append(observed, attemptInfo{
-			hasDeadline: ok,
-			deadline:    time.Until(deadline),
-		})
-	}).Return(errors.New("transient failure"))
-
-	logger := log.NewHelper(log.NewStdLogger(io.Discard))
-	opts := &sdk.ExecutionRequest{
-		Input: &sdk.ExecuteInput{
-			Attestation: &sdk.ExecuteAttestation{},
-		},
-	}
-
-	err := dispatch(context.Background(), plugin, opts, logger)
-	require.Error(t, err)
-
-	require.GreaterOrEqual(t, len(observed), 2, "should have retried at least once")
-
-	// Every attempt must have a per-attempt deadline near perAttemptTimeout.
-	// No attempt should inherit an unbounded (no-deadline) context.
-	for i, a := range observed {
-		assert.True(t, a.hasDeadline, "attempt %d had no deadline", i)
-		assert.Greater(t, a.deadline, 0*time.Second, "attempt %d deadline already exceeded", i)
-		assert.Less(t, a.deadline, sdk.PerAttemptTimeout+1*time.Second,
-			"attempt %d deadline %s exceeded perAttemptTimeout+slack", i, a.deadline)
-	}
-}
-
 // TestDispatchSucceedsOnRetry verifies that a transient failure followed by
 // success stops the retry loop and returns nil.
 func TestDispatchSucceedsOnRetry(t *testing.T) {
@@ -135,49 +83,4 @@ func TestDispatchNoInput(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no input provided")
 	plugin.AssertNotCalled(t, "Execute", mock.Anything, mock.Anything)
-}
-
-// TestDispatchRespectsParentContextCancellation verifies that cancelling the
-// parent context stops the retry loop promptly, rather than waiting for the
-// full MaxElapsedTime budget to expire.
-func TestDispatchRespectsParentContextCancellation(t *testing.T) {
-	restore := setMaxDispatchElapsedTimeForTest(30 * time.Second)
-	t.Cleanup(restore)
-
-	plugin := mockedSDK.NewFanOut(t)
-	plugin.On("String", mock.Anything).Return("test-plugin").Maybe()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Cancel the parent context on the first Execute call so the retry loop
-	// should stop during the backoff sleep that follows.
-	plugin.On("Execute", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
-		cancel()
-	}).Return(errors.New("transient failure"))
-
-	logger := log.NewHelper(log.NewStdLogger(io.Discard))
-	opts := &sdk.ExecutionRequest{
-		Input: &sdk.ExecuteInput{
-			Attestation: &sdk.ExecuteAttestation{},
-		},
-	}
-
-	done := make(chan error, 1)
-	go func() {
-		done <- dispatch(ctx, plugin, opts, logger)
-	}()
-
-	select {
-	case err := <-done:
-		require.Error(t, err)
-		// The loop should exit with the parent context's cancellation error,
-		// not keep retrying for the full 30s budget.
-		assert.ErrorIs(t, err, context.Canceled)
-	case <-time.After(5 * time.Second):
-		cancel() // unblock the goroutine
-		err := <-done
-		assert.Failf(t, "dispatch did not return within 5s of parent context cancellation",
-			"eventually returned: %v", err)
-	}
 }

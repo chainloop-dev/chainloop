@@ -33,13 +33,6 @@ import (
 
 const IntegrationKindFanOut = "fan-out"
 
-// PerAttemptTimeout is the hard per-attempt deadline the fanout dispatcher
-// enforces on each Execute call. FanOut plugins that make HTTP calls should
-// set their http.Client.Timeout to this value so a hung endpoint cannot
-// consume the entire retry budget in a single attempt — the cutoff is
-// enforced at whichever layer sees the stall first.
-const PerAttemptTimeout = 10 * time.Second
-
 // FanOut a FanOut is an integration for which we expect to fan out data to other systems
 type FanOut interface {
 	// Integration has to be implemented by all integrations

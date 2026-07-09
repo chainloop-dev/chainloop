@@ -310,21 +310,16 @@ func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest
 
 	return backoff.RetryNotify(
 		func() error {
-			// Each attempt gets its own deadline so a single hung request
-			// cannot consume the entire retry budget.
-			attemptCtx, cancel := context.WithTimeout(ctx, sdk.PerAttemptTimeout)
-			defer cancel()
-
 			logger.Infow("msg", "executing integration", "integration", plugin.String(), "input", inputType)
 
-			err := plugin.Execute(attemptCtx, opts)
+			err := plugin.Execute(ctx, opts)
 			if err == nil {
 				logger.Infow("msg", "execution OK!", "integration", plugin.String(), "input", inputType)
 			}
 
 			return err
 		},
-		backoff.WithContext(b, ctx),
+		b,
 		func(err error, delay time.Duration) {
 			logger.Warnf("error executing integration %s, will retry in %s - %s", plugin.String(), delay, err)
 		},

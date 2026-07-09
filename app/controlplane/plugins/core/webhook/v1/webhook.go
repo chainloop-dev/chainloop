@@ -23,11 +23,16 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
+
+// perAttemptTimeout caps how long a single webhook HTTP call may take,
+// preventing a hung endpoint from blocking retries indefinitely.
+const perAttemptTimeout = 10 * time.Second
 
 // Integration implements a generic webhook integration
 type Integration struct {
@@ -87,7 +92,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 
 	return &Integration{
 		FanOutIntegration: base,
-		client:            &http.Client{Timeout: sdk.PerAttemptTimeout},
+		client:            &http.Client{Timeout: perAttemptTimeout},
 	}, nil
 }
 
