@@ -30,32 +30,6 @@ export interface ReferrerServiceDiscoverPrivateRequest {
   projectVersion: string;
 }
 
-/**
- * DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method
- * Deprecated: the public shared index is being retired.
- *
- * @deprecated
- */
-export interface DiscoverPublicSharedRequest {
-  /** Digest is the unique identifier of the referrer to discover */
-  digest: string;
-  /**
-   * Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
-   * Used to filter and resolve ambiguities
-   */
-  kind: string;
-  /** Pagination options for the references list */
-  pagination?: CursorPaginationRequest;
-}
-
-/** DiscoverPublicSharedResponse is the response for the DiscoverPublicShared method */
-export interface DiscoverPublicSharedResponse {
-  /** Result is the discovered referrer item */
-  result?: ReferrerItem;
-  /** Pagination information for the references list */
-  pagination?: CursorPaginationResponse;
-}
-
 /** ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method */
 export interface ReferrerServiceDiscoverPrivateResponse {
   /** Result is the discovered referrer item */
@@ -72,8 +46,6 @@ export interface ReferrerItem {
   kind: string;
   /** Downloadable indicates whether the referrer is downloadable or not from CAS */
   downloadable: boolean;
-  /** Public indicates whether the referrer is public since it belongs to a public workflow */
-  public: boolean;
   /** References contains the list of related referrer items */
   references: ReferrerItem[];
   /** CreatedAt is the timestamp when the referrer was created */
@@ -211,169 +183,6 @@ export const ReferrerServiceDiscoverPrivateRequest = {
   },
 };
 
-function createBaseDiscoverPublicSharedRequest(): DiscoverPublicSharedRequest {
-  return { digest: "", kind: "", pagination: undefined };
-}
-
-export const DiscoverPublicSharedRequest = {
-  encode(message: DiscoverPublicSharedRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.digest !== "") {
-      writer.uint32(10).string(message.digest);
-    }
-    if (message.kind !== "") {
-      writer.uint32(18).string(message.kind);
-    }
-    if (message.pagination !== undefined) {
-      CursorPaginationRequest.encode(message.pagination, writer.uint32(26).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DiscoverPublicSharedRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDiscoverPublicSharedRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.digest = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.kind = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.pagination = CursorPaginationRequest.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DiscoverPublicSharedRequest {
-    return {
-      digest: isSet(object.digest) ? String(object.digest) : "",
-      kind: isSet(object.kind) ? String(object.kind) : "",
-      pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
-    };
-  },
-
-  toJSON(message: DiscoverPublicSharedRequest): unknown {
-    const obj: any = {};
-    message.digest !== undefined && (obj.digest = message.digest);
-    message.kind !== undefined && (obj.kind = message.kind);
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<DiscoverPublicSharedRequest>, I>>(base?: I): DiscoverPublicSharedRequest {
-    return DiscoverPublicSharedRequest.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<DiscoverPublicSharedRequest>, I>>(object: I): DiscoverPublicSharedRequest {
-    const message = createBaseDiscoverPublicSharedRequest();
-    message.digest = object.digest ?? "";
-    message.kind = object.kind ?? "";
-    message.pagination = (object.pagination !== undefined && object.pagination !== null)
-      ? CursorPaginationRequest.fromPartial(object.pagination)
-      : undefined;
-    return message;
-  },
-};
-
-function createBaseDiscoverPublicSharedResponse(): DiscoverPublicSharedResponse {
-  return { result: undefined, pagination: undefined };
-}
-
-export const DiscoverPublicSharedResponse = {
-  encode(message: DiscoverPublicSharedResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.result !== undefined) {
-      ReferrerItem.encode(message.result, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.pagination !== undefined) {
-      CursorPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DiscoverPublicSharedResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDiscoverPublicSharedResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.result = ReferrerItem.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.pagination = CursorPaginationResponse.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DiscoverPublicSharedResponse {
-    return {
-      result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined,
-      pagination: isSet(object.pagination) ? CursorPaginationResponse.fromJSON(object.pagination) : undefined,
-    };
-  },
-
-  toJSON(message: DiscoverPublicSharedResponse): unknown {
-    const obj: any = {};
-    message.result !== undefined && (obj.result = message.result ? ReferrerItem.toJSON(message.result) : undefined);
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination ? CursorPaginationResponse.toJSON(message.pagination) : undefined);
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<DiscoverPublicSharedResponse>, I>>(base?: I): DiscoverPublicSharedResponse {
-    return DiscoverPublicSharedResponse.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<DiscoverPublicSharedResponse>, I>>(object: I): DiscoverPublicSharedResponse {
-    const message = createBaseDiscoverPublicSharedResponse();
-    message.result = (object.result !== undefined && object.result !== null)
-      ? ReferrerItem.fromPartial(object.result)
-      : undefined;
-    message.pagination = (object.pagination !== undefined && object.pagination !== null)
-      ? CursorPaginationResponse.fromPartial(object.pagination)
-      : undefined;
-    return message;
-  },
-};
-
 function createBaseReferrerServiceDiscoverPrivateResponse(): ReferrerServiceDiscoverPrivateResponse {
   return { result: undefined, pagination: undefined };
 }
@@ -459,7 +268,6 @@ function createBaseReferrerItem(): ReferrerItem {
     digest: "",
     kind: "",
     downloadable: false,
-    public: false,
     references: [],
     createdAt: undefined,
     metadata: {},
@@ -477,9 +285,6 @@ export const ReferrerItem = {
     }
     if (message.downloadable === true) {
       writer.uint32(24).bool(message.downloadable);
-    }
-    if (message.public === true) {
-      writer.uint32(48).bool(message.public);
     }
     for (const v of message.references) {
       ReferrerItem.encode(v!, writer.uint32(34).fork()).ldelim();
@@ -523,13 +328,6 @@ export const ReferrerItem = {
           }
 
           message.downloadable = reader.bool();
-          continue;
-        case 6:
-          if (tag !== 48) {
-            break;
-          }
-
-          message.public = reader.bool();
           continue;
         case 4:
           if (tag !== 34) {
@@ -579,7 +377,6 @@ export const ReferrerItem = {
       digest: isSet(object.digest) ? String(object.digest) : "",
       kind: isSet(object.kind) ? String(object.kind) : "",
       downloadable: isSet(object.downloadable) ? Boolean(object.downloadable) : false,
-      public: isSet(object.public) ? Boolean(object.public) : false,
       references: Array.isArray(object?.references) ? object.references.map((e: any) => ReferrerItem.fromJSON(e)) : [],
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       metadata: isObject(object.metadata)
@@ -602,7 +399,6 @@ export const ReferrerItem = {
     message.digest !== undefined && (obj.digest = message.digest);
     message.kind !== undefined && (obj.kind = message.kind);
     message.downloadable !== undefined && (obj.downloadable = message.downloadable);
-    message.public !== undefined && (obj.public = message.public);
     if (message.references) {
       obj.references = message.references.map((e) => e ? ReferrerItem.toJSON(e) : undefined);
     } else {
@@ -633,7 +429,6 @@ export const ReferrerItem = {
     message.digest = object.digest ?? "";
     message.kind = object.kind ?? "";
     message.downloadable = object.downloadable ?? false;
-    message.public = object.public ?? false;
     message.references = object.references?.map((e) => ReferrerItem.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.metadata = Object.entries(object.metadata ?? {}).reduce<{ [key: string]: string }>((acc, [key, value]) => {
@@ -799,16 +594,6 @@ export interface ReferrerService {
     request: DeepPartial<ReferrerServiceDiscoverPrivateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<ReferrerServiceDiscoverPrivateResponse>;
-  /**
-   * DiscoverPublicShared returns the referrer item for a given digest in the public shared index
-   * Deprecated: the public shared index is being retired.
-   *
-   * @deprecated
-   */
-  DiscoverPublicShared(
-    request: DeepPartial<DiscoverPublicSharedRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<DiscoverPublicSharedResponse>;
 }
 
 export class ReferrerServiceClientImpl implements ReferrerService {
@@ -817,7 +602,6 @@ export class ReferrerServiceClientImpl implements ReferrerService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.DiscoverPrivate = this.DiscoverPrivate.bind(this);
-    this.DiscoverPublicShared = this.DiscoverPublicShared.bind(this);
   }
 
   DiscoverPrivate(
@@ -827,17 +611,6 @@ export class ReferrerServiceClientImpl implements ReferrerService {
     return this.rpc.unary(
       ReferrerServiceDiscoverPrivateDesc,
       ReferrerServiceDiscoverPrivateRequest.fromPartial(request),
-      metadata,
-    );
-  }
-
-  DiscoverPublicShared(
-    request: DeepPartial<DiscoverPublicSharedRequest>,
-    metadata?: grpc.Metadata,
-  ): Promise<DiscoverPublicSharedResponse> {
-    return this.rpc.unary(
-      ReferrerServiceDiscoverPublicSharedDesc,
-      DiscoverPublicSharedRequest.fromPartial(request),
       metadata,
     );
   }
@@ -858,29 +631,6 @@ export const ReferrerServiceDiscoverPrivateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = ReferrerServiceDiscoverPrivateResponse.decode(data);
-      return {
-        ...value,
-        toObject() {
-          return value;
-        },
-      };
-    },
-  } as any,
-};
-
-export const ReferrerServiceDiscoverPublicSharedDesc: UnaryMethodDefinitionish = {
-  methodName: "DiscoverPublicShared",
-  service: ReferrerServiceDesc,
-  requestStream: false,
-  responseStream: false,
-  requestType: {
-    serializeBinary() {
-      return DiscoverPublicSharedRequest.encode(this).finish();
-    },
-  } as any,
-  responseType: {
-    deserializeBinary(data: Uint8Array) {
-      const value = DiscoverPublicSharedResponse.decode(data);
       return {
         ...value,
         toObject() {

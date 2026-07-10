@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ func NewWorkflowCreate(cfg *ActionsOpts) *WorkflowCreate {
 
 type NewWorkflowCreateOpts struct {
 	Name, Description, Project, Team, ContractName string
-	Public                                         bool
 	ContractBytes                                  []byte
 }
 
@@ -40,7 +39,6 @@ func (action *WorkflowCreate) Run(opts *NewWorkflowCreateOpts) (*WorkflowItem, e
 	resp, err := client.Create(context.Background(), &pb.WorkflowServiceCreateRequest{
 		Name: opts.Name, ProjectName: opts.Project, Team: opts.Team, ContractName: opts.ContractName,
 		Description:   opts.Description,
-		Public:        opts.Public,
 		ContractBytes: opts.ContractBytes,
 	})
 	if err != nil {

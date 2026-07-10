@@ -299,10 +299,6 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 	contract2, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{Name: "contract-2", OrgID: org2.ID})
 	require.NoError(s.T(), err)
 
-	s.Run("by default the workflow is private", func() {
-		s.False(workflow.Public)
-	})
-
 	s.Run("can't update if no changes are provided", func() {
 		got, err := s.Workflow.Update(ctx, org2.ID, workflow.ID.String(), nil)
 		s.True(biz.IsErrValidation(err))
@@ -346,17 +342,12 @@ func (s *workflowIntegrationTestSuite) TestUpdate() {
 		{
 			name:    "update description",
 			updates: &biz.WorkflowUpdateOpts{Description: toPtrS("new description")},
-			want:    &biz.Workflow{Description: "new description", Team: team, Project: project, Public: false},
-		},
-		{
-			name:    "update visibility",
-			updates: &biz.WorkflowUpdateOpts{Public: toPtrBool(true)},
-			want:    &biz.Workflow{Description: description, Team: team, Project: project, Public: true},
+			want:    &biz.Workflow{Description: "new description", Team: team, Project: project},
 		},
 		{
 			name:    "update all options",
-			updates: &biz.WorkflowUpdateOpts{Team: toPtrS("new team"), Public: toPtrBool(true)},
-			want:    &biz.Workflow{Description: description, Team: "new team", Project: "test-project", Public: true},
+			updates: &biz.WorkflowUpdateOpts{Team: toPtrS("new team")},
+			want:    &biz.Workflow{Description: description, Team: "new team", Project: "test-project"},
 		},
 		{
 			name:    "can update contract",
@@ -499,17 +490,6 @@ func (s *workflowListIntegrationTestSuite) TestList() {
 		require.NoError(s.T(), err)
 
 		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowProjectNames: []string{"other-project"}}, nil)
-		s.NoError(err)
-		s.Len(workflows, 1)
-	})
-
-	s.Run("list workflows with workflow public filter", func() {
-		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name1", Project: project, Team: team, Description: description, Public: true})
-		require.NoError(s.T(), err)
-		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, Team: team, Description: description, Public: false})
-		require.NoError(s.T(), err)
-
-		workflows, _, err := s.Workflow.List(ctx, s.org.ID, &biz.WorkflowListOpts{WorkflowPublic: toPtrBool(true)}, nil)
 		s.NoError(err)
 		s.Len(workflows, 1)
 	})

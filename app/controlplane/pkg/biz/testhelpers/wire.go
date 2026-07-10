@@ -50,7 +50,6 @@ func WireTestData(context.Context, *TestDatabase, *testing.T, log.Logger, creden
 		wire.Build(
 			data.ProviderSet,
 			biz.ProviderSet,
-			wire.Value(&conf.ReferrerSharedIndex{}),
 			wire.Struct(new(TestingUseCases), "*"),
 			wire.Struct(new(TestingRepos), "*"),
 			NewConfData,
@@ -67,7 +66,6 @@ func WireTestData(context.Context, *TestDatabase, *testing.T, log.Logger, creden
 			newJWTConfig,
 			authzConfig,
 			authzUseCaseConfig,
-			biz.NewIndexConfig,
 			newAttestationBundleCache,
 			newNilCASClient,
 			newNoopTracerProvider,

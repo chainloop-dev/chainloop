@@ -533,35 +533,6 @@ func (uc *WorkflowRunUseCase) List(ctx context.Context, orgID string, f *RunList
 	return uc.wfRunRepo.List(ctx, orgUUID, f, p)
 }
 
-// Returns the workflow run with the provided ID if it belongs to the org or its public
-func (uc *WorkflowRunUseCase) GetByIDInOrgOrPublic(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
-	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.GetByIDInOrgOrPublic")
-	defer span.End()
-
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	runUUID, err := uuid.Parse(runID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	wfrun, err := uc.wfRunRepo.FindByID(ctx, runUUID)
-	if err != nil {
-		return nil, fmt.Errorf("finding workflow run: %w", err)
-	}
-
-	// if available, add attestation from attestation bundles
-	if err = uc.addAttestationFromBundle(ctx, wfrun); err != nil {
-		return nil, fmt.Errorf("retrieving attestation from bundle: %w", err)
-	}
-
-	// If the workflow is public or belongs to the org we can return it
-	return workflowRunInOrgOrPublic(wfrun, orgUUID)
-}
-
 // Returns the workflow run with the provided ID if it belongs to the org
 func (uc *WorkflowRunUseCase) GetByIDInOrg(ctx context.Context, orgID, runID string) (*WorkflowRun, error) {
 	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.GetByIDInOrg")
@@ -654,8 +625,11 @@ func trustedRootBizToVerifier(biztr *TrustedRoot) (*verifier.TrustedRoot, error)
 	return tr, nil
 }
 
-func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
-	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.GetByDigestInOrgOrPublic")
+// GetByDigestInOrg returns the workflow run identified by the given attestation digest, but only
+// when it belongs to the provided organization. A run in another organization is reported as not
+// found (identical to a nonexistent digest) so it does not leak cross-tenant existence.
+func (uc *WorkflowRunUseCase) GetByDigestInOrg(ctx context.Context, orgID, digest string) (*WorkflowRun, error) {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.GetByDigestInOrg")
 	defer span.End()
 
 	orgUUID, err := uuid.Parse(orgID)
@@ -672,13 +646,16 @@ func (uc *WorkflowRunUseCase) GetByDigestInOrgOrPublic(ctx context.Context, orgI
 		return nil, fmt.Errorf("finding workflow run: %w", err)
 	}
 
+	if wfrun == nil || wfrun.Workflow.OrgID != orgUUID {
+		return nil, NewErrNotFound("workflow run")
+	}
+
 	// if available, add attestation from attestation bundles
 	if err = uc.addAttestationFromBundle(ctx, wfrun); err != nil {
 		return nil, fmt.Errorf("retrieving attestation from bundle: %w", err)
 	}
 
-	// If the workflow is public or belongs to the org we can return it
-	return workflowRunInOrgOrPublic(wfrun, orgUUID)
+	return wfrun, nil
 }
 
 // addAttestationFromBundle resolves the attestation bundle using cache → DB → CAS fallback.
@@ -770,15 +747,6 @@ func (uc *WorkflowRunUseCase) downloadBundleFromCAS(ctx context.Context, digest 
 	}
 
 	return buf.Bytes(), nil
-}
-
-// filter the workflow runs that belong to the org or are public
-func workflowRunInOrgOrPublic(wfRun *WorkflowRun, orgID uuid.UUID) (*WorkflowRun, error) {
-	if wfRun == nil || (wfRun.Workflow.OrgID != orgID && !wfRun.Workflow.Public) {
-		return nil, NewErrNotFound("workflow run")
-	}
-
-	return wfRun, nil
 }
 
 // Implements https://pkg.go.dev/entgo.io/ent/schema/field#EnumValues

@@ -52,8 +52,6 @@ data:
     {{- if .Values.controlplane.uiDashboardURL }}
     ui_dashboard_url: {{ .Values.controlplane.uiDashboardURL | quote }}
     {{- end }}
-    referrer_shared_index:
-      {{- toYaml .Values.controlplane.referrerSharedIndex | nindent 6 }}
     {{ if .Values.controlplane.onboarding }}
     onboarding:
       {{- toYaml .Values.controlplane.onboarding | nindent 6 }}

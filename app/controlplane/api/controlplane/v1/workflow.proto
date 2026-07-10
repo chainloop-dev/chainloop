@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -58,7 +58,8 @@ message WorkflowServiceCreateRequest {
 
   string team = 5;
   string description = 6;
-  bool public = 7;
+  reserved 7;
+  reserved "public";
 }
 
 message WorkflowServiceUpdateRequest {
@@ -74,7 +75,8 @@ message WorkflowServiceUpdateRequest {
   // and not just the default value
   string project_name = 3 [(buf.validate.field).string = {min_len: 1}];
   optional string team = 4;
-  optional bool public = 5;
+  reserved 5;
+  reserved "public";
   optional string description = 6;
   optional string contract_name = 7 [(buf.validate.field) = {
     cel: {
@@ -117,8 +119,8 @@ message WorkflowServiceListRequest {
   repeated string project_names = 3;
   // The description of the workflow
   string workflow_description = 4;
-  // If the workflow is public
-  optional bool workflow_public = 5;
+  reserved 5;
+  reserved "workflow_public";
   // The type of runner that ran the workflow
   workflowcontract.v1.CraftingSchema.Runner.RunnerType workflow_run_runner_type = 6;
   // The status of the last workflow run

@@ -35,18 +35,6 @@ service ReferrerService {
       produces: ["application/json"]
     };
   }
-  // DiscoverPublicShared returns the referrer item for a given digest in the public shared index
-  // Deprecated: the public shared index is being retired.
-  rpc DiscoverPublicShared(DiscoverPublicSharedRequest) returns (DiscoverPublicSharedResponse) {
-    option deprecated = true;
-    option (google.api.http) = {get: "/discover/shared/{digest}"};
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Discover public shared referrer"
-      description: "Returns the referrer item for a given digest in the public shared index"
-      produces: ["application/json"]
-    };
-  }
-
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "ReferrerService"
     description: "Referrer service for discovering referred content by digest"
@@ -85,42 +73,6 @@ message ReferrerServiceDiscoverPrivateRequest {
   };
 }
 
-// DiscoverPublicSharedRequest is the request for the DiscoverPublicShared method
-// Deprecated: the public shared index is being retired.
-message DiscoverPublicSharedRequest {
-  option deprecated = true;
-
-  // Digest is the unique identifier of the referrer to discover
-  string digest = 1 [(buf.validate.field).string = {min_len: 1}];
-  // Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...
-  // Used to filter and resolve ambiguities
-  string kind = 2;
-  // Pagination options for the references list
-  CursorPaginationRequest pagination = 3;
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "DiscoverPublicSharedRequest"
-      description: "Request to discover a public shared referrer"
-    }
-  };
-}
-
-// DiscoverPublicSharedResponse is the response for the DiscoverPublicShared method
-message DiscoverPublicSharedResponse {
-  // Result is the discovered referrer item
-  ReferrerItem result = 1;
-  // Pagination information for the references list
-  CursorPaginationResponse pagination = 2;
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "DiscoverPublicSharedResponse"
-      description: "Response for the DiscoverPublicShared method"
-    }
-  };
-}
-
 // ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method
 message ReferrerServiceDiscoverPrivateResponse {
   // Result is the discovered referrer item
@@ -144,8 +96,8 @@ message ReferrerItem {
   string kind = 2;
   // Downloadable indicates whether the referrer is downloadable or not from CAS
   bool downloadable = 3;
-  // Public indicates whether the referrer is public since it belongs to a public workflow
-  bool public = 6;
+  reserved 6;
+  reserved "public";
   // References contains the list of related referrer items
   repeated ReferrerItem references = 4;
   // CreatedAt is the timestamp when the referrer was created

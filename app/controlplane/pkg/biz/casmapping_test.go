@@ -72,7 +72,6 @@ func (s *casMappingSuite) TestCreate() {
 		CASBackend:    &biz.CASBackend{ID: validUUID},
 		WorkflowRunID: validUUID,
 		OrgID:         validUUID,
-		Public:        false,
 	}
 
 	// Mock successful repo call

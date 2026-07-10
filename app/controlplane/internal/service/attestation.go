@@ -263,7 +263,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 		return nil, err
 	}
 
-	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+	wRun, err := s.wrUseCase.GetByIDInOrg(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if wRun == nil {
@@ -441,7 +441,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 		return nil, err
 	}
 
-	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+	wRun, err := s.wrUseCase.GetByIDInOrg(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if wRun == nil {
@@ -465,7 +465,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	// Find the CAS backend associated with this workflowRun, that's the one that will be used to upload the materials
 	// NOTE: currently we only support one backend per workflowRun but this will change in the future
 	// This is the new mode, where the CAS backend ref is stored in the workflow run since initialization
-	wRun, err := s.wrUseCase.GetByIDInOrgOrPublic(ctx, robotAccount.OrgID, req.WorkflowRunId)
+	wRun, err := s.wrUseCase.GetByIDInOrg(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
 	} else if wRun == nil {

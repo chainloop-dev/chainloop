@@ -34,8 +34,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ReferrerService_DiscoverPrivate_FullMethodName      = "/controlplane.v1.ReferrerService/DiscoverPrivate"
-	ReferrerService_DiscoverPublicShared_FullMethodName = "/controlplane.v1.ReferrerService/DiscoverPublicShared"
+	ReferrerService_DiscoverPrivate_FullMethodName = "/controlplane.v1.ReferrerService/DiscoverPrivate"
 )
 
 // ReferrerServiceClient is the client API for ReferrerService service.
@@ -44,10 +43,6 @@ const (
 type ReferrerServiceClient interface {
 	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(ctx context.Context, in *ReferrerServiceDiscoverPrivateRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverPrivateResponse, error)
-	// Deprecated: Do not use.
-	// DiscoverPublicShared returns the referrer item for a given digest in the public shared index
-	// Deprecated: the public shared index is being retired.
-	DiscoverPublicShared(ctx context.Context, in *DiscoverPublicSharedRequest, opts ...grpc.CallOption) (*DiscoverPublicSharedResponse, error)
 }
 
 type referrerServiceClient struct {
@@ -67,26 +62,12 @@ func (c *referrerServiceClient) DiscoverPrivate(ctx context.Context, in *Referre
 	return out, nil
 }
 
-// Deprecated: Do not use.
-func (c *referrerServiceClient) DiscoverPublicShared(ctx context.Context, in *DiscoverPublicSharedRequest, opts ...grpc.CallOption) (*DiscoverPublicSharedResponse, error) {
-	out := new(DiscoverPublicSharedResponse)
-	err := c.cc.Invoke(ctx, ReferrerService_DiscoverPublicShared_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ReferrerServiceServer is the server API for ReferrerService service.
 // All implementations must embed UnimplementedReferrerServiceServer
 // for forward compatibility
 type ReferrerServiceServer interface {
 	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
-	// Deprecated: Do not use.
-	// DiscoverPublicShared returns the referrer item for a given digest in the public shared index
-	// Deprecated: the public shared index is being retired.
-	DiscoverPublicShared(context.Context, *DiscoverPublicSharedRequest) (*DiscoverPublicSharedResponse, error)
 	mustEmbedUnimplementedReferrerServiceServer()
 }
 
@@ -96,9 +77,6 @@ type UnimplementedReferrerServiceServer struct {
 
 func (UnimplementedReferrerServiceServer) DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiscoverPrivate not implemented")
-}
-func (UnimplementedReferrerServiceServer) DiscoverPublicShared(context.Context, *DiscoverPublicSharedRequest) (*DiscoverPublicSharedResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DiscoverPublicShared not implemented")
 }
 func (UnimplementedReferrerServiceServer) mustEmbedUnimplementedReferrerServiceServer() {}
 
@@ -131,24 +109,6 @@ func _ReferrerService_DiscoverPrivate_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ReferrerService_DiscoverPublicShared_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DiscoverPublicSharedRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ReferrerServiceServer).DiscoverPublicShared(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ReferrerService_DiscoverPublicShared_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ReferrerServiceServer).DiscoverPublicShared(ctx, req.(*DiscoverPublicSharedRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ReferrerService_ServiceDesc is the grpc.ServiceDesc for ReferrerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -159,10 +119,6 @@ var ReferrerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiscoverPrivate",
 			Handler:    _ReferrerService_DiscoverPrivate_Handler,
-		},
-		{
-			MethodName: "DiscoverPublicShared",
-			Handler:    _ReferrerService_DiscoverPublicShared_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

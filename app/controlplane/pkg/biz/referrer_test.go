@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,46 +23,9 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
-
-func (s *referrerTestSuite) TestInitialization() {
-	testCases := []struct {
-		name       string
-		conf       *ReferrerSharedIndexConfig
-		wantErrMsg string
-	}{
-		{
-			name: "nil configuration",
-		},
-		{
-			name: "disabled",
-			conf: &ReferrerSharedIndexConfig{
-				Enabled: false,
-			},
-		},
-		{
-			name: "enabled with valid orgs",
-			conf: &ReferrerSharedIndexConfig{
-				Enabled:     true,
-				AllowedOrgs: []string{"00000000-0000-0000-0000-000000000000"},
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		s.T().Run(tc.name, func(t *testing.T) {
-			_, err := NewReferrerUseCase(nil, nil, nil, tc.conf, nil)
-			if tc.wantErrMsg != "" {
-				assert.EqualError(t, err, tc.wantErrMsg)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
 
 func (s *referrerTestSuite) TestExtractReferrers() {
 	var fullAttReferrer = &Referrer{

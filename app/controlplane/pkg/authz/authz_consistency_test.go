@@ -70,7 +70,6 @@ var authzExemptProcedures = map[string]struct{}{
 	"/controlplane.v1.SigningService/GetTrustedRoot":           {},
 	"/controlplane.v1.StatusService/Infoz":                     {},
 	"/controlplane.v1.StatusService/Statusz":                   {},
-	"/controlplane.v1.ReferrerService/DiscoverPublicShared":    {},
 }
 
 // adminOnlyProcedures lists controlplane.v1 procedures that reach the authorization middleware but

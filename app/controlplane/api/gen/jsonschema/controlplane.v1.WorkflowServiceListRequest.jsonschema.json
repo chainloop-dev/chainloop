@@ -45,10 +45,6 @@
       "description": "The name of the workflow to filter by",
       "type": "string"
     },
-    "^(workflow_public)$": {
-      "description": "If the workflow is public",
-      "type": "boolean"
-    },
     "^(workflow_run_last_status)$": {
       "anyOf": [
         {
@@ -148,10 +144,6 @@
     "workflowName": {
       "description": "The name of the workflow to filter by",
       "type": "string"
-    },
-    "workflowPublic": {
-      "description": "If the workflow is public",
-      "type": "boolean"
     },
     "workflowRunLastStatus": {
       "anyOf": [

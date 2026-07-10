@@ -23,7 +23,6 @@ import (
 	"sort"
 	"time"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	v2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -43,44 +42,17 @@ type ReferrerUseCase struct {
 	membershipUseCase *MembershipUseCase
 	workflowRepo      WorkflowRepo
 	logger            *log.Helper
-	indexConfig       *ReferrerSharedIndexConfig
 }
 
-type ReferrerSharedIndexConfig struct {
-	Enabled     bool
-	AllowedOrgs []string
-}
-
-func NewIndexConfig(cfg *conf.ReferrerSharedIndex) (*ReferrerSharedIndexConfig, error) {
-	// referrer shared index is optional, if not configured, it's disabled
-	if cfg == nil {
-		return nil, nil
-	}
-
-	if err := cfg.ValidateOrgs(); err != nil {
-		return nil, fmt.Errorf("invalid shared index config: %w", err)
-	}
-
-	return &ReferrerSharedIndexConfig{
-		Enabled:     cfg.Enabled,
-		AllowedOrgs: cfg.AllowedOrgs,
-	}, nil
-}
-
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, indexCfg *ReferrerSharedIndexConfig, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 	logger := servicelogger.ScopedHelper(l, "biz/referrer")
 
-	if indexCfg != nil && indexCfg.Enabled {
-		logger.Infow("msg", "shared index enabled", "allowedOrgs", indexCfg.AllowedOrgs)
-	}
-
 	return &ReferrerUseCase{
 		repo:              repo,
 		membershipUseCase: membershipUseCase,
-		indexConfig:       indexCfg,
 		workflowRepo:      wfRepo,
 		logger:            logger,
 	}, nil
@@ -104,9 +76,7 @@ type Referrer struct {
 	Kind   string
 	// Wether the item is downloadable from CAS or not
 	Downloadable bool
-	// If this referrer is part of a public workflow
-	InPublicWorkflow bool
-	References       []*Referrer
+	References   []*Referrer
 
 	Metadata, Annotations map[string]string
 }
@@ -127,8 +97,6 @@ type ProjectID = uuid.UUID
 type GetFromRootFilters struct {
 	// RootKind is the kind of the root referrer, i.e ATTESTATION
 	RootKind *string
-	// Wether to filter by visibility or not
-	Public *bool
 	// ProjectIDs stores visible projects by org for the requesting user.
 	// If an org entry doesn't exist, it means that RBAC is not applied, hence all projects in that org are visible
 	ProjectIDs map[OrgID][]ProjectID
@@ -159,12 +127,6 @@ func WithProjectScope(projectName, projectVersion string) func(*GetFromRootFilte
 func WithVisibleProjectIDs(projectIDs map[OrgID][]ProjectID) func(*GetFromRootFilters) {
 	return func(o *GetFromRootFilters) {
 		o.ProjectIDs = projectIDs
-	}
-}
-
-func WithPublicVisibility(public bool) func(*GetFromRootFilters) {
-	return func(o *GetFromRootFilters) {
-		o.Public = &public
 	}
 }
 
@@ -215,9 +177,8 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 		return nil, "", err
 	}
 
-	// We pass the list of organizationsIDs from where to look for the referrer
-	// For now we just pass the list of organizations the user is member of
-	// in the future we will expand this to publicly available orgs and so on.
+	// We pass the list of organizationsIDs from where to look for the referrer:
+	// the organizations the user is a member of.
 	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs, p, extraFilters...)
 }
 
@@ -233,47 +194,6 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
 	filters = append(filters, extraFilters...)
-
-	ref, nextCursor, err := s.repo.GetFromRoot(ctx, digest, orgIDs, p, filters...)
-	if err != nil {
-		if errors.As(err, &ErrAmbiguousReferrer{}) {
-			return nil, "", NewErrValidation(fmt.Errorf("please provide the referrer kind: %w", err))
-		}
-
-		return nil, "", fmt.Errorf("getting referrer from root: %w", err)
-	} else if ref == nil {
-		return nil, "", NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
-	}
-
-	return ref, nextCursor, nil
-}
-
-// Get the list of public referrers from organizations
-// that have been allowed to be shown in a shared index
-// NOTE: This is a public endpoint under /discover/[sha256:deadbeef]
-func (s *ReferrerUseCase) GetFromRootInPublicSharedIndex(ctx context.Context, digest, rootKind string, p *pagination.CursorOptions) (*StoredReferrer, string, error) {
-	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootInPublicSharedIndex")
-	defer span.End()
-
-	if s.indexConfig == nil || !s.indexConfig.Enabled {
-		return nil, "", NewErrUnauthorizedStr("shared referrer index functionality is not enabled")
-	}
-
-	// Load the organizations that are allowed to appear in the shared index
-	orgIDs := make([]uuid.UUID, 0)
-	for _, orgID := range s.indexConfig.AllowedOrgs {
-		orgUUID, err := uuid.Parse(orgID)
-		if err != nil {
-			return nil, "", NewErrInvalidUUID(err)
-		}
-		orgIDs = append(orgIDs, orgUUID)
-	}
-
-	// and ask only for the public referrers of those orgs
-	filters := []GetFromRootFilter{WithPublicVisibility(true)}
-	if rootKind != "" {
-		filters = append(filters, WithKind(rootKind))
-	}
 
 	ref, nextCursor, err := s.repo.GetFromRoot(ctx, digest, orgIDs, p, filters...)
 	if err != nil {

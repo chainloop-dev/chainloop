@@ -18,8 +18,6 @@ package biz_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -32,90 +30,10 @@ import (
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
-	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
-
-func (s *referrerIntegrationTestSuite) TestGetFromRootInPublicSharedIndex() {
-	// Load attestation
-	attJSON, err := os.ReadFile("testdata/attestations/with-git-subject.json")
-	require.NoError(s.T(), err)
-	var envelope *dsse.Envelope
-	require.NoError(s.T(), json.Unmarshal(attJSON, &envelope))
-	h, _, err := v1.SHA256(bytes.NewReader(attJSON))
-	require.NoError(s.T(), err)
-	wantReferrerAtt := &biz.Referrer{
-		Digest:       h.String(),
-		Kind:         "ATTESTATION",
-		Downloadable: true,
-	}
-
-	// We'll store the attestation in the private only index
-	ctx := context.Background()
-	s.Run("public endpoint fails if feature not enabled", func() {
-		_, _, err := s.Referrer.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
-		s.ErrorContains(err, "not enabled")
-	})
-
-	s.Run("storing it associated with a private workflow keeps it private and not in the index", func() {
-		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
-		require.NoError(s.T(), err)
-		ref, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
-		s.NoError(err)
-		s.False(ref.InPublicWorkflow)
-		res, _, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
-		s.True(biz.IsNotFound(err))
-		s.Nil(res)
-	})
-
-	s.T().Run("storing it associated with a public workflow but not allowed org keeps it out of the index", func(t *testing.T) {
-		// Make workflow2 public
-		_, err := s.Workflow.Update(ctx, s.org2.ID, s.workflow2.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
-		require.NoError(t, err)
-
-		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
-		require.NoError(s.T(), err)
-		// It's marked as public in the internal index
-		ref, _, err := s.sharedEnabledUC.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
-		s.NoError(err)
-		s.True(ref.InPublicWorkflow)
-
-		// But it's not in the public shared index because the org 2 is not whitelisted
-		res, _, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
-		s.True(biz.IsNotFound(err))
-		s.Nil(res)
-	})
-
-	s.T().Run("it should appear if we whitelist org2", func(t *testing.T) {
-		uc, err := biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Membership,
-			&biz.ReferrerSharedIndexConfig{
-				Enabled:     true,
-				AllowedOrgs: []string{s.org2.ID},
-			}, nil)
-		require.NoError(t, err)
-		// Now it's public since org2 is whitelisted
-		res, _, err := uc.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
-		s.NoError(err)
-		s.Equal(wantReferrerAtt.Digest, res.Digest)
-	})
-
-	s.T().Run("or we can make the workflow 1 public", func(t *testing.T) {
-		// reset workflow2 to private
-		_, err := s.Workflow.Update(ctx, s.org2.ID, s.workflow2.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(false)})
-		require.NoError(t, err)
-		// Make workflow1 public
-		_, err = s.Workflow.Update(ctx, s.org1.ID, s.workflow1.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
-		require.NoError(t, err)
-		err = s.sharedEnabledUC.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
-		require.NoError(s.T(), err)
-		// Now it's public since org1 is whitelisted
-		res, _, err := s.sharedEnabledUC.GetFromRootInPublicSharedIndex(ctx, wantReferrerAtt.Digest, "", nil)
-		s.NoError(err)
-		s.Equal(wantReferrerAtt.Digest, res.Digest)
-	})
-}
 
 func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestation() {
 	envelope, attJSON := testEnvelope(s.T(), "testdata/attestations/with-dependent-attestation.json")
@@ -407,27 +325,10 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Contains(gotDigests, "sha256:5f4d1baadaf3e439f769f11c7ba0c5f77dad27d00689144d1311b48e65818bbd")
 	})
 
-	s.T().Run("if all associated workflows are private, the referrer is private", func(t *testing.T) {
+	s.T().Run("returns the associated workflow IDs", func(_ *testing.T) {
 		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
 		s.NoError(err)
-		s.False(got.InPublicWorkflow)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
-		for _, r := range got.References {
-			s.False(r.InPublicWorkflow)
-		}
-	})
-
-	s.T().Run("the referrer will be public if one associated workflow is public", func(t *testing.T) {
-		// Make workflow1 public
-		_, err := s.Workflow.Update(ctx, s.org1.ID, s.workflow1.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
-		require.NoError(t, err)
-
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
-		s.NoError(err)
-		s.True(got.InPublicWorkflow)
-		for _, r := range got.References {
-			s.True(r.InPublicWorkflow)
-		}
 	})
 }
 
@@ -668,36 +569,6 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 		s.Equal(sbomDigest, got.Digest)
 	})
 
-	s.Run("public workflow stays visible under the version filter regardless of RBAC", func() {
-		// A workflow whose project is NOT in the caller's RBAC-visible set, but which is public —
-		// matching isReferrerVisible's InPublicWorkflow short-circuit. The version filter must
-		// honor the same convention or it silently hides referrers that are otherwise visible.
-		wfPublic, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
-			Name: "wf-public", Team: "team", OrgID: s.org1.ID, Project: "public-proj",
-		})
-		require.NoError(s.T(), err)
-		_, err = s.Workflow.Update(ctx, s.org1.ID, wfPublic.ID.String(), &biz.WorkflowUpdateOpts{Public: toPtrBool(true)})
-		require.NoError(s.T(), err)
-		require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, h, wfPublic.ID.String()))
-
-		contractPublic, err := s.WorkflowContract.Describe(ctx, s.org1.ID, wfPublic.ContractID.String(), 0)
-		require.NoError(s.T(), err)
-		runPublic, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
-			WorkflowID: wfPublic.ID.String(), ContractRevision: contractPublic, CASBackendID: casBackend.ID,
-			ProjectVersion: "v1.0.0",
-		})
-		require.NoError(s.T(), err)
-		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runPublic.ID, h.String(), false))
-
-		// RBAC restricts the caller to project "test" — "public-proj" is NOT in their set.
-		rbac := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
-
-		got, _, err := s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, rbac, nil, biz.WithProjectScope("public-proj", "v1.0.0"))
-		s.NoError(err, "public workflow must remain discoverable even when RBAC excludes its project")
-		s.Require().NotNil(got)
-		s.Equal(sbomDigest, got.Digest)
-	})
-
 	s.Run("material root cannot bypass version scoping by supplying a cursor", func() {
 		// A second project version whose run points to an unrelated attestation digest, so the
 		// SBOM (only referenced by the v1.0.0 attestation) does not belong to it.
@@ -724,7 +595,6 @@ type referrerIntegrationTestSuite struct {
 	workflow1, workflow2 *biz.Workflow
 	org1UUID, org2UUID   uuid.UUID
 	user, user2          *biz.User
-	sharedEnabledUC      *biz.ReferrerUseCase
 	run                  *biz.WorkflowRun
 }
 
@@ -763,13 +633,6 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 	s.user2, err = s.User.UpsertByEmail(ctx, "user-2@test.com", nil)
 	require.NoError(s.T(), err)
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.user2.ID, biz.WithCurrentMembership())
-	require.NoError(s.T(), err)
-
-	s.sharedEnabledUC, err = biz.NewReferrerUseCase(s.Repos.Referrer, s.Repos.Workflow, s.Membership,
-		&biz.ReferrerSharedIndexConfig{
-			Enabled:     true,
-			AllowedOrgs: []string{s.org1.ID},
-		}, nil)
 	require.NoError(s.T(), err)
 
 	// Find contract revision

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import (
 
 func newWorkflowUpdateCmd() *cobra.Command {
 	var name, description, project, team, contractName string
-	var public bool
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -34,9 +33,6 @@ func newWorkflowUpdateCmd() *cobra.Command {
 			opts := &action.WorkflowUpdateOpts{}
 			if cmd.Flags().Changed("team") {
 				opts.Team = &team
-			}
-			if cmd.Flags().Changed("public") {
-				opts.Public = &public
 			}
 
 			if cmd.Flags().Changed("description") {
@@ -64,7 +60,6 @@ func newWorkflowUpdateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&description, "description", "", "workflow description")
 	cmd.Flags().StringVar(&team, "team", "", "team name")
-	cmd.Flags().BoolVar(&public, "public", false, "is the workflow public")
 	cmd.Flags().StringVar(&contractName, "contract", "", "the name of an existing contract")
 
 	return cmd

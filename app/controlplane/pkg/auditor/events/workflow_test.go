@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,7 +65,6 @@ func TestWorkflowEvents(t *testing.T) {
 				WorkflowContractName: wfContractName,
 				WorkflowDescription:  &wfDescription,
 				Team:                 &newTeam,
-				Public:               false,
 			},
 			expected: "testdata/workflows/workflow_created.json",
 			actor:    auditor.ActorTypeUser,
@@ -83,7 +82,6 @@ func TestWorkflowEvents(t *testing.T) {
 				WorkflowContractName: wfContractName,
 				WorkflowDescription:  &wfDescription,
 				Team:                 &newTeam,
-				Public:               false,
 			},
 			expected: "testdata/workflows/workflow_created_by_api_token.json",
 			actor:    auditor.ActorTypeAPIToken,
@@ -99,7 +97,6 @@ func TestWorkflowEvents(t *testing.T) {
 				},
 				NewDescription: &wfDescription,
 				NewTeam:        &newTeam,
-				NewPublic:      boolPtr(true),
 			},
 			expected: "testdata/workflows/workflow_updated.json",
 			actor:    auditor.ActorTypeUser,
@@ -115,7 +112,6 @@ func TestWorkflowEvents(t *testing.T) {
 				},
 				NewDescription: &wfDescription,
 				NewTeam:        &newTeam,
-				NewPublic:      boolPtr(true),
 			},
 			expected: "testdata/workflows/workflow_updated_by_api_token.json",
 			actor:    auditor.ActorTypeAPIToken,
@@ -131,7 +127,6 @@ func TestWorkflowEvents(t *testing.T) {
 				},
 				NewDescription:          &wfDescription,
 				NewTeam:                 &newTeam,
-				NewPublic:               boolPtr(true),
 				NewWorkflowContractID:   &wfContractUUID,
 				NewWorkflowContractName: &wfContractName,
 			},
@@ -149,7 +144,6 @@ func TestWorkflowEvents(t *testing.T) {
 				},
 				NewDescription:          &wfDescription,
 				NewTeam:                 &newTeam,
-				NewPublic:               boolPtr(true),
 				NewWorkflowContractID:   &wfContractUUID,
 				NewWorkflowContractName: &wfContractName,
 			},
@@ -219,8 +213,4 @@ func TestWorkflowEvents(t *testing.T) {
 			assert.Equal(t, string(want), string(got))
 		})
 	}
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }

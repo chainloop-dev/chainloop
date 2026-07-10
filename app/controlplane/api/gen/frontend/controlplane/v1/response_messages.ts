@@ -501,9 +501,10 @@ export interface WorkflowItem {
   /** Current, latest revision of the contract */
   contractRevisionLatest: number;
   /**
-   * A public workflow means that any user can
-   * - access to all its workflow runs
-   * - their attestation and materials
+   * Deprecated: public workflows were removed. This field is always false and
+   * is retained only for wire compatibility; it will be removed in a future release.
+   *
+   * @deprecated
    */
   public: boolean;
   description: string;

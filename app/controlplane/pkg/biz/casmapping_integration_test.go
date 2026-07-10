@@ -81,11 +81,11 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUser() {
 		s.Nil(mapping)
 	})
 
-	s.Run("userOrg1And2 can download validDigestPublic from org3", func() {
+	s.Run("userOrg1And2 can not download validDigestPublic from org3", func() {
+		// Cross-org download is no longer possible: access is granted through org membership only.
 		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigestPublic, s.userOrg1And2.ID)
-		s.NoError(err)
-		s.NotNil(mapping)
-		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
+		s.Error(err)
+		s.Nil(mapping)
 	})
 
 	s.Run("userOrg2 can download validDigest2 from org2", func() {
@@ -95,11 +95,10 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUser() {
 		s.Equal(s.casBackend2.ID, mapping.CASBackend.ID)
 	})
 
-	s.Run("userOrg2 can download validDigestPublic from org3", func() {
+	s.Run("userOrg2 can not download validDigestPublic from org3", func() {
 		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(context.TODO(), validDigestPublic, s.userOrg2.ID)
-		s.NoError(err)
-		s.NotNil(mapping)
-		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
+		s.Error(err)
+		s.Nil(mapping)
 	})
 
 	s.Run("userOrg2 can download validDigest from org2", func() {
@@ -133,11 +132,10 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadByOrg() {
 		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
 	})
 
-	s.Run("validDigestPublic is available from any org", func() {
+	s.Run("validDigestPublic is not available from an unrelated org", func() {
 		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestPublic, []uuid.UUID{uuid.New()}, nil)
-		s.NoError(err)
-		s.NotNil(mapping)
-		s.Equal(s.casBackend3.ID, mapping.CASBackend.ID)
+		s.Error(err)
+		s.Nil(mapping)
 	})
 
 	s.Run("validDigestWithoutRun is available only to org 3", func() {
@@ -190,20 +188,6 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadPrefersDefaultBack
 		s.NoError(err)
 		s.Require().NotNil(mapping)
 		s.Equal(nonDefaultBackend.ID, mapping.CASBackend.ID)
-	})
-
-	s.Run("public download returns the default backend even when it is mapped last", func() {
-		// Public mappings (workflow is public) across two backends, non-default created first.
-		_, err := s.CASMapping.Create(ctx, validDigestPublic, nonDefaultBackend.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
-		require.NoError(s.T(), err)
-		_, err = s.CASMapping.Create(ctx, validDigestPublic, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
-		require.NoError(s.T(), err)
-
-		// A requester with no access to org1 falls back to the public mappings.
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigestPublic, []uuid.UUID{uuid.New()}, nil)
-		s.NoError(err)
-		s.Require().NotNil(mapping)
-		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
 	})
 }
 
@@ -266,23 +250,6 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadSkipsSoftDeleted()
 		s.Error(err)
 		s.Nil(mapping)
 	})
-
-	s.Run("public download skips a mapping whose workflow is soft-deleted", func() {
-		_, err := s.CASMapping.Create(ctx, validDigest2, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: &s.publicWorkflowRun.ID})
-		require.NoError(s.T(), err)
-
-		// A non-member can reach it through the public fallback while the workflow is public.
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest2, []uuid.UUID{uuid.New()}, nil)
-		s.NoError(err)
-		s.Require().NotNil(mapping)
-
-		require.NoError(s.T(), s.Workflow.Delete(ctx, s.org1.ID, s.publicWorkflow.ID.String()))
-
-		// Once the workflow is soft-deleted the mapping is no longer public.
-		mapping, err = s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest2, []uuid.UUID{uuid.New()}, nil)
-		s.Error(err)
-		s.Nil(mapping)
-	})
 }
 
 func (s *casMappingIntegrationSuite) TestCreate() {
@@ -292,7 +259,6 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		casBackendID  uuid.UUID
 		workflowRunID *uuid.UUID
 		wantErr       bool
-		wantPublic    bool
 	}{
 		{
 			name:          "valid",
@@ -335,17 +301,15 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			wantErr:       true,
 		},
 		{
-			name:          "public workflowrun",
+			name:          "associated to a workflowrun",
 			digest:        validDigest,
 			casBackendID:  s.casBackend1.ID,
 			workflowRunID: biz.ToPtr(s.publicWorkflowRun.ID),
-			wantPublic:    true,
 		},
 		{
 			name:         "not associated to any workflowrun",
 			digest:       validDigest,
 			casBackendID: s.casBackend1.ID,
-			wantPublic:   false,
 		},
 	}
 
@@ -354,7 +318,6 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			Digest:     validDigest,
 			CASBackend: &biz.CASBackend{ID: s.casBackend1.ID},
 			OrgID:      s.casBackend1.OrganizationID,
-			Public:     tc.wantPublic,
 		}
 
 		if tc.workflowRunID != nil {
@@ -425,7 +388,7 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 
 	s.projectID = workflow.ProjectID
 
-	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow-public", OrgID: s.org1.ID, Public: true, Project: "test-project"})
+	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow-public", OrgID: s.org1.ID, Project: "test-project"})
 	assert.NoError(err)
 	s.publicWorkflow = publicWorkflow
 

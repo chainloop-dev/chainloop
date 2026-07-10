@@ -35,8 +35,8 @@ message Bootstrap {
   // Plugins directory
   // NOTE: plugins have the form of chainloop-plugin-<name>
   string plugins_dir = 7;
-  // Configuration about the shared referrer index
-  ReferrerSharedIndex referrer_shared_index = 8;
+  reserved 8;
+  reserved "referrer_shared_index";
 
   // The certificate authority used for keyless signing (deprecated, use certificate_authorities instead)
   CA certificate_authority = 9 [deprecated = true];
@@ -168,17 +168,6 @@ message PolicyProvider {
   string host = 3 [deprecated = true];
   // URL of the provider API, it will be used both for policies and groups. Example: https://my-server/policy-api
   string url = 4; // Note. Validations not applied not to break compatibility with current deployments
-}
-
-// Configuration used to enable a shared index API endpoint that can be used to discover metadata referrers
-// To populate the shared index you need to enable the feature and configure the allowed orgs
-// The reason to have an org allowList is to avoid leaking metadata from other organizations and set the stage for a trusted publisher model
-message ReferrerSharedIndex {
-  // If the shared, public index feature is enabled
-  bool enabled = 1;
-  // list of organizations uuids that are allowed to appear in the shared referrer index
-  // think of it as a list of trusted publishers
-  repeated string allowed_orgs = 2;
 }
 
 message Server {

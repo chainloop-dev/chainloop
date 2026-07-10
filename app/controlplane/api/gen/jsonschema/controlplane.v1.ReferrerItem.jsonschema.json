@@ -46,10 +46,6 @@
       },
       "type": "object"
     },
-    "public": {
-      "description": "Public indicates whether the referrer is public since it belongs to a public workflow",
-      "type": "boolean"
-    },
     "references": {
       "description": "References contains the list of related referrer items",
       "items": {

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ func NewWorkflowUpdate(cfg *ActionsOpts) *WorkflowUpdate {
 
 type WorkflowUpdateOpts struct {
 	Description, Team, ContractName *string
-	Public                          *bool
 }
 
 func (action *WorkflowUpdate) Run(ctx context.Context, name, project string, opts *WorkflowUpdateOpts) (*WorkflowItem, error) {
@@ -41,7 +40,6 @@ func (action *WorkflowUpdate) Run(ctx context.Context, name, project string, opt
 		ProjectName:  project,
 		Description:  opts.Description,
 		Team:         opts.Team,
-		Public:       opts.Public,
 		ContractName: opts.ContractName,
 	})
 

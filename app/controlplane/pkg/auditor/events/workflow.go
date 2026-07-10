@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,7 +69,6 @@ type WorkflowCreated struct {
 	WorkflowContractName string     `json:"workflow_contract_name,omitempty"`
 	WorkflowDescription  *string    `json:"description,omitempty"`
 	Team                 *string    `json:"team,omitempty"`
-	Public               bool       `json:"public,omitempty"`
 }
 
 func (w *WorkflowCreated) TargetID() *uuid.UUID {
@@ -99,7 +98,6 @@ type WorkflowUpdated struct {
 	*WorkflowBase
 	NewDescription          *string    `json:"new_description,omitempty"`
 	NewTeam                 *string    `json:"new_team,omitempty"`
-	NewPublic               *bool      `json:"new_public,omitempty"`
 	NewWorkflowContractID   *uuid.UUID `json:"new_workflow_contract_id,omitempty"`
 	NewWorkflowContractName *string    `json:"new_workflow_contract_name,omitempty"`
 }

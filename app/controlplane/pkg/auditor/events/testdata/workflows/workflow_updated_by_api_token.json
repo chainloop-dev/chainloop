@@ -13,8 +13,7 @@
     "workflow_name": "test-contract",
     "project_name": "test-project",
     "new_description": "test description",
-    "new_team": "test-team",
-    "new_public": true
+    "new_team": "test-team"
   },
-  "Digest": "sha256:fc33dee1b1a043d847a6c4c0d945f75d18508675569f43915a7149e9e756ad65"
+  "Digest": "sha256:8e7e749962224439f25efce9428336f94f2b77b384bfe5f0885208a0d203da94"
 }

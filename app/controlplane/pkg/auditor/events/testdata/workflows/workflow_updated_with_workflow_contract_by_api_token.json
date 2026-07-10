@@ -14,9 +14,8 @@
     "project_name": "test-project",
     "new_description": "test description",
     "new_team": "test-team",
-    "new_public": true,
     "new_workflow_contract_id": "1089bb36-e27b-428b-8009-d015c8737c54",
     "new_workflow_contract_name": "test-contract"
   },
-  "Digest": "sha256:9e28ae18fa9d44faa4a6d072f928bd9b70bda9aded9abdcedc776819f4e638e7"
+  "Digest": "sha256:30cbab2d2e989f8026610e0e81c4b2602f4f68c2cb440a8bd40ef54a84f75883"
 }

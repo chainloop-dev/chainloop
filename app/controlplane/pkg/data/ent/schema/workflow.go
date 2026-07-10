@@ -52,7 +52,10 @@ func (Workflow) Fields() []ent.Field {
 				Default: "CURRENT_TIMESTAMP",
 			}),
 		field.Time("deleted_at").Optional(),
-		// public means that the workflow runs, attestations and materials are reachable
+		// Deprecated: the public workflow feature was removed and this column is no longer read or
+		// written by the application. It is intentionally kept (not dropped) so that pods still
+		// running the previous image—which SELECT this column—keep working during rollout. The
+		// column will be dropped in a follow-up migration once the rollout has settled.
 		field.Bool("public").Default(false),
 		field.UUID("organization_id", uuid.UUID{}),
 		field.UUID("project_id", uuid.UUID{}),

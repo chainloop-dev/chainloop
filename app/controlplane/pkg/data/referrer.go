@@ -138,10 +138,6 @@ func (r *ReferrerRepo) Exist(ctx context.Context, digest string, filters ...biz.
 		query = query.Where(referrer.Kind(*opts.RootKind))
 	}
 
-	if opts.Public != nil {
-		query = query.WithWorkflows(func(q *ent.WorkflowQuery) { q.Where(workflow.PublicEQ(*opts.Public)) })
-	}
-
 	return query.Exist(ctx)
 }
 
@@ -171,11 +167,6 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(orgIDs...)),
 	}
 
-	// optionally attaching its visibility
-	if opts.Public != nil {
-		predicateWF = append(predicateWF, workflow.Public(*opts.Public))
-	}
-
 	// Attach the workflow predicate
 	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
 
@@ -190,7 +181,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 		if opts.ProjectVersion != nil {
 			version = *opts.ProjectVersion
 		}
-		projectPred = r.projectScopePredicate(*opts.ProjectName, version, orgIDs, opts.ProjectIDs, opts.Public)
+		projectPred = r.projectScopePredicate(*opts.ProjectName, version, orgIDs, opts.ProjectIDs)
 		predicateReferrer = append(predicateReferrer, referrer.Or(
 			referrer.KindNEQ(biz.ReferrerAttestationType),
 			projectPred,
@@ -215,7 +206,7 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 	}
 
 	// Find the referrer recursively starting from the root
-	res, nextCursor, err := r.doGet(ctx, refs[0], orgIDs, opts.ProjectIDs, opts.Public, projectPred, p, 0)
+	res, nextCursor, err := r.doGet(ctx, refs[0], orgIDs, opts.ProjectIDs, projectPred, p, 0)
 	if err != nil && !biz.IsErrUnauthorized(err) {
 		return nil, "", fmt.Errorf("failed to get referrer: %w", err)
 	}
@@ -230,13 +221,11 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 // semi-join via the index on workflow_run.attestation_digest, which is what makes the filter
 // scale at thousands of runs per project.
 //
-// Visibility mirrors isReferrerVisible: a run is included when its workflow is either public
-// (regardless of RBAC) or its project is in the caller's RBAC-visible set. visibleProjectsMap
-// follows the existing convention — an org entry present means RBAC applies for that org and
-// only the listed project IDs are visible; an org absent means no RBAC restriction. When
-// public != nil, the run's workflow visibility is additionally constrained to that value.
-// The public-workflow short-circuit is tracked for removal in chainloop-dev/chainloop#3163.
-func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool) predicate.Referrer {
+// Visibility mirrors isReferrerVisible: a run is included when its workflow's project is in the
+// caller's RBAC-visible set. visibleProjectsMap follows the existing convention — an org entry
+// present means RBAC applies for that org and only the listed project IDs are visible; an org
+// absent means no RBAC restriction.
+func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) predicate.Referrer {
 	versionPredicates := []predicate.ProjectVersion{
 		projectversion.DeletedAtIsNil(),
 		projectversion.HasProjectWith(
@@ -252,27 +241,16 @@ func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs
 		workflowrun.HasVersionWith(versionPredicates...),
 	}
 
-	// Visibility OR — same semantics as isReferrerVisible: a public workflow is visible to any
-	// caller in its org, otherwise the project must be in the caller's RBAC-visible set.
-	visibility := []predicate.WorkflowRun{
-		workflowrun.HasWorkflowWith(
-			workflow.DeletedAtIsNil(),
-			workflow.Public(true),
-			workflow.HasOrganizationWith(organization.IDIn(orgIDs...)),
-		),
+	// Visibility — same semantics as isReferrerVisible: the run's workflow project must be in the
+	// caller's RBAC-visible set. If no project is visible in any allowed org, nothing matches.
+	rbacScope := projectVisibilityPredicate(orgIDs, visibleProjectsMap)
+	if rbacScope == nil {
+		return func(s *sql.Selector) { s.Where(sql.False()) }
 	}
-	if rbacScope := projectVisibilityPredicate(orgIDs, visibleProjectsMap); rbacScope != nil {
-		visibility = append(visibility, workflowrun.HasWorkflowWith(
-			workflow.DeletedAtIsNil(),
-			workflow.HasProjectWith(rbacScope),
-		))
-	}
-	runPredicates = append(runPredicates, workflowrun.Or(visibility...))
-
-	// If the caller explicitly scopes by public/private, layer that on top.
-	if public != nil {
-		runPredicates = append(runPredicates, workflowrun.HasWorkflowWith(workflow.Public(*public)))
-	}
+	runPredicates = append(runPredicates, workflowrun.HasWorkflowWith(
+		workflow.DeletedAtIsNil(),
+		workflow.HasProjectWith(rbacScope),
+	))
 
 	return func(s *sql.Selector) {
 		t := sql.Table(workflowrun.Table)
@@ -286,8 +264,8 @@ func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs
 
 // projectVisibilityPredicate builds a project predicate that accepts a project iff it belongs to
 // one of the allowed orgs AND, when RBAC applies to that org, the project is in the caller's
-// visible set. Returns nil when no org grants any project visibility, so callers can fall back
-// to other visibility paths (e.g. public workflows).
+// visible set. Returns nil when no org grants any project visibility, so callers can treat that
+// as "nothing is visible".
 func projectVisibilityPredicate(orgIDs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) predicate.Project {
 	perOrg := make([]predicate.Project, 0, len(orgIDs))
 	for _, orgID := range orgIDs {
@@ -315,7 +293,7 @@ func projectVisibilityPredicate(orgIDs []uuid.UUID, visibleProjectsMap map[uuid.
 // we also need to limit this because there might be cycles
 const maxTraverseLevels = 1
 
-func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, public *bool, projectPred predicate.Referrer, p *pagination.CursorOptions, level int) (*biz.StoredReferrer, string, error) {
+func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID, projectPred predicate.Referrer, p *pagination.CursorOptions, level int) (*biz.StoredReferrer, string, error) {
 	// Assemble the referrer to return
 	res := &biz.StoredReferrer{
 		ID:        root.ID,
@@ -355,11 +333,6 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	predicateWF := []predicate.Workflow{
 		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(allowedOrgs...)),
-	}
-
-	// optionally attaching its visibility
-	if public != nil {
-		predicateWF = append(predicateWF, workflow.Public(*public))
 	}
 
 	// Attach the workflow predicate
@@ -414,7 +387,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// Add the references to the result
 	for _, reference := range refs {
 		// Call recursively the function — pagination only applies to the first level
-		ref, _, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, public, projectPred, nil, level+1)
+		ref, _, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, projectPred, nil, level+1)
 		if err != nil && !biz.IsErrUnauthorized(err) {
 			return nil, "", fmt.Errorf("failed to get referrer: %w", err)
 		}
@@ -449,10 +422,6 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 }
 
 func isReferrerVisible(ref *biz.StoredReferrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) bool {
-	if ref.InPublicWorkflow {
-		return true
-	}
-
 	for _, oid := range ref.OrgIDs {
 		if !slices.Contains(allowedOrgs, oid) {
 			// skip check in organizations where the user doesn't have access
@@ -477,19 +446,14 @@ func isReferrerVisible(ref *biz.StoredReferrer, allowedOrgs []uuid.UUID, visible
 }
 
 // hydrate the referrer with the following information:
-// - isPublic: if it has a public workflow associated
 // - workflowIDs: the list of associated workflows
 // - orgIDs: the list of associated organizations
 func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) {
-	isPublic := false
 	workflowIDs := make([]uuid.UUID, 0, len(root.Edges.Workflows))
 	projectIDs := make(map[uuid.UUID]bool, 0)
 	orgIDs := make([]uuid.UUID, 0)
 	orgsMap := make(map[uuid.UUID]struct{}, 0)
 	for _, wf := range root.Edges.Workflows {
-		if wf.Public {
-			isPublic = true
-		}
 		workflowIDs = append(workflowIDs, wf.ID)
 		if _, ok := orgsMap[wf.OrganizationID]; !ok {
 			orgIDs = append(orgIDs, wf.OrganizationID)
@@ -501,7 +465,6 @@ func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) {
 	}
 
 	out.ProjectIDs = maps.Keys(projectIDs)
-	out.InPublicWorkflow = isPublic
 	out.WorkflowIDs = workflowIDs
 	out.OrgIDs = orgIDs
 }

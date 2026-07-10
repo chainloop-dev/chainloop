@@ -59,7 +59,7 @@ func wireApp(context.Context, *conf.Bootstrap, credentials.ReaderWriter, log.Log
 			wire.Bind(new(biz.CASClient), new(*biz.CASClientUseCase)),
 			serviceOpts,
 			wire.Value([]biz.CASClientOpts{}),
-			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "ReferrerSharedIndex", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "FederatedAuthentication", "OperationAuthorizationProvider"),
+			wire.FieldsOf(new(*conf.Bootstrap), "Server", "Auth", "Data", "CasServer", "Onboarding", "PrometheusIntegration", "PolicyProviders", "NatsServer", "FederatedAuthentication", "OperationAuthorizationProvider"),
 			wire.FieldsOf(new(*conf.Data), "Database"),
 			dispatcher.New,
 			authz.NewCasbinEnforcer,
@@ -77,7 +77,6 @@ func wireApp(context.Context, *conf.Bootstrap, credentials.ReaderWriter, log.Log
 			newJWTConfig,
 			authzConfig,
 			authzUseCaseConfig,
-			biz.NewIndexConfig,
 		),
 	)
 }

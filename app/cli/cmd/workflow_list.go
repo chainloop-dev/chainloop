@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -97,8 +97,8 @@ func WorkflowListTableOutput(workflowListResult *action.WorkflowListResult) erro
 		return nil
 	}
 
-	headerRow := table.Row{"Name", "Project", "Contract", "Public", "Runner", "Last Run status", "Created At"}
-	headerRowFull := table.Row{"Name", "Description", "Project", "Team", "Contract", "Public", "Runner", "Last Run status", "Created At"}
+	headerRow := table.Row{"Name", "Project", "Contract", "Runner", "Last Run status", "Created At"}
+	headerRowFull := table.Row{"Name", "Description", "Project", "Team", "Contract", "Runner", "Last Run status", "Created At"}
 
 	t := output.NewTableWriter()
 	if full {
@@ -117,14 +117,14 @@ func WorkflowListTableOutput(workflowListResult *action.WorkflowListResult) erro
 
 		if !full {
 			row = table.Row{
-				p.Name, p.Project, p.ContractName, p.Public,
+				p.Name, p.Project, p.ContractName,
 				lastRunRunner, lastRunState,
 				p.CreatedAt.Format(time.RFC822),
 			}
 		} else {
 			row = table.Row{
 				p.Name, p.Description, p.Project, p.Team,
-				p.ContractName, p.Public,
+				p.ContractName,
 				lastRunRunner, lastRunState,
 				p.CreatedAt.Format(time.RFC822),
 			}

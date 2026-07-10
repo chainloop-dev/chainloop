@@ -61,7 +61,7 @@
       "type": "string"
     },
     "public": {
-      "description": "A public workflow means that any user can\n - access to all its workflow runs\n - their attestation and materials",
+      "description": "Deprecated: public workflows were removed. This field is always false and\n is retained only for wire compatibility; it will be removed in a future release.",
       "type": "boolean"
     },
     "runsCount": {
