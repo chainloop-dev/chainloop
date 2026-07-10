@@ -54,9 +54,9 @@ func LoadFileOrURL(fileRef string) ([]byte, error) {
 
 // ValidateAndExtractName validates and extracts a name from either
 // an explicit name parameter OR from metadata.name in the file content.
-// Ensures exactly one source is provided. Returns error when:
+// Returns error when:
 // - Neither explicit name nor metadata.name is provided
-// - Both explicit name and metadata.name are provided (ambiguous)
+// - Both are provided and they differ (providing both with the same value is allowed)
 func ValidateAndExtractName(explicitName, filePath string) (string, error) {
 	// Load file content if provided
 	var content []byte
@@ -74,9 +74,9 @@ func ValidateAndExtractName(explicitName, filePath string) (string, error) {
 		return "", fmt.Errorf("parse content: %w", err)
 	}
 
-	// Both provided - ambiguous
-	if explicitName != "" && metadataName != "" {
-		return "", fmt.Errorf("conflicting names: explicit name (%q) and metadata.name (%q) both provided", explicitName, metadataName)
+	// Both provided - only an error if they differ
+	if explicitName != "" && metadataName != "" && explicitName != metadataName {
+		return "", fmt.Errorf("--name %q and metadata.name %q differ: pass only one, or set them to the same value", explicitName, metadataName)
 	}
 
 	// Neither provided - missing required name

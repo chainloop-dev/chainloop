@@ -1,8 +1,9 @@
-#release-contract
+# DO NOT CHANGE metadata.name, it's used in the SSDF and CRA guides
+# https://docs.chainloop.dev/guides/ssdf and https://docs.chainloop.dev/guides/cra
 apiVersion: chainloop.dev/v1
 kind: Contract
 metadata:
-  name: sbom-quality
+  name: release-contract
   description: Contract for SBOM quality checks
 spec:
   materials:

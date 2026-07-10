@@ -1,8 +1,10 @@
-# Require a container image reference and include SLSA complicance verification
+# Require a container image reference and include SLSA compliance verification
+# DO NOT CHANGE metadata.name, it's used in the SLSA guide
+# https://docs.chainloop.dev/guides/slsa
 apiVersion: chainloop.dev/v1
 kind: Contract
 metadata:
-  name: github
+  name: skynet-build
   description: Require a container image reference and include SLSA compliance verification
 spec:
   materials:
