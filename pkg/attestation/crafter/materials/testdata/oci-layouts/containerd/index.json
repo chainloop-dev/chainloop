@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.index.v1+json",
+  "manifests": [
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "size": 743,
+      "annotations": {
+        "io.containerd.image.name": "ghcr.io/org/image:v2.0.0",
+        "org.opencontainers.image.ref.name": "v2.0.0"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "size": 743,
+      "annotations": {
+        "io.containerd.image.name": "ghcr.io/org/image@sha256:3ac173d9b28419abf3ac44a6bf26ed1959da2bdf7ab29c634a3944e9f0f7d34"
+      }
+    },
+    {
+      "mediaType": "application/vnd.oci.image.manifest.v1+json",
+      "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "size": 743,
+      "annotations": {
+        "io.containerd.image.name": "localhost:5000/org/image"
+      }
+    }
+  ]
+}

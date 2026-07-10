@@ -129,13 +129,19 @@ func (i *OCIImageCrafter) Craft(ctx context.Context, imageRef string) (*api.Atte
 	// Check if the image is tagged as "latest"
 	hasLatestTag := i.isLatestTag(ref, remoteRef.DigestStr())
 
+	// Digest references carry no tag; ref.Identifier() would return the digest itself
+	var tag string
+	if t, ok := ref.(name.Tag); ok {
+		tag = t.TagStr()
+	}
+
 	containerImage := &api.Attestation_Material_ContainerImage{
 		// TODO: remove once we know servers are not running server-side validation
 		Id:           i.input.Name,
 		Name:         repoName,
 		Digest:       remoteRef.DigestStr(),
 		IsSubject:    i.input.Output,
-		Tag:          ref.Identifier(),
+		Tag:          tag,
 		HasLatestTag: wrapperspb.Bool(hasLatestTag),
 	}
 
@@ -414,10 +420,12 @@ func (i *OCIImageCrafter) buildMaterialFromManifest(layoutPath string, manifest 
 	tag := ""
 	if manifest.Annotations != nil {
 		if t, ok := manifest.Annotations["io.containerd.image.name"]; ok {
-			// Extract tag from full reference (e.g., "registry/repo:tag" -> "tag")
-			parts := strings.Split(t, ":")
-			if len(parts) > 1 {
-				tag = parts[len(parts)-1]
+			// Parse the full reference (e.g. "registry:5000/repo:tag"); naive splitting on ":"
+			// would mistake registry ports or digests for tags
+			if parsed, err := name.ParseReference(t); err == nil {
+				if tagged, ok := parsed.(name.Tag); ok {
+					tag = tagged.TagStr()
+				}
 			}
 		}
 	}

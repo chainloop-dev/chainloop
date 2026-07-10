@@ -17,10 +17,20 @@ package materials_test
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"log"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -212,6 +222,115 @@ func TestOCIImageCraft_LayoutWithDigestSelector(t *testing.T) {
 			} else {
 				assert.NotEmpty(t, containerImage.Digest)
 			}
+		})
+	}
+}
+
+func TestOCIImageCraft_RemoteTag(t *testing.T) {
+	server := httptest.NewServer(registry.New(registry.Logger(log.New(io.Discard, "", 0))))
+	defer server.Close()
+
+	u, err := url.Parse(server.URL)
+	require.NoError(t, err)
+	repo := fmt.Sprintf("%s/test/image", u.Host)
+
+	for _, tag := range []string{"v1.0.0", "latest"} {
+		ref, err := name.ParseReference(fmt.Sprintf("%s:%s", repo, tag))
+		require.NoError(t, err)
+		require.NoError(t, remote.Write(ref, empty.Image))
+	}
+
+	taggedRef, err := name.ParseReference(fmt.Sprintf("%s:v1.0.0", repo))
+	require.NoError(t, err)
+	desc, err := remote.Get(taggedRef)
+	require.NoError(t, err)
+	digest := desc.Digest.String()
+
+	testCases := []struct {
+		name     string
+		imageRef string
+		wantTag  string
+	}{
+		{
+			name:     "tagged reference",
+			imageRef: fmt.Sprintf("%s:v1.0.0", repo),
+			wantTag:  "v1.0.0",
+		},
+		{
+			// a digest reference carries no tag, the digest must not leak into the tag field
+			name:     "digest reference",
+			imageRef: fmt.Sprintf("%s@%s", repo, digest),
+			wantTag:  "",
+		},
+		{
+			name:     "untagged reference defaults to latest",
+			imageRef: repo,
+			wantTag:  "latest",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			schema := &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
+			}
+			l := zerolog.Nop()
+			crafter, err := materials.NewOCIImageCrafter(schema, authn.DefaultKeychain, &l)
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), tc.imageRef)
+			require.NoError(t, err)
+
+			containerImage := got.GetContainerImage()
+			require.NotNil(t, containerImage)
+			assert.Equal(t, tc.wantTag, containerImage.Tag)
+			assert.Equal(t, digest, containerImage.Digest)
+		})
+	}
+}
+
+func TestOCIImageCraft_LayoutTagExtraction(t *testing.T) {
+	testCases := []struct {
+		name           string
+		digestSelector string
+		wantTag        string
+	}{
+		{
+			name:           "tagged containerd reference",
+			digestSelector: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			wantTag:        "v2.0.0",
+		},
+		{
+			// a digest reference carries no tag, the digest must not leak into the tag field
+			name:           "digest containerd reference",
+			digestSelector: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			wantTag:        "",
+		},
+		{
+			// the registry port must not be mistaken for a tag
+			name:           "untagged reference on a registry with port",
+			digestSelector: "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+			wantTag:        "latest",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			schema := &contractAPI.CraftingSchema_Material{
+				Name: "test",
+				Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
+			}
+			l := zerolog.Nop()
+			crafter, err := materials.NewOCIImageCrafter(schema, nil, &l)
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), "testdata/oci-layouts/containerd@"+tc.digestSelector)
+			require.NoError(t, err)
+
+			containerImage := got.GetContainerImage()
+			require.NotNil(t, containerImage)
+			assert.Equal(t, tc.wantTag, containerImage.Tag)
 		})
 	}
 }
