@@ -16,6 +16,9 @@
 package crafter_test
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -737,6 +740,294 @@ func (s *crafterSuite) TestAddMaterialsAutomaticInvalidNameSurfacesValidationErr
 	assert.Nil(s.T(), m)
 	assert.Contains(s.T(), err.Error(), "must contain only lowercase letters, numbers, and hyphens")
 	assert.NotContains(s.T(), err.Error(), "failed to auto-discover material kind")
+}
+
+func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
+	// Build the fixture in-process so no binary blob is checked in.
+	zipFixture := filepath.Join(s.T().TempDir(), "two-files.zip")
+	buildZip(s.T(), zipFixture, map[string]string{"alpha.txt": "alpha", "beta.txt": "beta"})
+
+	s.Run("happy path: two files produce two materials", func() {
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), "testdata/contracts/empty_generic.yaml", &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		// Nil uploader causes inline storage — no network required.
+		backend := &casclient.CASBackend{}
+
+		mts, err := c.AddMaterialsFromArchive(
+			context.Background(),
+			"",
+			"ARTIFACT",
+			"entry",
+			zipFixture,
+			materials.ArchiveZip,
+			backend,
+			nil,
+			materials.DefaultArchiveLimits(),
+		)
+
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 2)
+
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Len(s.T(), stateMap, 2)
+
+		// Material names are sequential (0-indexed) with the --name value as
+		// prefix, independent of the entry order.
+		m1, has1 := stateMap["entry-0"]
+		m2, has2 := stateMap["entry-1"]
+		assert.True(s.T(), has1, "expected material entry-0 in state")
+		assert.True(s.T(), has2, "expected material entry-1 in state")
+
+		// The recorded artifact filename must preserve each original entry
+		// basename, not the sequential material key.
+		gotFilenames := []string{m1.GetArtifact().GetName(), m2.GetArtifact().GetName()}
+		assert.ElementsMatch(s.T(), []string{"alpha.txt", "beta.txt"}, gotFilenames)
+	})
+
+	s.Run("atomicity: over-tight limit leaves state empty", func() {
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), "testdata/contracts/empty_generic.yaml", &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		backend := &casclient.CASBackend{}
+
+		// MaxEntries:1 causes ErrTooManyEntries after the second entry.
+		tightLimits := materials.ArchiveLimits{MaxEntries: 1, MaxTotalSize: 1 << 30}
+
+		_, err = c.AddMaterialsFromArchive(
+			context.Background(),
+			"",
+			"ARTIFACT",
+			"entry",
+			zipFixture,
+			materials.ArchiveZip,
+			backend,
+			nil,
+			tightLimits,
+		)
+
+		require.Error(s.T(), err)
+		assert.ErrorIs(s.T(), err, materials.ErrTooManyEntries)
+
+		// Atomicity: no materials must have been committed.
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Empty(s.T(), stateMap, "state must be empty after a failed archive expansion")
+
+		// Atomicity: policy evaluations must also be rolled back.
+		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetPolicyEvaluations(), "policy evaluations must be rolled back after a failed archive expansion")
+	})
+}
+
+// buildZip creates a zip archive at the given path containing the provided
+// files (entry name → content). All entries are regular files.
+func buildZip(t *testing.T, path string, files map[string]string) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	zw := zip.NewWriter(f)
+	for name, content := range files {
+		w, err := zw.Create(name)
+		require.NoError(t, err)
+		_, err = w.Write([]byte(content))
+		require.NoError(t, err)
+	}
+	require.NoError(t, zw.Close())
+}
+
+// buildTarGz creates a .tar.gz archive at path containing regular files,
+// directory entries, and symlinks as described by the parameters.
+func buildTarGz(t *testing.T, path string, regular map[string]string, dirs []string, symlinks map[string]string) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	gw := gzip.NewWriter(f)
+	tw := tar.NewWriter(gw)
+
+	for name, content := range regular {
+		hdr := &tar.Header{
+			Name:     name,
+			Typeflag: tar.TypeReg,
+			Mode:     0o600,
+			Size:     int64(len(content)),
+		}
+		require.NoError(t, tw.WriteHeader(hdr))
+		_, err = tw.Write([]byte(content))
+		require.NoError(t, err)
+	}
+	for _, name := range dirs {
+		hdr := &tar.Header{
+			Name:     name,
+			Typeflag: tar.TypeDir,
+			Mode:     0o700,
+		}
+		require.NoError(t, tw.WriteHeader(hdr))
+	}
+	for name, target := range symlinks {
+		hdr := &tar.Header{
+			Name:     name,
+			Typeflag: tar.TypeSymlink,
+			Linkname: target,
+		}
+		require.NoError(t, tw.WriteHeader(hdr))
+	}
+
+	require.NoError(t, tw.Close())
+	require.NoError(t, gw.Close())
+}
+
+func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
+	const contract = "testdata/contracts/empty_generic.yaml"
+	backend := &casclient.CASBackend{}
+
+	s.Run("name collision: both names present with suffix", func() {
+		dir := s.T().TempDir()
+		p := filepath.Join(dir, "collide.zip")
+		buildZip(s.T(), p, map[string]string{
+			"scan.json":        `{"a":1}`,
+			"nested/scan.json": `{"b":2}`,
+		})
+
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		mts, err := c.AddMaterialsFromArchive(
+			context.Background(),
+			"", "ARTIFACT", "", p,
+			materials.ArchiveZip, backend, nil,
+			materials.DefaultArchiveLimits(),
+		)
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 2)
+
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Len(s.T(), stateMap, 2)
+		// Entries sharing a basename still get distinct sequential names.
+		_, hasMat0 := stateMap["material-0"]
+		_, hasMat1 := stateMap["material-1"]
+		assert.True(s.T(), hasMat0, "expected material material-0 in state")
+		assert.True(s.T(), hasMat1, "expected material material-1 in state")
+	})
+
+	s.Run("name prefix: used as the sequential name prefix", func() {
+		dir := s.T().TempDir()
+		p := filepath.Join(dir, "prefix.zip")
+		buildZip(s.T(), p, map[string]string{
+			"a.json": `{"x":1}`,
+		})
+
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		mts, err := c.AddMaterialsFromArchive(
+			context.Background(),
+			"", "ARTIFACT", "sboms", p,
+			materials.ArchiveZip, backend, nil,
+			materials.DefaultArchiveLimits(),
+		)
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 1)
+
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Len(s.T(), stateMap, 1)
+		_, found := stateMap["sboms-0"]
+		assert.True(s.T(), found, "expected material sboms-0 in state")
+	})
+
+	s.Run("skip dirs and symlinks in tar.gz: only regular file becomes material", func() {
+		dir := s.T().TempDir()
+		p := filepath.Join(dir, "mixed.tar.gz")
+		buildTarGz(s.T(), p,
+			map[string]string{"real.txt": "hello"},
+			[]string{"adir/"},
+			map[string]string{"link.txt": "real.txt"},
+		)
+
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		mts, err := c.AddMaterialsFromArchive(
+			context.Background(),
+			"", "ARTIFACT", "", p,
+			materials.ArchiveTarGz, backend, nil,
+			materials.DefaultArchiveLimits(),
+		)
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 1, "only the regular file must become a material")
+
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Len(s.T(), stateMap, 1)
+		realMat, hasReal := stateMap["material-0"]
+		assert.True(s.T(), hasReal, "expected material material-0 in state")
+		// The original filename is still preserved in the artifact metadata.
+		assert.Equal(s.T(), "real.txt", realMat.GetArtifact().GetName())
+	})
+
+	s.Run("traversal rejection: ../escape.txt entry causes error and empty state", func() {
+		dir := s.T().TempDir()
+		p := filepath.Join(dir, "evil.tar.gz")
+		buildTarGz(s.T(), p,
+			map[string]string{"../escape.txt": "evil"},
+			nil, nil,
+		)
+
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		_, err = c.AddMaterialsFromArchive(
+			context.Background(),
+			"", "ARTIFACT", "", p,
+			materials.ArchiveTarGz, backend, nil,
+			materials.DefaultArchiveLimits(),
+		)
+		require.Error(s.T(), err, "path-traversal entry must cause an error")
+		assert.ErrorIs(s.T(), err, materials.ErrUnsafeEntry)
+
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Empty(s.T(), stateMap, "state must be empty after traversal rejection (atomic rollback)")
+	})
+
+	s.Run("tar.gz happy path: two regular files produce two materials", func() {
+		dir := s.T().TempDir()
+		p := filepath.Join(dir, "two.tar.gz")
+		buildTarGz(s.T(), p,
+			map[string]string{
+				"alpha.txt": "aaa",
+				"beta.txt":  "bbb",
+			},
+			nil, nil,
+		)
+
+		runner := runners.NewGeneric()
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runner)
+		require.NoError(s.T(), err)
+
+		mts, err := c.AddMaterialsFromArchive(
+			context.Background(),
+			"", "ARTIFACT", "", p,
+			materials.ArchiveTarGz, backend, nil,
+			materials.DefaultArchiveLimits(),
+		)
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 2)
+
+		stateMap := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Len(s.T(), stateMap, 2)
+		m1, has1 := stateMap["material-0"]
+		m2, has2 := stateMap["material-1"]
+		assert.True(s.T(), has1, "expected material material-0 in state")
+		assert.True(s.T(), has2, "expected material material-1 in state")
+		// Original filenames preserved regardless of the sequential keys.
+		gotFilenames := []string{m1.GetArtifact().GetName(), m2.GetArtifact().GetName()}
+		assert.ElementsMatch(s.T(), []string{"alpha.txt", "beta.txt"}, gotFilenames)
+	})
 }
 
 func loadSchema(path string) (*schemaapi.CraftingSchema, error) {
