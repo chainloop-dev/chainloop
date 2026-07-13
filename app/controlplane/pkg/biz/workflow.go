@@ -42,11 +42,7 @@ type Workflow struct {
 	ContractName                     string
 	// Latest available contract revision
 	ContractRevisionLatest int
-	// Public means that the associated workflow runs, attestations and materials
-	// are reachable by other users, regardless of their organization
-	// This field is also used to calculate if an user can download attestations/materials from the CAS
-	Public    bool
-	ProjectID uuid.UUID
+	ProjectID              uuid.UUID
 	// WorkflowTemplateID references the platform workflow template this workflow was created from
 	WorkflowTemplateID *uuid.UUID
 }
@@ -78,9 +74,6 @@ type WorkflowCreateOpts struct {
 	ContractBytes []byte
 	// DetectedContract is the detected contract from the contract bytes
 	DetectedContract *Contract
-	// Public means that the associated workflow runs, attestations and materials
-	// are reachable by other users, regardless of their organization
-	Public bool
 
 	// Owner identifies the user to be marked as owner of the project
 	Owner *uuid.UUID
@@ -96,7 +89,6 @@ type WorkflowCreateOpts struct {
 
 type WorkflowUpdateOpts struct {
 	Team, Description, ContractID *string
-	Public                        *bool
 }
 
 // WorkflowListOpts is the options to filter the list of workflows
@@ -109,8 +101,6 @@ type WorkflowListOpts struct {
 	WorkflowTeam string
 	// WorkflowProjectNames is the project name of the workflow
 	WorkflowProjectNames []string
-	// WorkflowPublic is the flag to filter public workflows
-	WorkflowPublic *bool
 	// WorkflowActiveWindow is the active window of the workflow
 	WorkflowRunRunnerType string
 	// WorkflowActiveWindow is the active window of the workflow
@@ -241,7 +231,6 @@ func (uc *WorkflowUseCase) Create(ctx context.Context, opts *WorkflowCreateOpts)
 		WorkflowContractName: wf.ContractName,
 		WorkflowDescription:  &opts.Description,
 		Team:                 &opts.Team,
-		Public:               opts.Public,
 	}, &orgUUID)
 
 	// Dispatch events to the audit log regarding the contract
@@ -330,7 +319,6 @@ func (uc *WorkflowUseCase) dispatchWorkflowUpdatedEvent(ctx context.Context, wf 
 		},
 		NewDescription: opts.Description,
 		NewTeam:        opts.Team,
-		NewPublic:      opts.Public,
 	}
 
 	if opts.ContractID != nil && newWfContract != nil {

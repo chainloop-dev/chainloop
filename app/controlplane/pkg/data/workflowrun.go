@@ -238,7 +238,7 @@ func (r *WorkflowRunRepo) FindByIDInOrg(ctx context.Context, orgID, id uuid.UUID
 	run, err := orgScopedQuery(r.data.DB, orgID).
 		QueryWorkflows().
 		QueryWorkflowruns().Where(workflowrun.ID(id)).
-		WithWorkflowAndProject().WithContractVersion().WithCasBackends().
+		WithWorkflowAndProject().WithVersion().WithContractVersion().WithCasBackends().
 		Only(ctx)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, err

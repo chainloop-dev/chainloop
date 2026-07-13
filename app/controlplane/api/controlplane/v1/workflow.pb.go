@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,7 +102,6 @@ type WorkflowServiceCreateRequest struct {
 	ContractBytes []byte `protobuf:"bytes,4,opt,name=contract_bytes,json=contractBytes,proto3" json:"contract_bytes,omitempty"`
 	Team          string `protobuf:"bytes,5,opt,name=team,proto3" json:"team,omitempty"`
 	Description   string `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
-	Public        bool   `protobuf:"varint,7,opt,name=public,proto3" json:"public,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -179,13 +178,6 @@ func (x *WorkflowServiceCreateRequest) GetDescription() string {
 	return ""
 }
 
-func (x *WorkflowServiceCreateRequest) GetPublic() bool {
-	if x != nil {
-		return x.Public
-	}
-	return false
-}
-
 type WorkflowServiceUpdateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -193,7 +185,6 @@ type WorkflowServiceUpdateRequest struct {
 	// and not just the default value
 	ProjectName   string  `protobuf:"bytes,3,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
 	Team          *string `protobuf:"bytes,4,opt,name=team,proto3,oneof" json:"team,omitempty"`
-	Public        *bool   `protobuf:"varint,5,opt,name=public,proto3,oneof" json:"public,omitempty"`
 	Description   *string `protobuf:"bytes,6,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	ContractName  *string `protobuf:"bytes,7,opt,name=contract_name,json=contractName,proto3,oneof" json:"contract_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -249,13 +240,6 @@ func (x *WorkflowServiceUpdateRequest) GetTeam() string {
 		return *x.Team
 	}
 	return ""
-}
-
-func (x *WorkflowServiceUpdateRequest) GetPublic() bool {
-	if x != nil && x.Public != nil {
-		return *x.Public
-	}
-	return false
 }
 
 func (x *WorkflowServiceUpdateRequest) GetDescription() string {
@@ -458,8 +442,6 @@ type WorkflowServiceListRequest struct {
 	ProjectNames []string `protobuf:"bytes,3,rep,name=project_names,json=projectNames,proto3" json:"project_names,omitempty"`
 	// The description of the workflow
 	WorkflowDescription string `protobuf:"bytes,4,opt,name=workflow_description,json=workflowDescription,proto3" json:"workflow_description,omitempty"`
-	// If the workflow is public
-	WorkflowPublic *bool `protobuf:"varint,5,opt,name=workflow_public,json=workflowPublic,proto3,oneof" json:"workflow_public,omitempty"`
 	// The type of runner that ran the workflow
 	WorkflowRunRunnerType v1.CraftingSchema_Runner_RunnerType `protobuf:"varint,6,opt,name=workflow_run_runner_type,json=workflowRunRunnerType,proto3,enum=workflowcontract.v1.CraftingSchema_Runner_RunnerType" json:"workflow_run_runner_type,omitempty"`
 	// The status of the last workflow run
@@ -530,13 +512,6 @@ func (x *WorkflowServiceListRequest) GetWorkflowDescription() string {
 		return x.WorkflowDescription
 	}
 	return ""
-}
-
-func (x *WorkflowServiceListRequest) GetWorkflowPublic() bool {
-	if x != nil && x.WorkflowPublic != nil {
-		return *x.WorkflowPublic
-	}
-	return false
 }
 
 func (x *WorkflowServiceListRequest) GetWorkflowRunRunnerType() v1.CraftingSchema_Runner_RunnerType {
@@ -726,7 +701,7 @@ var File_controlplane_v1_workflow_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_workflow_proto_rawDesc = "" +
 	"\n" +
-	"\x1econtrolplane/v1/workflow.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\x1a\x1ejsonfilter/v1/jsonfilter.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\x88\x04\n" +
+	"\x1econtrolplane/v1/workflow.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\x1a\x1ejsonfilter/v1/jsonfilter.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xfe\x03\n" +
 	"\x1cWorkflowServiceCreateRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12*\n" +
@@ -735,21 +710,18 @@ const file_controlplane_v1_workflow_proto_rawDesc = "" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')\xd8\x01\x01R\fcontractName\x12%\n" +
 	"\x0econtract_bytes\x18\x04 \x01(\fR\rcontractBytes\x12\x12\n" +
 	"\x04team\x18\x05 \x01(\tR\x04team\x12 \n" +
-	"\vdescription\x18\x06 \x01(\tR\vdescription\x12\x16\n" +
-	"\x06public\x18\a \x01(\bR\x06public\"\xa7\x04\n" +
+	"\vdescription\x18\x06 \x01(\tR\vdescriptionJ\x04\b\a\x10\bR\x06public\"\x8d\x04\n" +
 	"\x1cWorkflowServiceUpdateRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12*\n" +
 	"\fproject_name\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vprojectName\x12\x17\n" +
-	"\x04team\x18\x04 \x01(\tH\x00R\x04team\x88\x01\x01\x12\x1b\n" +
-	"\x06public\x18\x05 \x01(\bH\x01R\x06public\x88\x01\x01\x12%\n" +
-	"\vdescription\x18\x06 \x01(\tH\x02R\vdescription\x88\x01\x01\x12\xad\x01\n" +
+	"\x04team\x18\x04 \x01(\tH\x00R\x04team\x88\x01\x01\x12%\n" +
+	"\vdescription\x18\x06 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\xad\x01\n" +
 	"\rcontract_name\x18\a \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
-	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')H\x03R\fcontractName\x88\x01\x01B\a\n" +
-	"\x05_teamB\t\n" +
-	"\a_publicB\x0e\n" +
+	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')H\x02R\fcontractName\x88\x01\x01B\a\n" +
+	"\x05_teamB\x0e\n" +
 	"\f_descriptionB\x10\n" +
-	"\x0e_contract_name\"V\n" +
+	"\x0e_contract_nameJ\x04\b\x05\x10\x06R\x06public\"V\n" +
 	"\x1dWorkflowServiceUpdateResponse\x125\n" +
 	"\x06result\x18\x01 \x01(\v2\x1d.controlplane.v1.WorkflowItemR\x06result\"V\n" +
 	"\x1dWorkflowServiceCreateResponse\x125\n" +
@@ -758,13 +730,12 @@ const file_controlplane_v1_workflow_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12*\n" +
 	"\fproject_name\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\vprojectName\"\x1f\n" +
-	"\x1dWorkflowServiceDeleteResponse\"\xd3\x05\n" +
+	"\x1dWorkflowServiceDeleteResponse\"\xa8\x05\n" +
 	"\x1aWorkflowServiceListRequest\x12#\n" +
 	"\rworkflow_name\x18\x01 \x01(\tR\fworkflowName\x12#\n" +
 	"\rworkflow_team\x18\x02 \x01(\tR\fworkflowTeam\x12#\n" +
 	"\rproject_names\x18\x03 \x03(\tR\fprojectNames\x121\n" +
-	"\x14workflow_description\x18\x04 \x01(\tR\x13workflowDescription\x12,\n" +
-	"\x0fworkflow_public\x18\x05 \x01(\bH\x00R\x0eworkflowPublic\x88\x01\x01\x12n\n" +
+	"\x14workflow_description\x18\x04 \x01(\tR\x13workflowDescription\x12n\n" +
 	"\x18workflow_run_runner_type\x18\x06 \x01(\x0e25.workflowcontract.v1.CraftingSchema.Runner.RunnerTypeR\x15workflowRunRunnerType\x12`\n" +
 	"\x18workflow_run_last_status\x18\a \x01(\x0e2\x1a.controlplane.v1.RunStatusB\v\xbaH\b\xd8\x01\x01\x82\x01\x02 \x00R\x15workflowRunLastStatus\x12w\n" +
 	"\x1dworkflow_last_activity_window\x18\b \x01(\x0e2'.controlplane.v1.WorkflowActivityWindowB\v\xbaH\b\xd8\x01\x01\x82\x01\x02 \x00R\x1aworkflowLastActivityWindow\x12H\n" +
@@ -772,8 +743,7 @@ const file_controlplane_v1_workflow_proto_rawDesc = "" +
 	"pagination\x18\t \x01(\v2(.controlplane.v1.OffsetPaginationRequestR\n" +
 	"pagination\x12<\n" +
 	"\fjson_filters\x18\n" +
-	" \x03(\v2\x19.jsonfilter.v1.JSONFilterR\vjsonFiltersB\x12\n" +
-	"\x10_workflow_public\"\x9f\x01\n" +
+	" \x03(\v2\x19.jsonfilter.v1.JSONFilterR\vjsonFiltersJ\x04\b\x05\x10\x06R\x0fworkflow_public\"\x9f\x01\n" +
 	"\x1bWorkflowServiceListResponse\x125\n" +
 	"\x06result\x18\x01 \x03(\v2\x1d.controlplane.v1.WorkflowItemR\x06result\x12I\n" +
 	"\n" +
@@ -866,7 +836,6 @@ func file_controlplane_v1_workflow_proto_init() {
 	file_controlplane_v1_pagination_proto_init()
 	file_controlplane_v1_response_messages_proto_init()
 	file_controlplane_v1_workflow_proto_msgTypes[1].OneofWrappers = []any{}
-	file_controlplane_v1_workflow_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

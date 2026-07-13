@@ -26,7 +26,6 @@ import (
 
 func newReferrerDiscoverCmd() *cobra.Command {
 	var digest, kind string
-	var fromPublicIndex bool
 	paginationOpts := &options.PaginationOpts{DefaultLimit: 20}
 
 	cmd := &cobra.Command{
@@ -38,15 +37,7 @@ func newReferrerDiscoverCmd() *cobra.Command {
 				NextCursor: paginationOpts.NextCursor,
 			}
 
-			var res *action.ReferrerDiscoverResult
-			var err error
-
-			if fromPublicIndex {
-				res, err = action.NewReferrerDiscoverPublicIndex(ActionOpts).Run(context.Background(), digest, kind, pagination)
-			} else {
-				res, err = action.NewReferrerDiscoverPrivate(ActionOpts).Run(context.Background(), digest, kind, pagination)
-			}
-
+			res, err := action.NewReferrerDiscoverPrivate(ActionOpts).Run(context.Background(), digest, kind, pagination)
 			if err != nil {
 				return err
 			}
@@ -61,7 +52,6 @@ func newReferrerDiscoverCmd() *cobra.Command {
 	cobra.CheckErr(err)
 	cmd.Flags().StringVarP(&kind, "kind", "k", "", "optional kind of the referrer, used to disambiguate between multiple referrers with the same digest")
 	cobra.CheckErr(err)
-	cmd.Flags().BoolVar(&fromPublicIndex, "public", false, "discover from public shared index instead of your organizations'")
 	paginationOpts.AddFlags(cmd)
 
 	return cmd

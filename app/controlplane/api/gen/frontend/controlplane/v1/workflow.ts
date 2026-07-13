@@ -68,7 +68,6 @@ export interface WorkflowServiceCreateRequest {
   contractBytes: Uint8Array;
   team: string;
   description: string;
-  public: boolean;
 }
 
 export interface WorkflowServiceUpdateRequest {
@@ -79,7 +78,6 @@ export interface WorkflowServiceUpdateRequest {
    */
   projectName: string;
   team?: string | undefined;
-  public?: boolean | undefined;
   description?: string | undefined;
   contractName?: string | undefined;
 }
@@ -109,10 +107,6 @@ export interface WorkflowServiceListRequest {
   projectNames: string[];
   /** The description of the workflow */
   workflowDescription: string;
-  /** If the workflow is public */
-  workflowPublic?:
-    | boolean
-    | undefined;
   /** The type of runner that ran the workflow */
   workflowRunRunnerType: CraftingSchema_Runner_RunnerType;
   /** The status of the last workflow run */
@@ -140,15 +134,7 @@ export interface WorkflowServiceViewResponse {
 }
 
 function createBaseWorkflowServiceCreateRequest(): WorkflowServiceCreateRequest {
-  return {
-    name: "",
-    projectName: "",
-    contractName: "",
-    contractBytes: new Uint8Array(0),
-    team: "",
-    description: "",
-    public: false,
-  };
+  return { name: "", projectName: "", contractName: "", contractBytes: new Uint8Array(0), team: "", description: "" };
 }
 
 export const WorkflowServiceCreateRequest = {
@@ -170,9 +156,6 @@ export const WorkflowServiceCreateRequest = {
     }
     if (message.description !== "") {
       writer.uint32(50).string(message.description);
-    }
-    if (message.public === true) {
-      writer.uint32(56).bool(message.public);
     }
     return writer;
   },
@@ -226,13 +209,6 @@ export const WorkflowServiceCreateRequest = {
 
           message.description = reader.string();
           continue;
-        case 7:
-          if (tag !== 56) {
-            break;
-          }
-
-          message.public = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -250,7 +226,6 @@ export const WorkflowServiceCreateRequest = {
       contractBytes: isSet(object.contractBytes) ? bytesFromBase64(object.contractBytes) : new Uint8Array(0),
       team: isSet(object.team) ? String(object.team) : "",
       description: isSet(object.description) ? String(object.description) : "",
-      public: isSet(object.public) ? Boolean(object.public) : false,
     };
   },
 
@@ -265,7 +240,6 @@ export const WorkflowServiceCreateRequest = {
       ));
     message.team !== undefined && (obj.team = message.team);
     message.description !== undefined && (obj.description = message.description);
-    message.public !== undefined && (obj.public = message.public);
     return obj;
   },
 
@@ -281,20 +255,12 @@ export const WorkflowServiceCreateRequest = {
     message.contractBytes = object.contractBytes ?? new Uint8Array(0);
     message.team = object.team ?? "";
     message.description = object.description ?? "";
-    message.public = object.public ?? false;
     return message;
   },
 };
 
 function createBaseWorkflowServiceUpdateRequest(): WorkflowServiceUpdateRequest {
-  return {
-    name: "",
-    projectName: "",
-    team: undefined,
-    public: undefined,
-    description: undefined,
-    contractName: undefined,
-  };
+  return { name: "", projectName: "", team: undefined, description: undefined, contractName: undefined };
 }
 
 export const WorkflowServiceUpdateRequest = {
@@ -307,9 +273,6 @@ export const WorkflowServiceUpdateRequest = {
     }
     if (message.team !== undefined) {
       writer.uint32(34).string(message.team);
-    }
-    if (message.public !== undefined) {
-      writer.uint32(40).bool(message.public);
     }
     if (message.description !== undefined) {
       writer.uint32(50).string(message.description);
@@ -348,13 +311,6 @@ export const WorkflowServiceUpdateRequest = {
 
           message.team = reader.string();
           continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.public = reader.bool();
-          continue;
         case 6:
           if (tag !== 50) {
             break;
@@ -383,7 +339,6 @@ export const WorkflowServiceUpdateRequest = {
       name: isSet(object.name) ? String(object.name) : "",
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       team: isSet(object.team) ? String(object.team) : undefined,
-      public: isSet(object.public) ? Boolean(object.public) : undefined,
       description: isSet(object.description) ? String(object.description) : undefined,
       contractName: isSet(object.contractName) ? String(object.contractName) : undefined,
     };
@@ -394,7 +349,6 @@ export const WorkflowServiceUpdateRequest = {
     message.name !== undefined && (obj.name = message.name);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.team !== undefined && (obj.team = message.team);
-    message.public !== undefined && (obj.public = message.public);
     message.description !== undefined && (obj.description = message.description);
     message.contractName !== undefined && (obj.contractName = message.contractName);
     return obj;
@@ -409,7 +363,6 @@ export const WorkflowServiceUpdateRequest = {
     message.name = object.name ?? "";
     message.projectName = object.projectName ?? "";
     message.team = object.team ?? undefined;
-    message.public = object.public ?? undefined;
     message.description = object.description ?? undefined;
     message.contractName = object.contractName ?? undefined;
     return message;
@@ -657,7 +610,6 @@ function createBaseWorkflowServiceListRequest(): WorkflowServiceListRequest {
     workflowTeam: "",
     projectNames: [],
     workflowDescription: "",
-    workflowPublic: undefined,
     workflowRunRunnerType: 0,
     workflowRunLastStatus: 0,
     workflowLastActivityWindow: 0,
@@ -679,9 +631,6 @@ export const WorkflowServiceListRequest = {
     }
     if (message.workflowDescription !== "") {
       writer.uint32(34).string(message.workflowDescription);
-    }
-    if (message.workflowPublic !== undefined) {
-      writer.uint32(40).bool(message.workflowPublic);
     }
     if (message.workflowRunRunnerType !== 0) {
       writer.uint32(48).int32(message.workflowRunRunnerType);
@@ -736,13 +685,6 @@ export const WorkflowServiceListRequest = {
 
           message.workflowDescription = reader.string();
           continue;
-        case 5:
-          if (tag !== 40) {
-            break;
-          }
-
-          message.workflowPublic = reader.bool();
-          continue;
         case 6:
           if (tag !== 48) {
             break;
@@ -793,7 +735,6 @@ export const WorkflowServiceListRequest = {
       workflowTeam: isSet(object.workflowTeam) ? String(object.workflowTeam) : "",
       projectNames: Array.isArray(object?.projectNames) ? object.projectNames.map((e: any) => String(e)) : [],
       workflowDescription: isSet(object.workflowDescription) ? String(object.workflowDescription) : "",
-      workflowPublic: isSet(object.workflowPublic) ? Boolean(object.workflowPublic) : undefined,
       workflowRunRunnerType: isSet(object.workflowRunRunnerType)
         ? craftingSchema_Runner_RunnerTypeFromJSON(object.workflowRunRunnerType)
         : 0,
@@ -816,7 +757,6 @@ export const WorkflowServiceListRequest = {
       obj.projectNames = [];
     }
     message.workflowDescription !== undefined && (obj.workflowDescription = message.workflowDescription);
-    message.workflowPublic !== undefined && (obj.workflowPublic = message.workflowPublic);
     message.workflowRunRunnerType !== undefined &&
       (obj.workflowRunRunnerType = craftingSchema_Runner_RunnerTypeToJSON(message.workflowRunRunnerType));
     message.workflowRunLastStatus !== undefined &&
@@ -843,7 +783,6 @@ export const WorkflowServiceListRequest = {
     message.workflowTeam = object.workflowTeam ?? "";
     message.projectNames = object.projectNames?.map((e) => e) || [];
     message.workflowDescription = object.workflowDescription ?? "";
-    message.workflowPublic = object.workflowPublic ?? undefined;
     message.workflowRunRunnerType = object.workflowRunRunnerType ?? 0;
     message.workflowRunLastStatus = object.workflowRunLastStatus ?? 0;
     message.workflowLastActivityWindow = object.workflowLastActivityWindow ?? 0;

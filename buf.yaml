@@ -55,8 +55,16 @@ modules:
       ignore_only:
         # Deprecated `attestation` and `bundle` fields were removed in favor of `attestation_bundle`;
         # their tag numbers and names are `reserved` in the proto to prevent accidental reuse.
+        # The `public` workflow attribute and the public shared referrer index were removed;
+        # their tag numbers/names are `reserved` and the DiscoverPublicShared RPC + messages deleted.
         FIELD_NO_DELETE:
           - app/controlplane/api/controlplane/v1/workflow_run.proto
+          - app/controlplane/api/controlplane/v1/workflow.proto
+          - app/controlplane/api/controlplane/v1/referrer.proto
+        RPC_NO_DELETE:
+          - app/controlplane/api/controlplane/v1/referrer.proto
+        MESSAGE_NO_DELETE:
+          - app/controlplane/api/controlplane/v1/referrer.proto
   - path: app/controlplane/internal/conf
     lint:
       use:
@@ -74,6 +82,13 @@ modules:
       except:
         - EXTENSION_NO_DELETE
         - FIELD_SAME_DEFAULT
+      ignore_only:
+        # The referrer_shared_index config field + ReferrerSharedIndex message were removed
+        # together with the public shared referrer index feature.
+        FIELD_NO_DELETE:
+          - app/controlplane/internal/conf/controlplane/config/v1/conf.proto
+        MESSAGE_NO_DELETE:
+          - app/controlplane/internal/conf/controlplane/config/v1/conf.proto
   - path: app/controlplane/pkg/conf
     lint:
       use:

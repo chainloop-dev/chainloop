@@ -204,7 +204,6 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 			SetName(opts.Name).
 			SetProjectID(projectID).
 			SetTeam(opts.Team).
-			SetPublic(opts.Public).
 			SetName(opts.Name).
 			SetContractID(contractUUID).
 			SetOrganizationID(orgUUID).
@@ -236,7 +235,6 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 
 	req := r.data.DB.Workflow.UpdateOneID(id).
 		SetNillableTeam(opts.Team).
-		SetNillablePublic(opts.Public).
 		SetNillableDescription(opts.Description).
 		SetUpdatedAt(time.Now())
 
@@ -344,10 +342,6 @@ func applyWorkflowRunFilters(baseQuery *ent.WorkflowQuery, opts *biz.WorkflowLis
 // applyWorkflowFilters applies filters to the Workflow query based on the provided options
 func applyWorkflowFilters(wfQuery *ent.WorkflowQuery, opts *biz.WorkflowListOpts) (*ent.WorkflowQuery, error) {
 	if opts != nil {
-		if opts.WorkflowPublic != nil {
-			wfQuery = wfQuery.Where(workflow.Public(*opts.WorkflowPublic))
-		}
-
 		if opts.ProjectIDs != nil {
 			wfQuery = wfQuery.Where(workflow.ProjectIDIn(opts.ProjectIDs...))
 		}
@@ -503,7 +497,6 @@ func entWFToBizWF(ctx context.Context, w *ent.Workflow) (*biz.Workflow, error) {
 	wf := &biz.Workflow{Name: w.Name, ID: w.ID,
 		CreatedAt: toTimePtr(w.CreatedAt), Team: w.Team,
 		RunsCounter:        w.RunsCount,
-		Public:             w.Public,
 		Description:        w.Description,
 		OrgID:              w.OrganizationID,
 		ProjectID:          w.ProjectID,

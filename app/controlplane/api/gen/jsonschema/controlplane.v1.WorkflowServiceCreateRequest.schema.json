@@ -37,9 +37,6 @@
       "minLength": 1,
       "type": "string"
     },
-    "public": {
-      "type": "boolean"
-    },
     "team": {
       "type": "string"
     }

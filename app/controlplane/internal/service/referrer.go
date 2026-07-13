@@ -96,26 +96,6 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 	}, nil
 }
 
-// DiscoverPublicShared implements the deprecated public shared index RPC, kept for backwards compatibility.
-//
-//nolint:staticcheck // the RPC is deprecated but still served
-func (s *ReferrerService) DiscoverPublicShared(ctx context.Context, req *pb.DiscoverPublicSharedRequest) (*pb.DiscoverPublicSharedResponse, error) {
-	paginationOpts, err := referrerPaginationOptsFromProto(req.GetPagination())
-	if err != nil {
-		return nil, err
-	}
-
-	res, nextCursor, err := s.referrerUC.GetFromRootInPublicSharedIndex(ctx, req.GetDigest(), req.GetKind(), paginationOpts)
-	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	return &pb.DiscoverPublicSharedResponse{
-		Result:     bizReferrerToPb(res),
-		Pagination: bizCursorToPb(nextCursor),
-	}, nil
-}
-
 // defaultReferrerPageSize is the page size applied when a referrer Discover* request
 // arrives without pagination. It deliberately overrides the package-wide
 // pagination.DefaultCursorLimit (10) because referrer responses render nested references
@@ -144,7 +124,6 @@ func bizReferrerToPb(r *biz.StoredReferrer) *pb.ReferrerItem {
 	item := &pb.ReferrerItem{
 		Digest:       r.Digest,
 		Downloadable: r.Downloadable,
-		Public:       r.InPublicWorkflow,
 		Kind:         r.Kind,
 		CreatedAt:    timestamppb.New(*r.CreatedAt),
 		Metadata:     r.Metadata,

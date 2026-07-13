@@ -38,10 +38,9 @@ message WorkflowItem {
   string contract_name = 8;
   // Current, latest revision of the contract
   int32 contract_revision_latest = 11;
-  // A public workflow means that any user can
-  // - access to all its workflow runs
-  // - their attestation and materials
-  bool public = 9;
+  // Deprecated: public workflows were removed. This field is always false and
+  // is retained only for wire compatibility; it will be removed in a future release.
+  bool public = 9 [deprecated = true];
   string description = 10;
 }
 

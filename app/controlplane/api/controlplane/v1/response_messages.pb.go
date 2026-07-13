@@ -742,9 +742,10 @@ type WorkflowItem struct {
 	ContractName string                 `protobuf:"bytes,8,opt,name=contract_name,json=contractName,proto3" json:"contract_name,omitempty"`
 	// Current, latest revision of the contract
 	ContractRevisionLatest int32 `protobuf:"varint,11,opt,name=contract_revision_latest,json=contractRevisionLatest,proto3" json:"contract_revision_latest,omitempty"`
-	// A public workflow means that any user can
-	// - access to all its workflow runs
-	// - their attestation and materials
+	// Deprecated: public workflows were removed. This field is always false and
+	// is retained only for wire compatibility; it will be removed in a future release.
+	//
+	// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
 	Public        bool   `protobuf:"varint,9,opt,name=public,proto3" json:"public,omitempty"`
 	Description   string `protobuf:"bytes,10,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -851,6 +852,7 @@ func (x *WorkflowItem) GetContractRevisionLatest() int32 {
 	return 0
 }
 
+// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
 func (x *WorkflowItem) GetPublic() bool {
 	if x != nil {
 		return x.Public
@@ -3101,7 +3103,7 @@ var File_controlplane_v1_response_messages_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
-	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a#attestation/v1/crafting_state.proto\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xb9\x03\n" +
+	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a#attestation/v1/crafting_state.proto\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xbd\x03\n" +
 	"\fWorkflowItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -3115,8 +3117,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"runs_count\x18\x06 \x01(\x05R\trunsCount\x12;\n" +
 	"\blast_run\x18\a \x01(\v2 .controlplane.v1.WorkflowRunItemR\alastRun\x12#\n" +
 	"\rcontract_name\x18\b \x01(\tR\fcontractName\x128\n" +
-	"\x18contract_revision_latest\x18\v \x01(\x05R\x16contractRevisionLatest\x12\x16\n" +
-	"\x06public\x18\t \x01(\bR\x06public\x12 \n" +
+	"\x18contract_revision_latest\x18\v \x01(\x05R\x16contractRevisionLatest\x12\x1a\n" +
+	"\x06public\x18\t \x01(\bB\x02\x18\x01R\x06public\x12 \n" +
 	"\vdescription\x18\n" +
 	" \x01(\tR\vdescription\"\xd3\x06\n" +
 	"\x0fWorkflowRunItem\x12\x0e\n" +

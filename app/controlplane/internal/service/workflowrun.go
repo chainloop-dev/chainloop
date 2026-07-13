@@ -254,12 +254,12 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	var run *biz.WorkflowRun
 	switch {
 	case req.GetId() != "":
-		run, err = s.wrUseCase.GetByIDInOrgOrPublic(ctx, currentOrg.ID, req.GetId())
+		run, err = s.wrUseCase.GetByIDInOrg(ctx, currentOrg.ID, req.GetId())
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 	case req.GetDigest() != "":
-		run, err = s.wrUseCase.GetByDigestInOrgOrPublic(ctx, currentOrg.ID, req.GetDigest())
+		run, err = s.wrUseCase.GetByDigestInOrg(ctx, currentOrg.ID, req.GetDigest())
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
@@ -267,11 +267,9 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		return nil, errors.BadRequest("invalid", "id or digest required")
 	}
 
-	// Apply RBAC only if workflow is not public
-	if !run.Workflow.Public {
-		if err = s.authorizeResource(ctx, authz.PolicyWorkflowRunRead, authz.ResourceTypeProject, run.Workflow.ProjectID); err != nil {
-			return nil, err
-		}
+	// Enforce project-scoped RBAC on the workflow run
+	if err = s.authorizeResource(ctx, authz.PolicyWorkflowRunRead, authz.ResourceTypeProject, run.Workflow.ProjectID); err != nil {
+		return nil, err
 	}
 
 	var verificationResult *pb.WorkflowRunServiceViewResponse_VerificationResult

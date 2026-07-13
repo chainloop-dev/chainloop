@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -88,7 +88,6 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		ContractName:                        req.GetContractName(),
 		ContractBytes:                       req.GetContractBytes(),
 		Description:                         req.GetDescription(),
-		Public:                              req.GetPublic(),
 		OrgRestrictContractCreationToAdmins: org.RestrictContractCreationToOrgAdmins,
 	}
 
@@ -143,7 +142,6 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 
 	updateOpts := &biz.WorkflowUpdateOpts{
 		Team:        req.Team,
-		Public:      req.Public,
 		Description: req.Description,
 		ContractID:  contractID,
 	}
@@ -198,12 +196,6 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 	// Check the Project Name
 	if len(req.GetProjectNames()) != 0 {
 		filters.WorkflowProjectNames = req.GetProjectNames()
-	}
-
-	// Workflow visibility
-	if req.WorkflowPublic != nil {
-		val := req.GetWorkflowPublic()
-		filters.WorkflowPublic = &val
 	}
 
 	// Workflow Run Runner Type
@@ -302,7 +294,7 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 	item := &pb.WorkflowItem{
 		Id: wf.ID.String(), Name: wf.Name, CreatedAt: timestamppb.New(*wf.CreatedAt),
-		Project: wf.Project, Team: wf.Team, RunsCount: int32(wf.RunsCounter), Public: wf.Public,
+		Project: wf.Project, Team: wf.Team, RunsCount: int32(wf.RunsCounter),
 		Description: wf.Description, ContractRevisionLatest: int32(wf.ContractRevisionLatest),
 		ContractName: wf.ContractName,
 		ProjectId:    wf.ProjectID.String(),

@@ -25,15 +25,11 @@ import (
 type ReferrerDiscover struct {
 	cfg *ActionsOpts
 }
-type ReferrerDiscoverPublic struct {
-	cfg *ActionsOpts
-}
 
 type ReferrerItem struct {
 	Digest       string            `json:"digest"`
 	Kind         string            `json:"kind"`
 	Downloadable bool              `json:"downloadable"`
-	Public       bool              `json:"public"`
 	CreatedAt    *time.Time        `json:"createdAt"`
 	References   []*ReferrerItem   `json:"references"`
 	Metadata     map[string]string `json:"metadata,omitempty"`
@@ -52,27 +48,6 @@ func NewReferrerDiscoverPrivate(cfg *ActionsOpts) *ReferrerDiscover {
 func (action *ReferrerDiscover) Run(ctx context.Context, digest, kind string, p *PaginationOpts) (*ReferrerDiscoverResult, error) {
 	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
 	resp, err := client.DiscoverPrivate(ctx, &pb.ReferrerServiceDiscoverPrivateRequest{
-		Digest:     digest,
-		Kind:       kind,
-		Pagination: paginationOptsToPb(p),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return newReferrerDiscoverResult(resp.Result, resp.GetPagination()), nil
-}
-
-func NewReferrerDiscoverPublicIndex(cfg *ActionsOpts) *ReferrerDiscoverPublic {
-	return &ReferrerDiscoverPublic{cfg}
-}
-
-// Run calls the deprecated public shared index RPC, kept for backwards compatibility.
-//
-//nolint:staticcheck // the RPC is deprecated but still supported
-func (action *ReferrerDiscoverPublic) Run(ctx context.Context, digest, kind string, p *PaginationOpts) (*ReferrerDiscoverResult, error) {
-	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
-	resp, err := client.DiscoverPublicShared(ctx, &pb.DiscoverPublicSharedRequest{
 		Digest:     digest,
 		Kind:       kind,
 		Pagination: paginationOptsToPb(p),
@@ -109,7 +84,6 @@ func pbReferrerItemToAction(in *pb.ReferrerItem) *ReferrerItem {
 	out := &ReferrerItem{
 		Digest:       in.GetDigest(),
 		Downloadable: in.GetDownloadable(),
-		Public:       in.GetPublic(),
 		Kind:         in.GetKind(),
 		CreatedAt:    toTimePtr(in.GetCreatedAt().AsTime()),
 		References:   make([]*ReferrerItem, 0, len(in.GetReferences())),

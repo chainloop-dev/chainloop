@@ -247,7 +247,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		assert.NoError(err)
 
 		// Retrieve attestation ref from storage and compare
-		r, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
+		r, err := s.WorkflowRun.GetByIDInOrg(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(bundleHash.String(), r.Attestation.Digest)
 		env := attestation.DSSEEnvelopeFromBundle(bundle)
@@ -281,7 +281,7 @@ func (s *workflowRunIntegrationTestSuite) TestSaveAttestation() {
 		// digest is recorded on the workflow run
 		err = s.WorkflowRun.MarkAsFinished(ctx, run.ID.String(), biz.WorkflowRunSuccess, "")
 		assert.NoError(err)
-		stored, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, s.org.ID, run.ID.String())
+		stored, err := s.WorkflowRun.GetByIDInOrg(ctx, s.org.ID, run.ID.String())
 		assert.NoError(err)
 		assert.Equal(bundleHash.String(), stored.Attestation.Digest)
 
@@ -407,7 +407,7 @@ func (s *workflowRunIntegrationTestSuite) TestReleasedVersionImmutability() {
 	})
 }
 
-func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrgOrPublic() {
+func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrg() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 	testCases := []struct {
@@ -434,15 +434,16 @@ func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrgOrPublic() {
 			wantErr: true,
 		},
 		{
-			name:  "can access workflowRun from other org if public",
-			orgID: s.org.ID,
-			runID: s.runOrg2Public.ID.String(),
+			name:    "can't access workflowRun from other org even if formerly public",
+			orgID:   s.org.ID,
+			runID:   s.runOrg2Public.ID.String(),
+			wantErr: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			run, err := s.WorkflowRun.GetByIDInOrgOrPublic(ctx, tc.orgID, tc.runID)
+			run, err := s.WorkflowRun.GetByIDInOrg(ctx, tc.orgID, tc.runID)
 			if tc.wantErr {
 				assert.Error(err)
 				assert.True(biz.IsNotFound(err))
@@ -454,7 +455,7 @@ func (s *workflowRunIntegrationTestSuite) TestGetByIDInOrgOrPublic() {
 	}
 }
 
-func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrgOrPublic() {
+func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrg() {
 	assert := assert.New(s.T())
 	ctx := context.Background()
 	testCases := []struct {
@@ -487,15 +488,16 @@ func (s *workflowRunIntegrationTestSuite) TestGetByDigestInOrgOrPublic() {
 			errTypeChecker: biz.IsNotFound,
 		},
 		{
-			name:   "can access workflowRun from other org if public",
-			orgID:  s.org.ID,
-			digest: s.digestAttPublic,
+			name:           "can't access workflowRun from other org even if formerly public",
+			orgID:          s.org.ID,
+			digest:         s.digestAttPublic,
+			errTypeChecker: biz.IsNotFound,
 		},
 	}
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			run, err := s.WorkflowRun.GetByDigestInOrgOrPublic(ctx, tc.orgID, tc.digest)
+			run, err := s.WorkflowRun.GetByDigestInOrg(ctx, tc.orgID, tc.digest)
 			if tc.errTypeChecker != nil {
 				assert.Error(err)
 				assert.True(tc.errTypeChecker(err))
@@ -1075,7 +1077,7 @@ func setupWorkflowRunTestData(t *testing.T, suite *testhelpers.TestingUseCases, 
 	s.workflowOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow", OrgID: s.org2.ID, Project: "test-project"})
 	assert.NoError(err)
 	// Public workflow
-	s.workflowPublicOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-public-workflow", OrgID: s.org2.ID, Public: true, Project: "test-project"})
+	s.workflowPublicOrg2, err = suite.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-public-workflow", OrgID: s.org2.ID, Project: "test-project"})
 	assert.NoError(err)
 
 	// Find contract revision

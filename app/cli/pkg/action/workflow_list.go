@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,10 +38,6 @@ type WorkflowItem struct {
 	ContractName           string           `json:"contractName,omitempty"`
 	ContractRevisionLatest int32            `json:"contractRevisionLatest,omitempty"`
 	LastRun                *WorkflowRunItem `json:"lastRun,omitempty"`
-	// A public workflow means that any user can
-	// - access to all its workflow runs
-	// - their attestation and materials
-	Public bool `json:"public"`
 }
 
 // WorkflowListResult holds the output of the workflow list action
@@ -109,7 +105,6 @@ func pbWorkflowItemToAction(wf *pb.WorkflowItem) *WorkflowItem {
 		ContractName:           wf.ContractName,
 		ContractRevisionLatest: wf.ContractRevisionLatest,
 		LastRun:                pbWorkflowRunItemToAction(wf.LastRun),
-		Public:                 wf.Public,
 		Description:            wf.Description,
 	}
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 
 func newWorkflowCreateCmd() *cobra.Command {
 	var workflowName, description, project, team, contractRef string
-	var public, skipIfExists bool
+	var skipIfExists bool
 
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -47,7 +47,6 @@ func newWorkflowCreateCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := &action.NewWorkflowCreateOpts{
 				Name: workflowName, Team: team, Project: project, Description: description,
-				Public: public,
 			}
 
 			// Try to load it if it's a file or URL otherwise assume it's an existing contract name
@@ -96,7 +95,6 @@ func newWorkflowCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&team, "team", "", "team name")
 	cmd.Flags().StringVar(&contractRef, "contract", "", "the name of an existing contract or the path/URL to a contract file. If not provided an empty one will be created.")
-	cmd.Flags().BoolVar(&public, "public", false, "is the workflow public")
 	cmd.Flags().BoolVarP(&skipIfExists, "skip-if-exists", "f", false, "do not fail if the workflow with the provided name already exists")
 	cmd.Flags().SortFlags = false
 
