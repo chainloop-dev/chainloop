@@ -497,7 +497,9 @@ func (uc *WorkflowContractUseCase) RevisionWouldChange(ctx context.Context, orgI
 	}
 
 	// Same rule used by the data layer on Update: a new revision is created
-	// only when the stored raw body differs from the incoming one.
+	// only when the stored raw body differs from the incoming one. The CLI sends
+	// verbatim contract bytes on every apply path, so dry-run apply and real
+	// apply see identical bytes for the same file.
 	return !bytes.Equal(latest.Version.Schema.Raw, incoming.Raw), nil
 }
 
