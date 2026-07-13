@@ -1,4 +1,4 @@
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,14 +20,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/go-kratos/kratos/v2/log"
 )
+
+// perAttemptTimeout caps how long a single webhook HTTP call may take,
+// preventing a hung endpoint from blocking retries indefinitely.
+const perAttemptTimeout = 10 * time.Second
 
 // Integration implements a generic webhook integration
 type Integration struct {
@@ -69,7 +74,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "webhook",
-			Version:     "1.1",
+			Version:     "1.2",
 			Description: "Send Attestation and SBOMs to a generic POST webhook URL",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -87,7 +92,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 
 	return &Integration{
 		FanOutIntegration: base,
-		client:            &http.Client{},
+		client:            &http.Client{Timeout: perAttemptTimeout},
 	}, nil
 }
 
@@ -259,7 +264,7 @@ func (i *Integration) sendWebhook(ctx context.Context, url, kind string, payload
 	}()
 
 	// Read response body for more detailed error messages
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		i.Logger.Warnw("failed to read response body", "error", err)
 	}
