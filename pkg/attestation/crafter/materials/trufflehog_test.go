@@ -1,0 +1,172 @@
+//
+// Copyright 2026 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package materials_test
+
+import (
+	"context"
+	"testing"
+
+	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
+
+func TestNewTrufflehogCrafter(t *testing.T) {
+	testCases := []struct {
+		name    string
+		input   *contractAPI.CraftingSchema_Material
+		wantErr bool
+	}{
+		{
+			name: "happy path",
+			input: &contractAPI.CraftingSchema_Material{
+				Type: contractAPI.CraftingSchema_Material_TRUFFLEHOG_JSON,
+			},
+		},
+		{
+			name: "wrong type",
+			input: &contractAPI.CraftingSchema_Material{
+				Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := materials.NewTrufflehogCrafter(tc.input, nil, nil)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestTrufflehogCrafter_Craft(t *testing.T) {
+	testCases := []struct {
+		name        string
+		filePath    string
+		wantErr     string
+		annotations map[string]string
+	}{
+		{
+			name:     "invalid path",
+			filePath: "./testdata/non-existing.json",
+			wantErr:  "no such file or directory",
+		},
+		{
+			name:     "not JSONL content",
+			filePath: "./testdata/simple.txt",
+			wantErr:  "unexpected material type",
+		},
+		{
+			name:     "wrong JSON content (multi-line object)",
+			filePath: "./testdata/sbom-spdx.json",
+			wantErr:  "unexpected material type",
+		},
+		{
+			name:     "valid JSONL but missing DetectorName",
+			filePath: "./testdata/trufflehog-missing-detector.json",
+			wantErr:  "unexpected material type",
+		},
+		{
+			name:     "empty report (no findings)",
+			filePath: "./testdata/trufflehog-empty.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name": "trufflehog",
+			},
+		},
+		{
+			name:     "report with findings",
+			filePath: "./testdata/trufflehog-report.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name": "trufflehog",
+			},
+		},
+	}
+
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_TRUFFLEHOG_JSON,
+	}
+
+	l := zerolog.Nop()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Mock uploader
+			uploader := mUploader.NewUploader(t)
+			if tc.wantErr == "" {
+				uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
+					Return(&casclient.UpDownStatus{}, nil)
+			}
+
+			backend := &casclient.CASBackend{Uploader: uploader}
+			crafter, err := materials.NewTrufflehogCrafter(schema, backend, &l)
+			require.NoError(t, err)
+
+			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, contractAPI.CraftingSchema_Material_TRUFFLEHOG_JSON.String(), got.MaterialType.String())
+			assert.True(t, got.UploadedToCas)
+
+			for k, v := range tc.annotations {
+				assert.Equal(t, v, got.Annotations[k])
+			}
+		})
+	}
+}
+
+// TestTrufflehogCrafter_CleanScanEmptyFile covers a clean scan: TruffleHog
+// finds no secrets and emits nothing, leaving a zero-byte file. It must be
+// accepted and crafted as the canonical empty report "[]", so the recorded
+// digest is sha256("[]") — not the universal empty-file digest, which would
+// collide across unrelated empty materials.
+func TestTrufflehogCrafter_CleanScanEmptyFile(t *testing.T) {
+	// well-known digests
+	const emptyReportDigest = "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" // sha256("[]")
+	const emptyFileDigest = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"   // sha256("")
+
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_TRUFFLEHOG_JSON,
+	}
+	l := zerolog.Nop()
+	uploader := mUploader.NewUploader(t)
+	uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
+		Return(&casclient.UpDownStatus{}, nil)
+	backend := &casclient.CASBackend{Uploader: uploader}
+	crafter, err := materials.NewTrufflehogCrafter(schema, backend, &l)
+	require.NoError(t, err)
+
+	got, err := crafter.Craft(context.TODO(), "./testdata/trufflehog-clean-scan.jsonl")
+	require.NoError(t, err, "a clean scan (zero-byte output) must be accepted")
+	assert.True(t, got.UploadedToCas)
+	assert.Equal(t, emptyReportDigest, got.GetArtifact().Digest, "clean scan must be stored as canonical []")
+	assert.NotEqual(t, emptyFileDigest, got.GetArtifact().Digest, "must not use the universal empty-file digest")
+	assert.Equal(t, "trufflehog", got.Annotations["chainloop.material.tool.name"])
+}

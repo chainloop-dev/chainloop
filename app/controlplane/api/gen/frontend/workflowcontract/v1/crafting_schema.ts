@@ -307,6 +307,16 @@ export enum CraftingSchema_Material_MaterialType {
   RADAMSA_REPORT = 38,
   /** RADAMSA_CRASHES - radamsa crashing inputs, a single file or a crashes/ archive (tar.gz or zip) */
   RADAMSA_CRASHES = 39,
+  /**
+   * TRUFFLEHOG_JSON - TruffleHog secret scanning report in JSONL format (one JSON finding per line)
+   * https://github.com/trufflesecurity/trufflehog
+   */
+  TRUFFLEHOG_JSON = 40,
+  /**
+   * COBERTURA_XML - Cobertura code coverage report in XML format
+   * https://github.com/cobertura/cobertura
+   */
+  COBERTURA_XML = 41,
   UNRECOGNIZED = -1,
 }
 
@@ -432,6 +442,12 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 39:
     case "RADAMSA_CRASHES":
       return CraftingSchema_Material_MaterialType.RADAMSA_CRASHES;
+    case 40:
+    case "TRUFFLEHOG_JSON":
+      return CraftingSchema_Material_MaterialType.TRUFFLEHOG_JSON;
+    case 41:
+    case "COBERTURA_XML":
+      return CraftingSchema_Material_MaterialType.COBERTURA_XML;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -521,6 +537,10 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "RADAMSA_REPORT";
     case CraftingSchema_Material_MaterialType.RADAMSA_CRASHES:
       return "RADAMSA_CRASHES";
+    case CraftingSchema_Material_MaterialType.TRUFFLEHOG_JSON:
+      return "TRUFFLEHOG_JSON";
+    case CraftingSchema_Material_MaterialType.COBERTURA_XML:
+      return "COBERTURA_XML";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

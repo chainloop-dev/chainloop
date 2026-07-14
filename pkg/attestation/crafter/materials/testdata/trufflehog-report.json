@@ -1,0 +1,2 @@
+{"SourceMetadata":{"Data":{"Filesystem":{"file":"config/secrets.yaml","line":12}}},"SourceID":0,"SourceType":15,"SourceName":"trufflehog - filesystem","DetectorType":8,"DetectorName":"Github","DecoderName":"PLAIN","Verified":true,"Raw":"ghp_exampleTokenValue","Redacted":"ghp_***","ExtraData":null}
+{"SourceMetadata":{"Data":{"Filesystem":{"file":"app/.env","line":4}}},"SourceID":0,"SourceType":15,"SourceName":"trufflehog - filesystem","DetectorType":9,"DetectorName":"AWS","DecoderName":"PLAIN","Verified":false,"Raw":"AKIAEXAMPLE","Redacted":"AKIA***","ExtraData":null}

@@ -22,6 +22,7 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeOutput(t *testing.T) {
@@ -200,6 +201,19 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			testField: "bomFormat",
 		},
 		{
+			name: "cobertura xml material projected to json",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_COBERTURA_XML,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+					},
+				},
+			},
+			filename:  "testdata/cobertura.xml",
+			testField: "packages",
+		},
+		{
 			name: "sigcheck csv material",
 			material: &Attestation_Material{
 				MaterialType: schemaapi.CraftingSchema_Material_SYSINTERNALS_SIGCHECK,
@@ -254,6 +268,19 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			testField: "elements",
 		},
 		{
+			name: "trufflehog JSONL projected to elements",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_TRUFFLEHOG_JSON,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name: "name", Digest: "sha256:deadbeef", IsSubject: true,
+					},
+				},
+			},
+			filename:  "testdata/trufflehog-report.json",
+			testField: "elements",
+		},
+		{
 			// metadata-only: the (non-existent) crashes path must NOT be read.
 			name: "radamsa crashes metadata only",
 			material: &Attestation_Material{
@@ -302,4 +329,49 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestCoberturaEmptyReportIsEvaluable guards the requirement that a legitimate
+// empty coverage report (line-rate="NaN", no packages) projects to valid JSON
+// the policy engine can evaluate — instead of failing with a NaN marshal error,
+// which a policy would surface as a violation. line-rate is null and
+// lines-valid is 0, so a policy can guard on lines-valid > 0 and treat the
+// report as valid (no violations).
+func TestCoberturaEmptyReportIsEvaluable(t *testing.T) {
+	m := &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_COBERTURA_XML,
+		M: &Attestation_Material_Artifact_{
+			Artifact: &Attestation_Material_Artifact{Name: "coverage", Digest: "sha256:deadbeef"},
+		},
+	}
+
+	content, err := m.GetEvaluableContent("testdata/cobertura-empty.xml")
+	require.NoError(t, err, "empty report must be evaluable, not error on NaN")
+
+	var decoded map[string]any
+	require.NoError(t, json.NewDecoder(bytes.NewReader(content)).Decode(&decoded))
+	assert.Nil(t, decoded["line-rate"], "NaN line-rate must project as null")
+	assert.EqualValues(t, 0, decoded["lines-valid"], "lines-valid stays 0 so a policy can detect an empty report")
+}
+
+// TestTruffleHogCleanScanIsEvaluable guards that a clean scan (TruffleHog found
+// no secrets, leaving a zero-byte file) projects to valid policy input with an
+// empty findings list, so a secrets policy sees "no secrets -> no violation"
+// rather than an evaluation error.
+func TestTruffleHogCleanScanIsEvaluable(t *testing.T) {
+	m := &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_TRUFFLEHOG_JSON,
+		M: &Attestation_Material_Artifact_{
+			Artifact: &Attestation_Material_Artifact{Name: "secrets", Digest: "sha256:deadbeef"},
+		},
+	}
+
+	content, err := m.GetEvaluableContent("testdata/trufflehog-clean-scan.jsonl")
+	require.NoError(t, err, "clean scan must be evaluable")
+
+	var decoded map[string]any
+	require.NoError(t, json.NewDecoder(bytes.NewReader(content)).Decode(&decoded))
+	elements, ok := decoded["elements"].([]any)
+	require.True(t, ok, "clean scan must project to an elements array")
+	assert.Empty(t, elements, "a clean scan has zero findings")
 }

@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">
+<coverage line-rate="0.6667" branch-rate="0.5" lines-covered="4" lines-valid="6" branches-covered="1" branches-valid="2" complexity="3" version="1.9.4.1" timestamp="1700000000000">
+  <sources>
+    <source>src/main/java</source>
+  </sources>
+  <packages>
+    <package name="com.example.app" line-rate="0.6667" branch-rate="0.5" complexity="3">
+      <classes>
+        <class name="com.example.app.Calculator" filename="com/example/app/Calculator.java" line-rate="0.6667" branch-rate="0.5" complexity="3">
+          <methods>
+            <method name="add" signature="(II)I" line-rate="1.0" branch-rate="1.0" complexity="1">
+              <lines>
+                <line number="5" hits="3" branch="false"/>
+              </lines>
+            </method>
+            <method name="divide" signature="(II)I" line-rate="0.5" branch-rate="0.5" complexity="2">
+              <lines>
+                <line number="9" hits="1" branch="true" condition-coverage="50% (1/2)"/>
+                <line number="10" hits="0" branch="false"/>
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="5" hits="3" branch="false"/>
+            <line number="6" hits="3" branch="false"/>
+            <line number="9" hits="1" branch="true" condition-coverage="50% (1/2)"/>
+            <line number="10" hits="0" branch="false"/>
+            <line number="11" hits="1" branch="false"/>
+            <line number="12" hits="0" branch="false"/>
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>

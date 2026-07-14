@@ -56,7 +56,9 @@
             "CERTCC_DRANZER",
             "OSSF_SCORECARD_JSON",
             "RADAMSA_REPORT",
-            "RADAMSA_CRASHES"
+            "RADAMSA_CRASHES",
+            "TRUFFLEHOG_JSON",
+            "COBERTURA_XML"
           ],
           "title": "Material Type",
           "type": "string"
@@ -148,7 +150,9 @@
             "CERTCC_DRANZER",
             "OSSF_SCORECARD_JSON",
             "RADAMSA_REPORT",
-            "RADAMSA_CRASHES"
+            "RADAMSA_CRASHES",
+            "TRUFFLEHOG_JSON",
+            "COBERTURA_XML"
           ],
           "title": "Material Type",
           "type": "string"

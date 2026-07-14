@@ -188,6 +188,12 @@ message CraftingSchema {
       RADAMSA_REPORT = 38;
       // radamsa crashing inputs, a single file or a crashes/ archive (tar.gz or zip)
       RADAMSA_CRASHES = 39;
+      // TruffleHog secret scanning report in JSONL format (one JSON finding per line)
+      // https://github.com/trufflesecurity/trufflehog
+      TRUFFLEHOG_JSON = 40;
+      // Cobertura code coverage report in XML format
+      // https://github.com/cobertura/cobertura
+      COBERTURA_XML = 41;
     }
   }
 }
