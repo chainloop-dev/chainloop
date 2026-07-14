@@ -16,6 +16,7 @@
 package materials
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -109,18 +110,52 @@ type crafterCommon struct {
 	input  *schemaapi.CraftingSchema_Material
 }
 
+// uploadAndCraftOpts tunes uploadAndCraft behaviour.
+type uploadAndCraftOpts struct {
+	// emptyContentFallback, when set, replaces the artifact content if the file
+	// on disk is empty (zero bytes). Report types that are legitimately empty
+	// (e.g. a TruffleHog scan that finds no secrets emits no output) use this to
+	// craft a canonical representation ("[]") instead of a zero-byte file. This
+	// keeps the recorded digest meaningful and avoids the universal empty-file
+	// digest, which would collide across unrelated empty materials of any type.
+	// The original filename is preserved.
+	emptyContentFallback []byte
+}
+
+type uploadAndCraftOption func(*uploadAndCraftOpts)
+
+// withEmptyContentFallback substitutes canonical content when the artifact file
+// is empty, rather than rejecting it.
+func withEmptyContentFallback(content []byte) uploadAndCraftOption {
+	return func(o *uploadAndCraftOpts) { o.emptyContentFallback = content }
+}
+
 // uploadAndCraft uploads the artifact to CAS and crafts the material
 // this function is used by all the uploadable artifacts crafters (SBOMs, JUnit, and more in the future)
-func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger) (*api.Attestation_Material, error) {
+func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger, opts ...uploadAndCraftOption) (*api.Attestation_Material, error) {
+	options := &uploadAndCraftOpts{}
+	for _, o := range opts {
+		o(options)
+	}
+
 	// 1 - Check the file can be stored in the provided CAS backend
 	result, err := fileStats(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("getting file stats: %w", err)
 	}
-	defer result.r.Close()
+	defer func() { _ = result.r.Close() }()
 
 	if result.size == 0 {
-		return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, errors.New("file is empty"))
+		if len(options.emptyContentFallback) == 0 {
+			return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, errors.New("file is empty"))
+		}
+		// Substitute canonical content for the empty file, preserving the
+		// original filename, so the digest reflects the report's meaning.
+		_ = result.r.Close()
+		result, err = fileStatsFromBytes(result.filename, options.emptyContentFallback)
+		if err != nil {
+			return nil, fmt.Errorf("getting file stats: %w", err)
+		}
 	}
 
 	// Determine if we should skip the upload based on contract setting
@@ -221,6 +256,22 @@ func fileStats(filepath string) (*fileInfo, error) {
 	return &fileInfo{filename: stat.Name(), digest: hash.String(), size: stat.Size(), r: f}, nil
 }
 
+// fileStatsFromBytes builds a fileInfo from in-memory content, preserving the
+// given filename. Used to craft a canonical representation when the on-disk
+// file is empty (see uploadAndCraft's emptyContentFallback).
+func fileStatsFromBytes(filename string, content []byte) (*fileInfo, error) {
+	hash, _, err := cr_v1.SHA256(bytes.NewReader(content))
+	if err != nil {
+		return nil, fmt.Errorf("generating digest: %w", err)
+	}
+	return &fileInfo{
+		filename: filename,
+		digest:   hash.String(),
+		size:     int64(len(content)),
+		r:        io.NopCloser(bytes.NewReader(content)),
+	}, nil
+}
+
 type Craftable interface {
 	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
 }
@@ -258,6 +309,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewJUnitXMLCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_JACOCO_XML:
 		crafter = NewJacocoCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_COBERTURA_XML:
+		crafter = NewCoberturaCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_OPENVEX:
 		crafter, err = NewOpenVEXCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CSAF_VEX:
@@ -322,6 +375,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewRadamsaReportCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_RADAMSA_CRASHES:
 		crafter, err = NewRadamsaCrashesCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_TRUFFLEHOG_JSON:
+		crafter, err = NewTrufflehogCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

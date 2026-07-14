@@ -27,10 +27,12 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/accesschk"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/cobertura"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/dranzer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
 	materialsradamsa "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/radamsa"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/trufflehog"
 	"github.com/chainloop-dev/chainloop/pkg/tabular"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -193,6 +195,15 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 			return nil, fmt.Errorf("invalid radamsa -M metadata log: %w", err)
 		}
 		return json.Marshal(records)
+	case v1.CraftingSchema_Material_TRUFFLEHOG_JSON:
+		// TruffleHog --json output is JSONL (one finding per line), not a JSON
+		// array; render it as a JSON array so the policy engine exposes the
+		// findings as input.elements.
+		findings, err := trufflehog.Parse(bytes.NewReader(rawMaterial))
+		if err != nil {
+			return nil, fmt.Errorf("invalid trufflehog report: %w", err)
+		}
+		return json.Marshal(findings)
 	case v1.CraftingSchema_Material_RADAMSA_CRASHES:
 		// metadata-only: the crash content (single binary file or archive) is
 		// never evaluated. Discard it so inline content is not parsed as JSON;
@@ -202,6 +213,12 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 		var report jacoco.Report
 		if err := xml.Unmarshal(rawMaterial, &report); err != nil {
 			return nil, fmt.Errorf("invalid Jacoco report file: %w", err)
+		}
+		return json.Marshal(&report)
+	case v1.CraftingSchema_Material_COBERTURA_XML:
+		var report cobertura.Coverage
+		if err := xml.Unmarshal(rawMaterial, &report); err != nil {
+			return nil, fmt.Errorf("invalid Cobertura report file: %w", err)
 		}
 		return json.Marshal(&report)
 	case v1.CraftingSchema_Material_SYSINTERNALS_SIGCHECK:
