@@ -350,7 +350,7 @@ Options
 -h, --help                    help for init
 --latest-version          use the latest existing project version instead of specifying one
 --mark-latest             explicitly mark the project version as latest (default: automatic for new versions; use =false to skip promotion) (default true)
---pr                      mark this attestation as a pull/merge request build (skips latest promotion and sets the chainloop.dev/is-pull-request annotation; auto-detected from CI env if not set)
+--pr                      mark this attestation as a pull/merge request build (sets the chainloop.dev/is-pull-request annotation; auto-detected from CI env if not set)
 --project string          name of the project of this workflow
 --release                 promote the provided version as a release
 --remote-state            Store the attestation state remotely
