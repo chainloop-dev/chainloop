@@ -194,6 +194,9 @@ message CraftingSchema {
       // Cobertura code coverage report in XML format
       // https://github.com/cobertura/cobertura
       COBERTURA_XML = 41;
+      // Checkmarx One native JSON report (ScanResultsCollection)
+      // https://github.com/Checkmarx/ast-cli/blob/main/internal/wrappers/results-json.go
+      CHECKMARX_JSON = 42;
     }
   }
 }

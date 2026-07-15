@@ -53,6 +53,10 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	// auto-detection. RADAMSA_CRASHES single-file mode accepts almost any
 	// non-empty file and would eagerly shadow other types; both work fine when
 	// referenced with an explicit kind in a workflow contract.
+	// NOTE: CHECKMARX_JSON is intentionally omitted from auto-detection. The
+	// Checkmarx native report is generic JSON that risks shadowing (or being
+	// shadowed by) other JSON kinds; it must be referenced with an explicit
+	// --kind CHECKMARX_JSON. Revisit once the fingerprint is proven strong.
 	CraftingSchema_Material_HELM_CHART,
 	CraftingSchema_Material_SARIF,
 	CraftingSchema_Material_BLACKDUCK_SCA_JSON,

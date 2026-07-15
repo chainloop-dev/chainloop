@@ -169,7 +169,8 @@
             "RADAMSA_REPORT",
             "RADAMSA_CRASHES",
             "TRUFFLEHOG_JSON",
-            "COBERTURA_XML"
+            "COBERTURA_XML",
+            "CHECKMARX_JSON"
           ],
           "title": "Material Type",
           "type": "string"

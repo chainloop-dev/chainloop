@@ -377,6 +377,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewRadamsaCrashesCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_TRUFFLEHOG_JSON:
 		crafter, err = NewTrufflehogCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_CHECKMARX_JSON:
+		crafter, err = NewCheckmarxCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}
