@@ -317,6 +317,11 @@ export enum CraftingSchema_Material_MaterialType {
    * https://github.com/cobertura/cobertura
    */
   COBERTURA_XML = 41,
+  /**
+   * CHECKMARX_JSON - Checkmarx One native JSON report (ScanResultsCollection)
+   * https://github.com/Checkmarx/ast-cli/blob/main/internal/wrappers/results-json.go
+   */
+  CHECKMARX_JSON = 42,
   UNRECOGNIZED = -1,
 }
 
@@ -448,6 +453,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 41:
     case "COBERTURA_XML":
       return CraftingSchema_Material_MaterialType.COBERTURA_XML;
+    case 42:
+    case "CHECKMARX_JSON":
+      return CraftingSchema_Material_MaterialType.CHECKMARX_JSON;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -541,6 +549,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "TRUFFLEHOG_JSON";
     case CraftingSchema_Material_MaterialType.COBERTURA_XML:
       return "COBERTURA_XML";
+    case CraftingSchema_Material_MaterialType.CHECKMARX_JSON:
+      return "CHECKMARX_JSON";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

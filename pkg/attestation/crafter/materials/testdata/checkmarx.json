@@ -1,0 +1,299 @@
+{
+  "results": [
+    {
+      "type": "sast",
+      "label": "sast",
+      "id": "13588362",
+      "similarityId": "1959005240",
+      "status": "NEW",
+      "state": "TO_VERIFY",
+      "severity": "HIGH",
+      "created": "2023-11-29T16:00:29Z",
+      "firstFoundAt": "2023-11-24T10:27:23Z",
+      "foundAt": "2023-11-29T16:00:29Z",
+      "firstScanId": "12c2e25b-d25a-4321-9ce2-79a4df314d38",
+      "description": "The method Lambda embeds untrusted data in generated output with html, at line 18 of /src/main/resources/lessons/challenges/js/challenge8.js. This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page.\n\n",
+      "descriptionHTML": "<p>The method Lambda embeds untrusted data in generated output with html, at line 18 of /src/main/resources/lessons/challenges/js/challenge8.js. This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page.</p>\n",
+      "data": {
+        "queryId": 1779421333800271656,
+        "queryName": "Client_DOM_Stored_XSS",
+        "group": "JavaScript_High_Risk",
+        "resultHash": "vu/B9/LA3CAJTW+YXs3WsnzYc14=",
+        "languageName": "JavaScript",
+        "nodes": [
+          {
+            "id": "I09eTl48jtJ+UqDgeyBVAQ/oiYI=",
+            "line": 7,
+            "name": "votes",
+            "column": 43,
+            "length": 5,
+            "method": "Lambda",
+            "nodeID": 167070,
+            "domType": "ParamDecl",
+            "fileName": "/challenge8-js.testdata",
+            "fullName": "CxJSNS_953c03de.loadVotes.Lambda.votes",
+            "typeName": "object",
+            "methodLine": 7,
+            "definitions": "1"
+          },
+          {
+            "id": "RJLk6yhAIFf46AYFkZGpG5BITrE=",
+            "line": 18,
+            "name": "votes",
+            "column": 42,
+            "length": 5,
+            "method": "Lambda",
+            "nodeID": 167232,
+            "domType": "UnknownReference",
+            "fileName": "/challenge8-js.testdata",
+            "fullName": "CxJSNS_953c03de.loadVotes.Lambda.votes",
+            "typeName": "object",
+            "methodLine": 7,
+            "definitions": "1"
+          },
+          {
+            "id": "wu4zwsJQtEpEwABrFtX8o1/8u8E=",
+            "line": 18,
+            "name": "html",
+            "column": 37,
+            "length": 4,
+            "method": "Lambda",
+            "nodeID": 167226,
+            "domType": "MethodInvokeExpr",
+            "fileName": "/challenge8-js.testdata",
+            "fullName": "html",
+            "typeName": "html",
+            "methodLine": 7,
+            "definitions": "0"
+          }
+        ]
+      },
+      "comments": {},
+      "vulnerabilityDetails": {
+        "cweId": 79,
+        "cvss": {},
+        "compliances": [
+          "FISMA 2014",
+          "MOIS(KISA) Secure Coding 2021",
+          "OWASP Top 10 2013",
+          "OWASP Top 10 2021",
+          "PCI DSS v3.2.1",
+          "NIST SP 800-53",
+          "OWASP ASVS",
+          "CWE top 25",
+          "ASD STIG 4.10",
+          "SANS top 25",
+          "OWASP Top 10 2017"
+        ]
+      }
+    },
+    {
+      "type": "sast",
+      "label": "sast",
+      "id": "13588363",
+      "similarityId": "15011039",
+      "status": "NEW",
+      "state": "TO_VERIFY",
+      "severity": "HIGH",
+      "created": "2023-11-29T16:00:29Z",
+      "firstFoundAt": "2023-11-24T10:27:23Z",
+      "foundAt": "2023-11-29T16:00:29Z",
+      "firstScanId": "12c2e25b-d25a-4321-9ce2-79a4df314d38",
+      "description": "The method Lambda embeds untrusted data in generated output with html, at line 57 of /src/main/resources/webgoat/static/js/goatApp/support/GoatUtils.js. This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page.\n\n",
+      "descriptionHTML": "<p>The method Lambda embeds untrusted data in generated output with html, at line 57 of /src/main/resources/webgoat/static/js/goatApp/support/GoatUtils.js. This untrusted data is embedded into the output without proper sanitization or encoding, enabling an attacker to inject malicious code into the generated web-page.</p>\n",
+      "data": {
+        "queryId": 1779421333800271656,
+        "queryName": "Client_DOM_Stored_XSS",
+        "group": "JavaScript_High_Risk",
+        "resultHash": "jFgXDclJK/RDlpwY3fbow/7lVv8=",
+        "languageName": "JavaScript",
+        "nodes": [
+          {
+            "id": "voHHLkc4qjb3UpedvmZQayOk03I=",
+            "line": 56,
+            "name": "reply",
+            "column": 69,
+            "length": 5,
+            "method": "Lambda",
+            "nodeID": 183497,
+            "domType": "ParamDecl",
+            "fileName": "/GoatUtils-js.testdata",
+            "fullName": "CxJSNS_b114a3b8.CxAssociativeArray_75dc0652.Cxc09a0906.Lambda.reply",
+            "typeName": "object",
+            "methodLine": 56,
+            "definitions": "1"
+          },
+          {
+            "id": "IbtfjyTk3jy5XU57DiAGTLLtJKY=",
+            "line": 57,
+            "name": "reply",
+            "column": 51,
+            "length": 5,
+            "method": "Lambda",
+            "nodeID": 183516,
+            "domType": "UnknownReference",
+            "fileName": "/GoatUtils-js.testdata",
+            "fullName": "CxJSNS_b114a3b8.CxAssociativeArray_75dc0652.Cxc09a0906.Lambda.reply",
+            "typeName": "object",
+            "methodLine": 56,
+            "definitions": "1"
+          },
+          {
+            "id": "ZMHi6gwUdqfEtqo08wbDlnaGuKA=",
+            "line": 57,
+            "name": "html",
+            "column": 46,
+            "length": 4,
+            "method": "Lambda",
+            "nodeID": 183512,
+            "domType": "MethodInvokeExpr",
+            "fileName": "/GoatUtils-js.testdata",
+            "fullName": "CxJSNS_b114a3b8.CxAssociativeArray_75dc0652.Cxc09a0906.Lambda.html",
+            "typeName": "html",
+            "methodLine": 56,
+            "definitions": "0"
+          }
+        ]
+      },
+      "comments": {},
+      "vulnerabilityDetails": {
+        "cweId": 79,
+        "cvss": {},
+        "compliances": [
+          "FISMA 2014",
+          "MOIS(KISA) Secure Coding 2021",
+          "OWASP Top 10 2013",
+          "OWASP Top 10 2021",
+          "PCI DSS v3.2.1",
+          "NIST SP 800-53",
+          "OWASP ASVS",
+          "CWE top 25",
+          "ASD STIG 4.10",
+          "SANS top 25",
+          "OWASP Top 10 2017"
+        ]
+      }
+    },
+    {
+      "type": "kics",
+      "label": "IaC Security",
+      "id": "16350365",
+      "similarityId": "531bf8e9771fc9a38b866afcdc86e10dd80487262d98baf44f82522516f4db9e",
+      "status": "NEW",
+      "state": "TO_VERIFY",
+      "severity": "HIGH",
+      "created": "2023-11-29T15:54:59Z",
+      "firstFoundAt": "2023-11-29T15:54:59Z",
+      "foundAt": "2023-11-29T15:54:59Z",
+      "firstScanId": "dc2b7f5c-625d-4236-891d-90869454aaf7",
+      "description": "A user should be specified in the dockerfile, otherwise the image will run as root",
+      "descriptionHTML": "<p>A user should be specified in the dockerfile, otherwise the image will run as root</p>\n",
+      "data": {
+        "queryId": "fd54f200-402c-4333-a5a4-36ef6709af2f [Taken from query_id]",
+        "queryName": "Missing User Instruction",
+        "group": "Build Process [Taken from category]",
+        "line": 1,
+        "platform": "Dockerfile",
+        "issueType": "MissingAttribute",
+        "expectedValue": "The 'Dockerfile' should contain the 'USER' instruction",
+        "value": "The 'Dockerfile' does not contain any 'USER' instruction",
+        "filename": "/Dockerfile_desktop"
+      },
+      "comments": {},
+      "vulnerabilityDetails": {
+        "cvss": {}
+      }
+    },
+    {
+      "type": "sca",
+      "scaType": "Vulnerability",
+      "label": "sca",
+      "id": "CVE-2013-7285",
+      "similarityId": "CVE-2013-7285",
+      "status": "NEW",
+      "state": "TO_VERIFY",
+      "severity": "HIGH",
+      "created": "2023-11-29T15:58:19Z",
+      "firstFoundAt": "2023-11-24T10:25:10Z",
+      "foundAt": "2023-11-29T15:58:19Z",
+      "firstScanId": "12c2e25b-d25a-4321-9ce2-79a4df314d38",
+      "description": "Xstream API versions up to 1.4.6, if the security framework has not been initialized, may allow a remote attacker to run arbitrary shell commands by manipulating the processed input stream when unmarshaling XML or any supported format. e.g. JSON.",
+      "descriptionHTML": "<p>Xstream API versions up to 1.4.6, if the security framework has not been initialized, may allow a remote attacker to run arbitrary shell commands by manipulating the processed input stream when unmarshaling XML or any supported format. e.g. JSON.</p>\n",
+      "data": {
+        "packageData": [
+          {
+            "comment": "https://github.com/advisories/GHSA-f554-x222-wgf7",
+            "type": "Advisory",
+            "url": "https://github.com/advisories/GHSA-f554-x222-wgf7"
+          },
+          {
+            "comment": "https://x-stream.github.io/CVE-2013-7285.html",
+            "type": "Advisory",
+            "url": "https://x-stream.github.io/CVE-2013-7285.html"
+          },
+          {
+            "comment": "http://blog.diniscruz.com/2013/12/xstream-remote-code-execution-exploit.html",
+            "type": "Disclosure",
+            "url": "http://blog.diniscruz.com/2013/12/xstream-remote-code-execution-exploit.html"
+          },
+          {
+            "comment": "https://www.mail-archive.com/user@xstream.codehaus.org/msg00604.html",
+            "type": "Mail Thread",
+            "url": "https://www.mail-archive.com/user@xstream.codehaus.org/msg00604.html"
+          },
+          {
+            "comment": "https://www.mail-archive.com/user@xstream.codehaus.org/msg00607.html",
+            "type": "Mail Thread",
+            "url": "https://www.mail-archive.com/user@xstream.codehaus.org/msg00607.html"
+          },
+          {
+            "comment": "https://github.com/x-stream/xstream/commit/94666ae6dfe839410c73bdfeeb211374f04a2059",
+            "type": "Commit",
+            "url": "https://github.com/x-stream/xstream/commit/94666ae6dfe839410c73bdfeeb211374f04a2059"
+          }
+        ],
+        "packageIdentifier": "Maven-com.thoughtworks.xstream:xstream-1.4.5",
+        "scaPackageData": {
+          "id": "Maven-com.thoughtworks.xstream:xstream-1.4.5",
+          "fixLink": "https://devhub.checkmarx.com/cve-details/CWE-78",
+          "locations": [
+            "pom.xml"
+          ],
+          "dependencyPaths": [
+            [
+              {
+                "id": "Maven-com.thoughtworks.xstream:xstream-1.4.5",
+                "name": "com.thoughtworks.xstream:xstream",
+                "version": "1.4.5",
+                "isResolved": true,
+                "locations": [
+                  "pom.xml"
+                ]
+              }
+            ]
+          ],
+          "outdated": true,
+          "supportsQuickFix": false,
+          "isDirectDependency": true,
+          "typeOfDependency": "Direct Dependency"
+        },
+        "recommendedVersion": "1.4.20"
+      },
+      "comments": {},
+      "vulnerabilityDetails": {
+        "cweId": "CWE-78",
+        "cvssScore": 9.8,
+        "cveName": "CWE-78",
+        "cvss": {
+          "version": 3,
+          "attackVector": "NETWORK",
+          "availability": "HIGH",
+          "confidentiality": "HIGH",
+          "attackComplexity": "LOW"
+        }
+      }
+    }
+  ],
+  "totalCount": 4,
+  "scanID": "dc2b7f5c-625d-4236-891d-90869454aaf7"
+}
