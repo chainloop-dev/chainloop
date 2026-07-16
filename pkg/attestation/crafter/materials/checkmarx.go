@@ -62,6 +62,20 @@ type checkmarxResult struct {
 	Data         json.RawMessage `json:"data"`
 }
 
+// checkmarxEngineToScanType maps Checkmarx's raw engine identifiers onto the
+// canonical scan-type vocabulary. Checkmarx names some engines by product
+// (e.g. "kics") rather than by category, so we normalize them here to keep the
+// scan.types annotation consistent with other material kinds. An engine absent
+// from this map is dropped from the annotation (fail closed): recognition never
+// fires on a type we cannot classify, and no vendor-specific name leaks out.
+var checkmarxEngineToScanType = map[string]string{
+	"sast":       ScanTypeSAST,
+	"sca":        ScanTypeSCA,
+	"kics":       ScanTypeIaC,
+	"containers": ScanTypeContainer,
+	"sscs":       ScanTypeSupplyChain,
+}
+
 func NewCheckmarxCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CheckmarxCrafter, error) {
 	if schema.Type != schemaapi.CraftingSchema_Material_CHECKMARX_JSON {
 		return nil, fmt.Errorf("material type is not a Checkmarx native JSON report")
@@ -133,12 +147,25 @@ func (i *CheckmarxCrafter) injectAnnotations(m *api.Attestation_Material, typeSe
 	}
 	m.Annotations[AnnotationToolNameKey] = "checkmarx"
 
-	// Advertise the distinct engine types found in the report (sorted,
-	// comma-joined; e.g. "kics,sast,sca"). A clean/null report yields no types, so
-	// the annotation is omitted rather than set empty: recognition then fails
-	// closed, which is the safe choice for a compliance gate.
-	if len(typeSet) > 0 {
-		types := slices.Sorted(maps.Keys(typeSet))
+	// Normalize the raw Checkmarx engine identifiers onto the canonical scan-type
+	// vocabulary, dropping any engine we cannot classify so no vendor-specific
+	// name leaks into the annotation.
+	scanTypes := map[string]struct{}{}
+	for raw := range typeSet {
+		scanType, ok := checkmarxEngineToScanType[raw]
+		if !ok {
+			i.logger.Debug().Str("engine", raw).Msg("unrecognized Checkmarx engine type, omitting from scan.types annotation")
+			continue
+		}
+		scanTypes[scanType] = struct{}{}
+	}
+
+	// Advertise the distinct scan types found in the report (sorted, comma-joined;
+	// e.g. "iac,sast,sca"). A clean/null report (or one with only unrecognized
+	// engines) yields no types, so the annotation is omitted rather than set
+	// empty: recognition then fails closed, the safe choice for a compliance gate.
+	if len(scanTypes) > 0 {
+		types := slices.Sorted(maps.Keys(scanTypes))
 		m.Annotations[AnnotationScanTypesKey] = strings.Join(types, ",")
 	}
 }

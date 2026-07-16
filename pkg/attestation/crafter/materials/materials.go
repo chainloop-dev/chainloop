@@ -54,11 +54,26 @@ const (
 	// names may contain underscores, which material names disallow.
 	AnnotationPolicyInput = "chainloop.material.policy_input"
 	// AnnotationScanTypesKey records, on a multi-engine scan material, the
-	// distinct scanner engine types present in the report (lower-cased, sorted,
-	// comma-joined; e.g. "kics,sast,sca"). It lets attestation-level policies
-	// that match purely by annotation (e.g. the *-scan-present compliance
-	// policies) tell which engines actually ran without reading material content.
+	// distinct scan types present in the report (sorted, comma-joined; e.g.
+	// "iac,sast,sca"). It lets attestation-level policies that match purely by
+	// annotation (e.g. the *-scan-present compliance policies) tell which kinds of
+	// analysis actually ran without reading material content. Values are drawn
+	// from the canonical ScanType* vocabulary below, not from any single vendor's
+	// engine names, so the annotation stays consistent across material kinds.
 	AnnotationScanTypesKey = "chainloop.material.scan.types"
+)
+
+// Canonical scan types for the AnnotationScanTypesKey annotation. A material
+// crafter that inspects a multi-engine report must normalize each vendor's
+// engine identifiers onto this generic vocabulary rather than emitting the raw
+// names, keeping the annotation meaningful across material kinds.
+const (
+	ScanTypeSAST        = "sast"         // Static Application Security Testing
+	ScanTypeSCA         = "sca"          // Software Composition Analysis
+	ScanTypeIaC         = "iac"          // Infrastructure as Code scanning
+	ScanTypeContainer   = "container"    // Container image scanning
+	ScanTypeSupplyChain = "supply-chain" // Supply-chain security scanning
+	ScanTypeSecrets     = "secrets"      // Secret detection
 )
 
 // IsLegacyAnnotation returns true if the annotation key is a legacy annotation

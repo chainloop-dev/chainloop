@@ -117,8 +117,20 @@ func TestCheckmarxCrafter_Craft(t *testing.T) {
 			filePath: "./testdata/checkmarx.json",
 			annotations: map[string]string{
 				"chainloop.material.tool.name": "checkmarx",
-				// Distinct engine types, lower-cased and sorted, comma-joined.
-				"chainloop.material.scan.types": "kics,sast,sca",
+				// Engine types normalized to the canonical scan-type vocabulary
+				// (kics -> iac), lower-cased, sorted and comma-joined.
+				"chainloop.material.scan.types": "iac,sast,sca",
+			},
+		},
+		{
+			// containers -> container and sscs -> supply-chain are mapped to the
+			// canonical vocabulary; an unmapped engine ("future-engine") is dropped
+			// so no vendor-specific value leaks into the annotation.
+			name:     "extra engines (containers + sscs + unmapped)",
+			filePath: "./testdata/checkmarx-extra-engines.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":  "checkmarx",
+				"chainloop.material.scan.types": "container,supply-chain",
 			},
 		},
 	}
