@@ -19,7 +19,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
+	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -99,11 +102,14 @@ func (i *CheckmarxCrafter) Craft(ctx context.Context, filePath string) (*api.Att
 	// Each real result carries a type and a data payload, regardless of engine
 	// (sast, sca, kics, containers, sscs). similarityId carries omitempty in the
 	// ast-cli structs and is left as a supporting signal only, to avoid rejecting
-	// valid reports.
+	// valid reports. We also collect the distinct engine types so attestation-level
+	// policies can tell which engines actually produced findings.
+	typeSet := map[string]struct{}{}
 	for idx, r := range results {
 		if r.Type == "" || r.Data == nil {
 			return nil, fmt.Errorf("checkmarx result %d is missing type or data: %w", idx, ErrInvalidMaterialType)
 		}
+		typeSet[strings.ToLower(r.Type)] = struct{}{}
 	}
 
 	if len(results) == 0 {
@@ -116,14 +122,23 @@ func (i *CheckmarxCrafter) Craft(ctx context.Context, filePath string) (*api.Att
 		return nil, err
 	}
 
-	i.injectAnnotations(m)
+	i.injectAnnotations(m, typeSet)
 
 	return m, nil
 }
 
-func (i *CheckmarxCrafter) injectAnnotations(m *api.Attestation_Material) {
+func (i *CheckmarxCrafter) injectAnnotations(m *api.Attestation_Material, typeSet map[string]struct{}) {
 	if m.Annotations == nil {
 		m.Annotations = make(map[string]string)
 	}
 	m.Annotations[AnnotationToolNameKey] = "checkmarx"
+
+	// Advertise the distinct engine types found in the report (sorted,
+	// comma-joined; e.g. "kics,sast,sca"). A clean/null report yields no types, so
+	// the annotation is omitted rather than set empty: recognition then fails
+	// closed, which is the safe choice for a compliance gate.
+	if len(typeSet) > 0 {
+		types := slices.Sorted(maps.Keys(typeSet))
+		m.Annotations[AnnotationScanTypesKey] = strings.Join(types, ",")
+	}
 }

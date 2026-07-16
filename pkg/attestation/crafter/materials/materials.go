@@ -53,6 +53,12 @@ const (
 	// (e.g. "ignored_paths"). The material name cannot carry it because input
 	// names may contain underscores, which material names disallow.
 	AnnotationPolicyInput = "chainloop.material.policy_input"
+	// AnnotationScanTypesKey records, on a multi-engine scan material, the
+	// distinct scanner engine types present in the report (lower-cased, sorted,
+	// comma-joined; e.g. "kics,sast,sca"). It lets attestation-level policies
+	// that match purely by annotation (e.g. the *-scan-present compliance
+	// policies) tell which engines actually ran without reading material content.
+	AnnotationScanTypesKey = "chainloop.material.scan.types"
 )
 
 // IsLegacyAnnotation returns true if the annotation key is a legacy annotation
