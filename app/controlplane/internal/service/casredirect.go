@@ -88,7 +88,11 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, nil)
+		// Restrict the lookup to the token's project when it is project-scoped, mirroring
+		// CASCredentialsService.Get. Passing nil here would let a project-scoped token resolve
+		// mappings for any project in its organization.
+		projectIDs := casMappingProjectFilter(orgID, currentAPIToken)
+		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, projectIDs)
 	}
 
 	if err != nil {

@@ -329,6 +329,24 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	return projects
 }
 
+// casMappingProjectFilter builds the per-org project filter passed to
+// CASMappingUseCase.FindCASMappingForDownloadByOrg for an API token. A project-scoped token
+// restricts the lookup to its own project; an org-scoped token (nil ProjectID) yields a nil map,
+// which the data layer treats as "no project filter" (whole-org visibility).
+//
+// Both CASRedirectService.GetDownloadURL and CASCredentialsService.Get resolve a download mapping
+// for an API token, so they share this helper to keep the project-scope filter consistent and
+// prevent the two paths from drifting.
+func casMappingProjectFilter(orgID uuid.UUID, token *entities.APIToken) map[uuid.UUID][]uuid.UUID {
+	if token == nil || token.ProjectID == nil {
+		return nil
+	}
+
+	return map[uuid.UUID][]uuid.UUID{
+		orgID: {*token.ProjectID},
+	}
+}
+
 // checkPolicy Checks a policy against a user or a token
 func (s *service) checkPolicy(ctx context.Context, policy *authz.Policy) error {
 	// Token case

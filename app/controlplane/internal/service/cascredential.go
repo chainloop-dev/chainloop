@@ -116,10 +116,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 			}
 
 			// pass projectIDs if it's included in the token
-			projectIDs := make(map[uuid.UUID][]uuid.UUID)
-			if currentAPIToken.ProjectID != nil {
-				projectIDs[orgID] = []uuid.UUID{*currentAPIToken.ProjectID}
-			}
+			projectIDs := casMappingProjectFilter(orgID, currentAPIToken)
 			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, projectIDs)
 			if err != nil && !biz.IsNotFound(err) {
 				if biz.IsErrValidation(err) {
