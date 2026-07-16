@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -526,6 +526,15 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 	id, name, err := req.GetGroupReference().Parse()
 	if err != nil {
 		return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid group reference: %s", err.Error()))
+	}
+
+	// Authorize before resolving results. This mirrors the sibling group sub-resource handlers
+	// (ListMembers, etc.): only org admins/owners or a maintainer of the target group may read a
+	// group's project attachments. The visibleProjects row filter alone is insufficient because it
+	// returns nil ("no filter") for callers where RBAC is not applied (e.g. a legacy RoleViewer or
+	// an org-scoped API token), which the data layer treats as full visibility.
+	if err = g.userHasPermissionOnGroupMembershipsWithPolicy(ctx, currentOrg.ID, req.GetGroupReference(), authz.PolicyGroupListMemberships); err != nil {
+		return nil, err
 	}
 
 	// Initialize the options for getting projects
