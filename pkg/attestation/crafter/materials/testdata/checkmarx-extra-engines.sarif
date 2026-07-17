@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Checkmarx One",
+          "version": "1.0",
+          "informationUri": "https://checkmarx.com/resource/documents/en/34965-67042-checkmarx-one.html",
+          "rules": [
+            {
+              "id": "openssl - CVE-2022-0001 (containers)",
+              "name": "openssl - CVE-2022-0001",
+              "helpUri": "https://checkmarx.com",
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "fullDescription": {
+                "text": "Vulnerable package in container image"
+              },
+              "properties": {
+                "security-severity": "9.0",
+                "name": "openssl - CVE-2022-0001",
+                "id": "openssl - CVE-2022-0001 (containers)",
+                "description": "Vulnerable package in container image",
+                "tags": ["security", "checkmarx", "containers"]
+              }
+            },
+            {
+              "id": "Missing branch protection (sscs)",
+              "name": "Missing branch protection",
+              "helpUri": "https://checkmarx.com",
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "fullDescription": {
+                "text": "Repository is missing branch protection"
+              },
+              "properties": {
+                "security-severity": "6.0",
+                "name": "Missing branch protection",
+                "id": "Missing branch protection (sscs)",
+                "description": "Repository is missing branch protection",
+                "tags": ["security", "checkmarx", "sscs"]
+              }
+            },
+            {
+              "id": "Some future finding (future-engine)",
+              "name": "Some future finding",
+              "helpUri": "https://checkmarx.com",
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "fullDescription": {
+                "text": "Finding from an engine we do not classify yet"
+              },
+              "properties": {
+                "security-severity": "5.0",
+                "name": "Some future finding",
+                "id": "Some future finding (future-engine)",
+                "description": "Finding from an engine we do not classify yet",
+                "tags": ["security", "checkmarx", "future-engine"]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "openssl - CVE-2022-0001 (containers)",
+          "level": "error",
+          "message": {
+            "text": "Vulnerable package openssl in image"
+          }
+        },
+        {
+          "ruleId": "Missing branch protection (sscs)",
+          "level": "warning",
+          "message": {
+            "text": "Branch protection not enabled"
+          }
+        },
+        {
+          "ruleId": "Some future finding (future-engine)",
+          "level": "note",
+          "message": {
+            "text": "Future engine finding"
+          }
+        }
+      ]
+    }
+  ]
+}
