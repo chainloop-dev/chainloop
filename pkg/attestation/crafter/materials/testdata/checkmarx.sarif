@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Checkmarx One",
+          "version": "1.0",
+          "informationUri": "https://checkmarx.com/resource/documents/en/34965-67042-checkmarx-one.html",
+          "rules": [
+            {
+              "id": "Reflected_XSS (sast)",
+              "name": "ReflectedXss",
+              "helpUri": "https://checkmarx.com",
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "fullDescription": {
+                "text": "Reflected XSS"
+              },
+              "properties": {
+                "security-severity": "8.0",
+                "name": "Reflected_XSS",
+                "id": "Reflected_XSS (sast)",
+                "description": "Reflected XSS",
+                "tags": ["security", "checkmarx", "sast"]
+              }
+            },
+            {
+              "id": "CVE-2021-1234 (sca)",
+              "name": "Cve20211234",
+              "helpUri": "https://checkmarx.com",
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "fullDescription": {
+                "text": "Vulnerable dependency"
+              },
+              "properties": {
+                "security-severity": "9.0",
+                "name": "CVE-2021-1234",
+                "id": "CVE-2021-1234 (sca)",
+                "description": "Vulnerable dependency",
+                "tags": ["security", "checkmarx", "sca"]
+              }
+            },
+            {
+              "id": "Passwords And Secrets - Generic Password (kics)",
+              "name": "Passwords And Secrets - Generic Password",
+              "helpUri": "https://checkmarx.com",
+              "help": {
+                "text": "",
+                "markdown": ""
+              },
+              "fullDescription": {
+                "text": "Generic password in IaC file"
+              },
+              "properties": {
+                "security-severity": "7.0",
+                "name": "Passwords And Secrets - Generic Password",
+                "id": "Passwords And Secrets - Generic Password (kics)",
+                "description": "Generic password in IaC file",
+                "tags": ["security", "checkmarx", "kics"]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "Reflected_XSS (sast)",
+          "level": "error",
+          "message": {
+            "text": "Reflected XSS in handler.go"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "handler.go"
+                },
+                "region": {
+                  "startLine": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CVE-2021-1234 (sca)",
+          "level": "error",
+          "message": {
+            "text": "Vulnerable dependency detected"
+          }
+        },
+        {
+          "ruleId": "Passwords And Secrets - Generic Password (kics)",
+          "level": "warning",
+          "message": {
+            "text": "Generic password found in main.tf"
+          }
+        }
+      ]
+    }
+  ]
+}
