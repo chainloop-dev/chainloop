@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Checkmarx One",
+          "version": "1.0",
+          "informationUri": "https://checkmarx.com/resource/documents/en/34965-67042-checkmarx-one.html",
+          "rules": [
+            {
+              "id": "Reflected_XSS (sast)",
+              "name": "ReflectedXss",
+              "helpUri": "https://checkmarx.com",
+              "help": { "text": "", "markdown": "" },
+              "fullDescription": { "text": "Reflected XSS" },
+              "properties": {
+                "security-severity": "8.0",
+                "name": "Reflected_XSS",
+                "id": "Reflected_XSS (sast)",
+                "description": "Reflected XSS",
+                "tags": ["security", "checkmarx", "sast"]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "Reflected_XSS (sast)",
+          "level": "error",
+          "message": { "text": "Reflected XSS in handler.go" }
+        }
+      ]
+    },
+    {
+      "tool": {
+        "driver": {
+          "name": "some-other-tool",
+          "informationUri": "https://example.com",
+          "rules": [
+            {
+              "id": "Vulnerable dependency (sca)",
+              "shortDescription": { "text": "Vulnerable dependency" }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "Vulnerable dependency (sca)",
+          "level": "error",
+          "message": { "text": "Vulnerable dependency from a non-Checkmarx tool" }
+        }
+      ]
+    }
+  ]
+}

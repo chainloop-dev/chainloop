@@ -104,34 +104,36 @@ func (i *SARIFCrafter) injectAnnotations(m *api.Attestation_Material, doc *sarif
 	}
 }
 
-// checkmarxScanTypes inspects a Checkmarx One SARIF report and returns its
-// distinct scan types, normalized onto the canonical scan-type vocabulary and
-// formatted for the AnnotationScanTypesKey annotation (sorted, comma-joined; e.g.
-// "iac,sast,sca"). It returns "" for a non-Checkmarx report or one whose engines
-// we cannot classify, so recognition fails closed and never over-claims for other
-// tools.
+// checkmarxScanTypes inspects a SARIF report and returns the distinct scan types
+// produced by its Checkmarx runs, normalized onto the canonical scan-type
+// vocabulary and formatted for the AnnotationScanTypesKey annotation (sorted,
+// comma-joined; e.g. "iac,sast,sca"). It returns "" when no Checkmarx run is
+// present or none of its engines can be classified, so recognition fails closed
+// and never over-claims for other tools.
 //
+// Detection and extraction are both per run: a SARIF document may bundle several
+// runs (e.g. an aggregated report mixing tools), and only a Checkmarx run's
+// "(<engine>)" suffixes use the vocabulary we normalize. Gating extraction on the
+// individual run keeps another tool's rule ids from being attributed to Checkmarx.
+//
+// The engine is read from each finding's ruleId, not the driver's rule catalog:
 // Checkmarx's SARIF export carries no dedicated engine field (the EngineID
-// property only exists in its sonar export). It does append a "(<engine>)" suffix
-// to every rule id (e.g. "Reflected_XSS (sast)"), verified against ast-cli's
-// findRuleID; that suffix is the engine signal we read here. The Checkmarx-only
-// engine names (kics, sscs, containers) are why we gate on isCheckmarxSARIF: a
-// generic SARIF must never be mapped onto this vocabulary.
+// property only exists in its sonar export), but ast-cli appends a "(<engine>)"
+// suffix to every result ruleId (e.g. "Reflected_XSS (sast)"), verified against
+// ast-cli's findRuleID. Reading findings rather than tool.driver.rules (a catalog
+// that need not correspond to findings) keeps the annotation findings-based,
+// consistent with the native CHECKMARX_JSON crafter.
 func (i *SARIFCrafter) checkmarxScanTypes(doc *sarif.Report) string {
-	if !isCheckmarxSARIF(doc) {
-		return ""
-	}
-
 	scanTypes := map[string]struct{}{}
 	for _, run := range doc.Runs {
-		if run == nil || run.Tool == nil || run.Tool.Driver == nil {
+		if !isCheckmarxRun(run) {
 			continue
 		}
-		for _, rule := range run.Tool.Driver.Rules {
-			if rule == nil || rule.ID == nil {
+		for _, result := range run.Results {
+			if result == nil || result.RuleID == nil {
 				continue
 			}
-			engine := ruleIDEngineSuffix(*rule.ID)
+			engine := ruleIDEngineSuffix(*result.RuleID)
 			if engine == "" {
 				continue
 			}
@@ -152,26 +154,24 @@ func (i *SARIFCrafter) checkmarxScanTypes(doc *sarif.Report) string {
 	return strings.Join(slices.Sorted(maps.Keys(scanTypes)), ",")
 }
 
-// isCheckmarxSARIF reports whether doc looks like a Checkmarx One SARIF export.
-// Checkmarx stamps its driver name ("Checkmarx One") and tags every rule with
-// "checkmarx"; either signal is enough.
-func isCheckmarxSARIF(doc *sarif.Report) bool {
-	for _, run := range doc.Runs {
-		if run == nil || run.Tool == nil || run.Tool.Driver == nil {
+// isCheckmarxRun reports whether a single SARIF run looks like a Checkmarx One
+// export. Checkmarx stamps its driver name ("Checkmarx One") and tags every rule
+// with "checkmarx"; either signal is enough.
+func isCheckmarxRun(run *sarif.Run) bool {
+	if run == nil || run.Tool == nil || run.Tool.Driver == nil {
+		return false
+	}
+	driver := run.Tool.Driver
+	if driver.Name != nil && strings.Contains(strings.ToLower(*driver.Name), checkmarxVendorTag) {
+		return true
+	}
+	for _, rule := range driver.Rules {
+		if rule == nil || rule.Properties == nil {
 			continue
 		}
-		driver := run.Tool.Driver
-		if driver.Name != nil && strings.Contains(strings.ToLower(*driver.Name), checkmarxVendorTag) {
-			return true
-		}
-		for _, rule := range driver.Rules {
-			if rule == nil || rule.Properties == nil {
-				continue
-			}
-			for _, tag := range rule.Properties.Tags {
-				if strings.ToLower(tag) == checkmarxVendorTag {
-					return true
-				}
+		for _, tag := range rule.Properties.Tags {
+			if strings.ToLower(tag) == checkmarxVendorTag {
+				return true
 			}
 		}
 	}

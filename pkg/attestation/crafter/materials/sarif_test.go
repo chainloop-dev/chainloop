@@ -165,6 +165,28 @@ func TestSARIFCraft_ScanTypes(t *testing.T) {
 			},
 		},
 		{
+			// Scan types are findings-based: the driver rule catalog lists sast, sca
+			// and kics rules, but only a sast finding is present, so scan.types must
+			// reflect just the engines that actually produced results (matching the
+			// native CHECKMARX_JSON crafter).
+			name:     "checkmarx SARIF with rules but no findings for some engines",
+			filePath: "./testdata/checkmarx-rules-without-findings.sarif",
+			annotations: map[string]string{
+				"chainloop.material.scan.types": "sast",
+			},
+		},
+		{
+			// A multi-run SARIF mixing a Checkmarx run (sast) with another tool's run
+			// whose rule ids reuse the "(engine)" suffix (sca) must only attribute the
+			// Checkmarx run's engines: detection and extraction are per run, so the
+			// other tool's findings never contaminate the annotation.
+			name:     "multi-run SARIF only attributes checkmarx run engines",
+			filePath: "./testdata/checkmarx-multi-run.sarif",
+			annotations: map[string]string{
+				"chainloop.material.scan.types": "sast",
+			},
+		},
+		{
 			// A non-Checkmarx SARIF (tfsec) must never get a scan.types annotation:
 			// the engine normalization is Checkmarx-specific, so recognition fails
 			// closed for other tools rather than over-claiming.
