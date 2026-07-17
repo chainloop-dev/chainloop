@@ -70,6 +70,10 @@ func TestCheckmarxCrafter_Craft(t *testing.T) {
 		filePath    string
 		wantErr     string
 		annotations map[string]string
+		// absentAnnotations lists annotation keys that must NOT be set. A clean or
+		// null report advertises no engine types, so scan.types must be omitted
+		// (fail closed) rather than set to an empty value.
+		absentAnnotations []string
 	}{
 		{
 			name:     "invalid path",
@@ -92,6 +96,7 @@ func TestCheckmarxCrafter_Craft(t *testing.T) {
 			annotations: map[string]string{
 				"chainloop.material.tool.name": "checkmarx",
 			},
+			absentAnnotations: []string{"chainloop.material.scan.types"},
 		},
 		{
 			// The ast-cli serializer emits "results": null (not []) when a
@@ -102,6 +107,7 @@ func TestCheckmarxCrafter_Craft(t *testing.T) {
 			annotations: map[string]string{
 				"chainloop.material.tool.name": "checkmarx",
 			},
+			absentAnnotations: []string{"chainloop.material.scan.types"},
 		},
 		{
 			// Real ast-cli output bundling multiple engines in one file (2 sast,
@@ -111,6 +117,20 @@ func TestCheckmarxCrafter_Craft(t *testing.T) {
 			filePath: "./testdata/checkmarx.json",
 			annotations: map[string]string{
 				"chainloop.material.tool.name": "checkmarx",
+				// Engine types normalized to the canonical scan-type vocabulary
+				// (kics -> iac), lower-cased, sorted and comma-joined.
+				"chainloop.material.scan.types": "iac,sast,sca",
+			},
+		},
+		{
+			// containers -> container and sscs -> supply-chain are mapped to the
+			// canonical vocabulary; an unmapped engine ("future-engine") is dropped
+			// so no vendor-specific value leaks into the annotation.
+			name:     "extra engines (containers + sscs + unmapped)",
+			filePath: "./testdata/checkmarx-extra-engines.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":  "checkmarx",
+				"chainloop.material.scan.types": "container,supply-chain",
 			},
 		},
 	}
@@ -148,6 +168,11 @@ func TestCheckmarxCrafter_Craft(t *testing.T) {
 				for k, v := range tc.annotations {
 					assert.Equal(t, v, got.Annotations[k])
 				}
+			}
+
+			for _, k := range tc.absentAnnotations {
+				_, ok := got.Annotations[k]
+				assert.False(t, ok, "annotation %q must not be set", k)
 			}
 		})
 	}

@@ -19,7 +19,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
+	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -57,6 +60,20 @@ type checkmarxResult struct {
 	Type         string          `json:"type"`
 	SimilarityID string          `json:"similarityId"`
 	Data         json.RawMessage `json:"data"`
+}
+
+// checkmarxEngineToScanType maps Checkmarx's raw engine identifiers onto the
+// canonical scan-type vocabulary. Checkmarx names some engines by product
+// (e.g. "kics") rather than by category, so we normalize them here to keep the
+// scan.types annotation consistent with other material kinds. An engine absent
+// from this map is dropped from the annotation (fail closed): recognition never
+// fires on a type we cannot classify, and no vendor-specific name leaks out.
+var checkmarxEngineToScanType = map[string]string{
+	"sast":       ScanTypeSAST,
+	"sca":        ScanTypeSCA,
+	"kics":       ScanTypeIaC,
+	"containers": ScanTypeContainer,
+	"sscs":       ScanTypeSupplyChain,
 }
 
 func NewCheckmarxCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*CheckmarxCrafter, error) {
@@ -99,11 +116,14 @@ func (i *CheckmarxCrafter) Craft(ctx context.Context, filePath string) (*api.Att
 	// Each real result carries a type and a data payload, regardless of engine
 	// (sast, sca, kics, containers, sscs). similarityId carries omitempty in the
 	// ast-cli structs and is left as a supporting signal only, to avoid rejecting
-	// valid reports.
+	// valid reports. We also collect the distinct engine types so attestation-level
+	// policies can tell which engines actually produced findings.
+	typeSet := map[string]struct{}{}
 	for idx, r := range results {
 		if r.Type == "" || r.Data == nil {
 			return nil, fmt.Errorf("checkmarx result %d is missing type or data: %w", idx, ErrInvalidMaterialType)
 		}
+		typeSet[strings.ToLower(r.Type)] = struct{}{}
 	}
 
 	if len(results) == 0 {
@@ -116,14 +136,36 @@ func (i *CheckmarxCrafter) Craft(ctx context.Context, filePath string) (*api.Att
 		return nil, err
 	}
 
-	i.injectAnnotations(m)
+	i.injectAnnotations(m, typeSet)
 
 	return m, nil
 }
 
-func (i *CheckmarxCrafter) injectAnnotations(m *api.Attestation_Material) {
+func (i *CheckmarxCrafter) injectAnnotations(m *api.Attestation_Material, typeSet map[string]struct{}) {
 	if m.Annotations == nil {
 		m.Annotations = make(map[string]string)
 	}
 	m.Annotations[AnnotationToolNameKey] = "checkmarx"
+
+	// Normalize the raw Checkmarx engine identifiers onto the canonical scan-type
+	// vocabulary, dropping any engine we cannot classify so no vendor-specific
+	// name leaks into the annotation.
+	scanTypes := map[string]struct{}{}
+	for raw := range typeSet {
+		scanType, ok := checkmarxEngineToScanType[raw]
+		if !ok {
+			i.logger.Debug().Str("engine", raw).Msg("unrecognized Checkmarx engine type, omitting from scan.types annotation")
+			continue
+		}
+		scanTypes[scanType] = struct{}{}
+	}
+
+	// Advertise the distinct scan types found in the report (sorted, comma-joined;
+	// e.g. "iac,sast,sca"). A clean/null report (or one with only unrecognized
+	// engines) yields no types, so the annotation is omitted rather than set
+	// empty: recognition then fails closed, the safe choice for a compliance gate.
+	if len(scanTypes) > 0 {
+		types := slices.Sorted(maps.Keys(scanTypes))
+		m.Annotations[AnnotationScanTypesKey] = strings.Join(types, ",")
+	}
 }
