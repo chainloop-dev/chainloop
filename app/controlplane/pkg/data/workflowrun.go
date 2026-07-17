@@ -99,9 +99,11 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 				return fmt.Errorf("creating version: %w", err)
 			}
 			versionCreated = true
-		case opts.BlockReleasedVersions || markAsLatest:
-			// Re-read the version inside the transaction with a row lock so a
-			// concurrent release can't slip past these checks.
+		default:
+			// Re-read the existing version inside the transaction with a row lock
+			// so a concurrent release or soft deletion can't slip past the checks
+			// below. The fresh row is the authoritative source for all subsequent
+			// promotion decisions in this transaction.
 			fresh, err := tx.ProjectVersion.Query().ForUpdate().
 				Where(projectversion.ID(version.ID), projectversion.ProjectID(wf.ProjectID), projectversion.DeletedAtIsNil()).
 				Only(ctx)
@@ -111,19 +113,51 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 				}
 				return fmt.Errorf("loading version: %w", err)
 			}
+			version = fresh
 
 			// Reject new attestations against an already-released (immutable) version.
 			if opts.BlockReleasedVersions && !fresh.Prerelease {
 				return biz.NewErrReleasedVersionImmutable(fresh.Version)
 			}
 
-			if markAsLatest {
+			switch {
+			case markAsLatest:
+				// Explicit --mark-latest=true: force promotion of a pre-release
+				// version. Released versions are rejected.
 				if !fresh.Prerelease {
 					return biz.NewErrValidationStr("cannot promote a released version to latest")
 				}
-
 				if err := promoteVersionToLatestWithTx(ctx, tx, wf.ProjectID, fresh.ID); err != nil {
 					return fmt.Errorf("promoting version to latest: %w", err)
+				}
+			case opts.MarkAsLatest != nil:
+				// Explicit --mark-latest=false (also the PR-mode sentinel): make no
+				// latest-state change. This suppression wins over automatic repair.
+			default:
+				// Omitted promotion intent (nil): auto-repair latest when the
+				// existing version is the newest active pre-release version in the
+				// project and it is not already latest. "Newest" means no other
+				// active version has a strictly greater immutable created_at, the
+				// same ordering the latest-version migration used. Released and
+				// already-latest versions are left untouched; released versions are
+				// never auto-promoted (only explicit true attempts promotion and is
+				// rejected above).
+				if fresh.Prerelease && !fresh.Latest {
+					newerExists, err := tx.ProjectVersion.Query().
+						Where(
+							projectversion.ProjectID(wf.ProjectID),
+							projectversion.DeletedAtIsNil(),
+							projectversion.CreatedAtGT(fresh.CreatedAt),
+						).
+						Exist(ctx)
+					if err != nil {
+						return fmt.Errorf("checking for newer versions: %w", err)
+					}
+					if !newerExists {
+						if err := promoteVersionToLatestWithTx(ctx, tx, wf.ProjectID, fresh.ID); err != nil {
+							return fmt.Errorf("promoting version to latest: %w", err)
+						}
+					}
 				}
 			}
 		}

@@ -826,16 +826,7 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 	})
 
 	s.T().Run("multiple new versions with mark-as-latest=false — none are latest", func(_ *testing.T) {
-		// Use a fresh workflow/project to start with a clean slate
-		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
-			Name: "ml-none-latest-wf", OrgID: s.org.ID, Project: "ml-none-latest-project",
-		})
-		s.Require().NoError(err)
-
-		// Delete the auto-created default version so we start with zero latest
-		_, err = s.Data.DB.ProjectVersion.Delete().
-			Where(entProjectVersion.ProjectID(wf.ProjectID)).Exec(ctx)
-		s.Require().NoError(err)
+		wf := s.createIsolatedWorkflow(ctx, "ml-none-latest-wf", "ml-none-latest-project")
 
 		markFalse := false
 		run1, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
@@ -863,14 +854,7 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 	})
 
 	s.T().Run("mark-as-latest=false then mark-as-latest=true on second version", func(_ *testing.T) {
-		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
-			Name: "ml-false-then-true-wf", OrgID: s.org.ID, Project: "ml-false-then-true-project",
-		})
-		s.Require().NoError(err)
-
-		_, err = s.Data.DB.ProjectVersion.Delete().
-			Where(entProjectVersion.ProjectID(wf.ProjectID)).Exec(ctx)
-		s.Require().NoError(err)
+		wf := s.createIsolatedWorkflow(ctx, "ml-false-then-true-wf", "ml-false-then-true-project")
 
 		// First version: not latest
 		markFalse := false
@@ -978,6 +962,132 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		s.Require().NoError(err)
 		s.False(run.ProjectVersion.Latest)
 	})
+
+	s.T().Run("omitted promotion repairs newest existing pre-release version", func(_ *testing.T) {
+		wf := s.createIsolatedWorkflow(ctx, "ml-repair-wf", "ml-repair-project")
+
+		// 1) v1 created normally -> latest=true.
+		runV1, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "repair-v1",
+		})
+		s.Require().NoError(err)
+		s.True(runV1.ProjectVersion.Latest)
+
+		// 2) v2 created with mark-as-latest=false (PR/explicit-false sentinel) -> v2 not latest, v1 stays latest.
+		markFalse := false
+		runV2PR, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "repair-v2", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(runV2PR.ProjectVersion.Latest)
+		v1AfterPR, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "repair-v1")
+		s.Require().NoError(err)
+		s.True(v1AfterPR.Latest)
+
+		// 3) Re-attest v2 with mark-as-latest=nil (omitted) -> v2 is the newest active pre-release and not latest, so it is repaired to latest, and v1 becomes non-latest.
+		runV2Repair, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "repair-v2",
+		})
+		s.Require().NoError(err)
+		s.True(runV2Repair.ProjectVersion.Latest)
+		v1AfterRepair, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "repair-v1")
+		s.Require().NoError(err)
+		s.False(v1AfterRepair.Latest)
+	})
+
+	s.T().Run("omitted promotion does not promote an older existing version over a newer one", func(_ *testing.T) {
+		wf := s.createIsolatedWorkflow(ctx, "ml-repair-older-wf", "ml-repair-older-project")
+
+		// v1 then v2, both created with nil (v2 becomes latest).
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "older-v1",
+		})
+		s.Require().NoError(err)
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "older-v2",
+		})
+		s.Require().NoError(err)
+
+		// Re-attest the older v1 with nil -> must NOT promote it over newer v2.
+		runOlder, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "older-v1",
+		})
+		s.Require().NoError(err)
+		s.False(runOlder.ProjectVersion.Latest)
+		v2After, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "older-v2")
+		s.Require().NoError(err)
+		s.True(v2After.Latest)
+	})
+
+	s.T().Run("explicit false suppression wins over automatic repair on newer version", func(_ *testing.T) {
+		wf := s.createIsolatedWorkflow(ctx, "ml-repair-suppress-wf", "ml-repair-suppress-project")
+
+		// v1 not latest, then v2 explicit-true -> v2 latest.
+		markFalse := false
+		_, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "suppress-v1", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		markTrue := true
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "suppress-v2", MarkAsLatest: &markTrue,
+		})
+		s.Require().NoError(err)
+
+		// Explicitly restore v1 as latest.
+		_, err = s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "suppress-v1", MarkAsLatest: &markTrue,
+		})
+		s.Require().NoError(err)
+		v1Restored, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "suppress-v1")
+		s.Require().NoError(err)
+		s.True(v1Restored.Latest)
+
+		// Re-attest the newer v2 with mark-as-latest=false (PR/explicit-false sentinel) -> v1 stays latest, v2 not promoted.
+		runV2Suppressed, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "suppress-v2", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(runV2Suppressed.ProjectVersion.Latest)
+		v1Final, err := s.ProjectVersion.FindByProjectAndVersion(ctx, wf.ProjectID.String(), "suppress-v1")
+		s.Require().NoError(err)
+		s.True(v1Final.Latest)
+	})
+
+	s.T().Run("omitted promotion on newest released version does not auto-promote", func(_ *testing.T) {
+		wf := s.createIsolatedWorkflow(ctx, "ml-repair-released-wf", "ml-repair-released-project")
+
+		// Create the newest version as non-latest (mark=false), then release it.
+		// This isolates the released-version guard from the already-latest short-circuit.
+		markFalse := false
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "released-newest", MarkAsLatest: &markFalse,
+		})
+		s.Require().NoError(err)
+		s.False(run.ProjectVersion.Latest)
+		_, err = s.ProjectVersion.UpdateReleaseStatus(ctx, run.ProjectVersion.ID.String(), true)
+		s.Require().NoError(err)
+
+		// Re-attest with nil (omitted) without the org released-version block -> succeeds, no auto-promotion.
+		run2, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: wf.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: "runnerType", RunnerRunURL: "runURL", ProjectVersion: "released-newest",
+		})
+		s.Require().NoError(err)
+		// Released versions are never auto-promoted; latest flag is unchanged.
+		s.False(run2.ProjectVersion.Latest)
+	})
 }
 
 func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
@@ -1021,6 +1131,20 @@ func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
 // Run the tests
 func TestWorkflowRunUseCase(t *testing.T) {
 	suite.Run(t, new(workflowRunIntegrationTestSuite))
+}
+
+// createIsolatedWorkflow creates a fresh workflow in its own project and
+// deletes the auto-created default version, so a subtest starts with a clean
+// latest-version slate. The caller drives the full lifecycle under test.
+func (s *workflowRunIntegrationTestSuite) createIsolatedWorkflow(ctx context.Context, name, project string) *biz.Workflow {
+	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+		Name: name, OrgID: s.org.ID, Project: project,
+	})
+	s.Require().NoError(err)
+	_, err = s.Data.DB.ProjectVersion.Delete().
+		Where(entProjectVersion.ProjectID(wf.ProjectID)).Exec(ctx)
+	s.Require().NoError(err)
+	return wf
 }
 
 // Utility struct to hold the test suite

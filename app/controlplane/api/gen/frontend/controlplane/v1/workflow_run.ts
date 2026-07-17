@@ -112,9 +112,11 @@ export interface AttestationServiceInitRequest {
   useLatestVersion: boolean;
   /**
    * Optional flag to control whether the version should be marked as the latest.
-   * Omitted: default behavior (new versions become latest).
-   * true: force promote to latest (only pre-release versions).
-   * false: skip latest promotion.
+   * Omitted (nil): new versions become latest, and an existing newest
+   * pre-release version is promoted to latest when it is not already latest.
+   * true: force promotion of a pre-release version to latest (released
+   * versions are rejected).
+   * false: skip latest promotion (also the sentinel sent by PR mode).
    * Mutually exclusive with use_latest_version.
    */
   markAsLatest?: boolean | undefined;

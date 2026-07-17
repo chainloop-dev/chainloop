@@ -342,6 +342,36 @@ func TestParseContractV2(t *testing.T) {
 	}
 }
 
+func TestExplicitMarkAsLatestTrue(t *testing.T) {
+	cases := []struct {
+		name string
+		v    *bool
+		want bool
+	}{
+		{
+			name: "nil pointer (flag not set) is not explicit-true",
+			v:    nil,
+			want: false,
+		},
+		{
+			name: "explicit false is not explicit-true",
+			v:    boolPtr(false),
+			want: false,
+		},
+		{
+			name: "explicit true is explicit-true",
+			v:    boolPtr(true),
+			want: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, explicitMarkAsLatestTrue(tc.v))
+		})
+	}
+}
+
 func TestResolvePRMode(t *testing.T) {
 	// resolvePRMode uses the override when provided (explicit --pr flag),
 	// otherwise falls back to DetectPRContext from the runner environment.
