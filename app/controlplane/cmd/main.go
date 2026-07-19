@@ -180,7 +180,6 @@ func main() {
 
 	// Start the background CAS Backend checker for DEFAULT backends (every 30 minutes)
 	if app.casBackendChecker != nil {
-
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
 			CheckInterval:           30 * time.Minute,
 			InitialDelay:            initialDelay,
@@ -288,6 +287,7 @@ func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err e
 		Environment:      sentryOpts.Environment,
 		Release:          Version,
 		AttachStacktrace: true,
+		BeforeSend:       servicelogger.SentryBeforeSend,
 	})
 
 	if err == nil {

@@ -167,6 +167,7 @@ func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err e
 		Environment:      sentryOpts.Environment,
 		Release:          Version,
 		AttachStacktrace: true,
+		BeforeSend:       servicelogger.SentryBeforeSend,
 	})
 
 	if err == nil {
