@@ -17,6 +17,7 @@ package biz_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -649,6 +650,46 @@ func (s *membershipIntegrationTestSuite) TestDeleteWithGroups() {
 func TestMembershipUseCase(t *testing.T) {
 	suite.Run(t, new(membershipIntegrationTestSuite))
 	suite.Run(t, new(membershipFilteringPaginationTestSuite))
+}
+
+// FindByOrgNameAndUser must not mask transient (non-NotFound) failures of the
+// org lookup as a fabricated "organization not found". A genuinely missing org
+// still has to surface as biz.NotFound so that ContextService.Current can
+// degrade gracefully instead of returning a captured gRPC 500 (see PFM-6775).
+func (s *membershipIntegrationTestSuite) TestFindByOrgNameAndUserPreservesTransientError() {
+	ctx := context.Background()
+
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.NoError(err)
+	user, err := s.User.UpsertByEmail(ctx, "transient@test.com", nil)
+	s.NoError(err)
+
+	userUUID, err := uuid.Parse(user.ID)
+	s.NoError(err)
+
+	s.Run("transient failure surfaces the real error, not a fake not-found", func() {
+		// A cancelled context makes the org query fail with a non-NotFound
+		// error against an org that actually exists. The underlying cause must
+		// be preserved (wrapped with %w) rather than masked. This asserts the
+		// data-layer contract ("non-NotFound is preserved"); how each transient
+		// class then maps to a gRPC status/Sentry is covered by the
+		// service-layer TestHandleUseCaseErr cases.
+		canceledCtx, cancel := context.WithCancel(ctx)
+		cancel()
+
+		_, err := s.Repos.Membership.FindByOrgNameAndUser(canceledCtx, org.Name, userUUID)
+		s.Error(err)
+		// The transient cause must remain observable...
+		s.True(errors.Is(err, context.Canceled), "expected the real error to be preserved, got: %v", err)
+		// ...and it must NOT be masked as a biz.NotFound.
+		s.False(biz.IsNotFound(err), "a transient failure must not be reported as not-found")
+	})
+
+	s.Run("genuinely missing org still returns biz.NotFound", func() {
+		_, err := s.Repos.Membership.FindByOrgNameAndUser(ctx, "non-existent-org-"+uuid.NewString(), userUUID)
+		s.Error(err)
+		s.True(biz.IsNotFound(err), "a missing org must map to biz.NotFound")
+	})
 }
 
 // Utility struct to hold the test suite

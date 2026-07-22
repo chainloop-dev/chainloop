@@ -228,7 +228,11 @@ func (r *MembershipRepo) FindByOrgNameAndUser(ctx context.Context, orgName strin
 		if ent.IsNotFound(err) {
 			return nil, biz.NewErrNotFound(fmt.Sprintf("organization %s not found", orgName))
 		}
-		return nil, fmt.Errorf("organization %s not found", orgName)
+		// Preserve the real error (e.g. context cancellation, statement/pool
+		// timeout) instead of masking a transient failure as a fake "not found".
+		// A fabricated not-found here would surface as a captured gRPC 500 in
+		// ContextService.Current rather than degrading gracefully (see PFM-6775).
+		return nil, fmt.Errorf("querying organization %q: %w", orgName, err)
 	}
 
 	m, err := r.data.DB.Membership.Query().Where(

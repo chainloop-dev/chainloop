@@ -30,6 +30,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// maskedClientMsg is the generic message servicelogger.LogAndMaskErr returns to
+// the client, hiding the real (potentially sensitive) server-side error.
+const maskedClientMsg = "server error"
+
 func TestHandleUseCaseErr(t *testing.T) {
 	t.Parallel()
 
@@ -81,7 +85,7 @@ func TestHandleUseCaseErr(t *testing.T) {
 			name:        "server-side status error is still masked",
 			err:         status.Error(codes.Unavailable, "connection to database lost"),
 			wantCode:    codes.Internal,
-			wantMessage: "server error",
+			wantMessage: maskedClientMsg,
 		},
 		{
 			name:        "validation error maps to bad request",
@@ -93,7 +97,28 @@ func TestHandleUseCaseErr(t *testing.T) {
 			name:        "unknown error is masked as internal server error",
 			err:         errors.New("sensitive details"),
 			wantCode:    codes.Internal,
-			wantMessage: "server error",
+			wantMessage: maskedClientMsg,
+		},
+		{
+			// PFM-6775: a transient org-lookup failure now surfaces the real DB
+			// cause up the stack (wrapped with %w by the data and biz layers).
+			// It must be masked as a generic internal error so the SQL detail
+			// never reaches the client, while the real error remains available
+			// for logging/Sentry.
+			name: "transient org-lookup failure is masked, SQL detail not leaked to client",
+			err: fmt.Errorf("failed to find membership: %w",
+				fmt.Errorf("querying organization %q: %w", "chainloop",
+					errors.New("pq: canceling statement due to statement timeout (SQLSTATE 57014)"))),
+			wantCode:    codes.Internal,
+			wantMessage: maskedClientMsg,
+		},
+		{
+			// PFM-6775: a genuinely missing org still maps to NotFound (never
+			// masked), so ContextService.Current can degrade gracefully.
+			name:        "genuinely missing org maps to not found",
+			err:         fmt.Errorf("failed to find membership: %w", biz.NewErrNotFound("organization chainloop")),
+			wantCode:    codes.NotFound,
+			wantMessage: "failed to find membership: organization chainloop not found",
 		},
 	}
 
