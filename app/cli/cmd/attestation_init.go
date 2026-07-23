@@ -201,7 +201,7 @@ func newAttestationInitCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&existingVersion, "existing-version", false, "return an error if the version doesn't exist in the project")
 	cmd.Flags().StringSliceVar(&collectors, "collectors", nil, "comma-separated list of additional collectors to enable (e.g. aiconfig)")
 	cmd.Flags().BoolVar(&markAsLatest, "mark-latest", true, "explicitly mark the project version as latest (default: automatic for new versions; use =false to skip promotion)")
-	cmd.Flags().BoolVar(&prMode, "pr", false, "mark this attestation as a pull/merge request build (sets the chainloop.dev/is-pull-request annotation; auto-detected from CI env if not set)")
+	cmd.Flags().BoolVar(&prMode, "pr", false, "mark this attestation as a pull/merge request build (skips latest promotion and sets the chainloop.dev/is-pull-request annotation; auto-detected from CI env if not set)")
 
 	return cmd
 }
