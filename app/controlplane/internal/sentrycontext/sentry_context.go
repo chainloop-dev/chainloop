@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/transport"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -89,12 +90,23 @@ func buildRequestContext(ctx context.Context, req interface{}) map[string]interf
 		operation = info.Operation()
 	}
 
-	return map[string]interface{}{
+	requestContext := map[string]interface{}{
 		"protocol":   protocol,
 		"operation":  operation,
 		"args":       extractArgs(req),
 		"request-id": extractTracingIDFromMetadata(ctx),
 	}
+
+	// Surface the OpenTelemetry trace/span IDs so a Sentry event can be cross-referenced
+	// with its distributed trace in the OTLP backend (Tempo/Jaeger). The gRPC server is
+	// instrumented via otelgrpc, so a valid span context is present on ctx when tracing is
+	// enabled. These are informational fields and do not alter Sentry's canonical trace_id.
+	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
+		requestContext["otel-trace-id"] = sc.TraceID().String()
+		requestContext["otel-span-id"] = sc.SpanID().String()
+	}
+
+	return requestContext
 }
 
 // extractTracingIDFromMetadata extracts the tracing ID from the metadata.
