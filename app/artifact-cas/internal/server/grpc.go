@@ -17,6 +17,7 @@ package server
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"crypto/tls"
 	"fmt"
 	"os"
@@ -52,21 +53,15 @@ import (
 
 // NewGRPCServer new a gRPC server.
 func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, validator protovalidate.Validator, logger log.Logger) (*grpc.Server, error) {
-	log := log.NewHelper(logger)
-	// Load the key on initialization instead of on every request
+	// Parse the public key once on initialization instead of on every request
 	// TODO: implement jwks endpoint
-	publicKeyPath := authConf.GetPublicKeyPath()
-	if publicKeyPath == "" {
-		// Maintain backwards compatibility
-		publicKeyPath = authConf.RobotAccountPublicKeyPath
-	}
-
-	log.Debugw("msg", "loading public key from file", "file", publicKeyPath)
-
-	rawKey, err := os.ReadFile(publicKeyPath)
+	publicKey, err := parsePublicKey(authConf, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load public key: %w", err)
+		return nil, err
 	}
+
+	// Share a single keyfunc closure over the parsed key across all interceptors
+	keyFunc := loadPublicKey(publicKey)
 
 	var opts = []grpc.ServerOption{
 		// Kratos middleware are in practice unary interceptors
@@ -83,7 +78,7 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 			// If we require a logged in user we
 			selector.Server(
 				jwtMiddleware.Server(
-					loadPublicKey(rawKey),
+					keyFunc,
 					jwtMiddleware.WithSigningMethod(casJWT.SigningMethod),
 					jwtMiddleware.WithClaims(func() jwt.Claims { return &casJWT.Claims{} })),
 			).Match(requireAuthentication()).Build(),
@@ -92,7 +87,7 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 		// Streaming interceptors
 		grpc.StreamInterceptor(
 			grpcselector.StreamServerInterceptor(
-				grpc_auth.StreamServerInterceptor(jwtAuthFunc(loadPublicKey(rawKey), casJWT.SigningMethod)),
+				grpc_auth.StreamServerInterceptor(jwtAuthFunc(keyFunc, casJWT.SigningMethod)),
 				grpcselector.MatchFunc(allButReflectionAPI),
 			),
 			// grpc prometheus metrics
@@ -163,10 +158,38 @@ func allButReflectionAPI(_ context.Context, callMeta interceptors.CallMeta) bool
 	return !reflectionServiceRegexp.MatchString(callMeta.Service)
 }
 
-// load key for verification
-func loadPublicKey(rawKey []byte) jwt.Keyfunc {
-	return func(token *jwt.Token) (interface{}, error) {
-		return jwt.ParseECPublicKeyFromPEM(rawKey)
+// parsePublicKey resolves the configured public key path, reads the file and parses
+// the EC public key once. A malformed key therefore fails at server construction
+// instead of surfacing as a per-request authentication error.
+func parsePublicKey(authConf *conf.Auth, logger log.Logger) (*ecdsa.PublicKey, error) {
+	l := log.NewHelper(logger)
+
+	publicKeyPath := authConf.GetPublicKeyPath()
+	if publicKeyPath == "" {
+		// Maintain backwards compatibility with the deprecated field.
+		publicKeyPath = authConf.RobotAccountPublicKeyPath //nolint:staticcheck // intentional fallback to the deprecated field
+	}
+
+	l.Debugw("msg", "loading public key from file", "file", publicKeyPath)
+
+	rawKey, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load public key: %w", err)
+	}
+
+	publicKey, err := jwt.ParseECPublicKeyFromPEM(rawKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
+	}
+
+	return publicKey, nil
+}
+
+// loadPublicKey returns a jwt.Keyfunc that hands back the pre-parsed public key,
+// avoiding a PEM re-parse on every request.
+func loadPublicKey(publicKey *ecdsa.PublicKey) jwt.Keyfunc {
+	return func(_ *jwt.Token) (interface{}, error) {
+		return publicKey, nil
 	}
 }
 

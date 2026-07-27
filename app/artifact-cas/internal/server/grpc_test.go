@@ -22,7 +22,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
+	"github.com/go-kratos/kratos/v2/log"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
@@ -178,6 +180,60 @@ func TestAllButReflectionAPI(t *testing.T) {
 
 	for _, op := range testCases {
 		assert.Equal(t, allButReflectionAPI(context.TODO(), op.callMeta), op.expected)
+	}
+}
+
+func TestLoadPublicKey(t *testing.T) {
+	rawKey, err := os.ReadFile("./testdata/test-key.ec.pub")
+	require.NoError(t, err)
+	want, err := jwt.ParseECPublicKeyFromPEM(rawKey)
+	require.NoError(t, err)
+
+	// The keyfunc must hand back the pre-parsed key without re-parsing the PEM
+	got, err := loadPublicKey(want)(&jwt.Token{})
+	require.NoError(t, err)
+	assert.Same(t, want, got)
+}
+
+func TestParsePublicKey(t *testing.T) {
+	testCases := []struct {
+		name     string
+		authConf *conf.Auth
+		wantErr  string
+	}{
+		{
+			name:     "valid public key via PublicKeyPath",
+			authConf: &conf.Auth{PublicKeyPath: "./testdata/test-key.ec.pub"},
+		},
+		{
+			name:     "valid public key via deprecated RobotAccountPublicKeyPath",
+			authConf: &conf.Auth{RobotAccountPublicKeyPath: "./testdata/test-key.ec.pub"},
+		},
+		{
+			name:     "missing file",
+			authConf: &conf.Auth{PublicKeyPath: "./testdata/does-not-exist.pub"},
+			wantErr:  "failed to load public key",
+		},
+		{
+			name:     "not a public key PEM",
+			authConf: &conf.Auth{PublicKeyPath: "./testdata/test-key.ec.pem"},
+			wantErr:  "failed to parse public key",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parsePublicKey(tc.authConf, log.DefaultLogger)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tc.wantErr)
+				assert.Nil(t, got)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.NotNil(t, got)
+		})
 	}
 }
 
