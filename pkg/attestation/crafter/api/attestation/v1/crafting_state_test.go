@@ -331,6 +331,42 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 	}
 }
 
+// TestDranzerBundleIsEvaluable guards that a CERTCC_DRANZER material holding an
+// archive of per-mode reports projects to an aggregate the existing
+// activex-controls-fuzzed policy can evaluate. Recording the archive whole
+// without aggregating would hand the policy engine zip bytes, which parse to an
+// empty report and make the policy *skip* — a clean-looking false pass.
+func TestDranzerBundleIsEvaluable(t *testing.T) {
+	m := &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_CERTCC_DRANZER,
+		M: &Attestation_Material_Artifact_{
+			Artifact: &Attestation_Material_Artifact{Name: "dranzer-report", Digest: "sha256:deadbeef"},
+		},
+	}
+
+	content, err := m.GetEvaluableContent("testdata/dranzer-bundle.zip")
+	require.NoError(t, err)
+
+	var decoded map[string]any
+	require.NoError(t, json.NewDecoder(bytes.NewReader(content)).Decode(&decoded))
+
+	// The policy reads tool.name and needs run evidence to avoid skipping.
+	assert.Equal(t, "dranzer", decoded["tool"].(map[string]any)["name"])
+	assert.Equal(t, "96", decoded["tool"].(map[string]any)["version"])
+
+	// failed_count sums across the bundle, so the -t mode's single failure is
+	// what makes the gate fire.
+	summary := decoded["summary"].(map[string]any)
+	assert.EqualValues(t, 1, summary["failed_count"])
+	assert.EqualValues(t, 0, summary["hung_count"])
+	assert.EqualValues(t, 16, summary["object_count"])
+
+	assert.Len(t, decoded["findings"], 1, "the -t report's crash finding must survive aggregation")
+
+	// The CSV companion is not a report, so only the four modes are listed.
+	assert.Len(t, decoded["reports"], 4)
+}
+
 // TestCoberturaEmptyReportIsEvaluable guards the requirement that a legitimate
 // empty coverage report (line-rate="NaN", no packages) projects to valid JSON
 // the policy engine can evaluate — instead of failing with a NaN marshal error,
