@@ -293,7 +293,11 @@ export enum CraftingSchema_Material_MaterialType {
   SYSINTERNALS_SIGCHECK = 34,
   /** SYSINTERNALS_ACCESSCHK - Sysinternals AccessChk text output https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk */
   SYSINTERNALS_ACCESSCHK = 35,
-  /** CERTCC_DRANZER - CERT/CC dranzer ActiveX/COM control test report (plain text) https://github.com/CERTCC/dranzer */
+  /**
+   * CERTCC_DRANZER - CERT/CC dranzer ActiveX/COM control test report (plain text): a single
+   * report or an archive (zip or tar.gz) holding the per-mode reports of one
+   * run (-b, -p, -s, -t) https://github.com/CERTCC/dranzer
+   */
   CERTCC_DRANZER = 36,
   /**
    * OSSF_SCORECARD_JSON - OpenSSF Scorecard result in JSON format

@@ -75,8 +75,10 @@ type Tool struct {
 // Finding is a single error reported against a COM object during the run. The
 // header failure blocks populate CLSID/ClassName/ErrorCode/ErrorMessage; the
 // inline access-violation and exception blocks additionally populate Method,
-// Address and AccessType.
+// Address and AccessType. Source names the archive entry the finding came from
+// when the material is a bundle of reports, and is empty otherwise.
 type Finding struct {
+	Source       string `json:"source,omitempty"`
 	CLSID        string `json:"clsid,omitempty"`
 	ClassName    string `json:"class_name,omitempty"`
 	Method       string `json:"method,omitempty"`
@@ -88,8 +90,11 @@ type Finding struct {
 
 // Object is a single COM/ActiveX control described in the report, with its
 // version/identity metadata. Only the per-object test modes (e.g. -t) emit
-// these blocks; summary-only modes (-b/-p/-s) leave Objects empty.
+// these blocks; summary-only modes (-b/-p/-s) leave Objects empty. Source names
+// the archive entry it came from when the material is a bundle of reports, and is
+// empty otherwise.
 type Object struct {
+	Source      string            `json:"source,omitempty"`
 	CLSID       string            `json:"clsid,omitempty"`
 	Description string            `json:"description,omitempty"`
 	Metadata    map[string]string `json:"metadata,omitempty"`
@@ -108,8 +113,14 @@ type Summary struct {
 	Counters    map[string]int `json:"counters,omitempty"`
 }
 
-// Report is the structured projection of a dranzer run.
+// Report is the structured projection of a dranzer run. Source names the
+// archive entry it was read from when the material is a bundle of reports, and
+// is empty for a single-file material.
+//
+// Raw is always emitted, even when empty, so a policy reading input.raw for a
+// string-matching fallback finds a string rather than an undefined key.
 type Report struct {
+	Source   string    `json:"source,omitempty"`
 	Tool     Tool      `json:"tool"`
 	Objects  []Object  `json:"objects"`
 	Findings []Finding `json:"findings"`
@@ -255,21 +266,32 @@ func inlineFinding(current *Object, f Finding) Finding {
 // applyCounter records a summary counter both in the explicit field that maps to
 // its well-known label and, always, in the Counters map under a normalized key.
 func (r *Report) applyCounter(label string, value int) {
-	label = strings.TrimSpace(label)
-	r.Summary.Counters[normalizeKey(label)] = value
+	key := normalizeKey(label)
+	r.Summary.Counters[key] = value
 
-	switch strings.ToLower(label) {
-	case "com objects":
-		r.Summary.ObjectCount = value
-	case "com objects with kill bit":
-		r.Summary.KillBit = value
-	case "com objects passed test":
-		r.Summary.Passed = value
-	case "com objects failed test":
-		r.Summary.Failed = value
-	case "com objects hung during test":
-		r.Summary.Hung = value
+	if field := r.Summary.wellKnownCounter(key); field != nil {
+		*field = value
 	}
+}
+
+// wellKnownCounter returns the explicit Summary field mirroring the normalized
+// counter key, or nil for a counter that only lives in the Counters map. It is
+// the single definition of that mapping, so recording a counter and aggregating
+// counters across a bundle cannot disagree about which field a label feeds.
+func (s *Summary) wellKnownCounter(key string) *int {
+	switch key {
+	case "com_objects":
+		return &s.ObjectCount
+	case "com_objects_with_kill_bit":
+		return &s.KillBit
+	case "com_objects_passed_test":
+		return &s.Passed
+	case "com_objects_failed_test":
+		return &s.Failed
+	case "com_objects_hung_during_test":
+		return &s.Hung
+	}
+	return nil
 }
 
 // normalizeKey turns a human label such as "COM Object Filename" into a stable
@@ -301,13 +323,27 @@ func isSeparatorLine(trimmed string) bool {
 }
 
 // LooksLikeDranzer reports whether the parsed report resembles genuine dranzer
-// output. It is deliberately lenient: the test-engine version banner, a parsed
-// object or finding, or the recognizable run-summary line is enough.
+// output. It is lenient about structure — a test-engine version banner, a parsed
+// object, a parsed finding, or any parsed run counter is enough, and every mode
+// emits the banner — but it judges only what the parser actually extracted, never
+// the presence of a phrase in the raw text.
+//
+// That distinction matters because dranzer bundles ship a CSV companion beside the
+// reports which quotes both the per-object banner and an error line inside its
+// columns. A raw substring match accepts such a file even though it yields no
+// version, objects, findings or counters; it would then be recorded as dranzer
+// evidence and *skip* policy evaluation, which on a compliance gate is
+// indistinguishable from a clean run. Genuine reports put the banner and the
+// counters on their own lines, where the line-anchored patterns match them, so
+// nothing real is lost.
+//
+// A parsed counter counts even when its value is zero, so a legitimate run that
+// found no COM objects is still recognized.
 func (r *Report) LooksLikeDranzer() bool {
-	if r.Tool.Version != "" || len(r.Objects) > 0 || len(r.Findings) > 0 {
-		return true
-	}
-	return strings.Contains(r.Raw, "Testing COM Object -") || strings.Contains(r.Raw, "Number of COM Objects")
+	return r.Tool.Version != "" ||
+		len(r.Objects) > 0 ||
+		len(r.Findings) > 0 ||
+		len(r.Summary.Counters) > 0
 }
 
 // JSON returns the report serialized as JSON for the policy engine.

@@ -229,7 +229,9 @@ const (
 	CraftingSchema_Material_SYSINTERNALS_SIGCHECK CraftingSchema_Material_MaterialType = 34
 	// Sysinternals AccessChk text output https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk
 	CraftingSchema_Material_SYSINTERNALS_ACCESSCHK CraftingSchema_Material_MaterialType = 35
-	// CERT/CC dranzer ActiveX/COM control test report (plain text) https://github.com/CERTCC/dranzer
+	// CERT/CC dranzer ActiveX/COM control test report (plain text): a single
+	// report or an archive (zip or tar.gz) holding the per-mode reports of one
+	// run (-b, -p, -s, -t) https://github.com/CERTCC/dranzer
 	CraftingSchema_Material_CERTCC_DRANZER CraftingSchema_Material_MaterialType = 36
 	// OpenSSF Scorecard result in JSON format
 	// https://github.com/ossf/scorecard
