@@ -610,10 +610,9 @@ func (s *testSuite) TestPrefixSelectorMultiRoleSeparation() {
 		{"release suffixed routes to the release role only", "release-scan-2", 1},
 		{"unrelated name routes to neither role", "other-scan", 0},
 	}
+	pv := NewPolicyVerifier(&v12.Policies{Materials: atts}, nil, &s.logger)
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			schema := &v12.CraftingSchema{Policies: &v12.Policies{Materials: atts}}
-			pv := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 			material := &v1.Attestation_Material{
 				Id:           tc.id,
 				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},

@@ -21,9 +21,10 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -1090,13 +1091,7 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveCombinations() {
 
 	// keys returns the sorted material names currently in the crafting state.
 	keys := func(c *testingCrafter) []string {
-		mats := c.CraftingState.GetAttestation().GetMaterials()
-		out := make([]string, 0, len(mats))
-		for k := range mats {
-			out = append(out, k)
-		}
-		sort.Strings(out)
-		return out
+		return slices.Sorted(maps.Keys(c.CraftingState.GetAttestation().GetMaterials()))
 	}
 
 	s.Run("uncompressed tar explodes named-first in sorted order", func() {

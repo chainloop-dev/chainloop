@@ -16,7 +16,6 @@
 package action
 
 import (
-	"archive/zip"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,16 +30,7 @@ import (
 func writeTestZip(t *testing.T, dir, name string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
-	f, err := os.Create(path)
-	require.NoError(t, err)
-	defer f.Close()
-
-	w := zip.NewWriter(f)
-	entry, err := w.Create("entry.txt")
-	require.NoError(t, err)
-	_, err = entry.Write([]byte("hello"))
-	require.NoError(t, err)
-	require.NoError(t, w.Close())
+	writeZipWithFiles(t, path, map[string]string{"entry.txt": "hello"})
 	return path
 }
 
