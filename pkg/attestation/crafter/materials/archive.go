@@ -325,6 +325,9 @@ func SanitizeMaterialName(s string) string {
 type NameAllocator struct {
 	used map[string]struct{}
 	seq  int
+	// named tracks, per sanitized base, the next suffix to try so AllocateNamed
+	// yields "<base>", "<base>-1", "<base>-2", … deterministically.
+	named map[string]int
 }
 
 // NewNameAllocator seeds the allocator with existing material names.
@@ -349,6 +352,35 @@ func (a *NameAllocator) AllocateSequential(prefix string) string {
 	for {
 		candidate := fmt.Sprintf("%s-%d", base, a.seq)
 		a.seq++
+		if _, taken := a.used[candidate]; !taken {
+			a.used[candidate] = struct{}{}
+			return candidate
+		}
+	}
+}
+
+// AllocateNamed returns a unique material name derived from base: the bare
+// sanitized base on first use, then "<base>-1", "<base>-2", …. It skips names
+// already in use (seeded existing materials or a base reused across archives)
+// and falls back to the "material" base when base sanitizes to empty. Callers
+// that want the whole set named deterministically must feed entries in a stable
+// order (the explode path sorts entries by name before allocating).
+func (a *NameAllocator) AllocateNamed(base string) string {
+	b := defaultMaterialName
+	if s := SanitizeMaterialName(base); s != "" {
+		b = s
+	}
+	if a.named == nil {
+		a.named = make(map[string]int)
+	}
+
+	for {
+		n := a.named[b]
+		a.named[b]++
+		candidate := b
+		if n > 0 {
+			candidate = fmt.Sprintf("%s-%d", b, n)
+		}
 		if _, taken := a.used[candidate]; !taken {
 			a.used[candidate] = struct{}{}
 			return candidate

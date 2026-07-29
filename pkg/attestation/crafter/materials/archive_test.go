@@ -273,6 +273,33 @@ func TestNameAllocatorSequential(t *testing.T) {
 	})
 }
 
+func TestNameAllocatorNamed(t *testing.T) {
+	t.Run("first is the bare name, rest are positional suffixes", func(t *testing.T) {
+		a := NewNameAllocator(nil)
+		assert.Equal(t, "scan-report", a.AllocateNamed("scan-report"))
+		assert.Equal(t, "scan-report-1", a.AllocateNamed("scan-report"))
+		assert.Equal(t, "scan-report-2", a.AllocateNamed("scan-report"))
+	})
+
+	t.Run("name is sanitized", func(t *testing.T) {
+		a := NewNameAllocator(nil)
+		assert.Equal(t, "q3-scans", a.AllocateNamed("Q3 Scans"))
+		assert.Equal(t, "q3-scans-1", a.AllocateNamed("Q3 Scans"))
+	})
+
+	t.Run("collision with an existing material skips the bare name", func(t *testing.T) {
+		a := NewNameAllocator([]string{"scan-report"})
+		assert.Equal(t, "scan-report-1", a.AllocateNamed("scan-report"))
+		assert.Equal(t, "scan-report-2", a.AllocateNamed("scan-report"))
+	})
+
+	t.Run("empty/symbol-only name falls back to material", func(t *testing.T) {
+		a := NewNameAllocator(nil)
+		assert.Equal(t, "material", a.AllocateNamed(""))
+		assert.Equal(t, "material-1", a.AllocateNamed("!!!"))
+	})
+}
+
 func TestIsExplodableKind(t *testing.T) {
 	// Explodable: SBOM and SARIF bundles.
 	assert.True(t, IsExplodableKind("SBOM_CYCLONEDX_JSON"))

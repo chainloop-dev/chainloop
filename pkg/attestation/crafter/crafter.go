@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -885,19 +886,22 @@ func (c *Crafter) AddMaterialsFromArchive(
 		c.CraftingState.Attestation.PolicyEvaluations = c.CraftingState.Attestation.PolicyEvaluations[:policyEvalCheckpoint]
 	}
 
-	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
-		// Material names are sequential ("<prefix>-1", "<prefix>-2", … or
-		// "material-N" with no prefix). The original basename is still derived
-		// (with archive "/" semantics, OS-independently) and used for the temp
-		// file so the recorded artifact filename preserves the real name.
-		base := materials.ArchiveEntryBaseName(name)
-		matName := allocator.AllocateSequential(namePrefix)
+	// First pass: extract every entry to its own temp file. Material names are
+	// assigned in a second pass over a sorted list so the file→name mapping is
+	// deterministic and reproducible, independent of the order the archive
+	// writer stored the entries. Each entry gets its own temp subdirectory so
+	// two entries sharing a basename (e.g. "a/x.json" and "b/x.json") never
+	// collide, while the temp file keeps the original basename so the recorded
+	// material metadata preserves the real filename.
+	type archiveEntry struct {
+		name    string // in-archive path; drives the deterministic ordering
+		tmpPath string
+	}
+	var entries []archiveEntry
 
-		// Give each entry its own temp subdirectory (named by the unique material
-		// name) so two entries sharing a basename (e.g. "a/x.json" and "b/x.json")
-		// never collide, while the temp file itself keeps the original basename so
-		// the recorded material metadata preserves the real filename.
-		entryDir, err := os.MkdirTemp(tmpDir, matName+"-*")
+	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
+		base := materials.ArchiveEntryBaseName(name)
+		entryDir, err := os.MkdirTemp(tmpDir, "entry-*")
 		if err != nil {
 			return fmt.Errorf("creating temp dir for entry %q: %w", name, err)
 		}
@@ -916,34 +920,40 @@ func (c *Crafter) AddMaterialsFromArchive(
 			return fmt.Errorf("closing temp file for entry %q: %w", name, err)
 		}
 
+		entries = append(entries, archiveEntry{name: name, tmpPath: tmpPath})
+		return nil
+	})
+	if walkErr != nil {
+		return nil, fmt.Errorf("expanding archive %q: %w", archivePath, walkErr)
+	}
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("archive %q contains no processable entries", archivePath)
+	}
+
+	// Deterministic order: sort by the normalized ("/"-separated) entry path so
+	// the same archive content always yields the same material names, and the
+	// first sorted entry takes the exact --name (namePrefix).
+	sort.SliceStable(entries, func(i, j int) bool {
+		return strings.ReplaceAll(entries[i].name, "\\", "/") < strings.ReplaceAll(entries[j].name, "\\", "/")
+	})
+
+	// Second pass: name (first entry = exact prefix, then "<prefix>-1", …) and stage.
+	for _, e := range entries {
+		matName := allocator.AllocateNamed(namePrefix)
 		m := &schemaapi.CraftingSchema_Material{
 			Optional: true,
 			Type:     materialKind,
 			Name:     matName,
 		}
 
-		mt, err := c.stageMaterial(ctx, m, tmpPath, casBackend, runtimeAnnotations, opts...)
-		// Remove the entry's temp subdir immediately after staging to keep disk
-		// usage bounded; the deferred os.RemoveAll(tmpDir) is the safety net.
-		os.RemoveAll(entryDir) //nolint:errcheck // best-effort cleanup
+		mt, err := c.stageMaterial(ctx, m, e.tmpPath, casBackend, runtimeAnnotations, opts...)
 		if err != nil {
-			return fmt.Errorf("staging entry %q as material %q: %w", name, matName, err)
+			rollback()
+			return nil, fmt.Errorf("staging entry %q as material %q: %w", e.name, matName, err)
 		}
 
 		stagedNames = append(stagedNames, matName)
 		result = append(result, mt)
-		return nil
-	})
-
-	if walkErr != nil {
-		// Roll back any in-memory staging: remove material map entries and
-		// truncate policy evaluations back to the pre-call checkpoint.
-		rollback()
-		return nil, fmt.Errorf("expanding archive %q: %w", archivePath, walkErr)
-	}
-
-	if len(result) == 0 {
-		return nil, fmt.Errorf("archive %q contains no processable entries", archivePath)
 	}
 
 	// All entries staged successfully; persist once.

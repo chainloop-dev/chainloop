@@ -773,17 +773,18 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
 
-		// Material names are sequential (0-indexed) with the --name value as
-		// prefix, independent of the entry order.
-		m1, has1 := stateMap["entry-0"]
+		// The first entry (in sorted path order) takes the exact --name; the
+		// rest get stable positional suffixes. alpha.txt sorts before beta.txt.
+		m1, has1 := stateMap["entry"]
 		m2, has2 := stateMap["entry-1"]
-		assert.True(s.T(), has1, "expected material entry-0 in state")
+		assert.True(s.T(), has1, "expected material entry in state")
 		assert.True(s.T(), has2, "expected material entry-1 in state")
 
 		// The recorded artifact filename must preserve each original entry
-		// basename, not the sequential material key.
-		gotFilenames := []string{m1.GetArtifact().GetName(), m2.GetArtifact().GetName()}
-		assert.ElementsMatch(s.T(), []string{"alpha.txt", "beta.txt"}, gotFilenames)
+		// basename, not the derived material key. Deterministic sorted order:
+		// entry -> alpha.txt, entry-1 -> beta.txt.
+		assert.Equal(s.T(), "alpha.txt", m1.GetArtifact().GetName())
+		assert.Equal(s.T(), "beta.txt", m2.GetArtifact().GetName())
 	})
 
 	s.Run("atomicity: over-tight limit leaves state empty", func() {
@@ -906,14 +907,15 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
-		// Entries sharing a basename still get distinct sequential names.
-		_, hasMat0 := stateMap["material-0"]
+		// Entries sharing a basename still get distinct names: no --name given,
+		// so the first sorted entry is "material" and the next "material-1".
+		_, hasMat := stateMap["material"]
 		_, hasMat1 := stateMap["material-1"]
-		assert.True(s.T(), hasMat0, "expected material material-0 in state")
+		assert.True(s.T(), hasMat, "expected material material in state")
 		assert.True(s.T(), hasMat1, "expected material material-1 in state")
 	})
 
-	s.Run("name prefix: used as the sequential name prefix", func() {
+	s.Run("name: first entry takes the exact --name", func() {
 		dir := s.T().TempDir()
 		p := filepath.Join(dir, "prefix.zip")
 		buildZip(s.T(), p, map[string]string{
@@ -935,8 +937,8 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 1)
-		_, found := stateMap["sboms-0"]
-		assert.True(s.T(), found, "expected material sboms-0 in state")
+		_, found := stateMap["sboms"]
+		assert.True(s.T(), found, "expected material sboms in state")
 	})
 
 	s.Run("skip dirs and symlinks in tar.gz: only regular file becomes material", func() {
@@ -963,8 +965,8 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 1)
-		realMat, hasReal := stateMap["material-0"]
-		assert.True(s.T(), hasReal, "expected material material-0 in state")
+		realMat, hasReal := stateMap["material"]
+		assert.True(s.T(), hasReal, "expected material material in state")
 		// The original filename is still preserved in the artifact metadata.
 		assert.Equal(s.T(), "real.txt", realMat.GetArtifact().GetName())
 	})
@@ -1020,13 +1022,47 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 
 		stateMap := c.CraftingState.GetAttestation().GetMaterials()
 		assert.Len(s.T(), stateMap, 2)
-		m1, has1 := stateMap["material-0"]
+		m1, has1 := stateMap["material"]
 		m2, has2 := stateMap["material-1"]
-		assert.True(s.T(), has1, "expected material material-0 in state")
+		assert.True(s.T(), has1, "expected material material in state")
 		assert.True(s.T(), has2, "expected material material-1 in state")
-		// Original filenames preserved regardless of the sequential keys.
-		gotFilenames := []string{m1.GetArtifact().GetName(), m2.GetArtifact().GetName()}
-		assert.ElementsMatch(s.T(), []string{"alpha.txt", "beta.txt"}, gotFilenames)
+		// Deterministic sorted order: material -> alpha.txt, material-1 -> beta.txt.
+		assert.Equal(s.T(), "alpha.txt", m1.GetArtifact().GetName())
+		assert.Equal(s.T(), "beta.txt", m2.GetArtifact().GetName())
+	})
+
+	s.Run("reproducible: names map to entries by sorted path, independent of stored order", func() {
+		// Build two archives with the same three files; map iteration in buildZip
+		// stores them in arbitrary order, so this also exercises order-independence.
+		dir := s.T().TempDir()
+		p1 := filepath.Join(dir, "one.zip")
+		p2 := filepath.Join(dir, "two.zip")
+		files := map[string]string{"m.json": "1", "a.json": "2", "z.json": "3"}
+		buildZip(s.T(), p1, files)
+		buildZip(s.T(), p2, files)
+
+		mapping := func(p string) map[string]string {
+			runner := runners.NewGeneric()
+			c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runner)
+			require.NoError(s.T(), err)
+			_, err = c.AddMaterialsFromArchive(
+				context.Background(),
+				"", "ARTIFACT", "scan", p,
+				materials.ArchiveZip, backend, nil,
+				materials.DefaultArchiveLimits(),
+			)
+			require.NoError(s.T(), err)
+			out := map[string]string{}
+			for k, m := range c.CraftingState.GetAttestation().GetMaterials() {
+				out[k] = m.GetArtifact().GetName()
+			}
+			return out
+		}
+
+		// Sorted paths a.json < m.json < z.json → scan, scan-1, scan-2.
+		want := map[string]string{"scan": "a.json", "scan-1": "m.json", "scan-2": "z.json"}
+		assert.Equal(s.T(), want, mapping(p1))
+		assert.Equal(s.T(), want, mapping(p2), "same content must yield an identical name→file mapping")
 	})
 }
 
