@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -880,6 +881,21 @@ func buildTarGz(t *testing.T, path string, regular map[string]string, dirs []str
 	require.NoError(t, gw.Close())
 }
 
+// buildTar creates an uncompressed .tar archive of regular files.
+func buildTar(t *testing.T, path string, regular map[string]string) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	tw := tar.NewWriter(f)
+	for name, content := range regular {
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: name, Typeflag: tar.TypeReg, Mode: 0o600, Size: int64(len(content))}))
+		_, err = tw.Write([]byte(content))
+		require.NoError(t, err)
+	}
+	require.NoError(t, tw.Close())
+}
+
 func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 	const contract = "testdata/contracts/empty_generic.yaml"
 	backend := &casclient.CASBackend{}
@@ -1063,6 +1079,101 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveBehavior() {
 		want := map[string]string{"scan": "a.json", "scan-1": "m.json", "scan-2": "z.json"}
 		assert.Equal(s.T(), want, mapping(p1))
 		assert.Equal(s.T(), want, mapping(p2), "same content must yield an identical name→file mapping")
+	})
+}
+
+// TestAddMaterialsFromArchiveCombinations battle-tests the explode path across
+// archive formats, naming scenarios, and failure/rollback paths.
+func (s *crafterSuite) TestAddMaterialsFromArchiveCombinations() {
+	const contract = "testdata/contracts/empty_generic.yaml"
+	backend := &casclient.CASBackend{}
+
+	// keys returns the sorted material names currently in the crafting state.
+	keys := func(c *testingCrafter) []string {
+		mats := c.CraftingState.GetAttestation().GetMaterials()
+		out := make([]string, 0, len(mats))
+		for k := range mats {
+			out = append(out, k)
+		}
+		sort.Strings(out)
+		return out
+	}
+
+	s.Run("uncompressed tar explodes named-first in sorted order", func() {
+		p := filepath.Join(s.T().TempDir(), "u.tar")
+		buildTar(s.T(), p, map[string]string{"b.txt": "b", "a.txt": "a"})
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runners.NewGeneric())
+		require.NoError(s.T(), err)
+
+		mts, err := c.AddMaterialsFromArchive(context.Background(), "", "ARTIFACT", "scan", p, materials.ArchiveTar, backend, nil, materials.DefaultArchiveLimits())
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 2)
+		state := c.CraftingState.GetAttestation().GetMaterials()
+		assert.Equal(s.T(), []string{"scan", "scan-1"}, keys(c))
+		// a.txt sorts first → exact name; b.txt → scan-1.
+		assert.Equal(s.T(), "a.txt", state["scan"].GetArtifact().GetName())
+		assert.Equal(s.T(), "b.txt", state["scan-1"].GetArtifact().GetName())
+	})
+
+	s.Run("named with multiple entries: name, name-1, name-2", func() {
+		p := filepath.Join(s.T().TempDir(), "multi.zip")
+		buildZip(s.T(), p, map[string]string{"c.json": "3", "a.json": "1", "b.json": "2"})
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runners.NewGeneric())
+		require.NoError(s.T(), err)
+
+		mts, err := c.AddMaterialsFromArchive(context.Background(), "", "ARTIFACT", "scan", p, materials.ArchiveZip, backend, nil, materials.DefaultArchiveLimits())
+		require.NoError(s.T(), err)
+		assert.Len(s.T(), mts, 3)
+		assert.Equal(s.T(), []string{"scan", "scan-1", "scan-2"}, keys(c))
+	})
+
+	s.Run("name collides with an existing material: derived names start at -1", func() {
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runners.NewGeneric())
+		require.NoError(s.T(), err)
+
+		p1 := filepath.Join(s.T().TempDir(), "first.zip")
+		buildZip(s.T(), p1, map[string]string{"x.txt": "x"})
+		_, err = c.AddMaterialsFromArchive(context.Background(), "", "ARTIFACT", "scan", p1, materials.ArchiveZip, backend, nil, materials.DefaultArchiveLimits())
+		require.NoError(s.T(), err)
+
+		// Re-adding under the same --name must not overwrite "scan"; the new
+		// entry is allocated the next free suffix.
+		p2 := filepath.Join(s.T().TempDir(), "second.zip")
+		buildZip(s.T(), p2, map[string]string{"y.txt": "y"})
+		_, err = c.AddMaterialsFromArchive(context.Background(), "", "ARTIFACT", "scan", p2, materials.ArchiveZip, backend, nil, materials.DefaultArchiveLimits())
+		require.NoError(s.T(), err)
+
+		assert.Equal(s.T(), []string{"scan", "scan-1"}, keys(c))
+	})
+
+	s.Run("max total size exceeded rolls back to empty", func() {
+		p := filepath.Join(s.T().TempDir(), "big.zip")
+		buildZip(s.T(), p, map[string]string{"a.txt": "0123456789", "b.txt": "0123456789"})
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runners.NewGeneric())
+		require.NoError(s.T(), err)
+
+		tight := materials.ArchiveLimits{MaxEntries: 10000, MaxTotalSize: 4}
+		_, err = c.AddMaterialsFromArchive(context.Background(), "", "ARTIFACT", "scan", p, materials.ArchiveZip, backend, nil, tight)
+		require.Error(s.T(), err)
+		assert.ErrorIs(s.T(), err, materials.ErrArchiveTooLarge)
+		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetMaterials())
+	})
+
+	s.Run("invalid entry mid-stage rolls back the already-staged entry", func() {
+		p := filepath.Join(s.T().TempDir(), "mixed-sarif.zip")
+		buildZip(s.T(), p, map[string]string{
+			// a-valid sorts before b-invalid, so the valid entry stages first and
+			// must be rolled back when the invalid one fails.
+			"a-valid.sarif":   `{"$schema":"https://json.schemastore.org/sarif-2.1.0.json","version":"2.1.0","runs":[{"tool":{"driver":{"name":"t"}},"results":[]}]}`,
+			"b-invalid.sarif": `{"hello":"world"}`,
+		})
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runners.NewGeneric())
+		require.NoError(s.T(), err)
+
+		_, err = c.AddMaterialsFromArchive(context.Background(), "", "SARIF", "scan", p, materials.ArchiveZip, backend, nil, materials.DefaultArchiveLimits())
+		require.Error(s.T(), err)
+		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetMaterials(), "a staging failure must roll back every entry")
+		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetPolicyEvaluations())
 	})
 }
 
