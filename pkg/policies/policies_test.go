@@ -578,6 +578,54 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 	}
 }
 
+// TestPrefixSelectorMultiRoleSeparation mirrors a multi-stage contract: two
+// distinct roles, each guarded by its own name-PREFIX selector. Exploding a
+// role's archive into "<role>", "<role>-1", … must route only that role's
+// policies and never the sibling role's — the two prefixes never cross-match.
+func (s *testSuite) TestPrefixSelectorMultiRoleSeparation() {
+	buildAtt := &v12.PolicyAttachment{
+		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{
+			Name:      "build-scan",
+			MatchMode: v12.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+		},
+	}
+	releaseAtt := &v12.PolicyAttachment{
+		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{
+			Name:      "release-scan",
+			MatchMode: v12.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+		},
+	}
+	atts := []*v12.PolicyAttachment{buildAtt, releaseAtt}
+
+	cases := []struct {
+		name string
+		id   string
+		want int
+	}{
+		{"build base routes to the build role only", "build-scan", 1},
+		{"build suffixed routes to the build role only", "build-scan-1", 1},
+		{"release base routes to the release role only", "release-scan", 1},
+		{"release suffixed routes to the release role only", "release-scan-2", 1},
+		{"unrelated name routes to neither role", "other-scan", 0},
+	}
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			schema := &v12.CraftingSchema{Policies: &v12.Policies{Materials: atts}}
+			pv := NewPolicyVerifier(schema.Policies, nil, &s.logger)
+			material := &v1.Attestation_Material{
+				Id:           tc.id,
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			}
+			got, err := pv.requiredPoliciesForMaterial(context.TODO(), material)
+			s.Require().NoError(err)
+			s.Require().Len(got, tc.want)
+		})
+	}
+}
+
 func (s *testSuite) TestValidInlineMaterial() {
 	content, err := os.ReadFile("testdata/sbom-spdx.json")
 	s.Require().NoError(err)
