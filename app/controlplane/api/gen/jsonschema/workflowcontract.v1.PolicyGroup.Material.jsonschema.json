@@ -3,7 +3,47 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "Policy group materials",
+  "patternProperties": {
+    "^(match_mode)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATCH_MODE_UNSPECIFIED",
+            "MATCH_MODE_EXACT",
+            "MATCH_MODE_PREFIX"
+          ],
+          "title": "Match Mode",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "How `name` is matched against a material's name. Defaults to exact match\n (UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing\n a name prefix, mirroring PolicyAttachment.MaterialSelector."
+    }
+  },
   "properties": {
+    "matchMode": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATCH_MODE_UNSPECIFIED",
+            "MATCH_MODE_EXACT",
+            "MATCH_MODE_PREFIX"
+          ],
+          "title": "Match Mode",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "How `name` is matched against a material's name. Defaults to exact match\n (UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing\n a name prefix, mirroring PolicyAttachment.MaterialSelector."
+    },
     "name": {
       "description": "Free form name, as we support placeholders eg `{{ inputs.input_name }}`\n If no name is provided, material won't be enforced and will apply policies if `type` matches",
       "type": "string"

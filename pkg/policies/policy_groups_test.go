@@ -181,6 +181,50 @@ func (s *groupsTestSuite) TestRequiredPoliciesForMaterial() {
 	}
 }
 
+func (s *groupsTestSuite) TestGroupMaterialPrefixMatch() {
+	// A group material with PREFIX match mode applies its policies to every
+	// material whose name starts with the group material name (e.g. an archive
+	// exploded into "sbom", "sbom-1", …), while EXACT (default) matches only the
+	// exact name.
+	group := &v1.PolicyGroup{
+		Spec: &v1.PolicyGroup_PolicyGroupSpec{
+			Policies: &v1.PolicyGroup_PolicyGroupPolicies{
+				Materials: []*v1.PolicyGroup_Material{
+					{
+						Name:      "sbom",
+						MatchMode: v1.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+						Type:      v1.CraftingSchema_Material_SBOM_SPDX_JSON,
+						Policies:  []*v1.PolicyAttachment{{Policy: &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"}}},
+					},
+				},
+			},
+		},
+	}
+
+	cases := []struct {
+		name     string
+		id       string
+		expected int
+	}{
+		{"prefix matches the exact base name", "sbom", 1},
+		{"prefix matches a suffixed name", "sbom-1", 1},
+		{"prefix does not match a different name", "other", 0},
+	}
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			material := &api.Attestation_Material{
+				MaterialType: v1.CraftingSchema_Material_SBOM_SPDX_JSON,
+				Id:           tc.id,
+				M:            &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{}},
+			}
+			v := NewPolicyGroupVerifier(nil, nil, nil, &s.logger)
+			atts, err := v.requiredPoliciesForMaterial(context.TODO(), material, group, nil)
+			s.Require().NoError(err)
+			s.Len(atts, tc.expected)
+		})
+	}
+}
+
 func (s *groupsTestSuite) TestGroupLoader() {
 	cases := []struct {
 		name     string

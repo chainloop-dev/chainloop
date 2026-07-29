@@ -866,6 +866,12 @@ export interface PolicyGroup_Material {
    */
   name: string;
   optional: boolean;
+  /**
+   * How `name` is matched against a material's name. Defaults to exact match
+   * (UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing
+   * a name prefix, mirroring PolicyAttachment.MaterialSelector.
+   */
+  matchMode: PolicyAttachment_MaterialSelector_MatchMode;
   /** Policies to be applied to this material */
   policies: PolicyAttachment[];
 }
@@ -3149,7 +3155,7 @@ export const PolicyGroup_PolicyGroupPolicies = {
 };
 
 function createBasePolicyGroup_Material(): PolicyGroup_Material {
-  return { type: 0, name: "", optional: false, policies: [] };
+  return { type: 0, name: "", optional: false, matchMode: 0, policies: [] };
 }
 
 export const PolicyGroup_Material = {
@@ -3162,6 +3168,9 @@ export const PolicyGroup_Material = {
     }
     if (message.optional === true) {
       writer.uint32(24).bool(message.optional);
+    }
+    if (message.matchMode !== 0) {
+      writer.uint32(32).int32(message.matchMode);
     }
     for (const v of message.policies) {
       PolicyAttachment.encode(v!, writer.uint32(50).fork()).ldelim();
@@ -3197,6 +3206,13 @@ export const PolicyGroup_Material = {
 
           message.optional = reader.bool();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.matchMode = reader.int32() as any;
+          continue;
         case 6:
           if (tag !== 50) {
             break;
@@ -3218,6 +3234,7 @@ export const PolicyGroup_Material = {
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
       name: isSet(object.name) ? String(object.name) : "",
       optional: isSet(object.optional) ? Boolean(object.optional) : false,
+      matchMode: isSet(object.matchMode) ? policyAttachment_MaterialSelector_MatchModeFromJSON(object.matchMode) : 0,
       policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicyAttachment.fromJSON(e)) : [],
     };
   },
@@ -3227,6 +3244,8 @@ export const PolicyGroup_Material = {
     message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
     message.name !== undefined && (obj.name = message.name);
     message.optional !== undefined && (obj.optional = message.optional);
+    message.matchMode !== undefined &&
+      (obj.matchMode = policyAttachment_MaterialSelector_MatchModeToJSON(message.matchMode));
     if (message.policies) {
       obj.policies = message.policies.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
     } else {
@@ -3244,6 +3263,7 @@ export const PolicyGroup_Material = {
     message.type = object.type ?? 0;
     message.name = object.name ?? "";
     message.optional = object.optional ?? false;
+    message.matchMode = object.matchMode ?? 0;
     message.policies = object.policies?.map((e) => PolicyAttachment.fromPartial(e)) || [];
     return message;
   },

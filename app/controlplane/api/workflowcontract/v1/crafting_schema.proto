@@ -499,6 +499,11 @@ message PolicyGroup {
     string name = 2;
     bool optional = 3;
 
+    // How `name` is matched against a material's name. Defaults to exact match
+    // (UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing
+    // a name prefix, mirroring PolicyAttachment.MaterialSelector.
+    PolicyAttachment.MaterialSelector.MatchMode match_mode = 4;
+
     // Policies to be applied to this material
     repeated PolicyAttachment policies = 6;
 

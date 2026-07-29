@@ -2006,6 +2006,10 @@ type PolicyGroup_Material struct {
 	// If no name is provided, material won't be enforced and will apply policies if `type` matches
 	Name     string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Optional bool   `protobuf:"varint,3,opt,name=optional,proto3" json:"optional,omitempty"`
+	// How `name` is matched against a material's name. Defaults to exact match
+	// (UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing
+	// a name prefix, mirroring PolicyAttachment.MaterialSelector.
+	MatchMode PolicyAttachment_MaterialSelector_MatchMode `protobuf:"varint,4,opt,name=match_mode,json=matchMode,proto3,enum=workflowcontract.v1.PolicyAttachment_MaterialSelector_MatchMode" json:"match_mode,omitempty"`
 	// Policies to be applied to this material
 	Policies      []*PolicyAttachment `protobuf:"bytes,6,rep,name=policies,proto3" json:"policies,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2061,6 +2065,13 @@ func (x *PolicyGroup_Material) GetOptional() bool {
 		return x.Optional
 	}
 	return false
+}
+
+func (x *PolicyGroup_Material) GetMatchMode() PolicyAttachment_MaterialSelector_MatchMode {
+	if x != nil {
+		return x.MatchMode
+	}
+	return PolicyAttachment_MaterialSelector_MATCH_MODE_UNSPECIFIED
 }
 
 func (x *PolicyGroup_Material) GetPolicies() []*PolicyAttachment {
@@ -2259,7 +2270,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\a\n" +
-	"\x05_gate\"\xc7\a\n" +
+	"\x05_gate\"\xa8\b\n" +
 	"\vPolicyGroup\x12[\n" +
 	"\vapi_version\x18\x01 \x01(\tB:\xbaH7r5R\x10chainloop.dev/v1R!workflowcontract.chainloop.dev/v1R\n" +
 	"apiVersion\x12&\n" +
@@ -2272,11 +2283,13 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06inputs\x18\x02 \x03(\v2 .workflowcontract.v1.PolicyInputR\x06inputs\x1a\xa7\x01\n" +
 	"\x13PolicyGroupPolicies\x12G\n" +
 	"\tmaterials\x18\x01 \x03(\v2).workflowcontract.v1.PolicyGroup.MaterialR\tmaterials\x12G\n" +
-	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\x1a\xd7\x02\n" +
+	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\x1a\xb8\x03\n" +
 	"\bMaterial\x12W\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\b\xbaH\x05\x82\x01\x02\x10\x01R\x04type\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
-	"\boptional\x18\x03 \x01(\bR\boptional\x12A\n" +
+	"\boptional\x18\x03 \x01(\bR\boptional\x12_\n" +
+	"\n" +
+	"match_mode\x18\x04 \x01(\x0e2@.workflowcontract.v1.PolicyAttachment.MaterialSelector.MatchModeR\tmatchMode\x12A\n" +
 	"\bpolicies\x18\x06 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\bpolicies:\x7f\xbaH|\x1az\n" +
 	"\x0egroup_material\x123if name is provided, type should have a valid value\x1a3!has(this.name) || has(this.name) && this.type != 0*I\n" +
 	"\x10AttestationPhase\x12!\n" +
@@ -2366,12 +2379,13 @@ var file_workflowcontract_v1_crafting_schema_proto_depIdxs = []int32{
 	26, // 35: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.materials:type_name -> workflowcontract.v1.PolicyGroup.Material
 	9,  // 36: workflowcontract.v1.PolicyGroup.PolicyGroupPolicies.attestation:type_name -> workflowcontract.v1.PolicyAttachment
 	2,  // 37: workflowcontract.v1.PolicyGroup.Material.type:type_name -> workflowcontract.v1.CraftingSchema.Material.MaterialType
-	9,  // 38: workflowcontract.v1.PolicyGroup.Material.policies:type_name -> workflowcontract.v1.PolicyAttachment
-	39, // [39:39] is the sub-list for method output_type
-	39, // [39:39] is the sub-list for method input_type
-	39, // [39:39] is the sub-list for extension type_name
-	39, // [39:39] is the sub-list for extension extendee
-	0,  // [0:39] is the sub-list for field type_name
+	3,  // 38: workflowcontract.v1.PolicyGroup.Material.match_mode:type_name -> workflowcontract.v1.PolicyAttachment.MaterialSelector.MatchMode
+	9,  // 39: workflowcontract.v1.PolicyGroup.Material.policies:type_name -> workflowcontract.v1.PolicyAttachment
+	40, // [40:40] is the sub-list for method output_type
+	40, // [40:40] is the sub-list for method input_type
+	40, // [40:40] is the sub-list for extension type_name
+	40, // [40:40] is the sub-list for extension extendee
+	0,  // [0:40] is the sub-list for field type_name
 }
 
 func init() { file_workflowcontract_v1_crafting_schema_proto_init() }
