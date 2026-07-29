@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -78,10 +79,9 @@ func TestAddSourceArchiveEvidence(t *testing.T) {
 	require.True(t, ok, "expected scan-archive evidence material")
 	assert.Equal(t, schemaapi.CraftingSchema_Material_EVIDENCE, ev.GetMaterialType())
 
-	// Forward edge: the archive references every exploded material.
+	// Forward edge: the archive references exactly the exploded materials.
 	fwd := ev.GetAnnotations()[materials.AnnotationMaterialReferences]
-	assert.Contains(t, fwd, "scan")
-	assert.Contains(t, fwd, "scan-1")
+	assert.ElementsMatch(t, []string{"scan", "scan-1"}, strings.Split(fwd, ","))
 
 	// Reverse edge: every exploded material references the archive.
 	for _, name := range []string{"scan", "scan-1"} {
