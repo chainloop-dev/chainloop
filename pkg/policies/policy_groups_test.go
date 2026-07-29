@@ -209,6 +209,7 @@ func (s *groupsTestSuite) TestGroupMaterialPrefixMatch() {
 		{"prefix matches the exact base name", "sbom", 1},
 		{"prefix matches a suffixed name", "sbom-1", 1},
 		{"prefix does not match a different name", "other", 0},
+		{"prefix does not match a substring past the dash boundary", "sbomextra", 0},
 	}
 	for _, tc := range cases {
 		s.Run(tc.name, func() {

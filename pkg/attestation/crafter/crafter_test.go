@@ -1175,6 +1175,34 @@ func (s *crafterSuite) TestAddMaterialsFromArchiveCombinations() {
 		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetMaterials(), "a staging failure must roll back every entry")
 		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetPolicyEvaluations())
 	})
+
+	s.Run("archive with no regular files errors and stages nothing", func() {
+		p := filepath.Join(s.T().TempDir(), "empty.tar.gz")
+		// Only a directory entry and a symlink — both skipped by the walker.
+		buildTarGz(s.T(), p, map[string]string{}, []string{"adir/"}, map[string]string{"link": "adir"})
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runners.NewGeneric())
+		require.NoError(s.T(), err)
+
+		_, err = c.AddMaterialsFromArchive(context.Background(), "", "ARTIFACT", "scan", p, materials.ArchiveTarGz, backend, nil, materials.DefaultArchiveLimits())
+		require.Error(s.T(), err)
+		assert.ErrorContains(s.T(), err, "no processable entries")
+		assert.Empty(s.T(), c.CraftingState.GetAttestation().GetMaterials())
+	})
+
+	s.Run("user annotations propagate to every exploded material", func() {
+		p := filepath.Join(s.T().TempDir(), "annotated.zip")
+		buildZip(s.T(), p, map[string]string{"a.txt": "a", "b.txt": "b"})
+		c, err := newInitializedCrafter(s.T(), contract, &v1.WorkflowMetadata{}, true, "", runners.NewGeneric())
+		require.NoError(s.T(), err)
+
+		annotations := map[string]string{"environment": "ci"}
+		mts, err := c.AddMaterialsFromArchive(context.Background(), "", "ARTIFACT", "scan", p, materials.ArchiveZip, backend, annotations, materials.DefaultArchiveLimits())
+		require.NoError(s.T(), err)
+		require.Len(s.T(), mts, 2)
+		for _, mt := range mts {
+			assert.Equal(s.T(), "ci", mt.GetAnnotations()["environment"], "annotation must be attached to every exploded material")
+		}
+	})
 }
 
 func loadSchema(path string) (*schemaapi.CraftingSchema, error) {

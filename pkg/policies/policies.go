@@ -972,13 +972,15 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 
 // nameMatches reports whether a material name satisfies a selector/group-material
 // name filter under the given match mode. The default (unspecified) mode is an
-// exact match, so existing contracts are unaffected; PREFIX matches any material
-// whose name begins with the filter (e.g. an archive exploded into "<name>",
-// "<name>-1", …). It is the single predicate shared by standalone policy
-// attachments (shouldApplyPolicy) and policy groups (VerifyMaterial).
+// exact match, so existing contracts are unaffected. PREFIX matches the exact
+// name or any "<name>-<suffix>" derivative — the shape produced by exploding an
+// archive into "<name>", "<name>-1", … — and deliberately NOT arbitrary
+// substrings, so a selector "scan" matches "scan" and "scan-1" but not "scanner".
+// It is the single predicate shared by standalone policy attachments
+// (shouldApplyPolicy) and policy groups (VerifyMaterial).
 func nameMatches(name string, mode v1.PolicyAttachment_MaterialSelector_MatchMode, materialID string) bool {
 	if mode == v1.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX {
-		return strings.HasPrefix(materialID, name)
+		return materialID == name || strings.HasPrefix(materialID, name+"-")
 	}
 	return name == materialID
 }
