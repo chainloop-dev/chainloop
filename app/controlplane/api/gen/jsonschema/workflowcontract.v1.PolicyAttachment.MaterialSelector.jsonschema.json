@@ -2,7 +2,47 @@
   "$id": "workflowcontract.v1.PolicyAttachment.MaterialSelector.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(match_mode)$": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATCH_MODE_UNSPECIFIED",
+            "MATCH_MODE_EXACT",
+            "MATCH_MODE_PREFIX"
+          ],
+          "title": "Match Mode",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "How `name` is matched against a material's name. Defaults to exact match\n (UNSPECIFIED behaves as EXACT), so existing selectors are unchanged. Use\n PREFIX to target a set of materials sharing a name prefix (e.g. an\n archive exploded into `\u003cname\u003e`, `\u003cname\u003e-1`, `\u003cname\u003e-2`)."
+    }
+  },
   "properties": {
+    "matchMode": {
+      "anyOf": [
+        {
+          "enum": [
+            "MATCH_MODE_UNSPECIFIED",
+            "MATCH_MODE_EXACT",
+            "MATCH_MODE_PREFIX"
+          ],
+          "title": "Match Mode",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "How `name` is matched against a material's name. Defaults to exact match\n (UNSPECIFIED behaves as EXACT), so existing selectors are unchanged. Use\n PREFIX to target a set of materials sharing a name prefix (e.g. an\n archive exploded into `\u003cname\u003e`, `\u003cname\u003e-1`, `\u003cname\u003e-2`)."
+    },
     "name": {
       "description": "material name",
       "type": "string"

@@ -414,6 +414,13 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 		Selector: &v12.PolicyAttachment_MaterialSelector{Name: "custom-material"},
 	}
 	attMultikind := &v12.PolicyAttachment{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/multi-kind.yaml"}}
+	attPrefixPolicyTyped := &v12.PolicyAttachment{
+		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{
+			Name:      "sbom",
+			MatchMode: v12.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+		},
+	}
 
 	testcases := []struct {
 		name     string
@@ -499,6 +506,46 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 					Artifact: &v1.Attestation_Material_Artifact{},
 				},
 				MaterialType: v12.CraftingSchema_Material_SARIF,
+			},
+			result: 0,
+		},
+		{
+			name:     "prefix selector matches the exact base name",
+			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "sbom",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 1,
+		},
+		{
+			name:     "prefix selector matches a suffixed name",
+			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "sbom-1",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 1,
+		},
+		{
+			name:     "prefix selector does not match a different name",
+			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "other",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 0,
+		},
+		{
+			name:     "exact selector (default) does not match a suffixed name",
+			policies: []*v12.PolicyAttachment{attFilteredPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "sbom-1",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
 			},
 			result: 0,
 		},

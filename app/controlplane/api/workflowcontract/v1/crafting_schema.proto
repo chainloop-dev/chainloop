@@ -293,6 +293,18 @@ message PolicyAttachment {
   message MaterialSelector {
     // material name
     string name = 1;
+
+    // How `name` is matched against a material's name. Defaults to exact match
+    // (UNSPECIFIED behaves as EXACT), so existing selectors are unchanged. Use
+    // PREFIX to target a set of materials sharing a name prefix (e.g. an
+    // archive exploded into `<name>`, `<name>-1`, `<name>-2`).
+    MatchMode match_mode = 2;
+
+    enum MatchMode {
+      MATCH_MODE_UNSPECIFIED = 0;
+      MATCH_MODE_EXACT = 1;
+      MATCH_MODE_PREFIX = 2;
+    }
   }
 }
 

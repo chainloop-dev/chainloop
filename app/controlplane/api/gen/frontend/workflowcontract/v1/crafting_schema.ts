@@ -648,6 +648,56 @@ export interface PolicyAttachment_WithEntry {
 export interface PolicyAttachment_MaterialSelector {
   /** material name */
   name: string;
+  /**
+   * How `name` is matched against a material's name. Defaults to exact match
+   * (UNSPECIFIED behaves as EXACT), so existing selectors are unchanged. Use
+   * PREFIX to target a set of materials sharing a name prefix (e.g. an
+   * archive exploded into `<name>`, `<name>-1`, `<name>-2`).
+   */
+  matchMode: PolicyAttachment_MaterialSelector_MatchMode;
+}
+
+export enum PolicyAttachment_MaterialSelector_MatchMode {
+  MATCH_MODE_UNSPECIFIED = 0,
+  MATCH_MODE_EXACT = 1,
+  MATCH_MODE_PREFIX = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function policyAttachment_MaterialSelector_MatchModeFromJSON(
+  object: any,
+): PolicyAttachment_MaterialSelector_MatchMode {
+  switch (object) {
+    case 0:
+    case "MATCH_MODE_UNSPECIFIED":
+      return PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_UNSPECIFIED;
+    case 1:
+    case "MATCH_MODE_EXACT":
+      return PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_EXACT;
+    case 2:
+    case "MATCH_MODE_PREFIX":
+      return PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_PREFIX;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyAttachment_MaterialSelector_MatchMode.UNRECOGNIZED;
+  }
+}
+
+export function policyAttachment_MaterialSelector_MatchModeToJSON(
+  object: PolicyAttachment_MaterialSelector_MatchMode,
+): string {
+  switch (object) {
+    case PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_UNSPECIFIED:
+      return "MATCH_MODE_UNSPECIFIED";
+    case PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_EXACT:
+      return "MATCH_MODE_EXACT";
+    case PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_PREFIX:
+      return "MATCH_MODE_PREFIX";
+    case PolicyAttachment_MaterialSelector_MatchMode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 /** Represents a policy to be applied to a material or attestation */
@@ -1826,13 +1876,16 @@ export const PolicyAttachment_WithEntry = {
 };
 
 function createBasePolicyAttachment_MaterialSelector(): PolicyAttachment_MaterialSelector {
-  return { name: "" };
+  return { name: "", matchMode: 0 };
 }
 
 export const PolicyAttachment_MaterialSelector = {
   encode(message: PolicyAttachment_MaterialSelector, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.matchMode !== 0) {
+      writer.uint32(16).int32(message.matchMode);
     }
     return writer;
   },
@@ -1851,6 +1904,13 @@ export const PolicyAttachment_MaterialSelector = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.matchMode = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1861,12 +1921,17 @@ export const PolicyAttachment_MaterialSelector = {
   },
 
   fromJSON(object: any): PolicyAttachment_MaterialSelector {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      matchMode: isSet(object.matchMode) ? policyAttachment_MaterialSelector_MatchModeFromJSON(object.matchMode) : 0,
+    };
   },
 
   toJSON(message: PolicyAttachment_MaterialSelector): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.matchMode !== undefined &&
+      (obj.matchMode = policyAttachment_MaterialSelector_MatchModeToJSON(message.matchMode));
     return obj;
   },
 
@@ -1881,6 +1946,7 @@ export const PolicyAttachment_MaterialSelector = {
   ): PolicyAttachment_MaterialSelector {
     const message = createBasePolicyAttachment_MaterialSelector();
     message.name = object.name ?? "";
+    message.matchMode = object.matchMode ?? 0;
     return message;
   },
 };

@@ -957,8 +957,8 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, nil
 	}
 
-	if filteredName != "" && filteredName != material.GetId() {
-		// a filer exists and doesn't match
+	if filteredName != "" && !selectorMatches(policyAtt.GetSelector(), material.GetId()) {
+		// a filter exists and doesn't match
 		return false, nil
 	}
 
@@ -968,6 +968,17 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 	}
 
 	return true, nil
+}
+
+// selectorMatches reports whether a material name satisfies the selector's name
+// filter. The default (unspecified) mode is an exact match, so existing
+// selectors are unaffected; PREFIX matches any material whose name begins with
+// the selector name (e.g. an archive exploded into "<name>", "<name>-1", …).
+func selectorMatches(selector *v1.PolicyAttachment_MaterialSelector, materialID string) bool {
+	if selector.GetMatchMode() == v1.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX {
+		return strings.HasPrefix(materialID, selector.GetName())
+	}
+	return selector.GetName() == materialID
 }
 
 func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
