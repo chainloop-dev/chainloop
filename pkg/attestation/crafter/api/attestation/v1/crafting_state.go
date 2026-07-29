@@ -240,11 +240,16 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 		// dranzer emits plain text; project it to JSON so the policy engine,
 		// which only consumes JSON, can evaluate it. The raw text is preserved
 		// in the projection's "raw" field for string-matching fallbacks.
-		report, err := dranzer.Parse(rawMaterial)
+		//
+		// The material may also be an archive of the per-mode reports of one run
+		// (-b/-p/-s/-t), so the projection aggregates its entries. Parsing the
+		// archive bytes as text instead would yield an empty report, and the
+		// policy would then skip rather than evaluate — a false pass.
+		bundle, err := dranzer.ParseBundle(rawMaterial)
 		if err != nil {
 			return nil, fmt.Errorf("invalid dranzer material: %w", err)
 		}
-		return json.Marshal(report)
+		return json.Marshal(bundle)
 	}
 
 	return rawMaterial, nil

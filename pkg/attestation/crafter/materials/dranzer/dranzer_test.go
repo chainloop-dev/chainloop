@@ -84,6 +84,136 @@ func TestParse(t *testing.T) {
 	}
 }
 
+// TestParseModeReports pins the parser against the output shape of a single dranzer
+// run invoked in each of its four test modes, plus the CSV companion
+// file that ships alongside them in the same bundle. The CSV quotes a
+// "Testing COM Object - {GUID}" banner inside one of its columns, so it must be
+// rejected on parsed content rather than on a raw substring match: accepting it
+// would record a non-report as dranzer evidence whose policy evaluation then
+// silently skips.
+func TestParseModeReports(t *testing.T) {
+	const bundle = "../testdata/dranzer-bundle/"
+
+	testCases := []struct {
+		name             string
+		file             string
+		wantLooksLike    bool
+		wantVersion      string
+		wantObjectCount  int
+		wantPassed       int
+		wantFailed       int
+		wantObjects      int
+		wantFindingCount int
+	}{
+		{
+			name:            "-b mode is summary only",
+			file:            "example-app_1.0.0_b_Result.txt",
+			wantLooksLike:   true,
+			wantVersion:     "96",
+			wantObjectCount: 4,
+			wantPassed:      4,
+		},
+		{
+			name:            "-p mode is summary only",
+			file:            "example-app_1.0.0_p_Result.txt",
+			wantLooksLike:   true,
+			wantVersion:     "96",
+			wantObjectCount: 4,
+			wantPassed:      4,
+		},
+		{
+			name:            "-s mode is summary only",
+			file:            "example-app_1.0.0_s_Result.txt",
+			wantLooksLike:   true,
+			wantVersion:     "96",
+			wantObjectCount: 4,
+			wantPassed:      4,
+		},
+		{
+			name:             "-t mode reports a failed object",
+			file:             "example-app_1.0.0_t_Result.txt",
+			wantLooksLike:    true,
+			wantVersion:      "96",
+			wantObjectCount:  4,
+			wantPassed:       3,
+			wantFailed:       1,
+			wantObjects:      1,
+			wantFindingCount: 1,
+		},
+		{
+			name:          "CSV companion is not a report",
+			file:          "checkResult_Dranzer.csv",
+			wantLooksLike: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := os.ReadFile(bundle + tc.file)
+			require.NoError(t, err)
+
+			report, err := Parse(data)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.wantLooksLike, report.LooksLikeDranzer())
+			assert.Equal(t, tc.wantVersion, report.Tool.Version)
+			assert.Equal(t, tc.wantObjectCount, report.Summary.ObjectCount)
+			assert.Equal(t, tc.wantPassed, report.Summary.Passed)
+			assert.Equal(t, tc.wantFailed, report.Summary.Failed)
+			assert.Len(t, report.Objects, tc.wantObjects)
+			assert.Len(t, report.Findings, tc.wantFindingCount)
+
+			// Real reports are ANSI-encoded, so the projection must always be
+			// valid UTF-8 regardless of the input bytes.
+			assert.True(t, utf8.ValidString(report.Raw))
+		})
+	}
+}
+
+// TestLooksLikeDranzerJudgesParsedContent pins that recognition rests on what the
+// parser extracted, never on the raw text containing a phrase a report happens to
+// use. Prose or a spreadsheet column quoting a dranzer label yields no version,
+// objects, findings or counters, so accepting it would record a non-report as
+// dranzer evidence whose policy evaluation then skips — indistinguishable from a
+// clean run on a compliance gate.
+func TestLooksLikeDranzerJudgesParsedContent(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{
+			name:  "prose quoting a counter label is not a report",
+			input: "The report shows Number of COM Objects and other fields.\n",
+			want:  false,
+		},
+		{
+			name:  "prose quoting the per-object banner is not a report",
+			input: "Look for the Testing COM Object - line in the output.\n",
+			want:  false,
+		},
+		{
+			name:  "a parsed counter is enough, even when every count is zero",
+			input: "Number of COM Objects                   0\nNumber of COM Objects Failed Test       0\n",
+			want:  true,
+		},
+		{
+			name:  "the version banner alone is enough",
+			input: "Test Engine Version: $Rev: 96 $\n",
+			want:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			report, err := Parse([]byte(tc.input))
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.want, report.LooksLikeDranzer())
+		})
+	}
+}
+
 func TestParseExtractsFindingAndMetadata(t *testing.T) {
 	data, err := os.ReadFile("testdata/dranzer-report.txt")
 	require.NoError(t, err)

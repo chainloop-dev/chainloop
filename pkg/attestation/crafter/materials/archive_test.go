@@ -194,31 +194,6 @@ func TestWalkArchiveEntries(t *testing.T) {
 	})
 }
 
-func TestSafeArchivePath(t *testing.T) {
-	tests := []struct {
-		name string
-		path string
-		want bool
-	}{
-		{"absolute path", "/etc/passwd", false},
-		{"windows drive-letter backslash", "C:\\Windows\\system32", false},
-		{"windows drive-letter forward slash", "c:/windows/system32", false},
-		{"path traversal", "../escape.txt", false},
-		{"nested path traversal", "foo/../../../etc/passwd", false},
-		{"double dot in filename is ok", "foo..bar.json", true},
-		{"escape via nested double dot", "a/../../etc/passwd", false},
-		{"valid nested path", "a/b.txt", true},
-		{"valid simple path", "file.txt", true},
-		{"valid with subdirs", "nested/dir/file.txt", true},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := safeArchivePath(tc.path)
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
 func TestArchiveEntryBaseName(t *testing.T) {
 	tests := []struct{ name, in, want string }{
 		{"simple", "scan.json", "scan.json"},

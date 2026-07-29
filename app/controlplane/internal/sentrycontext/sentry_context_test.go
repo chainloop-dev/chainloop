@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -121,6 +122,26 @@ func TestBuildRequestContext(t *testing.T) {
 		assert.NotNil(t, requestContext)
 		assert.Equal(t, "", requestContext["protocol"])
 		assert.Equal(t, "", requestContext["operation"])
+	})
+
+	t.Run("with a valid otel span context", func(t *testing.T) {
+		traceID, _ := trace.TraceIDFromHex("36b9df80c3e0c37e920caef35fa6eca0")
+		spanID, _ := trace.SpanIDFromHex("a1b2c3d4e5f60718")
+		sc := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID: traceID,
+			SpanID:  spanID,
+		})
+		ctx := trace.ContextWithSpanContext(context.Background(), sc)
+
+		requestContext := buildRequestContext(ctx, req)
+		assert.Equal(t, "36b9df80c3e0c37e920caef35fa6eca0", requestContext["otel-trace-id"])
+		assert.Equal(t, "a1b2c3d4e5f60718", requestContext["otel-span-id"])
+	})
+
+	t.Run("without a valid otel span context", func(t *testing.T) {
+		requestContext := buildRequestContext(context.Background(), req)
+		assert.NotContains(t, requestContext, "otel-trace-id")
+		assert.NotContains(t, requestContext, "otel-span-id")
 	})
 }
 
