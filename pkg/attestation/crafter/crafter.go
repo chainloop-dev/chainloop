@@ -591,6 +591,19 @@ type addOpts struct {
 	// the contract arguments when evaluating the standalone material policies,
 	// either globally or scoped to a specific policy.
 	runtimeInputs *policies.RuntimeInputs
+	// recordSourceArchive, when set on an archive explode, also records the
+	// source archive as an EVIDENCE material cross-linked with the exploded
+	// materials, within the same atomic add.
+	recordSourceArchive bool
+}
+
+// WithSourceArchiveEvidence makes an archive explode also record the source
+// archive once as an EVIDENCE material, cross-linked with every exploded
+// material, in the same atomic add.
+func WithSourceArchiveEvidence() AddOpt {
+	return func(o *addOpts) {
+		o.recordSourceArchive = true
+	}
 }
 
 // WithRuntimeInputs supplies policy input values that are merged additively onto
@@ -853,6 +866,11 @@ func (c *Crafter) AddMaterialsFromArchive(
 		return nil, fmt.Errorf("adding materials from archive: %w", err)
 	}
 
+	addOptions := &addOpts{}
+	for _, opt := range opts {
+		opt(addOptions)
+	}
+
 	// Validate kind up front so we fail fast before touching disk.
 	kindVal, found := schemaapi.CraftingSchema_Material_MaterialType_value[kind]
 	if !found {
@@ -959,7 +977,47 @@ func (c *Crafter) AddMaterialsFromArchive(
 		result = append(result, mt)
 	}
 
-	// All entries staged successfully; persist once.
+	// Optionally record the source archive once as an EVIDENCE material,
+	// cross-linked with every exploded material in both directions via
+	// chainloop.material.references. Staged inside this same transaction so the
+	// whole set (exploded materials + archive + cross-links) commits or rolls
+	// back atomically — a partial commit would otherwise leave orphaned
+	// materials that a retry duplicates.
+	if addOptions.recordSourceArchive {
+		archiveBase := "material"
+		if s := materials.SanitizeMaterialName(namePrefix); s != "" {
+			archiveBase = s
+		}
+		archiveName := allocator.AllocateNamed(archiveBase + "-archive")
+
+		explodedNames := make([]string, len(result))
+		for i, mt := range result {
+			explodedNames[i] = mt.GetId()
+		}
+
+		archiveMaterial := &schemaapi.CraftingSchema_Material{
+			Optional: true,
+			Type:     schemaapi.CraftingSchema_Material_EVIDENCE,
+			Name:     archiveName,
+		}
+		if _, err := c.stageMaterial(ctx, archiveMaterial, archivePath,
+			casBackend, map[string]string{materials.AnnotationMaterialReferences: strings.Join(explodedNames, ",")}, opts...); err != nil {
+			rollback()
+			return nil, fmt.Errorf("recording source archive %q as evidence %q: %w", archivePath, archiveName, err)
+		}
+		stagedNames = append(stagedNames, archiveName)
+
+		// Reverse edge: point each exploded material back at the archive. They are
+		// freshly staged, so there are no prior references to merge.
+		for _, mt := range result {
+			if mt.Annotations == nil {
+				mt.Annotations = map[string]string{}
+			}
+			mt.Annotations[materials.AnnotationMaterialReferences] = archiveName
+		}
+	}
+
+	// Everything staged successfully; persist the whole set once.
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
 		// Roll back in-memory state including policy evaluations.
 		rollback()

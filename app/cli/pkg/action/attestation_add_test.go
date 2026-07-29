@@ -43,7 +43,10 @@ var materialNameRe = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 // TestAddSourceArchiveEvidence exercises the Part B cross-link end to end: an
 // exploded archive is recorded once as an EVIDENCE material and linked with the
 // exploded materials in both directions.
-func TestAddSourceArchiveEvidence(t *testing.T) {
+// TestExplodeRecordsSourceArchiveEvidence checks that AddMaterialsFromArchive
+// records the source archive once as an EVIDENCE material cross-linked with the
+// exploded materials in both directions, all in the one atomic add.
+func TestExplodeRecordsSourceArchiveEvidence(t *testing.T) {
 	ctx := context.Background()
 
 	// A dry-run crafter backed by a local state file (no control plane).
@@ -65,12 +68,9 @@ func TestAddSourceArchiveEvidence(t *testing.T) {
 	writeZipWithFiles(t, zipPath, map[string]string{"a.txt": "a", "b.txt": "b"})
 
 	backend := &casclient.CASBackend{}
-	mts, err := c.AddMaterialsFromArchive(ctx, "", "ARTIFACT", "scan", zipPath, materials.ArchiveZip, backend, nil, materials.DefaultArchiveLimits())
+	mts, err := c.AddMaterialsFromArchive(ctx, "", "ARTIFACT", "scan", zipPath, materials.ArchiveZip, backend, nil, materials.DefaultArchiveLimits(), crafter.WithSourceArchiveEvidence())
 	require.NoError(t, err)
 	require.Len(t, mts, 2)
-
-	action := &AttestationAdd{}
-	require.NoError(t, action.addSourceArchiveEvidence(ctx, c, "", "scan", zipPath, mts, backend))
 
 	state := c.CraftingState.GetAttestation().GetMaterials()
 
