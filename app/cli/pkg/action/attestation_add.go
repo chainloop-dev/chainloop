@@ -160,13 +160,20 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 	if format != materials.ArchiveNone {
 		if len(policyInputFiles) > 0 {
-			action.Logger.Warn().Msg("--policy-input-from-file is ignored when expanding an archive; evidence cross-links are not recorded for exploded materials")
+			action.Logger.Warn().Msg("--policy-input-from-file is ignored when expanding an archive")
 		}
 		limits := materials.ArchiveLimits{MaxEntries: action.maxExtractEntries, MaxTotalSize: action.maxExtractSize}
 		mts, err := crafter.AddMaterialsFromArchive(ctx, attestationID, materialType, materialName, materialValue, format, casBackend, annotations, limits, addOpts...)
 		if err != nil {
 			return nil, fmt.Errorf("adding materials from archive: %w", err)
 		}
+
+		// Record the original archive once as an EVIDENCE material, cross-linked
+		// with every exploded material so the source bundle itself is attested.
+		if err := action.addSourceArchiveEvidence(ctx, crafter, attestationID, materialName, materialValue, mts, casBackend); err != nil {
+			return nil, fmt.Errorf("recording source archive evidence: %w", err)
+		}
+
 		results := make([]*AttestationStatusMaterial, 0, len(mts))
 		for _, mt := range mts {
 			r, err := attMaterialToAction(mt)
@@ -308,6 +315,42 @@ func (action *AttestationAdd) addPolicyInputEvidence(ctx context.Context, c *cra
 		if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_EVIDENCE.String(), names[i], pif.File, casBackend, annotations); err != nil {
 			return fmt.Errorf("adding evidence material %q: %w", names[i], err)
 		}
+	}
+
+	return nil
+}
+
+// addSourceArchiveEvidence records the original archive (the value passed to an
+// exploding `att add`) once as an EVIDENCE material and cross-links it with the
+// exploded materials in both directions via chainloop.material.references: every
+// exploded material points at the archive, and the archive points back at all of
+// them. The evidence name is derived deterministically from the material name
+// ("<name>-archive"), falling back to "material-archive" when no name was given.
+func (action *AttestationAdd) addSourceArchiveEvidence(ctx context.Context, c *crafter.Crafter, attestationID, materialName, archivePath string, exploded []*api.Attestation_Material, casBackend *casclient.CASBackend) error {
+	base := "material"
+	if s := sanitizeMaterialNamePart(materialName); s != "" {
+		base = s
+	}
+	archiveName := base + "-archive"
+
+	explodedNames := make([]string, 0, len(exploded))
+	for _, m := range exploded {
+		explodedNames = append(explodedNames, m.GetId())
+	}
+
+	// Reverse edge: point each exploded material back at the archive. These are
+	// the same in-memory objects held in the crafting state, so they are
+	// persisted when the archive material below is written.
+	for _, m := range exploded {
+		addReference(m, archiveName)
+	}
+
+	// Forward edge: the archive references every exploded material.
+	annotations := map[string]string{
+		materials.AnnotationMaterialReferences: strings.Join(explodedNames, ","),
+	}
+	if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_EVIDENCE.String(), archiveName, archivePath, casBackend, annotations); err != nil {
+		return fmt.Errorf("adding source archive evidence %q: %w", archiveName, err)
 	}
 
 	return nil
