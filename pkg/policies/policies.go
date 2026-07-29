@@ -957,7 +957,7 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, nil
 	}
 
-	if filteredName != "" && !selectorMatches(policyAtt.GetSelector(), material.GetId()) {
+	if filteredName != "" && !nameMatches(filteredName, policyAtt.GetSelector().GetMatchMode(), material.GetId()) {
 		// a filter exists and doesn't match
 		return false, nil
 	}
@@ -970,15 +970,17 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 	return true, nil
 }
 
-// selectorMatches reports whether a material name satisfies the selector's name
-// filter. The default (unspecified) mode is an exact match, so existing
-// selectors are unaffected; PREFIX matches any material whose name begins with
-// the selector name (e.g. an archive exploded into "<name>", "<name>-1", …).
-func selectorMatches(selector *v1.PolicyAttachment_MaterialSelector, materialID string) bool {
-	if selector.GetMatchMode() == v1.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX {
-		return strings.HasPrefix(materialID, selector.GetName())
+// nameMatches reports whether a material name satisfies a selector/group-material
+// name filter under the given match mode. The default (unspecified) mode is an
+// exact match, so existing contracts are unaffected; PREFIX matches any material
+// whose name begins with the filter (e.g. an archive exploded into "<name>",
+// "<name>-1", …). It is the single predicate shared by standalone policy
+// attachments (shouldApplyPolicy) and policy groups (VerifyMaterial).
+func nameMatches(name string, mode v1.PolicyAttachment_MaterialSelector_MatchMode, materialID string) bool {
+	if mode == v1.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX {
+		return strings.HasPrefix(materialID, name)
 	}
-	return selector.GetName() == materialID
+	return name == materialID
 }
 
 func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {

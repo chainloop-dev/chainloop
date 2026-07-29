@@ -892,9 +892,12 @@ func (c *Crafter) AddMaterialsFromArchive(
 	// writer stored the entries. Each entry gets its own temp subdirectory so
 	// two entries sharing a basename (e.g. "a/x.json" and "b/x.json") never
 	// collide, while the temp file keeps the original basename so the recorded
-	// material metadata preserves the real filename.
+	// material metadata preserves the real filename. Because names can only be
+	// assigned once every entry is known, all extracted files coexist on disk
+	// until the deferred cleanup — bounded by limits.MaxTotalSize.
 	type archiveEntry struct {
-		name    string // in-archive path; drives the deterministic ordering
+		name    string // in-archive path, for error messages
+		sortKey string // normalized path, precomputed once to order entries deterministically
 		tmpPath string
 	}
 	var entries []archiveEntry
@@ -920,7 +923,7 @@ func (c *Crafter) AddMaterialsFromArchive(
 			return fmt.Errorf("closing temp file for entry %q: %w", name, err)
 		}
 
-		entries = append(entries, archiveEntry{name: name, tmpPath: tmpPath})
+		entries = append(entries, archiveEntry{name: name, sortKey: materials.NormalizeArchivePath(name), tmpPath: tmpPath})
 		return nil
 	})
 	if walkErr != nil {
@@ -930,11 +933,11 @@ func (c *Crafter) AddMaterialsFromArchive(
 		return nil, fmt.Errorf("archive %q contains no processable entries", archivePath)
 	}
 
-	// Deterministic order: sort by the normalized ("/"-separated) entry path so
-	// the same archive content always yields the same material names, and the
-	// first sorted entry takes the exact --name (namePrefix).
+	// Deterministic order: sort by the normalized entry path so the same archive
+	// content always yields the same material names, and the first sorted entry
+	// takes the exact --name (namePrefix).
 	sort.SliceStable(entries, func(i, j int) bool {
-		return strings.ReplaceAll(entries[i].name, "\\", "/") < strings.ReplaceAll(entries[j].name, "\\", "/")
+		return entries[i].sortKey < entries[j].sortKey
 	})
 
 	// Second pass: name (first entry = exact prefix, then "<prefix>-1", …) and stage.

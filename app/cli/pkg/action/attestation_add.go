@@ -170,6 +170,12 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 
 		// Record the original archive once as an EVIDENCE material, cross-linked
 		// with every exploded material so the source bundle itself is attested.
+		// Note: AddMaterialsFromArchive has already committed the exploded
+		// materials, so this runs as a second commit. If it fails, the exploded
+		// materials remain persisted (they are complete and valid); re-running
+		// the same command is safe because explosion is deterministic — the same
+		// archive yields the same material names, so the retry overwrites
+		// identically and re-records the evidence.
 		if err := action.addSourceArchiveEvidence(ctx, crafter, attestationID, materialName, materialValue, mts, casBackend); err != nil {
 			return nil, fmt.Errorf("recording source archive evidence: %w", err)
 		}
@@ -328,20 +334,26 @@ func (action *AttestationAdd) addPolicyInputEvidence(ctx context.Context, c *cra
 // ("<name>-archive"), falling back to "material-archive" when no name was given.
 func (action *AttestationAdd) addSourceArchiveEvidence(ctx context.Context, c *crafter.Crafter, attestationID, materialName, archivePath string, exploded []*api.Attestation_Material, casBackend *casclient.CASBackend) error {
 	base := "material"
-	if s := sanitizeMaterialNamePart(materialName); s != "" {
+	if s := materials.SanitizeMaterialName(materialName); s != "" {
 		base = s
 	}
-	archiveName := base + "-archive"
+	// Collision-safe evidence name: seed an allocator with the names already in
+	// the attestation so "<name>-archive" (or a "-N" variant) never overwrites an
+	// existing material.
+	existing := c.CraftingState.GetAttestation().GetMaterials()
+	existingNames := make([]string, 0, len(existing))
+	for k := range existing {
+		existingNames = append(existingNames, k)
+	}
+	archiveName := materials.NewNameAllocator(existingNames).AllocateNamed(base + "-archive")
 
+	// Cross-link both directions via chainloop.material.references. The reverse
+	// edge mutates each exploded material in place — they are the same objects
+	// held in the crafting state, so it is persisted when the archive material is
+	// written below.
 	explodedNames := make([]string, 0, len(exploded))
 	for _, m := range exploded {
 		explodedNames = append(explodedNames, m.GetId())
-	}
-
-	// Reverse edge: point each exploded material back at the archive. These are
-	// the same in-memory objects held in the crafting state, so they are
-	// persisted when the archive material below is written.
-	for _, m := range exploded {
 		addReference(m, archiveName)
 	}
 

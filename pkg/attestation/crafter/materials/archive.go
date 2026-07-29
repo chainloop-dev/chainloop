@@ -171,7 +171,7 @@ func WalkArchiveEntries(path string, format ArchiveFormat, limits ArchiveLimits,
 // ".." as a substring (e.g. "foo..bar.json") is accepted; only actual path
 // components equal to ".." are rejected.
 func safeArchivePath(name string) bool {
-	normalized := strings.ReplaceAll(name, "\\", "/")
+	normalized := NormalizeArchivePath(name)
 	// Reject absolute paths, including Windows drive-letter (e.g. "C:/x") and
 	// UNC paths (which normalize to a leading "/").
 	if strings.HasPrefix(normalized, "/") || hasWindowsDriveLetter(normalized) {
@@ -285,13 +285,19 @@ func IsExplodableKind(kind string) bool {
 	return ok
 }
 
+// NormalizeArchivePath converts an archive entry path to its canonical
+// "/"-separated form, independent of the host OS. Archive entry names are
+// "/"-separated by spec; backslashes produced on Windows are folded to "/" so
+// the same entry resolves identically everywhere (filepath would treat "\\" as
+// a separator only on Windows, yielding OS-dependent results).
+func NormalizeArchivePath(name string) string {
+	return strings.ReplaceAll(name, "\\", "/")
+}
+
 // ArchiveEntryBaseName returns the final element of an archive entry name using
-// archive ("/") path semantics, independent of the host OS. Archive entry names
-// are "/"-separated by spec; backslashes are normalized first so names produced
-// on Windows resolve to the same basename everywhere (filepath.Base would treat
-// "\\" as a separator only on Windows, yielding OS-dependent results).
+// archive ("/") path semantics, independent of the host OS.
 func ArchiveEntryBaseName(name string) string {
-	return path.Base(strings.ReplaceAll(name, "\\", "/"))
+	return path.Base(NormalizeArchivePath(name))
 }
 
 // defaultMaterialName is the fallback base used when a name cannot be derived
@@ -319,12 +325,11 @@ func SanitizeMaterialName(s string) string {
 	return b.String()
 }
 
-// NameAllocator hands out sequential, unique DNS-1123 material names of the
-// form "<prefix>-<n>" (n starting at 1). It is seeded with names already present
-// in the attestation so derived names never overwrite existing materials.
+// NameAllocator hands out unique DNS-1123 material names of the form "<base>",
+// then "<base>-1", "<base>-2", …. It is seeded with names already present in the
+// attestation so derived names never overwrite existing materials.
 type NameAllocator struct {
 	used map[string]struct{}
-	seq  int
 	// named tracks, per sanitized base, the next suffix to try so AllocateNamed
 	// yields "<base>", "<base>-1", "<base>-2", … deterministically.
 	named map[string]int
@@ -337,26 +342,6 @@ func NewNameAllocator(existing []string) *NameAllocator {
 		used[e] = struct{}{}
 	}
 	return &NameAllocator{used: used}
-}
-
-// AllocateSequential returns the next unused "<prefix>-<n>" material name, where
-// n is a zero-based counter that advances across calls and skips names already
-// in use. prefix is sanitized to DNS-1123; an empty or symbol-only prefix yields
-// the base "material" (so entries are named material-0, material-1, …).
-func (a *NameAllocator) AllocateSequential(prefix string) string {
-	base := defaultMaterialName
-	if s := SanitizeMaterialName(prefix); s != "" {
-		base = s
-	}
-
-	for {
-		candidate := fmt.Sprintf("%s-%d", base, a.seq)
-		a.seq++
-		if _, taken := a.used[candidate]; !taken {
-			a.used[candidate] = struct{}{}
-			return candidate
-		}
-	}
 }
 
 // AllocateNamed returns a unique material name derived from base: the bare
