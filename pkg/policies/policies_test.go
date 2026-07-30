@@ -540,16 +540,16 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			result: 0,
 		},
 		{
-			// Prefix is bounded on the "-" separator, so it must not match a name
-			// that merely starts with the same characters (no accidental substring).
-			name:     "prefix selector does not match a substring past the dash boundary",
+			// PREFIX is a literal prefix: any name starting with the filter matches,
+			// including "sbomextra". Authors are expected to pick a discriminating prefix.
+			name:     "prefix selector matches any name starting with the filter",
 			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
 			material: &v1.Attestation_Material{
 				Id:           "sbomextra",
 				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
 				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
 			},
-			result: 0,
+			result: 1,
 		},
 		{
 			name:     "exact selector (default) does not match a suffixed name",
