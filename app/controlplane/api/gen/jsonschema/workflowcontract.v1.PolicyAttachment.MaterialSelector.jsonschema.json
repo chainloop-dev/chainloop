@@ -7,9 +7,9 @@
       "anyOf": [
         {
           "enum": [
-            "MATCH_MODE_UNSPECIFIED",
-            "MATCH_MODE_EXACT",
-            "MATCH_MODE_PREFIX"
+            "UNSPECIFIED",
+            "EXACT",
+            "PREFIX"
           ],
           "title": "Match Mode",
           "type": "string"
@@ -28,9 +28,9 @@
       "anyOf": [
         {
           "enum": [
-            "MATCH_MODE_UNSPECIFIED",
-            "MATCH_MODE_EXACT",
-            "MATCH_MODE_PREFIX"
+            "UNSPECIFIED",
+            "EXACT",
+            "PREFIX"
           ],
           "title": "Match Mode",
           "type": "string"

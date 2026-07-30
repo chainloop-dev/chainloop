@@ -192,7 +192,7 @@ func (s *groupsTestSuite) TestGroupMaterialPrefixMatch() {
 				Materials: []*v1.PolicyGroup_Material{
 					{
 						Name:      "sbom",
-						MatchMode: v1.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+						MatchMode: v1.PolicyAttachment_MaterialSelector_PREFIX,
 						Type:      v1.CraftingSchema_Material_SBOM_SPDX_JSON,
 						Policies:  []*v1.PolicyAttachment{{Policy: &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"}}},
 					},

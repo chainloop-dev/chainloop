@@ -373,25 +373,29 @@ func (CraftingSchema_Material_MaterialType) EnumDescriptor() ([]byte, []int) {
 	return file_workflowcontract_v1_crafting_schema_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
+// Values are intentionally unprefixed for contract-author usability
+// ("match_mode: PREFIX" reads better than "MATCH_MODE_PREFIX"), matching the
+// other unprefixed enums in this file (RunnerType, MaterialType).
+// buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
 type PolicyAttachment_MaterialSelector_MatchMode int32
 
 const (
-	PolicyAttachment_MaterialSelector_MATCH_MODE_UNSPECIFIED PolicyAttachment_MaterialSelector_MatchMode = 0
-	PolicyAttachment_MaterialSelector_MATCH_MODE_EXACT       PolicyAttachment_MaterialSelector_MatchMode = 1
-	PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX      PolicyAttachment_MaterialSelector_MatchMode = 2
+	PolicyAttachment_MaterialSelector_UNSPECIFIED PolicyAttachment_MaterialSelector_MatchMode = 0
+	PolicyAttachment_MaterialSelector_EXACT       PolicyAttachment_MaterialSelector_MatchMode = 1
+	PolicyAttachment_MaterialSelector_PREFIX      PolicyAttachment_MaterialSelector_MatchMode = 2
 )
 
 // Enum value maps for PolicyAttachment_MaterialSelector_MatchMode.
 var (
 	PolicyAttachment_MaterialSelector_MatchMode_name = map[int32]string{
-		0: "MATCH_MODE_UNSPECIFIED",
-		1: "MATCH_MODE_EXACT",
-		2: "MATCH_MODE_PREFIX",
+		0: "UNSPECIFIED",
+		1: "EXACT",
+		2: "PREFIX",
 	}
 	PolicyAttachment_MaterialSelector_MatchMode_value = map[string]int32{
-		"MATCH_MODE_UNSPECIFIED": 0,
-		"MATCH_MODE_EXACT":       1,
-		"MATCH_MODE_PREFIX":      2,
+		"UNSPECIFIED": 0,
+		"EXACT":       1,
+		"PREFIX":      2,
 	}
 )
 
@@ -1893,7 +1897,7 @@ func (x *PolicyAttachment_MaterialSelector) GetMatchMode() PolicyAttachment_Mate
 	if x != nil {
 		return x.MatchMode
 	}
-	return PolicyAttachment_MaterialSelector_MATCH_MODE_UNSPECIFIED
+	return PolicyAttachment_MaterialSelector_UNSPECIFIED
 }
 
 type PolicyGroup_PolicyGroupSpec struct {
@@ -2073,7 +2077,7 @@ func (x *PolicyGroup_Material) GetMatchMode() PolicyAttachment_MaterialSelector_
 	if x != nil {
 		return x.MatchMode
 	}
-	return PolicyAttachment_MaterialSelector_MATCH_MODE_UNSPECIFIED
+	return PolicyAttachment_MaterialSelector_UNSPECIFIED
 }
 
 func (x *PolicyGroup_Material) GetPolicies() []*PolicyAttachment {
@@ -2192,7 +2196,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x98\x01\n" +
 	"\bPolicies\x12C\n" +
 	"\tmaterials\x18\x01 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\tmaterials\x12G\n" +
-	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\xd0\x05\n" +
+	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\xaf\x05\n" +
 	"\x10PolicyAttachment\x12\x1b\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x03ref\x129\n" +
 	"\bembedded\x18\x02 \x01(\v2\x1b.workflowcontract.v1.PolicyH\x00R\bembedded\x12R\n" +
@@ -2203,15 +2207,16 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x04gate\x18\a \x01(\bH\x01R\x04gate\x88\x01\x01\x1a7\n" +
 	"\tWithEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xdd\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a\xbc\x01\n" +
 	"\x10MaterialSelector\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12_\n" +
 	"\n" +
-	"match_mode\x18\x02 \x01(\x0e2@.workflowcontract.v1.PolicyAttachment.MaterialSelector.MatchModeR\tmatchMode\"T\n" +
-	"\tMatchMode\x12\x1a\n" +
-	"\x16MATCH_MODE_UNSPECIFIED\x10\x00\x12\x14\n" +
-	"\x10MATCH_MODE_EXACT\x10\x01\x12\x15\n" +
-	"\x11MATCH_MODE_PREFIX\x10\x02B\x0f\n" +
+	"match_mode\x18\x02 \x01(\x0e2@.workflowcontract.v1.PolicyAttachment.MaterialSelector.MatchModeR\tmatchMode\"3\n" +
+	"\tMatchMode\x12\x0f\n" +
+	"\vUNSPECIFIED\x10\x00\x12\t\n" +
+	"\x05EXACT\x10\x01\x12\n" +
+	"\n" +
+	"\x06PREFIX\x10\x02B\x0f\n" +
 	"\x06policy\x12\x05\xbaH\x02\b\x01B\a\n" +
 	"\x05_gate\"\x88\x02\n" +
 	"\x06Policy\x12[\n" +

@@ -418,7 +418,7 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 		Selector: &v12.PolicyAttachment_MaterialSelector{
 			Name:      "sbom",
-			MatchMode: v12.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+			MatchMode: v12.PolicyAttachment_MaterialSelector_PREFIX,
 		},
 	}
 
@@ -587,14 +587,14 @@ func (s *testSuite) TestPrefixSelectorMultiRoleSeparation() {
 		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 		Selector: &v12.PolicyAttachment_MaterialSelector{
 			Name:      "build-scan",
-			MatchMode: v12.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+			MatchMode: v12.PolicyAttachment_MaterialSelector_PREFIX,
 		},
 	}
 	releaseAtt := &v12.PolicyAttachment{
 		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
 		Selector: &v12.PolicyAttachment_MaterialSelector{
 			Name:      "release-scan",
-			MatchMode: v12.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX,
+			MatchMode: v12.PolicyAttachment_MaterialSelector_PREFIX,
 		},
 	}
 	atts := []*v12.PolicyAttachment{buildAtt, releaseAtt}

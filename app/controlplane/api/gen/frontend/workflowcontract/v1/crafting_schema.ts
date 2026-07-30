@@ -661,10 +661,16 @@ export interface PolicyAttachment_MaterialSelector {
   matchMode: PolicyAttachment_MaterialSelector_MatchMode;
 }
 
+/**
+ * Values are intentionally unprefixed for contract-author usability
+ * ("match_mode: PREFIX" reads better than "MATCH_MODE_PREFIX"), matching the
+ * other unprefixed enums in this file (RunnerType, MaterialType).
+ * buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+ */
 export enum PolicyAttachment_MaterialSelector_MatchMode {
-  MATCH_MODE_UNSPECIFIED = 0,
-  MATCH_MODE_EXACT = 1,
-  MATCH_MODE_PREFIX = 2,
+  UNSPECIFIED = 0,
+  EXACT = 1,
+  PREFIX = 2,
   UNRECOGNIZED = -1,
 }
 
@@ -673,14 +679,14 @@ export function policyAttachment_MaterialSelector_MatchModeFromJSON(
 ): PolicyAttachment_MaterialSelector_MatchMode {
   switch (object) {
     case 0:
-    case "MATCH_MODE_UNSPECIFIED":
-      return PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_UNSPECIFIED;
+    case "UNSPECIFIED":
+      return PolicyAttachment_MaterialSelector_MatchMode.UNSPECIFIED;
     case 1:
-    case "MATCH_MODE_EXACT":
-      return PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_EXACT;
+    case "EXACT":
+      return PolicyAttachment_MaterialSelector_MatchMode.EXACT;
     case 2:
-    case "MATCH_MODE_PREFIX":
-      return PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_PREFIX;
+    case "PREFIX":
+      return PolicyAttachment_MaterialSelector_MatchMode.PREFIX;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -692,12 +698,12 @@ export function policyAttachment_MaterialSelector_MatchModeToJSON(
   object: PolicyAttachment_MaterialSelector_MatchMode,
 ): string {
   switch (object) {
-    case PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_UNSPECIFIED:
-      return "MATCH_MODE_UNSPECIFIED";
-    case PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_EXACT:
-      return "MATCH_MODE_EXACT";
-    case PolicyAttachment_MaterialSelector_MatchMode.MATCH_MODE_PREFIX:
-      return "MATCH_MODE_PREFIX";
+    case PolicyAttachment_MaterialSelector_MatchMode.UNSPECIFIED:
+      return "UNSPECIFIED";
+    case PolicyAttachment_MaterialSelector_MatchMode.EXACT:
+      return "EXACT";
+    case PolicyAttachment_MaterialSelector_MatchMode.PREFIX:
+      return "PREFIX";
     case PolicyAttachment_MaterialSelector_MatchMode.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

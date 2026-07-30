@@ -979,7 +979,7 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 // It is the single predicate shared by standalone policy attachments
 // (shouldApplyPolicy) and policy groups (VerifyMaterial).
 func nameMatches(name string, mode v1.PolicyAttachment_MaterialSelector_MatchMode, materialID string) bool {
-	if mode == v1.PolicyAttachment_MaterialSelector_MATCH_MODE_PREFIX {
+	if mode == v1.PolicyAttachment_MaterialSelector_PREFIX {
 		return materialID == name || strings.HasPrefix(materialID, name+"-")
 	}
 	return name == materialID

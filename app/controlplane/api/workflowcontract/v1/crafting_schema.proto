@@ -302,10 +302,14 @@ message PolicyAttachment {
     // archive exploded into `<name>`, `<name>-1`, `<name>-2`).
     MatchMode match_mode = 2;
 
+    // Values are intentionally unprefixed for contract-author usability
+    // ("match_mode: PREFIX" reads better than "MATCH_MODE_PREFIX"), matching the
+    // other unprefixed enums in this file (RunnerType, MaterialType).
+    // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
     enum MatchMode {
-      MATCH_MODE_UNSPECIFIED = 0;
-      MATCH_MODE_EXACT = 1;
-      MATCH_MODE_PREFIX = 2;
+      UNSPECIFIED = 0;
+      EXACT = 1;
+      PREFIX = 2;
     }
   }
 }
