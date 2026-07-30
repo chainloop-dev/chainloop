@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"buf.build/go/protovalidate"
@@ -79,6 +80,29 @@ const (
 // IsLegacyAnnotation returns true if the annotation key is a legacy annotation
 func IsLegacyAnnotation(key string) bool {
 	return key == AnnotationToolNameKey || key == AnnotationToolVersionKey
+}
+
+// AppendReferences returns the value for the chainloop.material.references
+// annotation with names appended to the existing comma-separated list,
+// preserving any existing entries and skipping duplicates. It is the shared
+// primitive behind every material cross-link so the append semantics stay
+// consistent regardless of the caller.
+func AppendReferences(existing string, names ...string) string {
+	var refs []string
+	if existing != "" {
+		refs = strings.Split(existing, ",")
+	}
+	seen := make(map[string]struct{}, len(refs))
+	for _, r := range refs {
+		seen[r] = struct{}{}
+	}
+	for _, n := range names {
+		if _, ok := seen[n]; !ok {
+			refs = append(refs, n)
+			seen[n] = struct{}{}
+		}
+	}
+	return strings.Join(refs, ",")
 }
 
 // Tool represents a tool with name and version

@@ -128,6 +128,27 @@ func TestCraftingStateValidateComplete(t *testing.T) {
 			wantErr:     true,
 			errContains: []string{"req"},
 		},
+		{
+			// An exploded archive names its first entry exactly the --name value,
+			// so the required contract slot is satisfied while the extra entries
+			// coexist as additional (undeclared) materials.
+			name: "exploded first entry satisfies a required named slot",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "scan-report"},
+			},
+			crafted: []string{"scan-report", "scan-report-1", "scan-report-archive"},
+		},
+		{
+			// If only suffixed entries exist (no exact slot name), the required
+			// slot is NOT satisfied.
+			name: "exploded suffixed entries without the exact slot name leave it missing",
+			materials: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "scan-report"},
+			},
+			crafted:     []string{"scan-report-1", "scan-report-2"},
+			wantErr:     true,
+			errContains: []string{"scan-report"},
+		},
 	}
 
 	for _, tc := range testCases {

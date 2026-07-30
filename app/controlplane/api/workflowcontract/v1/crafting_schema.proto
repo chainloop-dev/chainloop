@@ -295,6 +295,22 @@ message PolicyAttachment {
   message MaterialSelector {
     // material name
     string name = 1;
+
+    // How `name` is matched against a material's name. Defaults to exact match
+    // (UNSPECIFIED behaves as EXACT), so existing selectors are unchanged. Use
+    // PREFIX to target a set of materials sharing a name prefix (e.g. an
+    // archive exploded into `<name>`, `<name>-1`, `<name>-2`).
+    MatchMode match_mode = 2;
+
+    // Values are intentionally unprefixed for contract-author usability
+    // ("match_mode: PREFIX" reads better than "MATCH_MODE_PREFIX"), matching the
+    // other unprefixed enums in this file (RunnerType, MaterialType).
+    // buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+    enum MatchMode {
+      UNSPECIFIED = 0;
+      EXACT = 1;
+      PREFIX = 2;
+    }
   }
 }
 
@@ -488,6 +504,11 @@ message PolicyGroup {
     // If no name is provided, material won't be enforced and will apply policies if `type` matches
     string name = 2;
     bool optional = 3;
+
+    // How `name` is matched against a material's name. Defaults to exact match
+    // (UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing
+    // a name prefix, mirroring PolicyAttachment.MaterialSelector.
+    PolicyAttachment.MaterialSelector.MatchMode match_mode = 4;
 
     // Policies to be applied to this material
     repeated PolicyAttachment policies = 6;

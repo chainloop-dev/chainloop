@@ -414,6 +414,13 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 		Selector: &v12.PolicyAttachment_MaterialSelector{Name: "custom-material"},
 	}
 	attMultikind := &v12.PolicyAttachment{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/multi-kind.yaml"}}
+	attPrefixPolicyTyped := &v12.PolicyAttachment{
+		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{
+			Name:      "sbom",
+			MatchMode: v12.PolicyAttachment_MaterialSelector_PREFIX,
+		},
+	}
 
 	testcases := []struct {
 		name     string
@@ -502,6 +509,58 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			},
 			result: 0,
 		},
+		{
+			name:     "prefix selector matches the exact base name",
+			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "sbom",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 1,
+		},
+		{
+			name:     "prefix selector matches a suffixed name",
+			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "sbom-1",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 1,
+		},
+		{
+			name:     "prefix selector does not match a different name",
+			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "other",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 0,
+		},
+		{
+			// PREFIX is a literal prefix: any name starting with the filter matches,
+			// including "sbomextra". Authors are expected to pick a discriminating prefix.
+			name:     "prefix selector matches any name starting with the filter",
+			policies: []*v12.PolicyAttachment{attPrefixPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "sbomextra",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 1,
+		},
+		{
+			name:     "exact selector (default) does not match a suffixed name",
+			policies: []*v12.PolicyAttachment{attFilteredPolicyTyped},
+			material: &v1.Attestation_Material{
+				Id:           "sbom-1",
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			},
+			result: 0,
+		},
 	}
 
 	for _, tc := range testcases {
@@ -515,6 +574,53 @@ func (s *testSuite) TestMaterialSelectionCriteria() {
 			atts, err := pv.requiredPoliciesForMaterial(context.TODO(), tc.material)
 			s.Require().NoError(err)
 			s.Require().Len(atts, tc.result)
+		})
+	}
+}
+
+// TestPrefixSelectorMultiRoleSeparation mirrors a multi-stage contract: two
+// distinct roles, each guarded by its own name-PREFIX selector. Exploding a
+// role's archive into "<role>", "<role>-1", … must route only that role's
+// policies and never the sibling role's — the two prefixes never cross-match.
+func (s *testSuite) TestPrefixSelectorMultiRoleSeparation() {
+	buildAtt := &v12.PolicyAttachment{
+		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{
+			Name:      "build-scan",
+			MatchMode: v12.PolicyAttachment_MaterialSelector_PREFIX,
+		},
+	}
+	releaseAtt := &v12.PolicyAttachment{
+		Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
+		Selector: &v12.PolicyAttachment_MaterialSelector{
+			Name:      "release-scan",
+			MatchMode: v12.PolicyAttachment_MaterialSelector_PREFIX,
+		},
+	}
+	atts := []*v12.PolicyAttachment{buildAtt, releaseAtt}
+
+	cases := []struct {
+		name string
+		id   string
+		want int
+	}{
+		{"build base routes to the build role only", "build-scan", 1},
+		{"build suffixed routes to the build role only", "build-scan-1", 1},
+		{"release base routes to the release role only", "release-scan", 1},
+		{"release suffixed routes to the release role only", "release-scan-2", 1},
+		{"unrelated name routes to neither role", "other-scan", 0},
+	}
+	pv := NewPolicyVerifier(&v12.Policies{Materials: atts}, nil, &s.logger)
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			material := &v1.Attestation_Material{
+				Id:           tc.id,
+				M:            &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+			}
+			got, err := pv.requiredPoliciesForMaterial(context.TODO(), material)
+			s.Require().NoError(err)
+			s.Require().Len(got, tc.want)
 		})
 	}
 }

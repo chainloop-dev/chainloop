@@ -957,8 +957,8 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, nil
 	}
 
-	if filteredName != "" && filteredName != material.GetId() {
-		// a filer exists and doesn't match
+	if filteredName != "" && !nameMatches(filteredName, policyAtt.GetSelector().GetMatchMode(), material.GetId()) {
+		// a filter exists and doesn't match
 		return false, nil
 	}
 
@@ -968,6 +968,21 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 	}
 
 	return true, nil
+}
+
+// nameMatches reports whether a material name satisfies a selector/group-material
+// name filter under the given match mode. The default (unspecified) mode is an
+// exact match, so existing contracts are unaffected. PREFIX is a literal prefix:
+// it matches any material whose name begins with the filter (e.g. "scan-report"
+// matches the exploded set "scan-report", "scan-report-1", …). The author is
+// expected to choose a discriminating prefix. It is the single predicate shared
+// by standalone policy attachments (shouldApplyPolicy) and policy groups
+// (VerifyMaterial).
+func nameMatches(name string, mode v1.PolicyAttachment_MaterialSelector_MatchMode, materialID string) bool {
+	if mode == v1.PolicyAttachment_MaterialSelector_PREFIX {
+		return strings.HasPrefix(materialID, name)
+	}
+	return name == materialID
 }
 
 func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {

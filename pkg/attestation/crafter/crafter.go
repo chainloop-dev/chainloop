@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -590,6 +591,19 @@ type addOpts struct {
 	// the contract arguments when evaluating the standalone material policies,
 	// either globally or scoped to a specific policy.
 	runtimeInputs *policies.RuntimeInputs
+	// recordSourceArchive, when set on an archive explode, also records the
+	// source archive as an EVIDENCE material cross-linked with the exploded
+	// materials, within the same atomic add.
+	recordSourceArchive bool
+}
+
+// WithSourceArchiveEvidence makes an archive explode also record the source
+// archive once as an EVIDENCE material, cross-linked with every exploded
+// material, in the same atomic add.
+func WithSourceArchiveEvidence() AddOpt {
+	return func(o *addOpts) {
+		o.recordSourceArchive = true
+	}
 }
 
 // WithRuntimeInputs supplies policy input values that are merged additively onto
@@ -852,6 +866,11 @@ func (c *Crafter) AddMaterialsFromArchive(
 		return nil, fmt.Errorf("adding materials from archive: %w", err)
 	}
 
+	addOptions := &addOpts{}
+	for _, opt := range opts {
+		opt(addOptions)
+	}
+
 	// Validate kind up front so we fail fast before touching disk.
 	kindVal, found := schemaapi.CraftingSchema_Material_MaterialType_value[kind]
 	if !found {
@@ -885,19 +904,25 @@ func (c *Crafter) AddMaterialsFromArchive(
 		c.CraftingState.Attestation.PolicyEvaluations = c.CraftingState.Attestation.PolicyEvaluations[:policyEvalCheckpoint]
 	}
 
-	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
-		// Material names are sequential ("<prefix>-1", "<prefix>-2", … or
-		// "material-N" with no prefix). The original basename is still derived
-		// (with archive "/" semantics, OS-independently) and used for the temp
-		// file so the recorded artifact filename preserves the real name.
-		base := materials.ArchiveEntryBaseName(name)
-		matName := allocator.AllocateSequential(namePrefix)
+	// First pass: extract every entry to its own temp file. Material names are
+	// assigned in a second pass over a sorted list so the file→name mapping is
+	// deterministic and reproducible, independent of the order the archive
+	// writer stored the entries. Each entry gets its own temp subdirectory so
+	// two entries sharing a basename (e.g. "a/x.json" and "b/x.json") never
+	// collide, while the temp file keeps the original basename so the recorded
+	// material metadata preserves the real filename. Because names can only be
+	// assigned once every entry is known, all extracted files coexist on disk
+	// until the deferred cleanup — bounded by limits.MaxTotalSize.
+	type archiveEntry struct {
+		name    string // in-archive path, for error messages
+		sortKey string // normalized path, precomputed once to order entries deterministically
+		tmpPath string
+	}
+	var entries []archiveEntry
 
-		// Give each entry its own temp subdirectory (named by the unique material
-		// name) so two entries sharing a basename (e.g. "a/x.json" and "b/x.json")
-		// never collide, while the temp file itself keeps the original basename so
-		// the recorded material metadata preserves the real filename.
-		entryDir, err := os.MkdirTemp(tmpDir, matName+"-*")
+	walkErr := materials.WalkArchiveEntries(archivePath, format, limits, func(name string, r io.Reader) error {
+		base := materials.ArchiveEntryBaseName(name)
+		entryDir, err := os.MkdirTemp(tmpDir, "entry-*")
 		if err != nil {
 			return fmt.Errorf("creating temp dir for entry %q: %w", name, err)
 		}
@@ -916,37 +941,83 @@ func (c *Crafter) AddMaterialsFromArchive(
 			return fmt.Errorf("closing temp file for entry %q: %w", name, err)
 		}
 
+		entries = append(entries, archiveEntry{name: name, sortKey: materials.NormalizeArchivePath(name), tmpPath: tmpPath})
+		return nil
+	})
+	if walkErr != nil {
+		return nil, fmt.Errorf("expanding archive %q: %w", archivePath, walkErr)
+	}
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("archive %q contains no processable entries", archivePath)
+	}
+
+	// Deterministic order: sort by the normalized entry path so the same archive
+	// content always yields the same material names, and the first sorted entry
+	// takes the exact --name (namePrefix).
+	sort.SliceStable(entries, func(i, j int) bool {
+		return entries[i].sortKey < entries[j].sortKey
+	})
+
+	// Second pass: name (first entry = exact prefix, then "<prefix>-1", …) and stage.
+	for _, e := range entries {
+		matName := allocator.AllocateNamed(namePrefix)
 		m := &schemaapi.CraftingSchema_Material{
 			Optional: true,
 			Type:     materialKind,
 			Name:     matName,
 		}
 
-		mt, err := c.stageMaterial(ctx, m, tmpPath, casBackend, runtimeAnnotations, opts...)
-		// Remove the entry's temp subdir immediately after staging to keep disk
-		// usage bounded; the deferred os.RemoveAll(tmpDir) is the safety net.
-		os.RemoveAll(entryDir) //nolint:errcheck // best-effort cleanup
+		mt, err := c.stageMaterial(ctx, m, e.tmpPath, casBackend, runtimeAnnotations, opts...)
 		if err != nil {
-			return fmt.Errorf("staging entry %q as material %q: %w", name, matName, err)
+			rollback()
+			return nil, fmt.Errorf("staging entry %q as material %q: %w", e.name, matName, err)
 		}
 
 		stagedNames = append(stagedNames, matName)
 		result = append(result, mt)
-		return nil
-	})
-
-	if walkErr != nil {
-		// Roll back any in-memory staging: remove material map entries and
-		// truncate policy evaluations back to the pre-call checkpoint.
-		rollback()
-		return nil, fmt.Errorf("expanding archive %q: %w", archivePath, walkErr)
 	}
 
-	if len(result) == 0 {
-		return nil, fmt.Errorf("archive %q contains no processable entries", archivePath)
+	// Optionally record the source archive once as an EVIDENCE material,
+	// cross-linked with every exploded material in both directions via
+	// chainloop.material.references. Staged inside this same transaction so the
+	// whole set (exploded materials + archive + cross-links) commits or rolls
+	// back atomically — a partial commit would otherwise leave orphaned
+	// materials that a retry duplicates.
+	if addOptions.recordSourceArchive {
+		archiveBase := "material"
+		if s := materials.SanitizeMaterialName(namePrefix); s != "" {
+			archiveBase = s
+		}
+		archiveName := allocator.AllocateNamed(archiveBase + "-archive")
+
+		explodedNames := make([]string, len(result))
+		for i, mt := range result {
+			explodedNames[i] = mt.GetId()
+		}
+
+		archiveMaterial := &schemaapi.CraftingSchema_Material{
+			Optional: true,
+			Type:     schemaapi.CraftingSchema_Material_EVIDENCE,
+			Name:     archiveName,
+		}
+		if _, err := c.stageMaterial(ctx, archiveMaterial, archivePath,
+			casBackend, map[string]string{materials.AnnotationMaterialReferences: strings.Join(explodedNames, ",")}, opts...); err != nil {
+			rollback()
+			return nil, fmt.Errorf("recording source archive %q as evidence %q: %w", archivePath, archiveName, err)
+		}
+		stagedNames = append(stagedNames, archiveName)
+
+		// Reverse edge: point each exploded material back at the archive,
+		// preserving any references a caller already set via runtimeAnnotations.
+		for _, mt := range result {
+			if mt.Annotations == nil {
+				mt.Annotations = map[string]string{}
+			}
+			mt.Annotations[materials.AnnotationMaterialReferences] = materials.AppendReferences(mt.Annotations[materials.AnnotationMaterialReferences], archiveName)
+		}
 	}
 
-	// All entries staged successfully; persist once.
+	// Everything staged successfully; persist the whole set once.
 	if err := c.stateManager.Write(ctx, attestationID, c.CraftingState); err != nil {
 		// Roll back in-memory state including policy evaluations.
 		rollback()

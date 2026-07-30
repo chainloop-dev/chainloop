@@ -27,6 +27,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestAppendReferences(t *testing.T) {
+	tests := []struct {
+		name     string
+		existing string
+		add      []string
+		want     string
+	}{
+		{"append to empty", "", []string{"a"}, "a"},
+		{"append multiple to empty", "", []string{"a", "b"}, "a,b"},
+		{"preserve existing and append", "existing", []string{"archive"}, "existing,archive"},
+		{"preserve a list and append", "a,b", []string{"c"}, "a,b,c"},
+		{"skip duplicates against existing", "a,b", []string{"b", "c"}, "a,b,c"},
+		{"skip duplicates within added", "", []string{"a", "a"}, "a"},
+		{"no names is a no-op on existing", "a,b", nil, "a,b"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, materials.AppendReferences(tc.existing, tc.add...))
+		})
+	}
+}
+
 func TestCraft(t *testing.T) {
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{

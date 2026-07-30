@@ -160,13 +160,20 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 	if format != materials.ArchiveNone {
 		if len(policyInputFiles) > 0 {
-			action.Logger.Warn().Msg("--policy-input-from-file is ignored when expanding an archive; evidence cross-links are not recorded for exploded materials")
+			// The runtime inputs still apply to every exploded material's policy
+			// evaluation (they flow through addOpts); only the per-input EVIDENCE
+			// materials are not recorded on the explode path.
+			action.Logger.Warn().Msg("--policy-input-from-file values apply to policy evaluation but are not recorded as evidence materials when expanding an archive")
 		}
 		limits := materials.ArchiveLimits{MaxEntries: action.maxExtractEntries, MaxTotalSize: action.maxExtractSize}
-		mts, err := crafter.AddMaterialsFromArchive(ctx, attestationID, materialType, materialName, materialValue, format, casBackend, annotations, limits, addOpts...)
+		// AddMaterialsFromArchive also records the source archive as an EVIDENCE
+		// material cross-linked with the exploded materials, all in one atomic
+		// commit — nothing is persisted unless the whole set succeeds.
+		mts, err := crafter.AddMaterialsFromArchive(ctx, attestationID, materialType, materialName, materialValue, format, casBackend, annotations, limits, withSourceArchiveEvidence(addOpts)...)
 		if err != nil {
 			return nil, fmt.Errorf("adding materials from archive: %w", err)
 		}
+
 		results := make([]*AttestationStatusMaterial, 0, len(mts))
 		for _, mt := range mts {
 			r, err := attMaterialToAction(mt)
@@ -248,6 +255,13 @@ func runtimeInputAddOpts(runtimeInputs *policies.RuntimeInputs) []crafter.AddOpt
 	return []crafter.AddOpt{crafter.WithRuntimeInputs(runtimeInputs)}
 }
 
+// withSourceArchiveEvidence extends opts so an archive explode also records the
+// source archive as evidence. Defined at package scope so it can reference the
+// crafter package, which the `crafter` local in Run() shadows.
+func withSourceArchiveEvidence(opts []crafter.AddOpt) []crafter.AddOpt {
+	return append(opts, crafter.WithSourceArchiveEvidence())
+}
+
 // buildRuntimeInputs reads each policy input file and returns the extracted
 // values grouped for the policy engine: unscoped entries under Global and
 // policy-scoped entries under Scoped[policy]. Values are newline-joined and
@@ -323,24 +337,7 @@ func addReference(m *api.Attestation_Material, names ...string) {
 	if m.Annotations == nil {
 		m.Annotations = make(map[string]string)
 	}
-
-	existing := []string{}
-	if v := m.Annotations[materials.AnnotationMaterialReferences]; v != "" {
-		existing = strings.Split(v, ",")
-	}
-
-	seen := make(map[string]struct{}, len(existing))
-	for _, e := range existing {
-		seen[e] = struct{}{}
-	}
-	for _, n := range names {
-		if _, ok := seen[n]; !ok {
-			existing = append(existing, n)
-			seen[n] = struct{}{}
-		}
-	}
-
-	m.Annotations[materials.AnnotationMaterialReferences] = strings.Join(existing, ",")
+	m.Annotations[materials.AnnotationMaterialReferences] = materials.AppendReferences(m.Annotations[materials.AnnotationMaterialReferences], names...)
 }
 
 // policyInputEvidenceNames derives the evidence material name for each policy

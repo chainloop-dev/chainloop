@@ -16,13 +16,21 @@
 package action
 
 import (
+	"archive/zip"
+	"context"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/filesystem"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,6 +39,71 @@ import (
 // materialNameRe mirrors the DNS-1123-style constraint enforced on material
 // names by the proto validation (name.dns-1123).
 var materialNameRe = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
+
+// TestAddSourceArchiveEvidence exercises the Part B cross-link end to end: an
+// exploded archive is recorded once as an EVIDENCE material and linked with the
+// exploded materials in both directions.
+// TestExplodeRecordsSourceArchiveEvidence checks that AddMaterialsFromArchive
+// records the source archive once as an EVIDENCE material cross-linked with the
+// exploded materials in both directions, all in the one atomic add.
+func TestExplodeRecordsSourceArchiveEvidence(t *testing.T) {
+	ctx := context.Background()
+
+	// A dry-run crafter backed by a local state file (no control plane).
+	statePath := filepath.Join(t.TempDir(), "attestation.json")
+	sm, err := filesystem.New(statePath)
+	require.NoError(t, err)
+	c, err := crafter.NewCrafter(sm, nil)
+	require.NoError(t, err)
+	require.NoError(t, c.Init(ctx, &crafter.InitOpts{
+		SchemaV1:      &schemaapi.CraftingSchema{SchemaVersion: "v1"},
+		WfInfo:        &api.WorkflowMetadata{},
+		DryRun:        true,
+		AttestationID: "",
+		Runner:        runners.NewGeneric(),
+	}))
+
+	// A zip of two files exploded into "scan" / "scan-1".
+	zipPath := filepath.Join(t.TempDir(), "bundle.zip")
+	writeZipWithFiles(t, zipPath, map[string]string{"a.txt": "a", "b.txt": "b"})
+
+	backend := &casclient.CASBackend{}
+	mts, err := c.AddMaterialsFromArchive(ctx, "", "ARTIFACT", "scan", zipPath, materials.ArchiveZip, backend, nil, materials.DefaultArchiveLimits(), crafter.WithSourceArchiveEvidence())
+	require.NoError(t, err)
+	require.Len(t, mts, 2)
+
+	state := c.CraftingState.GetAttestation().GetMaterials()
+
+	// The archive is recorded once as EVIDENCE under "scan-archive".
+	ev, ok := state["scan-archive"]
+	require.True(t, ok, "expected scan-archive evidence material")
+	assert.Equal(t, schemaapi.CraftingSchema_Material_EVIDENCE, ev.GetMaterialType())
+
+	// Forward edge: the archive references exactly the exploded materials.
+	fwd := ev.GetAnnotations()[materials.AnnotationMaterialReferences]
+	assert.ElementsMatch(t, []string{"scan", "scan-1"}, strings.Split(fwd, ","))
+
+	// Reverse edge: every exploded material references the archive.
+	for _, name := range []string{"scan", "scan-1"} {
+		assert.Contains(t, state[name].GetAnnotations()[materials.AnnotationMaterialReferences], "scan-archive",
+			"exploded material %q must reference the archive", name)
+	}
+}
+
+func writeZipWithFiles(t *testing.T, path string, files map[string]string) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	zw := zip.NewWriter(f)
+	for name, content := range files {
+		w, err := zw.Create(name)
+		require.NoError(t, err)
+		_, err = w.Write([]byte(content))
+		require.NoError(t, err)
+	}
+	require.NoError(t, zw.Close())
+}
 
 func TestPolicyInputEvidenceNames(t *testing.T) {
 	testCases := []struct {

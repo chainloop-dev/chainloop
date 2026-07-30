@@ -300,7 +300,7 @@ func (pgv *PolicyGroupVerifier) requiredPoliciesForMaterial(ctx context.Context,
 			return nil, err
 		}
 
-		if gm.Name != "" && gm.Name != material.GetId() {
+		if gm.GetName() != "" && !nameMatches(gm.GetName(), gm.GetMatchMode(), material.GetId()) {
 			continue
 		}
 
@@ -330,10 +330,11 @@ func InterpolateGroupMaterial(gm *v1.PolicyGroup_Material, bindings map[string]s
 	}
 
 	return &v1.PolicyGroup_Material{
-		Type:     gm.Type,
-		Name:     name,
-		Optional: gm.Optional,
-		Policies: gm.Policies,
+		Type:      gm.Type,
+		Name:      name,
+		MatchMode: gm.MatchMode,
+		Optional:  gm.Optional,
+		Policies:  gm.Policies,
 	}, nil
 }
 

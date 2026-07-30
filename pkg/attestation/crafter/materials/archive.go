@@ -111,7 +111,15 @@ func IsExplodableKind(kind string) bool {
 // on Windows resolve to the same basename everywhere (filepath.Base would treat
 // "\\" as a separator only on Windows, yielding OS-dependent results).
 func ArchiveEntryBaseName(name string) string {
-	return path.Base(strings.ReplaceAll(name, "\\", "/"))
+	return path.Base(NormalizeArchivePath(name))
+}
+
+// NormalizeArchivePath converts an archive entry path to its canonical
+// "/"-separated form, independent of the host OS. Archive entry names are
+// "/"-separated by spec; backslashes produced on Windows are folded to "/" so
+// the same entry resolves identically everywhere.
+func NormalizeArchivePath(name string) string {
+	return strings.ReplaceAll(name, "\\", "/")
 }
 
 // defaultMaterialName is the fallback base used when a name cannot be derived
@@ -139,12 +147,14 @@ func SanitizeMaterialName(s string) string {
 	return b.String()
 }
 
-// NameAllocator hands out sequential, unique DNS-1123 material names of the
-// form "<prefix>-<n>" (n starting at 1). It is seeded with names already present
-// in the attestation so derived names never overwrite existing materials.
+// NameAllocator hands out unique DNS-1123 material names of the form "<base>",
+// then "<base>-1", "<base>-2", …. It is seeded with names already present in the
+// attestation so derived names never overwrite existing materials.
 type NameAllocator struct {
 	used map[string]struct{}
-	seq  int
+	// named tracks, per sanitized base, the next suffix to try so AllocateNamed
+	// yields "<base>", "<base>-1", "<base>-2", … deterministically.
+	named map[string]int
 }
 
 // NewNameAllocator seeds the allocator with existing material names.
@@ -156,19 +166,28 @@ func NewNameAllocator(existing []string) *NameAllocator {
 	return &NameAllocator{used: used}
 }
 
-// AllocateSequential returns the next unused "<prefix>-<n>" material name, where
-// n is a zero-based counter that advances across calls and skips names already
-// in use. prefix is sanitized to DNS-1123; an empty or symbol-only prefix yields
-// the base "material" (so entries are named material-0, material-1, …).
-func (a *NameAllocator) AllocateSequential(prefix string) string {
-	base := defaultMaterialName
-	if s := SanitizeMaterialName(prefix); s != "" {
-		base = s
+// AllocateNamed returns a unique material name derived from base: the bare
+// sanitized base on first use, then "<base>-1", "<base>-2", …. It skips names
+// already in use (seeded existing materials or a base reused across archives)
+// and falls back to the "material" base when base sanitizes to empty. Callers
+// that want the whole set named deterministically must feed entries in a stable
+// order (the explode path sorts entries by name before allocating).
+func (a *NameAllocator) AllocateNamed(base string) string {
+	b := defaultMaterialName
+	if s := SanitizeMaterialName(base); s != "" {
+		b = s
+	}
+	if a.named == nil {
+		a.named = make(map[string]int)
 	}
 
 	for {
-		candidate := fmt.Sprintf("%s-%d", base, a.seq)
-		a.seq++
+		n := a.named[b]
+		a.named[b]++
+		candidate := b
+		if n > 0 {
+			candidate = fmt.Sprintf("%s-%d", b, n)
+		}
 		if _, taken := a.used[candidate]; !taken {
 			a.used[candidate] = struct{}{}
 			return candidate

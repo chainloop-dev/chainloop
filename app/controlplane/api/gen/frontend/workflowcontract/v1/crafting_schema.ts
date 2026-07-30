@@ -652,6 +652,62 @@ export interface PolicyAttachment_WithEntry {
 export interface PolicyAttachment_MaterialSelector {
   /** material name */
   name: string;
+  /**
+   * How `name` is matched against a material's name. Defaults to exact match
+   * (UNSPECIFIED behaves as EXACT), so existing selectors are unchanged. Use
+   * PREFIX to target a set of materials sharing a name prefix (e.g. an
+   * archive exploded into `<name>`, `<name>-1`, `<name>-2`).
+   */
+  matchMode: PolicyAttachment_MaterialSelector_MatchMode;
+}
+
+/**
+ * Values are intentionally unprefixed for contract-author usability
+ * ("match_mode: PREFIX" reads better than "MATCH_MODE_PREFIX"), matching the
+ * other unprefixed enums in this file (RunnerType, MaterialType).
+ * buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX
+ */
+export enum PolicyAttachment_MaterialSelector_MatchMode {
+  UNSPECIFIED = 0,
+  EXACT = 1,
+  PREFIX = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function policyAttachment_MaterialSelector_MatchModeFromJSON(
+  object: any,
+): PolicyAttachment_MaterialSelector_MatchMode {
+  switch (object) {
+    case 0:
+    case "UNSPECIFIED":
+      return PolicyAttachment_MaterialSelector_MatchMode.UNSPECIFIED;
+    case 1:
+    case "EXACT":
+      return PolicyAttachment_MaterialSelector_MatchMode.EXACT;
+    case 2:
+    case "PREFIX":
+      return PolicyAttachment_MaterialSelector_MatchMode.PREFIX;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyAttachment_MaterialSelector_MatchMode.UNRECOGNIZED;
+  }
+}
+
+export function policyAttachment_MaterialSelector_MatchModeToJSON(
+  object: PolicyAttachment_MaterialSelector_MatchMode,
+): string {
+  switch (object) {
+    case PolicyAttachment_MaterialSelector_MatchMode.UNSPECIFIED:
+      return "UNSPECIFIED";
+    case PolicyAttachment_MaterialSelector_MatchMode.EXACT:
+      return "EXACT";
+    case PolicyAttachment_MaterialSelector_MatchMode.PREFIX:
+      return "PREFIX";
+    case PolicyAttachment_MaterialSelector_MatchMode.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 /** Represents a policy to be applied to a material or attestation */
@@ -820,6 +876,12 @@ export interface PolicyGroup_Material {
    */
   name: string;
   optional: boolean;
+  /**
+   * How `name` is matched against a material's name. Defaults to exact match
+   * (UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing
+   * a name prefix, mirroring PolicyAttachment.MaterialSelector.
+   */
+  matchMode: PolicyAttachment_MaterialSelector_MatchMode;
   /** Policies to be applied to this material */
   policies: PolicyAttachment[];
 }
@@ -1830,13 +1892,16 @@ export const PolicyAttachment_WithEntry = {
 };
 
 function createBasePolicyAttachment_MaterialSelector(): PolicyAttachment_MaterialSelector {
-  return { name: "" };
+  return { name: "", matchMode: 0 };
 }
 
 export const PolicyAttachment_MaterialSelector = {
   encode(message: PolicyAttachment_MaterialSelector, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.matchMode !== 0) {
+      writer.uint32(16).int32(message.matchMode);
     }
     return writer;
   },
@@ -1855,6 +1920,13 @@ export const PolicyAttachment_MaterialSelector = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.matchMode = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1865,12 +1937,17 @@ export const PolicyAttachment_MaterialSelector = {
   },
 
   fromJSON(object: any): PolicyAttachment_MaterialSelector {
-    return { name: isSet(object.name) ? String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? String(object.name) : "",
+      matchMode: isSet(object.matchMode) ? policyAttachment_MaterialSelector_MatchModeFromJSON(object.matchMode) : 0,
+    };
   },
 
   toJSON(message: PolicyAttachment_MaterialSelector): unknown {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
+    message.matchMode !== undefined &&
+      (obj.matchMode = policyAttachment_MaterialSelector_MatchModeToJSON(message.matchMode));
     return obj;
   },
 
@@ -1885,6 +1962,7 @@ export const PolicyAttachment_MaterialSelector = {
   ): PolicyAttachment_MaterialSelector {
     const message = createBasePolicyAttachment_MaterialSelector();
     message.name = object.name ?? "";
+    message.matchMode = object.matchMode ?? 0;
     return message;
   },
 };
@@ -3087,7 +3165,7 @@ export const PolicyGroup_PolicyGroupPolicies = {
 };
 
 function createBasePolicyGroup_Material(): PolicyGroup_Material {
-  return { type: 0, name: "", optional: false, policies: [] };
+  return { type: 0, name: "", optional: false, matchMode: 0, policies: [] };
 }
 
 export const PolicyGroup_Material = {
@@ -3100,6 +3178,9 @@ export const PolicyGroup_Material = {
     }
     if (message.optional === true) {
       writer.uint32(24).bool(message.optional);
+    }
+    if (message.matchMode !== 0) {
+      writer.uint32(32).int32(message.matchMode);
     }
     for (const v of message.policies) {
       PolicyAttachment.encode(v!, writer.uint32(50).fork()).ldelim();
@@ -3135,6 +3216,13 @@ export const PolicyGroup_Material = {
 
           message.optional = reader.bool();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.matchMode = reader.int32() as any;
+          continue;
         case 6:
           if (tag !== 50) {
             break;
@@ -3156,6 +3244,7 @@ export const PolicyGroup_Material = {
       type: isSet(object.type) ? craftingSchema_Material_MaterialTypeFromJSON(object.type) : 0,
       name: isSet(object.name) ? String(object.name) : "",
       optional: isSet(object.optional) ? Boolean(object.optional) : false,
+      matchMode: isSet(object.matchMode) ? policyAttachment_MaterialSelector_MatchModeFromJSON(object.matchMode) : 0,
       policies: Array.isArray(object?.policies) ? object.policies.map((e: any) => PolicyAttachment.fromJSON(e)) : [],
     };
   },
@@ -3165,6 +3254,8 @@ export const PolicyGroup_Material = {
     message.type !== undefined && (obj.type = craftingSchema_Material_MaterialTypeToJSON(message.type));
     message.name !== undefined && (obj.name = message.name);
     message.optional !== undefined && (obj.optional = message.optional);
+    message.matchMode !== undefined &&
+      (obj.matchMode = policyAttachment_MaterialSelector_MatchModeToJSON(message.matchMode));
     if (message.policies) {
       obj.policies = message.policies.map((e) => e ? PolicyAttachment.toJSON(e) : undefined);
     } else {
@@ -3182,6 +3273,7 @@ export const PolicyGroup_Material = {
     message.type = object.type ?? 0;
     message.name = object.name ?? "";
     message.optional = object.optional ?? false;
+    message.matchMode = object.matchMode ?? 0;
     message.policies = object.policies?.map((e) => PolicyAttachment.fromPartial(e)) || [];
     return message;
   },
