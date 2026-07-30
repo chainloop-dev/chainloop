@@ -194,12 +194,15 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	// Resolve PR mode: explicit --pr flag wins, otherwise auto-detect from the
-	// CI runner environment. PR mode only tags the attestation with the
-	// chainloop.dev/is-pull-request annotation; it does not alter latest
-	// promotion (use --mark-latest=false explicitly to skip promotion).
+	// CI runner environment. When in PR mode, default mark-latest=false unless
+	// the user explicitly passed --mark-latest=true.
 	isPR, err := action.resolvePRMode(ctx, discoveredRunner, opts.PRMode)
 	if err != nil {
 		action.Logger.Warn().Err(err).Msg("failed to detect PR context")
+	}
+	if isPR && !explicitMarkAsLatestTrue(opts.MarkAsLatest) {
+		falseVal := false
+		opts.MarkAsLatest = &falseVal
 	}
 
 	// Parse the raw contract to get V2 schema if available
@@ -565,4 +568,11 @@ func (action *AttestationInit) resolvePRMode(ctx context.Context, runner crafter
 		return false, err
 	}
 	return detected, nil
+}
+
+// explicitMarkAsLatestTrue returns true only when the user explicitly passed
+// --mark-latest=true. A nil pointer (flag not set) or an explicit false do not
+// count, so PR mode can safely override them to false.
+func explicitMarkAsLatestTrue(v *bool) bool {
+	return v != nil && *v
 }

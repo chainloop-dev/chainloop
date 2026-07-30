@@ -12,7 +12,7 @@
       "type": "string"
     },
     "^(markAsLatest)$": {
-      "description": "Optional flag to control whether the version should be marked as the latest.\n Omitted: default behavior (new versions become latest).\n true: force promote to latest (only pre-release versions).\n false: skip latest promotion.\n Mutually exclusive with use_latest_version.",
+      "description": "Optional flag to control whether the version should be marked as the latest.\n Omitted (nil): new versions become latest, and an existing newest\n pre-release version is promoted to latest when it is not already latest.\n true: force promotion of a pre-release version to latest (released\n versions are rejected).\n false: skip latest promotion (also the sentinel sent by PR mode).\n Mutually exclusive with use_latest_version.",
       "type": "boolean"
     },
     "^(projectName)$": {
@@ -46,7 +46,7 @@
       "type": "string"
     },
     "mark_as_latest": {
-      "description": "Optional flag to control whether the version should be marked as the latest.\n Omitted: default behavior (new versions become latest).\n true: force promote to latest (only pre-release versions).\n false: skip latest promotion.\n Mutually exclusive with use_latest_version.",
+      "description": "Optional flag to control whether the version should be marked as the latest.\n Omitted (nil): new versions become latest, and an existing newest\n pre-release version is promoted to latest when it is not already latest.\n true: force promotion of a pre-release version to latest (released\n versions are rejected).\n false: skip latest promotion (also the sentinel sent by PR mode).\n Mutually exclusive with use_latest_version.",
       "type": "boolean"
     },
     "project_name": {
