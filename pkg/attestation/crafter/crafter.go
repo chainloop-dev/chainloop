@@ -1007,13 +1007,13 @@ func (c *Crafter) AddMaterialsFromArchive(
 		}
 		stagedNames = append(stagedNames, archiveName)
 
-		// Reverse edge: point each exploded material back at the archive. They are
-		// freshly staged, so there are no prior references to merge.
+		// Reverse edge: point each exploded material back at the archive,
+		// preserving any references a caller already set via runtimeAnnotations.
 		for _, mt := range result {
 			if mt.Annotations == nil {
 				mt.Annotations = map[string]string{}
 			}
-			mt.Annotations[materials.AnnotationMaterialReferences] = archiveName
+			mt.Annotations[materials.AnnotationMaterialReferences] = materials.AppendReferences(mt.Annotations[materials.AnnotationMaterialReferences], archiveName)
 		}
 	}
 

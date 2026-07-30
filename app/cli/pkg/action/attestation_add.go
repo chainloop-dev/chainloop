@@ -337,24 +337,7 @@ func addReference(m *api.Attestation_Material, names ...string) {
 	if m.Annotations == nil {
 		m.Annotations = make(map[string]string)
 	}
-
-	existing := []string{}
-	if v := m.Annotations[materials.AnnotationMaterialReferences]; v != "" {
-		existing = strings.Split(v, ",")
-	}
-
-	seen := make(map[string]struct{}, len(existing))
-	for _, e := range existing {
-		seen[e] = struct{}{}
-	}
-	for _, n := range names {
-		if _, ok := seen[n]; !ok {
-			existing = append(existing, n)
-			seen[n] = struct{}{}
-		}
-	}
-
-	m.Annotations[materials.AnnotationMaterialReferences] = strings.Join(existing, ",")
+	m.Annotations[materials.AnnotationMaterialReferences] = materials.AppendReferences(m.Annotations[materials.AnnotationMaterialReferences], names...)
 }
 
 // policyInputEvidenceNames derives the evidence material name for each policy
