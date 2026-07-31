@@ -149,8 +149,13 @@ func (uc *ProjectVersionUseCase) UpdateReleaseStatus(ctx context.Context, versio
 	return uc.projectRepo.Update(ctx, versionUUID, &ProjectVersionUpdateOpts{Prerelease: &preReleaseValue})
 }
 
-// MarkAsLatest promotes a pre-release version to latest. The platform repo builds the
-// "project version mark-latest" CLI command and service endpoint on top of this method.
+// MarkAsLatest promotes a pre-release version to latest.
+//
+// Nothing calls this today: no service in this repository uses it, and the
+// platform implements its own mark-latest over its own repositories rather than
+// this use case. It is kept as the biz-layer entry point for the operation, and
+// it dispatches the promotion event so that a future caller cannot reintroduce
+// the silent-transition gap this method used to have.
 func (uc *ProjectVersionUseCase) MarkAsLatest(ctx context.Context, projectID, versionID string) error {
 	ctx, span := otelx.Start(ctx, projectVersionTracer, "ProjectVersionUseCase.MarkAsLatest")
 	defer span.End()
