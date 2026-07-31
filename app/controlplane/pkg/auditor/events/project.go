@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -164,6 +164,10 @@ type ProjectVersionUpdated struct {
 	VersionID  *uuid.UUID `json:"version_id,omitempty"`
 	Version    string     `json:"version,omitempty"`
 	NewVersion *string    `json:"new_version,omitempty"`
+	// MarkedAsLatest reports that the update promoted this version to be the
+	// project's latest one. Always emitted, like Prerelease on the sibling
+	// events, so consumers can tell "not a promotion" from "older producer".
+	MarkedAsLatest bool `json:"marked_as_latest"`
 }
 
 func (p *ProjectVersionUpdated) ActionType() string {
@@ -183,15 +187,17 @@ func (p *ProjectVersionUpdated) ActionInfo() (json.RawMessage, error) {
 }
 
 func (p *ProjectVersionUpdated) Description() string {
-	desc := fmt.Sprintf("%s has updated version '%s' for project '%s'",
-		auditor.GetActorIdentifier(), p.Version, p.ProjectName)
-
-	if p.NewVersion != nil {
-		desc = fmt.Sprintf("%s has renamed version '%s' to '%s' for project '%s'",
+	switch {
+	case p.NewVersion != nil:
+		return fmt.Sprintf("%s has renamed version '%s' to '%s' for project '%s'",
 			auditor.GetActorIdentifier(), p.Version, *p.NewVersion, p.ProjectName)
+	case p.MarkedAsLatest:
+		return fmt.Sprintf("%s has promoted version '%s' to latest for project '%s'",
+			auditor.GetActorIdentifier(), p.Version, p.ProjectName)
+	default:
+		return fmt.Sprintf("%s has updated version '%s' for project '%s'",
+			auditor.GetActorIdentifier(), p.Version, p.ProjectName)
 	}
-
-	return desc
 }
 
 // Helper function to make role names more user-friendly

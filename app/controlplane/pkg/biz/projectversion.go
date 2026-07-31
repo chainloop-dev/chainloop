@@ -20,6 +20,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -51,24 +52,72 @@ type ProjectVersion struct {
 	ProjectID uuid.UUID
 }
 
+// ProjectVersionPromotion is the outcome of promoting a project version to be
+// the latest one.
+type ProjectVersionPromotion struct {
+	// Promoted reports whether the promotion changed which version is the
+	// latest one. It is false when the version already was the latest.
+	Promoted bool
+	// Version and Project describe the promotion for auditing purposes. Both are
+	// populated whenever the promotion succeeded, so that a committed promotion
+	// can always be reported.
+	Version *ProjectVersion
+	Project *Project
+}
+
+// dispatchProjectVersionPromoted reports that a project version became the
+// latest one for its project. Every path that promotes a version funnels
+// through here: downstream consumers reconcile off this event, so a promotion
+// must be as loud as a creation, otherwise anything tracking the latest version
+// of the project silently falls behind.
+//
+// A promotion deliberately reuses ProjectVersionUpdated rather than declaring
+// its own action type, and that choice is load-bearing. Subjects are published
+// as "audit.<target_type>.<action_type>", and consumers subscribe to a fixed
+// list of them, so a new action type lands on a subject nobody is listening to
+// and every promotion is dropped — the very failure this event exists to
+// prevent, but silent. If this action type ever changes, the consumers must
+// subscribe to the new subject and be released FIRST; MarkedAsLatest is what
+// lets a consumer tell a promotion from a rename in the meantime.
+func dispatchProjectVersionPromoted(ctx context.Context, auditorUC *AuditorUseCase, project *Project, version *ProjectVersion) {
+	if auditorUC == nil || project == nil || version == nil {
+		return
+	}
+
+	auditorUC.Dispatch(ctx, &events.ProjectVersionUpdated{
+		ProjectBase: &events.ProjectBase{
+			ProjectID:   &project.ID,
+			ProjectName: project.Name,
+		},
+		VersionID:      &version.ID,
+		Version:        version.Version,
+		MarkedAsLatest: true,
+	}, &project.OrgID)
+}
+
 type ProjectVersionRepo interface {
 	FindByProjectAndVersion(ctx context.Context, projectID uuid.UUID, version string) (*ProjectVersion, error)
 	Update(ctx context.Context, versionID uuid.UUID, updates *ProjectVersionUpdateOpts) (*ProjectVersion, error)
 	Create(ctx context.Context, projectID uuid.UUID, version string, prerelease bool) (*ProjectVersion, error)
-	MarkAsLatest(ctx context.Context, projectID, versionID uuid.UUID) error
+	MarkAsLatest(ctx context.Context, projectID, versionID uuid.UUID) (*ProjectVersionPromotion, error)
 }
 
 type ProjectVersionUseCase struct {
 	projectRepo ProjectVersionRepo
+	auditorUC   *AuditorUseCase
 	logger      *log.Helper
 }
 
-func NewProjectVersionUseCase(repo ProjectVersionRepo, l log.Logger) *ProjectVersionUseCase {
+func NewProjectVersionUseCase(repo ProjectVersionRepo, auditorUC *AuditorUseCase, l log.Logger) *ProjectVersionUseCase {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
-	return &ProjectVersionUseCase{projectRepo: repo, logger: servicelogger.ScopedHelper(l, "biz/project-version")}
+	return &ProjectVersionUseCase{
+		projectRepo: repo,
+		auditorUC:   auditorUC,
+		logger:      servicelogger.ScopedHelper(l, "biz/project-version"),
+	}
 }
 
 func (uc *ProjectVersionUseCase) FindByProjectAndVersion(ctx context.Context, projectID string, version string) (*ProjectVersion, error) {
@@ -100,8 +149,13 @@ func (uc *ProjectVersionUseCase) UpdateReleaseStatus(ctx context.Context, versio
 	return uc.projectRepo.Update(ctx, versionUUID, &ProjectVersionUpdateOpts{Prerelease: &preReleaseValue})
 }
 
-// MarkAsLatest promotes a pre-release version to latest. The platform repo builds the
-// "project version mark-latest" CLI command and service endpoint on top of this method.
+// MarkAsLatest promotes a pre-release version to latest.
+//
+// Nothing calls this today: no service in this repository uses it, and the
+// platform implements its own mark-latest over its own repositories rather than
+// this use case. It is kept as the biz-layer entry point for the operation, and
+// it dispatches the promotion event so that a future caller cannot reintroduce
+// the silent-transition gap this method used to have.
 func (uc *ProjectVersionUseCase) MarkAsLatest(ctx context.Context, projectID, versionID string) error {
 	ctx, span := otelx.Start(ctx, projectVersionTracer, "ProjectVersionUseCase.MarkAsLatest")
 	defer span.End()
@@ -116,7 +170,16 @@ func (uc *ProjectVersionUseCase) MarkAsLatest(ctx context.Context, projectID, ve
 		return NewErrInvalidUUID(err)
 	}
 
-	return uc.projectRepo.MarkAsLatest(ctx, projectUUID, versionUUID)
+	promotion, err := uc.projectRepo.MarkAsLatest(ctx, projectUUID, versionUUID)
+	if err != nil {
+		return err
+	}
+
+	if promotion.Promoted {
+		dispatchProjectVersionPromoted(ctx, uc.auditorUC, promotion.Project, promotion.Version)
+	}
+
+	return nil
 }
 
 func (uc *ProjectVersionUseCase) Create(ctx context.Context, projectID, version string, prerelease bool) (*ProjectVersion, error) {

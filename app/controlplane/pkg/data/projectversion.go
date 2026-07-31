@@ -17,6 +17,7 @@ package data
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -143,12 +144,27 @@ func createProjectVersionWithTx(ctx context.Context, tx *ent.Tx, projectID uuid.
 		Save(ctx)
 }
 
-func (r *ProjectVersionRepo) MarkAsLatest(ctx context.Context, projectID, versionID uuid.UUID) error {
+func (r *ProjectVersionRepo) MarkAsLatest(ctx context.Context, projectID, versionID uuid.UUID) (*biz.ProjectVersionPromotion, error) {
 	ctx, span := otelx.Start(ctx, projectVersionRepoTracer, "ProjectVersionRepo.MarkAsLatest")
 	defer span.End()
 
-	return WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-		v, err := tx.ProjectVersion.Query().
+	// The audit context is read up front, before anything is written: the
+	// project's name and organization are stable, and reading them here keeps
+	// them off both the locked window and the post-commit path. A promotion that
+	// commits can then always be reported, whereas a read placed after the
+	// commit could fail and strand the promotion with no event — and the retry
+	// would see it as already latest and stay silent forever.
+	p, err := r.data.DB.Project.Get(ctx, projectID)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, biz.NewErrNotFound("Project")
+		}
+		return nil, fmt.Errorf("loading project: %w", err)
+	}
+
+	var promotion *biz.ProjectVersionPromotion
+	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		v, err := tx.ProjectVersion.Query().ForUpdate().
 			Where(projectversion.ID(versionID), projectversion.ProjectID(projectID), projectversion.DeletedAtIsNil()).
 			Only(ctx)
 		if err != nil {
@@ -158,28 +174,63 @@ func (r *ProjectVersionRepo) MarkAsLatest(ctx context.Context, projectID, versio
 			return err
 		}
 
-		if !v.Prerelease {
-			return biz.NewErrValidationStr("cannot promote a released version to latest")
+		promoted, err := promoteVersionToLatestWithTx(ctx, tx, v)
+		if err != nil {
+			return err
 		}
 
-		return promoteVersionToLatestWithTx(ctx, tx, projectID, versionID)
-	})
+		// v is the pre-update snapshot and latest is the only field the
+		// promotion touches, so this describes the committed row.
+		version := entProjectVersionToBiz(v)
+		version.Latest = true
+
+		promotion = &biz.ProjectVersionPromotion{
+			Promoted: promoted,
+			Version:  version,
+			Project:  entProjectToBiz(p),
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return promotion, nil
 }
 
-func promoteVersionToLatestWithTx(ctx context.Context, tx *ent.Tx, projectID, versionID uuid.UUID) error {
+// promoteVersionToLatestWithTx makes v the only latest version of its project.
+// v must have been read in this transaction with a row lock, which serialises
+// concurrent promotions of that same version.
+//
+// It reports whether v's own latest flag changed, which callers use to decide
+// whether the transition is worth announcing.
+//
+// The lock covers v alone, not the project's other versions, so promotions of
+// two different versions of the same project are not serialised against each
+// other and can both report success. Closing that needs a lock on the project
+// row or a unique partial index on (project_id) WHERE latest.
+func promoteVersionToLatestWithTx(ctx context.Context, tx *ent.Tx, v *ent.ProjectVersion) (bool, error) {
+	if !v.Prerelease {
+		return false, biz.NewErrValidationStr("cannot promote a released version to latest")
+	}
+
 	if err := tx.ProjectVersion.Update().
 		Where(
-			projectversion.ProjectID(projectID),
+			projectversion.ProjectID(v.ProjectID),
 			projectversion.DeletedAtIsNil(),
 			projectversion.Latest(true),
 		).SetLatest(false).Exec(ctx); err != nil {
-		return err
+		return false, err
 	}
 
-	return tx.ProjectVersion.UpdateOneID(versionID).
+	if err := tx.ProjectVersion.UpdateOneID(v.ID).
 		SetLatest(true).
 		SetUpdatedAt(time.Now()).
-		Exec(ctx)
+		Exec(ctx); err != nil {
+		return false, err
+	}
+
+	return !v.Latest, nil
 }
 
 func findProjectVersionWithClient(ctx context.Context, client *ent.Client, projectID uuid.UUID, version string) (*ent.ProjectVersion, error) {

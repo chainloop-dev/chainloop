@@ -166,7 +166,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		return nil, nil, err
 	}
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
-	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
+	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, auditorUseCase, logger)
 	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo, authzUseCase, membershipUseCase)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, authzUseCase)
 	testingRepos := &TestingRepos{

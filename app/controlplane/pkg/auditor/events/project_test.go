@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,6 +90,35 @@ func TestProjectEvents(t *testing.T) {
 				NewVersion: stringPtr("v1.0.1"),
 			},
 			expected: "testdata/projects/project_version_updated.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "ProjectVersionUpdated without a specific change",
+			event: &events.ProjectVersionUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+				VersionID: &versionUUID,
+				Version:   "v1.0.0",
+			},
+			expected: "testdata/projects/project_version_updated_generic.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "ProjectVersionUpdated marked as latest",
+			event: &events.ProjectVersionUpdated{
+				ProjectBase: &events.ProjectBase{
+					ProjectID:   &projectUUID,
+					ProjectName: projectName,
+				},
+				VersionID:      &versionUUID,
+				Version:        "v1.0.0",
+				MarkedAsLatest: true,
+			},
+			expected: "testdata/projects/project_version_marked_as_latest.json",
 			actor:    auditor.ActorTypeUser,
 			actorID:  userUUID,
 		},

@@ -7,14 +7,13 @@
   "ActorEmail": "john@cyberdyne.io",
   "ActorName": "John Connor",
   "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
-  "Description": "John Connor has renamed version 'v1.0.0' to 'v1.0.1' for project 'test-project'",
+  "Description": "John Connor has promoted version 'v1.0.0' to latest for project 'test-project'",
   "Info": {
     "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
     "project_name": "test-project",
     "version_id": "5089bb36-e27b-428b-8009-d015c8737c58",
     "version": "v1.0.0",
-    "new_version": "v1.0.1",
-    "marked_as_latest": false
+    "marked_as_latest": true
   },
-  "Digest": "sha256:3d2d27245dbe6e2629eb88259c56194e0a0c81820fa96e3391b316a511fe18c1"
+  "Digest": "sha256:02de4db635507f73918e0a5ad07039e3da666d323ab2de72bd106160a2bc7dca"
 }

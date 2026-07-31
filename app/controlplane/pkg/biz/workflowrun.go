@@ -88,9 +88,13 @@ const (
 )
 
 type WorkflowRunRepoCreateResult struct {
-	Run            *WorkflowRun
-	Project        *Project
+	Run     *WorkflowRun
+	Project *Project
+	// VersionCreated reports that the run created the project version.
 	VersionCreated bool
+	// VersionPromoted reports that the run promoted an already existing project
+	// version to be the latest one. Mutually exclusive with VersionCreated.
+	VersionPromoted bool
 }
 
 type WorkflowRunRepo interface {
@@ -323,8 +327,9 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 		return nil, err
 	}
 
-	// Dispatch audit event for project version creation if a new version was created
-	if result.VersionCreated && uc.auditorUC != nil && result.Project != nil {
+	// Report the project version transition this run caused, if any.
+	switch {
+	case result.VersionCreated && uc.auditorUC != nil && result.Project != nil:
 		uc.auditorUC.Dispatch(ctx, &events.ProjectVersionCreated{
 			ProjectBase: &events.ProjectBase{
 				ProjectID:   &result.Project.ID,
@@ -334,6 +339,8 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			Version:    result.Run.ProjectVersion.Version,
 			Prerelease: result.Run.ProjectVersion.Prerelease,
 		}, &result.Project.OrgID)
+	case result.VersionPromoted:
+		dispatchProjectVersionPromoted(ctx, uc.auditorUC, result.Project, result.Run.ProjectVersion)
 	}
 
 	return result.Run, nil

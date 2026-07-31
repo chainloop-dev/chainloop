@@ -1018,6 +1018,60 @@ func (s *workflowRunIntegrationTestSuite) TestContractInformation() {
 	})
 }
 
+// The repository is the only layer that can tell a version creation apart from
+// the promotion of an existing one, so it must report the promotion back to the
+// use case, which is what turns it into an audit event.
+func (s *workflowRunIntegrationTestSuite) TestCreateReportsVersionPromotion() {
+	ctx := context.Background()
+	markTrue, markFalse := true, false
+
+	createOpts := func(version string, markAsLatest *bool) *biz.WorkflowRunRepoCreateOpts {
+		return &biz.WorkflowRunRepoCreateOpts{
+			WorkflowID:      s.workflowOrg1.ID,
+			SchemaVersionID: s.contractVersion.Version.ID,
+			RunURL:          "runURL",
+			RunnerType:      "runnerType",
+			Backends:        []uuid.UUID{s.casBackend.ID},
+			LatestRevision:  s.contractVersion.Contract.LatestRevision,
+			UsedRevision:    s.contractVersion.Version.Revision,
+			ProjectVersion:  version,
+			MarkAsLatest:    markAsLatest,
+		}
+	}
+
+	s.Run("creating a version is reported as a creation, not a promotion", func() {
+		result, err := s.Repos.WorkflowRunRepo.Create(ctx, createOpts("promotion-created", &markTrue))
+		s.Require().NoError(err)
+		s.True(result.VersionCreated)
+		s.False(result.VersionPromoted)
+		s.True(result.Run.ProjectVersion.Latest)
+	})
+
+	s.Run("re-attesting the version that already is the latest is not a promotion", func() {
+		result, err := s.Repos.WorkflowRunRepo.Create(ctx, createOpts("promotion-noop", &markTrue))
+		s.Require().NoError(err)
+		s.Require().True(result.Run.ProjectVersion.Latest)
+
+		result, err = s.Repos.WorkflowRunRepo.Create(ctx, createOpts("promotion-noop", &markTrue))
+		s.Require().NoError(err)
+		s.False(result.VersionCreated)
+		s.False(result.VersionPromoted)
+	})
+
+	s.Run("promoting an existing non-latest version is reported as a promotion", func() {
+		_, err := s.Repos.WorkflowRunRepo.Create(ctx, createOpts("promotion-old", &markFalse))
+		s.Require().NoError(err)
+		_, err = s.Repos.WorkflowRunRepo.Create(ctx, createOpts("promotion-new", &markTrue))
+		s.Require().NoError(err)
+
+		result, err := s.Repos.WorkflowRunRepo.Create(ctx, createOpts("promotion-old", &markTrue))
+		s.Require().NoError(err)
+		s.False(result.VersionCreated)
+		s.True(result.VersionPromoted)
+		s.True(result.Run.ProjectVersion.Latest)
+	})
+}
+
 // Run the tests
 func TestWorkflowRunUseCase(t *testing.T) {
 	suite.Run(t, new(workflowRunIntegrationTestSuite))
