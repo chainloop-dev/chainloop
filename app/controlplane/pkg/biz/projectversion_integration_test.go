@@ -22,6 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -144,6 +145,33 @@ func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatest() {
 	v2Demoted, err := s.ProjectVersion.FindByProjectAndVersion(ctx, s.project.ID.String(), "2.0.0")
 	require.NoError(t, err)
 	require.False(t, v2Demoted.Latest)
+}
+
+// The repository is what knows whether the promotion actually moved the latest
+// pointer, so it reports it back for the use case to audit.
+func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatestReportsPromotion() {
+	t := s.T()
+	ctx := context.Background()
+	repo := data.NewProjectVersionRepo(s.Data, s.L)
+
+	v1, err := s.ProjectVersion.Create(ctx, s.project.ID.String(), "1.0.0", true)
+	require.NoError(t, err)
+	_, err = s.ProjectVersion.Create(ctx, s.project.ID.String(), "2.0.0", true)
+	require.NoError(t, err)
+
+	promotion, err := repo.MarkAsLatest(ctx, s.project.ID, v1.ID)
+	require.NoError(t, err)
+	require.True(t, promotion.Promoted)
+	require.Equal(t, v1.ID, promotion.Version.ID)
+	require.Equal(t, "1.0.0", promotion.Version.Version)
+	require.True(t, promotion.Version.Latest)
+	require.Equal(t, s.project.ID, promotion.Project.ID)
+	require.Equal(t, s.org.ID, promotion.Project.OrgID.String())
+
+	// Promoting the version that already is the latest changes nothing
+	promotion, err = repo.MarkAsLatest(ctx, s.project.ID, v1.ID)
+	require.NoError(t, err)
+	require.False(t, promotion.Promoted)
 }
 
 func (s *ProjectVersionIntegrationTestSuite) TestMarkAsLatestReleasedVersionError() {

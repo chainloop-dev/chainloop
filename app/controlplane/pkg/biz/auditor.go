@@ -34,17 +34,25 @@ type AuditorUseCase struct {
 	dispatcher *auditor.Dispatcher
 }
 
+// NewAuditorUseCase builds an AuditorUseCase from the NATS-backed publisher.
+// It takes the concrete type because the publisher is nil when auditing is
+// disabled, and a nil pointer assigned straight to an interface would leave the
+// dispatcher holding a typed-nil that reports itself as enabled.
 func NewAuditorUseCase(p *auditor.AuditLogPublisher, logger log.Logger) *AuditorUseCase {
-	// keep the Publisher interface nil when the publisher is disabled so the
-	// dispatcher short-circuits instead of holding a typed-nil interface
 	var publisher auditor.Publisher
 	if p != nil {
 		publisher = p
 	}
 
+	return newAuditorUseCase(publisher, logger)
+}
+
+// newAuditorUseCase builds an AuditorUseCase over any publisher. A nil
+// publisher makes dispatching a no-op.
+func newAuditorUseCase(p auditor.Publisher, logger log.Logger) *AuditorUseCase {
 	return &AuditorUseCase{
 		log:        log.NewHelper(log.With(logger, "component", "biz/auditor")),
-		dispatcher: auditor.NewDispatcher(publisher, logger),
+		dispatcher: auditor.NewDispatcher(p, logger),
 	}
 }
 

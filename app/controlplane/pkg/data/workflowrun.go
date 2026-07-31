@@ -88,7 +88,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	}
 
 	var p *ent.WorkflowRun
-	versionCreated := false
+	var versionCreated, versionPromoted bool
 	// Create version and workflow in a transaction
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		markAsLatest := opts.MarkAsLatest != nil && *opts.MarkAsLatest
@@ -118,12 +118,12 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 			}
 
 			if markAsLatest {
-				if !fresh.Prerelease {
-					return biz.NewErrValidationStr("cannot promote a released version to latest")
-				}
-
-				if err := promoteVersionToLatestWithTx(ctx, tx, wf.ProjectID, fresh.ID); err != nil {
-					return fmt.Errorf("promoting version to latest: %w", err)
+				// Returned unwrapped so that the released-version validation
+				// error reads identically here and on the explicit promotion
+				// endpoint, which surfaces it to the user verbatim.
+				versionPromoted, err = promoteVersionToLatestWithTx(ctx, tx, fresh)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -189,9 +189,10 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 	run.ProjectVersion = entProjectVersionToBiz(version)
 
 	return &biz.WorkflowRunRepoCreateResult{
-		Project:        entProjectToBiz(project),
-		Run:            run,
-		VersionCreated: versionCreated,
+		Project:         entProjectToBiz(project),
+		Run:             run,
+		VersionCreated:  versionCreated,
+		VersionPromoted: versionPromoted,
 	}, nil
 }
 

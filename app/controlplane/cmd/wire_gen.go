@@ -224,7 +224,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		return nil, nil, err
 	}
 	projectVersionRepo := data.NewProjectVersionRepo(dataData, logger)
-	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, logger)
+	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, auditorUseCase, logger)
 	policyevalbundleCache, err := policyevalbundle.New(contextContext, reloadableConnection, logger)
 	if err != nil {
 		cleanup3()
