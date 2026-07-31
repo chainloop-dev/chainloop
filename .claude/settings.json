@@ -17,7 +17,7 @@
             "type": "command"
           }
         ],
-        "matcher": "Edit|Write|MultiEdit"
+        "matcher": "Edit|Write|MultiEdit|Bash"
       }
     ],
     "PreToolUse": [
@@ -28,7 +28,7 @@
             "type": "command"
           }
         ],
-        "matcher": "Edit|Write|MultiEdit"
+        "matcher": "Edit|Write|MultiEdit|Bash"
       }
     ],
     "SessionEnd": [
