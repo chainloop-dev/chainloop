@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/google/uuid"
@@ -195,8 +196,8 @@ func (s *staleRevokerTestSuite) createOrgWithThreshold(ctx context.Context, days
 	org, err := s.Organization.CreateWithRandomName(ctx)
 	require.NoError(s.T(), err)
 
-	// Need a membership so Update works
-	_, err = s.Membership.Create(ctx, org.ID, s.user.ID, biz.WithCurrentMembership())
+	// Need an admin membership so Update works
+	_, err = s.Membership.Create(ctx, org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	require.NoError(s.T(), err)
 
 	org, err = s.Organization.Update(ctx, s.user.ID, org.Name, &biz.OrganizationUpdateOpts{
