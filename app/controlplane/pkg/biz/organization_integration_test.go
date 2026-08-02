@@ -17,6 +17,7 @@ package biz_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -196,6 +197,93 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 	})
 }
 
+// TestUpdateRequiresAdminMembership verifies that changing organization-wide
+// security settings requires an admin/owner membership in the organization
+// being updated. Holding any membership is not enough: the settings gated here
+// (policy enforcement, allowed policy hostnames, runner env-var capture) are
+// security controls for the whole org.
+func (s *OrgIntegrationTestSuite) TestUpdateRequiresAdminMembership() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name    string
+		role    authz.Role
+		allowed bool
+	}{
+		{name: "owner can update", role: authz.RoleOwner, allowed: true},
+		{name: "admin can update", role: authz.RoleAdmin, allowed: true},
+		{name: "viewer cannot update", role: authz.RoleViewer},
+		{name: "member cannot update", role: authz.RoleOrgMember},
+		{name: "contributor cannot update", role: authz.RoleOrgContributor},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			org, err := s.Organization.CreateWithRandomName(ctx)
+			require.NoError(s.T(), err)
+
+			user, err := s.User.UpsertByEmail(ctx, fmt.Sprintf("%s@test.com", uuid.NewString()), nil)
+			require.NoError(s.T(), err)
+
+			_, err = s.Membership.Create(ctx, org.ID, user.ID, biz.WithMembershipRole(tc.role))
+			require.NoError(s.T(), err)
+
+			got, err := s.Organization.Update(ctx, user.ID, org.Name, &biz.OrganizationUpdateOpts{
+				BlockOnPolicyViolation: toPtrBool(false),
+			})
+
+			if tc.allowed {
+				s.NoError(err)
+				s.False(got.BlockOnPolicyViolation)
+				return
+			}
+
+			s.Error(err)
+			s.True(biz.IsErrUnauthorized(err), "want unauthorized, got %v", err)
+			s.Nil(got)
+		})
+	}
+}
+
+// TestUpdateCrossOrgTampering is a regression test for CP-N1: a user who is an
+// owner of their own organization but only a viewer of a victim organization
+// must not be able to change the victim's security settings. The authz
+// middleware evaluates the caller's role against the organization in the
+// request header, so the biz layer has to authorize against the organization
+// actually being updated.
+func (s *OrgIntegrationTestSuite) TestUpdateCrossOrgTampering() {
+	ctx := context.Background()
+
+	victimOrg, err := s.Organization.CreateWithRandomName(ctx)
+	require.NoError(s.T(), err)
+	attackerOrg, err := s.Organization.CreateWithRandomName(ctx)
+	require.NoError(s.T(), err)
+
+	attacker, err := s.User.UpsertByEmail(ctx, "attacker@test.com", nil)
+	require.NoError(s.T(), err)
+
+	// Owner of their own org, which is what gets them past the authz middleware
+	_, err = s.Membership.Create(ctx, attackerOrg.ID, attacker.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
+	require.NoError(s.T(), err)
+	// ...but only a viewer of the victim org
+	_, err = s.Membership.Create(ctx, victimOrg.ID, attacker.ID, biz.WithMembershipRole(authz.RoleViewer))
+	require.NoError(s.T(), err)
+
+	got, err := s.Organization.Update(ctx, attacker.ID, victimOrg.Name, &biz.OrganizationUpdateOpts{
+		BlockOnPolicyViolation:   toPtrBool(false),
+		PoliciesAllowedHostnames: []string{"evil.example.com"},
+		SkipRunnerEnvVars:        toPtrBool(false),
+	})
+	s.Error(err)
+	s.True(biz.IsErrUnauthorized(err), "want unauthorized, got %v", err)
+	s.Nil(got)
+
+	// The victim org keeps its settings
+	victim, err := s.Organization.FindByName(ctx, victimOrg.Name)
+	s.NoError(err)
+	s.Empty(victim.PoliciesAllowedHostnames)
+}
+
 // We are doing an integration test here because there are some database constraints
 // and delete cascades that we want to validate that they work too
 func (s *OrgIntegrationTestSuite) TestDeleteOrg() {
@@ -288,7 +376,7 @@ func (s *OrgIntegrationTestSuite) SetupTest() {
 
 	s.user, err = s.User.UpsertByEmail(ctx, "foo@test.com", nil)
 	assert.NoError(err)
-	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithCurrentMembership())
+	_, err = s.Membership.Create(ctx, s.org.ID, s.user.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership())
 	assert.NoError(err)
 
 	// Integration

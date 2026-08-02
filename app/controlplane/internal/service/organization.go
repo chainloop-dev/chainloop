@@ -82,6 +82,19 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		return nil, err
 	}
 
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// The authorization middleware evaluates the caller's role against the organization
+	// selected in the request headers, so the update has to target that same organization.
+	// Honoring an arbitrary name here would let an admin of one organization change the
+	// settings of another one they merely belong to.
+	if req.Name != currentOrg.Name {
+		return nil, errors.Forbidden("forbidden", "the organization to update must be the currently selected one")
+	}
+
 	// we want to differentiate between setting the value to empty or not setting it at all
 	// to do that we will use a nil slice to represent not setting it at all
 	var policiesAllowedHostnames []string
@@ -102,7 +115,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		apiTokenMaxDaysInactive = &days
 	}
 
-	org, err := s.orgUC.Update(ctx, currentUser.ID, req.Name, &biz.OrganizationUpdateOpts{
+	org, err := s.orgUC.Update(ctx, currentUser.ID, currentOrg.Name, &biz.OrganizationUpdateOpts{
 		BlockOnPolicyViolation:              req.BlockOnPolicyViolation,
 		PoliciesAllowedHostnames:            policiesAllowedHostnames,
 		PreventImplicitWorkflowCreation:     req.PreventImplicitWorkflowCreation,

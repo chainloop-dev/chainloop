@@ -245,6 +245,14 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 		return nil, NewErrNotFound("membership")
 	}
 
+	// These settings are organization-wide security controls, so they require an
+	// admin membership in the organization being updated. Authorizing against this
+	// membership, and not against the caller's current role, is what keeps a user
+	// from tampering with another organization they happen to belong to.
+	if !membership.Role.IsAdmin() {
+		return nil, NewErrUnauthorizedStr("only organization admins can update the organization settings")
+	}
+
 	orgUUID, err := uuid.Parse(membership.Org.ID)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
