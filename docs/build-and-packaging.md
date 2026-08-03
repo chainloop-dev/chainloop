@@ -19,9 +19,9 @@ All binaries and container images are built via [GoReleaser](https://goreleaser.
 | `control-plane` | linux/amd64, linux/arm64 | Main backend service |
 | `artifact-cas` | linux/amd64, linux/arm64 | Content-addressable storage proxy |
 | `chainloop` (CLI) | darwin/amd64, darwin/arm64, linux/amd64, linux/arm64 | Multi-platform client |
-| `chainloop-plugin-discord-webhook` | linux/amd64 | Bundled into control-plane image |
-| `chainloop-plugin-smtp` | linux/amd64 | Bundled into control-plane image |
-| `chainloop-plugin-dependency-track` | linux/amd64 | Bundled into control-plane image |
+| `chainloop-plugin-discord-webhook` | linux/amd64, linux/arm64 | Bundled into control-plane image |
+| `chainloop-plugin-smtp` | linux/amd64, linux/arm64 | Bundled into control-plane image |
+| `chainloop-plugin-dependency-track` | linux/amd64, linux/arm64 | Bundled into control-plane image |
 
 All binaries are statically compiled (`CGO_ENABLED=0`) and stripped (`-s -w`). Version info is injected via `-ldflags` from the git tag. CLI binaries are published as GitHub Release assets alongside a `checksums.txt`.
 
