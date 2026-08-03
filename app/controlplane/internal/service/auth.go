@@ -21,9 +21,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/mail"
 	"net/url"
+	"slices"
+	"strings"
 	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -115,16 +118,18 @@ type AuthService struct {
 	AuthURLs          *AuthURLs
 	auditorUseCase    *biz.AuditorUseCase
 	devMode           bool
+	// scheme://host destinations the post-login redirect may target
+	allowedCallbackOrigins []string
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, serverConfig *conf.Server, auc *biz.AuditorUseCase, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, bootstrapConfig *conf.Bootstrap, auc *biz.AuditorUseCase, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
 	}
 
 	// Craft Auth related endpoints
-	authURLs, err := getAuthURLs(serverConfig.GetHttp(), authConfig.GetOidc().GetLoginUrlOverride())
+	authURLs, err := getAuthURLs(bootstrapConfig.GetServer().GetHttp(), authConfig.GetOidc().GetLoginUrlOverride())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get auth URLs: %w", err)
 	}
@@ -152,7 +157,70 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		membershipUseCase: mUC,
 		orgInvitesUseCase: inviteUC,
 		auditorUseCase:    auc,
+		allowedCallbackOrigins: originsOf(authURLs.Login, bootstrapConfig.GetServer().GetHttp().GetExternalUrl(),
+			bootstrapConfig.GetUiDashboardUrl()),
 	}, nil
+}
+
+var errInvalidCallback = errors.New("invalid callback URL")
+
+// originsOf extracts the origin of the given URLs, skipping empty or malformed ones
+func originsOf(urls ...string) []string {
+	origins := make([]string, 0, len(urls))
+	for _, raw := range urls {
+		u, err := url.Parse(raw)
+		if err != nil || u.Scheme == "" || u.Host == "" {
+			continue
+		}
+
+		origins = append(origins, originOf(u))
+	}
+
+	return origins
+}
+
+// originOf normalizes the URL down to scheme://host. Hosts are case insensitive, so a
+// config typo like "https://App.Example.com" still matches the browser-sent origin
+func originOf(u *url.URL) string {
+	return strings.ToLower(u.Scheme + "://" + u.Host)
+}
+
+// callbackAllowed rejects post-login redirect targets that would hand the user JWT over to
+// a third party. Relative paths (CAS download redirect) and loopback (CLI login) are always
+// allowed, anything else must match a known origin.
+func callbackAllowed(callback string, allowedOrigins []string) error {
+	if callback == "" {
+		return nil
+	}
+
+	// Browsers fold "\" into "/", so "/\evil.example" would escape a seemingly relative path
+	if strings.Contains(callback, `\`) {
+		return errInvalidCallback
+	}
+
+	u, err := url.Parse(callback)
+	if err != nil {
+		return errInvalidCallback
+	}
+
+	// Relative path. Both parts must be empty, otherwise "//evil.example" would pass as a path
+	if u.Scheme == "" && u.Host == "" {
+		return nil
+	}
+
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return errInvalidCallback
+	}
+
+	if host := u.Hostname(); host == "localhost" || net.ParseIP(host).IsLoopback() {
+		return nil
+	}
+
+	if slices.Contains(allowedOrigins, originOf(u)) {
+		return nil
+	}
+
+	return fmt.Errorf("callback URL not allowed: %s", originOf(u))
 }
 
 type AuthURLs struct {
@@ -221,6 +289,13 @@ func (h oauthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oauthResp {
+	// The final destination where the auth token will be pushed to, i.e the CLI.
+	// Rejected upfront so a crafted callback never starts the OIDC dance
+	callback := r.URL.Query().Get(oauth.QueryParamCallback)
+	if err := callbackAllowed(callback, svc.allowedCallbackOrigins); err != nil {
+		return newOauthResp(http.StatusBadRequest, err, true)
+	}
+
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
@@ -231,8 +306,7 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 	state := base64.URLEncoding.EncodeToString(b)
 	svc.setOauthCookie(w, cookieOauthStateName, state)
 
-	// Store the final destination where the auth token will be pushed to, i.e the CLI
-	svc.setOauthCookie(w, cookieCallback, r.URL.Query().Get(oauth.QueryParamCallback))
+	svc.setOauthCookie(w, cookieCallback, callback)
 
 	// Wether the token should be short lived or not
 	svc.setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
@@ -362,12 +436,18 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 		return newOauthResp(http.StatusOK, nil, false)
 	}
 
-	// Redirect to the callback URL
+	// Redirect to the callback URL. The cookie was validated at login time, re-check it here
+	// so a stale or tampered cookie can't turn this into an open redirect either
+	if err := callbackAllowed(callbackValue, svc.allowedCallbackOrigins); err != nil {
+		return newOauthResp(http.StatusBadRequest, err, true)
+	}
+
 	callbackURL, err := crafCallbackURL(callbackValue, userToken)
 	if err != nil {
 		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
 	}
 
+	setTokenLeakHeaders(w)
 	http.Redirect(w, r, callbackURL, http.StatusFound)
 	return newOauthResp(http.StatusTemporaryRedirect, nil, false)
 }

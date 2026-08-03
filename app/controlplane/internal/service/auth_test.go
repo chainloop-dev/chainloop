@@ -16,6 +16,8 @@
 package service
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -123,4 +125,55 @@ func TestGetPreferredEmail(t *testing.T) {
 		got := tc.claims.preferredEmail()
 		assert.Equal(t, tc.want, got)
 	}
+}
+
+func TestCallbackAllowed(t *testing.T) {
+	// mixed case on purpose, origins are matched case insensitively
+	allowed := originsOf("https://app.chainloop.dev/login", "https://CP.Chainloop.dev", "https://app.chainloop.dev")
+
+	testCases := []struct {
+		name     string
+		callback string
+		wantErr  bool
+	}{
+		{name: "empty, token is rendered in a page", callback: ""},
+		{name: "relative path, CAS download redirect", callback: "/download/sha256:deadbeef?foo=bar"},
+		{name: "loopback with random port, CLI login", callback: "http://127.0.0.1:41337/auth/callback"},
+		{name: "localhost with random port, CLI login", callback: "http://localhost:41337/auth/callback"},
+		{name: "IPv6 loopback", callback: "http://[::1]:41337/auth/callback"},
+		{name: "dashboard origin", callback: "https://app.chainloop.dev/login/callback?returnTo=%2Fprojects"},
+		{name: "control plane origin, config declared it in a different case", callback: "https://cp.chainloop.dev/foo"},
+		{name: "dashboard origin, browser sent a different case", callback: "https://APP.chainloop.dev/login/callback"},
+		{name: "third party origin", callback: "https://evil.example/collect", wantErr: true},
+		{name: "protocol relative", callback: "//evil.example/collect", wantErr: true},
+		{name: "backslash escaping a relative path", callback: "/\\evil.example/collect", wantErr: true},
+		{name: "non http scheme", callback: "javascript:alert(1)", wantErr: true},
+		{name: "loopback lookalike host", callback: "http://localhost.evil.example/collect", wantErr: true},
+		{name: "allowed host as a subdomain", callback: "https://app.chainloop.dev.evil.example/collect", wantErr: true},
+		{name: "allowed host with a different scheme", callback: "http://app.chainloop.dev/collect", wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := callbackAllowed(tc.callback, allowed)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+// The callback cookie must not be set for a destination we would refuse to redirect to
+func TestLoginHandlerRejectsForeignCallback(t *testing.T) {
+	svc := &AuthService{allowedCallbackOrigins: originsOf("https://app.chainloop.dev")}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/auth/login?callback=https%3A%2F%2Fevil.example%2Fcollect&long-lived=true", nil)
+
+	resp := loginHandler(svc, w, r)
+	assert.Equal(t, http.StatusBadRequest, resp.code)
+	assert.Empty(t, w.Result().Cookies())
 }

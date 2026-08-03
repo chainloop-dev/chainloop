@@ -179,8 +179,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, authzUseCase)
 	v5 := serviceOpts(logger, authzUseCase, projectUseCase, groupUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, organizationUseCase, userUseCase, v5...)
-	confServer := bootstrap.Server
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, confServer, auditorUseCase, v5...)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, bootstrap, auditorUseCase, v5...)
 	if err != nil {
 		cleanup3()
 		cleanup2()
@@ -317,6 +316,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	prometheusService := service.NewPrometheusService(organizationUseCase, prometheusUseCase, v5...)
 	groupService := service.NewGroupService(groupUseCase, v5...)
 	projectService := service.NewProjectService(v5...)
+	confServer := bootstrap.Server
 	federatedAuthentication := bootstrap.FederatedAuthentication
 	operationAuthorizationProvider := bootstrap.OperationAuthorizationProvider
 	validator, err := newProtoValidator()

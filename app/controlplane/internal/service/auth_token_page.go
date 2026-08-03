@@ -29,13 +29,18 @@ var tokenPageTemplate = template.Must(template.New("tokenPage").Parse(tokenPageH
 // leakage so the bearer token does not escape the page.
 func renderTokenPage(w http.ResponseWriter, token string) error {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Referrer-Policy", "no-referrer")
+	setTokenLeakHeaders(w)
 
 	if err := tokenPageTemplate.Execute(w, struct{ Token string }{Token: token}); err != nil {
 		return fmt.Errorf("failed to render token page: %w", err)
 	}
 	return nil
+}
+
+// setTokenLeakHeaders keeps a response carrying a user token out of caches and Referer headers
+func setTokenLeakHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Referrer-Policy", "no-referrer")
 }
 
 // #nosec G101 -- HTML template, not a credential
