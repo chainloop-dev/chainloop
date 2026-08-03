@@ -13,6 +13,7 @@ builds:
       - -X main.Version={{ .Version }}
     targets:
       - linux_amd64
+      - linux_arm64
   - binary: artifact-cas
     id: artifact-cas
     main: ./app/artifact-cas/cmd
@@ -22,6 +23,7 @@ builds:
       - -X main.Version={{ .Version }}
     targets:
       - linux_amd64
+      - linux_arm64
   - binary: chainloop
     id: cli
     main: ./app/cli
@@ -43,18 +45,21 @@ builds:
     main: ./app/controlplane/plugins/core/discord-webhook/v1/cmd
     targets:
       - linux_amd64
+      - linux_arm64
     ldflags: ["{{ .Env.COMMON_LDFLAGS }}"]
   - binary: chainloop-plugin-smtp
     id: chainloop-plugin-smtp
     main: ./app/controlplane/plugins/core/smtp/v1/cmd
     targets:
       - linux_amd64
+      - linux_arm64
     ldflags: ["{{ .Env.COMMON_LDFLAGS }}"]
   - binary: chainloop-plugin-dependency-track
     id: chainloop-plugin-dependency-track
     main: ./app/controlplane/plugins/core/dependency-track/v1/cmd
     targets:
       - linux_amd64
+      - linux_arm64
 archives:
   - format: binary
     id: binaries-cli
@@ -98,6 +103,7 @@ dockers:
       - chainloop-plugin-dependency-track
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane:{{ .Tag }}-amd64"
+    goarch: amd64
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -111,6 +117,7 @@ dockers:
       - chainloop-plugin-dependency-track
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane:{{ .Tag }}-arm64"
+    goarch: arm64
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -123,6 +130,7 @@ dockers:
       - app/controlplane/pkg/data/ent/migrate/migrations
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:{{ .Tag }}-amd64"
+    goarch: amd64
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -133,6 +141,7 @@ dockers:
       - app/controlplane/pkg/data/ent/migrate/migrations
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/control-plane-migrations:{{ .Tag }}-arm64"
+    goarch: arm64
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -145,6 +154,7 @@ dockers:
       - artifact-cas
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/artifact-cas:{{ .Tag }}-amd64"
+    goarch: amd64
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -155,6 +165,7 @@ dockers:
       - artifact-cas
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/artifact-cas:{{ .Tag }}-arm64"
+    goarch: arm64
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -167,6 +178,7 @@ dockers:
       - cli
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/cli:{{ .Tag }}-amd64"
+    goarch: amd64
     use: buildx
     build_flag_templates:
       - "--pull"
@@ -177,6 +189,7 @@ dockers:
       - cli
     image_templates:
       - "ghcr.io/chainloop-dev/chainloop/cli:{{ .Tag }}-arm64"
+    goarch: arm64
     use: buildx
     build_flag_templates:
       - "--pull"
