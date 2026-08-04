@@ -43,11 +43,11 @@ func (s *robotAccountTestSuite) TestRevoke() {
 	})
 
 	s.Run("revokes the robot account", func() {
-		err := s.RobotAccount.Revoke(ctx, s.org.ID, s.ra.ID.String())
+		err := s.RobotAccount.Revoke(ctx, s.org.ID, s.raID.String())
 		s.NoError(err)
 
 		// Reload the robot account
-		ra, err := s.RobotAccount.FindByID(ctx, s.ra.ID.String())
+		ra, err := s.RobotAccount.FindByID(ctx, s.raID.String())
 		s.NoError(err)
 		s.NotNil(ra.RevokedAt)
 	})
@@ -56,8 +56,8 @@ func (s *robotAccountTestSuite) TestRevoke() {
 // Utility struct to hold the test suite
 type robotAccountTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org *biz.Organization
-	ra  *biz.RobotAccount
+	org  *biz.Organization
+	raID uuid.UUID
 }
 
 // // Run the tests
@@ -79,6 +79,8 @@ func (s *robotAccountTestSuite) SetupTest() {
 		OrgID:   s.org.ID,
 	})
 	s.NoError(err)
-	s.ra, err = s.RobotAccount.Create(ctx, "myRobotAccount", s.org.ID, wf.ID.String())
+	// Seeded via ent: creation is no longer exposed, but existing accounts must remain revocable.
+	ra, err := s.Data.DB.RobotAccount.Create().SetName("myRobotAccount").SetWorkflowID(wf.ID).Save(ctx)
 	s.NoError(err)
+	s.raID = ra.ID
 }

@@ -38,102 +38,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type RobotAccountServiceCreateRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	WorkflowId    string                 `protobuf:"bytes,2,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RobotAccountServiceCreateRequest) Reset() {
-	*x = RobotAccountServiceCreateRequest{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RobotAccountServiceCreateRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RobotAccountServiceCreateRequest) ProtoMessage() {}
-
-func (x *RobotAccountServiceCreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RobotAccountServiceCreateRequest.ProtoReflect.Descriptor instead.
-func (*RobotAccountServiceCreateRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *RobotAccountServiceCreateRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *RobotAccountServiceCreateRequest) GetWorkflowId() string {
-	if x != nil {
-		return x.WorkflowId
-	}
-	return ""
-}
-
-type RobotAccountServiceCreateResponse struct {
-	state         protoimpl.MessageState                              `protogen:"open.v1"`
-	Result        *RobotAccountServiceCreateResponse_RobotAccountFull `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RobotAccountServiceCreateResponse) Reset() {
-	*x = RobotAccountServiceCreateResponse{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RobotAccountServiceCreateResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RobotAccountServiceCreateResponse) ProtoMessage() {}
-
-func (x *RobotAccountServiceCreateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RobotAccountServiceCreateResponse.ProtoReflect.Descriptor instead.
-func (*RobotAccountServiceCreateResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *RobotAccountServiceCreateResponse) GetResult() *RobotAccountServiceCreateResponse_RobotAccountFull {
-	if x != nil {
-		return x.Result
-	}
-	return nil
-}
-
 type RobotAccountServiceRevokeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -143,7 +47,7 @@ type RobotAccountServiceRevokeRequest struct {
 
 func (x *RobotAccountServiceRevokeRequest) Reset() {
 	*x = RobotAccountServiceRevokeRequest{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[2]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -155,7 +59,7 @@ func (x *RobotAccountServiceRevokeRequest) String() string {
 func (*RobotAccountServiceRevokeRequest) ProtoMessage() {}
 
 func (x *RobotAccountServiceRevokeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[2]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -168,7 +72,7 @@ func (x *RobotAccountServiceRevokeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RobotAccountServiceRevokeRequest.ProtoReflect.Descriptor instead.
 func (*RobotAccountServiceRevokeRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{2}
+	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RobotAccountServiceRevokeRequest) GetId() string {
@@ -186,7 +90,7 @@ type RobotAccountServiceRevokeResponse struct {
 
 func (x *RobotAccountServiceRevokeResponse) Reset() {
 	*x = RobotAccountServiceRevokeResponse{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[3]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -198,7 +102,7 @@ func (x *RobotAccountServiceRevokeResponse) String() string {
 func (*RobotAccountServiceRevokeResponse) ProtoMessage() {}
 
 func (x *RobotAccountServiceRevokeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[3]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -211,7 +115,7 @@ func (x *RobotAccountServiceRevokeResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use RobotAccountServiceRevokeResponse.ProtoReflect.Descriptor instead.
 func (*RobotAccountServiceRevokeResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{3}
+	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{1}
 }
 
 type RobotAccountServiceListRequest struct {
@@ -224,7 +128,7 @@ type RobotAccountServiceListRequest struct {
 
 func (x *RobotAccountServiceListRequest) Reset() {
 	*x = RobotAccountServiceListRequest{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[4]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -236,7 +140,7 @@ func (x *RobotAccountServiceListRequest) String() string {
 func (*RobotAccountServiceListRequest) ProtoMessage() {}
 
 func (x *RobotAccountServiceListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[4]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -249,7 +153,7 @@ func (x *RobotAccountServiceListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RobotAccountServiceListRequest.ProtoReflect.Descriptor instead.
 func (*RobotAccountServiceListRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{4}
+	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RobotAccountServiceListRequest) GetWorkflowId() string {
@@ -275,7 +179,7 @@ type RobotAccountServiceListResponse struct {
 
 func (x *RobotAccountServiceListResponse) Reset() {
 	*x = RobotAccountServiceListResponse{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[5]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -287,7 +191,7 @@ func (x *RobotAccountServiceListResponse) String() string {
 func (*RobotAccountServiceListResponse) ProtoMessage() {}
 
 func (x *RobotAccountServiceListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[5]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -300,7 +204,7 @@ func (x *RobotAccountServiceListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RobotAccountServiceListResponse.ProtoReflect.Descriptor instead.
 func (*RobotAccountServiceListResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{5}
+	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RobotAccountServiceListResponse) GetResult() []*RobotAccountServiceListResponse_RobotAccountItem {
@@ -308,91 +212,6 @@ func (x *RobotAccountServiceListResponse) GetResult() []*RobotAccountServiceList
 		return x.Result
 	}
 	return nil
-}
-
-type RobotAccountServiceCreateResponse_RobotAccountFull struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Id         string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	WorkflowId string                 `protobuf:"bytes,3,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
-	CreatedAt  *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	RevokedAt  *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=revoked_at,json=revokedAt,proto3" json:"revoked_at,omitempty"`
-	// The key is returned only during creation
-	Key           string `protobuf:"bytes,6,opt,name=key,proto3" json:"key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) Reset() {
-	*x = RobotAccountServiceCreateResponse_RobotAccountFull{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RobotAccountServiceCreateResponse_RobotAccountFull) ProtoMessage() {}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RobotAccountServiceCreateResponse_RobotAccountFull.ProtoReflect.Descriptor instead.
-func (*RobotAccountServiceCreateResponse_RobotAccountFull) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{1, 0}
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) GetWorkflowId() string {
-	if x != nil {
-		return x.WorkflowId
-	}
-	return ""
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return nil
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) GetRevokedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.RevokedAt
-	}
-	return nil
-}
-
-func (x *RobotAccountServiceCreateResponse_RobotAccountFull) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
 }
 
 type RobotAccountServiceListResponse_RobotAccountItem struct {
@@ -408,7 +227,7 @@ type RobotAccountServiceListResponse_RobotAccountItem struct {
 
 func (x *RobotAccountServiceListResponse_RobotAccountItem) Reset() {
 	*x = RobotAccountServiceListResponse_RobotAccountItem{}
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[7]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -420,7 +239,7 @@ func (x *RobotAccountServiceListResponse_RobotAccountItem) String() string {
 func (*RobotAccountServiceListResponse_RobotAccountItem) ProtoMessage() {}
 
 func (x *RobotAccountServiceListResponse_RobotAccountItem) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[7]
+	mi := &file_controlplane_v1_robot_accounts_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -433,7 +252,7 @@ func (x *RobotAccountServiceListResponse_RobotAccountItem) ProtoReflect() protor
 
 // Deprecated: Use RobotAccountServiceListResponse_RobotAccountItem.ProtoReflect.Descriptor instead.
 func (*RobotAccountServiceListResponse_RobotAccountItem) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{5, 0}
+	return file_controlplane_v1_robot_accounts_proto_rawDescGZIP(), []int{3, 0}
 }
 
 func (x *RobotAccountServiceListResponse_RobotAccountItem) GetId() string {
@@ -475,23 +294,7 @@ var File_controlplane_v1_robot_accounts_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_robot_accounts_proto_rawDesc = "" +
 	"\n" +
-	"$controlplane/v1/robot_accounts.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"a\n" +
-	" RobotAccountServiceCreateRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12)\n" +
-	"\vworkflow_id\x18\x02 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\n" +
-	"workflowId\"\xe2\x02\n" +
-	"!RobotAccountServiceCreateResponse\x12[\n" +
-	"\x06result\x18\x01 \x01(\v2C.controlplane.v1.RobotAccountServiceCreateResponse.RobotAccountFullR\x06result\x1a\xdf\x01\n" +
-	"\x10RobotAccountFull\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
-	"\vworkflow_id\x18\x03 \x01(\tR\n" +
-	"workflowId\x129\n" +
-	"\n" +
-	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
-	"\n" +
-	"revoked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\trevokedAt\x12\x10\n" +
-	"\x03key\x18\x06 \x01(\tR\x03key\"<\n" +
+	"$controlplane/v1/robot_accounts.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"<\n" +
 	" RobotAccountServiceRevokeRequest\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"#\n" +
 	"!RobotAccountServiceRevokeResponse\"t\n" +
@@ -509,9 +312,8 @@ const file_controlplane_v1_robot_accounts_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"revoked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\trevokedAt2\xe2\x02\n" +
-	"\x13RobotAccountService\x12o\n" +
-	"\x06Create\x121.controlplane.v1.RobotAccountServiceCreateRequest\x1a2.controlplane.v1.RobotAccountServiceCreateResponse\x12i\n" +
+	"revoked_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\trevokedAt2\xf1\x01\n" +
+	"\x13RobotAccountService\x12i\n" +
 	"\x04List\x12/.controlplane.v1.RobotAccountServiceListRequest\x1a0.controlplane.v1.RobotAccountServiceListResponse\x12o\n" +
 	"\x06Revoke\x121.controlplane.v1.RobotAccountServiceRevokeRequest\x1a2.controlplane.v1.RobotAccountServiceRevokeResponseBLZJgithub.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1b\x06proto3"
 
@@ -527,36 +329,28 @@ func file_controlplane_v1_robot_accounts_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_robot_accounts_proto_rawDescData
 }
 
-var file_controlplane_v1_robot_accounts_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_controlplane_v1_robot_accounts_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_controlplane_v1_robot_accounts_proto_goTypes = []any{
-	(*RobotAccountServiceCreateRequest)(nil),                   // 0: controlplane.v1.RobotAccountServiceCreateRequest
-	(*RobotAccountServiceCreateResponse)(nil),                  // 1: controlplane.v1.RobotAccountServiceCreateResponse
-	(*RobotAccountServiceRevokeRequest)(nil),                   // 2: controlplane.v1.RobotAccountServiceRevokeRequest
-	(*RobotAccountServiceRevokeResponse)(nil),                  // 3: controlplane.v1.RobotAccountServiceRevokeResponse
-	(*RobotAccountServiceListRequest)(nil),                     // 4: controlplane.v1.RobotAccountServiceListRequest
-	(*RobotAccountServiceListResponse)(nil),                    // 5: controlplane.v1.RobotAccountServiceListResponse
-	(*RobotAccountServiceCreateResponse_RobotAccountFull)(nil), // 6: controlplane.v1.RobotAccountServiceCreateResponse.RobotAccountFull
-	(*RobotAccountServiceListResponse_RobotAccountItem)(nil),   // 7: controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem
-	(*timestamppb.Timestamp)(nil),                              // 8: google.protobuf.Timestamp
+	(*RobotAccountServiceRevokeRequest)(nil),                 // 0: controlplane.v1.RobotAccountServiceRevokeRequest
+	(*RobotAccountServiceRevokeResponse)(nil),                // 1: controlplane.v1.RobotAccountServiceRevokeResponse
+	(*RobotAccountServiceListRequest)(nil),                   // 2: controlplane.v1.RobotAccountServiceListRequest
+	(*RobotAccountServiceListResponse)(nil),                  // 3: controlplane.v1.RobotAccountServiceListResponse
+	(*RobotAccountServiceListResponse_RobotAccountItem)(nil), // 4: controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem
+	(*timestamppb.Timestamp)(nil),                            // 5: google.protobuf.Timestamp
 }
 var file_controlplane_v1_robot_accounts_proto_depIdxs = []int32{
-	6, // 0: controlplane.v1.RobotAccountServiceCreateResponse.result:type_name -> controlplane.v1.RobotAccountServiceCreateResponse.RobotAccountFull
-	7, // 1: controlplane.v1.RobotAccountServiceListResponse.result:type_name -> controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem
-	8, // 2: controlplane.v1.RobotAccountServiceCreateResponse.RobotAccountFull.created_at:type_name -> google.protobuf.Timestamp
-	8, // 3: controlplane.v1.RobotAccountServiceCreateResponse.RobotAccountFull.revoked_at:type_name -> google.protobuf.Timestamp
-	8, // 4: controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem.created_at:type_name -> google.protobuf.Timestamp
-	8, // 5: controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem.revoked_at:type_name -> google.protobuf.Timestamp
-	0, // 6: controlplane.v1.RobotAccountService.Create:input_type -> controlplane.v1.RobotAccountServiceCreateRequest
-	4, // 7: controlplane.v1.RobotAccountService.List:input_type -> controlplane.v1.RobotAccountServiceListRequest
-	2, // 8: controlplane.v1.RobotAccountService.Revoke:input_type -> controlplane.v1.RobotAccountServiceRevokeRequest
-	1, // 9: controlplane.v1.RobotAccountService.Create:output_type -> controlplane.v1.RobotAccountServiceCreateResponse
-	5, // 10: controlplane.v1.RobotAccountService.List:output_type -> controlplane.v1.RobotAccountServiceListResponse
-	3, // 11: controlplane.v1.RobotAccountService.Revoke:output_type -> controlplane.v1.RobotAccountServiceRevokeResponse
-	9, // [9:12] is the sub-list for method output_type
-	6, // [6:9] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	4, // 0: controlplane.v1.RobotAccountServiceListResponse.result:type_name -> controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem
+	5, // 1: controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem.created_at:type_name -> google.protobuf.Timestamp
+	5, // 2: controlplane.v1.RobotAccountServiceListResponse.RobotAccountItem.revoked_at:type_name -> google.protobuf.Timestamp
+	2, // 3: controlplane.v1.RobotAccountService.List:input_type -> controlplane.v1.RobotAccountServiceListRequest
+	0, // 4: controlplane.v1.RobotAccountService.Revoke:input_type -> controlplane.v1.RobotAccountServiceRevokeRequest
+	3, // 5: controlplane.v1.RobotAccountService.List:output_type -> controlplane.v1.RobotAccountServiceListResponse
+	1, // 6: controlplane.v1.RobotAccountService.Revoke:output_type -> controlplane.v1.RobotAccountServiceRevokeResponse
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_robot_accounts_proto_init() }
@@ -570,7 +364,7 @@ func file_controlplane_v1_robot_accounts_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_robot_accounts_proto_rawDesc), len(file_controlplane_v1_robot_accounts_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

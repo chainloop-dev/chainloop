@@ -134,10 +134,8 @@ var (
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
 	// Robot Account
-	// NOTE: there is deliberately no create policy. Robot-account creation was retired from the CLI
-	// in 2024 (#890, #894) and has had no first-party caller since, so the RPC is left unmapped and
-	// reachable only by org admins via the middleware bypass. Re-adding a policy here would make it
-	// grantable to API tokens again, which is what CP-N4 was.
+	// No create policy on purpose: the Create RPC was removed (CP-N4). Any policy for it would be
+	// grantable to API tokens, letting a project-scoped token mint credentials for another project.
 	PolicyRobotAccountList = &Policy{ResourceRobotAccount, ActionList}
 	// Workflow Contract
 	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}

@@ -100,12 +100,7 @@ var adminOnlyProcedures = map[string]struct{}{
 	"/controlplane.v1.OrganizationService/Update":           {},
 	"/controlplane.v1.OrganizationService/UpdateMembership": {},
 
-	// Robot account creation and revocation (List is role-gated in ServerOperationsMap). Create is
-	// deliberately here rather than in ServerOperationsMap: it has had no first-party caller since
-	// robot accounts were retired from the CLI in 2024 (#890, #894), and any policy mapped to it is
-	// grantable to API tokens — which is how CP-N4 let a project-scoped token mint credentials for
-	// another project's workflow. Admin-only by omission is the intended state.
-	"/controlplane.v1.RobotAccountService/Create": {},
+	// Robot account revocation (List is role-gated in ServerOperationsMap).
 	"/controlplane.v1.RobotAccountService/Revoke": {},
 }
 

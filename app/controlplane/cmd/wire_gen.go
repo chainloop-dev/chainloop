@@ -113,8 +113,8 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
 	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
+	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, logger)
 	auth := bootstrap.Auth
-	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
 	if err != nil {
 		cleanup3()

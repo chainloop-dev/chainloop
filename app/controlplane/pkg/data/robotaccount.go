@@ -42,18 +42,6 @@ func NewRobotAccountRepo(data *Data, logger log.Logger) biz.RobotAccountRepo {
 	}
 }
 
-func (r *RobotAccountRepo) Create(ctx context.Context, name string, workflowID uuid.UUID) (*biz.RobotAccount, error) {
-	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.Create")
-	defer span.End()
-
-	p, err := r.data.DB.RobotAccount.Create().SetName(name).SetWorkflowID(workflowID).Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return entRaToBizRa(p, workflowID), nil
-}
-
 func (r *RobotAccountRepo) List(ctx context.Context, workflowID uuid.UUID, includeRevoked bool) ([]*biz.RobotAccount, error) {
 	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.List")
 	defer span.End()

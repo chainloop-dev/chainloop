@@ -38,26 +38,6 @@ func NewRobotAccountService(uc *biz.RobotAccountUseCase, opts ...NewOpt) *RobotA
 	}
 }
 
-func (s *RobotAccountService) Create(ctx context.Context, req *pb.RobotAccountServiceCreateRequest) (*pb.RobotAccountServiceCreateResponse, error) {
-	currentOrg, err := requireCurrentOrg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	robotAccount, err := s.robotAccountUseCase.Create(ctx, req.Name, currentOrg.ID, req.WorkflowId)
-	if err != nil && biz.IsNotFound(err) {
-		return nil, errors.NotFound("not found", err.Error())
-	} else if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
-	}
-
-	return &pb.RobotAccountServiceCreateResponse{
-		Result: &pb.RobotAccountServiceCreateResponse_RobotAccountFull{
-			Id: robotAccount.ID.String(), Name: robotAccount.Name, WorkflowId: robotAccount.WorkflowID.String(), CreatedAt: timestamppb.New(*robotAccount.CreatedAt), Key: robotAccount.JWT,
-		},
-	}, nil
-}
-
 func (s *RobotAccountService) List(ctx context.Context, req *pb.RobotAccountServiceListRequest) (*pb.RobotAccountServiceListResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
 	if err != nil {
