@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"

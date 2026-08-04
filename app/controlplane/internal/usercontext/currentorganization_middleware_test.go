@@ -21,11 +21,11 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"

@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

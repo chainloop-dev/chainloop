@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

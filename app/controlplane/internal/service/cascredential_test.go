@@ -18,7 +18,7 @@ package service
 import (
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/stretchr/testify/assert"
 )
 

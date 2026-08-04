@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/middleware"
