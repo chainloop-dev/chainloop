@@ -61,15 +61,16 @@ modules:
           - app/controlplane/api/controlplane/v1/workflow_run.proto
           - app/controlplane/api/controlplane/v1/workflow.proto
           - app/controlplane/api/controlplane/v1/referrer.proto
-        # RobotAccountService/Create and its request/response messages were removed: robot accounts are
-        # superseded by workflow-scoped API tokens, creation had no caller after 2024, and the policy
-        # gating it was grantable to API tokens (CP-N4). List/Revoke are retained.
+        # The RobotAccountService was removed entirely (CP-N4): robot accounts are superseded by
+        # workflow-scoped API tokens, creation had no caller after 2024, and the policy gating it
+        # was grantable to API tokens. Existing robot-account JWTs are still honored at attestation
+        # time, but the management API (Create/List/Revoke) is gone.
+        FILE_NO_DELETE:
+          - app/controlplane/api/controlplane/v1/robot_accounts.proto
         RPC_NO_DELETE:
           - app/controlplane/api/controlplane/v1/referrer.proto
-          - app/controlplane/api/controlplane/v1/robot_accounts.proto
         MESSAGE_NO_DELETE:
           - app/controlplane/api/controlplane/v1/referrer.proto
-          - app/controlplane/api/controlplane/v1/robot_accounts.proto
   - path: app/controlplane/internal/conf
     lint:
       use:

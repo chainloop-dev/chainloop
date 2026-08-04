@@ -139,8 +139,8 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		UserAccessSyncer:    userAccessSyncerUseCase,
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
-	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
-	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, logger)
+	robotAccountRepo := data.NewRobotAccountRepo(dataData)
+	robotAccountUseCase := biz.NewRobotAccountUseCase(robotAccountRepo)
 	orgInvitationRepo := data.NewOrgInvitation(dataData, logger)
 	orgInvitationUseCase, err := biz.NewOrgInvitationUseCase(orgInvitationRepo, membershipRepo, userRepo, auditorUseCase, groupRepo, projectsRepo, authzUseCase, logger)
 	if err != nil {

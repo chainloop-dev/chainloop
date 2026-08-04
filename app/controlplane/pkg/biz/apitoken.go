@@ -38,10 +38,8 @@ type APITokenJWTConfig struct {
 	SymmetricHmacKey string
 }
 
-// orgLevelTokenPolicies are additional policies granted only to org-level tokens, never to
-// project-scoped ones. RegisteredIntegrationAdd belongs here because IntegrationsService/Register
-// creates an org-wide integration and performs no project-scope check, so a project-scoped token
-// holding it could plant an integration that receives every attestation in the organization.
+// orgLevelTokenPolicies are granted only to org-level tokens. RegisteredIntegrationAdd is here because
+// IntegrationsService/Register creates an org-level object and performs no project-scope check.
 var orgLevelTokenPolicies = []*authz.Policy{
 	authz.PolicyAPITokenCreate,
 	authz.PolicyAPITokenList,
@@ -255,8 +253,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		policies = uc.DefaultAuthzPolicies
 	}
 
-	// Org-level tokens additionally get the org-wide policies withheld from project-scoped tokens.
-	// Concat (not append) so the shared defaultAuthzPolicies backing array is never written to.
+	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
 	if projectID == nil && orgUUID != nil {
 		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}

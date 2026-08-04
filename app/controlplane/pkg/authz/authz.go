@@ -58,7 +58,6 @@ const (
 	ResourceRegisteredIntegration   = "integration_registered"
 	ResourceAttachedIntegration     = "integration_attached"
 	ResourceOrgMetric               = "metrics_org"
-	ResourceRobotAccount            = "robot_account"
 	ResourceWorkflowRun             = "workflow_run"
 	ResourceWorkflow                = "workflow"
 	ResourceProject                 = "project"
@@ -133,10 +132,6 @@ var (
 	PolicyAttachedIntegrationDetach = &Policy{ResourceAttachedIntegration, ActionDelete}
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
-	// Robot Account
-	// No create policy on purpose: the Create RPC was removed (CP-N4). Any policy for it would be
-	// grantable to API tokens, letting a project-scoped token mint credentials for another project.
-	PolicyRobotAccountList = &Policy{ResourceRobotAccount, ActionList}
 	// Workflow Contract
 	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
 	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
@@ -233,8 +228,6 @@ var RolesMap = map[Role][]*Policy{
 		PolicyAttachedIntegrationList,
 		// Metrics
 		PolicyOrgMetricsRead,
-		// Robot Account
-		PolicyRobotAccountList,
 		// Workflow Contract
 		PolicyWorkflowContractList,
 		PolicyWorkflowContractRead,
@@ -387,8 +380,6 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	"/controlplane.v1.OrgMetricsService/Totals":                  {Policies: []*Policy{PolicyOrgMetricsRead}},
 	"/controlplane.v1.OrgMetricsService/TopWorkflowsByRunsCount": {Policies: []*Policy{PolicyOrgMetricsRead}},
 	"/controlplane.v1.OrgMetricsService/DailyRunsCount":          {Policies: []*Policy{PolicyOrgMetricsRead}},
-	// Robot Account
-	"/controlplane.v1.RobotAccountService/List": {Policies: []*Policy{PolicyRobotAccountList}},
 	// Workflows
 	"/controlplane.v1.WorkflowService/List":   {Policies: []*Policy{PolicyWorkflowList}},
 	"/controlplane.v1.WorkflowService/View":   {Policies: []*Policy{PolicyWorkflowRead}},
