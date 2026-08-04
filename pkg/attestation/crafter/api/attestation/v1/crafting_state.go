@@ -190,7 +190,15 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 	case v1.CraftingSchema_Material_RADAMSA_REPORT:
 		// radamsa's -M metadata log is one record per generated iteration; render
 		// it as a JSON array so the policy engine exposes it as input.elements.
-		records, err := materialsradamsa.Parse(bytes.NewReader(rawMaterial))
+		//
+		// The value may be a single -M log or an archive of per-run logs, so the
+		// records are merged across every archive entry here. Doing this only at
+		// craft time is not enough: the policy is evaluated against this projection,
+		// so an archive that was not expanded here would hand the engine zip/tar.gz
+		// bytes, which parse to no records and make the gate skip — a clean-looking
+		// false pass. ParseReportBytes shares its detection and parse rules with the
+		// crafter's InspectReport so the two cannot disagree.
+		records, err := materialsradamsa.ParseReportBytes(rawMaterial)
 		if err != nil {
 			return nil, fmt.Errorf("invalid radamsa -M metadata log: %w", err)
 		}

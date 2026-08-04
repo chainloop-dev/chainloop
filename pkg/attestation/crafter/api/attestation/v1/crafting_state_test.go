@@ -16,8 +16,13 @@
 package v1
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -365,6 +370,79 @@ func TestDranzerBundleIsEvaluable(t *testing.T) {
 
 	// The CSV companion is not a report, so only the four modes are listed.
 	assert.Len(t, decoded["reports"], 4)
+}
+
+// TestRadamsaReportArchiveIsEvaluable guards that a RADAMSA_REPORT material whose
+// value is an archive of per-run -M logs projects to input.elements holding the
+// records merged across every entry. Recording the archive whole without merging
+// here would hand the policy engine zip/tar.gz bytes, which parse to no records,
+// so radamsa-min-iterations reads a non-array input.elements and *skips* — a
+// clean-looking false pass on a fuzzing-coverage gate.
+func TestRadamsaReportArchiveIsEvaluable(t *testing.T) {
+	// Two per-run logs, three -M records each => six merged records.
+	logA := []byte("seed: 1\nmuta-num: 1, generator: file\nbyte-dec: 1, generator: jump\n")
+	logB := []byte("seed: 2\nmuta-num: 2, generator: file\nbyte-dec: 2, generator: jump\n")
+
+	dir := t.TempDir()
+	tarGz := filepath.Join(dir, "report.tar.gz")
+	writeReportTarGz(t, tarGz, map[string][]byte{"meta_1.log": logA, "meta_2.log": logB})
+	zipPath := filepath.Join(dir, "report.zip")
+	writeReportZip(t, zipPath, map[string][]byte{"meta_1.log": logA, "meta_2.log": logB})
+
+	for _, tc := range []struct{ name, path string }{
+		{"tar.gz", tarGz},
+		{"zip", zipPath},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_RADAMSA_REPORT,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{Name: "fuzz-report", Digest: "sha256:deadbeef"},
+				},
+			}
+
+			content, err := m.GetEvaluableContent(tc.path)
+			require.NoError(t, err)
+
+			var decoded map[string]any
+			require.NoError(t, json.NewDecoder(bytes.NewReader(content)).Decode(&decoded))
+
+			elements, ok := decoded["elements"].([]any)
+			require.True(t, ok, "input.elements must be an array so the gate does not skip")
+			assert.Len(t, elements, 6, "records from every archive entry must be merged")
+		})
+	}
+}
+
+func writeReportTarGz(t *testing.T, path string, files map[string][]byte) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	gz := gzip.NewWriter(f)
+	tw := tar.NewWriter(gz)
+	for name, content := range files {
+		require.NoError(t, tw.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: int64(len(content)), Typeflag: tar.TypeReg}))
+		_, err := tw.Write(content)
+		require.NoError(t, err)
+	}
+	require.NoError(t, tw.Close())
+	require.NoError(t, gz.Close())
+}
+
+func writeReportZip(t *testing.T, path string, files map[string][]byte) {
+	t.Helper()
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+	zw := zip.NewWriter(f)
+	for name, content := range files {
+		w, err := zw.Create(name)
+		require.NoError(t, err)
+		_, err = w.Write(content)
+		require.NoError(t, err)
+	}
+	require.NoError(t, zw.Close())
 }
 
 // TestCoberturaEmptyReportIsEvaluable guards the requirement that a legitimate
