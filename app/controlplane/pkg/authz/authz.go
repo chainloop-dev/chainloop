@@ -134,8 +134,11 @@ var (
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
 	// Robot Account
-	PolicyRobotAccountList   = &Policy{ResourceRobotAccount, ActionList}
-	PolicyRobotAccountCreate = &Policy{ResourceRobotAccount, ActionCreate}
+	// NOTE: there is deliberately no create policy. Robot-account creation was retired from the CLI
+	// in 2024 (#890, #894) and has had no first-party caller since, so the RPC is left unmapped and
+	// reachable only by org admins via the middleware bypass. Re-adding a policy here would make it
+	// grantable to API tokens again, which is what CP-N4 was.
+	PolicyRobotAccountList = &Policy{ResourceRobotAccount, ActionList}
 	// Workflow Contract
 	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
 	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
@@ -387,8 +390,7 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	"/controlplane.v1.OrgMetricsService/TopWorkflowsByRunsCount": {Policies: []*Policy{PolicyOrgMetricsRead}},
 	"/controlplane.v1.OrgMetricsService/DailyRunsCount":          {Policies: []*Policy{PolicyOrgMetricsRead}},
 	// Robot Account
-	"/controlplane.v1.RobotAccountService/List":   {Policies: []*Policy{PolicyRobotAccountList}},
-	"/controlplane.v1.RobotAccountService/Create": {Policies: []*Policy{PolicyRobotAccountCreate}},
+	"/controlplane.v1.RobotAccountService/List": {Policies: []*Policy{PolicyRobotAccountList}},
 	// Workflows
 	"/controlplane.v1.WorkflowService/List":   {Policies: []*Policy{PolicyWorkflowList}},
 	"/controlplane.v1.WorkflowService/View":   {Policies: []*Policy{PolicyWorkflowRead}},

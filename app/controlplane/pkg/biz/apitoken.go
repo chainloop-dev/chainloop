@@ -39,15 +39,13 @@ type APITokenJWTConfig struct {
 }
 
 // orgLevelTokenPolicies are additional policies granted only to org-level tokens, never to
-// project-scoped ones. RobotAccountCreate and RegisteredIntegrationAdd belong here because their
-// endpoints (RobotAccountService/Create, IntegrationsService/Register) resolve the target by
-// organization only, so a project-scoped token holding them could mint credentials for another
-// project's workflow or plant an org-wide integration.
+// project-scoped ones. RegisteredIntegrationAdd belongs here because IntegrationsService/Register
+// creates an org-wide integration and performs no project-scope check, so a project-scoped token
+// holding it could plant an integration that receives every attestation in the organization.
 var orgLevelTokenPolicies = []*authz.Policy{
 	authz.PolicyAPITokenCreate,
 	authz.PolicyAPITokenList,
 	authz.PolicyAPITokenRevoke,
-	authz.PolicyRobotAccountCreate,
 	authz.PolicyRegisteredIntegrationAdd,
 }
 

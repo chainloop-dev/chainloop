@@ -26,8 +26,8 @@ import (
 // project-scoped tokens. Every token receives defaultAuthzPolicies verbatim whatever its scope, and a
 // policy held by no role in authz.RolesMap is reachable for users only via the IsAdmin() bypass in
 // the authz middleware. Shipping such a policy in the default set therefore hands every project admin
-// an org-admin capability, which is how PolicyRobotAccountCreate and PolicyRegisteredIntegrationAdd
-// became escalations.
+// an org-admin capability, which is how PolicyRegisteredIntegrationAdd became an escalation (alongside
+// a robot-account create policy, since removed from authz entirely).
 func TestDefaultTokenPoliciesAreHeldByAHumanRole(t *testing.T) {
 	heldByRole := make(map[authz.Policy]struct{})
 	for _, policies := range authz.RolesMap {
