@@ -38,6 +38,12 @@ import (
 // inputs recorded in a RADAMSA_CRASHES material (0 means no crash).
 const AnnotationRadamsaCrashesCount = "chainloop.material.radamsa.crashes.count"
 
+// AnnotationRadamsaReportRecordsCount is the annotation holding the total number
+// of -M metadata records recorded in a RADAMSA_REPORT material, summed across all
+// entries when the input is an archive. It is informational: the gate reads the
+// records projected into input.elements, not this annotation.
+const AnnotationRadamsaReportRecordsCount = "chainloop.material.radamsa.report.records.count"
+
 const radamsaToolName = "radamsa"
 
 // RadamsaReportCrafter crafts a RADAMSA_REPORT material out of radamsa's -M
@@ -58,14 +64,19 @@ func NewRadamsaReportCrafter(schema *schemaapi.CraftingSchema_Material, backend 
 }
 
 func (c *RadamsaReportCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
-	f, err := os.Open(filePath)
+	// InspectReport applies the same content detection and per-entry parse the
+	// policy projection (radamsa.ParseReportBytes) applies at eval time, so a
+	// material accepted here is guaranteed to be evaluable. The archive itself is
+	// stored in CAS as-is; the records are merged into input.elements at eval time,
+	// not here.
+	records, err := radamsa.InspectReport(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("can't open the file: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := radamsa.Parse(f); err != nil {
-		return nil, fmt.Errorf("invalid radamsa -M metadata log: %w: %w", ErrInvalidMaterialType, err)
+		// Only invalid content is a material-type error; a file-access failure is a
+		// system problem the user can fix, so it is surfaced as-is.
+		if errors.Is(err, radamsa.ErrInvalidReport) {
+			return nil, fmt.Errorf("invalid radamsa -M metadata log: %w: %w", ErrInvalidMaterialType, err)
+		}
+		return nil, err
 	}
 
 	m, err := uploadAndCraft(ctx, c.input, c.backend, filePath, c.logger)
@@ -76,6 +87,7 @@ func (c *RadamsaReportCrafter) Craft(ctx context.Context, filePath string) (*api
 		m.Annotations = make(map[string]string)
 	}
 	m.Annotations[AnnotationToolNameKey] = radamsaToolName
+	m.Annotations[AnnotationRadamsaReportRecordsCount] = strconv.Itoa(records)
 	return m, nil
 }
 

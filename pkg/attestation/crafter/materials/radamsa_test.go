@@ -56,14 +56,35 @@ func TestNewRadamsaReportCrafter(t *testing.T) {
 }
 
 func TestRadamsaReportCrafter_Craft(t *testing.T) {
+	dir := t.TempDir()
+	// Each file holds two parseable -M records.
+	meta := []byte("seed: 123\nmuta-num: 1, generator: file\n")
+	badMeta := []byte("this is not a radamsa metadata log")
+	twoTar := filepath.Join(dir, "report.tar.gz")
+	writeTarGz(t, twoTar, map[string][]byte{"meta_1.log": meta, "meta_2.log": meta})
+	twoZip := filepath.Join(dir, "report.zip")
+	writeZip(t, twoZip, map[string][]byte{"meta_1.log": meta, "meta_2.log": meta})
+	badTar := filepath.Join(dir, "report-bad.tar.gz")
+	writeTarGz(t, badTar, map[string][]byte{"meta_1.log": meta, "bad.log": badMeta})
+	emptyTar := filepath.Join(dir, "report-empty.tar.gz")
+	writeTarGz(t, emptyTar, nil)
+	emptyFile := filepath.Join(dir, "empty.log")
+	require.NoError(t, os.WriteFile(emptyFile, []byte(" \n"), 0o600))
+
 	tests := []struct {
-		name     string
-		filePath string
-		wantErr  string
+		name      string
+		filePath  string
+		wantErr   string
+		wantCount string
 	}{
 		{name: "invalid path", filePath: "./testdata/nope.log", wantErr: "no such file"},
 		{name: "not a meta log", filePath: "./testdata/radamsa-meta-invalid.txt", wantErr: "invalid radamsa -M metadata log"},
-		{name: "valid -M log", filePath: "./testdata/radamsa-meta.txt"},
+		{name: "valid -M log", filePath: "./testdata/radamsa-meta.txt", wantCount: "3"},
+		{name: "tar.gz of two meta files => merged records", filePath: twoTar, wantCount: "4"},
+		{name: "zip of two meta files => merged records", filePath: twoZip, wantCount: "4"},
+		{name: "archive with a malformed entry fails the whole material", filePath: badTar, wantErr: "invalid radamsa -M metadata log"},
+		{name: "empty archive is a valid zero-iteration report", filePath: emptyTar, wantCount: "0"},
+		{name: "empty single log is a valid zero-iteration report", filePath: emptyFile, wantCount: "0"},
 	}
 	schema := &contractAPI.CraftingSchema_Material{Name: "report", Type: contractAPI.CraftingSchema_Material_RADAMSA_REPORT}
 	l := zerolog.Nop()
@@ -86,6 +107,7 @@ func TestRadamsaReportCrafter_Craft(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, contractAPI.CraftingSchema_Material_RADAMSA_REPORT.String(), got.MaterialType.String())
 			assert.Equal(t, "radamsa", got.Annotations["chainloop.material.tool.name"])
+			assert.Equal(t, tc.wantCount, got.Annotations["chainloop.material.radamsa.report.records.count"])
 			assert.True(t, got.UploadedToCas)
 		})
 	}

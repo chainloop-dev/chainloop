@@ -25,10 +25,17 @@ import (
 	"strings"
 )
 
+// ErrNoRecords means a -M log held no parseable records (an empty or blank-only
+// log). It is distinct from a malformed-line error so callers can tell a valid but
+// empty report — zero fuzzing iterations — from content that is not a -M log at
+// all.
+var ErrNoRecords = errors.New("no radamsa -M records found")
+
 // Parse reads a radamsa -M metadata log and returns one record per non-blank
 // line. Each record is a map of key -> value, where quoted values are unquoted
 // strings, integer-looking bare values are int64, and other bare tokens are
-// strings. It errors if no parseable record is found.
+// strings. It returns ErrNoRecords when no record is found and a distinct error
+// when a line is malformed.
 func Parse(r io.Reader) ([]map[string]any, error) {
 	scanner := bufio.NewScanner(r)
 	// radamsa lines can be long (many fields); raise the buffer ceiling.
@@ -50,7 +57,7 @@ func Parse(r io.Reader) ([]map[string]any, error) {
 		return nil, err
 	}
 	if len(records) == 0 {
-		return nil, errors.New("no radamsa -M records found")
+		return nil, ErrNoRecords
 	}
 	return records, nil
 }
