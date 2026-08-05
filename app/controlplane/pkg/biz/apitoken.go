@@ -40,11 +40,15 @@ type APITokenJWTConfig struct {
 
 // orgLevelTokenPolicies are granted only to org-level tokens. RegisteredIntegrationAdd is here because
 // IntegrationsService/Register creates an org-level object and performs no project-scope check.
+// RegisteredIntegrationList/Read gate ListRegistrations/DescribeRegistration, which enumerate and read
+// any registered integration in the organization — including its configuration — with no project filter.
 var orgLevelTokenPolicies = []*authz.Policy{
 	authz.PolicyAPITokenCreate,
 	authz.PolicyAPITokenList,
 	authz.PolicyAPITokenRevoke,
 	authz.PolicyRegisteredIntegrationAdd,
+	authz.PolicyRegisteredIntegrationList,
+	authz.PolicyRegisteredIntegrationRead,
 }
 
 // defaultAuthzPolicies are granted to every token regardless of scope, so each entry must be safe
@@ -63,8 +67,6 @@ var defaultAuthzPolicies = []*authz.Policy{
 	// to attach integrations
 	authz.PolicyAvailableIntegrationRead,
 	authz.PolicyAvailableIntegrationList,
-	authz.PolicyRegisteredIntegrationList,
-	authz.PolicyRegisteredIntegrationRead,
 	authz.PolicyAttachedIntegrationList,
 	authz.PolicyAttachedIntegrationAttach,
 
