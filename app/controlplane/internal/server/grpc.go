@@ -70,7 +70,6 @@ type Opts struct {
 	// Services
 	WorkflowSvc         *service.WorkflowService
 	AuthSvc             *service.AuthService
-	RobotAccountSvc     *service.RobotAccountService
 	WorkflowRunSvc      *service.WorkflowRunService
 	AttestationSvc      *service.AttestationService
 	WorkflowContractSvc *service.WorkflowContractService
@@ -156,7 +155,6 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	srv := grpc.NewServer(serverOpts...)
 	v1.RegisterWorkflowServiceServer(srv, opts.WorkflowSvc)
 	v1.RegisterStatusServiceServer(srv, service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase, opts.BootstrapConfig))
-	v1.RegisterRobotAccountServiceServer(srv, opts.RobotAccountSvc)
 	v1.RegisterWorkflowRunServiceServer(srv, opts.WorkflowRunSvc)
 	v1.RegisterAttestationServiceServer(srv, opts.AttestationSvc)
 	v1.RegisterWorkflowContractServiceServer(srv, opts.WorkflowContractSvc)

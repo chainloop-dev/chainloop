@@ -32,7 +32,7 @@ import (
 var ProviderSet = wire.NewSet(
 	NewWorkflowUsecase,
 	NewUserUseCase,
-	NewRootAccountUseCase,
+	NewRobotAccountUseCase,
 	NewWorkflowRunUseCase,
 	wire.Struct(new(WorkflowRunUseCaseOpts), "*"),
 	NewOrganizationUseCase,

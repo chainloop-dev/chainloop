@@ -19,138 +19,43 @@ import (
 	"context"
 	"time"
 
-	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/robotaccount"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
 
 var robotAccountTracer = otelx.Tracer("chainloop-controlplane", "biz/robotaccount")
 
+// RobotAccount is a legacy, workflow-scoped credential superseded by API tokens. Its management API
+// (RobotAccountService) was removed (CP-N4): accounts can no longer be created, listed or revoked.
+// Existing tokens are still honored during attestation, which is why lookup remains.
 type RobotAccount struct {
-	Name                 string
-	ID                   uuid.UUID
-	JWT                  string
-	WorkflowID           uuid.UUID
-	CreatedAt, RevokedAt *time.Time
+	ID, WorkflowID uuid.UUID
+	RevokedAt      *time.Time
 }
 
 type RobotAccountRepo interface {
-	Create(ctx context.Context, name string, workflowID uuid.UUID) (*RobotAccount, error)
-	List(ctx context.Context, workflowID uuid.UUID, includeRevoked bool) ([]*RobotAccount, error)
+	// FindByID returns (nil, nil) when no account with the given ID exists.
 	FindByID(ctx context.Context, ID uuid.UUID) (*RobotAccount, error)
-	Revoke(ctx context.Context, orgID, ID uuid.UUID) error
 }
 
 type RobotAccountUseCase struct {
 	robotAccountRepo RobotAccountRepo
-	workflowRepo     WorkflowRepo
-	authConf         *conf.Auth
-	logger           *log.Helper
 }
 
-func NewRootAccountUseCase(robotAccountRepo RobotAccountRepo, workflowRepo WorkflowRepo, conf *conf.Auth, logger log.Logger) *RobotAccountUseCase {
+func NewRobotAccountUseCase(robotAccountRepo RobotAccountRepo) *RobotAccountUseCase {
 	return &RobotAccountUseCase{
 		robotAccountRepo: robotAccountRepo,
-		workflowRepo:     workflowRepo,
-		authConf:         conf,
-		logger:           log.NewHelper(logger),
 	}
-}
-
-func (uc *RobotAccountUseCase) Create(ctx context.Context, name string, orgID, workflowID string) (*RobotAccount, error) {
-	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.Create")
-	defer span.End()
-
-	workflowUUID, err := uuid.Parse(workflowID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	// Make sure that the given workflow belongs to the provided org
-	if wf, err := uc.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
-		return nil, err
-	} else if wf == nil {
-		return nil, NewErrNotFound("workflow")
-	}
-
-	res, err := uc.robotAccountRepo.Create(ctx, name, workflowUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create Key
-	b, err := robotaccount.NewBuilder(
-		robotaccount.WithIssuer(jwt.DefaultIssuer),
-		robotaccount.WithKeySecret(uc.authConf.GeneratedJwsHmacSecret),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	jwt, err := b.GenerateJWT(orgID, workflowID, res.ID.String())
-	if err != nil {
-		return nil, err
-	}
-
-	res.JWT = jwt
-	return res, nil
-}
-
-func (uc *RobotAccountUseCase) List(ctx context.Context, orgID, workflowID string, includeRevoked bool) ([]*RobotAccount, error) {
-	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.List")
-	defer span.End()
-
-	workflowUUID, err := uuid.Parse(workflowID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-	// Check that the workflow is from the provided user
-	if wf, err := uc.workflowRepo.GetOrgScoped(ctx, orgUUID, workflowUUID); err != nil {
-		return nil, err
-	} else if wf == nil {
-		return nil, NewErrNotFound("workflow")
-	}
-
-	return uc.robotAccountRepo.List(ctx, workflowUUID, includeRevoked)
 }
 
 func (uc *RobotAccountUseCase) FindByID(ctx context.Context, id string) (*RobotAccount, error) {
 	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.FindByID")
 	defer span.End()
 
-	uuid, err := uuid.Parse(id)
+	accountUUID, err := uuid.Parse(id)
 	if err != nil {
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.robotAccountRepo.FindByID(ctx, uuid)
-}
-
-func (uc *RobotAccountUseCase) Revoke(ctx context.Context, orgID, id string) error {
-	ctx, span := otelx.Start(ctx, robotAccountTracer, "RobotAccountUseCase.Revoke")
-	defer span.End()
-
-	orgUUID, err := uuid.Parse(orgID)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-
-	uuid, err := uuid.Parse(id)
-	if err != nil {
-		return NewErrInvalidUUID(err)
-	}
-	return uc.robotAccountRepo.Revoke(ctx, orgUUID, uuid)
+	return uc.robotAccountRepo.FindByID(ctx, accountUUID)
 }

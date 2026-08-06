@@ -112,9 +112,9 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		UserAccessSyncer:    userAccessSyncerUseCase,
 	}
 	userUseCase := biz.NewUserUseCase(newUserUseCaseParams)
-	robotAccountRepo := data.NewRobotAccountRepo(dataData, logger)
+	robotAccountRepo := data.NewRobotAccountRepo(dataData)
+	robotAccountUseCase := biz.NewRobotAccountUseCase(robotAccountRepo)
 	auth := bootstrap.Auth
-	robotAccountUseCase := biz.NewRootAccountUseCase(robotAccountRepo, workflowRepo, auth, logger)
 	casCredentialsUseCase, err := biz.NewCASCredentialsUseCase(auth)
 	if err != nil {
 		cleanup3()
@@ -186,7 +186,6 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		cleanup()
 		return nil, nil, err
 	}
-	robotAccountService := service.NewRobotAccountService(robotAccountUseCase, v5...)
 	workflowRunRepo := data.NewWorkflowRunRepo(dataData, logger)
 	signingUseCase, err := biz.NewChainloopSigningUseCase(bootstrap, logger)
 	if err != nil {
@@ -342,7 +341,6 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		ClaimsCache:         cacheCache,
 		WorkflowSvc:         workflowService,
 		AuthSvc:             authService,
-		RobotAccountSvc:     robotAccountService,
 		WorkflowRunSvc:      workflowRunService,
 		AttestationSvc:      attestationService,
 		WorkflowContractSvc: workflowContractService,

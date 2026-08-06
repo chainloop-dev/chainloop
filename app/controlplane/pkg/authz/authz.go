@@ -58,7 +58,6 @@ const (
 	ResourceRegisteredIntegration   = "integration_registered"
 	ResourceAttachedIntegration     = "integration_attached"
 	ResourceOrgMetric               = "metrics_org"
-	ResourceRobotAccount            = "robot_account"
 	ResourceWorkflowRun             = "workflow_run"
 	ResourceWorkflow                = "workflow"
 	ResourceProject                 = "project"
@@ -133,9 +132,6 @@ var (
 	PolicyAttachedIntegrationDetach = &Policy{ResourceAttachedIntegration, ActionDelete}
 	// Org Metrics
 	PolicyOrgMetricsRead = &Policy{ResourceOrgMetric, ActionList}
-	// Robot Account
-	PolicyRobotAccountList   = &Policy{ResourceRobotAccount, ActionList}
-	PolicyRobotAccountCreate = &Policy{ResourceRobotAccount, ActionCreate}
 	// Workflow Contract
 	PolicyWorkflowContractList   = &Policy{ResourceWorkflowContract, ActionList}
 	PolicyWorkflowContractRead   = &Policy{ResourceWorkflowContract, ActionRead}
@@ -232,8 +228,6 @@ var RolesMap = map[Role][]*Policy{
 		PolicyAttachedIntegrationList,
 		// Metrics
 		PolicyOrgMetricsRead,
-		// Robot Account
-		PolicyRobotAccountList,
 		// Workflow Contract
 		PolicyWorkflowContractList,
 		PolicyWorkflowContractRead,
@@ -386,9 +380,6 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	"/controlplane.v1.OrgMetricsService/Totals":                  {Policies: []*Policy{PolicyOrgMetricsRead}},
 	"/controlplane.v1.OrgMetricsService/TopWorkflowsByRunsCount": {Policies: []*Policy{PolicyOrgMetricsRead}},
 	"/controlplane.v1.OrgMetricsService/DailyRunsCount":          {Policies: []*Policy{PolicyOrgMetricsRead}},
-	// Robot Account
-	"/controlplane.v1.RobotAccountService/List":   {Policies: []*Policy{PolicyRobotAccountList}},
-	"/controlplane.v1.RobotAccountService/Create": {Policies: []*Policy{PolicyRobotAccountCreate}},
 	// Workflows
 	"/controlplane.v1.WorkflowService/List":   {Policies: []*Policy{PolicyWorkflowList}},
 	"/controlplane.v1.WorkflowService/View":   {Policies: []*Policy{PolicyWorkflowRead}},

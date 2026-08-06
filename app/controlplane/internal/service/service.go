@@ -40,7 +40,6 @@ import (
 var ProviderSet = wire.NewSet(
 	NewWorkflowService,
 	NewAuthService,
-	NewRobotAccountService,
 	NewWorkflowRunService,
 	NewAttestationService,
 	NewWorkflowSchemaService,

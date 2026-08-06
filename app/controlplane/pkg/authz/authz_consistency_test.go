@@ -99,9 +99,6 @@ var adminOnlyProcedures = map[string]struct{}{
 	"/controlplane.v1.OrganizationService/DeleteMembership": {},
 	"/controlplane.v1.OrganizationService/Update":           {},
 	"/controlplane.v1.OrganizationService/UpdateMembership": {},
-
-	// Robot account revocation (List/Create are role-gated in ServerOperationsMap).
-	"/controlplane.v1.RobotAccountService/Revoke": {},
 }
 
 // TestEveryProcedureIsClassified asserts that every controlplane.v1 wire procedure is explicitly

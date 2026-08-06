@@ -38,12 +38,40 @@ type APITokenJWTConfig struct {
 	SymmetricHmacKey string
 }
 
-// orgLevelTokenPolicies are additional policies granted only to org-level tokens.
-// They allow managing project-scoped tokens.
+// orgLevelTokenPolicies are granted only to org-level tokens. RegisteredIntegrationAdd is here because
+// IntegrationsService/Register creates an org-level object and performs no project-scope check.
+// RegisteredIntegrationList/Read gate ListRegistrations/DescribeRegistration, which enumerate and read
+// any registered integration in the organization — including its configuration — with no project filter.
 var orgLevelTokenPolicies = []*authz.Policy{
 	authz.PolicyAPITokenCreate,
 	authz.PolicyAPITokenList,
 	authz.PolicyAPITokenRevoke,
+	authz.PolicyRegisteredIntegrationAdd,
+	authz.PolicyRegisteredIntegrationList,
+	authz.PolicyRegisteredIntegrationRead,
+}
+
+// defaultAuthzPolicies are granted to every token regardless of scope, so each entry must be safe
+// for a caller confined to a single project. Org-wide capabilities go in orgLevelTokenPolicies.
+var defaultAuthzPolicies = []*authz.Policy{
+	// Add permissions to workflow run
+	authz.PolicyWorkflowRunList, authz.PolicyWorkflowRunRead,
+	// To read, list and create workflows
+	authz.PolicyWorkflowRead, authz.PolicyWorkflowList, authz.PolicyWorkflowCreate,
+	// Add permissions to workflow contract management
+	authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead, authz.PolicyWorkflowContractUpdate, authz.PolicyWorkflowContractCreate,
+	// to download artifacts and list referrers
+	authz.PolicyArtifactDownload, authz.PolicyReferrerRead,
+	authz.PolicyOrganizationRead,
+
+	// to attach integrations
+	authz.PolicyAvailableIntegrationRead,
+	authz.PolicyAvailableIntegrationList,
+	authz.PolicyAttachedIntegrationList,
+	authz.PolicyAttachedIntegrationAttach,
+
+	// to upload CAS artifacts
+	authz.PolicyArtifactUpload,
 }
 
 // APIToken is used for unattended access to the control plane API.
@@ -101,36 +129,12 @@ type APITokenUseCase struct {
 
 func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig, authzUC *AuthzUseCase, orgUseCase *OrganizationUseCase, auditorUC *AuditorUseCase, logger log.Logger) (*APITokenUseCase, error) {
 	uc := &APITokenUseCase{
-		apiTokenRepo: apiTokenRepo,
-		orgUseCase:   orgUseCase,
-		auditorUC:    auditorUC,
-		logger:       servicelogger.ScopedHelper(logger, "biz/APITokenUseCase"),
-		authz:        authzUC,
-		DefaultAuthzPolicies: []*authz.Policy{
-			// Add permissions to workflow run
-			authz.PolicyWorkflowRunList, authz.PolicyWorkflowRunRead,
-			// To read, list and create workflows
-			authz.PolicyWorkflowRead, authz.PolicyWorkflowList, authz.PolicyWorkflowCreate,
-			// Add permissions to workflow contract management
-			authz.PolicyWorkflowContractList, authz.PolicyWorkflowContractRead, authz.PolicyWorkflowContractUpdate, authz.PolicyWorkflowContractCreate,
-			// to download artifacts and list referrers
-			authz.PolicyArtifactDownload, authz.PolicyReferrerRead,
-			authz.PolicyOrganizationRead,
-			// to create robot accounts
-			authz.PolicyRobotAccountCreate,
-
-			// to attach integrations
-			authz.PolicyAvailableIntegrationRead,
-			authz.PolicyAvailableIntegrationList,
-			authz.PolicyRegisteredIntegrationList,
-			authz.PolicyRegisteredIntegrationRead,
-			authz.PolicyRegisteredIntegrationAdd,
-			authz.PolicyAttachedIntegrationList,
-			authz.PolicyAttachedIntegrationAttach,
-
-			// to upload CAS artifacts
-			authz.PolicyArtifactUpload,
-		},
+		apiTokenRepo:         apiTokenRepo,
+		orgUseCase:           orgUseCase,
+		auditorUC:            auditorUC,
+		logger:               servicelogger.ScopedHelper(logger, "biz/APITokenUseCase"),
+		authz:                authzUC,
+		DefaultAuthzPolicies: defaultAuthzPolicies,
 	}
 
 	// Create the JWT builder for the API token
@@ -251,9 +255,9 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		policies = uc.DefaultAuthzPolicies
 	}
 
-	// Org-level tokens additionally get project-level API token management policies
+	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
 	if projectID == nil && orgUUID != nil {
-		policies = append(policies, orgLevelTokenPolicies...)
+		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT

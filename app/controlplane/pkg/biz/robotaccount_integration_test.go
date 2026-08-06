@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package biz_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
@@ -25,30 +26,33 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-func (s *robotAccountTestSuite) TestRevoke() {
+func (s *robotAccountTestSuite) TestFindByID() {
 	ctx := context.Background()
-	s.Run("returns an error if org ID format is not valid", func() {
-		err := s.RobotAccount.Revoke(ctx, "not_valid_uuid", uuid.NewString())
-		s.ErrorAs(err, &biz.ErrInvalidUUID{})
+
+	s.Run("returns an error if the ID format is not valid", func() {
+		_, err := s.RobotAccount.FindByID(ctx, "not_valid_uuid")
+		s.True(biz.IsErrInvalidUUID(err))
 	})
 
-	s.Run("returns an error if robot account ID format is not valid", func() {
-		err := s.RobotAccount.Revoke(ctx, uuid.NewString(), "not_valid_uuid")
-		s.ErrorAs(err, &biz.ErrInvalidUUID{})
-	})
-
-	s.Run("returns a Not Found if robot account cannot be found", func() {
-		err := s.RobotAccount.Revoke(ctx, s.org.ID, uuid.NewString())
-		s.ErrorAs(err, &biz.ErrNotFound{})
-	})
-
-	s.Run("revokes the robot account", func() {
-		err := s.RobotAccount.Revoke(ctx, s.org.ID, s.ra.ID.String())
+	s.Run("returns nil if the robot account cannot be found", func() {
+		ra, err := s.RobotAccount.FindByID(ctx, uuid.NewString())
 		s.NoError(err)
+		s.Nil(ra)
+	})
 
-		// Reload the robot account
-		ra, err := s.RobotAccount.FindByID(ctx, s.ra.ID.String())
+	s.Run("finds an active robot account", func() {
+		ra, err := s.RobotAccount.FindByID(ctx, s.raID.String())
 		s.NoError(err)
+		s.NotNil(ra)
+		s.Equal(s.raID, ra.ID)
+		s.Equal(s.workflowID, ra.WorkflowID)
+		s.Nil(ra.RevokedAt)
+	})
+
+	s.Run("finds a revoked robot account with its revocation timestamp", func() {
+		ra, err := s.RobotAccount.FindByID(ctx, s.revokedRaID.String())
+		s.NoError(err)
+		s.NotNil(ra)
 		s.NotNil(ra.RevokedAt)
 	})
 }
@@ -56,11 +60,12 @@ func (s *robotAccountTestSuite) TestRevoke() {
 // Utility struct to hold the test suite
 type robotAccountTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	org *biz.Organization
-	ra  *biz.RobotAccount
+	org               *biz.Organization
+	workflowID        uuid.UUID
+	raID, revokedRaID uuid.UUID
 }
 
-// // Run the tests
+// Run the tests
 func TestRobotAccountUseCase(t *testing.T) {
 	suite.Run(t, new(robotAccountTestSuite))
 }
@@ -71,14 +76,24 @@ func (s *robotAccountTestSuite) SetupTest() {
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T())
 	s.org, err = s.Organization.CreateWithRandomName(ctx)
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
 		Name:    "myworkflow",
 		Project: "myproject",
 		OrgID:   s.org.ID,
 	})
-	s.NoError(err)
-	s.ra, err = s.RobotAccount.Create(ctx, "myRobotAccount", s.org.ID, wf.ID.String())
-	s.NoError(err)
+	s.Require().NoError(err)
+	s.workflowID = wf.ID
+
+	// Seeded via ent: management is no longer exposed, but existing accounts must remain
+	// resolvable for attestation-time authentication.
+	ra, err := s.Data.DB.RobotAccount.Create().SetName("myRobotAccount").SetWorkflowID(wf.ID).Save(ctx)
+	s.Require().NoError(err)
+	s.raID = ra.ID
+
+	revoked, err := s.Data.DB.RobotAccount.Create().SetName("myRevokedRobotAccount").
+		SetWorkflowID(wf.ID).SetRevokedAt(time.Now()).Save(ctx)
+	s.Require().NoError(err)
+	s.revokedRaID = revoked.ID
 }

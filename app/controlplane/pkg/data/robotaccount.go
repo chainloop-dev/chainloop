@@ -17,14 +17,10 @@ package data
 
 import (
 	"context"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
 
@@ -32,48 +28,12 @@ var robotAccountRepoTracer = otelx.Tracer("chainloop-controlplane", "data/robota
 
 type RobotAccountRepo struct {
 	data *Data
-	log  *log.Helper
 }
 
-func NewRobotAccountRepo(data *Data, logger log.Logger) biz.RobotAccountRepo {
+func NewRobotAccountRepo(data *Data) biz.RobotAccountRepo {
 	return &RobotAccountRepo{
 		data: data,
-		log:  log.NewHelper(logger),
 	}
-}
-
-func (r *RobotAccountRepo) Create(ctx context.Context, name string, workflowID uuid.UUID) (*biz.RobotAccount, error) {
-	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.Create")
-	defer span.End()
-
-	p, err := r.data.DB.RobotAccount.Create().SetName(name).SetWorkflowID(workflowID).Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return entRaToBizRa(p, workflowID), nil
-}
-
-func (r *RobotAccountRepo) List(ctx context.Context, workflowID uuid.UUID, includeRevoked bool) ([]*biz.RobotAccount, error) {
-	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.List")
-	defer span.End()
-
-	raQuery := r.data.DB.Workflow.Query().Where(workflow.ID(workflowID)).QueryRobotaccounts()
-	if !includeRevoked {
-		raQuery = raQuery.Where(robotaccount.RevokedAtIsNil())
-	}
-
-	robotAccounts, err := raQuery.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*biz.RobotAccount, 0, len(robotAccounts))
-	for _, a := range robotAccounts {
-		result = append(result, entRaToBizRa(a, workflowID))
-	}
-
-	return result, nil
 }
 
 func (r *RobotAccountRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.RobotAccount, error) {
@@ -92,29 +52,5 @@ func (r *RobotAccountRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.Rob
 		return nil, err
 	}
 
-	return entRaToBizRa(p, workflowID), nil
-}
-
-func (r *RobotAccountRepo) Revoke(ctx context.Context, orgID, id uuid.UUID) error {
-	ctx, span := otelx.Start(ctx, robotAccountRepoTracer, "RobotAccountRepo.Revoke")
-	defer span.End()
-
-	// Find a non-revoked robot account in the scope of the organization
-	acc, err := orgScopedQuery(r.data.DB, orgID).
-		QueryWorkflows().
-		QueryRobotaccounts().Where(robotaccount.ID(id)).Where(robotaccount.RevokedAtIsNil()).
-		First(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return biz.NewErrNotFound("robot account")
-		}
-		return err
-	}
-
-	// and update it
-	return acc.Update().SetRevokedAt(time.Now()).Exec(ctx)
-}
-
-func entRaToBizRa(a *ent.RobotAccount, workflowID uuid.UUID) *biz.RobotAccount {
-	return &biz.RobotAccount{Name: a.Name, ID: a.ID, CreatedAt: toTimePtr(a.CreatedAt), WorkflowID: workflowID, RevokedAt: toTimePtr(a.RevokedAt)}
+	return &biz.RobotAccount{ID: p.ID, WorkflowID: workflowID, RevokedAt: toTimePtr(p.RevokedAt)}, nil
 }
