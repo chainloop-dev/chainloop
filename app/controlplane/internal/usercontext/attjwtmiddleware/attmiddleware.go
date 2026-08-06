@@ -27,10 +27,10 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	errorsAPI "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"

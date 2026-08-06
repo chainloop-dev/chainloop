@@ -20,9 +20,9 @@ import (
 	"fmt"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	"github.com/go-kratos/kratos/v2/middleware"

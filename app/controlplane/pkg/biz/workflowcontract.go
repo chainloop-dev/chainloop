@@ -29,9 +29,9 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	loader "github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"

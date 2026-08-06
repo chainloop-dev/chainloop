@@ -20,10 +20,10 @@ import (
 	"io"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v5"
