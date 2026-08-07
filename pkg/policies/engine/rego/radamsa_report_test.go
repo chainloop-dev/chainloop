@@ -72,21 +72,23 @@ violations contains msg if {
 func TestRadamsaMinIterationsAgainstArchiveMaterial(t *testing.T) {
 	policy := &engine.Policy{Name: "radamsa-min-iterations", Source: []byte(minIterationsGate)}
 
-	// Each log holds three -M records.
+	// Each log holds a `seed:` run header (not a fuzzing iteration, so not counted)
+	// and two mutation records.
 	logA := []byte("seed: 1\nmuta-num: 1, generator: file\nbyte-dec: 1, generator: jump\n")
 	logB := []byte("seed: 2\nmuta-num: 2, generator: file\nbyte-dec: 2, generator: jump\n")
 	badLog := []byte("this is not a radamsa metadata log")
 
 	dir := t.TempDir()
-	// tar.gz and zip of two good logs => six merged records.
-	sixTar := filepath.Join(dir, "six.tar.gz")
-	writeTarGzFile(t, sixTar, map[string][]byte{"meta_1.log": logA, "meta_2.log": logB})
-	sixZip := filepath.Join(dir, "six.zip")
-	writeZipFile(t, sixZip, map[string][]byte{"meta_1.log": logA, "meta_2.log": logB})
+	// tar.gz and zip of two good logs => four merged records (two per log; the seed
+	// header line is not a fuzzing iteration and is not counted).
+	fourTar := filepath.Join(dir, "four.tar.gz")
+	writeTarGzFile(t, fourTar, map[string][]byte{"meta_1.log": logA, "meta_2.log": logB})
+	fourZip := filepath.Join(dir, "four.zip")
+	writeZipFile(t, fourZip, map[string][]byte{"meta_1.log": logA, "meta_2.log": logB})
 	// zip with one malformed entry => the whole material is rejected at ingestion.
 	withBad := filepath.Join(dir, "withbad.zip")
 	writeZipFile(t, withBad, map[string][]byte{"meta_1.log": logA, "broken.log": badLog})
-	// plain-gzipped single log (not a tar.gz) => three records.
+	// plain-gzipped single log (not a tar.gz) => two records.
 	gzLog := filepath.Join(dir, "single.log.gz")
 	writeGzipFile(t, gzLog, logA)
 	// empty archive => zero iterations => the gate must FAIL (not skip, not error).
@@ -100,12 +102,12 @@ func TestRadamsaMinIterationsAgainstArchiveMaterial(t *testing.T) {
 		wantViolation bool
 		wantIngestErr bool // malformed content is rejected before evaluation
 	}{
-		{name: "tar.gz meets minimum", path: sixTar, minIterations: "6", wantViolation: false},
-		{name: "tar.gz misses minimum", path: sixTar, minIterations: "7", wantViolation: true},
-		{name: "zip meets minimum", path: sixZip, minIterations: "6", wantViolation: false},
-		{name: "zip misses minimum", path: sixZip, minIterations: "7", wantViolation: true},
-		{name: "plain gzip single log meets minimum", path: gzLog, minIterations: "3", wantViolation: false},
-		{name: "plain gzip single log misses minimum", path: gzLog, minIterations: "4", wantViolation: true},
+		{name: "tar.gz meets minimum", path: fourTar, minIterations: "4", wantViolation: false},
+		{name: "tar.gz misses minimum", path: fourTar, minIterations: "5", wantViolation: true},
+		{name: "zip meets minimum", path: fourZip, minIterations: "4", wantViolation: false},
+		{name: "zip misses minimum", path: fourZip, minIterations: "5", wantViolation: true},
+		{name: "plain gzip single log meets minimum", path: gzLog, minIterations: "2", wantViolation: false},
+		{name: "plain gzip single log misses minimum", path: gzLog, minIterations: "3", wantViolation: true},
 		{name: "zero-iteration report fails the gate rather than skipping", path: emptyArchive, minIterations: "1", wantViolation: true},
 		{name: "malformed archive entry is rejected at ingestion", path: withBad, minIterations: "1", wantIngestErr: true},
 	}

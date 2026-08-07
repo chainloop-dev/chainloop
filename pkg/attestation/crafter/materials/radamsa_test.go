@@ -57,7 +57,8 @@ func TestNewRadamsaReportCrafter(t *testing.T) {
 
 func TestRadamsaReportCrafter_Craft(t *testing.T) {
 	dir := t.TempDir()
-	// Each file holds two parseable -M records.
+	// Each file holds a `seed:` run header (not a fuzzing iteration, so not counted)
+	// and one mutation record.
 	meta := []byte("seed: 123\nmuta-num: 1, generator: file\n")
 	badMeta := []byte("this is not a radamsa metadata log")
 	twoTar := filepath.Join(dir, "report.tar.gz")
@@ -79,9 +80,9 @@ func TestRadamsaReportCrafter_Craft(t *testing.T) {
 	}{
 		{name: "invalid path", filePath: "./testdata/nope.log", wantErr: "no such file"},
 		{name: "not a meta log", filePath: "./testdata/radamsa-meta-invalid.txt", wantErr: "invalid radamsa -M metadata log"},
-		{name: "valid -M log", filePath: "./testdata/radamsa-meta.txt", wantCount: "3"},
-		{name: "tar.gz of two meta files => merged records", filePath: twoTar, wantCount: "4"},
-		{name: "zip of two meta files => merged records", filePath: twoZip, wantCount: "4"},
+		{name: "valid -M log", filePath: "./testdata/radamsa-meta.txt", wantCount: "2"},
+		{name: "tar.gz of two meta files => merged records", filePath: twoTar, wantCount: "2"},
+		{name: "zip of two meta files => merged records", filePath: twoZip, wantCount: "2"},
 		{name: "archive with a malformed entry fails the whole material", filePath: badTar, wantErr: "invalid radamsa -M metadata log"},
 		{name: "empty archive is a valid zero-iteration report", filePath: emptyTar, wantCount: "0"},
 		{name: "empty single log is a valid zero-iteration report", filePath: emptyFile, wantCount: "0"},
