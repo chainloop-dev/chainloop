@@ -379,7 +379,8 @@ func TestDranzerBundleIsEvaluable(t *testing.T) {
 // so radamsa-min-iterations reads a non-array input.elements and *skips* — a
 // clean-looking false pass on a fuzzing-coverage gate.
 func TestRadamsaReportArchiveIsEvaluable(t *testing.T) {
-	// Two per-run logs, three -M records each => six merged records.
+	// Two per-run logs, two mutation records each (the seed header line is not a
+	// fuzzing iteration and is not counted) => four merged records.
 	logA := []byte("seed: 1\nmuta-num: 1, generator: file\nbyte-dec: 1, generator: jump\n")
 	logB := []byte("seed: 2\nmuta-num: 2, generator: file\nbyte-dec: 2, generator: jump\n")
 
@@ -409,7 +410,7 @@ func TestRadamsaReportArchiveIsEvaluable(t *testing.T) {
 
 			elements, ok := decoded["elements"].([]any)
 			require.True(t, ok, "input.elements must be an array so the gate does not skip")
-			assert.Len(t, elements, 6, "records from every archive entry must be merged")
+			assert.Len(t, elements, 4, "mutation records from every archive entry must be merged")
 		})
 	}
 }

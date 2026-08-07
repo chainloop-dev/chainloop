@@ -69,6 +69,14 @@ func parseEntry(r io.Reader) ([]map[string]any, error) {
 	case err != nil:
 		return nil, fmt.Errorf("%w: %w", ErrInvalidReport, err)
 	}
+	// Drop the per-run header line(s). radamsa emits a single `seed: <n>` line at the
+	// start of each run to identify it, not to report a mutation; counting it would
+	// inflate the iteration count by one per -M log (the bug this guards against). A
+	// concatenated multi-run log carries one header per run, so every seed-bearing
+	// record is dropped, not just the first. radamsa's per-output meta lines describe
+	// a single mutation and never carry a `seed` field, so presence of `seed` is the
+	// header marker.
+	recs = dropRunHeaders(recs)
 	// Enforce the record cap here — the one chokepoint every path flows through —
 	// so a single standalone log is bounded exactly as an archive entry is, and no
 	// path can hand the eval projection an unbounded record set.
@@ -76,6 +84,21 @@ func parseEntry(r io.Reader) ([]map[string]any, error) {
 		return nil, fmt.Errorf("%w: exceeds %d records", ErrInvalidReport, maxReportRecords)
 	}
 	return recs, nil
+}
+
+// dropRunHeaders returns recs with radamsa's per-run header lines removed. The
+// header is the `seed: <n>` line radamsa writes once per run; it identifies the run,
+// not a fuzzing iteration, so it must not be counted or projected into
+// input.elements. Records are filtered in place, preserving order.
+func dropRunHeaders(recs []map[string]any) []map[string]any {
+	kept := recs[:0]
+	for _, rec := range recs {
+		if _, isHeader := rec["seed"]; isHeader {
+			continue
+		}
+		kept = append(kept, rec)
+	}
+	return kept
 }
 
 // parseSingle parses one standalone -M log and always returns a non-nil slice, so a
