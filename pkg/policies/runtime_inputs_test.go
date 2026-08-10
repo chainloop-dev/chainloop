@@ -26,6 +26,7 @@ const (
 	keyMinIterations     = "min_iterations"
 	policyRadamsaMinIter = "radamsa-min-iterations"
 	scopeShared          = "shared"
+	refRadamsaDigest     = "chainloop://radamsa-min-iterations@sha256:abc"
 )
 
 func TestMergeRuntimeInputs(t *testing.T) {
@@ -254,6 +255,36 @@ func TestRuntimeInputsForPolicy(t *testing.T) {
 		assert.Equal(t, map[string]string{keyMinIterations: "10"}, replaceInputs)
 	})
 
+	t.Run("most specific scoped override wins deterministically", func(t *testing.T) {
+		// Both a bare-name scope and a digest-pinned ref scope match the same
+		// attachment and set the same input to different values.
+		ri := &RuntimeInputs{ScopedOverride: map[string]map[string]string{
+			policyRadamsaMinIter: {keyMinIterations: "10"},
+			refRadamsaDigest:     {keyMinIterations: "20"},
+		}}
+
+		// Run many times: Go map iteration is randomized, but the digest-pinned
+		// (most specific) scope must win every time.
+		for range 50 {
+			_, replaceInputs, matched := ri.forPolicy(policyRadamsaMinIter, refRadamsaDigest)
+			assert.Equal(t, map[string]string{keyMinIterations: "20"}, replaceInputs)
+			assert.ElementsMatch(t, []string{policyRadamsaMinIter, refRadamsaDigest}, matched)
+		}
+	})
+
+	t.Run("scoped appends apply least-specific first, deterministically", func(t *testing.T) {
+		ri := &RuntimeInputs{Scoped: map[string]map[string]string{
+			policyRadamsaMinIter: {keyMinIterations: "a"},
+			refRadamsaDigest:     {keyMinIterations: "b"},
+		}}
+
+		for range 50 {
+			appendInputs, _, _ := ri.forPolicy(policyRadamsaMinIter, refRadamsaDigest)
+			// least specific (bare "a") first, most specific ("b") last
+			assert.Equal(t, map[string]string{keyMinIterations: "a\nb"}, appendInputs)
+		}
+	})
+
 	t.Run("does not mutate the global maps", func(t *testing.T) {
 		ri := &RuntimeInputs{
 			Global:         map[string]string{"ignored_paths": "g"},
@@ -264,6 +295,24 @@ func TestRuntimeInputsForPolicy(t *testing.T) {
 		assert.Equal(t, map[string]string{"ignored_paths": "g"}, ri.Global)
 		assert.Equal(t, map[string]string{keyMinIterations: "10"}, ri.GlobalOverride)
 	})
+}
+
+func TestMatchingScopesOrder(t *testing.T) {
+	name := policyRadamsaMinIter
+	scheme := "chainloop://" + policyRadamsaMinIter // scheme-qualified, no digest
+	digest := policyRadamsaMinIter + "@sha256:abc"  // digest-pinned, no scheme
+	ref := refRadamsaDigest                         // digest + scheme
+	// Four scopes that all match the attachment, at increasing specificity:
+	// bare name < scheme-qualified < digest-pinned < digest+scheme.
+	scoped := map[string]struct{}{
+		name:   {},
+		scheme: {},
+		digest: {},
+		ref:    {},
+	}
+
+	got := matchingScopes(scoped, name, ref)
+	assert.Equal(t, []string{name, scheme, digest, ref}, got)
 }
 
 func TestOverrideRuntimeInputs(t *testing.T) {

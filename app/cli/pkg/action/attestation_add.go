@@ -273,6 +273,12 @@ func withSourceArchiveEvidence(opts []crafter.AddOpt) []crafter.AddOpt {
 // contract value instead of appending, keeping a scalar override a scalar. As
 // with contract-declared arguments, individual append values must not embed
 // those delimiters; path globs, the intended use, never do.
+//
+// Precedence for the same input+scope: file inputs are applied first and inline
+// --policy-input values last, so an inline value deterministically wins over a
+// --policy-input-from-file-replace for the same key. (Cobra exposes each
+// repeatable flag as its own slice with no cross-flag ordering, so this fixed
+// precedence — rather than raw CLI argument order — is what we can guarantee.)
 func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile, policyInputs []*PolicyInput) (*policies.RuntimeInputs, error) {
 	if len(policyInputFiles) == 0 && len(policyInputs) == 0 {
 		return nil, nil

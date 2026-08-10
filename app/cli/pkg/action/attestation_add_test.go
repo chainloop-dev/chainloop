@@ -274,6 +274,18 @@ func TestBuildRuntimeInputs(t *testing.T) {
 		assert.Equal(t, map[string]string{testInputMinIter: "20"}, got.ScopedOverride[testPolicyRadamsa])
 	})
 
+	t.Run("inline --policy-input wins over a file-replace for the same input", func(t *testing.T) {
+		// File-replace fills min_iterations from the file column; the inline value
+		// is applied afterwards and must win deterministically.
+		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
+			{Input: testInputMinIter, Column: "Path", File: path, Replace: true},
+		}, []*PolicyInput{
+			{Input: testInputMinIter, Value: "10"},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{testInputMinIter: "10"}, got.GlobalOverride)
+	})
+
 	t.Run("append files, replace files and inline values coexist", func(t *testing.T) {
 		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
 			{Input: "ignored_paths", Column: "Path", File: path},

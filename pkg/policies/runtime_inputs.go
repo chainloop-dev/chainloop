@@ -18,6 +18,7 @@ package policies
 import (
 	"maps"
 	"slices"
+	"strings"
 	"sync"
 )
 
@@ -70,23 +71,60 @@ func (ri *RuntimeInputs) forPolicy(name, ref string) (appendInputs, replaceInput
 		}
 	}
 
+	// Apply matching scopes least-specific first so that, when several scopes
+	// target the same attachment and set the same input, the most specific one
+	// is applied last and wins — deterministically, regardless of Go's map
+	// iteration order.
 	appendInputs = ri.Global
-	for scope, inputs := range ri.Scoped {
-		if policyScopeMatches(scope, name, ref) {
-			markMatch(scope)
-			appendInputs = MergeRuntimeInputs(appendInputs, inputs)
-		}
+	for _, scope := range matchingScopes(ri.Scoped, name, ref) {
+		markMatch(scope)
+		appendInputs = MergeRuntimeInputs(appendInputs, ri.Scoped[scope])
 	}
 
 	replaceInputs = ri.GlobalOverride
-	for scope, inputs := range ri.ScopedOverride {
-		if policyScopeMatches(scope, name, ref) {
-			markMatch(scope)
-			replaceInputs = OverrideRuntimeInputs(replaceInputs, inputs)
-		}
+	for _, scope := range matchingScopes(ri.ScopedOverride, name, ref) {
+		markMatch(scope)
+		replaceInputs = OverrideRuntimeInputs(replaceInputs, ri.ScopedOverride[scope])
 	}
 
 	return appendInputs, replaceInputs, matched
+}
+
+// matchingScopes returns the keys of scoped that target the attachment
+// identified by (name, ref), ordered so more specific scopes come last. Callers
+// apply them in that order, so a later (more specific) scope wins when several
+// set the same input. Ties break on the scope string, so the order — and thus
+// the merged result — is deterministic regardless of Go's randomized map
+// iteration.
+func matchingScopes[V any](scoped map[string]V, name, ref string) []string {
+	var out []string
+	for scope := range scoped {
+		if policyScopeMatches(scope, name, ref) {
+			out = append(out, scope)
+		}
+	}
+	slices.SortFunc(out, func(a, b string) int {
+		if d := scopeSpecificity(a) - scopeSpecificity(b); d != 0 {
+			return d
+		}
+		return strings.Compare(a, b)
+	})
+	return out
+}
+
+// scopeSpecificity scores how narrowly a scope key targets a policy: a scope
+// that pins a digest is the most specific, a scope carrying a scheme or org path
+// (a fuller ref) is more specific than a bare policy name.
+func scopeSpecificity(scope string) int {
+	_, digest := splitPolicyRef(scope)
+	score := 0
+	if digest != "" {
+		score += 2
+	}
+	if strings.Contains(scope, "://") || strings.Contains(scope, "/") {
+		score++
+	}
+	return score
 }
 
 // policyScopeMatches reports whether a runtime-input scope key targets the
