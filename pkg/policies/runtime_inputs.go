@@ -113,15 +113,28 @@ func matchingScopes[V any](scoped map[string]V, name, ref string) []string {
 }
 
 // scopeSpecificity scores how narrowly a scope key targets a policy: a scope
-// that pins a digest is the most specific, a scope carrying a scheme or org path
-// (a fuller ref) is more specific than a bare policy name.
+// that pins a digest is the most specific, and a scope carrying anything beyond
+// the bare policy name — a scheme (chainloop://), an org path (org/name) or a
+// provider prefix (provider:name) — is more specific than a bare name.
 func scopeSpecificity(scope string) int {
 	_, digest := splitPolicyRef(scope)
+
+	// Drop the "@sha256:<digest>" suffix so its own ':' does not count as
+	// provider/scheme qualification below.
+	head := scope
+	if digest != "" {
+		if i := strings.Index(scope, "@"); i >= 0 {
+			head = scope[:i]
+		}
+	}
+
 	score := 0
 	if digest != "" {
 		score += 2
 	}
-	if strings.Contains(scope, "://") || strings.Contains(scope, "/") {
+	// A scheme (chainloop://), org path (org/name) or provider prefix
+	// (provider:name) all introduce a ':' or '/' beyond the bare name.
+	if strings.ContainsAny(head, ":/") {
 		score++
 	}
 	return score

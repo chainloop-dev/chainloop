@@ -315,6 +315,16 @@ func TestMatchingScopesOrder(t *testing.T) {
 	assert.Equal(t, []string{name, scheme, digest, ref}, got)
 }
 
+func TestMatchingScopesProviderQualifiedOutranksBare(t *testing.T) {
+	// A "provider:policy" scope carries no scheme "//" or org "/", only a ':';
+	// it must still outrank a conflicting bare-name scope.
+	name := policyRadamsaMinIter
+	provider := "builtin:" + policyRadamsaMinIter
+
+	got := matchingScopes(map[string]struct{}{name: {}, provider: {}}, name, name)
+	assert.Equal(t, []string{name, provider}, got) // bare (score 0) then provider (score 1)
+}
+
 func TestOverrideRuntimeInputs(t *testing.T) {
 	testCases := []struct {
 		name      string
