@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -401,27 +402,22 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// Record which runtime inputs actually applied to this policy (i.e. made it
-	// into the computed args because the policy declares them). The values
-	// themselves live in `with`; this only flags the overridden input names.
-	// Skipped entirely on the common path with no runtime inputs to avoid a
-	// per-attachment map allocation.
+	// into the computed args because the policy declares them — ComputeArguments
+	// drops runtime keys the policy doesn't declare). The values themselves live
+	// in `with`; this only flags the overridden input names, deduped across the
+	// append and replace maps. Skipped on the common path with no runtime inputs
+	// to avoid a per-attachment map allocation.
 	var runtimeInputOverrides []string
 	if len(appendRuntime) > 0 || len(replaceRuntime) > 0 {
 		overrideNames := make(map[string]struct{}, len(appendRuntime)+len(replaceRuntime))
-		for k := range appendRuntime {
-			if _, ok := args[k]; ok {
-				overrideNames[k] = struct{}{}
+		for _, m := range []map[string]string{appendRuntime, replaceRuntime} {
+			for k := range m {
+				if _, ok := args[k]; ok {
+					overrideNames[k] = struct{}{}
+				}
 			}
 		}
-		for k := range replaceRuntime {
-			if _, ok := args[k]; ok {
-				overrideNames[k] = struct{}{}
-			}
-		}
-		for k := range overrideNames {
-			runtimeInputOverrides = append(runtimeInputOverrides, k)
-		}
-		slices.Sort(runtimeInputOverrides)
+		runtimeInputOverrides = slices.Sorted(maps.Keys(overrideNames))
 	}
 
 	sources := make([]string, 0)
