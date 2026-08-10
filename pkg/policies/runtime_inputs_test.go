@@ -21,6 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Repeated domain strings, extracted to satisfy goconst.
+const (
+	keyMinIterations     = "min_iterations"
+	policyRadamsaMinIter = "radamsa-min-iterations"
+	scopeShared          = "shared"
+)
+
 func TestMergeRuntimeInputs(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -162,15 +169,17 @@ func TestPolicyScopeMatches(t *testing.T) {
 func TestRuntimeInputsForPolicy(t *testing.T) {
 	t.Run("nil receiver returns nothing", func(t *testing.T) {
 		var ri *RuntimeInputs
-		got, matched := ri.forPolicy("p", "p")
-		assert.Nil(t, got)
+		appendInputs, replaceInputs, matched := ri.forPolicy("p", "p")
+		assert.Nil(t, appendInputs)
+		assert.Nil(t, replaceInputs)
 		assert.Nil(t, matched)
 	})
 
 	t.Run("global inputs apply to every policy", func(t *testing.T) {
 		ri := &RuntimeInputs{Global: map[string]string{"ignored_paths": "a"}}
-		got, matched := ri.forPolicy("some-policy", "some-policy")
-		assert.Equal(t, map[string]string{"ignored_paths": "a"}, got)
+		appendInputs, replaceInputs, matched := ri.forPolicy("some-policy", "some-policy")
+		assert.Equal(t, map[string]string{"ignored_paths": "a"}, appendInputs)
+		assert.Nil(t, replaceInputs)
 		assert.Empty(t, matched)
 	})
 
@@ -179,12 +188,12 @@ func TestRuntimeInputsForPolicy(t *testing.T) {
 			"trusted-binaries-signed": {"ignored_paths": "a"},
 		}}
 
-		got, matched := ri.forPolicy("trusted-binaries-signed", "chainloop://trusted-binaries-signed@sha256:abc")
-		assert.Equal(t, map[string]string{"ignored_paths": "a"}, got)
+		appendInputs, _, matched := ri.forPolicy("trusted-binaries-signed", "chainloop://trusted-binaries-signed@sha256:abc")
+		assert.Equal(t, map[string]string{"ignored_paths": "a"}, appendInputs)
 		assert.ElementsMatch(t, []string{"trusted-binaries-signed"}, matched)
 
-		got, matched = ri.forPolicy("trusted-binaries-vendor-keys", "chainloop://trusted-binaries-vendor-keys")
-		assert.Empty(t, got)
+		appendInputs, _, matched = ri.forPolicy("trusted-binaries-vendor-keys", "chainloop://trusted-binaries-vendor-keys")
+		assert.Empty(t, appendInputs)
 		assert.Empty(t, matched)
 	})
 
@@ -195,19 +204,118 @@ func TestRuntimeInputsForPolicy(t *testing.T) {
 				"trusted-binaries-signed": {"ignored_paths": "s"},
 			},
 		}
-		got, matched := ri.forPolicy("trusted-binaries-signed", "trusted-binaries-signed")
-		assert.Equal(t, map[string]string{"ignored_paths": "g\ns"}, got)
+		appendInputs, replaceInputs, matched := ri.forPolicy("trusted-binaries-signed", "trusted-binaries-signed")
+		assert.Equal(t, map[string]string{"ignored_paths": "g\ns"}, appendInputs)
+		assert.Nil(t, replaceInputs)
 		assert.ElementsMatch(t, []string{"trusted-binaries-signed"}, matched)
 	})
 
-	t.Run("does not mutate the global map", func(t *testing.T) {
-		ri := &RuntimeInputs{
-			Global: map[string]string{"ignored_paths": "g"},
-			Scoped: map[string]map[string]string{"p": {"ignored_paths": "s"}},
-		}
-		_, _ = ri.forPolicy("p", "p")
-		assert.Equal(t, map[string]string{"ignored_paths": "g"}, ri.Global)
+	t.Run("global override applies to every policy", func(t *testing.T) {
+		ri := &RuntimeInputs{GlobalOverride: map[string]string{keyMinIterations: "10"}}
+		appendInputs, replaceInputs, matched := ri.forPolicy(policyRadamsaMinIter, policyRadamsaMinIter)
+		assert.Nil(t, appendInputs)
+		assert.Equal(t, map[string]string{keyMinIterations: "10"}, replaceInputs)
+		assert.Empty(t, matched)
 	})
+
+	t.Run("scoped override applies only to the matching policy and matched is tracked", func(t *testing.T) {
+		ri := &RuntimeInputs{ScopedOverride: map[string]map[string]string{
+			policyRadamsaMinIter: {keyMinIterations: "10"},
+		}}
+
+		_, replaceInputs, matched := ri.forPolicy(policyRadamsaMinIter, "chainloop://radamsa-min-iterations@sha256:abc")
+		assert.Equal(t, map[string]string{keyMinIterations: "10"}, replaceInputs)
+		assert.ElementsMatch(t, []string{policyRadamsaMinIter}, matched)
+
+		_, replaceInputs, matched = ri.forPolicy("other-policy", "other-policy")
+		assert.Empty(t, replaceInputs)
+		assert.Empty(t, matched)
+	})
+
+	t.Run("scoped override wins over global override for the same input", func(t *testing.T) {
+		ri := &RuntimeInputs{
+			GlobalOverride: map[string]string{keyMinIterations: "5"},
+			ScopedOverride: map[string]map[string]string{
+				policyRadamsaMinIter: {keyMinIterations: "10"},
+			},
+		}
+		_, replaceInputs, matched := ri.forPolicy(policyRadamsaMinIter, policyRadamsaMinIter)
+		assert.Equal(t, map[string]string{keyMinIterations: "10"}, replaceInputs)
+		assert.ElementsMatch(t, []string{policyRadamsaMinIter}, matched)
+	})
+
+	t.Run("append and override for the same policy are returned separately", func(t *testing.T) {
+		ri := &RuntimeInputs{
+			Global:         map[string]string{"ignored_paths": "a"},
+			GlobalOverride: map[string]string{keyMinIterations: "10"},
+		}
+		appendInputs, replaceInputs, _ := ri.forPolicy("p", "p")
+		assert.Equal(t, map[string]string{"ignored_paths": "a"}, appendInputs)
+		assert.Equal(t, map[string]string{keyMinIterations: "10"}, replaceInputs)
+	})
+
+	t.Run("does not mutate the global maps", func(t *testing.T) {
+		ri := &RuntimeInputs{
+			Global:         map[string]string{"ignored_paths": "g"},
+			Scoped:         map[string]map[string]string{"p": {"ignored_paths": "s"}},
+			GlobalOverride: map[string]string{keyMinIterations: "10"},
+		}
+		_, _, _ = ri.forPolicy("p", "p")
+		assert.Equal(t, map[string]string{"ignored_paths": "g"}, ri.Global)
+		assert.Equal(t, map[string]string{keyMinIterations: "10"}, ri.GlobalOverride)
+	})
+}
+
+func TestOverrideRuntimeInputs(t *testing.T) {
+	testCases := []struct {
+		name      string
+		with      map[string]string
+		overrides map[string]string
+		want      map[string]string
+	}{
+		{
+			name:      "no overrides returns args unchanged",
+			with:      map[string]string{keyMinIterations: "100"},
+			overrides: nil,
+			want:      map[string]string{keyMinIterations: "100"},
+		},
+		{
+			name:      "override replaces the contract value",
+			with:      map[string]string{keyMinIterations: "100"},
+			overrides: map[string]string{keyMinIterations: "10"},
+			want:      map[string]string{keyMinIterations: "10"},
+		},
+		{
+			name:      "override on a different key is added alongside",
+			with:      map[string]string{"paths": "**"},
+			overrides: map[string]string{keyMinIterations: "10"},
+			want:      map[string]string{"paths": "**", keyMinIterations: "10"},
+		},
+		{
+			name:      "override replaces an appended multi-value with a scalar",
+			with:      map[string]string{keyMinIterations: "100\n50"},
+			overrides: map[string]string{keyMinIterations: "10"},
+			want:      map[string]string{keyMinIterations: "10"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := OverrideRuntimeInputs(tc.with, tc.overrides)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestOverrideRuntimeInputsDoesNotMutate ensures the input maps are left untouched.
+func TestOverrideRuntimeInputsDoesNotMutate(t *testing.T) {
+	with := map[string]string{keyMinIterations: "100"}
+	overrides := map[string]string{keyMinIterations: "10"}
+
+	_ = OverrideRuntimeInputs(with, overrides)
+
+	assert.Equal(t, map[string]string{keyMinIterations: "100"}, with)
+	assert.Equal(t, map[string]string{keyMinIterations: "10"}, overrides)
 }
 
 func TestScopeTrackerUnmatched(t *testing.T) {
@@ -233,6 +341,15 @@ func TestScopeTrackerUnmatched(t *testing.T) {
 			ri:      &RuntimeInputs{Scoped: map[string]map[string]string{"zebra": {}, "alpha": {}, "beta": {}}},
 			matched: []string{"beta"},
 			want:    []string{"alpha", "zebra"},
+		},
+		{
+			name: "unmatched override scopes are reported too, deduped with append scopes",
+			ri: &RuntimeInputs{
+				Scoped:         map[string]map[string]string{"alpha": {}, scopeShared: {}},
+				ScopedOverride: map[string]map[string]string{"zebra": {}, scopeShared: {}},
+			},
+			matched: []string{"alpha"},
+			want:    []string{scopeShared, "zebra"},
 		},
 	}
 

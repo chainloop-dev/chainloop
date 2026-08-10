@@ -22,36 +22,71 @@ import (
 )
 
 // RuntimeInputs holds policy input values supplied at runtime (e.g. via
-// --policy-input-from-file). Inputs are either global (applied to every policy
-// attachment that declares them) or scoped to a specific policy (applied only
-// to the attachment whose metadata name or ref matches the scope key).
+// --policy-input-from-file, --policy-input-from-file-replace or --policy-input).
+// Inputs are either global (applied to every policy attachment that declares
+// them) or scoped to a specific policy (applied only to the attachment whose
+// metadata name or ref matches the scope key). Independently, each input is
+// merged onto the contract value either additively (append) or by replacing it
+// (override); the two modes live in separate maps so the same input name can be
+// appended by one flag and never collides with an override of another.
 type RuntimeInputs struct {
-	// Global inputs, keyed by input name.
+	// Global holds append-mode inputs, keyed by input name.
 	Global map[string]string
-	// Scoped inputs, keyed by policy scope (a policy name or ref) then input name.
+	// Scoped holds append-mode inputs, keyed by policy scope (a policy name or
+	// ref) then input name.
 	Scoped map[string]map[string]string
+	// GlobalOverride holds replace-mode inputs, keyed by input name.
+	GlobalOverride map[string]string
+	// ScopedOverride holds replace-mode inputs, keyed by policy scope then input
+	// name.
+	ScopedOverride map[string]map[string]string
+}
+
+// empty reports whether ri carries no inputs at all. Nil-safe.
+func (ri *RuntimeInputs) empty() bool {
+	return ri == nil || (len(ri.Global) == 0 && len(ri.Scoped) == 0 &&
+		len(ri.GlobalOverride) == 0 && len(ri.ScopedOverride) == 0)
 }
 
 // forPolicy returns the runtime inputs that apply to a policy attachment
 // identified by its metadata name and raw ref, together with the scope keys
-// that matched. The returned map merges the global inputs with any scoped
-// entries whose key matches the attachment (additively when they share an
-// input name). Returns (nil, nil) when nothing applies. Nil-safe.
-func (ri *RuntimeInputs) forPolicy(name, ref string) (map[string]string, []string) {
-	if ri == nil || (len(ri.Global) == 0 && len(ri.Scoped) == 0) {
-		return nil, nil
+// that matched. Append-mode inputs (appendInputs) merge the global inputs with
+// any scoped entries whose key matches the attachment (additively when they
+// share an input name). Replace-mode inputs (replaceInputs) merge the global
+// overrides with any matching scoped overrides, the scoped ones winning. The
+// caller layers appendInputs onto the contract additively and then applies
+// replaceInputs on top, so a replace always wins over an append for the same
+// key. Returns (nil, nil, nil) when nothing applies. Nil-safe.
+func (ri *RuntimeInputs) forPolicy(name, ref string) (appendInputs, replaceInputs map[string]string, matched []string) {
+	if ri.empty() {
+		return nil, nil, nil
 	}
 
-	effective := ri.Global
-	var matched []string
-	for scope, inputs := range ri.Scoped {
-		if policyScopeMatches(scope, name, ref) {
+	seen := make(map[string]struct{})
+	markMatch := func(scope string) {
+		if _, ok := seen[scope]; !ok {
+			seen[scope] = struct{}{}
 			matched = append(matched, scope)
-			effective = MergeRuntimeInputs(effective, inputs)
 		}
 	}
 
-	return effective, matched
+	appendInputs = ri.Global
+	for scope, inputs := range ri.Scoped {
+		if policyScopeMatches(scope, name, ref) {
+			markMatch(scope)
+			appendInputs = MergeRuntimeInputs(appendInputs, inputs)
+		}
+	}
+
+	replaceInputs = ri.GlobalOverride
+	for scope, inputs := range ri.ScopedOverride {
+		if policyScopeMatches(scope, name, ref) {
+			markMatch(scope)
+			replaceInputs = OverrideRuntimeInputs(replaceInputs, inputs)
+		}
+	}
+
+	return appendInputs, replaceInputs, matched
 }
 
 // policyScopeMatches reports whether a runtime-input scope key targets the
@@ -112,6 +147,28 @@ func MergeRuntimeInputs(with, runtimeInputs map[string]string) map[string]string
 	return merged
 }
 
+// OverrideRuntimeInputs returns the given arguments with the override inputs
+// applied by replacement: each override key's value replaces whatever the
+// arguments held for that key (a contract value or an appended runtime value),
+// rather than being newline-appended. This is what makes a scalar input
+// overridable at run time: the value no longer collapses into a multi-value
+// list through append-time newline joining. The value is still normalized like
+// any other input downstream (getInputArguments splits it on newlines and
+// commas), so a single comma-free value such as "10" stays a scalar while a
+// value that itself contains commas expands into a list; a literal comma must
+// be escaped as "\,". The input maps are not mutated.
+func OverrideRuntimeInputs(with, overrides map[string]string) map[string]string {
+	if len(overrides) == 0 {
+		return with
+	}
+
+	merged := make(map[string]string, len(with)+len(overrides))
+	maps.Copy(merged, with)
+	maps.Copy(merged, overrides)
+
+	return merged
+}
+
 // scopeTracker records, concurrency-safely, which runtime-input scope keys were
 // matched by at least one policy attachment during a material evaluation.
 type scopeTracker struct {
@@ -134,9 +191,9 @@ func (t *scopeTracker) mark(keys ...string) {
 	}
 }
 
-// unmatched returns the sorted scope keys declared in ri that were never marked
-// (i.e. matched no policy attachment), so the caller can warn about likely
-// typos. Nil-safe.
+// unmatched returns the sorted scope keys declared in ri (across both append-
+// and replace-mode scoped inputs) that were never marked (i.e. matched no policy
+// attachment), so the caller can warn about likely typos. Nil-safe.
 func (t *scopeTracker) unmatched(ri *RuntimeInputs) []string {
 	if t == nil || ri == nil {
 		return nil
@@ -144,8 +201,16 @@ func (t *scopeTracker) unmatched(ri *RuntimeInputs) []string {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	var out []string
+	scopes := make(map[string]struct{}, len(ri.Scoped)+len(ri.ScopedOverride))
 	for scope := range ri.Scoped {
+		scopes[scope] = struct{}{}
+	}
+	for scope := range ri.ScopedOverride {
+		scopes[scope] = struct{}{}
+	}
+
+	var out []string
+	for scope := range scopes {
 		if _, ok := t.seen[scope]; !ok {
 			out = append(out, scope)
 		}

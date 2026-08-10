@@ -27,11 +27,12 @@ import (
 
 func TestResolvePolicyInputFiles(t *testing.T) {
 	testCases := []struct {
-		name    string
-		raw     []string
-		want    []*action.PolicyInputFromFile
-		wantNil bool
-		wantErr bool
+		name       string
+		raw        []string
+		rawReplace []string
+		want       []*action.PolicyInputFromFile
+		wantNil    bool
+		wantErr    bool
 	}{
 		{
 			name:    "nil input returns nil",
@@ -71,11 +72,25 @@ func TestResolvePolicyInputFiles(t *testing.T) {
 			raw:     []string{"ignored_paths=env://CHAINLOOP_TEST_DEFINITELY_UNSET_VAR"},
 			wantErr: true,
 		},
+		{
+			name:       "append and replace variants both parsed, Replace set accordingly",
+			raw:        []string{"ignored_paths=/no/exist1.csv:Path"},
+			rawReplace: []string{"min_iterations=/no/exist2.csv:Iterations"},
+			want: []*action.PolicyInputFromFile{
+				{Input: "ignored_paths", Column: "Path", File: "/no/exist1.csv"},
+				{Input: "min_iterations", Column: "Iterations", File: "/no/exist2.csv", Replace: true},
+			},
+		},
+		{
+			name:       "malformed replace value propagates the parse error",
+			rawReplace: []string{"missing-equals"},
+			wantErr:    true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := resolvePolicyInputFiles(tc.raw)
+			got, err := resolvePolicyInputFiles(tc.raw, tc.rawReplace)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -97,7 +112,7 @@ func TestResolvePolicyInputFilesExistingFile(t *testing.T) {
 	path := filepath.Join(dir, "exception.csv")
 	require.NoError(t, os.WriteFile(path, []byte("Path\nc:\\a.dll\n"), 0600))
 
-	got, err := resolvePolicyInputFiles([]string{"ignored_paths=" + path + ":Path"})
+	got, err := resolvePolicyInputFiles([]string{"ignored_paths=" + path + ":Path"}, nil)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	assert.Equal(t, &action.PolicyInputFromFile{Input: "ignored_paths", Column: "Path", File: path}, got[0])
@@ -109,7 +124,7 @@ func TestResolvePolicyInputFilesExistingFile(t *testing.T) {
 func TestResolvePolicyInputFilesResolvesEnv(t *testing.T) {
 	t.Setenv("CHAINLOOP_TEST_POLICY_INPUT", `["c:\\a.dll"]`)
 
-	got, err := resolvePolicyInputFiles([]string{"ignored_paths=env://CHAINLOOP_TEST_POLICY_INPUT"})
+	got, err := resolvePolicyInputFiles([]string{"ignored_paths=env://CHAINLOOP_TEST_POLICY_INPUT"}, nil)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 

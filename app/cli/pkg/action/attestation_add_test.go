@@ -185,7 +185,7 @@ func TestAddReference(t *testing.T) {
 }
 
 func TestBuildRuntimeInputsNil(t *testing.T) {
-	got, err := buildRuntimeInputs(nil)
+	got, err := buildRuntimeInputs(nil, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, got)
 }
@@ -196,14 +196,22 @@ func TestBuildRuntimeInputs(t *testing.T) {
 	path := filepath.Join(dir, "exception.csv")
 	require.NoError(t, os.WriteFile(path, []byte("Path,Extra\na.dll,x\nb.dll,y\n"), 0600))
 
+	// Expected joined values for the Path and Extra columns respectively.
+	const (
+		wantAB = "a.dll\nb.dll"
+		wantXY = "x\ny"
+	)
+
 	t.Run("unscoped inputs land in Global", func(t *testing.T) {
 		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
 			{Input: "ignored_paths", Column: "Path", File: path},
-		})
+		}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, &policies.RuntimeInputs{
-			Global: map[string]string{"ignored_paths": "a.dll\nb.dll"},
-			Scoped: map[string]map[string]string{},
+			Global:         map[string]string{"ignored_paths": wantAB},
+			Scoped:         map[string]map[string]string{},
+			GlobalOverride: map[string]string{},
+			ScopedOverride: map[string]map[string]string{},
 		}, got)
 	})
 
@@ -211,14 +219,16 @@ func TestBuildRuntimeInputs(t *testing.T) {
 		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
 			{Policy: "trusted-binaries-signed", Input: "ignored_paths", Column: "Path", File: path},
 			{Policy: "trusted-binaries-vendor-keys", Input: "third_party_paths", Column: "Path", File: path},
-		})
+		}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, &policies.RuntimeInputs{
 			Global: map[string]string{},
 			Scoped: map[string]map[string]string{
-				"trusted-binaries-signed":      {"ignored_paths": "a.dll\nb.dll"},
-				"trusted-binaries-vendor-keys": {"third_party_paths": "a.dll\nb.dll"},
+				"trusted-binaries-signed":      {"ignored_paths": wantAB},
+				"trusted-binaries-vendor-keys": {"third_party_paths": wantAB},
 			},
+			GlobalOverride: map[string]string{},
+			ScopedOverride: map[string]map[string]string{},
 		}, got)
 	})
 
@@ -226,7 +236,7 @@ func TestBuildRuntimeInputs(t *testing.T) {
 		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
 			{Policy: "p", Input: "ignored_paths", Column: "Path", File: path},
 			{Policy: "p", Input: "ignored_paths", Column: "Extra", File: path},
-		})
+		}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, map[string]string{"ignored_paths": "a.dll\nb.dll\nx\ny"}, got.Scoped["p"])
 	})
@@ -235,9 +245,45 @@ func TestBuildRuntimeInputs(t *testing.T) {
 		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
 			{Input: "ignored_paths", Column: "Path", File: path},
 			{Policy: "p", Input: "ignored_paths", Column: "Extra", File: path},
+		}, nil)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"ignored_paths": wantAB}, got.Global)
+		assert.Equal(t, map[string]string{"ignored_paths": wantXY}, got.Scoped["p"])
+	})
+
+	t.Run("replace-mode file inputs land in the override maps", func(t *testing.T) {
+		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
+			{Input: "ignored_paths", Column: "Path", File: path, Replace: true},
+			{Policy: "p", Input: "third_party_paths", Column: "Extra", File: path, Replace: true},
+		}, nil)
+		require.NoError(t, err)
+		assert.Empty(t, got.Global)
+		assert.Empty(t, got.Scoped)
+		assert.Equal(t, map[string]string{"ignored_paths": wantAB}, got.GlobalOverride)
+		assert.Equal(t, map[string]string{"third_party_paths": wantXY}, got.ScopedOverride["p"])
+	})
+
+	t.Run("inline values land in the override maps, last write wins", func(t *testing.T) {
+		got, err := buildRuntimeInputs(nil, []*PolicyInput{
+			{Input: testInputMinIter, Value: "5"},
+			{Input: testInputMinIter, Value: "10"},
+			{Policy: testPolicyRadamsa, Input: testInputMinIter, Value: "20"},
 		})
 		require.NoError(t, err)
-		assert.Equal(t, map[string]string{"ignored_paths": "a.dll\nb.dll"}, got.Global)
-		assert.Equal(t, map[string]string{"ignored_paths": "x\ny"}, got.Scoped["p"])
+		assert.Equal(t, map[string]string{testInputMinIter: "10"}, got.GlobalOverride)
+		assert.Equal(t, map[string]string{testInputMinIter: "20"}, got.ScopedOverride[testPolicyRadamsa])
+	})
+
+	t.Run("append files, replace files and inline values coexist", func(t *testing.T) {
+		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
+			{Input: "ignored_paths", Column: "Path", File: path},
+			{Input: "extra_paths", Column: "Extra", File: path, Replace: true},
+		}, []*PolicyInput{
+			{Policy: testPolicyRadamsa, Input: testInputMinIter, Value: "10"},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"ignored_paths": wantAB}, got.Global)
+		assert.Equal(t, map[string]string{"extra_paths": wantXY}, got.GlobalOverride)
+		assert.Equal(t, map[string]string{testInputMinIter: "10"}, got.ScopedOverride[testPolicyRadamsa])
 	})
 }

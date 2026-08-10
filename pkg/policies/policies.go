@@ -386,11 +386,14 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// Resolve the runtime-supplied inputs that apply to this policy (global plus
-	// any scoped to its name/ref) and merge them additively onto the contract
-	// arguments before computing the effective values.
-	effectiveRuntime, matchedScopes := opts.runtimeInputs.forPolicy(policy.GetMetadata().GetName(), attachment.GetRef())
+	// any scoped to its name/ref). Append-mode inputs merge additively onto the
+	// contract arguments; replace-mode inputs are then applied on top, replacing
+	// whatever value (contract or appended) the key held so an override does not
+	// collapse into a multi-value list through append-time newline joining.
+	appendRuntime, replaceRuntime, matchedScopes := opts.runtimeInputs.forPolicy(policy.GetMetadata().GetName(), attachment.GetRef())
 	opts.scopeTracker.mark(matchedScopes...)
-	with := MergeRuntimeInputs(attachment.GetWith(), effectiveRuntime)
+	with := MergeRuntimeInputs(attachment.GetWith(), appendRuntime)
+	with = OverrideRuntimeInputs(with, replaceRuntime)
 
 	args, err := ComputeArguments(policy.GetMetadata().GetName(), policy.GetSpec().GetInputs(), with, opts.bindings, pv.logger)
 	if err != nil {
@@ -400,13 +403,26 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	// Record which runtime inputs actually applied to this policy (i.e. made it
 	// into the computed args because the policy declares them). The values
 	// themselves live in `with`; this only flags the overridden input names.
+	// Skipped entirely on the common path with no runtime inputs to avoid a
+	// per-attachment map allocation.
 	var runtimeInputOverrides []string
-	for k := range effectiveRuntime {
-		if _, ok := args[k]; ok {
+	if len(appendRuntime) > 0 || len(replaceRuntime) > 0 {
+		overrideNames := make(map[string]struct{}, len(appendRuntime)+len(replaceRuntime))
+		for k := range appendRuntime {
+			if _, ok := args[k]; ok {
+				overrideNames[k] = struct{}{}
+			}
+		}
+		for k := range replaceRuntime {
+			if _, ok := args[k]; ok {
+				overrideNames[k] = struct{}{}
+			}
+		}
+		for k := range overrideNames {
 			runtimeInputOverrides = append(runtimeInputOverrides, k)
 		}
+		slices.Sort(runtimeInputOverrides)
 	}
-	slices.Sort(runtimeInputOverrides)
 
 	sources := make([]string, 0)
 	evalResults := make([]*engine.EvaluationResult, 0)
