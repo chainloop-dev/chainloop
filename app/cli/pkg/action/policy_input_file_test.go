@@ -131,7 +131,7 @@ func TestParsePolicyInputFromFile(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ParsePolicyInputFromFile(tc.raw, false)
+			got, err := ParsePolicyInputFromFile(tc.raw)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -140,24 +140,6 @@ func TestParsePolicyInputFromFile(t *testing.T) {
 			assert.Equal(t, tc.want, got)
 		})
 	}
-}
-
-func TestParsePolicyInputFromFileReplace(t *testing.T) {
-	// The replace variant shares all parsing with the append variant and only
-	// sets Replace=true; a representative case plus the flag-name in the error.
-	got, err := ParsePolicyInputFromFile("radamsa-min-iterations:min_iterations=values.csv:Iterations", true)
-	require.NoError(t, err)
-	assert.Equal(t, &PolicyInputFromFile{
-		Policy:  testPolicyRadamsa,
-		Input:   testInputMinIter,
-		Column:  "Iterations",
-		File:    "values.csv",
-		Replace: true,
-	}, got)
-
-	_, err = ParsePolicyInputFromFile(testInputMinIter, true)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "--policy-input-from-file-replace")
 }
 
 func TestParsePolicyInput(t *testing.T) {

@@ -265,20 +265,13 @@ func withSourceArchiveEvidence(opts []crafter.AddOpt) []crafter.AddOpt {
 
 // buildRuntimeInputs reads each policy input file and combines it with the
 // inline --policy-input values, returning them grouped for the policy engine.
-// Append-mode file inputs (--policy-input-from-file) go under Global/Scoped and
-// are newline-joined via policies.MergeRuntimeInputs so repeated inputs merge
-// using the multi-value encoding the engine expects (it splits inputs back on
-// newlines and commas). Replace-mode file inputs (--policy-input-from-file-replace)
-// and every inline value go under GlobalOverride/ScopedOverride and replace the
-// contract value instead of appending, keeping a scalar override a scalar. As
-// with contract-declared arguments, individual append values must not embed
-// those delimiters; path globs, the intended use, never do.
-//
-// Precedence for the same input+scope: file inputs are applied first and inline
-// --policy-input values last, so an inline value deterministically wins over a
-// --policy-input-from-file-replace for the same key. (Cobra exposes each
-// repeatable flag as its own slice with no cross-flag ordering, so this fixed
-// precedence — rather than raw CLI argument order — is what we can guarantee.)
+// File inputs (--policy-input-from-file) go under Global/Scoped and are
+// newline-joined via policies.MergeRuntimeInputs so repeated inputs merge using
+// the multi-value encoding the engine expects (it splits inputs back on newlines
+// and commas). Inline values (--policy-input) go under GlobalOverride/ScopedOverride
+// and replace the contract value instead of appending, keeping a scalar override
+// a scalar. As with contract-declared arguments, individual append values must
+// not embed those delimiters; path globs, the intended use, never do.
 func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile, policyInputs []*PolicyInput) (*policies.RuntimeInputs, error) {
 	if len(policyInputFiles) == 0 && len(policyInputs) == 0 {
 		return nil, nil
@@ -297,12 +290,7 @@ func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile, policyInputs []
 			return nil, fmt.Errorf("extracting %q from %q: %w", pif.Column, pif.File, err)
 		}
 
-		joined := strings.Join(values, "\n")
-		if pif.Replace {
-			addOverrideInput(ri, pif.Policy, pif.Input, joined)
-		} else {
-			addAppendInput(ri, pif.Policy, pif.Input, joined)
-		}
+		addAppendInput(ri, pif.Policy, pif.Input, strings.Join(values, "\n"))
 	}
 
 	for _, pi := range policyInputs {

@@ -251,18 +251,6 @@ func TestBuildRuntimeInputs(t *testing.T) {
 		assert.Equal(t, map[string]string{"ignored_paths": wantXY}, got.Scoped["p"])
 	})
 
-	t.Run("replace-mode file inputs land in the override maps", func(t *testing.T) {
-		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
-			{Input: "ignored_paths", Column: "Path", File: path, Replace: true},
-			{Policy: "p", Input: "third_party_paths", Column: "Extra", File: path, Replace: true},
-		}, nil)
-		require.NoError(t, err)
-		assert.Empty(t, got.Global)
-		assert.Empty(t, got.Scoped)
-		assert.Equal(t, map[string]string{"ignored_paths": wantAB}, got.GlobalOverride)
-		assert.Equal(t, map[string]string{"third_party_paths": wantXY}, got.ScopedOverride["p"])
-	})
-
 	t.Run("inline values land in the override maps, last write wins", func(t *testing.T) {
 		got, err := buildRuntimeInputs(nil, []*PolicyInput{
 			{Input: testInputMinIter, Value: "5"},
@@ -274,28 +262,15 @@ func TestBuildRuntimeInputs(t *testing.T) {
 		assert.Equal(t, map[string]string{testInputMinIter: "20"}, got.ScopedOverride[testPolicyRadamsa])
 	})
 
-	t.Run("inline --policy-input wins over a file-replace for the same input", func(t *testing.T) {
-		// File-replace fills min_iterations from the file column; the inline value
-		// is applied afterwards and must win deterministically.
-		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
-			{Input: testInputMinIter, Column: "Path", File: path, Replace: true},
-		}, []*PolicyInput{
-			{Input: testInputMinIter, Value: "10"},
-		})
-		require.NoError(t, err)
-		assert.Equal(t, map[string]string{testInputMinIter: "10"}, got.GlobalOverride)
-	})
-
-	t.Run("append files, replace files and inline values coexist", func(t *testing.T) {
+	t.Run("append files (via Global) and inline overrides coexist", func(t *testing.T) {
 		got, err := buildRuntimeInputs([]*PolicyInputFromFile{
 			{Input: "ignored_paths", Column: "Path", File: path},
-			{Input: "extra_paths", Column: "Extra", File: path, Replace: true},
 		}, []*PolicyInput{
 			{Policy: testPolicyRadamsa, Input: testInputMinIter, Value: "10"},
 		})
 		require.NoError(t, err)
 		assert.Equal(t, map[string]string{"ignored_paths": wantAB}, got.Global)
-		assert.Equal(t, map[string]string{"extra_paths": wantXY}, got.GlobalOverride)
+		assert.Empty(t, got.GlobalOverride)
 		assert.Equal(t, map[string]string{testInputMinIter: "10"}, got.ScopedOverride[testPolicyRadamsa])
 	})
 }

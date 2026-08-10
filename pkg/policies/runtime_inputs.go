@@ -23,7 +23,7 @@ import (
 )
 
 // RuntimeInputs holds policy input values supplied at runtime (e.g. via
-// --policy-input-from-file, --policy-input-from-file-replace or --policy-input).
+// --policy-input-from-file or --policy-input).
 // Inputs are either global (applied to every policy attachment that declares
 // them) or scoped to a specific policy (applied only to the attachment whose
 // metadata name or ref matches the scope key). Independently, each input is

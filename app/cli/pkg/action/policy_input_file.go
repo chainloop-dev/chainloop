@@ -27,8 +27,9 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/tabular"
 )
 
-// PolicyInputFromFile describes a single --policy-input-from-file[-replace] flag
-// value: a policy input name fed from a named column of a CSV or JSON file.
+// PolicyInputFromFile describes a single --policy-input-from-file flag value: a
+// policy input name fed from a named column of a CSV or JSON file. Its values
+// are appended to any contract-declared value for the input.
 type PolicyInputFromFile struct {
 	// Policy optionally scopes the input to a specific policy (its name or ref).
 	// Empty means the input is global and applies to every declaring policy.
@@ -39,10 +40,6 @@ type PolicyInputFromFile struct {
 	Column string
 	// File is the source CSV or JSON file path.
 	File string
-	// Replace reports whether the extracted values replace the contract-declared
-	// value for the input (--policy-input-from-file-replace) rather than being
-	// appended to it (--policy-input-from-file).
-	Replace bool
 }
 
 // PolicyInput describes a single --policy-input flag value: a policy input name
@@ -115,14 +112,9 @@ func parsePolicyInputKey(lhs, raw, flag string) (policy, input string, err error
 // key. The column is the segment after the last ":"; since a column name never
 // contains a path separator, a trailing ":<...>" whose ":" belongs to the file
 // (a Windows drive letter like C:\data\... or a URL scheme like https://) is not
-// mistaken for a column. replace records whether the values replace the contract
-// value (--policy-input-from-file-replace) rather than being appended to it
-// (--policy-input-from-file), and only affects the flag name shown in errors.
-func ParsePolicyInputFromFile(raw string, replace bool) (*PolicyInputFromFile, error) {
-	flag := "--policy-input-from-file"
-	if replace {
-		flag = "--policy-input-from-file-replace"
-	}
+// mistaken for a column.
+func ParsePolicyInputFromFile(raw string) (*PolicyInputFromFile, error) {
+	const flag = "--policy-input-from-file"
 
 	lhs, rhs, found := strings.Cut(raw, "=")
 	if !found {
@@ -154,7 +146,7 @@ func ParsePolicyInputFromFile(raw string, replace bool) (*PolicyInputFromFile, e
 		return nil, fmt.Errorf("invalid %s %q: missing file path", flag, raw)
 	}
 
-	return &PolicyInputFromFile{Policy: policy, Input: input, Column: column, File: file, Replace: replace}, nil
+	return &PolicyInputFromFile{Policy: policy, Input: input, Column: column, File: file}, nil
 }
 
 // ParsePolicyInput parses a single --policy-input flag value of the form

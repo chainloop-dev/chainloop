@@ -54,9 +54,9 @@ violations contains msg if {
 //   - The old --policy-input-from-file behavior APPENDS the runtime value, so
 //     getInputArguments yields the array ["100","10"] and to_number fails with
 //     "eval_type_error: to_number ... got array" — the reported error.
-//   - The new --policy-input (and --policy-input-from-file-replace) behavior
-//     REPLACES the value via OverrideRuntimeInputs, so min_iterations stays the
-//     scalar "10", to_number succeeds, and the policy evaluates cleanly.
+//   - The new --policy-input behavior REPLACES the value via
+//     OverrideRuntimeInputs, so min_iterations stays the scalar "10", to_number
+//     succeeds, and the policy evaluates cleanly.
 func TestPFM6906ScalarOverrideFixesToNumberArrayError(t *testing.T) {
 	eng := rego.NewEngine()
 	policy := &engine.Policy{Name: "radamsa-min-iterations", Source: []byte(radamsaMinIterationsPolicy)}

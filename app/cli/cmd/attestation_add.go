@@ -42,8 +42,8 @@ func newAttestationAddCmd() *cobra.Command {
 	var annotationsFlag []string
 	var noStrictValidation bool
 	var policyInputFromFileFlag []string
-	var policyInputFromFileReplaceFlag []string
 	var policyInputFlag []string
+	var appendFlag bool
 	var maxExtractEntries int
 	var maxExtractSize string
 
@@ -88,11 +88,7 @@ func newAttestationAddCmd() *cobra.Command {
   # Override a scalar policy input for a single run with an inline literal value. Unlike --policy-input-from-file
   # (which appends), --policy-input REPLACES the contract-declared value, so a scalar input stays a scalar.
   chainloop attestation add --name fuzz --value report.txt --kind RADAMSA_REPORT \
-    --policy-input radamsa-min-iterations:min_iterations=10
-
-  # Replace (rather than append) a contract-declared list from a file column with --policy-input-from-file-replace.
-  chainloop attestation add --name sigcheck --value sigcheckResult.csv --kind SYSINTERNALS_SIGCHECK \
-    --policy-input-from-file-replace ignored_paths=exception.csv:Path`,
+    --policy-input radamsa-min-iterations:min_iterations=10`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			maxExtractSizeBytes, err := bytefmt.ToBytes(maxExtractSize)
 			if err != nil {
@@ -129,10 +125,9 @@ func newAttestationAddCmd() *cobra.Command {
 				return err
 			}
 
-			// Parse and resolve the policy input files (column -> policy input),
-			// both the append and the replace variants. Done once here; the
-			// resolved local paths are reused across retries.
-			policyInputFiles, err := resolvePolicyInputFiles(policyInputFromFileFlag, policyInputFromFileReplaceFlag)
+			// Parse and resolve the policy input files (column -> policy input).
+			// Done once here; the resolved local paths are reused across retries.
+			policyInputFiles, err := resolvePolicyInputFiles(policyInputFromFileFlag)
 			if err != nil {
 				return err
 			}
@@ -141,6 +136,12 @@ func newAttestationAddCmd() *cobra.Command {
 			policyInputs, err := parsePolicyInputs(policyInputFlag)
 			if err != nil {
 				return err
+			}
+
+			// --append is reserved: it will later toggle append/replace semantics
+			// for --policy-input and --policy-input-from-file, but does nothing yet.
+			if appendFlag {
+				logger.Warn().Msg("--append has no effect yet; reserved for a future release")
 			}
 
 			// In some cases, the attestation state is stored remotely. To control concurrency we use
@@ -206,8 +207,8 @@ func newAttestationAddCmd() *cobra.Command {
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
 	cmd.Flags().BoolVar(&noStrictValidation, "no-strict-validation", false, "skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)")
 	cmd.Flags().StringArrayVar(&policyInputFromFileFlag, "policy-input-from-file", nil, "feed a policy input from a column of a CSV or JSON file, in the format [<policy>:]<input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); the values are APPENDED to any contract-declared value; an optional <policy>: prefix scopes the input to a single policy (matched by name or ref), otherwise it applies to every declaring policy; <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.")
-	cmd.Flags().StringArrayVar(&policyInputFromFileReplaceFlag, "policy-input-from-file-replace", nil, "like --policy-input-from-file but the extracted values REPLACE (override) any contract-declared value for the input instead of being appended to it; same [<policy>:]<input>=<file>[:<column>] format; repeatable. The file is also recorded as EVIDENCE.")
 	cmd.Flags().StringArrayVar(&policyInputFlag, "policy-input", nil, "set a policy input to a literal value that REPLACES (overrides) any contract-declared value for the input, in the format [<policy>:]<input>=<value> (e.g. min_iterations=10); use this to override a scalar input at run time; an optional <policy>: prefix scopes it to a single policy (matched by name or ref), otherwise it applies to every declaring policy; repeatable.")
+	cmd.Flags().BoolVar(&appendFlag, "append", false, "reserved for a future release: will control whether --policy-input and --policy-input-from-file append to (rather than replace) the contract-declared value; has no effect yet")
 
 	// Optional OCI registry credentials
 	cmd.Flags().StringVar(&registryServer, "registry-server", "", fmt.Sprintf("OCI repository server, ($%s)", registryServerEnvVarName))
@@ -233,40 +234,33 @@ func newAttestationAddCmd() *cobra.Command {
 	return cmd
 }
 
-// resolvePolicyInputFiles parses each --policy-input-from-file (append) and
-// --policy-input-from-file-replace (replace) value and resolves its file
-// reference to a local path (downloading URLs to a temporary file, mirroring how
-// --value is handled). Both variants are returned in one slice, distinguished by
-// PolicyInputFromFile.Replace.
-func resolvePolicyInputFiles(rawAppend, rawReplace []string) ([]*action.PolicyInputFromFile, error) {
-	if len(rawAppend) == 0 && len(rawReplace) == 0 {
+// resolvePolicyInputFiles parses each --policy-input-from-file value and
+// resolves its file reference to a local path (downloading URLs to a temporary
+// file, mirroring how --value is handled).
+func resolvePolicyInputFiles(raw []string) ([]*action.PolicyInputFromFile, error) {
+	if len(raw) == 0 {
 		return nil, nil
 	}
 
-	result := make([]*action.PolicyInputFromFile, 0, len(rawAppend)+len(rawReplace))
-	for _, group := range []struct {
-		raw     []string
-		replace bool
-	}{{rawAppend, false}, {rawReplace, true}} {
-		for _, r := range group.raw {
-			pif, err := action.ParsePolicyInputFromFile(r, group.replace)
-			if err != nil {
-				return nil, err
-			}
-
-			path, err := resourceloader.GetPathForResource(pif.File)
-			if err != nil {
-				var uerr *resourceloader.UnrecognizedSchemeError
-				if errors.As(err, &uerr) {
-					path = pif.File
-				} else {
-					return nil, fmt.Errorf("loading policy input file: %w", err)
-				}
-			}
-			pif.File = path
-
-			result = append(result, pif)
+	result := make([]*action.PolicyInputFromFile, 0, len(raw))
+	for _, r := range raw {
+		pif, err := action.ParsePolicyInputFromFile(r)
+		if err != nil {
+			return nil, err
 		}
+
+		path, err := resourceloader.GetPathForResource(pif.File)
+		if err != nil {
+			var uerr *resourceloader.UnrecognizedSchemeError
+			if errors.As(err, &uerr) {
+				path = pif.File
+			} else {
+				return nil, fmt.Errorf("loading policy input file: %w", err)
+			}
+		}
+		pif.File = path
+
+		result = append(result, pif)
 	}
 
 	return result, nil
