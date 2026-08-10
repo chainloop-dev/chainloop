@@ -24,6 +24,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Repeated domain strings across the action test files, extracted to satisfy goconst.
+const (
+	testPolicyRadamsa = "radamsa-min-iterations"
+	testInputMinIter  = "min_iterations"
+)
+
 func TestParsePolicyInputFromFile(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -126,6 +132,83 @@ func TestParsePolicyInputFromFile(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := ParsePolicyInputFromFile(tc.raw)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestParsePolicyInput(t *testing.T) {
+	testCases := []struct {
+		name    string
+		raw     string
+		want    *PolicyInput
+		wantErr bool
+	}{
+		{
+			name: "input and value",
+			raw:  "min_iterations=10",
+			want: &PolicyInput{Input: testInputMinIter, Value: "10"},
+		},
+		{
+			name: "policy-scoped input and value",
+			raw:  "radamsa-min-iterations:min_iterations=10",
+			want: &PolicyInput{Policy: testPolicyRadamsa, Input: testInputMinIter, Value: "10"},
+		},
+		{
+			name: "policy-scoped input pinned to a version",
+			raw:  "radamsa-min-iterations@sha256:deadbeef:min_iterations=10",
+			want: &PolicyInput{Policy: "radamsa-min-iterations@sha256:deadbeef", Input: testInputMinIter, Value: "10"},
+		},
+		{
+			name: "provider-style scope keeps its colon",
+			raw:  "builtin:radamsa-min-iterations:min_iterations=10",
+			want: &PolicyInput{Policy: "builtin:radamsa-min-iterations", Input: testInputMinIter, Value: "10"},
+		},
+		{
+			name: "value with a comma is kept verbatim",
+			raw:  "ignored_paths=a,b,c",
+			want: &PolicyInput{Input: "ignored_paths", Value: "a,b,c"},
+		},
+		{
+			name: "surrounding whitespace trimmed",
+			raw:  " radamsa-min-iterations : min_iterations = 10 ",
+			want: &PolicyInput{Policy: testPolicyRadamsa, Input: testInputMinIter, Value: "10"},
+		},
+		{
+			name:    "missing equals",
+			raw:     "min_iterations:10",
+			wantErr: true,
+		},
+		{
+			name:    "missing input name",
+			raw:     "=10",
+			wantErr: true,
+		},
+		{
+			name:    "missing value",
+			raw:     "min_iterations=",
+			wantErr: true,
+		},
+		{
+			name:    "empty policy scope",
+			raw:     ":min_iterations=10",
+			wantErr: true,
+		},
+		{
+			name:    "versioned scope missing an input name",
+			raw:     "radamsa-min-iterations@sha256:deadbeef=10",
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ParsePolicyInput(tc.raw)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return

@@ -254,12 +254,18 @@ Scope an input to a specific policy with a <policy>: prefix so it only applies t
 chainloop attestation add --name sigcheck --value sigcheckResult.csv --kind SYSINTERNALS_SIGCHECK \
 --policy-input-from-file trusted-binaries-signed:ignored_paths=exception.csv:Path \
 --policy-input-from-file trusted-binaries-vendor-keys:third_party_paths=exception.csv:Path
+
+Override a scalar policy input for a single run with an inline literal value. Unlike --policy-input-from-file
+(which appends), --policy-input REPLACES the contract-declared value, so a scalar input stays a scalar.
+chainloop attestation add --name fuzz --value report.txt --kind RADAMSA_REPORT \
+--policy-input radamsa-min-iterations:min_iterations=10
 ```
 
 Options
 
 ```
 --annotation strings                   additional annotation in the format of key=value
+--append                               reserved for a future release: will control whether --policy-input and --policy-input-from-file append to (rather than replace) the contract-declared value; has no effect yet
 --attestation-id string                Unique identifier of the in-progress attestation
 -h, --help                                 help for add
 --kind string                          kind of the material to be recorded: ["ARTIFACT" "ASYNCAPI_SPEC" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CERTCC_DRANZER" "CHAINLOOP_AI_AGENT_CONFIG" "CHAINLOOP_AI_CODING_SESSION" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CHECKMARX_JSON" "COBERTURA_XML" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "GRAPHQL_SPEC" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENAPI_SPEC" "OPENVEX" "OSSF_SCORECARD_JSON" "RADAMSA_CRASHES" "RADAMSA_REPORT" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "SYSINTERNALS_ACCESSCHK" "SYSINTERNALS_SIGCHECK" "TRUFFLEHOG_JSON" "TWISTCLI_SCAN_JSON" "YELP_DETECT_SECRETS_BASELINE" "ZAP_DAST_ZIP"]
@@ -267,7 +273,8 @@ Options
 --max-extract-size string              max total uncompressed size to extract when --value is an archive (default "1GiB")
 --name string                          name of the material as shown in the contract
 --no-strict-validation                 skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)
---policy-input-from-file stringArray   feed a policy input from a column of a CSV or JSON file, in the format [<policy>:]<input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); an optional <policy>: prefix scopes the input to a single policy (matched by name or ref), otherwise it applies to every declaring policy; <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.
+--policy-input stringArray             set a policy input to a literal value that REPLACES (overrides) any contract-declared value for the input, in the format [<policy>:]<input>=<value> (e.g. min_iterations=10); use this to override a scalar input at run time; an optional <policy>: prefix scopes it to a single policy (matched by name or ref), otherwise it applies to every declaring policy; repeatable.
+--policy-input-from-file stringArray   feed a policy input from a column of a CSV or JSON file, in the format [<policy>:]<input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); the values are APPENDED to any contract-declared value; an optional <policy>: prefix scopes the input to a single policy (matched by name or ref), otherwise it applies to every declaring policy; <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.
 --registry-password string             registry password, ($CHAINLOOP_REGISTRY_PASSWORD)
 --registry-server string               OCI repository server, ($CHAINLOOP_REGISTRY_SERVER)
 --registry-username string             registry username, ($CHAINLOOP_REGISTRY_USERNAME)

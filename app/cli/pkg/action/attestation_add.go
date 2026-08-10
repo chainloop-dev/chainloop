@@ -101,16 +101,16 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
 
-func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string, policyInputFiles []*PolicyInputFromFile) ([]*AttestationStatusMaterial, error) {
+func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string, policyInputFiles []*PolicyInputFromFile, policyInputs []*PolicyInput) ([]*AttestationStatusMaterial, error) {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
 	crafter, err := newCrafter(&newCrafterStateOpts{enableRemoteState: (attestationID != ""), localStatePath: action.localStatePath}, action.CPConnection, action.opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load crafter: %w", err)
 	}
 
-	// Resolve runtime policy inputs from the provided files before adding the
-	// material, so a malformed file aborts the add early.
-	runtimeInputs, err := buildRuntimeInputs(policyInputFiles)
+	// Resolve runtime policy inputs from the provided files and inline values
+	// before adding the material, so a malformed file aborts the add early.
+	runtimeInputs, err := buildRuntimeInputs(policyInputFiles, policyInputs)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 			// The runtime inputs still apply to every exploded material's policy
 			// evaluation (they flow through addOpts); only the per-input EVIDENCE
 			// materials are not recorded on the explode path.
-			action.Logger.Warn().Msg("--policy-input-from-file values apply to policy evaluation but are not recorded as evidence materials when expanding an archive")
+			action.Logger.Warn().Msg("policy input files apply to policy evaluation but are not recorded as evidence materials when expanding an archive")
 		}
 		limits := materials.ArchiveLimits{MaxEntries: action.maxExtractEntries, MaxTotalSize: action.maxExtractSize}
 		// AddMaterialsFromArchive also records the source archive as an EVIDENCE
@@ -249,7 +249,8 @@ func shouldExplode(materialType, value string) (materials.ArchiveFormat, error) 
 // returns nil when there are none. Defined at package scope so it can name the
 // crafter package type (the Run method shadows it with a local variable).
 func runtimeInputAddOpts(runtimeInputs *policies.RuntimeInputs) []crafter.AddOpt {
-	if runtimeInputs == nil || (len(runtimeInputs.Global) == 0 && len(runtimeInputs.Scoped) == 0) {
+	if runtimeInputs == nil || (len(runtimeInputs.Global) == 0 && len(runtimeInputs.Scoped) == 0 &&
+		len(runtimeInputs.GlobalOverride) == 0 && len(runtimeInputs.ScopedOverride) == 0) {
 		return nil
 	}
 	return []crafter.AddOpt{crafter.WithRuntimeInputs(runtimeInputs)}
@@ -262,41 +263,69 @@ func withSourceArchiveEvidence(opts []crafter.AddOpt) []crafter.AddOpt {
 	return append(opts, crafter.WithSourceArchiveEvidence())
 }
 
-// buildRuntimeInputs reads each policy input file and returns the extracted
-// values grouped for the policy engine: unscoped entries under Global and
-// policy-scoped entries under Scoped[policy]. Values are newline-joined and
-// accumulated via policies.MergeRuntimeInputs so repeated inputs merge using the
-// same multi-value encoding the engine expects (it splits inputs back on
-// newlines and commas). As with contract-declared arguments, individual values
-// must not embed those delimiters; path globs, the intended use, never do.
-func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile) (*policies.RuntimeInputs, error) {
-	if len(policyInputFiles) == 0 {
+// buildRuntimeInputs reads each policy input file and combines it with the
+// inline --policy-input values, returning them grouped for the policy engine.
+// File inputs (--policy-input-from-file) go under Global/Scoped and are
+// newline-joined via policies.MergeRuntimeInputs so repeated inputs merge using
+// the multi-value encoding the engine expects (it splits inputs back on newlines
+// and commas). Inline values (--policy-input) go under GlobalOverride/ScopedOverride
+// and replace the contract value instead of appending, keeping a scalar override
+// a scalar. As with contract-declared arguments, individual append values must
+// not embed those delimiters; path globs, the intended use, never do.
+func buildRuntimeInputs(policyInputFiles []*PolicyInputFromFile, policyInputs []*PolicyInput) (*policies.RuntimeInputs, error) {
+	if len(policyInputFiles) == 0 && len(policyInputs) == 0 {
 		return nil, nil
 	}
 
 	ri := &policies.RuntimeInputs{
-		Global: map[string]string{},
-		Scoped: map[string]map[string]string{},
+		Global:         map[string]string{},
+		Scoped:         map[string]map[string]string{},
+		GlobalOverride: map[string]string{},
+		ScopedOverride: map[string]map[string]string{},
 	}
+
 	for _, pif := range policyInputFiles {
 		values, err := ExtractColumnValues(pif.File, pif.Column)
 		if err != nil {
 			return nil, fmt.Errorf("extracting %q from %q: %w", pif.Column, pif.File, err)
 		}
 
-		// Unscoped entries go to Global; policy-scoped entries to their own
-		// Scoped[policy] map. Because global and scoped values live in separate
-		// maps, they never collide here even when they share an input name;
-		// forPolicy is what later merges a policy's scoped values over Global.
-		add := map[string]string{pif.Input: strings.Join(values, "\n")}
-		if pif.Policy == "" {
-			ri.Global = policies.MergeRuntimeInputs(ri.Global, add)
-		} else {
-			ri.Scoped[pif.Policy] = policies.MergeRuntimeInputs(ri.Scoped[pif.Policy], add)
-		}
+		addAppendInput(ri, pif.Policy, pif.Input, strings.Join(values, "\n"))
+	}
+
+	for _, pi := range policyInputs {
+		addOverrideInput(ri, pi.Policy, pi.Input, pi.Value)
 	}
 
 	return ri, nil
+}
+
+// addAppendInput accumulates an append-mode runtime input. Unscoped entries go
+// to Global; policy-scoped entries to their own Scoped[policy] map. Because
+// global and scoped values live in separate maps they never collide here even
+// when they share an input name; forPolicy is what later merges a policy's
+// scoped values over Global.
+func addAppendInput(ri *policies.RuntimeInputs, policy, input, value string) {
+	add := map[string]string{input: value}
+	if policy == "" {
+		ri.Global = policies.MergeRuntimeInputs(ri.Global, add)
+	} else {
+		ri.Scoped[policy] = policies.MergeRuntimeInputs(ri.Scoped[policy], add)
+	}
+}
+
+// addOverrideInput records a replace-mode runtime input. When the same key is
+// supplied more than once the last value wins, since a replace — unlike an
+// append — has no meaningful accumulation.
+func addOverrideInput(ri *policies.RuntimeInputs, policy, input, value string) {
+	if policy == "" {
+		ri.GlobalOverride[input] = value
+		return
+	}
+	if ri.ScopedOverride[policy] == nil {
+		ri.ScopedOverride[policy] = map[string]string{}
+	}
+	ri.ScopedOverride[policy][input] = value
 }
 
 // addPolicyInputEvidence adds each policy input file as an EVIDENCE material,

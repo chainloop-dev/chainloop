@@ -28,7 +28,8 @@ import (
 )
 
 // PolicyInputFromFile describes a single --policy-input-from-file flag value: a
-// policy input name fed from a named column of a CSV or JSON file.
+// policy input name fed from a named column of a CSV or JSON file. Its values
+// are appended to any contract-declared value for the input.
 type PolicyInputFromFile struct {
 	// Policy optionally scopes the input to a specific policy (its name or ref).
 	// Empty means the input is global and applies to every declaring policy.
@@ -39,6 +40,21 @@ type PolicyInputFromFile struct {
 	Column string
 	// File is the source CSV or JSON file path.
 	File string
+}
+
+// PolicyInput describes a single --policy-input flag value: a policy input name
+// set to a literal value supplied directly on the command line. The value
+// always replaces (overrides) any contract-declared value for the input rather
+// than being appended, which is what makes a scalar input overridable at run
+// time.
+type PolicyInput struct {
+	// Policy optionally scopes the input to a specific policy (its name or ref).
+	// Empty means the input is global and applies to every declaring policy.
+	Policy string
+	// Input is the destination policy input name (e.g. "min_iterations").
+	Input string
+	// Value is the literal value to set.
+	Value string
 }
 
 // scopeDelimiter separates an optional policy scope from the input name on the
@@ -53,6 +69,39 @@ const scopeDelimiter = ":"
 // was omitted, which would otherwise be mistaken for the digest.
 const digestScheme = "@sha256"
 
+// parsePolicyInputKey splits the left-hand side of a policy-input flag value
+// (everything before "=") into an optional "<policy>:" scope prefix and the
+// input name. The optional prefix scopes the input to a single policy (matched
+// against its name or ref); without it the input is global. Because a policy ref
+// may itself contain ":" (scheme, digest) but an input name never does, the
+// scope is taken as everything before the *last* ":". flag names the originating
+// CLI flag so errors point at the right one.
+func parsePolicyInputKey(lhs, raw, flag string) (policy, input string, err error) {
+	if i := strings.LastIndex(lhs, scopeDelimiter); i >= 0 {
+		policy = strings.TrimSpace(lhs[:i])
+		input = strings.TrimSpace(lhs[i+1:])
+		if policy == "" {
+			return "", "", fmt.Errorf("invalid %s %q: missing policy scope before %q", flag, raw, scopeDelimiter)
+		}
+		// A bare "<policy>@sha256:<digest>" (no input) would be mis-split into
+		// policy "<policy>@sha256" and input "<digest>"; reject it with guidance.
+		// The right-hand side is left unnamed so the message stays accurate for
+		// every flag (a file for --policy-input-from-file[-replace], a literal
+		// value for --policy-input).
+		if strings.HasSuffix(policy, digestScheme) {
+			return "", "", fmt.Errorf("invalid %s %q: versioned policy scope is missing an input name; expected an input name after the digest, as in <policy>@sha256:<digest>:<input>", flag, raw)
+		}
+	} else {
+		input = strings.TrimSpace(lhs)
+	}
+
+	if input == "" {
+		return "", "", fmt.Errorf("invalid %s %q: missing input name", flag, raw)
+	}
+
+	return policy, input, nil
+}
+
 // ParsePolicyInputFromFile parses a single flag value of the form
 // "[<policy>:]<input>=<file>[:<column>]". The optional "<policy>:" prefix scopes
 // the input to a single policy (matched against its name or ref); without it the
@@ -65,35 +114,21 @@ const digestScheme = "@sha256"
 // (a Windows drive letter like C:\data\... or a URL scheme like https://) is not
 // mistaken for a column.
 func ParsePolicyInputFromFile(raw string) (*PolicyInputFromFile, error) {
+	const flag = "--policy-input-from-file"
+
 	lhs, rhs, found := strings.Cut(raw, "=")
 	if !found {
-		return nil, fmt.Errorf("invalid --policy-input-from-file %q: expected [<policy>:]<input>=<file>[:<column>]", raw)
+		return nil, fmt.Errorf("invalid %s %q: expected [<policy>:]<input>=<file>[:<column>]", flag, raw)
 	}
 
-	// Split off the optional "<policy>:" scope prefix at the last ":": a policy
-	// ref may contain colons (scheme, digest) but the input name never does.
-	var policy, input string
-	if i := strings.LastIndex(lhs, scopeDelimiter); i >= 0 {
-		policy = strings.TrimSpace(lhs[:i])
-		input = strings.TrimSpace(lhs[i+1:])
-		if policy == "" {
-			return nil, fmt.Errorf("invalid --policy-input-from-file %q: missing policy scope before %q", raw, scopeDelimiter)
-		}
-		// A bare "<policy>@sha256:<digest>" (no input) would be mis-split into
-		// policy "<policy>@sha256" and input "<digest>"; reject it with guidance.
-		if strings.HasSuffix(policy, digestScheme) {
-			return nil, fmt.Errorf("invalid --policy-input-from-file %q: versioned policy scope is missing an input name; expected <policy>@sha256:<digest>:<input>=<file>", raw)
-		}
-	} else {
-		input = strings.TrimSpace(lhs)
+	policy, input, err := parsePolicyInputKey(lhs, raw, flag)
+	if err != nil {
+		return nil, err
 	}
 
 	rhs = strings.TrimSpace(rhs)
-	if input == "" {
-		return nil, fmt.Errorf("invalid --policy-input-from-file %q: missing input name", raw)
-	}
 	if rhs == "" {
-		return nil, fmt.Errorf("invalid --policy-input-from-file %q: missing file path", raw)
+		return nil, fmt.Errorf("invalid %s %q: missing file path", flag, raw)
 	}
 
 	// Default the column to the input name; override it only when a ":<column>"
@@ -108,10 +143,36 @@ func ParsePolicyInputFromFile(raw string) (*PolicyInputFromFile, error) {
 	}
 
 	if file == "" {
-		return nil, fmt.Errorf("invalid --policy-input-from-file %q: missing file path", raw)
+		return nil, fmt.Errorf("invalid %s %q: missing file path", flag, raw)
 	}
 
 	return &PolicyInputFromFile{Policy: policy, Input: input, Column: column, File: file}, nil
+}
+
+// ParsePolicyInput parses a single --policy-input flag value of the form
+// "[<policy>:]<input>=<value>", where <value> is a literal set directly on the
+// command line. The optional "<policy>:" prefix has the same scoping semantics
+// as --policy-input-from-file. The value always overrides (replaces) any
+// contract-declared value for the input.
+func ParsePolicyInput(raw string) (*PolicyInput, error) {
+	const flag = "--policy-input"
+
+	lhs, rhs, found := strings.Cut(raw, "=")
+	if !found {
+		return nil, fmt.Errorf("invalid %s %q: expected [<policy>:]<input>=<value>", flag, raw)
+	}
+
+	policy, input, err := parsePolicyInputKey(lhs, raw, flag)
+	if err != nil {
+		return nil, err
+	}
+
+	value := strings.TrimSpace(rhs)
+	if value == "" {
+		return nil, fmt.Errorf("invalid %s %q: missing value", flag, raw)
+	}
+
+	return &PolicyInput{Policy: policy, Input: input, Value: value}, nil
 }
 
 // ExtractColumnValues reads the given CSV or JSON file and returns the values of
