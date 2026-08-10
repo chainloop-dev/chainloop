@@ -138,12 +138,6 @@ func newAttestationAddCmd() *cobra.Command {
 				return err
 			}
 
-			// --append is reserved: it will later toggle append/replace semantics
-			// for --policy-input and --policy-input-from-file, but does nothing yet.
-			if appendFlag {
-				logger.Warn().Msg("--append has no effect yet; reserved for a future release")
-			}
-
 			// In some cases, the attestation state is stored remotely. To control concurrency we use
 			// optimistic locking. We retry the operation if the state has changed since we last read it.
 			return runWithBackoffRetry(
