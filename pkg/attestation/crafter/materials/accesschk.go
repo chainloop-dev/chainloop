@@ -62,6 +62,18 @@ func (i *AccessChkCrafter) Craft(ctx context.Context, filePath string) (*api.Att
 		return nil, fmt.Errorf("input does not look like accesschk output: %w", ErrInvalidMaterialType)
 	}
 
+	// The material is attested by digest and stored as-is, but at policy
+	// evaluation time it is projected to JSON client-side on the runner. Above
+	// this size the parser omits the verbatim raw-text fallback to keep peak
+	// memory bounded; warn so an operator relying on string-matching policies is
+	// aware the fallback fields will not be present for this material.
+	if len(data) > accesschk.RawRetentionLimit {
+		i.logger.Warn().
+			Int("size", len(data)).
+			Int("threshold", accesschk.RawRetentionLimit).
+			Msg("large AccessChk material: raw-text fallback fields are omitted from the policy input to limit memory use")
+	}
+
 	m, err := uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
 	if err != nil {
 		return nil, err

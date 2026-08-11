@@ -17,12 +17,23 @@
 // (https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk) into a
 // structured representation. AccessChk has no machine-readable output mode, so
 // the parser is intentionally tolerant: anything it cannot recognize is
-// preserved verbatim and the full original text is always retained in Raw, so a
-// policy can fall back to string matching regardless of the output mode used.
+// preserved verbatim and, for inputs below RawRetentionLimit, the full original
+// text is retained in Raw so a policy can fall back to string matching
+// regardless of the output mode used.
+//
+// The parser streams the input line by line rather than building a normalized
+// full-text copy, and it size-gates the verbatim fallback fields (Raw and the
+// per-object RawLines). Both measures keep peak memory bounded: a
+// several-hundred-MB material would otherwise pin multiple copies of itself in
+// memory and double the JSON document handed to the policy engine, which has
+// OOM-killed CI runners during client-side policy evaluation.
 package accesschk
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -30,6 +41,15 @@ import (
 
 // ToolName is the canonical tool name recorded for AccessChk materials.
 const ToolName = "AccessChk"
+
+// RawRetentionLimit is the maximum input size (in bytes) for which Parse retains
+// the verbatim fallback fields Raw and RawLines. Above it these fields are
+// omitted: they are not part of the attestation (only the original file's digest
+// is attested) and no policy reads them, so trimming them for oversized inputs
+// does not change the recorded evidence or any current evaluation — it only
+// prevents the transient JSON projection handed to the policy engine from
+// ballooning to multiples of the original file size.
+const RawRetentionLimit = 10 * 1024 * 1024 // 10 MiB
 
 // versionRe extracts the AccessChk version from its banner, e.g. "Accesschk v6.15".
 var versionRe = regexp.MustCompile(`(?i)accesschk v([0-9][0-9.]*)`)
@@ -84,154 +104,200 @@ type Object struct {
 }
 
 // Report is the structured projection of an AccessChk run.
+//
+// Raw holds the full original text for inputs below RawRetentionLimit and is
+// empty otherwise; descriptorMarker records whether an SDDL/descriptor marker
+// was seen during parsing so LooksLikeAccessChk stays reliable even when Raw is
+// omitted for oversized inputs.
 type Report struct {
 	Tool    Tool     `json:"tool"`
 	Objects []Object `json:"objects"`
 	Raw     string   `json:"raw"`
+
+	descriptorMarker bool
 }
 
 // Parse converts AccessChk text output into a Report. It only returns an error
 // when the input is not valid UTF-8 text; well-formed text always parses, with
 // any unrecognized content preserved in the per-object RawLines and the
-// top-level Raw field.
+// top-level Raw field for inputs below RawRetentionLimit (see the package doc).
 func Parse(data []byte) (*Report, error) {
 	if !utf8.Valid(data) {
 		return nil, fmt.Errorf("input is not valid UTF-8 text")
 	}
 
-	raw := string(data)
+	// Retain the verbatim fallback fields only for inputs small enough that the
+	// resulting JSON projection stays bounded; see RawRetentionLimit.
+	retainRaw := len(data) <= RawRetentionLimit
+
 	report := &Report{
 		Tool:    Tool{Name: ToolName},
 		Objects: []Object{},
-		Raw:     raw,
+	}
+	if retainRaw {
+		report.Raw = string(data)
 	}
 
-	if m := versionRe.FindStringSubmatch(raw); m != nil {
-		report.Tool.Version = m[1]
-	}
-
-	normalized := strings.ReplaceAll(raw, "\r\n", "\n")
 	var current *Object
 	var entryIndent int
-
-	// State for the -l (full security descriptor) mode.
-	const (
-		sectNone = iota
-		sectDescriptorFlags
-		sectDACL
-		sectSACL
-	)
 	section := sectNone
 	var currentACE *ACE
 
-	for _, line := range strings.Split(normalized, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" || isBannerLine(trimmed) {
-			continue
+	// Stream line by line instead of normalizing and splitting the whole input
+	// at once. bufio.Reader.ReadString grows to fit arbitrarily long lines and
+	// returns freshly allocated strings, so stored substrings do not pin the
+	// entire input in memory.
+	reader := bufio.NewReader(bytes.NewReader(data))
+	for {
+		raw, readErr := reader.ReadString('\n')
+		line := strings.TrimSuffix(raw, "\n")
+		line = strings.TrimSuffix(line, "\r")
+
+		if line != "" || readErr == nil {
+			processLine(report, line, &current, &entryIndent, &section, &currentACE, retainRaw)
 		}
 
-		indent := len(line) - len(strings.TrimLeft(line, " \t"))
-
-		// A line at column zero starts a new object.
-		if indent == 0 {
-			report.Objects = append(report.Objects, Object{
-				Name:          trimmed,
-				AccessEntries: []AccessEntry{},
-				RawLines:      []string{},
-			})
-			current = &report.Objects[len(report.Objects)-1]
-			entryIndent = -1
-			section = sectNone
-			currentACE = nil
-			continue
-		}
-
-		// Indented content before any object header is dropped.
-		if current == nil {
-			continue
-		}
-
-		current.RawLines = append(current.RawLines, line)
-
-		// Compact default (R/W) output mode.
-		if m := accessEntryRe.FindStringSubmatch(trimmed); m != nil {
-			current.AccessEntries = append(current.AccessEntries, AccessEntry{
-				Access:    m[1],
-				Principal: m[2],
-				Rights:    []string{},
-			})
-			entryIndent = indent
-			currentACE = nil
-			continue
-		}
-
-		// -l (full security descriptor) section headers.
-		switch {
-		case strings.HasPrefix(trimmed, "DESCRIPTOR FLAGS"):
-			section = sectDescriptorFlags
-			currentACE = nil
-			continue
-		case strings.HasPrefix(trimmed, "OWNER:"):
-			current.Owner = strings.TrimSpace(strings.TrimPrefix(trimmed, "OWNER:"))
-			currentACE = nil
-			continue
-		case strings.HasPrefix(trimmed, "DACL"):
-			section = sectDACL
-			currentACE = nil
-			continue
-		case strings.HasPrefix(trimmed, "SACL"):
-			section = sectSACL
-			currentACE = nil
-			continue
-		}
-
-		// -l numbered ACE lines (DACL by default, SACL once inside a SACL block).
-		if m := aceRe.FindStringSubmatch(trimmed); m != nil {
-			ace := ACE{
-				Index:     atoi(m[1]),
-				AceType:   strings.TrimSpace(m[2]),
-				Principal: strings.TrimSpace(m[3]),
-				AceFlags:  []string{},
-				Rights:    []string{},
+		if readErr != nil {
+			if readErr != io.EOF {
+				return nil, fmt.Errorf("reading accesschk output: %w", readErr)
 			}
-			if section == sectSACL {
-				current.SACL = append(current.SACL, ace)
-				currentACE = &current.SACL[len(current.SACL)-1]
-			} else {
-				section = sectDACL
-				current.DACL = append(current.DACL, ace)
-				currentACE = &current.DACL[len(current.DACL)-1]
-			}
-			continue
-		}
-
-		// Detail lines: bracketed tokens are flags, bare tokens are rights.
-		isFlag := strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")
-		token := strings.TrimSuffix(strings.TrimPrefix(trimmed, "["), "]")
-
-		if currentACE != nil {
-			if isFlag {
-				currentACE.AceFlags = append(currentACE.AceFlags, token)
-			} else {
-				currentACE.Rights = append(currentACE.Rights, trimmed)
-			}
-			continue
-		}
-
-		if section == sectDescriptorFlags {
-			current.DescriptorFlags = append(current.DescriptorFlags, token)
-			continue
-		}
-
-		// A line indented deeper than the compact access entry it follows is a
-		// specific right (only emitted under -v); attach it to the entry.
-		if entryIndent >= 0 && indent > entryIndent && len(current.AccessEntries) > 0 {
-			last := &current.AccessEntries[len(current.AccessEntries)-1]
-			last.Rights = append(last.Rights, trimmed)
+			break
 		}
 	}
 
 	return report, nil
+}
+
+// sect* constants for the -l (full security descriptor) mode section state.
+const (
+	sectNone = iota
+	sectDescriptorFlags
+	sectDACL
+	sectSACL
+)
+
+// processLine folds a single (newline-stripped) line into the report, advancing
+// the parser's cursor into the current object, access entry and descriptor
+// section. It is the per-line body of Parse's streaming loop.
+func processLine(report *Report, line string, current **Object, entryIndent *int, section *int, currentACE **ACE, retainRaw bool) {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" || isBannerLine(trimmed) {
+		if report.Tool.Version == "" {
+			if m := versionRe.FindStringSubmatch(trimmed); m != nil {
+				report.Tool.Version = m[1]
+			}
+		}
+		return
+	}
+
+	// Track SDDL/descriptor markers so LooksLikeAccessChk works without Raw.
+	if !report.descriptorMarker &&
+		(strings.Contains(trimmed, "DESCRIPTOR FLAGS") || strings.Contains(trimmed, "ACCESS_ALLOWED")) {
+		report.descriptorMarker = true
+	}
+
+	indent := len(line) - len(strings.TrimLeft(line, " \t"))
+
+	// A line at column zero starts a new object.
+	if indent == 0 {
+		obj := Object{Name: trimmed, AccessEntries: []AccessEntry{}}
+		if retainRaw {
+			obj.RawLines = []string{}
+		}
+		report.Objects = append(report.Objects, obj)
+		*current = &report.Objects[len(report.Objects)-1]
+		*entryIndent = -1
+		*section = sectNone
+		*currentACE = nil
+		return
+	}
+
+	// Indented content before any object header is dropped.
+	if *current == nil {
+		return
+	}
+
+	cur := *current
+	if retainRaw {
+		cur.RawLines = append(cur.RawLines, line)
+	}
+
+	// Compact default (R/W) output mode.
+	if m := accessEntryRe.FindStringSubmatch(trimmed); m != nil {
+		cur.AccessEntries = append(cur.AccessEntries, AccessEntry{
+			Access:    m[1],
+			Principal: m[2],
+			Rights:    []string{},
+		})
+		*entryIndent = indent
+		*currentACE = nil
+		return
+	}
+
+	// -l (full security descriptor) section headers.
+	switch {
+	case strings.HasPrefix(trimmed, "DESCRIPTOR FLAGS"):
+		*section = sectDescriptorFlags
+		*currentACE = nil
+		return
+	case strings.HasPrefix(trimmed, "OWNER:"):
+		cur.Owner = strings.TrimSpace(strings.TrimPrefix(trimmed, "OWNER:"))
+		*currentACE = nil
+		return
+	case strings.HasPrefix(trimmed, "DACL"):
+		*section = sectDACL
+		*currentACE = nil
+		return
+	case strings.HasPrefix(trimmed, "SACL"):
+		*section = sectSACL
+		*currentACE = nil
+		return
+	}
+
+	// -l numbered ACE lines (DACL by default, SACL once inside a SACL block).
+	if m := aceRe.FindStringSubmatch(trimmed); m != nil {
+		ace := ACE{
+			Index:     atoi(m[1]),
+			AceType:   strings.TrimSpace(m[2]),
+			Principal: strings.TrimSpace(m[3]),
+			AceFlags:  []string{},
+			Rights:    []string{},
+		}
+		if *section == sectSACL {
+			cur.SACL = append(cur.SACL, ace)
+			*currentACE = &cur.SACL[len(cur.SACL)-1]
+		} else {
+			*section = sectDACL
+			cur.DACL = append(cur.DACL, ace)
+			*currentACE = &cur.DACL[len(cur.DACL)-1]
+		}
+		return
+	}
+
+	// Detail lines: bracketed tokens are flags, bare tokens are rights.
+	isFlag := strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")
+	token := strings.TrimSuffix(strings.TrimPrefix(trimmed, "["), "]")
+
+	if ace := *currentACE; ace != nil {
+		if isFlag {
+			ace.AceFlags = append(ace.AceFlags, token)
+		} else {
+			ace.Rights = append(ace.Rights, trimmed)
+		}
+		return
+	}
+
+	if *section == sectDescriptorFlags {
+		cur.DescriptorFlags = append(cur.DescriptorFlags, token)
+		return
+	}
+
+	// A line indented deeper than the compact access entry it follows is a
+	// specific right (only emitted under -v); attach it to the entry.
+	if *entryIndent >= 0 && indent > *entryIndent && len(cur.AccessEntries) > 0 {
+		last := &cur.AccessEntries[len(cur.AccessEntries)-1]
+		last.Rights = append(last.Rights, trimmed)
+	}
 }
 
 // atoi parses a non-negative integer, returning 0 on failure. ACE indexes are
@@ -260,10 +326,9 @@ func (r *Report) LooksLikeAccessChk() bool {
 			return true
 		}
 	}
-	if strings.Contains(r.Raw, "DESCRIPTOR FLAGS") || strings.Contains(r.Raw, "ACCESS_ALLOWED") {
-		return true
-	}
-	return false
+	// descriptorMarker is set during parsing when an SDDL/descriptor marker is
+	// seen, so this fallback works even when Raw is omitted for oversized inputs.
+	return r.descriptorMarker
 }
 
 // isBannerLine reports whether a trimmed line belongs to the AccessChk startup
