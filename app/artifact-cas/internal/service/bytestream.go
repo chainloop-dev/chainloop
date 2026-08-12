@@ -203,15 +203,6 @@ func (s *ByteStreamService) bufferedUpload(ctx context.Context, stream bytestrea
 // received chunks into an io.Pipe while Upload consumes the other end, so the
 // two run concurrently and peak memory stays bounded (PFM-6923). It returns the
 // total number of bytes committed to the backend.
-//
-// Tradeoff vs. the buffered path: because bytes are forwarded as they arrive, an
-// over-cap upload has already streamed up to maxBytes to the backend by the time
-// the size guard trips (the client is still correctly rejected with
-// ResourceExhausted). For multipart backends the SDK aborts the in-flight upload
-// best-effort; operators should keep a bucket lifecycle rule to reap any
-// incomplete multipart uploads a failed abort could leave behind. This is
-// inherent to streaming — the alternative (buffer-then-validate) is exactly the
-// OOM this change removes.
 func (s *ByteStreamService) streamUpload(ctx context.Context, stream bytestream.ByteStream_WriteServer, storageBackend backend.Uploader, req *writeRequest, maxBytes int64) (int64, error) {
 	pr, pw := io.Pipe()
 
