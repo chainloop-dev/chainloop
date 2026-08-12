@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
+	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -407,4 +408,15 @@ func (s *testSuite) TearDownTest() {
 
 func TestOCIBackend(t *testing.T) {
 	suite.Run(t, new(testSuite))
+}
+
+// TestBackend_DoesNotSupportStreaming pins the OCI backend as NON-streaming.
+// go-containerregistry's push path needs the whole layer content in memory up
+// front (see Backend.Upload), so the CAS service must keep buffering OCI
+// uploads. If OCI ever grows a SupportsStreaming method it would be fed a
+// streaming reader and silently break; this test fails closed against that.
+func TestBackend_DoesNotSupportStreaming(t *testing.T) {
+	var b backend.UploaderDownloader = &Backend{}
+	_, ok := b.(backend.StreamingUploader)
+	require.False(t, ok, "oci backend must NOT implement backend.StreamingUploader; it requires full in-memory buffering")
 }

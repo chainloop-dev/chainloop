@@ -376,3 +376,13 @@ func (c *minioInstance) ConnectionString(t *testing.T) string {
 type minioInstance struct {
 	instance testcontainers.Container
 }
+
+// TestBackend_SupportsStreaming asserts the s3 backend opts into streaming
+// uploads so the CAS service feeds it directly from the client stream instead
+// of buffering the whole artifact in memory (PFM-6923).
+func TestBackend_SupportsStreaming(t *testing.T) {
+	var b backend.UploaderDownloader = &Backend{}
+	su, ok := b.(backend.StreamingUploader)
+	require.True(t, ok, "s3 backend must implement backend.StreamingUploader")
+	assert.True(t, su.SupportsStreaming())
+}

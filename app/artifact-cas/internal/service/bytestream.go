@@ -115,29 +115,33 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	}
 
 	s.log.Infow("msg", "artifact does not exist, uploading", "digest", req.resource.Digest, "name", req.resource.FileName)
-	// Create a buffer that will be filled in the background before sending its content to the backend
-	buffer := newStreamReader(info.MaxBytes)
-	// Add data from first request
-	if err = buffer.Write(req.GetData()); err != nil {
-		if backend.IsUploadSizeExceeded(err) {
-			return status.Error(codes.ResourceExhausted, err.Error())
-		}
-		return sl.LogAndMaskErr(err, s.log)
+
+	// Streaming-capable backends (object stores such as S3/Azure) are fed
+	// directly from the client stream through an io.Pipe, so CAS memory stays
+	// bounded by the chunk/pipe size regardless of artifact size (PFM-6923).
+	// The OCI backend, whose push path needs the whole layer content up front,
+	// does not advertise streaming and keeps the fully-buffered path.
+	var committedSize int64
+	if su, ok := storageBackend.(backend.StreamingUploader); ok && su.SupportsStreaming() {
+		committedSize, err = s.streamUpload(ctx, stream, storageBackend, req, info.MaxBytes)
+	} else {
+		committedSize, err = s.bufferedUpload(ctx, stream, storageBackend, req, info.MaxBytes)
 	}
 
-	// Start a goroutine that will fill the buffer in the background
-	go bufferStream(ctx, stream, buffer, s.log)
-
-	// Block until the buffer has been filled or the upload process has been canceled
-	// This implementation is suboptimal since it requires the content to be uploaded in memory before pushing it
-	// This is due to the fact that our OCI push implementation does not support streaming/chunks for uncompressed layers
-	// We can not use stream.Layer since it only supports compressed layers, we want to store raw data and set custom mimetypes
-	// https://github.com/google/go-containerregistry/blob/main/pkg/v1/stream/README.md
-	// TODO: Split content in multiple layers and do concurrent uploads/downloads
-	err = <-buffer.errorChan
-
-	// Now it's time to check if the data provider has sent an error
+	// Classify the outcome. The error may come from two distinct stages, which
+	// must be treated differently:
+	//   - A backend Upload failure (backendUploadError) is always masked as an
+	//     internal error. It must NOT be interpreted as a client disconnect even
+	//     when it wraps a network reset/cancellation originating backend-side —
+	//     doing so would falsely report success and silently drop the artifact.
+	//   - A stream-read (feed) error is classified: a client disconnect is not a
+	//     failure, an exceeded size cap maps to ResourceExhausted, anything else
+	//     is masked.
 	if err != nil {
+		var backendErr *backendUploadError
+		if errors.As(err, &backendErr) {
+			return sl.LogAndMaskErr(backendErr.err, s.log)
+		}
 		if isClientDisconnect(err) {
 			s.log.Infow("msg", "upload canceled", "digest", req.resource.Digest, "name", req.resource.FileName)
 			return nil
@@ -148,22 +152,198 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
-	s.log.Infow("msg", "artifact received, uploading now to backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
-	if err := storageBackend.Upload(ctx, buffer, req.resource); err != nil {
-		return sl.LogAndMaskErr(err, s.log)
-	}
-
-	s.log.Infow("msg", "upload finished", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
+	s.log.Infow("msg", "upload finished", "name", req.resource.FileName, "digest", req.resource.Digest, "size", committedSize)
 	s.audit.Dispatch(&events.CASArtifactUploaded{
 		CASArtifactBase: &events.CASArtifactBase{
 			Digest:      req.resource.Digest,
-			SizeBytes:   buffer.size,
+			SizeBytes:   committedSize,
 			FileName:    req.resource.FileName,
 			BackendType: info.BackendType,
 		},
 	}, info)
 
-	return stream.SendAndClose(&bytestream.WriteResponse{CommittedSize: buffer.size})
+	return stream.SendAndClose(&bytestream.WriteResponse{CommittedSize: committedSize})
+}
+
+// bufferedUpload accumulates the whole artifact in memory before handing it to
+// the backend. This is required by the OCI backend: its push implementation
+// does not support streaming/chunked uploads for uncompressed layers (we can not
+// use stream.Layer since it only supports compressed layers, and we want to
+// store raw data with custom mimetypes), so it needs the full content up front.
+// https://github.com/google/go-containerregistry/blob/main/pkg/v1/stream/README.md
+// It returns the total number of bytes committed to the backend. Feed errors are
+// returned unwrapped (classified by the caller); backend Upload failures are
+// wrapped in backendUploadError so the caller always masks them.
+func (s *ByteStreamService) bufferedUpload(ctx context.Context, stream bytestream.ByteStream_WriteServer, storageBackend backend.Uploader, req *writeRequest, maxBytes int64) (int64, error) {
+	// Create a buffer that will be filled in the background before sending its content to the backend
+	buffer := newStreamReader(maxBytes)
+	// Add data from the first request
+	if err := buffer.Write(req.GetData()); err != nil {
+		return 0, err
+	}
+
+	// Start a goroutine that will fill the buffer in the background
+	go bufferStream(ctx, stream, buffer, s.log)
+
+	// Block until the buffer has been filled or the upload process has been canceled
+	if err := <-buffer.errorChan; err != nil {
+		return 0, err
+	}
+
+	s.log.Infow("msg", "artifact received, uploading now to backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", buffer.size)
+	if err := storageBackend.Upload(ctx, buffer, req.resource); err != nil {
+		return 0, &backendUploadError{err}
+	}
+
+	return buffer.size, nil
+}
+
+// streamUpload pipes the client stream straight into the backend's Upload
+// without buffering the whole artifact in memory. A background goroutine feeds
+// received chunks into an io.Pipe while Upload consumes the other end, so the
+// two run concurrently and peak memory stays bounded (PFM-6923). It returns the
+// total number of bytes committed to the backend.
+//
+// Tradeoff vs. the buffered path: because bytes are forwarded as they arrive, an
+// over-cap upload has already streamed up to maxBytes to the backend by the time
+// the size guard trips (the client is still correctly rejected with
+// ResourceExhausted). For multipart backends the SDK aborts the in-flight upload
+// best-effort; operators should keep a bucket lifecycle rule to reap any
+// incomplete multipart uploads a failed abort could leave behind. This is
+// inherent to streaming — the alternative (buffer-then-validate) is exactly the
+// OOM this change removes.
+func (s *ByteStreamService) streamUpload(ctx context.Context, stream bytestream.ByteStream_WriteServer, storageBackend backend.Uploader, req *writeRequest, maxBytes int64) (int64, error) {
+	pr, pw := io.Pipe()
+
+	var (
+		uploadedSize int64
+		feedErr      error
+	)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		uploadedSize, feedErr = feedPipe(ctx, stream, pw, req.GetData(), maxBytes, s.log, req.resource.Digest)
+		// Closing with feedErr signals EOF to the reader when nil, or propagates
+		// the failure so Upload stops reading.
+		_ = pw.CloseWithError(feedErr)
+	}()
+
+	uploadErr := storageBackend.Upload(ctx, streamingReader{pr}, req.resource)
+	// If Upload returned without draining the pipe (a backend failure, or a
+	// backend that reports success without reading to EOF), the feeding goroutine
+	// may still be blocked on Write; closing the read end unblocks it. Then wait
+	// for it so uploadedSize/feedErr are safe to read.
+	_ = pr.CloseWithError(uploadErr)
+	<-done
+
+	// errPipeConsumerGone means the feed only failed because the reader (Upload)
+	// stopped consuming — a consequence of the upload outcome, not a genuine
+	// stream-read failure, so the backend's own result is authoritative.
+	if errors.Is(feedErr, errPipeConsumerGone) {
+		feedErr = nil
+	}
+
+	// A genuine feed-side error (client disconnect, exceeded size cap, stream
+	// read failure) is the precise signal and takes precedence: when it occurs it
+	// is what induced the backend error through the pipe. Returned unwrapped so
+	// the caller classifies it (disconnect / ResourceExhausted / mask).
+	if feedErr != nil {
+		return 0, feedErr
+	}
+	// A backend failure is wrapped so the caller always masks it, never mistaking
+	// a backend-side reset/cancellation for a client disconnect.
+	if uploadErr != nil {
+		return 0, &backendUploadError{uploadErr}
+	}
+
+	return uploadedSize, nil
+}
+
+// backendUploadError marks a failure returned by the storage backend's Upload,
+// as opposed to an error reading the client stream. Backend failures are always
+// masked as internal errors and are never interpreted as a client disconnect or
+// a size-cap violation, both of which only originate on the stream-read side.
+type backendUploadError struct{ err error }
+
+func (e *backendUploadError) Error() string { return e.err.Error() }
+func (e *backendUploadError) Unwrap() error { return e.err }
+
+// errPipeConsumerGone is returned by feedPipe when a write to the pipe fails,
+// which only happens once the reader (the backend Upload) has stopped consuming
+// — because Upload returned and streamUpload closed the read end, or because it
+// failed. It is not a genuine stream-read failure; streamUpload defers to the
+// backend's own error in that case.
+var errPipeConsumerGone = errors.New("pipe consumer stopped reading")
+
+// streamingReader wraps the upload pipe reader with a stable string form. The
+// pipe is written to concurrently while the backend reads it; exposing the bare
+// *io.PipeReader lets a reflective consumer (a structured logger, a test's mock
+// matcher, etc.) walk the pipe's internal state and race with the writer. The
+// wrapper keeps io.Reader behaviour while presenting an opaque identity to fmt.
+type streamingReader struct {
+	io.Reader
+}
+
+func (streamingReader) String() string { return "cas-streaming-upload" }
+
+// feedPipe forwards the artifact from the client stream into pw, enforcing the
+// max upload size as it goes. firstData is the payload already read from the
+// first request. It returns the total number of bytes forwarded.
+func feedPipe(ctx context.Context, stream bytestream.ByteStream_WriteServer, pw *io.PipeWriter, firstData []byte, maxSize int64, log *log.Helper, digest string) (int64, error) {
+	var size int64
+	write := func(data []byte) error {
+		if len(data) == 0 {
+			return nil
+		}
+		size += int64(len(data))
+		if err := checkUploadSize(size, maxSize); err != nil {
+			return err
+		}
+		if _, err := pw.Write(data); err != nil {
+			// A write only fails once the reader has gone away; surface it as the
+			// consumer-gone sentinel so streamUpload defers to the backend result
+			// rather than treating this as a client-side stream failure.
+			return errPipeConsumerGone
+		}
+		return nil
+	}
+
+	// Forward the data from the first request.
+	if err := write(firstData); err != nil {
+		return size, err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			// DeadlineExceeded, or Canceled
+			return size, ctx.Err()
+		default:
+			// Extract the next chunk of data from the stream request
+			req, err := getWriteRequest(stream)
+			if err != nil {
+				// Finished reading the stream is not a real error
+				if errors.Is(err, io.EOF) {
+					return size, nil
+				}
+				return size, err
+			}
+
+			// Forward this request's data first: a spec-compliant client may set
+			// finish_write=true on the same message that carries the final chunk,
+			// so the data must be written before the finish check or it is lost.
+			if err := write(req.GetData()); err != nil {
+				return size, err
+			}
+
+			log.Debugw("msg", "upload chunk received (streaming)", "digest", digest, "currentSize", size, "maxSize", maxSize, "chunkSize", len(req.GetData()))
+
+			// Check if the client has finished sending data
+			if req.GetFinishWrite() {
+				return size, nil
+			}
+		}
+	}
 }
 
 // Server-side streaming RPC for reading blobs, implements the bytestream interface
@@ -250,18 +430,20 @@ func bufferStream(ctx context.Context, stream bytestream.ByteStream_WriteServer,
 				return
 			}
 
-			// Check if the client has finished sending data
-			if req.GetFinishWrite() {
-				return
-			}
-
-			// Write the data to the buffer
+			// Write the data first: a spec-compliant client may set
+			// finish_write=true on the same message that carries the final chunk,
+			// so the data must be buffered before the finish check or it is lost.
 			if err = buffer.Write(req.GetData()); err != nil {
 				bufferErr = err
 				return
 			}
 
 			log.Debugw("msg", "upload chunk received", "digest", req.resource.Digest, "currentSize", buffer.size, "maxSize", buffer.maxSize, "chunkSize", len(req.GetData()))
+
+			// Check if the client has finished sending data
+			if req.GetFinishWrite() {
+				return
+			}
 		}
 	}
 }
@@ -290,14 +472,22 @@ func newStreamReader(maxSize int64) *streamReader {
 func (r *streamReader) Write(data []byte) error {
 	r.size += int64(len(data))
 
-	// Check if the size of the buffer has exceeded the maximum allowed size
-	// if maxSize is 0, then there is no limit
-	if r.maxSize != 0 && r.size > r.maxSize {
-		return backend.NewErrUploadSizeExceeded(r.size, r.maxSize)
+	if err := checkUploadSize(r.size, r.maxSize); err != nil {
+		return err
 	}
 
 	_, err := r.Buffer.Write(data)
 	return err
+}
+
+// checkUploadSize returns an ErrUploadSizeExceeded when total exceeds maxSize.
+// maxSize == 0 means no limit. It is shared by the buffered (streamReader) and
+// streaming (feedPipe) paths so their cap semantics cannot drift.
+func checkUploadSize(total, maxSize int64) error {
+	if maxSize != 0 && total > maxSize {
+		return backend.NewErrUploadSizeExceeded(total, maxSize)
+	}
+	return nil
 }
 
 type writeRequest struct {
