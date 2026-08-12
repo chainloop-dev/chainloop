@@ -40,6 +40,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
+	"github.com/go-git/go-git/v6/plumbing/storer"
 	"github.com/google/go-containerregistry/pkg/authn"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -338,6 +339,8 @@ func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, erro
 		return nil, fmt.Errorf("opening repository: %w", err)
 	}
 
+	defer releaseGitDescriptors(repo, logger)
+
 	head, err := repo.Head()
 	if err != nil {
 		if errors.Is(err, plumbing.ErrReferenceNotFound) {
@@ -383,6 +386,24 @@ func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, erro
 	}
 
 	return c, nil
+}
+
+// releaseGitDescriptors closes the packfile descriptors go-git keeps open after
+// a read. Since go-git v6.0.0-alpha.5 every PlainOpen* call builds its own
+// 256-entry descriptor pool holding roughly 3 descriptors per packfile
+// (.pack/.idx/.rev). Those are released only on LRU eviction, which never fires
+// below 256 entries, so without this call they stay open for the lifetime of the
+// process. Descriptors reopen lazily, so the repository remains usable
+// afterwards.
+func releaseGitDescriptors(repo *git.Repository, logger *zerolog.Logger) {
+	releaser, ok := repo.Storer.(storer.IdleReleaser)
+	if !ok {
+		return
+	}
+
+	if err := releaser.CloseIdleDescriptors(); err != nil && logger != nil {
+		logger.Debug().Err(err).Msg("releasing git pack descriptors")
+	}
 }
 
 // Clear any basic auth credentials from the remote URL
