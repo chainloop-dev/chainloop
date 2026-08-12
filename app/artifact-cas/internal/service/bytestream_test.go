@@ -21,9 +21,11 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strconv"
+	"syscall"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -254,6 +256,101 @@ func (s *bytestreamSuite) TestWriteErrorUploading() {
 	s.Empty(s.audit.published)
 }
 
+// TestWriteBufferedMultiChunkIntegrity: the buffered/OCI path reassembles a
+// multi-chunk upload byte-for-byte and hands the backend content whose sha256
+// matches the declared digest — parity with the streaming path.
+func (s *bytestreamSuite) TestWriteBufferedMultiChunkIntegrity() {
+	content := []byte("chainloop attestation payload spanning multiple stream chunks")
+	resource := resourceWithDigest(content, "artifact.bin")
+
+	received := make(chan []byte, 1)
+	s.ociBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	s.ociBackend.On("Upload", mock.Anything, mock.Anything, resource).Return(nil).Run(func(args mock.Arguments) {
+		got, err := io.ReadAll(args.Get(1).(io.Reader))
+		s.NoError(err)
+		received <- got
+	})
+
+	stream, err := s.client.Write(s.upCtx)
+	s.NoError(err)
+	sendInChunks(s.T(), stream, encodeResource(s.T(), resource), content, 9)
+
+	got, err := stream.CloseAndRecv()
+	s.NoError(err)
+	s.Equal(int64(len(content)), got.CommittedSize)
+
+	gotBytes := <-received
+	s.Equal(content, gotBytes)
+	s.Equal(resource.Digest, sha256Hex(gotBytes), "backend content digest must match the declared digest")
+}
+
+// TestWriteBufferedFinishWriteWithData: the buffered/OCI path must also store a
+// trailing chunk carried on a finish_write=true message, not drop it.
+func (s *bytestreamSuite) TestWriteBufferedFinishWriteWithData() {
+	content := []byte("hello world")
+	resource := resourceWithDigest(content, "artifact.bin")
+
+	received := make(chan []byte, 1)
+	s.ociBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	s.ociBackend.On("Upload", mock.Anything, mock.Anything, resource).Return(nil).Run(func(args mock.Arguments) {
+		got, err := io.ReadAll(args.Get(1).(io.Reader))
+		s.NoError(err)
+		received <- got
+	})
+
+	stream, err := s.client.Write(s.upCtx)
+	s.NoError(err)
+	rb := encodeResource(s.T(), resource)
+	s.NoError(stream.Send(&bytestream.WriteRequest{ResourceName: rb, Data: content[:5]}))
+	s.NoError(stream.Send(&bytestream.WriteRequest{ResourceName: rb, Data: content[5:], FinishWrite: true}))
+
+	got, err := stream.CloseAndRecv()
+	s.NoError(err)
+	s.Equal(int64(len(content)), got.CommittedSize)
+	s.Equal(content, <-received)
+}
+
+// TestWriteBufferedBackendResetNotTreatedAsDisconnect: the buffered/OCI path
+// masks a backend-side failure wrapping a network reset as Internal, never
+// mistaking it for a client disconnect (which would falsely report success).
+func (s *bytestreamSuite) TestWriteBufferedBackendResetNotTreatedAsDisconnect() {
+	s.ociBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
+	s.ociBackend.On("Upload", mock.Anything, mock.Anything, s.resource).
+		Return(fmt.Errorf("connection to registry failed: %w", syscall.ECONNRESET))
+
+	stream, err := s.client.Write(s.upCtx)
+	s.NoError(err)
+	s.NoError(stream.Send(&bytestream.WriteRequest{
+		ResourceName: encodeResource(s.T(), s.resource),
+		Data:         []byte("hello world"),
+	}))
+
+	_, err = stream.CloseAndRecv()
+	// "server error" is the masked message; a buggy disconnect path would return
+	// nil and surface a gRPC "cardinality violation" instead.
+	assertGRPCError(s.T(), err, codes.Internal, "server error")
+	s.Empty(s.audit.published)
+}
+
+// TestWriteBufferedBackendCanceledNotTreatedAsDisconnect: same guard for an
+// Upload error wrapping context.Canceled originating backend-side.
+func (s *bytestreamSuite) TestWriteBufferedBackendCanceledNotTreatedAsDisconnect() {
+	s.ociBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
+	s.ociBackend.On("Upload", mock.Anything, mock.Anything, s.resource).
+		Return(fmt.Errorf("registry deadline: %w", context.Canceled))
+
+	stream, err := s.client.Write(s.upCtx)
+	s.NoError(err)
+	s.NoError(stream.Send(&bytestream.WriteRequest{
+		ResourceName: encodeResource(s.T(), s.resource),
+		Data:         []byte("hello world"),
+	}))
+
+	_, err = stream.CloseAndRecv()
+	assertGRPCError(s.T(), err, codes.Internal, "server error")
+	s.Empty(s.audit.published)
+}
+
 func (s *bytestreamSuite) TestRead() {
 	ctx := s.downCtx
 
@@ -360,10 +457,13 @@ type bytestreamSuite struct {
 	srv        *grpc.Server
 	client     bytestream.ByteStreamClient
 	ociBackend *mocks.UploaderDownloader
-	resource   *v1.CASResource
-	audit      *fakePublisher
-	upCtx      context.Context
-	downCtx    context.Context
+	// streamingBackend is a streaming-capable backend (implements
+	// backend.StreamingUploader) reachable via the "backend-streaming" metadata.
+	streamingBackend *mocks.UploaderDownloader
+	resource         *v1.CASResource
+	audit            *fakePublisher
+	upCtx            context.Context
+	downCtx          context.Context
 }
 
 // Run after each test
@@ -388,6 +488,12 @@ func (s *bytestreamSuite) SetupTest() {
 
 					claims := &casJWT.Claims{
 						StoredSecretID: "secret-id", BackendType: backendType, OrgID: testOrgID,
+					}
+					// Route to the streaming-capable backend when requested so
+					// the same suite can exercise both the buffered (OCI) and
+					// streaming (object-store) code paths.
+					if v := md.Get("backend-streaming"); len(v) > 0 {
+						claims.BackendType = streamingBackendType
 					}
 					if v := md.Get("source-internal"); len(v) > 0 {
 						claims.SourceInternal = true
@@ -416,11 +522,20 @@ func (s *bytestreamSuite) SetupTest() {
 	ociBackend := mocks.NewUploaderDownloader(s.T())
 	ociBackendProvider.On("FromCredentials", mock.Anything, mock.Anything).Maybe().Return(ociBackend, nil)
 
+	// A streaming-capable backend (object stores like S3/Azure). It wraps a mock
+	// so tests can set expectations on it while the service detects it as
+	// streaming via the backend.StreamingUploader interface.
+	streamingBackend := mocks.NewUploaderDownloader(s.T())
+	streamingBackendProvider := mocks.NewProvider(s.T())
+	streamingBackendProvider.On("FromCredentials", mock.Anything, mock.Anything).Maybe().
+		Return(&streamingUploaderDownloader{streamingBackend}, nil)
+
 	s.audit = &fakePublisher{}
 	bytestream.RegisterByteStreamServer(
 		server,
 		NewByteStreamService(backend.Providers{
-			backendType: ociBackendProvider,
+			backendType:          ociBackendProvider,
+			streamingBackendType: streamingBackendProvider,
 		}, WithLogger(log.DefaultLogger), WithAuditDispatcher(newTestDispatcher(s.audit))),
 	)
 	go func() {
@@ -437,6 +552,7 @@ func (s *bytestreamSuite) SetupTest() {
 	s.srv = server
 	s.conn = conn
 	s.ociBackend = ociBackend
+	s.streamingBackend = streamingBackend
 	s.client = bytestream.NewByteStreamClient(conn)
 	s.resource = &v1.CASResource{
 		Digest: "deadbeef", FileName: "skynet.exe",

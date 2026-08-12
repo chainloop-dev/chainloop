@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,7 +37,15 @@ type Backend struct {
 	endpoint           string
 }
 
-var _ backend.UploaderDownloader = (*Backend)(nil)
+var (
+	_ backend.UploaderDownloader = (*Backend)(nil)
+	_ backend.StreamingUploader  = (*Backend)(nil)
+)
+
+// SupportsStreaming reports that the azureblob backend can upload directly from
+// a streaming reader. Upload uses the SDK's UploadStream, which reads the artifact
+// in bounded-size blocks, so CAS never needs to buffer the whole blob in memory.
+func (b *Backend) SupportsStreaming() bool { return true }
 
 func NewBackend(creds *Credentials) (*Backend, error) {
 	credential, err := azidentity.NewClientSecretCredential(creds.TenantID, creds.ClientID, creds.ClientSecret, nil)

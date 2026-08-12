@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,22 @@ type UploaderDownloader interface {
 	Uploader
 	Downloader
 	Describer
+}
+
+// StreamingUploader is an optional interface implemented by backends whose
+// Upload can consume the artifact directly from a streaming io.Reader without
+// requiring the whole blob to be buffered in memory first.
+//
+// The Artifact CAS service type-asserts uploaders against this interface: when
+// a backend reports SupportsStreaming()==true the upload is piped straight from
+// the client stream to the backend, bounding CAS memory usage independently of
+// artifact size (PFM-6923). Backends that do not implement it (e.g. the OCI
+// backend, whose push path needs the full layer content up front) keep the
+// buffered code path.
+type StreamingUploader interface {
+	// SupportsStreaming reports whether Upload can be fed a streaming reader
+	// without the caller buffering the full artifact in memory first.
+	SupportsStreaming() bool
 }
 
 type Describer interface {

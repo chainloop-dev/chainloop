@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,9 +46,18 @@ type Backend struct {
 	customEndpoint string
 }
 
-var _ backend.UploaderDownloader = (*Backend)(nil)
+var (
+	_ backend.UploaderDownloader = (*Backend)(nil)
+	_ backend.StreamingUploader  = (*Backend)(nil)
+)
 
 const defaultRegion = "us-east-1"
+
+// SupportsStreaming reports that the s3 backend can upload directly from a
+// streaming reader. The AWS SDK's manager.Uploader consumes the reader in
+// bounded-size parts (multipart upload), so CAS never needs to buffer the whole
+// artifact in memory.
+func (b *Backend) SupportsStreaming() bool { return true }
 
 func NewBackend(creds *Credentials) (*Backend, error) {
 	if creds == nil {
