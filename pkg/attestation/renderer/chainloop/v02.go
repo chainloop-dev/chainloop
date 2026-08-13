@@ -291,6 +291,12 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		SigningTSA:                  r.att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
 
+	// When evaluations are offloaded to CAS (ref set), keep only the ref and drop
+	// the inline copy; the summary counters above are derived independently.
+	if r.policyEvaluationsRef != nil {
+		p.PolicyEvaluations = nil
+	}
+
 	// transform to structpb.Struct in a two steps process
 	// 1 - ProvenancePredicate -> json
 	// 2 - json -> structpb.Struct
