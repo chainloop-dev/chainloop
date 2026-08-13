@@ -196,9 +196,13 @@ jobs:
           ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          # This needs to run AFTER goreleaser to make sure the source code is available
-
-          gh release download $RELEASE_TAG -A tar.gz -O /tmp/source-code.tar.gz
+          # This needs to run AFTER goreleaser to make sure the source code is available.
+          # Fetch the tag's source archive directly instead of via `gh release download -A`:
+          # GitHub only exposes the auto-built "Source code (tar.gz)" release asset once a
+          # release is published, but our release is still a draft at this point. The archive
+          # URL depends only on the git tag (which already exists), so it works either way and
+          # produces the same auto-generated tarball.
+          curl -sfL "https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${RELEASE_TAG}.tar.gz" -o /tmp/source-code.tar.gz
           chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Read current project version
