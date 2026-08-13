@@ -239,7 +239,7 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 		// AccessChk emits plain text; project it to JSON so the policy engine,
 		// which only consumes JSON, can evaluate it. The raw text is preserved
 		// in the projection's "raw" field for string-matching fallbacks.
-		report, err := accesschk.Parse(rawMaterial)
+		report, err := accesschk.Parse(bytes.NewReader(rawMaterial))
 		if err != nil {
 			return nil, fmt.Errorf("invalid accesschk material: %w", err)
 		}

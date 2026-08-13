@@ -16,6 +16,7 @@
 package accesschk_test
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -53,9 +54,10 @@ func TestParse_LargeInputOmitsRawFields(t *testing.T) {
 	data := buildLargeInput(accesschk.RawRetentionLimit + 1)
 	require.Greater(t, len(data), accesschk.RawRetentionLimit)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
+	assert.True(t, report.RawOmitted(), "RawOmitted must report the drop above the retention limit")
 	assert.Empty(t, report.Raw, "Raw must be omitted above the retention limit")
 	require.NotEmpty(t, report.Objects)
 	for _, obj := range report.Objects {
@@ -74,9 +76,10 @@ func TestParse_LargeInputOmitsRawFields(t *testing.T) {
 func TestParse_SmallInputRetainsRawFields(t *testing.T) {
 	data := []byte("c:\\file\n  RW BUILTIN\\Administrators\n")
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
+	assert.False(t, report.RawOmitted(), "RawOmitted must be false below the retention limit")
 	assert.Equal(t, string(data), report.Raw)
 	require.Len(t, report.Objects, 1)
 	assert.Equal(t, []string{"  RW BUILTIN\\Administrators"}, report.Objects[0].RawLines)
@@ -97,7 +100,7 @@ func TestParse_LargeSDDLStillDetected(t *testing.T) {
 	data := []byte(b.String())
 	require.Greater(t, len(data), accesschk.RawRetentionLimit)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	assert.Empty(t, report.Raw)
@@ -109,7 +112,7 @@ func TestParse_LargeSDDLStillDetected(t *testing.T) {
 func TestParse_CRLFLineEndings(t *testing.T) {
 	data := []byte("c:\\file\r\n  RW Everyone\r\n")
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	require.Len(t, report.Objects, 1)
@@ -126,7 +129,7 @@ func TestParse_VeryLongLine(t *testing.T) {
 	principal := strings.Repeat("A", 128*1024)
 	data := []byte("c:\\file\n  RW " + principal + "\n")
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	require.Len(t, report.Objects, 1)

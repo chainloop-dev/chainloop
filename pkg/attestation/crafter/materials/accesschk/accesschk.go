@@ -21,17 +21,16 @@
 // text is retained in Raw so a policy can fall back to string matching
 // regardless of the output mode used.
 //
-// The parser streams the input line by line rather than building a normalized
-// full-text copy, and it size-gates the verbatim fallback fields (Raw and the
-// per-object RawLines). Both measures keep peak memory bounded: a
-// several-hundred-MB material would otherwise pin multiple copies of itself in
-// memory and double the JSON document handed to the policy engine, which has
-// OOM-killed CI runners during client-side policy evaluation.
+// Parse reads from an io.Reader and streams the input line by line rather than
+// buffering the whole material in memory or building a normalized full-text
+// copy, and it size-gates the verbatim fallback fields (Raw and the per-object
+// RawLines). Together these keep peak memory bounded: a large material would
+// otherwise pin multiple copies of itself in memory and inflate the JSON
+// document handed to the policy engine to multiples of the input size.
 package accesschk
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"regexp"
@@ -108,35 +107,45 @@ type Object struct {
 // Raw holds the full original text for inputs below RawRetentionLimit and is
 // empty otherwise; descriptorMarker records whether an SDDL/descriptor marker
 // was seen during parsing so LooksLikeAccessChk stays reliable even when Raw is
-// omitted for oversized inputs.
+// omitted for oversized inputs. rawOmitted records whether the verbatim fallback
+// fields were dropped because the input exceeded RawRetentionLimit, so callers
+// can warn without knowing the input size upfront (see RawOmitted).
 type Report struct {
 	Tool    Tool     `json:"tool"`
 	Objects []Object `json:"objects"`
 	Raw     string   `json:"raw"`
 
 	descriptorMarker bool
+	rawOmitted       bool
 }
 
-// Parse converts AccessChk text output into a Report. It only returns an error
-// when the input is not valid UTF-8 text; well-formed text always parses, with
+// RawOmitted reports whether the verbatim fallback fields (Raw and the per-object
+// RawLines) were dropped because the input exceeded RawRetentionLimit. It lets a
+// streaming caller warn about the omission without measuring the input itself.
+func (r *Report) RawOmitted() bool {
+	return r.rawOmitted
+}
+
+// Parse converts AccessChk text output read from r into a Report. It streams r
+// and never buffers the whole input, so it can parse a file handle directly
+// without an intermediate full-file copy. It only returns an error when the
+// input is not valid UTF-8 text or r fails; well-formed text always parses, with
 // any unrecognized content preserved in the per-object RawLines and the
 // top-level Raw field for inputs below RawRetentionLimit (see the package doc).
-func Parse(data []byte) (*Report, error) {
-	if !utf8.Valid(data) {
-		return nil, fmt.Errorf("input is not valid UTF-8 text")
-	}
-
-	// Retain the verbatim fallback fields only for inputs small enough that the
-	// resulting JSON projection stays bounded; see RawRetentionLimit.
-	retainRaw := len(data) <= RawRetentionLimit
-
+func Parse(r io.Reader) (*Report, error) {
 	report := &Report{
 		Tool:    Tool{Name: ToolName},
 		Objects: []Object{},
 	}
-	if retainRaw {
-		report.Raw = string(data)
-	}
+
+	// Retain the verbatim fallback fields (Raw, RawLines) optimistically. The
+	// input size is unknown when streaming, so accumulate while the running byte
+	// count stays within RawRetentionLimit; the moment it crosses, drop
+	// everything retained so far and stop, keeping peak memory bounded for
+	// oversized materials without needing the size upfront.
+	retainRaw := true
+	var rawBuilder strings.Builder
+	var total int
 
 	var current *Object
 	var entryIndent int
@@ -147,11 +156,36 @@ func Parse(data []byte) (*Report, error) {
 	// at once. bufio.Reader.ReadString grows to fit arbitrarily long lines and
 	// returns freshly allocated strings, so stored substrings do not pin the
 	// entire input in memory.
-	reader := bufio.NewReader(bytes.NewReader(data))
+	reader := bufio.NewReader(r)
 	for {
 		raw, readErr := reader.ReadString('\n')
+		total += len(raw)
+
+		// Validate UTF-8 incrementally. A '\n' (0x0A) can never be part of a
+		// multi-byte UTF-8 sequence, so splitting on it never splits a rune and
+		// per-line validation is equivalent to validating the whole input.
+		if !utf8.ValidString(raw) {
+			return nil, fmt.Errorf("input is not valid UTF-8 text")
+		}
+
 		line := strings.TrimSuffix(raw, "\n")
 		line = strings.TrimSuffix(line, "\r")
+
+		// Cross the retention limit: discard everything retained so far (Raw and
+		// every object's RawLines) and stop retaining. This is all-or-nothing so
+		// oversized reports never carry a partial verbatim copy.
+		if retainRaw && total > RawRetentionLimit {
+			retainRaw = false
+			report.rawOmitted = true
+			rawBuilder.Reset()
+			for i := range report.Objects {
+				report.Objects[i].RawLines = nil
+			}
+		}
+		// Concatenating every ReadString chunk reproduces the input verbatim.
+		if retainRaw {
+			rawBuilder.WriteString(raw)
+		}
 
 		if line != "" || readErr == nil {
 			processLine(report, line, &current, &entryIndent, &section, &currentACE, retainRaw)
@@ -163,6 +197,10 @@ func Parse(data []byte) (*Report, error) {
 			}
 			break
 		}
+	}
+
+	if retainRaw {
+		report.Raw = rawBuilder.String()
 	}
 
 	return report, nil

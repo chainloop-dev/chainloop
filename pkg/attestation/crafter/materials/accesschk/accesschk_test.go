@@ -16,6 +16,7 @@
 package accesschk_test
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -28,7 +29,7 @@ func TestParse_Default(t *testing.T) {
 	data, err := os.ReadFile("./testdata/default.txt")
 	require.NoError(t, err)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	assert.Equal(t, "AccessChk", report.Tool.Name)
@@ -60,7 +61,7 @@ func TestParse_Verbose(t *testing.T) {
 	data, err := os.ReadFile("./testdata/verbose.txt")
 	require.NoError(t, err)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	require.Len(t, report.Objects, 1)
@@ -80,7 +81,7 @@ func TestParse_Service(t *testing.T) {
 	data, err := os.ReadFile("./testdata/service.txt")
 	require.NoError(t, err)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	require.Len(t, report.Objects, 1)
@@ -94,7 +95,7 @@ func TestParse_SDDL(t *testing.T) {
 	data, err := os.ReadFile("./testdata/sddl.txt")
 	require.NoError(t, err)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	require.Len(t, report.Objects, 1)
@@ -112,7 +113,7 @@ func TestParse_NoBanner(t *testing.T) {
 	data, err := os.ReadFile("./testdata/nobanner.txt")
 	require.NoError(t, err)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 
 	assert.Equal(t, "AccessChk", report.Tool.Name)
@@ -127,7 +128,7 @@ func TestParse_DescriptorFormat(t *testing.T) {
 	data, err := os.ReadFile("./testdata/descriptor.txt")
 	require.NoError(t, err)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 	assert.True(t, report.LooksLikeAccessChk())
 
@@ -168,19 +169,42 @@ func TestParse_Garbage(t *testing.T) {
 	data, err := os.ReadFile("./testdata/garbage.txt")
 	require.NoError(t, err)
 
-	report, err := accesschk.Parse(data)
+	report, err := accesschk.Parse(bytes.NewReader(data))
 	require.NoError(t, err)
 	assert.False(t, report.LooksLikeAccessChk())
 }
 
 func TestParse_InvalidUTF8(t *testing.T) {
-	_, err := accesschk.Parse([]byte{0xff, 0xfe, 0x00, 0x01})
+	_, err := accesschk.Parse(bytes.NewReader([]byte{0xff, 0xfe, 0x00, 0x01}))
 	assert.Error(t, err)
 }
 
 func TestParse_Empty(t *testing.T) {
-	report, err := accesschk.Parse([]byte{})
+	report, err := accesschk.Parse(bytes.NewReader([]byte{}))
 	require.NoError(t, err)
 	assert.False(t, report.LooksLikeAccessChk())
 	assert.Empty(t, report.Objects)
+}
+
+// TestParse_StreamsFromOpenFile verifies Parse consumes an *os.File directly,
+// i.e. it can stream from disk without the caller reading the whole file into
+// memory first.
+func TestParse_StreamsFromOpenFile(t *testing.T) {
+	f, err := os.Open("./testdata/default.txt")
+	require.NoError(t, err)
+	defer f.Close()
+
+	report, err := accesschk.Parse(f)
+	require.NoError(t, err)
+
+	assert.Equal(t, "6.15", report.Tool.Version)
+	assert.False(t, report.RawOmitted())
+	require.Len(t, report.Objects, 1)
+	assert.Equal(t, `c:\windows\system32\notepad.exe`, report.Objects[0].Name)
+	require.Len(t, report.Objects[0].AccessEntries, 3)
+
+	// Streaming still reconstructs the verbatim Raw fallback for small inputs.
+	raw, err := os.ReadFile("./testdata/default.txt")
+	require.NoError(t, err)
+	assert.Equal(t, string(raw), report.Raw)
 }
