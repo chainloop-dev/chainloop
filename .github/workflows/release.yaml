@@ -275,6 +275,16 @@ jobs:
           # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
           gh release edit $RELEASE_TAG -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
 
+      # GoReleaser publishes the release as a draft (see release.draft in .goreleaser.yml).
+      # Flip it to published only after every post-release step above has succeeded so a
+      # failure leaves the release as a draft for a human to inspect/retry rather than
+      # publishing a broken release.
+      - name: Publish release
+        if: ${{ success() }}
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release edit "$RELEASE_TAG" --draft=false
+
       - name: Mark attestation as failed
         if: ${{ failure() }}
         env:
