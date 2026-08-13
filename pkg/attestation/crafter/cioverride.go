@@ -95,6 +95,8 @@ func overrideHeadWithPRCommit(headCommit *HeadCommit, path, actualSHA string, lo
 		return
 	}
 
+	defer releaseGitDescriptors(repo, logger)
+
 	hash := plumbing.NewHash(actualSHA)
 	commit, err := repo.CommitObject(hash)
 	if err != nil {
