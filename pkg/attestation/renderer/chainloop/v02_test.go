@@ -480,6 +480,8 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 
 			if !tc.wantRef {
 				assert.Nil(t, predicate.PolicyEvaluationsRef)
+				// Without a ref (no-CAS backend) the evaluations stay inline.
+				assert.NotEmpty(t, predicate.PolicyEvaluations)
 				return
 			}
 
@@ -487,6 +489,10 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 			assert.Equal(t, tc.ref.Name, predicate.PolicyEvaluationsRef.Name)
 			assert.Equal(t, tc.ref.MediaType, predicate.PolicyEvaluationsRef.MediaType)
 			assert.Equal(t, tc.ref.Digest["sha256"], predicate.PolicyEvaluationsRef.Digest["sha256"])
+
+			// With a ref present (CAS offload) the predicate must not also carry
+			// the inline evaluations.
+			assert.Empty(t, predicate.PolicyEvaluations)
 		})
 	}
 }
