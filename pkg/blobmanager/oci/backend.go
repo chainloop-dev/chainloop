@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package oci
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -102,23 +103,27 @@ func (b *Backend) Exists(_ context.Context, digest string) (bool, error) {
 	return true, nil
 }
 
-func (b *Backend) Upload(_ context.Context, r io.Reader, resource *pb.CASResource) error {
-	// We need to read the whole content before uploading it to the registry
-	// This is due to the fact that our OCI push implementation does not support streaming/chunks for uncompressed layers
-	// We can not use stream.Layer since it only supports compressed layers, we want to store raw data and set custom mimetypes
-	// https://github.com/google/go-containerregistry/blob/main/pkg/v1/stream/README.md
-	// TODO: Split content in multiple layers and do concurrent uploads/downloads
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return fmt.Errorf("reading content: %w", err)
-	}
+// sniffLen is the number of leading bytes http.DetectContentType inspects to
+// determine the media type. We peek exactly this many bytes off the stream so
+// the media type is detected identically to the buffered path without reading
+// the whole artifact into memory.
+const sniffLen = 512
 
+// SupportsStreaming reports that the OCI backend can upload directly from a
+// streaming reader. Streaming requires the artifact size to be known up front
+// (registry blobs are pushed with a fixed Content-Length); when the client did
+// not provide it Upload transparently falls back to buffering the content.
+func (b *Backend) SupportsStreaming() bool { return true }
+
+func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResource) error {
 	ref, err := name.ParseReference(b.resourcePath(resource.Digest))
 	if err != nil {
 		return fmt.Errorf("parsing reference: %w", err)
 	}
 
-	img, err := craftImage(data, resource)
+	// The image is either backed by a streaming layer (when the size is known)
+	// or a fully buffered one (legacy clients that do not send the size).
+	img, err := b.craftImageFromReader(r, resource)
 	if err != nil {
 		return fmt.Errorf("crafting image: %w", err)
 	}
@@ -127,23 +132,96 @@ func (b *Backend) Upload(_ context.Context, r io.Reader, resource *pb.CASResourc
 		return fmt.Errorf("validating image: %w", err)
 	}
 
-	err = remote.Write(ref, img, remote.WithAuthFromKeychain(b.keychain))
-	if err != nil {
+	// Disable go-containerregistry's request retries: a streamed layer body
+	// cannot be replayed, so a retry would re-request the already-drained reader
+	// and upload truncated content. On a transient failure the whole upload is
+	// retried by the client instead. The retry-disable is harmless for the
+	// buffered path too.
+	if err := remote.Write(ref, img,
+		remote.WithAuthFromKeychain(b.keychain),
+		remote.WithContext(ctx),
+		remote.WithRetryPredicate(func(error) bool { return false }),
+	); err != nil {
 		return fmt.Errorf("writing image: %w", err)
 	}
 
 	return nil
 }
 
+// craftImageFromReader builds the chainloop OCI image around the artifact
+// content. When the artifact size is known (resource.Size > 0) the layer is
+// streamed straight from r, keeping memory bounded regardless of artifact size.
+// Otherwise it falls back to buffering the whole content, which is
+// required for legacy clients that do not report the size (an empty artifact has
+// size 0 and is rejected by the buffered path).
+func (b *Backend) craftImageFromReader(r io.Reader, resource *pb.CASResource) (v1.Image, error) {
+	if resource == nil || resource.Digest == "" {
+		return nil, errors.New("resource metadata is not valid")
+	}
+
+	if resource.Size <= 0 {
+		data, err := io.ReadAll(r)
+		if err != nil {
+			return nil, fmt.Errorf("reading content: %w", err)
+		}
+		return craftImage(data, resource)
+	}
+
+	return craftStreamingImage(r, resource)
+}
+
 func (b *Backend) resourcePath(resourceName string) string {
 	return fmt.Sprintf("%s/%s-%s", b.repo, b.prefix, resourceName)
 }
 
+// craftStreamingImage assembles the image with a layer whose bytes are streamed
+// from r. The media type is detected from the leading bytes, which are peeked
+// (not consumed) so the streamed content is complete.
+func craftStreamingImage(r io.Reader, resource *pb.CASResource) (v1.Image, error) {
+	hash, err := v1.NewHash("sha256:" + resource.Digest)
+	if err != nil {
+		return nil, fmt.Errorf("parsing digest: %w", err)
+	}
+
+	// Peek the leading bytes to detect the media type without consuming them.
+	br := bufio.NewReaderSize(r, sniffLen)
+	head, err := br.Peek(sniffLen)
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, bufio.ErrBufferFull) {
+		return nil, fmt.Errorf("detecting media type: %w", err)
+	}
+
+	// Verify the streamed content against the declared digest as it flows to the
+	// registry. The buffered path got this for free (the layer digest was
+	// computed from the bytes); here rawStreamLayer.Digest() returns the declared
+	// digest, so without this a client could store content under a mismatched key
+	// on a registry that does not strictly verify blob digests on commit.
+	layer := &rawStreamLayer{
+		hash:      hash,
+		size:      resource.Size,
+		mediaType: backend.DetectedMediaType(head),
+		body:      io.NopCloser(newVerifyingReader(br, resource.Digest, resource.Size)),
+	}
+
+	return buildImage(layer, resource)
+}
+
+// craftImage builds the image from the whole content buffered in memory. Kept
+// for legacy clients that do not report the artifact size up front.
 func craftImage(content []byte, resource *pb.CASResource) (v1.Image, error) {
 	if len(content) == 0 {
 		return nil, errors.New("content is empty")
 	}
 
+	layer := static.NewLayer(content, backend.DetectedMediaType(content))
+	return buildImage(layer, resource)
+}
+
+// buildImage assembles the chainloop OCI image (OCI manifest + OCI config + a
+// single raw layer + authors/title annotations) around an already-constructed
+// layer. Using an OCIConfigJSON config makes mutate populate the config's
+// rootfs.diff_ids from the layer DiffID, which the download path relies on
+// (remote.Image().LayerByDiffID).
+func buildImage(layer v1.Layer, resource *pb.CASResource) (v1.Image, error) {
 	if resource == nil || resource.FileName == "" || resource.Digest == "" {
 		return nil, errors.New("resource metadata is not valid")
 	}
@@ -156,7 +234,6 @@ func craftImage(content []byte, resource *pb.CASResource) (v1.Image, error) {
 		ocispec.AnnotationTitle: resource.FileName,
 	}).(v1.Image)
 
-	layer := static.NewLayer(content, backend.DetectedMediaType(content))
 	img, err := mutate.Append(base, mutate.Addendum{Layer: layer})
 	if err != nil {
 		return nil, err

@@ -51,8 +51,8 @@ type UploaderDownloader interface {
 // The Artifact CAS service type-asserts uploaders against this interface: when
 // a backend reports SupportsStreaming()==true the upload is piped straight from
 // the client stream to the backend, bounding CAS memory usage independently of
-// artifact size (PFM-6923). Backends that do not implement it (e.g. the OCI
-// backend, whose push path needs the full layer content up front) keep the
+// artifact size (PFM-6923). The object-store backends (S3, Azure) and
+// the OCI backend implement it. A backend that does not implement it keeps the
 // buffered code path.
 type StreamingUploader interface {
 	// SupportsStreaming reports whether Upload can be fed a streaming reader

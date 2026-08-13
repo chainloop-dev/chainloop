@@ -48,7 +48,10 @@ func (s *testSuite) TestUpload() {
 	})
 
 	s.T().Run("empty content", func(t *testing.T) {
-		err := s.validBackend.Upload(context.TODO(), bytes.NewBuffer(nil), s.casResource)
+		// An empty artifact has size 0, which routes through the buffered path
+		// that rejects empty content.
+		emptyResource := &pb.CASResource{Digest: s.casResource.Digest, FileName: s.casResource.FileName, Size: 0}
+		err := s.validBackend.Upload(context.TODO(), bytes.NewBuffer(nil), emptyResource)
 		assert.Error(s.T(), err)
 		assert.ErrorContains(s.T(), err, "content is empty")
 	})
@@ -410,13 +413,13 @@ func TestOCIBackend(t *testing.T) {
 	suite.Run(t, new(testSuite))
 }
 
-// TestBackend_DoesNotSupportStreaming pins the OCI backend as NON-streaming.
-// go-containerregistry's push path needs the whole layer content in memory up
-// front (see Backend.Upload), so the CAS service must keep buffering OCI
-// uploads. If OCI ever grows a SupportsStreaming method it would be fed a
-// streaming reader and silently break; this test fails closed against that.
-func TestBackend_DoesNotSupportStreaming(t *testing.T) {
+// TestBackend_SupportsStreaming pins the OCI backend as streaming-capable: it
+// implements backend.StreamingUploader and reports true, so the CAS service
+// feeds it directly from the client stream and CAS memory stays bounded
+// regardless of artifact size.
+func TestBackend_SupportsStreaming(t *testing.T) {
 	var b backend.UploaderDownloader = &Backend{}
-	_, ok := b.(backend.StreamingUploader)
-	require.False(t, ok, "oci backend must NOT implement backend.StreamingUploader; it requires full in-memory buffering")
+	su, ok := b.(backend.StreamingUploader)
+	require.True(t, ok, "oci backend must implement backend.StreamingUploader")
+	require.True(t, su.SupportsStreaming())
 }
