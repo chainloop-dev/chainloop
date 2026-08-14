@@ -101,6 +101,7 @@ type PolicyVerifier struct {
 	projectName        string
 	projectVersionName string
 	runtimeInputs      *RuntimeInputs
+	executionTimeout   time.Duration
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
@@ -118,6 +119,7 @@ type PolicyVerifierOptions struct {
 	ProjectName        string
 	ProjectVersionName string
 	RuntimeInputs      *RuntimeInputs
+	ExecutionTimeout   time.Duration
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -198,6 +200,21 @@ func WithRuntimeInputs(inputs *RuntimeInputs) PolicyVerifierOption {
 	}
 }
 
+// DefaultExecutionTimeout bounds a single policy evaluation, for both the rego
+// and the WASM engines. Policy evaluation runs on whatever context the caller
+// provides, and those contexts (e.g. the CLI's cobra command context) typically
+// carry no deadline, so a runaway policy would otherwise hang the attestation
+// indefinitely. Override with WithExecutionTimeout.
+const DefaultExecutionTimeout = 60 * time.Second
+
+// WithExecutionTimeout sets the maximum duration of a single policy evaluation.
+// Non-positive values fall back to DefaultExecutionTimeout.
+func WithExecutionTimeout(timeout time.Duration) PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.ExecutionTimeout = timeout
+	}
+}
+
 const defaultPolicyCacheTTL = 5 * time.Minute
 
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
@@ -209,6 +226,11 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 	maxConcurrency := options.MaxConcurrency
 	if maxConcurrency <= 0 {
 		maxConcurrency = defaultMaxConcurrency
+	}
+
+	executionTimeout := options.ExecutionTimeout
+	if executionTimeout <= 0 {
+		executionTimeout = DefaultExecutionTimeout
 	}
 
 	if options.PolicyCache == nil {
@@ -235,6 +257,7 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		projectName:        options.ProjectName,
 		projectVersionName: options.ProjectVersionName,
 		runtimeInputs:      options.RuntimeInputs,
+		executionTimeout:   executionTimeout,
 	}
 }
 
@@ -658,6 +681,9 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Poli
 	if pv.projectName != "" || pv.projectVersionName != "" {
 		opts = append(opts, engine.WithProjectContext(pv.projectName, pv.projectVersionName))
 	}
+
+	// Bound each policy evaluation regardless of the engine that runs it
+	opts = append(opts, engine.WithExecutionTimeout(pv.executionTimeout))
 
 	switch policyType {
 	case engine.PolicyTypeRego:

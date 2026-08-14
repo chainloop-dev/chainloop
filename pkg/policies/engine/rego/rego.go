@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
@@ -30,11 +31,19 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// DefaultExecutionTimeout bounds a single policy evaluation when no explicit
+// timeout is provided. Rego policies can hang indefinitely (e.g. a pathological
+// comprehension or a chain of http.send calls), and the contexts they run under
+// rarely carry a deadline of their own, so the engine always applies one.
+const DefaultExecutionTimeout = 60 * time.Second
+
 // Engine policy checker for chainloop attestations and materials
 type Engine struct {
 	// operatingMode defines the mode of running the policy engine
 	// by restricting or not the operations allowed by the compiler
 	operatingMode EnvironmentMode
+	// executionTimeout bounds each evaluation performed by this engine
+	executionTimeout time.Duration
 	// Embed common engine options
 	*engine.CommonEngineOptions
 }
@@ -43,11 +52,18 @@ type Engine struct {
 // default operating mode is EnvironmentModeRestrictive
 // default allowed hostnames are www.chainloop.dev and www.cisa.gov
 // user provided allowed hostnames are appended to the base ones
+// default execution timeout is DefaultExecutionTimeout
 func NewEngine(opts ...engine.Option) *Engine {
 	options := engine.ApplyOptions(opts...)
 
+	executionTimeout := options.ExecutionTimeout
+	if executionTimeout <= 0 {
+		executionTimeout = DefaultExecutionTimeout
+	}
+
 	return &Engine{
 		operatingMode:       EnvironmentMode(options.OperatingMode),
+		executionTimeout:    executionTimeout,
 		CommonEngineOptions: options.CommonEngineOptions,
 	}
 }
@@ -124,6 +140,11 @@ func (r *Engine) injectProjectMetadata(inputMap map[string]interface{}) map[stri
 }
 
 func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte, args map[string]any) (*engine.EvaluationResult, error) {
+	// Bound the whole evaluation. A caller deadline that expires earlier still
+	// wins, since context.WithTimeout never extends the parent's.
+	ctx, cancel := context.WithTimeout(ctx, r.executionTimeout)
+	defer cancel()
+
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
@@ -433,6 +454,10 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, v
 
 // Evaluates a single rule and returns its boolean result
 func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, parsedModule *ast.Module, decodedInput interface{}) (result bool, found bool, err error) {
+	// Bound the evaluation, same as Verify does for the main rule
+	ctx, cancel := context.WithTimeout(ctx, r.executionTimeout)
+	defer cancel()
+
 	// Add input
 	regoInput := rego.Input(decodedInput)
 

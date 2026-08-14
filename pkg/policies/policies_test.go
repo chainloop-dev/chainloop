@@ -21,12 +21,14 @@ import (
 	"io/fs"
 	"os"
 	"testing"
+	"time"
 
 	v12 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -1960,6 +1962,38 @@ func (s *testSuite) TestEngineEvaluationsToAPIViolationsBehaviorMatrix() {
 			if tc.checkFn != nil {
 				tc.checkFn(violations)
 			}
+		})
+	}
+}
+
+func TestPolicyVerifierExecutionTimeout(t *testing.T) {
+	logger := zerolog.Nop()
+
+	testCases := []struct {
+		name string
+		opts []PolicyVerifierOption
+		want time.Duration
+	}{
+		{
+			name: "defaults when not provided",
+			want: DefaultExecutionTimeout,
+		},
+		{
+			name: "honors the provided timeout",
+			opts: []PolicyVerifierOption{WithExecutionTimeout(5 * time.Second)},
+			want: 5 * time.Second,
+		},
+		{
+			name: "falls back to the default on a non-positive timeout",
+			opts: []PolicyVerifierOption{WithExecutionTimeout(0)},
+			want: DefaultExecutionTimeout,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pv := NewPolicyVerifier(&v12.Policies{}, nil, &logger, tc.opts...)
+			assert.Equal(t, tc.want, pv.executionTimeout)
 		})
 	}
 }
