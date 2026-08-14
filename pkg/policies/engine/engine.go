@@ -60,9 +60,13 @@ type Options struct {
 	// OperatingMode defines whether the Rego engine runs in restrictive (0) or permissive (1) mode
 	OperatingMode int32
 
-	// WASM-specific options
+	// ExecutionTimeout bounds a single policy evaluation. It is honored by both
+	// the rego and the WASM engines, each of which falls back to its own default
+	// when the value is non-positive.
 	ExecutionTimeout time.Duration
-	Logger           *zerolog.Logger
+
+	// WASM-specific options
+	Logger *zerolog.Logger
 }
 
 // WithAllowedHostnames sets the list of allowed hostnames for HTTP requests
@@ -94,7 +98,8 @@ func WithOperatingMode(mode int32) Option {
 	}
 }
 
-// WithExecutionTimeout sets the WASM execution timeout
+// WithExecutionTimeout sets the maximum duration of a single policy evaluation.
+// Applies to both the rego and the WASM engines.
 func WithExecutionTimeout(timeout time.Duration) Option {
 	return func(opts *Options) {
 		opts.ExecutionTimeout = timeout

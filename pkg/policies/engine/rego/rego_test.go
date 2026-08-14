@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine/rego/builtins"
@@ -867,4 +868,33 @@ func TestRego_StructuredLicenseViolations(t *testing.T) {
 	assert.Equal(t, "libfoo", v.RawFinding["component_name"])
 	assert.Equal(t, "GPL-3.0", v.RawFinding["license_id"])
 	assert.Equal(t, "pkg:npm/libfoo@2.1.0", v.RawFinding["package_purl"])
+}
+
+func TestRego_ExecutionTimeoutOption(t *testing.T) {
+	testCases := []struct {
+		name string
+		opts []engine.Option
+		want time.Duration
+	}{
+		{
+			name: "defaults when not provided",
+			want: DefaultExecutionTimeout,
+		},
+		{
+			name: "honors the provided timeout",
+			opts: []engine.Option{engine.WithExecutionTimeout(42 * time.Second)},
+			want: 42 * time.Second,
+		},
+		{
+			name: "falls back to the default on a non-positive timeout",
+			opts: []engine.Option{engine.WithExecutionTimeout(0)},
+			want: DefaultExecutionTimeout,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, NewEngine(tc.opts...).executionTimeout)
+		})
+	}
 }
