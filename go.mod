@@ -52,7 +52,7 @@ require (
 	google.golang.org/api v0.291.0
 	google.golang.org/genproto v0.0.0-20260519071638-aa98bba5eb94 // indirect
 	google.golang.org/grpc v1.83.0
-	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
+	google.golang.org/protobuf v1.36.12
 	sigs.k8s.io/yaml v1.6.0
 )
 
