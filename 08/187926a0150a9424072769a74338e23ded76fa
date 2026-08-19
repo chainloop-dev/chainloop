@@ -1,0 +1,29 @@
+app/controlplane/pkg/biz/casmapping_integration_test.go
+  s_ba6b8453ce8401::t_50f0a161ed57fd 256-266,272,326-352,366-369,371
+app/controlplane/pkg/data/casmapping.go
+  s_ba6b8453ce8401::t_33d5191dde657e 73-76
+  s_ba6b8453ce8401::t_3c07b7da0b79ff 28,77-89
+app/controlplane/pkg/biz/casmapping.go
+  h_cb14c7fdb7afb4 145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "08187926a0150a9424072769a74338e23ded76fa",
+  "prompts": {},
+  "humans": {
+    "h_cb14c7fdb7afb4": {
+      "author": "Miguel Martinez <miguel@chainloop.dev>"
+    }
+  },
+  "sessions": {
+    "s_ba6b8453ce8401": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e19606bd-40e5-400d-a907-29de5fd17b1a",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Miguel Martinez <miguel@chainloop.dev>"
+    }
+  }
+}
