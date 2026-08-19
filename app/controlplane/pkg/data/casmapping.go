@@ -72,13 +72,14 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 
 	// project_id is not enforced at the database level, so an ID that belongs to no project (a
 	// project version ID, for instance) writes cleanly. Validate it here: a mapping whose project_id
-	// is not a real project of the backend's organization can never match the
+	// is not a live project of the backend's organization can never match the
 	// "organization_id = <org> AND project_id IN (<visible projects>)" filter used by
 	// FindByDigestInOrgs, making the artifact undownloadable for every role with RBAC enabled.
 	if opts != nil && opts.ProjectID != nil {
 		exists, err := r.data.DB.Project.Query().Where(
 			project.ID(*opts.ProjectID),
 			project.OrganizationID(casBackend.OrganizationID),
+			project.DeletedAtIsNil(),
 		).Exist(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check project: %w", err)

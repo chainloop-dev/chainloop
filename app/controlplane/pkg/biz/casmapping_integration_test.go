@@ -18,6 +18,7 @@ package biz_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
@@ -264,6 +265,12 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 	foreignProject, err := s.Project.Create(ctx, s.org2.ID, randomName())
 	require.NoError(s.T(), err)
 
+	// A soft-deleted project. Nothing sets projects.deleted_at today, so it is set directly here to
+	// cover the guard against a project that is no longer live.
+	deletedProject, err := s.Project.Create(ctx, s.org1.ID, randomName())
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.Data.DB.Project.UpdateOneID(deletedProject.ID).SetDeletedAt(time.Now()).Exec(ctx))
+
 	testCases := []struct {
 		name          string
 		digest        string
@@ -348,6 +355,13 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			digest:       validDigest,
 			casBackendID: s.casBackend1.ID,
 			projectID:    biz.ToPtr(foreignProject.ID),
+			wantErr:      true,
+		},
+		{
+			name:         "soft-deleted project",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			projectID:    biz.ToPtr(deletedProject.ID),
 			wantErr:      true,
 		},
 	}
