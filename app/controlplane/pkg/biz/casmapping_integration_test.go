@@ -253,11 +253,23 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadSkipsSoftDeleted()
 }
 
 func (s *casMappingIntegrationSuite) TestCreate() {
+	ctx := context.Background()
+
+	// A project version ID is not a project ID. Storing one in cas_mappings.project_id makes the
+	// mapping unreachable for any role whose downloads are filtered by project RBAC.
+	projectVersion, err := s.ProjectVersion.Create(ctx, s.projectID.String(), "v1.0.0", false)
+	require.NoError(s.T(), err)
+
+	// A project living in a different organization than the CAS backend.
+	foreignProject, err := s.Project.Create(ctx, s.org2.ID, randomName())
+	require.NoError(s.T(), err)
+
 	testCases := []struct {
 		name          string
 		digest        string
 		casBackendID  uuid.UUID
 		workflowRunID *uuid.UUID
+		projectID     *uuid.UUID
 		wantErr       bool
 	}{
 		{
@@ -311,6 +323,33 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			digest:       validDigest,
 			casBackendID: s.casBackend1.ID,
 		},
+		{
+			name:         "associated to a project",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			projectID:    biz.ToPtr(s.projectID),
+		},
+		{
+			name:         "non-existing project",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			projectID:    biz.ToPtr(uuid.New()),
+			wantErr:      true,
+		},
+		{
+			name:         "a project version ID is not a valid project ID",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			projectID:    biz.ToPtr(projectVersion.ID),
+			wantErr:      true,
+		},
+		{
+			name:         "project from another organization",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			projectID:    biz.ToPtr(foreignProject.ID),
+			wantErr:      true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -324,8 +363,12 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			want.WorkflowRunID = *tc.workflowRunID
 		}
 
+		if tc.projectID != nil {
+			want.ProjectID = *tc.projectID
+		}
+
 		s.Run(tc.name, func() {
-			got, err := s.CASMapping.Create(context.TODO(), tc.digest, tc.casBackendID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: tc.workflowRunID})
+			got, err := s.CASMapping.Create(ctx, tc.digest, tc.casBackendID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: tc.workflowRunID, ProjectID: tc.projectID})
 			if tc.wantErr {
 				s.Error(err)
 			} else {

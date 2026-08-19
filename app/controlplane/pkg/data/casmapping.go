@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casmapping"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
@@ -66,6 +67,23 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 			return nil, fmt.Errorf("failed to check workflow run: %w", err)
 		} else if !exists {
 			return nil, biz.NewErrNotFound("workflow run")
+		}
+	}
+
+	// project_id is not enforced at the database level, so an ID that belongs to no project (a
+	// project version ID, for instance) writes cleanly. Validate it here: a mapping whose project_id
+	// is not a real project of the backend's organization can never match the
+	// "organization_id = <org> AND project_id IN (<visible projects>)" filter used by
+	// FindByDigestInOrgs, making the artifact undownloadable for every role with RBAC enabled.
+	if opts != nil && opts.ProjectID != nil {
+		exists, err := r.data.DB.Project.Query().Where(
+			project.ID(*opts.ProjectID),
+			project.OrganizationID(casBackend.OrganizationID),
+		).Exist(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check project: %w", err)
+		} else if !exists {
+			return nil, biz.NewErrNotFound(fmt.Sprintf("project %s in organization %s", opts.ProjectID, casBackend.OrganizationID))
 		}
 	}
 
