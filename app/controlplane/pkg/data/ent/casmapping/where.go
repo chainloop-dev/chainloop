@@ -81,6 +81,11 @@ func ProjectID(v uuid.UUID) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldEQ(FieldProjectID, v))
 }
 
+// ProductID applies equality check predicate on the "product_id" field. It's identical to ProductIDEQ.
+func ProductID(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldEQ(FieldProductID, v))
+}
+
 // DigestEQ applies the EQ predicate on the "digest" field.
 func DigestEQ(v string) predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldEQ(FieldDigest, v))
@@ -284,6 +289,56 @@ func ProjectIDIsNil() predicate.CASMapping {
 // ProjectIDNotNil applies the NotNil predicate on the "project_id" field.
 func ProjectIDNotNil() predicate.CASMapping {
 	return predicate.CASMapping(sql.FieldNotNull(FieldProjectID))
+}
+
+// ProductIDEQ applies the EQ predicate on the "product_id" field.
+func ProductIDEQ(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldEQ(FieldProductID, v))
+}
+
+// ProductIDNEQ applies the NEQ predicate on the "product_id" field.
+func ProductIDNEQ(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNEQ(FieldProductID, v))
+}
+
+// ProductIDIn applies the In predicate on the "product_id" field.
+func ProductIDIn(vs ...uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldIn(FieldProductID, vs...))
+}
+
+// ProductIDNotIn applies the NotIn predicate on the "product_id" field.
+func ProductIDNotIn(vs ...uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNotIn(FieldProductID, vs...))
+}
+
+// ProductIDGT applies the GT predicate on the "product_id" field.
+func ProductIDGT(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldGT(FieldProductID, v))
+}
+
+// ProductIDGTE applies the GTE predicate on the "product_id" field.
+func ProductIDGTE(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldGTE(FieldProductID, v))
+}
+
+// ProductIDLT applies the LT predicate on the "product_id" field.
+func ProductIDLT(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldLT(FieldProductID, v))
+}
+
+// ProductIDLTE applies the LTE predicate on the "product_id" field.
+func ProductIDLTE(v uuid.UUID) predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldLTE(FieldProductID, v))
+}
+
+// ProductIDIsNil applies the IsNil predicate on the "product_id" field.
+func ProductIDIsNil() predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldIsNull(FieldProductID))
+}
+
+// ProductIDNotNil applies the NotNil predicate on the "product_id" field.
+func ProductIDNotNil() predicate.CASMapping {
+	return predicate.CASMapping(sql.FieldNotNull(FieldProductID))
 }
 
 // HasCasBackend applies the HasEdge predicate on the "cas_backend" edge.

@@ -120,8 +120,8 @@ func (_c *CASMappingRepo_Create_Call) RunAndReturn(run func(ctx context.Context,
 }
 
 // FindByDigestInOrgs provides a mock function for the type CASMappingRepo
-func (_mock *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (*biz.CASMapping, error) {
-	ret := _mock.Called(ctx, digest, orgs, projectIDs)
+func (_mock *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, scopes biz.RBACScopes) (*biz.CASMapping, error) {
+	ret := _mock.Called(ctx, digest, orgs, scopes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByDigestInOrgs")
@@ -129,18 +129,18 @@ func (_mock *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest stri
 
 	var r0 *biz.CASMapping
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []uuid.UUID, map[uuid.UUID][]uuid.UUID) (*biz.CASMapping, error)); ok {
-		return returnFunc(ctx, digest, orgs, projectIDs)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []uuid.UUID, biz.RBACScopes) (*biz.CASMapping, error)); ok {
+		return returnFunc(ctx, digest, orgs, scopes)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []uuid.UUID, map[uuid.UUID][]uuid.UUID) *biz.CASMapping); ok {
-		r0 = returnFunc(ctx, digest, orgs, projectIDs)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []uuid.UUID, biz.RBACScopes) *biz.CASMapping); ok {
+		r0 = returnFunc(ctx, digest, orgs, scopes)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.CASMapping)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []uuid.UUID, map[uuid.UUID][]uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, digest, orgs, projectIDs)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, []uuid.UUID, biz.RBACScopes) error); ok {
+		r1 = returnFunc(ctx, digest, orgs, scopes)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -156,12 +156,12 @@ type CASMappingRepo_FindByDigestInOrgs_Call struct {
 //   - ctx context.Context
 //   - digest string
 //   - orgs []uuid.UUID
-//   - projectIDs map[uuid.UUID][]uuid.UUID
-func (_e *CASMappingRepo_Expecter) FindByDigestInOrgs(ctx interface{}, digest interface{}, orgs interface{}, projectIDs interface{}) *CASMappingRepo_FindByDigestInOrgs_Call {
-	return &CASMappingRepo_FindByDigestInOrgs_Call{Call: _e.mock.On("FindByDigestInOrgs", ctx, digest, orgs, projectIDs)}
+//   - scopes biz.RBACScopes
+func (_e *CASMappingRepo_Expecter) FindByDigestInOrgs(ctx interface{}, digest interface{}, orgs interface{}, scopes interface{}) *CASMappingRepo_FindByDigestInOrgs_Call {
+	return &CASMappingRepo_FindByDigestInOrgs_Call{Call: _e.mock.On("FindByDigestInOrgs", ctx, digest, orgs, scopes)}
 }
 
-func (_c *CASMappingRepo_FindByDigestInOrgs_Call) Run(run func(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID)) *CASMappingRepo_FindByDigestInOrgs_Call {
+func (_c *CASMappingRepo_FindByDigestInOrgs_Call) Run(run func(ctx context.Context, digest string, orgs []uuid.UUID, scopes biz.RBACScopes)) *CASMappingRepo_FindByDigestInOrgs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -175,9 +175,9 @@ func (_c *CASMappingRepo_FindByDigestInOrgs_Call) Run(run func(ctx context.Conte
 		if args[2] != nil {
 			arg2 = args[2].([]uuid.UUID)
 		}
-		var arg3 map[uuid.UUID][]uuid.UUID
+		var arg3 biz.RBACScopes
 		if args[3] != nil {
-			arg3 = args[3].(map[uuid.UUID][]uuid.UUID)
+			arg3 = args[3].(biz.RBACScopes)
 		}
 		run(
 			arg0,
@@ -194,7 +194,81 @@ func (_c *CASMappingRepo_FindByDigestInOrgs_Call) Return(cASMapping *biz.CASMapp
 	return _c
 }
 
-func (_c *CASMappingRepo_FindByDigestInOrgs_Call) RunAndReturn(run func(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (*biz.CASMapping, error)) *CASMappingRepo_FindByDigestInOrgs_Call {
+func (_c *CASMappingRepo_FindByDigestInOrgs_Call) RunAndReturn(run func(ctx context.Context, digest string, orgs []uuid.UUID, scopes biz.RBACScopes) (*biz.CASMapping, error)) *CASMappingRepo_FindByDigestInOrgs_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListByDigestInOrg provides a mock function for the type CASMappingRepo
+func (_mock *CASMappingRepo) ListByDigestInOrg(ctx context.Context, digest string, orgID uuid.UUID) ([]*biz.CASMapping, error) {
+	ret := _mock.Called(ctx, digest, orgID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListByDigestInOrg")
+	}
+
+	var r0 []*biz.CASMapping
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, uuid.UUID) ([]*biz.CASMapping, error)); ok {
+		return returnFunc(ctx, digest, orgID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, uuid.UUID) []*biz.CASMapping); ok {
+		r0 = returnFunc(ctx, digest, orgID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*biz.CASMapping)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, digest, orgID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// CASMappingRepo_ListByDigestInOrg_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListByDigestInOrg'
+type CASMappingRepo_ListByDigestInOrg_Call struct {
+	*mock.Call
+}
+
+// ListByDigestInOrg is a helper method to define mock.On call
+//   - ctx context.Context
+//   - digest string
+//   - orgID uuid.UUID
+func (_e *CASMappingRepo_Expecter) ListByDigestInOrg(ctx interface{}, digest interface{}, orgID interface{}) *CASMappingRepo_ListByDigestInOrg_Call {
+	return &CASMappingRepo_ListByDigestInOrg_Call{Call: _e.mock.On("ListByDigestInOrg", ctx, digest, orgID)}
+}
+
+func (_c *CASMappingRepo_ListByDigestInOrg_Call) Run(run func(ctx context.Context, digest string, orgID uuid.UUID)) *CASMappingRepo_ListByDigestInOrg_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *CASMappingRepo_ListByDigestInOrg_Call) Return(cASMappings []*biz.CASMapping, err error) *CASMappingRepo_ListByDigestInOrg_Call {
+	_c.Call.Return(cASMappings, err)
+	return _c
+}
+
+func (_c *CASMappingRepo_ListByDigestInOrg_Call) RunAndReturn(run func(ctx context.Context, digest string, orgID uuid.UUID) ([]*biz.CASMapping, error)) *CASMappingRepo_ListByDigestInOrg_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
@@ -192,39 +193,187 @@ func (s *casMappingIntegrationSuite) TestCASMappingForDownloadPrefersDefaultBack
 	})
 }
 
-// When RBAC is enabled for an org (projectIDs carries an entry for it), only mappings whose project
-// is in the visible set are reachable through that org.
+// When RBAC is enabled for an org (scopes carries an entry for it), only mappings scoped to a
+// project or a product in the visible set are reachable through that org.
 func (s *casMappingIntegrationSuite) TestCASMappingForDownloadRBAC() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org1.ID)
 
-	// A mapping in org1 scoped to a specific project.
+	// A mapping in org1 scoped to a specific project, and one scoped to a specific product.
 	_, err := s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{
 		WorkflowRunID: &s.workflowRun.ID,
 		ProjectID:     &s.projectID,
 	})
 	require.NoError(s.T(), err)
 
-	s.Run("returned when the project is visible", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{orgUUID},
-			map[uuid.UUID][]uuid.UUID{orgUUID: {s.projectID}})
+	_, err = s.CASMapping.Create(ctx, validDigest2, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{
+		ProductID: &s.productID,
+	})
+	require.NoError(s.T(), err)
+
+	testCases := []struct {
+		name   string
+		digest string
+		scope  biz.RBACScope
+		want   bool
+	}{
+		{
+			name:   "project mapping returned when the project is visible",
+			digest: validDigest,
+			scope:  biz.RBACScope{ProjectIDs: []uuid.UUID{s.projectID}},
+			want:   true,
+		},
+		{
+			name:   "project mapping not returned when the project is not visible",
+			digest: validDigest,
+			scope:  biz.RBACScope{ProjectIDs: []uuid.UUID{uuid.New()}},
+		},
+		{
+			name:   "project mapping not returned to a product-only member",
+			digest: validDigest,
+			scope:  biz.RBACScope{ProductIDs: []uuid.UUID{s.productID}},
+		},
+		{
+			name:   "product mapping returned when the product is visible",
+			digest: validDigest2,
+			scope:  biz.RBACScope{ProductIDs: []uuid.UUID{s.productID}},
+			want:   true,
+		},
+		{
+			name:   "product mapping returned when both dimensions are granted",
+			digest: validDigest2,
+			scope:  biz.RBACScope{ProjectIDs: []uuid.UUID{s.projectID}, ProductIDs: []uuid.UUID{s.productID}},
+			want:   true,
+		},
+		{
+			name:   "product mapping not returned when the product is not visible",
+			digest: validDigest2,
+			scope:  biz.RBACScope{ProductIDs: []uuid.UUID{uuid.New()}},
+		},
+		{
+			name:   "product mapping not returned to a project-only member",
+			digest: validDigest2,
+			scope:  biz.RBACScope{ProjectIDs: []uuid.UUID{s.projectID}},
+		},
+		{
+			name:   "project mapping not returned when RBAC is enabled with no grants",
+			digest: validDigest,
+			scope:  biz.RBACScope{},
+		},
+		{
+			name:   "product mapping not returned when RBAC is enabled with no grants",
+			digest: validDigest2,
+			scope:  biz.RBACScope{},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, tc.digest, []uuid.UUID{orgUUID},
+				biz.RBACScopes{orgUUID: tc.scope})
+			if !tc.want {
+				s.Error(err)
+				s.Nil(mapping)
+				return
+			}
+
+			s.NoError(err)
+			s.Require().NotNil(mapping)
+			s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
+		})
+	}
+}
+
+// deref returns the value behind the pointer, or the zero value when it is nil.
+func deref[T any](p *T) T {
+	if p == nil {
+		var zero T
+		return zero
+	}
+
+	return *p
+}
+
+// Product memberships are written into this database by downstream (platform) code only, so this
+// test seeds the membership row directly to pin the contract: an org member whose only grant is a
+// product membership must reach the artifacts scoped to that product.
+func (s *casMappingIntegrationSuite) TestCASMappingForDownloadUserProductMembership() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org1.ID)
+
+	_, err := s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{
+		ProductID: &s.productID,
+	})
+	require.NoError(s.T(), err)
+
+	s.Run("not reachable before the product membership exists", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(ctx, validDigest, s.userOrg1Member.ID)
+		s.Error(err)
+		s.Nil(mapping)
+	})
+
+	require.NoError(s.T(), s.Repos.Membership.AddResourceRole(ctx, orgUUID, authz.ResourceTypeProduct, s.productID,
+		authz.MembershipTypeUser, uuid.MustParse(s.userOrg1Member.ID), authz.RoleProductViewer, nil))
+
+	s.Run("reachable once the product membership exists", func() {
+		mapping, err := s.CASMapping.FindCASMappingForDownloadByUser(ctx, validDigest, s.userOrg1Member.ID)
 		s.NoError(err)
 		s.Require().NotNil(mapping)
-		s.Equal(s.casBackend1.ID, mapping.CASBackend.ID)
+		s.Equal(s.productID, mapping.ProductID)
+	})
+}
+
+// ListByDigestInOrg is the unfiltered, system-level view of an artifact's mappings.
+func (s *casMappingIntegrationSuite) TestListByDigestInOrg() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org1.ID)
+
+	_, err := s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{
+		ProjectID: &s.projectID,
+	})
+	require.NoError(s.T(), err)
+	_, err = s.CASMapping.Create(ctx, validDigest, s.casBackend1.ID.String(), &biz.CASMappingCreateOpts{
+		ProductID: &s.productID,
+	})
+	require.NoError(s.T(), err)
+	// Same digest, different org.
+	_, err = s.CASMapping.Create(ctx, validDigest, s.casBackend2.ID.String(), nil)
+	require.NoError(s.T(), err)
+
+	s.Run("returns every scope of the digest within the org", func() {
+		mappings, err := s.CASMapping.ListByDigestInOrg(ctx, validDigest, orgUUID)
+		s.NoError(err)
+		s.Require().Len(mappings, 2)
+
+		type scope struct{ projectID, productID uuid.UUID }
+		scopes := make([]scope, 0, len(mappings))
+		for _, m := range mappings {
+			s.Equal(orgUUID, m.OrgID)
+			s.Equal(s.casBackend1.ID, m.CASBackend.ID)
+			scopes = append(scopes, scope{projectID: m.ProjectID, productID: m.ProductID})
+		}
+		s.ElementsMatch([]scope{
+			{projectID: s.projectID},
+			{productID: s.productID},
+		}, scopes)
 	})
 
-	s.Run("not returned when the project is not visible", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{orgUUID},
-			map[uuid.UUID][]uuid.UUID{orgUUID: {uuid.New()}})
-		s.Error(err)
-		s.Nil(mapping)
+	s.Run("returns empty for a digest with no mappings in the org", func() {
+		mappings, err := s.CASMapping.ListByDigestInOrg(ctx, validDigest3, orgUUID)
+		s.NoError(err)
+		s.Empty(mappings)
 	})
 
-	s.Run("not returned when RBAC is enabled with no visible projects", func() {
-		mapping, err := s.CASMapping.FindCASMappingForDownloadByOrg(ctx, validDigest, []uuid.UUID{orgUUID},
-			map[uuid.UUID][]uuid.UUID{orgUUID: {}})
+	s.Run("fails on an invalid digest", func() {
+		mappings, err := s.CASMapping.ListByDigestInOrg(ctx, invalidDigest, orgUUID)
 		s.Error(err)
-		s.Nil(mapping)
+		s.Nil(mappings)
+	})
+
+	s.Run("fails without an organization", func() {
+		mappings, err := s.CASMapping.ListByDigestInOrg(ctx, validDigest, uuid.Nil)
+		s.Error(err)
+		s.Nil(mappings)
 	})
 }
 
@@ -277,6 +426,7 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 		casBackendID  uuid.UUID
 		workflowRunID *uuid.UUID
 		projectID     *uuid.UUID
+		productID     *uuid.UUID
 		wantErr       bool
 	}{
 		{
@@ -364,25 +514,42 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 			projectID:    biz.ToPtr(deletedProject.ID),
 			wantErr:      true,
 		},
+		{
+			// Unlike a project, a product cannot be validated here: it lives in the Chainloop
+			// platform database, so this only checks the ID is stored as given.
+			name:         "scoped to a product",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			productID:    &s.productID,
+		},
+		{
+			// The download filter grants access on either scope, so both at once would widen the
+			// artifact to the members of two unrelated resources.
+			name:         "rejected when scoped to a project and a product at once",
+			digest:       validDigest,
+			casBackendID: s.casBackend1.ID,
+			projectID:    biz.ToPtr(s.projectID),
+			productID:    &s.productID,
+			wantErr:      true,
+		},
 	}
 
 	for _, tc := range testCases {
 		want := &biz.CASMapping{
-			Digest:     validDigest,
-			CASBackend: &biz.CASBackend{ID: s.casBackend1.ID},
-			OrgID:      s.casBackend1.OrganizationID,
-		}
-
-		if tc.workflowRunID != nil {
-			want.WorkflowRunID = *tc.workflowRunID
-		}
-
-		if tc.projectID != nil {
-			want.ProjectID = *tc.projectID
+			Digest:        validDigest,
+			CASBackend:    &biz.CASBackend{ID: s.casBackend1.ID},
+			OrgID:         s.casBackend1.OrganizationID,
+			WorkflowRunID: deref(tc.workflowRunID),
+			ProjectID:     deref(tc.projectID),
+			ProductID:     deref(tc.productID),
 		}
 
 		s.Run(tc.name, func() {
-			got, err := s.CASMapping.Create(ctx, tc.digest, tc.casBackendID.String(), &biz.CASMappingCreateOpts{WorkflowRunID: tc.workflowRunID, ProjectID: tc.projectID})
+			got, err := s.CASMapping.Create(ctx, tc.digest, tc.casBackendID.String(), &biz.CASMappingCreateOpts{
+				WorkflowRunID: tc.workflowRunID,
+				ProjectID:     tc.projectID,
+				ProductID:     tc.productID,
+			})
 			if tc.wantErr {
 				s.Error(err)
 			} else {
@@ -402,12 +569,13 @@ func (s *casMappingIntegrationSuite) TestCreate() {
 
 type casMappingIntegrationSuite struct {
 	testhelpers.UseCasesEachTestSuite
-	casBackend1, casBackend2, casBackend3 *biz.CASBackend
-	workflowRun, publicWorkflowRun        *biz.WorkflowRun
-	publicWorkflow                        *biz.Workflow
-	projectID                             uuid.UUID
-	userOrg1And2, userOrg2                *biz.User
-	org1, org2, orgNoUsers                *biz.Organization
+	casBackend1, casBackend2, casBackend3  *biz.CASBackend
+	workflowRun, publicWorkflowRun         *biz.WorkflowRun
+	publicWorkflow                         *biz.Workflow
+	projectID                              uuid.UUID
+	productID                              uuid.UUID
+	userOrg1And2, userOrg2, userOrg1Member *biz.User
+	org1, org2, orgNoUsers                 *biz.Organization
 }
 
 func (s *casMappingIntegrationSuite) SetupTest() {
@@ -444,6 +612,7 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	assert.NoError(err)
 
 	s.projectID = workflow.ProjectID
+	s.productID = uuid.New()
 
 	publicWorkflow, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: "test-workflow-public", OrgID: s.org1.ID, Project: "test-project"})
 	assert.NoError(err)
@@ -472,7 +641,14 @@ func (s *casMappingIntegrationSuite) SetupTest() {
 	s.userOrg2, err = s.User.UpsertByEmail(ctx, "foo-org2@test.com", nil)
 	assert.NoError(err)
 
+	// A user whose org role has RBAC enabled, so their access is restricted to the projects and
+	// products they hold a membership on.
+	s.userOrg1Member, err = s.User.UpsertByEmail(ctx, "member-org1@test.com", nil)
+	assert.NoError(err)
+
 	_, err = s.Membership.Create(ctx, s.org1.ID, s.userOrg1And2.ID)
+	assert.NoError(err)
+	_, err = s.Membership.Create(ctx, s.org1.ID, s.userOrg1Member.ID, biz.WithMembershipRole(authz.RoleOrgMember))
 	assert.NoError(err)
 	_, err = s.Membership.Create(ctx, s.org2.ID, s.userOrg1And2.ID, biz.WithCurrentMembership())
 	assert.NoError(err)

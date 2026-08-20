@@ -115,12 +115,12 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 				return nil, handleUseCaseErr(err, s.log)
 			}
 
-			// pass projectIDs if it's included in the token
-			projectIDs := make(map[uuid.UUID][]uuid.UUID)
-			if currentAPIToken.ProjectID != nil {
-				projectIDs[orgID] = []uuid.UUID{*currentAPIToken.ProjectID}
+			// restrict the lookup to what the token can see, a nil result meaning no RBAC applies
+			scopes := make(biz.RBACScopes)
+			if visibleProjects := s.visibleProjects(ctx); visibleProjects != nil {
+				scopes[orgID] = biz.RBACScope{ProjectIDs: visibleProjects}
 			}
-			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, projectIDs)
+			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, scopes)
 			if err != nil && !biz.IsNotFound(err) {
 				if biz.IsErrValidation(err) {
 					return nil, errors.BadRequest("invalid", err.Error())

@@ -25,6 +25,8 @@ const (
 	FieldOrganizationID = "organization_id"
 	// FieldProjectID holds the string denoting the project_id field in the database.
 	FieldProjectID = "project_id"
+	// FieldProductID holds the string denoting the product_id field in the database.
+	FieldProductID = "product_id"
 	// EdgeCasBackend holds the string denoting the cas_backend edge name in mutations.
 	EdgeCasBackend = "cas_backend"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -64,6 +66,7 @@ var Columns = []string{
 	FieldWorkflowRunID,
 	FieldOrganizationID,
 	FieldProjectID,
+	FieldProductID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "cas_mappings"
@@ -125,6 +128,11 @@ func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
 // ByProjectID orders the results by the project_id field.
 func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectID, opts...).ToFunc()
+}
+
+// ByProductID orders the results by the product_id field.
+func ByProductID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProductID, opts...).ToFunc()
 }
 
 // ByCasBackendField orders the results by cas_backend field.

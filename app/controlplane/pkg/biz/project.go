@@ -715,18 +715,6 @@ func (uc *ProjectUseCase) verifyRequesterHasPermissions(ctx context.Context, org
 	return nil
 }
 
-// getProjectsWithMembership returns the list of project IDs in the org for which the user has a membership
-func getProjectsWithMembershipInOrg(orgID uuid.UUID, memberships []*Membership) []uuid.UUID {
-	ids := make([]uuid.UUID, 0)
-	for _, m := range memberships {
-		if m.ResourceType == authz.ResourceTypeProject && m.OrganizationID == orgID {
-			ids = append(ids, m.ResourceID)
-		}
-	}
-
-	return ids
-}
-
 // UpdateMemberRole updates the role of a user or group in a project.
 func (uc *ProjectUseCase) UpdateMemberRole(ctx context.Context, orgID uuid.UUID, opts *UpdateMemberRoleOpts) error {
 	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.UpdateMemberRole")

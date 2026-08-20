@@ -172,14 +172,15 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 		return nil, "", NewErrInvalidUUID(err)
 	}
 
-	userOrgs, projectIDs, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
+	userOrgs, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
 	if err != nil {
 		return nil, "", err
 	}
 
 	// We pass the list of organizationsIDs from where to look for the referrer:
-	// the organizations the user is a member of.
-	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, projectIDs, p, extraFilters...)
+	// the organizations the user is a member of. Referrers are always project-scoped, so only the
+	// project dimension of the RBAC scopes is relevant here.
+	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, scopes.ProjectIDsByOrg(), p, extraFilters...)
 }
 
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {

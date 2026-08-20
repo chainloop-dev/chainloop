@@ -36,20 +36,32 @@ type CASMapping struct {
 	CASBackend               *CASBackend
 	Digest                   string
 	CreatedAt                *time.Time
-	ProjectID                uuid.UUID
-}
-
-type CASMappingFindOptions struct {
-	Orgs       []uuid.UUID
-	ProjectIDs []uuid.UUID
+	// Scope of the artifact within the organization. At most one of them is set, both being unset
+	// means the mapping is only reachable with organization-wide access.
+	//
+	// The two scopes are not symmetric: projects live in this database and ProjectID is backed by a
+	// foreign key, while products live in the Chainloop platform database, so ProductID is a plain
+	// UUID reference. The download filter still treats both as equal grants, see RBACScope.
+	ProjectID uuid.UUID
+	ProductID uuid.UUID
 }
 
 type CASMappingRepo interface {
 	// Create a mapping with an optional workflow run id
 	Create(ctx context.Context, digest string, casBackendID uuid.UUID, opts *CASMappingCreateOpts) (*CASMapping, error)
 	// FindByDigestInOrgs returns a single accessible mapping for the digest within the given orgs
-	// (honouring project RBAC), preferring the default backend. Returns (nil, nil) when none exists.
-	FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (*CASMapping, error)
+	// (honouring the RBAC scopes), preferring the default backend. Returns (nil, nil) when none exists.
+	FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, scopes RBACScopes) (*CASMapping, error)
+	// ListByDigestInOrg returns the mappings for the digest in the given org, with no RBAC
+	// filtering applied. Mappings whose CAS backend has been (soft) deleted are left out, since
+	// they can no longer serve the artifact, so an empty slice means either no mapping exists or
+	// none of them can still be served.
+	//
+	// It has no consumer in this repository: the Chainloop platform reconciles product-scoped
+	// mappings for evidence uploaded before this scope existed, and needs to know which scopes and
+	// backends an artifact already has. Kept here because it must ship in the same release the
+	// platform bumps to for the product scope itself.
+	ListByDigestInOrg(ctx context.Context, digest string, orgID uuid.UUID) ([]*CASMapping, error)
 }
 
 type CASMappingUseCase struct {
@@ -64,7 +76,9 @@ func NewCASMappingUseCase(repo CASMappingRepo, membershipUC *MembershipUseCase, 
 
 type CASMappingCreateOpts struct {
 	WorkflowRunID *uuid.UUID
-	ProjectID     *uuid.UUID
+	// Scope of the artifact, see the CASMapping fields of the same name.
+	ProjectID *uuid.UUID
+	ProductID *uuid.UUID
 }
 
 // Create a mapping with an optional workflow run id
@@ -77,17 +91,31 @@ func (uc *CASMappingUseCase) Create(ctx context.Context, digest string, casBacke
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	// parse the digest to make sure is a valid sha256 sum
-	if _, err = cr_v1.NewHash(digest); err != nil {
-		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	if err := validateDigest(digest); err != nil {
+		return nil, err
+	}
+
+	// The download filter grants access on either scope, so a mapping carrying both would be
+	// reachable by members of the project AND members of the unrelated product.
+	if opts != nil && opts.ProjectID != nil && opts.ProductID != nil {
+		return nil, NewErrValidationStr("a mapping cannot be scoped to a project and a product at once")
 	}
 
 	return uc.repo.Create(ctx, digest, casBackendUUID, opts)
 }
 
+// validateDigest makes sure the digest is a valid sha256 sum
+func validateDigest(digest string) error {
+	if _, err := cr_v1.NewHash(digest); err != nil {
+		return NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	}
+
+	return nil
+}
+
 // FindCASMappingForDownloadByUser returns the CASMapping appropriate for the given digest and user.
-// It returns a mapping that points to an organization the user is a member of (honoring project
-// RBAC); if there are multiple, it picks the default one or the first one.
+// It returns a mapping that points to an organization the user is a member of (honoring the user's
+// RBAC scopes); if there are multiple, it picks the default one or the first one.
 func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context, digest string, userID string) (*CASMapping, error) {
 	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.FindCASMappingForDownloadByUser")
 	defer span.End()
@@ -99,12 +127,12 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	userOrgs, projectIDs, err := uc.membershipUC.GetOrgsAndRBACInfoForUser(ctx, userUUID)
+	userOrgs, scopes, err := uc.membershipUC.GetOrgsAndRBACInfoForUser(ctx, userUUID)
 	if err != nil {
 		return nil, err
 	}
 
-	mapping, err := uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs, projectIDs)
+	mapping, err := uc.FindCASMappingForDownloadByOrg(ctx, digest, userOrgs, scopes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cas mapping for download: %w", err)
 	}
@@ -113,13 +141,13 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByUser(ctx context.Context
 }
 
 // FindCASMappingForDownloadByOrg looks for the CAS mapping to download the referenced artifact in one of the passed organizations.
-// The result will get filtered out if RBAC is enabled (projectIDs is not Nil)
-func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (result *CASMapping, err error) {
+// The result will get filtered out for those organizations RBAC is enabled for, i.e. those present in scopes.
+func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context, digest string, orgs []uuid.UUID, scopes RBACScopes) (result *CASMapping, err error) {
 	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.FindCASMappingForDownloadByOrg")
 	defer span.End()
 
-	if _, err := cr_v1.NewHash(digest); err != nil {
-		return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+	if err := validateDigest(digest); err != nil {
+		return nil, err
 	}
 
 	// log the result
@@ -135,18 +163,42 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context,
 		return nil, NewErrValidationStr("no organizations provided")
 	}
 
-	// A mapping reachable through one of the user's orgs (honouring project RBAC), selected and
+	// A mapping reachable through one of the user's orgs (honouring the RBAC scopes), selected and
 	// bounded in the database. This is the common path and stays cheap regardless of how many
 	// mappings a digest has accumulated.
-	mapping, err := uc.repo.FindByDigestInOrgs(ctx, digest, orgs, projectIDs)
+	mapping, err := uc.repo.FindByDigestInOrgs(ctx, digest, orgs, scopes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cas mapping in orgs: %w", err)
 	} else if mapping == nil {
-		uc.logger.Warnw("msg", "digest not accessible to the requesting orgs", "digest", digest, "orgs", orgs, "projectIDs", projectIDs)
+		uc.logger.Warnw("msg", "digest not accessible to the requesting orgs", "digest", digest, "orgs", orgs, "scopes", scopes)
 		return nil, NewErrNotFound("digest not found in any mapping")
 	}
 
 	return mapping, nil
+}
+
+// ListByDigestInOrg returns the servable mappings for the digest within the given organization,
+// with no RBAC filtering. It is meant for trusted, system-level callers that need to inspect the
+// existing scopes of an artifact, or the backends holding it, rather than to serve a download.
+// Mappings on a (soft) deleted backend are left out, see the repository method.
+func (uc *CASMappingUseCase) ListByDigestInOrg(ctx context.Context, digest string, orgID uuid.UUID) ([]*CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingTracer, "CASMappingUseCase.ListByDigestInOrg")
+	defer span.End()
+
+	if err := validateDigest(digest); err != nil {
+		return nil, err
+	}
+
+	if orgID == uuid.Nil {
+		return nil, NewErrValidationStr("organization ID cannot be empty")
+	}
+
+	mappings, err := uc.repo.ListByDigestInOrg(ctx, digest, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list cas mappings in org: %w", err)
+	}
+
+	return mappings, nil
 }
 
 type CASMappingLookupRef struct {

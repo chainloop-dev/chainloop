@@ -81,6 +81,20 @@ func (_c *CASMappingCreate) SetNillableProjectID(v *uuid.UUID) *CASMappingCreate
 	return _c
 }
 
+// SetProductID sets the "product_id" field.
+func (_c *CASMappingCreate) SetProductID(v uuid.UUID) *CASMappingCreate {
+	_c.mutation.SetProductID(v)
+	return _c
+}
+
+// SetNillableProductID sets the "product_id" field if the given value is not nil.
+func (_c *CASMappingCreate) SetNillableProductID(v *uuid.UUID) *CASMappingCreate {
+	if v != nil {
+		_c.SetProductID(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *CASMappingCreate) SetID(v uuid.UUID) *CASMappingCreate {
 	_c.mutation.SetID(v)
@@ -226,6 +240,10 @@ func (_c *CASMappingCreate) createSpec() (*CASMapping, *sqlgraph.CreateSpec) {
 		_spec.SetField(casmapping.FieldWorkflowRunID, field.TypeUUID, value)
 		_node.WorkflowRunID = value
 	}
+	if value, ok := _c.mutation.ProductID(); ok {
+		_spec.SetField(casmapping.FieldProductID, field.TypeUUID, value)
+		_node.ProductID = value
+	}
 	if nodes := _c.mutation.CasBackendIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -360,6 +378,9 @@ func (u *CASMappingUpsertOne) UpdateNewValues() *CASMappingUpsertOne {
 		}
 		if _, exists := u.create.mutation.ProjectID(); exists {
 			s.SetIgnore(casmapping.FieldProjectID)
+		}
+		if _, exists := u.create.mutation.ProductID(); exists {
+			s.SetIgnore(casmapping.FieldProductID)
 		}
 	}))
 	return u
@@ -589,6 +610,9 @@ func (u *CASMappingUpsertBulk) UpdateNewValues() *CASMappingUpsertBulk {
 			}
 			if _, exists := b.mutation.ProjectID(); exists {
 				s.SetIgnore(casmapping.FieldProjectID)
+			}
+			if _, exists := b.mutation.ProductID(); exists {
+				s.SetIgnore(casmapping.FieldProductID)
 			}
 		}
 	}))

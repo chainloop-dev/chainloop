@@ -94,7 +94,9 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 		SetOrganizationID(casBackend.OrganizationID)
 
 	if opts != nil {
-		query.SetNillableProjectID(opts.ProjectID).SetNillableWorkflowRunID(opts.WorkflowRunID)
+		query.SetNillableProjectID(opts.ProjectID).
+			SetNillableProductID(opts.ProductID).
+			SetNillableWorkflowRunID(opts.WorkflowRunID)
 	}
 
 	mapping, err := query.Save(ctx)
@@ -107,13 +109,13 @@ func (r *CASMappingRepo) Create(ctx context.Context, digest string, casBackendID
 }
 
 // FindByDigestInOrgs returns a single CAS mapping for the digest that is reachable through one of
-// the given organizations, honouring project-level RBAC when projectIDs is provided for an org. The
+// the given organizations, honouring resource-level RBAC when a scope is provided for an org. The
 // mapping stored in the default backend is preferred; ties break on the oldest mapping for a stable
 // result. It returns (nil, nil) when no accessible mapping exists.
 //
 // The selection is performed entirely in the database with a LIMIT 1, so the cost is independent of
 // how many mappings a digest accumulates (e.g. the same artifact pushed across thousands of runs).
-func (r *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, projectIDs map[uuid.UUID][]uuid.UUID) (*biz.CASMapping, error) {
+func (r *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest string, orgs []uuid.UUID, scopes biz.RBACScopes) (*biz.CASMapping, error) {
 	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.FindByDigestInOrgs")
 	defer span.End()
 
@@ -122,18 +124,25 @@ func (r *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest string, 
 	}
 
 	// Build an OR of per-org predicates. When an org has RBAC enabled (its key is present in
-	// projectIDs) the mapping's project must be one of the visible projects; otherwise the whole org
-	// is accessible.
+	// scopes) the mapping must be scoped to a project or a product the subject can see; otherwise
+	// the whole org is accessible.
 	orgPreds := make([]predicate.CASMapping, 0, len(orgs))
 	for _, o := range orgs {
-		if visibleProjects, ok := projectIDs[o]; ok {
-			orgPreds = append(orgPreds, casmapping.And(
-				casmapping.OrganizationID(o),
-				casmapping.ProjectIDIn(visibleProjects...),
-			))
-		} else {
+		scope, rbacEnabled := scopes[o]
+		if !rbacEnabled {
 			orgPreds = append(orgPreds, casmapping.OrganizationID(o))
+			continue
 		}
+
+		// A subject with no visible resources must match nothing: ent renders an IN with no
+		// arguments as FALSE, so an empty scope yields "FALSE OR FALSE".
+		orgPreds = append(orgPreds, casmapping.And(
+			casmapping.OrganizationID(o),
+			casmapping.Or(
+				casmapping.ProjectIDIn(scope.ProjectIDs...),
+				casmapping.ProductIDIn(scope.ProductIDs...),
+			),
+		))
 	}
 
 	m, err := r.findOnePreferringDefault(ctx, casmapping.Digest(digest), casmapping.Or(orgPreds...))
@@ -144,6 +153,43 @@ func (r *CASMappingRepo) FindByDigestInOrgs(ctx context.Context, digest string, 
 	return entCASMappingToBiz(m)
 }
 
+// ListByDigestInOrg returns every CAS mapping for the digest within the given organization, with no
+// RBAC filtering applied. Mappings pointing to a (soft) deleted backend are left out, as they can
+// no longer serve the artifact.
+func (r *CASMappingRepo) ListByDigestInOrg(ctx context.Context, digest string, orgID uuid.UUID) ([]*biz.CASMapping, error) {
+	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.ListByDigestInOrg")
+	defer span.End()
+
+	mappings, err := r.queryServiceable(casmapping.Digest(digest), casmapping.OrganizationID(orgID)).
+		Order(casmapping.ByCreatedAt(sql.OrderAsc())).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query cas mappings by digest: %w", err)
+	}
+
+	result := make([]*biz.CASMapping, 0, len(mappings))
+	for _, m := range mappings {
+		bizMapping, err := entCASMappingToBiz(m)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, bizMapping)
+	}
+
+	return result, nil
+}
+
+// queryServiceable narrows a CAS mapping query down to the mappings matching the given predicates
+// that can still serve their artifact, with the backend eager-loaded so the result can be mapped to
+// the biz layer.
+func (r *CASMappingRepo) queryServiceable(preds ...predicate.CASMapping) *ent.CASMappingQuery {
+	return r.data.DB.CASMapping.Query().
+		Where(preds...).
+		// Never return a mapping whose backend has been (soft) deleted; it cannot serve downloads.
+		Where(casmapping.HasCasBackendWith(casbackend.DeletedAtIsNil())).
+		WithCasBackend()
+}
+
 // findOnePreferringDefault returns the first CAS mapping matching the given predicates, preferring
 // the one stored in the default backend and breaking ties on the oldest mapping. It returns
 // (nil, nil) when nothing matches.
@@ -151,15 +197,11 @@ func (r *CASMappingRepo) findOnePreferringDefault(ctx context.Context, preds ...
 	ctx, span := otelx.Start(ctx, casMappingRepoTracer, "CASMappingRepo.findOnePreferringDefault")
 	defer span.End()
 
-	m, err := r.data.DB.CASMapping.Query().
-		Where(preds...).
-		// Never return a mapping whose backend has been (soft) deleted; it cannot serve downloads.
-		Where(casmapping.HasCasBackendWith(casbackend.DeletedAtIsNil())).
+	m, err := r.queryServiceable(preds...).
 		Order(
 			casmapping.ByCasBackendField(casbackend.FieldDefault, sql.OrderDesc()),
 			casmapping.ByCreatedAt(sql.OrderAsc()),
 		).
-		WithCasBackend().
 		First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -204,5 +246,6 @@ func entCASMappingToBiz(input *ent.CASMapping) (*biz.CASMapping, error) {
 		OrgID:         input.OrganizationID,
 		CreatedAt:     toTimePtr(input.CreatedAt),
 		ProjectID:     input.ProjectID,
+		ProductID:     input.ProductID,
 	}, nil
 }

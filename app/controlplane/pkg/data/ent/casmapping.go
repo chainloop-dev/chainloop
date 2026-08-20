@@ -31,6 +31,8 @@ type CASMapping struct {
 	OrganizationID uuid.UUID `json:"organization_id,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
 	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	// ProductID holds the value of the "product_id" field.
+	ProductID uuid.UUID `json:"product_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CASMappingQuery when eager-loading is set.
 	Edges                   CASMappingEdges `json:"edges"`
@@ -93,7 +95,7 @@ func (*CASMapping) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case casmapping.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case casmapping.FieldID, casmapping.FieldWorkflowRunID, casmapping.FieldOrganizationID, casmapping.FieldProjectID:
+		case casmapping.FieldID, casmapping.FieldWorkflowRunID, casmapping.FieldOrganizationID, casmapping.FieldProjectID, casmapping.FieldProductID:
 			values[i] = new(uuid.UUID)
 		case casmapping.ForeignKeys[0]: // cas_mapping_cas_backend
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
@@ -147,6 +149,12 @@ func (_m *CASMapping) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
 			} else if value != nil {
 				_m.ProjectID = *value
+			}
+		case casmapping.FieldProductID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field product_id", values[i])
+			} else if value != nil {
+				_m.ProductID = *value
 			}
 		case casmapping.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -220,6 +228,9 @@ func (_m *CASMapping) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("project_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ProjectID))
+	builder.WriteString(", ")
+	builder.WriteString("product_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ProductID))
 	builder.WriteByte(')')
 	return builder.String()
 }

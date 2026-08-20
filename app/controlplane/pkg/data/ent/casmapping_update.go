@@ -92,6 +92,9 @@ func (_u *CASMappingUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if _u.mutation.WorkflowRunIDCleared() {
 		_spec.ClearField(casmapping.FieldWorkflowRunID, field.TypeUUID)
 	}
+	if _u.mutation.ProductIDCleared() {
+		_spec.ClearField(casmapping.FieldProductID, field.TypeUUID)
+	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -207,6 +210,9 @@ func (_u *CASMappingUpdateOne) sqlSave(ctx context.Context) (_node *CASMapping, 
 	}
 	if _u.mutation.WorkflowRunIDCleared() {
 		_spec.ClearField(casmapping.FieldWorkflowRunID, field.TypeUUID)
+	}
+	if _u.mutation.ProductIDCleared() {
+		_spec.ClearField(casmapping.FieldProductID, field.TypeUUID)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &CASMapping{config: _u.config}
