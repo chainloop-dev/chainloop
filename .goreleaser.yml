@@ -238,5 +238,10 @@ docker_manifests:
       - "ghcr.io/chainloop-dev/chainloop/cli:{{ .Tag }}-arm64"
 
 release:
+  # Publish the release as a draft first. The workflow performs all post-release
+  # work (SBOMs, attestation, release-note edits) against the draft and only flips
+  # it to published once every step succeeds, so a failure never leaves a public
+  # but incomplete release.
+  draft: true
   extra_files:
     - glob: ./.github/workflows/cosign.pub
