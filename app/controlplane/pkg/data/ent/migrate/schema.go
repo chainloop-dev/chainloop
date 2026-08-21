@@ -147,6 +147,7 @@ var (
 		{Name: "digest", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "workflow_run_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "product_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "cas_mapping_cas_backend", Type: field.TypeUUID},
 		{Name: "organization_id", Type: field.TypeUUID},
 		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
@@ -159,19 +160,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "cas_mappings_cas_backends_cas_backend",
-				Columns:    []*schema.Column{CasMappingsColumns[4]},
+				Columns:    []*schema.Column{CasMappingsColumns[5]},
 				RefColumns: []*schema.Column{CasBackendsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "cas_mappings_organizations_organization",
-				Columns:    []*schema.Column{CasMappingsColumns[5]},
+				Columns:    []*schema.Column{CasMappingsColumns[6]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "cas_mappings_projects_project",
-				Columns:    []*schema.Column{CasMappingsColumns[6]},
+				Columns:    []*schema.Column{CasMappingsColumns[7]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -190,7 +191,7 @@ var (
 			{
 				Name:    "casmapping_organization_id",
 				Unique:  false,
-				Columns: []*schema.Column{CasMappingsColumns[5]},
+				Columns: []*schema.Column{CasMappingsColumns[6]},
 			},
 		},
 	}

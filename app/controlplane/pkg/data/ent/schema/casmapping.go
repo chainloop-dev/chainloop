@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,10 @@ func (CASMapping) Fields() []ent.Field {
 		field.UUID("workflow_run_id", uuid.UUID{}).Immutable().Optional(),
 		field.UUID("organization_id", uuid.UUID{}).Immutable(),
 		field.UUID("project_id", uuid.UUID{}).Immutable().Optional(),
+		// Product the artifact belongs to, when it is not scoped to a project. Products live in a
+		// downstream (platform) database, so this is a plain UUID reference with no edge and no
+		// foreign key, following the workflow_run_id precedent.
+		field.UUID("product_id", uuid.UUID{}).Immutable().Optional(),
 	}
 }
 

@@ -452,7 +452,43 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, project
 	return nil
 }
 
-func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, map[uuid.UUID][]uuid.UUID, error) {
+// RBACScope holds the resources a subject can reach within a single organization once RBAC is
+// enforced for it. Both slices may be empty, meaning the subject reaches nothing in that org.
+type RBACScope struct {
+	// ProjectIDs the subject holds a membership on
+	ProjectIDs []uuid.UUID
+	// ProductIDs the subject holds a membership on. Nothing in this repository creates product
+	// memberships: the Chainloop platform writes them into this same memberships table, because the
+	// product entity itself lives in the platform database. Dropping this collection silently makes
+	// product-scoped artifacts undownloadable, so the tests seed such a row explicitly.
+	ProductIDs []uuid.UUID
+}
+
+// RBACScopes maps an organization to the resources visible within it. An organization present in
+// the map has RBAC enforced and access limited to the listed resources, an organization absent from
+// the map is reachable in full.
+type RBACScopes map[uuid.UUID]RBACScope
+
+// ProjectIDsByOrg narrows the scopes down to their project dimension, for consumers that only deal
+// with project-scoped resources (e.g. referrers). It returns nil for nil scopes, so that callers
+// following the "nil means no RBAC" convention keep working.
+func (s RBACScopes) ProjectIDsByOrg() map[OrgID][]ProjectID {
+	if s == nil {
+		return nil
+	}
+
+	projectIDs := make(map[OrgID][]ProjectID, len(s))
+	for orgID, scope := range s {
+		projectIDs[orgID] = scope.ProjectIDs
+	}
+
+	return projectIDs
+}
+
+// GetOrgsAndRBACInfoForUser returns the organizations the user is a member of, together with the
+// RBAC scopes of those organizations where the user's role has RBAC enabled. Organizations missing
+// from the scopes are reachable in full.
+func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, RBACScopes, error) {
 	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.GetOrgsAndRBACInfoForUser")
 	defer span.End()
 
@@ -463,21 +499,37 @@ func (uc *MembershipUseCase) GetOrgsAndRBACInfoForUser(ctx context.Context, user
 	}
 
 	userOrgs := make([]uuid.UUID, 0)
-	// This map holds the list of project IDs by org with RBAC active (user is org "member")
-	projectIDs := make(map[uuid.UUID][]uuid.UUID)
+	scopes := make(RBACScopes)
 	for _, m := range memberships {
-		if m.ResourceType == authz.ResourceTypeOrganization {
-			userOrgs = append(userOrgs, m.ResourceID)
-			// If the role in the org is member, we must enable RBAC for projects.
-			if m.Role.RBACEnabled() {
-				// get the list of projects in org, and match it with the memberships to build a filter.
-				// note that appending an empty slice to a nil slice doesn't change it (it's still nil)
-				projectIDs[m.ResourceID] = getProjectsWithMembershipInOrg(m.ResourceID, memberships)
+		if m.ResourceType != authz.ResourceTypeOrganization {
+			continue
+		}
+
+		userOrgs = append(userOrgs, m.ResourceID)
+		// If the role in the org is member, we must enable RBAC for its resources: the in-org
+		// resources are matched against the memberships to build a filter.
+		if m.Role.RBACEnabled() {
+			scopes[m.ResourceID] = RBACScope{
+				ProjectIDs: resourcesWithMembershipInOrg(m.ResourceID, memberships, authz.ResourceTypeProject),
+				ProductIDs: resourcesWithMembershipInOrg(m.ResourceID, memberships, authz.ResourceTypeProduct),
 			}
 		}
 	}
 
-	return userOrgs, projectIDs, nil
+	return userOrgs, scopes, nil
+}
+
+// resourcesWithMembershipInOrg returns the IDs of the resources of the given type in the org for
+// which the subject holds a membership.
+func resourcesWithMembershipInOrg(orgID uuid.UUID, memberships []*Membership, resourceType authz.ResourceType) []uuid.UUID {
+	ids := make([]uuid.UUID, 0)
+	for _, m := range memberships {
+		if m.ResourceType == resourceType && m.OrganizationID == orgID {
+			ids = append(ids, m.ResourceID)
+		}
+	}
+
+	return ids
 }
 
 // isUserSoleOwner checks if the user is the only owner in the organization

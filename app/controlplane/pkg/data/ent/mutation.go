@@ -3153,6 +3153,7 @@ type CASMappingMutation struct {
 	digest              *string
 	created_at          *time.Time
 	workflow_run_id     *uuid.UUID
+	product_id          *uuid.UUID
 	clearedFields       map[string]struct{}
 	cas_backend         *uuid.UUID
 	clearedcas_backend  bool
@@ -3475,6 +3476,55 @@ func (m *CASMappingMutation) ResetProjectID() {
 	delete(m.clearedFields, casmapping.FieldProjectID)
 }
 
+// SetProductID sets the "product_id" field.
+func (m *CASMappingMutation) SetProductID(u uuid.UUID) {
+	m.product_id = &u
+}
+
+// ProductID returns the value of the "product_id" field in the mutation.
+func (m *CASMappingMutation) ProductID() (r uuid.UUID, exists bool) {
+	v := m.product_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProductID returns the old "product_id" field's value of the CASMapping entity.
+// If the CASMapping object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CASMappingMutation) OldProductID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProductID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProductID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProductID: %w", err)
+	}
+	return oldValue.ProductID, nil
+}
+
+// ClearProductID clears the value of the "product_id" field.
+func (m *CASMappingMutation) ClearProductID() {
+	m.product_id = nil
+	m.clearedFields[casmapping.FieldProductID] = struct{}{}
+}
+
+// ProductIDCleared returns if the "product_id" field was cleared in this mutation.
+func (m *CASMappingMutation) ProductIDCleared() bool {
+	_, ok := m.clearedFields[casmapping.FieldProductID]
+	return ok
+}
+
+// ResetProductID resets all changes to the "product_id" field.
+func (m *CASMappingMutation) ResetProductID() {
+	m.product_id = nil
+	delete(m.clearedFields, casmapping.FieldProductID)
+}
+
 // SetCasBackendID sets the "cas_backend" edge to the CASBackend entity by id.
 func (m *CASMappingMutation) SetCasBackendID(id uuid.UUID) {
 	m.cas_backend = &id
@@ -3602,7 +3652,7 @@ func (m *CASMappingMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CASMappingMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.digest != nil {
 		fields = append(fields, casmapping.FieldDigest)
 	}
@@ -3617,6 +3667,9 @@ func (m *CASMappingMutation) Fields() []string {
 	}
 	if m.project != nil {
 		fields = append(fields, casmapping.FieldProjectID)
+	}
+	if m.product_id != nil {
+		fields = append(fields, casmapping.FieldProductID)
 	}
 	return fields
 }
@@ -3636,6 +3689,8 @@ func (m *CASMappingMutation) Field(name string) (ent.Value, bool) {
 		return m.OrganizationID()
 	case casmapping.FieldProjectID:
 		return m.ProjectID()
+	case casmapping.FieldProductID:
+		return m.ProductID()
 	}
 	return nil, false
 }
@@ -3655,6 +3710,8 @@ func (m *CASMappingMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldOrganizationID(ctx)
 	case casmapping.FieldProjectID:
 		return m.OldProjectID(ctx)
+	case casmapping.FieldProductID:
+		return m.OldProductID(ctx)
 	}
 	return nil, fmt.Errorf("unknown CASMapping field %s", name)
 }
@@ -3699,6 +3756,13 @@ func (m *CASMappingMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetProjectID(v)
 		return nil
+	case casmapping.FieldProductID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProductID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CASMapping field %s", name)
 }
@@ -3735,6 +3799,9 @@ func (m *CASMappingMutation) ClearedFields() []string {
 	if m.FieldCleared(casmapping.FieldProjectID) {
 		fields = append(fields, casmapping.FieldProjectID)
 	}
+	if m.FieldCleared(casmapping.FieldProductID) {
+		fields = append(fields, casmapping.FieldProductID)
+	}
 	return fields
 }
 
@@ -3754,6 +3821,9 @@ func (m *CASMappingMutation) ClearField(name string) error {
 		return nil
 	case casmapping.FieldProjectID:
 		m.ClearProjectID()
+		return nil
+	case casmapping.FieldProductID:
+		m.ClearProductID()
 		return nil
 	}
 	return fmt.Errorf("unknown CASMapping nullable field %s", name)
@@ -3777,6 +3847,9 @@ func (m *CASMappingMutation) ResetField(name string) error {
 		return nil
 	case casmapping.FieldProjectID:
 		m.ResetProjectID()
+		return nil
+	case casmapping.FieldProductID:
+		m.ResetProductID()
 		return nil
 	}
 	return fmt.Errorf("unknown CASMapping field %s", name)
