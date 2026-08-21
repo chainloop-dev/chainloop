@@ -350,6 +350,30 @@ func (uc *CASBackendUseCase) FindDefaultOrFallbackBackend(ctx context.Context, o
 	return fallbackBackend, nil
 }
 
+// FindDownloadBackend returns the backend that should serve a mapped artifact download.
+//
+// CAS mappings are historical: digest -> backend ID. If credentials are rotated by
+// creating a new backend for the same storage location and making it the org default,
+// old mappings still point at the backend with revoked credentials.
+//
+// For that case, try the org's current default backend first, then the configured
+// fallback. This is safe because CAS downloads are verified by digest: if the chosen
+// backend does not contain the exact content, the download fails.
+//
+// The stored mapping is not changed; this only chooses credentials for this read.
+func (uc *CASBackendUseCase) FindDownloadBackend(ctx context.Context, mapped *CASBackend) (*CASBackend, error) {
+	if mapped == nil {
+		return nil, NewErrNotFound("CAS Backend")
+	}
+
+	if mapped.ValidationStatus == CASBackendValidationOK {
+		return mapped, nil
+	}
+
+	uc.logger.Infow("msg", "mapped CAS backend validation failed, attempting default/fallback", "backend", mapped.Name, "status", mapped.ValidationStatus, "orgID", mapped.OrganizationID)
+	return uc.FindDefaultOrFallbackBackend(ctx, mapped.OrganizationID.String())
+}
+
 func (uc *CASBackendUseCase) CreateInlineBackend(ctx context.Context, orgID string) (*CASBackend, error) {
 	ctx, span := otelx.Start(ctx, casBackendTracer, "CASBackendUseCase.CreateInlineBackend")
 	defer span.End()
