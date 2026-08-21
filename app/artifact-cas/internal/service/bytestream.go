@@ -116,11 +116,11 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 
 	s.log.Infow("msg", "artifact does not exist, uploading", "digest", req.resource.Digest, "name", req.resource.FileName)
 
-	// Streaming-capable backends (object stores such as S3/Azure) are fed
-	// directly from the client stream through an io.Pipe, so CAS memory stays
-	// bounded by the chunk/pipe size regardless of artifact size (PFM-6923).
-	// The OCI backend, whose push path needs the whole layer content up front,
-	// does not advertise streaming and keeps the fully-buffered path.
+	// Streaming-capable backends (the object stores S3/Azure and the OCI backend)
+	// are fed directly from the client stream through an io.Pipe, so CAS memory
+	// stays bounded by the chunk/pipe size regardless of artifact size
+	// (PFM-6923). Backends that do not advertise streaming keep the
+	// fully-buffered path.
 	var committedSize int64
 	if su, ok := storageBackend.(backend.StreamingUploader); ok && su.SupportsStreaming() {
 		committedSize, err = s.streamUpload(ctx, stream, storageBackend, req, info.MaxBytes)
@@ -166,11 +166,11 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 }
 
 // bufferedUpload accumulates the whole artifact in memory before handing it to
-// the backend. This is required by the OCI backend: its push implementation
-// does not support streaming/chunked uploads for uncompressed layers (we can not
-// use stream.Layer since it only supports compressed layers, and we want to
-// store raw data with custom mimetypes), so it needs the full content up front.
-// https://github.com/google/go-containerregistry/blob/main/pkg/v1/stream/README.md
+// the backend. It is the fallback for backends that do not implement
+// StreamingUploader. Streaming backends always take streamUpload (they report
+// SupportsStreaming()==true unconditionally); when such a backend cannot stream
+// a particular upload — e.g. the OCI backend when the size is unknown — it
+// buffers internally, not through this path.
 // It returns the total number of bytes committed to the backend. Feed errors are
 // returned unwrapped (classified by the caller); backend Upload failures are
 // wrapped in backendUploadError so the caller always masks them.
