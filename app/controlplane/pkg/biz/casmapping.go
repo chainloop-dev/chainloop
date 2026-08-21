@@ -142,7 +142,7 @@ func (uc *CASMappingUseCase) FindCASMappingForDownloadByOrg(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cas mapping in orgs: %w", err)
 	} else if mapping == nil {
-		uc.logger.Warnw("msg", "digest not accessible to the requesting orgs", "digest", digest, "orgs", orgs)
+		uc.logger.Warnw("msg", "digest not accessible to the requesting orgs", "digest", digest, "orgs", orgs, "projectIDs", projectIDs)
 		return nil, NewErrNotFound("digest not found in any mapping")
 	}
 
