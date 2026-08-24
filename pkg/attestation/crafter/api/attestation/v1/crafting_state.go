@@ -239,11 +239,23 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 		// AccessChk emits plain text; project it to JSON so the policy engine,
 		// which only consumes JSON, can evaluate it. The raw text is preserved
 		// in the projection's "raw" field for string-matching fallbacks.
+		//
+		// The projection de-duplicates security descriptors: a registry hive or
+		// service database applies a handful of distinct descriptors to hundreds
+		// of thousands of objects, and repeating each one inline would balloon the
+		// document the policy engine holds in memory (large materials have
+		// OOM-killed CI runners). Objects reference a shared descriptors table by
+		// index instead; no object, name, or ACE is dropped, so policy findings
+		// are unchanged. Policies read a descriptor via input.descriptors[obj.descriptor].
 		report, err := accesschk.Parse(bytes.NewReader(rawMaterial))
 		if err != nil {
 			return nil, fmt.Errorf("invalid accesschk material: %w", err)
 		}
-		return json.Marshal(report)
+		projection, err := report.Project()
+		if err != nil {
+			return nil, fmt.Errorf("failed to project accesschk material: %w", err)
+		}
+		return json.Marshal(projection)
 	case v1.CraftingSchema_Material_CERTCC_DRANZER:
 		// dranzer emits plain text; project it to JSON so the policy engine,
 		// which only consumes JSON, can evaluate it. The raw text is preserved
