@@ -85,6 +85,16 @@ kits:
       # hooks from .claude/settings.json.
       traceMode: persistent
 
+  # Sign commits and tags with the SSH key forwarded from your host's agent, so
+  # the agent's commits carry your signature and not just your name. A `kind:
+  # mixin` kit, so it stacks on the sandbox kit above rather than competing with
+  # it; it writes only to /etc/gitconfig (`git config --system`) and resolves the
+  # key at signing time from $SSH_AUTH_SOCK, so nothing private enters the VM.
+  # Prerequisite: the key must be loaded on the HOST (`ssh-add ~/.ssh/id_ed25519`);
+  # with no key in the agent, signing fails and so does every commit.
+  # Upstream: https://github.com/docker/sbx-kits-contrib/tree/main/git-ssh-sign
+  - source: docker.io/sbx/git-ssh-sign-kit:latest
+
 workspace:
   path: .
   # An in-container clone (host repo mounted read-only), reachable from the host
