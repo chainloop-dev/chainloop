@@ -1,0 +1,386 @@
+# !!! REQUIRES an sbx@nightly build - NOT the v0.39.0 stable release, and not
+# !!! only for the `args:` block below (nightly-only) but because the kit is
+# !!! broken on stable. This kit inherits the built-in `claude` agent with
+# !!! `extends:`, which relies on ADDITIVE merge: the parent's setup commands,
+# !!! environment variables and network rules must survive alongside the ones
+# !!! declared here. A child `setup:` block silently drops the parent's
+# !!! (docker/sbx-releases#415), taking Claude's trust-flag seeding,
+# !!! ~/.claude/settings.json and the `claude mcp add mcp-gateway` registration
+# !!! with it, and leaving the persistent ~/.claude/* volumes root:root so the
+# !!! agent cannot write the transcript that `chainloop trace` reads.
+# !!!   <=v0.38.1                        BROKEN
+# !!!   nightly-202608180320 (rc1-245)   ok
+# !!!   v0.39.0 stable (def8cb0)         BROKEN AGAIN - #415 regressed in the release
+# !!!   nightly-202608240324 (rc1-441)   ok  <- verified
+# !!! On a broken build this kit produces a sandbox that starts but has no MCP
+# !!! gateway, stops at the trust dialog, and attests nothing. Check with:
+# !!!   sbx exec <name> -- stat -c '%U:%G' /home/agent/.claude/projects
+schemaVersion: "2"
+kind: sandbox                                # REQUIRED: only kind:sandbox may set an entrypoint
+name: chainloop-trace-claude
+displayName: Claude Code (Chainloop-traced)
+description: >-
+  Claude Code traced with Chainloop. Repos already initialized for `chainloop trace`
+  use their committed config (attested on `git push`); all other repos are
+  wrapped in `chainloop trace run` (attested on clean agent exit). Fork of the
+  built-in `claude` agent.
+
+# Everything the caller has to supply arrives as a kit ARGUMENT, so this file
+# holds no secrets and is committed as-is. `sbx kit validate ./kit` names any
+# argument it still needs, and traceMode's enum is enforced before the sandbox is
+# built rather than by the wrapper at runtime.
+#
+# WHY org/project/workflow are arguments rather than values baked in here: the
+# two tracing modes take their attestation identity from opposite places.
+#   persistent - `chainloop trace init` wrote organization/projectName (and
+#                optionally the workflow, else "ai-coding-session") into the
+#                repo's .chainloop.yml, and the push-time hook reads them from
+#                there. The kit contributes NOTHING but the token.
+#   trace run  - deliberately isolated: "it ignores .chainloop.yml entirely. The
+#                attestation identity must come from the --org, --project,
+#                --workflow flags (mandatory)" (`chainloop trace run --help`).
+# So the three values are dead weight in the mode this kit uses most, and
+# mandatory in the other. Asking for them per-invocation is the only shape that
+# is honest about that.
+args:
+  chainloopToken:
+    default: ""
+    description: >-
+      Chainloop org-scoped API token (chainloop organization api-token create).
+      Authenticates the attestation push in BOTH modes; in persistent mode it
+      must have access to the org pinned in the repo's .chainloop.yml.
+      OPTIONAL only because chainloopConfig is the other way to authenticate -
+      supply one or the other, or the wrapper refuses to start. When both are
+      present this one WINS: the CLI prefers an exported CHAINLOOP_TOKEN over a
+      config-file login session and logs "Both user credentials and
+      $CHAINLOOP_TOKEN set. Ignoring user credentials." (app/cli/cmd/root.go).
+  chainloopConfig:
+    default: ""
+    description: >-
+      Absolute path INSIDE the sandbox to a chainloop config.toml to adopt -
+      i.e. where you mounted the host's, which sbx mounts at the SAME absolute
+      path it has on the host. The wrapper copies it to
+      ~/.config/chainloop/config.toml so every later `chainloop` invocation
+      finds it, including the git hooks that persistent mode runs as their own
+      processes (a --config flag would not reach those). Brings the org and the
+      control-plane/CAS/platform endpoints with it, which is what makes this
+      worthwhile for self-hosted. NOTE its [auth] token is your personal
+      login session: short-lived (~days) and your full identity. Prefer
+      chainloopToken for anything unattended.
+  traceMode:
+    default: auto
+    enum: [auto, run, persistent]
+    description: >-
+      auto = persistent when the repo is already trace-initialized, else trace
+      run. run = always single-shot (DESTRUCTIVE on a trace-initialized repo:
+      teardown wipes .git/chainloop-trace/ and strips the committed agent
+      hooks). persistent = force persistent.
+  chainloopOrg:
+    default: ""
+    description: >-
+      Chainloop organization. `trace run` mode ONLY - ignored in persistent
+      mode, where the org comes from the repo's .chainloop.yml.
+  chainloopProject:
+    default: ""
+    description: >-
+      Chainloop project. `trace run` mode ONLY - ignored in persistent mode.
+  chainloopWorkflow:
+    default: ai-coding-session
+    description: >-
+      Chainloop workflow name. `trace run` mode ONLY. Matches the default
+      `chainloop trace init` writes, so both modes land on the same workflow
+      unless you say otherwise.
+
+# Inherit the built-in `claude` agent instead of restating it. This kit then
+# declares ONLY the Chainloop delta; everything below comes for free and stays in
+# step with sbx upgrades instead of drifting in a hand-copied spec:
+#   - sandbox.image (no tag to verify or bump)
+#   - the `anthropic` credential: proxy-injected x-api-key AND the OAuth block
+#   - Anthropic/Claude egress (api.anthropic.com, claude.com, downloads.claude.ai,
+#     mcp-proxy.anthropic.com, platform.claude.com, bridge.claudeusercontent.com)
+#   - IS_SANDBOX=1
+#   - ~/.claude.json trust+onboarding flags, ~/.claude/settings.json seeding, and
+#     `claude mcp add mcp-gateway` (MCP is invisible to the session without it)
+#   - the persistent ~/.claude/{projects,sessions,todos,shell-snapshots,statsig}
+#     volumes - projects/ holds the transcript `chainloop trace` reads
+#   - agentInstructions.filename: CLAUDE.md
+extends: claude
+
+sandbox:
+  # REPLACES the parent's [claude, --dangerously-skip-permissions] -> the wrap
+  # point. The wrapper re-adds that flag when it execs claude. (v1 spelled this
+  # `entrypoint.run: [...]`; v2 takes the argv array directly.)
+  entrypoint: ["/home/agent/.local/bin/cl-trace-wrap.sh"]
+
+setup:                                       # v1: `commands:`
+  install:
+    # Install the EE chainloop CLI (the public installer defaults to EE, which
+    # is the edition that ships `trace`). The installer requires the target
+    # dir to exist, so create it first. Run as root so we can write to
+    # /usr/local/bin (hooks invoke `chainloop` by bare name -> must be on PATH).
+    - command: >-
+        mkdir -p /usr/local/bin &&
+        curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --path /usr/local/bin &&
+        chainloop version
+      user: "0"
+      description: Install the EE chainloop CLI on PATH
+  files:                                     # v1: `commands.initFiles:`
+    - path: /home/agent/.local/bin/cl-trace-wrap.sh
+      mode: "0755"
+      content: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        run_plain() {
+          exec claude --dangerously-skip-permissions "$@"
+        }
+
+        # Every path that would hand back an UNTRACED agent is fatal instead.
+        # This kit exists to make a session provable, and a sandbox that quietly
+        # records nothing is the one outcome worse than not starting: you find
+        # out only when the attestation you expected is not there.
+        die() {
+          echo "[chainloop-trace] ERROR: $1" >&2
+          exit 1
+        }
+
+        if ! command -v chainloop >/dev/null 2>&1; then
+          die "chainloop CLI not on PATH - the kit's install step did not complete
+        (check egress to dl.chainloop.dev). Refusing to start an untraced agent."
+        fi
+
+        # Adopt a mounted host config.toml when one was pointed at. sbx mounts an
+        # extra read-only workspace at the SAME absolute path it has on the host,
+        # which is NOT where the CLI looks: `chainloop config view` inside the
+        # sandbox reports /home/agent/.config/chainloop/config.toml (Linux XDG),
+        # verified. Copy rather than pass --config, because in persistent mode the
+        # managed git hooks invoke `chainloop` as their own processes and a flag
+        # from this wrapper would never reach them.
+        # Deliberately not named CHAINLOOP_CONFIG: the CLI's viper prefix is
+        # CHAINLOOP, so that name could bind to its own --config flag.
+        if [ -n "$CL_TRACE_CONFIG_SOURCE" ]; then
+          if [ ! -r "$CL_TRACE_CONFIG_SOURCE" ]; then
+            die "chainloopConfig points at '$CL_TRACE_CONFIG_SOURCE', which is not
+        readable in the sandbox. Mount it read-only and give the path it has ON
+        THE HOST - that is where sbx mounts it inside too, e.g.
+          sbx run ... \"\$HOME/Library/Application Support/chainloop:ro\""
+          fi
+          mkdir -p "$HOME/.config/chainloop"
+          install -m 600 "$CL_TRACE_CONFIG_SOURCE" "$HOME/.config/chainloop/config.toml"
+          echo "[chainloop-trace] Adopted chainloop config from $CL_TRACE_CONFIG_SOURCE" >&2
+        fi
+
+        # Something has to authenticate the attestation. An explicit token wins
+        # over a config-file login session - the CLI prefers an exported
+        # CHAINLOOP_TOKEN and logs "Both user credentials and $CHAINLOOP_TOKEN
+        # set. Ignoring user credentials." (app/cli/cmd/root.go) - but with
+        # neither, nothing can be pushed, so refuse rather than record nothing.
+        if [ -z "$CHAINLOOP_TOKEN" ] && [ ! -r "$HOME/.config/chainloop/config.toml" ]; then
+          die "no Chainloop credentials. Pass an org-scoped API token with
+          --kit-arg chainloopToken=<token>
+        or mount your host config and point at it with
+          --kit-arg chainloopConfig=<path-inside-sandbox>"
+        fi
+
+        # NB: shell default-expansion (dollar-brace VAR colon-dash default) is
+        # rejected by the kit validator inside setup.files content - WORKDIR is
+        # the only supported placeholder - so the default is spelled out long.
+        # Every arg has a default, so the kit always defines these and bare
+        # $VAR is safe under `set -u`.
+        mode="$CHAINLOOP_TRACE_MODE"
+        if [ -z "$mode" ]; then
+          mode=auto
+        fi
+        # traceMode's enum is enforced by sbx before the sandbox is built, so a
+        # bad value here can only arrive via a runtime `-e` override.
+        case "$mode" in
+          auto|run|persistent) ;;
+          *) die "invalid CHAINLOOP_TRACE_MODE='$mode' (want auto|run|persistent)" ;;
+        esac
+
+        detected=0
+        if [ "$mode" != run ]; then
+          repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
+          for f in "$repo_root/.chainloop.yml" "$repo_root/.chainloop.yaml"; do
+            if [ -f "$f" ] && grep -qE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$f" \
+               && grep -q "chainloop trace hook" "$repo_root/.claude/settings.json" 2>/dev/null; then
+              detected=1
+              break
+            fi
+          done
+        fi
+
+        if [ "$mode" = auto ]; then
+          if [ "$detected" = 1 ]; then mode=persistent; else mode=run; fi
+        fi
+
+        if [ "$mode" = persistent ]; then
+          if [ "$detected" != 1 ]; then
+            die "traceMode=persistent, but this repo carries no committed trace config
+        (needs .chainloop.yml with projectName AND the 'chainloop trace hook'
+        entries in .claude/settings.json). Run 'chainloop trace init' in the
+        repo, or use traceMode=run with chainloopOrg/chainloopProject."
+          fi
+          echo "[chainloop-trace] Repo already initialized for chainloop trace - persistent mode" >&2
+          echo "[chainloop-trace]   identity from .chainloop.yml; attestation is pushed on 'git push'" >&2
+          run_plain "$@"
+        fi
+
+        # trace run mode: .chainloop.yml is ignored by design, so the identity
+        # has to come from the kit args.
+        missing=""
+        if [ -z "$CHAINLOOP_ORG" ]; then missing="$missing chainloopOrg"; fi
+        if [ -z "$CHAINLOOP_PROJECT" ]; then missing="$missing chainloopProject"; fi
+        if [ -z "$CHAINLOOP_WORKFLOW" ]; then missing="$missing chainloopWorkflow"; fi
+        if [ -n "$missing" ]; then
+          die "trace run mode needs an explicit attestation identity ('chainloop trace
+        run' ignores .chainloop.yml by design), but these kit args are empty:$missing
+          Supply them at launch, e.g.
+            --kit-arg chainloopOrg=my-org --kit-arg chainloopProject=my-project
+          or initialize the repo for persistent tracing with 'chainloop trace init'."
+        fi
+
+        echo "[chainloop-trace] Recording this session to Chainloop (trace run)" >&2
+        echo "[chainloop-trace]   org=$CHAINLOOP_ORG project=$CHAINLOOP_PROJECT workflow=$CHAINLOOP_WORKFLOW" >&2
+
+        exec chainloop trace run \
+          --org "$CHAINLOOP_ORG" \
+          --project "$CHAINLOOP_PROJECT" \
+          --workflow "$CHAINLOOP_WORKFLOW" \
+          --claude \
+          -- claude --dangerously-skip-permissions "$@"
+
+environment:
+  # v2 has no `environment.proxyManaged:` list - the sentinel is declared per
+  # credential as credentials[].apiKey.proxyManaged (see below).
+  variables:
+    # NOTE: HOME is deliberately NOT declared. The agent and the hook subprocess
+    # MUST share it (transcript discovery is os.UserHomeDir()-based; a mismatch
+    # silently loses usage/cost/tools), but sbx already sets HOME=/home/agent on
+    # PID 1, so every child inherits it - verified in a plain `claude` sandbox.
+    DO_NOT_TRACK: "1"                        # silence PostHog telemetry under restricted egress
+    # Mode selection - see the traceMode arg above for what each value does.
+    CHAINLOOP_TRACE_MODE: ${{ kit.args.traceMode }}
+    # `trace run` identity ONLY. Empty in persistent mode, where the identity
+    # comes from the repo's own .chainloop.yml.
+    CHAINLOOP_ORG: ${{ kit.args.chainloopOrg }}
+    CHAINLOOP_PROJECT: ${{ kit.args.chainloopProject }}
+    CHAINLOOP_WORKFLOW: ${{ kit.args.chainloopWorkflow }}
+    # Self-hosted overrides only (defaults are the SaaS endpoints):
+    # CHAINLOOP_CONTROL_PLANE_API: "api.cp.chainloop.dev:443"
+    # CHAINLOOP_ARTIFACT_CAS_API: "api.cas.chainloop.dev:443"
+    #
+    # Path B: the REAL org-scoped API token is set directly in the sandbox env,
+    # from the required `chainloopToken` arg - so no secret is stored in this
+    # file and it is committed as-is.
+    # Do NOT use `sbx secret set-custom` / proxy-managed header injection for this
+    # token (see the commented-out Path A block under `credentials:`): injection
+    # requires the proxy to TERMINATE TLS, and the intercepted path does not
+    # negotiate the `h2` ALPN - which is exactly what grpc-go >=1.67 refuses.
+    CHAINLOOP_TOKEN: ${{ kit.args.chainloopToken }}
+    # Path (inside the sandbox) of a mounted host config.toml for the wrapper to
+    # adopt. Not CHAINLOOP_-prefixed on purpose - see the wrapper's note.
+    CL_TRACE_CONFIG_SOURCE: ${{ kit.args.chainloopConfig }}
+    #
+    # CRITICAL (gRPC vs the egress proxy): `chainloop trace` talks to the control
+    # plane over gRPC (HTTP/2 + ALPN). sbx sets HTTP(S)_PROXY=gateway.docker.internal:3128
+    # and grpc-go honors it, dialing via HTTP CONNECT. The proxy handles a host in
+    # one of two ways, and only one of them works for gRPC (probe any host with
+    # `curl -sv --http2 --proxy "$HTTPS_PROXY" https://<host>/` and read the issuer):
+    #   TUNNEL      - no credential targets the host. TLS is end-to-end (real
+    #                 Let's Encrypt cert), ALPN reaches the server, `h2` negotiated.
+    #   INTERCEPTED - some credential targets the host, so the proxy terminates TLS
+    #                 to rewrite headers (issuer "Docker Sandboxes Proxy CA"). It
+    #                 answers `ALPN: server did not agree on a protocol` and drops
+    #                 to HTTP/1.1; grpc-go >=1.67 aborts with "missing selected ALPN
+    #                 property" and NO attestation is sent.
+    # A host flips to INTERCEPTED the moment ANY credential targets it - a kit
+    # apiKey.inject[].domain, OR a host-side `sbx secret set-custom --host
+    # api.cp.chainloop.dev --env CHAINLOOP_TOKEN`, which is easy to add from outside
+    # this repo and silently breaks tracing (verified on sbx v0.38.0: same kit,
+    # same empty token, tunnel before the custom secret existed and intercepted
+    # after; re-verified unchanged on v0.39.0-rc1-441). Bypassing the proxy for the
+    # Chainloop hosts makes tracing immune to that decision; egress is still
+    # enforced by sbx's allowlist. Keep localhost / gateway.docker.internal, which
+    # is what sbx's own default NO_PROXY carries.
+    NO_PROXY: "localhost,127.0.0.1,::1,gateway.docker.internal,api.cp.chainloop.dev,api.cas.chainloop.dev,api.app.chainloop.dev"
+    no_proxy: "localhost,127.0.0.1,::1,gateway.docker.internal,api.cp.chainloop.dev,api.cas.chainloop.dev,api.app.chainloop.dev"
+
+credentials:
+  # No `anthropic` entry: it is inherited from the parent, including the OAuth
+  # block that a hand-written fork would have had to copy. Do NOT redeclare it -
+  # named arrays merge by identity key (credentials[].service) and a duplicate
+  # service across parent and child is an ERROR, not an override.
+  #
+  # (For reference, v2 collapses v1's four-part wiring - credentials.sources +
+  # network.serviceDomains + network.serviceAuth + environment.proxyManaged -
+  # into one entry per service, and apiKey.proxyManaged defaults to FALSE.)
+
+  # --- Path A (NOT USABLE TODAY - verified v0.38.0, re-verified on the v0.39 line)
+  # Proxy-managed injection of the Chainloop token, so the real secret never
+  # enters the VM. Uncomment this entry, drop the CHAINLOOP_TOKEN variable above
+  # and the chainloopToken arg, and store the secret on the host with
+  #   sbx secret set-custom --host api.cp.chainloop.dev --env CHAINLOOP_TOKEN
+  #
+  # Why it cannot be enabled yet - TESTED END-TO-END, not inferred: injection only
+  # works on hosts the proxy INTERCEPTS (it must terminate TLS to rewrite the
+  # header), and the intercepted path answers `ALPN: server did not agree on a
+  # protocol`, dropping to HTTP/1.1. grpc-go >=1.67 then aborts with "missing
+  # selected ALPN property" and NO attestation is sent.
+  #
+  # !! This also applies to `sbx secret set-custom --host api.cp.chainloop.dev
+  # !! --env CHAINLOOP_TOKEN`, which is the same mechanism by another route (it
+  # !! substitutes a `sbx-cs-...` placeholder in outbound headers). A global custom
+  # !! secret for the Chainloop hosts is INERT only because this kit sets
+  # !! CHAINLOOP_TOKEN itself, which suppresses the binding. Stop setting the token
+  # !! here and the placeholder goes live, the hosts flip to the intercepted path,
+  # !! and tracing dies with the ALPN error. Verified on sbx v0.38.0:
+  # !!   CHAINLOOP_TOKEN=sbx-cs-...  ->  issuer "Docker Sandboxes Proxy CA", HTTP/1.x
+  # !!   kit-set CHAINLOOP_TOKEN     ->  issuer "Let's Encrypt", h2, gRPC works
+  #
+  # Re-test with:
+  #   curl -sv --http2 --proxy "$HTTPS_PROXY" https://api.cp.chainloop.dev/
+  # and enable this once the issuer is "Docker Sandboxes Proxy CA" AND the server
+  # still agrees on h2.
+  #
+  # - service: chainloop
+  #   apiKey:
+  #     name: CHAINLOOP_TOKEN
+  #     proxyManaged: true
+  #     inject:
+  #       - domain: api.cp.chainloop.dev
+  #         scheme: bearer                   # v2 shorthand for Authorization: Bearer %s
+  #       - domain: api.cas.chainloop.dev
+  #         scheme: bearer
+  #       - domain: api.app.chainloop.dev
+  #         scheme: bearer
+  # ---------------------------------------------------------------------------
+
+permissions:                                 # v1: `network.allowedDomains:`
+  # Sandbox egress is deny-by-default. The Anthropic/Claude hosts come from the
+  # parent (set union, deduplicated, parent order first); these are the Chainloop
+  # additions.
+  network:
+    allow:
+      - "api.cp.chainloop.dev:443"           # control plane - ALWAYS (attest + keyless signing CSR)
+      - "api.cas.chainloop.dev:443"          # CAS - only if the org CAS backend is external
+      - "api.app.chainloop.dev:443"          # platform backend - the EE CLI also dials this
+      - "timestamp.digicert.com:80"          # RFC 3161 timestamp authority (plain HTTP, signed response)
+                                             # used during attestation signing; host comes from the
+                                             # control plane's signing options
+      - "dl.chainloop.dev:443"               # EE CLI installer
+      - "chainloop-baafegchfnekdcde.z02.azurefd.net:443"  # EE CLI download CDN
+      - "github.com:443"                     # git push over HTTPS in persistent mode - the
+                                             # pre-push attestation egresses on push. Other
+                                             # forges/self-hosted: add your own host here.
+
+agentInstructions:                           # v1: `sandbox.aiFilename` + `agentContext:`
+  # filename is inherited (CLAUDE.md). NOTE: `content` is a scalar, so this
+  # REPLACES the parent's CLAUDE.md text (its CLAUDE_ENV_FILE / shell-completion
+  # guidance) rather than appending to it.
+  content: |
+    ## Chainloop tracing
+    This session is recorded by Chainloop trace. Tool/MCP usage and coding
+    activity are attested and sent to Chainloop (as a CHAINLOOP_AI_CODING_SESSION
+    attestation) when the agent exits cleanly, or on `git push` when the
+    repository is initialized for persistent tracing.

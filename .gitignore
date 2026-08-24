@@ -59,3 +59,4 @@ config.local.yaml
 devel/dex/config.dev.local.yaml
 devel/compose.override.yml
 .claude/worktrees/
+**/.claude/settings.local.json
