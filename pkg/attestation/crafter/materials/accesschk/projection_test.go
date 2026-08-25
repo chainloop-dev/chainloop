@@ -16,11 +16,17 @@
 package accesschk
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	everyone     = "Everyone"
+	keyAllAccess = "KEY_ALL_ACCESS"
 )
 
 // Project must be lossless: every object's descriptor is exactly reconstructable
@@ -30,9 +36,9 @@ func TestProjectIsLossless(t *testing.T) {
 	report := &Report{
 		Tool: Tool{Name: ToolName, Version: "6.15"},
 		Objects: []Object{
-			{Name: "key1", Owner: sys, DACL: []ACE{{Index: 0, Principal: "Everyone", Rights: []string{"KEY_ALL_ACCESS"}}}, AccessEntries: []AccessEntry{}},
-			{Name: "key2", Owner: sys, DACL: []ACE{{Index: 0, Principal: "Everyone", Rights: []string{"KEY_ALL_ACCESS"}}}, AccessEntries: []AccessEntry{}}, // same descriptor as key1
-			{Name: "key3", Owner: "Admins", DACL: []ACE{{Index: 0, Principal: sys, Rights: []string{"KEY_READ"}}}, AccessEntries: []AccessEntry{}},         // distinct
+			{Name: "key1", Owner: sys, DACL: []ACE{{Index: 0, Principal: everyone, Rights: []string{keyAllAccess}}}, AccessEntries: []AccessEntry{}},
+			{Name: "key2", Owner: sys, DACL: []ACE{{Index: 0, Principal: everyone, Rights: []string{keyAllAccess}}}, AccessEntries: []AccessEntry{}}, // same descriptor as key1
+			{Name: "key3", Owner: "Admins", DACL: []ACE{{Index: 0, Principal: sys, Rights: []string{"KEY_READ"}}}, AccessEntries: []AccessEntry{}},   // distinct
 		},
 	}
 
@@ -92,4 +98,59 @@ HKLM\SOFTWARE\B
 		assert.Equal(t, report.Objects[i].DACL, d.DACL)
 		assert.Equal(t, report.Objects[i].Owner, d.Owner)
 	}
+}
+
+// The serialized projection is the contract the policy engine consumes, so assert
+// the marshaled JSON shape directly: the descriptors table, objects that carry a
+// "descriptor" index (and no inline DACL), the retained/omitted raw_lines
+// fallback, and the top-level raw field.
+func TestProjectJSONShape(t *testing.T) {
+	report := &Report{
+		Tool: Tool{Name: ToolName, Version: "6.15"},
+		Raw:  "verbatim text",
+		Objects: []Object{
+			{Name: "key1", DACL: []ACE{{Index: 0, AceType: "access_allowed_ace_type", Principal: everyone, Rights: []string{keyAllAccess}}}, AccessEntries: []AccessEntry{}, RawLines: []string{"  raw line"}},
+			{Name: "key2", DACL: []ACE{{Index: 0, AceType: "access_allowed_ace_type", Principal: everyone, Rights: []string{keyAllAccess}}}, AccessEntries: []AccessEntry{}}, // same descriptor, no raw lines
+		},
+	}
+
+	proj, err := report.Project()
+	require.NoError(t, err)
+	b, err := json.Marshal(proj)
+	require.NoError(t, err)
+
+	// Decode into a struct mirroring the wire contract policies rely on.
+	var wire struct {
+		Tool        map[string]any `json:"tool"`
+		Descriptors []struct {
+			DACL          []map[string]any `json:"dacl"`
+			AccessEntries []any            `json:"access_entries"`
+		} `json:"descriptors"`
+		Objects []struct {
+			Name       string   `json:"name"`
+			Descriptor *int     `json:"descriptor"`
+			RawLines   []string `json:"raw_lines"`
+		} `json:"objects"`
+		Raw string `json:"raw"`
+	}
+	require.NoError(t, json.Unmarshal(b, &wire))
+
+	assert.Equal(t, "verbatim text", wire.Raw)
+	require.Len(t, wire.Descriptors, 1) // identical descriptors shared
+	require.Len(t, wire.Objects, 2)
+
+	require.NotNil(t, wire.Objects[0].Descriptor)
+	assert.Equal(t, "key1", wire.Objects[0].Name)
+	assert.Equal(t, *wire.Objects[0].Descriptor, *wire.Objects[1].Descriptor)
+	assert.Equal(t, everyone, wire.Descriptors[*wire.Objects[0].Descriptor].DACL[0]["principal"])
+	assert.NotNil(t, wire.Descriptors[0].AccessEntries)
+
+	// raw_lines is retained for key1 and omitted for key2.
+	assert.Equal(t, []string{"  raw line"}, wire.Objects[0].RawLines)
+	assert.Nil(t, wire.Objects[1].RawLines)
+
+	// Objects reference a descriptor index and never carry the DACL inline.
+	js := string(b)
+	assert.Contains(t, js, `"name":"key2","descriptor":0}`)
+	assert.NotContains(t, js, `"name":"key2","descriptor":0,"dacl"`)
 }
