@@ -31,12 +31,10 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-// These tests lock down the DOWNLOAD digest-verification behavior. The download
-// path is intentionally unchanged by the streaming-upload work (PFM-6923); this
-// battery guards it against regressions — the server must stream the stored
-// bytes back, compute their sha256 across however many chunks the backend
-// produces, and reject any content whose digest does not match the requested
-// resource name.
+// These tests lock down the DOWNLOAD digest-verification behavior — the server
+// must stream the stored bytes back, compute their sha256 across however many
+// chunks the backend produces, and reject any content whose digest does not
+// match the requested resource name.
 
 // fakeReadServer is a minimal bytestream.ByteStream_ReadServer that records the
 // data chunks the streamWriter sends. Only Send is exercised by streamWriter.

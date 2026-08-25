@@ -39,3 +39,8 @@ observability:
 
 auth:
   public_key_path: ${PUBLIC_KEY_PATH:../../devel/devkeys/cas.pub}
+
+# Local directory where uploads are staged and verified against the declared
+# digest before being sent to the backend. Required: there is no fallback.
+# In Kubernetes this points at a dedicated per-pod emptyDir.
+staging_dir: ${STAGING_DIR:/tmp/chainloop-cas-staging}

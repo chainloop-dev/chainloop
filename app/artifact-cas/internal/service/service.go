@@ -38,6 +38,11 @@ type commonService struct {
 	backends backend.Providers
 	// best-effort audit events publisher, nil-safe
 	audit *AuditDispatcher
+	// stagingDir is the local directory where uploads are staged on disk while
+	// their SHA256 is verified against the declared digest before reaching the
+	// backend. It must be set and writable: leaving it empty is a deployment
+	// error and uploads are refused rather than staged somewhere unintended.
+	stagingDir string
 }
 
 func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {
@@ -69,6 +74,16 @@ func WithLogger(logger log.Logger) NewOpt {
 func WithAuditDispatcher(d *AuditDispatcher) NewOpt {
 	return func(s *commonService) {
 		s.audit = d
+	}
+}
+
+// WithStagingDir sets the local directory where uploads are spilled and
+// verified before being sent to the backend. It must point at a writable volume
+// dedicated to this pod; there is no default, so an upload fails loudly rather
+// than silently staging somewhere unintended.
+func WithStagingDir(dir string) NewOpt {
+	return func(s *commonService) {
+		s.stagingDir = dir
 	}
 }
 

@@ -28,6 +28,12 @@ message Bootstrap {
   // Optional NATS server configuration to publish audit events to the
   // control-plane-owned stream. When unset, event publishing is disabled.
   NatsServer nats_server = 5;
+  // Local directory where uploads (and, later, downloads) are staged on disk
+  // and verified against the declared digest before reaching the backend. It
+  // must be a writable volume; in production a dedicated emptyDir is mounted
+  // here (NOT tmpfs/RAM, and NOT the /tmp secret mount). When unset the service
+  // falls back to the OS temp dir, which is only appropriate for local dev.
+  string staging_dir = 6;
 
   message NatsServer {
     // NATS server URI, e.g. "nats://localhost:4222"

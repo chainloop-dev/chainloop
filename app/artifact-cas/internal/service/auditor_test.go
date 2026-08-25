@@ -71,6 +71,9 @@ func testUploadedEntry() auditor.LogEntry {
 
 const testOrgID = "1089bb36-e27b-428b-8009-d015c8737c54"
 
+// testStoredSecretID is the credentials handle the fake JWT claims carry.
+const testStoredSecretID = "secret-id"
+
 func TestAuditDispatcherDispatch(t *testing.T) {
 	tests := []struct {
 		name string

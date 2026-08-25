@@ -51,10 +51,11 @@ func wireApp(*conf.Bootstrap, *conf.Server, *conf.Auth, credentials.Reader, log.
 	)
 }
 
-func serviceOpts(l log.Logger, audit *service.AuditDispatcher) []service.NewOpt {
+func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap) []service.NewOpt {
 	return []service.NewOpt{
 		service.WithLogger(l),
 		service.WithAuditDispatcher(audit),
+		service.WithStagingDir(bc.GetStagingDir()),
 	}
 }
 
