@@ -73,16 +73,7 @@ type Backend struct {
 	s3Client *s3.Client
 }
 
-var (
-	_ backend.UploaderDownloader = (*Backend)(nil)
-	_ backend.StreamingUploader  = (*Backend)(nil)
-)
-
-// SupportsStreaming reports that the s3accesspoint backend can upload directly
-// from a streaming reader. Like the plain s3 backend it uses the AWS SDK's
-// manager.Uploader, which consumes the reader in bounded-size multipart parts,
-// so CAS never needs to buffer the whole artifact in memory.
-func (b *Backend) SupportsStreaming() bool { return true }
+var _ backend.UploaderDownloader = (*Backend)(nil)
 
 // NewBackend constructs a *Backend wired to an STS-backed credentials
 // provider. ctx is used only for the initial AWS config load (DNS lookups,

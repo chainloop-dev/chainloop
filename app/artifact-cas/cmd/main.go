@@ -25,6 +25,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
+	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
@@ -121,6 +122,12 @@ func main() {
 
 	_ = logger.Log(log.LevelInfo, "msg", "starting artifact-cas service", "version", Version)
 
+	// Ensure the upload staging directory exists and sweep any files a previous
+	// crash left behind, so verification always starts from a clean volume.
+	if err := prepareStagingDir(&bc, logger); err != nil {
+		panic(err)
+	}
+
 	flush, err := initSentry(&bc, logger)
 	defer flush()
 	if err != nil {
@@ -150,6 +157,31 @@ func main() {
 
 func newProtoValidator() (protovalidate.Validator, error) {
 	return protovalidate.New()
+}
+
+// prepareStagingDir resolves the upload staging directory (falling back to the
+// OS temp dir when unconfigured — dev only; production mounts a dedicated
+// volume), creates it, and removes any leftover staging files from a previous
+// run. It must use the same directory the service is configured with (see
+// serviceOpts / conf.staging_dir).
+func prepareStagingDir(bc *conf.Bootstrap, logger log.Logger) error {
+	dir := bc.GetStagingDir()
+	if dir == "" {
+		dir = os.TempDir()
+		_ = logger.Log(log.LevelWarn, "msg", "staging_dir not configured, falling back to OS temp dir (dev only)", "dir", dir)
+	}
+
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+
+	if _, err := service.SweepStagingDir(dir, servicelogger.ScopedHelper(logger, "staging")); err != nil {
+		// A sweep failure is not fatal: the deferred per-upload cleanup still
+		// applies, so log and continue rather than blocking startup.
+		_ = logger.Log(log.LevelWarn, "msg", "failed to sweep staging dir", "dir", dir, "error", err.Error())
+	}
+
+	return nil
 }
 
 func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err error) {

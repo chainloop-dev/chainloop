@@ -14,6 +14,11 @@ metadata:
   {{- end }}
 data:
   server.yaml: |
+    {{- if .Values.cas.staging.enabled }}
+    # Local directory where uploads are staged and verified against the declared
+    # digest before being sent to the backend (see cas.staging in values.yaml).
+    staging_dir: {{ .Values.cas.staging.mountPath | quote }}
+    {{- end }}
     server:
       http:
         addr: "0.0.0.0:{{ .Values.cas.containerPorts.http }}"

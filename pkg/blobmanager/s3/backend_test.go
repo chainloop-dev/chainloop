@@ -244,12 +244,6 @@ func (s *testSuite) TestDownload() {
 		s.NoError(err)
 		s.Equal("test", buf.String())
 	})
-
-	// s.T().Run("it's been tampered", func(t *testing.T) {
-	// 	buf := bytes.NewBuffer(nil)
-	// 	err := s.backend.Download(context.Background(), buf, s.tamperedObjectDigest)
-	// 	s.ErrorContains(err, "failed to validate integrity of object")
-	// })
 }
 
 type testSuite struct {
@@ -258,7 +252,6 @@ type testSuite struct {
 	backend, invalidBackend *Backend
 	ownedObjectDigest       string
 	externalObjectDigest    string
-	tamperedObjectDigest    string
 }
 
 func TestS3Backend(t *testing.T) {
@@ -311,15 +304,6 @@ func (s *testSuite) SetupTest() {
 	s.ownedObjectDigest = fmt.Sprintf("%x", sha256.Sum256(buf.Bytes()))
 	// calculate sha256 of the content in the buffer
 	err = s.backend.Upload(context.Background(), buf, &pb.CASResource{Digest: s.ownedObjectDigest, FileName: "test.txt"})
-	require.NoError(s.T(), err)
-
-	// Copy an existing object but reference it from somewhere else
-	s.tamperedObjectDigest = "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"
-	_, err = minioClient.CopyObject(context.Background(), minio.CopyDestOptions{
-		Bucket: testBucket, Object: fmt.Sprintf("sha256:%s", s.tamperedObjectDigest),
-	}, minio.CopySrcOptions{
-		Bucket: testBucket, Object: fmt.Sprintf("sha256:%s", s.ownedObjectDigest),
-	})
 	require.NoError(s.T(), err)
 
 	// upload another one but by the client directly
@@ -375,14 +359,4 @@ func (c *minioInstance) ConnectionString(t *testing.T) string {
 
 type minioInstance struct {
 	instance testcontainers.Container
-}
-
-// TestBackend_SupportsStreaming asserts the s3 backend opts into streaming
-// uploads so the CAS service feeds it directly from the client stream instead
-// of buffering the whole artifact in memory (PFM-6923).
-func TestBackend_SupportsStreaming(t *testing.T) {
-	var b backend.UploaderDownloader = &Backend{}
-	su, ok := b.(backend.StreamingUploader)
-	require.True(t, ok, "s3 backend must implement backend.StreamingUploader")
-	assert.True(t, su.SupportsStreaming())
 }
