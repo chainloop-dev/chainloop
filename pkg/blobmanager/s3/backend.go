@@ -46,18 +46,9 @@ type Backend struct {
 	customEndpoint string
 }
 
-var (
-	_ backend.UploaderDownloader = (*Backend)(nil)
-	_ backend.StreamingUploader  = (*Backend)(nil)
-)
+var _ backend.UploaderDownloader = (*Backend)(nil)
 
 const defaultRegion = "us-east-1"
-
-// SupportsStreaming reports that the s3 backend can upload directly from a
-// streaming reader. The AWS SDK's manager.Uploader consumes the reader in
-// bounded-size parts (multipart upload), so CAS never needs to buffer the whole
-// artifact in memory.
-func (b *Backend) SupportsStreaming() bool { return true }
 
 func NewBackend(creds *Credentials) (*Backend, error) {
 	if creds == nil {
@@ -173,10 +164,12 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 		},
 	}
 
-	// if b.checksumVerificationEnabled() {
-	// 	// Check that the object is uploaded correctly
-	// 	input.ChecksumSHA256 = aws.String(hexSha256ToBinaryB64(resource.Digest))
-	// }
+	// No per-object ChecksumSHA256 precondition is set here: a whole-object SHA256
+	// precondition cannot be expressed for multipart uploads (S3 only supports
+	// FULL_OBJECT checksums for CRC variants) and is unsupported on some
+	// S3-compatible endpoints (e.g. R2). Upload integrity is guaranteed by the CAS
+	// service, which hashes the content and verifies it against the declared
+	// digest before calling Upload.
 
 	if _, err := uploader.Upload(ctx, input); err != nil {
 		return fmt.Errorf("failed to upload to bucket: %w", err)

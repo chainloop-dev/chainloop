@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"syscall"
 
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
@@ -38,6 +39,10 @@ type commonService struct {
 	backends backend.Providers
 	// best-effort audit events publisher, nil-safe
 	audit *AuditDispatcher
+	// stagingDir is the local directory where uploads are staged on disk while
+	// their SHA256 is verified against the declared digest before reaching the
+	// backend. It must be writable; when unset it defaults to the OS temp dir.
+	stagingDir string
 }
 
 func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {
@@ -72,10 +77,23 @@ func WithAuditDispatcher(d *AuditDispatcher) NewOpt {
 	}
 }
 
+// WithStagingDir sets the local directory where uploads are spilled and
+// verified before being sent to the backend. An empty path leaves the default
+// (the OS temp dir), which is only appropriate for tests — production must
+// point this at a dedicated writable volume.
+func WithStagingDir(dir string) NewOpt {
+	return func(s *commonService) {
+		if dir != "" {
+			s.stagingDir = dir
+		}
+	}
+}
+
 func newCommonService(backends backend.Providers, opts ...NewOpt) *commonService {
 	s := &commonService{
-		log:      servicelogger.EmptyLogger(),
-		backends: backends,
+		log:        servicelogger.EmptyLogger(),
+		backends:   backends,
+		stagingDir: os.TempDir(),
 	}
 
 	for _, opt := range opts {

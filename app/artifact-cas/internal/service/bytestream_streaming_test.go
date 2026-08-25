@@ -21,12 +21,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"os"
 	"syscall"
 	"testing"
-	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
-	"github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/bytestream"
@@ -35,15 +34,6 @@ import (
 )
 
 const streamingBackendType = "streaming-backend-type"
-
-// streamingUploaderDownloader wraps a mock backend and advertises streaming
-// support, so the CAS service pipes the upload straight through instead of
-// buffering it. Used only in tests to exercise the streaming code path.
-type streamingUploaderDownloader struct {
-	*mocks.UploaderDownloader
-}
-
-func (streamingUploaderDownloader) SupportsStreaming() bool { return true }
 
 // --- test helpers ---------------------------------------------------------
 
@@ -115,6 +105,98 @@ func (s *bytestreamSuite) expectStreamingUpload(resource *v1.CASResource, upload
 	return received
 }
 
+// --- upload integrity verification -----------------------------------------
+
+// TestWriteDigestMismatchRejected is the core upload-integrity guarantee: bytes
+// that do not hash to the client-declared digest are rejected with
+// InvalidArgument, nothing is ever sent to the backend, and no audit event is
+// emitted. Without verification an attacker could store arbitrary content under
+// an arbitrary digest key.
+func (s *bytestreamSuite) TestWriteDigestMismatchRejected() {
+	content := []byte("this is the real content that was actually streamed")
+	// The declared digest belongs to DIFFERENT content than what is sent.
+	resource := &v1.CASResource{Digest: sha256Hex([]byte("something else entirely")), FileName: "artifact.bin"}
+	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	// Upload must NOT be called for a mismatching digest.
+
+	stream, err := s.client.Write(streamingUpCtx(""))
+	s.NoError(err)
+	sendInChunks(s.T(), stream, encodeResource(s.T(), resource), content, 7)
+
+	_, err = stream.CloseAndRecv()
+	assertGRPCError(s.T(), err, codes.InvalidArgument, "does not match the declared digest")
+	s.streamingBackend.AssertNotCalled(s.T(), "Upload", mock.Anything, mock.Anything, mock.Anything)
+	s.Empty(s.audit.published)
+}
+
+// TestWriteBackendReceivesSeekableFile asserts the backend's Upload is handed a
+// value satisfying io.ReaderAt+io.Seeker (an *os.File), so the AWS SDK's
+// zero-buffer fast path is taken. Wrapping the file on the way to Upload (a
+// TeeReader, progress reader, LimitReader) would silently reinstate part
+// buffering, so this guards against that regression.
+func (s *bytestreamSuite) TestWriteBackendReceivesSeekableFile() {
+	content := deterministicBytes(64 * 1024)
+	resource := resourceWithDigest(content, "artifact.bin")
+	var isReaderAt, isSeeker bool
+	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, resource).Return(nil).Run(func(args mock.Arguments) {
+		r := args.Get(1)
+		_, isReaderAt = r.(io.ReaderAt)
+		_, isSeeker = r.(io.Seeker)
+		_, _ = io.ReadAll(r.(io.Reader))
+	})
+
+	stream, err := s.client.Write(streamingUpCtx(""))
+	s.NoError(err)
+	sendInChunks(s.T(), stream, encodeResource(s.T(), resource), content, 8192)
+
+	_, err = stream.CloseAndRecv()
+	s.NoError(err)
+	s.True(isReaderAt, "backend must receive an io.ReaderAt for the SDK zero-buffer fast path")
+	s.True(isSeeker, "backend must receive an io.Seeker for the SDK zero-buffer fast path")
+}
+
+// requireStagingEmpty asserts the per-test staging directory holds no files, so
+// verified-and-uploaded or rejected content never accumulates on disk.
+func (s *bytestreamSuite) requireStagingEmpty() {
+	entries, err := os.ReadDir(s.stagingDir)
+	s.Require().NoError(err)
+	s.Emptyf(entries, "staging dir must be left empty, found: %v", entries)
+}
+
+// TestWriteStagingCleanupOnSuccess: after a successful upload the staging file
+// is removed.
+func (s *bytestreamSuite) TestWriteStagingCleanupOnSuccess() {
+	content := []byte("staged, verified, then uploaded")
+	resource := resourceWithDigest(content, "ok.bin")
+	received := s.expectStreamingUpload(resource, nil)
+
+	stream, err := s.client.Write(streamingUpCtx(""))
+	s.NoError(err)
+	sendInChunks(s.T(), stream, encodeResource(s.T(), resource), content, 8)
+
+	_, err = stream.CloseAndRecv()
+	s.NoError(err)
+	<-received
+	s.requireStagingEmpty()
+}
+
+// TestWriteStagingCleanupOnMismatch: after a rejected digest mismatch the
+// staging file is removed too — unverified bytes never linger.
+func (s *bytestreamSuite) TestWriteStagingCleanupOnMismatch() {
+	content := []byte("content that will not match the declared digest")
+	resource := &v1.CASResource{Digest: sha256Hex([]byte("different")), FileName: "bad.bin"}
+	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+
+	stream, err := s.client.Write(streamingUpCtx(""))
+	s.NoError(err)
+	sendInChunks(s.T(), stream, encodeResource(s.T(), resource), content, 8)
+
+	_, err = stream.CloseAndRecv()
+	assertGRPCError(s.T(), err, codes.InvalidArgument, "does not match the declared digest")
+	s.requireStagingEmpty()
+}
+
 // --- integrity / normal cases --------------------------------------------
 
 // TestWriteStreamingSingleChunkOK: a single-chunk streaming upload stores the
@@ -179,50 +261,6 @@ func (s *bytestreamSuite) TestWriteStreamingManyChunksIntegrity() {
 	gotBytes := <-received
 	s.Equal(resource.Digest, sha256Hex(gotBytes))
 	s.Len(gotBytes, len(content))
-}
-
-// TestWriteStreamingConsumesBeforeFinish is the core bounded-memory regression
-// test (PFM-6923): the backend must begin consuming the upload BEFORE the client
-// finishes sending. The handshake blocks the client's tail chunk until Upload
-// has started; with a buffering implementation Upload is never entered until the
-// whole stream is received, so this deadlocks and fails via timeout.
-func (s *bytestreamSuite) TestWriteStreamingConsumesBeforeFinish() {
-	data := []byte("hello streaming world")
-	resource := resourceWithDigest(data, "artifact.bin")
-
-	uploadStarted := make(chan struct{})
-	received := make(chan []byte, 1)
-	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
-	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, resource).
-		Return(nil).Run(func(args mock.Arguments) {
-		close(uploadStarted)
-		got, err := io.ReadAll(args.Get(1).(io.Reader))
-		s.NoError(err)
-		received <- got
-	})
-
-	stream, err := s.client.Write(streamingUpCtx(""))
-	s.NoError(err)
-	s.NoError(stream.Send(&bytestream.WriteRequest{
-		ResourceName: encodeResource(s.T(), resource),
-		Data:         data[:6],
-	}))
-
-	select {
-	case <-uploadStarted:
-	case <-time.After(5 * time.Second):
-		s.FailNow("backend Upload was not started before the stream finished — upload is being buffered, not streamed")
-	}
-
-	s.NoError(stream.Send(&bytestream.WriteRequest{
-		ResourceName: encodeResource(s.T(), resource),
-		Data:         data[6:],
-	}))
-
-	got, err := stream.CloseAndRecv()
-	s.NoError(err)
-	s.Equal(int64(len(data)), got.CommittedSize)
-	s.Equal(data, <-received)
 }
 
 // TestWriteStreamingEmptyArtifact: a zero-byte artifact streams cleanly and is
@@ -359,8 +397,10 @@ func (s *bytestreamSuite) TestWriteStreamingMaxSizeUnlimited() {
 // TestWriteStreamingBackendError: a generic backend Upload failure surfaces as
 // Internal and emits no audit event.
 func (s *bytestreamSuite) TestWriteStreamingBackendError() {
-	s.streamingBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
-	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, s.resource).
+	data := []byte("hello world")
+	resource := resourceWithDigest(data, "artifact.bin")
+	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, resource).
 		Return(fmt.Errorf("object store rejected the upload")).Run(func(args mock.Arguments) {
 		_, _ = io.ReadAll(args.Get(1).(io.Reader))
 	})
@@ -368,8 +408,8 @@ func (s *bytestreamSuite) TestWriteStreamingBackendError() {
 	stream, err := s.client.Write(streamingUpCtx(""))
 	s.NoError(err)
 	s.NoError(stream.Send(&bytestream.WriteRequest{
-		ResourceName: encodeResource(s.T(), s.resource),
-		Data:         []byte("hello world"),
+		ResourceName: encodeResource(s.T(), resource),
+		Data:         data,
 	}))
 
 	_, err = stream.CloseAndRecv()
@@ -381,16 +421,18 @@ func (s *bytestreamSuite) TestWriteStreamingBackendError() {
 // wrapping a network reset must be masked as Internal, NOT mistaken for a client
 // disconnect (which would falsely report success and silently drop the blob).
 func (s *bytestreamSuite) TestWriteStreamingBackendResetNotTreatedAsDisconnect() {
-	s.streamingBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
-	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, s.resource).
+	data := []byte("hello world")
+	resource := resourceWithDigest(data, "artifact.bin")
+	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, resource).
 		Return(fmt.Errorf("connection to object store failed: %w", syscall.ECONNRESET)).
 		Run(func(args mock.Arguments) { _, _ = io.ReadAll(args.Get(1).(io.Reader)) })
 
 	stream, err := s.client.Write(streamingUpCtx(""))
 	s.NoError(err)
 	s.NoError(stream.Send(&bytestream.WriteRequest{
-		ResourceName: encodeResource(s.T(), s.resource),
-		Data:         []byte("hello world"),
+		ResourceName: encodeResource(s.T(), resource),
+		Data:         data,
 	}))
 
 	_, err = stream.CloseAndRecv()
@@ -403,16 +445,18 @@ func (s *bytestreamSuite) TestWriteStreamingBackendResetNotTreatedAsDisconnect()
 // TestWriteStreamingBackendCanceledNotTreatedAsDisconnect: same guard for an
 // Upload error wrapping context.Canceled originating backend-side.
 func (s *bytestreamSuite) TestWriteStreamingBackendCanceledNotTreatedAsDisconnect() {
-	s.streamingBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
-	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, s.resource).
+	data := []byte("hello world")
+	resource := resourceWithDigest(data, "artifact.bin")
+	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, resource).
 		Return(fmt.Errorf("backend deadline: %w", context.Canceled)).
 		Run(func(args mock.Arguments) { _, _ = io.ReadAll(args.Get(1).(io.Reader)) })
 
 	stream, err := s.client.Write(streamingUpCtx(""))
 	s.NoError(err)
 	s.NoError(stream.Send(&bytestream.WriteRequest{
-		ResourceName: encodeResource(s.T(), s.resource),
-		Data:         []byte("hello world"),
+		ResourceName: encodeResource(s.T(), resource),
+		Data:         data,
 	}))
 
 	_, err = stream.CloseAndRecv()
@@ -425,13 +469,14 @@ func (s *bytestreamSuite) TestWriteStreamingBackendCanceledNotTreatedAsDisconnec
 // service's own reader-close must not surface as an Internal error.
 func (s *bytestreamSuite) TestWriteStreamingBackendSuccessWithoutDrain() {
 	data := []byte("hello world")
-	s.streamingBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
-	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, s.resource).Return(nil) // no drain
+	resource := resourceWithDigest(data, "artifact.bin")
+	s.streamingBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, resource).Return(nil) // no drain
 
 	stream, err := s.client.Write(streamingUpCtx(""))
 	s.NoError(err)
 	s.NoError(stream.Send(&bytestream.WriteRequest{
-		ResourceName: encodeResource(s.T(), s.resource),
+		ResourceName: encodeResource(s.T(), resource),
 		Data:         data,
 	}))
 
@@ -445,18 +490,12 @@ func (s *bytestreamSuite) TestWriteStreamingBackendSuccessWithoutDrain() {
 }
 
 // TestWriteStreamingClientDisconnect: when the client cancels mid-upload, the
-// server treats it as a disconnect (no error masking, no audit) and the backend
-// sees the stream abort through the pipe.
+// server aborts before verification completes, so nothing is ever sent to the
+// backend and no audit event is emitted.
 func (s *bytestreamSuite) TestWriteStreamingClientDisconnect() {
-	uploadStarted := make(chan struct{})
-	readErr := make(chan error, 1)
-	s.streamingBackend.On("Exists", mock.Anything, s.resource.Digest).Return(false, nil)
-	s.streamingBackend.On("Upload", mock.Anything, mock.Anything, s.resource).Maybe().
-		Return(nil).Run(func(args mock.Arguments) {
-		close(uploadStarted)
-		_, err := io.ReadAll(args.Get(1).(io.Reader))
-		readErr <- err
-	})
+	// Exists may or may not be reached depending on how fast the cancellation
+	// races the handler; the invariant under test is that Upload never is.
+	s.streamingBackend.On("Exists", mock.Anything, s.resource.Digest).Maybe().Return(false, nil)
 
 	ctx, cancel := context.WithCancel(streamingUpCtx(""))
 	stream, err := s.client.Write(ctx)
@@ -465,26 +504,13 @@ func (s *bytestreamSuite) TestWriteStreamingClientDisconnect() {
 		ResourceName: encodeResource(s.T(), s.resource),
 		Data:         []byte("partial upload"),
 	}))
-
-	// Wait until the backend is actively consuming, then cancel the client so the
-	// disconnect happens deterministically mid-stream.
-	select {
-	case <-uploadStarted:
-	case <-time.After(5 * time.Second):
-		s.FailNow("backend Upload was not started")
-	}
 	cancel()
 
-	select {
-	case err := <-readErr:
-		// The backend saw the aborted stream (pipe closed with the cancellation).
-		s.Error(err)
-	case <-time.After(5 * time.Second):
-		s.FailNow("backend Upload did not observe the client disconnect")
-	}
-
-	// A disconnect is not a successful upload: no audit event is emitted.
+	_, err = stream.CloseAndRecv()
+	// The client canceled: the RPC ends in error and nothing is stored.
+	s.Error(err)
 	s.Empty(s.audit.published)
+	s.streamingBackend.AssertNotCalled(s.T(), "Upload", mock.Anything, mock.Anything, mock.Anything)
 }
 
 // --- dedup ----------------------------------------------------------------

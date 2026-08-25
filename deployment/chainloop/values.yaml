@@ -1473,7 +1473,34 @@ cas:
       drop: ["ALL"]
     seccompProfile:
       type: "RuntimeDefault"
-  
+
+  ## CAS upload staging volume.
+  ## Uploads are streamed to this directory on local disk and verified against
+  ## the declared digest before being sent to the storage backend; nothing
+  ## unverified ever reaches the backend. The container root filesystem is
+  ## read-only, so a writable emptyDir is mounted here.
+  ##
+  ## Optional: when disabled, the CAS falls back to the OS temporary directory.
+  ## Keep it enabled while readOnlyRootFilesystem is true, since neither the root
+  ## filesystem nor the /tmp secret mount are writable in that case.
+  ##
+  ## WARNING: this MUST be a per-pod volume (an emptyDir, as configured below).
+  ## On startup each CAS pod sweeps leftover staging files from its own volume.
+  ## The sweep assumes exclusive, per-pod ownership: pointing it at a volume
+  ## SHARED between pods (a PVC or hostPath) would let one pod's boot sweep delete
+  ## another pod's in-flight upload. Do not use shared storage here.
+  ## @param cas.staging.enabled Mount a dedicated emptyDir for upload staging and point staging_dir at it. Required when readOnlyRootFilesystem is true.
+  ## @param cas.staging.mountPath Directory where uploads are staged and verified. Must not be /tmp (used by the jwt-public-key secret mount).
+  ## @param cas.staging.sizeLimit Size limit for the staging emptyDir. Budget roughly (concurrent uploads) × max artifact size per replica. NOTE: a breach triggers kubelet POD EVICTION, not a clean error, so keep this generous and rely on per-request size caps as the real bound.
+  ##
+  staging:
+    enabled: true
+    mountPath: /staging
+    ## IMPORTANT: this is a node-disk emptyDir. Do NOT set `medium: Memory` — a
+    ## tmpfs volume is backed by RAM and would reintroduce the OOM that staging
+    ## to disk is meant to avoid.
+    sizeLimit: 10Gi
+
   ## @param cas.automountServiceAccountToken Mount Service Account token in cas pods
   ##
   automountServiceAccountToken: false
