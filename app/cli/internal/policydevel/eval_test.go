@@ -15,11 +15,13 @@
 package policydevel
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	v12 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -229,4 +231,118 @@ func TestEvaluateSimplifiedPolicies(t *testing.T) {
 		assert.Len(t, result.Result.Violations, 1)
 		assert.Contains(t, string(result.Result.Violations[0]), "too few components")
 	})
+}
+
+// fixtureGitHubPAT is assembled from fragments so that this file does not itself
+// carry a credential-shaped literal for secret scanners to flag.
+const fixtureGitHubPAT = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
+
+// writeSessionFixture materialises an AI coding session fixture with its
+// credential placeholder resolved, so that the crafter sees a real secret on disk.
+func writeSessionFixture(t *testing.T) string {
+	t.Helper()
+
+	content, err := os.ReadFile("testdata/ai-coding-session-with-secret.json")
+	require.NoError(t, err)
+	content = bytes.ReplaceAll(content, []byte("__GITHUB_PAT__"), []byte(fixtureGitHubPAT))
+
+	path := filepath.Join(t.TempDir(), "ai-coding-session.json")
+	require.NoError(t, os.WriteFile(path, content, 0600))
+
+	return path
+}
+
+// Policies must be evaluated against the material as it sits on disk. The crafter
+// redacts the copy it stages for upload, and a dry run always stages inline, so
+// evaluating the staged bytes would hide from a policy the very secret it exists
+// to catch.
+func TestEvaluateReadsUnredactedMaterialFromDisk(t *testing.T) {
+	testCases := []struct {
+		name        string
+		annotations map[string]string
+	}{
+		// The bug this pins: with no --annotation flags the crafter's annotation
+		// map was replaced by an empty one, so the marker that selects the file on
+		// disk was lost and policies evaluated the sanitized copy.
+		{name: "without user annotations", annotations: nil},
+		{name: "with user annotations", annotations: map[string]string{"custom": "value"}},
+		{
+			name:        "with an attempt to override the redaction marker",
+			annotations: map[string]string{v12.AnnotationMaterialRedacted: "false"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &EvalOptions{
+				PolicyPath:   "testdata/ai-coding-session-no-secrets-policy.yaml",
+				MaterialKind: "CHAINLOOP_AI_CODING_SESSION",
+				MaterialPath: writeSessionFixture(t),
+				Annotations:  tc.annotations,
+			}
+
+			result, err := Evaluate(opts, zerolog.New(os.Stderr))
+			require.NoError(t, err)
+			require.NotNil(t, result)
+
+			assert.False(t, result.Result.Skipped)
+			require.Len(t, result.Result.Violations, 1)
+			assert.Contains(t, result.Result.Violations[0], "GitHub token found")
+		})
+	}
+}
+
+func TestMergeAnnotations(t *testing.T) {
+	testCases := []struct {
+		name     string
+		existing map[string]string
+		user     map[string]string
+		want     map[string]string
+	}{
+		{
+			name:     "crafter annotations survive when the user supplies none",
+			existing: map[string]string{v12.AnnotationMaterialRedacted: v12.AnnotationValueTrue},
+			user:     nil,
+			want:     map[string]string{v12.AnnotationMaterialRedacted: v12.AnnotationValueTrue},
+		},
+		{
+			name:     "user annotations are added alongside the crafter's",
+			existing: map[string]string{v12.AnnotationMaterialRedacted: v12.AnnotationValueTrue},
+			user:     map[string]string{"custom": "value"},
+			want:     map[string]string{v12.AnnotationMaterialRedacted: v12.AnnotationValueTrue, "custom": "value"},
+		},
+		{
+			name:     "user annotations win on conflict outside the reserved namespace",
+			existing: map[string]string{"custom": "crafted"},
+			user:     map[string]string{"custom": "user"},
+			want:     map[string]string{"custom": "user"},
+		},
+		{
+			name:     "the reserved chainloop namespace can not be overridden",
+			existing: map[string]string{v12.AnnotationMaterialRedacted: v12.AnnotationValueTrue},
+			user:     map[string]string{v12.AnnotationMaterialRedacted: "false", "custom": "value"},
+			want:     map[string]string{v12.AnnotationMaterialRedacted: v12.AnnotationValueTrue, "custom": "value"},
+		},
+		{
+			name:     "a material with no annotations gets the user's",
+			existing: nil,
+			user:     map[string]string{"custom": "value"},
+			want:     map[string]string{"custom": "value"},
+		},
+		{
+			name:     "nothing to merge leaves the material untouched",
+			existing: nil,
+			user:     nil,
+			want:     nil,
+		},
+	}
+
+	logger := zerolog.New(os.Stderr)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			material := &v12.Attestation_Material{Annotations: tc.existing}
+			mergeAnnotations(material, tc.user, &logger)
+			assert.Equal(t, tc.want, material.GetAnnotations())
+		})
+	}
 }
