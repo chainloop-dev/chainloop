@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
@@ -99,8 +100,8 @@ func TestChainloopAISecurityContextCrafter_Craft(t *testing.T) {
 		},
 		{
 			// additionalProperties: false at every level is what makes an explicit
-			// --kind fail loudly on the wrong file, since this kind is excluded
-			// from auto-detection.
+			// --kind fail loudly on the wrong file, and what keeps auto-detection
+			// from accepting a near-miss.
 			name:    "an unknown field inside a fingerprint",
 			path:    "./testdata/ai-security-context-extra-field.json",
 			wantErr: "additionalProperties 'unexpected_field' not allowed",
@@ -210,7 +211,6 @@ func TestChainloopAISecurityContextCrafter_Annotations(t *testing.T) {
 		name         string
 		path         string
 		headSHA      string
-		toolVersion  string
 		fingerprints string
 		reconciles   string
 	}{
@@ -218,7 +218,6 @@ func TestChainloopAISecurityContextCrafter_Annotations(t *testing.T) {
 			name:         "a full security context",
 			path:         "./testdata/ai-security-context.json",
 			headSHA:      "49d3dd9a8b53f4988cf43d1d824fb3b14f808fcb",
-			toolVersion:  "dev",
 			fingerprints: "12",
 			reconciles:   "true",
 		},
@@ -226,7 +225,6 @@ func TestChainloopAISecurityContextCrafter_Annotations(t *testing.T) {
 			name:         "a security context with a single fingerprint",
 			path:         "./testdata/ai-security-context-minimal.json",
 			headSHA:      "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
-			toolVersion:  "dev",
 			fingerprints: "1",
 			reconciles:   "true",
 		},
@@ -238,11 +236,126 @@ func TestChainloopAISecurityContextCrafter_Annotations(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.headSHA, got.Annotations[annotationSecurityContextHeadSHA])
-			assert.Equal(t, tc.toolVersion, got.Annotations[annotationSecurityContextToolVersion])
 			assert.Equal(t, tc.fingerprints, got.Annotations[annotationSecurityContextFingerprints])
 			assert.Equal(t, tc.reconciles, got.Annotations[annotationSecurityContextReconciles])
 		})
 	}
+}
+
+// TestChainloopAISecurityContextCrafter_ToolAnnotations pins the producer to the
+// shared material-tool vocabulary. A private key would make the scanner
+// invisible to generic policies and to any tooling that reads tool identity the
+// same way for every material kind.
+func TestChainloopAISecurityContextCrafter_ToolAnnotations(t *testing.T) {
+	testCases := []struct {
+		name        string
+		path        string
+		wantTools   string
+		wantName    string
+		wantVersion string
+	}{
+		{
+			name:        "a full security context",
+			path:        "./testdata/ai-security-context.json",
+			wantTools:   `["strata-go@dev"]`,
+			wantName:    "strata-go",
+			wantVersion: "dev",
+		},
+		{
+			name:        "a security context with a single fingerprint",
+			path:        "./testdata/ai-security-context-minimal.json",
+			wantTools:   `["strata-go@dev"]`,
+			wantName:    "strata-go",
+			wantVersion: "dev",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := newSecurityContextCrafter(t).Craft(context.TODO(), tc.path)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.wantTools, got.Annotations[AnnotationToolsKey])
+			assert.Equal(t, tc.wantName, got.Annotations[AnnotationToolNameKey])
+			assert.Equal(t, tc.wantVersion, got.Annotations[AnnotationToolVersionKey])
+
+			// The private key this replaced must not linger: two sources of tool
+			// identity is how consumers end up reading the wrong one.
+			assert.NotContains(t, got.Annotations, api.CreateAnnotation("material.securitycontext.tool_version"))
+		})
+	}
+}
+
+// TestChainloopAISecurityContextCrafter_ToolAnnotationsIncomplete covers the
+// producer emitting a blank tool name or version. The schema requires both keys
+// but constrains neither to be non-empty, so a partial value must not turn into
+// a malformed "@version" entry in the shared vocabulary.
+func TestChainloopAISecurityContextCrafter_ToolAnnotationsIncomplete(t *testing.T) {
+	testCases := []struct {
+		name        string
+		tool        string
+		toolVersion string
+		wantTools   string
+		wantName    string
+		wantVersion string
+	}{
+		{
+			name:        "no tool name",
+			tool:        "",
+			toolVersion: "1.2.3",
+			wantTools:   "",
+			wantName:    "",
+			wantVersion: "",
+		},
+		{
+			name:        "no tool version",
+			tool:        "strata-go",
+			toolVersion: "",
+			wantTools:   `["strata-go"]`,
+			wantName:    "strata-go",
+			wantVersion: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := securityContextWithProvenance(t, tc.tool, tc.toolVersion)
+
+			got, err := newSecurityContextCrafter(t).Craft(context.TODO(), path)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.wantTools, got.Annotations[AnnotationToolsKey])
+			assert.Equal(t, tc.wantName, got.Annotations[AnnotationToolNameKey])
+			assert.Equal(t, tc.wantVersion, got.Annotations[AnnotationToolVersionKey])
+		})
+	}
+}
+
+// securityContextWithProvenance rewrites the minimal fixture's producing tool and
+// returns the path to the rewritten file.
+func securityContextWithProvenance(t *testing.T, tool, toolVersion string) string {
+	t.Helper()
+
+	raw, err := os.ReadFile("./testdata/ai-security-context-minimal.json")
+	require.NoError(t, err)
+
+	var doc map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(raw, &doc))
+
+	var data map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(doc["data"], &data))
+
+	var provenance map[string]any
+	require.NoError(t, json.Unmarshal(data["provenance"], &provenance))
+	provenance["tool"] = tool
+	provenance["tool_version"] = toolVersion
+
+	data["provenance"] = mustMarshal(t, provenance)
+	doc["data"] = mustMarshal(t, data)
+
+	path := filepath.Join(t.TempDir(), "security-context.json")
+	require.NoError(t, os.WriteFile(path, mustMarshal(t, doc), 0o600))
+	return path
 }
 
 // TestChainloopAISecurityContextCrafter_ReconcilesIsAlwaysAnnotated pins the one

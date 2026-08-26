@@ -33,7 +33,6 @@ import (
 
 var (
 	annotationSecurityContextHeadSHA      = api.CreateAnnotation("material.securitycontext.head_sha")
-	annotationSecurityContextToolVersion  = api.CreateAnnotation("material.securitycontext.tool_version")
 	annotationSecurityContextFingerprints = api.CreateAnnotation("material.securitycontext.fingerprints")
 	annotationSecurityContextReconciles   = api.CreateAnnotation("material.securitycontext.reconciles")
 )
@@ -133,14 +132,7 @@ func (c *ChainloopAISecurityContextCrafter) annotate(material *api.Attestation_M
 		material.Annotations[annotationSecurityContextHeadSHA] = data.Repo.HeadSHA
 	}
 
-	if v := data.Provenance.ToolVersion; v != "" {
-		material.Annotations[annotationSecurityContextToolVersion] = v
-		if v == "dev" {
-			// A development build carries no version, so the context cannot be
-			// traced back to the code that produced it.
-			c.logger.Warn().Msg("the AI security context was produced by a 'dev' build of the scanner")
-		}
-	}
+	c.annotateTool(material, &data.Provenance)
 
 	material.Annotations[annotationSecurityContextFingerprints] = strconv.Itoa(len(data.Fingerprints))
 
@@ -148,4 +140,30 @@ func (c *ChainloopAISecurityContextCrafter) annotate(material *api.Attestation_M
 	// the scan is incomplete and must not be read as a clean result. Published so
 	// a policy can reject it without reading the payload.
 	material.Annotations[annotationSecurityContextReconciles] = strconv.FormatBool(data.Scan.Reconciles)
+}
+
+// annotateTool publishes the scanner through the shared material-tool
+// vocabulary rather than a key private to this kind, so that a generic policy
+// or any tooling that reads tool identity the same way for every material kind
+// can see it.
+func (c *ChainloopAISecurityContextCrafter) annotateTool(material *api.Attestation_Material, provenance *aisecuritycontext.Provenance) {
+	if provenance.ToolVersion == "dev" {
+		// A development build carries no version, so the context cannot be
+		// traced back to the code that produced it.
+		c.logger.Warn().Msg("the AI security context was produced by a 'dev' build of the scanner")
+	}
+
+	// The schema requires both keys but constrains neither to be non-empty. An
+	// empty name would render as a bare "@version" entry, which names no tool.
+	if provenance.Tool == "" {
+		return
+	}
+
+	SetToolsAnnotation(material, []Tool{{Name: provenance.Tool, Version: provenance.ToolVersion}})
+
+	// Maintain backward compatibility - keep legacy keys for the first tool
+	material.Annotations[AnnotationToolNameKey] = provenance.Tool
+	if provenance.ToolVersion != "" {
+		material.Annotations[AnnotationToolVersionKey] = provenance.ToolVersion
+	}
 }
