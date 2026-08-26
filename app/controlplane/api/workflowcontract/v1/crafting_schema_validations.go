@@ -73,6 +73,7 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_CHAINLOOP_RUNNER_CONTEXT,
 	CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG,
 	CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
+	CraftingSchema_Material_CHAINLOOP_AI_SECURITY_CONTEXT,
 	CraftingSchema_Material_ATTESTATION,
 	CraftingSchema_Material_CONTAINER_IMAGE,
 	CraftingSchema_Material_ARTIFACT,

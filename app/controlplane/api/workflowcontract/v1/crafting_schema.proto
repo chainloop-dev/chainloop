@@ -205,6 +205,10 @@ message CraftingSchema {
       // PIT mutation testing report in its native XML format (mutations.xml)
       // https://pitest.org/
       PITEST_XML = 44;
+      // Chainloop AI security context: vulnerability fingerprints mined from a
+      // repository's fix history, the attack surfaces they share, ranked risks,
+      // and byte-verifiable evidence anchors backing each claim
+      CHAINLOOP_AI_SECURITY_CONTEXT = 45;
     }
   }
 }

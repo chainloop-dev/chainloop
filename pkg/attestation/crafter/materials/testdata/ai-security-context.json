@@ -1,0 +1,1933 @@
+{
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_SECURITY_CONTEXT",
+  "schema": "https://schemas.chainloop.dev/aisecuritycontext/0.1/ai-security-context.schema.json",
+  "data": {
+    "schema_version": "security-context-0.1",
+    "generated_at": "2026-08-26T19:39:57Z",
+    "repo": {
+      "owner": "chainloop-dev",
+      "name": "testrepo",
+      "url": "https://github.com/chainloop-dev/testrepo",
+      "ref": "master",
+      "head_sha": "49d3dd9a8b53f4988cf43d1d824fb3b14f808fcb"
+    },
+    "provenance": {
+      "tool": "strata-go",
+      "tool_version": "dev",
+      "protocol": "codex-app-server",
+      "triage_model": "openai/gpt-5.6-luna:nitro",
+      "adjudication_model": "openai/gpt-5.6-terra:nitro",
+      "triage_prompt_id": "current-diff-only-v1",
+      "adjudication_prompt_id": "adjudicate-a0-v3",
+      "input_profile": "D0",
+      "decision_profile": "A0",
+      "cwe_catalog_version": "CWE-4.20",
+      "anchor_verification": "relocating"
+    },
+    "scan": {
+      "window": {
+        "from_sha": "783206b0fad6dc1de7c3252362f74fe4ffd00a10",
+        "to_sha": "49d3dd9a8b53f4988cf43d1d824fb3b14f808fcb",
+        "last_n": 200
+      },
+      "commits_scanned": 199,
+      "commits_triaged": 199,
+      "commits_skipped": 1,
+      "triage_candidates": 24,
+      "adjudicated": 24,
+      "findings": 12,
+      "abstained": 12,
+      "rejected": 0,
+      "no_finding": 0,
+      "triage_errors": 0,
+      "adjudication_errors": 0,
+      "anchors_verified": 75,
+      "anchors_relocated": 32,
+      "anchors_rejected": 2,
+      "input_tokens": 4531707,
+      "output_tokens": 101010,
+      "wall_clock_s": 387.844874,
+      "reconciles": true,
+      "unresolved": [
+        {
+          "sha": "d514564a92bf4f472b0ac21cbac794a9494346f4",
+          "reason": "diff too large (2065160 bytes)"
+        }
+      ]
+    },
+    "class_counts": {
+      "access_control": 1,
+      "authentication": 1,
+      "input_validation": 1,
+      "other": 1,
+      "resource_exhaustion": 8
+    },
+    "min_support": 2,
+    "top_risks": [
+      {
+        "component": "openapi3filter/req_resp_decoder.go",
+        "kind": "source",
+        "classes": [
+          "resource_exhaustion"
+        ],
+        "severity": "high",
+        "fix_count": 5,
+        "recurring": true,
+        "severity_mass": 20,
+        "recency_weight": 5,
+        "cwe": [
+          "CWE-400",
+          "CWE-476"
+        ],
+        "evidence": [
+          "1223a0f215d2cf9beb2d9eb9ea2649d001c21388",
+          "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+          "68ac2affa325514d7d6e731204d6a1edf6bdff64",
+          "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f",
+          "f5441d67f855ed34d975b3b85665764644ab1459"
+        ]
+      },
+      {
+        "component": "openapi3filter/validation_handler.go",
+        "kind": "source",
+        "classes": [
+          "access_control",
+          "authentication"
+        ],
+        "severity": "high",
+        "fix_count": 2,
+        "recurring": true,
+        "severity_mass": 8,
+        "recency_weight": 2,
+        "cwe": [
+          "CWE-306",
+          "CWE-863"
+        ],
+        "evidence": [
+          "eda80e2676e9f577ceed2dd80e64f16083edb041",
+          "f0407d53b0730280266f454b755010e7eeb985da"
+        ]
+      },
+      {
+        "component": "openapi3/loader.go",
+        "kind": "source",
+        "classes": [
+          "resource_exhaustion"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-476"
+        ],
+        "evidence": [
+          "88aa64c7cbd03ecadbb419c473bdcaa8b0124c6b"
+        ]
+      },
+      {
+        "component": "openapi3filter/validation_error_encoder.go",
+        "kind": "source",
+        "classes": [
+          "resource_exhaustion"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-476"
+        ],
+        "evidence": [
+          "1d0a337c9b1570fab283be8a04c8af6e43b9a22c"
+        ]
+      },
+      {
+        "component": "openapi3/schema.go",
+        "kind": "source",
+        "classes": [
+          "input_validation",
+          "other"
+        ],
+        "severity": "medium",
+        "fix_count": 2,
+        "recurring": true,
+        "severity_mass": 3,
+        "recency_weight": 2,
+        "cwe": [
+          "CWE-20",
+          "CWE-476"
+        ],
+        "evidence": [
+          "94fcebf4edbfed0bd8818781f3be60dc2c196d85",
+          "d33e44e67734dcde81b576582185e1343fb3985d"
+        ]
+      },
+      {
+        "component": "openapi2conv/openapi2_conv.go",
+        "kind": "source",
+        "classes": [
+          "resource_exhaustion"
+        ],
+        "severity": "medium",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 2,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-476"
+        ],
+        "evidence": [
+          "355692920adc95a261f8afba887dce636a0e2d67"
+        ]
+      },
+      {
+        "component": "openapi3/schema_pattern.go",
+        "kind": "source",
+        "classes": [
+          "other"
+        ],
+        "severity": "low",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 1,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-476"
+        ],
+        "evidence": [
+          "d33e44e67734dcde81b576582185e1343fb3985d"
+        ]
+      }
+    ],
+    "shared_surfaces": [
+      {
+        "surface": "Access Control — h.Handler.ServeHTTP (+1 related sink)",
+        "class": "access_control/authentication",
+        "guard": [
+          "ErrEncodedPathSeparator",
+          "checkEncodedPathSeparator"
+        ],
+        "guard_kind": "mixed",
+        "sink_symbols": [
+          "h.Handler.ServeHTTP",
+          "next.ServeHTTP"
+        ],
+        "entry_points": [
+          ".github/docs/openapi3filter.txt",
+          "README.md",
+          "openapi3filter/encoded_path_route_confusion_test.go",
+          "openapi3filter/issue1105_test.go",
+          "openapi3filter/testdata/encoded_path_authorization_bypass.yml",
+          "openapi3filter/validation_error_test.go",
+          "openapi3filter/validation_handler.go"
+        ],
+        "check_hint": "For a request with a non-empty OpenAPI security requirement, validation must invoke an explicitly supplied AuthenticationFunc or reject the request; it must not silently treat authentication as successful.",
+        "support": 2,
+        "origin_fixes": [
+          "eda80e2676e9f577ceed2dd80e64f16083edb041",
+          "f0407d53b0730280266f454b755010e7eeb985da"
+        ]
+      },
+      {
+        "surface": "Other — cp.MatchString(value)",
+        "class": "other",
+        "guard": [],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "cp.MatchString(value)"
+        ],
+        "entry_points": [
+          "openapi3/issue1044_test.go",
+          "openapi3/schema.go",
+          "openapi3/schema_pattern.go"
+        ],
+        "check_hint": "A regex matcher must be non-nil before MatchString is called; a pattern compilation failure must remain a validation error.",
+        "support": 1,
+        "origin_fixes": [
+          "d33e44e67734dcde81b576582185e1343fb3985d"
+        ]
+      },
+      {
+        "surface": "Input Validation — fmt.Sprintf(\"%.10f\", *v) (+1 related sink)",
+        "class": "input_validation",
+        "guard": [
+          "multipleOfFailure"
+        ],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "fmt.Sprintf(\"%.10f\", *v)",
+          "fmt.Sprintf(\"%.10f\", value)"
+        ],
+        "entry_points": [
+          "openapi3/schema.go",
+          "openapi3/schema_test.go"
+        ],
+        "check_hint": "Every accepted numeric instance must be an integer multiple of the schema's positive multipleOf value, subject only to bounded float representation error.",
+        "support": 1,
+        "origin_fixes": [
+          "94fcebf4edbfed0bd8818781f3be60dc2c196d85"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — c.Value.AdditionalProperties.Has (+1 related sink)",
+        "class": "resource_exhaustion",
+        "guard": [],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "c.Value.AdditionalProperties.Has",
+          "c.Value.AdditionalProperties.Schema"
+        ],
+        "entry_points": [
+          "openapi3/ghsa_mh7x_f8wq_4jhx_test.go",
+          "openapi3/loader.go"
+        ],
+        "check_hint": "A JSON-pointer traversal may dereference SchemaRef.Value only after confirming that the referenced schema has resolved to a non-nil value.",
+        "support": 1,
+        "origin_fixes": [
+          "88aa64c7cbd03ecadbb419c473bdcaa8b0124c6b"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — components.Schemas[name]",
+        "class": "resource_exhaustion",
+        "guard": [],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "components.Schemas[name]"
+        ],
+        "entry_points": [
+          "openapi2conv/issue1062_test.go",
+          "openapi2conv/openapi2_conv.go"
+        ],
+        "check_hint": "Schema-reference conversion must not dereference the components table when no components context was supplied.",
+        "support": 1,
+        "origin_fixes": [
+          "355692920adc95a261f8afba887dce636a0e2d67"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — e.Parameter.In",
+        "class": "resource_exhaustion",
+        "guard": [],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "e.Parameter.In"
+        ],
+        "entry_points": [
+          "openapi3filter/ghsa_mmfr_pmjx_hw9w_test.go",
+          "openapi3filter/validation_error_encoder.go"
+        ],
+        "check_hint": "A RequestError without a Parameter (including request-body errors) must not dereference e.Parameter while converting an error.",
+        "support": 1,
+        "origin_fixes": [
+          "1d0a337c9b1570fab283be8a04c8af6e43b9a22c"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — mt.Schema.Value",
+        "class": "resource_exhaustion",
+        "guard": [],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "mt.Schema.Value"
+        ],
+        "entry_points": [
+          "openapi3filter/req_resp_decoder.go",
+          "openapi3filter/validate_request_test.go"
+        ],
+        "check_hint": "The default content-parameter decoder must not dereference MediaType.Schema unless that SchemaRef is non-nil; malformed-but-valid media-type content must be rejected as a validation error.",
+        "support": 1,
+        "origin_fixes": [
+          "68ac2affa325514d7d6e731204d6a1edf6bdff64"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — propSchema.Value.Items.Value (+2 related sinkes)",
+        "class": "resource_exhaustion",
+        "guard": [],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "propSchema.Value.Items.Value",
+          "schemaRef.Value.Items",
+          "valueSchema.Value.Items"
+        ],
+        "entry_points": [
+          "openapi3filter/array_items_nil_panic_test.go",
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "check_hint": "Every decoder that needs to interpret an array element must first ensure that the array has a non-nil, resolved Items schema; otherwise it must return an error.",
+        "support": 1,
+        "origin_fixes": [
+          "30e292371a89ca6d1f91a9553e0aa518b49f838d"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — schema.Value.AllOf",
+        "class": "resource_exhaustion",
+        "guard": [],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "schema.Value.AllOf"
+        ],
+        "entry_points": [
+          "openapi3filter/ghsa_74vm_87hj_r66f_test.go",
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "check_hint": "A SchemaRef must be non-nil before any access to schema.Value.",
+        "support": 1,
+        "origin_fixes": [
+          "f5441d67f855ed34d975b3b85665764644ab1459"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — append(result, nil) (+1 related sink)",
+        "class": "resource_exhaustion",
+        "guard": [
+          "maxSliceMapToSliceGap"
+        ],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "append(result, nil)",
+          "sliceMapToSlice"
+        ],
+        "entry_points": [
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "check_hint": "A deepObject array's reconstructed length must remain bounded relative to the number of supplied elements, and array indexes must be non-negative.",
+        "support": 1,
+        "origin_fixes": [
+          "1223a0f215d2cf9beb2d9eb9ea2649d001c21388"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — regexp.MustCompile(fmt.Sprintf",
+        "class": "resource_exhaustion",
+        "guard": [
+          "paramPrefixRE"
+        ],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "regexp.MustCompile(fmt.Sprintf"
+        ],
+        "entry_points": [
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "check_hint": "A parameter-specific prefix matcher must be compiled at most once for a deepObject decoding operation, independently of the number of untrusted query keys.",
+        "support": 1,
+        "origin_fixes": [
+          "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f"
+        ]
+      }
+    ],
+    "fingerprints": [
+      {
+        "id": "fp_94fcebf4ed",
+        "patch_id": "92c1e2499e90dc1b089cea95cc2806eba4fa9bb1",
+        "commit_sha": "94fcebf4edbfed0bd8818781f3be60dc2c196d85",
+        "commit_date": "2026-08-19T12:34:47+02:00",
+        "commit_subject": "openapi3: compare multipleOf on exact rationals, not fixed-precision decimals (#1252)",
+        "class": "input_validation",
+        "cwe": [
+          "CWE-20"
+        ],
+        "components": [
+          "openapi3/schema.go",
+          "openapi3/schema_test.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/req_resp_decoder.go",
+          "openapi3filter/validate_request.go",
+          "openapi3filter/validation_handler.go"
+        ],
+        "sink_symbols": [
+          "fmt.Sprintf(\"%.10f\", *v)",
+          "fmt.Sprintf(\"%.10f\", value)"
+        ],
+        "guard_symbols": [
+          "multipleOfFailure"
+        ],
+        "sink": "Fixed-precision formatting used as the multipleOf validation decision input.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Replaces lossy fixed-ten-decimal formatting with an exact-rational multipleOf decision, rejecting non-multiples such as 1e-300 for multipleOf 0.01.",
+        "severity": {
+          "level": "medium",
+          "source": "model_estimate",
+          "score": 5.3,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+        },
+        "confidence": "high",
+        "summary": "Openapi3 multipleOf validation no longer accepts tiny nonzero values rounded to zero by fixed-precision formatting.",
+        "poc": "An attacker can make request validation accept a numeric value prohibited by the API schema, allowing it to reach the wrapped application handler.",
+        "root_cause": "The multipleOf validator rounded float operands to ten decimal places before determining whether their quotient was integral.",
+        "attacker_preconditions": "The application uses openapi3filter request validation with a positive multipleOf constraint, and an unauthenticated client can supply the corresponding JSON number or request parameter.",
+        "invariant": "Every accepted numeric instance must be an integer multiple of the schema's positive multipleOf value, subject only to bounded float representation error.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "e9e5e116a3878c25132543fb5591ece5b8e204fd",
+            "path": "openapi3/schema.go",
+            "start_line": 2562,
+            "end_line": 2569,
+            "quoted_span": "\t// \"multipleOf\"\n\tif v := schema.MultipleOf; v != nil {\n\t\t// \"A numeric instance is valid only if division by this keyword's\n\t\t//    value results in an integer.\"\n\t\tnumRat, denRat := \u0026big.Rat{}, \u0026big.Rat{}\n\t\tnumRat.SetString(fmt.Sprintf(\"%.10f\", value))\n\t\tdenRat.SetString(fmt.Sprintf(\"%.10f\", *v))\n\t\tif !(\u0026big.Rat{}).Quo(numRat, denRat).IsInt() {",
+            "span_sha256": "1a141690cdc76ba8b1ba0fad6a9b7c6c48005f9b3b2288d5e290c099cd534d38",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "94fcebf4edbfed0bd8818781f3be60dc2c196d85",
+            "path": "openapi3/schema.go",
+            "start_line": 2408,
+            "end_line": 2435,
+            "quoted_span": "\texactValue := new(big.Rat).SetFloat64(value)\n\texactMultipleOf := new(big.Rat).SetFloat64(multipleOf)\n\tquotient := new(big.Rat).Quo(exactValue, exactMultipleOf)\n\tif quotient.IsInt() {\n\t\treturn \"\", true\n\t}\n\n\t// The quotient is not an integer, so floor and floor+1 bracket it. Both are\n\t// computed through big.Int, which no quotient can overflow. Compare the two\n\t// candidate multiples against the value itself rather than comparing the\n\t// quotient against an integer, so the window stays tied to the value's own\n\t// precision at every magnitude.\n\tfloor := new(big.Int).Div(quotient.Num(), quotient.Denom())\n\tvar distance *big.Rat\n\tfor _, k := range []*big.Int{floor, new(big.Int).Add(floor, big.NewInt(1))} {\n\t\tgap := new(big.Rat).Sub(exactValue, new(big.Rat).Mul(new(big.Rat).SetInt(k), exactMultipleOf))\n\t\tgap.Abs(gap)\n\t\tif distance == nil || gap.Cmp(distance) \u003c 0 {\n\t\t\tdistance = gap\n\t\t}\n\t}\n\n\tslack := new(big.Rat).SetFrac(big.NewInt(1), new(big.Int).Lsh(big.NewInt(1), multipleOfSlack))\n\ttolerance := new(big.Rat).Mul(new(big.Rat).Abs(exactValue), slack)\n\tif distance.Cmp(tolerance) \u003c= 0 {\n\t\treturn \"\", true\n\t}\n\treturn notAMultiple, false",
+            "span_sha256": "657a18de970ee4ab8822dc8763d5f49d858bfebaf1f7f7b65ccb0e28c48337be",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "94fcebf4edbfed0bd8818781f3be60dc2c196d85",
+            "path": "openapi3/schema_test.go",
+            "start_line": 1569,
+            "end_line": 1572,
+            "quoted_span": "\tt.Run(\"a value far below the multipleOf is not a multiple\", func(t *testing.T) {\n\t\trequire.ErrorContains(t, numberSchema(0.01).VisitJSON(1e-300),\n\t\t\t\"number must be a multiple of 0.01\")\n\t})",
+            "span_sha256": "595cfeffdc55061b970732ba723f145a3473d4113a998b2f1c2454f96f980cdb",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "94fcebf4edbfed0bd8818781f3be60dc2c196d85",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1429,
+            "end_line": 1437,
+            "quoted_span": "func JSONBodyDecoder(body io.Reader, header http.Header, schema *openapi3.SchemaRef, encFn EncodingFn) (any, error) {\n\tvar value any\n\tdec := json.NewDecoder(body)\n\tdec.UseNumber()\n\tif err := dec.Decode(\u0026value); err != nil {\n\t\treturn nil, \u0026ParseError{Kind: KindInvalidFormat, Cause: err}\n\t}\n\treturn value, nil\n}",
+            "span_sha256": "3b81795867b4c145a7556bacc95593f2eeda33af3274f887e2c8e779412dbacb",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "94fcebf4edbfed0bd8818781f3be60dc2c196d85",
+            "path": "openapi3/schema.go",
+            "start_line": 1996,
+            "end_line": 2008,
+            "quoted_span": "\tcase json.Number:\n\t\tvalueFloat64, err := value.Float64()\n\t\tif err != nil {\n\t\t\treturn \u0026SchemaError{\n\t\t\t\tValue:                 value,\n\t\t\t\tSchema:                schema,\n\t\t\t\tSchemaField:           \"type\",\n\t\t\t\tReason:                \"cannot convert json.Number to float64\",\n\t\t\t\tcustomizeMessageError: settings.customizeMessageError,\n\t\t\t\tOrigin:                err,\n\t\t\t}\n\t\t}\n\t\treturn schema.visitJSONNumber(settings, valueFloat64)",
+            "span_sha256": "4a69c36bc6156c8c3f20cf5db17053857106e69c0631354cab06a9b867cd23ad",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "94fcebf4edbfed0bd8818781f3be60dc2c196d85",
+            "path": "openapi3filter/validate_request.go",
+            "start_line": 250,
+            "end_line": 253,
+            "quoted_span": "\tif err = schema.VisitJSON(value, opts...); err != nil {\n\t\treturn \u0026RequestError{Input: input, Parameter: parameter, Err: err}\n\t}\n\treturn nil",
+            "span_sha256": "0a6f73e15735dcbad8769783e3449866cc20f23854d20c3a840417e51cc4e6f9",
+            "verified": true,
+            "relocated": true
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A JSON number such as 1e-300 could pass a positive multipleOf: 0.01 request constraint after fixed-precision formatting rounded it to zero.",
+          "after": "The same request-validation paths return a schema error for non-multiples instead of passing them to the application."
+        },
+        "failure_containment": "degraded",
+        "introduced_by": [
+          {
+            "commit_sha": "d4bdebd22566dd9c871036eb39343033acd8c6bc",
+            "description": "fixed-precision multipleOf conversion",
+            "committed_at": "2025-05-09T02:19:30+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 40385717
+      },
+      {
+        "id": "fp_eda80e2676",
+        "patch_id": "6a6fc53cd8f9e521e13f81a9112a2282424a221a",
+        "commit_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+        "commit_date": "2026-08-18T16:12:06+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "access_control",
+        "cwe": [
+          "CWE-863"
+        ],
+        "components": [
+          ".github/docs/openapi3filter.txt",
+          "openapi3filter/encoded_path_route_confusion_test.go",
+          "openapi3filter/issue1105_test.go",
+          "openapi3filter/testdata/encoded_path_authorization_bypass.yml",
+          "openapi3filter/validation_handler.go"
+        ],
+        "reachable_from": [
+          "routers/legacy/router.go"
+        ],
+        "sink_symbols": [
+          "h.Handler.ServeHTTP",
+          "next.ServeHTTP"
+        ],
+        "guard_symbols": [
+          "ErrEncodedPathSeparator",
+          "checkEncodedPathSeparator"
+        ],
+        "sink": "Forwarding the original request to the downstream handler after validation.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Rejects encoded-slash requests when the route selected from an escaped-equivalent shadow request differs from the decoded route, before authentication/validation and downstream dispatch. The analogous Validator.Middleware path remains unguarded.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 8.1,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+        },
+        "confidence": "high",
+        "summary": "Fixes an encoded-path route-confusion authorization bypass in ValidationHandler.",
+        "poc": "An unauthenticated remote client could cause validation to select an unauthenticated public operation while the encoded-path downstream router executes a protected operation.",
+        "root_cause": "ValidationHandler trusted a decoded-path route lookup for authorization while forwarding the original escaped request to a downstream router that may match encoded separators differently.",
+        "attacker_preconditions": "The application uses ValidationHandler with an OpenAPI document where a public decoded route collides with a protected parameterized route, and dispatches to gorilla/mux configured with UseEncodedPath; the attacker can send a request containing %2F.",
+        "invariant": "The operation whose security requirements are validated must be the same operation that receives the request from the downstream router.",
+        "fix_completeness": "partial",
+        "anchors": [
+          {
+            "revision": "commit",
+            "revision_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 83,
+            "end_line": 87,
+            "quoted_span": "// ErrEncodedPathSeparator is returned when a request path holds an encoded path\n// separator and the decoded path resolves to another operation than the escaped\n// path does. Serving such a request would validate one operation while the\n// wrapped handler serves the other one.\nvar ErrEncodedPathSeparator error = \u0026routers.RouteError{Reason: \"path contains an encoded path separator resolving to another operation\"}",
+            "span_sha256": "483918177e94d4680396aeaeb04e081cb2a0d8dbce66419499a4fb902ee7ad51",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 89,
+            "end_line": 113,
+            "quoted_span": "func (h *ValidationHandler) validateRequest(r *http.Request) error {\n\t// Find route\n\troute, pathParams, err := h.router.FindRoute(r)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tif err := h.checkEncodedPathSeparator(r, route); err != nil {\n\t\treturn err\n\t}\n\n\toptions := \u0026Options{\n\t\tAuthenticationFunc: h.AuthenticationFunc,\n\t}\n\n\t// Validate request\n\trequestValidationInput := \u0026RequestValidationInput{\n\t\tRequest:    r,\n\t\tPathParams: pathParams,\n\t\tRoute:      route,\n\t\tOptions:    options,\n\t}\n\tif err = ValidateRequest(r.Context(), requestValidationInput); err != nil {\n\t\treturn err\n\t}",
+            "span_sha256": "08a209d605e89a07f3c5023a8d83dacc82e573973db525462a87a8f8b18f73a2",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 118,
+            "end_line": 141,
+            "quoted_span": "// checkEncodedPathSeparator rejects a request whose encoded path separators make\n// r.URL.Path and r.URL.RawPath select different operations. The router matches\n// on the decoded path while routers such as gorilla/mux with UseEncodedPath\n// match on the escaped one, so the operation validated here — its security\n// requirements included — would not be the operation the wrapped handler serves.\nfunc (h *ValidationHandler) checkEncodedPathSeparator(r *http.Request, route *routers.Route) error {\n\tescapedPath := r.URL.EscapedPath()\n\tsegment := escapedPath\n\tfor _, separator := range []string{\"%2F\", \"%2f\"} {\n\t\tsegment = strings.ReplaceAll(segment, separator, \"~\")\n\t}\n\tif segment == escapedPath {\n\t\treturn nil\n\t}\n\n\tshadow := r.Clone(r.Context())\n\tshadow.URL.Path, shadow.URL.RawPath = segment, \"\"\n\tescapedRoute, _, err := h.router.FindRoute(shadow)\n\tif err != nil ||\n\t\tescapedRoute.Method != route.Method ||\n\t\tescapedRoute.Path != route.Path ||\n\t\tescapedRoute.Operation != route.Operation {\n\t\treturn ErrEncodedPathSeparator\n\t}",
+            "span_sha256": "a02f5a979a33e26caa32f8b9db2e62e8b3a53b59810d26847fc6fd0c3512f997",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "435c5db68d177dc136c98849a3783bf79087b27e",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 63,
+            "end_line": 72,
+            "quoted_span": "// Middleware implements gorilla/mux MiddlewareFunc\nfunc (h *ValidationHandler) Middleware(next http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tif handled := h.before(w, r); handled {\n\t\t\treturn\n\t\t}\n\t\t// TODO: validateResponse\n\t\tnext.ServeHTTP(w, r)\n\t})\n}",
+            "span_sha256": "32197d30e2f744001278dab52005fd05bff8ef7a6a2f92ac8b75cd1fa52bee98",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "435c5db68d177dc136c98849a3783bf79087b27e",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 82,
+            "end_line": 100,
+            "quoted_span": "func (h *ValidationHandler) validateRequest(r *http.Request) error {\n\t// Find route\n\troute, pathParams, err := h.router.FindRoute(r)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\toptions := \u0026Options{\n\t\tAuthenticationFunc: h.AuthenticationFunc,\n\t}\n\n\t// Validate request\n\trequestValidationInput := \u0026RequestValidationInput{\n\t\tRequest:    r,\n\t\tPathParams: pathParams,\n\t\tRoute:      route,\n\t\tOptions:    options,\n\t}\n\tif err = ValidateRequest(r.Context(), requestValidationInput); err != nil {",
+            "span_sha256": "c4ede6db78f3d5223235a730227785bae2f18d10b0c4e08110a742ed58899b65",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+            "path": "openapi3filter/encoded_path_route_confusion_test.go",
+            "start_line": 22,
+            "end_line": 49,
+            "quoted_span": "\thandler := \u0026openapi3filter.ValidationHandler{\n\t\tFile: \"testdata/encoded_path_authorization_bypass.yml\",\n\t\tAuthenticationFunc: func(_ context.Context, input *openapi3filter.AuthenticationInput) error {\n\t\t\tauthCalls.Add(1)\n\t\t\tif input.RequestValidationInput.Request.Header.Get(\"X-API-Key\") != \"good\" {\n\t\t\t\treturn input.NewError(errors.New(\"missing or invalid X-API-Key\"))\n\t\t\t}\n\t\t\treturn nil\n\t\t},\n\t\tErrorEncoder: func(_ context.Context, _ error, w http.ResponseWriter) {\n\t\t\tw.WriteHeader(http.StatusUnauthorized)\n\t\t},\n\t}\n\terr := handler.Load()\n\trequire.NoError(t, err)\n\n\tdownstream := mux.NewRouter().UseEncodedPath()\n\tdownstream.HandleFunc(\"/public/status\", func(w http.ResponseWriter, _ *http.Request) {\n\t\tdownstreamRoute.Store(\"/public/status\")\n\t\tw.WriteHeader(http.StatusNoContent)\n\t}).Methods(http.MethodGet)\n\tdownstream.HandleFunc(\"/{id}\", func(w http.ResponseWriter, r *http.Request) {\n\t\tdownstreamRoute.Store(\"/{id}\")\n\t\tprotectedID.Store(mux.Vars(r)[\"id\"])\n\t\tw.WriteHeader(http.StatusAccepted)\n\t}).Methods(http.MethodGet)\n\n\tserver := httptest.NewServer(handler.Middleware(downstream))",
+            "span_sha256": "a0695a4163092afa8832cb484d23a8a3546dab15720dbee80c57a23202f9a01a",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+            "path": "openapi3filter/encoded_path_route_confusion_test.go",
+            "start_line": 76,
+            "end_line": 85,
+            "quoted_span": "\tt.Run(\"encoded slash skips authentication and reaches protected handler\", func(t *testing.T) {\n\t\tbefore := authCalls.Load()\n\t\tstatus := request(\"/public%2Fstatus\")\n\t\trequire.Equal(t, http.StatusUnauthorized, status)\n\t\troute, _ := downstreamRoute.Load().(string)\n\t\trequire.Equal(t, \"/public/status\", route)\n\t\tid, _ := protectedID.Load().(string)\n\t\trequire.Equal(t, \"\", id)\n\t\trequire.Equal(t, before, authCalls.Load())\n\t})",
+            "span_sha256": "cec1d0078d737952977bf91d09560931c58543881e249e32fff247995b30e7e9",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+            "path": "openapi3filter/middleware.go",
+            "start_line": 119,
+            "end_line": 147,
+            "quoted_span": "func (v *Validator) Middleware(h http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tctx := r.Context()\n\t\troute, pathParams, err := v.router.FindRoute(r)\n\t\tif err != nil {\n\t\t\tv.logFunc(ctx, \"validation error: failed to find route for \"+r.URL.String(), err)\n\t\t\tv.errFunc(ctx, w, http.StatusNotFound, ErrCodeCannotFindRoute, err)\n\t\t\treturn\n\t\t}\n\t\trequestValidationInput := \u0026RequestValidationInput{\n\t\t\tRequest:    r,\n\t\t\tPathParams: pathParams,\n\t\t\tRoute:      route,\n\t\t\tOptions:    \u0026v.options,\n\t\t}\n\t\tif err = ValidateRequest(ctx, requestValidationInput); err != nil {\n\t\t\tv.logFunc(ctx, \"invalid request\", err)\n\t\t\tv.errFunc(ctx, w, http.StatusBadRequest, ErrCodeRequestInvalid, err)\n\t\t\treturn\n\t\t}\n\n\t\tvar wr responseWrapper\n\t\tif v.strict {\n\t\t\twr = \u0026strictResponseWrapper{w: w}\n\t\t} else {\n\t\t\twr = newWarnResponseWrapper(w)\n\t\t}\n\n\t\th.ServeHTTP(wr, r)",
+            "span_sha256": "40ecb8ff65266c3da755e515ca6f0bc704e4fb76d89440ceae27856eb3943df4",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "eda80e2676e9f577ceed2dd80e64f16083edb041",
+            "path": "routers/legacy/router.go",
+            "start_line": 107,
+            "end_line": 118,
+            "quoted_span": "// FindRoute extracts the route and parameters of an http.Request\nfunc (router *Router) FindRoute(req *http.Request) (*routers.Route, map[string]string, error) {\n\tmethod, url := req.Method, req.URL\n\tdoc := router.doc\n\n\t// Get server\n\tservers := doc.Servers\n\tvar server *openapi3.Server\n\tvar remainingPath string\n\tvar pathParams map[string]string\n\tif len(servers) == 0 {\n\t\tremainingPath = url.Path",
+            "span_sha256": "3d17770000d675c29243d903eddf8d8308056f96a35bcbc5e076caafe05315e1",
+            "verified": true,
+            "relocated": true
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A request such as /public%2Fstatus could validate as the public /public/status operation yet be dispatched by an encoded-path router to the protected /{id} operation.",
+          "after": "Encoded separators that would select a different escaped-path operation are stopped by the error encoder before the wrapped handler is invoked."
+        },
+        "failure_containment": "degraded",
+        "introduced_by": [
+          {
+            "commit_sha": "55d6baed46488585dd9a5a4f31dbe0ce03ef5592",
+            "description": "ValidationHandler direct Handler dispatch",
+            "committed_at": "2020-05-25T00:47:57+02:00",
+            "verified": true
+          },
+          {
+            "commit_sha": "26e9a3787488e3608f86913af5fdee929632e3e5",
+            "description": "ValidationHandler gorilla/mux Middleware dispatch",
+            "committed_at": "2020-06-15T13:07:01+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 196701849
+      },
+      {
+        "id": "fp_d33e44e677",
+        "patch_id": "825bfb590177bd3a3eccc15bf620c57c975f6a0a",
+        "commit_sha": "d33e44e67734dcde81b576582185e1343fb3985d",
+        "commit_date": "2026-08-14T09:19:35+02:00",
+        "commit_subject": "openapi3: stop validation panicking on an uncompilable pattern (#1245)",
+        "class": "other",
+        "cwe": [
+          "CWE-476"
+        ],
+        "components": [
+          "openapi3/issue1044_test.go",
+          "openapi3/schema.go",
+          "openapi3/schema_pattern.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/validate_request.go"
+        ],
+        "sink_symbols": [
+          "cp.MatchString(value)"
+        ],
+        "sink": "Invocation of RegexMatcher.MatchString on a failed pattern compiler result.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Compilation failure now clears a typed-nil matcher and matching occurs only with a non-nil matcher, so multi-error validation returns the compilation error instead of panicking.",
+        "severity": {
+          "level": "low",
+          "source": "model_estimate"
+        },
+        "confidence": "high",
+        "summary": "Prevents a request-triggerable nil-pointer panic during multi-error validation of an uncompilable OpenAPI regex pattern.",
+        "poc": "Remote denial of service: a request reaching the affected schema could panic the Go process when multi-error validation was enabled.",
+        "root_cause": "The shared pattern-validation refactor introduced in 98141fa4 continued after a compile error in multi-error mode and unconditionally invoked MatchString on the compiler result; conversion of a nil *regexp.Regexp to RegexMatcher made that result a non-nil interface containing a nil pointer.",
+        "attacker_preconditions": "The application validates attacker-controlled request parameters or bodies with openapi3filter.Options.MultiError enabled and a reachable string schema contains a pattern rejected by the configured regex compiler (including Go RE2).",
+        "invariant": "A regex matcher must be non-nil before MatchString is called; a pattern compilation failure must remain a validation error.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "commit",
+            "revision_sha": "d33e44e67734dcde81b576582185e1343fb3985d",
+            "path": "openapi3/issue1044_test.go",
+            "start_line": 12,
+            "end_line": 24,
+            "quoted_span": "// Go's regexp is RE2 and rejects the lookarounds ECMA 262 allows, so this\n// pattern cannot be compiled.\nconst issue1044Pattern = `^((?!-)[A-Za-z0-9-]{1,63}(?\u003c!-)\\.)+[A-Za-z]{2,6}$`\n\nfunc TestIssue1044(t *testing.T) {\n\tschema := openapi3.NewStringSchema().WithPattern(issue1044Pattern)\n\n\terr := schema.VisitJSON(\"example.com\", openapi3.MultiErrors())\n\n\tvar patternErr *openapi3.SchemaPatternRegexError\n\trequire.ErrorAs(t, err, \u0026patternErr)\n\trequire.Equal(t, issue1044Pattern, patternErr.Pattern)\n}",
+            "span_sha256": "3c560a6cb05d8a14b4f610a0e112403dc66cf0847cbab99398be6b755bbed132",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "d33e44e67734dcde81b576582185e1343fb3985d",
+            "path": "openapi3/schema_pattern.go",
+            "start_line": 23,
+            "end_line": 34,
+            "quoted_span": "\tif err != nil {\n\t\tschemaErr := \u0026SchemaError{\n\t\t\tSchema:      schema,\n\t\t\tSchemaField: \"pattern\",\n\t\t\tOrigin:      err,\n\t\t\tReason:      fmt.Sprintf(\"cannot compile pattern %q: %v\", pattern, err),\n\t\t}\n\t\t// A failed compile can yield a typed nil, which no call site's nil check catches.\n\t\tcp = nil\n\t\terr = newSchemaPatternRegexError(pattern, schemaErr, schema.Origin)\n\t\treturn\n\t}",
+            "span_sha256": "e09a4fc4c9fd1ca9c8d32c8a996abd5d2cbbf0f1818f0f466e34b3faedee45d3",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "d33e44e67734dcde81b576582185e1343fb3985d",
+            "path": "openapi3/schema.go",
+            "start_line": 2666,
+            "end_line": 2678,
+            "quoted_span": "\t\tif cp != nil \u0026\u0026 !cp.MatchString(value) {\n\t\t\terr := \u0026SchemaError{\n\t\t\t\tValue:                 value,\n\t\t\t\tSchema:                schema,\n\t\t\t\tSchemaField:           \"pattern\",\n\t\t\t\tReason:                fmt.Sprintf(`string doesn't match the regular expression \"%s\"`, schema.Pattern),\n\t\t\t\tcustomizeMessageError: settings.customizeMessageError,\n\t\t\t}\n\t\t\tif !settings.multiError {\n\t\t\t\treturn err\n\t\t\t}\n\t\t\tme = append(me, err)\n\t\t}",
+            "span_sha256": "c6c56ca02ca34e9032413950790d085548c62e13d2aeb56d766b5b8daae72883",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "d33e44e67734dcde81b576582185e1343fb3985d",
+            "path": "openapi3filter/validate_request.go",
+            "start_line": 240,
+            "end_line": 250,
+            "quoted_span": "\tvar opts []openapi3.SchemaValidationOption\n\tif options.MultiError {\n\t\topts = append(opts, openapi3.MultiErrors())\n\t}\n\tif options.customSchemaErrorFunc != nil {\n\t\topts = append(opts, openapi3.SetSchemaErrorMessageCustomizer(options.customSchemaErrorFunc))\n\t}\n\tif input.Route != nil \u0026\u0026 input.Route.Spec.IsOpenAPI31OrLater() {\n\t\topts = append(opts, openapi3.EnableJSONSchema2020())\n\t}\n\tif err = schema.VisitJSON(value, opts...); err != nil {",
+            "span_sha256": "4c4d55ed9c7ec82f413a8d3627c78eb826c0bec30b15ffa2593f8d85e47b0c9e",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "d33e44e67734dcde81b576582185e1343fb3985d",
+            "path": "openapi3filter/validate_request.go",
+            "start_line": 345,
+            "end_line": 364,
+            "quoted_span": "\tif options.MultiError {\n\t\topts = append(opts, openapi3.MultiErrors())\n\t}\n\tif options.customSchemaErrorFunc != nil {\n\t\topts = append(opts, openapi3.SetSchemaErrorMessageCustomizer(options.customSchemaErrorFunc))\n\t}\n\tif options.ExcludeReadOnlyValidations {\n\t\topts = append(opts, openapi3.DisableReadOnlyValidation())\n\t}\n\tif options.RegexCompiler != nil {\n\t\topts = append(opts, openapi3.SetSchemaRegexCompiler(options.RegexCompiler))\n\t}\n\t// Append additional schema validation options (e.g., document-scoped format validators)\n\topts = append(opts, options.SchemaValidationOptions...)\n\tif input.Route != nil \u0026\u0026 input.Route.Spec.IsOpenAPI31OrLater() {\n\t\topts = append(opts, openapi3.EnableJSONSchema2020())\n\t}\n\n\t// Validate JSON with the schema\n\tif err := contentType.Schema.Value.VisitJSON(value, opts...); err != nil {",
+            "span_sha256": "cbdcaca3470131a879d8e113bfbe3dabb93d3fd3e4546bef47674b7348576e41",
+            "verified": true,
+            "relocated": false
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A request value reaching a schema with an uncompilable pattern and multi-error enabled reached a nil matcher method call and panicked.",
+          "after": "The same request reaches a SchemaPatternRegexError returned to the validation caller."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "98141fa4ce8aa2c798b3c0a680707eb46d91847a",
+            "description": "shared compiled-pattern validation path",
+            "committed_at": "2023-06-21T10:53:57+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 99354338
+      },
+      {
+        "id": "fp_f5441d67f8",
+        "patch_id": "2d1387b286db794ffd2eb7dc6e1bb0ec8df005bf",
+        "commit_sha": "f5441d67f855ed34d975b3b85665764644ab1459",
+        "commit_date": "2026-08-03T12:58:07+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-476"
+        ],
+        "components": [
+          "openapi3filter/ghsa_74vm_87hj_r66f_test.go",
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/middleware.go"
+        ],
+        "sink_symbols": [
+          "schema.Value.AllOf"
+        ],
+        "sink": "Nil dereference of schema.Value.AllOf in decodeValue.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Short-circuits schema-less values before dereferencing SchemaRef.Value, allowing response validation to return normally.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "confidence": "high",
+        "summary": "Fixes a remotely triggerable nil-pointer denial of service in response-header validation.",
+        "poc": "A remote request can trigger an unhandled nil-pointer panic during response validation, causing denial of service for the serving request/process.",
+        "root_cause": "Response-header validation assumed every Header used Schema, but OpenAPI permits the mutually exclusive content form, whose MediaType may omit Schema.",
+        "attacker_preconditions": "A service uses openapi3filter response validation (including Validator.Middleware) with a valid OpenAPI response header declared through content whose media type omits schema; the attacker can send a non-HEAD request that reaches that operation and passes request validation.",
+        "invariant": "A SchemaRef must be non-nil before any access to schema.Value.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "commit",
+            "revision_sha": "f5441d67f855ed34d975b3b85665764644ab1459",
+            "path": "openapi3/header.go",
+            "start_line": 73,
+            "end_line": 92,
+            "quoted_span": "\tif (header.Schema == nil) == (len(header.Content) == 0) {\n\t\treturn \u0026HeaderFieldValidationError{Field: \"schema\",\n\t\t\tCause: newHeaderContentSchemaExactlyOne(header, header.Origin)}\n\t}\n\tif schema := header.Schema; schema != nil {\n\t\tif err := schema.Validate(ctx); err != nil {\n\t\t\treturn \u0026HeaderFieldValidationError{Field: \"schema\", Cause: err}\n\t\t}\n\t}\n\n\tif content := header.Content; content != nil {\n\t\tif len(content) \u003e 1 {\n\t\t\treturn \u0026HeaderFieldValidationError{Field: \"content\",\n\t\t\t\tCause: newHeaderContentSingleEntry(header.Origin)}\n\t\t}\n\n\t\tif err := content.Validate(ctx); err != nil {\n\t\t\treturn \u0026HeaderFieldValidationError{Field: \"content\", Cause: err}\n\t\t}\n\t}",
+            "span_sha256": "c8681a84c2ec6c659d4fc28d7161bd82cc07272231fcdcdcb3e1f7db5df10f79",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "f5441d67f855ed34d975b3b85665764644ab1459",
+            "path": "openapi3filter/ghsa_74vm_87hj_r66f_test.go",
+            "start_line": 30,
+            "end_line": 50,
+            "quoted_span": "const specHeader = `\nopenapi: 3.0.3\ninfo: {title: poc, version: \"1.0.0\"}\npaths:\n  /x:\n    get:\n      responses:\n        \"200\":\n          description: ok\n          headers:\n            X-Thing:\n              content:\n                application/json: {}\n`\n\nfunc validatedInput(t *testing.T, spec string, hdr http.Header) *openapi3filter.ResponseValidationInput {\n\tt.Helper()\n\tdoc, err := openapi3.NewLoader().LoadFromData([]byte(spec))\n\trequire.NoError(t, err)\n\terr = doc.Validate(t.Context())\n\trequire.NoError(t, err)",
+            "span_sha256": "ff770dd41bd1733b3fe92779d1208f20a3fe144152a87b85b9309c46c34dbcac",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "f5441d67f855ed34d975b3b85665764644ab1459",
+            "path": "openapi3filter/ghsa_74vm_87hj_r66f_test.go",
+            "start_line": 69,
+            "end_line": 73,
+            "quoted_span": "func TestResponseHeaderNilSchema(t *testing.T) {\n\tin := validatedInput(t, specHeader, http.Header{\"Content-Type\": {\"application/json\"}})\n\terr := openapi3filter.ValidateResponse(t.Context(), in)\n\trequire.NoError(t, err)\n}",
+            "span_sha256": "6129d49c6be6d63f0f73410f7b9d063d854a860a5709ff99ac17bbbf532bdcd1",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 270,
+            "end_line": 273,
+            "quoted_span": "func decodeValue(dec valueDecoder, param string, sm *openapi3.SerializationMethod, schema *openapi3.SchemaRef, required bool) (any, bool, error) {\n\tvar found bool\n\n\tif len(schema.Value.AllOf) \u003e 0 {",
+            "span_sha256": "fe54c84e7251b197dec29cab8370b1c21206452d7c0ad68f43d11da73a812f1b",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "f5441d67f855ed34d975b3b85665764644ab1459",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 270,
+            "end_line": 275,
+            "quoted_span": "func decodeValue(dec valueDecoder, param string, sm *openapi3.SerializationMethod, schema *openapi3.SchemaRef, required bool) (any, bool, error) {\n\tvar found bool\n\n\tif schema == nil {\n\t\treturn nil, false, nil\n\t}",
+            "span_sha256": "a61e40171d3403f21cd11ebe3f31ee2c02c737e7bb4495e73083fb3d260d4465",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "f5441d67f855ed34d975b3b85665764644ab1459",
+            "path": "openapi3filter/middleware.go",
+            "start_line": 117,
+            "end_line": 161,
+            "quoted_span": "// Middleware returns an http.Handler which wraps the given handler with\n// request and response validation.\nfunc (v *Validator) Middleware(h http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tctx := r.Context()\n\t\troute, pathParams, err := v.router.FindRoute(r)\n\t\tif err != nil {\n\t\t\tv.logFunc(ctx, \"validation error: failed to find route for \"+r.URL.String(), err)\n\t\t\tv.errFunc(ctx, w, http.StatusNotFound, ErrCodeCannotFindRoute, err)\n\t\t\treturn\n\t\t}\n\t\trequestValidationInput := \u0026RequestValidationInput{\n\t\t\tRequest:    r,\n\t\t\tPathParams: pathParams,\n\t\t\tRoute:      route,\n\t\t\tOptions:    \u0026v.options,\n\t\t}\n\t\tif err = ValidateRequest(ctx, requestValidationInput); err != nil {\n\t\t\tv.logFunc(ctx, \"invalid request\", err)\n\t\t\tv.errFunc(ctx, w, http.StatusBadRequest, ErrCodeRequestInvalid, err)\n\t\t\treturn\n\t\t}\n\n\t\tvar wr responseWrapper\n\t\tif v.strict {\n\t\t\twr = \u0026strictResponseWrapper{w: w}\n\t\t} else {\n\t\t\twr = newWarnResponseWrapper(w)\n\t\t}\n\n\t\th.ServeHTTP(wr, r)\n\n\t\tif err = ValidateResponse(ctx, \u0026ResponseValidationInput{\n\t\t\tRequestValidationInput: requestValidationInput,\n\t\t\tStatus:                 wr.statusCode(),\n\t\t\tHeader:                 wr.Header(),\n\t\t\tBody:                   io.NopCloser(bytes.NewBuffer(wr.bodyContents())),\n\t\t\tOptions:                \u0026v.options,\n\t\t}); err != nil {\n\t\t\tv.logFunc(ctx, \"invalid response\", err)\n\t\t\tif v.strict {\n\t\t\t\tv.errFunc(ctx, w, http.StatusInternalServerError, ErrCodeResponseInvalid, err)\n\t\t\t}\n\t\t\treturn\n\t\t}",
+            "span_sha256": "a3c1239ddea9d00e5efd618c0978a0ce268cfdad465c671c1f3e6435947206e3",
+            "verified": true,
+            "relocated": true
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A request routed through Validator.Middleware reaches ValidateResponse, whose schema-less response header reaches schema.Value.AllOf and panics.",
+          "after": "The response-validation path returns without decoding or dereferencing a nil schema."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "9ea22aedcb3f9fa0b06acb08981c11bc8fde4269",
+            "description": "response-header validation",
+            "committed_at": "2022-10-28T16:40:47+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 118786640
+      },
+      {
+        "id": "fp_d090e36b2f",
+        "patch_id": "ea28b0f8c01a1a8aab09bb7d1b36561db0ada0e5",
+        "commit_sha": "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f",
+        "commit_date": "2026-08-03T12:27:15+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-400"
+        ],
+        "components": [
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/middleware.go",
+          "openapi3filter/validate_request.go",
+          "openapi3filter/validate_request_input.go",
+          "openapi3filter/validation_handler.go"
+        ],
+        "sink_symbols": [
+          "regexp.MustCompile(fmt.Sprintf"
+        ],
+        "guard_symbols": [
+          "paramPrefixRE"
+        ],
+        "sink": "Repeated regular-expression compilation in the deepObject query-key loop.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Compiles the parameter-prefix regular expression once per DecodeObject invocation rather than once for every supplied query key.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "confidence": "high",
+        "summary": "Fixes request-validation resource exhaustion from recompiling a deepObject parameter regex for every query key.",
+        "poc": "A crafted request with many query keys could cause excessive CPU use and regex-compilation allocations during validation, reducing service availability before the wrapped handler runs.",
+        "root_cause": "The deepObject decoder compiled an invariant regular expression inside a loop over attacker-controlled query keys.",
+        "attacker_preconditions": "The attacker can send a request that reaches request validation for an operation configured with an object query parameter using the deepObject serialization style; the request supplies many distinct query keys.",
+        "invariant": "A parameter-specific prefix matcher must be compiled at most once for a deepObject decoding operation, independently of the number of untrusted query keys.",
+        "fix_completeness": "partial",
+        "anchors": [
+          {
+            "revision": "head",
+            "revision_sha": "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f",
+            "path": "openapi3filter/validate_request_input.go",
+            "start_line": 31,
+            "end_line": 38,
+            "quoted_span": "func (input *RequestValidationInput) GetQueryParams() url.Values {\n\tq := input.QueryParams\n\tif q == nil {\n\t\tq = input.Request.URL.Query()\n\t\tinput.QueryParams = q\n\t}\n\treturn q\n}",
+            "span_sha256": "1a375b5f82f68ef9b2db3ae28056fed60f5ef7ee9e9eaafb78ad81c3156c1443",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 254,
+            "end_line": 344,
+            "quoted_span": "\tcase openapi3.ParameterInQuery:\n\t\tif len(input.GetQueryParams()) == 0 {\n\t\t\treturn nil, false, nil\n\t\t}\n\t\tdec = \u0026urlValuesDecoder{values: input.GetQueryParams()}\n\tcase openapi3.ParameterInHeader:\n\t\tdec = \u0026headerParamDecoder{header: input.Request.Header}\n\tcase openapi3.ParameterInCookie:\n\t\tdec = \u0026cookieParamDecoder{req: input.Request}\n\tdefault:\n\t\treturn nil, false, fmt.Errorf(\"unsupported parameter's 'in': %s\", param.In)\n\t}\n\n\treturn decodeValue(dec, param.Name, sm, param.Schema, param.Required)\n}\n\nfunc decodeValue(dec valueDecoder, param string, sm *openapi3.SerializationMethod, schema *openapi3.SchemaRef, required bool) (any, bool, error) {\n\tvar found bool\n\n\tif len(schema.Value.AllOf) \u003e 0 {\n\t\tvar value any\n\t\tvar err error\n\t\tfor _, sr := range schema.Value.AllOf {\n\t\t\tvar f bool\n\t\t\tvalue, f, err = decodeValue(dec, param, sm, sr, required)\n\t\t\tfound = found || f\n\t\t\tif value == nil || err != nil {\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\treturn value, found, err\n\t}\n\n\tif len(schema.Value.AnyOf) \u003e 0 {\n\t\tfor _, sr := range schema.Value.AnyOf {\n\t\t\tvalue, f, _ := decodeValue(dec, param, sm, sr, required)\n\t\t\tfound = found || f\n\t\t\tif value != nil {\n\t\t\t\treturn value, found, nil\n\t\t\t}\n\t\t}\n\t\tif required {\n\t\t\treturn nil, found, fmt.Errorf(\"decoding anyOf for parameter %q failed\", param)\n\t\t}\n\t\treturn nil, found, nil\n\t}\n\n\tif len(schema.Value.OneOf) \u003e 0 {\n\t\tisMatched := 0\n\t\tvar value any\n\t\tfor _, sr := range schema.Value.OneOf {\n\t\t\tv, f, _ := decodeValue(dec, param, sm, sr, required)\n\t\t\tfound = found || f\n\t\t\tif v != nil {\n\t\t\t\tvalue = v\n\t\t\t\tisMatched++\n\t\t\t}\n\t\t}\n\t\tif isMatched \u003e= 1 {\n\t\t\treturn value, found, nil\n\t\t}\n\t\tif required {\n\t\t\treturn nil, found, fmt.Errorf(\"decoding oneOf failed: %q is required\", param)\n\t\t}\n\t\treturn nil, found, nil\n\t}\n\n\tif schema.Value.Not != nil {\n\t\t// TODO(decode not): handle decoding \"not\" JSON Schema\n\t\treturn nil, found, errors.New(\"not implemented: decoding 'not'\")\n\t}\n\n\tif schema.Value.Type != nil {\n\t\tvar decodeFn func(param string, sm *openapi3.SerializationMethod, schema *openapi3.SchemaRef) (any, bool, error)\n\t\tswitch {\n\t\tcase schema.Value.Type.Is(\"array\"):\n\t\t\tdecodeFn = func(param string, sm *openapi3.SerializationMethod, schema *openapi3.SchemaRef) (any, bool, error) {\n\t\t\t\tres, b, e := dec.DecodeArray(param, sm, schema)\n\t\t\t\tif len(res) == 0 {\n\t\t\t\t\treturn nil, b, e\n\t\t\t\t}\n\t\t\t\treturn res, b, e\n\t\t\t}\n\t\tcase schema.Value.Type.Is(\"object\"):\n\t\t\tdecodeFn = func(param string, sm *openapi3.SerializationMethod, schema *openapi3.SchemaRef) (any, bool, error) {\n\t\t\t\treturn dec.DecodeObject(param, sm, schema)\n\t\t\t}\n\t\tdefault:\n\t\t\tdecodeFn = dec.DecodePrimitive\n\t\t}\n\t\treturn decodeFn(param, sm, schema)",
+            "span_sha256": "a3528bf935d9873a39329f1e6ee42f5482ffd6e3e44565a89de707ea3a5813a5",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "947498e5a6bd4d8424522052f8ef6c1bb556d47e",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 686,
+            "end_line": 693,
+            "quoted_span": "\tcase \"deepObject\":\n\t\tpropsFn = func(params url.Values) (map[string]string, error) {\n\t\t\tprops := make(map[string]string)\n\t\t\tfor key, values := range params {\n\t\t\t\tif !regexp.MustCompile(fmt.Sprintf(`^%s\\[`, regexp.QuoteMeta(param))).MatchString(key) {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tmatches := deepObjectBracketRE.FindAllStringSubmatch(key, -1)",
+            "span_sha256": "045653106b8b2893cf897b6db284e4276f1351a9564cff5a4531208c2b932da7",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 686,
+            "end_line": 710,
+            "quoted_span": "\tcase \"deepObject\":\n\t\t// Compile the parameter-name prefix matcher once: it depends only on\n\t\t// param (constant for the whole loop), not on the loop variable. Doing\n\t\t// this inside the loop recompiles it once per query key, turning an\n\t\t// attacker-controlled key count into proportional CPU.\n\t\tparamPrefixRE := regexp.MustCompile(fmt.Sprintf(`^%s\\[`, regexp.QuoteMeta(param)))\n\t\tpropsFn = func(params url.Values) (map[string]string, error) {\n\t\t\tprops := make(map[string]string)\n\t\t\tfor key, values := range params {\n\t\t\t\tif !paramPrefixRE.MatchString(key) {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tmatches := deepObjectBracketRE.FindAllStringSubmatch(key, -1)\n\t\t\t\tswitch l := len(matches); {\n\t\t\t\tcase l == 0:\n\t\t\t\t\t// A query parameter's name does not match the required format, so skip it.\n\t\t\t\t\tcontinue\n\t\t\t\tcase l \u003e= 1:\n\t\t\t\t\tkk := []string{}\n\t\t\t\t\tfor _, m := range matches {\n\t\t\t\t\t\tkk = append(kk, m[1])\n\t\t\t\t\t}\n\t\t\t\t\tprops[strings.Join(kk, urlDecoderDelimiter)] = strings.Join(values, urlDecoderDelimiter)\n\t\t\t\t}\n\t\t\t}",
+            "span_sha256": "3f774619af5a7535aad74c9c4a4e0f921f0b15d905559919e7c9c6e6ed7c3527",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "d090e36b2f1c42c898ba2a687a8f6e25f5ca727f",
+            "path": "openapi3filter/middleware.go",
+            "start_line": 128,
+            "end_line": 138,
+            "quoted_span": "\t\trequestValidationInput := \u0026RequestValidationInput{\n\t\t\tRequest:    r,\n\t\t\tPathParams: pathParams,\n\t\t\tRoute:      route,\n\t\t\tOptions:    \u0026v.options,\n\t\t}\n\t\tif err = ValidateRequest(ctx, requestValidationInput); err != nil {\n\t\t\tv.logFunc(ctx, \"invalid request\", err)\n\t\t\tv.errFunc(ctx, w, http.StatusBadRequest, ErrCodeRequestInvalid, err)\n\t\t\treturn\n\t\t}",
+            "span_sha256": "ef17ac18e84955e3929a333140d40c79ab2da1647268445efe8e66b8c8afd782",
+            "verified": true,
+            "relocated": true
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A deepObject request with N query keys reached N regexp.MustCompile calls during request validation.",
+          "after": "A deepObject request reaches one regexp compilation followed by reuse of paramPrefixRE for every key."
+        },
+        "failure_containment": "degraded",
+        "introduced_by": [
+          {
+            "commit_sha": "2ab0c0e0ff1cd1ca72537dbddf2bebebd32d827e",
+            "description": "deepObject parameter-name filtering in urlValuesDecoder.DecodeObject",
+            "committed_at": "2024-05-11T09:35:01+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 70339934
+      },
+      {
+        "id": "fp_88aa64c7cb",
+        "patch_id": "b39c26eb3dcaa0d55cdb33a4ab9f0badc457441d",
+        "commit_sha": "88aa64c7cbd03ecadbb419c473bdcaa8b0124c6b",
+        "commit_date": "2026-07-25T14:43:34+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-476"
+        ],
+        "components": [
+          "openapi3/ghsa_mh7x_f8wq_4jhx_test.go",
+          "openapi3/loader.go"
+        ],
+        "reachable_from": [
+          "cmd/validate/main.go"
+        ],
+        "sink_symbols": [
+          "c.Value.AdditionalProperties.Has",
+          "c.Value.AdditionalProperties.Schema"
+        ],
+        "sink": "Unconditional dereference of an unresolved SchemaRef.Value while resolving an additionalProperties JSON-pointer segment.",
+        "fix_kind": "guard_added",
+        "fix_shape": "The resolver preserves an unresolved reference when its SchemaRef has no Value, allowing validation to return an error instead of dereferencing nil.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "confidence": "high",
+        "summary": "Fixes a crafted OpenAPI reference that could panic the loader and deny service.",
+        "poc": "A crafted OpenAPI 3 document can panic the Go process while resolving references, causing denial of service.",
+        "root_cause": "The additionalProperties branch in JSON-pointer component resolution dereferenced SchemaRef.Value even when the SchemaRef represented an unresolved $ref and therefore had Value == nil.",
+        "attacker_preconditions": "The consuming application accepts an attacker-controlled OpenAPI document and invokes the loader without recovering panics; the repository's validate CLI reaches this loader for a supplied file or stdin.",
+        "invariant": "A JSON-pointer traversal may dereference SchemaRef.Value only after confirming that the referenced schema has resolved to a non-nil value.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "commit",
+            "revision_sha": "88aa64c7cbd03ecadbb419c473bdcaa8b0124c6b",
+            "path": "openapi3/ghsa_mh7x_f8wq_4jhx_test.go",
+            "start_line": 12,
+            "end_line": 26,
+            "quoted_span": "\tspec := `\nopenapi: 3.0.3\ninfo: {title: t, version: \"1.0.0\"}\npaths: {}\ncomponents:\n  schemas:\n    A:\n      $ref: '#/components/schemas/A/additionalProperties'\n`\n\n\tloader := openapi3.NewLoader()\n\tdoc, err := loader.LoadFromData([]byte(spec))\n\trequire.NoError(t, err)\n\terr = doc.Validate(loader.Context)\n\trequire.EqualError(t, err, `invalid components: schema \"A\": found unresolved ref: \"#/components/schemas/A/additionalProperties\"`)",
+            "span_sha256": "efb27b00e8479503a481de231f6d1764557f945877614c09a3c9c166ce995a9b",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "f1a5b523b82868d2d9be2e116b4e942892be72c3",
+            "path": "openapi3/loader.go",
+            "start_line": 452,
+            "end_line": 461,
+            "quoted_span": "\t\t\t// Special case due to multijson\n\t\t\tcase *SchemaRef:\n\t\t\t\tif pathPart == \"additionalProperties\" {\n\t\t\t\t\tif ap := c.Value.AdditionalProperties.Has; ap != nil {\n\t\t\t\t\t\tcursor = *ap\n\t\t\t\t\t} else {\n\t\t\t\t\t\tcursor = c.Value.AdditionalProperties.Schema\n\t\t\t\t\t}\n\t\t\t\t\tattempted = true\n\t\t\t\t}",
+            "span_sha256": "545b5743f564c844b869f8eaf7ff6721cda9f9a1d7aa5295d453b14d5b631cbf",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "88aa64c7cbd03ecadbb419c473bdcaa8b0124c6b",
+            "path": "openapi3/loader.go",
+            "start_line": 452,
+            "end_line": 463,
+            "quoted_span": "\t\t\t// Special case due to multijson\n\t\t\tcase *SchemaRef:\n\t\t\t\tif pathPart == \"additionalProperties\" {\n\t\t\t\t\tif s := c.Value; s != nil {\n\t\t\t\t\t\tif ap := s.AdditionalProperties.Has; ap != nil {\n\t\t\t\t\t\t\tcursor = *ap\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\tcursor = s.AdditionalProperties.Schema\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t\tattempted = true\n\t\t\t\t}",
+            "span_sha256": "1736a68547618fbed9da73401f3bdbf61df43bdc1eea7c2ec0745b6b244b79e0",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "f1a5b523b82868d2d9be2e116b4e942892be72c3",
+            "path": "openapi3/loader.go",
+            "start_line": 1027,
+            "end_line": 1048,
+            "quoted_span": "\tif ref := component.Ref; ref != \"\" {\n\t\tif component.Value != nil {\n\t\t\treturn nil\n\t\t}\n\t\tif !loader.shouldVisitRef(ref, func(value any) {\n\t\t\tcomponent.Value = value.(*Schema)\n\t\t\trefPath, _ := loader.resolveRefPath(ref, documentPath)\n\t\t\tcomponent.setRefPath(refPath)\n\t\t}) {\n\t\t\treturn nil\n\t\t}\n\t\tloader.visitRef(ref)\n\t\tif isSingleRefElement(ref) {\n\t\t\tvar schema Schema\n\t\t\tif documentPath, err = loader.loadSingleElementFromURI(ref, documentPath, \u0026schema); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t\tcomponent.Value = \u0026schema\n\t\t\tcomponent.setRefPath(documentPath)\n\t\t} else {\n\t\t\tvar resolved SchemaRef\n\t\t\tdoc, componentPath, err := loader.resolveComponent(doc, ref, documentPath, \u0026resolved)",
+            "span_sha256": "f4949ef74420c36a08ba673a64d93d70e95f09eb4296ca7c5d94c03f9077e485",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "88aa64c7cbd03ecadbb419c473bdcaa8b0124c6b",
+            "path": "cmd/validate/main.go",
+            "start_line": 60,
+            "end_line": 73,
+            "quoted_span": "\tswitch {\n\tcase vd.OpenAPI == \"3\" || strings.HasPrefix(vd.OpenAPI, \"3.\"):\n\t\tloader := openapi3.NewLoader()\n\t\tloader.IsExternalRefsAllowed = *ext\n\n\t\tvar doc *openapi3.T\n\t\tif filename == \"-\" {\n\t\t\tdoc, err = loader.LoadFromStdin()\n\t\t} else {\n\t\t\tdoc, err = loader.LoadFromFile(filename)\n\t\t}\n\t\tif err != nil {\n\t\t\tlog.Fatalln(\"Loading error:\", err)\n\t\t}",
+            "span_sha256": "e979c4a58437e6da277e26bad3a8e652f386e53b92aa695f3b5a55a257d5b356",
+            "verified": true,
+            "relocated": true
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "The crafted reference reached an unconditional nil dereference during reference resolution and crashed the process.",
+          "after": "The crafted reference reaches validation as an unresolved-reference error."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "5ffbbe3711120676edb99bfd7b8f02eeaff52e72",
+            "description": "additionalProperties JSON-pointer traversal for SchemaRef",
+            "committed_at": "2021-06-23T10:56:33+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 160544821
+      },
+      {
+        "id": "fp_f0407d53b0",
+        "patch_id": "79a2923ba5e14bae48a7aaeecf438d37127a3d70",
+        "commit_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+        "commit_date": "2026-07-24T01:08:15+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "authentication",
+        "cwe": [
+          "CWE-306"
+        ],
+        "components": [
+          "README.md",
+          "openapi3filter/validation_error_test.go",
+          "openapi3filter/validation_handler.go"
+        ],
+        "sink_symbols": [
+          "h.Handler.ServeHTTP",
+          "next.ServeHTTP"
+        ],
+        "sink": "Downstream protected HTTP-handler dispatch after request validation.",
+        "fix_kind": "sink_removed",
+        "fix_shape": "Removes the implicit always-successful authentication callback, so secured requests without an explicitly configured authenticator fail validation rather than reaching the application handler.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5
+        },
+        "confidence": "high",
+        "summary": "ValidationHandler no longer silently bypasses OpenAPI security requirements when no authentication callback is configured.",
+        "poc": "Authentication bypass of OpenAPI-declared protected endpoints handled through ValidationHandler.",
+        "root_cause": "ValidationHandler.Load silently replaced a missing AuthenticationFunc with NoopAuthenticationFunc, whose unconditional nil return satisfied every declared security requirement.",
+        "attacker_preconditions": "An internet-reachable service uses ValidationHandler for an OpenAPI operation with non-empty security requirements but omits AuthenticationFunc; the attacker can send a request that otherwise passes request validation.",
+        "invariant": "For a request with a non-empty OpenAPI security requirement, validation must invoke an explicitly supplied AuthenticationFunc or reject the request; it must not silently treat authentication as successful.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "c9476701743509b5c9ed05858554eacf30672398",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 47,
+            "end_line": 49,
+            "quoted_span": "\tif h.AuthenticationFunc == nil {\n\t\th.AuthenticationFunc = NoopAuthenticationFunc\n\t}",
+            "span_sha256": "57f93ac7eb78ea293142fb9fd3e0aef13fcf90c000fbbe91695ca2818b0aaaa8",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "c9476701743509b5c9ed05858554eacf30672398",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 18,
+            "end_line": 18,
+            "quoted_span": "func NoopAuthenticationFunc(context.Context, *AuthenticationInput) error { return nil }",
+            "span_sha256": "3e26df63b49be83c3e4650e2ba1f4fdddd75967936db3d4a77240d31469c7dec",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "c9476701743509b5c9ed05858554eacf30672398",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 91,
+            "end_line": 104,
+            "quoted_span": "\toptions := \u0026Options{\n\t\tAuthenticationFunc: h.AuthenticationFunc,\n\t}\n\n\t// Validate request\n\trequestValidationInput := \u0026RequestValidationInput{\n\t\tRequest:    r,\n\t\tPathParams: pathParams,\n\t\tRoute:      route,\n\t\tOptions:    options,\n\t}\n\tif err = ValidateRequest(r.Context(), requestValidationInput); err != nil {\n\t\treturn err\n\t}",
+            "span_sha256": "30c249e751ae0d774a07d8b93b17f26d1cbd33d708babb618ac86b91ae9202dc",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 55,
+            "end_line": 72,
+            "quoted_span": "func (h *ValidationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {\n\tif handled := h.before(w, r); handled {\n\t\treturn\n\t}\n\t// TODO: validateResponse\n\th.Handler.ServeHTTP(w, r)\n}\n\n// Middleware implements gorilla/mux MiddlewareFunc\nfunc (h *ValidationHandler) Middleware(next http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tif handled := h.before(w, r); handled {\n\t\t\treturn\n\t\t}\n\t\t// TODO: validateResponse\n\t\tnext.ServeHTTP(w, r)\n\t})\n}",
+            "span_sha256": "2366e336e591aa27e2737acb949ead31bb796e3f1cb6c559f6e13b580ea17153",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 47,
+            "end_line": 50,
+            "quoted_span": "\t// NOTE: users MUST set AuthenticationFunc explicitly or expect ErrAuthenticationServiceMissing when verifying SecurityRequirements\n\tif h.ErrorEncoder == nil {\n\t\th.ErrorEncoder = DefaultErrorEncoder\n\t}",
+            "span_sha256": "9a01c822afaa427f773bd9b0d1ebd912292be098565723b9f1a4a6b39bed8ea5",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+            "path": "openapi3filter/validation_handler.go",
+            "start_line": 74,
+            "end_line": 80,
+            "quoted_span": "func (h *ValidationHandler) before(w http.ResponseWriter, r *http.Request) (handled bool) {\n\tif err := h.validateRequest(r); err != nil {\n\t\th.ErrorEncoder(r.Context(), err, w)\n\t\treturn true\n\t}\n\treturn false\n}",
+            "span_sha256": "ae19d8eddadbdf31aa96de8dce8170731e0e9a75c4df03795864fe7648af6f9b",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+            "path": "openapi3filter/validate_request.go",
+            "start_line": 45,
+            "end_line": 59,
+            "quoted_span": "\t// Security\n\tsecurity := operation.Security\n\t// If there aren't any security requirements for the operation\n\tif security == nil {\n\t\t// Use the global security requirements.\n\t\tsecurity = \u0026route.Spec.Security\n\t}\n\tif security != nil {\n\t\tif err := ValidateSecurityRequirements(ctx, input, *security); err != nil {\n\t\t\tif !options.MultiError {\n\t\t\t\treturn err\n\t\t\t}\n\t\t\tme = append(me, err)\n\t\t}\n\t}",
+            "span_sha256": "0bf97d8a140c586aa885351e062b47d4d6a702b9d994b7c63ea98c03e284ad9a",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+            "path": "openapi3filter/validate_request.go",
+            "start_line": 436,
+            "end_line": 439,
+            "quoted_span": "\tf := options.AuthenticationFunc\n\tif f == nil {\n\t\treturn ErrAuthenticationServiceMissing\n\t}",
+            "span_sha256": "ba4b70142e4aae621c51e48aa25b5bc2dcdc0e526d3e4181ac141d55e5bf155f",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+            "path": "README.md",
+            "start_line": 329,
+            "end_line": 330,
+            "quoted_span": "### v0.144.0\n* `openapi3filter.ValidationHandler.AuthenticationFunc` no longer defaults to `NoopAuthenticationFunc`. Users now have to explicitly set the field and implement their own `AuthenticationFunc` or use the noop impl should they wish to.",
+            "span_sha256": "2cf7c3556e13831ab3b63c426debccee915a94a726914d4aed65a0db80eb2f95",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "f0407d53b0730280266f454b755010e7eeb985da",
+            "path": "openapi3filter/validation_error_test.go",
+            "start_line": 694,
+            "end_line": 699,
+            "quoted_span": "\th := \u0026ValidationHandler{\n\t\tAuthenticationFunc: NoopAuthenticationFunc,\n\t\tHandler:            tt.fields.Handler,\n\t\tFile:               tt.fields.File,\n\t\tErrorEncoder:       tt.fields.ErrorEncoder,\n\t}",
+            "span_sha256": "b4abb5f62182d829beb38c8a8255d29180c0c672a9a626d414eb10fdcb4d3ef6",
+            "verified": true,
+            "relocated": false
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "Those requests received an implicit NoopAuthenticationFunc, passed the security-validation callback, and could reach the configured handler or middleware next handler.",
+          "after": "Unauthenticated requests to OpenAPI-secured operations with no configured AuthenticationFunc are rejected by validation and encoded as an error response."
+        },
+        "failure_containment": "degraded",
+        "introduced_by": [
+          {
+            "commit_sha": "55d6baed46488585dd9a5a4f31dbe0ce03ef5592",
+            "description": "ValidationHandler default authentication setup",
+            "committed_at": "2020-05-25T00:47:57+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 194487618
+      },
+      {
+        "id": "fp_68ac2affa3",
+        "patch_id": "4a7d714677b481c7d01291435469cd93f8b886a9",
+        "commit_sha": "68ac2affa325514d7d6e731204d6a1edf6bdff64",
+        "commit_date": "2026-07-23T23:00:10+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-476"
+        ],
+        "components": [
+          "openapi3filter/req_resp_decoder.go",
+          "openapi3filter/validate_request_test.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/middleware.go",
+          "openapi3filter/validate_request.go",
+          "openapi3filter/validation_handler.go"
+        ],
+        "sink_symbols": [
+          "mt.Schema.Value"
+        ],
+        "sink": "Nil-pointer dereference of the media type SchemaRef during content-parameter decoding.",
+        "fix_kind": "guard_added",
+        "fix_shape": "A schema-less content parameter now produces a validation error, which the supplied HTTP middleware returns as a 400, instead of dereferencing a nil SchemaRef.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "confidence": "high",
+        "summary": "Fixes an externally triggerable nil-pointer panic in default OpenAPI content-parameter validation.",
+        "poc": "A remote request can panic request validation, causing denial of service for the affected request/handler and potentially the process when the embedding server has no panic recovery.",
+        "root_cause": "defaultContentParameterDecoder checked that the application/json MediaType existed but omitted the required nil check for its SchemaRef before accessing Value.",
+        "attacker_preconditions": "The deployed validator uses its default content-parameter decoder and exposes an operation whose valid OpenAPI document has a content parameter with application/json but no schema; the attacker supplies that parameter (no credentials are needed when that operation has no security requirement).",
+        "invariant": "The default content-parameter decoder must not dereference MediaType.Schema unless that SchemaRef is non-nil; malformed-but-valid media-type content must be rejected as a validation error.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "3e5d7f4d5a0c335d8085de5c0e552efe61e37e03",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 192,
+            "end_line": 197,
+            "quoted_span": "\tmt := content.Get(\"application/json\")\n\tif mt == nil {\n\t\terr = fmt.Errorf(\"parameter %q has no content schema\", param.Name)\n\t\treturn\n\t}\n\toutSchema = mt.Schema.Value",
+            "span_sha256": "560e269522026b0f9dedf1bbaa29fe96e2f3b1f2e64f35d9687e72bfcd48194a",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "68ac2affa325514d7d6e731204d6a1edf6bdff64",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 192,
+            "end_line": 201,
+            "quoted_span": "\tmt := content.Get(\"application/json\")\n\tif mt == nil {\n\t\terr = fmt.Errorf(\"parameter %q has no content schema\", param.Name)\n\t\treturn\n\t}\n\tif mt.Schema == nil {\n\t\terr = fmt.Errorf(\"parameter %q content media type has no schema\", param.Name)\n\t\treturn\n\t}\n\toutSchema = mt.Schema.Value",
+            "span_sha256": "16ac81a51a1cc13eaf4412ae2526cd7b8bc7a1094a01e849b84793833a90fd13",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "68ac2affa325514d7d6e731204d6a1edf6bdff64",
+            "path": "openapi3/media_type.go",
+            "start_line": 117,
+            "end_line": 127,
+            "quoted_span": "// Validate returns an error if MediaType does not comply with the OpenAPI spec.\nfunc (mediaType *MediaType) Validate(ctx context.Context, opts ...ValidationOption) error {\n\tctx = WithValidationOptions(ctx, opts...)\n\n\tif mediaType == nil {\n\t\treturn nil\n\t}\n\tif schema := mediaType.Schema; schema != nil {\n\t\tif err := schema.Validate(ctx); err != nil {\n\t\t\treturn err\n\t\t}",
+            "span_sha256": "9bfafe50ae2384bffd18b8b3d64fc48086e74e9ca1e0d20e55a0af8bad67a353",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "68ac2affa325514d7d6e731204d6a1edf6bdff64",
+            "path": "openapi3/parameter.go",
+            "start_line": 364,
+            "end_line": 378,
+            "quoted_span": "\tif (parameter.Schema == nil) == (len(parameter.Content) == 0) {\n\t\treturn \u0026ParameterFieldValidationError{ParameterName: parameter.Name, Field: \"schema\",\n\t\t\tCause: newParameterContentSchemaExactlyOne(parameter.Origin)}\n\t}\n\n\tif content := parameter.Content; content != nil {\n\t\tif len(content) \u003e 1 {\n\t\t\treturn \u0026ParameterFieldValidationError{ParameterName: parameter.Name, Field: \"content\",\n\t\t\t\tCause: newParameterContentSingleEntry(parameter.Origin)}\n\t\t}\n\n\t\tif err := content.Validate(ctx); err != nil {\n\t\t\treturn \u0026ParameterFieldValidationError{ParameterName: parameter.Name, Field: \"content\", Cause: err}\n\t\t}\n\t}",
+            "span_sha256": "2a7fcf981bfa6316a6879e48721c416bdc78cdaad18f35e573231617bbfde6e6",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "68ac2affa325514d7d6e731204d6a1edf6bdff64",
+            "path": "openapi3filter/middleware.go",
+            "start_line": 117,
+            "end_line": 138,
+            "quoted_span": "// Middleware returns an http.Handler which wraps the given handler with\n// request and response validation.\nfunc (v *Validator) Middleware(h http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tctx := r.Context()\n\t\troute, pathParams, err := v.router.FindRoute(r)\n\t\tif err != nil {\n\t\t\tv.logFunc(ctx, \"validation error: failed to find route for \"+r.URL.String(), err)\n\t\t\tv.errFunc(ctx, w, http.StatusNotFound, ErrCodeCannotFindRoute, err)\n\t\t\treturn\n\t\t}\n\t\trequestValidationInput := \u0026RequestValidationInput{\n\t\t\tRequest:    r,\n\t\t\tPathParams: pathParams,\n\t\t\tRoute:      route,\n\t\t\tOptions:    \u0026v.options,\n\t\t}\n\t\tif err = ValidateRequest(ctx, requestValidationInput); err != nil {\n\t\t\tv.logFunc(ctx, \"invalid request\", err)\n\t\t\tv.errFunc(ctx, w, http.StatusBadRequest, ErrCodeRequestInvalid, err)\n\t\t\treturn\n\t\t}",
+            "span_sha256": "53349654ede0e17f8b33f6adffd0e523333200f6f0d4064651b83ba637c24e42",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "68ac2affa325514d7d6e731204d6a1edf6bdff64",
+            "path": "openapi3filter/validate_request_test.go",
+            "start_line": 572,
+            "end_line": 606,
+            "quoted_span": "// TestValidateRequestContentParameterWithoutSchema is a regression test for\n// GHSA-jpcw-4wr7-c3vq: a \"content\" parameter whose media type has no\n// \"schema\" is legal per the OpenAPI spec (doc.Validate accepts it) but used\n// to nil-pointer-dereference/panic in defaultContentParameterDecoder instead\n// of returning a validation error.\nfunc TestValidateRequestContentParameterWithoutSchema(t *testing.T) {\n\tconst spec = `\nopenapi: 3.0.3\ninfo: {title: poc, version: \"1.0.0\"}\npaths:\n  /c:\n    get:\n      parameters:\n        - name: cfg\n          in: query\n          content:\n            application/json: {}\n      responses:\n        \"200\": {description: ok}\n`\n\trouter := setupTestRouter(t, spec)\n\n\treq, err := http.NewRequest(http.MethodGet, \"/c?cfg=1\", nil)\n\trequire.NoError(t, err)\n\troute, pathParams, err := router.FindRoute(req)\n\trequire.NoError(t, err)\n\n\trequire.NotPanics(t, func() {\n\t\terr = ValidateRequest(t.Context(), \u0026RequestValidationInput{\n\t\t\tRequest:    req,\n\t\t\tPathParams: pathParams,\n\t\t\tRoute:      route,\n\t\t})\n\t})\n\trequire.Error(t, err)",
+            "span_sha256": "02ece890697fb3d5064eadb0613c112d79b2bd6829fd37c41c69f5217296fb27",
+            "verified": true,
+            "relocated": false
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A request containing a configured schema-less content parameter reached mt.Schema.Value and panicked.",
+          "after": "The request reaches a returned validation error (and the supplied middleware emits HTTP 400)."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "d3180292eead101a815a9291fd8b6aca8b45927e",
+            "description": "default JSON content-parameter decoder",
+            "committed_at": "2019-05-07T17:22:07+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 227597883
+      },
+      {
+        "id": "fp_30e292371a",
+        "patch_id": "b9cf2496dc5e21b6f58ba19d3f5473faaeabe517",
+        "commit_sha": "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+        "commit_date": "2026-07-21T14:48:31+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-476"
+        ],
+        "components": [
+          "openapi3filter/array_items_nil_panic_test.go",
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/middleware.go",
+          "openapi3filter/validate_request.go",
+          "openapi3filter/validate_response.go",
+          "openapi3filter/validation_handler.go"
+        ],
+        "sink_symbols": [
+          "propSchema.Value.Items.Value",
+          "schemaRef.Value.Items",
+          "valueSchema.Value.Items"
+        ],
+        "sink": "Nil-pointer dereference of an optional OpenAPI Schema.Items reference during array decoding.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Rejects nil or unresolved array item schemas with ordinary decoding errors instead of dereferencing them on the guarded parameter, urlencoded-body, and multipart-body paths.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "confidence": "high",
+        "summary": "Guards OpenAPI 3.1 array decoders against nil Items panics.",
+        "poc": "Remote denial of service through a nil-pointer panic in an application embedding the validator without panic recovery.",
+        "root_cause": "OpenAPI 3.1 made items optional for arrays, but request and response decoding retained unconditional Items dereferences.",
+        "attacker_preconditions": "The application validates requests or responses with openapi3filter using a valid OpenAPI 3.1 document that declares an array without items; an attacker can then send a matching parameter or form body to an operation reachable without an authentication requirement, and the embedding application has no panic recovery around the library call.",
+        "invariant": "Every decoder that needs to interpret an array element must first ensure that the array has a non-nil, resolved Items schema; otherwise it must return an error.",
+        "fix_completeness": "partial",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "c11a4812ba7be3ee3d81453be0c397ee84c238d5",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1126,
+            "end_line": 1129,
+            "quoted_span": "func parseArray(raw []string, schemaRef *openapi3.SchemaRef) ([]any, error) {\n\tvar value []any\n\tfor i, v := range raw {\n\t\titem, err := parsePrimitive(v, schemaRef.Value.Items)",
+            "span_sha256": "ce1ff26bb725f83d768558c9401af963678aaa47b6dde057e229791ddc103f5f",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "c11a4812ba7be3ee3d81453be0c397ee84c238d5",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1420,
+            "end_line": 1424,
+            "quoted_span": "\t\tcase propType.Is(\"array\"):\n\t\t\titems := propSchema.Value.Items.Value\n\t\t\tif !(items.Type.Is(\"string\") || items.Type.Is(\"integer\") || items.Type.Is(\"number\") || items.Type.Is(\"boolean\")) {\n\t\t\t\treturn nil, fmt.Errorf(\"unsupported schema of request body's property %q\", propName)\n\t\t\t}",
+            "span_sha256": "5068f00f713463f39447a80103899d492e1196b9230fd44567ce2c7c5d40c1ee",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "c11a4812ba7be3ee3d81453be0c397ee84c238d5",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1563,
+            "end_line": 1570,
+            "quoted_span": "\t\t\tif valueSchema.Value.Type.Is(\"array\") {\n\t\t\t\tvalueSchema = valueSchema.Value.Items\n\t\t\t}\n\t\t}\n\n\t\tpartHeader := http.Header(part.Header)\n\t\tvar value any\n\t\tif _, value, err = decodeBody(part, partHeader, valueSchema, subEncFn); err != nil {",
+            "span_sha256": "97b4abbd521eb42af298effd251def053729c42a7c8d34eab0d761c9c2616c9e",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1126,
+            "end_line": 1132,
+            "quoted_span": "func parseArray(raw []string, schemaRef *openapi3.SchemaRef) ([]any, error) {\n\tif schemaRef.Value.Items == nil || schemaRef.Value.Items.Value == nil {\n\t\treturn nil, fmt.Errorf(\"array items schema is required for decoding\")\n\t}\n\tvar value []any\n\tfor i, v := range raw {\n\t\titem, err := parsePrimitive(v, schemaRef.Value.Items)",
+            "span_sha256": "4f8d3fb3dc3139c3a76138e7e88b271bcdada395b3d076971d5ba160513db64c",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1423,
+            "end_line": 1427,
+            "quoted_span": "\t\tcase propType.Is(\"array\"):\n\t\t\tif propSchema.Value.Items == nil || propSchema.Value.Items.Value == nil {\n\t\t\t\treturn nil, fmt.Errorf(\"unsupported schema of request body's property %q: array items required\", propName)\n\t\t\t}\n\t\t\titems := propSchema.Value.Items.Value",
+            "span_sha256": "48168fbe9327185e98a2081420a387c37998dbec5b2679fbd5f6c47c19c9e07b",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "head",
+            "revision_sha": "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1569,
+            "end_line": 1574,
+            "quoted_span": "\t\t\tif valueSchema.Value.Type.Is(\"array\") {\n\t\t\t\tif valueSchema.Value.Items == nil {\n\t\t\t\t\treturn nil, fmt.Errorf(\"unsupported schema of multipart part %q: array items required\", name)\n\t\t\t\t}\n\t\t\t\tvalueSchema = valueSchema.Value.Items\n\t\t\t}",
+            "span_sha256": "f30954012c71c81b6cb285fdffa3859e1d974466d442cc45f87d205d2326f65d",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+            "path": "openapi3filter/array_items_nil_panic_test.go",
+            "start_line": 110,
+            "end_line": 118,
+            "quoted_span": "\tpanicVal := catchPanicValue(func() {\n\t\treqErr = openapi3filter.ValidateRequest(context.Background(), \u0026openapi3filter.RequestValidationInput{\n\t\t\tRequest: req, PathParams: pathParams, Route: route,\n\t\t\tOptions: \u0026openapi3filter.Options{AuthenticationFunc: openapi3filter.NoopAuthenticationFunc},\n\t\t})\n\t})\n\trequire.Nil(t, panicVal, \"must not panic\")\n\trequire.Error(t, reqErr, \"must return a clean error\")\n\trequire.Contains(t, reqErr.Error(), \"array items required\")",
+            "span_sha256": "60717733381d80314a46de65f5b47e84c6f3447d1d9648958cf4eab7a83eaa71",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 559,
+            "end_line": 563,
+            "quoted_span": "func (d *urlValuesDecoder) parseArray(raw []string, schemaRef *openapi3.SchemaRef) ([]any, error) {\n\tvar value []any\n\n\tfor i, v := range raw {\n\t\titem, err := d.parseValue(v, schemaRef.Value.Items)",
+            "span_sha256": "de8980a9902e967a986f425e6b759f01ec877482d166b7ed5c3593b5a7699d69",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "head",
+            "revision_sha": "30e292371a89ca6d1f91a9553e0aa518b49f838d",
+            "path": "openapi3filter/middleware.go",
+            "start_line": 119,
+            "end_line": 138,
+            "quoted_span": "func (v *Validator) Middleware(h http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tctx := r.Context()\n\t\troute, pathParams, err := v.router.FindRoute(r)\n\t\tif err != nil {\n\t\t\tv.logFunc(ctx, \"validation error: failed to find route for \"+r.URL.String(), err)\n\t\t\tv.errFunc(ctx, w, http.StatusNotFound, ErrCodeCannotFindRoute, err)\n\t\t\treturn\n\t\t}\n\t\trequestValidationInput := \u0026RequestValidationInput{\n\t\t\tRequest:    r,\n\t\t\tPathParams: pathParams,\n\t\t\tRoute:      route,\n\t\t\tOptions:    \u0026v.options,\n\t\t}\n\t\tif err = ValidateRequest(ctx, requestValidationInput); err != nil {\n\t\t\tv.logFunc(ctx, \"invalid request\", err)\n\t\t\tv.errFunc(ctx, w, http.StatusBadRequest, ErrCodeRequestInvalid, err)\n\t\t\treturn\n\t\t}",
+            "span_sha256": "e99c654e071a7880af441535d6eb87d9f737c947c269724627d59d79bfd74c16",
+            "verified": true,
+            "relocated": true
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A request or response reaching those decoders with a valid OpenAPI 3.1 array schema lacking items caused a nil-pointer dereference.",
+          "after": "The guarded generic array, urlencoded-form, and multipart-form decoders return decoding errors for missing item schemas."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "4cefcc72a2ee324ee30b866309584ee4724e7c7b",
+            "description": "OpenAPI 3.1 array-schema validation allowing missing items",
+            "committed_at": "2026-04-24T08:40:04+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 7625307
+      },
+      {
+        "id": "fp_1223a0f215",
+        "patch_id": "16599b78fa94f10fbb3efce24ab6e6247e6022c4",
+        "commit_sha": "1223a0f215d2cf9beb2d9eb9ea2649d001c21388",
+        "commit_date": "2026-07-12T00:04:27+02:00",
+        "commit_subject": "openapi3filter: fix unbounded allocation in deepObject array decoding (C-02)",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-400"
+        ],
+        "components": [
+          "openapi3filter/req_resp_decoder.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/middleware.go",
+          "openapi3filter/validate_request.go"
+        ],
+        "sink_symbols": [
+          "append(result, nil)",
+          "sliceMapToSlice"
+        ],
+        "guard_symbols": [
+          "maxSliceMapToSliceGap"
+        ],
+        "sink": "The sparse-array reconstruction loop in sliceMapToSlice, specifically its repeated append of nil entries through the maximum supplied index.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Rejects negative indexes and sparse array maps whose reconstructed length exceeds the supplied-element count by more than 10,000, preventing attacker-controlled allocation amplification before schema validation.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "confidence": "high",
+        "summary": "Fixes remote denial of service from unbounded deepObject array-index allocation.",
+        "poc": "Unauthenticated remote clients can cause multi-gigabyte heap allocations during request validation, exhausting memory and terminating or severely disrupting the service.",
+        "root_cause": "sliceMapToSlice trusted the maximum attacker-supplied numeric index and filled every omitted slot with nil, making reconstructed memory use proportional to the index rather than the request's supplied elements.",
+        "attacker_preconditions": "A service uses this validator for an externally reachable OpenAPI operation with query validation enabled and a deepObject object schema containing an array; the attacker can submit a bracketed numeric array index in that query parameter.",
+        "invariant": "A deepObject array's reconstructed length must remain bounded relative to the number of supplied elements, and array indexes must be non-negative.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "commit",
+            "revision_sha": "1223a0f215d2cf9beb2d9eb9ea2649d001c21388",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 661,
+            "end_line": 687,
+            "quoted_span": "\tcase \"deepObject\":\n\t\tpropsFn = func(params url.Values) (map[string]string, error) {\n\t\t\tprops := make(map[string]string)\n\t\t\tfor key, values := range params {\n\t\t\t\tif !regexp.MustCompile(fmt.Sprintf(`^%s\\[`, regexp.QuoteMeta(param))).MatchString(key) {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\n\t\t\t\tmatches := regexp.MustCompile(`\\[(.*?)\\]`).FindAllStringSubmatch(key, -1)\n\t\t\t\tswitch l := len(matches); {\n\t\t\t\tcase l == 0:\n\t\t\t\t\t// A query parameter's name does not match the required format, so skip it.\n\t\t\t\t\tcontinue\n\t\t\t\tcase l \u003e= 1:\n\t\t\t\t\tkk := []string{}\n\t\t\t\t\tfor _, m := range matches {\n\t\t\t\t\t\tkk = append(kk, m[1])\n\t\t\t\t\t}\n\t\t\t\t\tprops[strings.Join(kk, urlDecoderDelimiter)] = strings.Join(values, urlDecoderDelimiter)\n\t\t\t\t}\n\t\t\t}\n\t\t\tif len(props) == 0 {\n\t\t\t\t// HTTP request does not contain query parameters encoded by rules of style \"deepObject\".\n\t\t\t\treturn nil, nil\n\t\t\t}\n\t\t\treturn props, nil\n\t\t}",
+            "span_sha256": "c937a3c13a27e6e9064bb1de79af0417b64fdc65606786a3c6496142c79e7320",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "1223a0f215d2cf9beb2d9eb9ea2649d001c21388",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 988,
+            "end_line": 1012,
+            "quoted_span": "\tcase schema.Value.Type.Is(\"array\"):\n\t\tparamArr, ok := deepGet(params, mapKeys...)\n\t\tif !ok {\n\t\t\treturn nil, nil\n\t\t}\n\t\tt, isMap := paramArr.(map[string]any)\n\t\tif !isMap {\n\t\t\treturn nil, \u0026ParseError{path: pathFromKeys(mapKeys), Kind: KindInvalidFormat, Reason: \"array items must be set with indexes\"}\n\t\t}\n\t\t// intermediate arrays have to be instantiated\n\t\tarr, err := sliceMapToSlice(t)\n\t\tif err != nil {\n\t\t\treturn nil, \u0026ParseError{path: pathFromKeys(mapKeys), Kind: KindInvalidFormat, Reason: fmt.Sprintf(\"could not convert value map to array: %v\", err)}\n\t\t}\n\t\tresultArr := make([]any /*not 0,*/, len(arr))\n\t\tfor i := range arr {\n\t\t\tr, err := buildResObj(params, mapKeys, strconv.Itoa(i), schema.Value.Items)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\tif r != nil {\n\t\t\t\tresultArr[i] = r\n\t\t\t}\n\t\t}\n\t\treturn resultArr, nil",
+            "span_sha256": "1737a1d9f7d03d6b74b93bb24fb7e83aea573c463b91b12c3dac9d3555a06320",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "61f37b693702a391985bd49638954004eda0135e",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 947,
+            "end_line": 961,
+            "quoted_span": "\tmax := -1\n\tfor _, k := range keys {\n\t\tif k \u003e max {\n\t\t\tmax = k\n\t\t}\n\t}\n\tfor i := 0; i \u003c= max; i++ {\n\t\tval, ok := m[strconv.Itoa(i)]\n\t\tif !ok {\n\t\t\tresult = append(result, nil)\n\t\t\tcontinue\n\t\t}\n\t\tresult = append(result, val)\n\t}\n\treturn result, nil",
+            "span_sha256": "c128f26795fc6934cbddcbfe516eb05dd332cb5a8401669287e37ca4f7ae2197",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "1223a0f215d2cf9beb2d9eb9ea2649d001c21388",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 935,
+            "end_line": 968,
+            "quoted_span": "// maxSliceMapToSliceGap bounds how many synthesized nil holes sliceMapToSlice\n// will fill in for a sparse array before rejecting the input. Without this,\n// an attacker-supplied index (e.g. from a deepObject query parameter) drives\n// an allocation proportional to the index itself, regardless of how many\n// elements were actually provided.\nconst maxSliceMapToSliceGap = 10000\n\n// example: map[0:map[key:true] 1:map[key:false]] -\u003e [map[key:true] map[key:false]]\nfunc sliceMapToSlice(m map[string]any) ([]any, error) {\n\tvar result []any\n\n\tkeys := make([]int, 0, len(m))\n\tfor k := range m {\n\t\tkey, err := strconv.Atoi(k)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"array indexes must be integers: %w\", err)\n\t\t}\n\t\tif key \u003c 0 {\n\t\t\treturn nil, fmt.Errorf(\"array indexes must not be negative: %d\", key)\n\t\t}\n\t\tkeys = append(keys, key)\n\t}\n\tmax := -1\n\tfor _, k := range keys {\n\t\tif k \u003e max {\n\t\t\tmax = k\n\t\t}\n\t}\n\t// max+1 is the size of the slice this loop is about to build; bound the\n\t// gap between what was actually supplied (len(m)) and that size so a\n\t// single huge index can't force an outsized allocation.\n\tif gap := max + 1 - len(m); gap \u003e maxSliceMapToSliceGap {\n\t\treturn nil, fmt.Errorf(\"array index %d is too sparse relative to the %d supplied items\", max, len(m))\n\t}",
+            "span_sha256": "dbd6bddd208698dc145dd572d016e2d645a2396e734720fb242372ca9452b9e7",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "1223a0f215d2cf9beb2d9eb9ea2649d001c21388",
+            "path": "openapi3filter/middleware.go",
+            "start_line": 117,
+            "end_line": 138,
+            "quoted_span": "// Middleware returns an http.Handler which wraps the given handler with\n// request and response validation.\nfunc (v *Validator) Middleware(h http.Handler) http.Handler {\n\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tctx := r.Context()\n\t\troute, pathParams, err := v.router.FindRoute(r)\n\t\tif err != nil {\n\t\t\tv.logFunc(ctx, \"validation error: failed to find route for \"+r.URL.String(), err)\n\t\t\tv.errFunc(ctx, w, http.StatusNotFound, ErrCodeCannotFindRoute, err)\n\t\t\treturn\n\t\t}\n\t\trequestValidationInput := \u0026RequestValidationInput{\n\t\t\tRequest:    r,\n\t\t\tPathParams: pathParams,\n\t\t\tRoute:      route,\n\t\t\tOptions:    \u0026v.options,\n\t\t}\n\t\tif err = ValidateRequest(ctx, requestValidationInput); err != nil {\n\t\t\tv.logFunc(ctx, \"invalid request\", err)\n\t\t\tv.errFunc(ctx, w, http.StatusBadRequest, ErrCodeRequestInvalid, err)\n\t\t\treturn\n\t\t}",
+            "span_sha256": "53349654ede0e17f8b33f6adffd0e523333200f6f0d4064651b83ba637c24e42",
+            "verified": true,
+            "relocated": true
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A deepObject query parameter containing a very large numeric array index reached the reconstruction loop and caused allocations proportional to that index.",
+          "after": "Sparse deepObject array indexes with a gap over 10,000 are returned as ParseError-backed invalid request errors before slice reconstruction."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "78bb273e5892da3b0c8fc31857499449adfaba6c",
+            "description": "deepObject nested-array reconstruction",
+            "committed_at": "2024-03-22T20:15:06+01:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 72672561
+      },
+      {
+        "id": "fp_1d0a337c9b",
+        "patch_id": "ee26ffd99ee6ff2c2787259f666bfb67914593c1",
+        "commit_sha": "1d0a337c9b1570fab283be8a04c8af6e43b9a22c",
+        "commit_date": "2026-07-10T10:49:45+02:00",
+        "commit_subject": "Merge commit from fork",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-476"
+        ],
+        "components": [
+          "openapi3filter/ghsa_mmfr_pmjx_hw9w_test.go",
+          "openapi3filter/validation_error_encoder.go"
+        ],
+        "reachable_from": [
+          "openapi3filter/req_resp_decoder.go",
+          "openapi3filter/validate_request.go"
+        ],
+        "sink_symbols": [
+          "e.Parameter.In"
+        ],
+        "sink": "Nil-pointer dereference of RequestError.Parameter while formatting a nested ParseError.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Adds a nil check before the query-parameter formatting path, allowing malformed multipart body errors to fall through to a 400 ValidationError instead of panicking.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 7.5,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "confidence": "high",
+        "summary": "Fixes a remotely triggerable nil-pointer panic in multipart request validation error conversion.",
+        "poc": "A remote unauthenticated caller meeting the endpoint preconditions could trigger a nil-pointer panic while the application renders a malformed multipart request error, causing denial of service.",
+        "root_cause": "convertParseError assumed every nested invalid-format ParseError belonged to a parameter and dereferenced the nil Parameter of a request-body RequestError.",
+        "attacker_preconditions": "The application exposes a request-body-validated multipart/form-data endpoint with a scalar property and renders validation failures through ConvertErrors or ValidationErrorEncoder; the endpoint must be reachable without authentication.",
+        "invariant": "A RequestError without a Parameter (including request-body errors) must not dereference e.Parameter while converting an error.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "98d956447b64eaa10d3570a80b3be1a2849945f1",
+            "path": "openapi3filter/validation_error_encoder.go",
+            "start_line": 118,
+            "end_line": 130,
+            "quoted_span": "\t} else if innerErr.RootCause() != nil {\n\t\tif rootErr, ok := innerErr.Cause.(*ParseError); ok \u0026\u0026\n\t\t\trootErr.Kind == KindInvalidFormat \u0026\u0026 e.Parameter.In == \"query\" {\n\t\t\treturn \u0026ValidationError{\n\t\t\t\tStatus: http.StatusBadRequest,\n\t\t\t\tTitle: fmt.Sprintf(\"parameter %q in %s is invalid: %v is %s\",\n\t\t\t\t\te.Parameter.Name, e.Parameter.In, rootErr.Value, rootErr.Reason),\n\t\t\t}\n\t\t}\n\t\treturn \u0026ValidationError{\n\t\t\tStatus: http.StatusBadRequest,\n\t\t\tTitle:  innerErr.Reason,\n\t\t}",
+            "span_sha256": "e3ca1ff54c9269ee0b94bbe01e785fe2102d0cb563835aff6db1f8e942cca4fd",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "1d0a337c9b1570fab283be8a04c8af6e43b9a22c",
+            "path": "openapi3filter/validation_error_encoder.go",
+            "start_line": 118,
+            "end_line": 138,
+            "quoted_span": "\t} else if innerErr.RootCause() != nil {\n\t\tif rootErr, ok := innerErr.Cause.(*ParseError); ok \u0026\u0026\n\t\t\trootErr.Kind == KindInvalidFormat \u0026\u0026 e.Parameter != nil \u0026\u0026 e.Parameter.In == \"query\" {\n\t\t\treturn \u0026ValidationError{\n\t\t\t\tStatus: http.StatusBadRequest,\n\t\t\t\tTitle: fmt.Sprintf(\"parameter %q in %s is invalid: %v is %s\",\n\t\t\t\t\te.Parameter.Name, e.Parameter.In, rootErr.Value, rootErr.Reason),\n\t\t\t}\n\t\t}\n\t\t// For body parse errors (e.Parameter == nil) the outer ParseError's\n\t\t// Reason is often empty, e.g. the multipart decoder wraps a part's\n\t\t// *ParseError without setting one. Fall back to the full error text so\n\t\t// the response still carries a meaningful message.\n\t\ttitle := innerErr.Reason\n\t\tif title == \"\" {\n\t\t\ttitle = innerErr.Error()\n\t\t}\n\t\treturn \u0026ValidationError{\n\t\t\tStatus: http.StatusBadRequest,\n\t\t\tTitle:  title,\n\t\t}",
+            "span_sha256": "0d0259df5b10b28c12f115d17a2950abb033e7de98dc7d7ea52b6bd5ee68423d",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "1d0a337c9b1570fab283be8a04c8af6e43b9a22c",
+            "path": "openapi3filter/req_resp_decoder.go",
+            "start_line": 1545,
+            "end_line": 1560,
+            "quoted_span": "\t\tpartHeader := http.Header(part.Header)\n\t\tvar value any\n\t\tif _, value, err = decodeBody(part, partHeader, valueSchema, subEncFn); err != nil {\n\t\t\tif v, ok := err.(*ParseError); ok {\n\t\t\t\treturn nil, \u0026ParseError{path: []any{name}, Cause: v}\n\t\t\t}\n\t\t\treturn nil, fmt.Errorf(\"part %s: %w\", name, err)\n\t\t}\n\n\t\t// Parse primitive types when no content type is explicitly provided, or the content type is set to text/plain\n\t\tif contentType := partHeader.Get(headerCT); contentType == \"\" || contentType == \"text/plain\" {\n\t\t\tif value, err = parsePrimitive(value.(string), valueSchema); err != nil {\n\t\t\t\tif v, ok := err.(*ParseError); ok {\n\t\t\t\t\treturn nil, \u0026ParseError{path: []any{name}, Cause: v}\n\t\t\t\t}\n\t\t\t\treturn nil, fmt.Errorf(\"part %s: %w\", name, err)",
+            "span_sha256": "4ea3a86f16dfa115ffc57d5846a931469ffd4b49d8ca008d3ffd5ea03d96b52f",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "1d0a337c9b1570fab283be8a04c8af6e43b9a22c",
+            "path": "openapi3filter/validate_request.go",
+            "start_line": 323,
+            "end_line": 331,
+            "quoted_span": "\tencFn := func(name string) *openapi3.Encoding { return contentType.Encoding[name] }\n\tmediaType, value, err := decodeBody(bytes.NewReader(data), req.Header, contentType.Schema, encFn)\n\tif err != nil {\n\t\treturn \u0026RequestError{\n\t\t\tInput:       input,\n\t\t\tRequestBody: requestBody,\n\t\t\tReason:      \"failed to decode request body\",\n\t\t\tErr:         err,\n\t\t}",
+            "span_sha256": "1027b91c434f0db263e9036e79352df300612b83a5b56d8d578ba7acf902e9bc",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "1d0a337c9b1570fab283be8a04c8af6e43b9a22c",
+            "path": "openapi3filter/ghsa_mmfr_pmjx_hw9w_test.go",
+            "start_line": 111,
+            "end_line": 131,
+            "quoted_span": "\t\t\treq, err := http.NewRequest(http.MethodPost, \"/upload\", strings.NewReader(body))\n\t\t\trequire.NoError(t, err)\n\t\t\treq.Header.Set(\"Content-Type\", contentType)\n\n\t\t\troute, pathParams, err := router.FindRoute(req)\n\t\t\trequire.NoError(t, err)\n\n\t\t\treqErr := openapi3filter.ValidateRequest(ctx, \u0026openapi3filter.RequestValidationInput{\n\t\t\t\tRequest:    req,\n\t\t\t\tPathParams: pathParams,\n\t\t\t\tRoute:      route,\n\t\t\t\tOptions:    \u0026openapi3filter.Options{AuthenticationFunc: openapi3filter.NoopAuthenticationFunc},\n\t\t\t})\n\t\t\trequire.Error(t, reqErr)\n\n\t\t\t// This is what a typical error-rendering middleware calls; it must\n\t\t\t// not panic.\n\t\t\tvar converted error\n\t\t\trequire.NotPanics(t, func() {\n\t\t\t\tconverted = openapi3filter.ConvertErrors(reqErr)\n\t\t\t})",
+            "span_sha256": "796b7c5d25b2fde15f3ec329b733ae5d33eb5f3d4a881e10bf12b05e0280e7d3",
+            "verified": true,
+            "relocated": false
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "The crafted multipart request could reach the nil dereference in convertParseError when validation errors were converted.",
+          "after": "The crafted multipart request receives a 400 ValidationError when converted."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "55d6baed46488585dd9a5a4f31dbe0ce03ef5592",
+            "description": "validation error encoder query ParseError formatting",
+            "committed_at": "2020-05-25T00:47:57+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 193312908
+      },
+      {
+        "id": "fp_355692920a",
+        "patch_id": "1076adb70ecc53db903a03f459016b2d2f4688c1",
+        "commit_sha": "355692920adc95a261f8afba887dce636a0e2d67",
+        "commit_date": "2026-04-25T10:19:52+02:00",
+        "commit_subject": "openapi2conv: nil-guard components lookup in FromV3SchemaRef (#1156)",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-476"
+        ],
+        "components": [
+          "openapi2conv/issue1062_test.go",
+          "openapi2conv/openapi2_conv.go"
+        ],
+        "sink_symbols": [
+          "components.Schemas[name]"
+        ],
+        "sink": "Nil dereference during the components schema-map lookup in FromV3SchemaRef.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Adds a nil check before the component-schema lookup, causing unresolved nested refs to be emitted as plain converted refs instead of panicking.",
+        "severity": {
+          "level": "medium",
+          "source": "model_estimate",
+          "score": 5.3,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+        },
+        "confidence": "high",
+        "summary": "Fixes a crafted OpenAPI document-triggered nil-pointer denial of service in V3-to-V2 conversion.",
+        "poc": "A crafted multipart/form-data schema with an array item component reference panics the Go converter, enabling denial of service for a process that converts untrusted specifications.",
+        "root_cause": "FromV3RequestBodyFormData passed nil components while FromV3SchemaRef unconditionally indexed components.Schemas for referenced schemas.",
+        "attacker_preconditions": "The application accepts an attacker-controlled OpenAPI 3 document and invokes openapi2conv.FromV3 without recovering panics.",
+        "invariant": "Schema-reference conversion must not dereference the components table when no components context was supplied.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "5a0a3373598fa8184f7214e0af51164533130c7d",
+            "path": "openapi2conv/openapi2_conv.go",
+            "start_line": 848,
+            "end_line": 858,
+            "quoted_span": "func FromV3SchemaRef(schema *openapi3.SchemaRef, components *openapi3.Components) (*openapi2.SchemaRef, *openapi2.Parameter) {\n\tif ref := schema.Ref; ref != \"\" {\n\t\tname := getParameterNameFromNewRef(ref)\n\t\tif val, ok := components.Schemas[name]; ok {\n\t\t\tif val.Value.Format == \"binary\" {\n\t\t\t\tv2Ref := strings.Replace(ref, \"#/components/schemas/\", \"#/parameters/\", 1)\n\t\t\t\treturn nil, \u0026openapi2.Parameter{Ref: v2Ref}\n\t\t\t}\n\t\t}\n\n\t\treturn \u0026openapi2.SchemaRef{Ref: FromV3Ref(ref)}, nil",
+            "span_sha256": "e40f76931d0680cb85a1da8750324109ada6f69b424c69a8eafe764c5c6c992b",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "5a0a3373598fa8184f7214e0af51164533130c7d",
+            "path": "openapi2conv/openapi2_conv.go",
+            "start_line": 1038,
+            "end_line": 1041,
+            "quoted_span": "\t\tvar v2Items *openapi2.SchemaRef\n\t\tif val.Items != nil {\n\t\t\tv2Items, _ = FromV3SchemaRef(val.Items, nil)\n\t\t}",
+            "span_sha256": "426ebb0b04a5885eab4777e4c20285bbee976aba2fc7c65df3c6dc3e4197f712",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "355692920adc95a261f8afba887dce636a0e2d67",
+            "path": "openapi2conv/openapi2_conv.go",
+            "start_line": 848,
+            "end_line": 868,
+            "quoted_span": "func FromV3SchemaRef(schema *openapi3.SchemaRef, components *openapi3.Components) (*openapi2.SchemaRef, *openapi2.Parameter) {\n\tif ref := schema.Ref; ref != \"\" {\n\t\t// FromV3RequestBodyFormData (and other recursive call sites in\n\t\t// this file) pass components=nil when recursing into array\n\t\t// items and nested refs. Without guarding, components.Schemas\n\t\t// nil-derefs before we even have a chance to look up the\n\t\t// component, so a ref like '#/components/schemas/CreateEmbeddingRequest'\n\t\t// inside an array schema crashes the converter (#1062).\n\t\t// Treat a missing components table the same as 'the target\n\t\t// schema is not known locally': emit a plain $ref and move on.\n\t\tname := getParameterNameFromNewRef(ref)\n\t\tif components != nil {\n\t\t\tif val, ok := components.Schemas[name]; ok {\n\t\t\t\tif val.Value.Format == \"binary\" {\n\t\t\t\t\tv2Ref := strings.Replace(ref, \"#/components/schemas/\", \"#/parameters/\", 1)\n\t\t\t\t\treturn nil, \u0026openapi2.Parameter{Ref: v2Ref}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\treturn \u0026openapi2.SchemaRef{Ref: FromV3Ref(ref)}, nil",
+            "span_sha256": "cc3ad14725af70500906ed28ce72b454e3a32910194e7d89e4eb73209a8975c9",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "355692920adc95a261f8afba887dce636a0e2d67",
+            "path": "openapi2conv/issue1062_test.go",
+            "start_line": 59,
+            "end_line": 66,
+            "quoted_span": "\tvar doc3 openapi3.T\n\trequire.NoError(t, yaml.Unmarshal([]byte(v3Spec), \u0026doc3), \"unmarshal v3 spec\")\n\n\t// Pre-fix: this call panicked with\n\t//   \"runtime error: invalid memory reference or nil pointer dereference\"\n\t// inside FromV3SchemaRef when it deref'd nil components.Schemas.\n\tv2, err := FromV3(\u0026doc3)\n\trequire.NoError(t, err, \"FromV3 must not error on form-data array of $refs\")",
+            "span_sha256": "9db5c8f07388939b16d36710d0108967bb90c391abbfced32080e797770800b5",
+            "verified": true,
+            "relocated": false
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A multipart/form-data array item containing a component $ref reaches a nil dereference in FromV3SchemaRef via FromV3.",
+          "after": "The same document reaches plain $ref conversion and returns normally."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "1eeb41ca5a03ec81862d9135bcb0a09c6d7d7d2a",
+            "description": "form-data array-item conversion passing nil components",
+            "committed_at": "2024-10-01T22:44:42+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 49289710
+      }
+    ]
+  }
+}

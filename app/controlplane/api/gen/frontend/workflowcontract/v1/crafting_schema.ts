@@ -336,6 +336,12 @@ export enum CraftingSchema_Material_MaterialType {
    * https://pitest.org/
    */
   PITEST_XML = 44,
+  /**
+   * CHAINLOOP_AI_SECURITY_CONTEXT - Chainloop AI security context: vulnerability fingerprints mined from a
+   * repository's fix history, the attack surfaces they share, ranked risks,
+   * and byte-verifiable evidence anchors backing each claim
+   */
+  CHAINLOOP_AI_SECURITY_CONTEXT = 45,
   UNRECOGNIZED = -1,
 }
 
@@ -476,6 +482,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 44:
     case "PITEST_XML":
       return CraftingSchema_Material_MaterialType.PITEST_XML;
+    case 45:
+    case "CHAINLOOP_AI_SECURITY_CONTEXT":
+      return CraftingSchema_Material_MaterialType.CHAINLOOP_AI_SECURITY_CONTEXT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -575,6 +584,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "OVERSECURED_JSON";
     case CraftingSchema_Material_MaterialType.PITEST_XML:
       return "PITEST_XML";
+    case CraftingSchema_Material_MaterialType.CHAINLOOP_AI_SECURITY_CONTEXT:
+      return "CHAINLOOP_AI_SECURITY_CONTEXT";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
