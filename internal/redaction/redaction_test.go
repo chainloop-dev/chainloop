@@ -180,6 +180,43 @@ func TestRedact(t *testing.T) {
 			opts:    []Option{WithMaxBytes(8)},
 			wantErr: ErrTooLarge,
 		},
+		{
+			// Decoding keeps only the last value for a repeated key, so the secret
+			// in the first one would never be scanned — and since nothing was
+			// replaced, the original bytes would be handed back as clean.
+			name:     "duplicate key hiding a secret is refused",
+			doc:      `{"a":"SEC","a":"clean"}`,
+			findings: []Finding{{RuleID: "r1", Secret: "SEC"}},
+			wantErr:  ErrDuplicateKey,
+		},
+		{
+			name:    "duplicate key nested in the transcript is refused",
+			doc:     `{"data":{"raw_session":{"main":[{"content":"SEC","content":"clean"}]}}}`,
+			wantErr: ErrDuplicateKey,
+		},
+		{
+			name: "repeating a key in a sibling object is fine",
+			doc:  `{"a":{"k":"x"},"b":{"k":"y"},"c":[{"k":1},{"k":2}]}`,
+			// Same key name, different objects: nothing is lost, nothing to refuse.
+			wantUnchanged: true,
+		},
+		{
+			// Decoder.More reports false for a trailing bracket, so this has to be
+			// caught by requiring the input to be exhausted.
+			name:    "trailing closing bracket is rejected",
+			doc:     `{"a":"b"}]`,
+			wantErr: ErrInvalidJSON,
+		},
+		{
+			name:    "trailing closing brace is rejected",
+			doc:     `{"a":"b"}}`,
+			wantErr: ErrInvalidJSON,
+		},
+		{
+			name:    "a second document is rejected",
+			doc:     `{"a":"b"}{"c":"d"}`,
+			wantErr: ErrInvalidJSON,
+		},
 	}
 
 	for _, tc := range testCases {

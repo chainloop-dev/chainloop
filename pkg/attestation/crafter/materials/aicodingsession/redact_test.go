@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/internal/redaction"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -223,6 +224,32 @@ func TestRedactIsIdempotent(t *testing.T) {
 func TestRedactRejectsInvalidInput(t *testing.T) {
 	_, _, err := Redact(context.Background(), []byte(`not json`))
 	require.Error(t, err)
+}
+
+// A duplicate key would let a secret ride along unscanned: decoding keeps only
+// the last value, so the earlier one never reaches the scanner, and with nothing
+// replaced the original bytes would be uploaded as clean. Redaction has to fail
+// rather than pass the document through.
+func TestRedactRejectsDuplicateKeys(t *testing.T) {
+	doc := []byte(`{
+      "chainloop.material.evidence.id": "CHAINLOOP_AI_CODING_SESSION",
+      "schema": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
+      "data": {
+        "schema_version": "v1",
+        "agent": {"name": "claude-code"},
+        "session": {"id": "abc", "started_at": "2026-03-25T15:10:49.161Z", "duration_seconds": 1},
+        "raw_session": {
+          "main": [
+            {"content": "AWS_ACCESS_KEY_ID=` + fixtureAWSKey + `", "content": "nothing here"}
+          ]
+        }
+      }
+    }`)
+
+	out, _, err := Redact(context.Background(), doc)
+
+	require.ErrorIs(t, err, redaction.ErrDuplicateKey)
+	assert.Nil(t, out, "nothing may be returned for a document that cannot be scanned")
 }
 
 // validateEvidence mirrors the crafter's own validation of the data field.

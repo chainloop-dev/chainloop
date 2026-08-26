@@ -30,6 +30,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 	"strconv"
@@ -46,6 +47,11 @@ var (
 	ErrNotConverged = errors.New("secret redaction did not converge")
 	// ErrInvalidJSON is returned when the document is not a single JSON object.
 	ErrInvalidJSON = errors.New("document is not a JSON object")
+	// ErrDuplicateKey is returned when an object repeats a key. Decoding keeps
+	// only the last value for a repeated key, so a secret in an earlier one would
+	// never be scanned; redaction refuses the document rather than pass it
+	// through unexamined.
+	ErrDuplicateKey = errors.New("document contains a duplicate object key")
 )
 
 // Defaults applied by New when the corresponding option is not supplied.
@@ -435,6 +441,11 @@ func (w *rewriter) redactLeaf(s string) string {
 // decodeObject parses doc into a value tree, keeping numbers in their original
 // textual form so re-encoding does not reformat them.
 func decodeObject(doc []byte) (map[string]any, error) {
+	// Checked before decoding, because decoding is what loses the information.
+	if err := rejectDuplicateKeys(doc); err != nil {
+		return nil, err
+	}
+
 	dec := json.NewDecoder(bytes.NewReader(doc))
 	dec.UseNumber()
 
@@ -442,7 +453,12 @@ func decodeObject(doc []byte) (map[string]any, error) {
 	if err := dec.Decode(&root); err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidJSON, err)
 	}
-	if dec.More() {
+
+	// Decoder.More is not a top-level end-of-input check: it reports false for a
+	// trailing "]" or "}", which would let a malformed document through. Require
+	// the input to be exhausted instead.
+	var trailing json.RawMessage
+	if err := dec.Decode(&trailing); !errors.Is(err, io.EOF) {
 		return nil, fmt.Errorf("%w: unexpected trailing content", ErrInvalidJSON)
 	}
 
@@ -451,6 +467,82 @@ func decodeObject(doc []byte) (map[string]any, error) {
 		return nil, fmt.Errorf("%w: expected an object at the document root", ErrInvalidJSON)
 	}
 	return obj, nil
+}
+
+// jsonFrame tracks one open object or array while walking a token stream.
+type jsonFrame struct {
+	isObject bool
+	keys     map[string]struct{}
+	// expectKey is true when the next token in an object is a key rather than a
+	// value.
+	expectKey bool
+}
+
+// rejectDuplicateKeys reports an error if any object in doc repeats a key.
+//
+// Decoding into a map keeps only the last value for a repeated key. A secret in
+// an earlier one would therefore never reach the scanner, and because nothing
+// was replaced the original bytes — secret included — would be handed back as
+// "clean". Duplicate keys have no legitimate meaning in evidence, so the
+// document is refused.
+func rejectDuplicateKeys(doc []byte) error {
+	dec := json.NewDecoder(bytes.NewReader(doc))
+	var stack []*jsonFrame
+
+	top := func() *jsonFrame {
+		if len(stack) == 0 {
+			return nil
+		}
+		return stack[len(stack)-1]
+	}
+
+	for {
+		token, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrInvalidJSON, err)
+		}
+
+		if delim, ok := token.(json.Delim); ok {
+			switch delim {
+			case '{':
+				stack = append(stack, &jsonFrame{isObject: true, keys: map[string]struct{}{}, expectKey: true})
+			case '[':
+				stack = append(stack, &jsonFrame{})
+			case '}', ']':
+				if len(stack) == 0 {
+					return fmt.Errorf("%w: unbalanced %q", ErrInvalidJSON, delim)
+				}
+				stack = stack[:len(stack)-1]
+				// The nested value is complete, so the parent object expects the
+				// next key.
+				if parent := top(); parent != nil && parent.isObject {
+					parent.expectKey = true
+				}
+			}
+			continue
+		}
+
+		frame := top()
+		if frame == nil || !frame.isObject {
+			// A top-level scalar or an array element: no keys involved.
+			continue
+		}
+
+		if !frame.expectKey {
+			frame.expectKey = true
+			continue
+		}
+
+		key, _ := token.(string)
+		if _, duplicate := frame.keys[key]; duplicate {
+			return fmt.Errorf("%w: %q", ErrDuplicateKey, key)
+		}
+		frame.keys[key] = struct{}{}
+		frame.expectKey = false
+	}
 }
 
 // encode serialises v. HTML escaping is disabled so transcript text keeps its
