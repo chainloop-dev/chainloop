@@ -298,7 +298,7 @@ func BenchmarkRedact(b *testing.B) {
 	sb.WriteString(`{"role":"user","content":"` + awsPair + `"}]}}}`)
 	doc := []byte(sb.String())
 
-	r := New(scanner, WithMaxBytes(64<<20), WithTimeout(0))
+	r := New(scanner)
 	b.SetBytes(int64(len(doc)))
 	b.ResetTimer()
 	for b.Loop() {

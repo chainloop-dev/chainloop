@@ -18,7 +18,6 @@ package redaction
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 	"testing"
 
@@ -175,12 +174,6 @@ func TestRedact(t *testing.T) {
 			wantErr: ErrInvalidJSON,
 		},
 		{
-			name:    "document over the size cap",
-			doc:     `{"a":"aaaaaaaaaaaaaaaaaaaa"}`,
-			opts:    []Option{WithMaxBytes(8)},
-			wantErr: ErrTooLarge,
-		},
-		{
 			// Decoding keeps only the last value for a repeated key, so the secret
 			// in the first one would never be scanned — and since nothing was
 			// replaced, the original bytes would be handed back as clean.
@@ -229,9 +222,6 @@ func TestRedact(t *testing.T) {
 			if tc.wantErr != nil {
 				require.ErrorIs(t, err, tc.wantErr)
 				assert.Nil(t, got)
-				if errors.Is(tc.wantErr, ErrTooLarge) {
-					assert.Zero(t, scanner.calls, "scanner must not run on an oversized document")
-				}
 				return
 			}
 			require.NoError(t, err)

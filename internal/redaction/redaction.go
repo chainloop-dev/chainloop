@@ -35,13 +35,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var (
-	// ErrTooLarge is returned when a document exceeds the configured size cap.
-	// Redaction fails closed rather than shipping unscanned content.
-	ErrTooLarge = errors.New("document too large to redact")
 	// ErrNotConverged is returned when repeated passes keep detecting secrets,
 	// which in practice means a placeholder is itself matching a rule.
 	ErrNotConverged = errors.New("secret redaction did not converge")
@@ -54,20 +50,14 @@ var (
 	ErrDuplicateKey = errors.New("document contains a duplicate object key")
 )
 
-// Defaults applied by New when the corresponding option is not supplied.
+// DefaultMaxPasses bounds the convergence loop. A successful redaction costs two
+// passes: one that finds the secrets and one that confirms none are left.
 //
-// The size cap and the timeout are related. A successful redaction costs two
-// passes over the document: one that finds the secrets and one that confirms
-// none are left. Both together run at roughly 2.5 MB/s (measured by
-// BenchmarkRedact on an M3 Pro; the cost is regex matching, and rendering the
-// document is negligible beside it), so a document at the cap takes on the order
-// of 20s of real work. The timeout sits well above that deliberately: it is
-// there to stop pathological backtracking, not to bound ordinary work.
-const (
-	DefaultMaxBytes  = 24 << 20
-	DefaultTimeout   = 2 * time.Minute
-	DefaultMaxPasses = 4
-)
+// Redaction is deliberately unbounded in size and time. A session that cannot be
+// scanned cannot be stored, and failing an attestation over a large-but-honest
+// transcript is worse than taking a while over it. Callers that need a bound can
+// impose one through the context they pass to Redact.
+const DefaultMaxPasses = 4
 
 // Finding is a located secret. It is deliberately decoupled from any particular
 // scanning engine's types.
@@ -128,8 +118,6 @@ func (r *Report) RuleIDs() []string {
 type Redactor struct {
 	scanner       Scanner
 	pathFilter    PathFilter
-	maxBytes      int
-	timeout       time.Duration
 	maxPasses     int
 	placeholder   func(ruleID string) string
 	isPlaceholder func(string) bool
@@ -146,17 +134,6 @@ func WithPathFilter(f PathFilter) Option {
 			r.pathFilter = f
 		}
 	}
-}
-
-// WithMaxBytes caps the document size. Larger documents fail with ErrTooLarge
-// rather than being uploaded unscanned.
-func WithMaxBytes(n int) Option {
-	return func(r *Redactor) { r.maxBytes = n }
-}
-
-// WithTimeout bounds the total time spent scanning.
-func WithTimeout(d time.Duration) Option {
-	return func(r *Redactor) { r.timeout = d }
 }
 
 // WithMaxPasses bounds the convergence loop.
@@ -191,8 +168,6 @@ func New(s Scanner, opts ...Option) *Redactor {
 	r := &Redactor{
 		scanner:       s,
 		pathFilter:    func(string) bool { return true },
-		maxBytes:      DefaultMaxBytes,
-		timeout:       DefaultTimeout,
 		maxPasses:     DefaultMaxPasses,
 		placeholder:   DefaultPlaceholder,
 		isPlaceholder: IsDefaultPlaceholder,
@@ -231,19 +206,9 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 	if r.scanner == nil {
 		return nil, nil, errors.New("no scanner configured")
 	}
-	if r.maxBytes > 0 && len(doc) > r.maxBytes {
-		return nil, nil, fmt.Errorf("%w: %d bytes exceeds the %d byte limit", ErrTooLarge, len(doc), r.maxBytes)
-	}
-
 	root, err := decodeObject(doc)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	if r.timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, r.timeout)
-		defer cancel()
 	}
 
 	report := &Report{ByRule: map[string]int{}, Unlocated: map[string]int{}}
