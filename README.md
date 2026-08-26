@@ -64,27 +64,50 @@ During the attestation process, you can attach different pieces of evidence and 
 
 Chainloop supports the collection of the following list of evidence types. For the full list please refer to [this page](https://docs.chainloop.dev/concepts/material-types)
 
+- Key-Value metadata pairs
+- [Container Image Reference](https://github.com/opencontainers/image-spec)
+- Artifact Type: It represents a software artifact.
 - [CycloneDX SBOM](https://github.com/CycloneDX/specification)
 - [SPDX SBOM](https://spdx.dev/specifications/)
+- [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
 - [OpenVEX](https://github.com/openvex)
+- [CSAF VEX](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#45-profile-5-vex)
 - [SARIF](https://docs.oasis-open.org/sarif/sarif/v2.1.0/)
-- [Container Image Reference](https://github.com/opencontainers/image-spec)
 - [Helm Chart](https://helm.sh/docs/topics/charts/)
-- [BlackDuck SCA](https://www.blackduck.com/software-composition-analysis-tools/black-duck-sca.html)
-- [ZAP DAST](https://github.com/marketplace/actions/zap-baseline-scan)
-- [PrismaCloud Twistcli Scan](https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images)
-- [CSAF Security Incident Report](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#42-profile-2-security-incident-response)
+- Custom Evidence Type: Custom piece of evidence that doesn't fit in any other category, for instance, an approval report in json format, etc.
+- Attestation: existing Chainloop attestations.
 - [CSAF Informational Advisory](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#43-profile-3-informational-advisory)
 - [CSAF Security Advisory](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#44-profile-4-security-advisory)
-- [CSAF VEX](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#45-profile-5-vex)
+- [CSAF Security Incident Report](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#42-profile-2-security-incident-response)
 - [Gitlab Security report](https://docs.gitlab.com/ee/user/application_security/)
-- [JUnit](https://www.ibm.com/docs/en/developer-for-zos/14.1?topic=formats-junit-xml-format)
+- [ZAP DAST](https://github.com/marketplace/actions/zap-baseline-scan)
+- [BlackDuck SCA](https://www.blackduck.com/software-composition-analysis-tools/black-duck-sca.html)
+- [PrismaCloud Twistcli Scan](https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images)
+- [GitHub Advanced Security Code Scan](https://docs.github.com/en/rest/code-scanning/code-scanning?apiVersion=2022-11-28)
+- [GitHub Advanced Security Secret Scan](https://docs.github.com/en/rest/secret-scanning/secret-scanning?apiVersion=2022-11-28)
+- [GitHub Advanced Security Dependency Scan](https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28)
 - [JaCoCo XML Coverage Reports](https://www.jacoco.org/jacoco/trunk/doc/)
 - [SLSA Provenance files](https://slsa.dev/spec/v1.1/provenance)
-- Attestation: existing Chainloop attestations.
-- Artifact Type: It represents a software artifact.
-- Custom Evidence Type: Custom piece of evidence that doesn't fit in any other category, for instance, an approval report in json format, etc.
-- Key-Value metadata pairs
+- Chainloop Runner Context: automatically collected runner metadata.
+- Chainloop Pull Request Info: pull/merge request metadata collected automatically during attestation.
+- [Gitleaks JSON Report](https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting)
+- Chainloop AI Agent Config: AI agent configuration collected automatically during attestation.
+- Chainloop AI Coding Session: AI coding session telemetry collected during attestation.
+- [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
+- [AsyncAPI Specification](https://www.asyncapi.com/docs/reference/specification/latest)
+- [GraphQL SDL Schema](https://spec.graphql.org/)
+- [detect-secrets Baseline](https://github.com/Yelp/detect-secrets)
+- [Sysinternals Sigcheck (CSV)](https://learn.microsoft.com/en-us/sysinternals/downloads/sigcheck)
+- [Sysinternals AccessChk (text)](https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk)
+- [CERT/CC dranzer Report](https://github.com/CERTCC/dranzer)
+- [OpenSSF Scorecard (JSON)](https://github.com/ossf/scorecard)
+- [radamsa Metadata Log](https://gitlab.com/akihe/radamsa)
+- radamsa Crashing Inputs: a single file or a `crashes/` archive (tar.gz or zip).
+- [TruffleHog JSONL Report](https://github.com/trufflesecurity/trufflehog)
+- [Cobertura Coverage Report (XML)](https://github.com/cobertura/cobertura)
+- [Checkmarx One JSON Report](https://github.com/Checkmarx/ast-cli/blob/main/internal/wrappers/results-json.go)
+- [Oversecured JSON Report](https://docs.oversecured.com/docs/guide-exporting-reports)
+- [PIT Mutation Testing XML Report](https://pitest.org/)
 
 ## Getting started
 
