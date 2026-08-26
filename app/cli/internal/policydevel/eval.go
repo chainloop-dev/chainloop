@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	controlplanev1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -79,7 +80,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	material.Annotations = opts.Annotations
+	mergeAnnotations(material, opts.Annotations, &logger)
 
 	// 3. Verify material against policy
 	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, opts.ProjectName, opts.ProjectVersionName, &logger)
@@ -88,6 +89,40 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	}
 
 	return summary, nil
+}
+
+// mergeAnnotations layers the user's --annotation flags on top of the ones the
+// crafter produced, rather than replacing them.
+//
+// The crafter's annotations carry more than metadata: chainloop.material.redacted
+// is what tells the policy engine to evaluate the untouched file on disk instead
+// of the sanitized copy staged for upload. Dropping it would silently feed
+// policies redacted input, which is exactly what a secret-hunting policy must
+// not see.
+//
+// The chainloop.* namespace is therefore crafter-owned and not overridable, so
+// that a --annotation flag cannot put back the behaviour this guards against.
+// Crafter.stageMaterial protects the equivalent invariant on `attestation add`
+// by refusing to override annotations that come from the contract.
+func mergeAnnotations(material *v12.Attestation_Material, annotations map[string]string, logger *zerolog.Logger) {
+	if len(annotations) == 0 {
+		return
+	}
+
+	// Crafters that do not go through uploadAndCraft (container image, string)
+	// leave the map nil.
+	if material.Annotations == nil {
+		material.Annotations = make(map[string]string, len(annotations))
+	}
+
+	for k, v := range annotations {
+		if strings.HasPrefix(k, v12.AnnotationPrefix) {
+			logger.Info().Str("annotation", k).Msg("reserved annotation namespace, it is set by the crafter and can not be overridden, skipping")
+			continue
+		}
+
+		material.Annotations[k] = v
+	}
 }
 
 func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, error) {
