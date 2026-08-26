@@ -665,6 +665,14 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			expectedType: schemaapi.CraftingSchema_Material_JUNIT_XML,
 		},
 		{
+			// Detection must reach this kind rather than falling through to the
+			// ARTIFACT catch-all, which would silently drop both the schema
+			// validation and the annotations the kind exists to publish.
+			name:         "chainloop AI security context",
+			materialPath: "./materials/testdata/ai-security-context.json",
+			expectedType: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_SECURITY_CONTEXT,
+		},
+		{
 			name:         "artifact",
 			materialPath: "./materials/testdata/missing-empty.tgz",
 			expectedType: schemaapi.CraftingSchema_Material_ARTIFACT,
