@@ -30,30 +30,49 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Synthetic credentials embedded in testdata/session-with-secrets.json.
+// Synthetic credentials for testdata/session-with-secrets.json.
 //
-// The AWS pair sits in the fixture as __AWS_ACCESS_KEY_ID__ and
-// __AWS_SECRET_ACCESS_KEY__ placeholders, substituted by readFixture, and is
-// assembled here from fragments so the literal appears in no source file.
-// GitHub's push protection recognises the same AWS patterns betterleaks does, so
-// a realistic-looking key is rejected on push even as test data.
+// The fixture holds placeholders rather than the credentials themselves, and
+// readFixture substitutes them. Nothing credential-shaped is committed: a
+// realistic-looking secret in test data gets flagged by whatever scans the
+// repository, and there has been one instance of each kind already — GitHub's
+// push protection rejects the AWS patterns, and Checkov's basic-auth check
+// rejects a token embedded in a URL. The repository URL is therefore substituted
+// whole, since it is the "://user:pass@host" shape that is recognised rather
+// than the token in it.
+//
+// The values are assembled from fragments for the same reason: joined, they
+// would be flagged in this file instead.
 const (
 	fixtureAWSKey       = "AKIA" + "4G7TI63VCBIRS4GW"
 	fixtureAWSSecret    = "kQ7zXn2VbW9pLm4RtY6" + "uHs3JdF8gA1cE5oPzQwXn"
-	fixtureGitHubPAT    = "ghp_erOZlZv0B1e3amrQugdwZ8Ro2W4kDql9WPTf"
-	fixtureAnthropicKey = "sk-ant-api03-sT5wsx9DwmaHZDL0dUWKNhAhULxa35sUzyLFK95QBTZMDJTYn8p0J7ZQbwpYGYCQeW5eXAAGtVSmhp7UO9vxHJtSBC0xpAA"
+	fixtureGitHubPAT    = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
+	fixtureAnthropicKey = "sk-ant-api03-sT5wsx9DwmaHZDL0dUWKNhAhULxa35sUzyLFK9" +
+		"5QBTZMDJTYn8p0J7ZQbwpYGYCQeW5eXAAGtVSmhp7UO9vxHJtSBC0xpAA"
+	fixtureRepository = "https://oauth2:" + fixtureGitHubPAT + "@github.com/example/repo.git"
 )
 
-// readFixture loads a session fixture, substituting the AWS credential
-// placeholders for the values the detector must actually match.
+// fixtureSecrets maps each placeholder in the session fixtures to the value the
+// detector has to see. Keep in sync with the copy in the materials package,
+// which needs the same substitution to reach the crafter through a real file.
+var fixtureSecrets = map[string]string{
+	"__AWS_ACCESS_KEY_ID__":               fixtureAWSKey,
+	"__AWS_SECRET_ACCESS_KEY__":           fixtureAWSSecret,
+	"__GITHUB_PAT__":                      fixtureGitHubPAT,
+	"__ANTHROPIC_API_KEY__":               fixtureAnthropicKey,
+	"__GIT_REPOSITORY_WITH_CREDENTIALS__": fixtureRepository,
+}
+
+// readFixture loads a session fixture with its credential placeholders resolved.
 func readFixture(t *testing.T, path string) []byte {
 	t.Helper()
 
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
 
-	content = bytes.ReplaceAll(content, []byte("__AWS_ACCESS_KEY_ID__"), []byte(fixtureAWSKey))
-	content = bytes.ReplaceAll(content, []byte("__AWS_SECRET_ACCESS_KEY__"), []byte(fixtureAWSSecret))
+	for placeholder, secret := range fixtureSecrets {
+		content = bytes.ReplaceAll(content, []byte(placeholder), []byte(secret))
+	}
 	return content
 }
 

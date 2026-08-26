@@ -38,7 +38,7 @@ import (
 const (
 	fakeAWSKey    = "AKIA" + "4G7TI63VCBIRS4GW"
 	fakeAWSSecret = "kQ7zXn2VbW9pLm4RtY6" + "uHs3JdF8gA1cE5oPzQwXn"
-	fakeGitHubPAT = "ghp_erOZlZv0B1e3amrQugdwZ8Ro2W4kDql9WPTf"
+	fakeGitHubPAT = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
 )
 
 var fakeAnthropicKey = "sk-ant-api03-" + strings.Repeat("a", 93) + "AA"

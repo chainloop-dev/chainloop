@@ -139,18 +139,30 @@ func TestUploadAndCraftContentOverride(t *testing.T) {
 	}
 }
 
-// The AWS credentials the session fixture carries as __AWS_ACCESS_KEY_ID__ and
-// __AWS_SECRET_ACCESS_KEY__ placeholders, assembled from fragments so the literal
-// appears in no source file: GitHub's push protection recognises the same AWS
-// patterns betterleaks does, and rejects a realistic-looking key even in test
-// data.
+// The credentials the session fixture carries as placeholders. Nothing
+// credential-shaped is committed, and these are assembled from fragments for the
+// same reason: a realistic-looking secret gets flagged by whatever scans the
+// repository, whether that is GitHub's push protection or Checkov. See the
+// fixtureSecrets comment in the aicodingsession package.
 const (
-	awsKey    = "AKIA" + "4G7TI63VCBIRS4GW"
-	awsSecret = "kQ7zXn2VbW9pLm4RtY6" + "uHs3JdF8gA1cE5oPzQwXn"
+	awsKey        = "AKIA" + "4G7TI63VCBIRS4GW"
+	awsSecret     = "kQ7zXn2VbW9pLm4RtY6" + "uHs3JdF8gA1cE5oPzQwXn"
+	githubPAT     = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
+	anthropicKey  = "sk-ant-api03-sT5wsx9DwmaHZDL0dUWKNhAhULxa35sUzyLFK9" + "5QBTZMDJTYn8p0J7ZQbwpYGYCQeW5eXAAGtVSmhp7UO9vxHJtSBC0xpAA"
+	repositoryURL = "https://oauth2:" + githubPAT + "@github.com/example/repo.git"
 )
 
-// materializeFixture writes a copy of a session fixture with the AWS credential
-// placeholders substituted, and returns its path. The crafter reads the artifact
+// Keep in sync with fixtureSecrets in the aicodingsession package.
+var fixtureSecrets = map[string]string{
+	"__AWS_ACCESS_KEY_ID__":               awsKey,
+	"__AWS_SECRET_ACCESS_KEY__":           awsSecret,
+	"__GITHUB_PAT__":                      githubPAT,
+	"__ANTHROPIC_API_KEY__":               anthropicKey,
+	"__GIT_REPOSITORY_WITH_CREDENTIALS__": repositoryURL,
+}
+
+// materializeFixture writes a copy of a session fixture with its credential
+// placeholders resolved, and returns its path. The crafter reads the artifact
 // from disk, so the substitution has to land in a real file.
 func materializeFixture(t *testing.T, src string) string {
 	t.Helper()
@@ -158,8 +170,9 @@ func materializeFixture(t *testing.T, src string) string {
 	content, err := os.ReadFile(src)
 	require.NoError(t, err)
 
-	content = bytes.ReplaceAll(content, []byte("__AWS_ACCESS_KEY_ID__"), []byte(awsKey))
-	content = bytes.ReplaceAll(content, []byte("__AWS_SECRET_ACCESS_KEY__"), []byte(awsSecret))
+	for placeholder, secret := range fixtureSecrets {
+		content = bytes.ReplaceAll(content, []byte(placeholder), []byte(secret))
+	}
 
 	path := filepath.Join(t.TempDir(), filepath.Base(src))
 	require.NoError(t, os.WriteFile(path, content, 0o600))
