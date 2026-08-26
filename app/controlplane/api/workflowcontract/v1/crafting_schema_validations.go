@@ -42,6 +42,10 @@ import (
 //     an app platform), but the export envelope is not published by the vendor,
 //     so pinning it here would bet every other JSON kind on a shape inferred
 //     from a sample.
+//   - CHAINLOOP_AI_SECURITY_CONTEXT: generic JSON inside the Chainloop evidence
+//     envelope, so it would shadow (or be shadowed by) other JSON kinds. The
+//     envelope's evidence id is a strong fingerprint, but it is only reachable
+//     after a full parse, which auto-detection ordering cannot rely on.
 //
 // TestMaterialKindsExcludedFromAutoDetection pins these exclusions.
 var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{

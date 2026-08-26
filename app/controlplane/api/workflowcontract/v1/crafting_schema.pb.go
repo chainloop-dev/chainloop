@@ -256,6 +256,10 @@ const (
 	// PIT mutation testing report in its native XML format (mutations.xml)
 	// https://pitest.org/
 	CraftingSchema_Material_PITEST_XML CraftingSchema_Material_MaterialType = 44
+	// Chainloop AI security context: vulnerability fingerprints mined from a
+	// repository's fix history, the attack surfaces they share, ranked risks,
+	// and byte-verifiable evidence anchors backing each claim
+	CraftingSchema_Material_CHAINLOOP_AI_SECURITY_CONTEXT CraftingSchema_Material_MaterialType = 45
 )
 
 // Enum value maps for CraftingSchema_Material_MaterialType.
@@ -306,6 +310,7 @@ var (
 		42: "CHECKMARX_JSON",
 		43: "OVERSECURED_JSON",
 		44: "PITEST_XML",
+		45: "CHAINLOOP_AI_SECURITY_CONTEXT",
 	}
 	CraftingSchema_Material_MaterialType_value = map[string]int32{
 		"MATERIAL_TYPE_UNSPECIFIED":       0,
@@ -353,6 +358,7 @@ var (
 		"CHECKMARX_JSON":                  42,
 		"OVERSECURED_JSON":                43,
 		"PITEST_XML":                      44,
+		"CHAINLOOP_AI_SECURITY_CONTEXT":   45,
 	}
 )
 
@@ -2101,7 +2107,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xf6\x12\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\x99\x13\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -2124,7 +2130,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
 	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
 	"\x0fTEKTON_PIPELINE\x10\b\x12\x15\n" +
-	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xc1\f\n" +
+	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xe4\f\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
@@ -2135,7 +2141,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
 	"skipUpload\x12\xaa\x01\n" +
 	"\x05group\x18\a \x01(\tB\x93\x01\xbaH\x8f\x01\xba\x01\x8b\x01\n" +
-	"\x0egroup.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a=this == '' || this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x05group\"\xe6\a\n" +
+	"\x0egroup.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a=this == '' || this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x05group\"\x89\b\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -2186,7 +2192,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0eCHECKMARX_JSON\x10*\x12\x14\n" +
 	"\x10OVERSECURED_JSON\x10+\x12\x0e\n" +
 	"\n" +
-	"PITEST_XML\x10,:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
+	"PITEST_XML\x10,\x12!\n" +
+	"\x1dCHAINLOOP_AI_SECURITY_CONTEXT\x10-:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
 	"\x10CraftingSchemaV2\x128\n" +
 	"\vapi_version\x18\x01 \x01(\tB\x17\xbaH\x14r\x12\n" +
 	"\x10chainloop.dev/v1R\n" +

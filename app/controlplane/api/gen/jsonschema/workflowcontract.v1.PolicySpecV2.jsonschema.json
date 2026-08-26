@@ -101,7 +101,8 @@
             "COBERTURA_XML",
             "CHECKMARX_JSON",
             "OVERSECURED_JSON",
-            "PITEST_XML"
+            "PITEST_XML",
+            "CHAINLOOP_AI_SECURITY_CONTEXT"
           ],
           "title": "Material Type",
           "type": "string"

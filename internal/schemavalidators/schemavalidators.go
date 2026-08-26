@@ -54,6 +54,9 @@ type AIAgentConfigVersion string
 // AICodingSessionVersion represents the version of AI Coding Session schema.
 type AICodingSessionVersion string
 
+// AISecurityContextVersion represents the version of AI Security Context schema.
+type AISecurityContextVersion string
+
 type ScorecardVersion string
 
 const (
@@ -79,6 +82,8 @@ const (
 	AIAgentConfigVersion0_1 AIAgentConfigVersion = "0.1"
 	// AICodingSessionVersion0_1 represents AI Coding Session version 0.1 schema.
 	AICodingSessionVersion0_1 AICodingSessionVersion = "0.1"
+	// AISecurityContextVersion0_1 represents AI Security Context version 0.1 schema.
+	AISecurityContextVersion0_1 AISecurityContextVersion = "0.1"
 	// ScorecardVersionV2 represents the OpenSSF Scorecard V2 JSON result schema.
 	ScorecardVersionV2 ScorecardVersion = "v2"
 	// OpenAPIVersion2_0 represents Swagger/OpenAPI version 2.0 schema.
@@ -142,6 +147,10 @@ var (
 	//go:embed internal_schemas/aicodingsession/ai-coding-session-0.1.schema.json
 	aiCodingSessionSpecVersion0_1 string
 
+	// AI Security Context schemas
+	//go:embed internal_schemas/aisecuritycontext/ai-security-context-0.1.schema.json
+	aiSecurityContextSpecVersion0_1 string
+
 	// OpenAPI schemas
 	//go:embed external_schemas/openapi/json-schema-draft-04.json
 	jsonSchemaDraft04 string
@@ -166,24 +175,26 @@ var (
 )
 
 var (
-	compiledCycloneDxSchemas       map[CycloneDXVersion]*jsonschema.Schema
-	cycloneDxOnce                  sync.Once
-	compiledCSAFSchemas            map[CSAFVersion]*jsonschema.Schema
-	csafOnce                       sync.Once
-	compiledRunnerContextSchemas   map[RunnerContextVersion]*jsonschema.Schema
-	runnerContextOnce              sync.Once
-	compiledPRInfoSchemas          map[PRInfoVersion]*jsonschema.Schema
-	prInfoOnce                     sync.Once
-	compiledAIAgentConfigSchemas   map[AIAgentConfigVersion]*jsonschema.Schema
-	aiAgentConfigOnce              sync.Once
-	compiledAICodingSessionSchemas map[AICodingSessionVersion]*jsonschema.Schema
-	aiCodingSessionOnce            sync.Once
-	compiledOpenAPISchemas         map[OpenAPIVersion]*jsonschema.Schema
-	openapiOnce                    sync.Once
-	compiledAsyncAPISchemas        map[AsyncAPIVersion]*jsonschema.Schema
-	asyncapiOnce                   sync.Once
-	compiledScorecardSchemas       map[ScorecardVersion]*jsonschema.Schema
-	scorecardOnce                  sync.Once
+	compiledCycloneDxSchemas         map[CycloneDXVersion]*jsonschema.Schema
+	cycloneDxOnce                    sync.Once
+	compiledCSAFSchemas              map[CSAFVersion]*jsonschema.Schema
+	csafOnce                         sync.Once
+	compiledRunnerContextSchemas     map[RunnerContextVersion]*jsonschema.Schema
+	runnerContextOnce                sync.Once
+	compiledPRInfoSchemas            map[PRInfoVersion]*jsonschema.Schema
+	prInfoOnce                       sync.Once
+	compiledAIAgentConfigSchemas     map[AIAgentConfigVersion]*jsonschema.Schema
+	aiAgentConfigOnce                sync.Once
+	compiledAICodingSessionSchemas   map[AICodingSessionVersion]*jsonschema.Schema
+	aiCodingSessionOnce              sync.Once
+	compiledAISecurityContextSchemas map[AISecurityContextVersion]*jsonschema.Schema
+	aiSecurityContextOnce            sync.Once
+	compiledOpenAPISchemas           map[OpenAPIVersion]*jsonschema.Schema
+	openapiOnce                      sync.Once
+	compiledAsyncAPISchemas          map[AsyncAPIVersion]*jsonschema.Schema
+	asyncapiOnce                     sync.Once
+	compiledScorecardSchemas         map[ScorecardVersion]*jsonschema.Schema
+	scorecardOnce                    sync.Once
 )
 
 func initCycloneDxSchemas() {
@@ -289,6 +300,23 @@ func initAICodingSessionSchemas() {
 
 	compiledAICodingSessionSchemas = map[AICodingSessionVersion]*jsonschema.Schema{
 		AICodingSessionVersion0_1: compiler.MustCompile("https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json"),
+	}
+}
+
+// aiSecurityContextSchemaURL is the namespace label the AI security context
+// schema is registered under. Nothing fetches it: the compiler binds the string
+// to the embedded document below, and the producer writes the same string into
+// the evidence envelope's `schema` field.
+const aiSecurityContextSchemaURL = "https://schemas.chainloop.dev/aisecuritycontext/0.1/ai-security-context.schema.json"
+
+func initAISecurityContextSchemas() {
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource(aiSecurityContextSchemaURL, strings.NewReader(aiSecurityContextSpecVersion0_1)); err != nil {
+		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", aiSecurityContextSchemaURL, err))
+	}
+
+	compiledAISecurityContextSchemas = map[AISecurityContextVersion]*jsonschema.Schema{
+		AISecurityContextVersion0_1: compiler.MustCompile(aiSecurityContextSchemaURL),
 	}
 }
 
@@ -446,6 +474,35 @@ func ValidateAICodingSession(data any, version AICodingSessionVersion) error {
 	schema, ok := compiledAICodingSessionSchemas[version]
 	if !ok {
 		return errors.New("invalid AI coding session schema version")
+	}
+
+	if err := schema.Validate(data); err != nil {
+		var invalidJSONTypeError jsonschema.InvalidJSONTypeError
+		if errors.As(err, &invalidJSONTypeError) {
+			return ErrInvalidJSONPayload
+		}
+		return err
+	}
+
+	return nil
+}
+
+// ValidateSecurityContext validates the given object against the specified AI
+// Security Context schema version.
+//
+// The argument is the evidence envelope's `data` payload, not the whole file:
+// the schema is payload-rooted like every other internal schema, and the
+// envelope is asserted by the crafter in Go.
+func ValidateSecurityContext(data any, version AISecurityContextVersion) error {
+	aiSecurityContextOnce.Do(initAISecurityContextSchemas)
+
+	if version == "" {
+		version = AISecurityContextVersion0_1
+	}
+
+	schema, ok := compiledAISecurityContextSchemas[version]
+	if !ok {
+		return errors.New("invalid AI security context schema version")
 	}
 
 	if err := schema.Validate(data); err != nil {

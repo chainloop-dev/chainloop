@@ -1,0 +1,191 @@
+{
+  "schema_version": "security-context-0.1",
+  "generated_at": "2026-08-26T19:30:14Z",
+  "repo": {
+    "owner": "chainloop-dev",
+    "name": "sample-repo-go",
+    "url": "https://github.com/chainloop-dev/sample-repo-go",
+    "ref": "main",
+    "head_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2"
+  },
+  "provenance": {
+    "tool": "strata-go",
+    "tool_version": "dev",
+    "protocol": "codex-app-server",
+    "triage_model": "openai/gpt-5.6-luna:nitro",
+    "adjudication_model": "openai/gpt-5.6-terra:nitro",
+    "triage_prompt_id": "current-diff-only-v1",
+    "adjudication_prompt_id": "adjudicate-a0-v3",
+    "input_profile": "D0",
+    "decision_profile": "A0",
+    "cwe_catalog_version": "CWE-4.20",
+    "anchor_verification": "relocating"
+  },
+  "scan": {
+    "window": {
+      "from_sha": "a6214f62be37e2234f1c816dfd7a84c25376c98f",
+      "to_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2"
+    },
+    "commits_scanned": 6,
+    "commits_triaged": 6,
+    "commits_skipped": 0,
+    "triage_candidates": 1,
+    "adjudicated": 1,
+    "findings": 1,
+    "abstained": 0,
+    "rejected": 0,
+    "no_finding": 0,
+    "triage_errors": 0,
+    "adjudication_errors": 0,
+    "anchors_verified": 4,
+    "anchors_relocated": 2,
+    "anchors_rejected": 0,
+    "input_tokens": 45459,
+    "output_tokens": 2642,
+    "wall_clock_s": 45.175430959,
+    "reconciles": true
+  },
+  "class_counts": {
+    "injection": 1
+  },
+  "min_support": 2,
+  "top_risks": [
+    {
+      "component": "pkg/api/handler.go",
+      "kind": "source",
+      "classes": [
+        "injection"
+      ],
+      "severity": "critical",
+      "fix_count": 1,
+      "recurring": false,
+      "severity_mass": 8,
+      "recency_weight": 1,
+      "cwe": [
+        "CWE-78"
+      ],
+      "evidence": [
+        "8c948c742bdfc09c4aae6b3c386faeb98f925ff2"
+      ]
+    }
+  ],
+  "shared_surfaces": [
+    {
+      "surface": "Injection — exec.Command(\"sh\", \"-c\"",
+      "class": "injection",
+      "guard": [],
+      "guard_kind": "sink_removed",
+      "sink_symbols": [
+        "exec.Command(\"sh\", \"-c\""
+      ],
+      "entry_points": [
+        "pkg/api/handler.go"
+      ],
+      "check_hint": "Untrusted path input must be supplied as a literal argument to a fixed executable, never concatenated into a command interpreted by a shell.",
+      "support": 1,
+      "origin_fixes": [
+        "8c948c742bdfc09c4aae6b3c386faeb98f925ff2"
+      ]
+    }
+  ],
+  "fingerprints": [
+    {
+      "id": "fp_8c948c742b",
+      "patch_id": "32d18a48dac298fa43bd3dcffdb3bbfe06a008aa",
+      "commit_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+      "commit_date": "2026-08-19T19:58:28-03:00",
+      "commit_subject": "Avoid shell invoction in command handler",
+      "class": "injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "components": [
+        "pkg/api/handler.go"
+      ],
+      "reachable_from": [
+        "cmd/server/main.go",
+        "pkg/api/router.go"
+      ],
+      "sink_symbols": [
+        "exec.Command(\"sh\", \"-c\""
+      ],
+      "sink": "Shell interpreter execution through exec.Command using a command string built from the path query parameter.",
+      "fix_kind": "sink_removed",
+      "fix_shape": "Removes shell parsing of the attacker-controlled path by invoking ls directly with path as one argv element.",
+      "severity": {
+        "level": "critical",
+        "source": "model_estimate",
+        "score": 9.8,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+      },
+      "confidence": "high",
+      "summary": "Fixes unauthenticated OS command injection in GET /ls.",
+      "poc": "An unauthenticated remote caller could execute arbitrary shell commands with the service process's privileges.",
+      "root_cause": "Attacker-controlled query input was string-concatenated into a shell command passed to sh -c.",
+      "attacker_preconditions": "Network access to the unauthenticated GET /ls endpoint and control of its path query parameter.",
+      "invariant": "Untrusted path input must be supplied as a literal argument to a fixed executable, never concatenated into a command interpreted by a shell.",
+      "fix_completeness": "complete",
+      "anchors": [
+        {
+          "revision": "parent",
+          "revision_sha": "c8533df53b0af4b731cb1036ec61aee10e35c67b",
+          "path": "pkg/api/handler.go",
+          "start_line": 39,
+          "end_line": 46,
+          "quoted_span": "func lsHandler(c *gin.Context) {\n\tpath := c.Query(\"path\")\n\tif path == \"\" {\n\t\tc.JSON(http.StatusBadRequest, gin.H{\"error\": \"path query parameter is required\"})\n\t\treturn\n\t}\n\n\toutput, err := exec.Command(\"sh\", \"-c\", \"ls \"+path).CombinedOutput()",
+          "span_sha256": "492000e331be2eace22d94b23fb96abf1bab08c7e91d9a0bdddb736adcba7f9d",
+          "verified": true,
+          "relocated": false
+        },
+        {
+          "revision": "commit",
+          "revision_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+          "path": "pkg/api/handler.go",
+          "start_line": 46,
+          "end_line": 46,
+          "quoted_span": "\toutput, err := exec.Command(\"ls\", path).CombinedOutput()",
+          "span_sha256": "7a247f7cecee0857780f320ce4af77499d53d4f80fad002e2dcac5a00ebb417e",
+          "verified": true,
+          "relocated": false
+        },
+        {
+          "revision": "head",
+          "revision_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+          "path": "pkg/api/router.go",
+          "start_line": 7,
+          "end_line": 14,
+          "quoted_span": "func NewRouter() *gin.Engine {\n\trouter := gin.Default()\n\n\trouter.POST(\"/hello\", helloHandler)\n\trouter.GET(\"/ls\", lsHandler)\n\n\treturn router\n}",
+          "span_sha256": "1f94d0ca3f50b6765a754e3af395c2056da181372d9271d108721cb6607b9013",
+          "verified": true,
+          "relocated": true
+        },
+        {
+          "revision": "head",
+          "revision_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+          "path": "cmd/server/main.go",
+          "start_line": 10,
+          "end_line": 18,
+          "quoted_span": "func main() {\n\tcfg := config.Load()\n\n\trouter := api.NewRouter()\n\tlog.Printf(\"listening on %s\", cfg.Addr)\n\tif err := router.Run(cfg.Addr); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}",
+          "span_sha256": "271a83874851361f5216b4613551fc5af472d08d7ade12e6e39453d982c6fa9d",
+          "verified": true,
+          "relocated": true
+        }
+      ],
+      "reachability": {
+        "verdict": "narrows",
+        "before": "The caller could inject shell syntax through path and cause sh -c to execute arbitrary commands.",
+        "after": "The caller can cause only the fixed ls executable to run with path as a single argument."
+      },
+      "failure_containment": "degraded",
+      "introduced_by": [
+        {
+          "commit_sha": "c8533df53b0af4b731cb1036ec61aee10e35c67b",
+          "description": "GET /ls handler shell invocation",
+          "committed_at": "2026-08-19T19:56:46-03:00",
+          "verified": true
+        }
+      ],
+      "introduced_to_fixed_seconds": 102
+    }
+  ]
+}

@@ -438,6 +438,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewChainloopAIAgentConfigCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION:
 		crafter, err = NewChainloopAICodingSessionCrafter(materialSchema, casBackend, logger, WithAICodingSessionSkipRedaction(opts.SkipSecretRedaction))
+	case schemaapi.CraftingSchema_Material_CHAINLOOP_AI_SECURITY_CONTEXT:
+		crafter, err = NewChainloopAISecurityContextCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_OPENAPI_SPEC:
 		crafter, err = NewOpenAPICrafter(materialSchema, casBackend, logger, WithOpenAPINoStrictValidation(opts.NoStrictValidation))
 	case schemaapi.CraftingSchema_Material_ASYNCAPI_SPEC:

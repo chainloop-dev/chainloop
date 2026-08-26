@@ -315,6 +315,47 @@ func TestValidateAICodingSession(t *testing.T) {
 	}
 }
 
+func TestValidateSecurityContext(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filePath string
+		wantErr  string
+	}{
+		{
+			name:     "valid security context",
+			filePath: "./testdata/ai_security_context_valid.json",
+		},
+		{
+			name:     "missing required fields",
+			filePath: "./testdata/ai_security_context_missing_required.json",
+			wantErr:  "missing properties",
+		},
+		{
+			name:     "completely wrong format",
+			filePath: "./testdata/sbom-spdx.json",
+			wantErr:  "missing properties",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := os.ReadFile(tc.filePath)
+			require.NoError(t, err)
+
+			var v any
+			require.NoError(t, json.Unmarshal(f, &v))
+
+			err = schemavalidators.ValidateSecurityContext(v, "")
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestValidateOpenAPI(t *testing.T) {
 	testCases := []struct {
 		name    string

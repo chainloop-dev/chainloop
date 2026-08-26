@@ -327,6 +327,10 @@ func TestMaterialKindsExcludedFromAutoDetection(t *testing.T) {
 			kind: v1.CraftingSchema_Material_OVERSECURED_JSON,
 		},
 		{
+			name: "chainloop AI security context is generic JSON in an envelope",
+			kind: v1.CraftingSchema_Material_CHAINLOOP_AI_SECURITY_CONTEXT,
+		},
+		{
 			name: "radamsa report",
 			kind: v1.CraftingSchema_Material_RADAMSA_REPORT,
 		},

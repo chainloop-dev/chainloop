@@ -1,0 +1,910 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.chainloop.dev/aisecuritycontext/0.1/ai-security-context.schema.json",
+  "type": "object",
+  "title": "AI Security Context",
+  "description": "The compiled hand-off artifact: facts, not prose. There is deliberately no agent_brief, summary, usage_directive, or per-risk rationale \u2014 each is a pure projection of the fields below and is rebuilt on demand by internal/render. Model-authored judgments (sink, poc, root_cause, invariant, check_hint) do live here, because no template can reconstruct them. Every array is sorted, so two scans over identical history with identical model output produce byte-identical artifacts.  This schema describes the PAYLOAD only \u2014 the object the producer writes under `data`. The Chainloop evidence envelope {chainloop.material.evidence.id, schema, data} is asserted in Go by the crafter, matching every other first-party material schema.",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "repo",
+    "provenance",
+    "scan",
+    "class_counts",
+    "min_support",
+    "top_risks",
+    "shared_surfaces",
+    "fingerprints"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "security-context-0.1",
+      "description": "Payload schema version (contracts.SecurityContextSchema). Pinned so an artifact of a different version fails loudly rather than validating partially."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "minLength": 1,
+      "description": "RFC 3339 timestamp of when the context was compiled"
+    },
+    "repo": {
+      "$ref": "#/definitions/repo_ref"
+    },
+    "provenance": {
+      "$ref": "#/definitions/provenance"
+    },
+    "scan": {
+      "$ref": "#/definitions/scan_stats"
+    },
+    "class_counts": {
+      "type": "object",
+      "description": "Fingerprint count per L0 class. Sums to len(fingerprints).",
+      "propertyNames": {
+        "$ref": "#/definitions/l0_class"
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "min_support": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of origin fixes a derived claim needs before it is stated as a pattern. Emitted so a reader can tell a suppressed claim from an absent one."
+    },
+    "top_risks": {
+      "type": "array",
+      "description": "Components with a security-fix history, ranked by severity mass then recency-weighted fix count. Capped at 10, so a full list may mean 'at least 10'.",
+      "maxItems": 10,
+      "items": {
+        "$ref": "#/definitions/top_risk"
+      }
+    },
+    "shared_surfaces": {
+      "type": "array",
+      "description": "Invariants that must hold at every entry point reaching a shared sink. Clustered on shared sink symbols rather than on L0 class, because grouping by class produces a histogram wearing a surface's name.",
+      "items": {
+        "$ref": "#/definitions/shared_surface"
+      }
+    },
+    "fingerprints": {
+      "type": "array",
+      "description": "The adjudicated past fixes this context is built from, one per distinct fix",
+      "items": {
+        "$ref": "#/definitions/fingerprint"
+      }
+    }
+  },
+  "definitions": {
+    "repo_ref": {
+      "type": "object",
+      "title": "Repository reference",
+      "description": "The scanned repository at a specific revision. Treated downstream as a cross-check against the platform's own dispatch record, never as a join key.",
+      "required": [
+        "owner",
+        "name",
+        "url",
+        "ref",
+        "head_sha"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "Repository owner or organization"
+        },
+        "name": {
+          "type": "string",
+          "description": "Repository name"
+        },
+        "url": {
+          "type": "string",
+          "description": "Clone or browse URL of the repository"
+        },
+        "ref": {
+          "type": "string",
+          "description": "Branch, tag, or revision expression the scan resolved"
+        },
+        "head_sha": {
+          "$ref": "#/definitions/commit_sha",
+          "description": "Coverage watermark: the newest commit such that everything older inside the scanned window reached a terminal state. Mandatory in practice \u2014 without it nothing downstream can detect staleness, invalidate a lead, or re-verify an anchor. It may lag the scanned revision when scan.unresolved[] is non-empty."
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "title": "Provenance",
+      "description": "What produced the artifact. For a pipeline whose output is model-dependent, a scan is not reproducible or auditable without the tool version, the per-phase model and prompt identity, and the profile flags that decide which gates ran.",
+      "required": [
+        "tool",
+        "tool_version",
+        "protocol"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "type": "string",
+          "description": "Producing tool, e.g. \"strata-go\""
+        },
+        "tool_version": {
+          "type": "string",
+          "description": "Version of the producing tool"
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Transport the adjudicator drove, e.g. \"codex-app-server\""
+        },
+        "triage_model": {
+          "type": "string",
+          "description": "Phase 1 model id. A change to this invalidates an incremental baseline."
+        },
+        "adjudication_model": {
+          "type": "string",
+          "description": "Phase 2 model id. A change to this invalidates an incremental baseline."
+        },
+        "triage_prompt_id": {
+          "type": "string",
+          "description": "Identity of the Phase 1 prompt"
+        },
+        "adjudication_prompt_id": {
+          "type": "string",
+          "description": "Identity of the Phase 2 prompt"
+        },
+        "input_profile": {
+          "type": "string",
+          "enum": [
+            "D0",
+            "D1",
+            "D2",
+            "D3"
+          ],
+          "description": "Stage-1 diff-shaping profile. D0 (normalised diff only) is production; higher profiles add commit message / linked context and were measured to destabilise triage."
+        },
+        "decision_profile": {
+          "type": "string",
+          "description": "Phase 2 decision profile, e.g. \"A0\" (no advisory context available to the adjudicator)"
+        },
+        "cwe_catalog_version": {
+          "type": "string",
+          "description": "CWE catalog the class/CWE mapping was taken from, e.g. \"CWE-4.20\""
+        },
+        "anchor_verification": {
+          "type": "string",
+          "description": "Anchor checking mode, e.g. \"relocating\" \u2014 model line numbers may be corrected when the quoted bytes are found elsewhere in the same blob"
+        }
+      }
+    },
+    "scan_stats": {
+      "type": "object",
+      "title": "Scan statistics",
+      "description": "The funnel: every stage records what it dropped, so the report is reconcilable and a silent failure cannot masquerade as a clean scan. The invariant is adjudicated == findings + abstained + rejected + no_finding + adjudication_errors; when it does not hold, `reconciles` is false and the scan must not be read as complete.",
+      "required": [
+        "window",
+        "commits_scanned",
+        "commits_triaged",
+        "commits_skipped",
+        "triage_candidates",
+        "adjudicated",
+        "findings",
+        "abstained",
+        "rejected",
+        "no_finding",
+        "triage_errors",
+        "adjudication_errors",
+        "anchors_verified",
+        "anchors_relocated",
+        "anchors_rejected",
+        "input_tokens",
+        "output_tokens",
+        "wall_clock_s",
+        "reconciles"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "window": {
+          "$ref": "#/definitions/scan_window"
+        },
+        "commits_scanned": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits in the resolved window"
+        },
+        "commits_triaged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits Phase 1 classified"
+        },
+        "commits_skipped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits dropped before triage, e.g. an oversize diff past --max-diff-bytes"
+        },
+        "triage_candidates": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits triage marked YES and handed to Phase 2"
+        },
+        "adjudicated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits Phase 2 examined"
+        },
+        "findings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Accepted adjudications over all runs. Distinct fixes is len(fingerprints) == findings - duplicates_merged."
+        },
+        "abstained": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "ABSTAIN verdicts. Never collapsed into NO."
+        },
+        "rejected": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Adjudications a gate refused (anchor, reachability, or origin)"
+        },
+        "no_finding": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Decided NO: examined and found not to be a security fix"
+        },
+        "triage_errors": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits whose triage call failed. These appear in unresolved[] and hold back the watermark."
+        },
+        "adjudication_errors": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits whose adjudication failed or timed out. These appear in unresolved[] and hold back the watermark."
+        },
+        "anchors_verified": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Anchors whose quoted bytes were located and hashed in the named revision"
+        },
+        "anchors_relocated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Subset of verified anchors whose line numbers were wrong but whose bytes were right, and whose coordinates were corrected. The common case \u2014 models transcribe spans faithfully and line numbers poorly."
+        },
+        "anchors_rejected": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Anchors whose quoted bytes were not found in the named revision. Rejected anchors are dropped from the artifact, so this count has no corresponding entry in fingerprints[].anchors."
+        },
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Prompt tokens across both model phases"
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Completion tokens across both model phases"
+        },
+        "wall_clock_s": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Wall-clock seconds for the scan"
+        },
+        "reconciles": {
+          "type": "boolean",
+          "description": "Whether the funnel invariant above holds. False means adjudications vanished unattributed."
+        },
+        "duplicates_merged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Fixes recognised under a second commit_sha during the merge, which is what bridges `findings` (accepted adjudications) and len(fingerprints) (distinct fixes)."
+        },
+        "unresolved": {
+          "type": "array",
+          "description": "Commits inside the covered window that never reached a terminal state. The other half of the coverage defence: under incremental semantics a hole is permanent once head_sha advances past it, so a later run retries what is recorded here.",
+          "items": {
+            "$ref": "#/definitions/unresolved"
+          }
+        },
+        "truncated_unresolved": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Holes the list cap dropped, so a truncated list still reports an honest total"
+        }
+      }
+    },
+    "scan_window": {
+      "type": "object",
+      "title": "Scan window",
+      "description": "The history the artifact covers, so an incremental rescan knows where to resume and a reader knows what was NOT examined. Under incremental scanning the window is cumulative: from_sha keeps the earliest coverage boundary the artifact has ever had, to_sha advances to the current watermark.",
+      "additionalProperties": false,
+      "properties": {
+        "from_sha": {
+          "$ref": "#/definitions/commit_sha",
+          "description": "Oldest commit covered"
+        },
+        "to_sha": {
+          "$ref": "#/definitions/commit_sha",
+          "description": "Newest commit covered (the watermark)"
+        },
+        "last_n": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The --last bound the walk was truncated to, when one was set"
+        }
+      }
+    },
+    "unresolved": {
+      "type": "object",
+      "title": "Unresolved commit",
+      "description": "One commit inside the covered window that produced no answer. The reason is human-readable on purpose: it is what tells an operator whether to raise --max-diff-bytes, retry a flaky provider, or investigate.",
+      "required": [
+        "sha",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "sha": {
+          "$ref": "#/definitions/commit_sha"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why it never resolved, e.g. \"diff too large\", \"triage: <error>\", or an adjudication timeout"
+        }
+      }
+    },
+    "top_risk": {
+      "type": "object",
+      "title": "Top risk",
+      "description": "A component with a security-fix history, ranked by severity mass then recency-weighted fix count.",
+      "required": [
+        "component",
+        "kind",
+        "classes",
+        "severity",
+        "fix_count",
+        "recurring",
+        "severity_mass",
+        "recency_weight",
+        "cwe",
+        "evidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repository-relative path of the component"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "source",
+            "test",
+            "manifest",
+            "config",
+            "generated",
+            "docs"
+          ],
+          "description": "What kind of file the component is, so a reader can discount a risk that lives only in tests or generated code"
+        },
+        "classes": {
+          "type": "array",
+          "description": "L0 classes of the fixes that touched this component",
+          "items": {
+            "$ref": "#/definitions/l0_class"
+          }
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical",
+            "unknown",
+            ""
+          ],
+          "description": "Highest severity among the backing fixes. Empty is emitted, not filtered: the ranking treats \"unknown\" and \"\" as the same rank 0 (see sevRank), so a component whose only fix is rated \"unknown\" carries a peak severity of \"\". Read it as \"no rated fix\", the same as \"unknown\"."
+        },
+        "fix_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Security fixes that touched this component"
+        },
+        "recurring": {
+          "type": "boolean",
+          "description": "Whether fix_count reaches min_support. Distinguishes a genuine pattern from a component seen exactly once \u2014 at low fingerprint counts that is the difference between a true statement and a false one."
+        },
+        "severity_mass": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Summed severity weight of the backing fixes; the primary ranking key"
+        },
+        "recency_weight": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Recency-weighted fix count; the tiebreaker, so an old cluster does not outrank a live one"
+        },
+        "cwe": {
+          "type": "array",
+          "description": "CWE ids carried by the backing fixes",
+          "items": {
+            "$ref": "#/definitions/cwe_id"
+          }
+        },
+        "evidence": {
+          "$ref": "#/definitions/sha_list",
+          "description": "Origin fix commit SHAs backing this risk"
+        }
+      }
+    },
+    "shared_surface": {
+      "type": "object",
+      "title": "Shared surface",
+      "description": "One invariant that must hold at every entry point reaching a shared sink \u2014 the highest-value section, because a guard enforced on one path and skipped on a sibling path is a live bug.",
+      "required": [
+        "surface",
+        "class",
+        "guard",
+        "guard_kind",
+        "sink_symbols",
+        "entry_points",
+        "check_hint",
+        "support",
+        "origin_fixes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "surface": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the surface, taken from the shared sink symbols it clusters on"
+        },
+        "class": {
+          "type": "string",
+          "pattern": "^$|^(memory_safety|input_validation|injection|path_traversal|access_control|authentication|cryptography|resource_exhaustion|concurrency_toctou|deserialization|information_disclosure|logic_flaw|supply_chain|other)(/(memory_safety|input_validation|injection|path_traversal|access_control|authentication|cryptography|resource_exhaustion|concurrency_toctou|deserialization|information_disclosure|logic_flaw|supply_chain|other))*$",
+          "description": "L0 class of the fixes backing the surface. NOT a single class token: surfaces cluster on shared sink symbols, so a cluster spanning several classes emits them slash-joined and sorted (\"cryptography/resource_exhaustion\"). Each segment is a member of the closed taxonomy; empty when no backing fix carried a class."
+        },
+        "guard": {
+          "$ref": "#/definitions/symbol_list",
+          "description": "Symbols whose presence at a call site makes it safe"
+        },
+        "guard_kind": {
+          "type": "string",
+          "enum": [
+            "guard_added",
+            "sink_removed",
+            "mixed",
+            "unknown"
+          ],
+          "description": "Shape of the backing fixes, which decides the variant search: guard_added means search for the sink and assert the guard is near it; sink_removed means any surviving occurrence of the sink is itself a lead."
+        },
+        "sink_symbols": {
+          "$ref": "#/definitions/symbol_list",
+          "description": "Greppable identifiers for the dangerous operation this surface clusters on"
+        },
+        "entry_points": {
+          "$ref": "#/definitions/path_list",
+          "description": "Paths that reach the shared sink"
+        },
+        "check_hint": {
+          "type": "string",
+          "description": "Model-authored instruction for how to test the invariant at a new call site"
+        },
+        "support": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of origin fixes backing this surface. Compare against min_support before reading it as a pattern."
+        },
+        "origin_fixes": {
+          "$ref": "#/definitions/sha_list",
+          "description": "Fix commit SHAs backing this surface"
+        }
+      }
+    },
+    "fingerprint": {
+      "type": "object",
+      "title": "Fingerprint",
+      "description": "One adjudicated past fix \u2014 the Phase 2 output and the atom the context is built from. Identity has two keys on purpose: `id` is a short derived alias convenient for joining across artifacts but which dies with the commit it names; `patch_id` is invariant under rebase, squash, and clean cherry-pick, and is a matching hint rather than a primary key.",
+      "required": [
+        "id",
+        "commit_sha",
+        "commit_date",
+        "commit_subject",
+        "class",
+        "cwe",
+        "components",
+        "severity",
+        "summary",
+        "fix_completeness",
+        "reachability"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^fp_[0-9a-f]{10}$",
+          "description": "Derived alias, \"fp_\" + commit_sha[:10]"
+        },
+        "patch_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "`git patch-id --stable` over the commit's diff. Absent for merge commits and empty diffs, which have no well-defined value."
+        },
+        "commit_sha": {
+          "$ref": "#/definitions/commit_sha",
+          "description": "The fixing commit"
+        },
+        "commit_date": {
+          "type": "string",
+          "format": "date-time",
+          "minLength": 1,
+          "description": "Committer date of the fixing commit (git %cI), which is when the fix landed"
+        },
+        "commit_subject": {
+          "type": "string",
+          "description": "Subject line of the fixing commit"
+        },
+        "class": {
+          "$ref": "#/definitions/l0_class"
+        },
+        "cwe": {
+          "type": "array",
+          "description": "CWE ids for the flaw, from the catalog named in provenance",
+          "items": {
+            "$ref": "#/definitions/cwe_id"
+          }
+        },
+        "components": {
+          "$ref": "#/definitions/path_list",
+          "description": "Paths this commit MODIFIED. Every derived section keys off this, so reachability must not be folded in \u2014 doing so inflates fix counts and manufactures hot components out of files that were never touched."
+        },
+        "reachable_from": {
+          "$ref": "#/definitions/path_list",
+          "description": "Paths the vulnerability was reachable through but which the commit did not change"
+        },
+        "sink_symbols": {
+          "$ref": "#/definitions/symbol_list",
+          "description": "Greppable identifiers for the dangerous operation. This is what makes a fingerprint actionable \u2014 without it a past fix cannot be searched for elsewhere in the tree."
+        },
+        "guard_symbols": {
+          "$ref": "#/definitions/symbol_list",
+          "description": "Identifiers for the check whose presence makes a call site safe"
+        },
+        "sink": {
+          "type": "string",
+          "description": "The dangerous operation in prose"
+        },
+        "fix_kind": {
+          "type": "string",
+          "enum": [
+            "guard_added",
+            "sink_removed",
+            "unknown"
+          ],
+          "description": "Which of the two shapes the fix takes, which decides how to search for variants"
+        },
+        "fix_shape": {
+          "type": "string",
+          "description": "How the fix was carried out, in prose"
+        },
+        "severity": {
+          "$ref": "#/definitions/severity"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "description": "Adjudicator's confidence in the finding"
+        },
+        "summary": {
+          "type": "string",
+          "description": "The one-line what"
+        },
+        "poc": {
+          "type": "string",
+          "description": "The attacker story: what an attacker could do before the fix"
+        },
+        "root_cause": {
+          "type": "string",
+          "description": "Why the flaw existed. One of the two halves the adjudicator must establish to reach YES, retained as the basis for poc."
+        },
+        "attacker_preconditions": {
+          "type": "string",
+          "description": "What an attacker needed in order to reach the flaw. The other half behind a YES."
+        },
+        "invariant": {
+          "type": "string",
+          "description": "The property the fix established and which must keep holding. Model-authored; not reconstructible from the other fields."
+        },
+        "fix_completeness": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "multi",
+            "partial",
+            "unknown"
+          ],
+          "description": "How much of the vulnerability this one commit repairs. `multi` (the fix spans several commits) is deliberately distinct from `complete`."
+        },
+        "anchors": {
+          "type": "array",
+          "description": "Byte-verifiable evidence spans backing the claim. Anchors that failed verification are dropped, not recorded.",
+          "items": {
+            "$ref": "#/definitions/anchor"
+          }
+        },
+        "reachability": {
+          "$ref": "#/definitions/reachability"
+        },
+        "failure_containment": {
+          "type": "string",
+          "enum": [
+            "crashes",
+            "degraded",
+            "unknown"
+          ],
+          "description": "What still limits the damage when this invariant is violated. \"contained\" is a member of the producer's vocabulary but can never appear here: gate 2 rejects it, because a fault absorbed by the runtime or recovery middleware is hardening, not a security fix."
+        },
+        "introduced_by": {
+          "type": "array",
+          "description": "Where the flaw came from. EVERY entry independently introduced it \u2014 a list is a set of co-introductions (the same missing check added on two code paths), never a set of candidates the model was choosing between. Absent, never empty, means the archaeology was inconclusive. Ordered by committed_at.",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/commit_ref"
+          }
+        },
+        "introduced_to_fixed_seconds": {
+          "type": "integer",
+          "description": "commit_date minus the EARLIEST verified introduction, in seconds. Seconds rather than days because fixes land minutes after their introduction often enough that a day-granular field rounds the signal to zero. Absent means no verified origin, or a date anomaly \u2014 which is a different fact from zero."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "",
+            "reverted"
+          ],
+          "description": "Absent means live. A reverted fingerprint is ANNOTATED, never dropped: a repository that fixed something and then un-fixed it is more interesting than one that never fixed it, so it stays in top_risks and shared_surfaces with the revert recorded."
+        },
+        "reverted_by": {
+          "$ref": "#/definitions/commit_sha",
+          "description": "The commit that reverted this fix, established by reverse patch-id match against the artifact's known fixes"
+        }
+      }
+    },
+    "anchor": {
+      "type": "object",
+      "title": "Anchor",
+      "description": "A byte-verifiable evidence span. The model supplies revision/path/start_line/end_line/quoted_span; the checker resolves the revision to a concrete SHA, locates the span in that blob, and stamps span_sha256/verified/relocated. A consumer can therefore re-verify independently \u2014 `git show <revision_sha>:<path>` sliced at the line range must hash to span_sha256 \u2014 which a bare revision/path/line triple does not permit.",
+      "required": [
+        "revision",
+        "revision_sha",
+        "path",
+        "start_line",
+        "end_line",
+        "quoted_span",
+        "span_sha256",
+        "verified",
+        "relocated"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "type": "string",
+          "enum": [
+            "commit",
+            "parent",
+            "head"
+          ],
+          "description": "Which tree the span was read from: the fixing commit, its parent (pre-fix state), or repository HEAD. A closed vocabulary \u2014 the adjudicator works in an isolated checkout at the commit, so \"head\" and \"commit\" denote the same tree there, and a consumer resolves all three through revision_sha rather than re-deriving them."
+        },
+        "revision_sha": {
+          "$ref": "#/definitions/commit_sha",
+          "description": "Concrete commit the span was read from"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repository-relative path of the anchored file"
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "First line of the span, 1-indexed inclusive"
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Last line of the span, inclusive"
+        },
+        "quoted_span": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The exact bytes at those coordinates, which is what span_sha256 hashes"
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of quoted_span, for independent re-verification"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Whether the bytes were located and hashed in the named revision. Unverified anchors are dropped, so this is true throughout a well-formed artifact."
+        },
+        "relocated": {
+          "type": "boolean",
+          "description": "The model's line numbers were wrong but its bytes were right: the span was found elsewhere in the same blob and the coordinates were corrected. Rejecting this case would discard sound evidence."
+        },
+        "supports": {
+          "type": "array",
+          "description": "Which claims of the fingerprint this span backs",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "severity": {
+      "type": "object",
+      "title": "Severity",
+      "description": "The level together with how it was derived, so a consumer can tell a CVSS-backed rating from a model estimate.",
+      "required": [
+        "level",
+        "source"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "$ref": "#/definitions/severity_level"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "cvss",
+            "advisory",
+            "repository",
+            "human",
+            "model_estimate"
+          ],
+          "description": "How the rating was derived. Closed vocabulary, enforced at the adjudication gate. Under decision profile A0 the adjudicator has no advisory context, so \"advisory\" is refused there and real A0 output is \"model_estimate\" \u2014 with score/vector still present, since A0 does not suppress a model-estimated CVSS."
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Numeric CVSS base score, when one was produced"
+        },
+        "vector": {
+          "type": "string",
+          "description": "CVSS vector string, when one was produced"
+        }
+      }
+    },
+    "reachability": {
+      "type": "object",
+      "title": "Reachability",
+      "description": "How the commit changes what an attacker can reach. Only \"narrows\" survives the gate; before/after are retained because they are the evidence for that verdict, not a restatement of it.",
+      "required": [
+        "verdict"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "narrows",
+            "widens",
+            "unchanged"
+          ],
+          "description": "Direction of the change in attacker-reachable state"
+        },
+        "before": {
+          "type": "string",
+          "description": "What was reachable before the fix"
+        },
+        "after": {
+          "type": "string",
+          "description": "What is reachable after it"
+        }
+      }
+    },
+    "commit_ref": {
+      "type": "object",
+      "title": "Commit reference",
+      "description": "A commit and what it did there, with the pipeline's proof attached. The model supplies commit_sha and description; the pipeline resolves a short SHA to a full one, proves the commit is an ancestor of the fix, and stamps committed_at and verified \u2014 never the model, because a date read from git always parses and always agrees with the SHA beside it, which a reported one does not.",
+      "required": [
+        "commit_sha",
+        "verified"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "commit_sha": {
+          "$ref": "#/definitions/commit_sha"
+        },
+        "description": {
+          "type": "string",
+          "description": "Model-supplied short noun phrase for what the commit did"
+        },
+        "committed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Derived from git (%cI), never reported by the model"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Proved to be an ancestor of the fix commit \u2014 NOT proved to be the true origin. Git can refute a commit that could not possibly have introduced the flaw; it cannot confirm that an ancestor is where the flaw actually entered. A consumer joining fingerprints on origin must require this."
+        }
+      }
+    },
+    "commit_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Full 40-hex git commit SHA. Short SHAs are resolved before they reach the artifact."
+    },
+    "cwe_id": {
+      "type": "string",
+      "pattern": "^CWE-[0-9]+$",
+      "description": "CWE identifier in canonical form"
+    },
+    "l0_class": {
+      "type": "string",
+      "enum": [
+        "memory_safety",
+        "input_validation",
+        "injection",
+        "path_traversal",
+        "access_control",
+        "authentication",
+        "cryptography",
+        "resource_exhaustion",
+        "concurrency_toctou",
+        "deserialization",
+        "information_disclosure",
+        "logic_flaw",
+        "supply_chain",
+        "other"
+      ],
+      "description": "The closed, stable top-level security taxonomy. Closed on purpose: an earlier open list let a real run emit \"race_condition\", which nothing validated."
+    },
+    "severity_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical",
+        "unknown"
+      ],
+      "description": "Severity band"
+    },
+    "symbol_list": {
+      "type": "array",
+      "description": "Greppable code identifiers, sorted",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "path_list": {
+      "type": "array",
+      "description": "Repository-relative paths, sorted",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "sha_list": {
+      "type": "array",
+      "description": "Full commit SHAs, sorted",
+      "items": {
+        "$ref": "#/definitions/commit_sha"
+      }
+    }
+  }
+}
