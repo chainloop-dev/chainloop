@@ -463,8 +463,7 @@
           "description": "Name of the surface, taken from the shared sink symbols it clusters on"
         },
         "class": {
-          "type": "string",
-          "pattern": "^$|^(memory_safety|input_validation|injection|path_traversal|access_control|authentication|cryptography|resource_exhaustion|concurrency_toctou|deserialization|information_disclosure|logic_flaw|supply_chain|other)(/(memory_safety|input_validation|injection|path_traversal|access_control|authentication|cryptography|resource_exhaustion|concurrency_toctou|deserialization|information_disclosure|logic_flaw|supply_chain|other))*$",
+          "$ref": "#/definitions/l0_class_path",
           "description": "L0 class of the fixes backing the surface. NOT a single class token: surfaces cluster on shared sink symbols, so a cluster spanning several classes emits them slash-joined and sorted (\"cryptography/resource_exhaustion\"). Each segment is a member of the closed taxonomy; empty when no backing fix carried a class."
         },
         "guard": {
@@ -871,6 +870,11 @@
         "other"
       ],
       "description": "The closed, stable top-level security taxonomy. Closed on purpose: an earlier open list let a real run emit \"race_condition\", which nothing validated."
+    },
+    "l0_class_path": {
+      "type": "string",
+      "pattern": "^$|^(memory_safety|input_validation|injection|path_traversal|access_control|authentication|cryptography|resource_exhaustion|concurrency_toctou|deserialization|information_disclosure|logic_flaw|supply_chain|other)(/(memory_safety|input_validation|injection|path_traversal|access_control|authentication|cryptography|resource_exhaustion|concurrency_toctou|deserialization|information_disclosure|logic_flaw|supply_chain|other))*$",
+      "description": "One or more l0_class members, slash-joined and sorted, or empty. GENERATED: draft-07 cannot interpolate an enum into a pattern, so the taxonomy is authored once in #/definitions/l0_class and this alternation is derived from it \u2014 never hand-edit one without the other. TestAISecurityContextL0TaxonomyHasSingleSource regenerates the pattern from the enum and fails if they drift."
     },
     "severity_level": {
       "type": "string",
