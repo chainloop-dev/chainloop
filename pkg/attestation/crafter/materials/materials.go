@@ -388,6 +388,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter = NewJacocoCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_COBERTURA_XML:
 		crafter = NewCoberturaCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_PITEST_XML:
+		crafter = NewPitestCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_OPENVEX:
 		crafter, err = NewOpenVEXCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CSAF_VEX:

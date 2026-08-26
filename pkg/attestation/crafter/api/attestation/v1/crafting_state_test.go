@@ -619,3 +619,115 @@ func TestTruffleHogCleanScanIsEvaluableInline(t *testing.T) {
 	require.True(t, ok, "clean scan must project to an elements array")
 	assert.Empty(t, elements)
 }
+
+// pitestMaterial builds an artifact material of kind PITEST_XML for
+// projection tests.
+func pitestMaterial() *Attestation_Material {
+	return &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_PITEST_XML,
+		M: &Attestation_Material_Artifact_{
+			Artifact: &Attestation_Material_Artifact{Name: "mutations", Digest: "sha256:deadbeef"},
+		},
+	}
+}
+
+// pitestMutations decodes the evaluable content of a PIT report and returns
+// its mutation records.
+func pitestMutations(t *testing.T, path string) (map[string]any, []any) {
+	t.Helper()
+
+	content, err := pitestMaterial().GetEvaluableContent(path)
+	require.NoError(t, err)
+
+	var decoded map[string]any
+	require.NoError(t, json.NewDecoder(bytes.NewReader(content)).Decode(&decoded))
+	mutations, ok := decoded["mutations"].([]any)
+	require.True(t, ok, "PIT report must project to a mutations array")
+	return decoded, mutations
+}
+
+// TestPitestReportIsEvaluable guards the XML-to-JSON projection of a standard
+// PIT report: the root partial flag is preserved and every mutation record is
+// projected with its own fields.
+func TestPitestReportIsEvaluable(t *testing.T) {
+	decoded, mutations := pitestMutations(t, "testdata/pitest.xml")
+	assert.Equal(t, true, decoded["partial"], "root partial attribute must be preserved")
+	assert.Len(t, mutations, 164, "every mutation record must be projected")
+}
+
+// TestPitestSurvivedMutationKeepsStatus guards that a SURVIVED mutant keeps
+// detected=false and status=SURVIVED along with its source location, mutator,
+// indexes, blocks and description, so a policy can single out surviving
+// covered mutants.
+func TestPitestSurvivedMutationKeepsStatus(t *testing.T) {
+	_, mutations := pitestMutations(t, "testdata/pitest.xml")
+
+	var survived map[string]any
+	for _, m := range mutations {
+		mutation := m.(map[string]any)
+		if mutation["status"] == "SURVIVED" {
+			survived = mutation
+			break
+		}
+	}
+	require.NotNil(t, survived, "fixture must contain a SURVIVED mutation")
+	assert.Equal(t, false, survived["detected"])
+	assert.Equal(t, "SURVIVED", survived["status"])
+	assert.Equal(t, "PetController.java", survived["sourceFile"])
+	assert.Equal(t, "org.springframework.samples.petclinic.owner.PetController", survived["mutatedClass"])
+	assert.NotEmpty(t, survived["mutatedMethod"])
+	assert.NotEmpty(t, survived["methodDescription"])
+	assert.NotZero(t, survived["lineNumber"])
+	assert.NotEmpty(t, survived["mutator"])
+	assert.NotEmpty(t, survived["indexes"])
+	assert.NotEmpty(t, survived["blocks"])
+	assert.NotEmpty(t, survived["description"])
+}
+
+// TestPitestNoCoverageKeepsStatusDistinct guards that a NO_COVERAGE mutant is
+// not collapsed into the same signal as a surviving covered mutant: it keeps
+// status=NO_COVERAGE and numberOfTestsRun=0.
+func TestPitestNoCoverageKeepsStatusDistinct(t *testing.T) {
+	_, mutations := pitestMutations(t, "testdata/pitest.xml")
+
+	var noCoverage map[string]any
+	for _, m := range mutations {
+		mutation := m.(map[string]any)
+		if mutation["status"] == "NO_COVERAGE" {
+			noCoverage = mutation
+			break
+		}
+	}
+	require.NotNil(t, noCoverage, "fixture must contain a NO_COVERAGE mutation")
+	assert.Equal(t, "NO_COVERAGE", noCoverage["status"])
+	assert.Equal(t, false, noCoverage["detected"])
+	assert.EqualValues(t, 0, noCoverage["numberOfTestsRun"])
+}
+
+// TestPitestFullMutationMatrixIsEvaluable guards that a report generated with
+// PIT's fullMutationMatrix option preserves its killingTests, succeedingTests
+// and coveringTests lists (pipe-delimited, kept unsplit) instead of the
+// standard killingTest field.
+func TestPitestFullMutationMatrixIsEvaluable(t *testing.T) {
+	_, mutations := pitestMutations(t, "testdata/pitest-full-matrix.xml")
+	require.Len(t, mutations, 1)
+
+	mutation := mutations[0].(map[string]any)
+	assert.Equal(t,
+		"org.springframework.samples.petclinic.owner.PetControllerTests.processCreationFormSuccess()|org.springframework.samples.petclinic.owner.PetControllerTests.processCreationFormError()",
+		mutation["killingTests"])
+	assert.Equal(t,
+		"org.springframework.samples.petclinic.owner.PetControllerTests.processUpdateForm()",
+		mutation["succeedingTests"])
+	assert.Equal(t,
+		"org.springframework.samples.petclinic.owner.PetControllerTests.processCreationFormSuccess()|org.springframework.samples.petclinic.owner.PetControllerTests.processUpdateForm()",
+		mutation["coveringTests"])
+	assert.NotContains(t, mutation, "killingTest", "full-matrix reports must not manufacture the standard killingTest field")
+}
+
+// TestPitestInvalidReportIsNotEvaluable guards that a non-PIT XML report
+// fails the projection instead of producing an empty policy input.
+func TestPitestInvalidReportIsNotEvaluable(t *testing.T) {
+	_, err := pitestMaterial().GetEvaluableContent("testdata/cobertura.xml")
+	require.ErrorContains(t, err, "invalid PIT report file")
+}

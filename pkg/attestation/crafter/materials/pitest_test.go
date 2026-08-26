@@ -18,6 +18,7 @@ package materials_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -31,11 +32,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCoberturaCraft(t *testing.T) {
+func TestPitestCraft(t *testing.T) {
 	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
+		name       string
+		filePath   string
+		wantErr    string
+		wantDigest string
 	}{
 		{
 			name:     "invalid path",
@@ -53,25 +55,31 @@ func TestCoberturaCraft(t *testing.T) {
 			wantErr:  "unexpected material type",
 		},
 		{
+			name:     "wrong xml root (cobertura coverage)",
+			filePath: "./testdata/cobertura.xml",
+			wantErr:  "unexpected material type",
+		},
+		{
 			name:     "wrong xml root (junit testsuite)",
 			filePath: "./testdata/junit.xml",
 			wantErr:  "unexpected material type",
 		},
 		{
-			name:     "wrong xml root (PIT mutations report)",
-			filePath: "./testdata/pitest.xml",
-			wantErr:  "unexpected material type",
+			name:       "valid artifact type",
+			filePath:   "./testdata/pitest.xml",
+			wantDigest: "sha256:32bce80d562307c69f3e60eadc2aaa56be2f9d47d4aff354aa35e7c4d6bb909f",
 		},
 		{
-			name:     "valid artifact type",
-			filePath: "./testdata/cobertura.xml",
+			name:       "valid full mutation matrix report",
+			filePath:   "./testdata/pitest-full-matrix.xml",
+			wantDigest: "sha256:ed5677f32b319ee35064e92b2fcc0d03db266cb1484e209f293fc007f8aed494",
 		},
 	}
 
 	assert := assert.New(t)
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_COBERTURA_XML,
+		Type: contractAPI.CraftingSchema_Material_PITEST_XML,
 	}
 	l := zerolog.Nop()
 	for _, tc := range testCases {
@@ -82,11 +90,11 @@ func TestCoberturaCraft(t *testing.T) {
 				uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
 					Return(&casclient.UpDownStatus{
 						Digest:   "deadbeef",
-						Filename: "cobertura.xml",
+						Filename: "pitest.xml",
 					}, nil)
 			}
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter := materials.NewCoberturaCrafter(schema, backend, &l)
+			crafter := materials.NewPitestCrafter(schema, backend, &l)
 
 			got, err := crafter.Craft(context.TODO(), tc.filePath)
 			if tc.wantErr != "" {
@@ -95,35 +103,34 @@ func TestCoberturaCraft(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(contractAPI.CraftingSchema_Material_COBERTURA_XML.String(), got.MaterialType.String())
+			assert.Equal(contractAPI.CraftingSchema_Material_PITEST_XML.String(), got.MaterialType.String())
 			assert.True(got.UploadedToCas)
 
 			// The result includes the digest reference
 			assert.Equal(&attestationApi.Attestation_Material_Artifact{
-				Id: "test", Digest: "sha256:00b1d466b66effb5b42b02adcaa63c99fcf3df4d7e54f66e0e481bf4a15fdd38", Name: "cobertura.xml",
+				Id: "test", Digest: tc.wantDigest, Name: filepath.Base(tc.filePath),
 			}, got.GetArtifact())
 		})
 	}
 }
 
-// TestCoberturaCraftEmptyReport asserts that a legitimate empty coverage report
-// (a service with no measurable lines, where the tool emits line-rate="NaN")
-// is accepted, not rejected. Empty coverage is valid evidence; it must be
-// attestable so a downstream policy can decide it is not a violation.
-func TestCoberturaCraftEmptyReport(t *testing.T) {
+// TestPitestCraftEmptyReport asserts that a report with a valid <mutations>
+// root but no <mutation> records is rejected: it means no mutants were
+// analyzed, not a 0% or 100% result, and downstream score calculations would
+// otherwise divide by zero. The file must not be uploaded to the CAS.
+func TestPitestCraftEmptyReport(t *testing.T) {
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "test",
-		Type: contractAPI.CraftingSchema_Material_COBERTURA_XML,
+		Type: contractAPI.CraftingSchema_Material_PITEST_XML,
 	}
 	l := zerolog.Nop()
+	// No Upload expectation: the mock fails the test if an upload happens.
 	uploader := mUploader.NewUploader(t)
-	uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
-		Return(&casclient.UpDownStatus{Digest: "deadbeef", Filename: "cobertura-empty.xml"}, nil)
 	backend := &casclient.CASBackend{Uploader: uploader}
-	crafter := materials.NewCoberturaCrafter(schema, backend, &l)
+	crafter := materials.NewPitestCrafter(schema, backend, &l)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/cobertura-empty.xml")
-	require.NoError(t, err, "an empty-but-valid cobertura report must be accepted")
-	require.NotNil(t, got)
-	assert.Equal(t, contractAPI.CraftingSchema_Material_COBERTURA_XML.String(), got.MaterialType.String())
+	_, err := crafter.Craft(context.TODO(), "./testdata/pitest-empty.xml")
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "invalid PIT report file, no mutations found")
+	assert.ErrorIs(t, err, materials.ErrInvalidMaterialType)
 }

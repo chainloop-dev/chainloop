@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/dranzer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/pitest"
 	materialsradamsa "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/radamsa"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/trufflehog"
 	"github.com/chainloop-dev/chainloop/pkg/tabular"
@@ -259,6 +260,12 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 		var report cobertura.Coverage
 		if err := xml.Unmarshal(rawMaterial, &report); err != nil {
 			return nil, fmt.Errorf("invalid Cobertura report file: %w", err)
+		}
+		return json.Marshal(&report)
+	case v1.CraftingSchema_Material_PITEST_XML:
+		var report pitest.Report
+		if err := xml.Unmarshal(rawMaterial, &report); err != nil {
+			return nil, fmt.Errorf("invalid PIT report file: %w", err)
 		}
 		return json.Marshal(&report)
 	case v1.CraftingSchema_Material_SYSINTERNALS_SIGCHECK:

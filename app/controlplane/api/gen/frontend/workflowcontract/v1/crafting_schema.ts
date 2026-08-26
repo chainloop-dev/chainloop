@@ -331,6 +331,11 @@ export enum CraftingSchema_Material_MaterialType {
    * https://docs.oversecured.com/docs/guide-exporting-reports
    */
   OVERSECURED_JSON = 43,
+  /**
+   * PITEST_XML - PIT mutation testing report in its native XML format (mutations.xml)
+   * https://pitest.org/
+   */
+  PITEST_XML = 44,
   UNRECOGNIZED = -1,
 }
 
@@ -468,6 +473,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 43:
     case "OVERSECURED_JSON":
       return CraftingSchema_Material_MaterialType.OVERSECURED_JSON;
+    case 44:
+    case "PITEST_XML":
+      return CraftingSchema_Material_MaterialType.PITEST_XML;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -565,6 +573,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "CHECKMARX_JSON";
     case CraftingSchema_Material_MaterialType.OVERSECURED_JSON:
       return "OVERSECURED_JSON";
+    case CraftingSchema_Material_MaterialType.PITEST_XML:
+      return "PITEST_XML";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

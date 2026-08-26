@@ -105,7 +105,8 @@
             "TRUFFLEHOG_JSON",
             "COBERTURA_XML",
             "CHECKMARX_JSON",
-            "OVERSECURED_JSON"
+            "OVERSECURED_JSON",
+            "PITEST_XML"
           ],
           "title": "Material Type",
           "type": "string"
