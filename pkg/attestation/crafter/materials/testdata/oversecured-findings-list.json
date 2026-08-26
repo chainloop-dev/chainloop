@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "id": "b1c2d3e4-1111-4222-8333-444455556666",
+      "folderId": null,
+      "category": {
+        "id": "834b67a2-f80e-4e88-a164-ea3559abfbe2",
+        "severity": "high",
+        "descriptionTitle": "Hardcoded cryptographic key"
+      },
+      "chainType": null,
+      "codeOrigin": "custom",
+      "thirdPartyLabel": null,
+      "hasSast": true,
+      "hasDast": false,
+      "hasLlmDescription": false,
+      "sources": [],
+      "sink": null,
+      "isLocked": false
+    }
+  ],
+  "total": 28,
+  "page": 1,
+  "pageSize": 20
+}

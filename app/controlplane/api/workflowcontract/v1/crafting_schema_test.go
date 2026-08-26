@@ -307,3 +307,38 @@ func TestValidateRefs(t *testing.T) {
 		})
 	}
 }
+
+// Kinds deliberately kept out of CraftingMaterialInValidationOrder, the list
+// walked to guess a kind when `chainloop attestation add` is given no --kind.
+// Each is excluded for a documented reason (see the NOTEs beside the list), so
+// pin them here: adding one back would silently start probing every
+// contract-free material against it.
+func TestMaterialKindsExcludedFromAutoDetection(t *testing.T) {
+	testCases := []struct {
+		name string
+		kind v1.CraftingSchema_Material_MaterialType
+	}{
+		{
+			name: "checkmarx report is generic JSON",
+			kind: v1.CraftingSchema_Material_CHECKMARX_JSON,
+		},
+		{
+			name: "oversecured export envelope is not published by the vendor",
+			kind: v1.CraftingSchema_Material_OVERSECURED_JSON,
+		},
+		{
+			name: "radamsa report",
+			kind: v1.CraftingSchema_Material_RADAMSA_REPORT,
+		},
+		{
+			name: "radamsa crashes accept almost any non-empty file",
+			kind: v1.CraftingSchema_Material_RADAMSA_CRASHES,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.NotContains(t, v1.CraftingMaterialInValidationOrder, tc.kind)
+		})
+	}
+}

@@ -199,6 +199,9 @@ message CraftingSchema {
       // Checkmarx One native JSON report (ScanResultsCollection)
       // https://github.com/Checkmarx/ast-cli/blob/main/internal/wrappers/results-json.go
       CHECKMARX_JSON = 42;
+      // Oversecured mobile (Android/iOS) scan report, whole-scan JSON export
+      // https://docs.oversecured.com/docs/guide-exporting-reports
+      OVERSECURED_JSON = 43;
     }
   }
 }

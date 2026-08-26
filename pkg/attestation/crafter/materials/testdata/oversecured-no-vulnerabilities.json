@@ -1,0 +1,24 @@
+{
+  "header": {
+    "scan": {
+      "id": "e62f4c1b-8ca7-4c7a-8ca8-7b7fd33a6b14",
+      "fileName": "sampleapp-1.0.0.apk",
+      "version": "3.4.0",
+      "status": "completed",
+      "enrichmentStatus": "completed",
+      "vulnerabilityCount": 28
+    },
+    "app": {
+      "id": "6c69e813-32f5-49f1-bf53-568d63fc309d",
+      "name": "SampleApp",
+      "packageName": "com.oversecured.sample",
+      "platform": "android"
+    },
+    "severityCounts": {
+      "high": 6,
+      "low": 9,
+      "medium": 13
+    },
+    "generatedAt": "2026-08-26T10:33:35.816Z"
+  }
+}

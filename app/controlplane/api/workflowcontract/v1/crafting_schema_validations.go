@@ -30,6 +30,20 @@ import (
 // CraftingMaterialInValidationOrder all type of CraftingMaterial that are available for automatic
 // detection. The order of the list is important as it defines the order of the
 // detection process. Normally from most common one to the least common one and weaker validation method.
+//
+// Kinds deliberately left out, each because auto-detecting it would misfire on
+// other kinds' files. They all work when referenced with an explicit --kind or
+// from a workflow contract:
+//   - RADAMSA_CRASHES: single-file mode accepts almost any non-empty file, so it
+//     would eagerly shadow every other type. RADAMSA_REPORT goes with it.
+//   - CHECKMARX_JSON: generic JSON that risks shadowing (or being shadowed by)
+//     other JSON kinds. Revisit once the fingerprint is proven strong.
+//   - OVERSECURED_JSON: a stronger fingerprint (a header carrying a scan id and
+//     an app platform), but the export envelope is not published by the vendor,
+//     so pinning it here would bet every other JSON kind on a shape inferred
+//     from a sample.
+//
+// TestMaterialKindsExcludedFromAutoDetection pins these exclusions.
 var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_OPENVEX,
 	CraftingSchema_Material_SBOM_CYCLONEDX_JSON,
@@ -49,14 +63,6 @@ var CraftingMaterialInValidationOrder = []CraftingSchema_Material_MaterialType{
 	CraftingSchema_Material_JUNIT_XML,
 	CraftingSchema_Material_JACOCO_XML,
 	CraftingSchema_Material_COBERTURA_XML,
-	// NOTE: RADAMSA_REPORT and RADAMSA_CRASHES are intentionally omitted from
-	// auto-detection. RADAMSA_CRASHES single-file mode accepts almost any
-	// non-empty file and would eagerly shadow other types; both work fine when
-	// referenced with an explicit kind in a workflow contract.
-	// NOTE: CHECKMARX_JSON is intentionally omitted from auto-detection. The
-	// Checkmarx native report is generic JSON that risks shadowing (or being
-	// shadowed by) other JSON kinds; it must be referenced with an explicit
-	// --kind CHECKMARX_JSON. Revisit once the fingerprint is proven strong.
 	CraftingSchema_Material_HELM_CHART,
 	CraftingSchema_Material_SARIF,
 	CraftingSchema_Material_BLACKDUCK_SCA_JSON,
