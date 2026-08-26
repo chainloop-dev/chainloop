@@ -326,6 +326,11 @@ export enum CraftingSchema_Material_MaterialType {
    * https://github.com/Checkmarx/ast-cli/blob/main/internal/wrappers/results-json.go
    */
   CHECKMARX_JSON = 42,
+  /**
+   * OVERSECURED_JSON - Oversecured mobile (Android/iOS) scan report, whole-scan JSON export
+   * https://docs.oversecured.com/docs/guide-exporting-reports
+   */
+  OVERSECURED_JSON = 43,
   UNRECOGNIZED = -1,
 }
 
@@ -460,6 +465,9 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case 42:
     case "CHECKMARX_JSON":
       return CraftingSchema_Material_MaterialType.CHECKMARX_JSON;
+    case 43:
+    case "OVERSECURED_JSON":
+      return CraftingSchema_Material_MaterialType.OVERSECURED_JSON;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -555,6 +563,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "COBERTURA_XML";
     case CraftingSchema_Material_MaterialType.CHECKMARX_JSON:
       return "CHECKMARX_JSON";
+    case CraftingSchema_Material_MaterialType.OVERSECURED_JSON:
+      return "OVERSECURED_JSON";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -1,0 +1,384 @@
+{
+  "header": {
+    "scan": {
+      "id": "e62f4c1b-8ca7-4c7a-8ca8-7b7fd33a6b14",
+      "fileName": "sampleapp-1.0.0.apk",
+      "version": "3.4.0",
+      "status": "completed",
+      "startedAt": null,
+      "completedAt": "2026-08-26T10:32:08.054Z",
+      "enrichmentStatus": "completed",
+      "vulnerabilityCount": 3
+    },
+    "app": {
+      "id": "6c69e813-32f5-49f1-bf53-568d63fc309d",
+      "name": "SampleApp",
+      "packageName": "com.oversecured.sample",
+      "platform": "android"
+    },
+    "severityCounts": {
+      "high": 1,
+      "medium": 1,
+      "low": 1
+    },
+    "ai": {
+      "technicalSummary": "The scan found a mix of directly exploitable and chain-only weaknesses. The most important path combines attacker-controlled file writing with dynamic code loading, while the individual findings also demonstrate source-to-sink data flow across SAST and DAST results.",
+      "nonTechnicalSummary": "The application contains security issues that can be exploited individually and others that become dangerous only when combined. The report shows how several lower-level weaknesses can form a more serious attack path."
+    },
+    "compliance": {
+      "totalFindings": 0,
+      "requirements": []
+    },
+    "singleVulnerability": false,
+    "subjectTitle": null,
+    "generatedAt": "2026-08-26T10:33:35.816Z"
+  },
+  "vulnerabilities": [
+    {
+      "id": "2F65F30A-F06F-4CD3-B3C6-9B72DAD151A9",
+      "hash": "3b64b44322b8c23727728541dc80d8907b18c80624caa957c9d4a1024af68114",
+      "folderId": null,
+      "folder": null,
+      "falsePositive": false,
+      "category": {
+        "id": "f3bd3a2b-95ae-455e-917b-bc19908dc520",
+        "severity": "high",
+        "descriptionTitle": "Implicit broadcast intent discloses sensitive data",
+        "descriptionText": "An implicit intent is used to broadcast data without a permission with the \"signature\" protection level. The use of implicit intents allows any third-party application installed on the same device to intercept these intents by registering an appropriate broadcast receiver, which can lead to the disclosure of sensitive information contained in these intents.",
+        "descriptionRemediation": "The developer should always use explicit intents when broadcasting them. If this is not possible, the developer should protect the broadcast with a permission whose \"protection-level\" is set to \"signature\".",
+        "platform": "android"
+      },
+      "code": [
+        {
+          "file": "dev/fluttercommunity/plus/androidintent/IntentSender.java",
+          "source_type": "java",
+          "lines": [
+            {
+              "line_number": 29,
+              "is_matched": false,
+              "content": "        send(android.content.Intent.createChooser(intent, str));",
+              "descriptions": []
+            },
+            {
+              "line_number": 30,
+              "is_matched": false,
+              "content": "    }",
+              "descriptions": []
+            },
+            {
+              "line_number": 31,
+              "is_matched": false,
+              "content": "",
+              "descriptions": []
+            },
+            {
+              "line_number": 32,
+              "is_matched": true,
+              "content": "    public void sendBroadcast(android.content.Intent intent) {",
+              "descriptions": []
+            }
+          ]
+        },
+        {
+          "file": "dev/fluttercommunity/plus/androidintent/MethodCallHandlerImpl.java",
+          "source_type": "java",
+          "lines": [
+            {
+              "line_number": 62,
+              "is_matched": false,
+              "content": "            this.sender.launchChooser(intentBuildIntent, (java.lang.String) methodCall.<java.lang.String>argument(\"chooserTitle\"));",
+              "descriptions": []
+            },
+            {
+              "line_number": 63,
+              "is_matched": false,
+              "content": "            result.success(null);",
+              "descriptions": []
+            },
+            {
+              "line_number": 64,
+              "is_matched": false,
+              "content": "        } else if (\"sendBroadcast\".equalsIgnoreCase(methodCall.method)) {",
+              "descriptions": []
+            },
+            {
+              "line_number": 65,
+              "is_matched": true,
+              "content": "            this.sender.sendBroadcast(intentBuildIntent);",
+              "descriptions": []
+            }
+          ]
+        },
+        {
+          "file": "dev/fluttercommunity/plus/androidintent/MethodCallHandlerImpl.java",
+          "source_type": "java",
+          "lines": [
+            {
+              "line_number": 31,
+              "is_matched": false,
+              "content": "",
+              "descriptions": []
+            },
+            {
+              "line_number": 32,
+              "is_matched": false,
+              "content": "    @Override",
+              "descriptions": []
+            },
+            {
+              "line_number": 33,
+              "is_matched": false,
+              "content": "    public void onMethodCall(io.flutter.plugin.common.MethodCall methodCall, io.flutter.plugin.common.MethodChannel.Result result) {",
+              "descriptions": []
+            },
+            {
+              "line_number": 34,
+              "is_matched": true,
+              "content": "        java.lang.String strConvertAction = convertAction((java.lang.String) methodCall.<java.lang.String>argument(\"action\"));",
+              "descriptions": []
+            }
+          ]
+        }
+      ],
+      "stackTraces": [],
+      "pocs": [],
+      "attachments": [],
+      "llmDescription": {
+        "summary": "The app uses an implicit broadcast intent with a hardcoded action string to transmit sensitive login credentials, exposing them to any app on the device that registers a receiver for the same action, bypassing Android's intended intent security model.",
+        "businessImpact": "Attackers can steal user login credentials, leading to account compromise and loss of user trust. This exposes the organization to regulatory penalties under GDPR or CCPA for mishandling PII and may trigger reputational damage and support costs from breached users.",
+        "technicalImpact": "An attacker can intercept sensitive login data including usernames, passwords, or tokens by registering a broadcast receiver for the unprotected intent action. This enables credential harvesting, session hijacking, or lateral movement within compromised devices.",
+        "technicalDetailsProse": "The vulnerability resides in MainActivity.java at line 50–52, where an implicit broadcast is sent with unencrypted login data via an unprotected intent action. The data crosses the trust boundary from the app’s private context to the global broadcast namespace, with no permission enforcement or explicit recipient targeting.",
+        "howToFix": [
+          {
+            "title": "Replace implicit broadcast with explicit intent",
+            "details": [
+              "Use setComponent() to target a specific receiver within the app's package.",
+              "Avoid hardcoded action strings; use constants defined in a secure utility class."
+            ]
+          },
+          {
+            "title": "Use LocalBroadcastManager or modern alternatives",
+            "details": [
+              "Replace sendBroadcast() with LocalBroadcastManager.getInstance(this).sendBroadcastSync(i) for intra-app communication.",
+              "For Android 8+, use JobScheduler or WorkManager for background data transfer."
+            ]
+          },
+          {
+            "title": "Encrypt and minimize data in transit",
+            "details": [
+              "Do not send raw credentials; send authentication tokens instead.",
+              "Use Android Keystore to encrypt sensitive payloads before transmission."
+            ]
+          }
+        ],
+        "technicalDetails": {
+          "attackVector": "network",
+          "attackLocality": "local",
+          "privilegesRequired": "none",
+          "userInteraction": "none",
+          "scope": "unchanged",
+          "confidentialityImpact": "high",
+          "integrityImpact": "none",
+          "availabilityImpact": "none"
+        },
+        "exploitability": {
+          "difficulty": "trivial",
+          "requiredKnowledge": "Android broadcast intent mechanics and basic ADB usage"
+        },
+        "remediation": "Replace implicit broadcast with explicit intent or LocalBroadcastManager and encrypt sensitive data.",
+        "tags": [
+          "Android",
+          "BroadcastIntent",
+          "CredentialExposure",
+          "SecurityMisconfiguration",
+          "HighSeverity",
+          "LocalAttack",
+          "DataLeak",
+          "ImplicitIntent"
+        ]
+      }
+    },
+    {
+      "id": "02D40C3D-D2B6-4587-AE09-480B1FBCBAC2",
+      "hash": "29672c1ef669b7fd82293f4937c09f82ed8df2083bf3b2fdd9a8a6bb8999d34c",
+      "folderId": null,
+      "folder": null,
+      "falsePositive": false,
+      "category": {
+        "id": "65a6d3d3-8586-4e6c-ab85-4a73243e459a",
+        "severity": "medium",
+        "descriptionTitle": "Content injection",
+        "descriptionText": "An attacker has the ability to set arbitrary text within the application, which can lead to phishing attacks: the user will be inclined to trust messages from the application.",
+        "descriptionRemediation": "The developer should set attacker-controlled text in fields such as EditText rather than TextView, or restrict the ability to add such content at all. The user should be sure that it is not an application message.",
+        "platform": "android"
+      },
+      "code": [],
+      "stackTraces": [
+        {
+          "thread_name": "main",
+          "frames": [
+            {
+              "element": {
+                "className": "androidx.appcompat.app.AppCompatDelegateImpl",
+                "methodName": "setTitle",
+                "fileName": "AppCompatDelegateImpl.java",
+                "lineNumber": 1184
+              },
+              "variables": [
+                {
+                  "is_field": true,
+                  "name": "this",
+                  "class_name": "androidx.appcompat.app.AppCompatDelegateImpl",
+                  "value_id": "E0BC23F7-51AF-4DF6-8B79-42362231CDF7"
+                },
+                {
+                  "is_field": false,
+                  "name": "p0",
+                  "class_name": "java.lang.CharSequence",
+                  "value_id": "95E7F345-6E10-4F21-B9F2-628F69449C58"
+                }
+              ]
+            },
+            {
+              "element": {
+                "className": "androidx.appcompat.app.AppCompatActivity",
+                "methodName": "onTitleChanged",
+                "fileName": "AppCompatActivity.java",
+                "lineNumber": 277
+              },
+              "variables": [
+                {
+                  "is_field": true,
+                  "name": "this",
+                  "class_name": "com.example.mobile.scanner.QrScannerActivity",
+                  "value_id": "815884C3-ACD4-44F7-8299-F2E4314E61B5"
+                },
+                {
+                  "is_field": false,
+                  "name": "p0",
+                  "class_name": "java.lang.CharSequence",
+                  "value_id": "95E7F345-6E10-4F21-B9F2-628F69449C58"
+                }
+              ]
+            }
+          ],
+          "values": [
+            {
+              "id": "815884C3-ACD4-44F7-8299-F2E4314E61B5",
+              "class_name": "com.example.mobile.scanner.QrScannerActivity",
+              "value_type": "object",
+              "value_content": {
+                "identity_hash_code": 11978464,
+                "display_value": [
+                  {
+                    "is_field": true,
+                    "name": "a",
+                    "class_name": "com.example.mobile.scanner.a",
+                    "value_id": "1B119565-23F1-4E43-819F-8F02C4A53134"
+                  },
+                  {
+                    "is_field": true,
+                    "name": "a",
+                    "class_name": "boolean",
+                    "value_id": "C12D1596-3B66-431D-82DB-551C545BD493"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "95E7F345-6E10-4F21-B9F2-628F69449C58",
+              "class_name": "java.lang.String",
+              "value_type": "string",
+              "value_content": {
+                "identity_hash_code": 322027666,
+                "display_value": "test1337"
+              }
+            }
+          ],
+          "highlights": [
+            {
+              "frame_index": 1,
+              "path": [
+                {
+                  "type": "field",
+                  "name": "p0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "pocs": [
+        {
+          "kind": "shell",
+          "code": [
+            {
+              "source_type": "shell",
+              "lines": [
+                {
+                  "line_number": 1,
+                  "is_matched": false,
+                  "content": "adb shell am start -n com.oversecured.sample.nightly.staging/com.example.mobile.scanner.QrScannerActivity -d snitch://1979826049 -e android.intent.extra.REFERRER_NAME snitch931318559 -e com.android.vending.referral_url snitch770731296 -e google.message_id snitch1647502547 -e message_id snitch1486495031 --ez openFlight false -e title test1337",
+                  "descriptions": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "attachments": [],
+      "llmDescription": null
+    },
+    {
+      "id": "CF41D6F6-B1D1-4364-B578-04B7038CB347",
+      "hash": "a6d8893a0c5d841c7437f5c464503dcd88af611ba8b8c55e63c85c803fa011dc",
+      "folderId": null,
+      "folder": null,
+      "falsePositive": false,
+      "category": {
+        "id": "8d309f07-3732-4238-8b37-43f38221029c",
+        "severity": "low",
+        "descriptionTitle": "File access is enabled for WebView",
+        "descriptionText": "Access to data using file:// links is not disabled or explicitly enabled for the WebView. The setAllowFileAccess() method allows JavaScript to access local files in the context of the running application. By performing a man-in-the-middle attack or by manipulating a server response, an attacker could gain access to the application's files, such as preferences, local databases, cache, and so on. This could lead to the disclosure of confidential data such as authentication tokens and passwords.",
+        "descriptionRemediation": "If the application does not use this functionality, the developer should disable access to file:// scheme URLs by calling webView.getSettings().setAllowFileAccess(false).",
+        "platform": "android"
+      },
+      "code": [
+        {
+          "file": "com/example/mobile/webview/webview/AppWebView.java",
+          "source_type": "java",
+          "lines": [
+            {
+              "line_number": 266,
+              "is_matched": false,
+              "content": "        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true);",
+              "descriptions": []
+            },
+            {
+              "line_number": 267,
+              "is_matched": false,
+              "content": "        com.example.mobile.webview.webview.WebViewRenderPolicy.disableAccessibility(this.context);",
+              "descriptions": []
+            },
+            {
+              "line_number": 268,
+              "is_matched": false,
+              "content": "        android.webkit.WebSettings settings = getSettings();",
+              "descriptions": []
+            },
+            {
+              "line_number": 269,
+              "is_matched": true,
+              "content": "        settings.setAllowFileAccess(true);",
+              "descriptions": []
+            }
+          ]
+        }
+      ],
+      "stackTraces": [],
+      "pocs": [],
+      "attachments": [],
+      "llmDescription": null
+    }
+  ]
+}

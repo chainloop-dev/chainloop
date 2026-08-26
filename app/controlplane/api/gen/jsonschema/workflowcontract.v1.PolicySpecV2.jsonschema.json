@@ -99,7 +99,8 @@
             "RADAMSA_CRASHES",
             "TRUFFLEHOG_JSON",
             "COBERTURA_XML",
-            "CHECKMARX_JSON"
+            "CHECKMARX_JSON",
+            "OVERSECURED_JSON"
           ],
           "title": "Material Type",
           "type": "string"
