@@ -490,3 +490,132 @@ func TestTruffleHogCleanScanIsEvaluable(t *testing.T) {
 	require.True(t, ok, "clean scan must project to an elements array")
 	assert.Empty(t, elements, "a clean scan has zero findings")
 }
+
+// TestGetEvaluableContentRedactedPrefersDisk covers the interaction between an
+// inline CAS backend and a crafter that redacted the content before storing it.
+// Inline materials normally carry their own content, but a redacted material's
+// inline bytes are the sanitized copy, so policies have to read the untouched
+// file from disk instead. Without that, the policy input would silently differ
+// between an inline backend and every other one.
+func TestGetEvaluableContentRedactedPrefersDisk(t *testing.T) {
+	const (
+		// Any distinguishable value works here; this test is about which source
+		// the content is read from, not about detection.
+		onDiskSecret = "the-unredacted-original"
+		inlineSecret = "[REDACTED:aws-access-token]"
+
+		onDisk = `{"secret":"` + onDiskSecret + `"}`
+		inline = `{"secret":"` + inlineSecret + `"}`
+	)
+
+	diskPath := filepath.Join(t.TempDir(), "session.json")
+	require.NoError(t, os.WriteFile(diskPath, []byte(onDisk), 0o600))
+
+	testCases := []struct {
+		name       string
+		inlineCas  bool
+		redacted   bool
+		path       string
+		wantSecret string
+		wantErr    bool
+	}{
+		{
+			name:       "inline without the marker keeps reading the inline content",
+			inlineCas:  true,
+			path:       diskPath,
+			wantSecret: inlineSecret,
+		},
+		{
+			name:       "inline and redacted reads the original from disk",
+			inlineCas:  true,
+			redacted:   true,
+			path:       diskPath,
+			wantSecret: onDiskSecret,
+		},
+		{
+			name:       "inline and redacted with no path falls back to the inline content",
+			inlineCas:  true,
+			redacted:   true,
+			wantSecret: inlineSecret,
+		},
+		{
+			name:      "inline and redacted with an unreadable path fails loudly",
+			inlineCas: true,
+			redacted:  true,
+			path:      filepath.Join(t.TempDir(), "missing.json"),
+			// Silently falling back to the inline content here would point
+			// policies at redacted material without saying so.
+			wantErr: true,
+		},
+		{
+			name:       "non-inline is unaffected by the marker",
+			redacted:   true,
+			path:       diskPath,
+			wantSecret: onDiskSecret,
+		},
+		{
+			name:       "non-inline without the marker reads from disk as before",
+			path:       diskPath,
+			wantSecret: onDiskSecret,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
+				InlineCas:    tc.inlineCas,
+				M: &Attestation_Material_Artifact_{
+					Artifact: &Attestation_Material_Artifact{
+						Name:    "session.json",
+						Digest:  "sha256:deadbeef",
+						Content: []byte(inline),
+					},
+				},
+			}
+			if tc.redacted {
+				m.Annotations = map[string]string{AnnotationMaterialRedacted: "true"}
+			}
+
+			content, err := m.GetEvaluableContent(tc.path)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			// GetEvaluableContent also injects a chainloop_metadata block, so
+			// assert on the field that distinguishes the two sources.
+			var decoded map[string]any
+			require.NoError(t, json.Unmarshal(content, &decoded))
+			assert.Equal(t, tc.wantSecret, decoded["secret"])
+		})
+	}
+}
+
+// TestTruffleHogCleanScanIsEvaluableInline is the inline counterpart of
+// TestTruffleHogCleanScanIsEvaluable. It pins down that the canonical empty
+// content substituted for a zero-byte report projects the same either way, so
+// preferring the disk path for redacted materials cannot regress it.
+func TestTruffleHogCleanScanIsEvaluableInline(t *testing.T) {
+	m := &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_TRUFFLEHOG_JSON,
+		InlineCas:    true,
+		M: &Attestation_Material_Artifact_{
+			Artifact: &Attestation_Material_Artifact{
+				Name:    "secrets",
+				Digest:  "sha256:deadbeef",
+				Content: []byte("[]"),
+			},
+		},
+	}
+
+	content, err := m.GetEvaluableContent("testdata/trufflehog-clean-scan.jsonl")
+	require.NoError(t, err)
+
+	var decoded map[string]any
+	require.NoError(t, json.NewDecoder(bytes.NewReader(content)).Decode(&decoded))
+	elements, ok := decoded["elements"].([]any)
+	require.True(t, ok, "clean scan must project to an elements array")
+	assert.Empty(t, elements)
+}

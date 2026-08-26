@@ -77,6 +77,9 @@ type Crafter struct {
 
 	// noStrictValidation skips strict schema validation
 	noStrictValidation bool
+	// skipSecretRedaction stores evidence exactly as captured, without stripping
+	// secrets out of it first
+	skipSecretRedaction bool
 
 	// collectors are auto-discovery collectors that run during attestation init
 	collectors []Collector
@@ -132,6 +135,16 @@ func WithOCIAuth(server, username, password string) NewOpt {
 func WithNoStrictValidation(noStrictValidation bool) NewOpt {
 	return func(c *Crafter) error {
 		c.noStrictValidation = noStrictValidation
+		return nil
+	}
+}
+
+// WithSkipSecretRedaction disables the redaction of secrets from evidence that
+// supports it, storing the content exactly as captured. The bypass is recorded
+// in the attestation so a policy can reject it.
+func WithSkipSecretRedaction(skipSecretRedaction bool) NewOpt {
+	return func(c *Crafter) error {
+		c.skipSecretRedaction = skipSecretRedaction
 		return nil
 	}
 }
@@ -749,7 +762,8 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 
 	// 3- Craft resulting material
 	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger, &materials.CraftingOpts{
-		NoStrictValidation: c.noStrictValidation,
+		NoStrictValidation:  c.noStrictValidation,
+		SkipSecretRedaction: c.skipSecretRedaction,
 	})
 	if err != nil {
 		return nil, err

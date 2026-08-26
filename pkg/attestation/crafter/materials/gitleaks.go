@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/betterleaks/betterleaks/report"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
-	"github.com/zricethezav/gitleaks/v8/report"
 )
 
 type GitleaksReportCrafter struct {

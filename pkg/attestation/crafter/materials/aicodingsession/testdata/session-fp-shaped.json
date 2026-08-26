@@ -1,0 +1,87 @@
+{
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_CODING_SESSION",
+  "schema": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
+  "data": {
+    "schema_version": "v1",
+    "agent": {
+      "name": "claude-code",
+      "version": "2.1.83"
+    },
+    "session": {
+      "id": "3bf79921-3c03-81b6-afff-cb246849866f",
+      "slug": "memoized-purring-valley",
+      "started_at": "2026-03-25T15:10:49.161Z",
+      "ended_at": "2026-03-25T16:59:14.988Z",
+      "duration_seconds": 6505
+    },
+    "git_context": {
+      "repository": "git@github.com:chainloop-dev/chainloop.git",
+      "branch": "jiparis/pfm-6984-redact-secrets-in-session",
+      "work_dir": "/Users/jiparis/projects/chainloop",
+      "commit_start": "9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6",
+      "commit_end": "e25fa85e1c4b7a9d3f0821650cd7e4b39a1f8c2d",
+      "commits": [
+        "9f8e7d6 perf(crafter): de-duplicate AccessChk security descriptors",
+        "e25fa85 Bump Helm Chart and Dagger Version"
+      ],
+      "commit_count": 2
+    },
+    "code_changes": {
+      "files_modified": 3,
+      "lines_added": 1204,
+      "lines_removed": 87,
+      "files": [
+        {"path": "app/controlplane/internal/service/attestation.go", "status": "modified", "attribution": "ai"},
+        {"path": "pkg/attestation/crafter/materials/aicodingsession/redact.go", "status": "created", "attribution": "ai", "session_ids": ["3bf79921-3c03-81b6-afff-cb246849866f"]}
+      ]
+    },
+    "model": {
+      "primary": "claude-opus-5",
+      "provider": "anthropic",
+      "models_used": ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5-20251001"]
+    },
+    "usage": {
+      "input_tokens": 63,
+      "output_tokens": 2989,
+      "total_tokens": 1234567890,
+      "cache_read_input_tokens": 933233,
+      "cache_creation_input_tokens": 47538,
+      "estimated_cost_usd": 0.30000000000000004
+    },
+    "tools_used": {
+      "summary": [
+        {"tool_name": "Bash", "invocation_count": 13},
+        {"tool_name": "Edit", "invocation_count": 4}
+      ],
+      "total_invocations": 17
+    },
+    "conversation": {
+      "total_messages": 87,
+      "user_messages": 34,
+      "assistant_messages": 36
+    },
+    "subagents": [
+      {
+        "id": "ae0fbd58ba98882bb",
+        "type": "Explore",
+        "description": "Explore attestation crafter lifecycle",
+        "tokens": {"input": 73380, "output": 4096}
+      }
+    ],
+    "raw_session": {
+      "main": [
+        {
+          "type": "user",
+          "message": {"role": "user", "content": "the sha256 digest is 9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6f9e8d7c6b5a4938271605f4e"},
+          "timestamp": "2026-03-25T15:13:37.330Z"
+        },
+        {
+          "type": "assistant",
+          "message": {"role": "assistant", "content": "Reading pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go and running `go test ./... -run TestRedact`. Base64 of hello: aGVsbG8=. Escaped: <tag> & \"quotes\" and a tab\there."},
+          "timestamp": "2026-03-25T15:13:40.100Z"
+        }
+      ]
+    },
+    "warnings": []
+  }
+}

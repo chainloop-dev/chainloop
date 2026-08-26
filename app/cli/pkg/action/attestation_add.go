@@ -42,6 +42,9 @@ type AttestationAddOpts struct {
 	LocalStatePath                                     string
 	// NoStrictValidation skips strict schema validation
 	NoStrictValidation bool
+	// SkipSecretRedaction uploads evidence that would normally be scrubbed
+	// exactly as captured. The bypass is recorded in the attestation.
+	SkipSecretRedaction bool
 	// MaxExtractEntries limits the number of entries extracted from an archive.
 	// Zero defaults to materials.DefaultArchiveLimits().MaxEntries.
 	MaxExtractEntries int
@@ -75,6 +78,10 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 	}
 	if cfg.NoStrictValidation {
 		opts = append(opts, crafter.WithNoStrictValidation(cfg.NoStrictValidation))
+	}
+	if cfg.SkipSecretRedaction {
+		cfg.Logger.Warn().Msg("secret redaction is disabled, evidence will be stored exactly as captured")
+		opts = append(opts, crafter.WithSkipSecretRedaction(cfg.SkipSecretRedaction))
 	}
 
 	defaults := materials.DefaultArchiveLimits()
