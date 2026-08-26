@@ -53,6 +53,11 @@ func TestJacocoCraft(t *testing.T) {
 			wantErr:  "unexpected material type",
 		},
 		{
+			name:     "invalid Jacoco file (PIT mutations report)",
+			filePath: "./testdata/pitest.xml",
+			wantErr:  "unexpected material type",
+		},
+		{
 			name:     "valid artifact type",
 			filePath: "./testdata/jacoco.xml",
 		},

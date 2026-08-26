@@ -654,6 +654,11 @@ func (s *crafterSuite) TestAddMaterialsAutomatic() {
 			expectedType: schemaapi.CraftingSchema_Material_JUNIT_XML,
 		},
 		{
+			name:         "pitest",
+			materialPath: "./materials/testdata/pitest.xml",
+			expectedType: schemaapi.CraftingSchema_Material_PITEST_XML,
+		},
+		{
 			name:         "junit with custom material name",
 			materialName: "custom-junit-material",
 			materialPath: "./materials/testdata/junit.xml",
