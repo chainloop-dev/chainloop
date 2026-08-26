@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -165,6 +166,15 @@ type uploadAndCraftOpts struct {
 	// digest, which would collide across unrelated empty materials of any type.
 	// The original filename is preserved.
 	emptyContentFallback []byte
+
+	// contentOverride, when set, is stored and uploaded instead of the bytes on
+	// disk. It exists for crafters that must transform an artifact before it
+	// leaves the machine, such as redacting secrets out of an AI coding session.
+	// The recorded digest, size and uploaded (or inline) body then all describe
+	// the transformed content, which is the only content that ever reaches the
+	// CAS. The file on disk is left untouched, and remains what policies are
+	// evaluated against. The original filename is preserved.
+	contentOverride []byte
 }
 
 type uploadAndCraftOption func(*uploadAndCraftOpts)
@@ -175,6 +185,12 @@ func withEmptyContentFallback(content []byte) uploadAndCraftOption {
 	return func(o *uploadAndCraftOpts) { o.emptyContentFallback = content }
 }
 
+// withContentOverride stores and uploads the given bytes instead of the file on
+// disk, preserving the artifact's filename.
+func withContentOverride(content []byte) uploadAndCraftOption {
+	return func(o *uploadAndCraftOpts) { o.contentOverride = content }
+}
+
 // uploadAndCraft uploads the artifact to CAS and crafts the material
 // this function is used by all the uploadable artifacts crafters (SBOMs, JUnit, and more in the future)
 func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, artifactPath string, l *zerolog.Logger, opts ...uploadAndCraftOption) (*api.Attestation_Material, error) {
@@ -183,8 +199,8 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 		o(options)
 	}
 
-	// 1 - Check the file can be stored in the provided CAS backend
-	result, err := fileStats(artifactPath)
+	// 1 - Resolve the content to store and check it fits the provided CAS backend
+	result, err := resolveContent(artifactPath, options.contentOverride)
 	if err != nil {
 		return nil, fmt.Errorf("getting file stats: %w", err)
 	}
@@ -209,7 +225,8 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	l.Debug().Str("filename", result.filename).Str("digest", result.digest).Str("path", artifactPath).
 		Str("size", bytefmt.ByteSize(uint64(result.size))).
 		Str("max_size", bytefmt.ByteSize(uint64(backend.MaxSize))).
-		Str("backend", backend.Name).Bool("skip_upload", shouldSkipUpload).Msg("crafting file")
+		Str("backend", backend.Name).Bool("skip_upload", shouldSkipUpload).
+		Bool("content_override", options.contentOverride != nil).Msg("crafting file")
 
 	// If there is a max size set and the file is bigger than that, return an error
 	// Only check size if we're actually going to upload (not skipped)
@@ -239,8 +256,8 @@ func uploadAndCraft(ctx context.Context, input *schemaapi.CraftingSchema_Materia
 	case backend.Uploader != nil:
 		l.Debug().Str("backend", backend.Name).Msg("uploading")
 
-		// Reuse the already-open, already-hashed reader from fileStats
-		// to avoid a redundant SHA256 pass inside Uploader.UploadFile.
+		// Reuse the already-hashed reader resolved above to avoid a
+		// redundant SHA256 pass inside Uploader.UploadFile.
 		_, err = backend.Uploader.Upload(ctx, result.r, result.filename, result.digest)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %w", ErrBaseUploadAndCraft, fmt.Errorf("uploading material: %w", err))
@@ -270,6 +287,17 @@ type fileInfo struct {
 	filename, digest string
 	size             int64
 	r                io.ReadCloser
+}
+
+// resolveContent returns the content to be stored for an artifact: normally the
+// file on disk, or the bytes a crafter substituted for it. fileStats derives the
+// filename from the path with os.FileInfo.Name, which is already the base name,
+// so both branches record the same artifact name.
+func resolveContent(artifactPath string, override []byte) (*fileInfo, error) {
+	if override != nil {
+		return fileStatsFromBytes(filepath.Base(artifactPath), override)
+	}
+	return fileStats(artifactPath)
 }
 
 // Returns the sha256 hash of the file, its size and an error
@@ -302,8 +330,9 @@ func fileStats(filepath string) (*fileInfo, error) {
 }
 
 // fileStatsFromBytes builds a fileInfo from in-memory content, preserving the
-// given filename. Used to craft a canonical representation when the on-disk
-// file is empty (see uploadAndCraft's emptyContentFallback).
+// given filename. Used when the stored bytes differ from the bytes on disk: to
+// craft a canonical representation of an empty file (emptyContentFallback), or
+// to store a transformed copy of the artifact (contentOverride).
 func fileStatsFromBytes(filename string, content []byte) (*fileInfo, error) {
 	hash, _, err := cr_v1.SHA256(bytes.NewReader(content))
 	if err != nil {
@@ -324,6 +353,9 @@ type Craftable interface {
 // CraftingOpts contains options for crafting materials
 type CraftingOpts struct {
 	NoStrictValidation bool
+	// SkipSecretRedaction stores evidence exactly as captured, without stripping
+	// secrets out of it first. Only material types that redact honour it.
+	SkipSecretRedaction bool
 }
 
 //nolint:gocyclo
@@ -403,7 +435,7 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	case schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG:
 		crafter, err = NewChainloopAIAgentConfigCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION:
-		crafter, err = NewChainloopAICodingSessionCrafter(materialSchema, casBackend, logger)
+		crafter, err = NewChainloopAICodingSessionCrafter(materialSchema, casBackend, logger, WithAICodingSessionSkipRedaction(opts.SkipSecretRedaction))
 	case schemaapi.CraftingSchema_Material_OPENAPI_SPEC:
 		crafter, err = NewOpenAPICrafter(materialSchema, casBackend, logger, WithOpenAPINoStrictValidation(opts.NoStrictValidation))
 	case schemaapi.CraftingSchema_Material_ASYNCAPI_SPEC:

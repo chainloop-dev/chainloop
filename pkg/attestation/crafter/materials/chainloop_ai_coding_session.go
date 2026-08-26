@@ -20,8 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/redaction"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -34,22 +37,42 @@ var annotationAICodingModel = api.CreateAnnotation("material.aiagent.model")
 
 type ChainloopAICodingSessionCrafter struct {
 	*crafterCommon
-	backend *casclient.CASBackend
+	backend       *casclient.CASBackend
+	skipRedaction bool
+}
+
+// AICodingSessionCraftOpt tunes how an AI coding session is crafted.
+type AICodingSessionCraftOpt func(*ChainloopAICodingSessionCrafter)
+
+// WithAICodingSessionSkipRedaction uploads the session exactly as captured,
+// without stripping secrets out of it first.
+func WithAICodingSessionSkipRedaction(skip bool) AICodingSessionCraftOpt {
+	return func(c *ChainloopAICodingSessionCrafter) { c.skipRedaction = skip }
 }
 
 // NewChainloopAICodingSessionCrafter generates a new CHAINLOOP_AI_CODING_SESSION material.
 // This material type contains AI coding session telemetry collected during attestation.
-func NewChainloopAICodingSessionCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger) (*ChainloopAICodingSessionCrafter, error) {
+func NewChainloopAICodingSessionCrafter(schema *schemaapi.CraftingSchema_Material, backend *casclient.CASBackend, l *zerolog.Logger, opts ...AICodingSessionCraftOpt) (*ChainloopAICodingSessionCrafter, error) {
 	if schema.Type != schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION {
 		return nil, fmt.Errorf("material type is not chainloop_ai_coding_session")
 	}
 
 	craftCommon := &crafterCommon{logger: l, input: schema}
-	return &ChainloopAICodingSessionCrafter{backend: backend, crafterCommon: craftCommon}, nil
+	c := &ChainloopAICodingSessionCrafter{backend: backend, crafterCommon: craftCommon}
+	for _, o := range opts {
+		o(c)
+	}
+	return c, nil
 }
 
-// Craft validates the AI coding session against the JSON schema, calculates the digest,
-// uploads it and returns the material definition.
+// Craft validates the AI coding session against the JSON schema, redacts any
+// secrets found in it, calculates the digest, uploads it and returns the
+// material definition.
+//
+// Only the stored copy is redacted. The file on disk is left untouched, and it
+// is what policies are evaluated against once this material has been staged, so
+// a policy that looks for leaked credentials still sees what the agent actually
+// captured.
 func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
 	f, err := os.ReadFile(artifactPath)
 	if err != nil {
@@ -83,10 +106,17 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 		return nil, fmt.Errorf("AI coding session validation failed: %w", err)
 	}
 
-	material, err := uploadAndCraft(ctx, c.input, c.backend, artifactPath, c.logger)
+	craftOpts, report, err := c.redact(ctx, f)
 	if err != nil {
 		return nil, err
 	}
+
+	material, err := uploadAndCraft(ctx, c.input, c.backend, artifactPath, c.logger, craftOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	c.annotateRedaction(material, report)
 
 	// Surface agent name as an annotation
 	if data.Agent.Name != "" {
@@ -99,4 +129,64 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 	}
 
 	return material, nil
+}
+
+// redact strips secrets out of the session content, returning the options that
+// make uploadAndCraft store the sanitized copy instead of the file on disk.
+//
+// Redaction fails closed: if the content cannot be scanned or the result no
+// longer matches the schema, the material is not crafted at all rather than
+// uploaded unscanned. The operator's escape hatch is --skip-secret-redaction,
+// whose use is recorded in the attestation.
+func (c *ChainloopAICodingSessionCrafter) redact(ctx context.Context, content []byte) ([]uploadAndCraftOption, *redaction.Report, error) {
+	if c.skipRedaction {
+		c.logger.Warn().Msg("secret redaction is DISABLED: the AI coding session will be stored exactly as captured")
+		return nil, nil, nil
+	}
+
+	redacted, report, err := aicodingsession.Redact(ctx, content)
+	if err != nil {
+		return nil, nil, fmt.Errorf("redacting secrets from the AI coding session: %w", err)
+	}
+
+	if !report.Changed() {
+		// Nothing was replaced, so upload the file as it is on disk and keep the
+		// digest reproducible from the source file.
+		return nil, report, nil
+	}
+
+	return []uploadAndCraftOption{withContentOverride(redacted)}, report, nil
+}
+
+// annotateRedaction records what redaction did, so that it is visible in the
+// attestation and actionable by policies rather than an invisible rewrite.
+func (c *ChainloopAICodingSessionCrafter) annotateRedaction(material *api.Attestation_Material, report *redaction.Report) {
+	if c.skipRedaction {
+		material.Annotations[api.AnnotationMaterialRedactionSkipped] = api.AnnotationValueTrue
+		return
+	}
+
+	if report == nil {
+		return
+	}
+
+	if len(report.Unlocated) > 0 {
+		// Detected in the document as a whole but not attributable to any
+		// rewritable field: either a protected field or a match spanning the
+		// boundary between two of them.
+		c.logger.Warn().Interface("rules", report.Unlocated).
+			Msg("some detected secrets could not be redacted")
+	}
+
+	if !report.Changed() {
+		return
+	}
+
+	rules := report.RuleIDs()
+	material.Annotations[api.AnnotationMaterialRedacted] = api.AnnotationValueTrue
+	material.Annotations[api.AnnotationMaterialRedactionCount] = strconv.Itoa(report.Replacements)
+	material.Annotations[api.AnnotationMaterialRedactionRules] = strings.Join(rules, ",")
+
+	c.logger.Info().Int("count", report.Replacements).Strs("rules", rules).
+		Msg("redacted secrets from the AI coding session before upload")
 }

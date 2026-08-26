@@ -40,6 +40,10 @@ import (
 
 const AnnotationPrefix = "chainloop."
 
+// AnnotationValueTrue is the value of an annotation that acts as a flag. Shared
+// so that whoever sets one and whoever reads it cannot drift apart.
+const AnnotationValueTrue = "true"
+
 var (
 	AnnotationMaterialType              = CreateAnnotation("material.type")
 	AnnotationMaterialName              = CreateAnnotation("material.name")
@@ -53,6 +57,22 @@ var (
 	AnnotationsSBOMMainComponentName    = CreateAnnotation("material.sbom.main_component.name")
 	AnnotationsSBOMMainComponentType    = CreateAnnotation("material.sbom.main_component.type")
 	AnnotationsSBOMMainComponentVersion = CreateAnnotation("material.sbom.main_component.version")
+
+	// AnnotationMaterialRedacted marks a material whose stored content was
+	// transformed by its crafter before upload, to strip secrets out of it. Two
+	// things follow from it: the recorded digest describes the redacted artifact
+	// rather than the file on disk, and policy evaluation must read the untouched
+	// local file instead of the stored content (see GetEvaluableContent).
+	AnnotationMaterialRedacted = CreateAnnotation("material.redacted")
+	// AnnotationMaterialRedactionCount is how many secrets were replaced.
+	AnnotationMaterialRedactionCount = CreateAnnotation("material.redaction.count")
+	// AnnotationMaterialRedactionRules lists the detection rules that matched,
+	// so a policy can act on the kind of credential that was present.
+	AnnotationMaterialRedactionRules = CreateAnnotation("material.redaction.rules")
+	// AnnotationMaterialRedactionSkipped marks a material uploaded without
+	// redaction because the operator explicitly asked for it. Recorded so the
+	// bypass is visible to policies rather than silent.
+	AnnotationMaterialRedactionSkipped = CreateAnnotation("material.redaction.skipped")
 )
 
 type NormalizedMaterialOutput struct {
@@ -100,13 +120,25 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	}
 
 	if artifact != nil {
-		if m.InlineCas {
+		// Policies must evaluate the artifact as it was produced. For a redacted
+		// material the inline bytes are the sanitized copy, so the untouched file
+		// on disk wins; without a local path there is nothing better to read.
+		// This keeps the policy input identical whatever CAS backend is in use,
+		// which matters most in dry runs, where the backend is always inline and
+		// is exactly where people test their policies.
+		useInlineContent := m.InlineCas
+		if m.GetAnnotations()[AnnotationMaterialRedacted] == AnnotationValueTrue && value != "" {
+			useInlineContent = false
+		}
+
+		switch {
+		case useInlineContent:
 			rawMaterial = artifact.GetContent()
-		} else if value == "" {
+		case value == "":
 			return nil, errors.New("artifact path required")
-		} else if m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
+		case m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
 			m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML &&
-			m.MaterialType != v1.CraftingSchema_Material_RADAMSA_CRASHES {
+			m.MaterialType != v1.CraftingSchema_Material_RADAMSA_CRASHES:
 			// read content from local filesystem (except for tgz charts and
 			// metadata-only materials like radamsa crashes)
 			rawMaterial, err = os.ReadFile(value)

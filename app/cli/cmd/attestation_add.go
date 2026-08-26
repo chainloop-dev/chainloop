@@ -41,6 +41,7 @@ func newAttestationAddCmd() *cobra.Command {
 	var artifactCASConn *grpc.ClientConn
 	var annotationsFlag []string
 	var noStrictValidation bool
+	var skipSecretRedaction bool
 	var policyInputFromFileFlag []string
 	var policyInputFlag []string
 	var appendFlag bool
@@ -102,17 +103,18 @@ func newAttestationAddCmd() *cobra.Command {
 
 			a, err := action.NewAttestationAdd(
 				&action.AttestationAddOpts{
-					ActionsOpts:        ActionOpts,
-					CASURI:             viper.GetString(confOptions.CASAPI.viperKey),
-					CASCAPath:          viper.GetString(confOptions.CASCA.viperKey),
-					ConnectionInsecure: apiInsecure(),
-					RegistryServer:     registryServer,
-					RegistryUsername:   registryUsername,
-					RegistryPassword:   registryPassword,
-					LocalStatePath:     attestationLocalStatePath,
-					NoStrictValidation: noStrictValidation,
-					MaxExtractEntries:  maxExtractEntries,
-					MaxExtractSize:     int64(maxExtractSizeBytes),
+					ActionsOpts:         ActionOpts,
+					CASURI:              viper.GetString(confOptions.CASAPI.viperKey),
+					CASCAPath:           viper.GetString(confOptions.CASCA.viperKey),
+					ConnectionInsecure:  apiInsecure(),
+					RegistryServer:      registryServer,
+					RegistryUsername:    registryUsername,
+					RegistryPassword:    registryPassword,
+					LocalStatePath:      attestationLocalStatePath,
+					NoStrictValidation:  noStrictValidation,
+					SkipSecretRedaction: skipSecretRedaction,
+					MaxExtractEntries:   maxExtractEntries,
+					MaxExtractSize:      int64(maxExtractSizeBytes),
 				},
 			)
 			if err != nil {
@@ -200,6 +202,7 @@ func newAttestationAddCmd() *cobra.Command {
 	flagAttestationID(cmd)
 	cmd.Flags().StringVar(&kind, "kind", "", fmt.Sprintf("kind of the material to be recorded: %q", schemaapi.ListAvailableMaterialKind()))
 	cmd.Flags().BoolVar(&noStrictValidation, "no-strict-validation", false, "skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)")
+	cmd.Flags().BoolVar(&skipSecretRedaction, "skip-secret-redaction", false, "store evidence exactly as captured, without redacting detected secrets first (CHAINLOOP_AI_CODING_SESSION). Recorded in the attestation so policies can reject it")
 	cmd.Flags().StringArrayVar(&policyInputFromFileFlag, "policy-input-from-file", nil, "feed a policy input from a column of a CSV or JSON file, in the format [<policy>:]<input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); the values are APPENDED to any contract-declared value; an optional <policy>: prefix scopes the input to a single policy (matched by name or ref), otherwise it applies to every declaring policy; <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.")
 	cmd.Flags().StringArrayVar(&policyInputFlag, "policy-input", nil, "set a policy input to a literal value that REPLACES (overrides) any contract-declared value for the input, in the format [<policy>:]<input>=<value> (e.g. min_iterations=10); use this to override a scalar input at run time; an optional <policy>: prefix scopes it to a single policy (matched by name or ref), otherwise it applies to every declaring policy; repeatable.")
 	cmd.Flags().BoolVar(&appendFlag, "append", false, "reserved for a future release: will control whether --policy-input and --policy-input-from-file append to (rather than replace) the contract-declared value; has no effect yet")
