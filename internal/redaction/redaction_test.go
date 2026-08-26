@@ -147,11 +147,14 @@ func TestRedact(t *testing.T) {
 			wantErr: ErrNotConverged,
 		},
 		{
+			// 1e400 is valid JSON but out of float64 range: every decoder on the
+			// path has to keep numbers in their textual form, or an honest document
+			// gets refused over a number nobody was going to scan anyway.
 			name:             "numbers keep their exact representation",
-			doc:              `{"a":"SEC","big":12345678901234567890,"exp":1e10,"f":0.30000000000000004}`,
+			doc:              `{"a":"SEC","big":12345678901234567890,"exp":1e10,"f":0.30000000000000004,"huge":1e400}`,
 			findings:         []Finding{{RuleID: "r1", Secret: "SEC"}},
 			wantReplacements: 1,
-			mustContain:      []string{"12345678901234567890", "1e10", "0.30000000000000004"},
+			mustContain:      []string{"12345678901234567890", "1e10", "0.30000000000000004", "1e400"},
 		},
 		{
 			name:    "not json",

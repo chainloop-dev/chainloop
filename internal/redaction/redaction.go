@@ -452,6 +452,11 @@ type jsonFrame struct {
 // document is refused.
 func rejectDuplicateKeys(doc []byte) error {
 	dec := json.NewDecoder(bytes.NewReader(doc))
+	// Matching decodeObject: without this, Token parses numbers into float64 and
+	// a valid but out-of-range one such as 1e400 would fail the whole document
+	// here, before redaction ever runs.
+	dec.UseNumber()
+
 	var stack []*jsonFrame
 
 	top := func() *jsonFrame {
