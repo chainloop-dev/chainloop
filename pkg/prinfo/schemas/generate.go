@@ -29,10 +29,25 @@ import (
 func main() {
 	var outputDir string
 	var version string
+	var force bool
 
 	flag.StringVar(&outputDir, "output-dir", ".", "Directory to output the schema files")
-	flag.StringVar(&version, "version", string(prinfo.LatestVersion), "Schema version")
+	flag.StringVar(&version, "version", "", "Schema version to generate, e.g. 1.4 (required)")
+	flag.BoolVar(&force, "force", false, "Overwrite an already published schema version")
 	flag.Parse()
+
+	if version == "" {
+		fmt.Fprintf(os.Stderr, "Error: --version is required, latest published is %s\n", prinfo.LatestVersion)
+		os.Exit(1)
+	}
+
+	// Published schemas are immutable: they are what already-crafted attestations are
+	// validated against, and they may carry constructs the reflector cannot express,
+	// such as the string/object author union in 1.3.
+	if _, err := prinfo.Schema(prinfo.Version(version)); err == nil && !force {
+		fmt.Fprintf(os.Stderr, "Error: schema %s is already published, refusing to overwrite it. Pass --force to override.\n", version)
+		os.Exit(1)
+	}
 
 	generator := prinfo.NewGenerator()
 
