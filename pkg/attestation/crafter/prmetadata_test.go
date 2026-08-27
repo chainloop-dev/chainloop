@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/internal/prinfo"
+	"github.com/chainloop-dev/chainloop/pkg/prinfo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

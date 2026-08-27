@@ -22,8 +22,7 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/internal/prinfo"
-	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
+	"github.com/chainloop-dev/chainloop/pkg/prinfo"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -118,7 +117,7 @@ func TestChainloopPRInfoCrafter_Validation(t *testing.T) {
 			require.NoError(t, err)
 
 			// Validate the data against JSON schema
-			err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_3)
+			err = prinfo.Validate(rawData, prinfo.LatestVersion)
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -143,7 +142,7 @@ func TestChainloopPRInfoCrafter_BackwardCompat(t *testing.T) {
 	err := json.Unmarshal([]byte(oldFormatJSON), &rawData)
 	require.NoError(t, err)
 
-	err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_3)
+	err = prinfo.Validate(rawData, prinfo.LatestVersion)
 	require.NoError(t, err)
 
 	// New object author format should also validate against v1.3
@@ -158,7 +157,7 @@ func TestChainloopPRInfoCrafter_BackwardCompat(t *testing.T) {
 	err = json.Unmarshal([]byte(newFormatJSON), &rawData)
 	require.NoError(t, err)
 
-	err = schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_3)
+	err = prinfo.Validate(rawData, prinfo.LatestVersion)
 	require.NoError(t, err)
 }
 

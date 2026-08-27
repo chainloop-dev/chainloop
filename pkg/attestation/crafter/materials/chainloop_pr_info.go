@@ -22,10 +22,9 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/chainloop-dev/chainloop/internal/prinfo"
-	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
+	"github.com/chainloop-dev/chainloop/pkg/prinfo"
 
 	"github.com/rs/zerolog"
 )
@@ -75,7 +74,7 @@ func (i *ChainloopPRInfoCrafter) Craft(ctx context.Context, artifactPath string)
 	}
 
 	// Validate the data against JSON schema
-	if err := schemavalidators.ValidatePRInfo(rawData, schemavalidators.PRInfoVersion1_3); err != nil {
+	if err := prinfo.Validate(rawData, prinfo.LatestVersion); err != nil {
 		i.logger.Debug().Err(err).Msg("schema validation failed")
 		return nil, fmt.Errorf("PR info validation failed: %w", err)
 	}

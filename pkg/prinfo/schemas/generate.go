@@ -20,23 +20,31 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chainloop-dev/chainloop/internal/prinfo"
+	"github.com/chainloop-dev/chainloop/pkg/prinfo"
 )
 
-//go:generate go run ./generate.go --output-dir ../../../internal/schemavalidators/internal_schemas/prinfo --version 1.2
+// Scaffolds the JSON schema for a new PR/MR info version out of the prinfo.Data struct:
+//
+//	go run ./pkg/prinfo/schemas/generate.go --output-dir ./pkg/prinfo/schemas --version <new-version>
+//
+// Deliberately not wired to `go generate`: published schemas are immutable, they are what
+// already-crafted attestations are validated against. A previous //go:generate directive
+// silently rewrote the published 1.2 schema from a later revision of the struct.
+// Hand-written constructs the reflector cannot express (the string/object `author` union
+// in 1.3) would be lost too. Run this once when cutting a version, then edit the result.
 func main() {
 	var outputDir string
 	var version string
 
-	flag.StringVar(&outputDir, "output-dir", "../../../internal/schemavalidators/internal_schemas/prinfo", "Directory to output the schema files")
-	flag.StringVar(&version, "version", "1.2", "Schema version")
+	flag.StringVar(&outputDir, "output-dir", ".", "Directory to output the schema files")
+	flag.StringVar(&version, "version", string(prinfo.LatestVersion), "Schema version")
 	flag.Parse()
 
 	generator := prinfo.NewGenerator()
 
 	fmt.Printf("Generating JSON schema for PR/MR Info\n")
-	sch := generator.GeneratePRInfoSchema(version)
-	if err := generator.Save(sch, outputDir, version); err != nil {
+	sch := generator.GenerateSchema(prinfo.Version(version))
+	if err := generator.Save(sch, outputDir, prinfo.Version(version)); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing schema: %v\n", err)
 		os.Exit(1)
 	}

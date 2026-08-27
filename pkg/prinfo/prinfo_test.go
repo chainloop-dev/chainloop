@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -175,7 +173,7 @@ func TestValidatePRInfo(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_1)
+			err = Validate(data, Version1_1)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -253,7 +251,7 @@ func TestValidatePRInfoV1_2(t *testing.T) {
 			err := json.Unmarshal([]byte(tc.data), &data)
 			require.NoError(t, err)
 
-			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_2)
+			err = Validate(data, Version1_2)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -299,7 +297,7 @@ func TestValidatePRInfoV1_0BackwardCompat(t *testing.T) {
 			err := json.Unmarshal([]byte(tc.data), &data)
 			require.NoError(t, err)
 
-			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_0)
+			err = Validate(data, Version1_0)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -429,7 +427,7 @@ func TestValidatePRInfoV1_3(t *testing.T) {
 			err := json.Unmarshal([]byte(tc.data), &data)
 			require.NoError(t, err)
 
-			err = schemavalidators.ValidatePRInfo(data, schemavalidators.PRInfoVersion1_3)
+			err = Validate(data, Version1_3)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
