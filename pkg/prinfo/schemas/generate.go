@@ -26,12 +26,6 @@ import (
 // Scaffolds the JSON schema for a new PR/MR info version out of the prinfo.Data struct:
 //
 //	go run ./pkg/prinfo/schemas/generate.go --output-dir ./pkg/prinfo/schemas --version <new-version>
-//
-// Deliberately not wired to `go generate`: published schemas are immutable, they are what
-// already-crafted attestations are validated against. A previous //go:generate directive
-// silently rewrote the published 1.2 schema from a later revision of the struct.
-// Hand-written constructs the reflector cannot express (the string/object `author` union
-// in 1.3) would be lost too. Run this once when cutting a version, then edit the result.
 func main() {
 	var outputDir string
 	var version string
