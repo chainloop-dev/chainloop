@@ -376,8 +376,7 @@ func (s *groupsTestSuite) TestVerifyMaterialSuppliedContent() {
 			groups := []*v1.PolicyGroupAttachment{{Ref: "file://testdata/policy_group_multikind.yaml"}}
 			verifier := NewPolicyGroupVerifier(groups, nil, nil, &s.logger)
 
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "",
-				WithMaterialContent(tc.content))
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", tc.content)
 			if tc.wantErr != nil {
 				s.Require().ErrorIs(err, tc.wantErr)
 				return
@@ -444,7 +443,7 @@ func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
 			}
 
 			verifier := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -531,7 +530,7 @@ func (s *groupsTestSuite) TestGroupInputs() {
 		}
 		s.Run(tc.name, func() {
 			v := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
-			evs, err := v.VerifyMaterial(context.TODO(), material, "")
+			evs, err := v.VerifyMaterial(context.TODO(), material, "", nil)
 			if tc.wantErr {
 				s.Error(err)
 				s.Contains(err.Error(), tc.errMsg)
@@ -618,7 +617,7 @@ func (s *groupsTestSuite) TestSkipPolicies() {
 			}
 
 			verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger)
-			evs, err := verifier.VerifyMaterial(context.Background(), material, "")
+			evs, err := verifier.VerifyMaterial(context.Background(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -715,7 +714,7 @@ func (s *groupsTestSuite) TestSkipBothMaterialAndAttestationPolicies() {
 	}
 
 	verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger)
-	materialEvs, err := verifier.VerifyMaterial(context.Background(), material, "")
+	materialEvs, err := verifier.VerifyMaterial(context.Background(), material, "", nil)
 	s.Require().NoError(err)
 	s.Len(materialEvs, 0, "material policy should be skipped")
 
@@ -842,7 +841,7 @@ func (s *groupsTestSuite) TestVerifyMaterialInheritsGroupGate() {
 	}
 
 	verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger, WithDefaultGate(false))
-	evs, err := verifier.VerifyMaterial(context.Background(), material, "")
+	evs, err := verifier.VerifyMaterial(context.Background(), material, "", nil)
 
 	s.Require().NoError(err)
 	s.Len(evs, 1)

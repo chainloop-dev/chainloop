@@ -112,7 +112,7 @@ func TestConcurrentVerifyMaterial(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			res, err := pv.VerifyMaterial(context.Background(), material, "testdata/sbom-spdx.json")
+			res, err := pv.VerifyMaterial(context.Background(), material, "testdata/sbom-spdx.json", nil)
 			errs[i] = err
 			results[i] = res
 		}()

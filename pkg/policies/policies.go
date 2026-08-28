@@ -67,33 +67,14 @@ func (e *PolicyError) Unwrap() error {
 }
 
 type Verifier interface {
-	VerifyMaterial(ctx context.Context, m *v12.Attestation_Material, path string, opts ...VerifyMaterialOption) ([]*v12.PolicyEvaluation, error)
+	// VerifyMaterial evaluates a material. content, when non-nil, is the bytes to
+	// evaluate instead of resolving them from the material's stored copy or the
+	// file at path: a crafter that did not store the artifact verbatim reports
+	// what it stored, and that is what the engine must see rather than the
+	// untouched original. A redacted material does not resolve at all without it.
+	// Pass nil to resolve the content the usual way.
+	VerifyMaterial(ctx context.Context, m *v12.Attestation_Material, path string, content []byte) ([]*v12.PolicyEvaluation, error)
 	VerifyStatement(ctx context.Context, statement *intoto.Statement) ([]*v12.PolicyEvaluation, error)
-}
-
-// verifyMaterialOpts tunes a single material verification.
-type verifyMaterialOpts struct {
-	content []byte
-}
-
-// VerifyMaterialOption tunes a single call to VerifyMaterial.
-type VerifyMaterialOption func(*verifyMaterialOpts)
-
-// WithMaterialContent supplies the bytes to evaluate instead of resolving them
-// from the material's stored copy or the file on disk. Crafters that transform an
-// artifact before storing it must pass it, so that the policy engine sees the
-// content that was stored rather than the untouched original: a redacted material
-// fails to resolve at all without it. nil is a no-op.
-func WithMaterialContent(content []byte) VerifyMaterialOption {
-	return func(o *verifyMaterialOpts) { o.content = content }
-}
-
-func newVerifyMaterialOpts(opts ...VerifyMaterialOption) *verifyMaterialOpts {
-	o := &verifyMaterialOpts{}
-	for _, opt := range opts {
-		opt(o)
-	}
-	return o
 }
 
 // EvalPhase represents the phase of the attestation lifecycle where evaluation is happening.
@@ -287,9 +268,8 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 }
 
 // VerifyMaterial applies all required policies to a material
-func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Attestation_Material, artifactPath string, opts ...VerifyMaterialOption) ([]*v12.PolicyEvaluation, error) {
+func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Attestation_Material, artifactPath string, content []byte) ([]*v12.PolicyEvaluation, error) {
 	result := make([]*v12.PolicyEvaluation, 0)
-	o := newVerifyMaterialOpts(opts...)
 
 	attachments, err := pv.requiredPoliciesForMaterial(ctx, material)
 	if err != nil {
@@ -301,7 +281,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	}
 
 	// Load material content
-	subject, err := material.GetEvaluableContent(artifactPath, o.content)
+	subject, err := material.GetEvaluableContent(artifactPath, content)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}

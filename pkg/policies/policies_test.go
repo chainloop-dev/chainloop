@@ -658,7 +658,7 @@ func (s *testSuite) TestValidInlineMaterial() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err)
 	s.Len(res, 1)
 	s.Equal("made-with-syft", res[0].Name)
@@ -693,7 +693,7 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err)
 	s.Len(res, 1)
 	s.Equal("made-with-syft", res[0].Name)
@@ -702,7 +702,7 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 	s.Equal("Not made with syft", res[0].Violations[0].Message)
 }
 
-// TestVerifyMaterialSuppliedContent covers WithMaterialContent, the channel a
+// TestVerifyMaterialSuppliedContent covers the content parameter, the channel a
 // crafter uses to say which bytes it stored. Supplied content must win over every
 // other source, and a material whose stored copy was sanitized must refuse to be
 // evaluated without it rather than quietly reading the original from disk.
@@ -791,8 +791,7 @@ func (s *testSuite) TestVerifyMaterialSuppliedContent() {
 
 			verifier := NewPolicyVerifier(pol, nil, &s.logger)
 
-			res, err := verifier.VerifyMaterial(context.TODO(), material, tc.path,
-				WithMaterialContent(tc.content))
+			res, err := verifier.VerifyMaterial(context.TODO(), material, tc.path, tc.content)
 			if tc.wantErr != nil {
 				s.Require().ErrorIs(err, tc.wantErr)
 				// Wrapped so callers keep treating it as a policy failure.
@@ -835,7 +834,7 @@ func (s *testSuite) TestVerifyMaterialScopedRuntimeInputs() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger, WithRuntimeInputs(runtimeInputs))
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err)
 	s.Require().Len(res, 2)
 
@@ -1361,7 +1360,7 @@ func (s *testSuite) TestNewResultFormat() {
 			}
 
 			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -1432,7 +1431,7 @@ func (s *testSuite) TestContainerMaterial() {
 			}
 
 			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -1519,7 +1518,7 @@ func (s *testSuite) TestMultiKindAWithIgnore() {
 			}
 
 			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -1675,7 +1674,7 @@ func (s *testSuite) TestUndefinedBuiltinGracefulDegradation() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err, "undefined chainloop builtin should not cause a hard error")
 	s.Require().Len(res, 1)
 	s.True(res[0].Skipped, "policy should be marked as skipped")

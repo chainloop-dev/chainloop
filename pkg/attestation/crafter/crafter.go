@@ -770,13 +770,6 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 	}
 	mt := crafted.Material
 
-	// Crafters that transformed the artifact before storing it (redacting secrets
-	// out of an AI coding session) hand back what they stored, and that is what
-	// the policies below must see. Reading the file on disk instead would feed
-	// user-authored Rego the very secrets redaction removed. nil for every other
-	// material, which resolves its content the usual way.
-	withStoredContent := policies.WithMaterialContent(crafted.Content)
-
 	// 4 - Populate annotations from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
 	// b) we allow adding annotations that are not defined in the contract
@@ -828,7 +821,12 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithProjectContext(projectName, projectVersion),
 	)
-	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value, withStoredContent)
+	// crafted.Content is what a crafter that did not store the artifact verbatim
+	// stored in its place (an AI coding session with secrets redacted out of it),
+	// and it is what the policies must see. Reading the file at value instead would
+	// feed user-authored Rego the very secrets redaction removed. nil for every
+	// other material, which resolves its content the usual way.
+	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value, crafted.Content)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policy groups to material: %w", err)
 	}
@@ -849,7 +847,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		policies.WithProjectContext(projectName, projectVersion),
 		policies.WithRuntimeInputs(addOptions.runtimeInputs),
 	)
-	policyResults, err := pv.VerifyMaterial(ctx, mt, value, withStoredContent)
+	policyResults, err := pv.VerifyMaterial(ctx, mt, value, crafted.Content)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policies to material: %w", err)
 	}

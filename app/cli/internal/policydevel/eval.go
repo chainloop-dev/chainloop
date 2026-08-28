@@ -164,8 +164,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	}
 
 	v := policies.NewPolicyVerifier(pol, attestationClient, logger, opts...)
-	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath,
-		policies.WithMaterialContent(content))
+	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath, content)
 	if err != nil {
 		return nil, err
 	}
