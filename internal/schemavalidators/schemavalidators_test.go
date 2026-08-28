@@ -235,47 +235,6 @@ func TestValidateRunnerContext(t *testing.T) {
 	}
 }
 
-func TestValidatePRInfo(t *testing.T) {
-	testCases := []struct {
-		name     string
-		filePath string
-		wantErr  string
-	}{
-		{
-			name:     "valid PR info with all fields",
-			filePath: "./testdata/pr_info_valid.json",
-		},
-		{
-			name:     "missing required fields",
-			filePath: "./testdata/pr_info_missing_required.json",
-			wantErr:  "missing properties",
-		},
-		{
-			name:     "completely wrong format",
-			filePath: "./testdata/sbom-spdx.json",
-			wantErr:  "missing properties",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			f, err := os.ReadFile(tc.filePath)
-			require.NoError(t, err)
-
-			var v any
-			require.NoError(t, json.Unmarshal(f, &v))
-
-			err = schemavalidators.ValidatePRInfo(v, "")
-			if tc.wantErr != "" {
-				require.ErrorContains(t, err, tc.wantErr)
-				return
-			}
-
-			require.NoError(t, err)
-		})
-	}
-}
-
 func TestValidateAICodingSession(t *testing.T) {
 	testCases := []struct {
 		name     string

@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ func NewGenerator() *Generator {
 	return &Generator{}
 }
 
-// GeneratePRInfoSchema generates a JSON schema for the PR/MR info data.
-func (g *Generator) GeneratePRInfoSchema(version string) *jsonschema.Schema {
+// GenerateSchema generates a JSON schema for the PR/MR info data.
+func (g *Generator) GenerateSchema(version Version) *jsonschema.Schema {
 	r := &jsonschema.Reflector{
 		DoNotReference:             true,
 		ExpandedStruct:             true,
@@ -44,7 +44,7 @@ func (g *Generator) GeneratePRInfoSchema(version string) *jsonschema.Schema {
 
 	schema := r.Reflect(&Data{})
 
-	schema.ID = jsonschema.ID(fmt.Sprintf("https://schemas.chainloop.dev/prinfo/%s/pr-info.schema.json", version))
+	schema.ID = jsonschema.ID(SchemaURL(version))
 	schema.Title = "Pull Request / Merge Request Information"
 	schema.Description = "Schema for Pull Request or Merge Request metadata collected during attestation"
 	// we want to have a specific version of the schema to avoid compatibility issues
@@ -54,7 +54,7 @@ func (g *Generator) GeneratePRInfoSchema(version string) *jsonschema.Schema {
 }
 
 // Save writes the schema to a file
-func (g *Generator) Save(schema *jsonschema.Schema, outputDir, version string) error {
+func (g *Generator) Save(schema *jsonschema.Schema, outputDir string, version Version) error {
 	schemaJSON, err := json.MarshalIndent(schema, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal schema to JSON: %w", err)

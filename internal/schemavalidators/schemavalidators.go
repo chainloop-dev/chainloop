@@ -45,9 +45,6 @@ type AsyncAPIVersion string
 // RunnerContextVersion represents the version of Runner Context schema.
 type RunnerContextVersion string
 
-// PRInfoVersion represents the version of PR/MR Info schema.
-type PRInfoVersion string
-
 // AIAgentConfigVersion represents the version of AI Agent Config schema.
 type AIAgentConfigVersion string
 
@@ -62,14 +59,6 @@ type ScorecardVersion string
 const (
 	// RunnerContextVersion0_1 represents Runner Context version 0.1 schema.
 	RunnerContextVersion0_1 RunnerContextVersion = "0.1"
-	// PRInfoVersion1_0 represents PR/MR Info version 1.0 schema.
-	PRInfoVersion1_0 PRInfoVersion = "1.0"
-	// PRInfoVersion1_1 represents PR/MR Info version 1.1 schema (adds reviewers).
-	PRInfoVersion1_1 PRInfoVersion = "1.1"
-	// PRInfoVersion1_2 represents PR/MR Info version 1.2 schema (adds requested and review_status to reviewers).
-	PRInfoVersion1_2 PRInfoVersion = "1.2"
-	// PRInfoVersion1_3 represents PR/MR Info version 1.3 schema (author as object with type).
-	PRInfoVersion1_3 PRInfoVersion = "1.3"
 	// CycloneDXVersion1_5 represents CycloneDX version 1.5 schema.
 	CycloneDXVersion1_5 CycloneDXVersion = "1.5"
 	// CycloneDXVersion1_6 represents CycloneDX version 1.6 schema.
@@ -129,16 +118,6 @@ var (
 	//go:embed internal_schemas/runnercontext/runner-context-response-0.1.schema.json
 	runnerContextSpecVersion0_1 string
 
-	// PR/MR Info schemas
-	//go:embed internal_schemas/prinfo/pr-info-1.0.schema.json
-	prInfoSpecVersion1_0 string
-	//go:embed internal_schemas/prinfo/pr-info-1.1.schema.json
-	prInfoSpecVersion1_1 string
-	//go:embed internal_schemas/prinfo/pr-info-1.2.schema.json
-	prInfoSpecVersion1_2 string
-	//go:embed internal_schemas/prinfo/pr-info-1.3.schema.json
-	prInfoSpecVersion1_3 string
-
 	// AI Agent Config schemas
 	//go:embed internal_schemas/aiagentconfig/ai-agent-config-0.1.schema.json
 	aiAgentConfigSpecVersion0_1 string
@@ -181,8 +160,6 @@ var (
 	csafOnce                         sync.Once
 	compiledRunnerContextSchemas     map[RunnerContextVersion]*jsonschema.Schema
 	runnerContextOnce                sync.Once
-	compiledPRInfoSchemas            map[PRInfoVersion]*jsonschema.Schema
-	prInfoOnce                       sync.Once
 	compiledAIAgentConfigSchemas     map[AIAgentConfigVersion]*jsonschema.Schema
 	aiAgentConfigOnce                sync.Once
 	compiledAICodingSessionSchemas   map[AICodingSessionVersion]*jsonschema.Schema
@@ -255,29 +232,6 @@ func initRunnerContextSchemas() {
 
 	compiledRunnerContextSchemas = map[RunnerContextVersion]*jsonschema.Schema{
 		RunnerContextVersion0_1: compiler.MustCompile("https://chainloop.dev/schemas/runner-context-response-0.1.schema.json"),
-	}
-}
-
-func initPRInfoSchemas() {
-	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_0)); err != nil {
-		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json", err))
-	}
-	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_1)); err != nil {
-		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json", err))
-	}
-	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_2)); err != nil {
-		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json", err))
-	}
-	if err := compiler.AddResource("https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json", strings.NewReader(prInfoSpecVersion1_3)); err != nil {
-		panic(fmt.Sprintf("schemavalidators: failed to add resource %s: %v", "https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json", err))
-	}
-
-	compiledPRInfoSchemas = map[PRInfoVersion]*jsonschema.Schema{
-		PRInfoVersion1_0: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.0/pr-info.schema.json"),
-		PRInfoVersion1_1: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.1/pr-info.schema.json"),
-		PRInfoVersion1_2: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.2/pr-info.schema.json"),
-		PRInfoVersion1_3: compiler.MustCompile("https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json"),
 	}
 }
 
@@ -415,31 +369,6 @@ func ValidateChainloopRunnerContext(data interface{}, version RunnerContextVersi
 	return nil
 }
 
-// ValidatePRInfo validates the PR/MR info schema.
-func ValidatePRInfo(data interface{}, version PRInfoVersion) error {
-	prInfoOnce.Do(initPRInfoSchemas)
-
-	if version == "" {
-		version = PRInfoVersion1_3
-	}
-
-	schema, ok := compiledPRInfoSchemas[version]
-	if !ok {
-		return errors.New("invalid PR info schema version")
-	}
-
-	if err := schema.Validate(data); err != nil {
-		var invalidJSONTypeError jsonschema.InvalidJSONTypeError
-		if errors.As(err, &invalidJSONTypeError) {
-			return ErrInvalidJSONPayload
-		}
-		return err
-	}
-
-	return nil
-}
-
-// ValidateAIAgentConfig validates the AI agent config schema.
 func ValidateAIAgentConfig(data any, version AIAgentConfigVersion) error {
 	aiAgentConfigOnce.Do(initAIAgentConfigSchemas)
 
