@@ -300,7 +300,7 @@ func TestChainloopAIAgentConfigCrafter_AgentNameAnnotation(t *testing.T) {
 			crafter, err := NewChainloopAIAgentConfigCrafter(schema, backend, &logger)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expectedAgentName, got.Annotations[annotationAIAgentName])

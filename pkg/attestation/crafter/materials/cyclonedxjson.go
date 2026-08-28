@@ -113,7 +113,7 @@ func NewCyclonedxJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, 
 	return c, nil
 }
 
-func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -181,7 +181,7 @@ func (i *CyclonedxJSONCrafter) Craft(ctx context.Context, filePath string) (*api
 
 	i.injectAnnotations(m, &doc)
 
-	return res, nil
+	return craftResult(res, nil)
 }
 
 func (i *CyclonedxJSONCrafter) injectAnnotations(m *api.Attestation_Material, doc *cyclonedxDoc) {

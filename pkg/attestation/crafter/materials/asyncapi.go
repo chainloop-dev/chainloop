@@ -61,7 +61,7 @@ func NewAsyncAPICrafter(materialSchema *schemaapi.CraftingSchema_Material, backe
 	return c, nil
 }
 
-func (i *AsyncAPICrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
+func (i *AsyncAPICrafter) Craft(ctx context.Context, filepath string) (*CraftResult, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding AsyncAPI spec file")
 
 	f, err := os.ReadFile(filepath)
@@ -103,7 +103,7 @@ func (i *AsyncAPICrafter) Craft(ctx context.Context, filepath string) (*api.Atte
 
 	i.injectAnnotations(m, doc)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *AsyncAPICrafter) injectAnnotations(m *api.Attestation_Material, doc map[string]interface{}) {

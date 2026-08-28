@@ -100,7 +100,7 @@ func TestRadamsaReportCrafter_Craft(t *testing.T) {
 			crafter, err := materials.NewRadamsaReportCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
@@ -163,7 +163,7 @@ func TestRadamsaCrashesCrafter_Craft(t *testing.T) {
 			crafter, err := materials.NewRadamsaCrashesCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return

@@ -21,7 +21,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/trufflehog"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
@@ -46,7 +45,7 @@ func NewTrufflehogCrafter(schema *schemaapi.CraftingSchema_Material, backend *ca
 	}, nil
 }
 
-func (i *TrufflehogCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *TrufflehogCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -87,5 +86,5 @@ func (i *TrufflehogCrafter) Craft(ctx context.Context, filePath string) (*api.At
 	}
 	m.Annotations[AnnotationToolNameKey] = trufflehogToolName
 
-	return m, nil
+	return craftResult(m, nil)
 }

@@ -69,28 +69,14 @@ func NewChainloopAICodingSessionCrafter(schema *schemaapi.CraftingSchema_Materia
 // secrets found in it, calculates the digest, uploads it and returns the
 // material definition.
 //
-// The file on disk is left untouched; only the stored copy is redacted, which
-// means the sanitized bytes are dropped here. Callers that go on to evaluate
-// policies must craft through materials.Craft and pass on the EvaluableContent it
-// returns, or evaluation of a redacted session will fail rather than silently read
-// the original from disk.
-func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
-	material, _, err := c.transformCraft(ctx, artifactPath)
-	return material, err
-}
-
-// transformCraft is Craft, additionally returning the bytes it stored in place of
-// the artifact: the sanitized copy when redaction replaced something, and nil
-// otherwise, meaning the file on disk is what was stored and can be read from
-// there as usual.
-//
-// Redaction only rewrites the copy that leaves the machine, so a caller that
-// reads the artifact back off disk gets the credentials the session captured.
-// That is what these bytes exist to prevent.
-func (c *ChainloopAICodingSessionCrafter) transformCraft(ctx context.Context, artifactPath string) (*api.Attestation_Material, []byte, error) {
+// The file on disk is left untouched, so it is no longer the stored content once
+// anything was redacted. The sanitized copy is returned as CraftResult.Transformed
+// for whoever needs to read the artifact back — today policy evaluation, which
+// must not be handed the credentials the session captured.
+func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	f, err := os.ReadFile(artifactPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("can't open the file: %w", err)
+		return nil, fmt.Errorf("can't open the file: %w", err)
 	}
 
 	// Unmarshal envelope, keeping data as raw JSON for schema validation
@@ -99,30 +85,30 @@ func (c *ChainloopAICodingSessionCrafter) transformCraft(ctx context.Context, ar
 	}
 	if err := json.Unmarshal(f, &envelope); err != nil {
 		c.logger.Debug().Err(err).Msg("error decoding file")
-		return nil, nil, fmt.Errorf("invalid JSON format: %w", err)
+		return nil, fmt.Errorf("invalid JSON format: %w", err)
 	}
 
 	// Unmarshal data into typed struct for annotation extraction
 	var data aicodingsession.Data
 	if err := json.Unmarshal(envelope.Data, &data); err != nil {
 		c.logger.Debug().Err(err).Msg("error decoding data field")
-		return nil, nil, fmt.Errorf("failed to unmarshal data: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
 	// Validate using raw JSON to preserve unknown fields for strict schema validation
 	var rawData any
 	if err := json.Unmarshal(envelope.Data, &rawData); err != nil {
-		return nil, nil, fmt.Errorf("failed to unmarshal data for validation: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal data for validation: %w", err)
 	}
 
 	if err := schemavalidators.ValidateAICodingSession(rawData, schemavalidators.AICodingSessionVersion0_1); err != nil {
 		c.logger.Debug().Err(err).Msg("schema validation failed")
-		return nil, nil, fmt.Errorf("AI coding session validation failed: %w", err)
+		return nil, fmt.Errorf("AI coding session validation failed: %w", err)
 	}
 
 	redacted, report, err := c.redact(ctx, f)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Substituting the stored content only when something was actually replaced
@@ -134,7 +120,7 @@ func (c *ChainloopAICodingSessionCrafter) transformCraft(ctx context.Context, ar
 
 	material, err := uploadAndCraft(ctx, c.input, c.backend, artifactPath, c.logger, craftOpts...)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	c.annotateRedaction(material, report)
@@ -149,7 +135,7 @@ func (c *ChainloopAICodingSessionCrafter) transformCraft(ctx context.Context, ar
 		material.Annotations[annotationAICodingModel] = data.Model.Primary
 	}
 
-	return material, redacted, nil
+	return &CraftResult{Material: material, Transformed: redacted}, nil
 }
 
 // redact strips secrets out of the session content, returning the sanitized copy

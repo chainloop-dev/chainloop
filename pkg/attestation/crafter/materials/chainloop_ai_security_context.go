@@ -55,7 +55,7 @@ func NewChainloopAISecurityContextCrafter(schema *schemaapi.CraftingSchema_Mater
 
 // Craft validates the AI security context against the JSON schema, calculates the
 // digest, uploads it and returns the material definition.
-func (c *ChainloopAISecurityContextCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+func (c *ChainloopAISecurityContextCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	f, err := os.ReadFile(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -106,7 +106,7 @@ func (c *ChainloopAISecurityContextCrafter) Craft(ctx context.Context, artifactP
 
 	c.annotate(material, &data)
 
-	return material, nil
+	return craftResult(material, nil)
 }
 
 // validateSecurityContextEnvelope checks the two constant envelope fields and

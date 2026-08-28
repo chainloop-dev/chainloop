@@ -124,7 +124,7 @@ func TestTrufflehogCrafter_Craft(t *testing.T) {
 			crafter, err := materials.NewTrufflehogCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
@@ -163,7 +163,7 @@ func TestTrufflehogCrafter_CleanScanEmptyFile(t *testing.T) {
 	crafter, err := materials.NewTrufflehogCrafter(schema, backend, &l)
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/trufflehog-clean-scan.jsonl")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/trufflehog-clean-scan.jsonl"))
 	require.NoError(t, err, "a clean scan (zero-byte output) must be accepted")
 	assert.True(t, got.UploadedToCas)
 	assert.Equal(t, emptyReportDigest, got.GetArtifact().Digest, "clean scan must be stored as canonical []")

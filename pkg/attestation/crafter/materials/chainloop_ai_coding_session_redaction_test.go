@@ -269,8 +269,9 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 				WithAICodingSessionSkipRedaction(tc.skipRedaction))
 			require.NoError(t, err)
 
-			got, evaluable, err := crafter.transformCraft(context.TODO(), path)
+			res, err := crafter.Craft(context.TODO(), path)
 			require.NoError(t, err)
+			got, transformed := res.Material, res.Transformed
 
 			if tc.inlineBackend {
 				require.True(t, got.InlineCas)
@@ -290,13 +291,13 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 				// it against the recorded digest is the strongest available form
 				// of "policies see exactly what was stored": it holds even for
 				// skip-upload, where the stored bytes are kept nowhere else.
-				require.NotNil(t, evaluable, "a redacted session must hand back its sanitized copy")
-				assert.Equal(t, sha256Digest(string(evaluable)), got.GetArtifact().Digest)
-				assert.NotContains(t, string(evaluable), awsKey)
-				assert.Contains(t, string(evaluable), "[REDACTED:aws-access-token]")
+				require.NotNil(t, transformed, "a redacted session must hand back its sanitized copy")
+				assert.Equal(t, sha256Digest(string(transformed)), got.GetArtifact().Digest)
+				assert.NotContains(t, string(transformed), awsKey)
+				assert.Contains(t, string(transformed), "[REDACTED:aws-access-token]")
 
 				if stored != nil {
-					assert.Equal(t, string(stored), string(evaluable))
+					assert.Equal(t, string(stored), string(transformed))
 					assert.NotContains(t, string(stored), awsKey)
 					assert.Contains(t, string(stored), "[REDACTED:aws-access-token]")
 				}
@@ -306,13 +307,13 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
 				// Nothing was transformed, so nothing is held in memory for the
 				// policy engine: it reads the file, which is what was stored.
-				assert.Nil(t, evaluable)
+				assert.Nil(t, transformed)
 			default:
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedacted)
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedactionSkipped)
 				// Nothing to redact, so the digest stays reproducible from the file.
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
-				assert.Nil(t, evaluable)
+				assert.Nil(t, transformed)
 			}
 
 			// Redaction must never touch the source file.

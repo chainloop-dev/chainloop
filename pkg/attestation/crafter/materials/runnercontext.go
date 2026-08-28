@@ -23,7 +23,6 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
 )
@@ -44,7 +43,7 @@ func NewRunnerContextCrafter(materialSchema *schemaapi.CraftingSchema_Material, 
 	}, nil
 }
 
-func (r *RunnerContextCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (r *RunnerContextCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -63,5 +62,5 @@ func (r *RunnerContextCrafter) Craft(ctx context.Context, filePath string) (*api
 		return nil, fmt.Errorf("invalid Chainloop runner context file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, r.input, r.backend, filePath, r.logger)
+	return craftResult(uploadAndCraft(ctx, r.input, r.backend, filePath, r.logger))
 }

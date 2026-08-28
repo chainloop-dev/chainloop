@@ -189,7 +189,7 @@ func TestOpenAPICraft(t *testing.T) {
 			crafter, err := materials.NewOpenAPICrafter(tc.schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return
@@ -228,7 +228,7 @@ func TestOpenAPICraftNoStrictValidationSwagger2(t *testing.T) {
 	crafter, err := materials.NewOpenAPICrafter(schema, backend, &l, materials.WithOpenAPINoStrictValidation(true))
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/swagger-2.0-invalid.json")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/swagger-2.0-invalid.json"))
 	require.NoError(t, err)
 	assert.NotNil(t, got)
 	assert.Equal(t, schema.Type.String(), got.MaterialType.String())
@@ -252,7 +252,7 @@ func TestOpenAPICraftNoStrictValidation(t *testing.T) {
 	crafter, err := materials.NewOpenAPICrafter(schema, backend, &l, materials.WithOpenAPINoStrictValidation(true))
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/openapi-invalid.json")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/openapi-invalid.json"))
 	require.NoError(t, err)
 	assert.NotNil(t, got)
 	assert.Equal(t, schema.Type.String(), got.MaterialType.String())

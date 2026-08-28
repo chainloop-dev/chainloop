@@ -147,7 +147,7 @@ func TestDranzerCrafter_Craft(t *testing.T) {
 			crafter, err := materials.NewDranzerCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
@@ -183,7 +183,7 @@ func TestDranzerCrafter_CraftArchive(t *testing.T) {
 		}
 		crafter, err := materials.NewDranzerCrafter(schema, &casclient.CASBackend{Uploader: uploader}, &l)
 		require.NoError(t, err)
-		return crafter.Craft(context.TODO(), path)
+		return craftedMaterial(crafter.Craft(context.TODO(), path))
 	}
 
 	t.Run("zip of the four mode reports is accepted", func(t *testing.T) {

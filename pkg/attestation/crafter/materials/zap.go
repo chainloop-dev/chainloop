@@ -23,7 +23,6 @@ import (
 	"io"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 
 	"github.com/rs/zerolog"
@@ -58,7 +57,7 @@ func NewZAPCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend *c
 }
 
 // Craft will extract the ZAP JSON report from the zip file and upload it to the CAS
-func (i *ZAPCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *ZAPCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	archive, err := zip.OpenReader(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the zip file: %w", err)
@@ -105,5 +104,5 @@ func (i *ZAPCrafter) Craft(ctx context.Context, filePath string) (*api.Attestati
 	}
 
 	// Call uploadAndCraft with the path of the JSON report file
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger))
 }

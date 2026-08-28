@@ -130,7 +130,7 @@ func TestGraphQLCraft(t *testing.T) {
 			crafter, err := materials.NewGraphQLCrafter(tc.schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return

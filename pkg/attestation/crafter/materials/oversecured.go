@@ -81,7 +81,7 @@ func NewOversecuredCrafter(schema *schemaapi.CraftingSchema_Material, backend *c
 	return &OversecuredCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *OversecuredCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *OversecuredCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -137,7 +137,7 @@ func (i *OversecuredCrafter) Craft(ctx context.Context, filePath string) (*api.A
 
 	i.injectAnnotations(m)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *OversecuredCrafter) injectAnnotations(m *api.Attestation_Material) {

@@ -89,12 +89,12 @@ func NewOCIImageCrafter(schema *schemaapi.CraftingSchema_Material, ociAuth authn
 	return c, nil
 }
 
-func (i *OCIImageCrafter) Craft(ctx context.Context, imageRef string) (*api.Attestation_Material, error) {
+func (i *OCIImageCrafter) Craft(ctx context.Context, imageRef string) (*CraftResult, error) {
 	// Check if imageRef is a path to an OCI layout directory
 	layoutPath, digestSelector := parseLayoutReference(imageRef)
 	if i.isOCILayoutPath(layoutPath) {
 		i.logger.Debug().Str("path", layoutPath).Str("digest", digestSelector).Msg("detected OCI layout directory")
-		return i.craftFromLayout(ctx, layoutPath, digestSelector)
+		return craftResult(i.craftFromLayout(ctx, layoutPath, digestSelector))
 	}
 
 	// Otherwise, treat as remote registry reference
@@ -152,11 +152,11 @@ func (i *OCIImageCrafter) Craft(ctx context.Context, imageRef string) (*api.Atte
 		containerImage.SignatureProvider = string(signatureInfo.provider)
 	}
 
-	return &api.Attestation_Material{
+	return craftResult(&api.Attestation_Material{
 		MaterialType: i.input.Type,
 		M: &api.Attestation_Material_ContainerImage_{
 			ContainerImage: containerImage},
-	}, nil
+	}, nil)
 }
 
 // checkForSignature checks for a signature for the given image reference.

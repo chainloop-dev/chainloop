@@ -22,7 +22,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/prinfo"
 
@@ -48,7 +47,7 @@ func NewChainloopPRInfoCrafter(schema *schemaapi.CraftingSchema_Material, backen
 
 // Craft will validate the PR info against the JSON schema, calculate the digest of the artifact,
 // upload it and return the material definition.
-func (i *ChainloopPRInfoCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+func (i *ChainloopPRInfoCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	// Read the file
 	f, err := os.ReadFile(artifactPath)
 	if err != nil {
@@ -85,5 +84,5 @@ func (i *ChainloopPRInfoCrafter) Craft(ctx context.Context, artifactPath string)
 		return nil, err
 	}
 
-	return material, nil
+	return craftResult(material, nil)
 }

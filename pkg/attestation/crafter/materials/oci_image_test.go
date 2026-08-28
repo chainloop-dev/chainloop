@@ -114,7 +114,7 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 			crafter, err := materials.NewOCIImageCrafter(schema, nil, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.layoutPath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.layoutPath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
@@ -202,7 +202,7 @@ func TestOCIImageCraft_LayoutWithDigestSelector(t *testing.T) {
 			crafter, err := materials.NewOCIImageCrafter(schema, nil, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), imageRef)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), imageRef))
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
@@ -279,7 +279,7 @@ func TestOCIImageCraft_RemoteTag(t *testing.T) {
 			crafter, err := materials.NewOCIImageCrafter(schema, authn.DefaultKeychain, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.imageRef)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.imageRef))
 			require.NoError(t, err)
 
 			containerImage := got.GetContainerImage()
@@ -325,7 +325,7 @@ func TestOCIImageCraft_LayoutTagExtraction(t *testing.T) {
 			crafter, err := materials.NewOCIImageCrafter(schema, nil, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), "testdata/oci-layouts/containerd@"+tc.digestSelector)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), "testdata/oci-layouts/containerd@"+tc.digestSelector))
 			require.NoError(t, err)
 
 			containerImage := got.GetContainerImage()

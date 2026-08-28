@@ -85,7 +85,7 @@ func TestSLSAProvenanceCraft(t *testing.T) {
 	crafter, err := materials.NewSLSAProvenanceCrafter(schema, backend, &l)
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/slsa_provenance.sigstore.json")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/slsa_provenance.sigstore.json"))
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_SLSA_PROVENANCE.String(), got.MaterialType.String())
 	assert.True(got.UploadedToCas)

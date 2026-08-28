@@ -40,7 +40,7 @@ func NewSigcheckCrafter(schema *schemaapi.CraftingSchema_Material, backend *casc
 	return &SigcheckCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *SigcheckCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *SigcheckCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -69,7 +69,7 @@ func (i *SigcheckCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 
 	i.injectAnnotations(m)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *SigcheckCrafter) injectAnnotations(m *api.Attestation_Material) {

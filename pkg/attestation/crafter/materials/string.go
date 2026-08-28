@@ -40,12 +40,12 @@ func NewStringCrafter(materialSchema *schemaapi.CraftingSchema_Material) (*Strin
 	}, nil
 }
 
-func (i *StringCrafter) Craft(_ context.Context, value string) (*api.Attestation_Material, error) {
+func (i *StringCrafter) Craft(_ context.Context, value string) (*CraftResult, error) {
 	hash, _, err := cr_v1.SHA256(strings.NewReader(value))
 	if err != nil {
 		return nil, fmt.Errorf("generating digest: %w", err)
 	}
-	return &api.Attestation_Material{
+	return craftResult(&api.Attestation_Material{
 		MaterialType: i.input.Type,
 		M: &api.Attestation_Material_String_{
 			String_: &api.Attestation_Material_KeyVal{
@@ -57,5 +57,5 @@ func (i *StringCrafter) Craft(_ context.Context, value string) (*api.Attestation
 		Annotations: map[string]string{
 			AnnotationMaterialSize: strconv.Itoa(len(value)),
 		},
-	}, nil
+	}, nil)
 }

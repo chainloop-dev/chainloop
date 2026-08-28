@@ -155,7 +155,7 @@ func TestAsyncAPICraft(t *testing.T) {
 			crafter, err := materials.NewAsyncAPICrafter(tc.schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return
@@ -194,7 +194,7 @@ func TestAsyncAPICraftNoStrictValidation(t *testing.T) {
 	crafter, err := materials.NewAsyncAPICrafter(schema, backend, &l, materials.WithAsyncAPINoStrictValidation(true))
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/asyncapi-invalid.json")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/asyncapi-invalid.json"))
 	require.NoError(t, err)
 	assert.NotNil(t, got)
 	assert.Equal(t, schema.Type.String(), got.MaterialType.String())

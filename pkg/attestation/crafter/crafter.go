@@ -775,7 +775,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 	// the policies below must see. Reading the file on disk instead would feed
 	// user-authored Rego the very secrets redaction removed. nil for every other
 	// material, which resolves its content the usual way.
-	withEvaluableContent := policies.WithMaterialContent(crafted.EvaluableContent)
+	withStoredContent := policies.WithMaterialContent(crafted.Transformed)
 
 	// 4 - Populate annotations from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
@@ -828,7 +828,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithProjectContext(projectName, projectVersion),
 	)
-	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value, withEvaluableContent)
+	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value, withStoredContent)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policy groups to material: %w", err)
 	}
@@ -849,7 +849,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		policies.WithProjectContext(projectName, projectVersion),
 		policies.WithRuntimeInputs(addOptions.runtimeInputs),
 	)
-	policyResults, err := pv.VerifyMaterial(ctx, mt, value, withEvaluableContent)
+	policyResults, err := pv.VerifyMaterial(ctx, mt, value, withStoredContent)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policies to material: %w", err)
 	}

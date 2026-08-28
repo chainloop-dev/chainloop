@@ -22,7 +22,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 
 	"github.com/rs/zerolog"
@@ -49,7 +48,7 @@ func NewTwistCLIScanCrafter(materialSchema *schemaapi.CraftingSchema_Material, b
 	}, nil
 }
 
-func (i *TwistCLIScanCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *TwistCLIScanCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -66,5 +65,5 @@ func (i *TwistCLIScanCrafter) Craft(ctx context.Context, filePath string) (*api.
 		return nil, fmt.Errorf("invalid twistcli scan file: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger))
 }

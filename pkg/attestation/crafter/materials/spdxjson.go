@@ -47,7 +47,7 @@ func NewSPDXJSONCrafter(materialSchema *schemaapi.CraftingSchema_Material, backe
 	}, nil
 }
 
-func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -80,7 +80,7 @@ func (i *SPDXJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Atte
 
 	i.injectAnnotations(m, doc)
 
-	return res, nil
+	return craftResult(res, nil)
 }
 
 // extractMainComponent inspects the SPDX document and extracts the main component if any.

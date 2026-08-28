@@ -83,7 +83,7 @@ func NewOSSFScorecardCrafter(materialSchema *schemaapi.CraftingSchema_Material, 
 	return c, nil
 }
 
-func (i *OSSFScorecardCrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
+func (i *OSSFScorecardCrafter) Craft(ctx context.Context, filepath string) (*CraftResult, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding OpenSSF Scorecard report")
 
 	data, err := os.ReadFile(filepath)
@@ -130,7 +130,7 @@ func (i *OSSFScorecardCrafter) Craft(ctx context.Context, filepath string) (*api
 
 	i.injectAnnotations(m, &report)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *OSSFScorecardCrafter) injectAnnotations(m *api.Attestation_Material, report *scorecardReport) {

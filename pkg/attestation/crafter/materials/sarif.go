@@ -51,7 +51,7 @@ func NewSARIFCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend 
 	}, nil
 }
 
-func (i *SARIFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
+func (i *SARIFCrafter) Craft(ctx context.Context, filepath string) (*CraftResult, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding SARIF file")
 
 	// sarif.Open will take care of checkif if the file exists or not and unmarshal it, we just need to check if the schema is present to validate that it's a valid SARIF file
@@ -71,7 +71,7 @@ func (i *SARIFCrafter) Craft(ctx context.Context, filepath string) (*api.Attesta
 
 	i.injectAnnotations(m, doc)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *SARIFCrafter) injectAnnotations(m *api.Attestation_Material, doc *sarif.Report) {

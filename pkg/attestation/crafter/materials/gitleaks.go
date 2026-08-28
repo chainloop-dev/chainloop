@@ -41,7 +41,7 @@ func NewGitleaksReportCrafter(schema *schemaapi.CraftingSchema_Material, backend
 	return &GitleaksReportCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *GitleaksReportCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *GitleaksReportCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	var findings []report.Finding
 
 	data, err := os.ReadFile(filePath)
@@ -73,7 +73,7 @@ func (i *GitleaksReportCrafter) Craft(ctx context.Context, filePath string) (*ap
 
 	i.injectAnnotations(m)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *GitleaksReportCrafter) injectAnnotations(m *api.Attestation_Material) {

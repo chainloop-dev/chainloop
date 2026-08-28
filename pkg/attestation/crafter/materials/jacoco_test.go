@@ -83,7 +83,7 @@ func TestJacocoCraft(t *testing.T) {
 			backend := &casclient.CASBackend{Uploader: uploader}
 			crafter := materials.NewJacocoCrafter(schema, backend, &l)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return

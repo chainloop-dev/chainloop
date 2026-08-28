@@ -88,7 +88,7 @@ func TestCoberturaCraft(t *testing.T) {
 			backend := &casclient.CASBackend{Uploader: uploader}
 			crafter := materials.NewCoberturaCrafter(schema, backend, &l)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return
@@ -122,7 +122,7 @@ func TestCoberturaCraftEmptyReport(t *testing.T) {
 	backend := &casclient.CASBackend{Uploader: uploader}
 	crafter := materials.NewCoberturaCrafter(schema, backend, &l)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/cobertura-empty.xml")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/cobertura-empty.xml"))
 	require.NoError(t, err, "an empty-but-valid cobertura report must be accepted")
 	require.NotNil(t, got)
 	assert.Equal(t, contractAPI.CraftingSchema_Material_COBERTURA_XML.String(), got.MaterialType.String())

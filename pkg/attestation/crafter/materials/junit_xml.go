@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	materialsjunit "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/junit"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
@@ -39,12 +38,12 @@ func NewJUnitXMLCrafter(schema *schemaapi.CraftingSchema_Material, backend *casc
 	return &JUnitXMLCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *JUnitXMLCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *JUnitXMLCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	if err := i.validate(filePath); err != nil {
 		return nil, err
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger))
 }
 
 func (i *JUnitXMLCrafter) validate(filePath string) error {

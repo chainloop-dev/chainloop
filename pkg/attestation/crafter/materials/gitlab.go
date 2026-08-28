@@ -44,7 +44,7 @@ func NewGitlabCrafter(schema *schemaapi.CraftingSchema_Material, backend *cascli
 	return &GitlabCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *GitlabCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *GitlabCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -66,7 +66,7 @@ func (i *GitlabCrafter) Craft(ctx context.Context, filePath string) (*api.Attest
 
 	i.injectAnnotations(m, &glReport)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *GitlabCrafter) injectAnnotations(m *api.Attestation_Material, glReport *report.Report) {

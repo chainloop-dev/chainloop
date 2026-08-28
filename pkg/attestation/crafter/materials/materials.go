@@ -349,33 +349,34 @@ func fileStatsFromBytes(filename string, content []byte) (*fileInfo, error) {
 }
 
 type Craftable interface {
-	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
+	Craft(ctx context.Context, value string) (*CraftResult, error)
 }
 
-// transformCrafter is implemented by crafters that do not store the artifact
-// verbatim, and returns the bytes they stored in its place. For such a material
-// the file on disk is no longer the stored content, so anything that needs to
-// read the artifact back has to be given these bytes instead. What it is then
-// used for is the caller's business: today it feeds policy evaluation, which must
-// not see the data the transformation removed.
-//
-// Opt-in on purpose, and deliberately not on crafterCommon: a content field
-// shared by every crafter would let any of them report content that diverges
-// from its own recorded digest.
-type transformCrafter interface {
-	transformCraft(ctx context.Context, value string) (*api.Attestation_Material, []byte, error)
-}
-
-// CraftResult is a crafted material together with the content policies must be
-// evaluated against.
+// CraftResult is what crafting an artifact yields.
 type CraftResult struct {
 	Material *api.Attestation_Material
-	// EvaluableContent is the sanitized copy of the artifact, set only by
-	// crafters that transformed it before storing it — today, an AI coding
-	// session with secrets redacted out of it. nil means the stored bytes are the
-	// file on disk, so policy evaluation resolves the content the usual way and
+	// Transformed is what the crafter stored in place of the artifact, when it
+	// did not store it verbatim — today, an AI coding session with secrets
+	// redacted out of it. For such a material the file on disk is no longer the
+	// stored content, so anything that needs to read the artifact back has to be
+	// given these bytes instead; what they are then used for is the caller's
+	// business, and today they feed policy evaluation, which must not see the
+	// data the transformation removed.
+	//
+	// nil for every crafter that stores the artifact as it found it, which is all
+	// but one: their content resolves from the material or the file as usual and
 	// nothing extra is held in memory.
-	EvaluableContent []byte
+	Transformed []byte
+}
+
+// craftResult wraps a crafted material, propagating an error unchanged. It keeps
+// the crafters that store the artifact verbatim — all but the AI coding session —
+// to a single-line return.
+func craftResult(m *api.Attestation_Material, err error) (*CraftResult, error) {
+	if err != nil {
+		return nil, err
+	}
+	return &CraftResult{Material: m}, nil
 }
 
 // CraftingOpts contains options for crafting materials
@@ -498,16 +499,11 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		return nil, err
 	}
 
-	var m *api.Attestation_Material
-	var transformed []byte
-	if tc, ok := crafter.(transformCrafter); ok {
-		m, transformed, err = tc.transformCraft(ctx, value)
-	} else {
-		m, err = crafter.Craft(ctx, value)
-	}
+	res, err := crafter.Craft(ctx, value)
 	if err != nil {
 		return nil, fmt.Errorf("crafting material: %w", err)
 	}
+	m := res.Material
 
 	m.AddedAt = timestamppb.New(time.Now())
 	if m.Annotations == nil {
@@ -523,5 +519,5 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	m.Output = materialSchema.Output
 	m.Required = !materialSchema.Optional
 
-	return &CraftResult{Material: m, EvaluableContent: transformed}, nil
+	return res, nil
 }

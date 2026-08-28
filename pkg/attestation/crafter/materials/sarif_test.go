@@ -112,7 +112,7 @@ func TestSARIFCraft(t *testing.T) {
 			crafter, err := materials.NewSARIFCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return
@@ -214,7 +214,7 @@ func TestSARIFCraft_ScanTypes(t *testing.T) {
 			crafter, err := materials.NewSARIFCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			require.NoError(t, err)
 
 			for k, v := range tc.annotations {
@@ -272,7 +272,7 @@ func TestSARIFCraft_SkipUpload(t *testing.T) {
 			crafter, err := materials.NewSARIFCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), filePath))
 			require.NoError(t, err)
 
 			assert.Equal(contractAPI.CraftingSchema_Material_SARIF.String(), got.MaterialType.String())

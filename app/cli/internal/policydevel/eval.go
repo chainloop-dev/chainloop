@@ -88,7 +88,7 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	// must be evaluated against — `policy devel eval` has to reproduce what
 	// `attestation add` does, or a policy would be developed against input the
 	// real run never sees.
-	summary, err := verifyMaterial(policies, material, opts.MaterialPath, crafted.EvaluableContent, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, opts.ProjectName, opts.ProjectVersionName, &logger)
+	summary, err := verifyMaterial(policies, material, opts.MaterialPath, crafted.Transformed, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, opts.ProjectName, opts.ProjectVersionName, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, 
 	}, nil
 }
 
-func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, evaluableContent []byte, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, projectName, projectVersion string, logger *zerolog.Logger) (*EvalSummary, error) {
+func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, transformed []byte, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, projectName, projectVersion string, logger *zerolog.Logger) (*EvalSummary, error) {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
@@ -165,7 +165,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 
 	v := policies.NewPolicyVerifier(pol, attestationClient, logger, opts...)
 	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath,
-		policies.WithMaterialContent(evaluableContent))
+		policies.WithMaterialContent(transformed))
 	if err != nil {
 		return nil, err
 	}

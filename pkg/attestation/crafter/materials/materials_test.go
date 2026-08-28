@@ -64,9 +64,9 @@ func TestCraft(t *testing.T) {
 
 	res, err := materials.Craft(context.TODO(), schema, "test-value", nil, nil, nil, nil)
 	require.NoError(t, err)
-	// A crafter that does not transform the artifact holds nothing back for the
-	// policy engine; the content is resolved from the material or the file.
-	assert.Nil(res.EvaluableContent)
+	// A crafter that stores the artifact as it found it reports nothing extra, so
+	// the content resolves from the material or the file as usual.
+	assert.Nil(res.Transformed)
 
 	got := res.Material
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)

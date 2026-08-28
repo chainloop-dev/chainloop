@@ -72,7 +72,7 @@ func TestStringCraft(t *testing.T) {
 	crafter, err := materials.NewStringCrafter(schema)
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "value")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "value"))
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)
 	assert.False(got.UploadedToCas)

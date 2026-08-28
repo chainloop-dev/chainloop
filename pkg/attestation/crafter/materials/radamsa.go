@@ -28,7 +28,6 @@ import (
 	"strconv"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/radamsa"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
@@ -63,7 +62,7 @@ func NewRadamsaReportCrafter(schema *schemaapi.CraftingSchema_Material, backend 
 	}, nil
 }
 
-func (c *RadamsaReportCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (c *RadamsaReportCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	// InspectReport applies the same content detection and per-entry parse the
 	// policy projection (radamsa.ParseReportBytes) applies at eval time, so a
 	// material accepted here is guaranteed to be evaluable. The archive itself is
@@ -88,7 +87,7 @@ func (c *RadamsaReportCrafter) Craft(ctx context.Context, filePath string) (*api
 	}
 	m.Annotations[AnnotationToolNameKey] = radamsaToolName
 	m.Annotations[AnnotationRadamsaReportRecordsCount] = strconv.Itoa(records)
-	return m, nil
+	return craftResult(m, nil)
 }
 
 // RadamsaCrashesCrafter crafts a RADAMSA_CRASHES material out of either a single
@@ -109,7 +108,7 @@ func NewRadamsaCrashesCrafter(schema *schemaapi.CraftingSchema_Material, backend
 	}, nil
 }
 
-func (c *RadamsaCrashesCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (c *RadamsaCrashesCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	info, err := os.Stat(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -138,7 +137,7 @@ func (c *RadamsaCrashesCrafter) Craft(ctx context.Context, filePath string) (*ap
 	}
 	m.Annotations[AnnotationToolNameKey] = radamsaToolName
 	m.Annotations[AnnotationRadamsaCrashesCount] = strconv.Itoa(count)
-	return m, nil
+	return craftResult(m, nil)
 }
 
 // inspectCrashesArchive reports whether path is a readable zip or tar.gz and, if

@@ -115,7 +115,7 @@ func TestChainloopAISecurityContextCrafter_Craft(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := newSecurityContextCrafter(t).Craft(context.TODO(), tc.path)
+			got, err := craftedMaterial(newSecurityContextCrafter(t).Craft(context.TODO(), tc.path))
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -232,7 +232,7 @@ func TestChainloopAISecurityContextCrafter_Annotations(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := newSecurityContextCrafter(t).Craft(context.TODO(), tc.path)
+			got, err := craftedMaterial(newSecurityContextCrafter(t).Craft(context.TODO(), tc.path))
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.headSHA, got.Annotations[annotationSecurityContextHeadSHA])
@@ -272,7 +272,7 @@ func TestChainloopAISecurityContextCrafter_ToolAnnotations(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := newSecurityContextCrafter(t).Craft(context.TODO(), tc.path)
+			got, err := craftedMaterial(newSecurityContextCrafter(t).Craft(context.TODO(), tc.path))
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.wantTools, got.Annotations[AnnotationToolsKey])
@@ -321,7 +321,7 @@ func TestChainloopAISecurityContextCrafter_ToolAnnotationsIncomplete(t *testing.
 		t.Run(tc.name, func(t *testing.T) {
 			path := securityContextWithProvenance(t, tc.tool, tc.toolVersion)
 
-			got, err := newSecurityContextCrafter(t).Craft(context.TODO(), path)
+			got, err := craftedMaterial(newSecurityContextCrafter(t).Craft(context.TODO(), path))
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.wantTools, got.Annotations[AnnotationToolsKey])
@@ -381,7 +381,7 @@ func TestChainloopAISecurityContextCrafter_ReconcilesIsAlwaysAnnotated(t *testin
 	path := filepath.Join(t.TempDir(), "security-context.json")
 	require.NoError(t, os.WriteFile(path, mustMarshal(t, doc), 0o600))
 
-	got, err := newSecurityContextCrafter(t).Craft(context.TODO(), path)
+	got, err := craftedMaterial(newSecurityContextCrafter(t).Craft(context.TODO(), path))
 	require.NoError(t, err)
 	assert.Equal(t, "false", got.Annotations[annotationSecurityContextReconciles])
 }

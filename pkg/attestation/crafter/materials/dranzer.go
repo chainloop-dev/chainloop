@@ -55,7 +55,7 @@ func NewDranzerCrafter(schema *schemaapi.CraftingSchema_Material, backend *cascl
 	return &DranzerCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *DranzerCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *DranzerCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	// dranzer emits free-form text, so the fingerprint is soft: the input only has
 	// to resemble dranzer output (a test-engine version banner, a parsed object or
 	// finding, or the run-summary line). Inspect accepts a single report or an
@@ -84,7 +84,7 @@ func (i *DranzerCrafter) Craft(ctx context.Context, filePath string) (*api.Attes
 
 	i.injectAnnotations(m, inspection)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *DranzerCrafter) injectAnnotations(m *api.Attestation_Material, inspection dranzer.Inspection) {
