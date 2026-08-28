@@ -757,6 +757,88 @@ func (s *crafterSuite) TestAddMaterialsAutomaticInvalidNameSurfacesValidationErr
 	assert.NotContains(s.T(), err.Error(), "failed to auto-discover material kind")
 }
 
+// TestAddMaterialRedactedSessionIsWhatPoliciesSee is the end-to-end guarantee,
+// and the case that was impossible before: with a real (non-inline) CAS backend
+// the sanitized copy is streamed away and dropped, so the only content left on
+// the machine is the un-redacted file. Policies used to be evaluated against
+// exactly that.
+//
+// The attached policy looks for the raw credential rather than the placeholder,
+// so it can only stay quiet if the engine genuinely never receives it.
+func (s *crafterSuite) TestAddMaterialRedactedSessionIsWhatPoliciesSee() {
+	// Assembled from fragments so that nothing credential-shaped is committed,
+	// matching the fixture placeholders in the aicodingsession package.
+	const githubPAT = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
+
+	sessionPath := materializeSessionFixture(s.T(),
+		"./materials/aicodingsession/testdata/session-with-secrets.json")
+
+	uploader := mUploader.NewUploader(s.T())
+	uploader.On("Upload", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(&casclient.UpDownStatus{Digest: "deadbeef", Filename: "session-with-secrets.json"}, nil)
+	backend := &casclient.CASBackend{Uploader: uploader}
+
+	c, err := newInitializedCrafter(s.T(), "testdata/contracts/with_ai_session_policy.yaml",
+		&v1.WorkflowMetadata{}, false, "", runners.NewGeneric())
+	require.NoError(s.T(), err)
+
+	m, err := c.AddMaterialContractFree(context.Background(), "",
+		schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION.String(),
+		"ai-session", sessionPath, backend, nil)
+	require.NoError(s.T(), err)
+
+	// The material is not inline, so the sanitized bytes live nowhere the
+	// evaluation could have read them back from.
+	assert.False(s.T(), m.InlineCas)
+	assert.Equal(s.T(), v1.AnnotationValueTrue, m.Annotations[v1.AnnotationMaterialRedacted])
+
+	evaluations := c.CraftingState.Attestation.PolicyEvaluations
+	require.Len(s.T(), evaluations, 1)
+
+	messages := make([]string, 0, len(evaluations[0].Violations))
+	for _, v := range evaluations[0].Violations {
+		messages = append(messages, v.GetMessage())
+	}
+
+	assert.Contains(s.T(), messages, "secrets were found and redacted in the coding session")
+	assert.NotContains(s.T(), messages, "GitHub token reached the policy engine",
+		"the policy engine was handed the un-redacted session")
+
+	// The source file is untouched, which is precisely why reading it would have
+	// leaked: the material no longer describes it.
+	onDisk, err := os.ReadFile(sessionPath)
+	require.NoError(s.T(), err)
+	assert.Contains(s.T(), string(onDisk), githubPAT)
+}
+
+// materializeSessionFixture writes a copy of an AI coding session fixture with
+// its credential placeholders resolved, and returns its path. The crafter reads
+// the artifact from disk, so the substitution has to land in a real file.
+func materializeSessionFixture(t *testing.T, src string) string {
+	t.Helper()
+
+	content, err := os.ReadFile(src)
+	require.NoError(t, err)
+
+	// Keep in sync with fixtureSecrets in the aicodingsession package.
+	secrets := map[string]string{
+		"__AWS_ACCESS_KEY_ID__":     "AKIA" + "4G7TI63VCBIRS4GW",
+		"__AWS_SECRET_ACCESS_KEY__": "kQ7zXn2VbW9pLm4RtY6" + "uHs3JdF8gA1cE5oPzQwXn",
+		"__GITHUB_PAT__":            "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf",
+		"__ANTHROPIC_API_KEY__":     "sk-ant-api03-sT5wsx9DwmaHZDL0dUWKNhAhULxa35sUzyLFK9" + "5QBTZMDJTYn8p0J7ZQbwpYGYCQeW5eXAAGtVSmhp7UO9vxHJtSBC0xpAA",
+		"__GIT_REPOSITORY_WITH_CREDENTIALS__": "https://oauth2:" +
+			"ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf" + "@github.com/example/repo.git",
+	}
+	resolved := string(content)
+	for placeholder, secret := range secrets {
+		resolved = strings.ReplaceAll(resolved, placeholder, secret)
+	}
+
+	path := filepath.Join(t.TempDir(), filepath.Base(src))
+	require.NoError(t, os.WriteFile(path, []byte(resolved), 0o600))
+	return path
+}
+
 func (s *crafterSuite) TestAddMaterialsFromArchiveAtomic() {
 	// Build the fixture in-process so no binary blob is checked in.
 	zipFixture := filepath.Join(s.T().TempDir(), "two-files.zip")

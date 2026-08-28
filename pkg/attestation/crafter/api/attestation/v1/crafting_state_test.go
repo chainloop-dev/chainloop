@@ -491,72 +491,110 @@ func TestTruffleHogCleanScanIsEvaluable(t *testing.T) {
 	assert.Empty(t, elements, "a clean scan has zero findings")
 }
 
-// TestGetEvaluableContentRedactedPrefersDisk covers the interaction between an
-// inline CAS backend and a crafter that redacted the content before storing it.
-// Inline materials normally carry their own content, but a redacted material's
-// inline bytes are the sanitized copy, so policies have to read the untouched
-// file from disk instead. Without that, the policy input would silently differ
-// between an inline backend and every other one.
-func TestGetEvaluableContentRedactedPrefersDisk(t *testing.T) {
+// TestGetEvaluableContentRedactedNeverReadsDisk pins the invariant that policies
+// are handed exactly the bytes that were stored. For a redacted material the
+// original on disk is the one thing they must never see, whatever CAS backend is
+// in use: it still holds the secrets that redaction deliberately kept out of the
+// evidence store, and a policy is user-authored code that can ship what it reads.
+//
+// The sanitized copy therefore has to be supplied explicitly. Without it there is
+// no safe source, so resolution fails closed rather than falling back to the file.
+func TestGetEvaluableContentRedactedNeverReadsDisk(t *testing.T) {
 	const (
-		// Any distinguishable value works here; this test is about which source
+		// Any distinguishable values work here; this test is about which source
 		// the content is read from, not about detection.
 		onDiskSecret = "the-unredacted-original"
 		inlineSecret = "[REDACTED:aws-access-token]"
+		suppliedTag  = "[REDACTED:supplied]"
 
-		onDisk = `{"secret":"` + onDiskSecret + `"}`
-		inline = `{"secret":"` + inlineSecret + `"}`
+		onDisk   = `{"secret":"` + onDiskSecret + `"}`
+		inline   = `{"secret":"` + inlineSecret + `"}`
+		supplied = `{"secret":"` + suppliedTag + `"}`
 	)
 
 	diskPath := filepath.Join(t.TempDir(), "session.json")
 	require.NoError(t, os.WriteFile(diskPath, []byte(onDisk), 0o600))
 
 	testCases := []struct {
-		name       string
-		inlineCas  bool
-		redacted   bool
-		path       string
-		wantSecret string
-		wantErr    bool
+		name        string
+		inlineCas   bool
+		annotations map[string]string
+		path        string
+		content     []byte
+		wantSecret  string
+		wantErr     error
 	}{
 		{
-			name:       "inline without the marker keeps reading the inline content",
-			inlineCas:  true,
-			path:       diskPath,
-			wantSecret: inlineSecret,
-		},
-		{
-			name:       "inline and redacted reads the original from disk",
-			inlineCas:  true,
-			redacted:   true,
-			path:       diskPath,
-			wantSecret: onDiskSecret,
-		},
-		{
-			name:       "inline and redacted with no path falls back to the inline content",
-			inlineCas:  true,
-			redacted:   true,
-			wantSecret: inlineSecret,
-		},
-		{
-			name:      "inline and redacted with an unreadable path fails loudly",
+			name:      "inline and redacted without the sanitized copy fails closed",
 			inlineCas: true,
-			redacted:  true,
-			path:      filepath.Join(t.TempDir(), "missing.json"),
-			// Silently falling back to the inline content here would point
-			// policies at redacted material without saying so.
-			wantErr: true,
+			// The inline bytes ARE the sanitized copy here, so reading them would
+			// happen to be correct. It still fails: the caller has not said which
+			// content is authoritative, and guessing is what this test forbids.
+			annotations: map[string]string{AnnotationMaterialRedacted: AnnotationValueTrue},
+			path:        diskPath,
+			wantErr:     ErrRedactedContentRequired,
 		},
 		{
-			name:       "non-inline is unaffected by the marker",
-			redacted:   true,
+			name:        "non-inline and redacted without the sanitized copy fails closed",
+			annotations: map[string]string{AnnotationMaterialRedacted: AnnotationValueTrue},
+			path:        diskPath,
+			wantErr:     ErrRedactedContentRequired,
+		},
+		{
+			name:        "redacted with neither a path nor the sanitized copy fails closed",
+			inlineCas:   true,
+			annotations: map[string]string{AnnotationMaterialRedacted: AnnotationValueTrue},
+			wantErr:     ErrRedactedContentRequired,
+		},
+		{
+			name: "redacted with an empty but non-nil sanitized copy fails closed",
+			// Guards the len() check: a zero-length slice must not slip past into
+			// the empty-content fallback and yield an empty policy input.
+			annotations: map[string]string{AnnotationMaterialRedacted: AnnotationValueTrue},
+			path:        diskPath,
+			content:     []byte{},
+			wantErr:     ErrRedactedContentRequired,
+		},
+		{
+			name:        "redacted with the sanitized copy evaluates it, not the disk file",
+			inlineCas:   true,
+			annotations: map[string]string{AnnotationMaterialRedacted: AnnotationValueTrue},
+			path:        diskPath,
+			content:     []byte(supplied),
+			wantSecret:  suppliedTag,
+		},
+		{
+			name:        "redacted with the sanitized copy needs no path at all",
+			annotations: map[string]string{AnnotationMaterialRedacted: AnnotationValueTrue},
+			content:     []byte(supplied),
+			wantSecret:  suppliedTag,
+		},
+		{
+			name: "redaction skipped on purpose still reads from disk",
+			// --skip-secret-redaction stores the session exactly as captured, so
+			// the disk file and the stored copy are the same bytes. The opt-out is
+			// recorded in the attestation and is deliberately not fail-closed.
+			annotations: map[string]string{AnnotationMaterialRedactionSkipped: AnnotationValueTrue},
+			path:        diskPath,
+			wantSecret:  onDiskSecret,
+		},
+		{
+			name:       "unredacted inline reads the inline content as before",
+			inlineCas:  true,
+			path:       diskPath,
+			wantSecret: inlineSecret,
+		},
+		{
+			name:       "unredacted non-inline reads from disk as before",
 			path:       diskPath,
 			wantSecret: onDiskSecret,
 		},
 		{
-			name:       "non-inline without the marker reads from disk as before",
+			name:       "supplied content wins over the inline copy even unredacted",
+			inlineCas:  true,
 			path:       diskPath,
-			wantSecret: onDiskSecret,
+			content:    []byte(supplied),
+			wantSecret: suppliedTag,
 		},
 	}
 
@@ -565,6 +603,7 @@ func TestGetEvaluableContentRedactedPrefersDisk(t *testing.T) {
 			m := &Attestation_Material{
 				MaterialType: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
 				InlineCas:    tc.inlineCas,
+				Annotations:  tc.annotations,
 				M: &Attestation_Material_Artifact_{
 					Artifact: &Attestation_Material_Artifact{
 						Name:    "session.json",
@@ -573,30 +612,66 @@ func TestGetEvaluableContentRedactedPrefersDisk(t *testing.T) {
 					},
 				},
 			}
-			if tc.redacted {
-				m.Annotations = map[string]string{AnnotationMaterialRedacted: "true"}
-			}
 
-			content, err := m.GetEvaluableContent(tc.path)
-			if tc.wantErr {
-				require.Error(t, err)
+			content, err := m.GetEvaluableContentFrom(tc.path, tc.content)
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
 				return
 			}
 			require.NoError(t, err)
 
 			// GetEvaluableContent also injects a chainloop_metadata block, so
-			// assert on the field that distinguishes the two sources.
+			// assert on the field that distinguishes the sources.
 			var decoded map[string]any
 			require.NoError(t, json.Unmarshal(content, &decoded))
 			assert.Equal(t, tc.wantSecret, decoded["secret"])
+
+			if tc.annotations[AnnotationMaterialRedacted] == AnnotationValueTrue {
+				assert.NotEqual(t, onDiskSecret, decoded["secret"],
+					"the un-redacted original must never reach the policy engine")
+			}
 		})
 	}
+}
+
+// TestGetEvaluableContentFromInjectsMetadata pins that supplying the content does
+// not bypass the projection the policy engine relies on: the chainloop_metadata
+// descriptor is still injected, so a policy can read the redaction annotations
+// alongside the sanitized body.
+func TestGetEvaluableContentFromInjectsMetadata(t *testing.T) {
+	m := &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
+		Annotations: map[string]string{
+			AnnotationMaterialRedacted:       AnnotationValueTrue,
+			AnnotationMaterialRedactionCount: "2",
+			AnnotationMaterialRedactionRules: "jwt",
+		},
+		M: &Attestation_Material_Artifact_{
+			Artifact: &Attestation_Material_Artifact{Name: "session.json", Digest: "sha256:deadbeef"},
+		},
+	}
+
+	content, err := m.GetEvaluableContentFrom("", []byte(`{"secret":"[REDACTED:jwt]"}`))
+	require.NoError(t, err)
+
+	var decoded struct {
+		Secret   string `json:"secret"`
+		Metadata struct {
+			Annotations map[string]string `json:"annotations"`
+		} `json:"chainloop_metadata"`
+	}
+	require.NoError(t, json.Unmarshal(content, &decoded))
+
+	assert.Equal(t, "[REDACTED:jwt]", decoded.Secret)
+	assert.Equal(t, AnnotationValueTrue, decoded.Metadata.Annotations[AnnotationMaterialRedacted])
+	assert.Equal(t, "2", decoded.Metadata.Annotations[AnnotationMaterialRedactionCount])
+	assert.Equal(t, "jwt", decoded.Metadata.Annotations[AnnotationMaterialRedactionRules])
 }
 
 // TestTruffleHogCleanScanIsEvaluableInline is the inline counterpart of
 // TestTruffleHogCleanScanIsEvaluable. It pins down that the canonical empty
 // content substituted for a zero-byte report projects the same either way, so
-// preferring the disk path for redacted materials cannot regress it.
+// that resolving a redacted material's content differently cannot regress it.
 func TestTruffleHogCleanScanIsEvaluableInline(t *testing.T) {
 	m := &Attestation_Material{
 		MaterialType: schemaapi.CraftingSchema_Material_TRUFFLEHOG_JSON,

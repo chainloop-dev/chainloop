@@ -252,21 +252,23 @@ func writeSessionFixture(t *testing.T) string {
 	return path
 }
 
-// Policies must be evaluated against the material as it sits on disk. The crafter
-// redacts the copy it stages for upload, and a dry run always stages inline, so
-// evaluating the staged bytes would hide from a policy the very secret it exists
-// to catch.
-func TestEvaluateReadsUnredactedMaterialFromDisk(t *testing.T) {
+// Policies must be evaluated against the copy the crafter stored, never the file
+// on disk. A policy is arbitrary user-authored Rego that may ship what it reads to
+// an allowed hostname, so handing it the credential that redaction just stripped
+// out would turn the policy engine into an exfiltration path.
+//
+// `policy devel eval` has to agree with `attestation add` on this, or a policy
+// would be developed against input the real run never produces.
+func TestEvaluateReadsRedactedMaterial(t *testing.T) {
 	testCases := []struct {
 		name        string
 		annotations map[string]string
 	}{
-		// The bug this pins: with no --annotation flags the crafter's annotation
-		// map was replaced by an empty one, so the marker that selects the file on
-		// disk was lost and policies evaluated the sanitized copy.
 		{name: "without user annotations", annotations: nil},
 		{name: "with user annotations", annotations: map[string]string{"custom": "value"}},
 		{
+			// The chainloop.* namespace is crafter-owned: clearing the marker
+			// from the command line must not be able to re-open the disk path.
 			name:        "with an attempt to override the redaction marker",
 			annotations: map[string]string{v12.AnnotationMaterialRedacted: "false"},
 		},
@@ -279,6 +281,9 @@ func TestEvaluateReadsUnredactedMaterialFromDisk(t *testing.T) {
 				MaterialKind: "CHAINLOOP_AI_CODING_SESSION",
 				MaterialPath: writeSessionFixture(t),
 				Annotations:  tc.annotations,
+				// Debug surfaces the exact bytes handed to the engine, which is
+				// what the strongest assertion below inspects.
+				Debug: true,
 			}
 
 			result, err := Evaluate(opts, zerolog.New(os.Stderr))
@@ -287,7 +292,17 @@ func TestEvaluateReadsUnredactedMaterialFromDisk(t *testing.T) {
 
 			assert.False(t, result.Result.Skipped)
 			require.Len(t, result.Result.Violations, 1)
-			assert.Contains(t, result.Result.Violations[0], "GitHub token found")
+			assert.Contains(t, result.Result.Violations[0], "secrets were found and redacted")
+
+			// The point of the whole change: the credential is nowhere in the
+			// policy input, and the placeholder that replaced it is.
+			require.NotNil(t, result.DebugInfo)
+			require.NotEmpty(t, result.DebugInfo.Inputs)
+			for _, input := range result.DebugInfo.Inputs {
+				assert.NotContains(t, string(input), fixtureGitHubPAT,
+					"the policy engine must never receive the un-redacted credential")
+				assert.Contains(t, string(input), "[REDACTED:")
+			}
 		})
 	}
 }

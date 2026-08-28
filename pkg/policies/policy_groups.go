@@ -49,8 +49,9 @@ func NewPolicyGroupVerifier(policyGroups []*v1.PolicyGroupAttachment, policies *
 }
 
 // VerifyMaterial evaluates a material against groups of policies defined in the schema
-func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *api.Attestation_Material, path string) ([]*api.PolicyEvaluation, error) {
+func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *api.Attestation_Material, path string, opts ...VerifyMaterialOption) ([]*api.PolicyEvaluation, error) {
 	result := make([]*api.PolicyEvaluation, 0)
+	o := newVerifyMaterialOpts(opts...)
 
 	groupAtts := pgv.policyGroups
 
@@ -82,8 +83,10 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			continue
 		}
 
-		// Load material content once for all policies in this group
-		subject, err := material.GetEvaluableContent(path)
+		// Load material content once for all policies in this group. Kept below
+		// the skip above so that a material with no applicable policies never
+		// resolves its content at all.
+		subject, err := material.GetEvaluableContentFrom(path, o.content)
 		if err != nil {
 			return nil, NewPolicyError(err)
 		}

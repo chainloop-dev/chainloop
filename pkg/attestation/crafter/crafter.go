@@ -761,13 +761,21 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 	}
 
 	// 3- Craft resulting material
-	mt, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger, &materials.CraftingOpts{
+	crafted, err := materials.Craft(context.Background(), m, value, casBackend, c.ociRegistryAuth, c.Logger, &materials.CraftingOpts{
 		NoStrictValidation:  c.noStrictValidation,
 		SkipSecretRedaction: c.skipSecretRedaction,
 	})
 	if err != nil {
 		return nil, err
 	}
+	mt := crafted.Material
+
+	// Crafters that transformed the artifact before storing it (redacting secrets
+	// out of an AI coding session) hand back what they stored, and that is what
+	// the policies below must see. Reading the file on disk instead would feed
+	// user-authored Rego the very secrets redaction removed. nil for every other
+	// material, which resolves its content the usual way.
+	withEvaluableContent := policies.WithMaterialContent(crafted.EvaluableContent)
 
 	// 4 - Populate annotations from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
@@ -820,7 +828,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithProjectContext(projectName, projectVersion),
 	)
-	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value)
+	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value, withEvaluableContent)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policy groups to material: %w", err)
 	}
@@ -841,7 +849,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		policies.WithProjectContext(projectName, projectVersion),
 		policies.WithRuntimeInputs(addOptions.runtimeInputs),
 	)
-	policyResults, err := pv.VerifyMaterial(ctx, mt, value)
+	policyResults, err := pv.VerifyMaterial(ctx, mt, value, withEvaluableContent)
 	if err != nil {
 		return nil, fmt.Errorf("error applying policies to material: %w", err)
 	}

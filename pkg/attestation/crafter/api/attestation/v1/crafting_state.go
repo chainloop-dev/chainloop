@@ -62,8 +62,9 @@ var (
 	// AnnotationMaterialRedacted marks a material whose stored content was
 	// transformed by its crafter before upload, to strip secrets out of it. Two
 	// things follow from it: the recorded digest describes the redacted artifact
-	// rather than the file on disk, and policy evaluation must read the untouched
-	// local file instead of the stored content (see GetEvaluableContent).
+	// rather than the file on disk, and policy evaluation must be handed that
+	// sanitized copy explicitly, because the file on disk still holds the secrets
+	// (see GetEvaluableContentFrom, which fails closed without it).
 	AnnotationMaterialRedacted = CreateAnnotation("material.redacted")
 	// AnnotationMaterialRedactionCount is how many secrets were replaced.
 	AnnotationMaterialRedactionCount = CreateAnnotation("material.redaction.count")
@@ -110,10 +111,44 @@ func (m *Attestation_Material) NormalizedOutput() (*NormalizedMaterialOutput, er
 	return nil, fmt.Errorf("unknown material: %s", m.MaterialType)
 }
 
-// GetEvaluableContent returns the content to be sent to policy evaluations
+// ErrRedactedContentRequired is returned when policy evaluation is asked to
+// resolve a material whose stored copy was sanitized, without being given that
+// copy. There is no safe source left: the file on disk is the un-redacted
+// original, and for a CAS-backed material the sanitized bytes were streamed away
+// and are not on the material at all.
+var ErrRedactedContentRequired = errors.New(
+	"sanitized content is required to evaluate a redacted material: " +
+		"policies must never be handed the un-redacted original")
+
+// GetEvaluableContent returns the content to be sent to policy evaluations,
+// resolved from the material's stored copy or the file on disk.
 func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error) {
+	return m.GetEvaluableContentFrom(value, nil)
+}
+
+// GetEvaluableContentFrom is GetEvaluableContent with an explicit content source.
+//
+// content, when non-empty, is what policies are evaluated against, overriding
+// both the inline bytes and the file on disk. Crafters that transform an artifact
+// before it leaves the machine — redacting secrets out of an AI coding session —
+// hand back the bytes they stored so that the policy engine sees exactly those,
+// whatever CAS backend is in use.
+//
+// A material marked redacted with no content supplied fails closed. One
+// consequence is worth knowing: such a material's policy input cannot be
+// reconstructed from persisted crafting state alone, so any future push-time or
+// server-side material evaluation has to plumb the bytes through as well.
+func (m *Attestation_Material) GetEvaluableContentFrom(value string, content []byte) ([]byte, error) {
 	var rawMaterial []byte
 	var err error
+
+	// Fail closed before any source is chosen: a material whose stored copy was
+	// sanitized has exactly one valid policy input, and it is not the file on
+	// disk. Checked here rather than inside the artifact branch below so that it
+	// also covers material kinds that carry no artifact.
+	if len(content) == 0 && m.GetAnnotations()[AnnotationMaterialRedacted] == AnnotationValueTrue {
+		return nil, ErrRedactedContentRequired
+	}
 
 	artifact := m.GetArtifact()
 	if artifact == nil && m.GetSbomArtifact() != nil {
@@ -121,19 +156,17 @@ func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error)
 	}
 
 	if artifact != nil {
-		// Policies must evaluate the artifact as it was produced. For a redacted
-		// material the inline bytes are the sanitized copy, so the untouched file
-		// on disk wins; without a local path there is nothing better to read.
-		// This keeps the policy input identical whatever CAS backend is in use,
-		// which matters most in dry runs, where the backend is always inline and
-		// is exactly where people test their policies.
-		useInlineContent := m.InlineCas
-		if m.GetAnnotations()[AnnotationMaterialRedacted] == AnnotationValueTrue && value != "" {
-			useInlineContent = false
-		}
-
 		switch {
-		case useInlineContent:
+		case len(content) > 0:
+			// NOTE: ingestMaterialToJSON re-reads the artifact from `value` for
+			// the kinds it projects from a path (JUNIT_XML, HELM_CHART), so
+			// supplied content would be silently ignored for those. Unreachable
+			// today, since only CHAINLOOP_AI_CODING_SESSION supplies content and
+			// it is JSON-native. A crafter that starts transforming what it
+			// stores for a path-projected kind must make the projection
+			// content-based first, or it will fail open.
+			rawMaterial = content
+		case m.InlineCas:
 			rawMaterial = artifact.GetContent()
 		case value == "":
 			return nil, errors.New("artifact path required")

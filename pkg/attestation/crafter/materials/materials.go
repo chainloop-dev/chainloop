@@ -172,8 +172,10 @@ type uploadAndCraftOpts struct {
 	// leaves the machine, such as redacting secrets out of an AI coding session.
 	// The recorded digest, size and uploaded (or inline) body then all describe
 	// the transformed content, which is the only content that ever reaches the
-	// CAS. The file on disk is left untouched, and remains what policies are
-	// evaluated against. The original filename is preserved.
+	// CAS. The file on disk is left untouched, but it is no longer what the
+	// material describes: such a crafter must also report the transformed bytes
+	// (see transformCrafter), since reading the artifact back off disk would no
+	// longer yield the stored content. The original filename is preserved.
 	contentOverride []byte
 }
 
@@ -350,6 +352,32 @@ type Craftable interface {
 	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
 }
 
+// transformCrafter is implemented by crafters that do not store the artifact
+// verbatim, and returns the bytes they stored in its place. For such a material
+// the file on disk is no longer the stored content, so anything that needs to
+// read the artifact back has to be given these bytes instead. What it is then
+// used for is the caller's business: today it feeds policy evaluation, which must
+// not see the data the transformation removed.
+//
+// Opt-in on purpose, and deliberately not on crafterCommon: a content field
+// shared by every crafter would let any of them report content that diverges
+// from its own recorded digest.
+type transformCrafter interface {
+	transformCraft(ctx context.Context, value string) (*api.Attestation_Material, []byte, error)
+}
+
+// CraftResult is a crafted material together with the content policies must be
+// evaluated against.
+type CraftResult struct {
+	Material *api.Attestation_Material
+	// EvaluableContent is the sanitized copy of the artifact, set only by
+	// crafters that transformed it before storing it — today, an AI coding
+	// session with secrets redacted out of it. nil means the stored bytes are the
+	// file on disk, so policy evaluation resolves the content the usual way and
+	// nothing extra is held in memory.
+	EvaluableContent []byte
+}
+
 // CraftingOpts contains options for crafting materials
 type CraftingOpts struct {
 	NoStrictValidation bool
@@ -359,7 +387,7 @@ type CraftingOpts struct {
 }
 
 //nolint:gocyclo
-func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger, opts *CraftingOpts) (*api.Attestation_Material, error) {
+func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger, opts *CraftingOpts) (*CraftResult, error) {
 	var crafter Craftable
 	var err error
 
@@ -470,7 +498,13 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		return nil, err
 	}
 
-	m, err := crafter.Craft(ctx, value)
+	var m *api.Attestation_Material
+	var transformed []byte
+	if tc, ok := crafter.(transformCrafter); ok {
+		m, transformed, err = tc.transformCraft(ctx, value)
+	} else {
+		m, err = crafter.Craft(ctx, value)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("crafting material: %w", err)
 	}
@@ -489,5 +523,5 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	m.Output = materialSchema.Output
 	m.Required = !materialSchema.Optional
 
-	return m, nil
+	return &CraftResult{Material: m, EvaluableContent: transformed}, nil
 }
