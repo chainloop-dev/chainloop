@@ -355,18 +355,18 @@ type Craftable interface {
 // CraftResult is what crafting an artifact yields.
 type CraftResult struct {
 	Material *api.Attestation_Material
-	// Transformed is what the crafter stored in place of the artifact, when it
-	// did not store it verbatim — today, an AI coding session with secrets
-	// redacted out of it. For such a material the file on disk is no longer the
-	// stored content, so anything that needs to read the artifact back has to be
-	// given these bytes instead; what they are then used for is the caller's
-	// business, and today they feed policy evaluation, which must not see the
-	// data the transformation removed.
+	// Content is what the crafter stored in place of the artifact, when it did
+	// not store it verbatim — today, an AI coding session with secrets redacted
+	// out of it. For such a material the file on disk is no longer the stored
+	// content, so anything that needs to read the artifact back has to be given
+	// these bytes instead; what they are then used for is the caller's business,
+	// and today they feed policy evaluation, which must not see the data the
+	// transformation removed.
 	//
 	// nil for every crafter that stores the artifact as it found it, which is all
 	// but one: their content resolves from the material or the file as usual and
 	// nothing extra is held in memory.
-	Transformed []byte
+	Content []byte
 }
 
 // craftResult wraps a crafted material, propagating an error unchanged. It keeps

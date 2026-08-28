@@ -66,7 +66,7 @@ func TestCraft(t *testing.T) {
 	require.NoError(t, err)
 	// A crafter that stores the artifact as it found it reports nothing extra, so
 	// the content resolves from the material or the file as usual.
-	assert.Nil(res.Transformed)
+	assert.Nil(res.Content)
 
 	got := res.Material
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)

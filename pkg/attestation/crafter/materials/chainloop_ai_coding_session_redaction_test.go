@@ -271,7 +271,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 
 			res, err := crafter.Craft(context.TODO(), path)
 			require.NoError(t, err)
-			got, transformed := res.Material, res.Transformed
+			got, content := res.Material, res.Content
 
 			if tc.inlineBackend {
 				require.True(t, got.InlineCas)
@@ -291,13 +291,13 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 				// it against the recorded digest is the strongest available form
 				// of "policies see exactly what was stored": it holds even for
 				// skip-upload, where the stored bytes are kept nowhere else.
-				require.NotNil(t, transformed, "a redacted session must hand back its sanitized copy")
-				assert.Equal(t, sha256Digest(string(transformed)), got.GetArtifact().Digest)
-				assert.NotContains(t, string(transformed), awsKey)
-				assert.Contains(t, string(transformed), "[REDACTED:aws-access-token]")
+				require.NotNil(t, content, "a redacted session must hand back its sanitized copy")
+				assert.Equal(t, sha256Digest(string(content)), got.GetArtifact().Digest)
+				assert.NotContains(t, string(content), awsKey)
+				assert.Contains(t, string(content), "[REDACTED:aws-access-token]")
 
 				if stored != nil {
-					assert.Equal(t, string(stored), string(transformed))
+					assert.Equal(t, string(stored), string(content))
 					assert.NotContains(t, string(stored), awsKey)
 					assert.Contains(t, string(stored), "[REDACTED:aws-access-token]")
 				}
@@ -307,13 +307,13 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
 				// Nothing was transformed, so nothing is held in memory for the
 				// policy engine: it reads the file, which is what was stored.
-				assert.Nil(t, transformed)
+				assert.Nil(t, content)
 			default:
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedacted)
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedactionSkipped)
 				// Nothing to redact, so the digest stays reproducible from the file.
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
-				assert.Nil(t, transformed)
+				assert.Nil(t, content)
 			}
 
 			// Redaction must never touch the source file.

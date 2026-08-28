@@ -27,7 +27,7 @@ import (
 //	got, err := craftedMaterial(crafter.Craft(ctx, path))
 //
 // Tests that care about what the crafter stored in place of the artifact use
-// CraftResult.Transformed directly instead.
+// CraftResult.Content directly instead.
 func craftedMaterial(res *materials.CraftResult, err error) (*attestationApi.Attestation_Material, error) {
 	if res == nil {
 		return nil, err

@@ -70,7 +70,7 @@ func NewChainloopAICodingSessionCrafter(schema *schemaapi.CraftingSchema_Materia
 // material definition.
 //
 // The file on disk is left untouched, so it is no longer the stored content once
-// anything was redacted. The sanitized copy is returned as CraftResult.Transformed
+// anything was redacted. The sanitized copy is returned as CraftResult.Content
 // for whoever needs to read the artifact back — today policy evaluation, which
 // must not be handed the credentials the session captured.
 func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
@@ -135,7 +135,7 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 		material.Annotations[annotationAICodingModel] = data.Model.Primary
 	}
 
-	return &CraftResult{Material: material, Transformed: redacted}, nil
+	return &CraftResult{Material: material, Content: redacted}, nil
 }
 
 // redact strips secrets out of the session content, returning the sanitized copy

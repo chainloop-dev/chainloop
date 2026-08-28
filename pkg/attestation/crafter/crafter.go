@@ -775,7 +775,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 	// the policies below must see. Reading the file on disk instead would feed
 	// user-authored Rego the very secrets redaction removed. nil for every other
 	// material, which resolves its content the usual way.
-	withStoredContent := policies.WithMaterialContent(crafted.Transformed)
+	withStoredContent := policies.WithMaterialContent(crafted.Content)
 
 	// 4 - Populate annotations from the ones provided at runtime
 	// a) we do not allow overriding values that come from the contract
