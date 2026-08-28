@@ -258,7 +258,6 @@ environment:
     # MUST share it (transcript discovery is os.UserHomeDir()-based; a mismatch
     # silently loses usage/cost/tools), but sbx already sets HOME=/home/agent on
     # PID 1, so every child inherits it - verified in a plain `claude` sandbox.
-    DO_NOT_TRACK: "1"                        # silence PostHog telemetry under restricted egress
     # Mode selection - see the traceMode arg above for what each value does.
     CHAINLOOP_TRACE_MODE: ${{ kit.args.traceMode }}
     # `trace run` identity ONLY. Empty in persistent mode, where the identity
@@ -365,6 +364,7 @@ permissions:                                 # v1: `network.allowedDomains:`
       - "api.cp.chainloop.dev:443"           # control plane - ALWAYS (attest + keyless signing CSR)
       - "api.cas.chainloop.dev:443"          # CAS - only if the org CAS backend is external
       - "api.app.chainloop.dev:443"          # platform backend - the EE CLI also dials this
+      - "crb.chainloop.dev:443"              # CLI usage telemetry (PostHog)
       - "timestamp.digicert.com:80"          # RFC 3161 timestamp authority (plain HTTP, signed response)
                                              # used during attestation signing; host comes from the
                                              # control plane's signing options
