@@ -301,7 +301,7 @@ func (pv *PolicyVerifier) VerifyMaterial(ctx context.Context, material *v12.Atte
 	}
 
 	// Load material content
-	subject, err := material.GetEvaluableContentFrom(artifactPath, o.content)
+	subject, err := material.GetEvaluableContent(artifactPath, o.content)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}

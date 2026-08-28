@@ -64,7 +64,7 @@ var (
 	// things follow from it: the recorded digest describes the redacted artifact
 	// rather than the file on disk, and policy evaluation must be handed that
 	// sanitized copy explicitly, because the file on disk still holds the secrets
-	// (see GetEvaluableContentFrom, which fails closed without it).
+	// (see GetEvaluableContent, which fails closed without it).
 	AnnotationMaterialRedacted = CreateAnnotation("material.redacted")
 	// AnnotationMaterialRedactionCount is how many secrets were replaced.
 	AnnotationMaterialRedactionCount = CreateAnnotation("material.redaction.count")
@@ -120,25 +120,20 @@ var ErrRedactedContentRequired = errors.New(
 	"sanitized content is required to evaluate a redacted material: " +
 		"policies must never be handed the un-redacted original")
 
-// GetEvaluableContent returns the content to be sent to policy evaluations,
-// resolved from the material's stored copy or the file on disk.
-func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error) {
-	return m.GetEvaluableContentFrom(value, nil)
-}
-
-// GetEvaluableContentFrom is GetEvaluableContent with an explicit content source.
+// GetEvaluableContent returns the content to be sent to policy evaluations.
 //
 // content, when non-empty, is what policies are evaluated against, overriding
-// both the inline bytes and the file on disk. Crafters that transform an artifact
+// both the inline bytes and the file at value. Crafters that transform an artifact
 // before it leaves the machine — redacting secrets out of an AI coding session —
-// hand back the bytes they stored so that the policy engine sees exactly those,
-// whatever CAS backend is in use.
+// report the bytes they stored so that the policy engine sees exactly those,
+// whatever CAS backend is in use. Pass nil to resolve the content from the
+// material or the file, which is what every other material does.
 //
 // A material marked redacted with no content supplied fails closed. One
 // consequence is worth knowing: such a material's policy input cannot be
 // reconstructed from persisted crafting state alone, so any future push-time or
 // server-side material evaluation has to plumb the bytes through as well.
-func (m *Attestation_Material) GetEvaluableContentFrom(value string, content []byte) ([]byte, error) {
+func (m *Attestation_Material) GetEvaluableContent(value string, content []byte) ([]byte, error) {
 	var rawMaterial []byte
 	var err error
 

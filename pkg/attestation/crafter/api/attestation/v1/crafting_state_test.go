@@ -319,7 +319,7 @@ func TestGetEvaluableContentWithMetadata(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			content, err := tc.material.GetEvaluableContent(tc.filename)
+			content, err := tc.material.GetEvaluableContent(tc.filename, nil)
 			assert.NoError(t, err)
 			decoder := json.NewDecoder(bytes.NewReader(content))
 
@@ -349,7 +349,7 @@ func TestDranzerBundleIsEvaluable(t *testing.T) {
 		},
 	}
 
-	content, err := m.GetEvaluableContent("testdata/dranzer-bundle.zip")
+	content, err := m.GetEvaluableContent("testdata/dranzer-bundle.zip", nil)
 	require.NoError(t, err)
 
 	var decoded map[string]any
@@ -402,7 +402,7 @@ func TestRadamsaReportArchiveIsEvaluable(t *testing.T) {
 				},
 			}
 
-			content, err := m.GetEvaluableContent(tc.path)
+			content, err := m.GetEvaluableContent(tc.path, nil)
 			require.NoError(t, err)
 
 			var decoded map[string]any
@@ -460,7 +460,7 @@ func TestCoberturaEmptyReportIsEvaluable(t *testing.T) {
 		},
 	}
 
-	content, err := m.GetEvaluableContent("testdata/cobertura-empty.xml")
+	content, err := m.GetEvaluableContent("testdata/cobertura-empty.xml", nil)
 	require.NoError(t, err, "empty report must be evaluable, not error on NaN")
 
 	var decoded map[string]any
@@ -481,7 +481,7 @@ func TestTruffleHogCleanScanIsEvaluable(t *testing.T) {
 		},
 	}
 
-	content, err := m.GetEvaluableContent("testdata/trufflehog-clean-scan.jsonl")
+	content, err := m.GetEvaluableContent("testdata/trufflehog-clean-scan.jsonl", nil)
 	require.NoError(t, err, "clean scan must be evaluable")
 
 	var decoded map[string]any
@@ -613,7 +613,7 @@ func TestGetEvaluableContentRedactedNeverReadsDisk(t *testing.T) {
 				},
 			}
 
-			content, err := m.GetEvaluableContentFrom(tc.path, tc.content)
+			content, err := m.GetEvaluableContent(tc.path, tc.content)
 			if tc.wantErr != nil {
 				require.ErrorIs(t, err, tc.wantErr)
 				return
@@ -634,11 +634,11 @@ func TestGetEvaluableContentRedactedNeverReadsDisk(t *testing.T) {
 	}
 }
 
-// TestGetEvaluableContentFromInjectsMetadata pins that supplying the content does
+// TestGetEvaluableContentInjectsMetadata pins that supplying the content does
 // not bypass the projection the policy engine relies on: the chainloop_metadata
 // descriptor is still injected, so a policy can read the redaction annotations
 // alongside the sanitized body.
-func TestGetEvaluableContentFromInjectsMetadata(t *testing.T) {
+func TestGetEvaluableContentInjectsMetadata(t *testing.T) {
 	m := &Attestation_Material{
 		MaterialType: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
 		Annotations: map[string]string{
@@ -651,7 +651,7 @@ func TestGetEvaluableContentFromInjectsMetadata(t *testing.T) {
 		},
 	}
 
-	content, err := m.GetEvaluableContentFrom("", []byte(`{"secret":"[REDACTED:jwt]"}`))
+	content, err := m.GetEvaluableContent("", []byte(`{"secret":"[REDACTED:jwt]"}`))
 	require.NoError(t, err)
 
 	var decoded struct {
@@ -685,7 +685,7 @@ func TestTruffleHogCleanScanIsEvaluableInline(t *testing.T) {
 		},
 	}
 
-	content, err := m.GetEvaluableContent("testdata/trufflehog-clean-scan.jsonl")
+	content, err := m.GetEvaluableContent("testdata/trufflehog-clean-scan.jsonl", nil)
 	require.NoError(t, err)
 
 	var decoded map[string]any
@@ -711,7 +711,7 @@ func pitestMaterial() *Attestation_Material {
 func pitestMutations(t *testing.T, path string) (map[string]any, []any) {
 	t.Helper()
 
-	content, err := pitestMaterial().GetEvaluableContent(path)
+	content, err := pitestMaterial().GetEvaluableContent(path, nil)
 	require.NoError(t, err)
 
 	var decoded map[string]any
@@ -803,6 +803,6 @@ func TestPitestFullMutationMatrixIsEvaluable(t *testing.T) {
 // TestPitestInvalidReportIsNotEvaluable guards that a non-PIT XML report
 // fails the projection instead of producing an empty policy input.
 func TestPitestInvalidReportIsNotEvaluable(t *testing.T) {
-	_, err := pitestMaterial().GetEvaluableContent("testdata/cobertura.xml")
+	_, err := pitestMaterial().GetEvaluableContent("testdata/cobertura.xml", nil)
 	require.ErrorContains(t, err, "invalid PIT report file")
 }
