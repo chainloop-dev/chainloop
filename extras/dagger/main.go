@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	chainloopVersion = "v1.107.3"
-	platformVersion  = "v1.104.0"
+	chainloopVersion = "v1.108.0"
+	platformVersion  = "v1.106.3"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
