@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewTraceInitCmd creates the trace init subcommand.
+// newTraceInitCmd creates the trace init subcommand.
 func newTraceInitCmd() *cobra.Command {
 	var (
 		project      string

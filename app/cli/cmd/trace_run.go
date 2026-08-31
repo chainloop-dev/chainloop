@@ -36,7 +36,7 @@ and the optional --version flag. It does not read from or write to
 .chainloop.yml, and removes every hook and local trace artifact when the
 wrapped command exits, so a session never leaks setup into the next one.`
 
-// NewTraceRunCmd creates the `trace run` subcommand.
+// newTraceRunCmd creates the `trace run` subcommand.
 func newTraceRunCmd() *cobra.Command {
 	var (
 		projectFlag  string

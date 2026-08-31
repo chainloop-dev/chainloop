@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewTraceUninstallCmd creates the trace uninstall subcommand.
+// newTraceUninstallCmd creates the trace uninstall subcommand.
 func newTraceUninstallCmd() *cobra.Command {
 	var yes bool
 
