@@ -28,9 +28,10 @@ import (
 var hookLogFile *os.File
 
 // stderrMinLevel is the minimum zerolog.Level that hook commands write to
-// stderr. All levels still reach the on-disk trace log; stderr is filtered
-// to keep git/agent hooks quiet during normal operations.
-var stderrMinLevel = zerolog.WarnLevel
+// stderr. All levels still reach the on-disk trace log; stderr is filtered so
+// a hook stays readable when git interleaves its output with the commit or
+// push it is running inside. InitHookLogger sets it per invocation.
+var stderrMinLevel = zerolog.InfoLevel
 
 // levelFilterWriter only forwards log entries at or above minLevel to w.
 // Used by hook commands to keep stderr quiet while letting the trace log
@@ -79,7 +80,11 @@ func hookStderrWriter() *levelFilterWriter {
 func InitHookLogger() func() {
 	closeHookLogFile()
 
-	// --debug lowers the stderr floor; the log file always gets every level.
+	// Mirror initLogger: Info normally, Debug with --debug. Info matters —
+	// it carries the "commit record saved" / attestation feedback that tells
+	// the user trace is doing something during a commit or push. The log file
+	// always gets every level regardless.
+	stderrMinLevel = zerolog.InfoLevel
 	if flagDebug {
 		stderrMinLevel = zerolog.DebugLevel
 	}
