@@ -146,9 +146,10 @@ func (m *Attestation_Material) GetEvaluableContent(value string, content []byte)
 	}
 
 	if len(content) > 0 {
-		// Chosen ahead of the artifact below so that supplied content wins for
-		// every material kind, including the ones that carry no artifact at all
-		// (a container image, a string) and would otherwise resolve to "{}".
+		// Chosen ahead of the artifact below so that supplied content is
+		// authoritative for every material kind, rather than only for the ones
+		// whose content happens to resolve from an artifact. A kind that carries
+		// no artifact would otherwise drop it and project "{}" instead.
 		//
 		// NOTE: ingestMaterialToJSON re-reads the artifact from `value` for the
 		// kinds it projects from a path (JUNIT_XML, HELM_CHART), so supplied
