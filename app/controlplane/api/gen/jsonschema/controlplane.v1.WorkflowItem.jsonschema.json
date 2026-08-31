@@ -26,6 +26,10 @@
       "maximum": 2147483647,
       "minimum": -2147483648,
       "type": "integer"
+    },
+    "^(workflow_template_id)$": {
+      "description": "Optional reference to the platform workflow template this workflow was created from.\n Empty when the workflow is not bound to any template.",
+      "type": "string"
     }
   },
   "properties": {
@@ -70,6 +74,10 @@
       "type": "integer"
     },
     "team": {
+      "type": "string"
+    },
+    "workflowTemplateId": {
+      "description": "Optional reference to the platform workflow template this workflow was created from.\n Empty when the workflow is not bound to any template.",
       "type": "string"
     }
   },

@@ -32,18 +32,27 @@ func NewWorkflowCreate(cfg *ActionsOpts) *WorkflowCreate {
 type NewWorkflowCreateOpts struct {
 	Name, Description, Project, Team, ContractName string
 	ContractBytes                                  []byte
+	// WorkflowTemplateID optionally binds the workflow to a platform workflow template.
+	// The open-source CLI does not set it, it exists so template-aware clients can.
+	WorkflowTemplateID string
 }
 
 func (action *WorkflowCreate) Run(opts *NewWorkflowCreateOpts) (*WorkflowItem, error) {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
-	resp, err := client.Create(context.Background(), &pb.WorkflowServiceCreateRequest{
-		Name: opts.Name, ProjectName: opts.Project, Team: opts.Team, ContractName: opts.ContractName,
-		Description:   opts.Description,
-		ContractBytes: opts.ContractBytes,
-	})
+	resp, err := client.Create(context.Background(), newWorkflowCreateRequest(opts))
 	if err != nil {
 		return nil, err
 	}
 
 	return pbWorkflowItemToAction(resp.Result), nil
+}
+
+// newWorkflowCreateRequest maps the create options to the API request
+func newWorkflowCreateRequest(opts *NewWorkflowCreateOpts) *pb.WorkflowServiceCreateRequest {
+	return &pb.WorkflowServiceCreateRequest{
+		Name: opts.Name, ProjectName: opts.Project, Team: opts.Team, ContractName: opts.ContractName,
+		Description:        opts.Description,
+		ContractBytes:      opts.ContractBytes,
+		WorkflowTemplateId: opts.WorkflowTemplateID,
+	}
 }

@@ -218,6 +218,41 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 	}
 }
 
+// TestCreateWithWorkflowTemplate verifies that the platform workflow template reference given
+// at creation time is persisted and read back. The reference is opaque: the control plane has no
+// workflow_template table, so an arbitrary UUID is accepted and never dereferenced.
+func (s *workflowIntegrationTestSuite) TestCreateWithWorkflowTemplate() {
+	ctx := context.Background()
+	templateID := uuid.New()
+
+	s.Run("the template reference is persisted and read back", func() {
+		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID: s.org.ID, Name: "templated-workflow", Project: "templated-project",
+			WorkflowTemplateID: &templateID,
+		})
+		require.NoError(s.T(), err)
+		s.Require().NotNil(wf.WorkflowTemplateID)
+		s.Equal(templateID, *wf.WorkflowTemplateID)
+
+		found, err := s.Workflow.FindByID(ctx, wf.ID.String())
+		require.NoError(s.T(), err)
+		s.Require().NotNil(found.WorkflowTemplateID)
+		s.Equal(templateID, *found.WorkflowTemplateID)
+	})
+
+	s.Run("it stays unset when no template is given", func() {
+		wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID: s.org.ID, Name: "plain-workflow", Project: "templated-project",
+		})
+		require.NoError(s.T(), err)
+		s.Nil(wf.WorkflowTemplateID)
+
+		found, err := s.Workflow.FindByID(ctx, wf.ID.String())
+		require.NoError(s.T(), err)
+		s.Nil(found.WorkflowTemplateID)
+	})
+}
+
 // TestCreateWithProjectScopedContract verifies that a project-scoped contract can be used
 // when creating a workflow in the same project, and is rejected for different projects.
 func (s *workflowIntegrationTestSuite) TestCreateWithProjectScopedContract() {

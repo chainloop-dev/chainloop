@@ -91,6 +91,17 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 		OrgRestrictContractCreationToAdmins: org.RestrictContractCreationToOrgAdmins,
 	}
 
+	// The template reference is an opaque pointer to a platform-owned entity: there is no
+	// workflow_template table in the control plane, so existence and ownership are not checked
+	// here. protovalidate already enforces the UUID shape, this parse is defence in depth.
+	if req.GetWorkflowTemplateId() != "" {
+		templateID, err := uuid.Parse(req.GetWorkflowTemplateId())
+		if err != nil {
+			return nil, errors.BadRequest("invalid", "invalid workflow template ID")
+		}
+		createOpts.WorkflowTemplateID = &templateID
+	}
+
 	// add current user as the owner of the project in case it needs to be created
 	user := entities.CurrentUser(ctx)
 	if user != nil {
@@ -306,6 +317,10 @@ func bizWorkflowToPb(wf *biz.Workflow) *pb.WorkflowItem {
 
 	if wf.LastRun != nil {
 		item.LastRun = bizWorkFlowRunToPb(wf.LastRun)
+	}
+
+	if wf.WorkflowTemplateID != nil {
+		item.WorkflowTemplateId = wf.WorkflowTemplateID.String()
 	}
 
 	return item

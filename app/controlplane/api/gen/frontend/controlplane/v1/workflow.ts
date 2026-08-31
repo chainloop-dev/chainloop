@@ -68,6 +68,12 @@ export interface WorkflowServiceCreateRequest {
   contractBytes: Uint8Array;
   team: string;
   description: string;
+  /**
+   * Optional reference to the platform workflow template this workflow is created from.
+   * Not dereferenced nor validated for existence in the control plane, it's an opaque
+   * reference to a platform-owned entity.
+   */
+  workflowTemplateId: string;
 }
 
 export interface WorkflowServiceUpdateRequest {
@@ -134,7 +140,15 @@ export interface WorkflowServiceViewResponse {
 }
 
 function createBaseWorkflowServiceCreateRequest(): WorkflowServiceCreateRequest {
-  return { name: "", projectName: "", contractName: "", contractBytes: new Uint8Array(0), team: "", description: "" };
+  return {
+    name: "",
+    projectName: "",
+    contractName: "",
+    contractBytes: new Uint8Array(0),
+    team: "",
+    description: "",
+    workflowTemplateId: "",
+  };
 }
 
 export const WorkflowServiceCreateRequest = {
@@ -156,6 +170,9 @@ export const WorkflowServiceCreateRequest = {
     }
     if (message.description !== "") {
       writer.uint32(50).string(message.description);
+    }
+    if (message.workflowTemplateId !== "") {
+      writer.uint32(66).string(message.workflowTemplateId);
     }
     return writer;
   },
@@ -209,6 +226,13 @@ export const WorkflowServiceCreateRequest = {
 
           message.description = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.workflowTemplateId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -226,6 +250,7 @@ export const WorkflowServiceCreateRequest = {
       contractBytes: isSet(object.contractBytes) ? bytesFromBase64(object.contractBytes) : new Uint8Array(0),
       team: isSet(object.team) ? String(object.team) : "",
       description: isSet(object.description) ? String(object.description) : "",
+      workflowTemplateId: isSet(object.workflowTemplateId) ? String(object.workflowTemplateId) : "",
     };
   },
 
@@ -240,6 +265,7 @@ export const WorkflowServiceCreateRequest = {
       ));
     message.team !== undefined && (obj.team = message.team);
     message.description !== undefined && (obj.description = message.description);
+    message.workflowTemplateId !== undefined && (obj.workflowTemplateId = message.workflowTemplateId);
     return obj;
   },
 
@@ -255,6 +281,7 @@ export const WorkflowServiceCreateRequest = {
     message.contractBytes = object.contractBytes ?? new Uint8Array(0);
     message.team = object.team ?? "";
     message.description = object.description ?? "";
+    message.workflowTemplateId = object.workflowTemplateId ?? "";
     return message;
   },
 };

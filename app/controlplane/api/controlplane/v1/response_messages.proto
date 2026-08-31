@@ -42,6 +42,9 @@ message WorkflowItem {
   // is retained only for wire compatibility; it will be removed in a future release.
   bool public = 9 [deprecated = true];
   string description = 10;
+  // Optional reference to the platform workflow template this workflow was created from.
+  // Empty when the workflow is not bound to any template.
+  string workflow_template_id = 13;
 }
 
 message WorkflowRunItem {
