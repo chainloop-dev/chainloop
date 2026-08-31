@@ -93,6 +93,12 @@ func Execute(rootCmd *cobra.Command) error {
 }
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
+	// Seed the root logger here and not only in PersistentPreRunE: cobra
+	// rejects unknown subcommands and invalid flags before that hook runs, and
+	// with SilenceErrors set main is the only place those errors get printed.
+	// A zero-value zerolog.Logger has no writer and would drop them silently.
+	logger = l
+
 	rootCmd := &cobra.Command{
 		Use:           appName,
 		Short:         "Chainloop Command Line Interface",
