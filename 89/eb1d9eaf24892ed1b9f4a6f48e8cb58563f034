@@ -1,0 +1,14 @@
+sbxenv.yaml
+  h_cb14c7fdb7afb4 103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "89eb1d9eaf24892ed1b9f4a6f48e8cb58563f034",
+  "prompts": {},
+  "humans": {
+    "h_cb14c7fdb7afb4": {
+      "author": "Miguel Martinez <miguel@chainloop.dev>"
+    }
+  }
+}
