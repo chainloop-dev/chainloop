@@ -93,6 +93,12 @@ func Execute(rootCmd *cobra.Command) error {
 }
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
+	// Seed the root logger here and not only in PersistentPreRunE: cobra
+	// rejects unknown subcommands and invalid flags before that hook runs, and
+	// with SilenceErrors set main is the only place those errors get printed.
+	// A zero-value zerolog.Logger has no writer and would drop them silently.
+	logger = l
+
 	rootCmd := &cobra.Command{
 		Use:           appName,
 		Short:         "Chainloop Command Line Interface",
@@ -290,6 +296,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
 		newIntegrationCmd(), newOrganizationCmd(), newCASBackendCmd(),
 		newReferrerDiscoverCmd(), newPolicyCmd(), newApplyCmd(),
+		newTraceCmd(),
 	)
 
 	// Load plugins for root command and subcommands (except completion and help)
@@ -327,6 +334,13 @@ func init() {
 // isTelemetryDisabled checks if the telemetry is disabled by the user or if we are running a development version
 func isTelemetryDisabled() bool {
 	return os.Getenv(doNotTrackEnv) == "1" || os.Getenv(doNotTrackEnv) == trueString || Version == devVersion
+}
+
+// Logger returns the root logger. Hook commands swap it in place (see
+// InitHookLogger), and main reads it for its final error line so that line
+// shares the hook's colorless formatting during a git commit or push.
+func Logger() zerolog.Logger {
+	return logger
 }
 
 func initLogger(logger zerolog.Logger) (zerolog.Logger, error) {

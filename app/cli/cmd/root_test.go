@@ -15,7 +15,10 @@
 package cmd
 
 import (
+	"bytes"
 	"testing"
+
+	"github.com/rs/zerolog"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -110,4 +113,19 @@ func TestLoadAuthToken(t *testing.T) {
 			assert.Equal(t, tc.expectedIsUser, isUser)
 		})
 	}
+}
+
+// Cobra rejects unknown subcommands and invalid flags before PersistentPreRunE
+// runs, so main prints those errors through a Logger() that PersistentPreRunE
+// never got to initialize. NewRootCmd must leave the root logger usable.
+func TestNewRootCmdInitializesLogger(t *testing.T) {
+	previous := logger
+	t.Cleanup(func() { logger = previous })
+
+	var out bytes.Buffer
+	NewRootCmd(zerolog.New(&out))
+
+	rootLogger := Logger()
+	rootLogger.Error().Msg("boom")
+	assert.Contains(t, out.String(), "boom")
 }

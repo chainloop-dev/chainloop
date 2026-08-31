@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/go-kratos/kratos/v2/errors"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
@@ -45,8 +46,12 @@ func main() {
 	})
 	rootCmd := cmd.NewRootCmd(logger)
 	if err := cmd.Execute(rootCmd); err != nil {
-		msg, exitCode := errorInfo(err, logger)
-		logger.Error().Msg(msg)
+		// cmd.Logger() rather than the local logger: a hook command may have
+		// swapped the root logger for a colorless one, and this final line
+		// should match.
+		hookLogger := cmd.Logger()
+		msg, exitCode := errorInfo(err, hookLogger)
+		hookLogger.Error().Msg(msg)
 		os.Exit(exitCode)
 	}
 }
@@ -89,9 +94,15 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 	}
 
 	var gateErr *cmd.GateError
+	var subprocessErr *action.SubprocessExitError
 
 	// Make overrides
 	switch {
+	case errors.As(err, &subprocessErr):
+		// `chainloop trace run` — surface the wrapped command's exit code so
+		// the parent shell sees the same status it would have seen running the
+		// command directly.
+		return subprocessErr.Error(), subprocessErr.ExitCode
 	case v1.IsCasBackendErrorReasonRequired(err):
 		msg = "you need to enable a CAS backend first. Refer to `chainloop cas-backend` command or contact your administrator."
 	case v1.IsCasBackendErrorReasonInvalid(err):
