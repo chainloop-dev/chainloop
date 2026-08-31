@@ -145,34 +145,39 @@ func (m *Attestation_Material) GetEvaluableContent(value string, content []byte)
 		return nil, ErrRedactedContentRequired
 	}
 
-	artifact := m.GetArtifact()
-	if artifact == nil && m.GetSbomArtifact() != nil {
-		artifact = m.GetSbomArtifact().GetArtifact()
-	}
+	if len(content) > 0 {
+		// Chosen ahead of the artifact below so that supplied content wins for
+		// every material kind, including the ones that carry no artifact at all
+		// (a container image, a string) and would otherwise resolve to "{}".
+		//
+		// NOTE: ingestMaterialToJSON re-reads the artifact from `value` for the
+		// kinds it projects from a path (JUNIT_XML, HELM_CHART), so supplied
+		// content is still ignored for those. Unreachable today, since only
+		// CHAINLOOP_AI_CODING_SESSION supplies content and it is JSON-native. A
+		// crafter that starts transforming what it stores for a path-projected
+		// kind must make the projection content-based first, or it will fail open.
+		rawMaterial = content
+	} else {
+		artifact := m.GetArtifact()
+		if artifact == nil && m.GetSbomArtifact() != nil {
+			artifact = m.GetSbomArtifact().GetArtifact()
+		}
 
-	if artifact != nil {
-		switch {
-		case len(content) > 0:
-			// NOTE: ingestMaterialToJSON re-reads the artifact from `value` for
-			// the kinds it projects from a path (JUNIT_XML, HELM_CHART), so
-			// supplied content would be silently ignored for those. Unreachable
-			// today, since only CHAINLOOP_AI_CODING_SESSION supplies content and
-			// it is JSON-native. A crafter that starts transforming what it
-			// stores for a path-projected kind must make the projection
-			// content-based first, or it will fail open.
-			rawMaterial = content
-		case m.InlineCas:
-			rawMaterial = artifact.GetContent()
-		case value == "":
-			return nil, errors.New("artifact path required")
-		case m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
-			m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML &&
-			m.MaterialType != v1.CraftingSchema_Material_RADAMSA_CRASHES:
-			// read content from local filesystem (except for tgz charts and
-			// metadata-only materials like radamsa crashes)
-			rawMaterial, err = os.ReadFile(value)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read material content: %w", err)
+		if artifact != nil {
+			switch {
+			case m.InlineCas:
+				rawMaterial = artifact.GetContent()
+			case value == "":
+				return nil, errors.New("artifact path required")
+			case m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
+				m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML &&
+				m.MaterialType != v1.CraftingSchema_Material_RADAMSA_CRASHES:
+				// read content from local filesystem (except for tgz charts and
+				// metadata-only materials like radamsa crashes)
+				rawMaterial, err = os.ReadFile(value)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read material content: %w", err)
+				}
 			}
 		}
 	}

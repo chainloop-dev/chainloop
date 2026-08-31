@@ -634,6 +634,51 @@ func TestGetEvaluableContentRedactedNeverReadsDisk(t *testing.T) {
 	}
 }
 
+// TestGetEvaluableContentSuppliedForArtifactlessKind pins that supplied content
+// wins for material kinds that carry no artifact. Those resolve to "{}" on their
+// own — a container image's findings live in chainloop_metadata — so a caller
+// supplying content used to have it silently dropped, handing policies an empty
+// object instead of the bytes it asked for.
+func TestGetEvaluableContentSuppliedForArtifactlessKind(t *testing.T) {
+	testCases := []struct {
+		name     string
+		material *Attestation_Material
+	}{
+		{
+			name: "container image",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_CONTAINER_IMAGE,
+				M: &Attestation_Material_ContainerImage_{
+					ContainerImage: &Attestation_Material_ContainerImage{
+						Name: "image", Digest: "sha256:deadbeef",
+					},
+				},
+			},
+		},
+		{
+			name: "string",
+			material: &Attestation_Material{
+				MaterialType: schemaapi.CraftingSchema_Material_STRING,
+				M: &Attestation_Material_String_{
+					String_: &Attestation_Material_KeyVal{Value: "value"},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			content, err := tc.material.GetEvaluableContent("", []byte(`{"supplied":"yes"}`))
+			require.NoError(t, err)
+
+			var decoded map[string]any
+			require.NoError(t, json.Unmarshal(content, &decoded))
+			assert.Equal(t, "yes", decoded["supplied"],
+				"supplied content must be evaluated whatever the material kind")
+		})
+	}
+}
+
 // TestGetEvaluableContentInjectsMetadata pins that supplying the content does
 // not bypass the projection the policy engine relies on: the chainloop_metadata
 // descriptor is still injected, so a policy can read the redaction annotations
