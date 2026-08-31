@@ -100,7 +100,7 @@ workspace:
   # An in-container clone (host repo mounted read-only), reachable from the host
   # as the `sandbox-<name>` git remote. Required for per-file AI-vs-human line
   # attribution, which needs a readable .git and at least one commit.
-  clone: false
+  clone: true
 
 # Deliberately no additionalWorkspaces: the kit can also authenticate from a
 # mounted host config.toml instead of a token (--kit-arg chainloopConfig=...),
