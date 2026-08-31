@@ -369,7 +369,9 @@ permissions:                                 # v1: `network.allowedDomains:`
                                              # used during attestation signing; host comes from the
                                              # control plane's signing options
       - "dl.chainloop.dev:443"               # EE CLI installer
-      - "chainloop-baafegchfnekdcde.z02.azurefd.net:443"  # EE CLI download CDN
+      - "download.chainloop.dev:443"         # EE CLI download CDN (vanity host in front of the
+                                             # azurefd origin below; newer installers use it)
+      - "chainloop-baafegchfnekdcde.z02.azurefd.net:443"  # EE CLI download CDN (azurefd origin)
       - "github.com:443"                     # git push over HTTPS in persistent mode - the
                                              # pre-push attestation egresses on push. Other
                                              # forges/self-hosted: add your own host here.
