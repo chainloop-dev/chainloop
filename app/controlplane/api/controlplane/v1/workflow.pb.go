@@ -102,8 +102,12 @@ type WorkflowServiceCreateRequest struct {
 	ContractBytes []byte `protobuf:"bytes,4,opt,name=contract_bytes,json=contractBytes,proto3" json:"contract_bytes,omitempty"`
 	Team          string `protobuf:"bytes,5,opt,name=team,proto3" json:"team,omitempty"`
 	Description   string `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Optional reference to the platform workflow template this workflow is created from.
+	// Not dereferenced nor validated for existence in the control plane, it's an opaque
+	// reference to a platform-owned entity.
+	WorkflowTemplateId string `protobuf:"bytes,8,opt,name=workflow_template_id,json=workflowTemplateId,proto3" json:"workflow_template_id,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *WorkflowServiceCreateRequest) Reset() {
@@ -174,6 +178,13 @@ func (x *WorkflowServiceCreateRequest) GetTeam() string {
 func (x *WorkflowServiceCreateRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *WorkflowServiceCreateRequest) GetWorkflowTemplateId() string {
+	if x != nil {
+		return x.WorkflowTemplateId
 	}
 	return ""
 }
@@ -701,7 +712,7 @@ var File_controlplane_v1_workflow_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_workflow_proto_rawDesc = "" +
 	"\n" +
-	"\x1econtrolplane/v1/workflow.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\x1a\x1ejsonfilter/v1/jsonfilter.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xfe\x03\n" +
+	"\x1econtrolplane/v1/workflow.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\x1a\x1ejsonfilter/v1/jsonfilter.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xbd\x04\n" +
 	"\x1cWorkflowServiceCreateRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12*\n" +
@@ -710,7 +721,8 @@ const file_controlplane_v1_workflow_proto_rawDesc = "" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')\xd8\x01\x01R\fcontractName\x12%\n" +
 	"\x0econtract_bytes\x18\x04 \x01(\fR\rcontractBytes\x12\x12\n" +
 	"\x04team\x18\x05 \x01(\tR\x04team\x12 \n" +
-	"\vdescription\x18\x06 \x01(\tR\vdescriptionJ\x04\b\a\x10\bR\x06public\"\x8d\x04\n" +
+	"\vdescription\x18\x06 \x01(\tR\vdescription\x12=\n" +
+	"\x14workflow_template_id\x18\b \x01(\tB\v\xbaH\b\xd8\x01\x01r\x03\xb0\x01\x01R\x12workflowTemplateIdJ\x04\b\a\x10\bR\x06public\"\x8d\x04\n" +
 	"\x1cWorkflowServiceUpdateRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12*\n" +

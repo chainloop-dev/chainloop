@@ -60,6 +60,14 @@ message WorkflowServiceCreateRequest {
   string description = 6;
   reserved 7;
   reserved "public";
+
+  // Optional reference to the platform workflow template this workflow is created from.
+  // Not dereferenced nor validated for existence in the control plane, it's an opaque
+  // reference to a platform-owned entity.
+  string workflow_template_id = 8 [
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE,
+    (buf.validate.field).string.uuid = true
+  ];
 }
 
 message WorkflowServiceUpdateRequest {

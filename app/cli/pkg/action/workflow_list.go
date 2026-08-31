@@ -38,6 +38,9 @@ type WorkflowItem struct {
 	ContractName           string           `json:"contractName,omitempty"`
 	ContractRevisionLatest int32            `json:"contractRevisionLatest,omitempty"`
 	LastRun                *WorkflowRunItem `json:"lastRun,omitempty"`
+	// WorkflowTemplateID is the platform workflow template this workflow is bound to,
+	// empty when it is not bound to any
+	WorkflowTemplateID string `json:"workflowTemplateId,omitempty"`
 }
 
 // WorkflowListResult holds the output of the workflow list action
@@ -106,6 +109,7 @@ func pbWorkflowItemToAction(wf *pb.WorkflowItem) *WorkflowItem {
 		ContractRevisionLatest: wf.ContractRevisionLatest,
 		LastRun:                pbWorkflowRunItemToAction(wf.LastRun),
 		Description:            wf.Description,
+		WorkflowTemplateID:     wf.WorkflowTemplateId,
 	}
 }
 

@@ -508,6 +508,11 @@ export interface WorkflowItem {
    */
   public: boolean;
   description: string;
+  /**
+   * Optional reference to the platform workflow template this workflow was created from.
+   * Empty when the workflow is not bound to any template.
+   */
+  workflowTemplateId: string;
 }
 
 export interface WorkflowRunItem {
@@ -1041,6 +1046,7 @@ function createBaseWorkflowItem(): WorkflowItem {
     contractRevisionLatest: 0,
     public: false,
     description: "",
+    workflowTemplateId: "",
   };
 }
 
@@ -1081,6 +1087,9 @@ export const WorkflowItem = {
     }
     if (message.description !== "") {
       writer.uint32(82).string(message.description);
+    }
+    if (message.workflowTemplateId !== "") {
+      writer.uint32(106).string(message.workflowTemplateId);
     }
     return writer;
   },
@@ -1176,6 +1185,13 @@ export const WorkflowItem = {
 
           message.description = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.workflowTemplateId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1199,6 +1215,7 @@ export const WorkflowItem = {
       contractRevisionLatest: isSet(object.contractRevisionLatest) ? Number(object.contractRevisionLatest) : 0,
       public: isSet(object.public) ? Boolean(object.public) : false,
       description: isSet(object.description) ? String(object.description) : "",
+      workflowTemplateId: isSet(object.workflowTemplateId) ? String(object.workflowTemplateId) : "",
     };
   },
 
@@ -1218,6 +1235,7 @@ export const WorkflowItem = {
       (obj.contractRevisionLatest = Math.round(message.contractRevisionLatest));
     message.public !== undefined && (obj.public = message.public);
     message.description !== undefined && (obj.description = message.description);
+    message.workflowTemplateId !== undefined && (obj.workflowTemplateId = message.workflowTemplateId);
     return obj;
   },
 
@@ -1241,6 +1259,7 @@ export const WorkflowItem = {
     message.contractRevisionLatest = object.contractRevisionLatest ?? 0;
     message.public = object.public ?? false;
     message.description = object.description ?? "";
+    message.workflowTemplateId = object.workflowTemplateId ?? "";
     return message;
   },
 };

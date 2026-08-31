@@ -15,6 +15,11 @@
     "^(project_name)$": {
       "minLength": 1,
       "type": "string"
+    },
+    "^(workflow_template_id)$": {
+      "description": "Optional reference to the platform workflow template this workflow is created from.\n Not dereferenced nor validated for existence in the control plane, it's an opaque\n reference to a platform-owned entity.",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "type": "string"
     }
   },
   "properties": {
@@ -38,6 +43,11 @@
       "type": "string"
     },
     "team": {
+      "type": "string"
+    },
+    "workflowTemplateId": {
+      "description": "Optional reference to the platform workflow template this workflow is created from.\n Not dereferenced nor validated for existence in the control plane, it's an opaque\n reference to a platform-owned entity.",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "type": "string"
     }
   },

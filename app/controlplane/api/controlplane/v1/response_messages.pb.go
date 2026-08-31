@@ -746,10 +746,13 @@ type WorkflowItem struct {
 	// is retained only for wire compatibility; it will be removed in a future release.
 	//
 	// Deprecated: Marked as deprecated in controlplane/v1/response_messages.proto.
-	Public        bool   `protobuf:"varint,9,opt,name=public,proto3" json:"public,omitempty"`
-	Description   string `protobuf:"bytes,10,opt,name=description,proto3" json:"description,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Public      bool   `protobuf:"varint,9,opt,name=public,proto3" json:"public,omitempty"`
+	Description string `protobuf:"bytes,10,opt,name=description,proto3" json:"description,omitempty"`
+	// Optional reference to the platform workflow template this workflow was created from.
+	// Empty when the workflow is not bound to any template.
+	WorkflowTemplateId string `protobuf:"bytes,13,opt,name=workflow_template_id,json=workflowTemplateId,proto3" json:"workflow_template_id,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *WorkflowItem) Reset() {
@@ -863,6 +866,13 @@ func (x *WorkflowItem) GetPublic() bool {
 func (x *WorkflowItem) GetDescription() string {
 	if x != nil {
 		return x.Description
+	}
+	return ""
+}
+
+func (x *WorkflowItem) GetWorkflowTemplateId() string {
+	if x != nil {
+		return x.WorkflowTemplateId
 	}
 	return ""
 }
@@ -3103,7 +3113,7 @@ var File_controlplane_v1_response_messages_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\n" +
-	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a#attestation/v1/crafting_state.proto\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xbd\x03\n" +
+	"'controlplane/v1/response_messages.proto\x12\x0fcontrolplane.v1\x1a#attestation/v1/crafting_state.proto\x1a\x1bbuf/validate/validate.proto\x1a\x13errors/errors.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xef\x03\n" +
 	"\fWorkflowItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
@@ -3120,7 +3130,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\x18contract_revision_latest\x18\v \x01(\x05R\x16contractRevisionLatest\x12\x1a\n" +
 	"\x06public\x18\t \x01(\bB\x02\x18\x01R\x06public\x12 \n" +
 	"\vdescription\x18\n" +
-	" \x01(\tR\vdescription\"\xd3\x06\n" +
+	" \x01(\tR\vdescription\x120\n" +
+	"\x14workflow_template_id\x18\r \x01(\tR\x12workflowTemplateId\"\xd3\x06\n" +
 	"\x0fWorkflowRunItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x129\n" +
 	"\n" +
