@@ -368,6 +368,9 @@ permissions:                                 # v1: `network.allowedDomains:`
       - "timestamp.digicert.com:80"          # RFC 3161 timestamp authority (plain HTTP, signed response)
                                              # used during attestation signing; host comes from the
                                              # control plane's signing options
+      - "buf.build:443"                      # Buf Schema Registry - `make api` / `buf generate`
+                                             # resolve the buf.yaml module deps and the remote
+                                             # plugins declared in the buf.gen.yaml files
       - "dl.chainloop.dev:443"               # EE CLI installer
       - "chainloop-baafegchfnekdcde.z02.azurefd.net:443"  # EE CLI download CDN
       - "github.com:443"                     # git push over HTTPS in persistent mode - the
