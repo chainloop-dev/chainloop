@@ -2,7 +2,6 @@
 
 [![LFX Health Score](https://insights.linuxfoundation.org/api/badge/health-score?project=chainloop)](https://insights.linuxfoundation.org/project/chainloop)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/chainloop-dev/chainloop/badge)](https://securityscorecards.dev/viewer/?uri=github.com/chainloop-dev/chainloop)
-[![Go Report Card](https://goreportcard.com/badge/github.com/chainloop-dev/chainloop)](https://goreportcard.com/report/github.com/chainloop-dev/chainloop)
 ![Test passing](https://github.com/chainloop-dev/chainloop/actions/workflows/test.yml/badge.svg?branch=main)
 [![Chat on Slack](https://img.shields.io/badge/slack-chainloop-blue?logo=slack)](https://join.slack.com/t/chainloop-community/shared_invite/zt-2k34dvx3r-u85uGP_KiLC6ic5Wy4aRnQ)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/chainloop-dev/chainloop/blob/main/LICENSE.md)
