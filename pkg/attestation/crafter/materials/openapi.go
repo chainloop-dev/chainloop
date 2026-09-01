@@ -60,7 +60,7 @@ func NewOpenAPICrafter(materialSchema *schemaapi.CraftingSchema_Material, backen
 	return crafter, nil
 }
 
-func (i *OpenAPICrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
+func (i *OpenAPICrafter) Craft(ctx context.Context, filepath string) (*CraftResult, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding OpenAPI spec file")
 
 	data, err := os.ReadFile(filepath)
@@ -107,7 +107,7 @@ func (i *OpenAPICrafter) Craft(ctx context.Context, filepath string) (*api.Attes
 
 	i.injectAnnotations(m, doc)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *OpenAPICrafter) injectAnnotations(m *api.Attestation_Material, doc map[string]interface{}) {

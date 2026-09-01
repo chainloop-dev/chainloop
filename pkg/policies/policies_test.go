@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -657,7 +658,7 @@ func (s *testSuite) TestValidInlineMaterial() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err)
 	s.Len(res, 1)
 	s.Equal("made-with-syft", res[0].Name)
@@ -692,13 +693,117 @@ func (s *testSuite) TestInvalidInlineMaterial() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err)
 	s.Len(res, 1)
 	s.Equal("made-with-syft", res[0].Name)
 	s.Len(res[0].Violations, 1)
 	s.Equal("made-with-syft", res[0].Violations[0].Subject)
 	s.Equal("Not made with syft", res[0].Violations[0].Message)
+}
+
+// TestVerifyMaterialSuppliedContent covers the content parameter, the channel a
+// crafter uses to say which bytes it stored. Supplied content must win over every
+// other source, and a material whose stored copy was sanitized must refuse to be
+// evaluated without it rather than quietly reading the original from disk.
+func (s *testSuite) TestVerifyMaterialSuppliedContent() {
+	onDisk, err := os.ReadFile("testdata/sbom-spdx.json")
+	s.Require().NoError(err)
+
+	diskPath := filepath.Join(s.T().TempDir(), "sbom.json")
+	s.Require().NoError(os.WriteFile(diskPath, onDisk, 0o600))
+
+	notAnSBOM := []byte(`{"this": { "is": "not", "a": "sbom"}}`)
+
+	pol := &v12.Policies{
+		Materials: []*v12.PolicyAttachment{
+			{Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"}},
+		},
+	}
+
+	testCases := []struct {
+		name           string
+		redacted       bool
+		inlineCas      bool
+		inlineContent  []byte
+		path           string
+		content        []byte
+		wantErr        error
+		wantViolations int
+	}{
+		{
+			// The disk file is a valid syft SBOM, the supplied bytes are not, so
+			// the violation count says which one the engine actually saw.
+			name:           "supplied content is evaluated instead of the file on disk",
+			path:           diskPath,
+			content:        notAnSBOM,
+			wantViolations: 1,
+		},
+		{
+			name:           "supplied content wins over the inline copy",
+			inlineCas:      true,
+			inlineContent:  onDisk,
+			content:        notAnSBOM,
+			wantViolations: 1,
+		},
+		{
+			name:           "without supplied content the file on disk is still read",
+			path:           diskPath,
+			wantViolations: 0,
+		},
+		{
+			name:     "a redacted material refuses to be evaluated from disk",
+			redacted: true,
+			path:     diskPath,
+			wantErr:  v1.ErrRedactedContentRequired,
+		},
+		{
+			name:          "a redacted inline material refuses just the same",
+			redacted:      true,
+			inlineCas:     true,
+			inlineContent: onDisk,
+			path:          diskPath,
+			wantErr:       v1.ErrRedactedContentRequired,
+		},
+		{
+			name:           "a redacted material with its sanitized copy evaluates it",
+			redacted:       true,
+			path:           diskPath,
+			content:        notAnSBOM,
+			wantViolations: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			material := &v1.Attestation_Material{
+				M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+					Content: tc.inlineContent,
+				}},
+				MaterialType: v12.CraftingSchema_Material_SBOM_SPDX_JSON,
+				InlineCas:    tc.inlineCas,
+			}
+			if tc.redacted {
+				material.Annotations = map[string]string{
+					v1.AnnotationMaterialRedacted: v1.AnnotationValueTrue,
+				}
+			}
+
+			verifier := NewPolicyVerifier(pol, nil, &s.logger)
+
+			res, err := verifier.VerifyMaterial(context.TODO(), material, tc.path, tc.content)
+			if tc.wantErr != nil {
+				s.Require().ErrorIs(err, tc.wantErr)
+				// Wrapped so callers keep treating it as a policy failure.
+				var policyErr *PolicyError
+				s.Require().ErrorAs(err, &policyErr)
+				return
+			}
+			s.Require().NoError(err)
+			s.Require().Len(res, 1)
+			s.Len(res[0].Violations, tc.wantViolations)
+		})
+	}
 }
 
 // TestVerifyMaterialScopedRuntimeInputs reproduces the trusted-binaries scenario
@@ -729,7 +834,7 @@ func (s *testSuite) TestVerifyMaterialScopedRuntimeInputs() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger, WithRuntimeInputs(runtimeInputs))
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err)
 	s.Require().Len(res, 2)
 
@@ -1255,7 +1360,7 @@ func (s *testSuite) TestNewResultFormat() {
 			}
 
 			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -1326,7 +1431,7 @@ func (s *testSuite) TestContainerMaterial() {
 			}
 
 			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -1413,7 +1518,7 @@ func (s *testSuite) TestMultiKindAWithIgnore() {
 			}
 
 			verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -1569,7 +1674,7 @@ func (s *testSuite) TestUndefinedBuiltinGracefulDegradation() {
 
 	verifier := NewPolicyVerifier(schema.Policies, nil, &s.logger)
 
-	res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+	res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 	s.Require().NoError(err, "undefined chainloop builtin should not cause a hard error")
 	s.Require().Len(res, 1)
 	s.True(res[0].Skipped, "policy should be marked as skipped")

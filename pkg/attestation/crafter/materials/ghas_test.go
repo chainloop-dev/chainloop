@@ -117,7 +117,7 @@ func TestGHASCodeScanCraft(t *testing.T) {
 			crafter, err := materials.NewGHASCodeScanCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return
@@ -189,7 +189,7 @@ func TestGHASSecretScanCraft(t *testing.T) {
 			crafter, err := materials.NewGHASSecretScanCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return
@@ -261,7 +261,7 @@ func TestGHASDependencyScanCraft(t *testing.T) {
 			crafter, err := materials.NewGHASDependencyScanCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(err, tc.wantErr)
 				return

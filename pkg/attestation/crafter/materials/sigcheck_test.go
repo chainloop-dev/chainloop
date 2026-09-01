@@ -116,7 +116,7 @@ func TestSigcheckCrafter_Craft(t *testing.T) {
 			crafter, err := materials.NewSigcheckCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return

@@ -21,7 +21,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	attestation2 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -49,7 +48,7 @@ func NewAttestationCrafter(schema *schemaapi.CraftingSchema_Material, backend *c
 }
 
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition
-func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	data, err := os.ReadFile(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("artifact file cannot be read: %w", err)
@@ -81,5 +80,5 @@ func (i *AttestationCrafter) Craft(ctx context.Context, artifactPath string) (*a
 		return nil, fmt.Errorf("the provided predicate is not a valid chainloop attestation: found=%q", intotoStatement.PredicateType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger))
 }

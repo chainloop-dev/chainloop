@@ -50,7 +50,7 @@ func NewChainloopAIAgentConfigCrafter(schema *schemaapi.CraftingSchema_Material,
 
 // Craft validates the AI agent config against the JSON schema, calculates the digest,
 // uploads it and returns the material definition.
-func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	f, err := os.ReadFile(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -93,5 +93,5 @@ func (c *ChainloopAIAgentConfigCrafter) Craft(ctx context.Context, artifactPath 
 		material.Annotations[annotationAIAgentName] = data.Agent.Name
 	}
 
-	return material, nil
+	return craftResult(material, nil)
 }

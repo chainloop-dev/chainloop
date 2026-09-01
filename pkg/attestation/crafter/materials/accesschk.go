@@ -43,7 +43,7 @@ func NewAccessChkCrafter(schema *schemaapi.CraftingSchema_Material, backend *cas
 	return &AccessChkCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *AccessChkCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *AccessChkCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -71,7 +71,7 @@ func (i *AccessChkCrafter) Craft(ctx context.Context, filePath string) (*api.Att
 
 	i.injectAnnotations(m, report)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *AccessChkCrafter) injectAnnotations(m *api.Attestation_Material, report *accesschk.Report) {

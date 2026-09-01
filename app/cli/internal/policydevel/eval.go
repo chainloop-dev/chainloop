@@ -76,14 +76,19 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 	}
 
 	// 2. Craft material with annotations
-	material, err := craftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
+	crafted, err := craftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
 	if err != nil {
 		return nil, err
 	}
+	material := crafted.Material
 	mergeAnnotations(material, opts.Annotations, &logger)
 
-	// 3. Verify material against policy
-	summary, err := verifyMaterial(policies, material, opts.MaterialPath, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, opts.ProjectName, opts.ProjectVersionName, &logger)
+	// 3. Verify material against policy. A crafter that transformed the artifact
+	// before storing it hands back what it stored, and that is what the policy
+	// must be evaluated against — `policy devel eval` has to reproduce what
+	// `attestation add` does, or a policy would be developed against input the
+	// real run never sees.
+	summary, err := verifyMaterial(policies, material, opts.MaterialPath, crafted.Content, opts.Debug, opts.AllowedHostnames, opts.AttestationClient, opts.ControlPlaneConn, opts.ProjectName, opts.ProjectVersionName, &logger)
 	if err != nil {
 		return nil, err
 	}
@@ -95,15 +100,15 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 // crafter produced, rather than replacing them.
 //
 // The crafter's annotations carry more than metadata: chainloop.material.redacted
-// is what tells the policy engine to evaluate the untouched file on disk instead
-// of the sanitized copy staged for upload. Dropping it would silently feed
-// policies redacted input, which is exactly what a secret-hunting policy must
-// not see.
+// is how a policy learns that secrets were found and stripped out, and it is what
+// makes content resolution fail closed rather than fall back to the un-redacted
+// file on disk. Dropping it would hide the redaction from the policy and re-open
+// the path this exists to close.
 //
 // The chainloop.* namespace is therefore crafter-owned and not overridable, so
-// that a --annotation flag cannot put back the behaviour this guards against.
-// Crafter.stageMaterial protects the equivalent invariant on `attestation add`
-// by refusing to override annotations that come from the contract.
+// that a --annotation flag cannot clear the marker. Crafter.stageMaterial
+// protects the equivalent invariant on `attestation add` by refusing to override
+// annotations that come from the contract.
 func mergeAnnotations(material *v12.Attestation_Material, annotations map[string]string, logger *zerolog.Logger) {
 	if len(annotations) == 0 {
 		return
@@ -145,7 +150,7 @@ func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, 
 	}, nil
 }
 
-func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, projectName, projectVersion string, logger *zerolog.Logger) (*EvalSummary, error) {
+func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, content []byte, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, projectName, projectVersion string, logger *zerolog.Logger) (*EvalSummary, error) {
 	var opts []policies.PolicyVerifierOption
 	if len(allowedHostnames) > 0 {
 		opts = append(opts, policies.WithAllowedHostnames(allowedHostnames...))
@@ -159,7 +164,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	}
 
 	v := policies.NewPolicyVerifier(pol, attestationClient, logger, opts...)
-	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath)
+	policyEvs, err := v.VerifyMaterial(context.Background(), material, materialPath, content)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +230,7 @@ func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materi
 	return summary, nil
 }
 
-func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
+func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*materials.CraftResult, error) {
 	backend := &casclient.CASBackend{
 		Name:     "backend",
 		MaxSize:  0,
@@ -252,15 +257,15 @@ func craftMaterial(materialPath, materialKind string, logger *zerolog.Logger) (*
 	return nil, fmt.Errorf("could not auto-detect material kind for: %s", materialPath)
 }
 
-func craft(materialPath string, kind v1.CraftingSchema_Material_MaterialType, name string, backend *casclient.CASBackend, logger *zerolog.Logger) (*v12.Attestation_Material, error) {
+func craft(materialPath string, kind v1.CraftingSchema_Material_MaterialType, name string, backend *casclient.CASBackend, logger *zerolog.Logger) (*materials.CraftResult, error) {
 	materialSchema := &v1.CraftingSchema_Material{
 		Type: kind,
 		Name: name,
 	}
 
-	m, err := materials.Craft(context.Background(), materialSchema, materialPath, backend, nil, logger, nil)
+	res, err := materials.Craft(context.Background(), materialSchema, materialPath, backend, nil, logger, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to craft material (kind=%s): %w", kind.String(), err)
 	}
-	return m, nil
+	return res, nil
 }

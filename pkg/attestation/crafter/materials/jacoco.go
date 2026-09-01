@@ -24,7 +24,6 @@ import (
 	"slices"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
@@ -42,7 +41,7 @@ func NewJacocoCrafter(schema *schemaapi.CraftingSchema_Material, backend *cascli
 	}
 }
 
-func (c *JacocoCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (c *JacocoCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -70,5 +69,5 @@ func (c *JacocoCrafter) Craft(ctx context.Context, filePath string) (*api.Attest
 	}) {
 		return nil, fmt.Errorf("invalid Jacoco report file: %w", ErrInvalidMaterialType)
 	}
-	return uploadAndCraft(ctx, c.input, c.backend, filePath, c.logger)
+	return craftResult(uploadAndCraft(ctx, c.input, c.backend, filePath, c.logger))
 }

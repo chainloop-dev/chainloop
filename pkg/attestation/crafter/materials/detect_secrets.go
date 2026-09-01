@@ -49,7 +49,7 @@ func NewDetectSecretsCrafter(schema *schemaapi.CraftingSchema_Material, backend 
 	return &DetectSecretsCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *DetectSecretsCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *DetectSecretsCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -80,7 +80,7 @@ func (i *DetectSecretsCrafter) Craft(ctx context.Context, filePath string) (*api
 
 	i.injectAnnotations(m, &baseline)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *DetectSecretsCrafter) injectAnnotations(m *api.Attestation_Material, baseline *detectSecretsBaseline) {

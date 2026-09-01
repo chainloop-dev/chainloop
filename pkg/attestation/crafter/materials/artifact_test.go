@@ -88,7 +88,7 @@ func TestArtifactCraft(t *testing.T) {
 	crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/simple.txt"))
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_ARTIFACT.String(), got.MaterialType.String())
 	assert.True(got.UploadedToCas)
@@ -116,7 +116,7 @@ func TestArtifactCraftInline(t *testing.T) {
 		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+		got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/simple.txt"))
 		assert.NoError(err)
 		assertMaterial(t, got)
 	})
@@ -129,7 +129,7 @@ func TestArtifactCraftInline(t *testing.T) {
 		crafter, err := materials.NewArtifactCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+		got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/simple.txt"))
 		assert.NoError(err)
 		assertMaterial(t, got)
 	})

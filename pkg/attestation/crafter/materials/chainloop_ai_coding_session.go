@@ -69,11 +69,11 @@ func NewChainloopAICodingSessionCrafter(schema *schemaapi.CraftingSchema_Materia
 // secrets found in it, calculates the digest, uploads it and returns the
 // material definition.
 //
-// Only the stored copy is redacted. The file on disk is left untouched, and it
-// is what policies are evaluated against once this material has been staged, so
-// a policy that looks for leaked credentials still sees what the agent actually
-// captured.
-func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+// The file on disk is left untouched, so it is no longer the stored content once
+// anything was redacted. The sanitized copy is returned as CraftResult.Content
+// for whoever needs to read the artifact back — today policy evaluation, which
+// must not be handed the credentials the session captured.
+func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	f, err := os.ReadFile(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -106,9 +106,16 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 		return nil, fmt.Errorf("AI coding session validation failed: %w", err)
 	}
 
-	craftOpts, report, err := c.redact(ctx, f)
+	redacted, report, err := c.redact(ctx, f)
 	if err != nil {
 		return nil, err
+	}
+
+	// Substituting the stored content only when something was actually replaced
+	// keeps a clean session's digest reproducible from its source file.
+	var craftOpts []uploadAndCraftOption
+	if redacted != nil {
+		craftOpts = append(craftOpts, withContentOverride(redacted))
 	}
 
 	material, err := uploadAndCraft(ctx, c.input, c.backend, artifactPath, c.logger, craftOpts...)
@@ -128,17 +135,18 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 		material.Annotations[annotationAICodingModel] = data.Model.Primary
 	}
 
-	return material, nil
+	return &CraftResult{Material: material, Content: redacted}, nil
 }
 
-// redact strips secrets out of the session content, returning the options that
-// make uploadAndCraft store the sanitized copy instead of the file on disk.
+// redact strips secrets out of the session content, returning the sanitized copy
+// to store in place of the file on disk, or nil when nothing was replaced and the
+// file itself is what gets stored.
 //
 // Redaction fails closed: if the content cannot be scanned or the result no
 // longer matches the schema, the material is not crafted at all rather than
 // uploaded unscanned. The operator's escape hatch is --skip-secret-redaction,
 // whose use is recorded in the attestation.
-func (c *ChainloopAICodingSessionCrafter) redact(ctx context.Context, content []byte) ([]uploadAndCraftOption, *redaction.Report, error) {
+func (c *ChainloopAICodingSessionCrafter) redact(ctx context.Context, content []byte) ([]byte, *redaction.Report, error) {
 	if c.skipRedaction {
 		c.logger.Warn().Msg("secret redaction is DISABLED: the AI coding session will be stored exactly as captured")
 		return nil, nil, nil
@@ -150,12 +158,10 @@ func (c *ChainloopAICodingSessionCrafter) redact(ctx context.Context, content []
 	}
 
 	if !report.Changed() {
-		// Nothing was replaced, so upload the file as it is on disk and keep the
-		// digest reproducible from the source file.
 		return nil, report, nil
 	}
 
-	return []uploadAndCraftOption{withContentOverride(redacted)}, report, nil
+	return redacted, report, nil
 }
 
 // annotateRedaction records what redaction did, so that it is visible in the

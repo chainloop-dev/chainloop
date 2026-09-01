@@ -21,7 +21,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	intoto "github.com/in-toto/attestation/go/v1"
 	intotoatt "github.com/in-toto/in-toto-golang/in_toto/slsa_provenance/v1"
@@ -48,7 +47,7 @@ func NewSLSAProvenanceCrafter(schema *schemaapi.CraftingSchema_Material, backend
 }
 
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition
-func (i *SLSAProvenanceCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+func (i *SLSAProvenanceCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	data, err := os.ReadFile(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("artifact file cannot be read: %w", err)
@@ -68,5 +67,5 @@ func (i *SLSAProvenanceCrafter) Craft(ctx context.Context, artifactPath string) 
 		return nil, fmt.Errorf("the provided predicate is not a valid SLSA Provenance: found=%q", p)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger))
 }

@@ -23,7 +23,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/pitest"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
@@ -41,7 +40,7 @@ func NewPitestCrafter(schema *schemaapi.CraftingSchema_Material, backend *cascli
 	}
 }
 
-func (c *PitestCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (c *PitestCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -68,5 +67,5 @@ func (c *PitestCrafter) Craft(ctx context.Context, filePath string) (*api.Attest
 		return nil, fmt.Errorf("invalid PIT report file, no mutations found: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, c.input, c.backend, filePath, c.logger)
+	return craftResult(uploadAndCraft(ctx, c.input, c.backend, filePath, c.logger))
 }

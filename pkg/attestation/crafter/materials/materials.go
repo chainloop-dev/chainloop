@@ -172,8 +172,10 @@ type uploadAndCraftOpts struct {
 	// leaves the machine, such as redacting secrets out of an AI coding session.
 	// The recorded digest, size and uploaded (or inline) body then all describe
 	// the transformed content, which is the only content that ever reaches the
-	// CAS. The file on disk is left untouched, and remains what policies are
-	// evaluated against. The original filename is preserved.
+	// CAS. The file on disk is left untouched, but it is no longer what the
+	// material describes: such a crafter must also report the transformed bytes
+	// (see transformCrafter), since reading the artifact back off disk would no
+	// longer yield the stored content. The original filename is preserved.
 	contentOverride []byte
 }
 
@@ -347,7 +349,34 @@ func fileStatsFromBytes(filename string, content []byte) (*fileInfo, error) {
 }
 
 type Craftable interface {
-	Craft(ctx context.Context, value string) (*api.Attestation_Material, error)
+	Craft(ctx context.Context, value string) (*CraftResult, error)
+}
+
+// CraftResult is what crafting an artifact yields.
+type CraftResult struct {
+	Material *api.Attestation_Material
+	// Content is what the crafter stored in place of the artifact, when it did
+	// not store it verbatim — today, an AI coding session with secrets redacted
+	// out of it. For such a material the file on disk is no longer the stored
+	// content, so anything that needs to read the artifact back has to be given
+	// these bytes instead; what they are then used for is the caller's business,
+	// and today they feed policy evaluation, which must not see the data the
+	// transformation removed.
+	//
+	// nil for every crafter that stores the artifact as it found it, which is all
+	// but one: their content resolves from the material or the file as usual and
+	// nothing extra is held in memory.
+	Content []byte
+}
+
+// craftResult wraps a crafted material, propagating an error unchanged. It keeps
+// the crafters that store the artifact verbatim — all but the AI coding session —
+// to a single-line return.
+func craftResult(m *api.Attestation_Material, err error) (*CraftResult, error) {
+	if err != nil {
+		return nil, err
+	}
+	return &CraftResult{Material: m}, nil
 }
 
 // CraftingOpts contains options for crafting materials
@@ -359,7 +388,7 @@ type CraftingOpts struct {
 }
 
 //nolint:gocyclo
-func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger, opts *CraftingOpts) (*api.Attestation_Material, error) {
+func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, ociAuth authn.Keychain, logger *zerolog.Logger, opts *CraftingOpts) (*CraftResult, error) {
 	var crafter Craftable
 	var err error
 
@@ -470,10 +499,11 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		return nil, err
 	}
 
-	m, err := crafter.Craft(ctx, value)
+	res, err := crafter.Craft(ctx, value)
 	if err != nil {
 		return nil, fmt.Errorf("crafting material: %w", err)
 	}
+	m := res.Material
 
 	m.AddedAt = timestamppb.New(time.Now())
 	if m.Annotations == nil {
@@ -489,5 +519,5 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 	m.Output = materialSchema.Output
 	m.Required = !materialSchema.Optional
 
-	return m, nil
+	return res, nil
 }

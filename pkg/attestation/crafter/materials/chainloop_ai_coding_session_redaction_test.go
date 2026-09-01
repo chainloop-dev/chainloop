@@ -180,8 +180,9 @@ func materializeFixture(t *testing.T, src string) string {
 }
 
 // TestChainloopAICodingSessionCrafterRedaction is the end-to-end guarantee: the
-// bytes that leave the machine carry no secrets, while the file on disk — what
-// policies are evaluated against afterwards — is left untouched.
+// bytes that leave the machine carry no secrets, the file on disk is left
+// untouched, and the content handed to policy evaluation is byte-for-byte the
+// content that was stored — never the original.
 func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 	const (
 		withSecrets = "./aicodingsession/testdata/session-with-secrets.json"
@@ -193,6 +194,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 		filePath      string
 		skipRedaction bool
 		inlineBackend bool
+		skipUpload    bool
 		wantRedacted  bool
 		wantCount     string
 		wantRules     string
@@ -215,6 +217,16 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			wantRules:     "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
 		},
 		{
+			// Neither uploaded nor stored inline, so the sanitized copy exists
+			// nowhere but in what the crafter hands back.
+			name:         "skipping the upload still yields the redacted copy",
+			filePath:     withSecrets,
+			skipUpload:   true,
+			wantRedacted: true,
+			wantCount:    "7",
+			wantRules:    "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
+		},
+		{
 			name:          "the opt-out is recorded in the attestation",
 			filePath:      withSecrets,
 			skipRedaction: true,
@@ -229,8 +241,9 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			logger := zerolog.Nop()
 			schema := &schemaapi.CraftingSchema_Material{
-				Name: "test",
-				Type: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
+				Name:       "test",
+				Type:       schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
+				SkipUpload: tc.skipUpload,
 			}
 
 			path := materializeFixture(t, tc.filePath)
@@ -240,7 +253,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			// A nil Uploader is what the CLI builds for an inline CAS backend.
 			backend := &casclient.CASBackend{Name: "not-set"}
 			var stored []byte
-			if !tc.inlineBackend {
+			if !tc.inlineBackend && !tc.skipUpload {
 				uploader := mUploader.NewUploader(t)
 				uploader.On("Upload", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 					Run(func(args mock.Arguments) {
@@ -256,8 +269,9 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 				WithAICodingSessionSkipRedaction(tc.skipRedaction))
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), path)
+			res, err := crafter.Craft(context.TODO(), path)
 			require.NoError(t, err)
+			got, content := res.Material, res.Content
 
 			if tc.inlineBackend {
 				require.True(t, got.InlineCas)
@@ -270,22 +284,39 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			switch {
 			case tc.wantRedacted:
 				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedacted])
-				assert.NotContains(t, string(stored), awsKey)
-				assert.Contains(t, string(stored), "[REDACTED:aws-access-token]")
 				// The digest describes the redacted artifact, not the source file.
 				assert.NotEqual(t, sha256Digest(string(original)), got.GetArtifact().Digest)
+
+				// The sanitized copy is what policies must be handed. Comparing
+				// it against the recorded digest is the strongest available form
+				// of "policies see exactly what was stored": it holds even for
+				// skip-upload, where the stored bytes are kept nowhere else.
+				require.NotNil(t, content, "a redacted session must hand back its sanitized copy")
+				assert.Equal(t, sha256Digest(string(content)), got.GetArtifact().Digest)
+				assert.NotContains(t, string(content), awsKey)
+				assert.Contains(t, string(content), "[REDACTED:aws-access-token]")
+
+				if stored != nil {
+					assert.Equal(t, string(stored), string(content))
+					assert.NotContains(t, string(stored), awsKey)
+					assert.Contains(t, string(stored), "[REDACTED:aws-access-token]")
+				}
 			case tc.skipRedaction:
 				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedactionSkipped])
 				assert.Contains(t, string(stored), awsKey)
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
+				// Nothing was transformed, so nothing is held in memory for the
+				// policy engine: it reads the file, which is what was stored.
+				assert.Nil(t, content)
 			default:
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedacted)
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedactionSkipped)
 				// Nothing to redact, so the digest stays reproducible from the file.
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
+				assert.Nil(t, content)
 			}
 
-			// Redaction must never touch the file the policies will read.
+			// Redaction must never touch the source file.
 			stillOnDisk, err := os.ReadFile(path)
 			require.NoError(t, err)
 			assert.Equal(t, string(original), string(stillOnDisk))

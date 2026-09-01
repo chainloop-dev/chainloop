@@ -62,8 +62,13 @@ func TestCraft(t *testing.T) {
 		},
 	}
 
-	got, err := materials.Craft(context.TODO(), schema, "test-value", nil, nil, nil, nil)
+	res, err := materials.Craft(context.TODO(), schema, "test-value", nil, nil, nil, nil)
 	require.NoError(t, err)
+	// A crafter that stores the artifact as it found it reports nothing extra, so
+	// the content resolves from the material or the file as usual.
+	assert.Nil(res.Content)
+
+	got := res.Material
 	assert.Equal(contractAPI.CraftingSchema_Material_STRING, got.MaterialType)
 	assert.False(got.UploadedToCas)
 	assert.Equal(got.GetString_(), &attestationApi.Attestation_Material_KeyVal{

@@ -221,7 +221,7 @@ func TestCyclonedxJSONCraft(t *testing.T) {
 			crafter, err := materials.NewCyclonedxJSONCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				ast.ErrorContains(err, tc.wantErr)
 				return
@@ -314,7 +314,7 @@ func TestCycloneDXJSONCraftNoStrictValidation(t *testing.T) {
 				materials.WithCycloneDXNoStrictValidation(tc.noStrictValidation))
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			if tc.wantErr != "" {
 				ast.ErrorContains(err, tc.wantErr)
 				return
@@ -370,7 +370,7 @@ func TestCycloneDXJSONCraft_SkipUpload(t *testing.T) {
 			crafter, err := materials.NewCyclonedxJSONCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), filePath))
 			require.NoError(t, err)
 
 			ast.Equal(contractAPI.CraftingSchema_Material_SBOM_CYCLONEDX_JSON.String(), got.MaterialType.String())

@@ -47,7 +47,7 @@ func NewGraphQLCrafter(materialSchema *schemaapi.CraftingSchema_Material, backen
 	}, nil
 }
 
-func (i *GraphQLCrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
+func (i *GraphQLCrafter) Craft(ctx context.Context, filepath string) (*CraftResult, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding GraphQL SDL file")
 
 	content, err := os.ReadFile(filepath)
@@ -69,7 +69,7 @@ func (i *GraphQLCrafter) Craft(ctx context.Context, filepath string) (*api.Attes
 
 	i.injectAnnotations(m, doc)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *GraphQLCrafter) injectAnnotations(m *api.Attestation_Material, doc *ast.SchemaDocument) {

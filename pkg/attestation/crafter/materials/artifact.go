@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
 )
@@ -40,6 +39,6 @@ func NewArtifactCrafter(schema *schemaapi.CraftingSchema_Material, backend *casc
 }
 
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition
-func (i *ArtifactCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
-	return uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
+func (i *ArtifactCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger))
 }

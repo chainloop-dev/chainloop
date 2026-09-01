@@ -321,6 +321,72 @@ func (s *groupsTestSuite) TestVerifyStatement() {
 	}
 }
 
+// TestVerifyMaterialSuppliedContent mirrors the PolicyVerifier test for groups,
+// which resolve content per group rather than once up front. The case worth
+// pinning is the last one: resolution stays behind the "no policies apply" skip,
+// so a redacted material that no policy in the group selects must pass through
+// untouched instead of failing closed on content it never needed.
+func (s *groupsTestSuite) TestVerifyMaterialSuppliedContent() {
+	const (
+		matching    = `{"specVersion": "1.4"}`
+		notMatching = `{"specVersion": "1.0"}`
+	)
+
+	testCases := []struct {
+		name         string
+		materialType v1.CraftingSchema_Material_MaterialType
+		content      []byte
+		wantErr      error
+		wantEvals    int
+	}{
+		{
+			name:         "supplied content is evaluated",
+			materialType: v1.CraftingSchema_Material_OPENVEX,
+			content:      []byte(matching),
+			wantEvals:    1,
+		},
+		{
+			name:         "a redacted material without its sanitized copy fails closed",
+			materialType: v1.CraftingSchema_Material_OPENVEX,
+			wantErr:      api.ErrRedactedContentRequired,
+		},
+		{
+			name: "a redacted material no policy selects is never resolved at all",
+			// The group only covers SBOM_CYCLONEDX_JSON and OPENVEX, so nothing
+			// in it selects a coding session: the content is never loaded and
+			// there is nothing to fail closed over.
+			materialType: v1.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
+			wantEvals:    0,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			material := &api.Attestation_Material{
+				M: &api.Attestation_Material_Artifact_{Artifact: &api.Attestation_Material_Artifact{
+					Content: []byte(notMatching),
+				}},
+				MaterialType: tc.materialType,
+				InlineCas:    true,
+				Annotations: map[string]string{
+					api.AnnotationMaterialRedacted: api.AnnotationValueTrue,
+				},
+			}
+
+			groups := []*v1.PolicyGroupAttachment{{Ref: "file://testdata/policy_group_multikind.yaml"}}
+			verifier := NewPolicyGroupVerifier(groups, nil, nil, &s.logger)
+
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", tc.content)
+			if tc.wantErr != nil {
+				s.Require().ErrorIs(err, tc.wantErr)
+				return
+			}
+			s.Require().NoError(err)
+			s.Len(res, tc.wantEvals)
+		})
+	}
+}
+
 func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
 	cases := []struct {
 		name                string
@@ -377,7 +443,7 @@ func (s *groupsTestSuite) TestVerifyMaterialMultiKind() {
 			}
 
 			verifier := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
-			res, err := verifier.VerifyMaterial(context.TODO(), material, "")
+			res, err := verifier.VerifyMaterial(context.TODO(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -464,7 +530,7 @@ func (s *groupsTestSuite) TestGroupInputs() {
 		}
 		s.Run(tc.name, func() {
 			v := NewPolicyGroupVerifier(schema.PolicyGroups, nil, nil, &s.logger)
-			evs, err := v.VerifyMaterial(context.TODO(), material, "")
+			evs, err := v.VerifyMaterial(context.TODO(), material, "", nil)
 			if tc.wantErr {
 				s.Error(err)
 				s.Contains(err.Error(), tc.errMsg)
@@ -551,7 +617,7 @@ func (s *groupsTestSuite) TestSkipPolicies() {
 			}
 
 			verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger)
-			evs, err := verifier.VerifyMaterial(context.Background(), material, "")
+			evs, err := verifier.VerifyMaterial(context.Background(), material, "", nil)
 
 			if tc.expectErr {
 				s.Error(err)
@@ -648,7 +714,7 @@ func (s *groupsTestSuite) TestSkipBothMaterialAndAttestationPolicies() {
 	}
 
 	verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger)
-	materialEvs, err := verifier.VerifyMaterial(context.Background(), material, "")
+	materialEvs, err := verifier.VerifyMaterial(context.Background(), material, "", nil)
 	s.Require().NoError(err)
 	s.Len(materialEvs, 0, "material policy should be skipped")
 
@@ -775,7 +841,7 @@ func (s *groupsTestSuite) TestVerifyMaterialInheritsGroupGate() {
 	}
 
 	verifier := NewPolicyGroupVerifier(schema.GetPolicyGroups(), nil, nil, &s.logger, WithDefaultGate(false))
-	evs, err := verifier.VerifyMaterial(context.Background(), material, "")
+	evs, err := verifier.VerifyMaterial(context.Background(), material, "", nil)
 
 	s.Require().NoError(err)
 	s.Len(evs, 1)

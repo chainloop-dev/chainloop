@@ -22,7 +22,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/google/go-github/v66/github"
 	"github.com/rs/zerolog"
@@ -45,7 +44,7 @@ func NewGHASCodeScanCrafter(materialSchema *schemaapi.CraftingSchema_Material, b
 }
 
 // Craft will validate the CodeScan alerts report and craft the material
-func (i *GHASCodeScanCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *GHASCodeScanCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	var alerts []*github.Alert
 
 	report, err := os.ReadFile(filePath)
@@ -70,5 +69,5 @@ func (i *GHASCodeScanCrafter) Craft(ctx context.Context, filePath string) (*api.
 	}
 
 	// Call uploadAndCraft with the path of the JSON report file
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger))
 }

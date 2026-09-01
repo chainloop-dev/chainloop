@@ -22,7 +22,6 @@ import (
 	"os"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
 )
@@ -49,7 +48,7 @@ type blackduckRequiredFields struct {
 	DetailedCodeLocations              any `json:"detailedCodeLocations"`
 }
 
-func (i *BlackduckSCAJSONCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *BlackduckSCAJSONCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -65,5 +64,5 @@ func (i *BlackduckSCAJSONCrafter) Craft(ctx context.Context, filePath string) (*
 		return nil, fmt.Errorf("invalid Blackduck SCA scan: %w", ErrInvalidMaterialType)
 	}
 
-	return uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger)
+	return craftResult(uploadAndCraft(ctx, i.input, i.backend, filePath, i.logger))
 }

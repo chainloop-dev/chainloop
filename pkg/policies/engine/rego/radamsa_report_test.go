@@ -121,7 +121,7 @@ func TestRadamsaMinIterationsAgainstArchiveMaterial(t *testing.T) {
 					Artifact: &v1.Attestation_Material_Artifact{Name: "fuzz-report", Digest: "sha256:deadbeef"},
 				},
 			}
-			input, err := m.GetEvaluableContent(tc.path)
+			input, err := m.GetEvaluableContent(tc.path, nil)
 			if tc.wantIngestErr {
 				require.Error(t, err, "malformed evidence must be rejected, not silently dropped")
 				return

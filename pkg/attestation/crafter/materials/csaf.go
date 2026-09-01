@@ -88,7 +88,7 @@ func baseCSAFCrafter(materialSchema *schemaapi.CraftingSchema_Material, backend 
 	}, nil
 }
 
-func (i *CSAFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
+func (i *CSAFCrafter) Craft(ctx context.Context, filepath string) (*CraftResult, error) {
 	i.logger.Debug().Str("path", filepath).Msg("decoding CSAF file")
 	f, err := os.ReadFile(filepath)
 	if err != nil {
@@ -136,7 +136,7 @@ func (i *CSAFCrafter) Craft(ctx context.Context, filepath string) (*api.Attestat
 
 	i.injectAnnotations(m, documentMap)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *CSAFCrafter) injectAnnotations(m *api.Attestation_Material, documentMap map[string]any) {

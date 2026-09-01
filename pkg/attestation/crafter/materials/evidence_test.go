@@ -88,7 +88,7 @@ func TestEvidenceCraft(t *testing.T) {
 	crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 	require.NoError(t, err)
 
-	got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+	got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/simple.txt"))
 	assert.NoError(err)
 	assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
 	assert.True(got.UploadedToCas)
@@ -113,7 +113,7 @@ func TestEvidenceCraftInline(t *testing.T) {
 		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+		got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/simple.txt"))
 		assert.NoError(err)
 		assertEvidenceMaterial(t, got)
 	})
@@ -126,7 +126,7 @@ func TestEvidenceCraftInline(t *testing.T) {
 		crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/simple.txt")
+		got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/simple.txt"))
 		assert.NoError(err)
 		assertEvidenceMaterial(t, got)
 	})
@@ -225,7 +225,7 @@ func TestEvidenceCraftWithJSONAnnotations(t *testing.T) {
 			crafter, err := materials.NewEvidenceCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.TODO(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath))
 			assert.NoError(err)
 			assert.Equal(contractAPI.CraftingSchema_Material_EVIDENCE.String(), got.MaterialType.String())
 

@@ -148,7 +148,7 @@ func TestAttestationCraft(t *testing.T) {
 			crafter, err := materials.NewAttestationCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
-			got, err := crafter.Craft(context.Background(), tc.filePath)
+			got, err := craftedMaterial(crafter.Craft(context.Background(), tc.filePath))
 			if tc.expectErr {
 				assert.Error(err)
 				return
@@ -180,7 +180,7 @@ func TestAttestationCraftInline(t *testing.T) {
 		crafter, err := materials.NewAttestationCrafter(schema, backend, &l)
 		require.NoError(t, err)
 
-		got, err := crafter.Craft(context.TODO(), "./testdata/attestation-dsse.json")
+		got, err := craftedMaterial(crafter.Craft(context.TODO(), "./testdata/attestation-dsse.json"))
 		assert.NoError(err)
 
 		assert.NotNil(got)

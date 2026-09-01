@@ -66,7 +66,7 @@ func NewEvidenceCrafter(schema *schemaapi.CraftingSchema_Material, backend *casc
 // Craft will calculate the digest of the artifact, simulate an upload and return the material definition
 // If the evidence is in JSON format with id, data (and optionally schema) fields,
 // it will extract those as annotations
-func (i *EvidenceCrafter) Craft(ctx context.Context, artifactPath string) (*api.Attestation_Material, error) {
+func (i *EvidenceCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
 	material, err := uploadAndCraft(ctx, i.input, i.backend, artifactPath, i.logger)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (i *EvidenceCrafter) Craft(ctx context.Context, artifactPath string) (*api.
 	// Try to parse as JSON and extract annotations
 	i.tryExtractAnnotations(material, artifactPath)
 
-	return material, nil
+	return craftResult(material, nil)
 }
 
 // tryExtractAnnotations attempts to parse the evidence as JSON and extract id/schema fields as annotations

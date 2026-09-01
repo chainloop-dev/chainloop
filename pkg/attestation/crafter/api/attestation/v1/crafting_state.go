@@ -62,8 +62,9 @@ var (
 	// AnnotationMaterialRedacted marks a material whose stored content was
 	// transformed by its crafter before upload, to strip secrets out of it. Two
 	// things follow from it: the recorded digest describes the redacted artifact
-	// rather than the file on disk, and policy evaluation must read the untouched
-	// local file instead of the stored content (see GetEvaluableContent).
+	// rather than the file on disk, and policy evaluation must be handed that
+	// sanitized copy explicitly, because the file on disk still holds the secrets
+	// (see GetEvaluableContent, which fails closed without it).
 	AnnotationMaterialRedacted = CreateAnnotation("material.redacted")
 	// AnnotationMaterialRedactionCount is how many secrets were replaced.
 	AnnotationMaterialRedactionCount = CreateAnnotation("material.redaction.count")
@@ -110,41 +111,74 @@ func (m *Attestation_Material) NormalizedOutput() (*NormalizedMaterialOutput, er
 	return nil, fmt.Errorf("unknown material: %s", m.MaterialType)
 }
 
-// GetEvaluableContent returns the content to be sent to policy evaluations
-func (m *Attestation_Material) GetEvaluableContent(value string) ([]byte, error) {
+// ErrRedactedContentRequired is returned when policy evaluation is asked to
+// resolve a material whose stored copy was sanitized, without being given that
+// copy. There is no safe source left: the file on disk is the un-redacted
+// original, and for a CAS-backed material the sanitized bytes were streamed away
+// and are not on the material at all.
+var ErrRedactedContentRequired = errors.New(
+	"sanitized content is required to evaluate a redacted material: " +
+		"policies must never be handed the un-redacted original")
+
+// GetEvaluableContent returns the content to be sent to policy evaluations.
+//
+// content, when non-empty, is what policies are evaluated against, overriding
+// both the inline bytes and the file at value. Crafters that transform an artifact
+// before it leaves the machine — redacting secrets out of an AI coding session —
+// report the bytes they stored so that the policy engine sees exactly those,
+// whatever CAS backend is in use. Pass nil to resolve the content from the
+// material or the file, which is what every other material does.
+//
+// A material marked redacted with no content supplied fails closed. One
+// consequence is worth knowing: such a material's policy input cannot be
+// reconstructed from persisted crafting state alone, so any future push-time or
+// server-side material evaluation has to plumb the bytes through as well.
+func (m *Attestation_Material) GetEvaluableContent(value string, content []byte) ([]byte, error) {
 	var rawMaterial []byte
 	var err error
 
-	artifact := m.GetArtifact()
-	if artifact == nil && m.GetSbomArtifact() != nil {
-		artifact = m.GetSbomArtifact().GetArtifact()
+	// Fail closed before any source is chosen: a material whose stored copy was
+	// sanitized has exactly one valid policy input, and it is not the file on
+	// disk. Checked here rather than inside the artifact branch below so that it
+	// also covers material kinds that carry no artifact.
+	if len(content) == 0 && m.GetAnnotations()[AnnotationMaterialRedacted] == AnnotationValueTrue {
+		return nil, ErrRedactedContentRequired
 	}
 
-	if artifact != nil {
-		// Policies must evaluate the artifact as it was produced. For a redacted
-		// material the inline bytes are the sanitized copy, so the untouched file
-		// on disk wins; without a local path there is nothing better to read.
-		// This keeps the policy input identical whatever CAS backend is in use,
-		// which matters most in dry runs, where the backend is always inline and
-		// is exactly where people test their policies.
-		useInlineContent := m.InlineCas
-		if m.GetAnnotations()[AnnotationMaterialRedacted] == AnnotationValueTrue && value != "" {
-			useInlineContent = false
+	if len(content) > 0 {
+		// Chosen ahead of the artifact below so that supplied content is
+		// authoritative for every material kind, rather than only for the ones
+		// whose content happens to resolve from an artifact. A kind that carries
+		// no artifact would otherwise drop it and project "{}" instead.
+		//
+		// NOTE: ingestMaterialToJSON re-reads the artifact from `value` for the
+		// kinds it projects from a path (JUNIT_XML, HELM_CHART), so supplied
+		// content is still ignored for those. Unreachable today, since only
+		// CHAINLOOP_AI_CODING_SESSION supplies content and it is JSON-native. A
+		// crafter that starts transforming what it stores for a path-projected
+		// kind must make the projection content-based first, or it will fail open.
+		rawMaterial = content
+	} else {
+		artifact := m.GetArtifact()
+		if artifact == nil && m.GetSbomArtifact() != nil {
+			artifact = m.GetSbomArtifact().GetArtifact()
 		}
 
-		switch {
-		case useInlineContent:
-			rawMaterial = artifact.GetContent()
-		case value == "":
-			return nil, errors.New("artifact path required")
-		case m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
-			m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML &&
-			m.MaterialType != v1.CraftingSchema_Material_RADAMSA_CRASHES:
-			// read content from local filesystem (except for tgz charts and
-			// metadata-only materials like radamsa crashes)
-			rawMaterial, err = os.ReadFile(value)
-			if err != nil {
-				return nil, fmt.Errorf("failed to read material content: %w", err)
+		if artifact != nil {
+			switch {
+			case m.InlineCas:
+				rawMaterial = artifact.GetContent()
+			case value == "":
+				return nil, errors.New("artifact path required")
+			case m.MaterialType != v1.CraftingSchema_Material_HELM_CHART &&
+				m.MaterialType != v1.CraftingSchema_Material_JUNIT_XML &&
+				m.MaterialType != v1.CraftingSchema_Material_RADAMSA_CRASHES:
+				// read content from local filesystem (except for tgz charts and
+				// metadata-only materials like radamsa crashes)
+				rawMaterial, err = os.ReadFile(value)
+				if err != nil {
+					return nil, fmt.Errorf("failed to read material content: %w", err)
+				}
 			}
 		}
 	}

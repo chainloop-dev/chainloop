@@ -84,7 +84,7 @@ func NewCheckmarxCrafter(schema *schemaapi.CraftingSchema_Material, backend *cas
 	return &CheckmarxCrafter{backend: backend, crafterCommon: craftCommon}, nil
 }
 
-func (i *CheckmarxCrafter) Craft(ctx context.Context, filePath string) (*api.Attestation_Material, error) {
+func (i *CheckmarxCrafter) Craft(ctx context.Context, filePath string) (*CraftResult, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("can't open the file: %w", err)
@@ -138,7 +138,7 @@ func (i *CheckmarxCrafter) Craft(ctx context.Context, filePath string) (*api.Att
 
 	i.injectAnnotations(m, typeSet)
 
-	return m, nil
+	return craftResult(m, nil)
 }
 
 func (i *CheckmarxCrafter) injectAnnotations(m *api.Attestation_Material, typeSet map[string]struct{}) {

@@ -67,7 +67,7 @@ func NewHelmChartCrafter(materialSchema *schemaapi.CraftingSchema_Material, back
 	}, nil
 }
 
-func (c *HelmChartCrafter) Craft(ctx context.Context, helmChartRef string) (*api.Attestation_Material, error) {
+func (c *HelmChartCrafter) Craft(ctx context.Context, helmChartRef string) (*CraftResult, error) {
 	const ociProtocol = "oci://"
 
 	// if it starts with oci://, it's an OCI image
@@ -79,7 +79,7 @@ func (c *HelmChartCrafter) Craft(ctx context.Context, helmChartRef string) (*api
 
 	c.logger.Debug().Str("name", helmChartRef).Msg("loading from local path")
 	// otherwise, it's a local file
-	return c.craftLocalHelmChart(ctx, helmChartRef)
+	return craftResult(c.craftLocalHelmChart(ctx, helmChartRef))
 }
 
 func (c *HelmChartCrafter) craftLocalHelmChart(ctx context.Context, filepath string) (*api.Attestation_Material, error) {
