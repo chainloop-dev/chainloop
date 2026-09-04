@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,15 +35,11 @@ func newAttestationVerifyCmd() *cobra.Command {
   # verify an attestation stored in an https endpoint
   chainloop attestation verify -b https://myrepository/attestation.json`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			res, err := action.NewAttestationVerifyAction(ActionOpts).Run(cmd.Context(), fileOrURL)
-			if err != nil {
+			if err := action.NewAttestationVerifyAction(ActionOpts).Run(cmd.Context(), fileOrURL); err != nil {
 				return fmt.Errorf("verifying attestation: %w", err)
 			}
-			if res {
-				ActionOpts.Logger.Info().Msg("attestation verified successfully")
-			} else {
-				ActionOpts.Logger.Warn().Msg("attestation couldn't be verified")
-			}
+
+			ActionOpts.Logger.Info().Msg("attestation verified successfully")
 
 			return nil
 		},
