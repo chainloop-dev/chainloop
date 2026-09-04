@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,9 +60,14 @@ func verifyBundle(ctx context.Context, content []byte, opts *ActionsOpts) (bool,
 			return false, fmt.Errorf("getting roots: %w", err)
 		}
 		if err = verifier.VerifyBundle(ctx, content, tr); err != nil {
-			if !errors.Is(err, verifier.ErrMissingVerificationMaterial) {
+			if verificationFailedFatally(err) {
 				opts.Logger.Debug().Err(err).Msg("bundle verification failed")
 				return false, errors.New("bundle verification failed")
+			}
+			if verifier.IsTrustConfigError(err) {
+				// The attestation is reported as unverified, so say why: the
+				// gap is in the control plane's trust configuration.
+				opts.Logger.Warn().Err(err).Msg("attestation could not be verified")
 			}
 		} else {
 			return true, nil
@@ -70,4 +75,14 @@ func verifyBundle(ctx context.Context, content []byte, opts *ActionsOpts) (bool,
 	}
 
 	return false, nil
+}
+
+// verificationFailedFatally reports whether a bundle verification error must
+// abort the command instead of leaving the attestation reported as unverified.
+// Verification relies on the trust material the control plane serves, so a gap
+// there — no timestamp authorities configured, or a timestamp signed by an
+// authority whose chain it does not publish — says nothing about the
+// attestation and must not keep the evidence from being read.
+func verificationFailedFatally(err error) bool {
+	return !errors.Is(err, verifier.ErrMissingVerificationMaterial) && !verifier.IsTrustConfigError(err)
 }
