@@ -51,7 +51,7 @@ func WithAttestationContextFromFederatedInfo(orgUC *biz.OrganizationUseCase, log
 
 			orgID := (*claims)["orgId"].(string)
 
-			ctx = withRobotAccount(ctx, &RobotAccount{OrgID: orgID, ProviderKey: attjwtmiddleware.FederatedProviderKey})
+			ctx = WithRobotAccount(ctx, &RobotAccount{OrgID: orgID, ProviderKey: attjwtmiddleware.FederatedProviderKey})
 			// Find the associated organization
 			org, err := orgUC.FindByID(ctx, orgID)
 			if err != nil {

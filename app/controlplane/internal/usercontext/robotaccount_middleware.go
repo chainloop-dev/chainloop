@@ -32,7 +32,8 @@ type RobotAccount struct {
 	ID, WorkflowID, OrgID, ProviderKey string
 }
 
-func withRobotAccount(ctx context.Context, acc *RobotAccount) context.Context {
+// Set the current robot account in the context
+func WithRobotAccount(ctx context.Context, acc *RobotAccount) context.Context {
 	return context.WithValue(ctx, currentRobotAccountCtxKey{}, acc)
 }
 
@@ -121,7 +122,7 @@ func WithAttestationContextFromRobotAccount(robotAccountUseCase *biz.RobotAccoun
 			}
 
 			// Set the robot account in the context
-			ctx = withRobotAccount(ctx, &RobotAccount{
+			ctx = WithRobotAccount(ctx, &RobotAccount{
 				ID: account.ID.String(), WorkflowID: workflowID, OrgID: orgID, ProviderKey: authInfo.ProviderKey,
 			})
 
