@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	"code.cloudfoundry.org/bytefmt"
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -69,7 +70,13 @@ func (c *Client) Upload(ctx context.Context, r io.Reader, filename, digest strin
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	resource, err := encodeResource(filename, h.String())
+	// Detecting the content size lets the CAS stream the upload straight to
+	// object-store/OCI backends with a bounded memory footprint. When the size
+	// cannot be derived without consuming the reader it is left as 0 and the CAS
+	// transparently falls back to buffering.
+	size, _ := readerLen(r)
+
+	resource, err := encodeResource(filename, h.String(), size)
 	if err != nil {
 		return nil, fmt.Errorf("encoding resource name: %w", err)
 	}
@@ -159,8 +166,11 @@ doUpload:
 	return latestStatus, nil
 }
 
-// encodedResource returns a base64-encoded v1.UploadResource which wraps both the digest and fileName
-func encodeResource(fileName, digest string) (string, error) {
+// encodedResource returns a base64-encoded v1.UploadResource which wraps the
+// digest, fileName and (when known) the content size. The size lets the CAS
+// stream the upload to its backend; a zero size means "unknown" and the CAS
+// buffers instead.
+func encodeResource(fileName, digest string, size int64) (string, error) {
 	if fileName == "" {
 		return "", fmt.Errorf("file name is empty")
 	}
@@ -174,11 +184,40 @@ func encodeResource(fileName, digest string) (string, error) {
 	var encodedResource bytes.Buffer
 	enc := gob.NewEncoder(&encodedResource)
 	// Currently we only support SHA256
-	r := &v1.CASResource{FileName: fileName, Digest: h.Hex}
+	r := &v1.CASResource{FileName: fileName, Digest: h.Hex, Size: size}
 
 	if err := enc.Encode(r); err != nil {
 		return "", err
 	}
 
 	return base64.StdEncoding.EncodeToString(encodedResource.Bytes()), nil
+}
+
+// readerLen derives the number of bytes r will yield without consuming it,
+// mirroring how net/http derives a request body's ContentLength. It returns
+// false when the size cannot be determined, in which case the caller must treat
+// the size as unknown. The reader position is not modified.
+func readerLen(r io.Reader) (int64, bool) {
+	switch v := r.(type) {
+	case *bytes.Buffer:
+		return int64(v.Len()), true
+	case *bytes.Reader:
+		return int64(v.Len()), true
+	case *strings.Reader:
+		return int64(v.Len()), true
+	case *os.File:
+		info, err := v.Stat()
+		if err != nil || !info.Mode().IsRegular() {
+			return 0, false
+		}
+		// Account for any bytes already consumed so the reported size matches
+		// what remains to be read (and hashed).
+		cur, err := v.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return 0, false
+		}
+		return info.Size() - cur, true
+	default:
+		return 0, false
+	}
 }
