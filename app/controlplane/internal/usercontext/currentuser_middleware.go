@@ -139,7 +139,7 @@ func WithAttestationContextFromUser(userUC *biz.UserUseCase, orgUC *biz.Organiza
 						return nil, fmt.Errorf("your user doesn't have permissions to perform attestations in this organization, role=%s, orgID=%s", subject, org.ID)
 					}
 
-					ctx = withRobotAccount(ctx, &RobotAccount{OrgID: org.ID, ProviderKey: attjwtmiddleware.UserTokenProviderKey})
+					ctx = WithRobotAccount(ctx, &RobotAccount{OrgID: org.ID, ProviderKey: attjwtmiddleware.UserTokenProviderKey})
 					logger.Infow("msg", "[authN] processed credentials", "type", attjwtmiddleware.UserTokenProviderKey)
 
 					return handler(ctx, req)
