@@ -88,7 +88,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
-		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, nil)
+		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, s.rbacScopesForOrg(ctx, orgID))
 	}
 
 	if err != nil {
