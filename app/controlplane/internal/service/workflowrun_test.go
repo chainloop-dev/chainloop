@@ -16,6 +16,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -139,6 +140,22 @@ func TestResolvePolicyEvaluations(t *testing.T) {
 			wantDescribeCall: true,
 		},
 		{
+			name:             "a size of zero is unknown, not empty, so it is not downloaded",
+			describeSize:     0,
+			wantRefReason:    pb.PolicyEvaluationsRef_REASON_UNAVAILABLE,
+			wantDescribeCall: true,
+		},
+		{
+			name:             "a body larger than its reported size stops at the cap",
+			maxInlineBytes:   16,
+			describeSize:     8,
+			downloadBody:     bytes.Repeat([]byte("x"), 64),
+			wantRefReason:    pb.PolicyEvaluationsRef_REASON_TOO_LARGE,
+			wantRefSize:      0,
+			wantDescribeCall: true,
+			wantDownloadCall: true,
+		},
+		{
 			name:          "missing CAS mapping is not downloaded",
 			mappingErr:    biz.NewErrNotFound("digest"),
 			wantRefReason: pb.PolicyEvaluationsRef_REASON_UNAVAILABLE,
@@ -188,8 +205,10 @@ func TestResolvePolicyEvaluations(t *testing.T) {
 					Run(func(args mock.Arguments) {
 						w, ok := args.Get(4).(io.Writer)
 						require.True(t, ok)
-						_, err := w.Write(tc.downloadBody)
-						require.NoError(t, err)
+						// The error is deliberately ignored: a bounded writer
+						// rejects a body past the cap and the production code,
+						// not the test, decides what that means.
+						_, _ = w.Write(tc.downloadBody)
 					}).Return(nil)
 			}
 

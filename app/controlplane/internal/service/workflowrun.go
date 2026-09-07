@@ -173,8 +173,29 @@ func (s *WorkflowRunService) resolvePolicyEvaluations(
 		return tooLargePolicyEvaluations(digest, info.Size, mediaType)
 	}
 
-	var buf bytes.Buffer
-	if err := s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, &buf, digest); err != nil {
+	// A size of zero means the backend did not report one, not that the object
+	// is empty: some backends omit the content length and the proto getter then
+	// yields zero. Downloading on that basis would be downloading blind.
+	if info.Size <= 0 {
+		s.log.Warnw("msg", "policy evaluations bundle has no reported size", "digest", digest)
+		return unavailablePolicyEvaluations(digest, 0, mediaType)
+	}
+
+	// The reported size is metadata, so bound the transfer itself as well.
+	// A backend that under-reports cannot then push us past the cap.
+	buf := &boundedBuffer{limit: maxInlineBytes}
+	err = s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, buf, digest)
+
+	// Checked before the error because a writer refusing to grow surfaces as a
+	// download failure, and because the bound must hold even if an
+	// implementation swallows the write error.
+	if buf.exceeded {
+		s.log.Warnw("msg", "policy evaluations bundle exceeded the cap while downloading", "digest", digest, "reportedSize", info.Size, "max", maxInlineBytes)
+		// The reported size is known to be wrong, so no size is reported at all.
+		return tooLargePolicyEvaluations(digest, 0, mediaType)
+	}
+
+	if err != nil {
 		s.log.Warnw("msg", "downloading policy evaluations bundle", "digest", digest, "err", err)
 		return unavailablePolicyEvaluations(digest, info.Size, mediaType)
 	}
@@ -183,6 +204,33 @@ func (s *WorkflowRunService) resolvePolicyEvaluations(
 	_ = s.policyEvalCache.Set(ctx, digest, data)
 
 	return s.decodePolicyEvaluations(data, digest, info.Size, mediaType)
+}
+
+// boundedBuffer accumulates bytes in memory up to a limit and refuses the write
+// that would exceed it, recording that it did. It exists so the policy
+// evaluations cap is enforced against the bytes actually received rather than
+// against the size the CAS backend claims.
+type boundedBuffer struct {
+	buf      bytes.Buffer
+	limit    int64
+	written  int64
+	exceeded bool
+}
+
+func (b *boundedBuffer) Write(p []byte) (int, error) {
+	if b.written+int64(len(p)) > b.limit {
+		b.exceeded = true
+		return 0, fmt.Errorf("content exceeds the maximum of %d bytes", b.limit)
+	}
+
+	n, err := b.buf.Write(p)
+	b.written += int64(n)
+
+	return n, err
+}
+
+func (b *boundedBuffer) Bytes() []byte {
+	return b.buf.Bytes()
 }
 
 func (s *WorkflowRunService) decodePolicyEvaluations(data []byte, digest string, size int64, mediaType string) *resolvedPolicyEvaluations {
