@@ -131,6 +131,11 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Apply RBAC on the project
+	if _, err = s.userHasPermissionOnProject(ctx, robotAccount.OrgID, &cpAPI.IdentityReference{Name: &req.ProjectName}, authz.PolicyWorkflowRead); err != nil {
+		return nil, err
+	}
+
 	// Find contract revision
 	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision), biz.WithoutReferences())
 	if err != nil {

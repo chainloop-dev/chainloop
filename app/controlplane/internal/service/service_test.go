@@ -21,9 +21,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -254,6 +257,66 @@ func TestRequireCurrentUserOrAPIToken(t *testing.T) {
 			} else {
 				assert.Nil(t, gotToken)
 			}
+		})
+	}
+}
+
+func TestRBACScopesForOrg(t *testing.T) {
+	t.Parallel()
+
+	orgID := uuid.New()
+	projectID := uuid.New()
+
+	testCases := []struct {
+		name string
+		ctx  context.Context
+		want biz.RBACScopes
+	}{
+		{
+			name: "project-scoped API token is limited to its project",
+			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ProjectID: &projectID}),
+			want: biz.RBACScopes{orgID: biz.RBACScope{ProjectIDs: []uuid.UUID{projectID}}},
+		},
+		{
+			name: "org-scoped API token has no RBAC filter",
+			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{}),
+			want: biz.RBACScopes{},
+		},
+		{
+			name: "user with an RBAC-enabled role is limited to its memberships",
+			ctx: usercontext.WithAuthzSubject(
+				entities.WithMembership(context.Background(), &entities.Membership{
+					Resources: []*entities.ResourceMembership{
+						{ResourceType: authz.ResourceTypeProject, ResourceID: projectID, Role: authz.RoleProjectViewer},
+					},
+				}),
+				string(authz.RoleOrgMember),
+			),
+			want: biz.RBACScopes{orgID: biz.RBACScope{ProjectIDs: []uuid.UUID{projectID}}},
+		},
+		{
+			// the org key being present with an empty scope denies everything; it must not
+			// be confused with the absent key that grants the whole organization
+			name: "RBAC-enabled user with no project memberships reaches nothing",
+			ctx: usercontext.WithAuthzSubject(
+				entities.WithMembership(context.Background(), &entities.Membership{}),
+				string(authz.RoleOrgMember),
+			),
+			want: biz.RBACScopes{orgID: biz.RBACScope{ProjectIDs: []uuid.UUID{}}},
+		},
+		{
+			name: "user with a role without RBAC has no filter",
+			ctx:  usercontext.WithAuthzSubject(context.Background(), string(authz.RoleViewer)),
+			want: biz.RBACScopes{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			s := newService()
+			assert.Equal(t, tc.want, s.rbacScopesForOrg(tc.ctx, orgID))
 		})
 	}
 }

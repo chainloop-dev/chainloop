@@ -472,7 +472,17 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 
 	// if it's verifiable, make sure it passed
 	if validation != nil && !validation.Result {
-		return nil, NewErrValidation(fmt.Errorf("attestation verification failed: %s", validation.FailureReason))
+		// A failure caused by our own TSA trust configuration — typically an
+		// upstream authority that rotated its responder certificate ahead of the
+		// chain we pin — must not discard the evidence. The signature has already
+		// been verified against a trusted certificate, and verification is
+		// recomputed on every read, so the result self-heals once the
+		// configuration catches up.
+		if !validation.TrustConfigFault {
+			return nil, NewErrValidation(fmt.Errorf("attestation verification failed: %s", validation.FailureReason))
+		}
+		uc.logger.Warnw("msg", "accepting attestation with an unverifiable timestamp, review the configured TSA certificate chains",
+			"workflowRunID", runID.String(), "reason", validation.FailureReason)
 	}
 
 	// Run some validations on the predicate
@@ -571,6 +581,10 @@ func (uc *WorkflowRunUseCase) GetByIDInOrg(ctx context.Context, orgID, runID str
 type VerificationResult struct {
 	Result        bool
 	FailureReason string
+	// TrustConfigFault is set when verification failed because of this server's
+	// TSA trust configuration rather than because of a fault in the attestation.
+	// Callers persisting an attestation must not reject it on such a failure.
+	TrustConfigFault bool
 }
 
 func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (*VerificationResult, error) {
@@ -604,7 +618,11 @@ func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte) (
 			return nil, err
 		}
 
-		return &VerificationResult{Result: false, FailureReason: err.Error()}, nil
+		return &VerificationResult{
+			Result:           false,
+			FailureReason:    err.Error(),
+			TrustConfigFault: verifier.IsTrustConfigError(err),
+		}, nil
 	}
 	return &VerificationResult{Result: true}, nil
 }

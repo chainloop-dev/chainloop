@@ -328,6 +328,20 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	return projects
 }
 
+// rbacScopesForOrg returns the resource-level RBAC scopes of the current caller within the given
+// organization, ready to be passed to the use cases that honour them. When RBAC applies to the
+// caller the organization is present in the result, limited to the caller's visible projects;
+// when it does not (legacy roles, org-scoped API tokens) the organization is absent from the
+// result, meaning the whole organization is reachable.
+func (s *service) rbacScopesForOrg(ctx context.Context, orgID uuid.UUID) biz.RBACScopes {
+	scopes := make(biz.RBACScopes)
+	if visibleProjects := s.visibleProjects(ctx); visibleProjects != nil {
+		scopes[orgID] = biz.RBACScope{ProjectIDs: visibleProjects}
+	}
+
+	return scopes
+}
+
 // checkPolicy Checks a policy against a user or a token
 func (s *service) checkPolicy(ctx context.Context, policy *authz.Policy) error {
 	// Token case
