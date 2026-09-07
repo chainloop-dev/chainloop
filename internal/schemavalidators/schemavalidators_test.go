@@ -713,6 +713,7 @@ func TestValidateSecurityContextTraceSessions(t *testing.T) {
 	}{
 		{name: "more than maxItems session ids", value: overflow},
 		{name: "an empty-string session id", value: []any{""}},
+		{name: "a session id longer than maxLength", value: []any{strings.Repeat("a", 257)}},
 		{name: "a non-array trace_sessions", value: "not-an-array"},
 	}
 
