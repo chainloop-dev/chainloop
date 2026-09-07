@@ -266,8 +266,15 @@ type Attestations struct {
 	// when the workflow run's CAS backend is inline, since inline backends
 	// do not store attestation bundles externally.
 	SkipDbStorage bool `protobuf:"varint,1,opt,name=skip_db_storage,json=skipDbStorage,proto3" json:"skip_db_storage,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Maximum size in bytes of a policy-evaluation bundle that the workflow-run
+	// View API downloads from CAS and inlines in its response. Bundles above
+	// this size are returned as a reference for the caller to fetch directly,
+	// which keeps a single attestation with a very large number of violations
+	// from exhausting the control plane's memory. Values <= 0 select the
+	// built-in default.
+	PolicyEvaluationsMaxInlineBytes int64 `protobuf:"varint,2,opt,name=policy_evaluations_max_inline_bytes,json=policyEvaluationsMaxInlineBytes,proto3" json:"policy_evaluations_max_inline_bytes,omitempty"`
+	unknownFields                   protoimpl.UnknownFields
+	sizeCache                       protoimpl.SizeCache
 }
 
 func (x *Attestations) Reset() {
@@ -305,6 +312,13 @@ func (x *Attestations) GetSkipDbStorage() bool {
 		return x.SkipDbStorage
 	}
 	return false
+}
+
+func (x *Attestations) GetPolicyEvaluationsMaxInlineBytes() int64 {
+	if x != nil {
+		return x.PolicyEvaluationsMaxInlineBytes
+	}
+	return 0
 }
 
 type OperationAuthorizationProvider struct {
@@ -1427,7 +1441,7 @@ type Data_Database struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Driver string                 `protobuf:"bytes,1,opt,name=driver,proto3" json:"driver,omitempty"`
 	Source string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
-	// default 0
+	//  default 0
 	MinOpenConns int32 `protobuf:"varint,3,opt,name=min_open_conns,json=minOpenConns,proto3" json:"min_open_conns,omitempty"`
 	// default max(4, runtime.NumCPU())
 	MaxOpenConns int32 `protobuf:"varint,4,opt,name=max_open_conns,json=maxOpenConns,proto3" json:"max_open_conns,omitempty"`
@@ -1780,9 +1794,10 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x03uri\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x03uri\x12\x1f\n" +
 	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x05token\x12\x1a\n" +
 	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
-	"\x0eauthenticationJ\x04\b\b\x10\tR\x15referrer_shared_index\"6\n" +
+	"\x0eauthenticationJ\x04\b\b\x10\tR\x15referrer_shared_index\"\x84\x01\n" +
 	"\fAttestations\x12&\n" +
-	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\"v\n" +
+	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\x12L\n" +
+	"#policy_evaluations_max_inline_bytes\x18\x02 \x01(\x03R\x1fpolicyEvaluationsMaxInlineBytes\"v\n" +
 	"\x1eOperationAuthorizationProvider\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1e\n" +

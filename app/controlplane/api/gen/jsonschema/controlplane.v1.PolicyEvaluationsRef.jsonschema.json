@@ -1,0 +1,71 @@
+{
+  "$id": "controlplane.v1.PolicyEvaluationsRef.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Pointer to a policy-evaluation bundle held in a CAS backend, returned in\n place of the evaluations themselves.",
+  "patternProperties": {
+    "^(media_type)$": {
+      "description": "Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json",
+      "type": "string"
+    },
+    "^(size_bytes)$": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Size of the bundle in bytes. Zero when the size could not be determined."
+    }
+  },
+  "properties": {
+    "digest": {
+      "description": "Digest of the bundle as stored in CAS, in \"sha256:\u003chex\u003e\" form",
+      "type": "string"
+    },
+    "mediaType": {
+      "description": "Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "REASON_UNSPECIFIED",
+            "REASON_TOO_LARGE",
+            "REASON_UNAVAILABLE"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ],
+      "description": "Why the evaluations were not inlined"
+    },
+    "sizeBytes": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 9223372036854776000,
+          "minimum": -9223372036854775808,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "description": "Size of the bundle in bytes. Zero when the size could not be determined."
+    }
+  },
+  "title": "Policy Evaluations Ref",
+  "type": "object"
+}

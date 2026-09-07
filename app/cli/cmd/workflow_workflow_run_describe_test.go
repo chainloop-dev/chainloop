@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	attv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -207,4 +209,147 @@ func (s *workflowRunDescribeSuite) TestOutputTypePayload() {
 
 	s.Require().NoError(err)
 	s.Equal(expected, buf.String())
+}
+
+const (
+	testRefDigest       = "sha256:abc123"
+	testRefDownloadHint = "inspect with: chainloop artifact download --digest " + testRefDigest
+	policiesRowLabel    = "Policies"
+)
+
+func TestPolicyEvaluationsRefNotice(t *testing.T) {
+	tests := []struct {
+		name   string
+		ref    *action.PolicyEvaluationsRef
+		status *action.PolicyEvaluationStatus
+		want   []string
+	}{
+		{
+			name: "no reference produces no notice",
+		},
+		{
+			name: "oversized bundle reports counters, size and how to fetch it",
+			ref: &action.PolicyEvaluationsRef{
+				Digest:    testRefDigest,
+				SizeBytes: 64 * 1024 * 1024,
+				Reason:    action.PolicyEvaluationsRefReasonTooLarge,
+			},
+			status: &action.PolicyEvaluationStatus{Total: 12, Violated: 134112, Suppressed: 86321},
+			want: []string{
+				"12 evaluations, 134112 violations (86321 suppressed) - too large to include inline (64M)",
+				testRefDownloadHint,
+			},
+		},
+		{
+			name: "oversized bundle with nothing suppressed omits the suppressed count",
+			ref: &action.PolicyEvaluationsRef{
+				Digest:    testRefDigest,
+				SizeBytes: 3 * 1024 * 1024,
+				Reason:    action.PolicyEvaluationsRefReasonTooLarge,
+			},
+			status: &action.PolicyEvaluationStatus{Total: 2, Violated: 40},
+			want: []string{
+				"2 evaluations, 40 violations - too large to include inline (3M)",
+				testRefDownloadHint,
+			},
+		},
+		{
+			name: "unknown size omits the size",
+			ref: &action.PolicyEvaluationsRef{
+				Digest: testRefDigest,
+				Reason: action.PolicyEvaluationsRefReasonTooLarge,
+			},
+			status: &action.PolicyEvaluationStatus{Total: 2, Violated: 40},
+			want: []string{
+				"2 evaluations, 40 violations - too large to include inline",
+				testRefDownloadHint,
+			},
+		},
+		{
+			name: "unavailable bundle does not suggest a download",
+			ref: &action.PolicyEvaluationsRef{
+				Digest: testRefDigest,
+				Reason: action.PolicyEvaluationsRefReasonUnavailable,
+			},
+			status: &action.PolicyEvaluationStatus{Total: 3, Violated: 7},
+			want: []string{
+				"3 evaluations, 7 violations - could not be retrieved from the CAS backend",
+			},
+		},
+		{
+			name: "missing status still reports the reason",
+			ref: &action.PolicyEvaluationsRef{
+				Digest:    testRefDigest,
+				SizeBytes: 1024,
+				Reason:    action.PolicyEvaluationsRefReasonTooLarge,
+			},
+			want: []string{
+				"policy evaluations too large to include inline (1K)",
+				testRefDownloadHint,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, policyEvaluationsRefNotice(tc.ref, tc.status))
+		})
+	}
+}
+
+func TestAppendPolicySection(t *testing.T) {
+	tests := []struct {
+		name        string
+		attestation *action.WorkflowRunAttestationItem
+		wantContain []string
+		wantAbsent  []string
+	}{
+		{
+			name: "inlined evaluations are rendered as policy rows",
+			attestation: &action.WorkflowRunAttestationItem{
+				PolicyEvaluations: map[string][]*action.PolicyEvaluation{
+					chainloop.AttPolicyEvaluation: {
+						{Name: "strong-acl", Violations: []*action.PolicyViolation{{Message: "weak ACL"}}},
+					},
+				},
+				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 1, Violated: 1},
+			},
+			wantContain: []string{policiesRowLabel, "strong-acl", "weak ACL"},
+			wantAbsent:  []string{"artifact download"},
+		},
+		{
+			name: "an oversized bundle is rendered as a notice instead",
+			attestation: &action.WorkflowRunAttestationItem{
+				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 12, Violated: 134112},
+				PolicyEvaluationsRef: &action.PolicyEvaluationsRef{
+					Digest:    testRefDigest,
+					SizeBytes: 64 * 1024 * 1024,
+					Reason:    action.PolicyEvaluationsRefReasonTooLarge,
+				},
+			},
+			wantContain: []string{policiesRowLabel, "134112 violations", "too large", "artifact download --digest " + testRefDigest},
+		},
+		{
+			name: "no policies and no reference renders nothing",
+			attestation: &action.WorkflowRunAttestationItem{
+				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{},
+			},
+			wantAbsent: []string{"Policies"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tw := table.NewWriter()
+			appendPolicySection(tc.attestation, tw, false)
+			got := tw.Render()
+
+			for _, want := range tc.wantContain {
+				assert.Contains(t, got, want)
+			}
+			for _, absent := range tc.wantAbsent {
+				assert.NotContains(t, got, absent)
+			}
+		})
+	}
 }

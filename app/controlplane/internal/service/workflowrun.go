@@ -23,6 +23,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -48,6 +49,7 @@ type WorkflowRunService struct {
 	casClient               biz.CASClient
 	casMappingUC            *biz.CASMappingUseCase
 	policyEvalCache         *policyevalbundle.Cache
+	bootstrapConfig         *conf.Bootstrap
 }
 
 type NewWorkflowRunServiceOpts struct {
@@ -60,6 +62,7 @@ type NewWorkflowRunServiceOpts struct {
 	CASClient          biz.CASClient
 	CASMappingUC       *biz.CASMappingUseCase
 	PolicyEvalCache    *policyevalbundle.Cache
+	BootstrapConfig    *conf.Bootstrap
 	Opts               []NewOpt
 }
 
@@ -75,6 +78,7 @@ func NewWorkflowRunService(opts *NewWorkflowRunServiceOpts) *WorkflowRunService 
 		casClient:               opts.CASClient,
 		casMappingUC:            opts.CASMappingUC,
 		policyEvalCache:         opts.PolicyEvalCache,
+		bootstrapConfig:         opts.BootstrapConfig,
 	}
 }
 
@@ -87,39 +91,126 @@ func (p *casResolvedPredicate) GetPolicyEvaluations() map[string][]*chainloop.Po
 	return p.evals
 }
 
-func (s *WorkflowRunService) resolvePolicyEvaluations(
-	ctx context.Context,
-	ref *intoto.ResourceDescriptor,
-	orgID uuid.UUID,
-) (map[string][]*chainloop.PolicyEvaluation, error) {
-	if ref == nil {
-		return nil, nil
+// defaultPolicyEvaluationsMaxInlineBytes bounds the policy-evaluation bundle
+// the View API is willing to download and inline in a response. A single
+// attestation can carry a six-figure number of violations, and inlining one
+// holds the payload in memory several times over (download buffer, decoded
+// bundle, regrouped evaluations, response protos), which is enough to exhaust
+// the control plane. Bundles above the cap are returned as a reference so the
+// caller can fetch them directly from the CAS.
+const defaultPolicyEvaluationsMaxInlineBytes = 10 << 20 // 10MiB
+
+// resolvedPolicyEvaluations carries either the inlined evaluations or, when
+// they were deliberately left out, the reference the caller needs to fetch
+// them. Exactly one of the two fields is set.
+type resolvedPolicyEvaluations struct {
+	evaluations map[string][]*chainloop.PolicyEvaluation
+	ref         *pb.PolicyEvaluationsRef
+}
+
+func (s *WorkflowRunService) policyEvaluationsMaxInlineBytes() int64 {
+	if configured := s.bootstrapConfig.GetAttestations().GetPolicyEvaluationsMaxInlineBytes(); configured > 0 {
+		return configured
 	}
 
-	hexDigest, ok := ref.Digest["sha256"]
+	return defaultPolicyEvaluationsMaxInlineBytes
+}
+
+// resolvePolicyEvaluations resolves the policy-evaluation bundle referenced by
+// an attestation predicate. It returns nil when the predicate carries no
+// reference, meaning the caller should keep whatever the predicate itself
+// holds.
+//
+// Anything that prevents inlining the bundle with confidence -- an oversized
+// bundle, an unknown size, an unreachable or undecodable object -- yields a
+// reference rather than a download attempt.
+func (s *WorkflowRunService) resolvePolicyEvaluations(
+	ctx context.Context,
+	descriptor *intoto.ResourceDescriptor,
+	orgID uuid.UUID,
+) *resolvedPolicyEvaluations {
+	if descriptor == nil {
+		return nil
+	}
+
+	mediaType := descriptor.GetMediaType()
+
+	hexDigest, ok := descriptor.GetDigest()["sha256"]
 	if !ok {
-		return nil, fmt.Errorf("no sha256 digest in policy evaluations ref")
+		s.log.Warnw("msg", "policy evaluations reference has no sha256 digest")
+		return unavailablePolicyEvaluations("", 0, mediaType)
 	}
 	digest := fmt.Sprintf("sha256:%s", hexDigest)
 
+	maxInlineBytes := s.policyEvaluationsMaxInlineBytes()
+
+	// A cached bundle costs no CAS round trip. Only under-cap bundles are
+	// cached below, so the size check here just keeps the cap honest for
+	// entries written before it existed.
 	if cached, found, err := s.policyEvalCache.Get(ctx, digest); err == nil && found {
-		return chainloop.PolicyEvaluationsFromBundle(cached)
+		if int64(len(cached)) > maxInlineBytes {
+			return tooLargePolicyEvaluations(digest, int64(len(cached)), mediaType)
+		}
+
+		return s.decodePolicyEvaluations(cached, digest, int64(len(cached)), mediaType)
 	}
 
 	mapping, err := s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, digest, []uuid.UUID{orgID}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("finding CAS mapping: %w", err)
+		s.log.Warnw("msg", "finding CAS mapping for policy evaluations", "digest", digest, "err", err)
+		return unavailablePolicyEvaluations(digest, 0, mediaType)
+	}
+
+	// Ask for the size before paying for the transfer.
+	info, err := s.casClient.Describe(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, digest)
+	if err != nil {
+		s.log.Warnw("msg", "describing policy evaluations bundle", "digest", digest, "err", err)
+		return unavailablePolicyEvaluations(digest, 0, mediaType)
+	}
+
+	if info.Size > maxInlineBytes {
+		s.log.Infow("msg", "policy evaluations bundle too large to inline", "digest", digest, "size", info.Size, "max", maxInlineBytes)
+		return tooLargePolicyEvaluations(digest, info.Size, mediaType)
 	}
 
 	var buf bytes.Buffer
 	if err := s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, &buf, digest); err != nil {
-		return nil, fmt.Errorf("downloading policy eval bundle: %w", err)
+		s.log.Warnw("msg", "downloading policy evaluations bundle", "digest", digest, "err", err)
+		return unavailablePolicyEvaluations(digest, info.Size, mediaType)
 	}
 
 	data := buf.Bytes()
 	_ = s.policyEvalCache.Set(ctx, digest, data)
 
-	return chainloop.PolicyEvaluationsFromBundle(data)
+	return s.decodePolicyEvaluations(data, digest, info.Size, mediaType)
+}
+
+func (s *WorkflowRunService) decodePolicyEvaluations(data []byte, digest string, size int64, mediaType string) *resolvedPolicyEvaluations {
+	evaluations, err := chainloop.PolicyEvaluationsFromBundle(data)
+	if err != nil {
+		s.log.Warnw("msg", "decoding policy evaluations bundle", "digest", digest, "err", err)
+		return unavailablePolicyEvaluations(digest, size, mediaType)
+	}
+
+	return &resolvedPolicyEvaluations{evaluations: evaluations}
+}
+
+func tooLargePolicyEvaluations(digest string, size int64, mediaType string) *resolvedPolicyEvaluations {
+	return &resolvedPolicyEvaluations{ref: &pb.PolicyEvaluationsRef{
+		Digest:    digest,
+		SizeBytes: size,
+		MediaType: mediaType,
+		Reason:    pb.PolicyEvaluationsRef_REASON_TOO_LARGE,
+	}}
+}
+
+func unavailablePolicyEvaluations(digest string, size int64, mediaType string) *resolvedPolicyEvaluations {
+	return &resolvedPolicyEvaluations{ref: &pb.PolicyEvaluationsRef{
+		Digest:    digest,
+		SizeBytes: size,
+		MediaType: mediaType,
+		Reason:    pb.PolicyEvaluationsRef_REASON_UNAVAILABLE,
+	}}
 }
 
 func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServiceListRequest) (*pb.WorkflowRunServiceListResponse, error) {
@@ -283,18 +374,20 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	}
 
 	var predicate chainloop.NormalizablePredicate
+	var policyEvaluationsRef *pb.PolicyEvaluationsRef
 	if run.Attestation != nil && run.Attestation.Envelope != nil {
 		predicate, err = chainloop.ExtractPredicate(run.Attestation.Envelope)
 		if err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
 
-		if ref := predicate.GetPolicyEvaluationsRef(); ref != nil {
-			resolved, resolveErr := s.resolvePolicyEvaluations(ctx, ref, run.Workflow.OrgID)
-			if resolveErr != nil {
-				s.log.Warnw("msg", "failed to resolve policy evaluations from CAS, using inline", "err", resolveErr)
-			} else if resolved != nil {
-				predicate = &casResolvedPredicate{NormalizablePredicate: predicate, evals: resolved}
+		if resolved := s.resolvePolicyEvaluations(ctx, predicate.GetPolicyEvaluationsRef(), run.Workflow.OrgID); resolved != nil {
+			// Either the evaluations are inlined, or the caller is handed the
+			// reference to fetch them from the CAS itself.
+			if resolved.ref != nil {
+				policyEvaluationsRef = resolved.ref
+			} else {
+				predicate = &casResolvedPredicate{NormalizablePredicate: predicate, evals: resolved.evaluations}
 			}
 		}
 	}
@@ -302,6 +395,10 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	attestation, err := bizAttestationToPb(run.Attestation, predicate)
 	if err != nil {
 		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	if attestation != nil {
+		attestation.PolicyEvaluationsRef = policyEvaluationsRef
 	}
 
 	contractAndVersion, err := s.workflowContractUseCase.FindVersionByID(ctx, run.ContractVersionID.String())

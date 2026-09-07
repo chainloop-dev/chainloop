@@ -136,6 +136,14 @@ message Attestations {
   // when the workflow run's CAS backend is inline, since inline backends
   // do not store attestation bundles externally.
   bool skip_db_storage = 1;
+
+  // Maximum size in bytes of a policy-evaluation bundle that the workflow-run
+  // View API downloads from CAS and inlines in its response. Bundles above
+  // this size are returned as a reference for the caller to fetch directly,
+  // which keeps a single attestation with a very large number of violations
+  // from exhausting the control plane's memory. Values <= 0 select the
+  // built-in default.
+  int64 policy_evaluations_max_inline_bytes = 2;
 }
 
 message OperationAuthorizationProvider {

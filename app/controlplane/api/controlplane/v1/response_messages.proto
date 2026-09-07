@@ -189,6 +189,12 @@ message AttestationItem {
   map<string, string> annotations = 6;
   map<string, PolicyEvaluations> policy_evaluations = 8;
   PolicyEvaluationStatus policy_evaluation_status = 9;
+  // Reference to the policy-evaluation bundle in the CAS backend. Populated
+  // only when the evaluations are NOT inlined in policy_evaluations, either
+  // because the bundle is larger than the server inlines or because it could
+  // not be resolved. Fetch the bundle by digest to inspect the violations.
+  // Counters and status in policy_evaluation_status remain complete either way.
+  PolicyEvaluationsRef policy_evaluations_ref = 11;
 
   message PolicyEvaluationStatus {
     string strategy = 1;
@@ -233,6 +239,27 @@ message AttestationItem {
     // the filename or image reference as UTF-8.
     // Clients should prefer this field over the deprecated string value field.
     bytes raw_value = 10;
+  }
+}
+
+// Pointer to a policy-evaluation bundle held in a CAS backend, returned in
+// place of the evaluations themselves.
+message PolicyEvaluationsRef {
+  // Digest of the bundle as stored in CAS, in "sha256:<hex>" form
+  string digest = 1;
+  // Size of the bundle in bytes. Zero when the size could not be determined.
+  int64 size_bytes = 2;
+  // Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json
+  string media_type = 3;
+  // Why the evaluations were not inlined
+  Reason reason = 4;
+
+  enum Reason {
+    REASON_UNSPECIFIED = 0;
+    // The bundle exceeds the maximum size the server inlines in a response
+    REASON_TOO_LARGE = 1;
+    // The bundle could not be resolved from CAS
+    REASON_UNAVAILABLE = 2;
   }
 }
 

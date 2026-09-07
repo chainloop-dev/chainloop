@@ -579,6 +579,57 @@ func (UserNotMemberOfOrgError) EnumDescriptor() ([]byte, []int) {
 	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{9}
 }
 
+type PolicyEvaluationsRef_Reason int32
+
+const (
+	PolicyEvaluationsRef_REASON_UNSPECIFIED PolicyEvaluationsRef_Reason = 0
+	// The bundle exceeds the maximum size the server inlines in a response
+	PolicyEvaluationsRef_REASON_TOO_LARGE PolicyEvaluationsRef_Reason = 1
+	// The bundle could not be resolved from CAS
+	PolicyEvaluationsRef_REASON_UNAVAILABLE PolicyEvaluationsRef_Reason = 2
+)
+
+// Enum value maps for PolicyEvaluationsRef_Reason.
+var (
+	PolicyEvaluationsRef_Reason_name = map[int32]string{
+		0: "REASON_UNSPECIFIED",
+		1: "REASON_TOO_LARGE",
+		2: "REASON_UNAVAILABLE",
+	}
+	PolicyEvaluationsRef_Reason_value = map[string]int32{
+		"REASON_UNSPECIFIED": 0,
+		"REASON_TOO_LARGE":   1,
+		"REASON_UNAVAILABLE": 2,
+	}
+)
+
+func (x PolicyEvaluationsRef_Reason) Enum() *PolicyEvaluationsRef_Reason {
+	p := new(PolicyEvaluationsRef_Reason)
+	*p = x
+	return p
+}
+
+func (x PolicyEvaluationsRef_Reason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PolicyEvaluationsRef_Reason) Descriptor() protoreflect.EnumDescriptor {
+	return file_controlplane_v1_response_messages_proto_enumTypes[10].Descriptor()
+}
+
+func (PolicyEvaluationsRef_Reason) Type() protoreflect.EnumType {
+	return &file_controlplane_v1_response_messages_proto_enumTypes[10]
+}
+
+func (x PolicyEvaluationsRef_Reason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PolicyEvaluationsRef_Reason.Descriptor instead.
+func (PolicyEvaluationsRef_Reason) EnumDescriptor() ([]byte, []int) {
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{5, 0}
+}
+
 type WorkflowContractVersionItem_RawBody_Format int32
 
 const (
@@ -615,11 +666,11 @@ func (x WorkflowContractVersionItem_RawBody_Format) String() string {
 }
 
 func (WorkflowContractVersionItem_RawBody_Format) Descriptor() protoreflect.EnumDescriptor {
-	return file_controlplane_v1_response_messages_proto_enumTypes[10].Descriptor()
+	return file_controlplane_v1_response_messages_proto_enumTypes[11].Descriptor()
 }
 
 func (WorkflowContractVersionItem_RawBody_Format) Type() protoreflect.EnumType {
-	return &file_controlplane_v1_response_messages_proto_enumTypes[10]
+	return &file_controlplane_v1_response_messages_proto_enumTypes[11]
 }
 
 func (x WorkflowContractVersionItem_RawBody_Format) Number() protoreflect.EnumNumber {
@@ -628,7 +679,7 @@ func (x WorkflowContractVersionItem_RawBody_Format) Number() protoreflect.EnumNu
 
 // Deprecated: Use WorkflowContractVersionItem_RawBody_Format.Descriptor instead.
 func (WorkflowContractVersionItem_RawBody_Format) EnumDescriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{12, 0, 0}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{13, 0, 0}
 }
 
 type OrgItem_PolicyViolationBlockingStrategy int32
@@ -664,11 +715,11 @@ func (x OrgItem_PolicyViolationBlockingStrategy) String() string {
 }
 
 func (OrgItem_PolicyViolationBlockingStrategy) Descriptor() protoreflect.EnumDescriptor {
-	return file_controlplane_v1_response_messages_proto_enumTypes[11].Descriptor()
+	return file_controlplane_v1_response_messages_proto_enumTypes[12].Descriptor()
 }
 
 func (OrgItem_PolicyViolationBlockingStrategy) Type() protoreflect.EnumType {
-	return &file_controlplane_v1_response_messages_proto_enumTypes[11]
+	return &file_controlplane_v1_response_messages_proto_enumTypes[12]
 }
 
 func (x OrgItem_PolicyViolationBlockingStrategy) Number() protoreflect.EnumNumber {
@@ -677,7 +728,7 @@ func (x OrgItem_PolicyViolationBlockingStrategy) Number() protoreflect.EnumNumbe
 
 // Deprecated: Use OrgItem_PolicyViolationBlockingStrategy.Descriptor instead.
 func (OrgItem_PolicyViolationBlockingStrategy) EnumDescriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{15, 0}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{16, 0}
 }
 
 type CASBackendItem_ValidationStatus int32
@@ -713,11 +764,11 @@ func (x CASBackendItem_ValidationStatus) String() string {
 }
 
 func (CASBackendItem_ValidationStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_controlplane_v1_response_messages_proto_enumTypes[12].Descriptor()
+	return file_controlplane_v1_response_messages_proto_enumTypes[13].Descriptor()
 }
 
 func (CASBackendItem_ValidationStatus) Type() protoreflect.EnumType {
-	return &file_controlplane_v1_response_messages_proto_enumTypes[12]
+	return &file_controlplane_v1_response_messages_proto_enumTypes[13]
 }
 
 func (x CASBackendItem_ValidationStatus) Number() protoreflect.EnumNumber {
@@ -726,7 +777,7 @@ func (x CASBackendItem_ValidationStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CASBackendItem_ValidationStatus.Descriptor instead.
 func (CASBackendItem_ValidationStatus) EnumDescriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{16, 0}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{17, 0}
 }
 
 type WorkflowItem struct {
@@ -1259,8 +1310,14 @@ type AttestationItem struct {
 	Annotations            map[string]string                       `protobuf:"bytes,6,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	PolicyEvaluations      map[string]*PolicyEvaluations           `protobuf:"bytes,8,rep,name=policy_evaluations,json=policyEvaluations,proto3" json:"policy_evaluations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	PolicyEvaluationStatus *AttestationItem_PolicyEvaluationStatus `protobuf:"bytes,9,opt,name=policy_evaluation_status,json=policyEvaluationStatus,proto3" json:"policy_evaluation_status,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Reference to the policy-evaluation bundle in the CAS backend. Populated
+	// only when the evaluations are NOT inlined in policy_evaluations, either
+	// because the bundle is larger than the server inlines or because it could
+	// not be resolved. Fetch the bundle by digest to inspect the violations.
+	// Counters and status in policy_evaluation_status remain complete either way.
+	PolicyEvaluationsRef *PolicyEvaluationsRef `protobuf:"bytes,11,opt,name=policy_evaluations_ref,json=policyEvaluationsRef,proto3" json:"policy_evaluations_ref,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *AttestationItem) Reset() {
@@ -1350,6 +1407,87 @@ func (x *AttestationItem) GetPolicyEvaluationStatus() *AttestationItem_PolicyEva
 	return nil
 }
 
+func (x *AttestationItem) GetPolicyEvaluationsRef() *PolicyEvaluationsRef {
+	if x != nil {
+		return x.PolicyEvaluationsRef
+	}
+	return nil
+}
+
+// Pointer to a policy-evaluation bundle held in a CAS backend, returned in
+// place of the evaluations themselves.
+type PolicyEvaluationsRef struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Digest of the bundle as stored in CAS, in "sha256:<hex>" form
+	Digest string `protobuf:"bytes,1,opt,name=digest,proto3" json:"digest,omitempty"`
+	// Size of the bundle in bytes. Zero when the size could not be determined.
+	SizeBytes int64 `protobuf:"varint,2,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	// Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json
+	MediaType string `protobuf:"bytes,3,opt,name=media_type,json=mediaType,proto3" json:"media_type,omitempty"`
+	// Why the evaluations were not inlined
+	Reason        PolicyEvaluationsRef_Reason `protobuf:"varint,4,opt,name=reason,proto3,enum=controlplane.v1.PolicyEvaluationsRef_Reason" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PolicyEvaluationsRef) Reset() {
+	*x = PolicyEvaluationsRef{}
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PolicyEvaluationsRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PolicyEvaluationsRef) ProtoMessage() {}
+
+func (x *PolicyEvaluationsRef) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PolicyEvaluationsRef.ProtoReflect.Descriptor instead.
+func (*PolicyEvaluationsRef) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *PolicyEvaluationsRef) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+func (x *PolicyEvaluationsRef) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *PolicyEvaluationsRef) GetMediaType() string {
+	if x != nil {
+		return x.MediaType
+	}
+	return ""
+}
+
+func (x *PolicyEvaluationsRef) GetReason() PolicyEvaluationsRef_Reason {
+	if x != nil {
+		return x.Reason
+	}
+	return PolicyEvaluationsRef_REASON_UNSPECIFIED
+}
+
 type PolicyEvaluations struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Evaluations   []*PolicyEvaluation    `protobuf:"bytes,1,rep,name=evaluations,proto3" json:"evaluations,omitempty"`
@@ -1359,7 +1497,7 @@ type PolicyEvaluations struct {
 
 func (x *PolicyEvaluations) Reset() {
 	*x = PolicyEvaluations{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[5]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1371,7 +1509,7 @@ func (x *PolicyEvaluations) String() string {
 func (*PolicyEvaluations) ProtoMessage() {}
 
 func (x *PolicyEvaluations) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[5]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1384,7 +1522,7 @@ func (x *PolicyEvaluations) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyEvaluations.ProtoReflect.Descriptor instead.
 func (*PolicyEvaluations) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{5}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PolicyEvaluations) GetEvaluations() []*PolicyEvaluation {
@@ -1418,7 +1556,7 @@ type PolicyEvaluation struct {
 
 func (x *PolicyEvaluation) Reset() {
 	*x = PolicyEvaluation{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[6]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1430,7 +1568,7 @@ func (x *PolicyEvaluation) String() string {
 func (*PolicyEvaluation) ProtoMessage() {}
 
 func (x *PolicyEvaluation) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[6]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1443,7 +1581,7 @@ func (x *PolicyEvaluation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyEvaluation.ProtoReflect.Descriptor instead.
 func (*PolicyEvaluation) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{6}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PolicyEvaluation) GetName() string {
@@ -1574,7 +1712,7 @@ type PolicyViolation struct {
 
 func (x *PolicyViolation) Reset() {
 	*x = PolicyViolation{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[7]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1586,7 +1724,7 @@ func (x *PolicyViolation) String() string {
 func (*PolicyViolation) ProtoMessage() {}
 
 func (x *PolicyViolation) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[7]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1599,7 +1737,7 @@ func (x *PolicyViolation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyViolation.ProtoReflect.Descriptor instead.
 func (*PolicyViolation) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{7}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *PolicyViolation) GetSubject() string {
@@ -1691,7 +1829,7 @@ type PolicyReference struct {
 
 func (x *PolicyReference) Reset() {
 	*x = PolicyReference{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[8]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1703,7 +1841,7 @@ func (x *PolicyReference) String() string {
 func (*PolicyReference) ProtoMessage() {}
 
 func (x *PolicyReference) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[8]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1716,7 +1854,7 @@ func (x *PolicyReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PolicyReference.ProtoReflect.Descriptor instead.
 func (*PolicyReference) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{8}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *PolicyReference) GetName() string {
@@ -1772,7 +1910,7 @@ type WorkflowContractItem struct {
 
 func (x *WorkflowContractItem) Reset() {
 	*x = WorkflowContractItem{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1784,7 +1922,7 @@ func (x *WorkflowContractItem) String() string {
 func (*WorkflowContractItem) ProtoMessage() {}
 
 func (x *WorkflowContractItem) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[9]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1797,7 +1935,7 @@ func (x *WorkflowContractItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkflowContractItem.ProtoReflect.Descriptor instead.
 func (*WorkflowContractItem) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{9}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *WorkflowContractItem) GetId() string {
@@ -1886,7 +2024,7 @@ type ScopedEntity struct {
 
 func (x *ScopedEntity) Reset() {
 	*x = ScopedEntity{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1898,7 +2036,7 @@ func (x *ScopedEntity) String() string {
 func (*ScopedEntity) ProtoMessage() {}
 
 func (x *ScopedEntity) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[10]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1911,7 +2049,7 @@ func (x *ScopedEntity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScopedEntity.ProtoReflect.Descriptor instead.
 func (*ScopedEntity) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{10}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ScopedEntity) GetType() string {
@@ -1946,7 +2084,7 @@ type WorkflowRef struct {
 
 func (x *WorkflowRef) Reset() {
 	*x = WorkflowRef{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[11]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1958,7 +2096,7 @@ func (x *WorkflowRef) String() string {
 func (*WorkflowRef) ProtoMessage() {}
 
 func (x *WorkflowRef) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[11]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1971,7 +2109,7 @@ func (x *WorkflowRef) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkflowRef.ProtoReflect.Descriptor instead.
 func (*WorkflowRef) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{11}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *WorkflowRef) GetId() string {
@@ -2015,7 +2153,7 @@ type WorkflowContractVersionItem struct {
 
 func (x *WorkflowContractVersionItem) Reset() {
 	*x = WorkflowContractVersionItem{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[12]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2027,7 +2165,7 @@ func (x *WorkflowContractVersionItem) String() string {
 func (*WorkflowContractVersionItem) ProtoMessage() {}
 
 func (x *WorkflowContractVersionItem) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[12]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2040,7 +2178,7 @@ func (x *WorkflowContractVersionItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkflowContractVersionItem.ProtoReflect.Descriptor instead.
 func (*WorkflowContractVersionItem) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{12}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *WorkflowContractVersionItem) GetId() string {
@@ -2130,7 +2268,7 @@ type User struct {
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[13]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2142,7 +2280,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[13]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2155,7 +2293,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{13}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *User) GetId() string {
@@ -2222,7 +2360,7 @@ type OrgMembershipItem struct {
 
 func (x *OrgMembershipItem) Reset() {
 	*x = OrgMembershipItem{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[14]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2234,7 +2372,7 @@ func (x *OrgMembershipItem) String() string {
 func (*OrgMembershipItem) ProtoMessage() {}
 
 func (x *OrgMembershipItem) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[14]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2247,7 +2385,7 @@ func (x *OrgMembershipItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrgMembershipItem.ProtoReflect.Descriptor instead.
 func (*OrgMembershipItem) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{14}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *OrgMembershipItem) GetId() string {
@@ -2325,7 +2463,7 @@ type OrgItem struct {
 
 func (x *OrgItem) Reset() {
 	*x = OrgItem{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[15]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2337,7 +2475,7 @@ func (x *OrgItem) String() string {
 func (*OrgItem) ProtoMessage() {}
 
 func (x *OrgItem) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[15]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2350,7 +2488,7 @@ func (x *OrgItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrgItem.ProtoReflect.Descriptor instead.
 func (*OrgItem) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{15}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *OrgItem) GetId() string {
@@ -2469,7 +2607,7 @@ type CASBackendItem struct {
 
 func (x *CASBackendItem) Reset() {
 	*x = CASBackendItem{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[16]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2481,7 +2619,7 @@ func (x *CASBackendItem) String() string {
 func (*CASBackendItem) ProtoMessage() {}
 
 func (x *CASBackendItem) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[16]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2494,7 +2632,7 @@ func (x *CASBackendItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CASBackendItem.ProtoReflect.Descriptor instead.
 func (*CASBackendItem) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{16}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *CASBackendItem) GetId() string {
@@ -2621,7 +2759,7 @@ type APITokenItem struct {
 
 func (x *APITokenItem) Reset() {
 	*x = APITokenItem{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[17]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2633,7 +2771,7 @@ func (x *APITokenItem) String() string {
 func (*APITokenItem) ProtoMessage() {}
 
 func (x *APITokenItem) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[17]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2646,7 +2784,7 @@ func (x *APITokenItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use APITokenItem.ProtoReflect.Descriptor instead.
 func (*APITokenItem) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{17}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *APITokenItem) GetId() string {
@@ -2744,7 +2882,7 @@ type AttestationItem_PolicyEvaluationStatus struct {
 
 func (x *AttestationItem_PolicyEvaluationStatus) Reset() {
 	*x = AttestationItem_PolicyEvaluationStatus{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[20]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2756,7 +2894,7 @@ func (x *AttestationItem_PolicyEvaluationStatus) String() string {
 func (*AttestationItem_PolicyEvaluationStatus) ProtoMessage() {}
 
 func (x *AttestationItem_PolicyEvaluationStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[20]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2840,7 +2978,7 @@ type AttestationItem_EnvVariable struct {
 
 func (x *AttestationItem_EnvVariable) Reset() {
 	*x = AttestationItem_EnvVariable{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[21]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2852,7 +2990,7 @@ func (x *AttestationItem_EnvVariable) String() string {
 func (*AttestationItem_EnvVariable) ProtoMessage() {}
 
 func (x *AttestationItem_EnvVariable) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[21]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2913,7 +3051,7 @@ type AttestationItem_Material struct {
 
 func (x *AttestationItem_Material) Reset() {
 	*x = AttestationItem_Material{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[22]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2925,7 +3063,7 @@ func (x *AttestationItem_Material) String() string {
 func (*AttestationItem_Material) ProtoMessage() {}
 
 func (x *AttestationItem_Material) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[22]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3022,7 +3160,7 @@ type WorkflowContractVersionItem_RawBody struct {
 
 func (x *WorkflowContractVersionItem_RawBody) Reset() {
 	*x = WorkflowContractVersionItem_RawBody{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[27]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3034,7 +3172,7 @@ func (x *WorkflowContractVersionItem_RawBody) String() string {
 func (*WorkflowContractVersionItem_RawBody) ProtoMessage() {}
 
 func (x *WorkflowContractVersionItem_RawBody) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[27]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3047,7 +3185,7 @@ func (x *WorkflowContractVersionItem_RawBody) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use WorkflowContractVersionItem_RawBody.ProtoReflect.Descriptor instead.
 func (*WorkflowContractVersionItem_RawBody) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{12, 0}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{13, 0}
 }
 
 func (x *WorkflowContractVersionItem_RawBody) GetBody() []byte {
@@ -3074,7 +3212,7 @@ type CASBackendItem_Limits struct {
 
 func (x *CASBackendItem_Limits) Reset() {
 	*x = CASBackendItem_Limits{}
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[28]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3086,7 +3224,7 @@ func (x *CASBackendItem_Limits) String() string {
 func (*CASBackendItem_Limits) ProtoMessage() {}
 
 func (x *CASBackendItem_Limits) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_response_messages_proto_msgTypes[28]
+	mi := &file_controlplane_v1_response_messages_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3099,7 +3237,7 @@ func (x *CASBackendItem_Limits) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CASBackendItem_Limits.ProtoReflect.Descriptor instead.
 func (*CASBackendItem_Limits) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{16, 0}
+	return file_controlplane_v1_response_messages_proto_rawDescGZIP(), []int{17, 0}
 }
 
 func (x *CASBackendItem_Limits) GetMaxBytes() int64 {
@@ -3173,7 +3311,7 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\thas_gates\x18\x06 \x01(\bR\bhasGates\x12\x1e\n" +
 	"\n" +
 	"suppressed\x18\a \x01(\x05R\n" +
-	"suppressed\"\xa4\f\n" +
+	"suppressed\"\x81\r\n" +
 	"\x0fAttestationItem\x12\x1e\n" +
 	"\benvelope\x18\x03 \x01(\fB\x02\x18\x01R\benvelope\x12\x16\n" +
 	"\x06bundle\x18\n" +
@@ -3183,7 +3321,8 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	"\tmaterials\x18\x05 \x03(\v2).controlplane.v1.AttestationItem.MaterialR\tmaterials\x12S\n" +
 	"\vannotations\x18\x06 \x03(\v21.controlplane.v1.AttestationItem.AnnotationsEntryR\vannotations\x12f\n" +
 	"\x12policy_evaluations\x18\b \x03(\v27.controlplane.v1.AttestationItem.PolicyEvaluationsEntryR\x11policyEvaluations\x12q\n" +
-	"\x18policy_evaluation_status\x18\t \x01(\v27.controlplane.v1.AttestationItem.PolicyEvaluationStatusR\x16policyEvaluationStatus\x1a>\n" +
+	"\x18policy_evaluation_status\x18\t \x01(\v27.controlplane.v1.AttestationItem.PolicyEvaluationStatusR\x16policyEvaluationStatus\x12[\n" +
+	"\x16policy_evaluations_ref\x18\v \x01(\v2%.controlplane.v1.PolicyEvaluationsRefR\x14policyEvaluationsRef\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1ah\n" +
@@ -3216,7 +3355,18 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	" \x01(\fR\brawValue\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x82\x02\n" +
+	"\x14PolicyEvaluationsRef\x12\x16\n" +
+	"\x06digest\x18\x01 \x01(\tR\x06digest\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x02 \x01(\x03R\tsizeBytes\x12\x1d\n" +
+	"\n" +
+	"media_type\x18\x03 \x01(\tR\tmediaType\x12D\n" +
+	"\x06reason\x18\x04 \x01(\x0e2,.controlplane.v1.PolicyEvaluationsRef.ReasonR\x06reason\"N\n" +
+	"\x06Reason\x12\x16\n" +
+	"\x12REASON_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10REASON_TOO_LARGE\x10\x01\x12\x16\n" +
+	"\x12REASON_UNAVAILABLE\x10\x02\"X\n" +
 	"\x11PolicyEvaluations\x12C\n" +
 	"\vevaluations\x18\x01 \x03(\v2!.controlplane.v1.PolicyEvaluationR\vevaluations\"\x92\x06\n" +
 	"\x10PolicyEvaluation\x12\x12\n" +
@@ -3451,8 +3601,8 @@ func file_controlplane_v1_response_messages_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_response_messages_proto_rawDescData
 }
 
-var file_controlplane_v1_response_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
-var file_controlplane_v1_response_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_controlplane_v1_response_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 14)
+var file_controlplane_v1_response_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 30)
 var file_controlplane_v1_response_messages_proto_goTypes = []any{
 	(RunStatus)(0),                                  // 0: controlplane.v1.RunStatus
 	(PolicyViolationsFilter)(0),                     // 1: controlplane.v1.PolicyViolationsFilter
@@ -3464,111 +3614,115 @@ var file_controlplane_v1_response_messages_proto_goTypes = []any{
 	(FederatedAuthError)(0),                         // 7: controlplane.v1.FederatedAuthError
 	(UserWithNoMembershipError)(0),                  // 8: controlplane.v1.UserWithNoMembershipError
 	(UserNotMemberOfOrgError)(0),                    // 9: controlplane.v1.UserNotMemberOfOrgError
-	(WorkflowContractVersionItem_RawBody_Format)(0), // 10: controlplane.v1.WorkflowContractVersionItem.RawBody.Format
-	(OrgItem_PolicyViolationBlockingStrategy)(0),    // 11: controlplane.v1.OrgItem.PolicyViolationBlockingStrategy
-	(CASBackendItem_ValidationStatus)(0),            // 12: controlplane.v1.CASBackendItem.ValidationStatus
-	(*WorkflowItem)(nil),                            // 13: controlplane.v1.WorkflowItem
-	(*WorkflowRunItem)(nil),                         // 14: controlplane.v1.WorkflowRunItem
-	(*ProjectVersion)(nil),                          // 15: controlplane.v1.ProjectVersion
-	(*PolicyStatusSummary)(nil),                     // 16: controlplane.v1.PolicyStatusSummary
-	(*AttestationItem)(nil),                         // 17: controlplane.v1.AttestationItem
-	(*PolicyEvaluations)(nil),                       // 18: controlplane.v1.PolicyEvaluations
-	(*PolicyEvaluation)(nil),                        // 19: controlplane.v1.PolicyEvaluation
-	(*PolicyViolation)(nil),                         // 20: controlplane.v1.PolicyViolation
-	(*PolicyReference)(nil),                         // 21: controlplane.v1.PolicyReference
-	(*WorkflowContractItem)(nil),                    // 22: controlplane.v1.WorkflowContractItem
-	(*ScopedEntity)(nil),                            // 23: controlplane.v1.ScopedEntity
-	(*WorkflowRef)(nil),                             // 24: controlplane.v1.WorkflowRef
-	(*WorkflowContractVersionItem)(nil),             // 25: controlplane.v1.WorkflowContractVersionItem
-	(*User)(nil),                                    // 26: controlplane.v1.User
-	(*OrgMembershipItem)(nil),                       // 27: controlplane.v1.OrgMembershipItem
-	(*OrgItem)(nil),                                 // 28: controlplane.v1.OrgItem
-	(*CASBackendItem)(nil),                          // 29: controlplane.v1.CASBackendItem
-	(*APITokenItem)(nil),                            // 30: controlplane.v1.APITokenItem
-	nil,                                             // 31: controlplane.v1.AttestationItem.AnnotationsEntry
-	nil,                                             // 32: controlplane.v1.AttestationItem.PolicyEvaluationsEntry
-	(*AttestationItem_PolicyEvaluationStatus)(nil),  // 33: controlplane.v1.AttestationItem.PolicyEvaluationStatus
-	(*AttestationItem_EnvVariable)(nil),             // 34: controlplane.v1.AttestationItem.EnvVariable
-	(*AttestationItem_Material)(nil),                // 35: controlplane.v1.AttestationItem.Material
-	nil,                                             // 36: controlplane.v1.AttestationItem.Material.AnnotationsEntry
-	nil,                                             // 37: controlplane.v1.PolicyEvaluation.AnnotationsEntry
-	nil,                                             // 38: controlplane.v1.PolicyEvaluation.WithEntry
-	nil,                                             // 39: controlplane.v1.PolicyReference.DigestEntry
-	(*WorkflowContractVersionItem_RawBody)(nil),     // 40: controlplane.v1.WorkflowContractVersionItem.RawBody
-	(*CASBackendItem_Limits)(nil),                   // 41: controlplane.v1.CASBackendItem.Limits
-	(*timestamppb.Timestamp)(nil),                   // 42: google.protobuf.Timestamp
-	(v1.CraftingSchema_Runner_RunnerType)(0),        // 43: workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	(*v11.PolicyVulnerabilityFinding)(nil),          // 44: attestation.v1.PolicyVulnerabilityFinding
-	(*v11.PolicySASTFinding)(nil),                   // 45: attestation.v1.PolicySASTFinding
-	(*v11.PolicyLicenseViolationFinding)(nil),       // 46: attestation.v1.PolicyLicenseViolationFinding
-	(*v1.CraftingSchema)(nil),                       // 47: workflowcontract.v1.CraftingSchema
+	(PolicyEvaluationsRef_Reason)(0),                // 10: controlplane.v1.PolicyEvaluationsRef.Reason
+	(WorkflowContractVersionItem_RawBody_Format)(0), // 11: controlplane.v1.WorkflowContractVersionItem.RawBody.Format
+	(OrgItem_PolicyViolationBlockingStrategy)(0),    // 12: controlplane.v1.OrgItem.PolicyViolationBlockingStrategy
+	(CASBackendItem_ValidationStatus)(0),            // 13: controlplane.v1.CASBackendItem.ValidationStatus
+	(*WorkflowItem)(nil),                            // 14: controlplane.v1.WorkflowItem
+	(*WorkflowRunItem)(nil),                         // 15: controlplane.v1.WorkflowRunItem
+	(*ProjectVersion)(nil),                          // 16: controlplane.v1.ProjectVersion
+	(*PolicyStatusSummary)(nil),                     // 17: controlplane.v1.PolicyStatusSummary
+	(*AttestationItem)(nil),                         // 18: controlplane.v1.AttestationItem
+	(*PolicyEvaluationsRef)(nil),                    // 19: controlplane.v1.PolicyEvaluationsRef
+	(*PolicyEvaluations)(nil),                       // 20: controlplane.v1.PolicyEvaluations
+	(*PolicyEvaluation)(nil),                        // 21: controlplane.v1.PolicyEvaluation
+	(*PolicyViolation)(nil),                         // 22: controlplane.v1.PolicyViolation
+	(*PolicyReference)(nil),                         // 23: controlplane.v1.PolicyReference
+	(*WorkflowContractItem)(nil),                    // 24: controlplane.v1.WorkflowContractItem
+	(*ScopedEntity)(nil),                            // 25: controlplane.v1.ScopedEntity
+	(*WorkflowRef)(nil),                             // 26: controlplane.v1.WorkflowRef
+	(*WorkflowContractVersionItem)(nil),             // 27: controlplane.v1.WorkflowContractVersionItem
+	(*User)(nil),                                    // 28: controlplane.v1.User
+	(*OrgMembershipItem)(nil),                       // 29: controlplane.v1.OrgMembershipItem
+	(*OrgItem)(nil),                                 // 30: controlplane.v1.OrgItem
+	(*CASBackendItem)(nil),                          // 31: controlplane.v1.CASBackendItem
+	(*APITokenItem)(nil),                            // 32: controlplane.v1.APITokenItem
+	nil,                                             // 33: controlplane.v1.AttestationItem.AnnotationsEntry
+	nil,                                             // 34: controlplane.v1.AttestationItem.PolicyEvaluationsEntry
+	(*AttestationItem_PolicyEvaluationStatus)(nil),  // 35: controlplane.v1.AttestationItem.PolicyEvaluationStatus
+	(*AttestationItem_EnvVariable)(nil),             // 36: controlplane.v1.AttestationItem.EnvVariable
+	(*AttestationItem_Material)(nil),                // 37: controlplane.v1.AttestationItem.Material
+	nil,                                             // 38: controlplane.v1.AttestationItem.Material.AnnotationsEntry
+	nil,                                             // 39: controlplane.v1.PolicyEvaluation.AnnotationsEntry
+	nil,                                             // 40: controlplane.v1.PolicyEvaluation.WithEntry
+	nil,                                             // 41: controlplane.v1.PolicyReference.DigestEntry
+	(*WorkflowContractVersionItem_RawBody)(nil),     // 42: controlplane.v1.WorkflowContractVersionItem.RawBody
+	(*CASBackendItem_Limits)(nil),                   // 43: controlplane.v1.CASBackendItem.Limits
+	(*timestamppb.Timestamp)(nil),                   // 44: google.protobuf.Timestamp
+	(v1.CraftingSchema_Runner_RunnerType)(0),        // 45: workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	(*v11.PolicyVulnerabilityFinding)(nil),          // 46: attestation.v1.PolicyVulnerabilityFinding
+	(*v11.PolicySASTFinding)(nil),                   // 47: attestation.v1.PolicySASTFinding
+	(*v11.PolicyLicenseViolationFinding)(nil),       // 48: attestation.v1.PolicyLicenseViolationFinding
+	(*v1.CraftingSchema)(nil),                       // 49: workflowcontract.v1.CraftingSchema
 }
 var file_controlplane_v1_response_messages_proto_depIdxs = []int32{
-	42, // 0: controlplane.v1.WorkflowItem.created_at:type_name -> google.protobuf.Timestamp
-	14, // 1: controlplane.v1.WorkflowItem.last_run:type_name -> controlplane.v1.WorkflowRunItem
-	42, // 2: controlplane.v1.WorkflowRunItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 3: controlplane.v1.WorkflowRunItem.finished_at:type_name -> google.protobuf.Timestamp
+	44, // 0: controlplane.v1.WorkflowItem.created_at:type_name -> google.protobuf.Timestamp
+	15, // 1: controlplane.v1.WorkflowItem.last_run:type_name -> controlplane.v1.WorkflowRunItem
+	44, // 2: controlplane.v1.WorkflowRunItem.created_at:type_name -> google.protobuf.Timestamp
+	44, // 3: controlplane.v1.WorkflowRunItem.finished_at:type_name -> google.protobuf.Timestamp
 	0,  // 4: controlplane.v1.WorkflowRunItem.status:type_name -> controlplane.v1.RunStatus
-	13, // 5: controlplane.v1.WorkflowRunItem.workflow:type_name -> controlplane.v1.WorkflowItem
-	43, // 6: controlplane.v1.WorkflowRunItem.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	25, // 7: controlplane.v1.WorkflowRunItem.contract_version:type_name -> controlplane.v1.WorkflowContractVersionItem
-	15, // 8: controlplane.v1.WorkflowRunItem.version:type_name -> controlplane.v1.ProjectVersion
-	16, // 9: controlplane.v1.WorkflowRunItem.policy_summary:type_name -> controlplane.v1.PolicyStatusSummary
-	42, // 10: controlplane.v1.ProjectVersion.created_at:type_name -> google.protobuf.Timestamp
-	42, // 11: controlplane.v1.ProjectVersion.released_at:type_name -> google.protobuf.Timestamp
+	14, // 5: controlplane.v1.WorkflowRunItem.workflow:type_name -> controlplane.v1.WorkflowItem
+	45, // 6: controlplane.v1.WorkflowRunItem.runner_type:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	27, // 7: controlplane.v1.WorkflowRunItem.contract_version:type_name -> controlplane.v1.WorkflowContractVersionItem
+	16, // 8: controlplane.v1.WorkflowRunItem.version:type_name -> controlplane.v1.ProjectVersion
+	17, // 9: controlplane.v1.WorkflowRunItem.policy_summary:type_name -> controlplane.v1.PolicyStatusSummary
+	44, // 10: controlplane.v1.ProjectVersion.created_at:type_name -> google.protobuf.Timestamp
+	44, // 11: controlplane.v1.ProjectVersion.released_at:type_name -> google.protobuf.Timestamp
 	2,  // 12: controlplane.v1.PolicyStatusSummary.status:type_name -> controlplane.v1.PolicyStatus
-	34, // 13: controlplane.v1.AttestationItem.env_vars:type_name -> controlplane.v1.AttestationItem.EnvVariable
-	35, // 14: controlplane.v1.AttestationItem.materials:type_name -> controlplane.v1.AttestationItem.Material
-	31, // 15: controlplane.v1.AttestationItem.annotations:type_name -> controlplane.v1.AttestationItem.AnnotationsEntry
-	32, // 16: controlplane.v1.AttestationItem.policy_evaluations:type_name -> controlplane.v1.AttestationItem.PolicyEvaluationsEntry
-	33, // 17: controlplane.v1.AttestationItem.policy_evaluation_status:type_name -> controlplane.v1.AttestationItem.PolicyEvaluationStatus
-	19, // 18: controlplane.v1.PolicyEvaluations.evaluations:type_name -> controlplane.v1.PolicyEvaluation
-	37, // 19: controlplane.v1.PolicyEvaluation.annotations:type_name -> controlplane.v1.PolicyEvaluation.AnnotationsEntry
-	38, // 20: controlplane.v1.PolicyEvaluation.with:type_name -> controlplane.v1.PolicyEvaluation.WithEntry
-	20, // 21: controlplane.v1.PolicyEvaluation.violations:type_name -> controlplane.v1.PolicyViolation
-	21, // 22: controlplane.v1.PolicyEvaluation.policy_reference:type_name -> controlplane.v1.PolicyReference
-	21, // 23: controlplane.v1.PolicyEvaluation.group_reference:type_name -> controlplane.v1.PolicyReference
-	44, // 24: controlplane.v1.PolicyViolation.vulnerability:type_name -> attestation.v1.PolicyVulnerabilityFinding
-	45, // 25: controlplane.v1.PolicyViolation.sast:type_name -> attestation.v1.PolicySASTFinding
-	46, // 26: controlplane.v1.PolicyViolation.license_violation:type_name -> attestation.v1.PolicyLicenseViolationFinding
-	39, // 27: controlplane.v1.PolicyReference.digest:type_name -> controlplane.v1.PolicyReference.DigestEntry
-	42, // 28: controlplane.v1.WorkflowContractItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 29: controlplane.v1.WorkflowContractItem.updated_at:type_name -> google.protobuf.Timestamp
-	42, // 30: controlplane.v1.WorkflowContractItem.latest_revision_created_at:type_name -> google.protobuf.Timestamp
-	24, // 31: controlplane.v1.WorkflowContractItem.workflow_refs:type_name -> controlplane.v1.WorkflowRef
-	23, // 32: controlplane.v1.WorkflowContractItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
-	42, // 33: controlplane.v1.WorkflowContractVersionItem.created_at:type_name -> google.protobuf.Timestamp
-	47, // 34: controlplane.v1.WorkflowContractVersionItem.v1:type_name -> workflowcontract.v1.CraftingSchema
-	40, // 35: controlplane.v1.WorkflowContractVersionItem.raw_contract:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody
-	42, // 36: controlplane.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	42, // 37: controlplane.v1.User.updated_at:type_name -> google.protobuf.Timestamp
-	28, // 38: controlplane.v1.OrgMembershipItem.org:type_name -> controlplane.v1.OrgItem
-	26, // 39: controlplane.v1.OrgMembershipItem.user:type_name -> controlplane.v1.User
-	42, // 40: controlplane.v1.OrgMembershipItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 41: controlplane.v1.OrgMembershipItem.updated_at:type_name -> google.protobuf.Timestamp
-	5,  // 42: controlplane.v1.OrgMembershipItem.role:type_name -> controlplane.v1.MembershipRole
-	42, // 43: controlplane.v1.OrgItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 44: controlplane.v1.OrgItem.updated_at:type_name -> google.protobuf.Timestamp
-	11, // 45: controlplane.v1.OrgItem.default_policy_violation_strategy:type_name -> controlplane.v1.OrgItem.PolicyViolationBlockingStrategy
-	42, // 46: controlplane.v1.CASBackendItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 47: controlplane.v1.CASBackendItem.validated_at:type_name -> google.protobuf.Timestamp
-	12, // 48: controlplane.v1.CASBackendItem.validation_status:type_name -> controlplane.v1.CASBackendItem.ValidationStatus
-	41, // 49: controlplane.v1.CASBackendItem.limits:type_name -> controlplane.v1.CASBackendItem.Limits
-	42, // 50: controlplane.v1.CASBackendItem.updated_at:type_name -> google.protobuf.Timestamp
-	23, // 51: controlplane.v1.APITokenItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
-	42, // 52: controlplane.v1.APITokenItem.created_at:type_name -> google.protobuf.Timestamp
-	42, // 53: controlplane.v1.APITokenItem.revoked_at:type_name -> google.protobuf.Timestamp
-	42, // 54: controlplane.v1.APITokenItem.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 55: controlplane.v1.APITokenItem.last_used_at:type_name -> google.protobuf.Timestamp
-	18, // 56: controlplane.v1.AttestationItem.PolicyEvaluationsEntry.value:type_name -> controlplane.v1.PolicyEvaluations
-	16, // 57: controlplane.v1.AttestationItem.PolicyEvaluationStatus.summary:type_name -> controlplane.v1.PolicyStatusSummary
-	36, // 58: controlplane.v1.AttestationItem.Material.annotations:type_name -> controlplane.v1.AttestationItem.Material.AnnotationsEntry
-	10, // 59: controlplane.v1.WorkflowContractVersionItem.RawBody.format:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody.Format
-	60, // [60:60] is the sub-list for method output_type
-	60, // [60:60] is the sub-list for method input_type
-	60, // [60:60] is the sub-list for extension type_name
-	60, // [60:60] is the sub-list for extension extendee
-	0,  // [0:60] is the sub-list for field type_name
+	36, // 13: controlplane.v1.AttestationItem.env_vars:type_name -> controlplane.v1.AttestationItem.EnvVariable
+	37, // 14: controlplane.v1.AttestationItem.materials:type_name -> controlplane.v1.AttestationItem.Material
+	33, // 15: controlplane.v1.AttestationItem.annotations:type_name -> controlplane.v1.AttestationItem.AnnotationsEntry
+	34, // 16: controlplane.v1.AttestationItem.policy_evaluations:type_name -> controlplane.v1.AttestationItem.PolicyEvaluationsEntry
+	35, // 17: controlplane.v1.AttestationItem.policy_evaluation_status:type_name -> controlplane.v1.AttestationItem.PolicyEvaluationStatus
+	19, // 18: controlplane.v1.AttestationItem.policy_evaluations_ref:type_name -> controlplane.v1.PolicyEvaluationsRef
+	10, // 19: controlplane.v1.PolicyEvaluationsRef.reason:type_name -> controlplane.v1.PolicyEvaluationsRef.Reason
+	21, // 20: controlplane.v1.PolicyEvaluations.evaluations:type_name -> controlplane.v1.PolicyEvaluation
+	39, // 21: controlplane.v1.PolicyEvaluation.annotations:type_name -> controlplane.v1.PolicyEvaluation.AnnotationsEntry
+	40, // 22: controlplane.v1.PolicyEvaluation.with:type_name -> controlplane.v1.PolicyEvaluation.WithEntry
+	22, // 23: controlplane.v1.PolicyEvaluation.violations:type_name -> controlplane.v1.PolicyViolation
+	23, // 24: controlplane.v1.PolicyEvaluation.policy_reference:type_name -> controlplane.v1.PolicyReference
+	23, // 25: controlplane.v1.PolicyEvaluation.group_reference:type_name -> controlplane.v1.PolicyReference
+	46, // 26: controlplane.v1.PolicyViolation.vulnerability:type_name -> attestation.v1.PolicyVulnerabilityFinding
+	47, // 27: controlplane.v1.PolicyViolation.sast:type_name -> attestation.v1.PolicySASTFinding
+	48, // 28: controlplane.v1.PolicyViolation.license_violation:type_name -> attestation.v1.PolicyLicenseViolationFinding
+	41, // 29: controlplane.v1.PolicyReference.digest:type_name -> controlplane.v1.PolicyReference.DigestEntry
+	44, // 30: controlplane.v1.WorkflowContractItem.created_at:type_name -> google.protobuf.Timestamp
+	44, // 31: controlplane.v1.WorkflowContractItem.updated_at:type_name -> google.protobuf.Timestamp
+	44, // 32: controlplane.v1.WorkflowContractItem.latest_revision_created_at:type_name -> google.protobuf.Timestamp
+	26, // 33: controlplane.v1.WorkflowContractItem.workflow_refs:type_name -> controlplane.v1.WorkflowRef
+	25, // 34: controlplane.v1.WorkflowContractItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
+	44, // 35: controlplane.v1.WorkflowContractVersionItem.created_at:type_name -> google.protobuf.Timestamp
+	49, // 36: controlplane.v1.WorkflowContractVersionItem.v1:type_name -> workflowcontract.v1.CraftingSchema
+	42, // 37: controlplane.v1.WorkflowContractVersionItem.raw_contract:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody
+	44, // 38: controlplane.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	44, // 39: controlplane.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	30, // 40: controlplane.v1.OrgMembershipItem.org:type_name -> controlplane.v1.OrgItem
+	28, // 41: controlplane.v1.OrgMembershipItem.user:type_name -> controlplane.v1.User
+	44, // 42: controlplane.v1.OrgMembershipItem.created_at:type_name -> google.protobuf.Timestamp
+	44, // 43: controlplane.v1.OrgMembershipItem.updated_at:type_name -> google.protobuf.Timestamp
+	5,  // 44: controlplane.v1.OrgMembershipItem.role:type_name -> controlplane.v1.MembershipRole
+	44, // 45: controlplane.v1.OrgItem.created_at:type_name -> google.protobuf.Timestamp
+	44, // 46: controlplane.v1.OrgItem.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 47: controlplane.v1.OrgItem.default_policy_violation_strategy:type_name -> controlplane.v1.OrgItem.PolicyViolationBlockingStrategy
+	44, // 48: controlplane.v1.CASBackendItem.created_at:type_name -> google.protobuf.Timestamp
+	44, // 49: controlplane.v1.CASBackendItem.validated_at:type_name -> google.protobuf.Timestamp
+	13, // 50: controlplane.v1.CASBackendItem.validation_status:type_name -> controlplane.v1.CASBackendItem.ValidationStatus
+	43, // 51: controlplane.v1.CASBackendItem.limits:type_name -> controlplane.v1.CASBackendItem.Limits
+	44, // 52: controlplane.v1.CASBackendItem.updated_at:type_name -> google.protobuf.Timestamp
+	25, // 53: controlplane.v1.APITokenItem.scoped_entity:type_name -> controlplane.v1.ScopedEntity
+	44, // 54: controlplane.v1.APITokenItem.created_at:type_name -> google.protobuf.Timestamp
+	44, // 55: controlplane.v1.APITokenItem.revoked_at:type_name -> google.protobuf.Timestamp
+	44, // 56: controlplane.v1.APITokenItem.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 57: controlplane.v1.APITokenItem.last_used_at:type_name -> google.protobuf.Timestamp
+	20, // 58: controlplane.v1.AttestationItem.PolicyEvaluationsEntry.value:type_name -> controlplane.v1.PolicyEvaluations
+	17, // 59: controlplane.v1.AttestationItem.PolicyEvaluationStatus.summary:type_name -> controlplane.v1.PolicyStatusSummary
+	38, // 60: controlplane.v1.AttestationItem.Material.annotations:type_name -> controlplane.v1.AttestationItem.Material.AnnotationsEntry
+	11, // 61: controlplane.v1.WorkflowContractVersionItem.RawBody.format:type_name -> controlplane.v1.WorkflowContractVersionItem.RawBody.Format
+	62, // [62:62] is the sub-list for method output_type
+	62, // [62:62] is the sub-list for method input_type
+	62, // [62:62] is the sub-list for extension type_name
+	62, // [62:62] is the sub-list for extension extendee
+	0,  // [0:62] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_response_messages_proto_init() }
@@ -3577,23 +3731,23 @@ func file_controlplane_v1_response_messages_proto_init() {
 		return
 	}
 	file_controlplane_v1_response_messages_proto_msgTypes[1].OneofWrappers = []any{}
-	file_controlplane_v1_response_messages_proto_msgTypes[7].OneofWrappers = []any{
+	file_controlplane_v1_response_messages_proto_msgTypes[8].OneofWrappers = []any{
 		(*PolicyViolation_Vulnerability)(nil),
 		(*PolicyViolation_Sast)(nil),
 		(*PolicyViolation_LicenseViolation)(nil),
 	}
-	file_controlplane_v1_response_messages_proto_msgTypes[12].OneofWrappers = []any{
+	file_controlplane_v1_response_messages_proto_msgTypes[13].OneofWrappers = []any{
 		(*WorkflowContractVersionItem_V1)(nil),
 	}
-	file_controlplane_v1_response_messages_proto_msgTypes[15].OneofWrappers = []any{}
 	file_controlplane_v1_response_messages_proto_msgTypes[16].OneofWrappers = []any{}
+	file_controlplane_v1_response_messages_proto_msgTypes[17].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_response_messages_proto_rawDesc), len(file_controlplane_v1_response_messages_proto_rawDesc)),
-			NumEnums:      13,
-			NumMessages:   29,
+			NumEnums:      14,
+			NumMessages:   30,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

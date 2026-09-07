@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	attv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
@@ -174,11 +175,7 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		gt.AppendRow(table.Row{"Policy enforcement bypassed", att.PolicyEvaluationStatus.Bypassed})
 	}
 
-	evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]
-	if len(evs) > 0 {
-		gt.AppendRow(table.Row{"Policies", "------"})
-		policiesTable(evs, gt, flagDebug)
-	}
+	appendPolicySection(att, gt, flagDebug)
 
 	if run.Attestation.AttestationViewURL != "" {
 		gt.AppendRow(table.Row{"Attestation View URL", run.Attestation.AttestationViewURL})
@@ -299,6 +296,72 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 		}
 		mt.AppendRow(table.Row{"", fmt.Sprintf("%s: %s", name, msg)})
 	}
+}
+
+// appendPolicySection renders the attestation-level policies, either as the
+// usual per-policy rows or, when the server declined to inline the
+// evaluations, as a notice pointing at the bundle in the CAS backend.
+func appendPolicySection(att *action.WorkflowRunAttestationItem, gt table.Writer, debugMode bool) {
+	if notice := policyEvaluationsRefNotice(att.PolicyEvaluationsRef, att.PolicyEvaluationStatus); notice != nil {
+		gt.AppendRow(table.Row{"Policies", "------"})
+		for _, line := range notice {
+			gt.AppendRow(table.Row{"", line})
+		}
+
+		return
+	}
+
+	evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]
+	if len(evs) == 0 {
+		return
+	}
+
+	gt.AppendRow(table.Row{"Policies", "------"})
+	policiesTable(evs, gt, debugMode)
+}
+
+// policyEvaluationsRefNotice renders the lines shown in place of the policy
+// table when the server returned a reference instead of the evaluations. It
+// leads with the counters, which stay accurate no matter how large the bundle
+// is, and only offers a download when the bundle is known to be there.
+func policyEvaluationsRefNotice(ref *action.PolicyEvaluationsRef, status *action.PolicyEvaluationStatus) []string {
+	if ref == nil {
+		return nil
+	}
+
+	reason := "could not be retrieved from the CAS backend"
+	if ref.Reason == action.PolicyEvaluationsRefReasonTooLarge {
+		reason = "too large to include inline"
+		if ref.SizeBytes > 0 {
+			reason = fmt.Sprintf("%s (%s)", reason, bytefmt.ByteSize(uint64(ref.SizeBytes)))
+		}
+	}
+
+	// Without counters there is nothing to summarize, so name the subject instead.
+	if status == nil {
+		lines := []string{fmt.Sprintf("policy evaluations %s", reason)}
+		if ref.Reason == action.PolicyEvaluationsRefReasonTooLarge {
+			lines = append(lines, downloadPolicyEvaluationsHint(ref))
+		}
+
+		return lines
+	}
+
+	counters := fmt.Sprintf("%d evaluations, %d violations", status.Total, status.Violated)
+	if status.Suppressed > 0 {
+		counters = fmt.Sprintf("%s (%d suppressed)", counters, status.Suppressed)
+	}
+
+	lines := []string{fmt.Sprintf("%s - %s", counters, reason)}
+	if ref.Reason == action.PolicyEvaluationsRefReasonTooLarge {
+		lines = append(lines, downloadPolicyEvaluationsHint(ref))
+	}
+
+	return lines
+}
+
+func downloadPolicyEvaluationsHint(ref *action.PolicyEvaluationsRef) string {
+	return fmt.Sprintf("inspect with: chainloop artifact download --digest %s", ref.Digest)
 }
 
 // violationSummary builds a single-line description of a violation using the
