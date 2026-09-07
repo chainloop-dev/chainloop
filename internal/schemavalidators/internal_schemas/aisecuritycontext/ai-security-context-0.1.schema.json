@@ -673,6 +673,10 @@
         "reverted_by": {
           "$ref": "#/definitions/commit_sha",
           "description": "The commit that reverted this fix, established by reverse patch-id match against the artifact's known fixes"
+        },
+        "trace_sessions": {
+          "$ref": "#/definitions/trace_sessions",
+          "description": "Chainloop Trace session IDs (session_external_id) declared on the FIX commit via the Chainloop-Trace-Sessions git trailer — the AI coding session(s) that produced the fix. Recorded verbatim by the producer (no DB lookup); sorted + deduped."
         }
       }
     },
@@ -838,6 +842,10 @@
         "verified": {
           "type": "boolean",
           "description": "Proved to be an ancestor of the fix commit \u2014 NOT proved to be the true origin. Git can refute a commit that could not possibly have introduced the flaw; it cannot confirm that an ancestor is where the flaw actually entered. A consumer joining fingerprints on origin must require this."
+        },
+        "trace_sessions": {
+          "$ref": "#/definitions/trace_sessions",
+          "description": "Chainloop Trace session IDs (session_external_id) declared on this INTRODUCING commit via the Chainloop-Trace-Sessions git trailer \u2014 the AI coding session(s) that introduced the flaw. Recorded verbatim by the producer (no DB lookup); sorted + deduped."
         }
       }
     },
@@ -909,6 +917,16 @@
       "items": {
         "$ref": "#/definitions/commit_sha"
       }
+    },
+    "trace_sessions": {
+      "type": "array",
+      "description": "Chainloop Trace session IDs (session_external_id) declared on a commit via the Chainloop-Trace-Sessions git trailer, sorted + deduped. No pattern is enforced: session_external_id has no upstream format guarantee, so the IDs are treated as opaque strings. maxItems / maxLength are a defensive cap against a pathological or forged commit body inflating the artifact.",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "maxItems": 64
     }
   }
 }
