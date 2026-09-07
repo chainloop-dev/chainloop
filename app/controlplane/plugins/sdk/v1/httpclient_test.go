@@ -56,6 +56,13 @@ func TestIsPubliclyRoutable(t *testing.T) {
 		{name: "IETF protocol assignments", ip: "192.0.0.1", want: false},
 		{name: "benchmarking range", ip: "198.18.0.1", want: false},
 		{name: "reserved 240/4", ip: "240.0.0.1", want: false},
+		{name: "this network 0/8", ip: "0.1.2.3", want: false},
+		{name: "IPv4 documentation 192.0.2/24", ip: "192.0.2.1", want: false},
+		{name: "IPv4 documentation 198.51.100/24", ip: "198.51.100.1", want: false},
+		{name: "IPv4 documentation 203.0.113/24", ip: "203.0.113.1", want: false},
+		{name: "IPv6 discard-only", ip: "100::1", want: false},
+		{name: "IPv6 benchmarking", ip: "2001:2::1", want: false},
+		{name: "IPv6 documentation", ip: "2001:db8::1", want: false},
 
 		// An IPv4 address reached through an IPv6 form must be judged as the
 		// IPv4 address it carries.
@@ -205,25 +212,79 @@ func TestNewHTTPClientPublicTargetsOnly(t *testing.T) {
 	}
 }
 
-// Each redirect hop opens its own connection, so the dial-time check applies
-// to the whole chain and not only to the URL the caller supplied.
-func TestNewHTTPClientValidatesRedirectHops(t *testing.T) {
+// A proxy would be the only address a public-only client connects to, leaving
+// the destination unchecked, so such a client must not pick one up from the
+// environment. Asserted on the transport because net/http resolves the
+// environment once per process, which a test cannot change after the fact.
+func TestNewHTTPClientProxyUse(t *testing.T) {
+	testCases := []struct {
+		name              string
+		publicTargetsOnly bool
+		wantProxy         bool
+	}{
+		{name: "public-only client ignores an environment proxy", publicTargetsOnly: true},
+		{name: "unrestricted client keeps an environment proxy", wantProxy: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client := NewHTTPClient(HTTPClientOptions{PublicTargetsOnly: tc.publicTargetsOnly})
+
+			transport, ok := client.Transport.(*http.Transport)
+			require.True(t, ok)
+
+			if tc.wantProxy {
+				assert.NotNil(t, transport.Proxy)
+				return
+			}
+			assert.Nil(t, transport.Proxy)
+		})
+	}
+}
+
+// Each redirect hop opens its own connection, so the dial-time check covers
+// the whole chain: a first hop that passes cannot forward the client on to a
+// blocked destination. Resolution is stubbed because every test server listens
+// on the loopback interface, which no public-only client would reach at all.
+func TestPublicOnlyDialContextValidatesEveryRedirectHop(t *testing.T) {
+	var targetRequests int
 	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		targetRequests++
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer target.Close()
 
-	var redirectHops int
 	redirector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		redirectHops++
 		http.Redirect(w, r, target.URL, http.StatusFound)
 	}))
 	defer redirector.Close()
 
-	resp, err := NewHTTPClient(HTTPClientOptions{}).Get(redirector.URL)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+	// The URL the caller supplies resolves to a public address; the redirect
+	// target it is then sent to resolves to a private one.
+	var resolved int
+	resolve := func(_ context.Context, _ string) ([]net.IPAddr, error) {
+		resolved++
+		if resolved == 1 {
+			return []net.IPAddr{{IP: net.ParseIP("8.8.8.8")}}, nil
+		}
+		return []net.IPAddr{{IP: net.ParseIP("10.0.0.1")}}, nil
+	}
 
-	require.Equal(t, 1, redirectHops)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// The guard dials the address it validated, so point the dialer back at
+	// the test server on that same port to keep the test off the network.
+	dialer := &net.Dialer{}
+	dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		_, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return nil, err
+		}
+		return dialer.DialContext(ctx, network, net.JoinHostPort("127.0.0.1", port))
+	}
+
+	client := &http.Client{Transport: &http.Transport{DialContext: publicOnlyDialContext(resolve, dial)}}
+
+	_, err := client.Get(redirector.URL)
+	require.ErrorIs(t, err, ErrBlockedTarget)
+	assert.Equal(t, 2, resolved, "every hop must be resolved and validated")
+	assert.Zero(t, targetRequests, "the redirect target must not be reached")
 }

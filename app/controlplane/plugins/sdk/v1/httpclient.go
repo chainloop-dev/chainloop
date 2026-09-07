@@ -57,6 +57,10 @@ type HTTPClientOptions struct {
 	// (where cloud metadata services live) and the IPv6 transition ranges
 	// that embed an IPv4 address.
 	//
+	// Such a client also ignores any proxy configured in the environment,
+	// which would otherwise be the only address it connects to and would
+	// leave the destination unchecked.
+	//
 	// Enable it for plugins whose destination is a well-known public service.
 	// Plugins that legitimately talk to hosts inside the deployment's own
 	// network must leave it disabled.
@@ -67,24 +71,27 @@ type HTTPClientOptions struct {
 // destination taken from its registration config.
 func NewHTTPClient(opts HTTPClientOptions) *http.Client {
 	dialer := &net.Dialer{Timeout: dialTimeout, KeepAlive: dialKeepAlive}
-	dial := dialer.DialContext
+
+	transport := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialer.DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       idleConnTimeout,
+		TLSHandshakeTimeout:   tlsHandshakeWait,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 
 	if opts.PublicTargetsOnly {
-		dial = publicOnlyDialContext(net.DefaultResolver.LookupIPAddr, dial)
+		transport.DialContext = publicOnlyDialContext(net.DefaultResolver.LookupIPAddr, dialer.DialContext)
+
+		// Through a proxy the only address this client connects to is the
+		// proxy's own, which leaves the destination unchecked and the guard
+		// above unenforced, so a public-only client never uses one.
+		transport.Proxy = nil
 	}
 
-	return &http.Client{
-		Timeout: opts.Timeout,
-		Transport: &http.Transport{
-			Proxy:                 http.ProxyFromEnvironment,
-			DialContext:           dial,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       idleConnTimeout,
-			TLSHandshakeTimeout:   tlsHandshakeWait,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-	}
+	return &http.Client{Timeout: opts.Timeout, Transport: transport}
 }
 
 type resolveFunc func(ctx context.Context, host string) ([]net.IPAddr, error)
@@ -140,14 +147,21 @@ func publicOnlyDialContext(resolve resolveFunc, dial dialFunc) dialFunc {
 // blockedNets holds the ranges that are not publicly routable but that the
 // checks net.IP offers do not already cover.
 var blockedNets = []*net.IPNet{
-	mustParseCIDR("100.64.0.0/10"), // RFC 6598 shared address space (CGNAT)
-	mustParseCIDR("192.0.0.0/24"),  // RFC 6890 IETF protocol assignments
-	mustParseCIDR("198.18.0.0/15"), // RFC 2544 benchmarking
-	mustParseCIDR("240.0.0.0/4"),   // RFC 1112 reserved
-	mustParseCIDR("::/96"),         // RFC 4291 IPv4-compatible, deprecated
-	mustParseCIDR("64:ff9b::/96"),  // RFC 6052 NAT64
-	mustParseCIDR("2001::/32"),     // RFC 4380 Teredo
-	mustParseCIDR("2002::/16"),     // RFC 3056 6to4
+	mustParseCIDR("0.0.0.0/8"),       // RFC 6890 "this network"
+	mustParseCIDR("100.64.0.0/10"),   // RFC 6598 shared address space (CGNAT)
+	mustParseCIDR("192.0.0.0/24"),    // RFC 6890 IETF protocol assignments
+	mustParseCIDR("192.0.2.0/24"),    // RFC 5737 documentation
+	mustParseCIDR("198.18.0.0/15"),   // RFC 2544 benchmarking
+	mustParseCIDR("198.51.100.0/24"), // RFC 5737 documentation
+	mustParseCIDR("203.0.113.0/24"),  // RFC 5737 documentation
+	mustParseCIDR("240.0.0.0/4"),     // RFC 1112 reserved
+	mustParseCIDR("::/96"),           // RFC 4291 IPv4-compatible, deprecated
+	mustParseCIDR("64:ff9b::/96"),    // RFC 6052 NAT64
+	mustParseCIDR("100::/64"),        // RFC 6666 discard-only
+	mustParseCIDR("2001::/32"),       // RFC 4380 Teredo
+	mustParseCIDR("2001:2::/48"),     // RFC 5180 benchmarking
+	mustParseCIDR("2001:db8::/32"),   // RFC 3849 documentation
+	mustParseCIDR("2002::/16"),       // RFC 3056 6to4
 }
 
 // isPubliclyRoutable reports whether ip is an address on the public internet.
