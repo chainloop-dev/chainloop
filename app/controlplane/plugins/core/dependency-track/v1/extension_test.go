@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 package dependencytrack
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -60,7 +63,7 @@ func TestValidateRegistrationInput(t *testing.T) {
 		},
 	}
 
-	integration, err := New(nil)
+	integration, err := New(nil, sdk.NetworkPolicy{})
 	require.NoError(t, err)
 
 	for _, tc := range testCases {
@@ -204,7 +207,7 @@ func TestValidateAttachmentInput(t *testing.T) {
 		},
 	}
 
-	integration, err := New(nil)
+	integration, err := New(nil, sdk.NetworkPolicy{})
 	require.NoError(t, err)
 
 	for _, tc := range testCases {
@@ -222,7 +225,7 @@ func TestValidateAttachmentInput(t *testing.T) {
 }
 
 func TestNewIntegration(t *testing.T) {
-	_, err := New(nil)
+	_, err := New(nil, sdk.NetworkPolicy{})
 	assert.NoError(t, err)
 }
 
@@ -407,6 +410,61 @@ func TestVerifyAllFilters(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+// A Dependency-Track instance commonly runs inside the deployment's own
+// network, so whether it is reachable is up to the deployment's network
+// policy. httptest listens on the loopback interface, which stands in for
+// such an instance.
+func TestRegisterHonoursNetworkPolicy(t *testing.T) {
+	testCases := []struct {
+		name        string
+		netPolicy   sdk.NetworkPolicy
+		wantBlocked bool
+	}{
+		{
+			name:      "reachable by default",
+			netPolicy: sdk.NetworkPolicy{},
+		},
+		{
+			name:        "unreachable when private targets are blocked",
+			netPolicy:   sdk.NetworkPolicy{BlockPrivateTargets: true},
+			wantBlocked: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var requests int
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				requests++
+				assert.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+					"permissions": []map[string]string{
+						{"name": "BOM_UPLOAD"},
+						{"name": "VIEW_PORTFOLIO"},
+					},
+				}))
+			}))
+			defer server.Close()
+
+			integration, err := New(nil, tc.netPolicy)
+			require.NoError(t, err)
+
+			payload, err := json.Marshal(map[string]string{"instanceURI": server.URL, "apiKey": "an-api-key"})
+			require.NoError(t, err)
+
+			_, err = integration.Register(context.Background(), &sdk.RegistrationRequest{Payload: payload})
+
+			if tc.wantBlocked {
+				assert.ErrorIs(t, err, sdk.ErrBlockedTarget)
+				assert.Zero(t, requests, "the instance must not be reached")
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, 1, requests)
 		})
 	}
 }

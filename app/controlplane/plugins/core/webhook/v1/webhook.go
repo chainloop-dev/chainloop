@@ -69,8 +69,12 @@ type webhookPayload struct {
 	Kind     string                 `json:"Kind"` // e.g., "SBOM_CYCLONEDX_JSON", "ATTESTATION"
 }
 
-// New initializes the webhook integration
-func New(l log.Logger) (sdk.FanOut, error) {
+// New initializes the webhook integration.
+//
+// The destination is an arbitrary URL supplied at registration, and a
+// deployment may well run the receiver inside its own network, so whether a
+// non-public destination is reachable is left to netPolicy.
+func New(l log.Logger, netPolicy sdk.NetworkPolicy) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "webhook",
@@ -92,7 +96,10 @@ func New(l log.Logger) (sdk.FanOut, error) {
 
 	return &Integration{
 		FanOutIntegration: base,
-		client:            &http.Client{Timeout: perAttemptTimeout},
+		client: sdk.NewHTTPClient(sdk.HTTPClientOptions{
+			Timeout:           perAttemptTimeout,
+			PublicTargetsOnly: netPolicy.BlockPrivateTargets,
+		}),
 	}, nil
 }
 

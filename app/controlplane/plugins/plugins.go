@@ -63,15 +63,19 @@ type goPluginInitializer struct{}
 // a) Plugins implemented with go-plugin, compiled as a separate binary and placed in pluginsDir
 // b) Built-in plugins implemented as a go modules and loaded in memory
 // Important: Plugins have precedence over built-in plugins
-func Load(pluginsDir string, l log.Logger) (plugins sdk.AvailablePlugins, err error) {
+//
+// netPolicy applies to the plugins whose destination is an arbitrary URL taken
+// from their registration config. Plugins whose destination is a known public
+// service enforce their own, stricter policy.
+func Load(pluginsDir string, netPolicy sdk.NetworkPolicy, l log.Logger) (plugins sdk.AvailablePlugins, err error) {
 	// Array of built-in plugins to enable which are loaded in host memory dynamically
 	toEnableBuiltIn := []sdk.FanOutFactory{
-		dependencytrack.New,
+		func(l log.Logger) (sdk.FanOut, error) { return dependencytrack.New(l, netPolicy) },
 		smtp.New,
 		discord.New,
 		guac.New,
 		slack.New,
-		webhook.New,
+		func(l log.Logger) (sdk.FanOut, error) { return webhook.New(l, netPolicy) },
 	}
 
 	// Load plugins in memory from the array above

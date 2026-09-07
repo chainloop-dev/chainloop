@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,14 @@ import (
 
 type Integration struct {
 	*sdk.FanOutIntegration
+	client *http.Client
+}
+
+// publicOnlyClient builds the HTTP client used to reach the webhook. Slack is
+// a public service, so a destination inside the deployment's own network is
+// always refused, whatever the deployment's plugin network policy says.
+func publicOnlyClient() *http.Client {
+	return sdk.NewHTTPClient(sdk.HTTPClientOptions{PublicTargetsOnly: true})
 }
 
 // 1 - API schema definitions
@@ -50,7 +58,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "slack-webhook",
-			Version:     "1.1",
+			Version:     "1.2",
 			Description: "Send attestations to Slack",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -64,7 +72,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 		return nil, err
 	}
 
-	return &Integration{base}, nil
+	return &Integration{FanOutIntegration: base, client: publicOnlyClient()}, nil
 }
 
 // Register is executed when a operator wants to register a specific instance of this integration with their Chainloop organization
@@ -76,7 +84,7 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 		return nil, fmt.Errorf("invalid registration request: %w", err)
 	}
 
-	if err := executeWebhook(request.WebhookURL, "This is a test message. Welcome to Chainloop!"); err != nil {
+	if err := executeWebhook(i.client, request.WebhookURL, "This is a test message. Welcome to Chainloop!"); err != nil {
 		return nil, fmt.Errorf("error validating a webhook: %w", err)
 	}
 
@@ -118,7 +126,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	msg := fmt.Sprintf("\nNew attestation received!\n```\n%s\n```\n", summary)
 	webhookURL := req.RegistrationInfo.Credentials.Password
 
-	if err := executeWebhook(webhookURL, msg); err != nil {
+	if err := executeWebhook(i.client, webhookURL, msg); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 
@@ -127,7 +135,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 }
 
 // Send attestation to Slack
-func executeWebhook(webhookURL, msgContent string) error {
+func executeWebhook(client *http.Client, webhookURL, msgContent string) error {
 	payload := map[string]string{
 		"text": msgContent,
 	}
@@ -138,8 +146,7 @@ func executeWebhook(webhookURL, msgContent string) error {
 
 	requestBody := bytes.NewReader(jsonPayload)
 
-	// #nosec G107 - we are using a constant API URL that is not user input at this stage
-	r, err := http.Post(webhookURL, "application/json", requestBody)
+	r, err := client.Post(webhookURL, "application/json", requestBody)
 	if err != nil {
 		return fmt.Errorf("error making request: %w", err)
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,10 @@ import (
 type base struct {
 	host   *url.URL
 	apiKey string
+	// httpClient carries the deployment's outbound network policy, so every
+	// request to the instance has to go through it rather than through
+	// http.DefaultClient.
+	httpClient *http.Client
 }
 
 type Integration struct {
@@ -48,7 +52,7 @@ type SBOMUploader struct {
 	parentID string
 }
 
-func newBase(host, apiKey string) (*base, error) {
+func newBase(httpClient *http.Client, host, apiKey string) (*base, error) {
 	if apiKey == "" {
 		return nil, errors.New("apiKey required")
 	}
@@ -58,12 +62,12 @@ func newBase(host, apiKey string) (*base, error) {
 		return nil, err
 	}
 
-	return &base{host: uri, apiKey: apiKey}, nil
+	return &base{host: uri, apiKey: apiKey, httpClient: httpClient}, nil
 }
 
 // The integration definition
-func NewIntegration(host, apiKey string, checkAutoCreate bool) (*Integration, error) {
-	b, err := newBase(host, apiKey)
+func NewIntegration(httpClient *http.Client, host, apiKey string, checkAutoCreate bool) (*Integration, error) {
+	b, err := newBase(httpClient, host, apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +75,8 @@ func NewIntegration(host, apiKey string, checkAutoCreate bool) (*Integration, er
 	return &Integration{base: b, checkAutoCreate: checkAutoCreate}, nil
 }
 
-func NewSBOMUploader(host, apiKey string, sbom io.Reader, projectID, projectName string, parentID string) (*SBOMUploader, error) {
-	b, err := newBase(host, apiKey)
+func NewSBOMUploader(httpClient *http.Client, host, apiKey string, sbom io.Reader, projectID, projectName string, parentID string) (*SBOMUploader, error) {
+	b, err := newBase(httpClient, host, apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +99,7 @@ const viewPortfolioPermission = "VIEW_PORTFOLIO"
 const projectCreationPermission = "PROJECT_CREATION_UPLOAD"
 
 func (d *Integration) Validate(_ context.Context) error {
-	resp, err := teamPermissionsRequest(d.host, d.apiKey)
+	resp, err := teamPermissionsRequest(d.httpClient, d.host, d.apiKey)
 	if err != nil {
 		return err
 	}
@@ -115,7 +119,7 @@ func (d *Integration) Validate(_ context.Context) error {
 func (d *SBOMUploader) Validate(ctx context.Context) error {
 	autocreate := d.projectName != "" && d.projectID == ""
 	// Check auto-create permissions
-	integration, err := NewIntegration(d.host.String(), d.apiKey, autocreate)
+	integration, err := NewIntegration(d.httpClient, d.host.String(), d.apiKey, autocreate)
 	if err != nil {
 		return fmt.Errorf("intializing permissions checker: %w", err)
 	}
@@ -136,7 +140,7 @@ func (d *SBOMUploader) Validate(ctx context.Context) error {
 	}
 
 	// Check if the project or parent project exists
-	if projectFound, err := projectExists(d.host, d.apiKey, existingProjectID); err != nil {
+	if projectFound, err := projectExists(d.httpClient, d.host, d.apiKey, existingProjectID); err != nil {
 		return fmt.Errorf("checking that the project exists: %w", err)
 	} else if !projectFound {
 		return fmt.Errorf("project with ID %q not found", existingProjectID)
@@ -163,7 +167,7 @@ func (d *SBOMUploader) Do(_ context.Context) error {
 		values["project"] = strings.NewReader(d.projectID)
 	}
 
-	_, err := uploadSBOMRequest(d.host, d.apiKey, values)
+	_, err := uploadSBOMRequest(d.httpClient, d.host, d.apiKey, values)
 	return err
 }
 
@@ -201,7 +205,7 @@ type teamPermissionsResponse struct {
 	}
 }
 
-func teamPermissionsRequest(host *url.URL, apiKey string) (*teamPermissionsResponse, error) {
+func teamPermissionsRequest(httpClient *http.Client, host *url.URL, apiKey string) (*teamPermissionsResponse, error) {
 	apiEndpoint := host.JoinPath("/api/v1/team/self")
 
 	req, err := http.NewRequest(http.MethodGet, apiEndpoint.String(), nil)
@@ -211,7 +215,7 @@ func teamPermissionsRequest(host *url.URL, apiKey string) (*teamPermissionsRespo
 
 	req.Header.Set("X-Api-Key", apiKey)
 	// Submit the request
-	res, err := http.DefaultClient.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +245,7 @@ type uploadSBOMResponse struct {
 	Token string
 }
 
-func uploadSBOMRequest(host *url.URL, apiKey string, values map[string]io.Reader) (*uploadSBOMResponse, error) {
+func uploadSBOMRequest(httpClient *http.Client, host *url.URL, apiKey string, values map[string]io.Reader) (*uploadSBOMResponse, error) {
 	// Prepare the form-data
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -275,7 +279,7 @@ func uploadSBOMRequest(host *url.URL, apiKey string, values map[string]io.Reader
 	req.Header.Set("X-Api-Key", apiKey)
 
 	// Submit the request
-	res, err := http.DefaultClient.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +305,7 @@ func uploadSBOMRequest(host *url.URL, apiKey string, values map[string]io.Reader
 
 // We are listing projects instead of accessing a specific one to enable
 // son in the future listing and selection in the UI
-func projectExists(host *url.URL, apiKey string, projectID string) (bool, error) {
+func projectExists(httpClient *http.Client, host *url.URL, apiKey string, projectID string) (bool, error) {
 	apiEndpoint := host.JoinPath(fmt.Sprintf("/api/v1/project/%s", projectID))
 
 	req, err := http.NewRequest(http.MethodGet, apiEndpoint.String(), nil)
@@ -311,7 +315,7 @@ func projectExists(host *url.URL, apiKey string, projectID string) (bool, error)
 
 	req.Header.Set("X-Api-Key", apiKey)
 	// Submit the request
-	res, err := http.DefaultClient.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		return false, err
 	}
