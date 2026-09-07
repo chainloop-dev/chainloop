@@ -147,6 +147,12 @@ type CommitRef struct {
 	Description string `json:"description,omitempty"`
 	CommittedAt string `json:"committed_at,omitempty"`
 	Verified    bool   `json:"verified"`
+
+	// TraceSessions are the Chainloop Trace session IDs (session_external_id)
+	// declared on this introducing commit via the Chainloop-Trace-Sessions git
+	// trailer — the AI coding session(s) that introduced the flaw. Recorded
+	// verbatim by the producer with no DB lookup; sorted + deduped.
+	TraceSessions []string `json:"trace_sessions,omitempty"`
 }
 
 // Anchor is a byte-verifiable evidence span. A consumer can re-verify it
@@ -234,6 +240,12 @@ type Fingerprint struct {
 	// annotated rather than dropped.
 	Status     string `json:"status,omitempty"`
 	RevertedBy string `json:"reverted_by,omitempty"`
+
+	// TraceSessions are the Chainloop Trace session IDs (session_external_id)
+	// declared on the fix commit via the Chainloop-Trace-Sessions git trailer —
+	// the AI coding session(s) that produced the fix. Recorded verbatim by the
+	// producer with no DB lookup; sorted + deduped.
+	TraceSessions []string `json:"trace_sessions,omitempty"`
 }
 
 // Data is the AI security context payload: the object the producer writes under

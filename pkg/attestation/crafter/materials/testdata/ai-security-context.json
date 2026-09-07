@@ -544,10 +544,16 @@
             "commit_sha": "d4bdebd22566dd9c871036eb39343033acd8c6bc",
             "description": "fixed-precision multipleOf conversion",
             "committed_at": "2025-05-09T02:19:30+02:00",
-            "verified": true
+            "verified": true,
+            "trace_sessions": [
+              "1f2e3d4c-5b6a-7980-a1b2-c3d4e5f60718"
+            ]
           }
         ],
-        "introduced_to_fixed_seconds": 40385717
+        "introduced_to_fixed_seconds": 40385717,
+        "trace_sessions": [
+          "8b012929-ba7f-4986-815c-2fbe692a9a98"
+        ]
       },
       {
         "id": "fp_eda80e2676",
