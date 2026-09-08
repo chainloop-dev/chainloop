@@ -130,9 +130,9 @@ The organization, project, workflow and require-trace values are saved to
 
 			// Install the agent-side hooks for the providers resolved above.
 			// Pre-push infers the owning provider per-session from the recorded
-			// SessionRecord, so the list isn't persisted anywhere — only these
-			// hook config files (.claude/settings.json, .cursor/hooks.json)
-			// determine which providers can register sessions.
+			// SessionRecord, so the list isn't persisted anywhere — only each
+			// agent's own hook config file, written here, determines which
+			// providers can register sessions.
 			for _, p := range selectedProviders {
 				if err := p.InstallHooks(repoRoot); err != nil {
 					logger.Warn().Err(err).Str("provider", p.Name()).Msg("could not install agent hooks")
@@ -183,7 +183,10 @@ func ensureTraceInitWorkflow(ctx context.Context, executor *action.AttestationEx
 	}
 
 	if wf.Created {
+		// The workflow name is the same in every project, so the project is what
+		// identifies what was just created.
 		logger.Info().
+			Str("project", cfg.project).
 			Str("workflow", cfg.workflow).
 			Str("contract", wf.ContractName).
 			Msg("workflow created")
