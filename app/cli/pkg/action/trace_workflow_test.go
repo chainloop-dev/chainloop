@@ -20,6 +20,7 @@ import (
 	"errors"
 	"testing"
 
+	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -168,10 +169,10 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 			wantErr: forbidden,
 		},
 		{
-			name:    "an unauthenticated view fails with a hint",
-			api:     &fakeTraceWorkflowAPI{viewErr: status.Error(codes.Unauthenticated, "no token")},
+			name:    "an unauthenticated view fails",
+			api:     &fakeTraceWorkflowAPI{viewErr: status.Error(codes.Unauthenticated, "JWT token is missing")},
 			opts:    EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow},
-			wantErr: "not authenticated",
+			wantErr: "JWT token is missing",
 		},
 		{
 			name:             "a create failure fails",
@@ -224,6 +225,29 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 		_, err := ensureTraceWorkflow(context.Background(), api, zerolog.Nop(), EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow})
 		require.Error(t, err)
 		assert.Equal(t, codes.PermissionDenied, status.Code(err))
+	})
+
+	// Whichever call hits it, an authentication failure has to stay
+	// recognizable through the context added on the way up, so the CLI renders
+	// its own "run chainloop auth login" message instead of this plumbing.
+	t.Run("authentication errors stay recognizable", func(t *testing.T) {
+		authErr := jwtMiddleware.ErrMissingJwtToken.GRPCStatus().Err()
+
+		for name, api := range map[string]*fakeTraceWorkflowAPI{
+			"on view":     {viewErr: authErr},
+			"on contract": {viewErr: notFound, contractErr: authErr},
+			"on create":   {viewErr: notFound, contractFound: true, createErr: authErr},
+		} {
+			t.Run(name, func(t *testing.T) {
+				_, err := ensureTraceWorkflow(context.Background(), api, zerolog.Nop(),
+					EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: contract, ContractRequired: true})
+				require.Error(t, err)
+
+				msg, matched := AuthErrorMessage(err)
+				require.True(t, matched)
+				assert.Equal(t, `authentication required, please run "chainloop auth login"`, msg)
+			})
+		}
 	})
 
 	t.Run("a non-status contract error still falls back", func(t *testing.T) {

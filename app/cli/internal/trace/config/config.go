@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"gopkg.in/yaml.v3"
@@ -190,18 +191,19 @@ func LoadWorkflowFromYML(dir string) string {
 func updateChainloopYMLField(dir, key string, value any) error {
 	path := resolveChainloopYMLPath(dir)
 
+	// A missing file is the same as an empty document: setYAMLField starts one.
+	data, _ := os.ReadFile(path)
+
 	var doc yaml.Node
-	if data, err := os.ReadFile(path); err == nil {
-		if err := yaml.Unmarshal(data, &doc); err != nil {
-			return fmt.Errorf("parse %s: %w", filepath.Base(path), err)
-		}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("parse %s: %w", filepath.Base(path), err)
 	}
 
 	if err := setYAMLField(&doc, key, value); err != nil {
 		return fmt.Errorf("update %s in %s: %w", key, filepath.Base(path), err)
 	}
 
-	out, err := encodeYAML(&doc)
+	out, err := encodeYAML(&doc, yamlIndent(data))
 	if err != nil {
 		return fmt.Errorf("marshal %s: %w", filepath.Base(path), err)
 	}
@@ -209,12 +211,11 @@ func updateChainloopYMLField(dir, key string, value any) error {
 	return os.WriteFile(path, out, 0600)
 }
 
-// encodeYAML renders a node tree with the 2-space indentation .chainloop.yml
-// uses; the encoder defaults to 4.
-func encodeYAML(doc *yaml.Node) ([]byte, error) {
+// encodeYAML renders a node tree with the given indentation.
+func encodeYAML(doc *yaml.Node, indent int) ([]byte, error) {
 	var out bytes.Buffer
 	enc := yaml.NewEncoder(&out)
-	enc.SetIndent(2)
+	enc.SetIndent(indent)
 	if err := enc.Encode(doc); err != nil {
 		return nil, err
 	}
@@ -223,6 +224,34 @@ func encodeYAML(doc *yaml.Node) ([]byte, error) {
 	}
 
 	return out.Bytes(), nil
+}
+
+const (
+	// defaultYAMLIndent is what .chainloop.yml uses; the encoder would
+	// otherwise widen to 4.
+	defaultYAMLIndent = 2
+	// maxYAMLIndent bounds what is read as indentation, so a deeply indented
+	// continuation line inside a block scalar cannot widen the whole file.
+	maxYAMLIndent = 8
+)
+
+// yamlIndent reports the indentation width src already uses, taken from its
+// first indented line, so nested blocks are written back the way the user
+// wrote them rather than reindented to our own taste. Files with nothing
+// nested (and new ones) get defaultYAMLIndent.
+func yamlIndent(src []byte) int {
+	for _, line := range strings.Split(string(src), "\n") {
+		// YAML forbids tabs in indentation, so counting spaces is enough.
+		body := strings.TrimLeft(line, " ")
+		width := len(line) - len(body)
+		if body == "" || width == 0 || width > maxYAMLIndent {
+			continue
+		}
+
+		return width
+	}
+
+	return defaultYAMLIndent
 }
 
 // setYAMLField sets key to value in the document's top-level mapping, adding

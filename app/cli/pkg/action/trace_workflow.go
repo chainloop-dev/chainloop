@@ -87,7 +87,7 @@ func ensureTraceWorkflow(ctx context.Context, api traceWorkflowAPI, log zerolog.
 		return &TraceWorkflowResult{ContractName: wf.ContractName}, nil
 	}
 	if status.Code(err) != codes.NotFound {
-		return nil, authAwareErr(fmt.Errorf("looking up workflow %q in project %q: %w", opts.WorkflowName, opts.ProjectName, err))
+		return nil, fmt.Errorf("looking up workflow %q in project %q: %w", opts.WorkflowName, opts.ProjectName, err)
 	}
 
 	contract, err := resolveTraceContract(ctx, api, log, opts)
@@ -104,7 +104,7 @@ func ensureTraceWorkflow(ctx context.Context, api traceWorkflowAPI, log zerolog.
 			return &TraceWorkflowResult{}, nil
 		}
 
-		return nil, authAwareErr(fmt.Errorf("creating workflow %q in project %q: %w", opts.WorkflowName, opts.ProjectName, err))
+		return nil, fmt.Errorf("creating workflow %q in project %q: %w", opts.WorkflowName, opts.ProjectName, err)
 	}
 
 	return &TraceWorkflowResult{Created: true, ContractName: created.ContractName}, nil
@@ -123,7 +123,7 @@ func resolveTraceContract(ctx context.Context, api traceWorkflowAPI, log zerolog
 	exists, err := api.contractExists(ctx, opts.ContractName)
 	switch {
 	case err != nil && opts.ContractRequired:
-		return "", authAwareErr(fmt.Errorf("looking up contract %q: %w", opts.ContractName, err))
+		return "", fmt.Errorf("looking up contract %q: %w", opts.ContractName, err)
 	case err != nil:
 		log.Debug().Err(err).Str("contract", opts.ContractName).Msg("could not look up the contract; falling back to the default one")
 		return "", nil
@@ -135,16 +135,6 @@ func resolveTraceContract(ctx context.Context, api traceWorkflowAPI, log zerolog
 	}
 
 	return opts.ContractName, nil
-}
-
-// authAwareErr prefixes an unauthenticated failure with the way out, since
-// running trace before logging in is the most likely reason to get one.
-func authAwareErr(err error) error {
-	if status.Code(err) != codes.Unauthenticated {
-		return err
-	}
-
-	return fmt.Errorf("chainloop is not authenticated; run 'chainloop auth login' first: %w", err)
 }
 
 // cpTraceWorkflowAPI implements traceWorkflowAPI against the control plane,

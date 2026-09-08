@@ -47,22 +47,13 @@ func newTraceInitCmd() *cobra.Command {
 		Long: `Initialize git hooks that automatically trace AI coding sessions and
 create Chainloop attestations when you push.
 
-This installs the managed git hooks plus agent-specific hooks for the
-selected providers. Pass --claude, --cursor, and/or --opencode to pick
-providers; when none is set, Claude Code is used as the default.
+It installs the managed git hooks plus the hooks of the selected agent
+providers (Claude Code when none is given), and creates the Chainloop workflow
+the attestations target. Nothing is written to the repository until that
+workflow exists, so you need to be logged in.
 
-It also creates the Chainloop workflow the attestations target, attached to
-the "chainloop-ai-coding-session" contract when your organization has it and
-to a default empty contract otherwise. Pass --contract to attach a different
-one. Nothing is written to the repository until the workflow exists, so you
-need to be logged in with permission to create workflows.
-
-Pass --org to pin the Chainloop organization trace attestations target; the
-value is saved to .chainloop.yml and overrides the CLI default on every push.
-
-Pass --workflow to override the workflow name used when initializing trace
-attestations. The value is saved to .chainloop.yml and defaults to
-"ai-coding-session" when unset.`,
+The organization, project, workflow and require-trace values are saved to
+.chainloop.yml, and every push reads them from there.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 			if err != nil {

@@ -104,13 +104,12 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 	if err != nil {
 		return err
 	}
-	if err := executor.CheckAuth(ctx); err != nil {
-		log.Warn().Err(err).Msg("authentication check failed; attestation will fail after the session")
-	} else {
-		ensureTraceRunWorkflow(ctx, log, executor, opts)
-	}
+	prepErr := prepareTraceRunWorkflow(ctx, log, executor, opts)
 	if err := executor.Close(); err != nil {
 		log.Debug().Err(err).Msg("closing auth-check executor")
+	}
+	if prepErr != nil {
+		return prepErr
 	}
 
 	// Snapshot the agent settings files before we touch anything else
@@ -201,13 +200,29 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 	})
 }
 
-// ensureTraceRunWorkflow creates the workflow the session will be attested to,
-// so it gets the trace contract attached instead of the empty one the control
-// plane creates implicitly at push time. Unlike `trace init` this is
-// best-effort: a session the user is about to run is worth more than the
-// contract binding, and the attestation still creates the workflow implicitly
-// if this could not.
-func ensureTraceRunWorkflow(ctx context.Context, log zerolog.Logger, executor *AttestationExecutor, opts TraceRunOpts) {
+// prepareTraceRunWorkflow checks the credentials and creates the workflow the
+// session will be attested to, so it gets the trace contract attached instead
+// of the empty one the control plane creates implicitly at push time.
+//
+// It is best-effort: the session a user is about to run is worth more than the
+// contract binding, and the attestation creates the workflow anyway. The one
+// exception is a contract named with --contract: the attestation path cannot
+// carry a contract name, so continuing there would ignore the flag and bind the
+// default contract instead.
+func prepareTraceRunWorkflow(ctx context.Context, log zerolog.Logger, executor *AttestationExecutor, opts TraceRunOpts) error {
+	if err := executor.CheckAuth(ctx); err != nil {
+		if opts.ContractRequired {
+			return err
+		}
+		if authMsg, isAuth := AuthErrorMessage(err); isAuth {
+			log.Warn().Msg(authMsg + "; the session is recorded but its attestation will fail")
+		} else {
+			log.Warn().Err(err).Msg("authentication check failed; attestation will fail after the session")
+		}
+
+		return nil
+	}
+
 	wf, err := executor.EnsureWorkflow(ctx, EnsureTraceWorkflowOpts{
 		ProjectName:      opts.ProjectName,
 		WorkflowName:     opts.WorkflowName,
@@ -215,13 +230,19 @@ func ensureTraceRunWorkflow(ctx context.Context, log zerolog.Logger, executor *A
 		ContractRequired: opts.ContractRequired,
 	})
 	if err != nil {
+		if opts.ContractRequired {
+			return err
+		}
 		log.Warn().Err(err).Msg("could not create the workflow up front; it will be created when the session is attested")
-		return
+
+		return nil
 	}
 
 	if wf.Created {
 		log.Info().Str("workflow", opts.WorkflowName).Str("contract", wf.ContractName).Msg("workflow created")
 	}
+
+	return nil
 }
 
 // traceRunOwnsState reports whether the store's trace state is trace run's

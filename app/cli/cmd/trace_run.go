@@ -37,10 +37,9 @@ and the optional --version flag. It does not read from or write to
 .chainloop.yml, and removes every hook and local trace artifact when the
 wrapped command exits, so a session never leaks setup into the next one.
 
-The workflow is created before the command runs, attached to the
-"chainloop-ai-coding-session" contract when your organization has it, or to
-the one given with --contract. Creating it is best-effort: the session runs
-either way and the attestation creates the workflow if this did not.`
+The workflow is created before the command runs. That part is best-effort: the
+session runs either way and the attestation creates the workflow if this did
+not, except with --contract, which trace run cannot honor later.`
 
 // newTraceRunCmd creates the `trace run` subcommand.
 func newTraceRunCmd() *cobra.Command {
