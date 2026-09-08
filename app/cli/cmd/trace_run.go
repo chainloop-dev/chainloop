@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -34,7 +35,11 @@ trace run is isolated: it ignores .chainloop.yml entirely. The attestation
 identity must come from the --org, --project, --workflow flags (mandatory)
 and the optional --version flag. It does not read from or write to
 .chainloop.yml, and removes every hook and local trace artifact when the
-wrapped command exits, so a session never leaks setup into the next one.`
+wrapped command exits, so a session never leaks setup into the next one.
+
+The workflow is created before the command runs. That part is best-effort: the
+session runs either way and the attestation creates the workflow if this did
+not, except with --contract, which trace run cannot honor later.`
 
 // newTraceRunCmd creates the `trace run` subcommand.
 func newTraceRunCmd() *cobra.Command {
@@ -42,6 +47,7 @@ func newTraceRunCmd() *cobra.Command {
 		projectFlag  string
 		workflowFlag string
 		versionFlag  string
+		contractFlag string
 		claudeFlag   bool
 		cursorFlag   bool
 		opencodeFlag bool
@@ -103,17 +109,21 @@ func newTraceRunCmd() *cobra.Command {
 				return fmt.Errorf("--workflow is required for trace run")
 			}
 
+			contractName, contractRequired := config.ResolveContract(contractFlag)
+
 			return action.TraceRun(cmd.Context(), logger, action.TraceRunOpts{
-				Store:          store,
-				RepoRoot:       repoRoot,
-				Providers:      selectedTraceProviders(claudeFlag, cursorFlag, opencodeFlag),
-				Command:        args,
-				ProjectName:    projectFlag,
-				Organization:   organization,
-				WorkflowName:   workflowFlag,
-				ProjectVersion: versionFlag,
-				ActionOpts:     ActionOpts,
-				CLIVersion:     Version,
+				Store:            store,
+				RepoRoot:         repoRoot,
+				Providers:        selectedTraceProviders(claudeFlag, cursorFlag, opencodeFlag),
+				Command:          args,
+				ProjectName:      projectFlag,
+				Organization:     organization,
+				WorkflowName:     workflowFlag,
+				ProjectVersion:   versionFlag,
+				ContractName:     contractName,
+				ContractRequired: contractRequired,
+				ActionOpts:       ActionOpts,
+				CLIVersion:       Version,
 			})
 		},
 	}
@@ -121,6 +131,7 @@ func newTraceRunCmd() *cobra.Command {
 	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required; .chainloop.yml is ignored)")
 	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required; .chainloop.yml is ignored)")
 	cmd.Flags().StringVar(&versionFlag, "version", "", "chainloop project version (optional; defaults to the latest version)")
+	cmd.Flags().StringVar(&contractFlag, "contract", "", traceContractFlagDesc)
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")

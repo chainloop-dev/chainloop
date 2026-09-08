@@ -16,9 +16,11 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"gopkg.in/yaml.v3"
@@ -33,6 +35,13 @@ const (
 // when no override is configured in .chainloop.yml.
 const traceWorkflowName = "ai-coding-session"
 
+// traceContractName is the workflow contract the trace workflow is attached to
+// when the organization has it. It is the name of the library contract shipped
+// with Chainloop, prefixed so it never collides with a contract of the user's
+// own named after the workflow. Organizations without it get the control
+// plane's default empty contract instead.
+const traceContractName = "chainloop-ai-coding-session"
+
 // ResolveWorkflowName returns the persisted workflow name when non-empty,
 // otherwise falls back to the trace default. Centralizes the default so the
 // CLI command and the hook handler stay in sync.
@@ -42,6 +51,22 @@ func ResolveWorkflowName(persisted string) string {
 	}
 
 	return traceWorkflowName
+}
+
+// ResolveContract returns the contract to attach when the trace workflow is
+// created: the one given on the command line, or the trace default. required
+// reports that the name came from the user, where a missing contract is an
+// error instead of something to fall back from, because a typo must not
+// silently bind another contract.
+//
+// Unlike the workflow name, the contract is not persisted to .chainloop.yml:
+// it is only needed when the workflow is created, never on the push path.
+func ResolveContract(flag string) (name string, required bool) {
+	if flag != "" {
+		return flag, true
+	}
+
+	return traceContractName, false
 }
 
 // ChainloopYML represents the relevant fields in .chainloop.yml.
@@ -158,26 +183,119 @@ func LoadWorkflowFromYML(dir string) string {
 	return cfg.WorkflowName
 }
 
-// updateChainloopYMLField reads, updates a single field, and writes back
-// the .chainloop.yml file, preserving all other fields.
+// updateChainloopYMLField reads, updates a single field, and writes back the
+// .chainloop.yml file. The file is edited as a YAML node tree rather than
+// re-marshalled from a map, so the user's comments, key order and indentation
+// survive: .chainloop.yml is checked into their repository and a rewrite that
+// reformats it turns `chainloop trace init` into a noisy diff.
 func updateChainloopYMLField(dir, key string, value any) error {
 	path := resolveChainloopYMLPath(dir)
 
-	existing := make(map[string]any)
-	if data, err := os.ReadFile(path); err == nil {
-		if err := yaml.Unmarshal(data, &existing); err != nil {
-			return fmt.Errorf("parse %s: %w", filepath.Base(path), err)
-		}
+	// A missing file is the same as an empty document: setYAMLField starts one.
+	data, _ := os.ReadFile(path)
+
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return fmt.Errorf("parse %s: %w", filepath.Base(path), err)
 	}
 
-	existing[key] = value
+	if err := setYAMLField(&doc, key, value); err != nil {
+		return fmt.Errorf("update %s in %s: %w", key, filepath.Base(path), err)
+	}
 
-	out, err := yaml.Marshal(existing)
+	out, err := encodeYAML(&doc, yamlIndent(data))
 	if err != nil {
 		return fmt.Errorf("marshal %s: %w", filepath.Base(path), err)
 	}
 
 	return os.WriteFile(path, out, 0600)
+}
+
+// encodeYAML renders a node tree with the given indentation.
+func encodeYAML(doc *yaml.Node, indent int) ([]byte, error) {
+	var out bytes.Buffer
+	enc := yaml.NewEncoder(&out)
+	enc.SetIndent(indent)
+	if err := enc.Encode(doc); err != nil {
+		return nil, err
+	}
+	if err := enc.Close(); err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), nil
+}
+
+const (
+	// defaultYAMLIndent is what .chainloop.yml uses; the encoder would
+	// otherwise widen to 4.
+	defaultYAMLIndent = 2
+	// maxYAMLIndent bounds what is read as indentation, so a deeply indented
+	// continuation line inside a block scalar cannot widen the whole file.
+	maxYAMLIndent = 8
+)
+
+// yamlIndent reports the indentation width src already uses, taken from its
+// first indented line, so nested blocks are written back the way the user
+// wrote them rather than reindented to our own taste. Files with nothing
+// nested (and new ones) get defaultYAMLIndent.
+func yamlIndent(src []byte) int {
+	for _, line := range strings.Split(string(src), "\n") {
+		// YAML forbids tabs in indentation, so counting spaces is enough.
+		body := strings.TrimLeft(line, " ")
+		width := len(line) - len(body)
+		if body == "" || width == 0 || width > maxYAMLIndent {
+			continue
+		}
+
+		return width
+	}
+
+	return defaultYAMLIndent
+}
+
+// setYAMLField sets key to value in the document's top-level mapping, adding
+// the key at the end when it is absent. An empty document (missing or empty
+// file) is initialized to a mapping. Comments attached to an overwritten value
+// are kept, since they document the field rather than the value.
+func setYAMLField(doc *yaml.Node, key string, value any) error {
+	var encoded yaml.Node
+	if err := encoded.Encode(value); err != nil {
+		return err
+	}
+
+	// A missing or empty file leaves the document node zero-valued.
+	if len(doc.Content) == 0 {
+		doc.Kind = yaml.DocumentNode
+		doc.Content = []*yaml.Node{{Kind: yaml.MappingNode, Tag: "!!map"}}
+	}
+
+	mapping := doc.Content[0]
+	if mapping.Kind != yaml.MappingNode {
+		return fmt.Errorf("expected a top-level YAML mapping")
+	}
+
+	// A mapping's Content alternates key, value.
+	for i := 0; i+1 < len(mapping.Content); i += 2 {
+		if mapping.Content[i].Value != key {
+			continue
+		}
+
+		old := mapping.Content[i+1]
+		encoded.HeadComment = old.HeadComment
+		encoded.LineComment = old.LineComment
+		encoded.FootComment = old.FootComment
+		mapping.Content[i+1] = &encoded
+
+		return nil
+	}
+
+	mapping.Content = append(mapping.Content,
+		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: key},
+		&encoded,
+	)
+
+	return nil
 }
 
 // LoadRequireTraceFromYML looks for .chainloop.yml starting from dir

@@ -197,7 +197,11 @@ func (e *AttestationExecutor) CheckAuth(_ context.Context) error {
 		AuthTokenRaw: e.actionOpts.AuthTokenRaw,
 	}).Run()
 	if err != nil {
-		return fmt.Errorf("chainloop is not authenticated; run 'chainloop config save' first: %w", err)
+		// The wrap keeps the gRPC status reachable with errors.As, so an
+		// authentication failure still renders through AuthErrorMessage;
+		// anything else is the control plane being unreachable, and its own
+		// error says more than a guess would.
+		return fmt.Errorf("reaching the chainloop control plane: %w", err)
 	}
 
 	return nil

@@ -155,6 +155,154 @@ func TestSaveProjectToYML(t *testing.T) {
 	})
 }
 
+// TestUpdateChainloopYMLPreservesFormatting pins that updating one field keeps
+// the rest of the file as the user wrote it: comments, key order and
+// indentation. .chainloop.yml is checked into the user's repository, so a
+// rewrite that reformats it shows up as noise in their next diff. The fixture
+// is deliberately in non-alphabetical order, so re-marshalling through a map
+// cannot pass unnoticed, and the whole output is compared.
+func TestUpdateChainloopYMLPreservesFormatting(t *testing.T) {
+	// projectVersion, projectName, organization: reverse-alphabetical.
+	const existing = `# This indicates the [current version]+next
+projectVersion: v1.0.0+next
+projectName: old-project
+# organization and projectName are used for Chainloop Trace
+# https://docs.chainloop.dev/reference/operator/trace
+organization: chainloop
+# Maps material names to a location on disk
+scorecards:
+  - name: sarif-results
+    path: metadata/results.sarif
+`
+
+	testCases := []struct {
+		name   string
+		update func(dir string) error
+		want   string
+	}{
+		{
+			name:   "updating an existing field touches only that value",
+			update: func(dir string) error { return SaveProjectToYML(dir, "new-project") },
+			want: `# This indicates the [current version]+next
+projectVersion: v1.0.0+next
+projectName: new-project
+# organization and projectName are used for Chainloop Trace
+# https://docs.chainloop.dev/reference/operator/trace
+organization: chainloop
+# Maps material names to a location on disk
+scorecards:
+  - name: sarif-results
+    path: metadata/results.sarif
+`,
+		},
+		{
+			name:   "a new field is appended",
+			update: func(dir string) error { return SaveWorkflowToYML(dir, "my-workflow") },
+			want: `# This indicates the [current version]+next
+projectVersion: v1.0.0+next
+projectName: old-project
+# organization and projectName are used for Chainloop Trace
+# https://docs.chainloop.dev/reference/operator/trace
+organization: chainloop
+# Maps material names to a location on disk
+scorecards:
+  - name: sarif-results
+    path: metadata/results.sarif
+workflowName: my-workflow
+`,
+		},
+		{
+			name:   "a new boolean field is appended",
+			update: func(dir string) error { return SaveRequireTraceToYML(dir, true) },
+			want: `# This indicates the [current version]+next
+projectVersion: v1.0.0+next
+projectName: old-project
+# organization and projectName are used for Chainloop Trace
+# https://docs.chainloop.dev/reference/operator/trace
+organization: chainloop
+# Maps material names to a location on disk
+scorecards:
+  - name: sarif-results
+    path: metadata/results.sarif
+requireTrace: true
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, ".chainloop.yml")
+			require.NoError(t, os.WriteFile(path, []byte(existing), 0600))
+
+			require.NoError(t, tc.update(dir))
+
+			data, err := os.ReadFile(path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, string(data))
+		})
+	}
+}
+
+// TestUpdateChainloopYMLKeepsIndentation pins that nested blocks keep the
+// indentation width the file already uses, rather than being reindented to
+// whatever this package prefers.
+func TestUpdateChainloopYMLKeepsIndentation(t *testing.T) {
+	testCases := []struct {
+		name     string
+		existing string
+		want     string
+	}{
+		{
+			name: "two spaces",
+			existing: `projectName: p
+scorecards:
+  - name: sarif
+    path: results.sarif
+`,
+			want: `projectName: p
+scorecards:
+  - name: sarif
+    path: results.sarif
+workflowName: w
+`,
+		},
+		{
+			name: "four spaces",
+			existing: `projectName: p
+scorecards:
+    - name: sarif
+      path: results.sarif
+`,
+			want: `projectName: p
+scorecards:
+    - name: sarif
+      path: results.sarif
+workflowName: w
+`,
+		},
+		{
+			name:     "nothing nested falls back to two",
+			existing: "projectName: p\n",
+			want:     "projectName: p\nworkflowName: w\n",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, ".chainloop.yml")
+			require.NoError(t, os.WriteFile(path, []byte(tc.existing), 0600))
+
+			require.NoError(t, SaveWorkflowToYML(dir, "w"))
+
+			data, err := os.ReadFile(path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, string(data))
+		})
+	}
+}
+
 func TestRequireTrace(t *testing.T) {
 	t.Run("defaults to false when field missing", func(t *testing.T) {
 		dir := t.TempDir()
@@ -262,6 +410,26 @@ func TestWorkflow(t *testing.T) {
 		assert.Contains(t, string(data), "requireTrace: true")
 		assert.Contains(t, string(data), "workflowName: my-flow")
 	})
+}
+
+func TestResolveContract(t *testing.T) {
+	testCases := []struct {
+		name         string
+		flag         string
+		want         string
+		wantRequired bool
+	}{
+		{name: "defaults to the shipped contract, which may be absent", want: "chainloop-ai-coding-session"},
+		{name: "the flag wins and is required", flag: "my-contract", want: "my-contract", wantRequired: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			name, required := ResolveContract(tc.flag)
+			assert.Equal(t, tc.want, name)
+			assert.Equal(t, tc.wantRequired, required)
+		})
+	}
 }
 
 func TestFindChainloopYML(t *testing.T) {

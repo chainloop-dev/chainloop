@@ -37,9 +37,9 @@ type NewWorkflowCreateOpts struct {
 	WorkflowTemplateID string
 }
 
-func (action *WorkflowCreate) Run(opts *NewWorkflowCreateOpts) (*WorkflowItem, error) {
+func (action *WorkflowCreate) Run(ctx context.Context, opts *NewWorkflowCreateOpts) (*WorkflowItem, error) {
 	client := pb.NewWorkflowServiceClient(action.cfg.CPConnection)
-	resp, err := client.Create(context.Background(), newWorkflowCreateRequest(opts))
+	resp, err := client.Create(ctx, newWorkflowCreateRequest(opts))
 	if err != nil {
 		return nil, err
 	}

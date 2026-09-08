@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
@@ -34,6 +35,7 @@ import (
 func newTraceInitCmd() *cobra.Command {
 	var (
 		project      string
+		contract     string
 		claudeFlag   bool
 		cursorFlag   bool
 		opencodeFlag bool
@@ -45,93 +47,32 @@ func newTraceInitCmd() *cobra.Command {
 		Long: `Initialize git hooks that automatically trace AI coding sessions and
 create Chainloop attestations when you push.
 
-This installs the managed git hooks plus agent-specific hooks for the
-selected providers. Pass --claude, --cursor, and/or --opencode to pick
-providers; when none is set, Claude Code is used as the default.
+It installs the managed git hooks plus the hooks of the selected agent
+providers (Claude Code when none is given), and creates the Chainloop workflow
+the attestations target. Nothing is written to the repository until that
+workflow exists, so you need to be logged in.
 
-Pass --org to pin the Chainloop organization trace attestations target; the
-value is saved to .chainloop.yml and overrides the CLI default on every push.
-
-Pass --workflow to override the workflow name used when initializing trace
-attestations. The value is saved to .chainloop.yml and defaults to
-"ai-coding-session" when unset.`,
+The organization, project, workflow and require-trace values are saved to
+.chainloop.yml, and every push reads them from there.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 			if err != nil {
 				return err
 			}
 
-			// If --project was given, persist it to .chainloop.yml
-			if project != "" {
-				if err := config.SaveProjectToYML(repoRoot, project); err != nil {
-					return err
-				}
-				logger.Info().Str("project", project).Msg("project name saved to .chainloop.yml")
-			} else {
-				project = config.LoadProjectFromYML(repoRoot)
-			}
-			if project == "" {
-				return fmt.Errorf("--project is required (or add projectName to .chainloop.yml)")
-			}
-
-			// When the user explicitly passes the inherited persistent --org flag,
-			// persist it to .chainloop.yml so trace hooks target it on every push.
-			if cmd.Flags().Changed("org") {
-				orgFlag, err := cmd.Flags().GetString("org")
-				if err != nil {
-					return fmt.Errorf("reading --org flag: %w", err)
-				}
-				if err := config.SaveOrganizationToYML(repoRoot, orgFlag); err != nil {
-					return err
-				}
-				logger.Info().Str("organization", orgFlag).Msg("organization saved to .chainloop.yml")
-			}
-
-			if cmd.Flags().Changed("workflow") {
-				workflowFlag, err := cmd.Flags().GetString("workflow")
-				if err != nil {
-					return fmt.Errorf("reading --workflow flag: %w", err)
-				}
-				if err := config.SaveWorkflowToYML(repoRoot, workflowFlag); err != nil {
-					return err
-				}
-				logger.Info().Str("workflow", workflowFlag).Msg("workflow saved to .chainloop.yml")
-			}
-			workflowName := config.ResolveWorkflowName(config.LoadWorkflowFromYML(repoRoot))
-
-			// Persist --require-trace when explicitly set, otherwise
-			// load the persisted value from .chainloop.yml.
-			requireTrace := config.LoadRequireTraceFromYML(repoRoot)
-			if cmd.Flags().Changed("require-trace") {
-				val, err := cmd.Flags().GetBool("require-trace")
-				if err != nil {
-					return fmt.Errorf("reading --require-trace flag: %w", err)
-				}
-				requireTrace = val
-				if err := config.SaveRequireTraceToYML(repoRoot, requireTrace); err != nil {
-					return err
-				}
-			}
-
-			// Verify authentication. If the repo pins an organization, use it so
-			// the auth check reflects the org the hooks will actually target.
-			var authExecOpts []action.ExecutorOption
-			if forcedOrg := config.LoadOrganizationFromYML(repoRoot); forcedOrg != "" {
-				authExecOpts = append(authExecOpts, action.WithForcedOrganization(forcedOrg))
-			}
-			executor, err := action.NewAttestationExecutor(ActionOpts, Version, authExecOpts...)
+			cfg, err := resolveTraceInitConfig(cmd, repoRoot, project)
 			if err != nil {
 				return err
 			}
-			defer func() { _ = executor.Close() }()
 
-			if err := executor.CheckAuth(cmd.Context()); err != nil {
-				logger.Warn().Err(err).Msg("authentication check failed")
-				if requireTrace {
-					logger.Warn().Msg("require-trace is enabled: pushes with AI-assisted commits will fail until authenticated")
-				} else {
-					logger.Warn().Msg("hooks will be installed, but attestation commands will fail until authenticated")
-				}
+			if err := ensureTraceInitWorkflow(cmd.Context(), cfg, contract); err != nil {
+				return err
+			}
+
+			// The workflow exists: from here on it is safe to leave hooks and
+			// configuration behind.
+			if err := cfg.save(repoRoot); err != nil {
+				return err
 			}
 
 			// Create trace directory structure
@@ -174,8 +115,8 @@ attestations. The value is saved to .chainloop.yml and defaults to
 			}
 
 			logger.Info().
-				Str("project", project).
-				Str("workflow", workflowName).
+				Str("project", cfg.project).
+				Str("workflow", cfg.workflow).
 				Strs("providers", selected).
 				Msg("trace initialized")
 
@@ -184,6 +125,7 @@ attestations. The value is saved to .chainloop.yml and defaults to
 	}
 
 	cmd.Flags().StringVar(&project, "project", "", "chainloop project name")
+	cmd.Flags().StringVar(&contract, "contract", "", traceContractFlagDesc)
 	cmd.Flags().String("workflow", "", "chainloop workflow name used for trace attestations (defaults to \"ai-coding-session\")")
 	cmd.Flags().Bool("require-trace", false, "block pushes when attestation fails for AI-assisted commits")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
@@ -191,6 +133,145 @@ attestations. The value is saved to .chainloop.yml and defaults to
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
 	return cmd
+}
+
+// ensureTraceInitWorkflow makes sure the workflow the trace attestations target
+// exists, creating it up front while someone is watching the output. Left to
+// the pre-push hook, the control plane creates it implicitly with an empty
+// contract and no one reads the result. Anything other than the workflow
+// already existing is fatal, so a failed init leaves nothing behind.
+func ensureTraceInitWorkflow(ctx context.Context, cfg *traceInitConfig, contractFlag string) error {
+	// If the repo pins an organization, use it so the workflow lands where the
+	// hooks will actually attest. An empty name keeps the default connection.
+	executor, err := action.NewAttestationExecutor(ActionOpts, Version, action.WithForcedOrganization(cfg.organization))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = executor.Close() }()
+
+	if err := executor.CheckAuth(ctx); err != nil {
+		return err
+	}
+
+	contractName, contractRequired := config.ResolveContract(contractFlag)
+	wf, err := executor.EnsureWorkflow(ctx, action.EnsureTraceWorkflowOpts{
+		ProjectName:      cfg.project,
+		WorkflowName:     cfg.workflow,
+		ContractName:     contractName,
+		ContractRequired: contractRequired,
+	})
+	if err != nil {
+		return err
+	}
+
+	if wf.Created {
+		logger.Info().
+			Str("workflow", cfg.workflow).
+			Str("contract", wf.ContractName).
+			Msg("workflow created")
+	}
+
+	return nil
+}
+
+// traceInitConfig is the trace setup resolved from the command flags and the
+// existing .chainloop.yml. Resolving and saving are separate steps so nothing
+// lands in the user's repository before the Chainloop workflow exists.
+type traceInitConfig struct {
+	project      string
+	workflow     string
+	organization string
+	requireTrace bool
+
+	// The save* fields mark the values the user set on this run. Only those
+	// are written back to .chainloop.yml, leaving the rest of the file alone.
+	saveProject, saveWorkflow, saveOrganization, saveRequireTrace bool
+}
+
+// resolveTraceInitConfig reads the trace settings from the flags, falling back
+// to the values already in .chainloop.yml.
+func resolveTraceInitConfig(cmd *cobra.Command, repoRoot, projectFlag string) (*traceInitConfig, error) {
+	// The organization is read back even when the user did not pass --org,
+	// since it pins where the workflow is created. The other persisted values
+	// are only needed when they are being written.
+	cfg := &traceInitConfig{
+		project:      projectFlag,
+		saveProject:  projectFlag != "",
+		organization: config.LoadOrganizationFromYML(repoRoot),
+	}
+
+	if cfg.project == "" {
+		cfg.project = config.LoadProjectFromYML(repoRoot)
+	}
+	if cfg.project == "" {
+		return nil, fmt.Errorf("--project is required (or add projectName to .chainloop.yml)")
+	}
+
+	// --org is inherited from the root command, so it is only meant for this
+	// repository when the user passed it explicitly.
+	if cmd.Flags().Changed("org") {
+		org, err := cmd.Flags().GetString("org")
+		if err != nil {
+			return nil, fmt.Errorf("reading --org flag: %w", err)
+		}
+		cfg.organization = org
+		cfg.saveOrganization = true
+	}
+
+	workflow := config.LoadWorkflowFromYML(repoRoot)
+	if cmd.Flags().Changed("workflow") {
+		workflowFlag, err := cmd.Flags().GetString("workflow")
+		if err != nil {
+			return nil, fmt.Errorf("reading --workflow flag: %w", err)
+		}
+		workflow = workflowFlag
+		cfg.saveWorkflow = true
+	}
+	cfg.workflow = config.ResolveWorkflowName(workflow)
+
+	if cmd.Flags().Changed("require-trace") {
+		requireTrace, err := cmd.Flags().GetBool("require-trace")
+		if err != nil {
+			return nil, fmt.Errorf("reading --require-trace flag: %w", err)
+		}
+		cfg.requireTrace = requireTrace
+		cfg.saveRequireTrace = true
+	}
+
+	return cfg, nil
+}
+
+// save persists the values the user passed to .chainloop.yml so the trace
+// hooks target the same organization, project and workflow on every push.
+func (c *traceInitConfig) save(repoRoot string) error {
+	if c.saveProject {
+		if err := config.SaveProjectToYML(repoRoot, c.project); err != nil {
+			return err
+		}
+		logger.Info().Str("project", c.project).Msg("project name saved to .chainloop.yml")
+	}
+
+	if c.saveOrganization {
+		if err := config.SaveOrganizationToYML(repoRoot, c.organization); err != nil {
+			return err
+		}
+		logger.Info().Str("organization", c.organization).Msg("organization saved to .chainloop.yml")
+	}
+
+	if c.saveWorkflow {
+		if err := config.SaveWorkflowToYML(repoRoot, c.workflow); err != nil {
+			return err
+		}
+		logger.Info().Str("workflow", c.workflow).Msg("workflow saved to .chainloop.yml")
+	}
+
+	if c.saveRequireTrace {
+		if err := config.SaveRequireTraceToYML(repoRoot, c.requireTrace); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // selectedTraceProviders resolves the provider names to install based on the

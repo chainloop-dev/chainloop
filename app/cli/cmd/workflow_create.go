@@ -59,7 +59,7 @@ func newWorkflowCreateCmd() *cobra.Command {
 				}
 			}
 
-			wf, err := action.NewWorkflowCreate(ActionOpts).Run(opts)
+			wf, err := action.NewWorkflowCreate(ActionOpts).Run(cmd.Context(), opts)
 			if err != nil {
 				if s, ok := status.FromError(err); ok {
 					if s.Code() == codes.AlreadyExists {

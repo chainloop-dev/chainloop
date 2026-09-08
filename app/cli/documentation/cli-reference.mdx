@@ -3306,16 +3306,13 @@ Synopsis
 Initialize git hooks that automatically trace AI coding sessions and
 create Chainloop attestations when you push.
 
-This installs the managed git hooks plus agent-specific hooks for the
-selected providers. Pass --claude, --cursor, and/or --opencode to pick
-providers; when none is set, Claude Code is used as the default.
+It installs the managed git hooks plus the hooks of the selected agent
+providers (Claude Code when none is given), and creates the Chainloop workflow
+the attestations target. Nothing is written to the repository until that
+workflow exists, so you need to be logged in.
 
-Pass --org to pin the Chainloop organization trace attestations target; the
-value is saved to .chainloop.yml and overrides the CLI default on every push.
-
-Pass --workflow to override the workflow name used when initializing trace
-attestations. The value is saved to .chainloop.yml and defaults to
-"ai-coding-session" when unset.
+The organization, project, workflow and require-trace values are saved to
+.chainloop.yml, and every push reads them from there.
 
 ```
 chainloop trace init [flags]
@@ -3325,6 +3322,7 @@ Options
 
 ```
 --claude            install Claude Code hooks (default when no provider flag is set)
+--contract string   workflow contract to attach when creating the workflow; it must already exist (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
 -h, --help              help for init
 --opencode          install opencode hooks
@@ -3366,6 +3364,10 @@ and the optional --version flag. It does not read from or write to
 .chainloop.yml, and removes every hook and local trace artifact when the
 wrapped command exits, so a session never leaks setup into the next one.
 
+The workflow is created before the command runs. That part is best-effort: the
+session runs either way and the attestation creates the workflow if this did
+not, except with --contract, which trace run cannot honor later.
+
 ```
 chainloop trace run -- <command> [args...] [flags]
 ```
@@ -3374,6 +3376,7 @@ Options
 
 ```
 --claude            install Claude Code hooks (default when no provider flag is set)
+--contract string   workflow contract to attach when creating the workflow; it must already exist (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
 -h, --help              help for run
 --opencode          install opencode hooks
