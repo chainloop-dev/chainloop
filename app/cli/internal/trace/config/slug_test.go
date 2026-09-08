@@ -24,6 +24,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
+// Fixtures the table cases share.
+const (
+	validName = "my-project"
+	// errLowercase is the fragment the DNS-1123 message uses for a name whose
+	// characters or edges are wrong, as opposed to its length.
+	errLowercase = "lowercase"
+)
+
 func TestSlugifyDNS1123(t *testing.T) {
 	testCases := []struct {
 		name  string
@@ -31,7 +39,7 @@ func TestSlugifyDNS1123(t *testing.T) {
 		want  string
 	}{
 		{name: "empty input", input: "", want: ""},
-		{name: "an already valid name is unchanged", input: "my-project", want: "my-project"},
+		{name: "an already valid name is unchanged", input: validName, want: validName},
 		{name: "capitals are lowercased", input: "MyProject", want: "myproject"},
 		{name: "spaces become dashes", input: "My Cool Project", want: "my-cool-project"},
 		{name: "runs of separators collapse into one dash", input: "  --Foo_Bar!! ", want: "foo-bar"},
@@ -80,14 +88,14 @@ func TestValidateDNS1123Label(t *testing.T) {
 		input   string
 		wantErr string
 	}{
-		{name: "a valid name passes", input: "my-project"},
+		{name: "a valid name passes", input: validName},
 		{name: "a single character is valid", input: "a"},
 		{name: "63 characters is valid", input: strings.Repeat("a", 63)},
 		{name: "empty is rejected", input: "", wantErr: "cannot be empty"},
-		{name: "capitals are rejected", input: "MyProject", wantErr: "lowercase"},
-		{name: "spaces are rejected", input: "my project", wantErr: "lowercase"},
-		{name: "a leading dash is rejected", input: "-my-project", wantErr: "lowercase"},
-		{name: "a trailing dash is rejected", input: "my-project-", wantErr: "lowercase"},
+		{name: "capitals are rejected", input: "MyProject", wantErr: errLowercase},
+		{name: "spaces are rejected", input: "my project", wantErr: errLowercase},
+		{name: "a leading dash is rejected", input: "-my-project", wantErr: errLowercase},
+		{name: "a trailing dash is rejected", input: "my-project-", wantErr: errLowercase},
 		{name: "64 characters is rejected", input: strings.Repeat("a", 64), wantErr: "63"},
 	}
 

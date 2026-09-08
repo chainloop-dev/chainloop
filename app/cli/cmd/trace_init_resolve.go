@@ -53,47 +53,89 @@ func resolveTraceIdentity(ctx context.Context, cfg *traceInitConfig, repoRoot st
 	// Authenticate before asking anything: the pickers are populated from the
 	// control plane, so an unauthenticated user should see the login error
 	// rather than answer questions that lead to one.
-	executor, err := openTraceExecutor(ctx, cfg.organization)
+	//
+	// The connection starts unpinned. A .chainloop.yml pinning an organization
+	// the user has since left would otherwise fail this check before they get
+	// the chance to pick another one, and listing memberships is a user-scoped
+	// call that ignores the organization anyway.
+	executor, err := openTraceExecutor(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 
-	prompt := newHuhPrompter(os.LookupEnv)
+	// pinTo swaps the connection for one pinned to the resolved organization,
+	// so the project listing and the workflow creation that follows both
+	// target it.
+	pinTo := func(org string) (projectLister, error) {
+		if org == "" {
+			return executor, nil
+		}
 
-	// The organization step runs on this connection whatever it is pinned to:
-	// listing memberships is a user-scoped call that ignores the organization.
-	org, err := resolveInteractiveOrganization(ctx, executor, prompt,
-		cfg.organization, viper.GetString(confOptions.organization.viperKey))
-	if err != nil {
 		_ = executor.Close()
-		return nil, err
-	}
-
-	if !org.prompted {
-		logger.Info().Str("organization", org.value).Msg("using your only organization")
-	}
-
-	// Reopen pinned to the chosen organization so the project listing and the
-	// workflow creation that follows both target it.
-	if org.value != cfg.organization {
-		_ = executor.Close()
-		if executor, err = openTraceExecutor(ctx, org.value); err != nil {
+		pinned, err := openTraceExecutor(ctx, org)
+		if err != nil {
+			executor = nil
 			return nil, err
 		}
+
+		executor = pinned
+
+		return pinned, nil
 	}
 
-	cfg.organization, cfg.saveOrganization = org.value, org.save
+	if err := resolveIdentityInteractively(ctx, cfg, newHuhPrompter(os.LookupEnv),
+		viper.GetString(confOptions.organization.viperKey), filepath.Base(repoRoot), executor, pinTo); err != nil {
+		if executor != nil {
+			_ = executor.Close()
+		}
 
-	project, err := resolveInteractiveProject(ctx, executor, prompt,
-		cfg.project, filepath.Base(repoRoot))
-	if err != nil {
-		_ = executor.Close()
 		return nil, err
+	}
+
+	return executor, nil
+}
+
+// resolveIdentityInteractively asks for the settings the flags left open and
+// records them on cfg. pinTo is called once the organization is settled, to
+// repin the connection the project listing runs on.
+//
+// A value the user passed as a flag is already settled: it skips its question
+// and keeps the value and the save behavior resolveTraceInitConfig gave it,
+// which is what the save flags mean at this point.
+func resolveIdentityInteractively(ctx context.Context, cfg *traceInitConfig, p prompter,
+	currentOrg, repoDir string, orgs orgLister, pinTo func(org string) (projectLister, error)) error {
+	askOrg, askProject := !cfg.saveOrganization, !cfg.saveProject
+
+	if askOrg {
+		org, err := resolveInteractiveOrganization(ctx, orgs, p, cfg.organization, currentOrg)
+		if err != nil {
+			return err
+		}
+
+		if !org.prompted {
+			logger.Info().Str("organization", org.value).Msg("using your only organization")
+		}
+
+		cfg.organization, cfg.saveOrganization = org.value, org.save
+	}
+
+	projects, err := pinTo(cfg.organization)
+	if err != nil {
+		return err
+	}
+
+	if !askProject {
+		return nil
+	}
+
+	project, err := resolveInteractiveProject(ctx, projects, p, cfg.project, repoDir)
+	if err != nil {
+		return err
 	}
 
 	cfg.project, cfg.saveProject = project.value, project.save
 
-	return executor, nil
+	return nil
 }
 
 // openTraceExecutor dials the control plane pinned to orgName, an empty name

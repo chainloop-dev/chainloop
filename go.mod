@@ -106,6 +106,7 @@ require (
 require github.com/vektah/gqlparser/v2 v2.5.36
 
 require (
+	charm.land/huh/v2 v2.0.3
 	github.com/XSAM/otelsql v0.43.0
 	github.com/betterleaks/betterleaks v1.8.1
 	github.com/go-git/go-billy/v6 v6.0.0-alpha.2
@@ -121,7 +122,6 @@ require (
 	cel.dev/expr v0.25.2 // indirect
 	charm.land/bubbles/v2 v2.0.0 // indirect
 	charm.land/bubbletea/v2 v2.0.2 // indirect
-	charm.land/huh/v2 v2.0.3 // indirect
 	charm.land/lipgloss/v2 v2.0.3 // indirect
 	cloud.google.com/go/auth v0.23.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
