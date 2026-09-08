@@ -63,6 +63,10 @@ type WorkflowRunAttestationItem struct {
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 	// Policy evaluation status
 	PolicyEvaluationStatus *PolicyEvaluationStatus `json:"policy_evaluation_status,omitempty"`
+	// Set when the evaluations were not inlined above and must be fetched from
+	// the CAS backend instead. PolicyEvaluations is empty in that case, while
+	// PolicyEvaluationStatus stays complete.
+	PolicyEvaluationsRef *PolicyEvaluationsRef `json:"policy_evaluations_ref,omitempty"`
 	// URL to view the attestation in the UI
 	AttestationViewURL string `json:"attestation_view_url"`
 }
@@ -73,6 +77,15 @@ type PolicyEvaluationStatus struct {
 	Blocked            bool   `json:"blocked"`
 	HasViolations      bool   `json:"has_violations"`
 	HasGatedViolations bool   `json:"has_gated_violations"`
+	// Canonical, server-computed status and counters. Status is empty for
+	// runs that predate the server materializing the summary.
+	Status     string `json:"status,omitempty"`
+	Total      int    `json:"total"`
+	Passed     int    `json:"passed"`
+	Skipped    int    `json:"skipped"`
+	Violated   int    `json:"violated"`
+	Suppressed int    `json:"suppressed"`
+	HasGates   bool   `json:"has_gates"`
 }
 
 type Material struct {
@@ -96,6 +109,27 @@ type EnvVar struct {
 type Annotation struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+// PolicyEvaluationsRefReason explains why the evaluations were not included
+// in the response.
+type PolicyEvaluationsRefReason string
+
+const (
+	// The bundle is larger than the server is willing to inline
+	PolicyEvaluationsRefReasonTooLarge PolicyEvaluationsRefReason = "TOO_LARGE"
+	// The bundle could not be resolved from the CAS backend
+	PolicyEvaluationsRefReasonUnavailable PolicyEvaluationsRefReason = "UNAVAILABLE"
+)
+
+// PolicyEvaluationsRef points at a policy-evaluation bundle stored in a CAS
+// backend, returned in place of the evaluations themselves.
+type PolicyEvaluationsRef struct {
+	Digest string `json:"digest"`
+	// Size of the bundle in bytes, zero when it could not be determined
+	SizeBytes int64                      `json:"size_bytes,omitempty"`
+	MediaType string                     `json:"media_type,omitempty"`
+	Reason    PolicyEvaluationsRefReason `json:"reason"`
 }
 
 type PolicyEvaluation struct {
@@ -237,6 +271,14 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 	}
 
 	policyEvaluationStatus := att.GetPolicyEvaluationStatus()
+	summary := policyEvaluationStatus.GetSummary()
+
+	// Left empty for runs that predate the server materializing the summary,
+	// so consumers can tell "no policies" apart from "not reported".
+	var summaryStatus string
+	if summary != nil {
+		summaryStatus = summary.GetStatus().String()
+	}
 
 	var attestationViewURL string
 	baseUIDashboardURL := fetchUIDashboardURL(ctx, action.cfg.CPConnection)
@@ -259,8 +301,16 @@ func (action *WorkflowRunDescribe) Run(ctx context.Context, opts *WorkflowRunDes
 			Blocked:            policyEvaluationStatus.Blocked,
 			HasViolations:      policyEvaluationStatus.HasViolations,
 			HasGatedViolations: policyEvaluationStatus.HasGatedViolations,
+			Status:             summaryStatus,
+			Total:              int(summary.GetTotal()),
+			Passed:             int(summary.GetPassed()),
+			Skipped:            int(summary.GetSkipped()),
+			Violated:           int(summary.GetViolated()),
+			Suppressed:         int(summary.GetSuppressed()),
+			HasGates:           summary.GetHasGates(),
 		},
-		AttestationViewURL: attestationViewURL,
+		PolicyEvaluationsRef: pbPolicyEvaluationsRefToAction(att.GetPolicyEvaluationsRef()),
+		AttestationViewURL:   attestationViewURL,
 	}
 
 	return item, nil
@@ -287,6 +337,28 @@ func trustedRootPbToVerifier(resp *pb.GetTrustedRootResponse) (*verifier.Trusted
 		}
 	}
 	return tr, nil
+}
+
+// pbPolicyEvaluationsRefToAction maps the reference the server returns when it
+// declines to inline the evaluations. An unspecified reason is treated as
+// unavailable, which is the more conservative rendering: it does not promise
+// the caller that a download would succeed.
+func pbPolicyEvaluationsRefToAction(in *pb.PolicyEvaluationsRef) *PolicyEvaluationsRef {
+	if in == nil {
+		return nil
+	}
+
+	reason := PolicyEvaluationsRefReasonUnavailable
+	if in.GetReason() == pb.PolicyEvaluationsRef_REASON_TOO_LARGE {
+		reason = PolicyEvaluationsRefReasonTooLarge
+	}
+
+	return &PolicyEvaluationsRef{
+		Digest:    in.GetDigest(),
+		SizeBytes: in.GetSizeBytes(),
+		MediaType: in.GetMediaType(),
+		Reason:    reason,
+	}
 }
 
 func policyEvaluationPBToAction(in *pb.PolicyEvaluation) *PolicyEvaluation {

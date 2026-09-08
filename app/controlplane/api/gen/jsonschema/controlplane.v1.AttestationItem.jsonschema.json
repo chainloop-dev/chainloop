@@ -25,6 +25,10 @@
         "type": "string"
       },
       "type": "object"
+    },
+    "^(policy_evaluations_ref)$": {
+      "$ref": "controlplane.v1.PolicyEvaluationsRef.jsonschema.json",
+      "description": "Reference to the policy-evaluation bundle in the CAS backend. Populated\n only when the evaluations are NOT inlined in policy_evaluations, either\n because the bundle is larger than the server inlines or because it could\n not be resolved. Fetch the bundle by digest to inspect the violations.\n Counters and status in policy_evaluation_status remain complete either way."
     }
   },
   "properties": {
@@ -75,6 +79,10 @@
         "type": "string"
       },
       "type": "object"
+    },
+    "policyEvaluationsRef": {
+      "$ref": "controlplane.v1.PolicyEvaluationsRef.jsonschema.json",
+      "description": "Reference to the policy-evaluation bundle in the CAS backend. Populated\n only when the evaluations are NOT inlined in policy_evaluations, either\n because the bundle is larger than the server inlines or because it could\n not be resolved. Fetch the bundle by digest to inspect the violations.\n Counters and status in policy_evaluation_status remain complete either way."
     }
   },
   "title": "Attestation Item",

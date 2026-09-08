@@ -240,6 +240,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		CASClient:          casClientUseCase,
 		CASMappingUC:       casMappingUseCase,
 		PolicyEvalCache:    policyevalbundleCache,
+		BootstrapConfig:    bootstrap,
 		Opts:               v5,
 	}
 	workflowRunService := service.NewWorkflowRunService(newWorkflowRunServiceOpts)

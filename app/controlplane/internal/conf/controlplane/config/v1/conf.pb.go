@@ -328,8 +328,15 @@ type Attestations struct {
 	// when the workflow run's CAS backend is inline, since inline backends
 	// do not store attestation bundles externally.
 	SkipDbStorage bool `protobuf:"varint,1,opt,name=skip_db_storage,json=skipDbStorage,proto3" json:"skip_db_storage,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Maximum size in bytes of a policy-evaluation bundle that the workflow-run
+	// View API downloads from CAS and inlines in its response. Bundles above
+	// this size are returned as a reference for the caller to fetch directly,
+	// which keeps a single attestation with a very large number of violations
+	// from exhausting the control plane's memory. Values <= 0 select the
+	// built-in default.
+	PolicyEvaluationsMaxInlineBytes int64 `protobuf:"varint,2,opt,name=policy_evaluations_max_inline_bytes,json=policyEvaluationsMaxInlineBytes,proto3" json:"policy_evaluations_max_inline_bytes,omitempty"`
+	unknownFields                   protoimpl.UnknownFields
+	sizeCache                       protoimpl.SizeCache
 }
 
 func (x *Attestations) Reset() {
@@ -367,6 +374,13 @@ func (x *Attestations) GetSkipDbStorage() bool {
 		return x.SkipDbStorage
 	}
 	return false
+}
+
+func (x *Attestations) GetPolicyEvaluationsMaxInlineBytes() int64 {
+	if x != nil {
+		return x.PolicyEvaluationsMaxInlineBytes
+	}
+	return 0
 }
 
 type OperationAuthorizationProvider struct {
@@ -1845,9 +1859,10 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
 	"\x0eauthenticationJ\x04\b\b\x10\tR\x15referrer_shared_index\"J\n" +
 	"\x14PluginsNetworkPolicy\x122\n" +
-	"\x15block_private_targets\x18\x01 \x01(\bR\x13blockPrivateTargets\"6\n" +
+	"\x15block_private_targets\x18\x01 \x01(\bR\x13blockPrivateTargets\"\x84\x01\n" +
 	"\fAttestations\x12&\n" +
-	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\"v\n" +
+	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\x12L\n" +
+	"#policy_evaluations_max_inline_bytes\x18\x02 \x01(\x03R\x1fpolicyEvaluationsMaxInlineBytes\"v\n" +
 	"\x1eOperationAuthorizationProvider\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1e\n" +

@@ -7,16 +7,12 @@ require-template-schema-exists: true
 template: testify
 template-schema: "{{.Template}}.schema.json"
 packages:
-  github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz:
+  github.com/chainloop-dev/chainloop/pkg/casclient:
     config:
       dir: "{{.InterfaceDir}}/mocks"
       filename: "{{.InterfaceName}}.go"
       pkgname: mocks
       structname: "{{.InterfaceName}}"
     interfaces:
-      APITokenRepo:
-      CASBackendRepo:
-      CASClient:
-      CASMappingRepo:
-      OrganizationRepo:
-      WorkflowRunRepo:
+      Downloader:
+      DownloaderUploader:

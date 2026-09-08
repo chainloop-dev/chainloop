@@ -51,6 +51,10 @@ type CASUploader interface {
 
 type CASDownloader interface {
 	Download(ctx context.Context, backendType, secretID string, orgID uuid.UUID, w io.Writer, digest string) error
+	// Describe reports the metadata of a stored resource, including its size in
+	// bytes, without transferring its content. Callers use it to decide whether
+	// downloading is worthwhile before paying for the transfer.
+	Describe(ctx context.Context, backendType, secretID string, orgID uuid.UUID, digest string) (*casclient.ResourceInfo, error)
 }
 
 type CASClient interface {
@@ -147,6 +151,25 @@ func (uc *CASClientUseCase) Download(ctx context.Context, backendType, secretID 
 	uc.logger.Infow("msg", "download finalized", "digest", digest)
 
 	return nil
+}
+
+func (uc *CASClientUseCase) Describe(ctx context.Context, backendType, secretID string, orgID uuid.UUID, digest string) (*casclient.ResourceInfo, error) {
+	ctx, span := otelx.Start(ctx, casClientTracer, "CASClientUseCase.Describe")
+	defer span.End()
+
+	// SourceInternal flags this as the control plane's own traffic so the CAS doesn't emit audit events for it
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Downloader, OrgID: orgID, SourceInternal: true})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create cas client: %w", err)
+	}
+	defer closeFn()
+
+	info, err := client.Describe(ctx, digest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe content: %w", err)
+	}
+
+	return info, nil
 }
 
 // create a client with a temporary set of credentials for a specific operation

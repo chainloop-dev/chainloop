@@ -647,3 +647,87 @@ func TestValidateSecurityContextL0Class(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateSecurityContextTraceSessions covers the trace_sessions array added
+// to the fix commit (fingerprint) and to each introducing commit (commit_ref):
+// the valid fixture already carries one on both, and the bounds (maxItems,
+// per-item minLength/maxLength) reject a pathological or malformed trailer.
+func TestValidateSecurityContextTraceSessions(t *testing.T) {
+	loadPayload := func(t *testing.T) map[string]any {
+		t.Helper()
+		f, err := os.ReadFile("./testdata/ai_security_context_valid.json")
+		require.NoError(t, err)
+
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(f, &payload))
+		return payload
+	}
+
+	// firstFingerprint returns fingerprints[0] so a case can mutate its
+	// trace_sessions (the fix commit) or its introduced_by[0] (an origin commit).
+	firstFingerprint := func(t *testing.T, payload map[string]any) map[string]any {
+		t.Helper()
+		fps, ok := payload["fingerprints"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, fps)
+		fp, ok := fps[0].(map[string]any)
+		require.True(t, ok)
+		return fp
+	}
+
+	firstIntroducedBy := func(t *testing.T, fp map[string]any) map[string]any {
+		t.Helper()
+		origins, ok := fp["introduced_by"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, origins)
+		origin, ok := origins[0].(map[string]any)
+		require.True(t, ok)
+		return origin
+	}
+
+	t.Run("the fixture carries trace_sessions on both commit roles", func(t *testing.T) {
+		payload := loadPayload(t)
+		fp := firstFingerprint(t, payload)
+		require.NotEmpty(t, fp["trace_sessions"], "fix commit should carry trace_sessions")
+		require.NotEmpty(t, firstIntroducedBy(t, fp)["trace_sessions"], "introducing commit should carry trace_sessions")
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("fix commit accepts several session ids", func(t *testing.T) {
+		payload := loadPayload(t)
+		firstFingerprint(t, payload)["trace_sessions"] = []any{
+			"8b012929-ba7f-4986-815c-2fbe692a9a98",
+			"an-opaque-non-uuid-session-id",
+		}
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	overflow := make([]any, 65)
+	for i := range overflow {
+		overflow[i] = fmt.Sprintf("session-%02d", i)
+	}
+
+	rejected := []struct {
+		name  string
+		value any
+	}{
+		{name: "more than maxItems session ids", value: overflow},
+		{name: "an empty-string session id", value: []any{""}},
+		{name: "a session id longer than maxLength", value: []any{strings.Repeat("a", 257)}},
+		{name: "a non-array trace_sessions", value: "not-an-array"},
+	}
+
+	for _, tc := range rejected {
+		t.Run("fix commit rejects "+tc.name, func(t *testing.T) {
+			payload := loadPayload(t)
+			firstFingerprint(t, payload)["trace_sessions"] = tc.value
+			require.Error(t, schemavalidators.ValidateSecurityContext(payload, ""))
+		})
+
+		t.Run("introducing commit rejects "+tc.name, func(t *testing.T) {
+			payload := loadPayload(t)
+			firstIntroducedBy(t, firstFingerprint(t, payload))["trace_sessions"] = tc.value
+			require.Error(t, schemavalidators.ValidateSecurityContext(payload, ""))
+		})
+	}
+}
