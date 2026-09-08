@@ -52,19 +52,33 @@ type recordedPrompt struct {
 	title        string
 	options      []string
 	defaultValue string
+	// defaults is the preselected set for a multi-select.
+	defaults []string
 }
 
 // fakePrompter answers with scripted values. Input runs the real validator
 // first, the way a terminal prompt would, so validation is covered through the
 // same seam the huh implementation uses.
 type fakePrompter struct {
-	selectAnswer string
-	selectErr    error
-	inputAnswer  string
-	inputErr     error
+	selectAnswer      string
+	selectErr         error
+	multiSelectAnswer []string
+	multiSelectErr    error
+	inputAnswer       string
+	inputErr          error
 
-	selects []recordedPrompt
-	inputs  []recordedPrompt
+	selects      []recordedPrompt
+	multiSelects []recordedPrompt
+	inputs       []recordedPrompt
+}
+
+func (f *fakePrompter) MultiSelect(title string, options, defaults []string) ([]string, error) {
+	f.multiSelects = append(f.multiSelects, recordedPrompt{title: title, options: options, defaults: defaults})
+	if f.multiSelectErr != nil {
+		return nil, f.multiSelectErr
+	}
+
+	return f.multiSelectAnswer, nil
 }
 
 func (f *fakePrompter) Select(title string, options []string, defaultValue string) (string, error) {

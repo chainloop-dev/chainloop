@@ -18,13 +18,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -55,7 +53,9 @@ workflow exists, so you need to be logged in.
 On a terminal it asks which organization and project to use, offering what
 .chainloop.yml already holds so pressing Enter keeps it. A new project can be
 named freely; the name is normalized to the lowercase, dash-separated form
-Chainloop stores. Passing --org or --project skips the matching question.
+Chainloop stores. It then asks which agents to trace, with Claude Code
+ticked; use space to tick more. Passing --org, --project or a provider flag
+(--claude, --cursor, --opencode) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -82,6 +82,21 @@ The organization, project, workflow and require-trace values are saved to
 				return err
 			}
 			defer func() { _ = executor.Close() }()
+
+			// Ask which agents to trace before anything is created or written,
+			// so every question is answered up front and an abort leaves the
+			// repository untouched.
+			selected, err := resolveTraceProviders(newHuhPrompter(os.LookupEnv),
+				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag},
+				traceInitCanPrompt())
+			if err != nil {
+				return err
+			}
+
+			selectedProviders := providers.ByNames(selected)
+			if len(selectedProviders) == 0 {
+				return fmt.Errorf("no trace providers selected")
+			}
 
 			if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
 				return err
@@ -113,17 +128,11 @@ The organization, project, workflow and require-trace values are saved to
 				return fmt.Errorf("mark trace initialized: %w", err)
 			}
 
-			// Resolve which providers to install. Pre-push will infer the
-			// owning provider per-session from the recorded SessionRecord,
-			// so the list isn't persisted anywhere — only the agent-side
+			// Install the agent-side hooks for the providers resolved above.
+			// Pre-push infers the owning provider per-session from the recorded
+			// SessionRecord, so the list isn't persisted anywhere — only these
 			// hook config files (.claude/settings.json, .cursor/hooks.json)
 			// determine which providers can register sessions.
-			selected := selectedTraceProviders(claudeFlag, cursorFlag, opencodeFlag)
-			selectedProviders := providers.ByNames(selected)
-			if len(selectedProviders) == 0 {
-				return fmt.Errorf("no trace providers selected")
-			}
-
 			for _, p := range selectedProviders {
 				if err := p.InstallHooks(repoRoot); err != nil {
 					logger.Warn().Err(err).Str("provider", p.Name()).Msg("could not install agent hooks")
@@ -280,26 +289,4 @@ func (c *traceInitConfig) save(repoRoot string) error {
 	}
 
 	return nil
-}
-
-// selectedTraceProviders resolves the provider names to install based on the
-// --claude, --cursor, and --opencode flags. When none is set, Claude Code is
-// used as the default so existing users get the same behavior.
-func selectedTraceProviders(claudeFlag, cursorFlag, opencodeFlag bool) []string {
-	if !claudeFlag && !cursorFlag && !opencodeFlag {
-		return []string{providers.DefaultProvider}
-	}
-
-	var out []string
-	if claudeFlag {
-		out = append(out, claude.Name)
-	}
-	if cursorFlag {
-		out = append(out, cursor.Name)
-	}
-	if opencodeFlag {
-		out = append(out, opencode.Name)
-	}
-
-	return out
 }

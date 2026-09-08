@@ -24,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 
 	"github.com/spf13/viper"
-	"golang.org/x/term"
 )
 
 // resolveTraceIdentity settles the organization and project that were not fixed
@@ -39,8 +38,7 @@ import (
 func resolveTraceIdentity(ctx context.Context, cfg *traceInitConfig, repoRoot string) (*action.AttestationExecutor, error) {
 	// An API token is bound to its own organization server-side, so there is
 	// nothing to choose and no membership list to read.
-	interactive := authTokenIsUser && isInteractive(os.LookupEnv,
-		term.IsTerminal(int(os.Stdin.Fd())), term.IsTerminal(int(os.Stderr.Fd())))
+	interactive := authTokenIsUser && traceInitCanPrompt()
 
 	if !interactive {
 		if cfg.project == "" {

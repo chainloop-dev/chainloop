@@ -20,10 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+
+	"golang.org/x/term"
 )
 
 const (
@@ -74,6 +77,9 @@ type projectLister interface {
 // table-tested with a scripted fake.
 type prompter interface {
 	Select(title string, options []string, defaultValue string) (string, error)
+	// MultiSelect asks for zero or more of options, starting with defaults
+	// ticked. Implementations refuse an empty submission.
+	MultiSelect(title string, options, defaults []string) ([]string, error)
 	Input(title, defaultValue string, validate func(string) error) (string, error)
 }
 
@@ -87,6 +93,13 @@ type resolvedValue struct {
 	// prompted is false when the value was settled without asking, so the caller
 	// can report what was picked on the user's behalf.
 	prompted bool
+}
+
+// traceInitCanPrompt reports whether `trace init` has a user to ask, wiring
+// isInteractive to the real environment and terminals.
+func traceInitCanPrompt() bool {
+	return isInteractive(os.LookupEnv,
+		term.IsTerminal(int(os.Stdin.Fd())), term.IsTerminal(int(os.Stderr.Fd())))
 }
 
 // isInteractive reports whether the session can show a prompt: both streams the

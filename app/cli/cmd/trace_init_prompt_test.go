@@ -52,6 +52,17 @@ func TestHuhPrompterInput(t *testing.T) {
 	assert.Contains(t, out.String(), "Project name")
 }
 
+func TestHuhPrompterMultiSelect(t *testing.T) {
+	// Accessible mode toggles an option by its number and finishes on 0, so
+	// this ticks the second option on top of the preselected first one.
+	p, out := accessiblePrompter("2\n0\n")
+
+	got, err := p.MultiSelect("Pick agents", []string{"claude-code", "cursor", "opencode"}, []string{"claude-code"})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"claude-code", "cursor"}, got)
+	assert.Contains(t, out.String(), "Pick agents")
+}
+
 func TestNewHuhPrompterAccessibility(t *testing.T) {
 	testCases := []struct {
 		name string

@@ -60,14 +60,42 @@ func newHuhPrompter(lookupEnv func(string) (string, bool)) *huhPrompter {
 func (h *huhPrompter) Select(title string, options []string, defaultValue string) (string, error) {
 	value := defaultValue
 
+	// Filtering() is deliberately not set: it does not enable filtering, it puts
+	// the field straight into filter-input mode, which replaces the title with an
+	// empty "/" box and sends the arrow keys to the filter. Pressing "/" opens it
+	// on demand, which is what the help line offers.
 	field := huh.NewSelect[string]().
 		Title(title).
 		Options(huh.NewOptions(options...)...).
-		Filtering(true).
 		Value(&value)
 
 	if err := h.run(field); err != nil {
 		return "", err
+	}
+
+	return value, nil
+}
+
+// MultiSelect asks the user to tick any number of options, with defaults
+// already ticked. An empty submission is refused at the prompt, so the caller
+// never has to send the user back through init to fix it.
+func (h *huhPrompter) MultiSelect(title string, options, defaults []string) ([]string, error) {
+	value := append([]string(nil), defaults...)
+
+	field := huh.NewMultiSelect[string]().
+		Title(title).
+		Options(huh.NewOptions(options...)...).
+		Value(&value).
+		Validate(func(selected []string) error {
+			if len(selected) == 0 {
+				return errors.New("pick at least one, with space")
+			}
+
+			return nil
+		})
+
+	if err := h.run(field); err != nil {
+		return nil, err
 	}
 
 	return value, nil
