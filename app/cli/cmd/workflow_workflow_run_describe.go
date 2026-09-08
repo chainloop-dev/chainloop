@@ -515,10 +515,11 @@ func encodeAttestationOutput(run *action.WorkflowRunItemFull, writer io.Writer) 
 			if err != nil {
 				return fmt.Errorf("unmarshaling attestation: %w", err)
 			}
+
 			return output.EncodeProtoJSON(&bundle)
-		} else {
-			return output.EncodeJSON(run.Attestation.Envelope)
 		}
+
+		return output.EncodeJSON(run.Attestation.Envelope)
 	case formatPayloadPAE:
 		return encodePAE(run, writer)
 	default:
