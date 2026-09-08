@@ -489,6 +489,24 @@ func TestResolveInteractiveProject(t *testing.T) {
 			wantSave:         true,
 			wantInputDefault: "my-repo",
 		},
+		{
+			// Keeping a read-only project out of the list is not enough: typing
+			// its name reaches the same dead end.
+			name:        "typing the name of a project the caller can only view is refused",
+			readOnly:    []string{"payments"},
+			repoDir:     repoDirMyRepo,
+			inputAnswer: "Payments",
+			wantErr:     "you can only view the project",
+		},
+		{
+			name:         "typing a read-only name is refused from the create entry too",
+			projects:     []string{projectAPI},
+			readOnly:     []string{"payments"},
+			repoDir:      repoDirMyRepo,
+			selectAnswer: createNewProjectOption,
+			inputAnswer:  "payments",
+			wantErr:      "you can only view the project",
+		},
 	}
 
 	for _, tc := range testCases {

@@ -46,7 +46,7 @@ func TestHuhPrompterSelect(t *testing.T) {
 func TestHuhPrompterInput(t *testing.T) {
 	p, out := accessiblePrompter("my-project\n")
 
-	got, err := p.Input("Project name", "default-name", validateNewProjectName)
+	got, err := p.Input("Project name", "default-name", newProjectValidator(nil))
 	require.NoError(t, err)
 	assert.Equal(t, "my-project", got)
 	assert.Contains(t, out.String(), "Project name")

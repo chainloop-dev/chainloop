@@ -202,21 +202,23 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 	}
 
 	// Only the projects the caller can add a workflow to are worth offering;
-	// picking any other one would fail at creation time.
+	// picking any other one would fail at creation time. The rest are still
+	// worth knowing about, to refuse one that gets typed in by name.
 	writable := make([]string, 0, len(visible))
-	// pinnedReadOnly means .chainloop.yml points at a project the caller can see
-	// but not write to, which is why it is missing from the offer.
-	var pinnedReadOnly bool
+	readOnly := make([]string, 0, len(visible))
 
 	for _, project := range visible {
-		switch {
-		case project.CanCreateWorkflow:
+		if project.CanCreateWorkflow {
 			writable = append(writable, project.Name)
-		case project.Name == fromYML:
-			pinnedReadOnly = true
+			continue
 		}
+
+		readOnly = append(readOnly, project.Name)
 	}
 
+	// pinnedReadOnly means .chainloop.yml points at a project the caller can see
+	// but not write to, which is why it is missing from the offer.
+	pinnedReadOnly := fromYML != "" && slices.Contains(readOnly, fromYML)
 	if pinnedReadOnly {
 		logger.Warn().Str("project", fromYML).
 			Msg("you cannot create a workflow in the project this repository points at, pick another one")
@@ -225,7 +227,7 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 	// Nothing to choose from, so go straight to naming one rather than showing a
 	// list holding only the pinned project.
 	if len(writable) == 0 {
-		return promptNewProject(p, seedProjectName(fromYML, pinnedReadOnly, repoDir), fromYML)
+		return promptNewProject(p, seedProjectName(fromYML, pinnedReadOnly, repoDir), fromYML, readOnly)
 	}
 
 	// A project pinned in .chainloop.yml the listing did not carry at all is
@@ -249,7 +251,7 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 
 	// They asked for a new project, so seed the name from the repository rather
 	// than from the project they are moving away from.
-	return promptNewProject(p, config.SlugifyDNS1123(repoDir), fromYML)
+	return promptNewProject(p, config.SlugifyDNS1123(repoDir), fromYML, readOnly)
 }
 
 // seedProjectName is what the new-project prompt starts from. The project
@@ -266,9 +268,10 @@ func seedProjectName(fromYML string, pinnedReadOnly bool, repoDir string) string
 
 // promptNewProject collects a free-form project name and returns it normalized
 // to the DNS-1123 label the control plane stores. A name that normalizes to one
-// of the existing projects simply resolves to that project.
-func promptNewProject(p prompter, defaultName, fromYML string) (*resolvedValue, error) {
-	answer, err := p.Input(newProjectPromptTitle, defaultName, validateNewProjectName)
+// of the existing projects simply resolves to that project, so readOnly names
+// are refused: typing one is the same dead end as picking it from the list.
+func promptNewProject(p prompter, defaultName, fromYML string, readOnly []string) (*resolvedValue, error) {
+	answer, err := p.Input(newProjectPromptTitle, defaultName, newProjectValidator(readOnly))
 	if err != nil {
 		return nil, err
 	}
@@ -278,11 +281,23 @@ func promptNewProject(p prompter, defaultName, fromYML string) (*resolvedValue, 
 	return &resolvedValue{value: name, save: name != fromYML, prompted: true}, nil
 }
 
-// validateNewProjectName checks what a free-form name normalizes to, so a name
+// newProjectValidator checks what a free-form name normalizes to, so a name
 // that cannot become a valid project is refused at the prompt instead of by the
-// control plane a moment later.
-func validateNewProjectName(answer string) error {
-	return config.ValidateDNS1123Label(config.SlugifyDNS1123(answer))
+// control plane a moment later. readOnly are the projects the caller can see but
+// not write to, refused here for the same reason they are not offered.
+func newProjectValidator(readOnly []string) func(string) error {
+	return func(answer string) error {
+		name := config.SlugifyDNS1123(answer)
+		if err := config.ValidateDNS1123Label(name); err != nil {
+			return err
+		}
+
+		if slices.Contains(readOnly, name) {
+			return fmt.Errorf("you can only view the project %q, so a workflow cannot be created in it", name)
+		}
+
+		return nil
+	}
 }
 
 // firstPresent returns the first candidate that appears in options, falling
