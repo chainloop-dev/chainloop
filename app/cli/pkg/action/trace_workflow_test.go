@@ -245,7 +245,7 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 
 				msg, matched := AuthErrorMessage(err)
 				require.True(t, matched)
-				assert.Equal(t, `authentication required, please run "chainloop auth login"`, msg)
+				assert.Equal(t, authMsgMissing, msg)
 			})
 		}
 	})

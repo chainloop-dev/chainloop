@@ -87,7 +87,7 @@ func TestAuthErrorMessage(t *testing.T) {
 			name:      "a wrapped authentication error is still matched",
 			err:       fmt.Errorf("looking up workflow %q: %w", "ai-coding-session", jwtMiddleware.ErrMissingJwtToken.GRPCStatus().Err()),
 			wantMatch: true,
-			wantMsg:   `authentication required, please run "chainloop auth login"`,
+			wantMsg:   authMsgMissing,
 		},
 		{
 			name: "a permission error is not an authentication error",
@@ -118,10 +118,10 @@ func TestAuthErrorMessage(t *testing.T) {
 // through the transport to the CLI.
 func TestAuthErrorMessageGRPCWireRoundTrip(t *testing.T) {
 	for sentinel, want := range map[*kerrors.Error]string{
-		jwtMiddleware.ErrTokenExpired:    `your authentication token has expired, please run "chainloop auth login" again`,
-		jwtMiddleware.ErrTokenInvalid:    `your authentication token is invalid, please run "chainloop auth login" again`,
-		jwtMiddleware.ErrTokenParseFail:  `failed to parse authentication token, please run "chainloop auth login" again`,
-		jwtMiddleware.ErrMissingJwtToken: `authentication required, please run "chainloop auth login"`,
+		jwtMiddleware.ErrTokenExpired:    authMsgExpired,
+		jwtMiddleware.ErrTokenInvalid:    authMsgInvalid,
+		jwtMiddleware.ErrTokenParseFail:  authMsgParseFail,
+		jwtMiddleware.ErrMissingJwtToken: authMsgMissing,
 	} {
 		t.Run(sentinel.Message, func(t *testing.T) {
 			proto := sentinel.GRPCStatus().Proto()
@@ -144,8 +144,7 @@ func TestKratosErrorsIsMasksJWTErrors(t *testing.T) {
 
 	msg, matched := AuthErrorMessage(jwtMiddleware.ErrTokenExpired.GRPCStatus().Err())
 	require.True(t, matched)
-	assert.Equal(t, `your authentication token has expired, please run "chainloop auth login" again`, msg,
-		"an expired token must not be reported as an invalid one")
+	assert.Equal(t, authMsgExpired, msg, "an expired token must not be reported as an invalid one")
 }
 
 // TestJWTSentinelMessageCanary asserts the exact Message strings of the JWT
