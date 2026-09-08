@@ -617,6 +617,14 @@ export interface AttestationItem {
   annotations: { [key: string]: string };
   policyEvaluations: { [key: string]: PolicyEvaluations };
   policyEvaluationStatus?: AttestationItem_PolicyEvaluationStatus;
+  /**
+   * Reference to the policy-evaluation bundle in the CAS backend. Populated
+   * only when the evaluations are NOT inlined in policy_evaluations, either
+   * because the bundle is larger than the server inlines or because it could
+   * not be resolved. Fetch the bundle by digest to inspect the violations.
+   * Counters and status in policy_evaluation_status remain complete either way.
+   */
+  policyEvaluationsRef?: PolicyEvaluationsRef;
 }
 
 export interface AttestationItem_AnnotationsEntry {
@@ -693,6 +701,62 @@ export interface AttestationItem_Material {
 export interface AttestationItem_Material_AnnotationsEntry {
   key: string;
   value: string;
+}
+
+/**
+ * Pointer to a policy-evaluation bundle held in a CAS backend, returned in
+ * place of the evaluations themselves.
+ */
+export interface PolicyEvaluationsRef {
+  /** Digest of the bundle as stored in CAS, in "sha256:<hex>" form */
+  digest: string;
+  /** Size of the bundle in bytes. Zero when the size could not be determined. */
+  sizeBytes: number;
+  /** Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json */
+  mediaType: string;
+  /** Why the evaluations were not inlined */
+  reason: PolicyEvaluationsRef_Reason;
+}
+
+export enum PolicyEvaluationsRef_Reason {
+  REASON_UNSPECIFIED = 0,
+  /** REASON_TOO_LARGE - The bundle exceeds the maximum size the server inlines in a response */
+  REASON_TOO_LARGE = 1,
+  /** REASON_UNAVAILABLE - The bundle could not be resolved from CAS */
+  REASON_UNAVAILABLE = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function policyEvaluationsRef_ReasonFromJSON(object: any): PolicyEvaluationsRef_Reason {
+  switch (object) {
+    case 0:
+    case "REASON_UNSPECIFIED":
+      return PolicyEvaluationsRef_Reason.REASON_UNSPECIFIED;
+    case 1:
+    case "REASON_TOO_LARGE":
+      return PolicyEvaluationsRef_Reason.REASON_TOO_LARGE;
+    case 2:
+    case "REASON_UNAVAILABLE":
+      return PolicyEvaluationsRef_Reason.REASON_UNAVAILABLE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PolicyEvaluationsRef_Reason.UNRECOGNIZED;
+  }
+}
+
+export function policyEvaluationsRef_ReasonToJSON(object: PolicyEvaluationsRef_Reason): string {
+  switch (object) {
+    case PolicyEvaluationsRef_Reason.REASON_UNSPECIFIED:
+      return "REASON_UNSPECIFIED";
+    case PolicyEvaluationsRef_Reason.REASON_TOO_LARGE:
+      return "REASON_TOO_LARGE";
+    case PolicyEvaluationsRef_Reason.REASON_UNAVAILABLE:
+      return "REASON_UNAVAILABLE";
+    case PolicyEvaluationsRef_Reason.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface PolicyEvaluations {
@@ -1805,6 +1869,7 @@ function createBaseAttestationItem(): AttestationItem {
     annotations: {},
     policyEvaluations: {},
     policyEvaluationStatus: undefined,
+    policyEvaluationsRef: undefined,
   };
 }
 
@@ -1833,6 +1898,9 @@ export const AttestationItem = {
     });
     if (message.policyEvaluationStatus !== undefined) {
       AttestationItem_PolicyEvaluationStatus.encode(message.policyEvaluationStatus, writer.uint32(74).fork()).ldelim();
+    }
+    if (message.policyEvaluationsRef !== undefined) {
+      PolicyEvaluationsRef.encode(message.policyEvaluationsRef, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -1906,6 +1974,13 @@ export const AttestationItem = {
 
           message.policyEvaluationStatus = AttestationItem_PolicyEvaluationStatus.decode(reader, reader.uint32());
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.policyEvaluationsRef = PolicyEvaluationsRef.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1940,6 +2015,9 @@ export const AttestationItem = {
         : {},
       policyEvaluationStatus: isSet(object.policyEvaluationStatus)
         ? AttestationItem_PolicyEvaluationStatus.fromJSON(object.policyEvaluationStatus)
+        : undefined,
+      policyEvaluationsRef: isSet(object.policyEvaluationsRef)
+        ? PolicyEvaluationsRef.fromJSON(object.policyEvaluationsRef)
         : undefined,
     };
   },
@@ -1976,6 +2054,9 @@ export const AttestationItem = {
     message.policyEvaluationStatus !== undefined && (obj.policyEvaluationStatus = message.policyEvaluationStatus
       ? AttestationItem_PolicyEvaluationStatus.toJSON(message.policyEvaluationStatus)
       : undefined);
+    message.policyEvaluationsRef !== undefined && (obj.policyEvaluationsRef = message.policyEvaluationsRef
+      ? PolicyEvaluationsRef.toJSON(message.policyEvaluationsRef)
+      : undefined);
     return obj;
   },
 
@@ -2011,6 +2092,9 @@ export const AttestationItem = {
       (object.policyEvaluationStatus !== undefined && object.policyEvaluationStatus !== null)
         ? AttestationItem_PolicyEvaluationStatus.fromPartial(object.policyEvaluationStatus)
         : undefined;
+    message.policyEvaluationsRef = (object.policyEvaluationsRef !== undefined && object.policyEvaluationsRef !== null)
+      ? PolicyEvaluationsRef.fromPartial(object.policyEvaluationsRef)
+      : undefined;
     return message;
   },
 };
@@ -2676,6 +2760,103 @@ export const AttestationItem_Material_AnnotationsEntry = {
     const message = createBaseAttestationItem_Material_AnnotationsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBasePolicyEvaluationsRef(): PolicyEvaluationsRef {
+  return { digest: "", sizeBytes: 0, mediaType: "", reason: 0 };
+}
+
+export const PolicyEvaluationsRef = {
+  encode(message: PolicyEvaluationsRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.digest !== "") {
+      writer.uint32(10).string(message.digest);
+    }
+    if (message.sizeBytes !== 0) {
+      writer.uint32(16).int64(message.sizeBytes);
+    }
+    if (message.mediaType !== "") {
+      writer.uint32(26).string(message.mediaType);
+    }
+    if (message.reason !== 0) {
+      writer.uint32(32).int32(message.reason);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PolicyEvaluationsRef {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePolicyEvaluationsRef();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sizeBytes = longToNumber(reader.int64() as Long);
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.mediaType = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.reason = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PolicyEvaluationsRef {
+    return {
+      digest: isSet(object.digest) ? String(object.digest) : "",
+      sizeBytes: isSet(object.sizeBytes) ? Number(object.sizeBytes) : 0,
+      mediaType: isSet(object.mediaType) ? String(object.mediaType) : "",
+      reason: isSet(object.reason) ? policyEvaluationsRef_ReasonFromJSON(object.reason) : 0,
+    };
+  },
+
+  toJSON(message: PolicyEvaluationsRef): unknown {
+    const obj: any = {};
+    message.digest !== undefined && (obj.digest = message.digest);
+    message.sizeBytes !== undefined && (obj.sizeBytes = Math.round(message.sizeBytes));
+    message.mediaType !== undefined && (obj.mediaType = message.mediaType);
+    message.reason !== undefined && (obj.reason = policyEvaluationsRef_ReasonToJSON(message.reason));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<PolicyEvaluationsRef>, I>>(base?: I): PolicyEvaluationsRef {
+    return PolicyEvaluationsRef.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<PolicyEvaluationsRef>, I>>(object: I): PolicyEvaluationsRef {
+    const message = createBasePolicyEvaluationsRef();
+    message.digest = object.digest ?? "";
+    message.sizeBytes = object.sizeBytes ?? 0;
+    message.mediaType = object.mediaType ?? "";
+    message.reason = object.reason ?? 0;
     return message;
   },
 };

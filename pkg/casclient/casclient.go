@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ type Uploader interface {
 
 type Downloader interface {
 	Download(ctx context.Context, w io.Writer, digest string) error
+	// Describe reports the metadata of a stored resource, including its size in
+	// bytes, without transferring its content
+	Describe(ctx context.Context, digest string) (*ResourceInfo, error)
 	// Whether the CAS is ready to accept downloads
 	IsReady(ctx context.Context) (bool, error)
 }
