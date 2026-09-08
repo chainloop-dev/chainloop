@@ -30,9 +30,14 @@ import (
 // identityStepsFixture wires resolveIdentityInteractively to fakes and records
 // which organization the connection was repinned to.
 type identityStepsFixture struct {
-	orgs     *fakeOrgLister
-	projects *fakeProjectLister
-	prompt   *fakePrompter
+	orgs   *fakeOrgLister
+	prompt *fakePrompter
+
+	// defaultProjects is what a pinned connection lists, unless projectsByOrg
+	// names that organization. Giving each organization its own projects is what
+	// lets a test tell which connection the project step actually ran on.
+	defaultProjects []string
+	projectsByOrg   map[string][]string
 
 	pinnedTo string
 	pinCalls int
@@ -46,14 +51,21 @@ func (f *identityStepsFixture) pinTo(org string) (projectLister, error) {
 		return nil, f.pinErr
 	}
 
-	return f.projects, nil
+	projects, ok := f.projectsByOrg[org]
+	if !ok {
+		projects = f.defaultProjects
+	}
+
+	// A fresh lister per pin, so a stale one cannot answer for the new
+	// organization without the assertions noticing.
+	return &fakeProjectLister{projects: projects}, nil
 }
 
 func newIdentityStepsFixture(orgs []*action.MembershipItem, projects []string, p *fakePrompter) *identityStepsFixture {
 	return &identityStepsFixture{
-		orgs:     &fakeOrgLister{orgs: orgs},
-		projects: &fakeProjectLister{projects: projects},
-		prompt:   p,
+		orgs:            &fakeOrgLister{orgs: orgs},
+		defaultProjects: projects,
+		prompt:          p,
 	}
 }
 
@@ -134,14 +146,22 @@ func TestResolveIdentityInteractivelyPinning(t *testing.T) {
 
 	t.Run("the project listing runs on the chosen organization", func(t *testing.T) {
 		cfg := &traceInitConfig{}
-		f := newIdentityStepsFixture(orgs, []string{projectAPI}, &fakePrompter{selectAnswer: orgGlobex})
+		f := newIdentityStepsFixture(orgs, nil, &fakePrompter{selectAnswer: orgGlobex})
+		// Each organization owns a distinct project, so the options the picker
+		// was given say which connection listed them. Without this the assertion
+		// would hold even if the project step used a stale connection.
+		f.projectsByOrg = map[string][]string{
+			orgAcme:   {"acme-only"},
+			orgGlobex: {"globex-only"},
+		}
 
 		require.NoError(t, f.run(cfg))
 		assert.Equal(t, orgGlobex, f.pinnedTo, "pinning must happen after the organization is picked")
 		assert.Equal(t, 1, f.pinCalls)
-		// The project picker offers what the repinned lister returned.
+
 		require.Len(t, f.prompt.selects, 2)
-		assert.Contains(t, f.prompt.selects[1].options, projectAPI, "the project step must use the repinned connection")
+		assert.Contains(t, f.prompt.selects[1].options, "globex-only", "the project step must list the chosen organization")
+		assert.NotContains(t, f.prompt.selects[1].options, "acme-only", "it must not list the organization left behind")
 	})
 
 	t.Run("a pinning failure stops before the project question", func(t *testing.T) {
