@@ -52,6 +52,15 @@ providers (Claude Code when none is given), and creates the Chainloop workflow
 the attestations target. Nothing is written to the repository until that
 workflow exists, so you need to be logged in.
 
+On a terminal it asks which organization and project to use, offering what
+.chainloop.yml already holds so pressing Enter keeps it. A new project can be
+named freely; the name is normalized to the lowercase, dash-separated form
+Chainloop stores. Passing --org or --project skips the matching question.
+
+Nothing is asked in CI or when the output is redirected: there --project is
+required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
+turn the questions off on a terminal too.
+
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -65,7 +74,16 @@ The organization, project, workflow and require-trace values are saved to
 				return err
 			}
 
-			if err := ensureTraceInitWorkflow(cmd.Context(), cfg, contract); err != nil {
+			// Fill in whatever the flags and .chainloop.yml did not settle,
+			// asking the user when there is one to ask. The executor it hands
+			// back is pinned to the resolved organization and reused below.
+			executor, err := resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
+			if err != nil {
+				return err
+			}
+			defer func() { _ = executor.Close() }()
+
+			if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
 				return err
 			}
 
@@ -140,19 +158,10 @@ The organization, project, workflow and require-trace values are saved to
 // the pre-push hook, the control plane creates it implicitly with an empty
 // contract and no one reads the result. Anything other than the workflow
 // already existing is fatal, so a failed init leaves nothing behind.
-func ensureTraceInitWorkflow(ctx context.Context, cfg *traceInitConfig, contractFlag string) error {
-	// If the repo pins an organization, use it so the workflow lands where the
-	// hooks will actually attest. An empty name keeps the default connection.
-	executor, err := action.NewAttestationExecutor(ActionOpts, Version, action.WithForcedOrganization(cfg.organization))
-	if err != nil {
-		return err
-	}
-	defer func() { _ = executor.Close() }()
-
-	if err := executor.CheckAuth(ctx); err != nil {
-		return err
-	}
-
+//
+// It runs on the executor resolveTraceIdentity opened, which is already pinned
+// to the resolved organization and authenticated.
+func ensureTraceInitWorkflow(ctx context.Context, executor *action.AttestationExecutor, cfg *traceInitConfig, contractFlag string) error {
 	contractName, contractRequired := config.ResolveContract(contractFlag)
 	wf, err := executor.EnsureWorkflow(ctx, action.EnsureTraceWorkflowOpts{
 		ProjectName:      cfg.project,
@@ -200,11 +209,10 @@ func resolveTraceInitConfig(cmd *cobra.Command, repoRoot, projectFlag string) (*
 		organization: config.LoadOrganizationFromYML(repoRoot),
 	}
 
+	// A project may still be missing here. resolveTraceIdentity either asks for
+	// one or, when nobody can be asked, reports that it is required.
 	if cfg.project == "" {
 		cfg.project = config.LoadProjectFromYML(repoRoot)
-	}
-	if cfg.project == "" {
-		return nil, fmt.Errorf("--project is required (or add projectName to .chainloop.yml)")
 	}
 
 	// --org is inherited from the root command, so it is only meant for this

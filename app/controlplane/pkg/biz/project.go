@@ -38,6 +38,9 @@ type ProjectsRepo interface {
 	FindProjectByOrgIDAndID(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID) (*Project, error)
 	Create(ctx context.Context, orgID uuid.UUID, name string) (*Project, error)
 	ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) ([]*Project, error)
+	// List retrieves the projects of an organization matching filterOpts, plus the
+	// total number of matches before pagination.
+	List(ctx context.Context, filterOpts *ProjectListOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Project, int, error)
 	// ListMembers retrieves a list of members in a project, optionally filtered by admin status.
 	ListMembers(ctx context.Context, orgID uuid.UUID, projectID uuid.UUID, paginationOpts *pagination.OffsetPaginationOpts) ([]*ProjectMembership, int, error)
 	// AddMemberToProject adds a user or group to a project with a specific role.
@@ -73,12 +76,26 @@ type Project struct {
 	ID uuid.UUID
 	// Name is the name of the project
 	Name string
+	// Description is the optional, human-provided description of the project
+	Description string
 	// OrgID is the organization that this project belongs to
 	OrgID uuid.UUID
 	// CreatedAt is the time when the project was created
 	CreatedAt *time.Time
 	// UpdatedAt is the time when the project was last updated
 	UpdatedAt *time.Time
+}
+
+// ProjectListOpts filters a project listing.
+type ProjectListOpts struct {
+	// OrganizationID scopes the listing to one organization. Required.
+	OrganizationID uuid.UUID
+	// Name filters by project name, case-insensitive substring match.
+	Name *string
+	// VisibleProjects are the projects the caller is allowed to see when RBAC
+	// applies. A nil slice means no restriction; an empty one means nothing is
+	// visible.
+	VisibleProjects []uuid.UUID
 }
 
 // ProjectMembership represents a membership of a user or group in a project.
@@ -231,6 +248,23 @@ func (uc *ProjectUseCase) Create(ctx context.Context, orgID, name string) (*Proj
 	}, &orgUUID)
 
 	return project, nil
+}
+
+// List returns the projects of an organization the caller is allowed to see,
+// plus the total number of matches before pagination is applied.
+func (uc *ProjectUseCase) List(ctx context.Context, filterOpts *ProjectListOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*Project, int, error) {
+	ctx, span := otelx.Start(ctx, projectTracer, "ProjectUseCase.List")
+	defer span.End()
+
+	if filterOpts == nil || filterOpts.OrganizationID == uuid.Nil {
+		return nil, 0, NewErrValidationStr("organization ID is required to list projects")
+	}
+
+	if paginationOpts == nil {
+		paginationOpts = pagination.NewDefaultOffsetPaginationOpts()
+	}
+
+	return uc.projectsRepository.List(ctx, filterOpts, paginationOpts)
 }
 
 // ListMembers lists the members of a project with pagination.

@@ -27,12 +27,44 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service ProjectService {
+  // List the projects of the current organization that the caller can see
+  rpc List(ProjectServiceListRequest) returns (ProjectServiceListResponse) {}
   // Project membership management
   rpc ListMembers(ProjectServiceListMembersRequest) returns (ProjectServiceListMembersResponse);
   rpc AddMember(ProjectServiceAddMemberRequest) returns (ProjectServiceAddMemberResponse);
   rpc RemoveMember(ProjectServiceRemoveMemberRequest) returns (ProjectServiceRemoveMemberResponse);
   rpc UpdateMemberRole(ProjectServiceUpdateMemberRoleRequest) returns (ProjectServiceUpdateMemberRoleResponse);
   rpc ListPendingInvitations(ProjectServiceListPendingInvitationsRequest) returns (ProjectServiceListPendingInvitationsResponse) {}
+}
+
+// ProjectServiceListRequest contains parameters for filtering and paginating the projects of an organization
+message ProjectServiceListRequest {
+  // Filter by project name, case-insensitive substring match
+  optional string name = 1;
+  // Pagination parameters to limit and offset results
+  OffsetPaginationRequest pagination = 2;
+}
+
+// ProjectServiceListResponse contains a paginated list of the organization's projects
+message ProjectServiceListResponse {
+  // List of projects matching the request criteria
+  repeated ProjectItem projects = 1;
+  // Pagination information for the response
+  OffsetPaginationResponse pagination = 2;
+
+  // ProjectItem represents a project of the organization
+  message ProjectItem {
+    // Unique identifier of the project
+    string id = 1;
+    // Name of the project
+    string name = 2;
+    // Description of the project
+    string description = 3;
+    // Timestamp when the project was created
+    google.protobuf.Timestamp created_at = 4;
+    // Timestamp when the project was last updated
+    google.protobuf.Timestamp updated_at = 5;
+  }
 }
 
 // ProjectServiceListMembersRequest contains the information needed to list members of a project

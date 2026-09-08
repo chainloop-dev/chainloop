@@ -3311,6 +3311,15 @@ providers (Claude Code when none is given), and creates the Chainloop workflow
 the attestations target. Nothing is written to the repository until that
 workflow exists, so you need to be logged in.
 
+On a terminal it asks which organization and project to use, offering what
+.chainloop.yml already holds so pressing Enter keeps it. A new project can be
+named freely; the name is normalized to the lowercase, dash-separated form
+Chainloop stores. Passing --org or --project skips the matching question.
+
+Nothing is asked in CI or when the output is redirected: there --project is
+required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
+turn the questions off on a terminal too.
+
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.
 

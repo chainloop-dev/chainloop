@@ -92,9 +92,14 @@ func TestResolveTraceInitConfig(t *testing.T) {
 			wantSaved:        []string{"requireTrace"},
 		},
 		{
-			name:    "a project name is required",
-			yml:     "projectVersion: v1.0.0\n",
-			wantErr: "--project is required",
+			// Resolving no longer fails on a missing project: the interactive
+			// path asks for one, and the non-interactive path reports it. See
+			// TestResolveTraceIdentityNonInteractive.
+			name:        "a missing project name is left for the identity step",
+			yml:         "projectVersion: v1.0.0\n",
+			wantProject: "",
+			// The workflow still gets its default.
+			wantWorkflow: "ai-coding-session",
 		},
 	}
 

@@ -1,0 +1,40 @@
+{
+  "$id": "controlplane.v1.ProjectServiceListResponse.ProjectItem.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectItem represents a project of the organization",
+  "patternProperties": {
+    "^(createdAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project was created"
+    },
+    "^(updatedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project was last updated"
+    }
+  },
+  "properties": {
+    "created_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project was created"
+    },
+    "description": {
+      "description": "Description of the project",
+      "type": "string"
+    },
+    "id": {
+      "description": "Unique identifier of the project",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name of the project",
+      "type": "string"
+    },
+    "updated_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json",
+      "description": "Timestamp when the project was last updated"
+    }
+  },
+  "title": "Project Item",
+  "type": "object"
+}

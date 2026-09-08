@@ -1,0 +1,21 @@
+{
+  "$id": "controlplane.v1.ProjectServiceListResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceListResponse contains a paginated list of the organization's projects",
+  "properties": {
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationResponse.schema.json",
+      "description": "Pagination information for the response"
+    },
+    "projects": {
+      "description": "List of projects matching the request criteria",
+      "items": {
+        "$ref": "controlplane.v1.ProjectServiceListResponse.ProjectItem.schema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Project Service List Response",
+  "type": "object"
+}

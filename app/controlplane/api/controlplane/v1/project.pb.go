@@ -38,6 +38,116 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ProjectServiceListRequest contains parameters for filtering and paginating the projects of an organization
+type ProjectServiceListRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Filter by project name, case-insensitive substring match
+	Name *string `protobuf:"bytes,1,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	// Pagination parameters to limit and offset results
+	Pagination    *OffsetPaginationRequest `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectServiceListRequest) Reset() {
+	*x = ProjectServiceListRequest{}
+	mi := &file_controlplane_v1_project_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectServiceListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectServiceListRequest) ProtoMessage() {}
+
+func (x *ProjectServiceListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_project_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectServiceListRequest.ProtoReflect.Descriptor instead.
+func (*ProjectServiceListRequest) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ProjectServiceListRequest) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *ProjectServiceListRequest) GetPagination() *OffsetPaginationRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+// ProjectServiceListResponse contains a paginated list of the organization's projects
+type ProjectServiceListResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// List of projects matching the request criteria
+	Projects []*ProjectServiceListResponse_ProjectItem `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
+	// Pagination information for the response
+	Pagination    *OffsetPaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectServiceListResponse) Reset() {
+	*x = ProjectServiceListResponse{}
+	mi := &file_controlplane_v1_project_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectServiceListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectServiceListResponse) ProtoMessage() {}
+
+func (x *ProjectServiceListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_project_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectServiceListResponse.ProtoReflect.Descriptor instead.
+func (*ProjectServiceListResponse) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *ProjectServiceListResponse) GetProjects() []*ProjectServiceListResponse_ProjectItem {
+	if x != nil {
+		return x.Projects
+	}
+	return nil
+}
+
+func (x *ProjectServiceListResponse) GetPagination() *OffsetPaginationResponse {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
 // ProjectServiceListMembersRequest contains the information needed to list members of a project
 type ProjectServiceListMembersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -51,7 +161,7 @@ type ProjectServiceListMembersRequest struct {
 
 func (x *ProjectServiceListMembersRequest) Reset() {
 	*x = ProjectServiceListMembersRequest{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[0]
+	mi := &file_controlplane_v1_project_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -63,7 +173,7 @@ func (x *ProjectServiceListMembersRequest) String() string {
 func (*ProjectServiceListMembersRequest) ProtoMessage() {}
 
 func (x *ProjectServiceListMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[0]
+	mi := &file_controlplane_v1_project_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -76,7 +186,7 @@ func (x *ProjectServiceListMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectServiceListMembersRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListMembersRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{0}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ProjectServiceListMembersRequest) GetProjectReference() *IdentityReference {
@@ -106,7 +216,7 @@ type ProjectServiceListMembersResponse struct {
 
 func (x *ProjectServiceListMembersResponse) Reset() {
 	*x = ProjectServiceListMembersResponse{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[1]
+	mi := &file_controlplane_v1_project_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -118,7 +228,7 @@ func (x *ProjectServiceListMembersResponse) String() string {
 func (*ProjectServiceListMembersResponse) ProtoMessage() {}
 
 func (x *ProjectServiceListMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[1]
+	mi := &file_controlplane_v1_project_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -131,7 +241,7 @@ func (x *ProjectServiceListMembersResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ProjectServiceListMembersResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListMembersResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{1}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ProjectServiceListMembersResponse) GetMembers() []*ProjectMember {
@@ -174,7 +284,7 @@ type ProjectMember struct {
 
 func (x *ProjectMember) Reset() {
 	*x = ProjectMember{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[2]
+	mi := &file_controlplane_v1_project_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -186,7 +296,7 @@ func (x *ProjectMember) String() string {
 func (*ProjectMember) ProtoMessage() {}
 
 func (x *ProjectMember) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[2]
+	mi := &file_controlplane_v1_project_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -199,7 +309,7 @@ func (x *ProjectMember) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectMember.ProtoReflect.Descriptor instead.
 func (*ProjectMember) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{2}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ProjectMember) GetSubject() isProjectMember_Subject {
@@ -295,7 +405,7 @@ type ProjectServiceAddMemberRequest struct {
 
 func (x *ProjectServiceAddMemberRequest) Reset() {
 	*x = ProjectServiceAddMemberRequest{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[3]
+	mi := &file_controlplane_v1_project_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -307,7 +417,7 @@ func (x *ProjectServiceAddMemberRequest) String() string {
 func (*ProjectServiceAddMemberRequest) ProtoMessage() {}
 
 func (x *ProjectServiceAddMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[3]
+	mi := &file_controlplane_v1_project_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -320,7 +430,7 @@ func (x *ProjectServiceAddMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectServiceAddMemberRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceAddMemberRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{3}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ProjectServiceAddMemberRequest) GetProjectReference() *IdentityReference {
@@ -353,7 +463,7 @@ type ProjectServiceAddMemberResponse struct {
 
 func (x *ProjectServiceAddMemberResponse) Reset() {
 	*x = ProjectServiceAddMemberResponse{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[4]
+	mi := &file_controlplane_v1_project_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -365,7 +475,7 @@ func (x *ProjectServiceAddMemberResponse) String() string {
 func (*ProjectServiceAddMemberResponse) ProtoMessage() {}
 
 func (x *ProjectServiceAddMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[4]
+	mi := &file_controlplane_v1_project_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -378,7 +488,7 @@ func (x *ProjectServiceAddMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectServiceAddMemberResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceAddMemberResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{4}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{6}
 }
 
 type ProjectServiceRemoveMemberRequest struct {
@@ -393,7 +503,7 @@ type ProjectServiceRemoveMemberRequest struct {
 
 func (x *ProjectServiceRemoveMemberRequest) Reset() {
 	*x = ProjectServiceRemoveMemberRequest{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[5]
+	mi := &file_controlplane_v1_project_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -405,7 +515,7 @@ func (x *ProjectServiceRemoveMemberRequest) String() string {
 func (*ProjectServiceRemoveMemberRequest) ProtoMessage() {}
 
 func (x *ProjectServiceRemoveMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[5]
+	mi := &file_controlplane_v1_project_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -418,7 +528,7 @@ func (x *ProjectServiceRemoveMemberRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ProjectServiceRemoveMemberRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceRemoveMemberRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{5}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ProjectServiceRemoveMemberRequest) GetProjectReference() *IdentityReference {
@@ -444,7 +554,7 @@ type ProjectServiceRemoveMemberResponse struct {
 
 func (x *ProjectServiceRemoveMemberResponse) Reset() {
 	*x = ProjectServiceRemoveMemberResponse{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[6]
+	mi := &file_controlplane_v1_project_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -456,7 +566,7 @@ func (x *ProjectServiceRemoveMemberResponse) String() string {
 func (*ProjectServiceRemoveMemberResponse) ProtoMessage() {}
 
 func (x *ProjectServiceRemoveMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[6]
+	mi := &file_controlplane_v1_project_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -469,7 +579,7 @@ func (x *ProjectServiceRemoveMemberResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ProjectServiceRemoveMemberResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceRemoveMemberResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{6}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{8}
 }
 
 // ProjectMembershipReference is used to reference a user or group in the context of project membership
@@ -488,7 +598,7 @@ type ProjectMembershipReference struct {
 
 func (x *ProjectMembershipReference) Reset() {
 	*x = ProjectMembershipReference{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[7]
+	mi := &file_controlplane_v1_project_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -500,7 +610,7 @@ func (x *ProjectMembershipReference) String() string {
 func (*ProjectMembershipReference) ProtoMessage() {}
 
 func (x *ProjectMembershipReference) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[7]
+	mi := &file_controlplane_v1_project_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -513,7 +623,7 @@ func (x *ProjectMembershipReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectMembershipReference.ProtoReflect.Descriptor instead.
 func (*ProjectMembershipReference) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{7}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ProjectMembershipReference) GetMembershipReference() isProjectMembershipReference_MembershipReference {
@@ -575,7 +685,7 @@ type ProjectServiceUpdateMemberRoleRequest struct {
 
 func (x *ProjectServiceUpdateMemberRoleRequest) Reset() {
 	*x = ProjectServiceUpdateMemberRoleRequest{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[8]
+	mi := &file_controlplane_v1_project_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -587,7 +697,7 @@ func (x *ProjectServiceUpdateMemberRoleRequest) String() string {
 func (*ProjectServiceUpdateMemberRoleRequest) ProtoMessage() {}
 
 func (x *ProjectServiceUpdateMemberRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[8]
+	mi := &file_controlplane_v1_project_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -600,7 +710,7 @@ func (x *ProjectServiceUpdateMemberRoleRequest) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use ProjectServiceUpdateMemberRoleRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceUpdateMemberRoleRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{8}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ProjectServiceUpdateMemberRoleRequest) GetProjectReference() *IdentityReference {
@@ -633,7 +743,7 @@ type ProjectServiceUpdateMemberRoleResponse struct {
 
 func (x *ProjectServiceUpdateMemberRoleResponse) Reset() {
 	*x = ProjectServiceUpdateMemberRoleResponse{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[9]
+	mi := &file_controlplane_v1_project_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -645,7 +755,7 @@ func (x *ProjectServiceUpdateMemberRoleResponse) String() string {
 func (*ProjectServiceUpdateMemberRoleResponse) ProtoMessage() {}
 
 func (x *ProjectServiceUpdateMemberRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[9]
+	mi := &file_controlplane_v1_project_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -658,7 +768,7 @@ func (x *ProjectServiceUpdateMemberRoleResponse) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use ProjectServiceUpdateMemberRoleResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceUpdateMemberRoleResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{9}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{11}
 }
 
 type ProjectServiceListPendingInvitationsRequest struct {
@@ -673,7 +783,7 @@ type ProjectServiceListPendingInvitationsRequest struct {
 
 func (x *ProjectServiceListPendingInvitationsRequest) Reset() {
 	*x = ProjectServiceListPendingInvitationsRequest{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[10]
+	mi := &file_controlplane_v1_project_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -685,7 +795,7 @@ func (x *ProjectServiceListPendingInvitationsRequest) String() string {
 func (*ProjectServiceListPendingInvitationsRequest) ProtoMessage() {}
 
 func (x *ProjectServiceListPendingInvitationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[10]
+	mi := &file_controlplane_v1_project_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -698,7 +808,7 @@ func (x *ProjectServiceListPendingInvitationsRequest) ProtoReflect() protoreflec
 
 // Deprecated: Use ProjectServiceListPendingInvitationsRequest.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListPendingInvitationsRequest) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{10}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ProjectServiceListPendingInvitationsRequest) GetProjectReference() *IdentityReference {
@@ -728,7 +838,7 @@ type ProjectServiceListPendingInvitationsResponse struct {
 
 func (x *ProjectServiceListPendingInvitationsResponse) Reset() {
 	*x = ProjectServiceListPendingInvitationsResponse{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[11]
+	mi := &file_controlplane_v1_project_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -740,7 +850,7 @@ func (x *ProjectServiceListPendingInvitationsResponse) String() string {
 func (*ProjectServiceListPendingInvitationsResponse) ProtoMessage() {}
 
 func (x *ProjectServiceListPendingInvitationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[11]
+	mi := &file_controlplane_v1_project_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -753,7 +863,7 @@ func (x *ProjectServiceListPendingInvitationsResponse) ProtoReflect() protorefle
 
 // Deprecated: Use ProjectServiceListPendingInvitationsResponse.ProtoReflect.Descriptor instead.
 func (*ProjectServiceListPendingInvitationsResponse) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{11}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ProjectServiceListPendingInvitationsResponse) GetInvitations() []*PendingProjectInvitation {
@@ -787,7 +897,7 @@ type PendingProjectInvitation struct {
 
 func (x *PendingProjectInvitation) Reset() {
 	*x = PendingProjectInvitation{}
-	mi := &file_controlplane_v1_project_proto_msgTypes[12]
+	mi := &file_controlplane_v1_project_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -799,7 +909,7 @@ func (x *PendingProjectInvitation) String() string {
 func (*PendingProjectInvitation) ProtoMessage() {}
 
 func (x *PendingProjectInvitation) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_project_proto_msgTypes[12]
+	mi := &file_controlplane_v1_project_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -812,7 +922,7 @@ func (x *PendingProjectInvitation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingProjectInvitation.ProtoReflect.Descriptor instead.
 func (*PendingProjectInvitation) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{12}
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *PendingProjectInvitation) GetUserEmail() string {
@@ -843,11 +953,112 @@ func (x *PendingProjectInvitation) GetInvitationId() string {
 	return ""
 }
 
+// ProjectItem represents a project of the organization
+type ProjectServiceListResponse_ProjectItem struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unique identifier of the project
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Name of the project
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Description of the project
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	// Timestamp when the project was created
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Timestamp when the project was last updated
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectServiceListResponse_ProjectItem) Reset() {
+	*x = ProjectServiceListResponse_ProjectItem{}
+	mi := &file_controlplane_v1_project_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectServiceListResponse_ProjectItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectServiceListResponse_ProjectItem) ProtoMessage() {}
+
+func (x *ProjectServiceListResponse_ProjectItem) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_project_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectServiceListResponse_ProjectItem.ProtoReflect.Descriptor instead.
+func (*ProjectServiceListResponse_ProjectItem) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_project_proto_rawDescGZIP(), []int{1, 0}
+}
+
+func (x *ProjectServiceListResponse_ProjectItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ProjectServiceListResponse_ProjectItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ProjectServiceListResponse_ProjectItem) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ProjectServiceListResponse_ProjectItem) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *ProjectServiceListResponse_ProjectItem) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
 var File_controlplane_v1_project_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_project_proto_rawDesc = "" +
 	"\n" +
-	"\x1dcontrolplane/v1/project.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1bcontrolplane/v1/group.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\x1a$controlplane/v1/shared_message.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc5\x01\n" +
+	"\x1dcontrolplane/v1/project.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1bcontrolplane/v1/group.proto\x1a controlplane/v1/pagination.proto\x1a'controlplane/v1/response_messages.proto\x1a$controlplane/v1/shared_message.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x87\x01\n" +
+	"\x19ProjectServiceListRequest\x12\x17\n" +
+	"\x04name\x18\x01 \x01(\tH\x00R\x04name\x88\x01\x01\x12H\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2(.controlplane.v1.OffsetPaginationRequestR\n" +
+	"paginationB\a\n" +
+	"\x05_name\"\x88\x03\n" +
+	"\x1aProjectServiceListResponse\x12S\n" +
+	"\bprojects\x18\x01 \x03(\v27.controlplane.v1.ProjectServiceListResponse.ProjectItemR\bprojects\x12I\n" +
+	"\n" +
+	"pagination\x18\x02 \x01(\v2).controlplane.v1.OffsetPaginationResponseR\n" +
+	"pagination\x1a\xc9\x01\n" +
+	"\vProjectItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x129\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xc5\x01\n" +
 	" ProjectServiceListMembersRequest\x12W\n" +
 	"\x11project_reference\x18\x01 \x01(\v2\".controlplane.v1.IdentityReferenceB\x06\xbaH\x03\xc8\x01\x01R\x10projectReference\x12H\n" +
 	"\n" +
@@ -909,8 +1120,9 @@ const file_controlplane_v1_project_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12#\n" +
 	"\rinvitation_id\x18\x04 \x01(\tR\finvitationIdB\r\n" +
-	"\v_invited_by2\x8f\x05\n" +
-	"\x0eProjectService\x12t\n" +
+	"\v_invited_by2\xf2\x05\n" +
+	"\x0eProjectService\x12a\n" +
+	"\x04List\x12*.controlplane.v1.ProjectServiceListRequest\x1a+.controlplane.v1.ProjectServiceListResponse\"\x00\x12t\n" +
 	"\vListMembers\x121.controlplane.v1.ProjectServiceListMembersRequest\x1a2.controlplane.v1.ProjectServiceListMembersResponse\x12n\n" +
 	"\tAddMember\x12/.controlplane.v1.ProjectServiceAddMemberRequest\x1a0.controlplane.v1.ProjectServiceAddMemberResponse\x12w\n" +
 	"\fRemoveMember\x122.controlplane.v1.ProjectServiceRemoveMemberRequest\x1a3.controlplane.v1.ProjectServiceRemoveMemberResponse\x12\x83\x01\n" +
@@ -929,69 +1141,79 @@ func file_controlplane_v1_project_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_project_proto_rawDescData
 }
 
-var file_controlplane_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_controlplane_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_controlplane_v1_project_proto_goTypes = []any{
-	(*ProjectServiceListMembersRequest)(nil),             // 0: controlplane.v1.ProjectServiceListMembersRequest
-	(*ProjectServiceListMembersResponse)(nil),            // 1: controlplane.v1.ProjectServiceListMembersResponse
-	(*ProjectMember)(nil),                                // 2: controlplane.v1.ProjectMember
-	(*ProjectServiceAddMemberRequest)(nil),               // 3: controlplane.v1.ProjectServiceAddMemberRequest
-	(*ProjectServiceAddMemberResponse)(nil),              // 4: controlplane.v1.ProjectServiceAddMemberResponse
-	(*ProjectServiceRemoveMemberRequest)(nil),            // 5: controlplane.v1.ProjectServiceRemoveMemberRequest
-	(*ProjectServiceRemoveMemberResponse)(nil),           // 6: controlplane.v1.ProjectServiceRemoveMemberResponse
-	(*ProjectMembershipReference)(nil),                   // 7: controlplane.v1.ProjectMembershipReference
-	(*ProjectServiceUpdateMemberRoleRequest)(nil),        // 8: controlplane.v1.ProjectServiceUpdateMemberRoleRequest
-	(*ProjectServiceUpdateMemberRoleResponse)(nil),       // 9: controlplane.v1.ProjectServiceUpdateMemberRoleResponse
-	(*ProjectServiceListPendingInvitationsRequest)(nil),  // 10: controlplane.v1.ProjectServiceListPendingInvitationsRequest
-	(*ProjectServiceListPendingInvitationsResponse)(nil), // 11: controlplane.v1.ProjectServiceListPendingInvitationsResponse
-	(*PendingProjectInvitation)(nil),                     // 12: controlplane.v1.PendingProjectInvitation
-	(*IdentityReference)(nil),                            // 13: controlplane.v1.IdentityReference
-	(*OffsetPaginationRequest)(nil),                      // 14: controlplane.v1.OffsetPaginationRequest
-	(*OffsetPaginationResponse)(nil),                     // 15: controlplane.v1.OffsetPaginationResponse
-	(*User)(nil),                                         // 16: controlplane.v1.User
-	(*Group)(nil),                                        // 17: controlplane.v1.Group
-	(ProjectMemberRole)(0),                               // 18: controlplane.v1.ProjectMemberRole
-	(*timestamppb.Timestamp)(nil),                        // 19: google.protobuf.Timestamp
+	(*ProjectServiceListRequest)(nil),                    // 0: controlplane.v1.ProjectServiceListRequest
+	(*ProjectServiceListResponse)(nil),                   // 1: controlplane.v1.ProjectServiceListResponse
+	(*ProjectServiceListMembersRequest)(nil),             // 2: controlplane.v1.ProjectServiceListMembersRequest
+	(*ProjectServiceListMembersResponse)(nil),            // 3: controlplane.v1.ProjectServiceListMembersResponse
+	(*ProjectMember)(nil),                                // 4: controlplane.v1.ProjectMember
+	(*ProjectServiceAddMemberRequest)(nil),               // 5: controlplane.v1.ProjectServiceAddMemberRequest
+	(*ProjectServiceAddMemberResponse)(nil),              // 6: controlplane.v1.ProjectServiceAddMemberResponse
+	(*ProjectServiceRemoveMemberRequest)(nil),            // 7: controlplane.v1.ProjectServiceRemoveMemberRequest
+	(*ProjectServiceRemoveMemberResponse)(nil),           // 8: controlplane.v1.ProjectServiceRemoveMemberResponse
+	(*ProjectMembershipReference)(nil),                   // 9: controlplane.v1.ProjectMembershipReference
+	(*ProjectServiceUpdateMemberRoleRequest)(nil),        // 10: controlplane.v1.ProjectServiceUpdateMemberRoleRequest
+	(*ProjectServiceUpdateMemberRoleResponse)(nil),       // 11: controlplane.v1.ProjectServiceUpdateMemberRoleResponse
+	(*ProjectServiceListPendingInvitationsRequest)(nil),  // 12: controlplane.v1.ProjectServiceListPendingInvitationsRequest
+	(*ProjectServiceListPendingInvitationsResponse)(nil), // 13: controlplane.v1.ProjectServiceListPendingInvitationsResponse
+	(*PendingProjectInvitation)(nil),                     // 14: controlplane.v1.PendingProjectInvitation
+	(*ProjectServiceListResponse_ProjectItem)(nil),       // 15: controlplane.v1.ProjectServiceListResponse.ProjectItem
+	(*OffsetPaginationRequest)(nil),                      // 16: controlplane.v1.OffsetPaginationRequest
+	(*OffsetPaginationResponse)(nil),                     // 17: controlplane.v1.OffsetPaginationResponse
+	(*IdentityReference)(nil),                            // 18: controlplane.v1.IdentityReference
+	(*User)(nil),                                         // 19: controlplane.v1.User
+	(*Group)(nil),                                        // 20: controlplane.v1.Group
+	(ProjectMemberRole)(0),                               // 21: controlplane.v1.ProjectMemberRole
+	(*timestamppb.Timestamp)(nil),                        // 22: google.protobuf.Timestamp
 }
 var file_controlplane_v1_project_proto_depIdxs = []int32{
-	13, // 0: controlplane.v1.ProjectServiceListMembersRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	14, // 1: controlplane.v1.ProjectServiceListMembersRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
-	2,  // 2: controlplane.v1.ProjectServiceListMembersResponse.members:type_name -> controlplane.v1.ProjectMember
-	15, // 3: controlplane.v1.ProjectServiceListMembersResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
-	16, // 4: controlplane.v1.ProjectMember.user:type_name -> controlplane.v1.User
-	17, // 5: controlplane.v1.ProjectMember.group:type_name -> controlplane.v1.Group
-	18, // 6: controlplane.v1.ProjectMember.role:type_name -> controlplane.v1.ProjectMemberRole
-	19, // 7: controlplane.v1.ProjectMember.created_at:type_name -> google.protobuf.Timestamp
-	19, // 8: controlplane.v1.ProjectMember.updated_at:type_name -> google.protobuf.Timestamp
-	13, // 9: controlplane.v1.ProjectServiceAddMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	7,  // 10: controlplane.v1.ProjectServiceAddMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
-	18, // 11: controlplane.v1.ProjectServiceAddMemberRequest.role:type_name -> controlplane.v1.ProjectMemberRole
-	13, // 12: controlplane.v1.ProjectServiceRemoveMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	7,  // 13: controlplane.v1.ProjectServiceRemoveMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
-	13, // 14: controlplane.v1.ProjectMembershipReference.group_reference:type_name -> controlplane.v1.IdentityReference
-	13, // 15: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	7,  // 16: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
-	18, // 17: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.new_role:type_name -> controlplane.v1.ProjectMemberRole
-	13, // 18: controlplane.v1.ProjectServiceListPendingInvitationsRequest.project_reference:type_name -> controlplane.v1.IdentityReference
-	14, // 19: controlplane.v1.ProjectServiceListPendingInvitationsRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
-	12, // 20: controlplane.v1.ProjectServiceListPendingInvitationsResponse.invitations:type_name -> controlplane.v1.PendingProjectInvitation
-	15, // 21: controlplane.v1.ProjectServiceListPendingInvitationsResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
-	16, // 22: controlplane.v1.PendingProjectInvitation.invited_by:type_name -> controlplane.v1.User
-	19, // 23: controlplane.v1.PendingProjectInvitation.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 24: controlplane.v1.ProjectService.ListMembers:input_type -> controlplane.v1.ProjectServiceListMembersRequest
-	3,  // 25: controlplane.v1.ProjectService.AddMember:input_type -> controlplane.v1.ProjectServiceAddMemberRequest
-	5,  // 26: controlplane.v1.ProjectService.RemoveMember:input_type -> controlplane.v1.ProjectServiceRemoveMemberRequest
-	8,  // 27: controlplane.v1.ProjectService.UpdateMemberRole:input_type -> controlplane.v1.ProjectServiceUpdateMemberRoleRequest
-	10, // 28: controlplane.v1.ProjectService.ListPendingInvitations:input_type -> controlplane.v1.ProjectServiceListPendingInvitationsRequest
-	1,  // 29: controlplane.v1.ProjectService.ListMembers:output_type -> controlplane.v1.ProjectServiceListMembersResponse
-	4,  // 30: controlplane.v1.ProjectService.AddMember:output_type -> controlplane.v1.ProjectServiceAddMemberResponse
-	6,  // 31: controlplane.v1.ProjectService.RemoveMember:output_type -> controlplane.v1.ProjectServiceRemoveMemberResponse
-	9,  // 32: controlplane.v1.ProjectService.UpdateMemberRole:output_type -> controlplane.v1.ProjectServiceUpdateMemberRoleResponse
-	11, // 33: controlplane.v1.ProjectService.ListPendingInvitations:output_type -> controlplane.v1.ProjectServiceListPendingInvitationsResponse
-	29, // [29:34] is the sub-list for method output_type
-	24, // [24:29] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	16, // 0: controlplane.v1.ProjectServiceListRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
+	15, // 1: controlplane.v1.ProjectServiceListResponse.projects:type_name -> controlplane.v1.ProjectServiceListResponse.ProjectItem
+	17, // 2: controlplane.v1.ProjectServiceListResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
+	18, // 3: controlplane.v1.ProjectServiceListMembersRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	16, // 4: controlplane.v1.ProjectServiceListMembersRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
+	4,  // 5: controlplane.v1.ProjectServiceListMembersResponse.members:type_name -> controlplane.v1.ProjectMember
+	17, // 6: controlplane.v1.ProjectServiceListMembersResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
+	19, // 7: controlplane.v1.ProjectMember.user:type_name -> controlplane.v1.User
+	20, // 8: controlplane.v1.ProjectMember.group:type_name -> controlplane.v1.Group
+	21, // 9: controlplane.v1.ProjectMember.role:type_name -> controlplane.v1.ProjectMemberRole
+	22, // 10: controlplane.v1.ProjectMember.created_at:type_name -> google.protobuf.Timestamp
+	22, // 11: controlplane.v1.ProjectMember.updated_at:type_name -> google.protobuf.Timestamp
+	18, // 12: controlplane.v1.ProjectServiceAddMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	9,  // 13: controlplane.v1.ProjectServiceAddMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
+	21, // 14: controlplane.v1.ProjectServiceAddMemberRequest.role:type_name -> controlplane.v1.ProjectMemberRole
+	18, // 15: controlplane.v1.ProjectServiceRemoveMemberRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	9,  // 16: controlplane.v1.ProjectServiceRemoveMemberRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
+	18, // 17: controlplane.v1.ProjectMembershipReference.group_reference:type_name -> controlplane.v1.IdentityReference
+	18, // 18: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	9,  // 19: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.member_reference:type_name -> controlplane.v1.ProjectMembershipReference
+	21, // 20: controlplane.v1.ProjectServiceUpdateMemberRoleRequest.new_role:type_name -> controlplane.v1.ProjectMemberRole
+	18, // 21: controlplane.v1.ProjectServiceListPendingInvitationsRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	16, // 22: controlplane.v1.ProjectServiceListPendingInvitationsRequest.pagination:type_name -> controlplane.v1.OffsetPaginationRequest
+	14, // 23: controlplane.v1.ProjectServiceListPendingInvitationsResponse.invitations:type_name -> controlplane.v1.PendingProjectInvitation
+	17, // 24: controlplane.v1.ProjectServiceListPendingInvitationsResponse.pagination:type_name -> controlplane.v1.OffsetPaginationResponse
+	19, // 25: controlplane.v1.PendingProjectInvitation.invited_by:type_name -> controlplane.v1.User
+	22, // 26: controlplane.v1.PendingProjectInvitation.created_at:type_name -> google.protobuf.Timestamp
+	22, // 27: controlplane.v1.ProjectServiceListResponse.ProjectItem.created_at:type_name -> google.protobuf.Timestamp
+	22, // 28: controlplane.v1.ProjectServiceListResponse.ProjectItem.updated_at:type_name -> google.protobuf.Timestamp
+	0,  // 29: controlplane.v1.ProjectService.List:input_type -> controlplane.v1.ProjectServiceListRequest
+	2,  // 30: controlplane.v1.ProjectService.ListMembers:input_type -> controlplane.v1.ProjectServiceListMembersRequest
+	5,  // 31: controlplane.v1.ProjectService.AddMember:input_type -> controlplane.v1.ProjectServiceAddMemberRequest
+	7,  // 32: controlplane.v1.ProjectService.RemoveMember:input_type -> controlplane.v1.ProjectServiceRemoveMemberRequest
+	10, // 33: controlplane.v1.ProjectService.UpdateMemberRole:input_type -> controlplane.v1.ProjectServiceUpdateMemberRoleRequest
+	12, // 34: controlplane.v1.ProjectService.ListPendingInvitations:input_type -> controlplane.v1.ProjectServiceListPendingInvitationsRequest
+	1,  // 35: controlplane.v1.ProjectService.List:output_type -> controlplane.v1.ProjectServiceListResponse
+	3,  // 36: controlplane.v1.ProjectService.ListMembers:output_type -> controlplane.v1.ProjectServiceListMembersResponse
+	6,  // 37: controlplane.v1.ProjectService.AddMember:output_type -> controlplane.v1.ProjectServiceAddMemberResponse
+	8,  // 38: controlplane.v1.ProjectService.RemoveMember:output_type -> controlplane.v1.ProjectServiceRemoveMemberResponse
+	11, // 39: controlplane.v1.ProjectService.UpdateMemberRole:output_type -> controlplane.v1.ProjectServiceUpdateMemberRoleResponse
+	13, // 40: controlplane.v1.ProjectService.ListPendingInvitations:output_type -> controlplane.v1.ProjectServiceListPendingInvitationsResponse
+	35, // [35:41] is the sub-list for method output_type
+	29, // [29:35] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_project_proto_init() }
@@ -1003,22 +1225,23 @@ func file_controlplane_v1_project_proto_init() {
 	file_controlplane_v1_pagination_proto_init()
 	file_controlplane_v1_response_messages_proto_init()
 	file_controlplane_v1_shared_message_proto_init()
-	file_controlplane_v1_project_proto_msgTypes[2].OneofWrappers = []any{
+	file_controlplane_v1_project_proto_msgTypes[0].OneofWrappers = []any{}
+	file_controlplane_v1_project_proto_msgTypes[4].OneofWrappers = []any{
 		(*ProjectMember_User)(nil),
 		(*ProjectMember_Group)(nil),
 	}
-	file_controlplane_v1_project_proto_msgTypes[7].OneofWrappers = []any{
+	file_controlplane_v1_project_proto_msgTypes[9].OneofWrappers = []any{
 		(*ProjectMembershipReference_UserEmail)(nil),
 		(*ProjectMembershipReference_GroupReference)(nil),
 	}
-	file_controlplane_v1_project_proto_msgTypes[12].OneofWrappers = []any{}
+	file_controlplane_v1_project_proto_msgTypes[14].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_project_proto_rawDesc), len(file_controlplane_v1_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
