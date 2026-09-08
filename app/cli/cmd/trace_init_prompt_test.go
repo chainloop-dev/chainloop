@@ -57,10 +57,12 @@ func TestHuhPrompterMultiSelect(t *testing.T) {
 	// this ticks the second option on top of the preselected first one.
 	p, out := accessiblePrompter("2\n0\n")
 
-	got, err := p.MultiSelect("Pick agents", []string{"claude-code", "cursor", "opencode"}, []string{"claude-code"})
+	// The prompter is generic, so the options here are deliberately not provider
+	// names: nothing about it should depend on what is being picked.
+	got, err := p.MultiSelect("Pick options", []string{"first", "second", "third"}, []string{"first"})
 	require.NoError(t, err)
-	assert.Equal(t, []string{"claude-code", "cursor"}, got)
-	assert.Contains(t, out.String(), "Pick agents")
+	assert.Equal(t, []string{"first", "second"}, got)
+	assert.Contains(t, out.String(), "Pick options")
 }
 
 func TestNewHuhPrompterAccessibility(t *testing.T) {

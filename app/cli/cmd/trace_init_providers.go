@@ -41,17 +41,14 @@ func (f traceProviderFlags) any() bool {
 // than the order the flags happen to appear in.
 func (f traceProviderFlags) names() []string {
 	out := make([]string, 0, 3)
-	for _, p := range []struct {
-		set  bool
-		name string
-	}{
-		{f.claude, claude.Name},
-		{f.cursor, cursor.Name},
-		{f.opencode, opencode.Name},
-	} {
-		if p.set {
-			out = append(out, p.name)
-		}
+	if f.claude {
+		out = append(out, claude.Name)
+	}
+	if f.cursor {
+		out = append(out, cursor.Name)
+	}
+	if f.opencode {
+		out = append(out, opencode.Name)
 	}
 
 	return out

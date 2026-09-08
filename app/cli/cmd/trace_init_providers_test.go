@@ -24,6 +24,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// providerClaudeCode is the wire name of the default provider, spelled out
+// rather than taken from the package constant so that renaming it shows up here
+// as a failing test instead of passing silently.
+const providerClaudeCode = "claude-code"
+
 func TestResolveTraceProviders(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -47,7 +52,7 @@ func TestResolveTraceProviders(t *testing.T) {
 			name:        "several flags are all honored",
 			flags:       traceProviderFlags{claude: true, opencode: true},
 			interactive: true,
-			want:        []string{"claude-code", "opencode"},
+			want:        []string{providerClaudeCode, "opencode"},
 		},
 		{
 			name: "without a terminal the default provider is kept",
@@ -111,7 +116,7 @@ func TestTraceProviderFlags(t *testing.T) {
 	t.Run("names follow the registry order, not the flag order", func(t *testing.T) {
 		f := traceProviderFlags{opencode: true, claude: true}
 		assert.True(t, f.any())
-		assert.Equal(t, []string{"claude-code", "opencode"}, f.names())
+		assert.Equal(t, []string{providerClaudeCode, "opencode"}, f.names())
 	})
 }
 

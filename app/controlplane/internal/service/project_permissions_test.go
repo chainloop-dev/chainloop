@@ -131,19 +131,43 @@ func TestProjectsAllowing(t *testing.T) {
 	}
 }
 
-// TestProjectsAllowingWithoutRBAC pins down that an organization role carrying
-// the permission is not narrowed by the per-project check.
+// TestProjectsAllowingWithoutRBAC covers the organization roles RBAC does not
+// narrow. Whether they may create a workflow is decided by the role alone, so
+// it is the same answer for every project: all of them, or none.
 func TestProjectsAllowingWithoutRBAC(t *testing.T) {
+	testCases := []struct {
+		name string
+		role authz.Role
+		want bool
+	}{
+		{
+			name: "an organization admin may create a workflow anywhere",
+			role: authz.RoleAdmin,
+			want: true,
+		},
+		{
+			// An organization viewer may list projects, so it reaches here, but
+			// its role does not carry the permission. Reporting these as
+			// writable would offer a workflow the create call then refuses.
+			name: "an organization viewer may create a workflow nowhere",
+			role: authz.RoleViewer,
+			want: false,
+		},
+	}
+
 	s := newTestService(t)
 	one, two := uuid.New(), uuid.New()
 	projects := []*biz.Project{{ID: one}, {ID: two}}
 
-	// RoleAdmin is an organization role, so RBAC does not apply to it.
-	ctx := usercontext.WithAuthzSubject(context.Background(), string(authz.RoleAdmin))
-	require.False(t, authz.RoleAdmin.RBACEnabled(), "precondition: this role bypasses RBAC")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.False(t, tc.role.RBACEnabled(), "precondition: this role bypasses RBAC")
+			ctx := usercontext.WithAuthzSubject(context.Background(), string(tc.role))
 
-	got, err := s.projectsAllowing(ctx, authz.PolicyWorkflowCreate, projects)
-	require.NoError(t, err)
-	assert.True(t, got[one])
-	assert.True(t, got[two])
+			got, err := s.projectsAllowing(ctx, authz.PolicyWorkflowCreate, projects)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got[one])
+			assert.Equal(t, tc.want, got[two])
+		})
+	}
 }

@@ -16,6 +16,7 @@
 package action
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -34,20 +35,21 @@ func (e *AttestationExecutor) ListOrganizations(ctx context.Context) ([]*Members
 	return NewMembershipList(e.actionOpts).ListOrgs(ctx)
 }
 
-// ListProjects returns the names of the projects visible in the organization
-// the executor is pinned to, sorted and deduplicated. It runs over the
-// executor's connection, so it targets the organization pinned with
-// WithForcedOrganization like every other trace operation.
-func (e *AttestationExecutor) ListProjects(ctx context.Context) ([]string, error) {
+// ListProjects returns the projects visible in the organization the executor is
+// pinned to, sorted by name and deduplicated. It runs over the executor's
+// connection, so it targets the organization pinned with WithForcedOrganization
+// like every other trace operation.
+func (e *AttestationExecutor) ListProjects(ctx context.Context) ([]*TraceProject, error) {
 	return listAllTraceProjects(ctx, &cpTraceProjectAPI{cfg: e.actionOpts})
 }
 
-// traceProject is one entry of the project listing.
-type traceProject struct {
-	name string
-	// canCreateWorkflow is false for a project the caller can see but not add a
-	// workflow to, such as one they only view.
-	canCreateWorkflow bool
+// TraceProject is one entry of the project listing.
+type TraceProject struct {
+	Name string
+	// CanCreateWorkflow is false for a project the caller can see but not add a
+	// workflow to, such as one they only view. Offering one of those would end
+	// in a permission error the moment init tried to create the workflow.
+	CanCreateWorkflow bool
 }
 
 // traceProjectAPI is the slice of the control-plane API the project listing
@@ -55,14 +57,14 @@ type traceProject struct {
 type traceProjectAPI interface {
 	// listProjectsPage returns one page as the server sent it, plus the total
 	// number of pages it reports.
-	listProjectsPage(ctx context.Context, page, pageSize int32) ([]traceProject, int32, error)
+	listProjectsPage(ctx context.Context, page, pageSize int32) ([]*TraceProject, int32, error)
 }
 
-// listAllTraceProjects walks every page and returns the projects the caller can
-// actually create a workflow in. Offering the rest would end in a permission
-// error once init tried to create the workflow.
-func listAllTraceProjects(ctx context.Context, api traceProjectAPI) ([]string, error) {
-	names := make([]string, 0, traceProjectPageSize)
+// listAllTraceProjects walks every page and returns what the caller can see.
+// Deciding which of those to offer is left to the caller, which needs to tell a
+// project it may not write to apart from one that is missing entirely.
+func listAllTraceProjects(ctx context.Context, api traceProjectAPI) ([]*TraceProject, error) {
+	projects := make([]*TraceProject, 0, traceProjectPageSize)
 
 	for page := int32(1); ; page++ {
 		got, totalPages, err := api.listProjectsPage(ctx, page, traceProjectPageSize)
@@ -70,24 +72,23 @@ func listAllTraceProjects(ctx context.Context, api traceProjectAPI) ([]string, e
 			return nil, fmt.Errorf("listing projects: %w", err)
 		}
 
-		for _, p := range got {
-			if p.canCreateWorkflow {
-				names = append(names, p.name)
-			}
-		}
+		projects = append(projects, got...)
 
 		// Stop on the last page the server reports, and also on a page the server
 		// returned nothing for, so a server reporting more pages than it serves
-		// cannot spin here. This counts what arrived, not what survived the
-		// filter, so a page of read-only projects does not end the walk early.
+		// cannot spin here.
 		if len(got) == 0 || page >= totalPages {
 			break
 		}
 	}
 
-	slices.Sort(names)
+	slices.SortFunc(projects, func(a, b *TraceProject) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
-	return slices.Compact(names), nil
+	return slices.CompactFunc(projects, func(a, b *TraceProject) bool {
+		return a.Name == b.Name
+	}), nil
 }
 
 // cpTraceProjectAPI implements traceProjectAPI against the control plane.
@@ -95,7 +96,7 @@ type cpTraceProjectAPI struct {
 	cfg *ActionsOpts
 }
 
-func (a *cpTraceProjectAPI) listProjectsPage(ctx context.Context, page, pageSize int32) ([]traceProject, int32, error) {
+func (a *cpTraceProjectAPI) listProjectsPage(ctx context.Context, page, pageSize int32) ([]*TraceProject, int32, error) {
 	client := pb.NewProjectServiceClient(a.cfg.CPConnection)
 
 	resp, err := client.List(ctx, &pb.ProjectServiceListRequest{
@@ -105,11 +106,11 @@ func (a *cpTraceProjectAPI) listProjectsPage(ctx context.Context, page, pageSize
 		return nil, 0, err
 	}
 
-	projects := make([]traceProject, 0, len(resp.GetProjects()))
+	projects := make([]*TraceProject, 0, len(resp.GetProjects()))
 	for _, p := range resp.GetProjects() {
-		projects = append(projects, traceProject{
-			name:              p.GetName(),
-			canCreateWorkflow: p.GetCanCreateWorkflow(),
+		projects = append(projects, &TraceProject{
+			Name:              p.GetName(),
+			CanCreateWorkflow: p.GetCanCreateWorkflow(),
 		})
 	}
 

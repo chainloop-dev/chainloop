@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 
@@ -80,7 +81,7 @@ func (h *huhPrompter) Select(title string, options []string, defaultValue string
 // already ticked. An empty submission is refused at the prompt, so the caller
 // never has to send the user back through init to fix it.
 func (h *huhPrompter) MultiSelect(title string, options, defaults []string) ([]string, error) {
-	value := append([]string(nil), defaults...)
+	value := slices.Clone(defaults)
 
 	field := huh.NewMultiSelect[string]().
 		Title(title).

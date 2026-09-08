@@ -43,6 +43,20 @@ const (
 // untouched.
 var errAborted = errors.New("aborted")
 
+// stopIfAborted turns a dismissed prompt into a clean stop and passes every
+// other error through. Dismissing a question is a decision, not a failure, and
+// nothing has been created or written by the time one can be dismissed, so
+// reporting it as an error would be both noisy and wrong.
+func stopIfAborted(err error) error {
+	if !errors.Is(err, errAborted) {
+		return err
+	}
+
+	logger.Info().Msg("aborted, nothing was changed")
+
+	return nil
+}
+
 // ciSignals are environment variables that mean the CLI is running inside a CI
 // system, where a prompt would hang the build. CI covers almost every provider;
 // the rest are for the ones that do not set it.
@@ -69,7 +83,7 @@ type orgLister interface {
 // projectLister lists the projects visible in the selected organization, and
 // is likewise the slice of the executor the project resolver needs.
 type projectLister interface {
-	ListProjects(ctx context.Context) ([]string, error)
+	ListProjects(ctx context.Context) ([]*action.TraceProject, error)
 }
 
 // prompter asks the user to pick from a list or type a value. It keeps the
@@ -187,21 +201,44 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		return nil, fmt.Errorf("listing the projects you can see: %w", err)
 	}
 
-	// Nothing to choose from, so go straight to naming one.
-	if len(visible) == 0 {
-		return promptNewProject(p, cmp.Or(fromYML, config.SlugifyDNS1123(repoDir)), fromYML)
+	// Only the projects the caller can add a workflow to are worth offering;
+	// picking any other one would fail at creation time.
+	writable := make([]string, 0, len(visible))
+	// pinnedReadOnly means .chainloop.yml points at a project the caller can see
+	// but not write to, which is why it is missing from the offer.
+	var pinnedReadOnly bool
+
+	for _, project := range visible {
+		switch {
+		case project.CanCreateWorkflow:
+			writable = append(writable, project.Name)
+		case project.Name == fromYML:
+			pinnedReadOnly = true
+		}
 	}
 
-	// A project pinned in .chainloop.yml is offered even when the listing does
-	// not carry it: the user may only be able to see it through this repository,
-	// or it may not exist yet. Either way it is still this repository's project.
-	if fromYML != "" && !slices.Contains(visible, fromYML) {
-		visible = append(visible, fromYML)
+	if pinnedReadOnly {
+		logger.Warn().Str("project", fromYML).
+			Msg("you cannot create a workflow in the project this repository points at, pick another one")
 	}
 
-	options := append([]string{createNewProjectOption}, visible...)
+	// Nothing to choose from, so go straight to naming one rather than showing a
+	// list holding only the pinned project.
+	if len(writable) == 0 {
+		return promptNewProject(p, seedProjectName(fromYML, pinnedReadOnly, repoDir), fromYML)
+	}
 
-	chosen, err := p.Select(projectPromptTitle, options, cmp.Or(fromYML, createNewProjectOption))
+	// A project pinned in .chainloop.yml the listing did not carry at all is
+	// still offered: the user may only be able to see it through this
+	// repository, or it may not exist yet. One the listing did carry and marked
+	// read-only is a different case, and stays out.
+	if fromYML != "" && !pinnedReadOnly && !slices.Contains(writable, fromYML) {
+		writable = append(writable, fromYML)
+	}
+
+	options := append([]string{createNewProjectOption}, writable...)
+
+	chosen, err := p.Select(projectPromptTitle, options, firstPresent(options, fromYML))
 	if err != nil {
 		return nil, err
 	}
@@ -213,6 +250,18 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 	// They asked for a new project, so seed the name from the repository rather
 	// than from the project they are moving away from.
 	return promptNewProject(p, config.SlugifyDNS1123(repoDir), fromYML)
+}
+
+// seedProjectName is what the new-project prompt starts from. The project
+// .chainloop.yml pins is the best seed, unless it is one the caller cannot write
+// to, in which case proposing it again would just repeat the same failure.
+func seedProjectName(fromYML string, pinnedReadOnly bool, repoDir string) string {
+	fromRepo := config.SlugifyDNS1123(repoDir)
+	if pinnedReadOnly {
+		return fromRepo
+	}
+
+	return cmp.Or(fromYML, fromRepo)
 }
 
 // promptNewProject collects a free-form project name and returns it normalized

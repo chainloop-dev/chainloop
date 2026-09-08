@@ -249,15 +249,34 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 // on it. It answers for a whole listing in one pass, so a client does not have
 // to offer an action that would be refused the moment it is taken.
 //
-// It mirrors authorizeResource: a caller can hold several roles on the same
-// project, directly and through products, and any one of them granting the
-// permission is enough. Each distinct role is enforced once, not once per
-// project.
+// It mirrors the two checks the operation itself would face. First the
+// API-level one in the authz middleware, against the caller's organization
+// role. Then, when RBAC applies, authorizeResource: a caller can hold several
+// roles on the same project, directly and through products, and any one of them
+// granting the permission is enough. Each distinct role is enforced once, not
+// once per project.
 func (s *service) projectsAllowing(ctx context.Context, op *authz.Policy, projects []*biz.Project) (map[uuid.UUID]bool, error) {
 	allowed := make(map[uuid.UUID]bool, len(projects))
 
-	// Without RBAC the caller's organization role already carries the
-	// permission, so every visible project is fair game.
+	// The organization role gates every path, so a role without the permission
+	// allows nothing. An organization viewer, for instance, may list projects
+	// but not create a workflow in any of them. Administrators skip the policy
+	// check here for the same reason the middleware skips it: their policies are
+	// not spelled out in full yet.
+	subject := usercontext.CurrentAuthzSubject(ctx)
+	if !authz.Role(subject).IsAdmin() {
+		orgAllows, err := s.authz.Enforce(ctx, subject, op)
+		if err != nil {
+			return nil, err
+		}
+
+		if !orgAllows {
+			return allowed, nil
+		}
+	}
+
+	// The organization role carries the permission and RBAC does not narrow it
+	// per project, so every visible project is fair game.
 	if !rbacEnabled(ctx) {
 		for _, p := range projects {
 			allowed[p.ID] = true
@@ -276,24 +295,24 @@ func (s *service) projectsAllowing(ctx context.Context, op *authz.Policy, projec
 		return allowed, nil
 	}
 
+	// roleGrants caches the enforcer's answer per role, so a caller with many
+	// project memberships still enforces each distinct role only once.
 	roleGrants := make(map[authz.Role]bool)
-	m := entities.CurrentMembership(ctx)
-	for _, rm := range m.Resources {
+	for _, rm := range entities.CurrentMembership(ctx).Resources {
 		if rm.ResourceType != authz.ResourceTypeProject {
 			continue
 		}
 
-		grants, seen := roleGrants[rm.Role]
-		if !seen {
-			var err error
-			if grants, err = s.authz.Enforce(ctx, string(rm.Role), op); err != nil {
+		if _, seen := roleGrants[rm.Role]; !seen {
+			grants, err := s.authz.Enforce(ctx, string(rm.Role), op)
+			if err != nil {
 				return nil, err
 			}
 
 			roleGrants[rm.Role] = grants
 		}
 
-		if grants {
+		if roleGrants[rm.Role] {
 			allowed[rm.ResourceID] = true
 		}
 	}

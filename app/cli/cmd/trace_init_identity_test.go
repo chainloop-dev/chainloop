@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -37,13 +38,29 @@ func (f *fakeOrgLister) ListOrganizations(context.Context) ([]*action.Membership
 	return f.orgs, f.err
 }
 
+// fakeProjectLister serves a canned listing. projects are the ones the caller
+// may create a workflow in, readOnly the ones it can only see.
 type fakeProjectLister struct {
 	projects []string
+	readOnly []string
 	err      error
 }
 
-func (f *fakeProjectLister) ListProjects(context.Context) ([]string, error) {
-	return f.projects, f.err
+func (f *fakeProjectLister) ListProjects(context.Context) ([]*action.TraceProject, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+
+	out := make([]*action.TraceProject, 0, len(f.projects)+len(f.readOnly))
+	for _, name := range f.projects {
+		out = append(out, &action.TraceProject{Name: name, CanCreateWorkflow: true})
+	}
+
+	for _, name := range f.readOnly {
+		out = append(out, &action.TraceProject{Name: name})
+	}
+
+	return out, nil
 }
 
 // recordedPrompt captures what a prompt was shown, so tests can assert on the
@@ -327,6 +344,8 @@ func TestResolveInteractiveProject(t *testing.T) {
 		projects []string
 		fromYML  string
 		repoDir  string
+		// readOnly are projects the caller can see but not create a workflow in
+		readOnly []string
 		// selectAnswer is what the user picks in the list; empty means the list
 		// is not expected to be shown
 		selectAnswer string
@@ -432,13 +451,51 @@ func TestResolveInteractiveProject(t *testing.T) {
 			inputAnswer:  "!!!",
 			wantErr:      "cannot be empty",
 		},
+		{
+			// Offering it would fail at creation time, which is the dead end
+			// this whole prompt exists to remove.
+			name:              "a project the caller can only view is not offered",
+			projects:          []string{projectAPI},
+			readOnly:          []string{"locked"},
+			repoDir:           repoDirMyRepo,
+			selectAnswer:      projectAPI,
+			wantValue:         projectAPI,
+			wantSave:          true,
+			wantOptions:       []string{createNewProjectOption, projectAPI},
+			wantSelectDefault: createNewProjectOption,
+		},
+		{
+			// A pinned project missing from the listing is offered anyway, but
+			// one the listing returned as read-only must not be: it is a
+			// different case with the same symptom.
+			name:              "a pinned project the caller can only view is neither offered nor preselected",
+			projects:          []string{projectAPI},
+			readOnly:          []string{"payments"},
+			fromYML:           "payments",
+			repoDir:           repoDirMyRepo,
+			selectAnswer:      projectAPI,
+			wantValue:         projectAPI,
+			wantSave:          true,
+			wantOptions:       []string{createNewProjectOption, projectAPI},
+			wantSelectDefault: createNewProjectOption,
+		},
+		{
+			name:             "a pinned read-only project does not seed the new name",
+			readOnly:         []string{"payments"},
+			fromYML:          "payments",
+			repoDir:          repoDirMyRepo,
+			inputAnswer:      "my-repo",
+			wantValue:        "my-repo",
+			wantSave:         true,
+			wantInputDefault: "my-repo",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &fakePrompter{selectAnswer: tc.selectAnswer, inputAnswer: tc.inputAnswer}
 			got, err := resolveInteractiveProject(context.Background(),
-				&fakeProjectLister{projects: tc.projects}, p, tc.fromYML, tc.repoDir)
+				&fakeProjectLister{projects: tc.projects, readOnly: tc.readOnly}, p, tc.fromYML, tc.repoDir)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -468,18 +525,6 @@ func TestResolveInteractiveProject(t *testing.T) {
 	}
 }
 
-// TestResolveTraceIdentityNonInteractive covers the path a CI run takes. Test
-// binaries have no terminal attached, so isInteractive is false here and the
-// step never reaches the control plane.
-func TestResolveTraceIdentityNonInteractive(t *testing.T) {
-	t.Run("a missing project is reported, naming both ways to supply one", func(t *testing.T) {
-		_, err := resolveTraceIdentity(context.Background(), &traceInitConfig{}, t.TempDir())
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "--project is required in non-interactive mode")
-		assert.Contains(t, err.Error(), "projectName to .chainloop.yml")
-	})
-}
-
 func TestResolveInteractiveProjectErrors(t *testing.T) {
 	t.Run("a listing failure is returned, not swallowed", func(t *testing.T) {
 		_, err := resolveInteractiveProject(context.Background(),
@@ -499,4 +544,44 @@ func TestResolveInteractiveProjectErrors(t *testing.T) {
 			&fakeProjectLister{}, &fakePrompter{inputErr: errAborted}, "", "repo")
 		require.ErrorIs(t, err, errAborted)
 	})
+}
+
+// --- non-interactive ---------------------------------------------------------
+
+// TestResolveTraceIdentityNonInteractive covers the path a CI run takes. Test
+// binaries have no terminal attached, so isInteractive is false here and the
+// step never reaches the control plane.
+func TestResolveTraceIdentityNonInteractive(t *testing.T) {
+	t.Run("a missing project is reported, naming both ways to supply one", func(t *testing.T) {
+		_, err := resolveTraceIdentity(context.Background(), &traceInitConfig{}, t.TempDir())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "--project is required in non-interactive mode")
+		assert.Contains(t, err.Error(), "projectName to .chainloop.yml")
+	})
+}
+
+// --- aborting ----------------------------------------------------------------
+
+// TestStopIfAborted pins down that dismissing a prompt ends the command
+// quietly. Returning the error instead would exit 1 and print "ERROR aborted",
+// which reads as a failure when the user simply changed their mind.
+func TestStopIfAborted(t *testing.T) {
+	other := errors.New("boom")
+
+	testCases := []struct {
+		name string
+		err  error
+		want error
+	}{
+		{name: "a dismissed prompt is not an error", err: errAborted, want: nil},
+		{name: "a wrapped dismissal is recognized", err: fmt.Errorf("asking: %w", errAborted), want: nil},
+		{name: "any other error is passed through", err: other, want: other},
+		{name: "no error stays no error", err: nil, want: nil},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, stopIfAborted(tc.err))
+		})
+	}
 }

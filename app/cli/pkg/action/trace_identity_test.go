@@ -25,20 +25,20 @@ import (
 )
 
 // writable builds a page of projects the caller can add a workflow to.
-func writable(names ...string) []traceProject {
-	page := make([]traceProject, 0, len(names))
+func writable(names ...string) []*TraceProject {
+	page := make([]*TraceProject, 0, len(names))
 	for _, n := range names {
-		page = append(page, traceProject{name: n, canCreateWorkflow: true})
+		page = append(page, &TraceProject{Name: n, CanCreateWorkflow: true})
 	}
 
 	return page
 }
 
 // readOnly builds a page of projects the caller can see but not write to.
-func readOnly(names ...string) []traceProject {
-	page := make([]traceProject, 0, len(names))
+func readOnly(names ...string) []*TraceProject {
+	page := make([]*TraceProject, 0, len(names))
 	for _, n := range names {
-		page = append(page, traceProject{name: n})
+		page = append(page, &TraceProject{Name: n})
 	}
 
 	return page
@@ -46,7 +46,7 @@ func readOnly(names ...string) []traceProject {
 
 // fakeProjectPager serves canned pages, recording what it was asked for.
 type fakeProjectPager struct {
-	pages [][]traceProject
+	pages [][]*TraceProject
 	// totalPages is what the server reports; it defaults to len(pages)
 	totalPages int32
 	err        error
@@ -54,7 +54,7 @@ type fakeProjectPager struct {
 	requested []int32
 }
 
-func (f *fakeProjectPager) listProjectsPage(_ context.Context, page, _ int32) ([]traceProject, int32, error) {
+func (f *fakeProjectPager) listProjectsPage(_ context.Context, page, _ int32) ([]*TraceProject, int32, error) {
 	f.requested = append(f.requested, page)
 	if f.err != nil {
 		return nil, 0, f.err
@@ -83,63 +83,63 @@ const (
 func TestListAllTraceProjects(t *testing.T) {
 	testCases := []struct {
 		name          string
-		pages         [][]traceProject
+		pages         [][]*TraceProject
 		totalPages    int32
-		want          []string
+		want          []*TraceProject
 		wantRequested []int32
 	}{
 		{
 			name:          "no projects",
 			pages:         nil,
-			want:          []string{},
+			want:          []*TraceProject{},
 			wantRequested: []int32{1},
 		},
 		{
 			name:          "a single page is returned as is",
-			pages:         [][]traceProject{writable(projAlpha, projBeta)},
-			want:          []string{projAlpha, projBeta},
+			pages:         [][]*TraceProject{writable(projAlpha, projBeta)},
+			want:          writable(projAlpha, projBeta),
 			wantRequested: []int32{1},
 		},
 		{
 			name:          "every page is fetched and concatenated",
-			pages:         [][]traceProject{writable(projAlpha, projBeta), writable(projGamma)},
-			want:          []string{projAlpha, projBeta, projGamma},
+			pages:         [][]*TraceProject{writable(projAlpha, projBeta), writable(projGamma)},
+			want:          writable(projAlpha, projBeta, projGamma),
 			wantRequested: []int32{1, 2},
 		},
 		{
 			name:          "a project repeated across pages appears once",
-			pages:         [][]traceProject{writable(projAlpha, projBeta), writable(projBeta, projGamma)},
-			want:          []string{projAlpha, projBeta, projGamma},
+			pages:         [][]*TraceProject{writable(projAlpha, projBeta), writable(projBeta, projGamma)},
+			want:          writable(projAlpha, projBeta, projGamma),
 			wantRequested: []int32{1, 2},
 		},
 		{
 			name: "an empty page stops the walk even when the server claims more",
 			// A server that reports more pages than it serves must not spin here.
-			pages:         [][]traceProject{writable(projAlpha), {}},
+			pages:         [][]*TraceProject{writable(projAlpha), {}},
 			totalPages:    50,
-			want:          []string{projAlpha},
+			want:          writable(projAlpha),
 			wantRequested: []int32{1, 2},
 		},
 		{
-			name:          "a project the caller cannot write to is not offered",
-			pages:         [][]traceProject{append(writable(projAlpha), readOnly(projBeta)...)},
-			want:          []string{projAlpha},
+			// A project the caller cannot write to is reported, not dropped. The
+			// caller needs it to tell a read-only project apart from a missing
+			// one, which are offered differently.
+			name:          "a project the caller cannot write to is still reported",
+			pages:         [][]*TraceProject{append(writable(projAlpha), readOnly(projBeta)...)},
+			want:          append(writable(projAlpha), readOnly(projBeta)...),
 			wantRequested: []int32{1},
 		},
 		{
-			// The walk must count what the server sent, not what survived the
-			// filter, or a page of read-only projects ends it early and hides
-			// everything after it.
 			name:          "a page of read-only projects does not stop the walk",
-			pages:         [][]traceProject{readOnly(projBeta), writable(projGamma)},
-			want:          []string{projGamma},
+			pages:         [][]*TraceProject{readOnly(projBeta), writable(projGamma)},
+			want:          append(readOnly(projBeta), writable(projGamma)...),
 			wantRequested: []int32{1, 2},
 		},
 		{
-			name:          "every project being read-only yields nothing",
-			pages:         [][]traceProject{readOnly(projAlpha, projBeta)},
-			want:          []string{},
-			wantRequested: []int32{1},
+			name:          "projects are sorted by name across pages",
+			pages:         [][]*TraceProject{writable(projGamma), writable(projAlpha)},
+			want:          writable(projAlpha, projGamma),
+			wantRequested: []int32{1, 2},
 		},
 	}
 

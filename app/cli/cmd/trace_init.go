@@ -79,7 +79,7 @@ The organization, project, workflow and require-trace values are saved to
 			// back is pinned to the resolved organization and reused below.
 			executor, err := resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
 			if err != nil {
-				return err
+				return stopIfAborted(err)
 			}
 			defer func() { _ = executor.Close() }()
 
@@ -90,7 +90,7 @@ The organization, project, workflow and require-trace values are saved to
 				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag},
 				traceInitCanPrompt())
 			if err != nil {
-				return err
+				return stopIfAborted(err)
 			}
 
 			selectedProviders := providers.ByNames(selected)
