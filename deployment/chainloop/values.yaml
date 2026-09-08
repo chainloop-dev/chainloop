@@ -166,6 +166,11 @@ controlplane:
   ## @param controlplane.pluginsDir Directory where to look for plugins
   pluginsDir: /plugins
 
+  ## @extra controlplane.pluginsNetworkPolicy Outbound network policy for the plugins that accept an arbitrary target URL, currently the generic webhook and Dependency-Track plugins. Plugins whose destination is a known public service, such as the Slack and Discord webhooks, always refuse non-public destinations.
+  ## @param controlplane.pluginsNetworkPolicy.blockPrivateTargets Refuse requests to destinations that are not publicly routable, such as loopback, private ranges and cloud metadata endpoints
+  pluginsNetworkPolicy:
+    blockPrivateTargets: false
+
   ## @extra controlplane.federatedAuthentication Enable federated authentication during attestation process
   ## @param controlplane.federatedAuthentication.enabled Enable federated authentication
   ## @param controlplane.federatedAuthentication.url URL of the federated authentication endpoint

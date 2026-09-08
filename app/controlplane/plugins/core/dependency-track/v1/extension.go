@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"text/template"
 
@@ -32,6 +33,7 @@ import (
 
 type DependencyTrack struct {
 	*sdk.FanOutIntegration
+	httpClient *http.Client
 }
 
 // Request schemas for both registration and attachment
@@ -77,7 +79,12 @@ type attachmentConfig struct {
 
 const description = "Send CycloneDX SBOMs to your Dependency-Track instance"
 
-func New(l log.Logger) (sdk.FanOut, error) {
+// New initializes the Dependency-Track integration.
+//
+// The instance URL is supplied at registration, and a deployment commonly runs
+// Dependency-Track inside its own network, so whether a non-public instance is
+// reachable is left to netPolicy.
+func New(l log.Logger, netPolicy sdk.NetworkPolicy) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "dependency-track",
@@ -94,7 +101,11 @@ func New(l log.Logger) (sdk.FanOut, error) {
 		return nil, err
 	}
 
-	return &DependencyTrack{base}, nil
+	// SBOM uploads can be large, so the client keeps no total request
+	// timeout, matching the http.DefaultClient it replaces.
+	httpClient := sdk.NewHTTPClient(sdk.HTTPClientOptions{PublicTargetsOnly: netPolicy.BlockPrivateTargets})
+
+	return &DependencyTrack{FanOutIntegration: base, httpClient: httpClient}, nil
 }
 
 func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
@@ -107,7 +118,7 @@ func (i *DependencyTrack) Register(ctx context.Context, req *sdk.RegistrationReq
 
 	// Validate that the provided configuration is valid
 	instance, enableProjectCreation := request.InstanceURI, request.AllowAutoCreate
-	checker, err := client.NewIntegration(instance, request.APIKey, enableProjectCreation)
+	checker, err := client.NewIntegration(i.httpClient, instance, request.APIKey, enableProjectCreation)
 	if err != nil {
 		return nil, fmt.Errorf("checking integration: %w", err)
 	}
@@ -146,7 +157,7 @@ func (i *DependencyTrack) Attach(ctx context.Context, req *sdk.AttachmentRequest
 		return nil, fmt.Errorf("invalid registration configuration: %w", err)
 	}
 
-	if err := validateAttachment(ctx, rc, &request, req.RegistrationInfo.Credentials); err != nil {
+	if err := validateAttachment(ctx, i.httpClient, rc, &request, req.RegistrationInfo.Credentials); err != nil {
 		return nil, fmt.Errorf("invalid attachment configuration: %w", err)
 	}
 
@@ -166,7 +177,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 	var errs error
 	// Iterate over all SBOMs
 	for _, sbom := range req.Input.Materials {
-		if err := doExecute(ctx, req, sbom, i.Logger); err != nil {
+		if err := doExecute(ctx, i.httpClient, req, sbom, i.Logger); err != nil {
 			errs = errors.Join(errs, err)
 			continue
 		}
@@ -179,7 +190,7 @@ func (i *DependencyTrack) Execute(ctx context.Context, req *sdk.ExecutionRequest
 	return nil
 }
 
-func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.ExecuteMaterial, l *log.Helper) error {
+func doExecute(ctx context.Context, httpClient *http.Client, req *sdk.ExecutionRequest, sbom *sdk.ExecuteMaterial, l *log.Helper) error {
 	l.Info("execution requested")
 
 	// Make sure it's an SBOM and all the required configuration has been received
@@ -226,7 +237,8 @@ func doExecute(ctx context.Context, req *sdk.ExecutionRequest, sbom *sdk.Execute
 	)
 
 	// Create an SBOM client and perform validation and upload
-	d, err := client.NewSBOMUploader(registrationConfig.Domain,
+	d, err := client.NewSBOMUploader(httpClient,
+		registrationConfig.Domain,
 		req.RegistrationInfo.Credentials.Password,
 		bytes.NewReader(sbom.Content),
 		attachmentConfig.ProjectID,
@@ -334,13 +346,13 @@ func resolveProjectName(projectNameTpl string, attAnnotations, sbomAnnotations m
 
 // i.e we want to attach to a dependency track integration and we are proving the right attachment options
 // Not only syntactically but also semantically, i.e we can only request auto-creation of projects if the integration allows it
-func validateAttachment(ctx context.Context, rc *registrationConfig, ac *attachmentRequest, credentials *sdk.Credentials) error {
+func validateAttachment(ctx context.Context, httpClient *http.Client, rc *registrationConfig, ac *attachmentRequest, credentials *sdk.Credentials) error {
 	if err := validateAttachmentConfiguration(rc, ac); err != nil {
 		return fmt.Errorf("validating attachment configuration: %w", err)
 	}
 
 	// Instantiate an actual client to see if it would work with the current configuration
-	d, err := client.NewSBOMUploader(rc.Domain, credentials.Password, nil, ac.ProjectID, ac.ProjectName, ac.ParentID)
+	d, err := client.NewSBOMUploader(httpClient, rc.Domain, credentials.Password, nil, ac.ProjectID, ac.ProjectName, ac.ParentID)
 	if err != nil {
 		return fmt.Errorf("creating uploader: %w", err)
 	}

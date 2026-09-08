@@ -126,6 +126,22 @@ message Bootstrap {
 
   // Attestation storage and processing options
   Attestations attestations = 21;
+
+  // Outbound network policy applied to the integration plugins
+  PluginsNetworkPolicy plugins_network_policy = 22;
+}
+
+message PluginsNetworkPolicy {
+  // Refuse to connect to destinations that are not publicly routable
+  // (loopback, private ranges, cloud metadata endpoints) from the plugins
+  // that accept an arbitrary target URL, currently the generic webhook and
+  // Dependency-Track plugins.
+  //
+  // It defaults to false so that deployments running those services inside
+  // their own network keep working. Plugins whose destination is a known
+  // public service, such as the Slack and Discord webhooks, always refuse
+  // non-public destinations regardless of this setting.
+  bool block_private_targets = 1;
 }
 
 message Attestations {

@@ -48,6 +48,8 @@ data:
       default_entry_max_size: {{ .Values.cas.defaultMaxEntrySize | quote }}
       {{- end }}
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
+    plugins_network_policy:
+      block_private_targets: {{ .Values.controlplane.pluginsNetworkPolicy.blockPrivateTargets }}
     restrict_org_creation: {{ .Values.controlplane.restrictOrgCreation }}
     {{- if .Values.controlplane.uiDashboardURL }}
     ui_dashboard_url: {{ .Values.controlplane.uiDashboardURL | quote }}

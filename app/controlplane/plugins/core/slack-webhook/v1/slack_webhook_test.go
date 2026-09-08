@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 package slack
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
@@ -121,4 +124,36 @@ func TestRenderContent(t *testing.T) {
 func TestNewIntegration(t *testing.T) {
 	_, err := New(nil)
 	assert.NoError(t, err)
+}
+
+// The Slack webhook only ever targets Slack, so a destination inside the
+// deployment's own network is refused. httptest listens on the loopback
+// interface, which stands in for any such destination.
+func TestExecuteWebhookRejectsNonPublicURL(t *testing.T) {
+	var requests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	err := executeWebhook(publicOnlyClient(), server.URL, "New attestation received")
+	assert.ErrorIs(t, err, sdk.ErrBlockedTarget)
+	assert.Zero(t, requests, "the webhook must not be reached")
+}
+
+func TestRegisterRejectsNonPublicWebhook(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	integration, err := New(nil)
+	require.NoError(t, err)
+
+	payload, err := json.Marshal(map[string]string{"webhook": server.URL})
+	require.NoError(t, err)
+
+	_, err = integration.Register(context.Background(), &sdk.RegistrationRequest{Payload: payload})
+	assert.ErrorIs(t, err, sdk.ErrBlockedTarget)
 }

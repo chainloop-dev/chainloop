@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package client
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"net/url"
 	"testing"
 
@@ -52,7 +53,7 @@ func TestNewSBOMUploader(t *testing.T) {
 
 	assert := assert.New(t)
 	for _, tc := range tests {
-		got, err := NewSBOMUploader(tc.hostname, tc.apiKey, tc.sbom, tc.projectID, tc.projectName, tc.parentID)
+		got, err := NewSBOMUploader(http.DefaultClient, tc.hostname, tc.apiKey, tc.sbom, tc.projectID, tc.projectName, tc.parentID)
 		if tc.wantError {
 			assert.Error(err)
 			continue
@@ -62,8 +63,9 @@ func TestNewSBOMUploader(t *testing.T) {
 		assert.NoError(err)
 		assert.EqualValues(&SBOMUploader{
 			&base{
-				apiKey: tc.apiKey,
-				host:   uri,
+				apiKey:     tc.apiKey,
+				host:       uri,
+				httpClient: http.DefaultClient,
 			},
 			tc.sbom,
 			tc.projectID, tc.projectName,
@@ -90,7 +92,7 @@ func TestNewChecker(t *testing.T) {
 
 	assert := assert.New(t)
 	for _, tc := range tests {
-		got, err := NewIntegration(tc.hostname, tc.apiKey, tc.autoCreate)
+		got, err := NewIntegration(http.DefaultClient, tc.hostname, tc.apiKey, tc.autoCreate)
 		if tc.wantError {
 			assert.Error(err)
 			continue
@@ -100,8 +102,9 @@ func TestNewChecker(t *testing.T) {
 		assert.NoError(err)
 		assert.EqualValues(&Integration{
 			base: &base{
-				apiKey: tc.apiKey,
-				host:   uri,
+				apiKey:     tc.apiKey,
+				host:       uri,
+				httpClient: http.DefaultClient,
 			},
 			checkAutoCreate: tc.autoCreate,
 		}, got)

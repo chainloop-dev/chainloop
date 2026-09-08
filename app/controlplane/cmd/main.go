@@ -133,7 +133,11 @@ func main() {
 	}
 
 	// Load plugins
-	availablePlugins, err := plugins.Load(bc.GetPluginsDir(), logger)
+	netPolicy := sdk.NetworkPolicy{
+		BlockPrivateTargets: bc.GetPluginsNetworkPolicy().GetBlockPrivateTargets(),
+	}
+
+	availablePlugins, err := plugins.Load(bc.GetPluginsDir(), netPolicy, logger)
 	if err != nil {
 		panic(err)
 	}

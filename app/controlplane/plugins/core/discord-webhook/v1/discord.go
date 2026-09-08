@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,14 @@ import (
 
 type Integration struct {
 	*sdk.FanOutIntegration
+	client *http.Client
+}
+
+// publicOnlyClient builds the HTTP client used to reach the webhook. Discord is
+// a public service, so a destination inside the deployment's own network is
+// always refused, whatever the deployment's plugin network policy says.
+func publicOnlyClient() *http.Client {
+	return sdk.NewHTTPClient(sdk.HTTPClientOptions{PublicTargetsOnly: true})
 }
 
 // 1 - API schema definitions
@@ -55,7 +63,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	base, err := sdk.NewFanOut(
 		&sdk.NewParams{
 			ID:          "discord-webhook",
-			Version:     "1.1",
+			Version:     "1.2",
 			Description: "Send attestations to Discord",
 			Logger:      l,
 			InputSchema: &sdk.InputSchema{
@@ -69,7 +77,7 @@ func New(l log.Logger) (sdk.FanOut, error) {
 		return nil, err
 	}
 
-	return &Integration{base}, nil
+	return &Integration{FanOutIntegration: base, client: publicOnlyClient()}, nil
 }
 
 type webhookResponse struct {
@@ -80,7 +88,7 @@ type webhookResponse struct {
 }
 
 // Register is executed when a operator wants to register a specific instance of this integration with their Chainloop organization
-func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
+func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
 	i.Logger.Info("registration requested")
 
 	var request *registrationRequest
@@ -89,7 +97,12 @@ func (i *Integration) Register(_ context.Context, req *sdk.RegistrationRequest) 
 	}
 
 	// Test the webhook URL and extract some information from it to use it as reference for the user
-	resp, err := http.Get(request.WebhookURL)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, request.WebhookURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("invalid webhook URL: %w", err)
+	}
+
+	resp, err := i.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("invalid webhook URL: %w", err)
 	}
@@ -146,7 +159,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 	}
 
 	webhookURL := req.RegistrationInfo.Credentials.Password
-	if err := executeWebhook(webhookURL, config.Username, []byte(summary), "New Attestation Received"); err != nil {
+	if err := executeWebhook(i.client, webhookURL, config.Username, []byte(summary), "New Attestation Received"); err != nil {
 		return fmt.Errorf("error executing webhook: %w", err)
 	}
 
@@ -172,7 +185,7 @@ func (i *Integration) Execute(_ context.Context, req *sdk.ExecutionRequest) erro
 // --boundary
 // Content-Disposition: form-data; name="files[0]"; filename="statement.json"
 // --boundary
-func executeWebhook(webhookURL, usernameOverride string, statement []byte, msgContent string) error {
+func executeWebhook(client *http.Client, webhookURL, usernameOverride string, statement []byte, msgContent string) error {
 	var b bytes.Buffer
 	multipartWriter := multipart.NewWriter(&b)
 
@@ -215,8 +228,7 @@ func executeWebhook(webhookURL, usernameOverride string, statement []byte, msgCo
 	// Needed to dump the content of the multipartWriter to the buffer
 	multipartWriter.Close()
 
-	// #nosec G107 - we are using a constant API URL that is not user input at this stage
-	r, err := http.Post(webhookURL, multipartWriter.FormDataContentType(), &b)
+	r, err := client.Post(webhookURL, multipartWriter.FormDataContentType(), &b)
 	if err != nil {
 		return fmt.Errorf("creating request: %w", err)
 	}
