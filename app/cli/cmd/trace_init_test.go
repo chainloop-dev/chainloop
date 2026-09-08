@@ -39,6 +39,9 @@ func traceInitTestCmd(t *testing.T, args ...string) *cobra.Command {
 	return cmd
 }
 
+// defaultTraceWorkflow is the workflow name trace init falls back to.
+const defaultTraceWorkflow = "ai-coding-session"
+
 func TestResolveTraceInitConfig(t *testing.T) {
 	const existingYML = "projectName: yml-project\norganization: yml-org\nworkflowName: yml-workflow\nrequireTrace: true\n"
 
@@ -69,7 +72,7 @@ func TestResolveTraceInitConfig(t *testing.T) {
 			name:         "the workflow name falls back to the trace default",
 			yml:          "projectName: yml-project\n",
 			wantProject:  "yml-project",
-			wantWorkflow: "ai-coding-session",
+			wantWorkflow: defaultTraceWorkflow,
 		},
 		{
 			name:             "flags win and are marked for saving",
@@ -99,7 +102,7 @@ func TestResolveTraceInitConfig(t *testing.T) {
 			yml:         "projectVersion: v1.0.0\n",
 			wantProject: "",
 			// The workflow still gets its default.
-			wantWorkflow: "ai-coding-session",
+			wantWorkflow: defaultTraceWorkflow,
 		},
 	}
 

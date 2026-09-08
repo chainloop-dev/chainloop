@@ -65,19 +65,19 @@ func resolveTraceIdentity(ctx context.Context, cfg *traceInitConfig, repoRoot st
 
 	// pinTo swaps the connection for one pinned to the resolved organization,
 	// so the project listing and the workflow creation that follows both
-	// target it.
+	// target it. The replacement is opened before the old one is dropped, so
+	// executor always names a live connection for the error path to close.
 	pinTo := func(org string) (projectLister, error) {
 		if org == "" {
 			return executor, nil
 		}
 
-		_ = executor.Close()
 		pinned, err := openTraceExecutor(ctx, org)
 		if err != nil {
-			executor = nil
 			return nil, err
 		}
 
+		_ = executor.Close()
 		executor = pinned
 
 		return pinned, nil
@@ -85,10 +85,7 @@ func resolveTraceIdentity(ctx context.Context, cfg *traceInitConfig, repoRoot st
 
 	if err := resolveIdentityInteractively(ctx, cfg, newHuhPrompter(os.LookupEnv),
 		viper.GetString(confOptions.organization.viperKey), filepath.Base(repoRoot), executor, pinTo); err != nil {
-		if executor != nil {
-			_ = executor.Close()
-		}
-
+		_ = executor.Close()
 		return nil, err
 	}
 
@@ -96,8 +93,9 @@ func resolveTraceIdentity(ctx context.Context, cfg *traceInitConfig, repoRoot st
 }
 
 // resolveIdentityInteractively asks for the settings the flags left open and
-// records them on cfg. pinTo is called once the organization is settled, to
-// repin the connection the project listing runs on.
+// records them on cfg. pinTo is called once the organization is settled, and
+// always, since the caller works on the repinned connection whether or not a
+// project question follows.
 //
 // A value the user passed as a flag is already settled: it skips its question
 // and keeps the value and the save behavior resolveTraceInitConfig gave it,

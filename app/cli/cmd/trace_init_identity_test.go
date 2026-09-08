@@ -132,11 +132,7 @@ func TestIsInteractive(t *testing.T) {
 			env:   map[string]string{"CI": ""},
 			stdin: true, stderr: true, want: true,
 		},
-		{
-			name:  "Jenkins does not set CI but is still detected",
-			env:   map[string]string{"JENKINS_URL": "https://ci.example.com"},
-			stdin: true, stderr: true, want: false,
-		},
+		// Providers that do not set CI are covered by TestIsInteractiveCISignals.
 		{
 			name:  "a dumb terminal cannot render a prompt",
 			env:   map[string]string{"TERM": "dumb"},
@@ -161,6 +157,23 @@ func TestIsInteractive(t *testing.T) {
 				return v, ok
 			}
 			assert.Equal(t, tc.want, isInteractive(lookupEnv, tc.stdin, tc.stderr))
+		})
+	}
+}
+
+// TestIsInteractiveCISignals covers every provider in the list, so adding one
+// without it actually suppressing prompting fails here.
+func TestIsInteractiveCISignals(t *testing.T) {
+	for _, key := range ciSignals {
+		t.Run(key, func(t *testing.T) {
+			lookupEnv := func(k string) (string, bool) {
+				if k == key {
+					return "1", true
+				}
+
+				return "", false
+			}
+			assert.False(t, isInteractive(lookupEnv, true, true), "%s must disable prompting", key)
 		})
 	}
 }

@@ -34,10 +34,9 @@ type identityStepsFixture struct {
 	projects *fakeProjectLister
 	prompt   *fakePrompter
 
-	pinnedTo    string
-	pinCalls    int
-	pinErr      error
-	pinReturned bool
+	pinnedTo string
+	pinCalls int
+	pinErr   error
 }
 
 func (f *identityStepsFixture) pinTo(org string) (projectLister, error) {
@@ -46,8 +45,6 @@ func (f *identityStepsFixture) pinTo(org string) (projectLister, error) {
 	if f.pinErr != nil {
 		return nil, f.pinErr
 	}
-
-	f.pinReturned = true
 
 	return f.projects, nil
 }
@@ -142,7 +139,9 @@ func TestResolveIdentityInteractivelyPinning(t *testing.T) {
 		require.NoError(t, f.run(cfg))
 		assert.Equal(t, orgGlobex, f.pinnedTo, "pinning must happen after the organization is picked")
 		assert.Equal(t, 1, f.pinCalls)
-		assert.True(t, f.pinReturned, "the project step must use the repinned connection")
+		// The project picker offers what the repinned lister returned.
+		require.Len(t, f.prompt.selects, 2)
+		assert.Contains(t, f.prompt.selects[1].options, projectAPI, "the project step must use the repinned connection")
 	})
 
 	t.Run("a pinning failure stops before the project question", func(t *testing.T) {
