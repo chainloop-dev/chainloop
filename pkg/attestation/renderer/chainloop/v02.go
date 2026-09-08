@@ -47,6 +47,10 @@ type ProvenancePredicateV02 struct {
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policyEvaluations,omitempty"`
 	// Reference to the PolicyEvaluationBundle stored in CAS
 	PolicyEvaluationsRef *intoto.ResourceDescriptor `json:"policyEvaluationsRef,omitempty"`
+	// Size in bytes of the bundle PolicyEvaluationsRef points at. Recorded here
+	// so readers can decide whether to pull it without asking the CAS first.
+	// Zero when unrecorded.
+	PolicyEvaluationsBundleSize int64 `json:"policyEvaluationsBundleSize,omitempty"`
 	// Used to read policy evaluations from old attestations
 	PolicyEvaluationsFallback map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 
@@ -121,14 +125,18 @@ type PolicyViolation struct {
 
 type RendererV02 struct {
 	*RendererCommon
-	attClient            pb.AttestationServiceClient
-	logger               *zerolog.Logger
-	policyEvaluationsRef *intoto.ResourceDescriptor
+	attClient                   pb.AttestationServiceClient
+	logger                      *zerolog.Logger
+	policyEvaluationsRef        *intoto.ResourceDescriptor
+	policyEvaluationsBundleSize int64
 }
 
-// SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations bundle.
-func (r *RendererV02) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor) {
+// SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations
+// bundle, along with its size in bytes. The two are set together so the
+// predicate cannot describe a bundle of one size and point at another.
+func (r *RendererV02) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor, sizeBytes int64) {
 	r.policyEvaluationsRef = ref
+	r.policyEvaluationsBundleSize = sizeBytes
 }
 
 func NewChainloopRendererV02(att *v1.Attestation, builderVersion, builderDigest string, attClient pb.AttestationServiceClient, logger *zerolog.Logger) *RendererV02 {
@@ -276,6 +284,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		Materials:                   normalizedMaterials,
 		PolicyEvaluations:           evalResult.evaluations,
 		PolicyEvaluationsRef:        r.policyEvaluationsRef,
+		PolicyEvaluationsBundleSize: r.policyEvaluationsBundleSize,
 		PolicyHasViolations:         evalResult.hasViolations,
 		PolicyEvaluationsCount:      evalResult.evaluationsCount,
 		PolicyViolationsCount:       evalResult.violationsCount,
@@ -535,6 +544,10 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEval
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluationsRef() *intoto.ResourceDescriptor {
 	return p.PolicyEvaluationsRef
+}
+
+func (p *ProvenancePredicateV02) GetPolicyEvaluationsBundleSize() int64 {
+	return p.PolicyEvaluationsBundleSize
 }
 
 func (p *ProvenancePredicateV02) GetPolicyEvaluationStatus() *PolicyEvaluationStatus {

@@ -190,9 +190,9 @@ message AttestationItem {
   map<string, PolicyEvaluations> policy_evaluations = 8;
   PolicyEvaluationStatus policy_evaluation_status = 9;
   // Reference to the policy-evaluation bundle in the CAS backend. Populated
-  // only when the evaluations are NOT inlined in policy_evaluations, either
-  // because the bundle is larger than the server inlines or because it could
-  // not be resolved. Fetch the bundle by digest to inspect the violations.
+  // whenever the attestation carries a bundle, whether or not the evaluations
+  // were also inlined in policy_evaluations: see its "inlined" field. Fetch the
+  // bundle by digest to inspect the full set of evaluations.
   // Counters and status in policy_evaluation_status remain complete either way.
   PolicyEvaluationsRef policy_evaluations_ref = 11;
 
@@ -242,8 +242,9 @@ message AttestationItem {
   }
 }
 
-// Pointer to a policy-evaluation bundle held in a CAS backend, returned in
-// place of the evaluations themselves.
+// Pointer to a policy-evaluation bundle held in a CAS backend. It is the
+// canonical location of the evaluations, returned both alongside them and, when
+// they could not be inlined, in their place.
 message PolicyEvaluationsRef {
   // Digest of the bundle as stored in CAS, in "sha256:<hex>" form
   string digest = 1;
@@ -251,8 +252,11 @@ message PolicyEvaluationsRef {
   int64 size_bytes = 2;
   // Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json
   string media_type = 3;
-  // Why the evaluations were not inlined
+  // Why the evaluations were not inlined. REASON_UNSPECIFIED when they were.
   Reason reason = 4;
+  // True when policy_evaluations carries the evaluations decoded from this
+  // bundle, i.e the reference is informational rather than a fallback.
+  bool inlined = 5;
 
   enum Reason {
     REASON_UNSPECIFIED = 0;

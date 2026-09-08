@@ -299,31 +299,44 @@ func policiesTable(evs []*action.PolicyEvaluation, mt table.Writer, debugMode bo
 }
 
 // appendPolicySection renders the attestation-level policies, either as the
-// usual per-policy rows or, when the server declined to inline the
-// evaluations, as a notice pointing at the bundle in the CAS backend.
+// usual per-policy rows or, when the server declined to inline the evaluations,
+// as a notice explaining why. Either way it closes with the bundle in the CAS
+// backend, which holds the full set of evaluations the table only summarizes.
 func appendPolicySection(att *action.WorkflowRunAttestationItem, gt table.Writer, debugMode bool) {
-	if notice := policyEvaluationsRefNotice(att.PolicyEvaluationsRef, att.PolicyEvaluationStatus); notice != nil {
+	ref := att.PolicyEvaluationsRef
+
+	// A missing reference means the evaluations, if any, came inline: there is
+	// no bundle to point at.
+	if ref == nil || ref.Inlined {
+		if evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]; len(evs) > 0 {
+			gt.AppendRow(table.Row{"Policies", "------"})
+			policiesTable(evs, gt, debugMode)
+		}
+	} else {
 		gt.AppendRow(table.Row{"Policies", "------"})
-		for _, line := range notice {
+		for _, line := range policyEvaluationsRefNotice(ref, att.PolicyEvaluationStatus) {
 			gt.AppendRow(table.Row{"", line})
 		}
+	}
 
+	appendPolicyEvaluationsBundleRow(ref, gt)
+}
+
+// appendPolicyEvaluationsBundleRow points at the policy-evaluation bundle
+// whenever there is a digest to point at, including when the server could not
+// read it: the caller may well have access the control plane lacked.
+func appendPolicyEvaluationsBundleRow(ref *action.PolicyEvaluationsRef, gt table.Writer) {
+	if ref == nil || ref.Digest == "" {
 		return
 	}
 
-	evs := att.PolicyEvaluations[chainloop.AttPolicyEvaluation]
-	if len(evs) == 0 {
-		return
-	}
-
-	gt.AppendRow(table.Row{"Policies", "------"})
-	policiesTable(evs, gt, debugMode)
+	gt.AppendRow(table.Row{"Policy evaluations bundle", downloadPolicyEvaluationsHint(ref)})
 }
 
 // policyEvaluationsRefNotice renders the lines shown in place of the policy
 // table when the server returned a reference instead of the evaluations. It
 // leads with the counters, which stay accurate no matter how large the bundle
-// is, and only offers a download when the bundle is known to be there.
+// is.
 func policyEvaluationsRefNotice(ref *action.PolicyEvaluationsRef, status *action.PolicyEvaluationStatus) []string {
 	if ref == nil {
 		return nil
@@ -339,12 +352,7 @@ func policyEvaluationsRefNotice(ref *action.PolicyEvaluationsRef, status *action
 
 	// Without counters there is nothing to summarize, so name the subject instead.
 	if status == nil {
-		lines := []string{fmt.Sprintf("policy evaluations %s", reason)}
-		if ref.Reason == action.PolicyEvaluationsRefReasonTooLarge {
-			lines = append(lines, downloadPolicyEvaluationsHint(ref))
-		}
-
-		return lines
+		return []string{fmt.Sprintf("policy evaluations %s", reason)}
 	}
 
 	counters := fmt.Sprintf("%d evaluations, %d violations", status.Total, status.Violated)
@@ -352,16 +360,11 @@ func policyEvaluationsRefNotice(ref *action.PolicyEvaluationsRef, status *action
 		counters = fmt.Sprintf("%s (%d suppressed)", counters, status.Suppressed)
 	}
 
-	lines := []string{fmt.Sprintf("%s - %s", counters, reason)}
-	if ref.Reason == action.PolicyEvaluationsRefReasonTooLarge {
-		lines = append(lines, downloadPolicyEvaluationsHint(ref))
-	}
-
-	return lines
+	return []string{fmt.Sprintf("%s - %s", counters, reason)}
 }
 
 func downloadPolicyEvaluationsHint(ref *action.PolicyEvaluationsRef) string {
-	return fmt.Sprintf("inspect with: chainloop artifact download --digest %s", ref.Digest)
+	return fmt.Sprintf("chainloop artifact download --digest %s", ref.Digest)
 }
 
 // violationSummary builds a single-line description of a violation using the

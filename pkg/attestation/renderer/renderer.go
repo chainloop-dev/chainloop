@@ -104,10 +104,11 @@ func (ab *AttestationRenderer) RenderStatement(ctx context.Context) (*intoto.Sta
 	return statement, nil
 }
 
-// SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations bundle
-// on the underlying renderer. This must be called before Render().
-func (ab *AttestationRenderer) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor) {
-	ab.v02Renderer.SetPolicyEvaluationsRef(ref)
+// SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations
+// bundle, and its size in bytes, on the underlying renderer. This must be
+// called before Render().
+func (ab *AttestationRenderer) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor, sizeBytes int64) {
+	ab.v02Renderer.SetPolicyEvaluationsRef(ref, sizeBytes)
 }
 
 // Attestation (dsee envelope) -> { message: { Statement(in-toto): [subject, predicate] }, signature: "sig" }.

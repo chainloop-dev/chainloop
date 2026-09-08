@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import (
 	"os"
 	"testing"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -72,4 +74,85 @@ func readEnvelope(path string) (*dsse.Envelope, error) {
 		return nil, err
 	}
 	return &envelope, nil
+}
+
+func TestPBPolicyEvaluationsRefToAction(t *testing.T) {
+	const digest = "sha256:abc123"
+
+	testCases := []struct {
+		name string
+		in   *pb.PolicyEvaluationsRef
+		want *PolicyEvaluationsRef
+	}{
+		{
+			name: "no reference",
+		},
+		{
+			name: "inlined evaluations carry no reason",
+			in: &pb.PolicyEvaluationsRef{
+				Digest:    digest,
+				SizeBytes: 2048,
+				MediaType: "application/vnd.chainloop.policy-evaluations.v1+json",
+				Inlined:   true,
+			},
+			want: &PolicyEvaluationsRef{
+				Digest:    digest,
+				SizeBytes: 2048,
+				MediaType: "application/vnd.chainloop.policy-evaluations.v1+json",
+				Inlined:   true,
+			},
+		},
+		{
+			name: "oversized bundle",
+			in: &pb.PolicyEvaluationsRef{
+				Digest:    digest,
+				SizeBytes: 64 * 1024 * 1024,
+				Reason:    pb.PolicyEvaluationsRef_REASON_TOO_LARGE,
+			},
+			want: &PolicyEvaluationsRef{
+				Digest:    digest,
+				SizeBytes: 64 * 1024 * 1024,
+				Reason:    PolicyEvaluationsRefReasonTooLarge,
+			},
+		},
+		{
+			name: "unavailable bundle",
+			in: &pb.PolicyEvaluationsRef{
+				Digest: digest,
+				Reason: pb.PolicyEvaluationsRef_REASON_UNAVAILABLE,
+			},
+			want: &PolicyEvaluationsRef{
+				Digest: digest,
+				Reason: PolicyEvaluationsRefReasonUnavailable,
+			},
+		},
+		{
+			name: "an unspecified reason without inlining stays conservative",
+			in: &pb.PolicyEvaluationsRef{
+				Digest: digest,
+			},
+			want: &PolicyEvaluationsRef{
+				Digest: digest,
+				Reason: PolicyEvaluationsRefReasonUnavailable,
+			},
+		},
+		{
+			name: "an unknown reason alongside inlining does not fabricate a failure",
+			in: &pb.PolicyEvaluationsRef{
+				Digest:  digest,
+				Reason:  pb.PolicyEvaluationsRef_Reason(99),
+				Inlined: true,
+			},
+			want: &PolicyEvaluationsRef{
+				Digest:  digest,
+				Inlined: true,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, pbPolicyEvaluationsRefToAction(tc.in))
+		})
+	}
 }

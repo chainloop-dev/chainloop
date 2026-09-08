@@ -43,6 +43,9 @@ type NormalizablePredicate interface {
 	GetMetadata() *Metadata
 	GetPolicyEvaluations() map[string][]*PolicyEvaluation
 	GetPolicyEvaluationsRef() *intoto.ResourceDescriptor
+	// GetPolicyEvaluationsBundleSize reports the size in bytes of the bundle the
+	// reference points at, or zero when the attestation does not record it
+	GetPolicyEvaluationsBundleSize() int64
 	GetPolicyEvaluationStatus() *PolicyEvaluationStatus
 }
 

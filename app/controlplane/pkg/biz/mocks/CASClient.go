@@ -8,7 +8,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -38,92 +37,6 @@ type CASClient_Expecter struct {
 
 func (_m *CASClient) EXPECT() *CASClient_Expecter {
 	return &CASClient_Expecter{mock: &_m.Mock}
-}
-
-// Describe provides a mock function for the type CASClient
-func (_mock *CASClient) Describe(ctx context.Context, backendType string, secretID string, orgID uuid.UUID, digest string) (*casclient.ResourceInfo, error) {
-	ret := _mock.Called(ctx, backendType, secretID, orgID, digest)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Describe")
-	}
-
-	var r0 *casclient.ResourceInfo
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, uuid.UUID, string) (*casclient.ResourceInfo, error)); ok {
-		return returnFunc(ctx, backendType, secretID, orgID, digest)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, uuid.UUID, string) *casclient.ResourceInfo); ok {
-		r0 = returnFunc(ctx, backendType, secretID, orgID, digest)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*casclient.ResourceInfo)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, uuid.UUID, string) error); ok {
-		r1 = returnFunc(ctx, backendType, secretID, orgID, digest)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// CASClient_Describe_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Describe'
-type CASClient_Describe_Call struct {
-	*mock.Call
-}
-
-// Describe is a helper method to define mock.On call
-//   - ctx context.Context
-//   - backendType string
-//   - secretID string
-//   - orgID uuid.UUID
-//   - digest string
-func (_e *CASClient_Expecter) Describe(ctx any, backendType any, secretID any, orgID any, digest any) *CASClient_Describe_Call {
-	return &CASClient_Describe_Call{Call: _e.mock.On("Describe", ctx, backendType, secretID, orgID, digest)}
-}
-
-func (_c *CASClient_Describe_Call) Run(run func(ctx context.Context, backendType string, secretID string, orgID uuid.UUID, digest string)) *CASClient_Describe_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 uuid.UUID
-		if args[3] != nil {
-			arg3 = args[3].(uuid.UUID)
-		}
-		var arg4 string
-		if args[4] != nil {
-			arg4 = args[4].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-			arg4,
-		)
-	})
-	return _c
-}
-
-func (_c *CASClient_Describe_Call) Return(resourceInfo *casclient.ResourceInfo, err error) *CASClient_Describe_Call {
-	_c.Call.Return(resourceInfo, err)
-	return _c
-}
-
-func (_c *CASClient_Describe_Call) RunAndReturn(run func(ctx context.Context, backendType string, secretID string, orgID uuid.UUID, digest string) (*casclient.ResourceInfo, error)) *CASClient_Describe_Call {
-	_c.Call.Return(run)
-	return _c
 }
 
 // Download provides a mock function for the type CASClient

@@ -436,18 +436,22 @@ func mustStructValue(t *testing.T, fields map[string]any) *structpb.Value {
 
 func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 	testCases := []struct {
-		name    string
-		ref     *intoto.ResourceDescriptor
-		wantRef bool
+		name     string
+		ref      *intoto.ResourceDescriptor
+		size     int64
+		wantRef  bool
+		wantSize int64
 	}{
 		{
-			name: "ref is present when set",
+			name: "ref and bundle size are present when set",
 			ref: &intoto.ResourceDescriptor{
 				Name:      "policy-evaluations",
 				Digest:    map[string]string{"sha256": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
 				MediaType: PolicyEvaluationsBundleMediaType,
 			},
-			wantRef: true,
+			size:     4096,
+			wantRef:  true,
+			wantSize: 4096,
 		},
 		{
 			name:    "ref is nil when not set",
@@ -468,7 +472,7 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
 
 			if tc.ref != nil {
-				renderer.SetPolicyEvaluationsRef(tc.ref)
+				renderer.SetPolicyEvaluationsRef(tc.ref, tc.size)
 			}
 
 			statement, err := renderer.Statement(context.TODO())
@@ -480,6 +484,7 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 
 			if !tc.wantRef {
 				assert.Nil(t, predicate.PolicyEvaluationsRef)
+				assert.Zero(t, predicate.GetPolicyEvaluationsBundleSize())
 				// Without a ref (no-CAS backend) the evaluations stay inline.
 				assert.NotEmpty(t, predicate.PolicyEvaluations)
 				return
@@ -489,6 +494,10 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 			assert.Equal(t, tc.ref.Name, predicate.PolicyEvaluationsRef.Name)
 			assert.Equal(t, tc.ref.MediaType, predicate.PolicyEvaluationsRef.MediaType)
 			assert.Equal(t, tc.ref.Digest["sha256"], predicate.PolicyEvaluationsRef.Digest["sha256"])
+
+			// The size travels with the ref so readers can decide whether to
+			// pull the bundle without asking the CAS how big it is.
+			assert.Equal(t, tc.wantSize, predicate.GetPolicyEvaluationsBundleSize())
 
 			// With a ref present (CAS offload) the predicate must not also carry
 			// the inline evaluations.

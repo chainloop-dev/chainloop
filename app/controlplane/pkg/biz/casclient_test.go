@@ -17,17 +17,14 @@ package biz_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 func TestIsReady(t *testing.T) {
@@ -81,74 +78,6 @@ func TestIsReady(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestDescribe(t *testing.T) {
-	const digest = "sha256:cf4c9c8b7b1b4f4d0b4e3f4a5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d"
-
-	validConf := &conf.Bootstrap_CASServer{
-		Grpc: &conf.Server_GRPC{Addr: "localhost:1111"},
-	}
-
-	testCases := []struct {
-		name     string
-		orgID    uuid.UUID
-		casInfo  *casclient.ResourceInfo
-		casErr   error
-		want     *casclient.ResourceInfo
-		wantErr  bool
-		wantCall bool
-	}{
-		{
-			name:     "returns the resource metadata reported by the CAS",
-			orgID:    uuid.New(),
-			casInfo:  &casclient.ResourceInfo{Digest: digest, Filename: "policy-evaluations.json", Size: 2048},
-			want:     &casclient.ResourceInfo{Digest: digest, Filename: "policy-evaluations.json", Size: 2048},
-			wantCall: true,
-		},
-		{
-			name:     "propagates the CAS error",
-			orgID:    uuid.New(),
-			casErr:   errors.New("not found"),
-			wantErr:  true,
-			wantCall: true,
-		},
-		{
-			name:    "fails without reaching the CAS when the org is missing",
-			orgID:   uuid.Nil,
-			wantErr: true,
-		},
-	}
-
-	credsProvider, err := biz.NewCASCredentialsUseCase(&conf.Auth{
-		CasRobotAccountPrivateKeyPath: "./testdata/test-key.ec.pem",
-	})
-	require.NoError(t, err)
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			c := mocks.NewDownloaderUploader(t)
-			if tc.wantCall {
-				c.On("Describe", mock.Anything, digest).Return(tc.casInfo, tc.casErr)
-			}
-
-			clientProvider := func(_ *conf.Bootstrap_CASServer, _ string) (casclient.DownloaderUploader, func(), error) {
-				return c, func() {}, nil
-			}
-
-			uc := biz.NewCASClientUseCase(credsProvider, validConf, nil, biz.WithClientFactory(clientProvider))
-
-			got, err := uc.Describe(context.Background(), "OCI_REPOSITORY", "secret-name", tc.orgID, digest)
-			if tc.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, got)
-				return
-			}
-
-			assert.NoError(t, err)
 			assert.Equal(t, tc.want, got)
 		})
 	}

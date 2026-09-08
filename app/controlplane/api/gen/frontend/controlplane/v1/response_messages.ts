@@ -619,9 +619,9 @@ export interface AttestationItem {
   policyEvaluationStatus?: AttestationItem_PolicyEvaluationStatus;
   /**
    * Reference to the policy-evaluation bundle in the CAS backend. Populated
-   * only when the evaluations are NOT inlined in policy_evaluations, either
-   * because the bundle is larger than the server inlines or because it could
-   * not be resolved. Fetch the bundle by digest to inspect the violations.
+   * whenever the attestation carries a bundle, whether or not the evaluations
+   * were also inlined in policy_evaluations: see its "inlined" field. Fetch the
+   * bundle by digest to inspect the full set of evaluations.
    * Counters and status in policy_evaluation_status remain complete either way.
    */
   policyEvaluationsRef?: PolicyEvaluationsRef;
@@ -704,8 +704,9 @@ export interface AttestationItem_Material_AnnotationsEntry {
 }
 
 /**
- * Pointer to a policy-evaluation bundle held in a CAS backend, returned in
- * place of the evaluations themselves.
+ * Pointer to a policy-evaluation bundle held in a CAS backend. It is the
+ * canonical location of the evaluations, returned both alongside them and, when
+ * they could not be inlined, in their place.
  */
 export interface PolicyEvaluationsRef {
   /** Digest of the bundle as stored in CAS, in "sha256:<hex>" form */
@@ -714,8 +715,13 @@ export interface PolicyEvaluationsRef {
   sizeBytes: number;
   /** Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json */
   mediaType: string;
-  /** Why the evaluations were not inlined */
+  /** Why the evaluations were not inlined. REASON_UNSPECIFIED when they were. */
   reason: PolicyEvaluationsRef_Reason;
+  /**
+   * True when policy_evaluations carries the evaluations decoded from this
+   * bundle, i.e the reference is informational rather than a fallback.
+   */
+  inlined: boolean;
 }
 
 export enum PolicyEvaluationsRef_Reason {
@@ -2765,7 +2771,7 @@ export const AttestationItem_Material_AnnotationsEntry = {
 };
 
 function createBasePolicyEvaluationsRef(): PolicyEvaluationsRef {
-  return { digest: "", sizeBytes: 0, mediaType: "", reason: 0 };
+  return { digest: "", sizeBytes: 0, mediaType: "", reason: 0, inlined: false };
 }
 
 export const PolicyEvaluationsRef = {
@@ -2781,6 +2787,9 @@ export const PolicyEvaluationsRef = {
     }
     if (message.reason !== 0) {
       writer.uint32(32).int32(message.reason);
+    }
+    if (message.inlined === true) {
+      writer.uint32(40).bool(message.inlined);
     }
     return writer;
   },
@@ -2820,6 +2829,13 @@ export const PolicyEvaluationsRef = {
 
           message.reason = reader.int32() as any;
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.inlined = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2835,6 +2851,7 @@ export const PolicyEvaluationsRef = {
       sizeBytes: isSet(object.sizeBytes) ? Number(object.sizeBytes) : 0,
       mediaType: isSet(object.mediaType) ? String(object.mediaType) : "",
       reason: isSet(object.reason) ? policyEvaluationsRef_ReasonFromJSON(object.reason) : 0,
+      inlined: isSet(object.inlined) ? Boolean(object.inlined) : false,
     };
   },
 
@@ -2844,6 +2861,7 @@ export const PolicyEvaluationsRef = {
     message.sizeBytes !== undefined && (obj.sizeBytes = Math.round(message.sizeBytes));
     message.mediaType !== undefined && (obj.mediaType = message.mediaType);
     message.reason !== undefined && (obj.reason = policyEvaluationsRef_ReasonToJSON(message.reason));
+    message.inlined !== undefined && (obj.inlined = message.inlined);
     return obj;
   },
 
@@ -2857,6 +2875,7 @@ export const PolicyEvaluationsRef = {
     message.sizeBytes = object.sizeBytes ?? 0;
     message.mediaType = object.mediaType ?? "";
     message.reason = object.reason ?? 0;
+    message.inlined = object.inlined ?? false;
     return message;
   },
 };

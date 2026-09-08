@@ -100,9 +100,10 @@ func (p *casResolvedPredicate) GetPolicyEvaluations() map[string][]*chainloop.Po
 // caller can fetch them directly from the CAS.
 const defaultPolicyEvaluationsMaxInlineBytes = 10 << 20 // 10MiB
 
-// resolvedPolicyEvaluations carries either the inlined evaluations or, when
-// they were deliberately left out, the reference the caller needs to fetch
-// them. Exactly one of the two fields is set.
+// resolvedPolicyEvaluations carries the reference to the policy-evaluation
+// bundle and, when it was small enough to be read, the evaluations decoded from
+// it. The reference is always set so callers can point at the bundle whether or
+// not it was inlined; evaluations are set only on the inlining path.
 type resolvedPolicyEvaluations struct {
 	evaluations map[string][]*chainloop.PolicyEvaluation
 	ref         *pb.PolicyEvaluationsRef
@@ -121,12 +122,19 @@ func (s *WorkflowRunService) policyEvaluationsMaxInlineBytes() int64 {
 // reference, meaning the caller should keep whatever the predicate itself
 // holds.
 //
+// bundleSize is the size the attestation records for the bundle, and is what
+// the cap is enforced against: it travels signed with the predicate and costs
+// no round trip. A bundle whose size is not recorded is read in full, since
+// sizing it would mean asking the CAS on every view -- the very cost the
+// recorded size exists to avoid.
+//
 // Anything that prevents inlining the bundle with confidence -- an oversized
-// bundle, an unknown size, an unreachable or undecodable object -- yields a
-// reference rather than a download attempt.
+// bundle, an unreachable or undecodable object -- yields a reference rather
+// than the evaluations.
 func (s *WorkflowRunService) resolvePolicyEvaluations(
 	ctx context.Context,
 	descriptor *intoto.ResourceDescriptor,
+	bundleSize int64,
 	orgID uuid.UUID,
 ) *resolvedPolicyEvaluations {
 	if descriptor == nil {
@@ -143,104 +151,60 @@ func (s *WorkflowRunService) resolvePolicyEvaluations(
 	digest := fmt.Sprintf("sha256:%s", hexDigest)
 
 	maxInlineBytes := s.policyEvaluationsMaxInlineBytes()
+	if bundleSize > maxInlineBytes {
+		s.log.Infow("msg", "policy evaluations bundle too large to inline", "digest", digest, "size", bundleSize, "max", maxInlineBytes)
+		return tooLargePolicyEvaluations(digest, bundleSize, mediaType)
+	}
 
-	// A cached bundle costs no CAS round trip. Only under-cap bundles are
-	// cached below, so the size check here just keeps the cap honest for
-	// entries written before it existed.
+	// A cached bundle costs no CAS round trip.
 	if cached, found, err := s.policyEvalCache.Get(ctx, digest); err == nil && found {
-		if int64(len(cached)) > maxInlineBytes {
-			return tooLargePolicyEvaluations(digest, int64(len(cached)), mediaType)
-		}
-
-		return s.decodePolicyEvaluations(cached, digest, int64(len(cached)), mediaType)
+		return s.decodePolicyEvaluations(cached, digest, mediaType)
 	}
 
 	mapping, err := s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, digest, []uuid.UUID{orgID}, nil)
 	if err != nil {
 		s.log.Warnw("msg", "finding CAS mapping for policy evaluations", "digest", digest, "err", err)
-		return unavailablePolicyEvaluations(digest, 0, mediaType)
+		return unavailablePolicyEvaluations(digest, bundleSize, mediaType)
 	}
 
-	// Ask for the size before paying for the transfer.
-	info, err := s.casClient.Describe(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, digest)
-	if err != nil {
-		s.log.Warnw("msg", "describing policy evaluations bundle", "digest", digest, "err", err)
-		return unavailablePolicyEvaluations(digest, 0, mediaType)
-	}
-
-	if info.Size > maxInlineBytes {
-		s.log.Infow("msg", "policy evaluations bundle too large to inline", "digest", digest, "size", info.Size, "max", maxInlineBytes)
-		return tooLargePolicyEvaluations(digest, info.Size, mediaType)
-	}
-
-	// A size of zero means the backend did not report one, not that the object
-	// is empty: some backends omit the content length and the proto getter then
-	// yields zero. Downloading on that basis would be downloading blind.
-	if info.Size <= 0 {
-		s.log.Warnw("msg", "policy evaluations bundle has no reported size", "digest", digest)
-		return unavailablePolicyEvaluations(digest, 0, mediaType)
-	}
-
-	// The reported size is metadata, so bound the transfer itself as well.
-	// A backend that under-reports cannot then push us past the cap.
-	buf := &boundedBuffer{limit: maxInlineBytes}
+	buf := &bytes.Buffer{}
 	err = s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, buf, digest)
-
-	// Checked before the error because a writer refusing to grow surfaces as a
-	// download failure, and because the bound must hold even if an
-	// implementation swallows the write error.
-	if buf.exceeded {
-		s.log.Warnw("msg", "policy evaluations bundle exceeded the cap while downloading", "digest", digest, "reportedSize", info.Size, "max", maxInlineBytes)
-		// The reported size is known to be wrong, so no size is reported at all.
-		return tooLargePolicyEvaluations(digest, 0, mediaType)
-	}
-
 	if err != nil {
 		s.log.Warnw("msg", "downloading policy evaluations bundle", "digest", digest, "err", err)
-		return unavailablePolicyEvaluations(digest, info.Size, mediaType)
+		return unavailablePolicyEvaluations(digest, bundleSize, mediaType)
 	}
 
 	data := buf.Bytes()
 	_ = s.policyEvalCache.Set(ctx, digest, data)
 
-	return s.decodePolicyEvaluations(data, digest, info.Size, mediaType)
+	return s.decodePolicyEvaluations(data, digest, mediaType)
 }
 
-// boundedBuffer accumulates bytes in memory up to a limit and refuses the write
-// that would exceed it, recording that it did. It exists so the policy
-// evaluations cap is enforced against the bytes actually received rather than
-// against the size the CAS backend claims.
-type boundedBuffer struct {
-	buf      bytes.Buffer
-	limit    int64
-	written  int64
-	exceeded bool
-}
-
-func (b *boundedBuffer) Write(p []byte) (int, error) {
-	if b.written+int64(len(p)) > b.limit {
-		b.exceeded = true
-		return 0, fmt.Errorf("content exceeds the maximum of %d bytes", b.limit)
-	}
-
-	n, err := b.buf.Write(p)
-	b.written += int64(n)
-
-	return n, err
-}
-
-func (b *boundedBuffer) Bytes() []byte {
-	return b.buf.Bytes()
-}
-
-func (s *WorkflowRunService) decodePolicyEvaluations(data []byte, digest string, size int64, mediaType string) *resolvedPolicyEvaluations {
+// decodePolicyEvaluations reports the bytes actually read rather than the size
+// the attestation records: the two can disagree, and only the former is known
+// to be right.
+func (s *WorkflowRunService) decodePolicyEvaluations(data []byte, digest string, mediaType string) *resolvedPolicyEvaluations {
 	evaluations, err := chainloop.PolicyEvaluationsFromBundle(data)
 	if err != nil {
 		s.log.Warnw("msg", "decoding policy evaluations bundle", "digest", digest, "err", err)
-		return unavailablePolicyEvaluations(digest, size, mediaType)
+		return unavailablePolicyEvaluations(digest, int64(len(data)), mediaType)
 	}
 
-	return &resolvedPolicyEvaluations{evaluations: evaluations}
+	return &resolvedPolicyEvaluations{
+		evaluations: evaluations,
+		ref:         inlinedPolicyEvaluations(digest, int64(len(data)), mediaType),
+	}
+}
+
+// inlinedPolicyEvaluations references a bundle whose evaluations are being
+// returned alongside it. No reason is set: nothing was left out.
+func inlinedPolicyEvaluations(digest string, size int64, mediaType string) *pb.PolicyEvaluationsRef {
+	return &pb.PolicyEvaluationsRef{
+		Digest:    digest,
+		SizeBytes: size,
+		MediaType: mediaType,
+		Inlined:   true,
+	}
 }
 
 func tooLargePolicyEvaluations(digest string, size int64, mediaType string) *resolvedPolicyEvaluations {
@@ -429,12 +393,11 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 			return nil, handleUseCaseErr(err, s.log)
 		}
 
-		if resolved := s.resolvePolicyEvaluations(ctx, predicate.GetPolicyEvaluationsRef(), run.Workflow.OrgID); resolved != nil {
-			// Either the evaluations are inlined, or the caller is handed the
-			// reference to fetch them from the CAS itself.
-			if resolved.ref != nil {
-				policyEvaluationsRef = resolved.ref
-			} else {
+		if resolved := s.resolvePolicyEvaluations(ctx, predicate.GetPolicyEvaluationsRef(), predicate.GetPolicyEvaluationsBundleSize(), run.Workflow.OrgID); resolved != nil {
+			// The reference always travels back so the caller can fetch the
+			// bundle from the CAS; the evaluations only when they were inlined.
+			policyEvaluationsRef = resolved.ref
+			if resolved.evaluations != nil {
 				predicate = &casResolvedPredicate{NormalizablePredicate: predicate, evals: resolved.evaluations}
 			}
 		}

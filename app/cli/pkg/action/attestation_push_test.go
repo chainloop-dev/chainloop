@@ -93,7 +93,7 @@ func TestUploadPolicyEvaluationsBundle(t *testing.T) {
 				uploader = tc.uploader(t)
 			}
 
-			ref, err := uploadPolicyEvaluationsBundle(context.Background(), tc.evaluations, uploader)
+			ref, sizeBytes, err := uploadPolicyEvaluationsBundle(context.Background(), tc.evaluations, uploader)
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -103,6 +103,7 @@ func TestUploadPolicyEvaluationsBundle(t *testing.T) {
 
 			if !tc.wantRef {
 				assert.Nil(t, ref)
+				assert.Zero(t, sizeBytes)
 				return
 			}
 
@@ -117,6 +118,10 @@ func TestUploadPolicyEvaluationsBundle(t *testing.T) {
 			require.NoError(t, err)
 			expectedDigest := fmt.Sprintf("%x", sha256.Sum256(data))
 			assert.Equal(t, expectedDigest, ref.Digest["sha256"])
+
+			// The recorded size is what the reader gates the inlining cap on,
+			// so it has to be the size of the very bytes that were uploaded.
+			assert.Equal(t, int64(len(data)), sizeBytes)
 		})
 	}
 }
