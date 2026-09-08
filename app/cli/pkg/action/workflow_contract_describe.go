@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,12 +34,12 @@ func NewWorkflowContractDescribe(cfg *ActionsOpts) *WorkflowContractDescribe {
 	return &WorkflowContractDescribe{cfg}
 }
 
-func (action *WorkflowContractDescribe) Run(name string, rev int32) (*WorkflowContractWithVersionItem, error) {
+func (action *WorkflowContractDescribe) Run(ctx context.Context, name string, rev int32) (*WorkflowContractWithVersionItem, error) {
 	client := pb.NewWorkflowContractServiceClient(action.cfg.CPConnection)
 
 	request := &pb.WorkflowContractServiceDescribeRequest{Name: name, Revision: rev}
 
-	resp, err := client.Describe(context.Background(), request)
+	resp, err := client.Describe(ctx, request)
 	if err != nil {
 		action.cfg.Logger.Debug().Err(err).Msg("making the API request")
 		return nil, err

@@ -67,6 +67,11 @@ type TraceRunOpts struct {
 	// ProjectVersion, when set, targets a specific project version.
 	// Empty means use the latest version.
 	ProjectVersion string
+	// ContractName is the contract to attach when the workflow has to be
+	// created, and ContractRequired reports whether the user named it
+	// explicitly. See EnsureTraceWorkflowOpts.
+	ContractName     string
+	ContractRequired bool
 
 	// ActionOpts is the root command's initialized options, used to build
 	// the attestation executor. Required.
@@ -101,6 +106,8 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 	}
 	if err := executor.CheckAuth(ctx); err != nil {
 		log.Warn().Err(err).Msg("authentication check failed; attestation will fail after the session")
+	} else {
+		ensureTraceRunWorkflow(ctx, log, executor, opts)
 	}
 	if err := executor.Close(); err != nil {
 		log.Debug().Err(err).Msg("closing auth-check executor")
@@ -192,6 +199,29 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		ActionOpts:     opts.ActionOpts,
 		CLIVersion:     opts.CLIVersion,
 	})
+}
+
+// ensureTraceRunWorkflow creates the workflow the session will be attested to,
+// so it gets the trace contract attached instead of the empty one the control
+// plane creates implicitly at push time. Unlike `trace init` this is
+// best-effort: a session the user is about to run is worth more than the
+// contract binding, and the attestation still creates the workflow implicitly
+// if this could not.
+func ensureTraceRunWorkflow(ctx context.Context, log zerolog.Logger, executor *AttestationExecutor, opts TraceRunOpts) {
+	wf, err := executor.EnsureWorkflow(ctx, EnsureTraceWorkflowOpts{
+		ProjectName:      opts.ProjectName,
+		WorkflowName:     opts.WorkflowName,
+		ContractName:     opts.ContractName,
+		ContractRequired: opts.ContractRequired,
+	})
+	if err != nil {
+		log.Warn().Err(err).Msg("could not create the workflow up front; it will be created when the session is attested")
+		return
+	}
+
+	if wf.Created {
+		log.Info().Str("workflow", opts.WorkflowName).Str("contract", wf.ContractName).Msg("workflow created")
+	}
 }
 
 // traceRunOwnsState reports whether the store's trace state is trace run's

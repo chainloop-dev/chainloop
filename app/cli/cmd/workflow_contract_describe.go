@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ func newWorkflowContractDescribeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "describe",
 		Short: "Describe the information of the contract",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			res, err := action.NewWorkflowContractDescribe(ActionOpts).Run(name, revision)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			res, err := action.NewWorkflowContractDescribe(ActionOpts).Run(cmd.Context(), name, revision)
 			if err != nil {
 				return err
 			}

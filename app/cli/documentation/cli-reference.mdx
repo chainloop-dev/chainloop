@@ -3310,6 +3310,12 @@ This installs the managed git hooks plus agent-specific hooks for the
 selected providers. Pass --claude, --cursor, and/or --opencode to pick
 providers; when none is set, Claude Code is used as the default.
 
+It also creates the Chainloop workflow the attestations target, attached to
+the "chainloop-ai-coding-session" contract when your organization has it and
+to a default empty contract otherwise. Pass --contract to attach a different
+one. Nothing is written to the repository until the workflow exists, so you
+need to be logged in with permission to create workflows.
+
 Pass --org to pin the Chainloop organization trace attestations target; the
 value is saved to .chainloop.yml and overrides the CLI default on every push.
 
@@ -3325,6 +3331,7 @@ Options
 
 ```
 --claude            install Claude Code hooks (default when no provider flag is set)
+--contract string   workflow contract to attach when creating the workflow (defaults to "chainloop-ai-coding-session" when the organization has it)
 --cursor            install Cursor hooks
 -h, --help              help for init
 --opencode          install opencode hooks
@@ -3366,6 +3373,11 @@ and the optional --version flag. It does not read from or write to
 .chainloop.yml, and removes every hook and local trace artifact when the
 wrapped command exits, so a session never leaks setup into the next one.
 
+The workflow is created before the command runs, attached to the
+"chainloop-ai-coding-session" contract when your organization has it, or to
+the one given with --contract. Creating it is best-effort: the session runs
+either way and the attestation creates the workflow if this did not.
+
 ```
 chainloop trace run -- <command> [args...] [flags]
 ```
@@ -3374,6 +3386,7 @@ Options
 
 ```
 --claude            install Claude Code hooks (default when no provider flag is set)
+--contract string   workflow contract to attach when creating the workflow (defaults to "chainloop-ai-coding-session" when the organization has it)
 --cursor            install Cursor hooks
 -h, --help              help for run
 --opencode          install opencode hooks

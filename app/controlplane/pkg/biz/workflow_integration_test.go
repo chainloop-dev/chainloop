@@ -124,6 +124,10 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 		name       string
 		opts       *biz.WorkflowCreateOpts
 		wantErrMsg string
+		// wantContractName asserts which contract the workflow ends up
+		// attached to. Empty skips the check, since the default contract name
+		// is derived from the project and workflow names.
+		wantContractName string
 	}{
 		{
 			name:       "org missing",
@@ -160,8 +164,16 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name", Project: project},
 		},
 		{
-			name: "it can connect to existing contract by providing its name",
-			opts: &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, ContractName: "contract-1"},
+			name:             "it can connect to existing contract by providing its name",
+			opts:             &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name2", Project: project, ContractName: "contract-1"},
+			wantContractName: "contract-1",
+		},
+		{
+			// What `chainloop trace init` relies on: an org-level contract can
+			// be attached while the project is still being created.
+			name:             "an org-level contract can be attached to a workflow in a brand-new project",
+			opts:             &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "name4", Project: "brand-new-project", ContractName: "contract-1"},
+			wantContractName: "contract-1",
 		},
 		{
 			name: "can create it with just the name, the project and the org",
@@ -210,6 +222,9 @@ func (s *workflowIntegrationTestSuite) TestCreate() {
 			s.Equal(tc.opts.Project, got.Project)
 			s.NotEmpty(got.ContractID)
 			s.NotEmpty(got.ContractName)
+			if tc.wantContractName != "" {
+				s.Equal(tc.wantContractName, got.ContractName)
+			}
 			// There is a project version created
 			pv, err := s.ProjectVersion.FindByProjectAndVersion(ctx, got.ProjectID.String(), biz.DefaultVersionName)
 			s.NoError(err)

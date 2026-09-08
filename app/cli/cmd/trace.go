@@ -19,6 +19,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// traceContractFlagDesc documents the --contract flag `trace init` and
+// `trace run` share.
+const traceContractFlagDesc = `workflow contract to attach when creating the workflow (defaults to "chainloop-ai-coding-session" when the organization has it)`
+
 // newTraceCmd creates the trace parent command with all subcommands.
 func newTraceCmd() *cobra.Command {
 	cmd := &cobra.Command{
