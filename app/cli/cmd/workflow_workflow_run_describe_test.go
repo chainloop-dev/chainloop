@@ -216,6 +216,8 @@ const (
 	testRefDownloadHint = "chainloop artifact download --digest " + testRefDigest
 	policiesRowLabel    = "Policies"
 	bundleRowLabel      = "Policy evaluations bundle"
+	testPolicyName      = "strong-acl"
+	testViolationMsg    = "weak ACL"
 )
 
 func TestPolicyEvaluationsRefNotice(t *testing.T) {
@@ -297,7 +299,7 @@ func TestPolicyEvaluationsRefNotice(t *testing.T) {
 func TestAppendPolicySection(t *testing.T) {
 	inlinedEvaluations := map[string][]*action.PolicyEvaluation{
 		chainloop.AttPolicyEvaluation: {
-			{Name: "strong-acl", Violations: []*action.PolicyViolation{{Message: "weak ACL"}}},
+			{Name: testPolicyName, Violations: []*action.PolicyViolation{{Message: testViolationMsg}}},
 		},
 	}
 
@@ -318,7 +320,7 @@ func TestAppendPolicySection(t *testing.T) {
 					Inlined:   true,
 				},
 			},
-			wantContain: []string{policiesRowLabel, "strong-acl", "weak ACL", bundleRowLabel, testRefDownloadHint},
+			wantContain: []string{policiesRowLabel, testPolicyName, testViolationMsg, bundleRowLabel, testRefDownloadHint},
 		},
 		{
 			name: "evaluations without a bundle render the policy rows alone",
@@ -326,7 +328,7 @@ func TestAppendPolicySection(t *testing.T) {
 				PolicyEvaluations:      inlinedEvaluations,
 				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 1, Violated: 1},
 			},
-			wantContain: []string{policiesRowLabel, "strong-acl", "weak ACL"},
+			wantContain: []string{policiesRowLabel, testPolicyName, testViolationMsg},
 			wantAbsent:  []string{"artifact download", bundleRowLabel},
 		},
 		{
@@ -340,7 +342,7 @@ func TestAppendPolicySection(t *testing.T) {
 				},
 			},
 			wantContain: []string{policiesRowLabel, "134112 violations", "too large", bundleRowLabel, testRefDownloadHint},
-			wantAbsent:  []string{"strong-acl"},
+			wantAbsent:  []string{testPolicyName},
 		},
 		{
 			name: "an unavailable bundle still offers the download when the digest is known",
