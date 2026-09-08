@@ -68,9 +68,17 @@ func (s *ProjectService) List(ctx context.Context, req *pb.ProjectServiceListReq
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Resolve, once per listing, which projects the caller may add a workflow to.
+	writable, err := s.projectsAllowing(ctx, authz.PolicyWorkflowCreate, projects)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	result := make([]*pb.ProjectServiceListResponse_ProjectItem, 0, len(projects))
 	for _, p := range projects {
-		result = append(result, bizProjectToPb(p))
+		item := bizProjectToPb(p)
+		item.CanCreateWorkflow = writable[p.ID]
+		result = append(result, item)
 	}
 
 	return &pb.ProjectServiceListResponse{

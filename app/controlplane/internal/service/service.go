@@ -245,6 +245,62 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	return errors.Forbidden("forbidden", defaultMessage)
 }
 
+// projectsAllowing reports, per project ID, whether the caller may perform op
+// on it. It answers for a whole listing in one pass, so a client does not have
+// to offer an action that would be refused the moment it is taken.
+//
+// It mirrors authorizeResource: a caller can hold several roles on the same
+// project, directly and through products, and any one of them granting the
+// permission is enough. Each distinct role is enforced once, not once per
+// project.
+func (s *service) projectsAllowing(ctx context.Context, op *authz.Policy, projects []*biz.Project) (map[uuid.UUID]bool, error) {
+	allowed := make(map[uuid.UUID]bool, len(projects))
+
+	// Without RBAC the caller's organization role already carries the
+	// permission, so every visible project is fair game.
+	if !rbacEnabled(ctx) {
+		for _, p := range projects {
+			allowed[p.ID] = true
+		}
+
+		return allowed, nil
+	}
+
+	// An API token is scoped to a single project, and reaching here means the
+	// API-level check already accepted the operation for it.
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		for _, p := range projects {
+			allowed[p.ID] = token.ProjectID != nil && *token.ProjectID == p.ID
+		}
+
+		return allowed, nil
+	}
+
+	roleGrants := make(map[authz.Role]bool)
+	m := entities.CurrentMembership(ctx)
+	for _, rm := range m.Resources {
+		if rm.ResourceType != authz.ResourceTypeProject {
+			continue
+		}
+
+		grants, seen := roleGrants[rm.Role]
+		if !seen {
+			var err error
+			if grants, err = s.authz.Enforce(ctx, string(rm.Role), op); err != nil {
+				return nil, err
+			}
+
+			roleGrants[rm.Role] = grants
+		}
+
+		if grants {
+			allowed[rm.ResourceID] = true
+		}
+	}
+
+	return allowed, nil
+}
+
 // userHasPermissionOnProject is a helper method that checks if a policy can be applied to a project. It looks for a project
 // by name in the given organization and ensures that the user has a role that allows that specific operation in the project.
 // check authorizeResource method

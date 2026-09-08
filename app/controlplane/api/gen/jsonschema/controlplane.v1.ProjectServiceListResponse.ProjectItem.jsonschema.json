@@ -4,6 +4,10 @@
   "additionalProperties": false,
   "description": "ProjectItem represents a project of the organization",
   "patternProperties": {
+    "^(can_create_workflow)$": {
+      "description": "Whether the caller may create a workflow in this project. The listing is\n filtered by what the caller can see, which is not the same as what they\n can write to: a project viewer can read a project but not add a workflow\n to it. This is resolved server-side because a caller can hold several\n roles on the same project, directly and through products, and any one of\n them granting the permission is enough.",
+      "type": "boolean"
+    },
     "^(created_at)$": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the project was created"
@@ -14,6 +18,10 @@
     }
   },
   "properties": {
+    "canCreateWorkflow": {
+      "description": "Whether the caller may create a workflow in this project. The listing is\n filtered by what the caller can see, which is not the same as what they\n can write to: a project viewer can read a project but not add a workflow\n to it. This is resolved server-side because a caller can hold several\n roles on the same project, directly and through products, and any one of\n them granting the permission is enough.",
+      "type": "boolean"
+    },
     "createdAt": {
       "$ref": "google.protobuf.Timestamp.jsonschema.json",
       "description": "Timestamp when the project was created"

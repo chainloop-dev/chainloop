@@ -64,6 +64,13 @@ message ProjectServiceListResponse {
     google.protobuf.Timestamp created_at = 4;
     // Timestamp when the project was last updated
     google.protobuf.Timestamp updated_at = 5;
+    // Whether the caller may create a workflow in this project. The listing is
+    // filtered by what the caller can see, which is not the same as what they
+    // can write to: a project viewer can read a project but not add a workflow
+    // to it. This is resolved server-side because a caller can hold several
+    // roles on the same project, directly and through products, and any one of
+    // them granting the permission is enough.
+    bool can_create_workflow = 6;
   }
 }
 

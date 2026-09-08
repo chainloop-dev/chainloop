@@ -965,9 +965,16 @@ type ProjectServiceListResponse_ProjectItem struct {
 	// Timestamp when the project was created
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// Timestamp when the project was last updated
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// Whether the caller may create a workflow in this project. The listing is
+	// filtered by what the caller can see, which is not the same as what they
+	// can write to: a project viewer can read a project but not add a workflow
+	// to it. This is resolved server-side because a caller can hold several
+	// roles on the same project, directly and through products, and any one of
+	// them granting the permission is enough.
+	CanCreateWorkflow bool `protobuf:"varint,6,opt,name=can_create_workflow,json=canCreateWorkflow,proto3" json:"can_create_workflow,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ProjectServiceListResponse_ProjectItem) Reset() {
@@ -1035,6 +1042,13 @@ func (x *ProjectServiceListResponse_ProjectItem) GetUpdatedAt() *timestamppb.Tim
 	return nil
 }
 
+func (x *ProjectServiceListResponse_ProjectItem) GetCanCreateWorkflow() bool {
+	if x != nil {
+		return x.CanCreateWorkflow
+	}
+	return false
+}
+
 var File_controlplane_v1_project_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_project_proto_rawDesc = "" +
@@ -1045,12 +1059,12 @@ const file_controlplane_v1_project_proto_rawDesc = "" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2(.controlplane.v1.OffsetPaginationRequestR\n" +
 	"paginationB\a\n" +
-	"\x05_name\"\x88\x03\n" +
+	"\x05_name\"\xb8\x03\n" +
 	"\x1aProjectServiceListResponse\x12S\n" +
 	"\bprojects\x18\x01 \x03(\v27.controlplane.v1.ProjectServiceListResponse.ProjectItemR\bprojects\x12I\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2).controlplane.v1.OffsetPaginationResponseR\n" +
-	"pagination\x1a\xc9\x01\n" +
+	"pagination\x1a\xf9\x01\n" +
 	"\vProjectItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1058,7 +1072,8 @@ const file_controlplane_v1_project_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xc5\x01\n" +
+	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12.\n" +
+	"\x13can_create_workflow\x18\x06 \x01(\bR\x11canCreateWorkflow\"\xc5\x01\n" +
 	" ProjectServiceListMembersRequest\x12W\n" +
 	"\x11project_reference\x18\x01 \x01(\v2\".controlplane.v1.IdentityReferenceB\x06\xbaH\x03\xc8\x01\x01R\x10projectReference\x12H\n" +
 	"\n" +

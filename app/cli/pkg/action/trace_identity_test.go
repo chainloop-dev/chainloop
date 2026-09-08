@@ -24,9 +24,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// writable builds a page of projects the caller can add a workflow to.
+func writable(names ...string) []traceProject {
+	page := make([]traceProject, 0, len(names))
+	for _, n := range names {
+		page = append(page, traceProject{name: n, canCreateWorkflow: true})
+	}
+
+	return page
+}
+
+// readOnly builds a page of projects the caller can see but not write to.
+func readOnly(names ...string) []traceProject {
+	page := make([]traceProject, 0, len(names))
+	for _, n := range names {
+		page = append(page, traceProject{name: n})
+	}
+
+	return page
+}
+
 // fakeProjectPager serves canned pages, recording what it was asked for.
 type fakeProjectPager struct {
-	pages [][]string
+	pages [][]traceProject
 	// totalPages is what the server reports; it defaults to len(pages)
 	totalPages int32
 	err        error
@@ -34,7 +54,7 @@ type fakeProjectPager struct {
 	requested []int32
 }
 
-func (f *fakeProjectPager) listProjectsPage(_ context.Context, page, _ int32) ([]string, int32, error) {
+func (f *fakeProjectPager) listProjectsPage(_ context.Context, page, _ int32) ([]traceProject, int32, error) {
 	f.requested = append(f.requested, page)
 	if f.err != nil {
 		return nil, 0, f.err
@@ -63,7 +83,7 @@ const (
 func TestListAllTraceProjects(t *testing.T) {
 	testCases := []struct {
 		name          string
-		pages         [][]string
+		pages         [][]traceProject
 		totalPages    int32
 		want          []string
 		wantRequested []int32
@@ -76,29 +96,50 @@ func TestListAllTraceProjects(t *testing.T) {
 		},
 		{
 			name:          "a single page is returned as is",
-			pages:         [][]string{{projAlpha, projBeta}},
+			pages:         [][]traceProject{writable(projAlpha, projBeta)},
 			want:          []string{projAlpha, projBeta},
 			wantRequested: []int32{1},
 		},
 		{
 			name:          "every page is fetched and concatenated",
-			pages:         [][]string{{projAlpha, projBeta}, {projGamma}},
+			pages:         [][]traceProject{writable(projAlpha, projBeta), writable(projGamma)},
 			want:          []string{projAlpha, projBeta, projGamma},
 			wantRequested: []int32{1, 2},
 		},
 		{
 			name:          "a project repeated across pages appears once",
-			pages:         [][]string{{projAlpha, projBeta}, {projBeta, projGamma}},
+			pages:         [][]traceProject{writable(projAlpha, projBeta), writable(projBeta, projGamma)},
 			want:          []string{projAlpha, projBeta, projGamma},
 			wantRequested: []int32{1, 2},
 		},
 		{
 			name: "an empty page stops the walk even when the server claims more",
 			// A server that reports more pages than it serves must not spin here.
-			pages:         [][]string{{projAlpha}, {}},
+			pages:         [][]traceProject{writable(projAlpha), {}},
 			totalPages:    50,
 			want:          []string{projAlpha},
 			wantRequested: []int32{1, 2},
+		},
+		{
+			name:          "a project the caller cannot write to is not offered",
+			pages:         [][]traceProject{append(writable(projAlpha), readOnly(projBeta)...)},
+			want:          []string{projAlpha},
+			wantRequested: []int32{1},
+		},
+		{
+			// The walk must count what the server sent, not what survived the
+			// filter, or a page of read-only projects ends it early and hides
+			// everything after it.
+			name:          "a page of read-only projects does not stop the walk",
+			pages:         [][]traceProject{readOnly(projBeta), writable(projGamma)},
+			want:          []string{projGamma},
+			wantRequested: []int32{1, 2},
+		},
+		{
+			name:          "every project being read-only yields nothing",
+			pages:         [][]traceProject{readOnly(projAlpha, projBeta)},
+			want:          []string{},
+			wantRequested: []int32{1},
 		},
 	}
 

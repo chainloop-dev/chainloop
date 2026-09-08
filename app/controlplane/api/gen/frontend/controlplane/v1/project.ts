@@ -45,6 +45,15 @@ export interface ProjectServiceListResponse_ProjectItem {
   createdAt?: Date;
   /** Timestamp when the project was last updated */
   updatedAt?: Date;
+  /**
+   * Whether the caller may create a workflow in this project. The listing is
+   * filtered by what the caller can see, which is not the same as what they
+   * can write to: a project viewer can read a project but not add a workflow
+   * to it. This is resolved server-side because a caller can hold several
+   * roles on the same project, directly and through products, and any one of
+   * them granting the permission is enough.
+   */
+  canCreateWorkflow: boolean;
 }
 
 /** ProjectServiceListMembersRequest contains the information needed to list members of a project */
@@ -318,7 +327,7 @@ export const ProjectServiceListResponse = {
 };
 
 function createBaseProjectServiceListResponse_ProjectItem(): ProjectServiceListResponse_ProjectItem {
-  return { id: "", name: "", description: "", createdAt: undefined, updatedAt: undefined };
+  return { id: "", name: "", description: "", createdAt: undefined, updatedAt: undefined, canCreateWorkflow: false };
 }
 
 export const ProjectServiceListResponse_ProjectItem = {
@@ -337,6 +346,9 @@ export const ProjectServiceListResponse_ProjectItem = {
     }
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.canCreateWorkflow === true) {
+      writer.uint32(48).bool(message.canCreateWorkflow);
     }
     return writer;
   },
@@ -383,6 +395,13 @@ export const ProjectServiceListResponse_ProjectItem = {
 
           message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.canCreateWorkflow = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -399,6 +418,7 @@ export const ProjectServiceListResponse_ProjectItem = {
       description: isSet(object.description) ? String(object.description) : "",
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      canCreateWorkflow: isSet(object.canCreateWorkflow) ? Boolean(object.canCreateWorkflow) : false,
     };
   },
 
@@ -409,6 +429,7 @@ export const ProjectServiceListResponse_ProjectItem = {
     message.description !== undefined && (obj.description = message.description);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.canCreateWorkflow !== undefined && (obj.canCreateWorkflow = message.canCreateWorkflow);
     return obj;
   },
 
@@ -427,6 +448,7 @@ export const ProjectServiceListResponse_ProjectItem = {
     message.description = object.description ?? "";
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
+    message.canCreateWorkflow = object.canCreateWorkflow ?? false;
     return message;
   },
 };

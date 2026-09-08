@@ -42,15 +42,25 @@ func (e *AttestationExecutor) ListProjects(ctx context.Context) ([]string, error
 	return listAllTraceProjects(ctx, &cpTraceProjectAPI{cfg: e.actionOpts})
 }
 
+// traceProject is one entry of the project listing.
+type traceProject struct {
+	name string
+	// canCreateWorkflow is false for a project the caller can see but not add a
+	// workflow to, such as one they only view.
+	canCreateWorkflow bool
+}
+
 // traceProjectAPI is the slice of the control-plane API the project listing
 // drives, so the paging can be tested without a live control plane.
 type traceProjectAPI interface {
-	// listProjectsPage returns one page of project names plus the total number
-	// of pages the server reports.
-	listProjectsPage(ctx context.Context, page, pageSize int32) ([]string, int32, error)
+	// listProjectsPage returns one page as the server sent it, plus the total
+	// number of pages it reports.
+	listProjectsPage(ctx context.Context, page, pageSize int32) ([]traceProject, int32, error)
 }
 
-// listAllTraceProjects walks every page and returns the names it collected.
+// listAllTraceProjects walks every page and returns the projects the caller can
+// actually create a workflow in. Offering the rest would end in a permission
+// error once init tried to create the workflow.
 func listAllTraceProjects(ctx context.Context, api traceProjectAPI) ([]string, error) {
 	names := make([]string, 0, traceProjectPageSize)
 
@@ -60,10 +70,16 @@ func listAllTraceProjects(ctx context.Context, api traceProjectAPI) ([]string, e
 			return nil, fmt.Errorf("listing projects: %w", err)
 		}
 
-		names = append(names, got...)
+		for _, p := range got {
+			if p.canCreateWorkflow {
+				names = append(names, p.name)
+			}
+		}
 
-		// Stop on the last page the server reports, and also on an empty one, so
-		// a server reporting more pages than it serves cannot spin here.
+		// Stop on the last page the server reports, and also on a page the server
+		// returned nothing for, so a server reporting more pages than it serves
+		// cannot spin here. This counts what arrived, not what survived the
+		// filter, so a page of read-only projects does not end the walk early.
 		if len(got) == 0 || page >= totalPages {
 			break
 		}
@@ -79,7 +95,7 @@ type cpTraceProjectAPI struct {
 	cfg *ActionsOpts
 }
 
-func (a *cpTraceProjectAPI) listProjectsPage(ctx context.Context, page, pageSize int32) ([]string, int32, error) {
+func (a *cpTraceProjectAPI) listProjectsPage(ctx context.Context, page, pageSize int32) ([]traceProject, int32, error) {
 	client := pb.NewProjectServiceClient(a.cfg.CPConnection)
 
 	resp, err := client.List(ctx, &pb.ProjectServiceListRequest{
@@ -89,10 +105,13 @@ func (a *cpTraceProjectAPI) listProjectsPage(ctx context.Context, page, pageSize
 		return nil, 0, err
 	}
 
-	names := make([]string, 0, len(resp.GetProjects()))
+	projects := make([]traceProject, 0, len(resp.GetProjects()))
 	for _, p := range resp.GetProjects() {
-		names = append(names, p.GetName())
+		projects = append(projects, traceProject{
+			name:              p.GetName(),
+			canCreateWorkflow: p.GetCanCreateWorkflow(),
+		})
 	}
 
-	return names, resp.GetPagination().GetTotalPages(), nil
+	return projects, resp.GetPagination().GetTotalPages(), nil
 }
