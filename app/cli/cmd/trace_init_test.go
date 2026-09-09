@@ -175,24 +175,90 @@ func TestTraceInitConfigSave(t *testing.T) {
 	})
 }
 
+// stubProvider names a settings file, which is all readHarnessConfig reads.
+type stubProvider struct{ settings string }
+
+func (s stubProvider) SettingsFile(string) string { return s.settings }
+
+// TestHarnessConfigRestore covers undoing what init wrote to a harness. The
+// case that matters is the second run over a repository already set up:
+// installing over hooks that are present changes nothing, so undoing by
+// uninstalling would strip a working configuration instead.
+func TestHarnessConfigRestore(t *testing.T) {
+	t.Run("a configuration that was already there comes back untouched", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "settings.json")
+		original := []byte(`{"hooks":{"SessionStart":"chainloop"},"mine":"keep me"}`)
+		require.NoError(t, os.WriteFile(path, original, 0o600))
+
+		before, err := readHarnessConfig(stubProvider{settings: path}, dir)
+		require.NoError(t, err)
+
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		got, err := os.ReadFile(path)
+		require.NoError(t, err)
+		assert.Equal(t, original, got, "the hooks that predate this run must survive it")
+	})
+
+	t.Run("a configuration this run created is removed", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".claude", "settings.json")
+
+		before, err := readHarnessConfig(stubProvider{settings: path}, dir)
+		require.NoError(t, err)
+
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(path)
+		assert.True(t, os.IsNotExist(err), "a file this run created should not outlive it")
+
+		_, err = os.Stat(filepath.Dir(path))
+		assert.True(t, os.IsNotExist(err), "nor the directory that came with it")
+	})
+
+	t.Run("a directory holding anything else is left alone", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".claude", "settings.json")
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+
+		before, err := readHarnessConfig(stubProvider{settings: path}, dir)
+		require.NoError(t, err)
+
+		theirs := filepath.Join(filepath.Dir(path), "theirs.json")
+		require.NoError(t, os.WriteFile(theirs, []byte("{}"), 0o600))
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(theirs)
+		assert.NoError(t, err, "somebody else's file must survive")
+	})
+}
+
 // TestWriteTraceInitStateFailureLeavesNothing covers the step the harness hooks
 // are rolled back for. Its parts run in order and each one can fail, so a
 // caller that did not undo them would leave hooks calling a repository that was
 // never set up.
 func TestWriteTraceInitStateFailureLeavesNothing(t *testing.T) {
 	repoRoot := t.TempDir()
+	gitDir := filepath.Join(repoRoot, ".git")
+	require.NoError(t, os.MkdirAll(gitDir, 0o755))
 
-	// A file where the git directory should be: every part of the step writes
-	// under it, so the first of them fails.
-	gitDir := filepath.Join(repoRoot, "not-a-directory")
-	require.NoError(t, os.WriteFile(gitDir, []byte("x"), 0o600))
+	// A directory where the configuration file goes, so saving it fails for any
+	// user rather than depending on who the test runs as.
+	require.NoError(t, os.MkdirAll(filepath.Join(repoRoot, chainloopYMLName), 0o755))
 
-	cfg := &traceInitConfig{project: "a-project", workflow: defaultTraceWorkflow}
+	cfg := &traceInitConfig{project: "a-project", workflow: defaultTraceWorkflow, saveProject: true}
 	require.Error(t, writeTraceInitState(cfg, repoRoot, gitDir),
-		"a git directory that cannot be written to has to fail the step")
+		"a configuration that cannot be written has to fail the step")
 
-	_, err := os.Stat(filepath.Join(repoRoot, ".chainloop", "trace"))
-	assert.True(t, os.IsNotExist(err), "no trace directory should have been left behind")
+	// The state lives under the git directory, which is where the rest of the
+	// step would have written had it run.
+	_, err := os.Stat(filepath.Join(gitDir, "chainloop-trace"))
+	assert.True(t, os.IsNotExist(err), "no trace state should have been left behind")
 }
 
 // TestWriteTraceNextSteps checks the closing message names the files that have

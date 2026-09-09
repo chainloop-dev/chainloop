@@ -18,6 +18,7 @@ package cmd
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -119,8 +120,19 @@ The organization, project, workflow and require-trace values are saved to
 			// harness's own hook config file, written here, determines which of
 			// them can register sessions.
 			installed := make([]trace.Provider, 0, len(selectedProviders))
+			// before holds each harness's configuration as it stood, so a later
+			// failure puts back exactly what was there. Uninstalling instead
+			// would strip the hooks of a repository that was already set up,
+			// since installing over them changes nothing and still counts.
+			before := make([]harnessConfig, 0, len(selectedProviders))
 
 			for _, p := range selectedProviders {
+				snapshot, err := readHarnessConfig(p, repoRoot)
+				if err != nil {
+					logger.Warn().Err(err).Str("harness", p.Name()).Msg("could not read the harness configuration")
+					continue
+				}
+
 				if err := p.InstallHooks(repoRoot); err != nil {
 					logger.Warn().Err(err).Str("harness", p.Name()).Msg("could not install harness hooks")
 					continue
@@ -128,6 +140,7 @@ The organization, project, workflow and require-trace values are saved to
 
 				logger.Debug().Str("harness", p.Name()).Msg("harness hooks installed")
 				installed = append(installed, p)
+				before = append(before, snapshot)
 			}
 
 			if len(installed) == 0 {
@@ -136,14 +149,12 @@ The organization, project, workflow and require-trace values are saved to
 
 			// The workflow exists and something records into it. What remains is
 			// local, but a failure in any of it would leave harness hooks behind
-			// that call a repository which is not set up, so they are taken back
-			// out again. UninstallHooks removes only Chainloop's own entries,
-			// leaving the rest of a harness's configuration alone.
+			// calling a repository that is not set up.
 			if err := writeTraceInitState(cfg, repoRoot, gitDir); err != nil {
-				for _, p := range installed {
-					if uerr := p.UninstallHooks(repoRoot); uerr != nil {
-						logger.Debug().Err(uerr).Str("harness", p.Name()).
-							Msg("could not take the harness hooks back out")
+				for _, snapshot := range before {
+					if rerr := snapshot.restore(); rerr != nil {
+						logger.Debug().Err(rerr).Str("path", snapshot.path).
+							Msg("could not put the harness configuration back")
 					}
 				}
 
@@ -267,6 +278,66 @@ func joinWithOr(names []string) string {
 	default:
 		return strings.Join(names[:len(names)-1], ", ") + " or " + names[len(names)-1]
 	}
+}
+
+// harnessConfig is a harness's configuration file as it stood before init
+// touched it. Installing hooks merges into whatever is already there, and
+// installing over hooks that are present changes nothing at all, so putting
+// the file back is the only way to undo a run without taking a working setup
+// with it.
+type harnessConfig struct {
+	path string
+	// content is what the file held, and existed distinguishes an empty file
+	// from one init created.
+	content []byte
+	mode    os.FileMode
+	existed bool
+}
+
+// harnessSettings is the slice of a provider readHarnessConfig needs: where the
+// harness keeps the configuration its hooks are written into.
+type harnessSettings interface {
+	SettingsFile(repoRoot string) string
+}
+
+// readHarnessConfig records a harness's configuration before it is written to.
+func readHarnessConfig(p harnessSettings, repoRoot string) (harnessConfig, error) {
+	path := p.SettingsFile(repoRoot)
+
+	content, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return harnessConfig{path: path}, nil
+	}
+
+	if err != nil {
+		return harnessConfig{}, err
+	}
+
+	// The mode is kept so restoring does not quietly widen or narrow it.
+	info, err := os.Stat(path)
+	if err != nil {
+		return harnessConfig{}, err
+	}
+
+	return harnessConfig{path: path, content: content, mode: info.Mode().Perm(), existed: true}, nil
+}
+
+// restore puts the configuration back as it was, removing the file when init
+// was what created it. An empty directory left over from creating it goes too;
+// a directory holding anything else is left alone, which os.Remove does by
+// refusing to remove it.
+func (h harnessConfig) restore() error {
+	if h.existed {
+		return os.WriteFile(h.path, h.content, h.mode)
+	}
+
+	if err := os.Remove(h.path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	_ = os.Remove(filepath.Dir(h.path))
+
+	return nil
 }
 
 // writeTraceInitState leaves the repository set up: the configuration, the
