@@ -24,7 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 )
 
-const providersPromptTitle = "Agents to trace in this repository"
+const providersPromptTitle = "Harnesses to trace in this repository"
 
 // traceProviderFlags records which --claude / --cursor / --opencode flags the
 // user set.
@@ -99,7 +99,7 @@ func resolveTraceProviders(p prompter, flags traceProviderFlags, interactive boo
 	// The prompt refuses an empty submission, so this only catches a prompter
 	// that does not, but tracing nothing would install hooks that never fire.
 	if len(chosen) == 0 {
-		return nil, errors.New("select at least one agent to trace")
+		return nil, errors.New("select at least one harness to trace")
 	}
 
 	return chosen, nil

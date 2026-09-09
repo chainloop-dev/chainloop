@@ -49,16 +49,16 @@ func newTraceInitCmd() *cobra.Command {
 		Long: `Initialize git hooks that automatically trace AI coding sessions and
 create Chainloop attestations when you push.
 
-It installs the managed git hooks plus the hooks of the selected agent
-providers (Claude Code when none is given), and creates the Chainloop workflow
-the attestations target. Nothing is written to the repository until that
-workflow exists, so you need to be logged in.
+It installs the managed git hooks plus the hooks of the selected harnesses
+(Claude Code when none is given), and creates the Chainloop workflow the
+attestations target. Nothing is written to the repository until that workflow
+exists, so you need to be logged in.
 
 On a terminal it asks which organization and project to use, offering what
 .chainloop.yml already holds so pressing Enter keeps it. A new project can be
 named freely; the name is normalized to the lowercase, dash-separated form
-Chainloop stores. It then asks which agents to trace, with Claude Code
-ticked; use space to tick more. Passing --org, --project or a provider flag
+Chainloop stores. It then asks which harnesses to trace, with Claude Code
+ticked; use space to tick more. Passing --org, --project or a harness flag
 (--claude, --cursor, --opencode) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
@@ -158,7 +158,7 @@ The organization, project, workflow and require-trace values are saved to
 	cmd.Flags().StringVar(&contract, "contract", "", traceContractFlagDesc)
 	cmd.Flags().String("workflow", "", "chainloop workflow name used for trace attestations (defaults to \"ai-coding-session\")")
 	cmd.Flags().Bool("require-trace", false, "block pushes when attestation fails for AI-assisted commits")
-	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
+	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
@@ -172,7 +172,7 @@ const traceDocsURL = "https://docs.chainloop.dev/guides/chainloop-trace"
 // writeTraceInitSummary reports what the repository was set up with. It goes to
 // stdout rather than through the logger because it is the command's result,
 // not a note about something that happened on the way there.
-func writeTraceInitSummary(w io.Writer, cfg *traceInitConfig, agents []string) {
+func writeTraceInitSummary(w io.Writer, cfg *traceInitConfig, harnesses []string) {
 	fmt.Fprint(w, "\nCongratulations, your repository is initialized\n\n")
 
 	// The organization is absent when nothing pinned one and the CLI's own
@@ -183,7 +183,7 @@ func writeTraceInitSummary(w io.Writer, cfg *traceInitConfig, agents []string) {
 
 	fmt.Fprintf(w, "  project       %s\n", cfg.project)
 	fmt.Fprintf(w, "  workflow      %s\n", cfg.workflow)
-	fmt.Fprintf(w, "  agents        %s\n", strings.Join(agents, ", "))
+	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
 }
 
 // writeTraceNextSteps says what is left for the user to do. Committing comes
@@ -210,7 +210,7 @@ What's next
   1. Commit these files. Anyone who pulls them is set up automatically:
        git add %s
   2. Start %s and write some code
-  3. Commit and push as usual, and the AI-assisted commits are attested on push
+  3. Commit and push as usual. Your AI coding sessions are recorded and stored automatically
 
 Learn more: %s
 `, strings.Join(files, " "), joinNames(names), traceDocsURL)
