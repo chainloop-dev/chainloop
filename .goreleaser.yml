@@ -30,6 +30,14 @@ builds:
     ldflags:
       - "{{ .Env.COMMON_LDFLAGS }}"
       - -X github.com/chainloop-dev/chainloop/app/cli/cmd.Version={{ .Version }}
+      # Telemetry destination as a release-time input. Both fall back to the values compiled
+      # into app/cli/cmd/root.go, which is what builds outside this pipeline (Homebrew,
+      # go install) use. `index .Env` rather than `.Env.X` because GoReleaser templates run
+      # with missingkey=error, and `with` rather than `envOrDefault` because GitHub Actions
+      # renders a missing secret as an empty string, which would inject an empty key and
+      # silently disable telemetry for the whole release.
+      - '{{ with index .Env "POSTHOG_API_KEY" }}-X github.com/chainloop-dev/chainloop/app/cli/cmd.posthogAPIKey={{ . }}{{ end }}'
+      - '{{ with index .Env "POSTHOG_ENDPOINT" }}-X github.com/chainloop-dev/chainloop/app/cli/cmd.posthogEndpoint={{ . }}{{ end }}'
     targets:
       - darwin_amd64
       - darwin_arm64

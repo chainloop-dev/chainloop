@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package telemetry
 import (
 	"context"
 	"runtime"
+	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -27,6 +28,17 @@ import (
 
 const commandTrackerEventName = "command_executed"
 const UnrecognisedUserID = "unrecognised"
+
+// FlushTimeout bounds how long the CLI spends delivering a telemetry event. The PostHog
+// client takes it as the deadline for flushing its batch on close, and the command hook
+// takes it as the deadline after which it stops waiting on the delivery goroutine. Both
+// read it from here so the two deadlines cannot drift apart.
+const FlushTimeout = 2 * time.Second
+
+// authTypeUser mirrors v1.Attestation_Auth_AUTH_TYPE_USER.String(). It is duplicated as a
+// literal so this package keeps no dependency on the attestation API; a test pins the two
+// values together.
+const authTypeUser = "AUTH_TYPE_USER"
 
 // Tags represents a collection of event tags.
 type Tags map[string]string
@@ -66,6 +78,15 @@ func (t *CommandTracker) Track(ctx context.Context, cmd string, tags Tags) error
 
 	// Track the event with computed tags.
 	return t.client.TrackEvent(ctx, commandTrackerEventName, id, computedTags)
+}
+
+// IsInteractiveUserSession reports whether the command was run by a logged-in human outside
+// of CI. API and federated tokens are shared identities: an API token belongs to an
+// organization rather than a person, and a federated token resolves to the issuer URL, which
+// is the same value for every Chainloop installation using that provider. Anything derived
+// from the machine the command ran on is only meaningful for the interactive case.
+func (tg Tags) IsInteractiveUserSession() bool {
+	return tg["token_type"] == authTypeUser && tg["ci"] == "false"
 }
 
 // Merges two tag maps.

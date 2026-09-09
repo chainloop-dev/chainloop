@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
@@ -208,9 +207,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				go func() {
 					defer telemetryWg.Done()
 
-					// Create a context that times out after 1 seconds, this is because posthog has a 10 seconds hardcoded timeout
-					// and we want to finish earlier than that
-					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					// Stop waiting on the delivery goroutine after the flush deadline, so a slow
+					// or unreachable telemetry endpoint cannot hold up the command.
+					ctx, cancel := context.WithTimeout(context.Background(), telemetry.FlushTimeout)
 					defer cancel()
 					done := make(chan struct{})
 
@@ -451,12 +450,18 @@ func loadAuthToken(cmd *cobra.Command) (string, bool, error) {
 }
 
 var (
-	// Posthog API key and endpoint are not sensitive information it represents Chainloop's Posthog instance.
-	// It can be overridden by the user if they want to use their own instance of Posthog or deactivated by setting
-	// DO_NOT_TRACK=1 more information that can be found at: https://github.com/chainloop-dev/chainloop/blob/main/docs/docs/reference/operator/cli-telemetry.mdx
+	// Posthog API key and endpoint are not sensitive information, they represent Chainloop's
+	// Posthog instance. Both are overridable at build time with -X so anyone compiling the CLI
+	// can point it at their own instance, and telemetry can be turned off entirely with
+	// DO_NOT_TRACK=1. See https://docs.chainloop.dev/command-line-reference/cli-telemetry.
+	//
+	// The endpoint is compiled in and has no runtime override, so an installed binary reports
+	// wherever it was built to report. https://crb.chainloop.dev is therefore frozen on the
+	// previous project to keep serving binaries released before this change; it must not be
+	// repointed.
 	// nolint:gosec
-	posthogAPIKey   = "phc_TWWW19kEiD6sEejlHKWcICQ5Vc06vZUTYia8WdPB0A0" // gitleaks:allow
-	posthogEndpoint = "https://crb.chainloop.dev"
+	posthogAPIKey   = "phc_rCvU7fL4Ndr4GpzH54RNdyNUWNgTpuHX7ApDxFW6G9FS" // gitleaks:allow
+	posthogEndpoint = "https://t.chainloop.dev"
 )
 
 // recordCommand sends the command to the telemetry service
