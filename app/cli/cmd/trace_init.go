@@ -119,7 +119,7 @@ The organization, project, workflow and require-trace values are saved to
 			if err != nil {
 				return err
 			}
-			logger.Info().
+			logger.Debug().
 				Str("path", hooksDir).
 				Msg("git hooks installed (post-commit, pre-push)")
 
@@ -138,14 +138,23 @@ The organization, project, workflow and require-trace values are saved to
 					logger.Warn().Err(err).Str("provider", p.Name()).Msg("could not install agent hooks")
 					continue
 				}
-				logger.Info().Str("provider", p.Name()).Msg("agent hooks installed")
+				logger.Debug().Str("provider", p.Name()).Msg("agent hooks installed")
 			}
 
-			logger.Info().
+			// The one line worth printing on a successful run: every step above
+			// logs at debug, so this is what the user is left with. The
+			// organization is absent when nothing pinned one and the CLI's own
+			// default was used, in which case naming it here would be a guess.
+			done := logger.Info()
+			if cfg.organization != "" {
+				done = done.Str("organization", cfg.organization)
+			}
+
+			done.
 				Str("project", cfg.project).
 				Str("workflow", cfg.workflow).
 				Strs("providers", selected).
-				Msg("trace initialized")
+				Msg("repository initialized")
 
 			return nil
 		},
@@ -185,7 +194,7 @@ func ensureTraceInitWorkflow(ctx context.Context, executor *action.AttestationEx
 	if wf.Created {
 		// The workflow name is the same in every project, so the project is what
 		// identifies what was just created.
-		logger.Info().
+		logger.Debug().
 			Str("project", cfg.project).
 			Str("workflow", cfg.workflow).
 			Str("contract", wf.ContractName).
@@ -268,21 +277,21 @@ func (c *traceInitConfig) save(repoRoot string) error {
 		if err := config.SaveProjectToYML(repoRoot, c.project); err != nil {
 			return err
 		}
-		logger.Info().Str("project", c.project).Msg("project name saved to .chainloop.yml")
+		logger.Debug().Str("project", c.project).Msg("project name saved to .chainloop.yml")
 	}
 
 	if c.saveOrganization {
 		if err := config.SaveOrganizationToYML(repoRoot, c.organization); err != nil {
 			return err
 		}
-		logger.Info().Str("organization", c.organization).Msg("organization saved to .chainloop.yml")
+		logger.Debug().Str("organization", c.organization).Msg("organization saved to .chainloop.yml")
 	}
 
 	if c.saveWorkflow {
 		if err := config.SaveWorkflowToYML(repoRoot, c.workflow); err != nil {
 			return err
 		}
-		logger.Info().Str("workflow", c.workflow).Msg("workflow saved to .chainloop.yml")
+		logger.Debug().Str("workflow", c.workflow).Msg("workflow saved to .chainloop.yml")
 	}
 
 	if c.saveRequireTrace {

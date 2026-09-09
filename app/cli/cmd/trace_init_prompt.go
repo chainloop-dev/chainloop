@@ -83,10 +83,31 @@ func (h *huhPrompter) Select(title string, options []string, defaultValue string
 func (h *huhPrompter) MultiSelect(title string, options, defaults []string) ([]string, error) {
 	value := slices.Clone(defaults)
 
-	field := huh.NewMultiSelect[string]().
+	if err := h.run(newMultiSelectField(title, options, &value)); err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
+
+// multiSelectMaxVisible caps how many options are on screen at once, so a long
+// list scrolls instead of pushing the prompt off the top. It is the height huh
+// itself falls back to for dynamic options.
+const multiSelectMaxVisible = 10
+
+// newMultiSelectField builds the multi-select. It is separate from MultiSelect
+// so a test can render it without a terminal to run a form against.
+func newMultiSelectField(title string, options []string, value *[]string) *huh.MultiSelect[string] {
+	return huh.NewMultiSelect[string]().
 		Title(title).
 		Options(huh.NewOptions(options...)...).
-		Value(&value).
+		// The height has to be set. Left unset, huh sizes the viewport from the
+		// options and then subtracts the title's line from that same number, so
+		// the last option is silently cut off. Asking for one line more than the
+		// options occupy cancels the subtraction out. Select does not share this
+		// quirk, which is why only this field sets a height.
+		Height(min(len(options), multiSelectMaxVisible) + 1).
+		Value(value).
 		Validate(func(selected []string) error {
 			if len(selected) == 0 {
 				return errors.New("pick at least one, with space")
@@ -94,12 +115,6 @@ func (h *huhPrompter) MultiSelect(title string, options, defaults []string) ([]s
 
 			return nil
 		})
-
-	if err := h.run(field); err != nil {
-		return nil, err
-	}
-
-	return value, nil
 }
 
 // Input asks the user to type a value, prefilled with defaultValue. The

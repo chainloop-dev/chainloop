@@ -17,9 +17,11 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
+	"charm.land/huh/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -84,6 +86,32 @@ func TestNewHuhPrompterAccessibility(t *testing.T) {
 				return v, ok
 			})
 			assert.Equal(t, tc.want, p.accessible)
+		})
+	}
+}
+
+// TestMultiSelectFieldShowsEveryOption renders the real field and looks for
+// every option in the output. Left to size itself, huh's multi-select subtracts
+// the title's line from the height it derived from the options, so the last one
+// never appears and the user cannot tell there is more to tick.
+func TestMultiSelectFieldShowsEveryOption(t *testing.T) {
+	for _, count := range []int{1, 2, 3, 5, multiSelectMaxVisible} {
+		t.Run(fmt.Sprintf("%d options", count), func(t *testing.T) {
+			options := make([]string, 0, count)
+			for i := range count {
+				options = append(options, fmt.Sprintf("option-%d", i))
+			}
+
+			var value []string
+			form := huh.NewForm(huh.NewGroup(newMultiSelectField("Pick some", options, &value)))
+			// Init sizes the field, which is what this is about. Its command
+			// starts the cursor blinking and is nothing to run here.
+			_ = form.Init()
+
+			view := form.View()
+			for _, o := range options {
+				assert.Contains(t, view, o, "every option must be on screen")
+			}
 		})
 	}
 }
