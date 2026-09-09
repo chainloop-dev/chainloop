@@ -63,9 +63,10 @@ type WorkflowRunAttestationItem struct {
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 	// Policy evaluation status
 	PolicyEvaluationStatus *PolicyEvaluationStatus `json:"policy_evaluation_status,omitempty"`
-	// Set when the evaluations were not inlined above and must be fetched from
-	// the CAS backend instead. PolicyEvaluations is empty in that case, while
-	// PolicyEvaluationStatus stays complete.
+	// Where the policy-evaluation bundle lives in the CAS backend, set whenever
+	// the attestation carries one. When Inlined is false the evaluations above
+	// are empty and must be fetched from there instead; PolicyEvaluationStatus
+	// stays complete either way.
 	PolicyEvaluationsRef *PolicyEvaluationsRef `json:"policy_evaluations_ref,omitempty"`
 	// URL to view the attestation in the UI
 	AttestationViewURL string `json:"attestation_view_url"`
@@ -112,7 +113,7 @@ type Annotation struct {
 }
 
 // PolicyEvaluationsRefReason explains why the evaluations were not included
-// in the response.
+// in the response. Empty when they were.
 type PolicyEvaluationsRefReason string
 
 const (
@@ -123,13 +124,16 @@ const (
 )
 
 // PolicyEvaluationsRef points at a policy-evaluation bundle stored in a CAS
-// backend, returned in place of the evaluations themselves.
+// backend. It is returned both alongside the evaluations and, when they could
+// not be inlined, in their place.
 type PolicyEvaluationsRef struct {
 	Digest string `json:"digest"`
 	// Size of the bundle in bytes, zero when it could not be determined
 	SizeBytes int64                      `json:"size_bytes,omitempty"`
 	MediaType string                     `json:"media_type,omitempty"`
-	Reason    PolicyEvaluationsRefReason `json:"reason"`
+	Reason    PolicyEvaluationsRefReason `json:"reason,omitempty"`
+	// Whether the evaluations decoded from this bundle are also in the response
+	Inlined bool `json:"inlined"`
 }
 
 type PolicyEvaluation struct {
@@ -339,18 +343,28 @@ func trustedRootPbToVerifier(resp *pb.GetTrustedRootResponse) (*verifier.Trusted
 	return tr, nil
 }
 
-// pbPolicyEvaluationsRefToAction maps the reference the server returns when it
-// declines to inline the evaluations. An unspecified reason is treated as
-// unavailable, which is the more conservative rendering: it does not promise
-// the caller that a download would succeed.
+// pbPolicyEvaluationsRefToAction maps the reference to the policy-evaluation
+// bundle. A reason the client does not recognize is reported as unavailable
+// unless the server also inlined the evaluations, which is the more
+// conservative rendering: it never promises that a download would succeed, and
+// never invents a failure the server did not report.
 func pbPolicyEvaluationsRefToAction(in *pb.PolicyEvaluationsRef) *PolicyEvaluationsRef {
 	if in == nil {
 		return nil
 	}
 
-	reason := PolicyEvaluationsRefReasonUnavailable
-	if in.GetReason() == pb.PolicyEvaluationsRef_REASON_TOO_LARGE {
+	var reason PolicyEvaluationsRefReason
+	switch in.GetReason() {
+	case pb.PolicyEvaluationsRef_REASON_TOO_LARGE:
 		reason = PolicyEvaluationsRefReasonTooLarge
+	case pb.PolicyEvaluationsRef_REASON_UNAVAILABLE:
+		reason = PolicyEvaluationsRefReasonUnavailable
+	default:
+		// An unrecognized reason next to inlined evaluations is no failure at
+		// all; on its own it is one we cannot name.
+		if !in.GetInlined() {
+			reason = PolicyEvaluationsRefReasonUnavailable
+		}
 	}
 
 	return &PolicyEvaluationsRef{
@@ -358,6 +372,7 @@ func pbPolicyEvaluationsRefToAction(in *pb.PolicyEvaluationsRef) *PolicyEvaluati
 		SizeBytes: in.GetSizeBytes(),
 		MediaType: in.GetMediaType(),
 		Reason:    reason,
+		Inlined:   in.GetInlined(),
 	}
 }
 

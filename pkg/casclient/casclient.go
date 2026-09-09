@@ -43,9 +43,6 @@ type Uploader interface {
 
 type Downloader interface {
 	Download(ctx context.Context, w io.Writer, digest string) error
-	// Describe reports the metadata of a stored resource, including its size in
-	// bytes, without transferring its content
-	Describe(ctx context.Context, digest string) (*ResourceInfo, error)
 	// Whether the CAS is ready to accept downloads
 	IsReady(ctx context.Context) (bool, error)
 }

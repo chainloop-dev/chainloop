@@ -213,8 +213,11 @@ func (s *workflowRunDescribeSuite) TestOutputTypePayload() {
 
 const (
 	testRefDigest       = "sha256:abc123"
-	testRefDownloadHint = "inspect with: chainloop artifact download --digest " + testRefDigest
+	testRefDownloadHint = "chainloop artifact download --digest " + testRefDigest
 	policiesRowLabel    = "Policies"
+	bundleRowLabel      = "Policy evaluations bundle"
+	testPolicyName      = "strong-acl"
+	testViolationMsg    = "weak ACL"
 )
 
 func TestPolicyEvaluationsRefNotice(t *testing.T) {
@@ -237,7 +240,6 @@ func TestPolicyEvaluationsRefNotice(t *testing.T) {
 			status: &action.PolicyEvaluationStatus{Total: 12, Violated: 134112, Suppressed: 86321},
 			want: []string{
 				"12 evaluations, 134112 violations (86321 suppressed) - too large to include inline (64M)",
-				testRefDownloadHint,
 			},
 		},
 		{
@@ -250,7 +252,6 @@ func TestPolicyEvaluationsRefNotice(t *testing.T) {
 			status: &action.PolicyEvaluationStatus{Total: 2, Violated: 40},
 			want: []string{
 				"2 evaluations, 40 violations - too large to include inline (3M)",
-				testRefDownloadHint,
 			},
 		},
 		{
@@ -262,11 +263,10 @@ func TestPolicyEvaluationsRefNotice(t *testing.T) {
 			status: &action.PolicyEvaluationStatus{Total: 2, Violated: 40},
 			want: []string{
 				"2 evaluations, 40 violations - too large to include inline",
-				testRefDownloadHint,
 			},
 		},
 		{
-			name: "unavailable bundle does not suggest a download",
+			name: "unavailable bundle reports why it could not be read",
 			ref: &action.PolicyEvaluationsRef{
 				Digest: testRefDigest,
 				Reason: action.PolicyEvaluationsRefReasonUnavailable,
@@ -285,7 +285,6 @@ func TestPolicyEvaluationsRefNotice(t *testing.T) {
 			},
 			want: []string{
 				"policy evaluations too large to include inline (1K)",
-				testRefDownloadHint,
 			},
 		},
 	}
@@ -298,6 +297,12 @@ func TestPolicyEvaluationsRefNotice(t *testing.T) {
 }
 
 func TestAppendPolicySection(t *testing.T) {
+	inlinedEvaluations := map[string][]*action.PolicyEvaluation{
+		chainloop.AttPolicyEvaluation: {
+			{Name: testPolicyName, Violations: []*action.PolicyViolation{{Message: testViolationMsg}}},
+		},
+	}
+
 	tests := []struct {
 		name        string
 		attestation *action.WorkflowRunAttestationItem
@@ -305,17 +310,26 @@ func TestAppendPolicySection(t *testing.T) {
 		wantAbsent  []string
 	}{
 		{
-			name: "inlined evaluations are rendered as policy rows",
+			name: "inlined evaluations are rendered as policy rows alongside the bundle",
 			attestation: &action.WorkflowRunAttestationItem{
-				PolicyEvaluations: map[string][]*action.PolicyEvaluation{
-					chainloop.AttPolicyEvaluation: {
-						{Name: "strong-acl", Violations: []*action.PolicyViolation{{Message: "weak ACL"}}},
-					},
+				PolicyEvaluations:      inlinedEvaluations,
+				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 1, Violated: 1},
+				PolicyEvaluationsRef: &action.PolicyEvaluationsRef{
+					Digest:    testRefDigest,
+					SizeBytes: 2048,
+					Inlined:   true,
 				},
+			},
+			wantContain: []string{policiesRowLabel, testPolicyName, testViolationMsg, bundleRowLabel, testRefDownloadHint},
+		},
+		{
+			name: "evaluations without a bundle render the policy rows alone",
+			attestation: &action.WorkflowRunAttestationItem{
+				PolicyEvaluations:      inlinedEvaluations,
 				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 1, Violated: 1},
 			},
-			wantContain: []string{policiesRowLabel, "strong-acl", "weak ACL"},
-			wantAbsent:  []string{"artifact download"},
+			wantContain: []string{policiesRowLabel, testPolicyName, testViolationMsg},
+			wantAbsent:  []string{"artifact download", bundleRowLabel},
 		},
 		{
 			name: "an oversized bundle is rendered as a notice instead",
@@ -327,7 +341,30 @@ func TestAppendPolicySection(t *testing.T) {
 					Reason:    action.PolicyEvaluationsRefReasonTooLarge,
 				},
 			},
-			wantContain: []string{policiesRowLabel, "134112 violations", "too large", "artifact download --digest " + testRefDigest},
+			wantContain: []string{policiesRowLabel, "134112 violations", "too large", bundleRowLabel, testRefDownloadHint},
+			wantAbsent:  []string{testPolicyName},
+		},
+		{
+			name: "an unavailable bundle still offers the download when the digest is known",
+			attestation: &action.WorkflowRunAttestationItem{
+				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 3, Violated: 7},
+				PolicyEvaluationsRef: &action.PolicyEvaluationsRef{
+					Digest: testRefDigest,
+					Reason: action.PolicyEvaluationsRefReasonUnavailable,
+				},
+			},
+			wantContain: []string{policiesRowLabel, "could not be retrieved", bundleRowLabel, testRefDownloadHint},
+		},
+		{
+			name: "a reference without a digest cannot offer a download",
+			attestation: &action.WorkflowRunAttestationItem{
+				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 3, Violated: 7},
+				PolicyEvaluationsRef: &action.PolicyEvaluationsRef{
+					Reason: action.PolicyEvaluationsRefReasonUnavailable,
+				},
+			},
+			wantContain: []string{policiesRowLabel, "could not be retrieved"},
+			wantAbsent:  []string{"artifact download", bundleRowLabel},
 		},
 		{
 			name: "no policies and no reference renders nothing",
@@ -335,6 +372,17 @@ func TestAppendPolicySection(t *testing.T) {
 				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{},
 			},
 			wantAbsent: []string{"Policies"},
+		},
+		{
+			name: "a bundle with no attestation-level policies still points at it",
+			attestation: &action.WorkflowRunAttestationItem{
+				PolicyEvaluationStatus: &action.PolicyEvaluationStatus{Total: 1},
+				PolicyEvaluationsRef: &action.PolicyEvaluationsRef{
+					Digest:  testRefDigest,
+					Inlined: true,
+				},
+			},
+			wantContain: []string{bundleRowLabel, testRefDownloadHint},
 		},
 	}
 

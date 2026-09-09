@@ -106,7 +106,7 @@ func (ab *AttestationRenderer) RenderStatement(ctx context.Context) (*intoto.Sta
 
 // SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations bundle
 // on the underlying renderer. This must be called before Render().
-func (ab *AttestationRenderer) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor) {
+func (ab *AttestationRenderer) SetPolicyEvaluationsRef(ref *chainloop.PolicyEvaluationsRef) {
 	ab.v02Renderer.SetPolicyEvaluationsRef(ref)
 }
 

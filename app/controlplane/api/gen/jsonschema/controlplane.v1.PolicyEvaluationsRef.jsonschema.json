@@ -2,7 +2,7 @@
   "$id": "controlplane.v1.PolicyEvaluationsRef.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Pointer to a policy-evaluation bundle held in a CAS backend, returned in\n place of the evaluations themselves.",
+  "description": "Pointer to a policy-evaluation bundle held in a CAS backend. It is the\n canonical location of the evaluations, returned both alongside them and, when\n they could not be inlined, in their place.",
   "patternProperties": {
     "^(media_type)$": {
       "description": "Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json",
@@ -28,6 +28,10 @@
       "description": "Digest of the bundle as stored in CAS, in \"sha256:\u003chex\u003e\" form",
       "type": "string"
     },
+    "inlined": {
+      "description": "True when policy_evaluations carries the evaluations decoded from this\n bundle, i.e the reference is informational rather than a fallback.",
+      "type": "boolean"
+    },
     "mediaType": {
       "description": "Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json",
       "type": "string"
@@ -49,7 +53,7 @@
           "type": "integer"
         }
       ],
-      "description": "Why the evaluations were not inlined"
+      "description": "Why the evaluations were not inlined. REASON_UNSPECIFIED when they were."
     },
     "sizeBytes": {
       "anyOf": [

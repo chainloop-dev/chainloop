@@ -343,9 +343,11 @@ func decodeEnvelope(rawEnvelope []byte) (*dsse.Envelope, error) {
 }
 
 // uploadPolicyEvaluationsBundle serializes policy evaluations as a protobuf bundle,
-// uploads to CAS, and returns a ResourceDescriptor referencing the uploaded object.
+// uploads to CAS, and returns a reference to the uploaded object. The reference
+// records the size of the uploaded bytes so readers can decide whether to fetch
+// the bundle without asking the CAS how big it is.
 // Returns (nil, nil) when there are no evaluations or no uploader.
-func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.PolicyEvaluation, uploader casclient.Uploader) (*intoto.ResourceDescriptor, error) {
+func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.PolicyEvaluation, uploader casclient.Uploader) (*crChainloop.PolicyEvaluationsRef, error) {
 	if len(evaluations) == 0 || uploader == nil {
 		return nil, nil
 	}
@@ -364,9 +366,12 @@ func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.Policy
 		return nil, fmt.Errorf("uploading policy evaluation bundle: %w", err)
 	}
 
-	return &intoto.ResourceDescriptor{
-		Name:      "policy-evaluations",
-		Digest:    map[string]string{"sha256": hexDigest},
-		MediaType: crChainloop.PolicyEvaluationsBundleMediaType,
+	return &crChainloop.PolicyEvaluationsRef{
+		ResourceDescriptor: &intoto.ResourceDescriptor{
+			Name:      "policy-evaluations",
+			Digest:    map[string]string{"sha256": hexDigest},
+			MediaType: crChainloop.PolicyEvaluationsBundleMediaType,
+		},
+		SizeBytes: int64(len(data)),
 	}, nil
 }

@@ -1311,9 +1311,9 @@ type AttestationItem struct {
 	PolicyEvaluations      map[string]*PolicyEvaluations           `protobuf:"bytes,8,rep,name=policy_evaluations,json=policyEvaluations,proto3" json:"policy_evaluations,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	PolicyEvaluationStatus *AttestationItem_PolicyEvaluationStatus `protobuf:"bytes,9,opt,name=policy_evaluation_status,json=policyEvaluationStatus,proto3" json:"policy_evaluation_status,omitempty"`
 	// Reference to the policy-evaluation bundle in the CAS backend. Populated
-	// only when the evaluations are NOT inlined in policy_evaluations, either
-	// because the bundle is larger than the server inlines or because it could
-	// not be resolved. Fetch the bundle by digest to inspect the violations.
+	// whenever the attestation carries a bundle, whether or not the evaluations
+	// were also inlined in policy_evaluations: see its "inlined" field. Fetch the
+	// bundle by digest to inspect the full set of evaluations.
 	// Counters and status in policy_evaluation_status remain complete either way.
 	PolicyEvaluationsRef *PolicyEvaluationsRef `protobuf:"bytes,11,opt,name=policy_evaluations_ref,json=policyEvaluationsRef,proto3" json:"policy_evaluations_ref,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -1414,8 +1414,9 @@ func (x *AttestationItem) GetPolicyEvaluationsRef() *PolicyEvaluationsRef {
 	return nil
 }
 
-// Pointer to a policy-evaluation bundle held in a CAS backend, returned in
-// place of the evaluations themselves.
+// Pointer to a policy-evaluation bundle held in a CAS backend. It is the
+// canonical location of the evaluations, returned both alongside them and, when
+// they could not be inlined, in their place.
 type PolicyEvaluationsRef struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Digest of the bundle as stored in CAS, in "sha256:<hex>" form
@@ -1424,8 +1425,11 @@ type PolicyEvaluationsRef struct {
 	SizeBytes int64 `protobuf:"varint,2,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
 	// Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json
 	MediaType string `protobuf:"bytes,3,opt,name=media_type,json=mediaType,proto3" json:"media_type,omitempty"`
-	// Why the evaluations were not inlined
-	Reason        PolicyEvaluationsRef_Reason `protobuf:"varint,4,opt,name=reason,proto3,enum=controlplane.v1.PolicyEvaluationsRef_Reason" json:"reason,omitempty"`
+	// Why the evaluations were not inlined. REASON_UNSPECIFIED when they were.
+	Reason PolicyEvaluationsRef_Reason `protobuf:"varint,4,opt,name=reason,proto3,enum=controlplane.v1.PolicyEvaluationsRef_Reason" json:"reason,omitempty"`
+	// True when policy_evaluations carries the evaluations decoded from this
+	// bundle, i.e the reference is informational rather than a fallback.
+	Inlined       bool `protobuf:"varint,5,opt,name=inlined,proto3" json:"inlined,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1486,6 +1490,13 @@ func (x *PolicyEvaluationsRef) GetReason() PolicyEvaluationsRef_Reason {
 		return x.Reason
 	}
 	return PolicyEvaluationsRef_REASON_UNSPECIFIED
+}
+
+func (x *PolicyEvaluationsRef) GetInlined() bool {
+	if x != nil {
+		return x.Inlined
+	}
+	return false
 }
 
 type PolicyEvaluations struct {
@@ -3355,14 +3366,15 @@ const file_controlplane_v1_response_messages_proto_rawDesc = "" +
 	" \x01(\fR\brawValue\x1a>\n" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x82\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9c\x02\n" +
 	"\x14PolicyEvaluationsRef\x12\x16\n" +
 	"\x06digest\x18\x01 \x01(\tR\x06digest\x12\x1d\n" +
 	"\n" +
 	"size_bytes\x18\x02 \x01(\x03R\tsizeBytes\x12\x1d\n" +
 	"\n" +
 	"media_type\x18\x03 \x01(\tR\tmediaType\x12D\n" +
-	"\x06reason\x18\x04 \x01(\x0e2,.controlplane.v1.PolicyEvaluationsRef.ReasonR\x06reason\"N\n" +
+	"\x06reason\x18\x04 \x01(\x0e2,.controlplane.v1.PolicyEvaluationsRef.ReasonR\x06reason\x12\x18\n" +
+	"\ainlined\x18\x05 \x01(\bR\ainlined\"N\n" +
 	"\x06Reason\x12\x16\n" +
 	"\x12REASON_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10REASON_TOO_LARGE\x10\x01\x12\x16\n" +

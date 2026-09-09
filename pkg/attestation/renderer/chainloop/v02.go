@@ -40,13 +40,37 @@ const PredicateTypeV02 = "chainloop.dev/attestation/v0.2"
 const AttPolicyEvaluation = "CHAINLOOP.ATTESTATION"
 const PolicyEvaluationsBundleMediaType = "application/vnd.chainloop.policy-evaluations.v1+json"
 
+// PolicyEvaluationsRef points at the policy-evaluation bundle held in a CAS
+// backend. It is an in-toto resource descriptor plus the size in bytes of the
+// bundle it points at: the descriptor spec has no field for a size, and readers
+// need one to decide whether to fetch the bundle. Embedding keeps the size
+// inside the reference in the rendered predicate, next to the digest it
+// describes.
+type PolicyEvaluationsRef struct {
+	*intoto.ResourceDescriptor
+	// Size in bytes of the referenced bundle. Zero when not recorded.
+	SizeBytes int64 `json:"size,omitempty"`
+}
+
+// GetSizeBytes reports the recorded size, or zero when there is no reference or
+// it records none. A negative size is treated as unrecorded: the value is only
+// as trustworthy as the attestation it came from, and a reader that trusted it
+// would size a bundle it cannot size.
+func (r *PolicyEvaluationsRef) GetSizeBytes() int64 {
+	if r == nil || r.SizeBytes < 0 {
+		return 0
+	}
+
+	return r.SizeBytes
+}
+
 type ProvenancePredicateV02 struct {
 	*ProvenancePredicateCommon
 	Materials []*intoto.ResourceDescriptor `json:"materials,omitempty"`
 	// Deprecated: use PolicyEvaluationsRef to fetch full data from CAS.
 	PolicyEvaluations map[string][]*PolicyEvaluation `json:"policyEvaluations,omitempty"`
-	// Reference to the PolicyEvaluationBundle stored in CAS
-	PolicyEvaluationsRef *intoto.ResourceDescriptor `json:"policyEvaluationsRef,omitempty"`
+	// Reference to the PolicyEvaluationBundle stored in CAS, carrying its size
+	PolicyEvaluationsRef *PolicyEvaluationsRef `json:"policyEvaluationsRef,omitempty"`
 	// Used to read policy evaluations from old attestations
 	PolicyEvaluationsFallback map[string][]*PolicyEvaluation `json:"policy_evaluations,omitempty"`
 
@@ -123,11 +147,11 @@ type RendererV02 struct {
 	*RendererCommon
 	attClient            pb.AttestationServiceClient
 	logger               *zerolog.Logger
-	policyEvaluationsRef *intoto.ResourceDescriptor
+	policyEvaluationsRef *PolicyEvaluationsRef
 }
 
 // SetPolicyEvaluationsRef sets the CAS reference for the policy evaluations bundle.
-func (r *RendererV02) SetPolicyEvaluationsRef(ref *intoto.ResourceDescriptor) {
+func (r *RendererV02) SetPolicyEvaluationsRef(ref *PolicyEvaluationsRef) {
 	r.policyEvaluationsRef = ref
 }
 
@@ -533,7 +557,7 @@ func (p *ProvenancePredicateV02) GetPolicyEvaluations() map[string][]*PolicyEval
 	return p.PolicyEvaluations
 }
 
-func (p *ProvenancePredicateV02) GetPolicyEvaluationsRef() *intoto.ResourceDescriptor {
+func (p *ProvenancePredicateV02) GetPolicyEvaluationsRef() *PolicyEvaluationsRef {
 	return p.PolicyEvaluationsRef
 }
 

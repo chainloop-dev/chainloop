@@ -8,7 +8,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -37,74 +36,6 @@ type Downloader_Expecter struct {
 
 func (_m *Downloader) EXPECT() *Downloader_Expecter {
 	return &Downloader_Expecter{mock: &_m.Mock}
-}
-
-// Describe provides a mock function for the type Downloader
-func (_mock *Downloader) Describe(ctx context.Context, digest string) (*casclient.ResourceInfo, error) {
-	ret := _mock.Called(ctx, digest)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Describe")
-	}
-
-	var r0 *casclient.ResourceInfo
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*casclient.ResourceInfo, error)); ok {
-		return returnFunc(ctx, digest)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *casclient.ResourceInfo); ok {
-		r0 = returnFunc(ctx, digest)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*casclient.ResourceInfo)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, digest)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// Downloader_Describe_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Describe'
-type Downloader_Describe_Call struct {
-	*mock.Call
-}
-
-// Describe is a helper method to define mock.On call
-//   - ctx context.Context
-//   - digest string
-func (_e *Downloader_Expecter) Describe(ctx any, digest any) *Downloader_Describe_Call {
-	return &Downloader_Describe_Call{Call: _e.mock.On("Describe", ctx, digest)}
-}
-
-func (_c *Downloader_Describe_Call) Run(run func(ctx context.Context, digest string)) *Downloader_Describe_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *Downloader_Describe_Call) Return(resourceInfo *casclient.ResourceInfo, err error) *Downloader_Describe_Call {
-	_c.Call.Return(resourceInfo, err)
-	return _c
-}
-
-func (_c *Downloader_Describe_Call) RunAndReturn(run func(ctx context.Context, digest string) (*casclient.ResourceInfo, error)) *Downloader_Describe_Call {
-	_c.Call.Return(run)
-	return _c
 }
 
 // Download provides a mock function for the type Downloader

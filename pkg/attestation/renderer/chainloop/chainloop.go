@@ -42,7 +42,7 @@ type NormalizablePredicate interface {
 	GetRunLink() string
 	GetMetadata() *Metadata
 	GetPolicyEvaluations() map[string][]*PolicyEvaluation
-	GetPolicyEvaluationsRef() *intoto.ResourceDescriptor
+	GetPolicyEvaluationsRef() *PolicyEvaluationsRef
 	GetPolicyEvaluationStatus() *PolicyEvaluationStatus
 }
 
