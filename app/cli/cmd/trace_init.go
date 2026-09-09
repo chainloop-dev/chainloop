@@ -207,7 +207,7 @@ func writeTraceNextSteps(w io.Writer, repoRoot string, selected []trace.Provider
 	fmt.Fprintf(w, `
 What's next
 
-  1. Commit the changes, so the rest of your team is traced without running init:
+  1. Commit these files. Anyone who pulls them is set up automatically:
        git add %s
   2. Start %s and write some code
   3. Commit and push as usual, and the AI-assisted commits are attested on push
