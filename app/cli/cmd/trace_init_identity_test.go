@@ -399,15 +399,35 @@ func TestResolveInteractiveProject(t *testing.T) {
 			wantSelectDefault: createNewProjectOption,
 		},
 		{
-			name:              "a pinned project that is not visible is still offered and preselected",
+			// The listing is the source of truth. Offering a name only
+			// .chainloop.yml knows about makes it look like an existing project,
+			// and picking it asks the control plane to create one, which fails
+			// outright for a caller who may not create projects.
+			name:              "a pinned project the organization does not have is not offered",
 			projects:          []string{projectAPI},
-			fromYML:           "not-visible-to-me",
+			fromYML:           "gone-or-never-existed",
 			repoDir:           "whatever",
-			selectAnswer:      "not-visible-to-me",
-			wantValue:         "not-visible-to-me",
+			selectAnswer:      projectAPI,
+			wantValue:         projectAPI,
+			wantSave:          true,
+			wantOptions:       []string{createNewProjectOption, projectAPI},
+			wantSelectDefault: createNewProjectOption,
+		},
+		{
+			// It is still the name the repository is asking for, so creating is
+			// where it belongs: the input starts from it rather than from the
+			// repository's directory name.
+			name:              "a pinned project the organization does not have seeds the new name",
+			projects:          []string{projectAPI},
+			fromYML:           "gone-or-never-existed",
+			repoDir:           repoDirMyRepo,
+			selectAnswer:      createNewProjectOption,
+			inputAnswer:       "gone-or-never-existed",
+			wantValue:         "gone-or-never-existed",
 			wantSave:          false,
-			wantOptions:       []string{createNewProjectOption, projectAPI, "not-visible-to-me"},
-			wantSelectDefault: "not-visible-to-me",
+			wantOptions:       []string{createNewProjectOption, projectAPI},
+			wantSelectDefault: createNewProjectOption,
+			wantInputDefault:  "gone-or-never-existed",
 		},
 		{
 			name:              "choosing to create opens an input prefilled with the repository name",
@@ -465,9 +485,8 @@ func TestResolveInteractiveProject(t *testing.T) {
 			wantSelectDefault: createNewProjectOption,
 		},
 		{
-			// A pinned project missing from the listing is offered anyway, but
-			// one the listing returned as read-only must not be: it is a
-			// different case with the same symptom.
+			// The listing did carry it, so it is a real project, but picking it
+			// would fail at creation time just the same.
 			name:              "a pinned project the caller can only view is neither offered nor preselected",
 			projects:          []string{projectAPI},
 			readOnly:          []string{"payments"},

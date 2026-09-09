@@ -16,7 +16,6 @@
 package cmd
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -216,26 +215,36 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		readOnly = append(readOnly, project.Name)
 	}
 
-	// pinnedReadOnly means .chainloop.yml points at a project the caller can see
-	// but not write to, which is why it is missing from the offer.
-	pinnedReadOnly := fromYML != "" && slices.Contains(readOnly, fromYML)
-	if pinnedReadOnly {
-		logger.Warn().Str("project", fromYML).
-			Msg("you cannot create a workflow in the project this repository points at, pick another one")
+	// newProjectSeed is what the new-project prompt starts from. The repository's
+	// own directory name is the default seed: a project the organization already
+	// has is picked from the list, so seeding its name would only propose moving
+	// nowhere.
+	newProjectSeed := config.SlugifyDNS1123(repoDir)
+
+	// The listing is the source of truth: what .chainloop.yml names is only worth
+	// offering if the organization actually has it. Anything else it holds is
+	// stale, names a project in another organization, or was never created.
+	if fromYML != "" && !slices.Contains(writable, fromYML) {
+		if slices.Contains(readOnly, fromYML) {
+			logger.Warn().Str("project", fromYML).
+				Msg("you cannot create a workflow in the project this repository points at, pick another one")
+		} else {
+			// Not in the organization at all, so it is a name for a project that does
+			// not exist rather than one that can be picked. Offering it as if it were
+			// real is what makes selecting it fail on a project the caller may not be
+			// allowed to create. Creating it is what the repository is asking for, so
+			// it seeds the new name instead.
+			newProjectSeed = fromYML
+
+			logger.Warn().Str("project", fromYML).
+				Msg("the project this repository points at does not exist in this organization")
+		}
 	}
 
 	// Nothing to choose from, so go straight to naming one rather than showing a
-	// list holding only the pinned project.
+	// list holding nothing but the create entry.
 	if len(writable) == 0 {
-		return promptNewProject(p, seedProjectName(fromYML, pinnedReadOnly, repoDir), fromYML, readOnly)
-	}
-
-	// A project pinned in .chainloop.yml the listing did not carry at all is
-	// still offered: the user may only be able to see it through this
-	// repository, or it may not exist yet. One the listing did carry and marked
-	// read-only is a different case, and stays out.
-	if fromYML != "" && !pinnedReadOnly && !slices.Contains(writable, fromYML) {
-		writable = append(writable, fromYML)
+		return promptNewProject(p, newProjectSeed, fromYML, readOnly)
 	}
 
 	options := append([]string{createNewProjectOption}, writable...)
@@ -249,21 +258,7 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		return &resolvedValue{value: chosen, save: chosen != fromYML, prompted: true}, nil
 	}
 
-	// They asked for a new project, so seed the name from the repository rather
-	// than from the project they are moving away from.
-	return promptNewProject(p, config.SlugifyDNS1123(repoDir), fromYML, readOnly)
-}
-
-// seedProjectName is what the new-project prompt starts from. The project
-// .chainloop.yml pins is the best seed, unless it is one the caller cannot write
-// to, in which case proposing it again would just repeat the same failure.
-func seedProjectName(fromYML string, pinnedReadOnly bool, repoDir string) string {
-	fromRepo := config.SlugifyDNS1123(repoDir)
-	if pinnedReadOnly {
-		return fromRepo
-	}
-
-	return cmp.Or(fromYML, fromRepo)
+	return promptNewProject(p, newProjectSeed, fromYML, readOnly)
 }
 
 // promptNewProject collects a free-form project name and returns it normalized
