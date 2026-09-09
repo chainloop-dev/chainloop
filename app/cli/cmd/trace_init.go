@@ -119,7 +119,6 @@ The organization, project, workflow and require-trace values are saved to
 			// harness's own hook config file, written here, determines which of
 			// them can register sessions.
 			installed := make([]trace.Provider, 0, len(selectedProviders))
-			installedNames := make([]string, 0, len(selectedProviders))
 
 			for _, p := range selectedProviders {
 				if err := p.InstallHooks(repoRoot); err != nil {
@@ -129,7 +128,6 @@ The organization, project, workflow and require-trace values are saved to
 
 				logger.Debug().Str("harness", p.Name()).Msg("harness hooks installed")
 				installed = append(installed, p)
-				installedNames = append(installedNames, p.Name())
 			}
 
 			if len(installed) == 0 {
@@ -176,7 +174,7 @@ The organization, project, workflow and require-trace values are saved to
 
 			// What the run produced, and what to do with it. Every step above logs
 			// at debug, so this is what the user is left with.
-			writeTraceInitSummary(os.Stdout, organization, cfg.project, cfg.workflow, installedNames)
+			writeTraceInitSummary(os.Stdout, organization, cfg.project, cfg.workflow, providerNames(installed))
 			writeTraceNextSteps(os.Stdout, repoRoot, workDir, installed)
 
 			return nil
@@ -241,9 +239,7 @@ func writeTraceNextSteps(w io.Writer, repoRoot, workDir string, installed []trac
 
 	add(filepath.Join(repoRoot, config.ChainloopYMLName(repoRoot)))
 
-	names := make([]string, 0, len(installed))
 	for _, p := range installed {
-		names = append(names, p.Name())
 		add(p.SettingsFile(repoRoot))
 	}
 
@@ -257,7 +253,17 @@ What's next
      recorded and stored automatically
 
 Learn more: %s
-`, strings.Join(files, " "), joinWithOr(names), traceDocsURL)
+`, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
+}
+
+// providerNames names the harnesses, in the order they were installed.
+func providerNames(installed []trace.Provider) []string {
+	names := make([]string, 0, len(installed))
+	for _, p := range installed {
+		names = append(names, p.Name())
+	}
+
+	return names
 }
 
 // joinWithOr renders a list the way a sentence needs it: "a", "a or b", or

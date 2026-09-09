@@ -200,7 +200,7 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		return nil, fmt.Errorf("listing the projects you can see: %w", err)
 	}
 
-	visible, canCreate := listing.Projects, listing.CanCreateProject
+	visible := listing.Projects
 
 	// Only the projects the caller can add a workflow to are worth offering;
 	// picking any other one would fail at creation time. The rest are still
@@ -245,19 +245,10 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 
 	// Creating one is a permission of the organization role, not of any project:
 	// an organization contributor administering every project it can see still
-	// cannot create another. Offering the option anyway would fail on the name
-	// they just typed.
-	if !canCreate {
-		if len(writable) == 0 {
-			return nil, errors.New("you cannot create projects in this organization, and none of the projects you can see accepts a new workflow; ask an administrator for access to one")
-		}
-
-		chosen, err := p.Select(projectPromptTitle, writable, firstPresent(writable, fromYML))
-		if err != nil {
-			return nil, err
-		}
-
-		return &resolvedValue{value: chosen, save: chosen != fromYML, prompted: true}, nil
+	// cannot create another. With nothing to pick either, there is no way
+	// forward, so say so instead of asking.
+	if !listing.CanCreateProject && len(writable) == 0 {
+		return nil, errors.New("you cannot create projects in this organization, and none of the projects you can see accepts a new workflow; ask an administrator for access to one")
 	}
 
 	// Nothing to choose from, so go straight to naming one rather than showing a
@@ -266,18 +257,23 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		return promptNewProject(p, newProjectSeed, fromYML, readOnly)
 	}
 
-	options := append([]string{createNewProjectOption}, writable...)
+	// The create entry is only offered to a role that may act on it; offering it
+	// anyway would fail on the name they just typed.
+	options := writable
+	if listing.CanCreateProject {
+		options = append([]string{createNewProjectOption}, writable...)
+	}
 
 	chosen, err := p.Select(projectPromptTitle, options, firstPresent(options, fromYML))
 	if err != nil {
 		return nil, err
 	}
 
-	if chosen != createNewProjectOption {
-		return &resolvedValue{value: chosen, save: chosen != fromYML, prompted: true}, nil
+	if chosen == createNewProjectOption {
+		return promptNewProject(p, newProjectSeed, fromYML, readOnly)
 	}
 
-	return promptNewProject(p, newProjectSeed, fromYML, readOnly)
+	return &resolvedValue{value: chosen, save: chosen != fromYML, prompted: true}, nil
 }
 
 // promptNewProject collects a free-form project name and returns it normalized

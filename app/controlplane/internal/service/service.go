@@ -352,7 +352,7 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 func (s *service) userCanCreateProject(ctx context.Context) error {
 	pass, err := s.canCreateProject(ctx)
 	if err != nil {
-		return err
+		return handleUseCaseErr(err, s.log)
 	}
 
 	if !pass {
@@ -365,7 +365,7 @@ func (s *service) userCanCreateProject(ctx context.Context) error {
 // canCreateProject reports what userCanCreateProject enforces, so a listing can
 // tell a client whether creating one is worth offering. The two must answer
 // alike: an option that the create call then refuses is the dead end the answer
-// exists to avoid.
+// exists to avoid. Its error is raw, for the caller to convert at the boundary.
 func (s *service) canCreateProject(ctx context.Context) (bool, error) {
 	// admins always can create projects
 	if !rbacEnabled(ctx) {
@@ -373,19 +373,13 @@ func (s *service) canCreateProject(ctx context.Context) (bool, error) {
 	}
 
 	// Only org tokens can create projects
-	if token := entities.CurrentAPIToken(ctx); token != nil {
-		if token.ProjectID != nil {
-			return false, nil
-		}
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID != nil {
+		return false, nil
 	}
 
 	orgRole := usercontext.CurrentAuthzSubject(ctx)
-	pass, err := s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
-	if err != nil {
-		return false, handleUseCaseErr(err, s.log)
-	}
 
-	return pass, nil
+	return s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
 }
 
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)

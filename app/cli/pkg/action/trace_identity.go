@@ -83,7 +83,9 @@ type traceProjectPage struct {
 // Deciding which of those to offer is left to the caller, which needs to tell a
 // project it may not write to apart from one that is missing entirely.
 func listAllTraceProjects(ctx context.Context, api traceProjectAPI) (*TraceProjects, error) {
-	all := &TraceProjects{Projects: make([]*TraceProject, 0, traceProjectPageSize)}
+	projects := make([]*TraceProject, 0, traceProjectPageSize)
+	// Every page repeats the same answer, so the last one read is as good as any.
+	var canCreateProject bool
 
 	for page := int32(1); ; page++ {
 		got, err := api.listProjectsPage(ctx, page, traceProjectPageSize)
@@ -91,8 +93,8 @@ func listAllTraceProjects(ctx context.Context, api traceProjectAPI) (*TraceProje
 			return nil, fmt.Errorf("listing projects: %w", err)
 		}
 
-		all.Projects = append(all.Projects, got.Projects...)
-		all.CanCreateProject = got.CanCreateProject
+		projects = append(projects, got.Projects...)
+		canCreateProject = got.CanCreateProject
 
 		// Stop on the last page the server reports, and also on a page the server
 		// returned nothing for, so a server reporting more pages than it serves
@@ -102,15 +104,15 @@ func listAllTraceProjects(ctx context.Context, api traceProjectAPI) (*TraceProje
 		}
 	}
 
-	slices.SortFunc(all.Projects, func(a, b *TraceProject) int {
+	slices.SortFunc(projects, func(a, b *TraceProject) int {
 		return cmp.Compare(a.Name, b.Name)
 	})
 
-	all.Projects = slices.CompactFunc(all.Projects, func(a, b *TraceProject) bool {
+	projects = slices.CompactFunc(projects, func(a, b *TraceProject) bool {
 		return a.Name == b.Name
 	})
 
-	return all, nil
+	return &TraceProjects{Projects: projects, CanCreateProject: canCreateProject}, nil
 }
 
 // cpTraceProjectAPI implements traceProjectAPI against the control plane.
