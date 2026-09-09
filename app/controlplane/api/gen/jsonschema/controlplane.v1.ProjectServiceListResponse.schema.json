@@ -3,7 +3,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "ProjectServiceListResponse contains a paginated list of the organization's projects",
+  "patternProperties": {
+    "^(canCreateProject)$": {
+      "description": "Whether the caller may create a project in this organization. It is a\n property of their organization role, not of any project, so it does not\n belong on the items: an organization contributor, for instance, can be an\n administrator of several projects and still create none. Clients offering\n to create one need this to avoid an option that always fails.",
+      "type": "boolean"
+    }
+  },
   "properties": {
+    "can_create_project": {
+      "description": "Whether the caller may create a project in this organization. It is a\n property of their organization role, not of any project, so it does not\n belong on the items: an organization contributor, for instance, can be an\n administrator of several projects and still create none. Clients offering\n to create one need this to avoid an option that always fails.",
+      "type": "boolean"
+    },
     "pagination": {
       "$ref": "controlplane.v1.OffsetPaginationResponse.schema.json",
       "description": "Pagination information for the response"

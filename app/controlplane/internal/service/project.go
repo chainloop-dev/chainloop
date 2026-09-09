@@ -74,6 +74,13 @@ func (s *ProjectService) List(ctx context.Context, req *pb.ProjectServiceListReq
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
+	// Whether a new project is an option at all depends on the organization role
+	// rather than on any project, so it is answered once for the listing.
+	canCreateProject, err := s.canCreateProject(ctx)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
 	result := make([]*pb.ProjectServiceListResponse_ProjectItem, 0, len(projects))
 	for _, p := range projects {
 		item := bizProjectToPb(p)
@@ -82,8 +89,9 @@ func (s *ProjectService) List(ctx context.Context, req *pb.ProjectServiceListReq
 	}
 
 	return &pb.ProjectServiceListResponse{
-		Projects:   result,
-		Pagination: paginationToPb(total, paginationOpts.Offset(), paginationOpts.Limit()),
+		Projects:         result,
+		Pagination:       paginationToPb(total, paginationOpts.Offset(), paginationOpts.Limit()),
+		CanCreateProject: canCreateProject,
 	}, nil
 }
 

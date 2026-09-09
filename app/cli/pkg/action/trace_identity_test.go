@@ -48,16 +48,17 @@ func readOnly(names ...string) []*TraceProject {
 type fakeProjectPager struct {
 	pages [][]*TraceProject
 	// totalPages is what the server reports; it defaults to len(pages)
-	totalPages int32
-	err        error
+	totalPages       int32
+	canCreateProject bool
+	err              error
 
 	requested []int32
 }
 
-func (f *fakeProjectPager) listProjectsPage(_ context.Context, page, _ int32) ([]*TraceProject, int32, error) {
+func (f *fakeProjectPager) listProjectsPage(_ context.Context, page, _ int32) (*traceProjectPage, error) {
 	f.requested = append(f.requested, page)
 	if f.err != nil {
-		return nil, 0, f.err
+		return nil, f.err
 	}
 
 	total := f.totalPages
@@ -65,12 +66,14 @@ func (f *fakeProjectPager) listProjectsPage(_ context.Context, page, _ int32) ([
 		total = int32(len(f.pages))
 	}
 
+	out := &traceProjectPage{TotalPages: total, CanCreateProject: f.canCreateProject}
+
 	idx := int(page) - 1
-	if idx < 0 || idx >= len(f.pages) {
-		return nil, total, nil
+	if idx >= 0 && idx < len(f.pages) {
+		out.Projects = f.pages[idx]
 	}
 
-	return f.pages[idx], total, nil
+	return out, nil
 }
 
 // Project names the table cases share.
@@ -145,11 +148,12 @@ func TestListAllTraceProjects(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pager := &fakeProjectPager{pages: tc.pages, totalPages: tc.totalPages}
+			pager := &fakeProjectPager{pages: tc.pages, totalPages: tc.totalPages, canCreateProject: true}
 			got, err := listAllTraceProjects(context.Background(), pager)
 			require.NoError(t, err)
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.want, got.Projects)
 			assert.Equal(t, tc.wantRequested, pager.requested)
+			assert.True(t, got.CanCreateProject, "what the server said about creating must survive the walk")
 		})
 	}
 }

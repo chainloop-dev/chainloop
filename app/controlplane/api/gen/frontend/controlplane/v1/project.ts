@@ -31,6 +31,14 @@ export interface ProjectServiceListResponse {
   projects: ProjectServiceListResponse_ProjectItem[];
   /** Pagination information for the response */
   pagination?: OffsetPaginationResponse;
+  /**
+   * Whether the caller may create a project in this organization. It is a
+   * property of their organization role, not of any project, so it does not
+   * belong on the items: an organization contributor, for instance, can be an
+   * administrator of several projects and still create none. Clients offering
+   * to create one need this to avoid an option that always fails.
+   */
+  canCreateProject: boolean;
 }
 
 /** ProjectItem represents a project of the organization */
@@ -247,7 +255,7 @@ export const ProjectServiceListRequest = {
 };
 
 function createBaseProjectServiceListResponse(): ProjectServiceListResponse {
-  return { projects: [], pagination: undefined };
+  return { projects: [], pagination: undefined, canCreateProject: false };
 }
 
 export const ProjectServiceListResponse = {
@@ -257,6 +265,9 @@ export const ProjectServiceListResponse = {
     }
     if (message.pagination !== undefined) {
       OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.canCreateProject === true) {
+      writer.uint32(24).bool(message.canCreateProject);
     }
     return writer;
   },
@@ -282,6 +293,13 @@ export const ProjectServiceListResponse = {
 
           message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.canCreateProject = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -297,6 +315,7 @@ export const ProjectServiceListResponse = {
         ? object.projects.map((e: any) => ProjectServiceListResponse_ProjectItem.fromJSON(e))
         : [],
       pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
+      canCreateProject: isSet(object.canCreateProject) ? Boolean(object.canCreateProject) : false,
     };
   },
 
@@ -309,6 +328,7 @@ export const ProjectServiceListResponse = {
     }
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
+    message.canCreateProject !== undefined && (obj.canCreateProject = message.canCreateProject);
     return obj;
   },
 
@@ -322,6 +342,7 @@ export const ProjectServiceListResponse = {
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? OffsetPaginationResponse.fromPartial(object.pagination)
       : undefined;
+    message.canCreateProject = object.canCreateProject ?? false;
     return message;
   },
 };

@@ -51,6 +51,12 @@ message ProjectServiceListResponse {
   repeated ProjectItem projects = 1;
   // Pagination information for the response
   OffsetPaginationResponse pagination = 2;
+  // Whether the caller may create a project in this organization. It is a
+  // property of their organization role, not of any project, so it does not
+  // belong on the items: an organization contributor, for instance, can be an
+  // administrator of several projects and still create none. Clients offering
+  // to create one need this to avoid an option that always fails.
+  bool can_create_project = 3;
 
   // ProjectItem represents a project of the organization
   message ProjectItem {

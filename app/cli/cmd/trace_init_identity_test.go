@@ -39,14 +39,16 @@ func (f *fakeOrgLister) ListOrganizations(context.Context) ([]*action.Membership
 }
 
 // fakeProjectLister serves a canned listing. projects are the ones the caller
-// may create a workflow in, readOnly the ones it can only see.
+// may create a workflow in, readOnly the ones it can only see. cannotCreate
+// inverts the default so the common case stays untyped in the table.
 type fakeProjectLister struct {
-	projects []string
-	readOnly []string
-	err      error
+	projects     []string
+	readOnly     []string
+	cannotCreate bool
+	err          error
 }
 
-func (f *fakeProjectLister) ListProjects(context.Context) ([]*action.TraceProject, error) {
+func (f *fakeProjectLister) ListProjects(context.Context) (*action.TraceProjects, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -60,7 +62,7 @@ func (f *fakeProjectLister) ListProjects(context.Context) ([]*action.TraceProjec
 		out = append(out, &action.TraceProject{Name: name})
 	}
 
-	return out, nil
+	return &action.TraceProjects{Projects: out, CanCreateProject: !f.cannotCreate}, nil
 }
 
 // recordedPrompt captures what a prompt was shown, so tests can assert on the
@@ -346,6 +348,8 @@ func TestResolveInteractiveProject(t *testing.T) {
 		repoDir  string
 		// readOnly are projects the caller can see but not create a workflow in
 		readOnly []string
+		// cannotCreate is the organization role refusing new projects
+		cannotCreate bool
 		// selectAnswer is what the user picks in the list; empty means the list
 		// is not expected to be shown
 		selectAnswer string
@@ -526,13 +530,48 @@ func TestResolveInteractiveProject(t *testing.T) {
 			inputAnswer:  "payments",
 			wantErr:      "you can only view the project",
 		},
+		{
+			// Creating is an organization-role permission, so a contributor that
+			// administers projects still cannot have the option: it would fail on
+			// whatever name they typed.
+			name:              "a caller who cannot create projects is not offered the option",
+			projects:          []string{projectAPI, "payments"},
+			cannotCreate:      true,
+			repoDir:           repoDirMyRepo,
+			selectAnswer:      projectAPI,
+			wantValue:         projectAPI,
+			wantSave:          true,
+			wantOptions:       []string{projectAPI, "payments"},
+			wantSelectDefault: projectAPI,
+		},
+		{
+			name:              "a pinned project is still preselected without the create option",
+			projects:          []string{projectAPI, "payments"},
+			cannotCreate:      true,
+			fromYML:           "payments",
+			repoDir:           repoDirMyRepo,
+			selectAnswer:      "payments",
+			wantValue:         "payments",
+			wantSave:          false,
+			wantOptions:       []string{projectAPI, "payments"},
+			wantSelectDefault: "payments",
+		},
+		{
+			// Nothing to pick and nothing to create is a dead end, so it says so
+			// instead of asking for a name the control plane would refuse.
+			name:         "no writable project and no permission to create says so",
+			readOnly:     []string{"payments"},
+			cannotCreate: true,
+			repoDir:      repoDirMyRepo,
+			wantErr:      "you cannot create projects in this organization",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &fakePrompter{selectAnswer: tc.selectAnswer, inputAnswer: tc.inputAnswer}
 			got, err := resolveInteractiveProject(context.Background(),
-				&fakeProjectLister{projects: tc.projects, readOnly: tc.readOnly}, p, tc.fromYML, tc.repoDir)
+				&fakeProjectLister{projects: tc.projects, readOnly: tc.readOnly, cannotCreate: tc.cannotCreate}, p, tc.fromYML, tc.repoDir)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)

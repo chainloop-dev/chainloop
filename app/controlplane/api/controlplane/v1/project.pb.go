@@ -99,9 +99,15 @@ type ProjectServiceListResponse struct {
 	// List of projects matching the request criteria
 	Projects []*ProjectServiceListResponse_ProjectItem `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
 	// Pagination information for the response
-	Pagination    *OffsetPaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Pagination *OffsetPaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	// Whether the caller may create a project in this organization. It is a
+	// property of their organization role, not of any project, so it does not
+	// belong on the items: an organization contributor, for instance, can be an
+	// administrator of several projects and still create none. Clients offering
+	// to create one need this to avoid an option that always fails.
+	CanCreateProject bool `protobuf:"varint,3,opt,name=can_create_project,json=canCreateProject,proto3" json:"can_create_project,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ProjectServiceListResponse) Reset() {
@@ -146,6 +152,13 @@ func (x *ProjectServiceListResponse) GetPagination() *OffsetPaginationResponse {
 		return x.Pagination
 	}
 	return nil
+}
+
+func (x *ProjectServiceListResponse) GetCanCreateProject() bool {
+	if x != nil {
+		return x.CanCreateProject
+	}
+	return false
 }
 
 // ProjectServiceListMembersRequest contains the information needed to list members of a project
@@ -1059,12 +1072,13 @@ const file_controlplane_v1_project_proto_rawDesc = "" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2(.controlplane.v1.OffsetPaginationRequestR\n" +
 	"paginationB\a\n" +
-	"\x05_name\"\xb8\x03\n" +
+	"\x05_name\"\xe6\x03\n" +
 	"\x1aProjectServiceListResponse\x12S\n" +
 	"\bprojects\x18\x01 \x03(\v27.controlplane.v1.ProjectServiceListResponse.ProjectItemR\bprojects\x12I\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2).controlplane.v1.OffsetPaginationResponseR\n" +
-	"pagination\x1a\xf9\x01\n" +
+	"pagination\x12,\n" +
+	"\x12can_create_project\x18\x03 \x01(\bR\x10canCreateProject\x1a\xf9\x01\n" +
 	"\vProjectItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +

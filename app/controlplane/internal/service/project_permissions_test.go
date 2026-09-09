@@ -131,6 +131,71 @@ func TestProjectsAllowing(t *testing.T) {
 	}
 }
 
+// TestCanCreateProject covers whether a listing may offer creating a project.
+// The organization role decides it on its own, so an administrator of every
+// project in the organization can still be unable to create one.
+func TestCanCreateProject(t *testing.T) {
+	testCases := []struct {
+		name string
+		ctx  context.Context
+		want bool
+	}{
+		{
+			// An organization member is the role that owns project creation.
+			name: "an organization member may create projects",
+			ctx:  rbacContext(),
+			want: true,
+		},
+		{
+			// A contributor inherits the member's workflow permissions but not
+			// project creation, so offering it would always fail.
+			name: "an organization contributor may not, whatever it administers",
+			ctx: entities.WithMembership(
+				usercontext.WithAuthzSubject(context.Background(), string(authz.RoleOrgContributor)),
+				&entities.Membership{Resources: []*entities.ResourceMembership{
+					projectMembership(uuid.New(), authz.RoleProjectAdmin),
+				}}),
+			want: false,
+		},
+		{
+			name: "an organization admin bypasses RBAC and may",
+			ctx:  usercontext.WithAuthzSubject(context.Background(), string(authz.RoleAdmin)),
+			want: true,
+		},
+	}
+
+	s := newTestService(t)
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := s.canCreateProject(tc.ctx)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestCanCreateProjectMatchesEnforcement pins the reported answer to the one the
+// create call enforces. They are read by a client as the same question, so they
+// must not drift apart.
+func TestCanCreateProjectMatchesEnforcement(t *testing.T) {
+	s := newTestService(t)
+
+	for _, role := range []authz.Role{authz.RoleOrgMember, authz.RoleOrgContributor, authz.RoleAdmin, authz.RoleViewer} {
+		t.Run(string(role), func(t *testing.T) {
+			ctx := entities.WithMembership(
+				usercontext.WithAuthzSubject(context.Background(), string(role)),
+				&entities.Membership{})
+
+			reported, err := s.canCreateProject(ctx)
+			require.NoError(t, err)
+
+			assert.Equal(t, reported, s.userCanCreateProject(ctx) == nil,
+				"the listing reported %v, which the create call does not agree with", reported)
+		})
+	}
+}
+
 // TestProjectsAllowingWithoutRBAC covers the organization roles RBAC does not
 // narrow. Whether they may create a workflow is decided by the role alone, so
 // it is the same answer for every project: all of them, or none.

@@ -350,22 +350,9 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 }
 
 func (s *service) userCanCreateProject(ctx context.Context) error {
-	// admins always can create projects
-	if !rbacEnabled(ctx) {
-		return nil
-	}
-
-	// Only org tokens can create projects
-	if token := entities.CurrentAPIToken(ctx); token != nil {
-		if token.ProjectID != nil {
-			return errors.Forbidden("unauthorized", "you are not allowed to create projects")
-		}
-	}
-
-	orgRole := usercontext.CurrentAuthzSubject(ctx)
-	pass, err := s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
+	pass, err := s.canCreateProject(ctx)
 	if err != nil {
-		return handleUseCaseErr(err, s.log)
+		return err
 	}
 
 	if !pass {
@@ -373,6 +360,32 @@ func (s *service) userCanCreateProject(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// canCreateProject reports what userCanCreateProject enforces, so a listing can
+// tell a client whether creating one is worth offering. The two must answer
+// alike: an option that the create call then refuses is the dead end the answer
+// exists to avoid.
+func (s *service) canCreateProject(ctx context.Context) (bool, error) {
+	// admins always can create projects
+	if !rbacEnabled(ctx) {
+		return true, nil
+	}
+
+	// Only org tokens can create projects
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		if token.ProjectID != nil {
+			return false, nil
+		}
+	}
+
+	orgRole := usercontext.CurrentAuthzSubject(ctx)
+	pass, err := s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
+	if err != nil {
+		return false, handleUseCaseErr(err, s.log)
+	}
+
+	return pass, nil
 }
 
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)
