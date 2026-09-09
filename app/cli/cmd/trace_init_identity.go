@@ -29,12 +29,21 @@ import (
 )
 
 const (
-	orgPromptTitle        = "Chainloop organization for this repository"
-	projectPromptTitle    = "Chainloop project for this repository"
+	orgPromptTitle = "Select a Chainloop organization"
+
+	// The project picker offers creating one only to a caller allowed to, so it
+	// has a title for each case: promising an action that is not on the list
+	// would be the same dead end as offering the action itself.
+	projectPromptTitle       = "Select or create a Chainloop project"
+	selectProjectPromptTitle = "Select a Chainloop project"
+
 	newProjectPromptTitle = "Name for the new project"
 
-	// createNewProjectOption is the first entry of the project picker.
-	createNewProjectOption = "Create a new project…"
+	// createNewProjectOption closes the project picker, below the projects
+	// themselves. huh has no separator or grouping in a list — every entry is a
+	// label and a value, drawn alike — so the "+" is what sets an action apart
+	// from the names it sits under.
+	createNewProjectOption = "+ Create a new project…"
 )
 
 // errAborted is returned when the user dismisses a prompt. It stops `trace
@@ -223,6 +232,10 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 	// nowhere.
 	newProjectSeed := config.SlugifyDNS1123(repoDir)
 
+	// pinnedIsMissing records that .chainloop.yml names a project the
+	// organization does not have, which decides where the cursor starts.
+	var pinnedIsMissing bool
+
 	// The listing is the source of truth: what .chainloop.yml names is only worth
 	// offering if the organization actually has it. Anything else it holds is
 	// stale, names a project in another organization, or was never created.
@@ -231,6 +244,7 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 			logger.Warn().Str("project", fromYML).
 				Msg("you cannot create a workflow in the project this repository points at, pick another one")
 		} else {
+			pinnedIsMissing = true
 			// Not in the organization at all, so it is a name for a project that does
 			// not exist rather than one that can be picked. Offering it as if it were
 			// real is what makes selecting it fail on a project the caller may not be
@@ -258,13 +272,22 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 	}
 
 	// The create entry is only offered to a role that may act on it; offering it
-	// anyway would fail on the name they just typed.
-	options := writable
+	// anyway would fail on the name they just typed. It goes last, under the
+	// projects, since picking one of those is the common answer.
+	title, options := selectProjectPromptTitle, writable
 	if listing.CanCreateProject {
-		options = append([]string{createNewProjectOption}, writable...)
+		title = projectPromptTitle
+		options = append(slices.Clone(writable), createNewProjectOption)
 	}
 
-	chosen, err := p.Select(projectPromptTitle, options, firstPresent(options, fromYML))
+	// The cursor starts on what the repository pins, and on creating when what it
+	// pins does not exist, since that name is what it is asking to be created.
+	preselect := fromYML
+	if pinnedIsMissing {
+		preselect = createNewProjectOption
+	}
+
+	chosen, err := p.Select(title, options, firstPresent(options, preselect))
 	if err != nil {
 		return nil, err
 	}

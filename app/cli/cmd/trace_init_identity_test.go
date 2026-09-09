@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -389,18 +390,18 @@ func TestResolveInteractiveProject(t *testing.T) {
 			selectAnswer:      "payments",
 			wantValue:         "payments",
 			wantSave:          false,
-			wantOptions:       []string{createNewProjectOption, projectAPI, "payments"},
+			wantOptions:       []string{projectAPI, "payments", createNewProjectOption},
 			wantSelectDefault: "payments",
 		},
 		{
-			name:              "with nothing pinned the create entry is preselected",
+			name:              "with nothing pinned the first project is preselected",
 			projects:          []string{projectAPI, "payments"},
 			repoDir:           repoDirMyRepo,
 			selectAnswer:      projectAPI,
 			wantValue:         projectAPI,
 			wantSave:          true,
-			wantOptions:       []string{createNewProjectOption, projectAPI, "payments"},
-			wantSelectDefault: createNewProjectOption,
+			wantOptions:       []string{projectAPI, "payments", createNewProjectOption},
+			wantSelectDefault: projectAPI,
 		},
 		{
 			// The listing is the source of truth. Offering a name only
@@ -414,7 +415,7 @@ func TestResolveInteractiveProject(t *testing.T) {
 			selectAnswer:      projectAPI,
 			wantValue:         projectAPI,
 			wantSave:          true,
-			wantOptions:       []string{createNewProjectOption, projectAPI},
+			wantOptions:       []string{projectAPI, createNewProjectOption},
 			wantSelectDefault: createNewProjectOption,
 		},
 		{
@@ -429,7 +430,7 @@ func TestResolveInteractiveProject(t *testing.T) {
 			inputAnswer:       "gone-or-never-existed",
 			wantValue:         "gone-or-never-existed",
 			wantSave:          false,
-			wantOptions:       []string{createNewProjectOption, projectAPI},
+			wantOptions:       []string{projectAPI, createNewProjectOption},
 			wantSelectDefault: createNewProjectOption,
 			wantInputDefault:  "gone-or-never-existed",
 		},
@@ -441,8 +442,8 @@ func TestResolveInteractiveProject(t *testing.T) {
 			inputAnswer:       "My Cool Project",
 			wantValue:         "my-cool-project",
 			wantSave:          true,
-			wantOptions:       []string{createNewProjectOption, projectAPI},
-			wantSelectDefault: createNewProjectOption,
+			wantOptions:       []string{projectAPI, createNewProjectOption},
+			wantSelectDefault: projectAPI,
 			wantInputDefault:  "my-cool-project",
 		},
 		{
@@ -453,8 +454,8 @@ func TestResolveInteractiveProject(t *testing.T) {
 			inputAnswer:       "  Payments API (v2)!! ",
 			wantValue:         "payments-api-v2",
 			wantSave:          true,
-			wantOptions:       []string{createNewProjectOption, projectAPI},
-			wantSelectDefault: createNewProjectOption,
+			wantOptions:       []string{projectAPI, createNewProjectOption},
+			wantSelectDefault: projectAPI,
 			wantInputDefault:  "repo",
 		},
 		{
@@ -465,7 +466,7 @@ func TestResolveInteractiveProject(t *testing.T) {
 			inputAnswer:  "Backend API",
 			wantValue:    projectAPI,
 			wantSave:     true,
-			wantOptions:  []string{createNewProjectOption, projectAPI},
+			wantOptions:  []string{projectAPI, createNewProjectOption},
 		},
 		{
 			name:         "a name that normalizes to nothing is rejected",
@@ -485,12 +486,14 @@ func TestResolveInteractiveProject(t *testing.T) {
 			selectAnswer:      projectAPI,
 			wantValue:         projectAPI,
 			wantSave:          true,
-			wantOptions:       []string{createNewProjectOption, projectAPI},
-			wantSelectDefault: createNewProjectOption,
+			wantOptions:       []string{projectAPI, createNewProjectOption},
+			wantSelectDefault: projectAPI,
 		},
 		{
 			// The listing did carry it, so it is a real project, but picking it
 			// would fail at creation time just the same.
+			// It is a real project rather than a missing one, so the cursor stays
+			// on the list instead of starting on creating it.
 			name:              "a pinned project the caller can only view is neither offered nor preselected",
 			projects:          []string{projectAPI},
 			readOnly:          []string{"payments"},
@@ -499,8 +502,8 @@ func TestResolveInteractiveProject(t *testing.T) {
 			selectAnswer:      projectAPI,
 			wantValue:         projectAPI,
 			wantSave:          true,
-			wantOptions:       []string{createNewProjectOption, projectAPI},
-			wantSelectDefault: createNewProjectOption,
+			wantOptions:       []string{projectAPI, createNewProjectOption},
+			wantSelectDefault: projectAPI,
 		},
 		{
 			name:             "a pinned read-only project does not seed the new name",
@@ -591,6 +594,14 @@ func TestResolveInteractiveProject(t *testing.T) {
 				if tc.wantSelectDefault != "" {
 					assert.Equal(t, tc.wantSelectDefault, p.selects[0].defaultValue)
 				}
+
+				// The title offers creating a project exactly when the list does.
+				wantTitle := selectProjectPromptTitle
+				if slices.Contains(tc.wantOptions, createNewProjectOption) {
+					wantTitle = projectPromptTitle
+				}
+
+				assert.Equal(t, wantTitle, p.selects[0].title)
 			}
 
 			if tc.wantInputDefault != "" {

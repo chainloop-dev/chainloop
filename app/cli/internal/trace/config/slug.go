@@ -32,6 +32,11 @@ import (
 // It returns an empty string for input that has nothing usable in it, e.g.
 // "!!!". Callers are expected to reject that rather than pass it on;
 // ValidateDNS1123Label produces the message for it.
+//
+// materials.SanitizeMaterialName does the same to material names, and the two
+// agree on everything but the length cap, which it leaves to its own caller.
+// They are kept apart on purpose: importing it here would put the whole
+// material crafter, some 377 packages, behind this one.
 func SlugifyDNS1123(name string) string {
 	var b strings.Builder
 	b.Grow(len(name))
