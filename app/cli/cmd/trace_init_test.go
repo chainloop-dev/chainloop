@@ -248,11 +248,8 @@ func TestWriteTraceNextStepsFromSubdirectory(t *testing.T) {
 func TestWriteTraceInitSummary(t *testing.T) {
 	t.Run("every value is reported", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		writeTraceInitSummary(out, &traceInitConfig{
-			organization: "acme",
-			project:      "backend-api",
-			workflow:     defaultTraceWorkflow,
-		}, []string{"claude-code", "cursor"})
+		writeTraceInitSummary(out, "acme", "backend-api", defaultTraceWorkflow,
+			[]string{providerClaudeCode, "cursor"})
 
 		got := out.String()
 		assert.Contains(t, got, "your repository is initialized")
@@ -262,12 +259,9 @@ func TestWriteTraceInitSummary(t *testing.T) {
 		assert.Contains(t, got, "claude-code, cursor")
 	})
 
-	t.Run("an organization nothing pinned is left out rather than guessed at", func(t *testing.T) {
+	t.Run("no organization anywhere leaves the line out rather than guessing", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		writeTraceInitSummary(out, &traceInitConfig{
-			project:  "backend-api",
-			workflow: defaultTraceWorkflow,
-		}, []string{"claude-code"})
+		writeTraceInitSummary(out, "", "backend-api", defaultTraceWorkflow, []string{providerClaudeCode})
 
 		assert.NotContains(t, out.String(), "organization")
 	})

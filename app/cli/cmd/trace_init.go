@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"io"
@@ -31,6 +32,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // newTraceInitCmd creates the trace init subcommand.
@@ -106,8 +108,36 @@ The organization, project, workflow and require-trace values are saved to
 				return err
 			}
 
-			// The workflow exists: from here on it is safe to leave hooks and
-			// configuration behind.
+			// The harness hooks come first of everything that is left behind.
+			// They are what records a session, so a run where none of them lands
+			// has achieved nothing, and stopping here leaves the configuration,
+			// the git hooks and the initialized marker unwritten rather than
+			// leaving a repository that looks set up and records nothing.
+			//
+			// Pre-push infers the owning harness per-session from the recorded
+			// SessionRecord, so the list isn't persisted anywhere — only each
+			// harness's own hook config file, written here, determines which of
+			// them can register sessions.
+			installed := make([]trace.Provider, 0, len(selectedProviders))
+			installedNames := make([]string, 0, len(selectedProviders))
+
+			for _, p := range selectedProviders {
+				if err := p.InstallHooks(repoRoot); err != nil {
+					logger.Warn().Err(err).Str("harness", p.Name()).Msg("could not install harness hooks")
+					continue
+				}
+
+				logger.Debug().Str("harness", p.Name()).Msg("harness hooks installed")
+				installed = append(installed, p)
+				installedNames = append(installedNames, p.Name())
+			}
+
+			if len(installed) == 0 {
+				return fmt.Errorf("no harness hooks could be installed, so no sessions would be recorded")
+			}
+
+			// The workflow exists and something records into it: from here on it
+			// is safe to leave hooks and configuration behind.
 			if err := cfg.save(repoRoot); err != nil {
 				return err
 			}
@@ -132,34 +162,6 @@ The organization, project, workflow and require-trace values are saved to
 				return fmt.Errorf("mark trace initialized: %w", err)
 			}
 
-			// Install the agent-side hooks for the providers resolved above.
-			// Pre-push infers the owning provider per-session from the recorded
-			// SessionRecord, so the list isn't persisted anywhere — only each
-			// agent's own hook config file, written here, determines which
-			// providers can register sessions.
-			installed := make([]trace.Provider, 0, len(selectedProviders))
-			for _, p := range selectedProviders {
-				if err := p.InstallHooks(repoRoot); err != nil {
-					logger.Warn().Err(err).Str("harness", p.Name()).Msg("could not install harness hooks")
-					continue
-				}
-
-				logger.Debug().Str("harness", p.Name()).Msg("harness hooks installed")
-				installed = append(installed, p)
-			}
-
-			// Only what installed is reported: a harness whose hooks failed records
-			// nothing, and naming it would claim otherwise and offer a file that was
-			// never written for committing.
-			if len(installed) == 0 {
-				return fmt.Errorf("no harness hooks could be installed, so no sessions would be recorded")
-			}
-
-			installedNames := make([]string, 0, len(installed))
-			for _, p := range installed {
-				installedNames = append(installedNames, p.Name())
-			}
-
 			workDir, err := os.Getwd()
 			if err != nil {
 				// Only used to render paths relative to where the user is; the
@@ -167,9 +169,14 @@ The organization, project, workflow and require-trace values are saved to
 				workDir = repoRoot
 			}
 
+			// Nothing pinned an organization when cfg has none, so the workflow
+			// went to the one the CLI points at. That is the one to report: it is
+			// what the connection used, not a guess.
+			organization := cmp.Or(cfg.organization, viper.GetString(confOptions.organization.viperKey))
+
 			// What the run produced, and what to do with it. Every step above logs
 			// at debug, so this is what the user is left with.
-			writeTraceInitSummary(os.Stdout, cfg, installedNames)
+			writeTraceInitSummary(os.Stdout, organization, cfg.project, cfg.workflow, installedNames)
 			writeTraceNextSteps(os.Stdout, repoRoot, workDir, installed)
 
 			return nil
@@ -194,17 +201,17 @@ const traceDocsURL = "https://docs.chainloop.dev/guides/chainloop-trace"
 // writeTraceInitSummary reports what the repository was set up with. It goes to
 // stdout rather than through the logger because it is the command's result,
 // not a note about something that happened on the way there.
-func writeTraceInitSummary(w io.Writer, cfg *traceInitConfig, harnesses []string) {
+func writeTraceInitSummary(w io.Writer, organization, project, workflow string, harnesses []string) {
 	fmt.Fprint(w, "\nCongratulations, your repository is initialized\n\n")
 
-	// The organization is absent when nothing pinned one and the CLI's own
-	// default was used, in which case naming it here would be a guess.
-	if cfg.organization != "" {
-		fmt.Fprintf(w, "  organization  %s\n", cfg.organization)
+	// Empty only when the CLI has no organization configured either, which
+	// leaves nothing truthful to name.
+	if organization != "" {
+		fmt.Fprintf(w, "  organization  %s\n", organization)
 	}
 
-	fmt.Fprintf(w, "  project       %s\n", cfg.project)
-	fmt.Fprintf(w, "  workflow      %s\n", cfg.workflow)
+	fmt.Fprintf(w, "  project       %s\n", project)
+	fmt.Fprintf(w, "  workflow      %s\n", workflow)
 	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
 }
 
