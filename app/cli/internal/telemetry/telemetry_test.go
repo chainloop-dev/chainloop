@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,53 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/mocks"
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+const (
+	tagCI        = "ci"
+	tagTokenType = "token_type"
+	tagFalse     = "false"
+	tagTrue      = "true"
+)
+
+func TestTagsIsInteractiveUserSession(t *testing.T) {
+	testCases := []struct {
+		name string
+		tags telemetry.Tags
+		want bool
+	}{
+		{
+			name: "user token outside CI",
+			tags: telemetry.Tags{tagTokenType: v1.Attestation_Auth_AUTH_TYPE_USER.String(), tagCI: tagFalse},
+			want: true,
+		},
+		{
+			name: "user token in CI",
+			tags: telemetry.Tags{tagTokenType: v1.Attestation_Auth_AUTH_TYPE_USER.String(), tagCI: tagTrue},
+		},
+		{
+			name: "api token outside CI",
+			tags: telemetry.Tags{tagTokenType: v1.Attestation_Auth_AUTH_TYPE_API_TOKEN.String(), tagCI: tagFalse},
+		},
+		{
+			name: "federated token in CI",
+			tags: telemetry.Tags{tagTokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED.String(), tagCI: tagTrue},
+		},
+		{
+			name: "unauthenticated",
+			tags: telemetry.Tags{tagCI: tagFalse},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.tags.IsInteractiveUserSession())
+		})
+	}
+}
 
 func TestTagsWithEnvironmentInfo(t *testing.T) {
 	tags := telemetry.Tags{}.WithRuntimeInfo()

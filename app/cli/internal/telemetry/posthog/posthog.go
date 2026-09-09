@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/posthog/posthog-go"
@@ -40,6 +41,9 @@ func NewClient(apiKey string, endpointURL string) (*Tracker, error) {
 	client, err := posthog.NewWithConfig(apiKey, posthog.Config{
 		Endpoint: endpointURL,
 		Logger:   posthog.StdLogger(noopLogger, false),
+		// Close flushes the batch, and with no timeout it waits indefinitely. The CLI only
+		// abandons the telemetry goroutine after its own deadline, so bound the flush here.
+		ShutdownTimeout: 2 * time.Second,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PostHog client: %w", err)
@@ -50,9 +54,17 @@ func NewClient(apiKey string, endpointURL string) (*Tracker, error) {
 	}, nil
 }
 
+// enqueuer is the subset of posthog.Client that the Tracker uses. Depending on the
+// narrow interface instead of the full SDK one keeps the tracker testable: the SDK
+// interface also carries the feature-flag surface, which this package never touches.
+type enqueuer interface {
+	posthog.EnqueueClient
+	Close() error
+}
+
 // Tracker is an implementation of the telemetry.Client interface for PostHog.
 type Tracker struct {
-	client posthog.Client
+	client enqueuer
 }
 
 // TrackEvent sends an event to the PostHog server.
@@ -73,24 +85,26 @@ func (p *Tracker) TrackEvent(_ context.Context, eventName string, id string, tag
 		msg.Properties.Set(k, v)
 	}
 
-	// Assign the installation ID if available as a group.
-	// It creates a new group named cp_installation where the values are the cp_url_hash.
+	// Both groups belong on the same event: cp_installation identifies the control plane the
+	// command talked to, organization the tenant within it. They are set on a single Groups
+	// map because replacing the map would drop whichever group was assigned first.
+	groups := posthog.NewGroups()
 	if tags["cp_url_hash"] != "" {
-		msg.Groups = posthog.
-			NewGroups().
-			Set("cp_installation", tags["cp_url_hash"])
+		groups.Set("cp_installation", tags["cp_url_hash"])
 	}
-	// It creates a new group named org_id where the values are the org_id.
 	if tags["org_id"] != "" {
-		msg.Groups = posthog.
-			NewGroups().
-			Set("organization", tags["org_id"])
+		groups.Set("organization", tags["org_id"])
 	}
-	// Assign an alias to the userID in the following cases:
-	// - The machine ID is available and different from the userID.
-	// - The userID is different from the default one.
-	// An alias can help to track the same user across different devices even when it was not logged in.
-	if (tags["machine_id"] != "" && tags["machine_id"] != id) && id != telemetry.UnrecognisedUserID {
+	if len(groups) > 0 {
+		msg.Groups = groups
+	}
+
+	// Alias the machine ID onto the account so the events a user produced before logging in
+	// still resolve to them. Only interactive user sessions qualify: API and federated tokens
+	// are shared identities running on ephemeral CI machines, where aliasing merges unrelated
+	// runners into a single person and emits an alias on every command.
+	if tags.IsInteractiveUserSession() &&
+		(tags["machine_id"] != "" && tags["machine_id"] != id) && id != telemetry.UnrecognisedUserID {
 		if err := p.client.Enqueue(posthog.Alias{
 			DistinctId: id,
 			Alias:      tags["machine_id"],
