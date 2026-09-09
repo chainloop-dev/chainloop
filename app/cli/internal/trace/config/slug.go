@@ -63,19 +63,22 @@ func SlugifyDNS1123(name string) string {
 	return slug
 }
 
-// The kinds of thing ValidateDNS1123Label names in what it reports. Projects
-// and organizations are named by the same rule, and the caller says which one
-// it is asking about so the message names it.
+// Subject is the kind of thing ValidateDNS1123Label names in what it reports.
+// Projects and organizations are named by the same rule, so the caller says
+// which one it is asking about and the message names it. It is a type of its
+// own so it cannot be swapped with the name being validated.
+type Subject string
+
 const (
-	ProjectSubject      = "project"
-	OrganizationSubject = "organization"
+	ProjectSubject      Subject = "project"
+	OrganizationSubject Subject = "organization"
 )
 
 // ValidateDNS1123Label reports whether name is one the control plane will
 // accept for a subject of that kind, using the same rule the server applies at
 // creation time so a bad name is caught at the prompt rather than by a failing
 // API call.
-func ValidateDNS1123Label(subject, name string) error {
+func ValidateDNS1123Label(subject Subject, name string) error {
 	if name == "" {
 		return fmt.Errorf("the %s name cannot be empty", subject)
 	}

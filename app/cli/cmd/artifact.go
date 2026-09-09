@@ -48,7 +48,7 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 	}
 
 	if apiInsecure() {
-		logger.Warn().Msg("API contacted in insecure mode")
+		logger.Debug().Msg("API contacted in insecure mode")
 	}
 
 	var opts = []grpcconn.Option{

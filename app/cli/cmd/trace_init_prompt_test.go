@@ -36,14 +36,22 @@ func accessiblePrompter(input string) (*huhPrompter, *bytes.Buffer) {
 	return &huhPrompter{accessible: true, in: strings.NewReader(input), out: out}, out
 }
 
+// The options the Select tests pick between, in the order they are offered.
+const (
+	optionAlpha = "alpha"
+	optionBeta  = "beta"
+	optionGamma = "gamma"
+)
+
 func TestHuhPrompterSelect(t *testing.T) {
 	// Accessible mode numbers the options and reads the choice as a line.
 	p, out := accessiblePrompter("2\n")
 
-	got, err := p.Select("Pick one", []string{"alpha", "beta", "gamma"}, "alpha", nil)
+	got, err := p.Select("Pick one", "in some context", []string{optionAlpha, optionBeta, optionGamma}, optionAlpha, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "beta", got)
+	assert.Equal(t, optionBeta, got)
 	assert.Contains(t, out.String(), "Pick one")
+	assert.Contains(t, out.String(), "in some context", "the description belongs with the question")
 }
 
 // A validator lets the picker show an option it will not accept, which is how
@@ -53,25 +61,88 @@ func TestHuhPrompterSelectValidate(t *testing.T) {
 	// again rather than giving up.
 	p, out := accessiblePrompter("2\n1\n")
 
-	got, err := p.Select("Pick one", []string{"alpha", "beta"}, "alpha", func(chosen string) error {
-		if chosen == "beta" {
-			return errors.New("beta is not available")
+	const refusal = "beta is not available"
+
+	got, err := p.Select("Pick one", "", []string{optionAlpha, optionBeta}, optionAlpha, func(chosen string) error {
+		if chosen == optionBeta {
+			return errors.New(refusal)
 		}
 
 		return nil
 	})
 	require.NoError(t, err)
-	assert.Equal(t, "alpha", got)
-	assert.Contains(t, out.String(), "beta is not available")
+	assert.Equal(t, optionAlpha, got)
+	assert.Contains(t, out.String(), refusal)
 }
 
 func TestHuhPrompterInput(t *testing.T) {
 	p, out := accessiblePrompter("my-project\n")
 
-	got, err := p.Input("Project name", "default-name", newProjectValidator(nil))
+	got, err := p.Input("Project name", "in some context", "default-name", newProjectValidator(nil))
 	require.NoError(t, err)
 	assert.Equal(t, "my-project", got)
 	assert.Contains(t, out.String(), "Project name")
+	assert.Contains(t, out.String(), "in some context")
+}
+
+// TestInputDescription covers the line under an input's title directly: the
+// full terminal UI is what draws it, and accessible mode — the only way to
+// drive a prompt without a terminal — renders no description at all.
+func TestInputDescription(t *testing.T) {
+	const context = "organization  acme"
+
+	testCases := []struct {
+		name        string
+		description string
+		value       string
+		want        string
+	}{
+		{name: "an empty answer keeps the context", description: context, want: context},
+		{
+			name:        "an answer that needs no normalizing keeps it",
+			description: context, value: "my-project", want: context,
+		},
+		{
+			name:        "an answer that normalizes shows what it becomes",
+			description: context, value: "My Project", want: `will be created as "my-project"`,
+		},
+		{
+			// Nothing usable to show yet, so the context stands rather than
+			// flickering to an empty line.
+			name:        "an answer with nothing usable in it keeps the context",
+			description: context, value: "!!!", want: context,
+		},
+		{name: "no context and no answer shows nothing", value: "my-project"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, inputDescription(tc.description, tc.value))
+		})
+	}
+}
+
+// An input's description has to be there on the first draw, before anything is
+// typed: huh does not evaluate DescriptionFunc until its binding changes, so a
+// field relying on that alone opens with an empty line where the context goes.
+func TestInputFieldShowsItsDescriptionBeforeTyping(t *testing.T) {
+	const context = "organization  acme"
+
+	name := ""
+	form := huh.NewForm(huh.NewGroup(newInputField(newProjectPromptTitle, context, &name, nil)))
+	_ = form.Init()
+
+	assert.Contains(t, form.View(), context, "the context must be on screen before anything is typed")
+}
+
+// Accessible mode draws the title and the options and nothing else, so context
+// left in the description slot would be lost to a screen reader.
+func TestHuhPrompterAccessibleFoldsTheDescriptionIn(t *testing.T) {
+	p, out := accessiblePrompter("1\n")
+
+	_, err := p.Select("Pick one", "organization  acme", []string{optionAlpha}, optionAlpha, nil)
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "Pick one (organization  acme)")
 }
 
 func TestHuhPrompterMultiSelect(t *testing.T) {

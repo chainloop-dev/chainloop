@@ -30,7 +30,7 @@ import (
 // identityStepsFixture wires resolveIdentityInteractively to fakes and records
 // which organization the connection was repinned to.
 type identityStepsFixture struct {
-	orgs   *fakeOrgLister
+	orgs   *fakeOrgAPI
 	prompt *fakePrompter
 
 	// defaultProjects is what a pinned connection lists, unless projectsByOrg
@@ -63,7 +63,7 @@ func (f *identityStepsFixture) pinTo(org string) (projectLister, error) {
 
 func newIdentityStepsFixture(orgs []*action.MembershipItem, projects []string, p *fakePrompter) *identityStepsFixture {
 	return &identityStepsFixture{
-		orgs:            &fakeOrgLister{orgs: orgs},
+		orgs:            &fakeOrgAPI{orgs: orgs},
 		defaultProjects: projects,
 		prompt:          p,
 	}

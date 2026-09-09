@@ -32,7 +32,9 @@ import (
 
 // --- fakes -------------------------------------------------------------------
 
-type fakeOrgLister struct {
+// fakeOrgAPI serves a canned membership list and records what the resolver
+// asked to have created.
+type fakeOrgAPI struct {
 	orgs []*action.MembershipItem
 	err  error
 
@@ -42,11 +44,11 @@ type fakeOrgLister struct {
 	created   string
 }
 
-func (f *fakeOrgLister) ListOrganizations(context.Context) ([]*action.MembershipItem, error) {
+func (f *fakeOrgAPI) ListOrganizations(context.Context) ([]*action.MembershipItem, error) {
 	return f.orgs, f.err
 }
 
-func (f *fakeOrgLister) CreateOrganization(_ context.Context, name string) error {
+func (f *fakeOrgAPI) CreateOrganization(_ context.Context, name string) error {
 	f.created = name
 
 	return f.createErr
@@ -82,7 +84,9 @@ func (f *fakeProjectLister) ListProjects(context.Context) (*action.TraceProjects
 // recordedPrompt captures what a prompt was shown, so tests can assert on the
 // options and the preselected default rather than only on the outcome.
 type recordedPrompt struct {
-	title        string
+	title string
+	// description is the line drawn under the title, inside the same frame.
+	description  string
 	options      []string
 	defaultValue string
 	// defaults is the preselected set for a multi-select.
@@ -114,8 +118,8 @@ func (f *fakePrompter) MultiSelect(title string, options, defaults []string) ([]
 	return f.multiSelectAnswer, nil
 }
 
-func (f *fakePrompter) Select(title string, options []string, defaultValue string, validate func(string) error) (string, error) {
-	f.selects = append(f.selects, recordedPrompt{title: title, options: options, defaultValue: defaultValue})
+func (f *fakePrompter) Select(title, description string, options []string, defaultValue string, validate func(string) error) (string, error) {
+	f.selects = append(f.selects, recordedPrompt{title: title, description: description, options: options, defaultValue: defaultValue})
 	if f.selectErr != nil {
 		return "", f.selectErr
 	}
@@ -131,8 +135,8 @@ func (f *fakePrompter) Select(title string, options []string, defaultValue strin
 	return f.selectAnswer, nil
 }
 
-func (f *fakePrompter) Input(title, defaultValue string, validate func(string) error) (string, error) {
-	f.inputs = append(f.inputs, recordedPrompt{title: title, defaultValue: defaultValue})
+func (f *fakePrompter) Input(title, description, defaultValue string, validate func(string) error) (string, error) {
+	f.inputs = append(f.inputs, recordedPrompt{title: title, description: description, defaultValue: defaultValue})
 	if f.inputErr != nil {
 		return "", f.inputErr
 	}
@@ -161,6 +165,10 @@ func viewerMembership(name string, isDefault bool) *action.MembershipItem {
 
 // Fixtures the table cases share.
 const (
+	// nameWithNothingUsable normalizes to an empty string, so it is refused
+	// wherever a name is asked for.
+	nameWithNothingUsable = "!!!"
+
 	orgAcme       = "acme"
 	orgGlobex     = "globex"
 	projectAPI    = "backend-api"
@@ -254,8 +262,10 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 		// inputAnswer is what the user types when there is no organization to
 		// pick and one has to be created.
 		inputAnswer string
-		wantValue   string
-		wantSave    bool
+		// createErr is what creating the organization fails with.
+		createErr error
+		wantValue string
+		wantSave  bool
 		// wantDefault is the preselected entry; empty means no prompt is expected
 		wantDefault string
 		// wantCreated is the organization the resolver asked to have created.
@@ -270,6 +280,30 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 			wantValue:   "my-first-org",
 			wantSave:    true,
 			wantCreated: "my-first-org",
+		},
+		{
+			// An instance can restrict creating organizations to its
+			// administrators, which leaves a user who belongs to none with
+			// nothing to do but ask.
+			name:        "an instance that forbids creating organizations says so",
+			inputAnswer: "my-org",
+			createErr:   status.Error(codes.PermissionDenied, "restricted to instance admins"),
+			wantCreated: "my-org",
+			wantErr:     "ask to be invited",
+		},
+		{
+			name:        "a creation failure is returned",
+			inputAnswer: "my-org",
+			createErr:   errors.New("boom"),
+			wantCreated: "my-org",
+			wantErr:     "boom",
+		},
+		{
+			// A name the control plane would refuse is caught at the prompt, so
+			// nothing is attempted with it.
+			name:        "an unusable new name is refused before creating",
+			inputAnswer: nameWithNothingUsable,
+			wantErr:     "organization name cannot be empty",
 		},
 		{
 			name:      "a single organization is used without prompting",
@@ -358,14 +392,13 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 			wantErr: "write permissions on one of their projects",
 		},
 		{
-			// One usable organization is still used without asking, whatever the
-			// caller can only view beside it.
-			name:      "a single usable organization beside a viewer one still prompts",
-			orgs:      []*action.MembershipItem{membership(orgAcme, false), viewerMembership(orgGlobex, false)},
-			answer:    orgAcme,
-			wantValue: orgAcme,
-			wantSave:  true,
-
+			// The one usable organization is not the only entry, so the picker is
+			// still shown: the viewer one has to be visible to be understood.
+			name:        "a single usable organization beside a viewer one still prompts",
+			orgs:        []*action.MembershipItem{membership(orgAcme, false), viewerMembership(orgGlobex, false)},
+			answer:      orgAcme,
+			wantValue:   orgAcme,
+			wantSave:    true,
 			wantDefault: orgAcme,
 		},
 	}
@@ -373,8 +406,12 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &fakePrompter{selectAnswer: tc.answer, inputAnswer: tc.inputAnswer}
-			api := &fakeOrgLister{orgs: tc.orgs}
+			api := &fakeOrgAPI{orgs: tc.orgs, createErr: tc.createErr}
 			got, err := resolveInteractiveOrganization(context.Background(), api, p, tc.fromYML, tc.currentOrg)
+
+			// Asserted before the error check too, so a case that must not reach
+			// the control plane says so.
+			assert.Equal(t, tc.wantCreated, api.created, "organization created")
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -385,7 +422,6 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantValue, got.value)
 			assert.Equal(t, tc.wantSave, got.save)
-			assert.Equal(t, tc.wantCreated, api.created, "organization created")
 
 			if tc.wantCreated != "" {
 				assert.Empty(t, p.selects, "there was nothing to pick from")
@@ -411,7 +447,7 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 func TestResolveInteractiveOrganizationErrors(t *testing.T) {
 	t.Run("a listing failure is returned, not swallowed", func(t *testing.T) {
 		_, err := resolveInteractiveOrganization(context.Background(),
-			&fakeOrgLister{err: errors.New("boom")}, &fakePrompter{}, "", "")
+			&fakeOrgAPI{err: errors.New("boom")}, &fakePrompter{}, "", "")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "boom")
 	})
@@ -419,37 +455,8 @@ func TestResolveInteractiveOrganizationErrors(t *testing.T) {
 	t.Run("an aborted prompt is returned", func(t *testing.T) {
 		orgs := []*action.MembershipItem{membership(orgAcme, true), membership(orgGlobex, false)}
 		_, err := resolveInteractiveOrganization(context.Background(),
-			&fakeOrgLister{orgs: orgs}, &fakePrompter{selectErr: errAborted}, "", "")
+			&fakeOrgAPI{orgs: orgs}, &fakePrompter{selectErr: errAborted}, "", "")
 		require.ErrorIs(t, err, errAborted)
-	})
-
-	// An instance can restrict creating organizations to its administrators,
-	// which leaves a user who belongs to none with nothing to do but ask.
-	t.Run("an instance that forbids creating organizations says so", func(t *testing.T) {
-		api := &fakeOrgLister{createErr: status.Error(codes.PermissionDenied, "restricted to instance admins")}
-		_, err := resolveInteractiveOrganization(context.Background(),
-			api, &fakePrompter{inputAnswer: "my-org"}, "", "")
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "ask to be invited")
-		assert.Equal(t, "my-org", api.created, "it was attempted")
-	})
-
-	t.Run("a creation failure is returned", func(t *testing.T) {
-		_, err := resolveInteractiveOrganization(context.Background(),
-			&fakeOrgLister{createErr: errors.New("boom")}, &fakePrompter{inputAnswer: "my-org"}, "", "")
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "boom")
-	})
-
-	// A name the control plane would refuse is caught at the prompt, so nothing
-	// is attempted with it.
-	t.Run("an unusable new name is refused before creating", func(t *testing.T) {
-		api := &fakeOrgLister{}
-		_, err := resolveInteractiveOrganization(context.Background(),
-			api, &fakePrompter{inputAnswer: "!!!"}, "", "")
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "organization name cannot be empty")
-		assert.Empty(t, api.created)
 	})
 }
 
@@ -590,7 +597,7 @@ func TestResolveInteractiveProject(t *testing.T) {
 			projects:     []string{projectAPI},
 			repoDir:      "repo",
 			selectAnswer: createNewProjectOption,
-			inputAnswer:  "!!!",
+			inputAnswer:  nameWithNothingUsable,
 			wantErr:      "cannot be empty",
 		},
 		{
@@ -691,7 +698,7 @@ func TestResolveInteractiveProject(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &fakePrompter{selectAnswer: tc.selectAnswer, inputAnswer: tc.inputAnswer}
 			got, err := resolveInteractiveProject(context.Background(),
-				&fakeProjectLister{projects: tc.projects, readOnly: tc.readOnly, cannotCreate: tc.cannotCreate}, p, tc.fromYML, tc.repoDir)
+				&fakeProjectLister{projects: tc.projects, readOnly: tc.readOnly, cannotCreate: tc.cannotCreate}, p, tc.fromYML, tc.repoDir, orgAcme)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -719,11 +726,16 @@ func TestResolveInteractiveProject(t *testing.T) {
 				}
 
 				assert.Equal(t, wantTitle, p.selects[0].title)
+				// Which organization the projects come from is part of the
+				// question, not a line logged before it.
+				assert.Equal(t, "organization  "+orgAcme, p.selects[0].description)
 			}
 
 			if tc.wantInputDefault != "" {
 				require.Len(t, p.inputs, 1)
 				assert.Equal(t, tc.wantInputDefault, p.inputs[0].defaultValue)
+				assert.Equal(t, "organization  "+orgAcme, p.inputs[0].description,
+					"a new project is created in it, so it is part of that question too")
 			}
 		})
 	}
@@ -732,20 +744,20 @@ func TestResolveInteractiveProject(t *testing.T) {
 func TestResolveInteractiveProjectErrors(t *testing.T) {
 	t.Run("a listing failure is returned, not swallowed", func(t *testing.T) {
 		_, err := resolveInteractiveProject(context.Background(),
-			&fakeProjectLister{err: errors.New("boom")}, &fakePrompter{}, "", "repo")
+			&fakeProjectLister{err: errors.New("boom")}, &fakePrompter{}, "", "repo", orgAcme)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "boom")
 	})
 
 	t.Run("an aborted list is returned", func(t *testing.T) {
 		_, err := resolveInteractiveProject(context.Background(),
-			&fakeProjectLister{projects: []string{"a"}}, &fakePrompter{selectErr: errAborted}, "", "repo")
+			&fakeProjectLister{projects: []string{"a"}}, &fakePrompter{selectErr: errAborted}, "", "repo", orgAcme)
 		require.ErrorIs(t, err, errAborted)
 	})
 
 	t.Run("an aborted input is returned", func(t *testing.T) {
 		_, err := resolveInteractiveProject(context.Background(),
-			&fakeProjectLister{}, &fakePrompter{inputErr: errAborted}, "", "repo")
+			&fakeProjectLister{}, &fakePrompter{inputErr: errAborted}, "", "repo", orgAcme)
 		require.ErrorIs(t, err, errAborted)
 	})
 }

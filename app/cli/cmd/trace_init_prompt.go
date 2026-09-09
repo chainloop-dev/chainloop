@@ -56,10 +56,23 @@ func newHuhPrompter(lookupEnv func(string) (string, bool)) *huhPrompter {
 	return &huhPrompter{accessible: accessible, in: os.Stdin, out: os.Stderr}
 }
 
+// framed folds the description into the title when huh will not draw it.
+// Accessible mode renders the title and the options and nothing else, so a
+// description left in its own slot is simply lost there — and it carries the
+// context the question needs, which is worth more than the layout.
+func (h *huhPrompter) framed(title, description string) (string, string) {
+	if description == "" || !h.accessible {
+		return title, description
+	}
+
+	return fmt.Sprintf("%s (%s)", title, description), ""
+}
+
 // Select asks the user to pick one of options, starting on defaultValue. Long
 // lists can be narrowed by typing.
-func (h *huhPrompter) Select(title string, options []string, defaultValue string, validate func(string) error) (string, error) {
+func (h *huhPrompter) Select(title, description string, options []string, defaultValue string, validate func(string) error) (string, error) {
 	value := defaultValue
+	title, description = h.framed(title, description)
 
 	// Filtering() is deliberately not set: it does not enable filtering, it puts
 	// the field straight into filter-input mode, which replaces the title with an
@@ -67,11 +80,12 @@ func (h *huhPrompter) Select(title string, options []string, defaultValue string
 	// on demand, which is what the help line offers.
 	field := huh.NewSelect[string]().
 		Title(title).
+		Description(description).
 		Options(huh.NewOptions(options...)...).
 		Value(&value)
 
-	// Only when there is one: huh calls whatever it is given, so a nil validator
-	// panics rather than being treated as "nothing to check".
+	// Set only when there is one: huh calls whatever it is handed, so a nil
+	// validator panics rather than reading as "nothing to check".
 	if validate != nil {
 		field = field.Validate(validate)
 	}
@@ -124,29 +138,49 @@ func newMultiSelectField(title string, options []string, value *[]string) *huh.M
 }
 
 // Input asks the user to type a value, prefilled with defaultValue. The
-// description line shows what a free-form answer will be normalized to, so the
-// result is visible before it is submitted.
-func (h *huhPrompter) Input(title, defaultValue string, validate func(string) error) (string, error) {
+// description line gives way to what a free-form answer will be normalized to,
+// so the result is visible before it is submitted: once the answer needs
+// normalizing, seeing what it becomes matters more than the standing context.
+func (h *huhPrompter) Input(title, description, defaultValue string, validate func(string) error) (string, error) {
 	value := defaultValue
+	title, description = h.framed(title, description)
 
-	field := huh.NewInput().
-		Title(title).
-		Value(&value).
-		Validate(validate).
-		DescriptionFunc(func() string {
-			slug := config.SlugifyDNS1123(value)
-			if slug == "" || slug == value {
-				return ""
-			}
-
-			return fmt.Sprintf("will be created as %q", slug)
-		}, &value)
-
-	if err := h.run(field); err != nil {
+	if err := h.run(newInputField(title, description, &value, validate)); err != nil {
 		return "", err
 	}
 
 	return value, nil
+}
+
+// newInputField builds the input. It is separate from Input so a test can
+// render it without a terminal to run a form against, the same way
+// newMultiSelectField is.
+func newInputField(title, description string, value *string, validate func(string) error) *huh.Input {
+	return huh.NewInput().
+		Title(title).
+		// Both: DescriptionFunc is not evaluated for the first draw, only once
+		// its binding changes, so on its own it leaves an empty line where the
+		// context should be until the user types something.
+		Description(description).
+		Value(value).
+		Validate(validate).
+		DescriptionFunc(func() string { return inputDescription(description, *value) }, value)
+}
+
+// inputDescription is the line under an input's title: the standing context,
+// giving way to what a free-form answer will be normalized to once the answer
+// and its label differ, since seeing what will be created matters more at that
+// point than the context it will be created in.
+//
+// Accessible mode folds the context into the title instead and draws no
+// description at all, so the normalized name is not shown there.
+func inputDescription(description, value string) string {
+	slug := config.SlugifyDNS1123(value)
+	if slug == "" || slug == value {
+		return description
+	}
+
+	return fmt.Sprintf("will be created as %q", slug)
 }
 
 // run shows a single-field form and translates a dismissed prompt into

@@ -125,7 +125,7 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			if apiInsecure() {
-				logger.Warn().Msg("API contacted in insecure mode")
+				logger.Debug().Msg("API contacted in insecure mode")
 			}
 
 			authToken, isUserToken, err := loadAuthToken(cmd)
