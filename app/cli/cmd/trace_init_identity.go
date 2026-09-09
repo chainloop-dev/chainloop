@@ -226,10 +226,12 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		readOnly = append(readOnly, project.Name)
 	}
 
-	// newProjectSeed is what the new-project prompt starts from. The repository's
-	// own directory name is the default seed: a project the organization already
-	// has is picked from the list, so seeding its name would only propose moving
-	// nowhere.
+	// newProjectSeed is what the new-project prompt starts from: the repository's
+	// own directory name, whatever .chainloop.yml holds. A project the
+	// organization already has is picked from the list rather than typed, and a
+	// name it does not have is one nothing was ever created under — proposing it
+	// again would hand back a name that is as likely to be a typo as an
+	// intention.
 	newProjectSeed := config.SlugifyDNS1123(repoDir)
 
 	// pinnedIsMissing records that .chainloop.yml names a project the
@@ -244,15 +246,12 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 			logger.Warn().Str("project", fromYML).
 				Msg("you cannot create a workflow in the project this repository points at, pick another one")
 		} else {
-			pinnedIsMissing = true
 			// Not in the organization at all, so it is a name for a project that does
 			// not exist rather than one that can be picked. Offering it as if it were
 			// real is what makes selecting it fail on a project the caller may not be
-			// allowed to create. Creating it is what the repository is asking for, so
-			// it seeds the new name instead, which is the whole of what the user needs
-			// to know: they are being asked to create it, with the name already filled
-			// in. Warning about it would report a problem that the next prompt solves.
-			newProjectSeed = fromYML
+			// allowed to create. Nothing points anywhere usable, so the cursor starts
+			// on creating one; the name is asked for rather than carried over.
+			pinnedIsMissing = true
 
 			logger.Debug().Str("project", fromYML).
 				Msg("the project this repository points at does not exist in this organization")

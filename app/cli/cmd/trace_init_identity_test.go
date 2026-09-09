@@ -374,13 +374,15 @@ func TestResolveInteractiveProject(t *testing.T) {
 			wantInputDefault: "my-repo",
 		},
 		{
-			name:             "with no visible projects the pinned project is the default",
+			// Answering with what is already pinned writes nothing back, however
+			// the answer was arrived at.
+			name:             "with no visible projects the repository name is the default",
 			fromYML:          "existing",
 			repoDir:          repoDirMyRepo,
 			inputAnswer:      "existing",
 			wantValue:        "existing",
 			wantSave:         false,
-			wantInputDefault: "existing",
+			wantInputDefault: "my-repo",
 		},
 		{
 			name:              "the pinned project is preselected in the list",
@@ -419,10 +421,11 @@ func TestResolveInteractiveProject(t *testing.T) {
 			wantSelectDefault: createNewProjectOption,
 		},
 		{
-			// It is still the name the repository is asking for, so creating is
-			// where it belongs: the input starts from it rather than from the
-			// repository's directory name.
-			name:              "a pinned project the organization does not have seeds the new name",
+			// Nothing was ever created under that name, so it is as likely to be a
+			// typo as an intention. The cursor starts on creating, since nothing
+			// the repository points at can be picked, but the name is asked for
+			// rather than proposed back.
+			name:              "a pinned project the organization does not have does not seed the new name",
 			projects:          []string{projectAPI},
 			fromYML:           "gone-or-never-existed",
 			repoDir:           repoDirMyRepo,
@@ -432,7 +435,7 @@ func TestResolveInteractiveProject(t *testing.T) {
 			wantSave:          false,
 			wantOptions:       []string{projectAPI, createNewProjectOption},
 			wantSelectDefault: createNewProjectOption,
-			wantInputDefault:  "gone-or-never-existed",
+			wantInputDefault:  "my-repo",
 		},
 		{
 			name:              "choosing to create opens an input prefilled with the repository name",
