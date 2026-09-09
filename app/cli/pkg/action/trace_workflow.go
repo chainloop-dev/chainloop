@@ -56,9 +56,10 @@ type traceWorkflowAPI interface {
 	// viewWorkflow returns the workflow, or a NotFound error when the workflow
 	// or its project does not exist.
 	viewWorkflow(ctx context.Context, project, workflow string) (*WorkflowItem, error)
-	// contractExists reports whether a contract with that name exists in the
-	// organization. A lookup failure is returned as an error, not as false.
-	contractExists(ctx context.Context, name string) (bool, error)
+	// findContract returns the contract with that name, or nil when the
+	// organization does not have one. A lookup failure is returned as an error,
+	// not as a missing contract.
+	findContract(ctx context.Context, name string) (*WorkflowContractItem, error)
 	// createWorkflow creates the workflow, attached to contract when non-empty.
 	createWorkflow(ctx context.Context, project, workflow, contract string) (*WorkflowItem, error)
 }
@@ -111,31 +112,51 @@ func ensureTraceWorkflow(ctx context.Context, api traceWorkflowAPI, log zerolog.
 }
 
 // resolveTraceContract returns the contract name to attach on creation: the
-// requested one when the organization has it, or an empty string to let the
-// control plane create its per-project default. A contract that cannot be found
-// is only an error when the caller marked it required, because the shipped
-// default is absent in organizations that never imported it.
+// requested one when the organization has it and the project may use it, or an
+// empty string to let the control plane create its per-project default. A
+// contract that cannot be used is only an error when the caller marked it
+// required, because the shipped default is absent in organizations that never
+// imported it, and a contract of the user's own may happen to carry its name.
 func resolveTraceContract(ctx context.Context, api traceWorkflowAPI, log zerolog.Logger, opts EnsureTraceWorkflowOpts) (string, error) {
 	if opts.ContractName == "" {
 		return "", nil
 	}
 
-	exists, err := api.contractExists(ctx, opts.ContractName)
+	contract, err := api.findContract(ctx, opts.ContractName)
 	switch {
 	case err != nil && opts.ContractRequired:
 		return "", fmt.Errorf("looking up contract %q: %w", opts.ContractName, err)
 	case err != nil:
 		log.Debug().Err(err).Str("contract", opts.ContractName).Msg("could not look up the contract; falling back to the default one")
 		return "", nil
-	case !exists && opts.ContractRequired:
+	case contract == nil && opts.ContractRequired:
 		return "", fmt.Errorf("contract %q does not exist in this organization", opts.ContractName)
-	case !exists:
+	case contract == nil:
 		log.Debug().Str("contract", opts.ContractName).Msg("contract not found; falling back to the default one")
+		return "", nil
+	}
+
+	// A contract scoped to a project belongs to that project alone: the control
+	// plane refuses to attach it anywhere else, comparing project names. The
+	// name is all we have to go on here, and it is the same thing it compares.
+	if scope := contract.ScopedEntity; scope != nil && scope.Type == contractScopeProject && scope.Name != opts.ProjectName {
+		if opts.ContractRequired {
+			return "", fmt.Errorf("contract %q is scoped to project %q, so it cannot be used in project %q",
+				opts.ContractName, scope.Name, opts.ProjectName)
+		}
+
+		log.Debug().Str("contract", opts.ContractName).Str("scoped_to", scope.Name).
+			Msg("contract belongs to another project; falling back to the default one")
+
 		return "", nil
 	}
 
 	return opts.ContractName, nil
 }
+
+// contractScopeProject is the scope a contract carries when it belongs to a
+// single project rather than to the whole organization, which has none.
+const contractScopeProject = "project"
 
 // cpTraceWorkflowAPI implements traceWorkflowAPI against the control plane,
 // reusing the actions the equivalent commands run.
@@ -147,16 +168,17 @@ func (a *cpTraceWorkflowAPI) viewWorkflow(ctx context.Context, project, workflow
 	return NewWorkflowDescribe(a.cfg).Run(ctx, workflow, project)
 }
 
-func (a *cpTraceWorkflowAPI) contractExists(ctx context.Context, name string) (bool, error) {
-	if _, err := NewWorkflowContractDescribe(a.cfg).Run(ctx, name, 0); err != nil {
+func (a *cpTraceWorkflowAPI) findContract(ctx context.Context, name string) (*WorkflowContractItem, error) {
+	described, err := NewWorkflowContractDescribe(a.cfg).Run(ctx, name, 0)
+	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return false, nil
+			return nil, nil
 		}
 
-		return false, err
+		return nil, err
 	}
 
-	return true, nil
+	return described.Contract, nil
 }
 
 func (a *cpTraceWorkflowAPI) createWorkflow(ctx context.Context, project, workflow, contract string) (*WorkflowItem, error) {
