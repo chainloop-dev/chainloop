@@ -434,28 +434,41 @@ func mustStructValue(t *testing.T, fields map[string]any) *structpb.Value {
 	return structpb.NewStructValue(s)
 }
 
+// policyEvaluationsRefName is the descriptor name the CLI gives the bundle.
+const policyEvaluationsRefName = "policy-evaluations"
+
 func TestPredicatePolicyEvaluationsRef(t *testing.T) {
+	ref := func(size int64) *PolicyEvaluationsRef {
+		return &PolicyEvaluationsRef{
+			ResourceDescriptor: &intoto.ResourceDescriptor{
+				Name:      policyEvaluationsRefName,
+				Digest:    map[string]string{"sha256": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
+				MediaType: PolicyEvaluationsBundleMediaType,
+			},
+			SizeBytes: size,
+		}
+	}
+
 	testCases := []struct {
 		name     string
-		ref      *intoto.ResourceDescriptor
-		size     int64
+		ref      *PolicyEvaluationsRef
 		wantRef  bool
 		wantSize int64
 	}{
 		{
-			name: "ref and bundle size are present when set",
-			ref: &intoto.ResourceDescriptor{
-				Name:      "policy-evaluations",
-				Digest:    map[string]string{"sha256": "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"},
-				MediaType: PolicyEvaluationsBundleMediaType,
-			},
-			size:     4096,
+			name:     "the ref carries the bundle size next to the digest",
+			ref:      ref(4096),
 			wantRef:  true,
 			wantSize: 4096,
 		},
 		{
+			name:     "a bundle of unrecorded size reports zero",
+			ref:      ref(0),
+			wantRef:  true,
+			wantSize: 0,
+		},
+		{
 			name:    "ref is nil when not set",
-			ref:     nil,
 			wantRef: false,
 		},
 	}
@@ -472,7 +485,7 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
 
 			if tc.ref != nil {
-				renderer.SetPolicyEvaluationsRef(tc.ref, tc.size)
+				renderer.SetPolicyEvaluationsRef(tc.ref)
 			}
 
 			statement, err := renderer.Statement(context.TODO())
@@ -484,7 +497,6 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 
 			if !tc.wantRef {
 				assert.Nil(t, predicate.PolicyEvaluationsRef)
-				assert.Zero(t, predicate.GetPolicyEvaluationsBundleSize())
 				// Without a ref (no-CAS backend) the evaluations stay inline.
 				assert.NotEmpty(t, predicate.PolicyEvaluations)
 				return
@@ -495,13 +507,80 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 			assert.Equal(t, tc.ref.MediaType, predicate.PolicyEvaluationsRef.MediaType)
 			assert.Equal(t, tc.ref.Digest["sha256"], predicate.PolicyEvaluationsRef.Digest["sha256"])
 
-			// The size travels with the ref so readers can decide whether to
+			// The size sits inside the reference, so it survives the round trip
+			// through the signed statement and readers can decide whether to
 			// pull the bundle without asking the CAS how big it is.
-			assert.Equal(t, tc.wantSize, predicate.GetPolicyEvaluationsBundleSize())
+			assert.Equal(t, tc.wantSize, predicate.PolicyEvaluationsRef.GetSizeBytes())
 
 			// With a ref present (CAS offload) the predicate must not also carry
 			// the inline evaluations.
 			assert.Empty(t, predicate.PolicyEvaluations)
+		})
+	}
+}
+
+// TestPolicyEvaluationsRefJSON pins the rendered shape: the size is a key of the
+// reference object itself, alongside the descriptor's own fields.
+func TestPolicyEvaluationsRefJSON(t *testing.T) {
+	testCases := []struct {
+		name string
+		ref  *PolicyEvaluationsRef
+		want string
+	}{
+		{
+			name: "size is rendered inside the reference",
+			ref: &PolicyEvaluationsRef{
+				ResourceDescriptor: &intoto.ResourceDescriptor{
+					Name:      policyEvaluationsRefName,
+					Digest:    map[string]string{"sha256": "deadbeef"},
+					MediaType: PolicyEvaluationsBundleMediaType,
+				},
+				SizeBytes: 4096,
+			},
+			want: `{"name":"policy-evaluations","digest":{"sha256":"deadbeef"},"media_type":"application/vnd.chainloop.policy-evaluations.v1+json","size":4096}`,
+		},
+		{
+			name: "an unrecorded size is omitted rather than rendered as zero",
+			ref: &PolicyEvaluationsRef{
+				ResourceDescriptor: &intoto.ResourceDescriptor{
+					Name:   policyEvaluationsRefName,
+					Digest: map[string]string{"sha256": "deadbeef"},
+				},
+			},
+			want: `{"name":"policy-evaluations","digest":{"sha256":"deadbeef"}}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := json.Marshal(tc.ref)
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.want, string(got))
+
+			// and it reads back into the same value
+			var back PolicyEvaluationsRef
+			require.NoError(t, json.Unmarshal(got, &back))
+			assert.Equal(t, tc.ref.GetSizeBytes(), back.GetSizeBytes())
+			assert.Equal(t, tc.ref.GetDigest()["sha256"], back.GetDigest()["sha256"])
+		})
+	}
+}
+
+func TestPolicyEvaluationsRefGetSizeBytes(t *testing.T) {
+	testCases := []struct {
+		name string
+		ref  *PolicyEvaluationsRef
+		want int64
+	}{
+		{name: "no reference reports zero"},
+		{name: "an unrecorded size reports zero", ref: &PolicyEvaluationsRef{}, want: 0},
+		{name: "a recorded size is reported", ref: &PolicyEvaluationsRef{SizeBytes: 128}, want: 128},
+		{name: "a negative size is not trusted", ref: &PolicyEvaluationsRef{SizeBytes: -1}, want: 0},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.ref.GetSizeBytes())
 		})
 	}
 }

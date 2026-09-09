@@ -239,12 +239,12 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 		if getCASErr != nil || casBackend.Uploader == nil {
 			action.Logger.Debug().Msg("CAS backend is inline, skipping policy evaluations bundle upload")
 		} else {
-			ref, sizeBytes, uploadErr := uploadPolicyEvaluationsBundle(ctx, evaluations, casBackend.Uploader)
+			ref, uploadErr := uploadPolicyEvaluationsBundle(ctx, evaluations, casBackend.Uploader)
 			if uploadErr != nil {
 				return nil, fmt.Errorf("uploading policy evaluations bundle to CAS: %w", uploadErr)
 			}
 			if ref != nil {
-				renderer.SetPolicyEvaluationsRef(ref, sizeBytes)
+				renderer.SetPolicyEvaluationsRef(ref)
 			}
 		}
 	}
@@ -343,18 +343,19 @@ func decodeEnvelope(rawEnvelope []byte) (*dsse.Envelope, error) {
 }
 
 // uploadPolicyEvaluationsBundle serializes policy evaluations as a protobuf bundle,
-// uploads to CAS, and returns a ResourceDescriptor referencing the uploaded
-// object along with the size in bytes of what was uploaded.
-// Returns (nil, 0, nil) when there are no evaluations or no uploader.
-func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.PolicyEvaluation, uploader casclient.Uploader) (*intoto.ResourceDescriptor, int64, error) {
+// uploads to CAS, and returns a reference to the uploaded object. The reference
+// records the size of the uploaded bytes so readers can decide whether to fetch
+// the bundle without asking the CAS how big it is.
+// Returns (nil, nil) when there are no evaluations or no uploader.
+func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.PolicyEvaluation, uploader casclient.Uploader) (*crChainloop.PolicyEvaluationsRef, error) {
 	if len(evaluations) == 0 || uploader == nil {
-		return nil, 0, nil
+		return nil, nil
 	}
 
 	bundle := &v1.PolicyEvaluationBundle{Evaluations: evaluations}
 	data, err := protojson.Marshal(bundle)
 	if err != nil {
-		return nil, 0, fmt.Errorf("marshaling policy evaluation bundle: %w", err)
+		return nil, fmt.Errorf("marshaling policy evaluation bundle: %w", err)
 	}
 
 	sum := sha256.Sum256(data)
@@ -362,12 +363,15 @@ func uploadPolicyEvaluationsBundle(ctx context.Context, evaluations []*v1.Policy
 	digest := "sha256:" + hexDigest
 
 	if _, err := uploader.Upload(ctx, bytes.NewReader(data), "policy-evaluations.json", digest); err != nil {
-		return nil, 0, fmt.Errorf("uploading policy evaluation bundle: %w", err)
+		return nil, fmt.Errorf("uploading policy evaluation bundle: %w", err)
 	}
 
-	return &intoto.ResourceDescriptor{
-		Name:      "policy-evaluations",
-		Digest:    map[string]string{"sha256": hexDigest},
-		MediaType: crChainloop.PolicyEvaluationsBundleMediaType,
-	}, int64(len(data)), nil
+	return &crChainloop.PolicyEvaluationsRef{
+		ResourceDescriptor: &intoto.ResourceDescriptor{
+			Name:      "policy-evaluations",
+			Digest:    map[string]string{"sha256": hexDigest},
+			MediaType: crChainloop.PolicyEvaluationsBundleMediaType,
+		},
+		SizeBytes: int64(len(data)),
+	}, nil
 }

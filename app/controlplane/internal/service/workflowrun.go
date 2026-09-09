@@ -32,7 +32,6 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/google/uuid"
-	intoto "github.com/in-toto/attestation/go/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -122,28 +121,27 @@ func (s *WorkflowRunService) policyEvaluationsMaxInlineBytes() int64 {
 // reference, meaning the caller should keep whatever the predicate itself
 // holds.
 //
-// bundleSize is the size the attestation records for the bundle, and is what
-// the cap is enforced against: it travels signed with the predicate and costs
-// no round trip. A bundle whose size is not recorded is read in full, since
-// sizing it would mean asking the CAS on every view -- the very cost the
-// recorded size exists to avoid.
+// The cap is enforced against the size the descriptor records, which travels
+// signed with the predicate and costs no round trip. A bundle whose size is not
+// recorded is read in full, since sizing it would mean asking the CAS on every
+// view -- the very cost the recorded size exists to avoid.
 //
 // Anything that prevents inlining the bundle with confidence -- an oversized
 // bundle, an unreachable or undecodable object -- yields a reference rather
 // than the evaluations.
 func (s *WorkflowRunService) resolvePolicyEvaluations(
 	ctx context.Context,
-	descriptor *intoto.ResourceDescriptor,
-	bundleSize int64,
+	ref *chainloop.PolicyEvaluationsRef,
 	orgID uuid.UUID,
 ) *resolvedPolicyEvaluations {
-	if descriptor == nil {
+	if ref == nil {
 		return nil
 	}
 
-	mediaType := descriptor.GetMediaType()
+	mediaType := ref.GetMediaType()
+	bundleSize := ref.GetSizeBytes()
 
-	hexDigest, ok := descriptor.GetDigest()["sha256"]
+	hexDigest, ok := ref.GetDigest()["sha256"]
 	if !ok {
 		s.log.Warnw("msg", "policy evaluations reference has no sha256 digest")
 		return unavailablePolicyEvaluations("", 0, mediaType)
@@ -393,7 +391,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 			return nil, handleUseCaseErr(err, s.log)
 		}
 
-		if resolved := s.resolvePolicyEvaluations(ctx, predicate.GetPolicyEvaluationsRef(), predicate.GetPolicyEvaluationsBundleSize(), run.Workflow.OrgID); resolved != nil {
+		if resolved := s.resolvePolicyEvaluations(ctx, predicate.GetPolicyEvaluationsRef(), run.Workflow.OrgID); resolved != nil {
 			// The reference always travels back so the caller can fetch the
 			// bundle from the CAS; the evaluations only when they were inlined.
 			policyEvaluationsRef = resolved.ref

@@ -64,11 +64,17 @@ func policyEvaluationsBundle(t *testing.T) []byte {
 	return data
 }
 
-func testResourceDescriptor() *intoto.ResourceDescriptor {
-	return &intoto.ResourceDescriptor{
-		Name:      "policy-evaluations",
-		Digest:    map[string]string{sha256Alg: testBundleHexDigest},
-		MediaType: chainloop.PolicyEvaluationsBundleMediaType,
+// testPolicyEvaluationsRef builds the reference an attestation carries. A
+// sizeBytes of zero records no size, standing in for an attestation that does
+// not report one.
+func testPolicyEvaluationsRef(sizeBytes int64) *chainloop.PolicyEvaluationsRef {
+	return &chainloop.PolicyEvaluationsRef{
+		ResourceDescriptor: &intoto.ResourceDescriptor{
+			Name:      "policy-evaluations",
+			Digest:    map[string]string{sha256Alg: testBundleHexDigest},
+			MediaType: chainloop.PolicyEvaluationsBundleMediaType,
+		},
+		SizeBytes: sizeBytes,
 	}
 }
 
@@ -78,10 +84,10 @@ func TestResolvePolicyEvaluations(t *testing.T) {
 
 	testCases := []struct {
 		name string
-		// descriptor defaults to a valid one when nil and useNilDescriptor is false
-		descriptor       *intoto.ResourceDescriptor
-		useNilDescriptor bool
-		// bundleSize is what the attestation records; zero means it records none
+		// ref defaults to a valid one when nil and useNilRef is false
+		ref       *chainloop.PolicyEvaluationsRef
+		useNilRef bool
+		// bundleSize is what the reference records; zero means it records none
 		bundleSize int64
 		// maxInlineBytes 0 selects the built-in default
 		maxInlineBytes int64
@@ -102,8 +108,8 @@ func TestResolvePolicyEvaluations(t *testing.T) {
 		wantDownloadCall   bool
 	}{
 		{
-			name:              "no descriptor resolves to nothing",
-			useNilDescriptor:  true,
+			name:              "no reference resolves to nothing",
+			useNilRef:         true,
 			wantNilResolution: true,
 		},
 		{
@@ -133,7 +139,7 @@ func TestResolvePolicyEvaluations(t *testing.T) {
 		{
 			// An unrecorded size leaves nothing to enforce the cap against, and
 			// sizing the bundle would cost a CAS round trip on every view.
-			name:              "an attestation with no recorded size is inlined whatever the cap",
+			name:              "a reference with no recorded size is inlined whatever the cap",
 			maxInlineBytes:    4,
 			downloadBody:      bundle,
 			wantEvaluations:   true,
@@ -172,10 +178,12 @@ func TestResolvePolicyEvaluations(t *testing.T) {
 			wantDownloadCall:  true,
 		},
 		{
-			name: "descriptor without a sha256 digest reports unavailable",
-			descriptor: &intoto.ResourceDescriptor{
-				Name:   "policy-evaluations",
-				Digest: map[string]string{"sha512": "abc"},
+			name: "a reference without a sha256 digest reports unavailable",
+			ref: &chainloop.PolicyEvaluationsRef{
+				ResourceDescriptor: &intoto.ResourceDescriptor{
+					Name:   "policy-evaluations",
+					Digest: map[string]string{"sha512": "abc"},
+				},
 			},
 			wantRefReason:      pb.PolicyEvaluationsRef_REASON_UNAVAILABLE,
 			wantEmptyRefDigest: true,
@@ -228,12 +236,12 @@ func TestResolvePolicyEvaluations(t *testing.T) {
 				},
 			})
 
-			descriptor := tc.descriptor
-			if !tc.useNilDescriptor && descriptor == nil {
-				descriptor = testResourceDescriptor()
+			ref := tc.ref
+			if !tc.useNilRef && ref == nil {
+				ref = testPolicyEvaluationsRef(tc.bundleSize)
 			}
 
-			got := svc.resolvePolicyEvaluations(ctx, descriptor, tc.bundleSize, orgID)
+			got := svc.resolvePolicyEvaluations(ctx, ref, orgID)
 
 			if tc.wantNilResolution {
 				assert.Nil(t, got)
