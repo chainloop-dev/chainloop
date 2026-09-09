@@ -368,9 +368,10 @@ permissions:                                 # v1: `network.allowedDomains:`
       - "crb.chainloop.dev:443"              # CLI usage telemetry (PostHog) - binaries released
                                              # before the endpoint moved. The host is compiled
                                              # in, so an older tag checked out in a sandbox
-                                             # still reaches for it, and a blocked telemetry
-                                             # egress stalls every command for the request
-                                             # deadline instead of failing cleanly.
+                                             # still reaches for it. Commands succeed either
+                                             # way, but a connection that is dropped rather
+                                             # than refused costs each tracked command a
+                                             # couple of seconds waiting on the send deadline.
       - "timestamp.digicert.com:80"          # RFC 3161 timestamp authority (plain HTTP, signed response)
                                              # used during attestation signing; host comes from the
                                              # control plane's signing options
