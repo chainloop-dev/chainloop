@@ -137,18 +137,40 @@ The organization, project, workflow and require-trace values are saved to
 			// SessionRecord, so the list isn't persisted anywhere — only each
 			// agent's own hook config file, written here, determines which
 			// providers can register sessions.
+			installed := make([]trace.Provider, 0, len(selectedProviders))
 			for _, p := range selectedProviders {
 				if err := p.InstallHooks(repoRoot); err != nil {
-					logger.Warn().Err(err).Str("provider", p.Name()).Msg("could not install agent hooks")
+					logger.Warn().Err(err).Str("harness", p.Name()).Msg("could not install harness hooks")
 					continue
 				}
-				logger.Debug().Str("provider", p.Name()).Msg("agent hooks installed")
+
+				logger.Debug().Str("harness", p.Name()).Msg("harness hooks installed")
+				installed = append(installed, p)
+			}
+
+			// Only what installed is reported: a harness whose hooks failed records
+			// nothing, and naming it would claim otherwise and offer a file that was
+			// never written for committing.
+			if len(installed) == 0 {
+				return fmt.Errorf("no harness hooks could be installed, so no sessions would be recorded")
+			}
+
+			installedNames := make([]string, 0, len(installed))
+			for _, p := range installed {
+				installedNames = append(installedNames, p.Name())
+			}
+
+			workDir, err := os.Getwd()
+			if err != nil {
+				// Only used to render paths relative to where the user is; the
+				// repository root still names them correctly.
+				workDir = repoRoot
 			}
 
 			// What the run produced, and what to do with it. Every step above logs
 			// at debug, so this is what the user is left with.
-			writeTraceInitSummary(os.Stdout, cfg, selected)
-			writeTraceNextSteps(os.Stdout, repoRoot, selectedProviders)
+			writeTraceInitSummary(os.Stdout, cfg, installedNames)
+			writeTraceNextSteps(os.Stdout, repoRoot, workDir, installed)
 
 			return nil
 		},
@@ -187,38 +209,53 @@ func writeTraceInitSummary(w io.Writer, cfg *traceInitConfig, harnesses []string
 }
 
 // writeTraceNextSteps says what is left for the user to do. Committing comes
-// first: the hooks and the configuration live in the repository, so a teammate
-// who pulls them is traced without running init themselves, and until then this
-// only applies to the one working copy.
-func writeTraceNextSteps(w io.Writer, repoRoot string, selected []trace.Provider) {
-	files := []string{config.ChainloopYMLName(repoRoot)}
-	names := make([]string, 0, len(selected))
-
-	for _, p := range selected {
-		names = append(names, p.Name())
-
-		// A path outside the repository cannot be committed, so it is not worth
-		// naming here.
-		if rel, err := filepath.Rel(repoRoot, p.SettingsFile(repoRoot)); err == nil && !strings.HasPrefix(rel, "..") {
+// first: what init wrote into the repository is shared, and until it is
+// committed this setup exists in one working copy only.
+//
+// It stops short of promising that a teammate who pulls is set up: the git
+// hooks live in .git/hooks, which git does not carry between clones, so they
+// still have to run init themselves. What they gain is having nothing to answer
+// when they do.
+//
+// workDir is where the user ran the command, which is what `git add` resolves
+// its arguments against; it is not always the repository root.
+func writeTraceNextSteps(w io.Writer, repoRoot, workDir string, installed []trace.Provider) {
+	files := make([]string, 0, len(installed)+1)
+	add := func(absolute string) {
+		// An absolute path stages just as well, so it is the fallback for the
+		// rare case where no relative one exists.
+		if rel, err := filepath.Rel(workDir, absolute); err == nil {
 			files = append(files, rel)
+			return
 		}
+
+		files = append(files, absolute)
+	}
+
+	add(filepath.Join(repoRoot, config.ChainloopYMLName(repoRoot)))
+
+	names := make([]string, 0, len(installed))
+	for _, p := range installed {
+		names = append(names, p.Name())
+		add(p.SettingsFile(repoRoot))
 	}
 
 	fmt.Fprintf(w, `
 What's next
 
-  1. Commit these files. Anyone who pulls them is set up automatically:
+  1. Commit these files. Teammates then only need to run chainloop trace init:
        git add %s
   2. Start %s and write some code
-  3. Commit and push as usual. Your AI coding sessions are recorded and stored automatically
+  3. Commit and push as usual. The AI coding sessions behind those commits are
+     recorded and stored automatically
 
 Learn more: %s
-`, strings.Join(files, " "), joinNames(names), traceDocsURL)
+`, strings.Join(files, " "), joinWithOr(names), traceDocsURL)
 }
 
-// joinNames renders a list the way a sentence needs it: "a", "a or b", or
+// joinWithOr renders a list the way a sentence needs it: "a", "a or b", or
 // "a, b or c".
-func joinNames(names []string) string {
+func joinWithOr(names []string) string {
 	switch len(names) {
 	case 0:
 		return ""

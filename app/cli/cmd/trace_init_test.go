@@ -44,8 +44,9 @@ func traceInitTestCmd(t *testing.T, args ...string) *cobra.Command {
 // defaultTraceWorkflow is the workflow name trace init falls back to.
 const defaultTraceWorkflow = "ai-coding-session"
 
-// The files trace init leaves in the repository, which the closing message has
-// to name so they get committed.
+// The files trace init leaves in the repository: the config it writes and the
+// harness hooks it installs. The closing message has to name them so they get
+// committed.
 const (
 	chainloopYMLName = ".chainloop.yml"
 	claudeSettings   = ".claude/settings.json"
@@ -183,43 +184,65 @@ func TestWriteTraceNextSteps(t *testing.T) {
 		providers []string
 		// wantFiles are the paths the git add line must carry
 		wantFiles []string
-		// wantAgents is how the agents are named in the sentence
-		wantAgents string
+		// wantHarnesses is how the harnesses are named in the sentence
+		wantHarnesses string
 	}{
 		{
-			name:       "one agent",
-			providers:  []string{providerClaudeCode},
-			wantFiles:  []string{chainloopYMLName, claudeSettings},
-			wantAgents: providerClaudeCode,
+			name:          "one harness",
+			providers:     []string{providerClaudeCode},
+			wantFiles:     []string{chainloopYMLName, claudeSettings},
+			wantHarnesses: providerClaudeCode,
 		},
 		{
-			name:       "two agents",
-			providers:  []string{providerClaudeCode, "cursor"},
-			wantFiles:  []string{chainloopYMLName, claudeSettings, ".cursor/hooks.json"},
-			wantAgents: "claude-code or cursor",
+			name:          "two harnesses",
+			providers:     []string{providerClaudeCode, "cursor"},
+			wantFiles:     []string{chainloopYMLName, claudeSettings, ".cursor/hooks.json"},
+			wantHarnesses: "claude-code or cursor",
 		},
 		{
-			name:       "every agent",
-			providers:  []string{providerClaudeCode, "cursor", "opencode"},
-			wantFiles:  []string{chainloopYMLName, claudeSettings, ".cursor/hooks.json", ".opencode"},
-			wantAgents: "claude-code, cursor or opencode",
+			name:      "every harness",
+			providers: []string{providerClaudeCode, "cursor", "opencode"},
+			// Named in full: ".opencode" alone would pass on any file under that
+			// directory, so it would not catch the plugin being renamed.
+			wantFiles: []string{
+				chainloopYMLName, claudeSettings, ".cursor/hooks.json",
+				".opencode/plugins/chainloop-trace.ts",
+			},
+			wantHarnesses: "claude-code, cursor or opencode",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			out := &bytes.Buffer{}
-			writeTraceNextSteps(out, t.TempDir(), providers.ByNames(tc.providers))
+			repoRoot := t.TempDir()
+			writeTraceNextSteps(out, repoRoot, repoRoot, providers.ByNames(tc.providers))
 
 			got := out.String()
 			for _, f := range tc.wantFiles {
 				assert.Contains(t, got, f, "the file has to be committed, so it has to be named")
 			}
 
-			assert.Contains(t, got, tc.wantAgents)
+			assert.Contains(t, got, tc.wantHarnesses)
 			assert.Contains(t, got, traceDocsURL)
 		})
 	}
+}
+
+// TestWriteTraceNextStepsFromSubdirectory pins down that the git add line works
+// where it is printed. Its arguments are resolved against the working
+// directory, so repository-root paths would stage nothing from a subdirectory.
+func TestWriteTraceNextStepsFromSubdirectory(t *testing.T) {
+	repoRoot := t.TempDir()
+	workDir := filepath.Join(repoRoot, "services", "api")
+	require.NoError(t, os.MkdirAll(workDir, 0750))
+
+	out := &bytes.Buffer{}
+	writeTraceNextSteps(out, repoRoot, workDir, providers.ByNames([]string{providerClaudeCode}))
+
+	got := out.String()
+	assert.Contains(t, got, filepath.Join("..", "..", chainloopYMLName))
+	assert.Contains(t, got, filepath.Join("..", "..", claudeSettings))
 }
 
 func TestWriteTraceInitSummary(t *testing.T) {
@@ -250,7 +273,7 @@ func TestWriteTraceInitSummary(t *testing.T) {
 	})
 }
 
-func TestJoinNames(t *testing.T) {
+func TestJoinWithOr(t *testing.T) {
 	testCases := []struct {
 		names []string
 		want  string
@@ -263,7 +286,7 @@ func TestJoinNames(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.want, func(t *testing.T) {
-			assert.Equal(t, tc.want, joinNames(tc.names))
+			assert.Equal(t, tc.want, joinWithOr(tc.names))
 		})
 	}
 }
