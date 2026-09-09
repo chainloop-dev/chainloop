@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -39,10 +40,29 @@ func TestHuhPrompterSelect(t *testing.T) {
 	// Accessible mode numbers the options and reads the choice as a line.
 	p, out := accessiblePrompter("2\n")
 
-	got, err := p.Select("Pick one", []string{"alpha", "beta", "gamma"}, "alpha")
+	got, err := p.Select("Pick one", []string{"alpha", "beta", "gamma"}, "alpha", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "beta", got)
 	assert.Contains(t, out.String(), "Pick one")
+}
+
+// A validator lets the picker show an option it will not accept, which is how
+// an organization the caller can only view stays visible without being usable.
+func TestHuhPrompterSelectValidate(t *testing.T) {
+	// The refused option first, then an acceptable one: accessible mode asks
+	// again rather than giving up.
+	p, out := accessiblePrompter("2\n1\n")
+
+	got, err := p.Select("Pick one", []string{"alpha", "beta"}, "alpha", func(chosen string) error {
+		if chosen == "beta" {
+			return errors.New("beta is not available")
+		}
+
+		return nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "alpha", got)
+	assert.Contains(t, out.String(), "beta is not available")
 }
 
 func TestHuhPrompterInput(t *testing.T) {

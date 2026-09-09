@@ -35,6 +35,16 @@ func (e *AttestationExecutor) ListOrganizations(ctx context.Context) ([]*Members
 	return NewMembershipList(e.actionOpts).ListOrgs(ctx)
 }
 
+// CreateOrganization creates one and makes it the caller's current
+// organization, which is what the control plane does on creation. `trace init`
+// calls it for a user who belongs to none, where there is nothing to select and
+// every later step needs one.
+func (e *AttestationExecutor) CreateOrganization(ctx context.Context, name string) error {
+	_, err := NewOrgCreate(e.actionOpts).Run(ctx, name)
+
+	return err
+}
+
 // ListProjects returns the projects visible in the organization the executor is
 // pinned to, sorted by name and deduplicated. It runs over the executor's
 // connection, so it targets the organization pinned with WithForcedOrganization

@@ -58,7 +58,7 @@ func newHuhPrompter(lookupEnv func(string) (string, bool)) *huhPrompter {
 
 // Select asks the user to pick one of options, starting on defaultValue. Long
 // lists can be narrowed by typing.
-func (h *huhPrompter) Select(title string, options []string, defaultValue string) (string, error) {
+func (h *huhPrompter) Select(title string, options []string, defaultValue string, validate func(string) error) (string, error) {
 	value := defaultValue
 
 	// Filtering() is deliberately not set: it does not enable filtering, it puts
@@ -69,6 +69,12 @@ func (h *huhPrompter) Select(title string, options []string, defaultValue string
 		Title(title).
 		Options(huh.NewOptions(options...)...).
 		Value(&value)
+
+	// Only when there is one: huh calls whatever it is given, so a nil validator
+	// panics rather than being treated as "nothing to check".
+	if validate != nil {
+		field = field.Validate(validate)
+	}
 
 	if err := h.run(field); err != nil {
 		return "", err

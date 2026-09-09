@@ -26,6 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // --- fakes -------------------------------------------------------------------
@@ -33,10 +35,21 @@ import (
 type fakeOrgLister struct {
 	orgs []*action.MembershipItem
 	err  error
+
+	// createErr is what creating an organization fails with, and created
+	// records the name it was asked for.
+	createErr error
+	created   string
 }
 
 func (f *fakeOrgLister) ListOrganizations(context.Context) ([]*action.MembershipItem, error) {
 	return f.orgs, f.err
+}
+
+func (f *fakeOrgLister) CreateOrganization(_ context.Context, name string) error {
+	f.created = name
+
+	return f.createErr
 }
 
 // fakeProjectLister serves a canned listing. projects are the ones the caller
@@ -101,10 +114,18 @@ func (f *fakePrompter) MultiSelect(title string, options, defaults []string) ([]
 	return f.multiSelectAnswer, nil
 }
 
-func (f *fakePrompter) Select(title string, options []string, defaultValue string) (string, error) {
+func (f *fakePrompter) Select(title string, options []string, defaultValue string, validate func(string) error) (string, error) {
 	f.selects = append(f.selects, recordedPrompt{title: title, options: options, defaultValue: defaultValue})
 	if f.selectErr != nil {
 		return "", f.selectErr
+	}
+
+	// Run the validator the way a terminal prompt would, so what it refuses is
+	// covered through the same seam the huh implementation uses.
+	if validate != nil {
+		if err := validate(f.selectAnswer); err != nil {
+			return "", err
+		}
 	}
 
 	return f.selectAnswer, nil
@@ -127,6 +148,15 @@ func (f *fakePrompter) Input(title, defaultValue string, validate func(string) e
 
 func membership(name string, isDefault bool) *action.MembershipItem {
 	return &action.MembershipItem{Default: isDefault, Org: &action.OrgItem{Name: name}}
+}
+
+// viewerMembership is one the caller can only read, where no workflow can be
+// created and so no tracing can be set up.
+func viewerMembership(name string, isDefault bool) *action.MembershipItem {
+	m := membership(name, isDefault)
+	m.Role = action.RoleViewer
+
+	return m
 }
 
 // Fixtures the table cases share.
@@ -221,16 +251,25 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 		fromYML    string
 		currentOrg string
 		answer     string
-		wantValue  string
-		wantSave   bool
+		// inputAnswer is what the user types when there is no organization to
+		// pick and one has to be created.
+		inputAnswer string
+		wantValue   string
+		wantSave    bool
 		// wantDefault is the preselected entry; empty means no prompt is expected
 		wantDefault string
+		// wantCreated is the organization the resolver asked to have created.
+		wantCreated string
 		wantErr     string
 	}{
 		{
-			name:    "belonging to no organization is an error that points at the fix",
-			orgs:    nil,
-			wantErr: "chainloop organization create",
+			// Nothing to select, so the only way forward is the first one.
+			name:        "belonging to no organization creates one",
+			orgs:        nil,
+			inputAnswer: "My First Org",
+			wantValue:   "my-first-org",
+			wantSave:    true,
+			wantCreated: "my-first-org",
 		},
 		{
 			name:      "a single organization is used without prompting",
@@ -292,12 +331,50 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 			wantSave:    true,
 			wantDefault: orgAcme,
 		},
+		{
+			// Shown so it is clear the organization is still there, and why it
+			// cannot be used, rather than going missing from the list.
+			name:        "an organization the user can only view is marked and refused",
+			orgs:        []*action.MembershipItem{membership(orgAcme, true), viewerMembership(orgGlobex, false)},
+			answer:      orgGlobex + readOnlyOrgMarker,
+			wantDefault: orgAcme,
+			wantErr:     "you can only view",
+		},
+		{
+			// The cursor cannot start on an entry that would be refused, even
+			// when the server calls it the current one.
+			name:        "a viewer organization is never the preselected one",
+			orgs:        []*action.MembershipItem{viewerMembership(orgAcme, true), membership(orgGlobex, false)},
+			answer:      orgGlobex,
+			wantValue:   orgGlobex,
+			wantSave:    true,
+			wantDefault: orgGlobex,
+		},
+		{
+			// Not the same as belonging to none: there is nothing to create here,
+			// only someone to ask.
+			name:    "only viewer organizations leaves nothing to set up",
+			orgs:    []*action.MembershipItem{viewerMembership(orgAcme, true), viewerMembership(orgGlobex, false)},
+			wantErr: "write permissions on one of their projects",
+		},
+		{
+			// One usable organization is still used without asking, whatever the
+			// caller can only view beside it.
+			name:      "a single usable organization beside a viewer one still prompts",
+			orgs:      []*action.MembershipItem{membership(orgAcme, false), viewerMembership(orgGlobex, false)},
+			answer:    orgAcme,
+			wantValue: orgAcme,
+			wantSave:  true,
+
+			wantDefault: orgAcme,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &fakePrompter{selectAnswer: tc.answer}
-			got, err := resolveInteractiveOrganization(context.Background(), &fakeOrgLister{orgs: tc.orgs}, p, tc.fromYML, tc.currentOrg)
+			p := &fakePrompter{selectAnswer: tc.answer, inputAnswer: tc.inputAnswer}
+			api := &fakeOrgLister{orgs: tc.orgs}
+			got, err := resolveInteractiveOrganization(context.Background(), api, p, tc.fromYML, tc.currentOrg)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -308,6 +385,14 @@ func TestResolveInteractiveOrganization(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantValue, got.value)
 			assert.Equal(t, tc.wantSave, got.save)
+			assert.Equal(t, tc.wantCreated, api.created, "organization created")
+
+			if tc.wantCreated != "" {
+				assert.Empty(t, p.selects, "there was nothing to pick from")
+				require.Len(t, p.inputs, 1, "the name should have been asked for")
+				assert.True(t, got.prompted)
+				return
+			}
 
 			if tc.wantDefault == "" {
 				assert.Empty(t, p.selects, "no prompt should have been shown")
@@ -336,6 +421,35 @@ func TestResolveInteractiveOrganizationErrors(t *testing.T) {
 		_, err := resolveInteractiveOrganization(context.Background(),
 			&fakeOrgLister{orgs: orgs}, &fakePrompter{selectErr: errAborted}, "", "")
 		require.ErrorIs(t, err, errAborted)
+	})
+
+	// An instance can restrict creating organizations to its administrators,
+	// which leaves a user who belongs to none with nothing to do but ask.
+	t.Run("an instance that forbids creating organizations says so", func(t *testing.T) {
+		api := &fakeOrgLister{createErr: status.Error(codes.PermissionDenied, "restricted to instance admins")}
+		_, err := resolveInteractiveOrganization(context.Background(),
+			api, &fakePrompter{inputAnswer: "my-org"}, "", "")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "ask to be invited")
+		assert.Equal(t, "my-org", api.created, "it was attempted")
+	})
+
+	t.Run("a creation failure is returned", func(t *testing.T) {
+		_, err := resolveInteractiveOrganization(context.Background(),
+			&fakeOrgLister{createErr: errors.New("boom")}, &fakePrompter{inputAnswer: "my-org"}, "", "")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "boom")
+	})
+
+	// A name the control plane would refuse is caught at the prompt, so nothing
+	// is attempted with it.
+	t.Run("an unusable new name is refused before creating", func(t *testing.T) {
+		api := &fakeOrgLister{}
+		_, err := resolveInteractiveOrganization(context.Background(),
+			api, &fakePrompter{inputAnswer: "!!!"}, "", "")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "organization name cannot be empty")
+		assert.Empty(t, api.created)
 	})
 }
 

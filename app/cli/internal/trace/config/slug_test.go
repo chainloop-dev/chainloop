@@ -101,7 +101,7 @@ func TestValidateDNS1123Label(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := ValidateDNS1123Label(tc.input)
+			err := ValidateDNS1123Label(ProjectSubject, tc.input)
 			if tc.wantErr == "" {
 				assert.NoError(t, err)
 				return
@@ -109,6 +109,8 @@ func TestValidateDNS1123Label(t *testing.T) {
 
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.wantErr)
+			// The rule is the same for both; only the message differs.
+			assert.ErrorContains(t, ValidateDNS1123Label(OrganizationSubject, tc.input), "organization")
 		})
 	}
 }

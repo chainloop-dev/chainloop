@@ -16,7 +16,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -64,20 +63,29 @@ func SlugifyDNS1123(name string) string {
 	return slug
 }
 
-// ValidateDNS1123Label reports whether name is a project name the control plane
-// will accept, using the same rule the server applies at creation time so a bad
-// name is caught at the prompt rather than by a failing API call.
-func ValidateDNS1123Label(name string) error {
+// The kinds of thing ValidateDNS1123Label names in what it reports. Projects
+// and organizations are named by the same rule, and the caller says which one
+// it is asking about so the message names it.
+const (
+	ProjectSubject      = "project"
+	OrganizationSubject = "organization"
+)
+
+// ValidateDNS1123Label reports whether name is one the control plane will
+// accept for a subject of that kind, using the same rule the server applies at
+// creation time so a bad name is caught at the prompt rather than by a failing
+// API call.
+func ValidateDNS1123Label(subject, name string) error {
 	if name == "" {
-		return errors.New("the project name cannot be empty")
+		return fmt.Errorf("the %s name cannot be empty", subject)
 	}
 
 	if len(name) > validation.DNS1123LabelMaxLength {
-		return fmt.Errorf("the project name is %d characters long, the maximum is %d", len(name), validation.DNS1123LabelMaxLength)
+		return fmt.Errorf("the %s name is %d characters long, the maximum is %d", subject, len(name), validation.DNS1123LabelMaxLength)
 	}
 
 	if errs := validation.IsDNS1123Label(name); len(errs) > 0 {
-		return errors.New("the project name must contain only lowercase letters, numbers and dashes, and start and end with a letter or a number")
+		return fmt.Errorf("the %s name must contain only lowercase letters, numbers and dashes, and start and end with a letter or a number", subject)
 	}
 
 	return nil

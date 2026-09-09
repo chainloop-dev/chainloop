@@ -99,7 +99,7 @@ func resolveTraceIdentity(ctx context.Context, cfg *traceInitConfig, repoRoot st
 // and keeps the value and the save behavior resolveTraceInitConfig gave it,
 // which is what the save flags mean at this point.
 func resolveIdentityInteractively(ctx context.Context, cfg *traceInitConfig, p prompter,
-	currentOrg, repoDir string, orgs orgLister, pinTo func(org string) (projectLister, error)) error {
+	currentOrg, repoDir string, orgs orgAPI, pinTo func(org string) (projectLister, error)) error {
 	askOrg, askProject := !cfg.saveOrganization, !cfg.saveProject
 
 	if askOrg {

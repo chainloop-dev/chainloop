@@ -21,15 +21,25 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 
 	"golang.org/x/term"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
-	orgPromptTitle = "Select a Chainloop organization"
+	orgPromptTitle    = "Select a Chainloop organization"
+	newOrgPromptTitle = "Name for your new organization"
+
+	// readOnlyOrgMarker labels an organization the caller can only view. Those
+	// are shown rather than dropped — an organization missing from the list
+	// reads as something gone wrong — and refused when picked. Organization
+	// names are DNS-1123 labels, so no real one can end in this.
+	readOnlyOrgMarker = " (read-only)"
 
 	// The project picker offers creating one only to a caller allowed to, so it
 	// has a title for each case: promising an action that is not on the list
@@ -81,11 +91,13 @@ var ciSignals = []string{
 // wrappers and automation that run the CLI attached to a pseudo-terminal.
 const noPromptEnvVar = "CHAINLOOP_NO_PROMPT"
 
-// orgLister lists the organizations the current user belongs to. It is the
-// slice of the attestation executor the organization resolver needs, so that
-// resolver can be table-tested without a control plane.
-type orgLister interface {
+// orgAPI lists the organizations the current user belongs to, and creates one
+// for a user who belongs to none. It is the slice of the attestation executor
+// the organization resolver needs, so that resolver can be table-tested without
+// a control plane.
+type orgAPI interface {
 	ListOrganizations(ctx context.Context) ([]*action.MembershipItem, error)
+	CreateOrganization(ctx context.Context, name string) error
 }
 
 // projectLister lists the projects visible in the selected organization, and
@@ -98,7 +110,9 @@ type projectLister interface {
 // resolution logic below independent of the terminal library, so it can be
 // table-tested with a scripted fake.
 type prompter interface {
-	Select(title string, options []string, defaultValue string) (string, error)
+	// Select asks for one of options. validate, when set, refuses an answer and
+	// keeps the prompt open, the way Input's does.
+	Select(title string, options []string, defaultValue string, validate func(string) error) (string, error)
 	// MultiSelect asks for zero or more of options, starting with defaults
 	// ticked. Implementations refuse an empty submission.
 	MultiSelect(title string, options, defaults []string) ([]string, error)
@@ -163,41 +177,113 @@ func envEnabled(lookupEnv func(string) (string, bool), key string) bool {
 // resolveInteractiveOrganization picks the organization the trace attestations
 // land in. fromYML is what .chainloop.yml pins, currentOrg the one the CLI is
 // pointing at; both may be empty.
-func resolveInteractiveOrganization(ctx context.Context, lister orgLister, p prompter, fromYML, currentOrg string) (*resolvedValue, error) {
-	memberships, err := lister.ListOrganizations(ctx)
+func resolveInteractiveOrganization(ctx context.Context, api orgAPI, p prompter, fromYML, currentOrg string) (*resolvedValue, error) {
+	memberships, err := api.ListOrganizations(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing your organizations: %w", err)
 	}
 
-	names := make([]string, 0, len(memberships))
+	// labels are what the picker shows; usable holds only the ones that can be
+	// picked, which is where the cursor has to start.
+	labels := make([]string, 0, len(memberships))
+	usable := make([]string, 0, len(memberships))
 	// serverDefault is the membership the control plane marks as the current one.
 	var serverDefault string
+
 	for _, m := range memberships {
 		if m.Org == nil || m.Org.Name == "" {
 			continue
 		}
 
-		names = append(names, m.Org.Name)
+		// An organization the caller can only view cannot hold a trace workflow,
+		// since creating one is not a viewer's to do. It is shown marked rather
+		// than left out: an organization that simply disappeared from the list
+		// reads as something gone wrong.
+		if m.Role == action.RoleViewer {
+			labels = append(labels, m.Org.Name+readOnlyOrgMarker)
+			continue
+		}
+
+		labels = append(labels, m.Org.Name)
+		usable = append(usable, m.Org.Name)
+
 		if m.Default {
 			serverDefault = m.Org.Name
 		}
 	}
 
-	switch len(names) {
-	case 0:
-		return nil, errors.New("you do not belong to any organization, create one with `chainloop organization create`")
-	case 1:
-		return &resolvedValue{value: names[0], save: names[0] != fromYML}, nil
+	if len(labels) == 0 {
+		// Belonging to none is the one case where there is nothing to pick and
+		// something to do about it.
+		return promptNewOrganization(ctx, api, p, fromYML)
+	}
+
+	if len(usable) == 0 {
+		return nil, errors.New("you can only view the organizations you belong to, ask someone with write permissions on one of their projects to set this up")
+	}
+
+	// One to pick and nothing to weigh it against, so it is not worth asking.
+	if len(labels) == 1 {
+		return &resolvedValue{value: usable[0], save: usable[0] != fromYML}, nil
 	}
 
 	// Preselect what the repository already pins, then what the CLI points at,
-	// then what the server considers current.
-	chosen, err := p.Select(orgPromptTitle, names, firstPresent(names, fromYML, currentOrg, serverDefault))
+	// then what the server considers current, among the ones that can be picked.
+	chosen, err := p.Select(orgPromptTitle, labels,
+		firstPresent(usable, fromYML, currentOrg, serverDefault), refuseReadOnlyOrg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &resolvedValue{value: chosen, save: chosen != fromYML, prompted: true}, nil
+}
+
+// refuseReadOnlyOrg keeps the picker open on an organization the caller can
+// only view, saying why instead of failing later on a workflow that cannot be
+// created there.
+func refuseReadOnlyOrg(chosen string) error {
+	name, readOnly := strings.CutSuffix(chosen, readOnlyOrgMarker)
+	if !readOnly {
+		return nil
+	}
+
+	return fmt.Errorf("you can only view %q, ask someone with write permissions on one of its projects to set this up", name)
+}
+
+// promptNewOrganization collects a name and creates the organization, for a
+// user who belongs to none. Nothing can be selected in that case and every step
+// after this one needs an organization, so creating the first one is the only
+// way forward. An instance can restrict who may create them, which leaves
+// nothing to do but say so.
+//
+// It is the one point where trace init changes anything before the repository
+// is written to. An organization left behind by an init that is then abandoned
+// is the user's to keep, and is waiting for them on the next run.
+func promptNewOrganization(ctx context.Context, api orgAPI, p prompter, fromYML string) (*resolvedValue, error) {
+	answer, err := p.Input(newOrgPromptTitle, "", validateNewOrganization)
+	if err != nil {
+		return nil, err
+	}
+
+	name := config.SlugifyDNS1123(answer)
+	if err := api.CreateOrganization(ctx, name); err != nil {
+		if status.Code(err) == codes.PermissionDenied {
+			return nil, fmt.Errorf("this instance only lets administrators create organizations, so ask to be invited to one: %w", err)
+		}
+
+		return nil, fmt.Errorf("creating organization %q: %w", name, err)
+	}
+
+	logger.Info().Str("organization", name).Msg("organization created")
+
+	return &resolvedValue{value: name, save: name != fromYML, prompted: true}, nil
+}
+
+// validateNewOrganization checks what a free-form name normalizes to, so a name
+// the control plane would refuse is caught at the prompt. Organizations are
+// named by the same rule projects are.
+func validateNewOrganization(answer string) error {
+	return config.ValidateDNS1123Label(config.OrganizationSubject, config.SlugifyDNS1123(answer))
 }
 
 // resolveInteractiveProject picks the project the workflow is created in, or
@@ -288,7 +374,7 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		preselect = createNewProjectOption
 	}
 
-	chosen, err := p.Select(title, options, firstPresent(options, preselect))
+	chosen, err := p.Select(title, options, firstPresent(options, preselect), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +408,7 @@ func promptNewProject(p prompter, defaultName, fromYML string, readOnly []string
 func newProjectValidator(readOnly []string) func(string) error {
 	return func(answer string) error {
 		name := config.SlugifyDNS1123(answer)
-		if err := config.ValidateDNS1123Label(name); err != nil {
+		if err := config.ValidateDNS1123Label(config.ProjectSubject, name); err != nil {
 			return err
 		}
 
