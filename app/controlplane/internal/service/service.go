@@ -367,9 +367,16 @@ func (s *service) userCanCreateProject(ctx context.Context) error {
 // alike: an option that the create call then refuses is the dead end the answer
 // exists to avoid. Its error is raw, for the caller to convert at the boundary.
 func (s *service) canCreateProject(ctx context.Context) (bool, error) {
-	// admins always can create projects
 	if !rbacEnabled(ctx) {
-		return true, nil
+		// An API token outside RBAC acts for the whole organization.
+		if token := entities.CurrentAPIToken(ctx); token != nil {
+			return true, nil
+		}
+
+		// The roles outside RBAC are the administrators and the organization
+		// viewer, and only the former may create anything. Answering yes for a
+		// viewer would offer an option the API-level check refuses.
+		return authz.Role(usercontext.CurrentAuthzSubject(ctx)).IsAdmin(), nil
 	}
 
 	// Only org tokens can create projects

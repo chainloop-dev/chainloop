@@ -175,6 +175,26 @@ func TestTraceInitConfigSave(t *testing.T) {
 	})
 }
 
+// TestWriteTraceInitStateFailureLeavesNothing covers the step the harness hooks
+// are rolled back for. Its parts run in order and each one can fail, so a
+// caller that did not undo them would leave hooks calling a repository that was
+// never set up.
+func TestWriteTraceInitStateFailureLeavesNothing(t *testing.T) {
+	repoRoot := t.TempDir()
+
+	// A file where the git directory should be: every part of the step writes
+	// under it, so the first of them fails.
+	gitDir := filepath.Join(repoRoot, "not-a-directory")
+	require.NoError(t, os.WriteFile(gitDir, []byte("x"), 0o600))
+
+	cfg := &traceInitConfig{project: "a-project", workflow: defaultTraceWorkflow}
+	require.Error(t, writeTraceInitState(cfg, repoRoot, gitDir),
+		"a git directory that cannot be written to has to fail the step")
+
+	_, err := os.Stat(filepath.Join(repoRoot, ".chainloop", "trace"))
+	assert.True(t, os.IsNotExist(err), "no trace directory should have been left behind")
+}
+
 // TestWriteTraceNextSteps checks the closing message names the files that have
 // to be committed. Everything init wrote lives in the repository, so leaving
 // them uncommitted keeps the tracing on one working copy.

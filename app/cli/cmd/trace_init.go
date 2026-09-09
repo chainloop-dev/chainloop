@@ -134,30 +134,20 @@ The organization, project, workflow and require-trace values are saved to
 				return fmt.Errorf("no harness hooks could be installed, so no sessions would be recorded")
 			}
 
-			// The workflow exists and something records into it: from here on it
-			// is safe to leave hooks and configuration behind.
-			if err := cfg.save(repoRoot); err != nil {
+			// The workflow exists and something records into it. What remains is
+			// local, but a failure in any of it would leave harness hooks behind
+			// that call a repository which is not set up, so they are taken back
+			// out again. UninstallHooks removes only Chainloop's own entries,
+			// leaving the rest of a harness's configuration alone.
+			if err := writeTraceInitState(cfg, repoRoot, gitDir); err != nil {
+				for _, p := range installed {
+					if uerr := p.UninstallHooks(repoRoot); uerr != nil {
+						logger.Debug().Err(uerr).Str("harness", p.Name()).
+							Msg("could not take the harness hooks back out")
+					}
+				}
+
 				return err
-			}
-
-			// Create trace directory structure
-			store := state.NewGitStore(gitDir)
-			if err := store.InitTraceDir(); err != nil {
-				return fmt.Errorf("create trace directory: %w", err)
-			}
-
-			// Install git hooks
-			hooksDir, err := hooks.Install(gitDir, false)
-			if err != nil {
-				return err
-			}
-			logger.Debug().
-				Str("path", hooksDir).
-				Msg("git hooks installed (post-commit, pre-push)")
-
-			// Mark trace as initialized
-			if err := store.MarkTraceInitialized(); err != nil {
-				return fmt.Errorf("mark trace initialized: %w", err)
 			}
 
 			workDir, err := os.Getwd()
@@ -277,6 +267,34 @@ func joinWithOr(names []string) string {
 	default:
 		return strings.Join(names[:len(names)-1], ", ") + " or " + names[len(names)-1]
 	}
+}
+
+// writeTraceInitState leaves the repository set up: the configuration, the
+// trace directory, the managed git hooks and the marker that says init ran. It
+// is one step so its caller can undo the harness hooks if any part of it fails,
+// rather than leaving a half-configured repository behind.
+func writeTraceInitState(cfg *traceInitConfig, repoRoot, gitDir string) error {
+	if err := cfg.save(repoRoot); err != nil {
+		return err
+	}
+
+	store := state.NewGitStore(gitDir)
+	if err := store.InitTraceDir(); err != nil {
+		return fmt.Errorf("create trace directory: %w", err)
+	}
+
+	hooksDir, err := hooks.Install(gitDir, false)
+	if err != nil {
+		return err
+	}
+
+	logger.Debug().Str("path", hooksDir).Msg("git hooks installed (post-commit, pre-push)")
+
+	if err := store.MarkTraceInitialized(); err != nil {
+		return fmt.Errorf("mark trace initialized: %w", err)
+	}
+
+	return nil
 }
 
 // ensureTraceInitWorkflow makes sure the workflow the trace attestations target

@@ -298,7 +298,9 @@ func organizationLine(organization string) string {
 		return ""
 	}
 
-	return fmt.Sprintf("organization  %s", organization)
+	// A sentence rather than a label and a value: the columns of a key/value
+	// line read as one more row among the options it sits above.
+	return fmt.Sprintf("using the organization %s", organization)
 }
 
 // validateNewOrganization checks what a free-form name normalizes to, so a name

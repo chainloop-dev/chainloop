@@ -728,13 +728,13 @@ func TestResolveInteractiveProject(t *testing.T) {
 				assert.Equal(t, wantTitle, p.selects[0].title)
 				// Which organization the projects come from is part of the
 				// question, not a line logged before it.
-				assert.Equal(t, "organization  "+orgAcme, p.selects[0].description)
+				assert.Equal(t, organizationLine(orgAcme), p.selects[0].description)
 			}
 
 			if tc.wantInputDefault != "" {
 				require.Len(t, p.inputs, 1)
 				assert.Equal(t, tc.wantInputDefault, p.inputs[0].defaultValue)
-				assert.Equal(t, "organization  "+orgAcme, p.inputs[0].description,
+				assert.Equal(t, organizationLine(orgAcme), p.inputs[0].description,
 					"a new project is created in it, so it is part of that question too")
 			}
 		})

@@ -162,6 +162,19 @@ func TestCanCreateProject(t *testing.T) {
 			ctx:  usercontext.WithAuthzSubject(context.Background(), string(authz.RoleAdmin)),
 			want: true,
 		},
+		{
+			name: "an organization owner may",
+			ctx:  usercontext.WithAuthzSubject(context.Background(), string(authz.RoleOwner)),
+			want: true,
+		},
+		{
+			// A viewer sits outside RBAC like the administrators do, but reads
+			// rather than writes: the API-level check refuses it a workflow, so
+			// offering to create a project for one is a dead end.
+			name: "an organization viewer may not, though RBAC does not narrow it",
+			ctx:  usercontext.WithAuthzSubject(context.Background(), string(authz.RoleViewer)),
+			want: false,
+		},
 	}
 
 	s := newTestService(t)
@@ -175,26 +188,11 @@ func TestCanCreateProject(t *testing.T) {
 	}
 }
 
-// TestCanCreateProjectMatchesEnforcement pins the reported answer to the one the
-// create call enforces. They are read by a client as the same question, so they
-// must not drift apart.
-func TestCanCreateProjectMatchesEnforcement(t *testing.T) {
-	s := newTestService(t)
-
-	for _, role := range []authz.Role{authz.RoleOrgMember, authz.RoleOrgContributor, authz.RoleAdmin, authz.RoleViewer} {
-		t.Run(string(role), func(t *testing.T) {
-			ctx := entities.WithMembership(
-				usercontext.WithAuthzSubject(context.Background(), string(role)),
-				&entities.Membership{})
-
-			reported, err := s.canCreateProject(ctx)
-			require.NoError(t, err)
-
-			assert.Equal(t, reported, s.userCanCreateProject(ctx) == nil,
-				"the listing reported %v, which the create call does not agree with", reported)
-		})
-	}
-}
+// The reported answer and the enforced one cannot drift apart, because
+// userCanCreateProject is canCreateProject plus an error: a test comparing them
+// would compare the function to itself and pass whatever either did. What is
+// worth pinning is that both agree with the create RPC as the middleware
+// actually reaches it, which is the service-level RBAC test tracked in #3419.
 
 // TestProjectsAllowingWithoutRBAC covers the organization roles RBAC does not
 // narrow. Whether they may create a workflow is decided by the role alone, so
