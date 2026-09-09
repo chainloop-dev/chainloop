@@ -249,10 +249,12 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 			// not exist rather than one that can be picked. Offering it as if it were
 			// real is what makes selecting it fail on a project the caller may not be
 			// allowed to create. Creating it is what the repository is asking for, so
-			// it seeds the new name instead.
+			// it seeds the new name instead, which is the whole of what the user needs
+			// to know: they are being asked to create it, with the name already filled
+			// in. Warning about it would report a problem that the next prompt solves.
 			newProjectSeed = fromYML
 
-			logger.Warn().Str("project", fromYML).
+			logger.Debug().Str("project", fromYML).
 				Msg("the project this repository points at does not exist in this organization")
 		}
 	}
