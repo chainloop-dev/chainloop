@@ -16,11 +16,13 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,6 +43,13 @@ func traceInitTestCmd(t *testing.T, args ...string) *cobra.Command {
 
 // defaultTraceWorkflow is the workflow name trace init falls back to.
 const defaultTraceWorkflow = "ai-coding-session"
+
+// The files trace init leaves in the repository, which the closing message has
+// to name so they get committed.
+const (
+	chainloopYMLName = ".chainloop.yml"
+	claudeSettings   = ".claude/settings.json"
+)
 
 func TestResolveTraceInitConfig(t *testing.T) {
 	const existingYML = "projectName: yml-project\norganization: yml-org\nworkflowName: yml-workflow\nrequireTrace: true\n"
@@ -109,7 +118,7 @@ func TestResolveTraceInitConfig(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			path := filepath.Join(dir, ".chainloop.yml")
+			path := filepath.Join(dir, chainloopYMLName)
 			require.NoError(t, os.WriteFile(path, []byte(tc.yml), 0600))
 
 			cfg, err := resolveTraceInitConfig(traceInitTestCmd(t, tc.args...), dir, tc.projectFlag)
@@ -147,7 +156,7 @@ func TestResolveTraceInitConfig(t *testing.T) {
 func TestTraceInitConfigSave(t *testing.T) {
 	t.Run("only the values the user passed are written", func(t *testing.T) {
 		dir := t.TempDir()
-		path := filepath.Join(dir, ".chainloop.yml")
+		path := filepath.Join(dir, chainloopYMLName)
 		require.NoError(t, os.WriteFile(path, []byte("projectName: yml-project\n"), 0600))
 
 		cfg := &traceInitConfig{
@@ -163,4 +172,98 @@ func TestTraceInitConfigSave(t *testing.T) {
 		assert.Contains(t, string(data), "workflowName: ai-coding-session")
 		assert.NotContains(t, string(data), "organization:")
 	})
+}
+
+// TestWriteTraceNextSteps checks the closing message names the files that have
+// to be committed. Everything init wrote lives in the repository, so leaving
+// them uncommitted keeps the tracing on one working copy.
+func TestWriteTraceNextSteps(t *testing.T) {
+	testCases := []struct {
+		name      string
+		providers []string
+		// wantFiles are the paths the git add line must carry
+		wantFiles []string
+		// wantAgents is how the agents are named in the sentence
+		wantAgents string
+	}{
+		{
+			name:       "one agent",
+			providers:  []string{providerClaudeCode},
+			wantFiles:  []string{chainloopYMLName, claudeSettings},
+			wantAgents: providerClaudeCode,
+		},
+		{
+			name:       "two agents",
+			providers:  []string{providerClaudeCode, "cursor"},
+			wantFiles:  []string{chainloopYMLName, claudeSettings, ".cursor/hooks.json"},
+			wantAgents: "claude-code or cursor",
+		},
+		{
+			name:       "every agent",
+			providers:  []string{providerClaudeCode, "cursor", "opencode"},
+			wantFiles:  []string{chainloopYMLName, claudeSettings, ".cursor/hooks.json", ".opencode"},
+			wantAgents: "claude-code, cursor or opencode",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := &bytes.Buffer{}
+			writeTraceNextSteps(out, t.TempDir(), providers.ByNames(tc.providers))
+
+			got := out.String()
+			for _, f := range tc.wantFiles {
+				assert.Contains(t, got, f, "the file has to be committed, so it has to be named")
+			}
+
+			assert.Contains(t, got, tc.wantAgents)
+			assert.Contains(t, got, traceDocsURL)
+		})
+	}
+}
+
+func TestWriteTraceInitSummary(t *testing.T) {
+	t.Run("every value is reported", func(t *testing.T) {
+		out := &bytes.Buffer{}
+		writeTraceInitSummary(out, &traceInitConfig{
+			organization: "acme",
+			project:      "backend-api",
+			workflow:     defaultTraceWorkflow,
+		}, []string{"claude-code", "cursor"})
+
+		got := out.String()
+		assert.Contains(t, got, "your repository is initialized")
+		assert.Contains(t, got, "acme")
+		assert.Contains(t, got, "backend-api")
+		assert.Contains(t, got, defaultTraceWorkflow)
+		assert.Contains(t, got, "claude-code, cursor")
+	})
+
+	t.Run("an organization nothing pinned is left out rather than guessed at", func(t *testing.T) {
+		out := &bytes.Buffer{}
+		writeTraceInitSummary(out, &traceInitConfig{
+			project:  "backend-api",
+			workflow: defaultTraceWorkflow,
+		}, []string{"claude-code"})
+
+		assert.NotContains(t, out.String(), "organization")
+	})
+}
+
+func TestJoinNames(t *testing.T) {
+	testCases := []struct {
+		names []string
+		want  string
+	}{
+		{names: nil, want: ""},
+		{names: []string{"a"}, want: "a"},
+		{names: []string{"a", "b"}, want: "a or b"},
+		{names: []string{"a", "b", "c"}, want: "a, b or c"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.want, func(t *testing.T) {
+			assert.Equal(t, tc.want, joinNames(tc.names))
+		})
+	}
 }

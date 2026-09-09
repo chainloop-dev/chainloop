@@ -340,6 +340,13 @@ func findChainloopYMLAny(dir string) *ChainloopYML {
 	return nil
 }
 
+// ChainloopYMLName returns the name of the Chainloop file in dir: the one that
+// is there when either spelling exists, and the default otherwise. Callers use
+// it to name the file, for instance when asking the user to commit it.
+func ChainloopYMLName(dir string) string {
+	return filepath.Base(resolveChainloopYMLPath(dir))
+}
+
 // resolveChainloopYMLPath returns the path to the existing .chainloop.yml
 // (or .chainloop.yaml) in dir. If neither exists, defaults to .chainloop.yml.
 func resolveChainloopYMLPath(dir string) string {

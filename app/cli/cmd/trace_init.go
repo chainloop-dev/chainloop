@@ -18,8 +18,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
@@ -141,20 +145,10 @@ The organization, project, workflow and require-trace values are saved to
 				logger.Debug().Str("provider", p.Name()).Msg("agent hooks installed")
 			}
 
-			// The one line worth printing on a successful run: every step above
-			// logs at debug, so this is what the user is left with. The
-			// organization is absent when nothing pinned one and the CLI's own
-			// default was used, in which case naming it here would be a guess.
-			done := logger.Info()
-			if cfg.organization != "" {
-				done = done.Str("organization", cfg.organization)
-			}
-
-			done.
-				Str("project", cfg.project).
-				Str("workflow", cfg.workflow).
-				Strs("providers", selected).
-				Msg("repository initialized")
+			// What the run produced, and what to do with it. Every step above logs
+			// at debug, so this is what the user is left with.
+			writeTraceInitSummary(os.Stdout, cfg, selected)
+			writeTraceNextSteps(os.Stdout, repoRoot, selectedProviders)
 
 			return nil
 		},
@@ -169,6 +163,70 @@ The organization, project, workflow and require-trace values are saved to
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
 	return cmd
+}
+
+// traceDocsURL is the guide covering what this command set up and what can be
+// done with it, which is more than belongs in a command's own output.
+const traceDocsURL = "https://docs.chainloop.dev/guides/chainloop-trace"
+
+// writeTraceInitSummary reports what the repository was set up with. It goes to
+// stdout rather than through the logger because it is the command's result,
+// not a note about something that happened on the way there.
+func writeTraceInitSummary(w io.Writer, cfg *traceInitConfig, agents []string) {
+	fmt.Fprint(w, "\nCongratulations, your repository is initialized\n\n")
+
+	// The organization is absent when nothing pinned one and the CLI's own
+	// default was used, in which case naming it here would be a guess.
+	if cfg.organization != "" {
+		fmt.Fprintf(w, "  organization  %s\n", cfg.organization)
+	}
+
+	fmt.Fprintf(w, "  project       %s\n", cfg.project)
+	fmt.Fprintf(w, "  workflow      %s\n", cfg.workflow)
+	fmt.Fprintf(w, "  agents        %s\n", strings.Join(agents, ", "))
+}
+
+// writeTraceNextSteps says what is left for the user to do. Committing comes
+// first: the hooks and the configuration live in the repository, so a teammate
+// who pulls them is traced without running init themselves, and until then this
+// only applies to the one working copy.
+func writeTraceNextSteps(w io.Writer, repoRoot string, selected []trace.Provider) {
+	files := []string{config.ChainloopYMLName(repoRoot)}
+	names := make([]string, 0, len(selected))
+
+	for _, p := range selected {
+		names = append(names, p.Name())
+
+		// A path outside the repository cannot be committed, so it is not worth
+		// naming here.
+		if rel, err := filepath.Rel(repoRoot, p.SettingsFile(repoRoot)); err == nil && !strings.HasPrefix(rel, "..") {
+			files = append(files, rel)
+		}
+	}
+
+	fmt.Fprintf(w, `
+What's next
+
+  1. Commit the changes, so the rest of your team is traced without running init:
+       git add %s
+  2. Start %s and write some code
+  3. Commit and push as usual, and the AI-assisted commits are attested on push
+
+Learn more: %s
+`, strings.Join(files, " "), joinNames(names), traceDocsURL)
+}
+
+// joinNames renders a list the way a sentence needs it: "a", "a or b", or
+// "a, b or c".
+func joinNames(names []string) string {
+	switch len(names) {
+	case 0:
+		return ""
+	case 1:
+		return names[0]
+	default:
+		return strings.Join(names[:len(names)-1], ", ") + " or " + names[len(names)-1]
+	}
 }
 
 // ensureTraceInitWorkflow makes sure the workflow the trace attestations target
