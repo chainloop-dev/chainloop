@@ -698,7 +698,7 @@ func TestResolveInteractiveProject(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &fakePrompter{selectAnswer: tc.selectAnswer, inputAnswer: tc.inputAnswer}
 			got, err := resolveInteractiveProject(context.Background(),
-				&fakeProjectLister{projects: tc.projects, readOnly: tc.readOnly, cannotCreate: tc.cannotCreate}, p, tc.fromYML, tc.repoDir, orgAcme)
+				&fakeProjectLister{projects: tc.projects, readOnly: tc.readOnly, cannotCreate: tc.cannotCreate}, p, tc.fromYML, tc.repoDir)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -726,16 +726,11 @@ func TestResolveInteractiveProject(t *testing.T) {
 				}
 
 				assert.Equal(t, wantTitle, p.selects[0].title)
-				// Which organization the projects come from is part of the
-				// question, not a line logged before it.
-				assert.Equal(t, organizationLine(orgAcme), p.selects[0].description)
 			}
 
 			if tc.wantInputDefault != "" {
 				require.Len(t, p.inputs, 1)
 				assert.Equal(t, tc.wantInputDefault, p.inputs[0].defaultValue)
-				assert.Equal(t, organizationLine(orgAcme), p.inputs[0].description,
-					"a new project is created in it, so it is part of that question too")
 			}
 		})
 	}
@@ -744,20 +739,20 @@ func TestResolveInteractiveProject(t *testing.T) {
 func TestResolveInteractiveProjectErrors(t *testing.T) {
 	t.Run("a listing failure is returned, not swallowed", func(t *testing.T) {
 		_, err := resolveInteractiveProject(context.Background(),
-			&fakeProjectLister{err: errors.New("boom")}, &fakePrompter{}, "", "repo", orgAcme)
+			&fakeProjectLister{err: errors.New("boom")}, &fakePrompter{}, "", "repo")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "boom")
 	})
 
 	t.Run("an aborted list is returned", func(t *testing.T) {
 		_, err := resolveInteractiveProject(context.Background(),
-			&fakeProjectLister{projects: []string{"a"}}, &fakePrompter{selectErr: errAborted}, "", "repo", orgAcme)
+			&fakeProjectLister{projects: []string{"a"}}, &fakePrompter{selectErr: errAborted}, "", "repo")
 		require.ErrorIs(t, err, errAborted)
 	})
 
 	t.Run("an aborted input is returned", func(t *testing.T) {
 		_, err := resolveInteractiveProject(context.Background(),
-			&fakeProjectLister{}, &fakePrompter{inputErr: errAborted}, "", "repo", orgAcme)
+			&fakeProjectLister{}, &fakePrompter{inputErr: errAborted}, "", "repo")
 		require.ErrorIs(t, err, errAborted)
 	})
 }

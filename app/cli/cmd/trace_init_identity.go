@@ -113,11 +113,11 @@ type projectLister interface {
 // prompter asks the user to pick from a list or type a value. It keeps the
 // resolution logic below independent of the terminal library, so it can be
 // table-tested with a scripted fake.
+//
 // Every prompt takes a description, drawn under its title and inside the same
-// frame. Context the question needs — which organization a project is being
-// picked in, why a name is being asked for at all — belongs there rather than
-// in a log line above it, which reads as something that happened rather than
-// as part of the question. Empty means no line.
+// frame, for what the question itself has to explain — why a name is being
+// asked for at all, when arriving at it means there was nothing to pick. Empty
+// means no line.
 type prompter interface {
 	// Select asks for one of options. validate, when set, refuses an answer and
 	// keeps the prompt open, the way Input's does.
@@ -289,20 +289,6 @@ func promptNewOrganization(ctx context.Context, api orgAPI, p prompter, fromYML 
 	return &resolvedValue{value: name, save: name != fromYML, prompted: true}, nil
 }
 
-// organizationLine is the description the project prompts carry: which
-// organization the projects come from, and the one a new project would be
-// created in. It reports nothing when the organization is not known, which is
-// the case only when no organization was ever resolved.
-func organizationLine(organization string) string {
-	if organization == "" {
-		return ""
-	}
-
-	// A sentence rather than a label and a value: the columns of a key/value
-	// line read as one more row among the options it sits above.
-	return fmt.Sprintf("using the organization %s", organization)
-}
-
 // validateNewOrganization checks what a free-form name normalizes to, so a name
 // the control plane would refuse is caught at the prompt. Organizations are
 // named by the same rule projects are.
@@ -311,11 +297,9 @@ func validateNewOrganization(answer string) error {
 }
 
 // resolveInteractiveProject picks the project the workflow is created in, or
-// collects a name for a new one. fromYML is what .chainloop.yml pins, repoDir
-// the repository's directory name, used to seed a new name, and organization
-// the one already settled on, shown with the question since it is what the
-// projects on offer are drawn from.
-func resolveInteractiveProject(ctx context.Context, lister projectLister, p prompter, fromYML, repoDir, organization string) (*resolvedValue, error) {
+// collects a name for a new one. fromYML is what .chainloop.yml pins and
+// repoDir the repository's directory name, used to seed a new name.
+func resolveInteractiveProject(ctx context.Context, lister projectLister, p prompter, fromYML, repoDir string) (*resolvedValue, error) {
 	listing, err := lister.ListProjects(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing the projects you can see: %w", err)
@@ -379,7 +363,7 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 	// Nothing to choose from, so go straight to naming one rather than showing a
 	// list holding nothing but the create entry.
 	if len(writable) == 0 {
-		return promptNewProject(p, organization, newProjectSeed, fromYML, readOnly)
+		return promptNewProject(p, newProjectSeed, fromYML, readOnly)
 	}
 
 	// The create entry is only offered to a role that may act on it; offering it
@@ -398,13 +382,13 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 		preselect = createNewProjectOption
 	}
 
-	chosen, err := p.Select(title, organizationLine(organization), options, firstPresent(options, preselect), nil)
+	chosen, err := p.Select(title, "", options, firstPresent(options, preselect), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if chosen == createNewProjectOption {
-		return promptNewProject(p, organization, newProjectSeed, fromYML, readOnly)
+		return promptNewProject(p, newProjectSeed, fromYML, readOnly)
 	}
 
 	return &resolvedValue{value: chosen, save: chosen != fromYML, prompted: true}, nil
@@ -414,8 +398,8 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 // to the DNS-1123 label the control plane stores. A name that normalizes to one
 // of the existing projects simply resolves to that project, so readOnly names
 // are refused: typing one is the same dead end as picking it from the list.
-func promptNewProject(p prompter, organization, defaultName, fromYML string, readOnly []string) (*resolvedValue, error) {
-	answer, err := p.Input(newProjectPromptTitle, organizationLine(organization), defaultName, newProjectValidator(readOnly))
+func promptNewProject(p prompter, defaultName, fromYML string, readOnly []string) (*resolvedValue, error) {
+	answer, err := p.Input(newProjectPromptTitle, "", defaultName, newProjectValidator(readOnly))
 	if err != nil {
 		return nil, err
 	}

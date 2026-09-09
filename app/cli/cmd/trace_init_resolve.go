@@ -108,9 +108,13 @@ func resolveIdentityInteractively(ctx context.Context, cfg *traceInitConfig, p p
 			return err
 		}
 
-		// An organization settled without asking is not announced here: the
-		// project prompt that follows names it, and the closing summary names it
-		// again. A line of its own would only read as something that happened.
+		// An organization settled without asking is still reported: the questions
+		// that follow are answered inside it, and nothing else on the way through
+		// says which one it is.
+		if !org.prompted {
+			logger.Info().Str("organization", org.value).Msg("using your only organization")
+		}
+
 		cfg.organization, cfg.saveOrganization = org.value, org.save
 	}
 
@@ -123,7 +127,7 @@ func resolveIdentityInteractively(ctx context.Context, cfg *traceInitConfig, p p
 		return nil
 	}
 
-	project, err := resolveInteractiveProject(ctx, projects, p, cfg.project, repoDir, cfg.organization)
+	project, err := resolveInteractiveProject(ctx, projects, p, cfg.project, repoDir)
 	if err != nil {
 		return err
 	}
