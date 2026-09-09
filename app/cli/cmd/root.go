@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
@@ -208,9 +207,9 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 				go func() {
 					defer telemetryWg.Done()
 
-					// Create a context that times out after 1 seconds, this is because posthog has a 10 seconds hardcoded timeout
-					// and we want to finish earlier than that
-					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					// Stop waiting on the delivery goroutine after the flush deadline, so a slow
+					// or unreachable telemetry endpoint cannot hold up the command.
+					ctx, cancel := context.WithTimeout(context.Background(), telemetry.FlushTimeout)
 					defer cancel()
 					done := make(chan struct{})
 

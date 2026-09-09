@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
 	"github.com/posthog/posthog-go"
@@ -41,9 +40,8 @@ func NewClient(apiKey string, endpointURL string) (*Tracker, error) {
 	client, err := posthog.NewWithConfig(apiKey, posthog.Config{
 		Endpoint: endpointURL,
 		Logger:   posthog.StdLogger(noopLogger, false),
-		// Close flushes the batch, and with no timeout it waits indefinitely. The CLI only
-		// abandons the telemetry goroutine after its own deadline, so bound the flush here.
-		ShutdownTimeout: 2 * time.Second,
+		// Close is what flushes the batch, and it waits indefinitely unless bounded.
+		ShutdownTimeout: telemetry.FlushTimeout,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PostHog client: %w", err)

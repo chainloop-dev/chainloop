@@ -18,6 +18,7 @@ package telemetry
 import (
 	"context"
 	"runtime"
+	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
@@ -27,6 +28,12 @@ import (
 
 const commandTrackerEventName = "command_executed"
 const UnrecognisedUserID = "unrecognised"
+
+// FlushTimeout bounds how long the CLI spends delivering a telemetry event. The PostHog
+// client takes it as the deadline for flushing its batch on close, and the command hook
+// takes it as the deadline after which it stops waiting on the delivery goroutine. Both
+// read it from here so the two deadlines cannot drift apart.
+const FlushTimeout = 2 * time.Second
 
 // authTypeUser mirrors v1.Attestation_Auth_AUTH_TYPE_USER.String(). It is duplicated as a
 // literal so this package keeps no dependency on the attestation API; a test pins the two
