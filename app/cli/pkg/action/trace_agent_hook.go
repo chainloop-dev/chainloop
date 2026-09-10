@@ -16,6 +16,7 @@
 package action
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -56,6 +57,36 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 	return nil
 }
 
+// sessionStartBanner is what the developer sees at the top of a traced
+// session. Its audience includes someone who cloned the repository and never
+// ran init, so it says what is happening in plain words and, when we know it,
+// where the evidence goes. Chainloop's own vocabulary is deliberately absent:
+// "attested" does not tell a newcomer whether something is recorded,
+// uploaded, or signed, let alone to where.
+//
+// Each fact is dropped rather than guessed at when it is unknown, so the
+// banner never promises a destination that was not confirmed.
+func sessionStartBanner(dashboardURL, org, project string) string {
+	lines := []string{"Chainloop Trace is recording this session."}
+
+	if dashboardURL != "" {
+		lines = append(lines, "Evidence will be sent to "+strings.TrimRight(dashboardURL, "/"))
+	}
+
+	var identity []string
+	if org != "" {
+		identity = append(identity, "organization: "+org)
+	}
+	if project != "" {
+		identity = append(identity, "project: "+project)
+	}
+	if len(identity) > 0 {
+		lines = append(lines, strings.Join(identity, "  "))
+	}
+
+	return strings.Join(lines, "\n")
+}
+
 // HandleAgentSessionStart handles the agent session-start hook.
 func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error {
 	input, err := provider.ReadHookInput(os.Stdin)
@@ -74,11 +105,38 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 
 	ensureSessionTracked(provider, store, repoRoot, input, log)
 
-	if err := provider.SystemMessage("\n\n*** This session will be attested by Chainloop ***"); err != nil {
+	banner := sessionStartBanner(
+		hookDashboardURL(log),
+		config.LoadOrganizationFromYML(repoRoot),
+		config.LoadProjectFromYML(repoRoot),
+	)
+
+	if err := provider.SystemMessage("\n\n" + banner + "\n"); err != nil {
 		log.Debug().Err(err).Msg("session-start: failed to send system message")
 	}
 
 	return nil
+}
+
+// hookDashboardURL asks the control plane where its web dashboard lives, so
+// the session banner can name the destination the evidence is bound for.
+// Returns an empty string when there is no dashboard, no reachable control
+// plane, or no time to find out, in which case the banner simply omits the
+// line.
+//
+// This is the one network call the session-start hook makes, and it is
+// deliberately cheap to abandon: Infoz needs no credentials, so no token is
+// loaded, and the timeout is short because a developer waiting to type is a
+// worse cost than a missing line.
+func hookDashboardURL(log zerolog.Logger) string {
+	conn, err := newControlPlaneConnection("", "")
+	if err != nil {
+		log.Debug().Err(err).Msg("session-start: no control plane connection for the banner")
+		return ""
+	}
+	defer func() { _ = conn.Close() }()
+
+	return fetchUIDashboardURL(context.Background(), conn, hookDashboardURLTimeout)
 }
 
 // HandleAgentPreToolUse handles the agent pre-tool-use hook.

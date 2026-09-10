@@ -42,6 +42,16 @@ const (
 
 	// defaultAttestationStateFile is the default file name for local attestation state.
 	defaultAttestationStateFile = "chainloop-attestation.tmp.json"
+
+	// dashboardURLTimeout bounds an Infoz lookup made while a person waits on
+	// a command they ran themselves.
+	dashboardURLTimeout = 5 * time.Second
+
+	// hookDashboardURLTimeout is the tighter bound for the same lookup inside
+	// an agent hook, where the wait sits between the developer and their
+	// first prompt. Missing the banner's destination line costs far less than
+	// a visible stall, so this gives up quickly.
+	hookDashboardURLTimeout = 2 * time.Second
 )
 
 // AttestationStatePath returns the resolved path for local attestation state.
@@ -176,14 +186,19 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 	return casBackendInfo, artifactCASConn.Close, nil
 }
 
-// fetchUIDashboardURL retrieves the UI Dashboard URL from the control plane
-// Returns empty string if not configured or if fetch fails
-func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) string {
+// fetchUIDashboardURL retrieves the UI Dashboard URL from the control plane.
+// Returns empty string if not configured or if the fetch fails, so callers
+// can treat "no dashboard" and "could not ask" the same way.
+//
+// The caller chooses the timeout, because the acceptable wait depends on
+// where this runs: a person waiting on `workflow run describe` will tolerate
+// far more than an agent hook holding up someone's first prompt.
+func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn, timeout time.Duration) string {
 	if cpConnection == nil {
 		return ""
 	}
 
-	tmoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	tmoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	client := pb.NewStatusServiceClient(cpConnection)
