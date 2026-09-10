@@ -118,14 +118,20 @@ func TestNotifyPendingSessionLinksKeepsUnshownLinks(t *testing.T) {
 	require.NoError(t, store.InitTraceDir())
 	require.NoError(t, store.SavePendingLinks([]string{link}))
 
-	p := &recordingProvider{err: trace.ErrAnnounceUnsupported}
+	unsupported := &recordingProvider{err: trace.ErrAnnounceUnsupported}
 
-	notifyPendingSessionLinks(p, store, zerolog.Nop())
+	notifyPendingSessionLinks(unsupported, store, zerolog.Nop())
 
-	assert.Equal(t, 1, p.calls)
+	assert.Equal(t, 1, unsupported.calls)
 	assert.Equal(t, []string{link}, store.PendingLinks(), "unshown links must stay on disk")
 
-	// An agent that can show them still gets its turn later.
-	notifyPendingSessionLinks(p, store, zerolog.Nop())
-	assert.Equal(t, 2, p.calls, "unshown links must remain available")
+	// The point of keeping them: an agent that can show them gets its turn
+	// later, and consumes them as usual.
+	capable := &recordingProvider{}
+
+	notifyPendingSessionLinks(capable, store, zerolog.Nop())
+
+	assert.Equal(t, 1, capable.calls, "a capable agent must still be offered the links")
+	assert.Equal(t, "Coding Session Available at "+link, capable.announced)
+	assert.Empty(t, store.PendingLinks(), "once shown, the links are consumed")
 }
