@@ -164,6 +164,12 @@ func (p *Provider) SystemMessage(_ string) error {
 	return nil
 }
 
+// SupportsSystemMessage is false for opencode, so callers skip the cost of
+// composing a message that SystemMessage would drop.
+func (p *Provider) SupportsSystemMessage() bool {
+	return false
+}
+
 // AnnounceToUser is unsupported for OpenCode until its plugin's response
 // shape for surfacing a message is verified against a live session, the way
 // Claude Code's was. The hook after a shell command already fires, so wiring

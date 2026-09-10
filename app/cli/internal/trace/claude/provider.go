@@ -146,6 +146,12 @@ func (p *Provider) IsCommandTool(toolName string) bool {
 	return slices.Contains(commandTools, toolName)
 }
 
+// SupportsSystemMessage is true for Claude Code: it renders the
+// systemMessage field of a hook response directly to the user.
+func (p *Provider) SupportsSystemMessage() bool {
+	return true
+}
+
 // SystemMessage writes a message to stdout for Claude Code to display on session start.
 func (p *Provider) SystemMessage(msg string) error {
 	if msg == "" {

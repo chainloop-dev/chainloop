@@ -105,6 +105,12 @@ type Provider interface {
 	// SystemMessage writes a message to stdout for the agent to display on session start.
 	SystemMessage(msg string) error
 
+	// SupportsSystemMessage reports whether SystemMessage reaches the user
+	// rather than being discarded. Callers check it before assembling a
+	// message that costs something to produce, since for agents without
+	// such a channel that work buys nothing.
+	SupportsSystemMessage() bool
+
 	// AnnounceToUser writes a hook response to stdout so the agent puts msg
 	// in front of the user, after a shell command the agent ran. Which
 	// channel that uses is the provider's business: agents differ in whether

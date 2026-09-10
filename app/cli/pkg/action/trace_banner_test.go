@@ -16,10 +16,34 @@
 package action
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+// bannerProvider is a real provider with its banner capability forced, so a
+// test can drive both sides of the gate without a second agent.
+type bannerProvider struct {
+	trace.Provider
+
+	supports bool
+	sysCalls int
+}
+
+func (p *bannerProvider) SupportsSystemMessage() bool { return p.supports }
+
+func (p *bannerProvider) SystemMessage(string) error {
+	p.sysCalls++
+
+	return nil
+}
 
 // TestSessionStartBanner pins what the developer is told at the top of a
 // session. The audience includes a teammate who cloned the repository and
@@ -44,28 +68,31 @@ func TestSessionStartBanner(t *testing.T) {
 		},
 		{
 			name:         "destination is named when there is a dashboard",
-			dashboardURL: "https://app.chainloop.dev",
-			want:         recording + "\nEvidence will be sent to https://app.chainloop.dev",
+			dashboardURL: testDashboardURL,
+			want:         recording + "\nEvidence will be sent to " + testDashboardURL,
 		},
 		{
 			name:         "trailing slash is trimmed",
-			dashboardURL: "https://app.chainloop.dev/",
-			want:         recording + "\nEvidence will be sent to https://app.chainloop.dev",
+			dashboardURL: testDashboardURL + "/",
+			want:         recording + "\nEvidence will be sent to " + testDashboardURL,
 		},
 		{
-			name:         "organization and project are named when known",
-			dashboardURL: "https://app.chainloop.dev",
+			// Destination and identity share one line, and the URL keeps a
+			// space after it so a terminal linkifies it without swallowing
+			// the parenthesis.
+			name:         "organization and project qualify the destination",
+			dashboardURL: testDashboardURL,
 			org:          testOrgName,
 			project:      testProject,
 			want: recording +
-				"\nEvidence will be sent to https://app.chainloop.dev" +
-				"\norganization: " + testOrgName + "  project: " + testProject,
+				"\nEvidence will be sent to " + testDashboardURL +
+				" (organization: " + testOrgName + ", project: " + testProject + ")",
 		},
 		{
-			name:    "identity is named even with no dashboard configured",
+			name:    "identity stands alone when no dashboard is configured",
 			org:     testOrgName,
 			project: testProject,
-			want:    recording + "\norganization: " + testOrgName + "  project: " + testProject,
+			want:    recording + "\norganization: " + testOrgName + ", project: " + testProject,
 		},
 		{
 			name:    "project alone",
@@ -77,11 +104,62 @@ func TestSessionStartBanner(t *testing.T) {
 			org:  testOrgName,
 			want: recording + "\norganization: " + testOrgName,
 		},
+		{
+			name:         "dashboard with only a project",
+			dashboardURL: testDashboardURL,
+			project:      testProject,
+			want: recording +
+				"\nEvidence will be sent to " + testDashboardURL +
+				" (project: " + testProject + ")",
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, sessionStartBanner(tc.dashboardURL, tc.org, tc.project))
+		})
+	}
+}
+
+// TestSessionStartBannerGate checks that an agent which cannot display the
+// banner is never handed one. Building it costs a control-plane round trip,
+// which is not worth paying for a string the agent throws away.
+func TestSessionStartBannerGate(t *testing.T) {
+	testCases := []struct {
+		name     string
+		supports bool
+		wantSent int
+	}{
+		{
+			name:     "an agent that shows messages gets the banner",
+			supports: true,
+			wantSent: 1,
+		},
+		{
+			name:     "an agent that discards them is not asked",
+			supports: false,
+			wantSent: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoDir := initTempGitRepo(t)
+			store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+			require.NoError(t, store.InitTraceDir())
+
+			origDir, err := os.Getwd()
+			require.NoError(t, err)
+			require.NoError(t, os.Chdir(repoDir))
+			t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+			withStdin(t, `{"session_id":"abc-123"}`)
+
+			p := &bannerProvider{Provider: claude.New(), supports: tc.supports}
+			require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+
+			assert.Equal(t, tc.wantSent, p.sysCalls)
+			assert.True(t, store.SessionRecordExists("abc-123"), "the session is tracked either way")
 		})
 	}
 }

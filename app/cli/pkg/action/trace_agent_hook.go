@@ -67,12 +67,6 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 // Each fact is dropped rather than guessed at when it is unknown, so the
 // banner never promises a destination that was not confirmed.
 func sessionStartBanner(dashboardURL, org, project string) string {
-	lines := []string{"Chainloop Trace is recording this session."}
-
-	if dashboardURL != "" {
-		lines = append(lines, "Evidence will be sent to "+strings.TrimRight(dashboardURL, "/"))
-	}
-
 	var identity []string
 	if org != "" {
 		identity = append(identity, "organization: "+org)
@@ -80,11 +74,25 @@ func sessionStartBanner(dashboardURL, org, project string) string {
 	if project != "" {
 		identity = append(identity, "project: "+project)
 	}
-	if len(identity) > 0 {
-		lines = append(lines, strings.Join(identity, "  "))
+	where := strings.Join(identity, ", ")
+
+	// Destination and identity share a line, since they answer one question
+	// between them: where this is going. The space before the parenthesis
+	// matters, as it is what lets a terminal linkify the URL without
+	// swallowing the punctuation that follows it.
+	switch {
+	case dashboardURL != "" && where != "":
+		where = "Evidence will be sent to " + strings.TrimRight(dashboardURL, "/") + " (" + where + ")"
+	case dashboardURL != "":
+		where = "Evidence will be sent to " + strings.TrimRight(dashboardURL, "/")
 	}
 
-	return strings.Join(lines, "\n")
+	banner := "Chainloop Trace is recording this session."
+	if where != "" {
+		banner += "\n" + where
+	}
+
+	return banner
 }
 
 // HandleAgentSessionStart handles the agent session-start hook.
@@ -104,6 +112,14 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	}
 
 	ensureSessionTracked(provider, store, repoRoot, input, log)
+
+	// Composing the banner costs a control-plane round trip, so it is only
+	// worth doing for an agent that can put it in front of the user. Cursor
+	// and opencode would discard it, and the developer would have paid the
+	// wait for nothing.
+	if !provider.SupportsSystemMessage() {
+		return nil
+	}
 
 	banner := sessionStartBanner(
 		hookDashboardURL(log),
