@@ -99,6 +99,33 @@ func TestBuildSessionViewURL(t *testing.T) {
 	}
 }
 
+// TestAttestationResultGetOrganization covers the accessor RunTracePush feeds
+// into the session link, including the nil links in the Status chain.
+func TestAttestationResultGetOrganization(t *testing.T) {
+	testCases := []struct {
+		name string
+		res  *AttestationResult
+		want string
+	}{
+		{name: "nil result", res: nil},
+		{name: "nil status", res: &AttestationResult{}},
+		{name: "nil workflow meta", res: &AttestationResult{Status: &AttestationStatusResult{}}},
+		{
+			name: "organization reported by the control plane",
+			res: &AttestationResult{Status: &AttestationStatusResult{
+				WorkflowMeta: &AttestationStatusWorkflowMeta{Organization: testOrgName},
+			}},
+			want: testOrgName,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.res.GetOrganization())
+		})
+	}
+}
+
 // TestBuildAttestationViewURL guards the route the session link now shares a
 // builder with, so the refactor cannot silently change it.
 func TestBuildAttestationViewURL(t *testing.T) {

@@ -700,6 +700,15 @@ type sessionLogEntry struct {
 }
 
 func TestLogAttestedSessions(t *testing.T) {
+	// Deliberately not testOrgName: an organization that differs from the one
+	// used elsewhere, and that changes under escaping, proves the logged URL
+	// is built from the argument rather than from any incidental value.
+	const (
+		orgName    = "acme corp"
+		orgInPath  = "acme%20corp"
+		sessionURL = testDashboardURL + "/u/" + orgInPath + "/sessions/"
+	)
+
 	testCases := []struct {
 		name           string
 		uiDashboardURL string
@@ -708,26 +717,26 @@ func TestLogAttestedSessions(t *testing.T) {
 		want           []sessionLogEntry
 	}{
 		{
-			name:           "one line per session, each linked",
+			name:           "one line per session, each linked to the given org",
 			uiDashboardURL: testDashboardURL,
-			orgName:        testOrgName,
+			orgName:        orgName,
 			sessionIDs:     []string{testSessionID, "ses_2"},
 			want: []sessionLogEntry{
-				{Session: testSessionID, URL: testDashboardURL + "/u/chainloop/sessions/" + testSessionID},
-				{Session: "ses_2", URL: testDashboardURL + "/u/chainloop/sessions/ses_2"},
+				{Session: testSessionID, URL: sessionURL + testSessionID},
+				{Session: "ses_2", URL: sessionURL + "ses_2"},
 			},
 		},
 		{
 			name:           "no dashboard still confirms the session, without a url",
 			uiDashboardURL: "",
-			orgName:        testOrgName,
+			orgName:        orgName,
 			sessionIDs:     []string{testSessionID},
 			want:           []sessionLogEntry{{Session: testSessionID}},
 		},
 		{
 			name:           "no sessions logs nothing",
 			uiDashboardURL: testDashboardURL,
-			orgName:        testOrgName,
+			orgName:        orgName,
 			sessionIDs:     nil,
 			want:           nil,
 		},
