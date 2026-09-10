@@ -287,6 +287,10 @@ func TestValidateSecurityContext(t *testing.T) {
 			filePath: "./testdata/ai_security_context_valid.json",
 		},
 		{
+			name:     "valid un-adjudicated (triage-only) context",
+			filePath: "./testdata/ai_security_context_triage_only.json",
+		},
+		{
 			name:     "missing required fields",
 			filePath: "./testdata/ai_security_context_missing_required.json",
 			wantErr:  "missing properties",
@@ -315,6 +319,84 @@ func TestValidateSecurityContext(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+// TestValidateSecurityContextTriageFields covers the optional fields the
+// triage/adjudicate split consolidated into the security context in place at
+// security-context-0.1: the top-level survivors queue and the scan_stats
+// counters (adjudicated_commits, survivors_total, triage_input_tokens,
+// triage_output_tokens, adjudication_complete). An un-adjudicated (triage-only)
+// context carries survivors and the triage counters, a fully-adjudicated context
+// carries the adjudication frontier, a combined-scan context omits them all, and
+// a genuinely unknown field is still rejected — so both the context object and
+// scan_stats keep their additionalProperties: false contract.
+func TestValidateSecurityContextTriageFields(t *testing.T) {
+	load := func(t *testing.T) (map[string]any, map[string]any) {
+		t.Helper()
+		f, err := os.ReadFile("./testdata/ai_security_context_valid.json")
+		require.NoError(t, err)
+
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(f, &payload))
+
+		scan, ok := payload["scan"].(map[string]any)
+		require.True(t, ok, "the fixture must carry a scan object")
+		return payload, scan
+	}
+
+	t.Run("an un-adjudicated context with survivors and triage counters validates", func(t *testing.T) {
+		payload, scan := load(t)
+		payload["survivors"] = []any{
+			map[string]any{
+				"commit_sha":  "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+				"parent_sha":  "c8533df53b0af4b731cb1036ec61aee10e35c67b",
+				"commit_date": "2026-08-19T19:58:28-03:00",
+				"subject":     "Avoid shell invocation in command handler",
+				"patch_id":    "32d18a48dac298fa43bd3dcffdb3bbfe06a008aa",
+				"diff_bytes":  451,
+				"attempts":    0,
+			},
+		}
+		scan["survivors_total"] = 1
+		scan["triage_input_tokens"] = 8883
+		scan["triage_output_tokens"] = 83
+		scan["adjudication_complete"] = false
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("an adjudicate-produced context validates", func(t *testing.T) {
+		payload, scan := load(t)
+		scan["adjudicated_commits"] = []any{"8c948c742bdfc09c4aae6b3c386faeb98f925ff2"}
+		scan["survivors_total"] = 1
+		scan["adjudication_complete"] = true
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("a combined-scan context validates without them", func(t *testing.T) {
+		payload, _ := load(t)
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("a survivor missing its required commit_sha is rejected", func(t *testing.T) {
+		payload, _ := load(t)
+		payload["survivors"] = []any{map[string]any{"subject": "no sha"}}
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "missing properties")
+	})
+
+	t.Run("an unknown survivor field is rejected", func(t *testing.T) {
+		payload, _ := load(t)
+		payload["survivors"] = []any{map[string]any{
+			"commit_sha":     "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+			"unexpected_key": "x",
+		}}
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "additionalProperties")
+	})
+
+	t.Run("an unknown scan_stats field is still rejected", func(t *testing.T) {
+		payload, scan := load(t)
+		scan["unexpected_field"] = "x"
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "additionalProperties")
+	})
 }
 
 func TestValidateOpenAPI(t *testing.T) {

@@ -74,6 +74,13 @@
       "items": {
         "$ref": "#/definitions/fingerprint"
       }
+    },
+    "survivors": {
+      "type": "array",
+      "description": "Commits that survived Phase-1 triage — the adjudication work queue, retained after draining as the coverage record. Present on an un-adjudicated (triage-only) or incrementally-built context; absent for a combined triage+adjudicate scan.",
+      "items": {
+        "$ref": "#/definitions/survivor"
+      }
     }
   },
   "definitions": {
@@ -310,6 +317,32 @@
           "type": "integer",
           "minimum": 0,
           "description": "Holes the list cap dropped, so a truncated list still reports an honest total"
+        },
+        "adjudicated_commits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Commit SHAs driven to a terminal adjudication state across all runs (the adjudication frontier)."
+        },
+        "survivors_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many survivors the context holds at the covered window."
+        },
+        "triage_input_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cumulative Phase-1 input tokens across every triage run."
+        },
+        "triage_output_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cumulative Phase-1 output tokens across every triage run."
+        },
+        "adjudication_complete": {
+          "type": "boolean",
+          "description": "True when every survivor (outside holes/abandoned) reached a terminal state — the trust signal that an empty fingerprints list is 'clean' rather than 'not adjudicated yet'."
         }
       }
     },
@@ -351,6 +384,47 @@
           "type": "string",
           "minLength": 1,
           "description": "Why it never resolved, e.g. \"diff too large\", \"triage: <error>\", or an adjudication timeout"
+        }
+      }
+    },
+    "survivor": {
+      "type": "object",
+      "title": "Survivor",
+      "description": "One commit that survived Phase-1 triage: an entry in the adjudication work queue the context carries. All but commit_sha are optional.",
+      "required": [
+        "commit_sha"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "commit_sha": {
+          "type": "string",
+          "description": "The commit that triage marked as a candidate for adjudication"
+        },
+        "parent_sha": {
+          "type": "string",
+          "description": "Parent of the survivor commit. Empty for a root commit."
+        },
+        "commit_date": {
+          "type": "string",
+          "description": "Committer date of the survivor commit"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject line of the survivor commit"
+        },
+        "patch_id": {
+          "type": "string",
+          "description": "git patch-id --stable; rebase-durable key for history-rewrite reconciliation. Empty for merge commits."
+        },
+        "diff_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Size of the survivor's normalised diff in bytes"
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Failed adjudication tries; at the cap the survivor is abandoned."
         }
       }
     },

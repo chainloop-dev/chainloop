@@ -105,6 +105,41 @@ type ScanStats struct {
 	DuplicatesMerged    int          `json:"duplicates_merged,omitempty"`
 	Unresolved          []Unresolved `json:"unresolved,omitempty"`
 	TruncatedUnresolved int          `json:"truncated_unresolved,omitempty"`
+
+	// AdjudicatedCommits are the commit SHAs driven to a terminal Phase-2 state
+	// across all runs — the adjudication frontier.
+	AdjudicatedCommits []string `json:"adjudicated_commits,omitempty"`
+	// SurvivorsTotal is how many survivors the context holds at the covered
+	// window.
+	SurvivorsTotal int `json:"survivors_total,omitempty"`
+	// TriageInputTokens is the cumulative Phase-1 input tokens across every
+	// triage run.
+	TriageInputTokens int64 `json:"triage_input_tokens,omitempty"`
+	// TriageOutputTokens is the cumulative Phase-1 output tokens across every
+	// triage run.
+	TriageOutputTokens int64 `json:"triage_output_tokens,omitempty"`
+	// AdjudicationComplete is true when every survivor (outside holes/abandoned)
+	// reached a terminal state — the signal that an empty fingerprints list is
+	// "clean" rather than "not adjudicated yet".
+	AdjudicationComplete bool `json:"adjudication_complete,omitempty"`
+}
+
+// Survivor is one commit that survived Phase-1 triage: an entry in the
+// adjudication work queue the context carries. Retained after draining as the
+// coverage record. All but CommitSHA are optional.
+type Survivor struct {
+	CommitSHA  string `json:"commit_sha"`
+	ParentSHA  string `json:"parent_sha,omitempty"`
+	CommitDate string `json:"commit_date,omitempty"`
+	Subject    string `json:"subject,omitempty"`
+	// PatchID is git patch-id --stable: a rebase-durable key for history-rewrite
+	// reconciliation. Empty for merge commits.
+	PatchID string `json:"patch_id,omitempty"`
+	// DiffBytes is the size of the survivor's normalised diff in bytes.
+	DiffBytes int `json:"diff_bytes,omitempty"`
+	// Attempts counts failed adjudication tries; at the cap the survivor is
+	// abandoned.
+	Attempts int `json:"attempts,omitempty"`
 }
 
 // TopRisk is a component with a security-fix history, ranked by severity mass
@@ -267,6 +302,12 @@ type Data struct {
 	TopRisks       []TopRisk       `json:"top_risks"`
 	SharedSurfaces []SharedSurface `json:"shared_surfaces"`
 	Fingerprints   []Fingerprint   `json:"fingerprints"`
+
+	// Survivors is the adjudication work queue — the commits that survived
+	// Phase-1 triage, retained after draining as the coverage record. Present on
+	// an un-adjudicated (triage-only) or incrementally-built context; absent for
+	// a combined triage+adjudicate scan.
+	Survivors []Survivor `json:"survivors,omitempty"`
 }
 
 // Evidence is the Chainloop material envelope around a security context.
