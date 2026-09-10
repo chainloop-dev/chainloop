@@ -77,6 +77,8 @@ func TestSelectValidate(t *testing.T) {
 func TestInput(t *testing.T) {
 	p, out := accessiblePrompter("typed-value\n")
 
+	// No Validate and no Describe on purpose: huh panics on a nil validator, so
+	// a question that checks nothing has to reach the prompt all the same.
 	got, err := p.Input(InputOpts{Title: "A name", Description: "in some context", Default: "a-default"})
 	require.NoError(t, err)
 	assert.Equal(t, "typed-value", got)

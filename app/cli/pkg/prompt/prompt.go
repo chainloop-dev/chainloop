@@ -53,13 +53,9 @@ type Prompter struct {
 // New builds a prompter over the real terminal, in plain-text mode when the
 // environment asks for it.
 func New(lookupEnv func(string) (string, bool)) *Prompter {
-	accessible := false
-	for _, key := range accessibleEnvVars {
-		if envEnabled(lookupEnv, key) {
-			accessible = true
-			break
-		}
-	}
+	accessible := slices.ContainsFunc(accessibleEnvVars, func(key string) bool {
+		return envEnabled(lookupEnv, key)
+	})
 
 	return &Prompter{accessible: accessible, in: os.Stdin, out: os.Stderr}
 }
@@ -229,13 +225,10 @@ func (p *Prompter) run(field huh.Field) error {
 		WithInput(p.in).
 		WithOutput(p.out)
 
-	if err := form.Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return ErrAborted
-		}
-
-		return err
+	err := form.Run()
+	if errors.Is(err, huh.ErrUserAborted) {
+		return ErrAborted
 	}
 
-	return nil
+	return err
 }

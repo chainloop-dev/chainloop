@@ -30,8 +30,8 @@ type namingPrompter struct {
 	*prompt.Prompter
 }
 
-// newHuhPrompter builds the prompter `trace init` asks its questions through.
-func newHuhPrompter(lookupEnv func(string) (string, bool)) namingPrompter {
+// newNamingPrompter builds the prompter `trace init` asks its questions through.
+func newNamingPrompter(lookupEnv func(string) (string, bool)) namingPrompter {
 	return namingPrompter{prompt.New(lookupEnv)}
 }
 

@@ -81,7 +81,7 @@ func resolveTraceIdentity(ctx context.Context, cfg *traceInitConfig, repoRoot st
 		return pinned, nil
 	}
 
-	if err := resolveIdentityInteractively(ctx, cfg, newHuhPrompter(os.LookupEnv),
+	if err := resolveIdentityInteractively(ctx, cfg, newNamingPrompter(os.LookupEnv),
 		viper.GetString(confOptions.organization.viperKey), filepath.Base(repoRoot), executor, pinTo); err != nil {
 		_ = executor.Close()
 		return nil, err

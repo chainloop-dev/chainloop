@@ -93,7 +93,7 @@ The organization, project, workflow and require-trace values are saved to
 			// Ask which agents to trace before anything is created or written,
 			// so every question is answered up front and an abort leaves the
 			// repository untouched.
-			selected, err := resolveTraceProviders(newHuhPrompter(os.LookupEnv),
+			selected, err := resolveTraceProviders(newNamingPrompter(os.LookupEnv),
 				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag},
 				traceInitCanPrompt())
 			if err != nil {
