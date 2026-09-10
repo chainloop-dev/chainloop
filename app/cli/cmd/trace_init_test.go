@@ -16,11 +16,13 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,6 +40,17 @@ func traceInitTestCmd(t *testing.T, args ...string) *cobra.Command {
 
 	return cmd
 }
+
+// defaultTraceWorkflow is the workflow name trace init falls back to.
+const defaultTraceWorkflow = "ai-coding-session"
+
+// The files trace init leaves in the repository: the config it writes and the
+// harness hooks it installs. The closing message has to name them so they get
+// committed.
+const (
+	chainloopYMLName = ".chainloop.yml"
+	claudeSettings   = ".claude/settings.json"
+)
 
 func TestResolveTraceInitConfig(t *testing.T) {
 	const existingYML = "projectName: yml-project\norganization: yml-org\nworkflowName: yml-workflow\nrequireTrace: true\n"
@@ -69,7 +82,7 @@ func TestResolveTraceInitConfig(t *testing.T) {
 			name:         "the workflow name falls back to the trace default",
 			yml:          "projectName: yml-project\n",
 			wantProject:  "yml-project",
-			wantWorkflow: "ai-coding-session",
+			wantWorkflow: defaultTraceWorkflow,
 		},
 		{
 			name:             "flags win and are marked for saving",
@@ -92,16 +105,21 @@ func TestResolveTraceInitConfig(t *testing.T) {
 			wantSaved:        []string{"requireTrace"},
 		},
 		{
-			name:    "a project name is required",
-			yml:     "projectVersion: v1.0.0\n",
-			wantErr: "--project is required",
+			// Resolving no longer fails on a missing project: the interactive
+			// path asks for one, and the non-interactive path reports it. See
+			// TestResolveTraceIdentityNonInteractive.
+			name:        "a missing project name is left for the identity step",
+			yml:         "projectVersion: v1.0.0\n",
+			wantProject: "",
+			// The workflow still gets its default.
+			wantWorkflow: defaultTraceWorkflow,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			path := filepath.Join(dir, ".chainloop.yml")
+			path := filepath.Join(dir, chainloopYMLName)
 			require.NoError(t, os.WriteFile(path, []byte(tc.yml), 0600))
 
 			cfg, err := resolveTraceInitConfig(traceInitTestCmd(t, tc.args...), dir, tc.projectFlag)
@@ -139,7 +157,7 @@ func TestResolveTraceInitConfig(t *testing.T) {
 func TestTraceInitConfigSave(t *testing.T) {
 	t.Run("only the values the user passed are written", func(t *testing.T) {
 		dir := t.TempDir()
-		path := filepath.Join(dir, ".chainloop.yml")
+		path := filepath.Join(dir, chainloopYMLName)
 		require.NoError(t, os.WriteFile(path, []byte("projectName: yml-project\n"), 0600))
 
 		cfg := &traceInitConfig{
@@ -155,4 +173,239 @@ func TestTraceInitConfigSave(t *testing.T) {
 		assert.Contains(t, string(data), "workflowName: ai-coding-session")
 		assert.NotContains(t, string(data), "organization:")
 	})
+}
+
+// TestFileSnapshotRestore covers undoing what init wrote to a file. The
+// case that matters is the second run over a repository already set up:
+// installing over hooks that are present changes nothing, so undoing by
+// uninstalling would strip a working configuration instead.
+func TestFileSnapshotRestore(t *testing.T) {
+	t.Run("a configuration that was already there comes back untouched", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "settings.json")
+		original := []byte(`{"hooks":{"SessionStart":"chainloop"},"mine":"keep me"}`)
+		require.NoError(t, os.WriteFile(path, original, 0o600))
+
+		before, err := snapshotFile(path)
+		require.NoError(t, err)
+
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		got, err := os.ReadFile(path)
+		require.NoError(t, err)
+		assert.Equal(t, original, got, "the hooks that predate this run must survive it")
+	})
+
+	t.Run("a configuration this run created is removed", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".claude", "settings.json")
+
+		before, err := snapshotFile(path)
+		require.NoError(t, err)
+
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(path)
+		assert.True(t, os.IsNotExist(err), "a file this run created should not outlive it")
+
+		_, err = os.Stat(filepath.Dir(path))
+		assert.True(t, os.IsNotExist(err), "nor the directory that came with it")
+	})
+
+	// opencode keeps its hook a level deeper, so undoing a run has to take
+	// every directory it created rather than only the last one.
+	t.Run("a nested path loses every directory this run created", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".opencode", "plugins", "chainloop-trace.ts")
+
+		before, err := snapshotFile(path)
+		require.NoError(t, err)
+
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte("export default {}"), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(filepath.Join(dir, ".opencode"))
+		assert.True(t, os.IsNotExist(err), "the outer directory came with the run too")
+	})
+
+	// An empty directory that was already there is not this run's to remove.
+	t.Run("a directory that predates the run stays, even empty", func(t *testing.T) {
+		dir := t.TempDir()
+		existing := filepath.Join(dir, ".claude")
+		require.NoError(t, os.MkdirAll(existing, 0o755))
+
+		path := filepath.Join(existing, "settings.json")
+		before, err := snapshotFile(path)
+		require.NoError(t, err)
+
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(existing)
+		assert.NoError(t, err, "the directory was not created by this run")
+	})
+
+	t.Run("a directory holding anything else is left alone", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".claude", "settings.json")
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+
+		before, err := snapshotFile(path)
+		require.NoError(t, err)
+
+		theirs := filepath.Join(filepath.Dir(path), "theirs.json")
+		require.NoError(t, os.WriteFile(theirs, []byte("{}"), 0o600))
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(theirs)
+		assert.NoError(t, err, "somebody else's file must survive")
+	})
+}
+
+// TestWriteTraceInitStateFailureLeavesNothing covers the step the harness hooks
+// are rolled back for. Its parts run in order and each one can fail, so a
+// caller that did not undo them would leave hooks calling a repository that was
+// never set up.
+func TestWriteTraceInitStateFailureLeavesNothing(t *testing.T) {
+	repoRoot := t.TempDir()
+	gitDir := filepath.Join(repoRoot, ".git")
+	require.NoError(t, os.MkdirAll(gitDir, 0o755))
+
+	// A file where the trace state goes, so the step fails after saving the
+	// configuration rather than before it: failing on the first thing it does
+	// would leave nothing behind whatever the caller did about it.
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "chainloop-trace"), []byte("x"), 0o600))
+
+	ymlPath := filepath.Join(repoRoot, chainloopYMLName)
+	before, err := snapshotFile(ymlPath)
+	require.NoError(t, err)
+
+	cfg := &traceInitConfig{project: "a-project", workflow: defaultTraceWorkflow, saveProject: true}
+	require.Error(t, writeTraceInitState(cfg, repoRoot, gitDir),
+		"a trace directory that cannot be created has to fail the step")
+
+	// The step is not atomic on its own: it saved the configuration before it
+	// failed, which is exactly why the caller snapshots it.
+	_, err = os.Stat(ymlPath)
+	require.NoError(t, err, "the save this test relies on did happen")
+
+	require.NoError(t, before.restore())
+
+	_, err = os.Stat(ymlPath)
+	assert.True(t, os.IsNotExist(err), "the configuration must not outlive a failed run")
+}
+
+// TestWriteTraceNextSteps checks the closing message names the files that have
+// to be committed. Everything init wrote lives in the repository, so leaving
+// them uncommitted keeps the tracing on one working copy.
+func TestWriteTraceNextSteps(t *testing.T) {
+	testCases := []struct {
+		name      string
+		providers []string
+		// wantFiles are the paths the git add line must carry
+		wantFiles []string
+		// wantHarnesses is how the harnesses are named in the sentence
+		wantHarnesses string
+	}{
+		{
+			name:          "one harness",
+			providers:     []string{providerClaudeCode},
+			wantFiles:     []string{chainloopYMLName, claudeSettings},
+			wantHarnesses: providerClaudeCode,
+		},
+		{
+			name:          "two harnesses",
+			providers:     []string{providerClaudeCode, "cursor"},
+			wantFiles:     []string{chainloopYMLName, claudeSettings, ".cursor/hooks.json"},
+			wantHarnesses: "claude-code or cursor",
+		},
+		{
+			name:      "every harness",
+			providers: []string{providerClaudeCode, "cursor", "opencode"},
+			// Named in full: ".opencode" alone would pass on any file under that
+			// directory, so it would not catch the plugin being renamed.
+			wantFiles: []string{
+				chainloopYMLName, claudeSettings, ".cursor/hooks.json",
+				".opencode/plugins/chainloop-trace.ts",
+			},
+			wantHarnesses: "claude-code, cursor or opencode",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := &bytes.Buffer{}
+			repoRoot := t.TempDir()
+			writeTraceNextSteps(out, repoRoot, repoRoot, providers.ByNames(tc.providers))
+
+			got := out.String()
+			for _, f := range tc.wantFiles {
+				assert.Contains(t, got, f, "the file has to be committed, so it has to be named")
+			}
+
+			assert.Contains(t, got, tc.wantHarnesses)
+			assert.Contains(t, got, traceDocsURL)
+		})
+	}
+}
+
+// TestWriteTraceNextStepsFromSubdirectory pins down that the git add line works
+// where it is printed. Its arguments are resolved against the working
+// directory, so repository-root paths would stage nothing from a subdirectory.
+func TestWriteTraceNextStepsFromSubdirectory(t *testing.T) {
+	repoRoot := t.TempDir()
+	workDir := filepath.Join(repoRoot, "services", "api")
+	require.NoError(t, os.MkdirAll(workDir, 0750))
+
+	out := &bytes.Buffer{}
+	writeTraceNextSteps(out, repoRoot, workDir, providers.ByNames([]string{providerClaudeCode}))
+
+	got := out.String()
+	assert.Contains(t, got, filepath.Join("..", "..", chainloopYMLName))
+	assert.Contains(t, got, filepath.Join("..", "..", claudeSettings))
+}
+
+func TestWriteTraceInitSummary(t *testing.T) {
+	t.Run("every value is reported", func(t *testing.T) {
+		out := &bytes.Buffer{}
+		writeTraceInitSummary(out, "acme", "backend-api", defaultTraceWorkflow,
+			[]string{providerClaudeCode, "cursor"})
+
+		got := out.String()
+		assert.Contains(t, got, "your repository is initialized")
+		assert.Contains(t, got, "acme")
+		assert.Contains(t, got, "backend-api")
+		assert.Contains(t, got, defaultTraceWorkflow)
+		assert.Contains(t, got, "claude-code, cursor")
+	})
+
+	t.Run("no organization anywhere leaves the line out rather than guessing", func(t *testing.T) {
+		out := &bytes.Buffer{}
+		writeTraceInitSummary(out, "", "backend-api", defaultTraceWorkflow, []string{providerClaudeCode})
+
+		assert.NotContains(t, out.String(), "organization")
+	})
+}
+
+func TestJoinWithOr(t *testing.T) {
+	testCases := []struct {
+		names []string
+		want  string
+	}{
+		{names: nil, want: ""},
+		{names: []string{"a"}, want: "a"},
+		{names: []string{"a", "b"}, want: "a or b"},
+		{names: []string{"a", "b", "c"}, want: "a, b or c"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.want, func(t *testing.T) {
+			assert.Equal(t, tc.want, joinWithOr(tc.names))
+		})
+	}
 }

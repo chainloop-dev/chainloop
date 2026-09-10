@@ -3306,10 +3306,21 @@ Synopsis
 Initialize git hooks that automatically trace AI coding sessions and
 create Chainloop attestations when you push.
 
-It installs the managed git hooks plus the hooks of the selected agent
-providers (Claude Code when none is given), and creates the Chainloop workflow
-the attestations target. Nothing is written to the repository until that
-workflow exists, so you need to be logged in.
+It installs the managed git hooks plus the hooks of the selected harnesses
+(Claude Code when none is given), and creates the Chainloop workflow the
+attestations target. Nothing is written to the repository until that workflow
+exists, so you need to be logged in.
+
+On a terminal it asks which organization and project to use, offering what
+.chainloop.yml already holds so pressing Enter keeps it. A new project can be
+named freely; the name is normalized to the lowercase, dash-separated form
+Chainloop stores. It then asks which harnesses to trace, with Claude Code
+ticked; use space to tick more. Passing --org, --project or a harness flag
+(--claude, --cursor, --opencode) skips the matching question.
+
+Nothing is asked in CI or when the output is redirected: there --project is
+required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
+turn the questions off on a terminal too.
 
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.
@@ -3321,8 +3332,8 @@ chainloop trace init [flags]
 Options
 
 ```
---claude            install Claude Code hooks (default when no provider flag is set)
---contract string   workflow contract to attach when creating the workflow; it must already exist (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
+--claude            install Claude Code hooks (default when no harness flag is set)
+--contract string   workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
 -h, --help              help for init
 --opencode          install opencode hooks
@@ -3376,7 +3387,7 @@ Options
 
 ```
 --claude            install Claude Code hooks (default when no provider flag is set)
---contract string   workflow contract to attach when creating the workflow; it must already exist (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
+--contract string   workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
 -h, --help              help for run
 --opencode          install opencode hooks

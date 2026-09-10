@@ -15,6 +15,55 @@ import {
 
 export const protobufPackage = "controlplane.v1";
 
+/** ProjectServiceListRequest contains parameters for filtering and paginating the projects of an organization */
+export interface ProjectServiceListRequest {
+  /** Filter by project name, case-insensitive substring match */
+  name?:
+    | string
+    | undefined;
+  /** Pagination parameters to limit and offset results */
+  pagination?: OffsetPaginationRequest;
+}
+
+/** ProjectServiceListResponse contains a paginated list of the organization's projects */
+export interface ProjectServiceListResponse {
+  /** List of projects matching the request criteria */
+  projects: ProjectServiceListResponse_ProjectItem[];
+  /** Pagination information for the response */
+  pagination?: OffsetPaginationResponse;
+  /**
+   * Whether the caller may create a project in this organization. It is a
+   * property of their organization role, not of any project, so it does not
+   * belong on the items: an organization contributor, for instance, can be an
+   * administrator of several projects and still create none. Clients offering
+   * to create one need this to avoid an option that always fails.
+   */
+  canCreateProject: boolean;
+}
+
+/** ProjectItem represents a project of the organization */
+export interface ProjectServiceListResponse_ProjectItem {
+  /** Unique identifier of the project */
+  id: string;
+  /** Name of the project */
+  name: string;
+  /** Description of the project */
+  description: string;
+  /** Timestamp when the project was created */
+  createdAt?: Date;
+  /** Timestamp when the project was last updated */
+  updatedAt?: Date;
+  /**
+   * Whether the caller may create a workflow in this project. The listing is
+   * filtered by what the caller can see, which is not the same as what they
+   * can write to: a project viewer can read a project but not add a workflow
+   * to it. This is resolved server-side because a caller can hold several
+   * roles on the same project, directly and through products, and any one of
+   * them granting the permission is enough.
+   */
+  canCreateWorkflow: boolean;
+}
+
 /** ProjectServiceListMembersRequest contains the information needed to list members of a project */
 export interface ProjectServiceListMembersRequest {
   /** IdentityReference is used to specify the project by either its ID or name */
@@ -130,6 +179,300 @@ export interface PendingProjectInvitation {
   /** Unique identifier for the invitation */
   invitationId: string;
 }
+
+function createBaseProjectServiceListRequest(): ProjectServiceListRequest {
+  return { name: undefined, pagination: undefined };
+}
+
+export const ProjectServiceListRequest = {
+  encode(message: ProjectServiceListRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== undefined) {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationRequest.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceListRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceListRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationRequest.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceListRequest {
+    return {
+      name: isSet(object.name) ? String(object.name) : undefined,
+      pagination: isSet(object.pagination) ? OffsetPaginationRequest.fromJSON(object.pagination) : undefined,
+    };
+  },
+
+  toJSON(message: ProjectServiceListRequest): unknown {
+    const obj: any = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationRequest.toJSON(message.pagination) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceListRequest>, I>>(base?: I): ProjectServiceListRequest {
+    return ProjectServiceListRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceListRequest>, I>>(object: I): ProjectServiceListRequest {
+    const message = createBaseProjectServiceListRequest();
+    message.name = object.name ?? undefined;
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationRequest.fromPartial(object.pagination)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseProjectServiceListResponse(): ProjectServiceListResponse {
+  return { projects: [], pagination: undefined, canCreateProject: false };
+}
+
+export const ProjectServiceListResponse = {
+  encode(message: ProjectServiceListResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.projects) {
+      ProjectServiceListResponse_ProjectItem.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      OffsetPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.canCreateProject === true) {
+      writer.uint32(24).bool(message.canCreateProject);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceListResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceListResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projects.push(ProjectServiceListResponse_ProjectItem.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pagination = OffsetPaginationResponse.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.canCreateProject = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceListResponse {
+    return {
+      projects: Array.isArray(object?.projects)
+        ? object.projects.map((e: any) => ProjectServiceListResponse_ProjectItem.fromJSON(e))
+        : [],
+      pagination: isSet(object.pagination) ? OffsetPaginationResponse.fromJSON(object.pagination) : undefined,
+      canCreateProject: isSet(object.canCreateProject) ? Boolean(object.canCreateProject) : false,
+    };
+  },
+
+  toJSON(message: ProjectServiceListResponse): unknown {
+    const obj: any = {};
+    if (message.projects) {
+      obj.projects = message.projects.map((e) => e ? ProjectServiceListResponse_ProjectItem.toJSON(e) : undefined);
+    } else {
+      obj.projects = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination ? OffsetPaginationResponse.toJSON(message.pagination) : undefined);
+    message.canCreateProject !== undefined && (obj.canCreateProject = message.canCreateProject);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceListResponse>, I>>(base?: I): ProjectServiceListResponse {
+    return ProjectServiceListResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceListResponse>, I>>(object: I): ProjectServiceListResponse {
+    const message = createBaseProjectServiceListResponse();
+    message.projects = object.projects?.map((e) => ProjectServiceListResponse_ProjectItem.fromPartial(e)) || [];
+    message.pagination = (object.pagination !== undefined && object.pagination !== null)
+      ? OffsetPaginationResponse.fromPartial(object.pagination)
+      : undefined;
+    message.canCreateProject = object.canCreateProject ?? false;
+    return message;
+  },
+};
+
+function createBaseProjectServiceListResponse_ProjectItem(): ProjectServiceListResponse_ProjectItem {
+  return { id: "", name: "", description: "", createdAt: undefined, updatedAt: undefined, canCreateWorkflow: false };
+}
+
+export const ProjectServiceListResponse_ProjectItem = {
+  encode(message: ProjectServiceListResponse_ProjectItem, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.description !== "") {
+      writer.uint32(26).string(message.description);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.canCreateWorkflow === true) {
+      writer.uint32(48).bool(message.canCreateWorkflow);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ProjectServiceListResponse_ProjectItem {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseProjectServiceListResponse_ProjectItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.canCreateWorkflow = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ProjectServiceListResponse_ProjectItem {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      description: isSet(object.description) ? String(object.description) : "",
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? fromJsonTimestamp(object.updatedAt) : undefined,
+      canCreateWorkflow: isSet(object.canCreateWorkflow) ? Boolean(object.canCreateWorkflow) : false,
+    };
+  },
+
+  toJSON(message: ProjectServiceListResponse_ProjectItem): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.description !== undefined && (obj.description = message.description);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
+    message.updatedAt !== undefined && (obj.updatedAt = message.updatedAt.toISOString());
+    message.canCreateWorkflow !== undefined && (obj.canCreateWorkflow = message.canCreateWorkflow);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ProjectServiceListResponse_ProjectItem>, I>>(
+    base?: I,
+  ): ProjectServiceListResponse_ProjectItem {
+    return ProjectServiceListResponse_ProjectItem.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ProjectServiceListResponse_ProjectItem>, I>>(
+    object: I,
+  ): ProjectServiceListResponse_ProjectItem {
+    const message = createBaseProjectServiceListResponse_ProjectItem();
+    message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.description = object.description ?? "";
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
+    message.canCreateWorkflow = object.canCreateWorkflow ?? false;
+    return message;
+  },
+};
 
 function createBaseProjectServiceListMembersRequest(): ProjectServiceListMembersRequest {
   return { projectReference: undefined, pagination: undefined };
@@ -1213,6 +1556,8 @@ export const PendingProjectInvitation = {
 };
 
 export interface ProjectService {
+  /** List the projects of the current organization that the caller can see */
+  List(request: DeepPartial<ProjectServiceListRequest>, metadata?: grpc.Metadata): Promise<ProjectServiceListResponse>;
   /** Project membership management */
   ListMembers(
     request: DeepPartial<ProjectServiceListMembersRequest>,
@@ -1241,11 +1586,16 @@ export class ProjectServiceClientImpl implements ProjectService {
 
   constructor(rpc: Rpc) {
     this.rpc = rpc;
+    this.List = this.List.bind(this);
     this.ListMembers = this.ListMembers.bind(this);
     this.AddMember = this.AddMember.bind(this);
     this.RemoveMember = this.RemoveMember.bind(this);
     this.UpdateMemberRole = this.UpdateMemberRole.bind(this);
     this.ListPendingInvitations = this.ListPendingInvitations.bind(this);
+  }
+
+  List(request: DeepPartial<ProjectServiceListRequest>, metadata?: grpc.Metadata): Promise<ProjectServiceListResponse> {
+    return this.rpc.unary(ProjectServiceListDesc, ProjectServiceListRequest.fromPartial(request), metadata);
   }
 
   ListMembers(
@@ -1301,6 +1651,29 @@ export class ProjectServiceClientImpl implements ProjectService {
 }
 
 export const ProjectServiceDesc = { serviceName: "controlplane.v1.ProjectService" };
+
+export const ProjectServiceListDesc: UnaryMethodDefinitionish = {
+  methodName: "List",
+  service: ProjectServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ProjectServiceListRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = ProjectServiceListResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
 
 export const ProjectServiceListMembersDesc: UnaryMethodDefinitionish = {
   methodName: "ListMembers",

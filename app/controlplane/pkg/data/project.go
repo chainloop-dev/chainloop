@@ -111,6 +111,49 @@ func (r *ProjectRepo) ListProjectsByOrgID(ctx context.Context, orgID uuid.UUID) 
 	return res, nil
 }
 
+// List returns the projects of an organization matching filterOpts, ordered by
+// name, plus the total number of matches before pagination.
+func (r *ProjectRepo) List(ctx context.Context, filterOpts *biz.ProjectListOpts, paginationOpts *pagination.OffsetPaginationOpts) ([]*biz.Project, int, error) {
+	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.List")
+	defer span.End()
+
+	q := r.data.DB.Project.Query().Where(
+		project.OrganizationID(filterOpts.OrganizationID),
+		project.DeletedAtIsNil(),
+	)
+
+	// A nil set means RBAC does not restrict the caller. An empty one means they
+	// can see nothing, which project.IDIn() with no arguments expresses.
+	if filterOpts.VisibleProjects != nil {
+		q = q.Where(project.IDIn(filterOpts.VisibleProjects...))
+	}
+
+	if filterOpts.Name != nil && *filterOpts.Name != "" {
+		q = q.Where(project.NameContainsFold(*filterOpts.Name))
+	}
+
+	count, err := q.Count(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("counting projects: %w", err)
+	}
+
+	prs, err := q.
+		Order(ent.Asc(project.FieldName)).
+		Offset(paginationOpts.Offset()).
+		Limit(paginationOpts.Limit()).
+		All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("listing projects: %w", err)
+	}
+
+	res := make([]*biz.Project, 0, len(prs))
+	for _, p := range prs {
+		res = append(res, entProjectToBiz(p))
+	}
+
+	return res, count, nil
+}
+
 func (r *ProjectRepo) Create(ctx context.Context, orgID uuid.UUID, name string) (*biz.Project, error) {
 	ctx, span := otelx.Start(ctx, projectRepoTracer, "ProjectRepo.Create")
 	defer span.End()
@@ -375,11 +418,12 @@ func (r *ProjectRepo) queryMembership(orgID uuid.UUID, projectID uuid.UUID, memb
 // entProjectToBiz converts an ent.Project to a biz.Project
 func entProjectToBiz(pro *ent.Project) *biz.Project {
 	return &biz.Project{
-		ID:        pro.ID,
-		Name:      pro.Name,
-		OrgID:     pro.OrganizationID,
-		CreatedAt: &pro.CreatedAt,
-		UpdatedAt: &pro.UpdatedAt,
+		ID:          pro.ID,
+		Name:        pro.Name,
+		Description: pro.Description,
+		OrgID:       pro.OrganizationID,
+		CreatedAt:   &pro.CreatedAt,
+		UpdatedAt:   &pro.UpdatedAt,
 	}
 }
 

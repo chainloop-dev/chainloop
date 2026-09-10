@@ -39,6 +39,62 @@ func NewProjectService(opts ...NewOpt) *ProjectService {
 	}
 }
 
+// List returns the projects of the current organization the caller can see.
+func (s *ProjectService) List(ctx context.Context, req *pb.ProjectServiceListRequest) (*pb.ProjectServiceListResponse, error) {
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Initialize the pagination options, with default values
+	paginationOpts, err := initializePaginationOpts(req.GetPagination())
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// visibleProjects is nil when RBAC does not apply, which the use case reads as
+	// "no restriction", and a possibly empty set of project IDs otherwise.
+	projects, total, err := s.projectUseCase.List(ctx, &biz.ProjectListOpts{
+		OrganizationID:  orgUUID,
+		Name:            req.Name,
+		VisibleProjects: s.visibleProjects(ctx),
+	}, paginationOpts)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Resolve, once per listing, which projects the caller may add a workflow to.
+	writable, err := s.projectsAllowing(ctx, authz.PolicyWorkflowCreate, projects)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	// Whether a new project is an option at all depends on the organization role
+	// rather than on any project, so it is answered once for the listing.
+	canCreateProject, err := s.canCreateProject(ctx)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	result := make([]*pb.ProjectServiceListResponse_ProjectItem, 0, len(projects))
+	for _, p := range projects {
+		item := bizProjectToPb(p)
+		item.CanCreateWorkflow = writable[p.ID]
+		result = append(result, item)
+	}
+
+	return &pb.ProjectServiceListResponse{
+		Projects:         result,
+		Pagination:       paginationToPb(total, paginationOpts.Offset(), paginationOpts.Limit()),
+		CanCreateProject: canCreateProject,
+	}, nil
+}
+
 // ListMembers lists the members of a project.
 func (s *ProjectService) ListMembers(ctx context.Context, req *pb.ProjectServiceListMembersRequest) (*pb.ProjectServiceListMembersResponse, error) {
 	currentOrg, err := requireCurrentOrg(ctx)
@@ -429,6 +485,24 @@ func mapAuthzRoleToProjectMemberRole(role authz.Role) pb.ProjectMemberRole {
 	default:
 		return pb.ProjectMemberRole_PROJECT_MEMBER_ROLE_UNSPECIFIED
 	}
+}
+
+// bizProjectToPb converts a biz.Project to the item returned by List.
+func bizProjectToPb(p *biz.Project) *pb.ProjectServiceListResponse_ProjectItem {
+	item := &pb.ProjectServiceListResponse_ProjectItem{
+		Id:          p.ID.String(),
+		Name:        p.Name,
+		Description: p.Description,
+	}
+
+	if p.CreatedAt != nil {
+		item.CreatedAt = timestamppb.New(*p.CreatedAt)
+	}
+	if p.UpdatedAt != nil {
+		item.UpdatedAt = timestamppb.New(*p.UpdatedAt)
+	}
+
+	return item
 }
 
 // bizOrgInvitationToPendingProjectInvitationPb converts a biz.OrgInvitation to a pb.PendingProjectInvitation protobuf message.

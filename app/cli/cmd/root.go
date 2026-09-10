@@ -52,6 +52,11 @@ var (
 	defaultCASAPI    = "api.cas.chainloop.dev:443"
 	apiToken         string
 	flagYes          bool
+	// authTokenIsUser records whether the credentials in use are a user session
+	// rather than an API token. Commands that behave differently for the two,
+	// such as `trace init` skipping organization selection for org-scoped API
+	// tokens, read it instead of parsing the token again.
+	authTokenIsUser bool
 )
 
 const (
@@ -119,13 +124,14 @@ func NewRootCmd(l zerolog.Logger) *cobra.Command {
 			}
 
 			if apiInsecure() {
-				logger.Warn().Msg("API contacted in insecure mode")
+				logger.Debug().Msg("API contacted in insecure mode")
 			}
 
 			authToken, isUserToken, err := loadAuthToken(cmd)
 			if err != nil {
 				return err
 			}
+			authTokenIsUser = isUserToken
 
 			// If the auth token is not set and the command supports federated auth, we try to discover the runner and use the federated token for the runner if available
 			if authToken == "" && cmdSupportsFederatedAuth(cmd) {

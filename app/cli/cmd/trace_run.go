@@ -114,7 +114,7 @@ func newTraceRunCmd() *cobra.Command {
 			return action.TraceRun(cmd.Context(), logger, action.TraceRunOpts{
 				Store:            store,
 				RepoRoot:         repoRoot,
-				Providers:        selectedTraceProviders(claudeFlag, cursorFlag, opencodeFlag),
+				Providers:        traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag}.namesOrDefault(),
 				Command:          args,
 				ProjectName:      projectFlag,
 				Organization:     organization,

@@ -1,0 +1,18 @@
+{
+  "$id": "controlplane.v1.ProjectServiceListRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ProjectServiceListRequest contains parameters for filtering and paginating the projects of an organization",
+  "properties": {
+    "name": {
+      "description": "Filter by project name, case-insensitive substring match",
+      "type": "string"
+    },
+    "pagination": {
+      "$ref": "controlplane.v1.OffsetPaginationRequest.schema.json",
+      "description": "Pagination parameters to limit and offset results"
+    }
+  },
+  "title": "Project Service List Request",
+  "type": "object"
+}

@@ -245,6 +245,81 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	return errors.Forbidden("forbidden", defaultMessage)
 }
 
+// projectsAllowing reports, per project ID, whether the caller may perform op
+// on it. It answers for a whole listing in one pass, so a client does not have
+// to offer an action that would be refused the moment it is taken.
+//
+// It mirrors the two checks the operation itself would face. First the
+// API-level one in the authz middleware, against the caller's organization
+// role. Then, when RBAC applies, authorizeResource: a caller can hold several
+// roles on the same project, directly and through products, and any one of them
+// granting the permission is enough. Each distinct role is enforced once, not
+// once per project.
+func (s *service) projectsAllowing(ctx context.Context, op *authz.Policy, projects []*biz.Project) (map[uuid.UUID]bool, error) {
+	allowed := make(map[uuid.UUID]bool, len(projects))
+
+	// The organization role gates every path, so a role without the permission
+	// allows nothing. An organization viewer, for instance, may list projects
+	// but not create a workflow in any of them. Administrators skip the policy
+	// check here for the same reason the middleware skips it: their policies are
+	// not spelled out in full yet.
+	subject := usercontext.CurrentAuthzSubject(ctx)
+	if !authz.Role(subject).IsAdmin() {
+		orgAllows, err := s.authz.Enforce(ctx, subject, op)
+		if err != nil {
+			return nil, err
+		}
+
+		if !orgAllows {
+			return allowed, nil
+		}
+	}
+
+	// The organization role carries the permission and RBAC does not narrow it
+	// per project, so every visible project is fair game.
+	if !rbacEnabled(ctx) {
+		for _, p := range projects {
+			allowed[p.ID] = true
+		}
+
+		return allowed, nil
+	}
+
+	// An API token is scoped to a single project, and reaching here means the
+	// API-level check already accepted the operation for it.
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		for _, p := range projects {
+			allowed[p.ID] = token.ProjectID != nil && *token.ProjectID == p.ID
+		}
+
+		return allowed, nil
+	}
+
+	// roleGrants caches the enforcer's answer per role, so a caller with many
+	// project memberships still enforces each distinct role only once.
+	roleGrants := make(map[authz.Role]bool)
+	for _, rm := range entities.CurrentMembership(ctx).Resources {
+		if rm.ResourceType != authz.ResourceTypeProject {
+			continue
+		}
+
+		if _, seen := roleGrants[rm.Role]; !seen {
+			grants, err := s.authz.Enforce(ctx, string(rm.Role), op)
+			if err != nil {
+				return nil, err
+			}
+
+			roleGrants[rm.Role] = grants
+		}
+
+		if roleGrants[rm.Role] {
+			allowed[rm.ResourceID] = true
+		}
+	}
+
+	return allowed, nil
+}
+
 // userHasPermissionOnProject is a helper method that checks if a policy can be applied to a project. It looks for a project
 // by name in the given organization and ensures that the user has a role that allows that specific operation in the project.
 // check authorizeResource method
@@ -275,20 +350,7 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 }
 
 func (s *service) userCanCreateProject(ctx context.Context) error {
-	// admins always can create projects
-	if !rbacEnabled(ctx) {
-		return nil
-	}
-
-	// Only org tokens can create projects
-	if token := entities.CurrentAPIToken(ctx); token != nil {
-		if token.ProjectID != nil {
-			return errors.Forbidden("unauthorized", "you are not allowed to create projects")
-		}
-	}
-
-	orgRole := usercontext.CurrentAuthzSubject(ctx)
-	pass, err := s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
+	pass, err := s.canCreateProject(ctx)
 	if err != nil {
 		return handleUseCaseErr(err, s.log)
 	}
@@ -298,6 +360,33 @@ func (s *service) userCanCreateProject(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// canCreateProject reports what userCanCreateProject enforces, so a listing can
+// tell a client whether creating one is worth offering. The two must answer
+// alike: an option that the create call then refuses is the dead end the answer
+// exists to avoid. Its error is raw, for the caller to convert at the boundary.
+func (s *service) canCreateProject(ctx context.Context) (bool, error) {
+	if !rbacEnabled(ctx) {
+		// An API token outside RBAC acts for the whole organization.
+		if token := entities.CurrentAPIToken(ctx); token != nil {
+			return true, nil
+		}
+
+		// The roles outside RBAC are the administrators and the organization
+		// viewer, and only the former may create anything. Answering yes for a
+		// viewer would offer an option the API-level check refuses.
+		return authz.Role(usercontext.CurrentAuthzSubject(ctx)).IsAdmin(), nil
+	}
+
+	// Only org tokens can create projects
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID != nil {
+		return false, nil
+	}
+
+	orgRole := usercontext.CurrentAuthzSubject(ctx)
+
+	return s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
 }
 
 // visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)

@@ -34,8 +34,10 @@ type fakeTraceWorkflowAPI struct {
 	viewResult *WorkflowItem
 	viewErr    error
 
-	contractFound bool
-	contractErr   error
+	// contract is what the lookup finds, nil when the organization does not
+	// have one by that name.
+	contract    *WorkflowContractItem
+	contractErr error
 
 	createErr error
 
@@ -48,9 +50,23 @@ func (f *fakeTraceWorkflowAPI) viewWorkflow(_ context.Context, _, _ string) (*Wo
 	return f.viewResult, f.viewErr
 }
 
-func (f *fakeTraceWorkflowAPI) contractExists(_ context.Context, _ string) (bool, error) {
+func (f *fakeTraceWorkflowAPI) findContract(_ context.Context, _ string) (*WorkflowContractItem, error) {
 	f.contractCalls++
-	return f.contractFound, f.contractErr
+	return f.contract, f.contractErr
+}
+
+// globalContract is a contract the whole organization can attach.
+func globalContract(name string) *WorkflowContractItem {
+	return &WorkflowContractItem{Name: name}
+}
+
+// projectContract is a contract scoped to a single project, which the control
+// plane refuses to attach to a workflow in any other one.
+func projectContract(name, project string) *WorkflowContractItem {
+	return &WorkflowContractItem{
+		Name:         name,
+		ScopedEntity: &ScopedEntity{Type: "project", Name: project},
+	}
 }
 
 // defaultContract stands in for the empty contract the control plane creates
@@ -106,7 +122,7 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 		},
 		{
 			name:             "missing workflow with an existing contract is created attached to it",
-			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contractFound: true},
+			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contract: globalContract(contract)},
 			opts:             EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: contract},
 			wantCreated:      true,
 			wantContract:     contract,
@@ -133,6 +149,39 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 			wantCreateCall:   true,
 		},
 		{
+			// The shipped contract is picked by name, so an unrelated contract of
+			// the user's own that happens to carry it, scoped to another project,
+			// must not be attached: the control plane refuses it outright.
+			name:             "a contract scoped to another project is not used",
+			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contract: projectContract(contract, "another-project")},
+			opts:             EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: contract},
+			wantCreated:      true,
+			wantContract:     defaultContract,
+			wantContractCall: true,
+			wantCreateCall:   true,
+		},
+		{
+			// Scoped to the project being created in, it is the contract that
+			// project is meant to use.
+			name:             "a contract scoped to this project is used",
+			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contract: projectContract(contract, project)},
+			opts:             EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: contract},
+			wantCreated:      true,
+			wantContract:     contract,
+			wantContractCall: true,
+			wantCreateCall:   true,
+			wantCreatedWith:  contract,
+		},
+		{
+			// Asked for by name, so it is reported rather than silently swapped
+			// for the default, and before the control plane refuses it.
+			name:             "a required contract scoped to another project fails",
+			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contract: projectContract(contract, "another-project")},
+			opts:             EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: contract, ContractRequired: true},
+			wantErr:          `is scoped to project "another-project"`,
+			wantContractCall: true,
+		},
+		{
 			name:             "a required contract that does not exist fails",
 			api:              &fakeTraceWorkflowAPI{viewErr: notFound},
 			opts:             EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: "typo", ContractRequired: true},
@@ -156,7 +205,7 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 		},
 		{
 			name:             "a workflow created concurrently is not an error",
-			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contractFound: true, createErr: status.Error(codes.AlreadyExists, "already exists")},
+			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contract: globalContract(contract), createErr: status.Error(codes.AlreadyExists, "already exists")},
 			opts:             EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: contract},
 			wantContractCall: true,
 			wantCreateCall:   true,
@@ -176,7 +225,7 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 		},
 		{
 			name:             "a create failure fails",
-			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contractFound: true, createErr: denied},
+			api:              &fakeTraceWorkflowAPI{viewErr: notFound, contract: globalContract(contract), createErr: denied},
 			opts:             EnsureTraceWorkflowOpts{ProjectName: project, WorkflowName: workflow, ContractName: contract},
 			wantErr:          forbidden,
 			wantContractCall: true,
@@ -236,7 +285,7 @@ func TestEnsureTraceWorkflow(t *testing.T) {
 		for name, api := range map[string]*fakeTraceWorkflowAPI{
 			"on view":     {viewErr: authErr},
 			"on contract": {viewErr: notFound, contractErr: authErr},
-			"on create":   {viewErr: notFound, contractFound: true, createErr: authErr},
+			"on create":   {viewErr: notFound, contract: globalContract(contract), createErr: authErr},
 		} {
 			t.Run(name, func(t *testing.T) {
 				_, err := ensureTraceWorkflow(context.Background(), api, zerolog.Nop(),

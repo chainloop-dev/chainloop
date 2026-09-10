@@ -151,6 +151,7 @@ var (
 	PolicyWorkflowDelete = &Policy{ResourceWorkflow, ActionDelete}
 	// Projects
 	PolicyProjectCreate = &Policy{ResourceProject, ActionCreate}
+	PolicyProjectList   = &Policy{ResourceProject, ActionList}
 
 	// Organization
 	PolicyOrganizationCreate = &Policy{Organization, ActionCreate}
@@ -237,6 +238,8 @@ var RolesMap = map[Role][]*Policy{
 		// Workflow
 		PolicyWorkflowList,
 		PolicyWorkflowRead,
+		// Project
+		PolicyProjectList,
 		// Organization
 		PolicyOrganizationRead,
 
@@ -258,6 +261,9 @@ var RolesMap = map[Role][]*Policy{
 		PolicyWorkflowCreate,
 		PolicyWorkflowUpdate,
 		PolicyWorkflowDelete,
+
+		// Listing projects is RBAC-filtered to the ones the contributor can see
+		PolicyProjectList,
 
 		PolicyWorkflowRunList,
 		PolicyWorkflowRunRead,
@@ -433,6 +439,7 @@ var ServerOperationsMap = map[string]*OperationPolicy{
 	"/controlplane.v1.GroupService/UpdateMemberMaintainerStatus": {},
 
 	// Project Memberships
+	"/controlplane.v1.ProjectService/List":                   {Policies: []*Policy{PolicyProjectList}},
 	"/controlplane.v1.ProjectService/ListMembers":            {Policies: []*Policy{PolicyProjectListMemberships}},
 	"/controlplane.v1.ProjectService/AddMember":              {Policies: []*Policy{PolicyProjectAddMemberships}},
 	"/controlplane.v1.ProjectService/RemoveMember":           {Policies: []*Policy{PolicyProjectRemoveMemberships}},

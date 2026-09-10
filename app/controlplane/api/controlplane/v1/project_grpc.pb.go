@@ -34,6 +34,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	ProjectService_List_FullMethodName                   = "/controlplane.v1.ProjectService/List"
 	ProjectService_ListMembers_FullMethodName            = "/controlplane.v1.ProjectService/ListMembers"
 	ProjectService_AddMember_FullMethodName              = "/controlplane.v1.ProjectService/AddMember"
 	ProjectService_RemoveMember_FullMethodName           = "/controlplane.v1.ProjectService/RemoveMember"
@@ -45,6 +46,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProjectServiceClient interface {
+	// List the projects of the current organization that the caller can see
+	List(ctx context.Context, in *ProjectServiceListRequest, opts ...grpc.CallOption) (*ProjectServiceListResponse, error)
 	// Project membership management
 	ListMembers(ctx context.Context, in *ProjectServiceListMembersRequest, opts ...grpc.CallOption) (*ProjectServiceListMembersResponse, error)
 	AddMember(ctx context.Context, in *ProjectServiceAddMemberRequest, opts ...grpc.CallOption) (*ProjectServiceAddMemberResponse, error)
@@ -59,6 +62,15 @@ type projectServiceClient struct {
 
 func NewProjectServiceClient(cc grpc.ClientConnInterface) ProjectServiceClient {
 	return &projectServiceClient{cc}
+}
+
+func (c *projectServiceClient) List(ctx context.Context, in *ProjectServiceListRequest, opts ...grpc.CallOption) (*ProjectServiceListResponse, error) {
+	out := new(ProjectServiceListResponse)
+	err := c.cc.Invoke(ctx, ProjectService_List_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *projectServiceClient) ListMembers(ctx context.Context, in *ProjectServiceListMembersRequest, opts ...grpc.CallOption) (*ProjectServiceListMembersResponse, error) {
@@ -110,6 +122,8 @@ func (c *projectServiceClient) ListPendingInvitations(ctx context.Context, in *P
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility
 type ProjectServiceServer interface {
+	// List the projects of the current organization that the caller can see
+	List(context.Context, *ProjectServiceListRequest) (*ProjectServiceListResponse, error)
 	// Project membership management
 	ListMembers(context.Context, *ProjectServiceListMembersRequest) (*ProjectServiceListMembersResponse, error)
 	AddMember(context.Context, *ProjectServiceAddMemberRequest) (*ProjectServiceAddMemberResponse, error)
@@ -123,6 +137,9 @@ type ProjectServiceServer interface {
 type UnimplementedProjectServiceServer struct {
 }
 
+func (UnimplementedProjectServiceServer) List(context.Context, *ProjectServiceListRequest) (*ProjectServiceListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
 func (UnimplementedProjectServiceServer) ListMembers(context.Context, *ProjectServiceListMembersRequest) (*ProjectServiceListMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMembers not implemented")
 }
@@ -149,6 +166,24 @@ type UnsafeProjectServiceServer interface {
 
 func RegisterProjectServiceServer(s grpc.ServiceRegistrar, srv ProjectServiceServer) {
 	s.RegisterService(&ProjectService_ServiceDesc, srv)
+}
+
+func _ProjectService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectServiceListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_List_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).List(ctx, req.(*ProjectServiceListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ProjectService_ListMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -248,6 +283,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "controlplane.v1.ProjectService",
 	HandlerType: (*ProjectServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "List",
+			Handler:    _ProjectService_List_Handler,
+		},
 		{
 			MethodName: "ListMembers",
 			Handler:    _ProjectService_ListMembers_Handler,
