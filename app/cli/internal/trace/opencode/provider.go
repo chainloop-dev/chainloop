@@ -164,12 +164,14 @@ func (p *Provider) SystemMessage(_ string) error {
 	return nil
 }
 
-// AnnounceToUser is a no-op for OpenCode until its plugin's response shape
-// for surfacing a message is verified against a live session, the way Claude
-// Code's was. The hook after a shell command already fires, so wiring this up
-// later is a change to this method alone.
+// AnnounceToUser is unsupported for OpenCode until its plugin's response
+// shape for surfacing a message is verified against a live session, the way
+// Claude Code's was. The hook after a shell command already fires, so wiring
+// this up later is a change to this method alone. Reporting it as
+// unsupported rather than silently succeeding keeps callers from discarding
+// content this agent never showed anyone.
 func (p *Provider) AnnounceToUser(_ string) error {
-	return nil
+	return trace.ErrAnnounceUnsupported
 }
 
 // ParseSession reads the copied export JSON for sessionID and returns

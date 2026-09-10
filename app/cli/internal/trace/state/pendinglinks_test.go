@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTakePendingLinks(t *testing.T) {
+func TestPendingLinks(t *testing.T) {
 	links := []string{
 		"https://app.chainloop.dev/u/chainloop/sessions/ses_1",
 		"https://app.chainloop.dev/u/chainloop/sessions/ses_2",
@@ -73,11 +73,15 @@ func TestTakePendingLinks(t *testing.T) {
 				ageRecord(t, store, tc.age)
 			}
 
-			got := store.TakePendingLinks()
+			got := store.PendingLinks()
 			assert.Equal(t, tc.want, got)
 
-			// Whatever the outcome, nothing is left behind to announce twice.
-			assert.Empty(t, store.TakePendingLinks(), "links must be consumed exactly once")
+			// Reading does not consume: a caller that turns out to be unable
+			// to show them must leave them for one that can.
+			assert.Equal(t, tc.want, store.PendingLinks(), "reading must not consume")
+
+			require.NoError(t, store.ClearPendingLinks())
+			assert.Empty(t, store.PendingLinks(), "clearing must consume")
 		})
 	}
 }
@@ -113,16 +117,16 @@ func TestPendingLinksSurviveWipe(t *testing.T) {
 
 	require.NoError(t, store.WipeTraceDir())
 
-	assert.Equal(t, links, store.TakePendingLinks(), "links must outlive the post-push wipe")
+	assert.Equal(t, links, store.PendingLinks(), "links must outlive the post-push wipe")
 }
 
-func TestTakePendingLinksIgnoresCorruptRecord(t *testing.T) {
+func TestPendingLinksIgnoresCorruptRecord(t *testing.T) {
 	store := NewGitStore(t.TempDir())
 	require.NoError(t, store.InitTraceDir())
 
 	path := filepath.Join(store.traceDirPath(), pendingLinksFile)
 	require.NoError(t, os.WriteFile(path, []byte("{not json"), 0o600))
 
-	assert.Empty(t, store.TakePendingLinks(), "a corrupt record must not surface links")
+	assert.Empty(t, store.PendingLinks(), "a corrupt record must not surface links")
 	assert.NoFileExists(t, path, "a corrupt record must still be cleared")
 }

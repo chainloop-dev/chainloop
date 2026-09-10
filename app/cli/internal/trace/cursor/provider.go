@@ -100,11 +100,11 @@ func (p *Provider) SystemMessage(_ string) error {
 	return nil
 }
 
-// AnnounceToUser is a no-op for Cursor: it installs only sessionStart,
+// AnnounceToUser is unsupported for Cursor: it installs only sessionStart,
 // sessionEnd and afterFileEdit, so no hook fires after a shell command and
 // there is nowhere to deliver the message.
 func (p *Provider) AnnounceToUser(_ string) error {
-	return nil
+	return trace.ErrAnnounceUnsupported
 }
 
 // CaptureFileSnapshot is a no-op for Cursor: the afterFileEdit hook

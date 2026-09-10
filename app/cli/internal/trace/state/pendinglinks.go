@@ -64,32 +64,40 @@ func (s *Store) SavePendingLinks(links []string) error {
 	return os.WriteFile(filepath.Join(base, pendingLinksFile), data, 0o600)
 }
 
-// TakePendingLinks returns the recorded session links and clears the record,
-// so a link is announced at most once. It returns nil when there is nothing
-// recorded, when the record has expired, or when it cannot be read: this
-// feeds a cosmetic notification, and no failure here is worth surfacing to
-// the caller, let alone failing an agent's tool call over.
+// PendingLinks returns the recorded session links without consuming them, so
+// a caller that turns out to be unable to show them leaves them for whoever
+// can. Call ClearPendingLinks once they have actually been shown.
 //
-// The record is cleared even when it could not be parsed, so a corrupt file
-// does not wedge the mechanism for every later push.
-func (s *Store) TakePendingLinks() []string {
+// It returns nil when there is nothing recorded, when the record has expired,
+// or when it cannot be read: this feeds a cosmetic notification, and no
+// failure here is worth surfacing to the caller, let alone failing an agent's
+// tool call over. An unreadable or expired record is cleared on the spot,
+// since nobody will ever be able to use it and a corrupt file would otherwise
+// wedge the mechanism for every later push.
+func (s *Store) PendingLinks() []string {
 	path := filepath.Join(s.traceDirPath(), pendingLinksFile)
 
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil
 	}
-	_ = removeIfExists(path)
 
 	var rec pendingLinks
 	if err := json.Unmarshal(data, &rec); err != nil {
+		_ = removeIfExists(path)
 		return nil
 	}
 
 	savedAt, err := time.Parse(time.RFC3339, rec.SavedAt)
 	if err != nil || time.Since(savedAt) > pendingLinksTTL {
+		_ = removeIfExists(path)
 		return nil
 	}
 
 	return rec.Links
+}
+
+// ClearPendingLinks drops the record, so its links are shown at most once.
+func (s *Store) ClearPendingLinks() error {
+	return removeIfExists(filepath.Join(s.traceDirPath(), pendingLinksFile))
 }

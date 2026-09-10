@@ -182,7 +182,7 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 // nor a provider that cannot deliver one is worth failing an agent's tool
 // call over.
 func notifyPendingSessionLinks(provider trace.Provider, store *state.Store, log zerolog.Logger) {
-	links := store.TakePendingLinks()
+	links := store.PendingLinks()
 	if len(links) == 0 {
 		return
 	}
@@ -193,8 +193,25 @@ func notifyPendingSessionLinks(provider trace.Provider, store *state.Store, log 
 		lines = append(lines, sessionLinkMessage(link))
 	}
 
-	if err := provider.AnnounceToUser(strings.Join(lines, "\n")); err != nil {
+	err := provider.AnnounceToUser(strings.Join(lines, "\n"))
+	if errors.Is(err, trace.ErrAnnounceUnsupported) {
+		// This agent has no way to show them, so leave them for one that
+		// might. Their expiry bounds how long they can linger.
+		log.Debug().Msg("agent cannot show messages; leaving the session links for later")
+
+		return
+	}
+
+	// Any other outcome consumed the attempt, success or not. Clearing on a
+	// failed delivery is deliberate: retrying on every later shell command
+	// would nag far longer than one dropped notification costs.
+	if clearErr := store.ClearPendingLinks(); clearErr != nil {
+		log.Debug().Err(clearErr).Msg("could not clear the recorded session links")
+	}
+
+	if err != nil {
 		log.Debug().Err(err).Msg("could not surface session links through the agent")
+
 		return
 	}
 
