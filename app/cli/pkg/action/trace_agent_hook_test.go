@@ -122,7 +122,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		})
 
 		assert.Contains(t, stdout, `"systemMessage"`)
-		assert.Contains(t, stdout, "This session will be attested by Chainloop")
+		assert.Contains(t, stdout, "Chainloop Trace is recording this session.")
 	})
 
 	t.Run("ignores malformed stdin", func(t *testing.T) {

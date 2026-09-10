@@ -17,11 +17,18 @@ package trace
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
+
+// ErrAnnounceUnsupported is returned by AnnounceToUser when the agent has no
+// channel for showing the user a message. It means nothing was displayed, as
+// opposed to a delivery that was attempted and failed, so a caller holding
+// single-use content can keep it rather than throw it away unseen.
+var ErrAnnounceUnsupported = errors.New("agent cannot show messages to the user")
 
 // Provider discovers and parses AI coding sessions for a specific agent.
 //
@@ -97,6 +104,22 @@ type Provider interface {
 
 	// SystemMessage writes a message to stdout for the agent to display on session start.
 	SystemMessage(msg string) error
+
+	// SupportsSystemMessage reports whether SystemMessage reaches the user
+	// rather than being discarded. Callers check it before assembling a
+	// message that costs something to produce, since for agents without
+	// such a channel that work buys nothing.
+	SupportsSystemMessage() bool
+
+	// AnnounceToUser writes a hook response to stdout so the agent puts msg
+	// in front of the user, after a shell command the agent ran. Which
+	// channel that uses is the provider's business: agents differ in whether
+	// they render text directly, relay it through the model, or both.
+	//
+	// Providers with no way to reach the user return ErrAnnounceUnsupported,
+	// so callers can tell "shown" apart from "nothing happened" and avoid
+	// discarding a message nobody saw.
+	AnnounceToUser(msg string) error
 }
 
 // HookInput represents parsed hook invocation data from an AI agent.

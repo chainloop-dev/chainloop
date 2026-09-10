@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,6 +42,16 @@ const (
 
 	// defaultAttestationStateFile is the default file name for local attestation state.
 	defaultAttestationStateFile = "chainloop-attestation.tmp.json"
+
+	// dashboardURLTimeout bounds an Infoz lookup made while a person waits on
+	// a command they ran themselves.
+	dashboardURLTimeout = 5 * time.Second
+
+	// hookDashboardURLTimeout is the tighter bound for the same lookup inside
+	// an agent hook, where the wait sits between the developer and their
+	// first prompt. Missing the banner's destination line costs far less than
+	// a visible stall, so this gives up quickly.
+	hookDashboardURLTimeout = 2 * time.Second
 )
 
 // AttestationStatePath returns the resolved path for local attestation state.
@@ -175,14 +186,19 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 	return casBackendInfo, artifactCASConn.Close, nil
 }
 
-// fetchUIDashboardURL retrieves the UI Dashboard URL from the control plane
-// Returns empty string if not configured or if fetch fails
-func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) string {
+// fetchUIDashboardURL retrieves the UI Dashboard URL from the control plane.
+// Returns empty string if not configured or if the fetch fails, so callers
+// can treat "no dashboard" and "could not ask" the same way.
+//
+// The caller chooses the timeout, because the acceptable wait depends on
+// where this runs: a person waiting on `workflow run describe` will tolerate
+// far more than an agent hook holding up someone's first prompt.
+func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn, timeout time.Duration) string {
 	if cpConnection == nil {
 		return ""
 	}
 
-	tmoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	tmoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	client := pb.NewStatusServiceClient(cpConnection)
@@ -194,14 +210,32 @@ func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) str
 	return resp.UiDashboardUrl
 }
 
-// buildAttestationViewURL constructs the attestation view URL
-// Returns empty string if platformURL is not configured
-func buildAttestationViewURL(uiDashboardURL, orgName, digest string) string {
-	if uiDashboardURL == "" || digest == "" {
+// buildDashboardURL constructs a link to a resource page in the web dashboard,
+// of the form <base>/u/<org>/<section>/<id>. It returns an empty string when
+// the deployment has no dashboard configured or the resource has no ID, which
+// is how callers decide whether to show a link at all. The organization and ID
+// are path-escaped, since an ID may be an opaque string chosen elsewhere.
+func buildDashboardURL(uiDashboardURL, orgName, section, id string) string {
+	if uiDashboardURL == "" || id == "" {
 		return ""
 	}
 
 	// Trim trailing slash from platform URL if present
 	uiDashboardURL = strings.TrimRight(uiDashboardURL, "/")
-	return fmt.Sprintf("%s/u/%s/workflow-runs/%s", uiDashboardURL, orgName, digest)
+
+	return fmt.Sprintf("%s/u/%s/%s/%s", uiDashboardURL, url.PathEscape(orgName), section, url.PathEscape(id))
+}
+
+// buildAttestationViewURL constructs the attestation view URL
+// Returns empty string if platformURL is not configured
+func buildAttestationViewURL(uiDashboardURL, orgName, digest string) string {
+	return buildDashboardURL(uiDashboardURL, orgName, "workflow-runs", digest)
+}
+
+// buildSessionViewURL constructs the URL of an AI coding session's detail page.
+// sessionID is the agent's own session ID (Claude Code, Cursor, OpenCode); the
+// dashboard resolves a session by that identifier as well as by its Chainloop
+// UUID.
+func buildSessionViewURL(uiDashboardURL, orgName, sessionID string) string {
+	return buildDashboardURL(uiDashboardURL, orgName, "sessions", sessionID)
 }

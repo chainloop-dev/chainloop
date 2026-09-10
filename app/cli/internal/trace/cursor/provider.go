@@ -100,6 +100,19 @@ func (p *Provider) SystemMessage(_ string) error {
 	return nil
 }
 
+// SupportsSystemMessage is false for Cursor, so callers skip the cost of
+// composing a message that SystemMessage would drop.
+func (p *Provider) SupportsSystemMessage() bool {
+	return false
+}
+
+// AnnounceToUser is unsupported for Cursor: it installs only sessionStart,
+// sessionEnd and afterFileEdit, so no hook fires after a shell command and
+// there is nowhere to deliver the message.
+func (p *Provider) AnnounceToUser(_ string) error {
+	return trace.ErrAnnounceUnsupported
+}
+
 // CaptureFileSnapshot is a no-op for Cursor: the afterFileEdit hook
 // delivers old/new strings directly, so no pre-edit snapshot is needed.
 func (p *Provider) CaptureFileSnapshot(_ *state.Store, _ *trace.HookInput) error {

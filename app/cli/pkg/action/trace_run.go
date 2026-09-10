@@ -189,14 +189,15 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 	log.Debug().Msg("wrapped command completed; attesting session")
 
 	return RunTracePush(ctx, log, RunTracePushOpts{
-		AllowEmpty:     true,
-		ProjectName:    opts.ProjectName,
-		Organization:   opts.Organization,
-		WorkflowName:   opts.WorkflowName,
-		ProjectVersion: opts.ProjectVersion,
-		IgnoreYAML:     true,
-		ActionOpts:     opts.ActionOpts,
-		CLIVersion:     opts.CLIVersion,
+		AllowEmpty:            true,
+		ProjectName:           opts.ProjectName,
+		Organization:          opts.Organization,
+		WorkflowName:          opts.WorkflowName,
+		ProjectVersion:        opts.ProjectVersion,
+		IgnoreYAML:            true,
+		SkipAgentNotification: true,
+		ActionOpts:            opts.ActionOpts,
+		CLIVersion:            opts.CLIVersion,
 	})
 }
 

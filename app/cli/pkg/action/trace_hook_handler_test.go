@@ -16,6 +16,8 @@
 package action
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -689,4 +691,87 @@ func requireFileAttribution(t *testing.T, changes *aicodingsession.CodeChanges, 
 		return
 	}
 	require.Failf(t, "file not found in CodeChanges", "%s (got %v)", path, changes.Files)
+}
+
+// sessionLogEntry is the subset of a logAttestedSessions log line under test.
+type sessionLogEntry struct {
+	Session string `json:"session"`
+	Message string `json:"message"`
+}
+
+func TestLogAttestedSessions(t *testing.T) {
+	// Deliberately not testOrgName: an organization that differs from the one
+	// used elsewhere, and that changes under escaping, proves the logged URL
+	// is built from the argument rather than from any incidental value.
+	const (
+		orgName    = "acme corp"
+		orgInPath  = "acme%20corp"
+		sessionURL = testDashboardURL + "/u/" + orgInPath + "/sessions/"
+		linkPrefix = "Coding Session Available at "
+	)
+
+	testCases := []struct {
+		name           string
+		uiDashboardURL string
+		orgName        string
+		sessionIDs     []string
+		want           []sessionLogEntry
+	}{
+		{
+			name:           "one line per session, each linked to the given org",
+			uiDashboardURL: testDashboardURL,
+			orgName:        orgName,
+			sessionIDs:     []string{testSessionID, "ses_2"},
+			want: []sessionLogEntry{
+				{Message: linkPrefix + sessionURL + testSessionID},
+				{Message: linkPrefix + sessionURL + "ses_2"},
+			},
+		},
+		{
+			name:           "no dashboard still confirms the session, without a link",
+			uiDashboardURL: "",
+			orgName:        orgName,
+			sessionIDs:     []string{testSessionID},
+			want:           []sessionLogEntry{{Session: testSessionID, Message: "Coding session attested"}},
+		},
+		{
+			name:           "no sessions logs nothing",
+			uiDashboardURL: testDashboardURL,
+			orgName:        orgName,
+			sessionIDs:     nil,
+			want:           nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			log := zerolog.New(&buf).Level(zerolog.InfoLevel)
+
+			gotLinks := logAttestedSessions(log, tc.uiDashboardURL, tc.orgName, tc.sessionIDs)
+
+			// The returned links are what gets handed to the agent hook, so
+			// they must match the links that were logged, and nothing is
+			// returned when there is no dashboard to link to.
+			wantLinks := []string{}
+			for _, w := range tc.want {
+				if link, found := strings.CutPrefix(w.Message, linkPrefix); found {
+					wantLinks = append(wantLinks, link)
+				}
+			}
+			assert.Equal(t, wantLinks, gotLinks)
+
+			var got []sessionLogEntry
+			for line := range strings.SplitSeq(strings.TrimSpace(buf.String()), "\n") {
+				if line == "" {
+					continue
+				}
+				var entry sessionLogEntry
+				require.NoError(t, json.Unmarshal([]byte(line), &entry))
+				got = append(got, entry)
+			}
+
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }

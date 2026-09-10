@@ -285,6 +285,11 @@ type RunTracePushOpts struct {
 	// only on CLI flags. Pre-push hook callers leave it false to keep
 	// reading the repo config.
 	IgnoreYAML bool
+	// SkipAgentNotification suppresses recording session links for an agent
+	// hook to show later. `trace run` sets it: it reaches the push only
+	// after the agent it wrapped has exited, so no hook of that agent can
+	// fire again, and its own terminal already showed the links.
+	SkipAgentNotification bool
 
 	// ActionOpts is the root command's initialized options, used to build
 	// the attestation executor. Required: the push cannot run without it.
@@ -553,18 +558,18 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	log.Debug().Str("attestation_id", attestationID).Msg("attestation initialized")
 
 	// Add evidence for each session
-	var addedCount int
+	attestedSessions := make([]string, 0, len(evidenceFiles))
 	for _, ef := range evidenceFiles {
 		name := evidenceName(ef.sessionID)
 		if err := executor.AddEvidence(ctx, name, ef.tmpPath); err != nil {
 			log.Debug().Err(err).Str("session", ef.sessionID).Msg("could not add evidence")
 			continue
 		}
-		addedCount++
+		attestedSessions = append(attestedSessions, ef.sessionID)
 		log.Debug().Str("session", ef.sessionID).Str("name", name).Msg("evidence added")
 	}
 
-	if addedCount == 0 {
+	if len(attestedSessions) == 0 {
 		log.Debug().Msg("no evidence successfully added, resetting attestation")
 		_ = executor.Reset(ctx, "trace-push", "no CHAINLOOP_AI_CODING_SESSION evidence added")
 
@@ -573,8 +578,30 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	// Push attestation
 	log.Debug().Msg("pushing attestation")
-	if err := executor.Push(ctx); err != nil {
+	res, err := executor.Push(ctx)
+	if err != nil {
 		return fmt.Errorf("attestation push: %w", err)
+	}
+
+	// Tell the user where each session landed. The organization comes from the
+	// control plane rather than opts.Organization, which is empty whenever the
+	// CLI's current org is used.
+	links := logAttestedSessions(log, res.UIDashboardURL, res.GetOrganization(), attestedSessions)
+
+	// Hand the links to the agent hook that runs after this push. When the
+	// push was driven by a coding agent's shell tool, the log line above is
+	// captured into that tool's output rather than shown to the user, so the
+	// hook is what actually puts the link in front of them. A failure here
+	// costs a notification, never the attestation that already succeeded.
+	//
+	// The caller tells us whether to skip, rather than us inferring it from
+	// on-disk state: the trace-run sentinel outlives a killed run, and
+	// reading it here would silently suppress every later notification in
+	// that repository.
+	if opts.SkipAgentNotification {
+		log.Debug().Msg("caller already showed the links; not recording them for an agent hook")
+	} else if err := store.SavePendingLinks(links); err != nil {
+		log.Debug().Err(err).Msg("could not record session links for the agent hook")
 	}
 
 	log.Debug().Msg("attestation pushed, wiping single-use trace state")
@@ -603,6 +630,35 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	}
 
 	return nil
+}
+
+// logAttestedSessions reports one line per attested session. When the
+// deployment has a UI dashboard configured the line points at the session's
+// page, with the link inline so it reads as a sentence and stays clickable in
+// a terminal. Without a dashboard the line still names the session, so the
+// user gets confirmation of what was recorded either way.
+// It returns the links it logged, so the caller can hand them to the agent
+// hook that will show them to the user.
+func logAttestedSessions(log zerolog.Logger, uiDashboardURL, orgName string, sessionIDs []string) []string {
+	links := make([]string, 0, len(sessionIDs))
+	for _, id := range sessionIDs {
+		// The link already ends in the session ID, so a session field
+		// alongside it would only repeat itself in the rendered line.
+		if url := buildSessionViewURL(uiDashboardURL, orgName, id); url != "" {
+			log.Info().Msg(sessionLinkMessage(url))
+			links = append(links, url)
+			continue
+		}
+		log.Info().Str("session", id).Msg("Coding session attested")
+	}
+
+	return links
+}
+
+// sessionLinkMessage is the one place the user-facing wording lives, so the
+// pre-push log line and the agent's notification cannot drift apart.
+func sessionLinkMessage(url string) string {
+	return "Coding Session Available at " + url
 }
 
 // evidenceName returns the material name for a session evidence document.

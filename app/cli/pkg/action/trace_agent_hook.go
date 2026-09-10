@@ -16,9 +16,11 @@
 package action
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
@@ -55,6 +57,44 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 	return nil
 }
 
+// sessionStartBanner is what the developer sees at the top of a traced
+// session. Its audience includes someone who cloned the repository and never
+// ran init, so it says what is happening in plain words and, when we know it,
+// where the evidence goes. Chainloop's own vocabulary is deliberately absent:
+// "attested" does not tell a newcomer whether something is recorded,
+// uploaded, or signed, let alone to where.
+//
+// Each fact is dropped rather than guessed at when it is unknown, so the
+// banner never promises a destination that was not confirmed.
+func sessionStartBanner(dashboardURL, org, project string) string {
+	var identity []string
+	if org != "" {
+		identity = append(identity, "organization: "+org)
+	}
+	if project != "" {
+		identity = append(identity, "project: "+project)
+	}
+	where := strings.Join(identity, ", ")
+
+	// Destination and identity share a line, since they answer one question
+	// between them: where this is going. The space before the parenthesis
+	// matters, as it is what lets a terminal linkify the URL without
+	// swallowing the punctuation that follows it.
+	switch {
+	case dashboardURL != "" && where != "":
+		where = "Evidence will be sent to " + strings.TrimRight(dashboardURL, "/") + " (" + where + ")"
+	case dashboardURL != "":
+		where = "Evidence will be sent to " + strings.TrimRight(dashboardURL, "/")
+	}
+
+	banner := "Chainloop Trace is recording this session."
+	if where != "" {
+		banner += "\n" + where
+	}
+
+	return banner
+}
+
 // HandleAgentSessionStart handles the agent session-start hook.
 func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error {
 	input, err := provider.ReadHookInput(os.Stdin)
@@ -73,11 +113,46 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 
 	ensureSessionTracked(provider, store, repoRoot, input, log)
 
-	if err := provider.SystemMessage("\n\n*** This session will be attested by Chainloop ***"); err != nil {
+	// Composing the banner costs a control-plane round trip, so it is only
+	// worth doing for an agent that can put it in front of the user. Cursor
+	// and opencode would discard it, and the developer would have paid the
+	// wait for nothing.
+	if !provider.SupportsSystemMessage() {
+		return nil
+	}
+
+	banner := sessionStartBanner(
+		hookDashboardURL(log),
+		config.LoadOrganizationFromYML(repoRoot),
+		config.LoadProjectFromYML(repoRoot),
+	)
+
+	if err := provider.SystemMessage("\n\n" + banner + "\n"); err != nil {
 		log.Debug().Err(err).Msg("session-start: failed to send system message")
 	}
 
 	return nil
+}
+
+// hookDashboardURL asks the control plane where its web dashboard lives, so
+// the session banner can name the destination the evidence is bound for.
+// Returns an empty string when there is no dashboard, no reachable control
+// plane, or no time to find out, in which case the banner simply omits the
+// line.
+//
+// This is the one network call the session-start hook makes, and it is
+// deliberately cheap to abandon: Infoz needs no credentials, so no token is
+// loaded, and the timeout is short because a developer waiting to type is a
+// worse cost than a missing line.
+func hookDashboardURL(log zerolog.Logger) string {
+	conn, err := newControlPlaneConnection("", "")
+	if err != nil {
+		log.Debug().Err(err).Msg("session-start: no control plane connection for the banner")
+		return ""
+	}
+	defer func() { _ = conn.Close() }()
+
+	return fetchUIDashboardURL(context.Background(), conn, hookDashboardURLTimeout)
 }
 
 // HandleAgentPreToolUse handles the agent pre-tool-use hook.
@@ -173,6 +248,49 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 	}
 }
 
+// notifyPendingSessionLinks hands any session links left by a just-completed
+// trace push to the agent, so it can put them in front of the user.
+//
+// Best effort throughout: this is a notification, and neither a missing link
+// nor a provider that cannot deliver one is worth failing an agent's tool
+// call over.
+func notifyPendingSessionLinks(provider trace.Provider, store *state.Store, log zerolog.Logger) {
+	links := store.PendingLinks()
+	if len(links) == 0 {
+		return
+	}
+
+	// Same wording as the pre-push log line, so the two channels match.
+	lines := make([]string, 0, len(links))
+	for _, link := range links {
+		lines = append(lines, sessionLinkMessage(link))
+	}
+
+	err := provider.AnnounceToUser(strings.Join(lines, "\n"))
+	if errors.Is(err, trace.ErrAnnounceUnsupported) {
+		// Nothing was shown, so leave the links for an agent that can show
+		// them. Their expiry bounds how long they linger.
+		log.Debug().Msg("agent cannot show messages; leaving the session links for later")
+
+		return
+	}
+
+	if err != nil {
+		log.Debug().Err(err).Msg("could not surface session links through the agent")
+	} else {
+		log.Debug().Int("links", len(links)).Msg("session links handed to the agent")
+	}
+
+	// Success or failure, the attempt is spent: retrying on every later shell
+	// command would nag far longer than one dropped notification costs.
+	//
+	// Announcing before clearing makes this at-least-once by choice. The
+	// agent never acknowledges what it rendered, so exactly-once is not
+	// available at any price, and the other ordering trades a repeated line
+	// for a link nobody ever sees.
+	store.ClearPendingLinks()
+}
+
 // HandleAgentPostToolUse handles post-edit hooks across providers
 // (Claude's post-tool-use, Cursor's afterFileEdit) and records AI-attributed
 // line ranges for the edited file.
@@ -212,6 +330,12 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 		// Shell command: diff the before/after worktree snapshots and attribute
 		// every file the command changed to the AI.
 		recordCommandLineRanges(store, repoRoot, sessionID, log)
+
+		// The command may have been a `git push`, whose pre-push hook attested
+		// a session and left its link behind. Show it now: the pre-push output
+		// went to this tool call's captured stderr, which the user does not
+		// necessarily read.
+		notifyPendingSessionLinks(provider, store, log)
 
 		return nil
 	}
