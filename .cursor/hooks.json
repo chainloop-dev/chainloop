@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "chainloop trace hook cursor after-file-edit",
+        "timeout": 30
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "chainloop trace hook cursor session-end",
+        "timeout": 30
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": "chainloop trace hook cursor session-start",
+        "timeout": 30
+      }
+    ]
+  },
+  "version": 1
+}
