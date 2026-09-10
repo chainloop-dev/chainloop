@@ -553,18 +553,18 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	log.Debug().Str("attestation_id", attestationID).Msg("attestation initialized")
 
 	// Add evidence for each session
-	var addedCount int
+	attestedSessions := make([]string, 0, len(evidenceFiles))
 	for _, ef := range evidenceFiles {
 		name := evidenceName(ef.sessionID)
 		if err := executor.AddEvidence(ctx, name, ef.tmpPath); err != nil {
 			log.Debug().Err(err).Str("session", ef.sessionID).Msg("could not add evidence")
 			continue
 		}
-		addedCount++
+		attestedSessions = append(attestedSessions, ef.sessionID)
 		log.Debug().Str("session", ef.sessionID).Str("name", name).Msg("evidence added")
 	}
 
-	if addedCount == 0 {
+	if len(attestedSessions) == 0 {
 		log.Debug().Msg("no evidence successfully added, resetting attestation")
 		_ = executor.Reset(ctx, "trace-push", "no CHAINLOOP_AI_CODING_SESSION evidence added")
 
@@ -573,9 +573,15 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	// Push attestation
 	log.Debug().Msg("pushing attestation")
-	if err := executor.Push(ctx); err != nil {
+	res, err := executor.Push(ctx)
+	if err != nil {
 		return fmt.Errorf("attestation push: %w", err)
 	}
+
+	// Tell the user where each session landed. The organization comes from the
+	// control plane rather than opts.Organization, which is empty whenever the
+	// CLI's current org is used.
+	logAttestedSessions(log, res.UIDashboardURL, res.GetOrganization(), attestedSessions)
 
 	log.Debug().Msg("attestation pushed, wiping single-use trace state")
 
@@ -603,6 +609,20 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	}
 
 	return nil
+}
+
+// logAttestedSessions reports one line per attested session, carrying a link
+// to the session's page when the deployment has a UI dashboard configured.
+// Without one the line still names the session, so the user gets confirmation
+// of what was recorded either way.
+func logAttestedSessions(log zerolog.Logger, uiDashboardURL, orgName string, sessionIDs []string) {
+	for _, id := range sessionIDs {
+		ev := log.Info().Str("session", id)
+		if url := buildSessionViewURL(uiDashboardURL, orgName, id); url != "" {
+			ev = ev.Str("url", url)
+		}
+		ev.Msg("AI coding session attested")
+	}
 }
 
 // evidenceName returns the material name for a session evidence document.

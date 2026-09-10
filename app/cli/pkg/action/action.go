@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -194,14 +195,32 @@ func fetchUIDashboardURL(ctx context.Context, cpConnection *grpc.ClientConn) str
 	return resp.UiDashboardUrl
 }
 
-// buildAttestationViewURL constructs the attestation view URL
-// Returns empty string if platformURL is not configured
-func buildAttestationViewURL(uiDashboardURL, orgName, digest string) string {
-	if uiDashboardURL == "" || digest == "" {
+// buildDashboardURL constructs a link to a resource page in the web dashboard,
+// of the form <base>/u/<org>/<section>/<id>. It returns an empty string when
+// the deployment has no dashboard configured or the resource has no ID, which
+// is how callers decide whether to show a link at all. The organization and ID
+// are path-escaped, since an ID may be an opaque string chosen elsewhere.
+func buildDashboardURL(uiDashboardURL, orgName, section, id string) string {
+	if uiDashboardURL == "" || id == "" {
 		return ""
 	}
 
 	// Trim trailing slash from platform URL if present
 	uiDashboardURL = strings.TrimRight(uiDashboardURL, "/")
-	return fmt.Sprintf("%s/u/%s/workflow-runs/%s", uiDashboardURL, orgName, digest)
+
+	return fmt.Sprintf("%s/u/%s/%s/%s", uiDashboardURL, url.PathEscape(orgName), section, url.PathEscape(id))
+}
+
+// buildAttestationViewURL constructs the attestation view URL
+// Returns empty string if platformURL is not configured
+func buildAttestationViewURL(uiDashboardURL, orgName, digest string) string {
+	return buildDashboardURL(uiDashboardURL, orgName, "workflow-runs", digest)
+}
+
+// buildSessionViewURL constructs the URL of an AI coding session's detail page.
+// sessionID is the agent's own session ID (Claude Code, Cursor, OpenCode); the
+// dashboard resolves a session by that identifier as well as by its Chainloop
+// UUID.
+func buildSessionViewURL(uiDashboardURL, orgName, sessionID string) string {
+	return buildDashboardURL(uiDashboardURL, orgName, "sessions", sessionID)
 }

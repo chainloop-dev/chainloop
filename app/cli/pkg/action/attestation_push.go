@@ -63,6 +63,20 @@ type AttestationResult struct {
 	Digest   string                   `json:"digest"`
 	Envelope *dsse.Envelope           `json:"envelope"`
 	Status   *AttestationStatusResult `json:"status"`
+	// UIDashboardURL is the base URL of the web dashboard, as reported by the
+	// control plane at attestation init, or empty when the deployment has no
+	// UI configured.
+	UIDashboardURL string `json:"ui_dashboard_url,omitempty"`
+}
+
+// GetOrganization returns the organization the attestation was pushed to as
+// reported by the control plane, or an empty string when unknown. Nil-safe.
+func (r *AttestationResult) GetOrganization() string {
+	if r == nil || r.Status == nil || r.Status.WorkflowMeta == nil {
+		return ""
+	}
+
+	return r.Status.WorkflowMeta.Organization
 }
 
 type AttestationPush struct {
@@ -276,7 +290,8 @@ func (action *AttestationPush) Run(ctx context.Context, attestationID string, ru
 	}
 
 	// Build attestation view URL
-	attestationResult.Status.AttestationViewURL = buildAttestationViewURL(crafter.CraftingState.UiDashboardUrl, workflow.GetOrganization(), attestationResult.Digest)
+	attestationResult.UIDashboardURL = crafter.CraftingState.UiDashboardUrl
+	attestationResult.Status.AttestationViewURL = buildAttestationViewURL(attestationResult.UIDashboardURL, workflow.GetOrganization(), attestationResult.Digest)
 
 	action.Logger.Info().Msg("push completed")
 

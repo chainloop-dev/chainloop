@@ -282,11 +282,12 @@ func (e *AttestationExecutor) Reset(ctx context.Context, trigger, reason string)
 	return nil
 }
 
-// Push finalizes and pushes the attestation.
-func (e *AttestationExecutor) Push(ctx context.Context) error {
+// Push finalizes and pushes the attestation, returning the push result so
+// callers can report where the evidence landed.
+func (e *AttestationExecutor) Push(ctx context.Context) (*AttestationResult, error) {
 	cliVersion, cliDigest, err := e.executableInfo()
 	if err != nil {
-		return fmt.Errorf("resolve executable info: %w", err)
+		return nil, fmt.Errorf("resolve executable info: %w", err)
 	}
 
 	a, err := NewAttestationPush(&AttestationPushOpts{
@@ -299,14 +300,15 @@ func (e *AttestationExecutor) Push(ctx context.Context) error {
 		CLIDigest:          cliDigest,
 	})
 	if err != nil {
-		return fmt.Errorf("create attestation push action: %w", err)
+		return nil, fmt.Errorf("create attestation push action: %w", err)
 	}
 
-	if _, err := a.Run(ctx, "", nil, false); err != nil {
-		return fmt.Errorf("attestation push: %w", err)
+	res, err := a.Run(ctx, "", nil, false)
+	if err != nil {
+		return nil, fmt.Errorf("attestation push: %w", err)
 	}
 
-	return nil
+	return res, nil
 }
 
 // executableInfo returns the CLI version and SHA-256 digest of the running CLI binary
