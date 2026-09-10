@@ -167,9 +167,7 @@ func (p *Provider) SystemMessage(_ string) error {
 // AnnounceToUser is unsupported for OpenCode until its plugin's response
 // shape for surfacing a message is verified against a live session, the way
 // Claude Code's was. The hook after a shell command already fires, so wiring
-// this up later is a change to this method alone. Reporting it as
-// unsupported rather than silently succeeding keeps callers from discarding
-// content this agent never showed anyone.
+// this up later is a change to this method alone.
 func (p *Provider) AnnounceToUser(_ string) error {
 	return trace.ErrAnnounceUnsupported
 }

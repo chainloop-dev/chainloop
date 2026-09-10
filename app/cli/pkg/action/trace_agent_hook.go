@@ -175,8 +175,7 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 }
 
 // notifyPendingSessionLinks hands any session links left by a just-completed
-// trace push to the agent, so it can put them in front of the user. Links are
-// consumed on read, so a link is announced at most once.
+// trace push to the agent, so it can put them in front of the user.
 //
 // Best effort throughout: this is a notification, and neither a missing link
 // nor a provider that cannot deliver one is worth failing an agent's tool
@@ -195,27 +194,27 @@ func notifyPendingSessionLinks(provider trace.Provider, store *state.Store, log 
 
 	err := provider.AnnounceToUser(strings.Join(lines, "\n"))
 	if errors.Is(err, trace.ErrAnnounceUnsupported) {
-		// This agent has no way to show them, so leave them for one that
-		// might. Their expiry bounds how long they can linger.
+		// Nothing was shown, so leave the links for an agent that can show
+		// them. Their expiry bounds how long they linger.
 		log.Debug().Msg("agent cannot show messages; leaving the session links for later")
 
 		return
 	}
 
-	// Any other outcome consumed the attempt, success or not. Clearing on a
-	// failed delivery is deliberate: retrying on every later shell command
-	// would nag far longer than one dropped notification costs.
-	if clearErr := store.ClearPendingLinks(); clearErr != nil {
-		log.Debug().Err(clearErr).Msg("could not clear the recorded session links")
-	}
-
 	if err != nil {
 		log.Debug().Err(err).Msg("could not surface session links through the agent")
-
-		return
+	} else {
+		log.Debug().Int("links", len(links)).Msg("session links handed to the agent")
 	}
 
-	log.Debug().Int("links", len(links)).Msg("session links handed to the agent")
+	// Success or failure, the attempt is spent: retrying on every later shell
+	// command would nag far longer than one dropped notification costs.
+	//
+	// Announcing before clearing makes this at-least-once by choice. The
+	// agent never acknowledges what it rendered, so exactly-once is not
+	// available at any price, and the other ordering trades a repeated line
+	// for a link nobody ever sees.
+	store.ClearPendingLinks()
 }
 
 // HandleAgentPostToolUse handles post-edit hooks across providers

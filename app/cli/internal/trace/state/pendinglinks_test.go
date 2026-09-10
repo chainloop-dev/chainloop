@@ -80,7 +80,7 @@ func TestPendingLinks(t *testing.T) {
 			// to show them must leave them for one that can.
 			assert.Equal(t, tc.want, store.PendingLinks(), "reading must not consume")
 
-			require.NoError(t, store.ClearPendingLinks())
+			store.ClearPendingLinks()
 			assert.Empty(t, store.PendingLinks(), "clearing must consume")
 		})
 	}

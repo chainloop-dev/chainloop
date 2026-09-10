@@ -71,9 +71,8 @@ func (s *Store) SavePendingLinks(links []string) error {
 // It returns nil when there is nothing recorded, when the record has expired,
 // or when it cannot be read: this feeds a cosmetic notification, and no
 // failure here is worth surfacing to the caller, let alone failing an agent's
-// tool call over. An unreadable or expired record is cleared on the spot,
-// since nobody will ever be able to use it and a corrupt file would otherwise
-// wedge the mechanism for every later push.
+// tool call over. A record that is expired or unparseable is dropped on the
+// spot, since nobody can ever use it.
 func (s *Store) PendingLinks() []string {
 	path := filepath.Join(s.traceDirPath(), pendingLinksFile)
 
@@ -98,6 +97,6 @@ func (s *Store) PendingLinks() []string {
 }
 
 // ClearPendingLinks drops the record, so its links are shown at most once.
-func (s *Store) ClearPendingLinks() error {
-	return removeIfExists(filepath.Join(s.traceDirPath(), pendingLinksFile))
+func (s *Store) ClearPendingLinks() {
+	_ = removeIfExists(filepath.Join(s.traceDirPath(), pendingLinksFile))
 }

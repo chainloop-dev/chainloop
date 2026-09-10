@@ -594,10 +594,10 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// hook is what actually puts the link in front of them. A failure here
 	// costs a notification, never the attestation that already succeeded.
 	//
-	// Skipped for callers that already showed the user, which the caller
-	// tells us directly rather than us inferring it from on-disk state: the
-	// trace-run sentinel outlives a killed run, and reading it here would
-	// silently suppress every later notification in that repository.
+	// The caller tells us whether to skip, rather than us inferring it from
+	// on-disk state: the trace-run sentinel outlives a killed run, and
+	// reading it here would silently suppress every later notification in
+	// that repository.
 	if opts.SkipAgentNotification {
 		log.Debug().Msg("caller already showed the links; not recording them for an agent hook")
 	} else if err := store.SavePendingLinks(links); err != nil {

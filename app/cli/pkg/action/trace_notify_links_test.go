@@ -54,9 +54,6 @@ func TestNotifyPendingSessionLinks(t *testing.T) {
 		providerErr     error
 		wantCalls       int
 		wantUserMessage string
-		// wantKept is true when the links must survive for another agent to
-		// show, rather than being consumed by this attempt.
-		wantKept bool
 	}{
 		{
 			name:      "nothing pending leaves the agent alone",
@@ -83,16 +80,6 @@ func TestNotifyPendingSessionLinks(t *testing.T) {
 			wantCalls:       1,
 			wantUserMessage: "Coding Session Available at " + link1,
 		},
-		{
-			// The agent showed nobody anything, so discarding the links here
-			// would lose them silently.
-			name:            "an agent that cannot show messages keeps the links",
-			saved:           []string{link1},
-			providerErr:     trace.ErrAnnounceUnsupported,
-			wantCalls:       1,
-			wantUserMessage: "Coding Session Available at " + link1,
-			wantKept:        true,
-		},
 	}
 
 	for _, tc := range testCases {
@@ -111,21 +98,34 @@ func TestNotifyPendingSessionLinks(t *testing.T) {
 
 			// A second hook firing must stay silent once an agent has had
 			// its go, even if delivery failed: re-announcing on every later
-			// shell command is worse than dropping one notification. The
-			// exception is an agent that cannot show anything at all, which
-			// must leave the links intact for one that can.
+			// shell command is worse than dropping one notification.
 			before := p.calls
 			notifyPendingSessionLinks(p, store, zerolog.Nop())
-
-			if tc.wantKept {
-				assert.Equal(t, before+1, p.calls, "unshown links must remain available")
-				assert.Equal(t, tc.saved, store.PendingLinks(), "unshown links must stay on disk")
-
-				return
-			}
 
 			assert.Equal(t, before, p.calls, "shown links must be consumed exactly once")
 			assert.Empty(t, store.PendingLinks())
 		})
 	}
+}
+
+// TestNotifyPendingSessionLinksKeepsUnshownLinks covers the inverse of the
+// consume-once rule: an agent with no way to reach the user showed nobody
+// anything, so discarding the links would lose them silently.
+func TestNotifyPendingSessionLinksKeepsUnshownLinks(t *testing.T) {
+	const link = "https://app.chainloop.dev/u/chainloop/sessions/ses_1"
+
+	store := state.NewGitStore(t.TempDir())
+	require.NoError(t, store.InitTraceDir())
+	require.NoError(t, store.SavePendingLinks([]string{link}))
+
+	p := &recordingProvider{err: trace.ErrAnnounceUnsupported}
+
+	notifyPendingSessionLinks(p, store, zerolog.Nop())
+
+	assert.Equal(t, 1, p.calls)
+	assert.Equal(t, []string{link}, store.PendingLinks(), "unshown links must stay on disk")
+
+	// An agent that can show them still gets its turn later.
+	notifyPendingSessionLinks(p, store, zerolog.Nop())
+	assert.Equal(t, 2, p.calls, "unshown links must remain available")
 }
