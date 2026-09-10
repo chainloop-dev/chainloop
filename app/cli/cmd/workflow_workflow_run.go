@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import (
 
 func newWorkflowWorkflowRunCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "workflow-run",
-		Aliases: []string{"run"},
+		// Keep "run" as the canonical name so the usage and help output read
+		// "chainloop workflow run" instead of "chainloop workflow workflow-run".
+		Use:     "run",
+		Aliases: []string{"workflow-run"},
 		Short:   "Workflow Runs related operations",
 	}
 
