@@ -16,188 +16,48 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
-	"io"
-	"os"
-	"slices"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
-
-	"charm.land/huh/v2"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/prompt"
 )
 
-// accessibleEnvVars turn on plain, numbered prompts instead of the full
-// terminal UI, for screen readers and terminals that cannot render one.
-// ACCESSIBLE is the convention the Charm tools use.
-var accessibleEnvVars = []string{"CHAINLOOP_ACCESSIBLE", "ACCESSIBLE"}
-
-// huhPrompter implements prompter against the terminal. It is deliberately
-// thin: every decision lives in the resolvers in trace_init_identity.go, which
-// are tested against a scripted fake instead of a terminal.
-type huhPrompter struct {
-	accessible bool
-	// in and out are the streams the prompt uses. Prompts are drawn on stderr so
-	// stdout stays clean for anything piping the command's output.
-	in  io.Reader
-	out io.Writer
+// namingPrompter is the prompt package plus the one thing about these questions
+// that is Chainloop's rather than the terminal's: an answer typed freely is
+// stored as a DNS-1123 label, so the input shows what it will become. Nothing
+// else here knows about naming rules.
+type namingPrompter struct {
+	*prompt.Prompter
 }
 
-// newHuhPrompter builds the terminal prompter.
-func newHuhPrompter(lookupEnv func(string) (string, bool)) *huhPrompter {
-	accessible := false
-	for _, key := range accessibleEnvVars {
-		if envEnabled(lookupEnv, key) {
-			accessible = true
-			break
-		}
-	}
-
-	return &huhPrompter{accessible: accessible, in: os.Stdin, out: os.Stderr}
+// newHuhPrompter builds the prompter `trace init` asks its questions through.
+func newHuhPrompter(lookupEnv func(string) (string, bool)) namingPrompter {
+	return namingPrompter{prompt.New(lookupEnv)}
 }
 
-// framed folds the description into the title when huh will not draw it.
-// Accessible mode renders the title and the options and nothing else, so a
-// description left in its own slot is simply lost there — and it carries the
-// context the question needs, which is worth more than the layout.
-func (h *huhPrompter) framed(title, description string) (string, string) {
-	if description == "" || !h.accessible {
-		return title, description
-	}
-
-	return fmt.Sprintf("%s (%s)", title, description), ""
+// Input asks for a name, showing the label it will be stored as once the two
+// differ. Seeing what will be created matters more at that point than the
+// context it will be created in, so it takes the description's place.
+func (n namingPrompter) Input(title, description, defaultValue string, validate func(string) error) (string, error) {
+	return n.Prompter.Input(prompt.InputOpts{
+		Title:       title,
+		Description: description,
+		Default:     defaultValue,
+		Validate:    validate,
+		Describe: func(value string) string {
+			return nameDescription(description, value)
+		},
+	})
 }
 
-// Select asks the user to pick one of options, starting on defaultValue. Long
-// lists can be narrowed by typing.
-func (h *huhPrompter) Select(title, description string, options []string, defaultValue string, validate func(string) error) (string, error) {
-	value := defaultValue
-	title, description = h.framed(title, description)
-
-	// Filtering() is deliberately not set: it does not enable filtering, it puts
-	// the field straight into filter-input mode, which replaces the title with an
-	// empty "/" box and sends the arrow keys to the filter. Pressing "/" opens it
-	// on demand, which is what the help line offers.
-	field := huh.NewSelect[string]().
-		Title(title).
-		Description(description).
-		Options(huh.NewOptions(options...)...).
-		Value(&value)
-
-	// Set only when there is one: huh calls whatever it is handed, so a nil
-	// validator panics rather than reading as "nothing to check".
-	if validate != nil {
-		field = field.Validate(validate)
-	}
-
-	if err := h.run(field); err != nil {
-		return "", err
-	}
-
-	return value, nil
-}
-
-// MultiSelect asks the user to tick any number of options, with defaults
-// already ticked. An empty submission is refused at the prompt, so the caller
-// never has to send the user back through init to fix it.
-func (h *huhPrompter) MultiSelect(title string, options, defaults []string) ([]string, error) {
-	value := slices.Clone(defaults)
-
-	if err := h.run(newMultiSelectField(title, options, &value)); err != nil {
-		return nil, err
-	}
-
-	return value, nil
-}
-
-// multiSelectMaxVisible caps how many options are on screen at once, so a long
-// list scrolls instead of pushing the prompt off the top. It is the height huh
-// itself falls back to for dynamic options.
-const multiSelectMaxVisible = 10
-
-// newMultiSelectField builds the multi-select. It is separate from MultiSelect
-// so a test can render it without a terminal to run a form against.
-func newMultiSelectField(title string, options []string, value *[]string) *huh.MultiSelect[string] {
-	return huh.NewMultiSelect[string]().
-		Title(title).
-		Options(huh.NewOptions(options...)...).
-		// The height has to be set. Left unset, huh sizes the viewport from the
-		// options and then subtracts the title's line from that same number, so
-		// the last option is silently cut off. Asking for one line more than the
-		// options occupy cancels the subtraction out. Select does not share this
-		// quirk, which is why only this field sets a height.
-		Height(min(len(options), multiSelectMaxVisible) + 1).
-		Value(value).
-		Validate(func(selected []string) error {
-			if len(selected) == 0 {
-				return errors.New("pick at least one, with space")
-			}
-
-			return nil
-		})
-}
-
-// Input asks the user to type a value, prefilled with defaultValue. The
-// description line gives way to what a free-form answer will be normalized to,
-// so the result is visible before it is submitted: once the answer needs
-// normalizing, seeing what it becomes matters more than the standing context.
-func (h *huhPrompter) Input(title, description, defaultValue string, validate func(string) error) (string, error) {
-	value := defaultValue
-	title, description = h.framed(title, description)
-
-	if err := h.run(newInputField(title, description, &value, validate)); err != nil {
-		return "", err
-	}
-
-	return value, nil
-}
-
-// newInputField builds the input. It is separate from Input so a test can
-// render it without a terminal to run a form against, the same way
-// newMultiSelectField is.
-func newInputField(title, description string, value *string, validate func(string) error) *huh.Input {
-	return huh.NewInput().
-		Title(title).
-		// Both: DescriptionFunc is not evaluated for the first draw, only once
-		// its binding changes, so on its own it leaves an empty line where the
-		// context should be until the user types something.
-		Description(description).
-		Value(value).
-		Validate(validate).
-		DescriptionFunc(func() string { return inputDescription(description, *value) }, value)
-}
-
-// inputDescription is the line under an input's title: the standing context,
-// giving way to what a free-form answer will be normalized to once the answer
-// and its label differ, since seeing what will be created matters more at that
-// point than the context it will be created in.
-//
-// Accessible mode folds the context into the title instead and draws no
-// description at all, so the normalized name is not shown there.
-func inputDescription(description, value string) string {
+// nameDescription is the line under a name prompt's title: the standing
+// context, giving way to what the answer normalizes to once the answer and its
+// label differ.
+func nameDescription(description, value string) string {
 	slug := config.SlugifyDNS1123(value)
 	if slug == "" || slug == value {
 		return description
 	}
 
 	return fmt.Sprintf("will be created as %q", slug)
-}
-
-// run shows a single-field form and translates a dismissed prompt into
-// errAborted, which trace init reports as a clean stop.
-func (h *huhPrompter) run(field huh.Field) error {
-	form := huh.NewForm(huh.NewGroup(field)).
-		WithAccessible(h.accessible).
-		WithInput(h.in).
-		WithOutput(h.out)
-
-	if err := form.Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return errAborted
-		}
-
-		return err
-	}
-
-	return nil
 }

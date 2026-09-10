@@ -25,6 +25,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/prompt"
 
 	"golang.org/x/term"
 	"google.golang.org/grpc/codes"
@@ -60,10 +61,11 @@ const (
 	createNewProjectOption = "+ Create a new project…"
 )
 
-// errAborted is returned when the user dismisses a prompt. It stops `trace
-// init` before anything is created or written, so the repository is left
-// untouched.
-var errAborted = errors.New("aborted")
+// errAborted is what the prompter returns when the user dismisses a question.
+// It stops `trace init` before anything is created or written, so the
+// repository is left untouched. It is the prompt package's error rather than
+// one of its own, since that is what comes back.
+var errAborted = prompt.ErrAborted
 
 // stopIfAborted turns a dismissed prompt into a clean stop and passes every
 // other error through. Dismissing a question is a decision, not a failure, and
