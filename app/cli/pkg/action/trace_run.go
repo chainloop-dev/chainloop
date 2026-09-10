@@ -195,8 +195,11 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		WorkflowName:   opts.WorkflowName,
 		ProjectVersion: opts.ProjectVersion,
 		IgnoreYAML:     true,
-		ActionOpts:     opts.ActionOpts,
-		CLIVersion:     opts.CLIVersion,
+		// The wrapped agent has already exited and this terminal showed the
+		// push output, so there is no hook left to notify.
+		SkipAgentNotification: true,
+		ActionOpts:            opts.ActionOpts,
+		CLIVersion:            opts.CLIVersion,
 	})
 }
 

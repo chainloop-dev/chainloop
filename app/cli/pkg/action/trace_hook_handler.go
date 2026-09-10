@@ -285,6 +285,11 @@ type RunTracePushOpts struct {
 	// only on CLI flags. Pre-push hook callers leave it false to keep
 	// reading the repo config.
 	IgnoreYAML bool
+	// SkipAgentNotification suppresses recording session links for an agent
+	// hook to show later. `trace run` sets it: it reaches the push only
+	// after the agent it wrapped has exited, so no hook of that agent can
+	// fire again, and its own terminal already showed the links.
+	SkipAgentNotification bool
 
 	// ActionOpts is the root command's initialized options, used to build
 	// the attestation executor. Required: the push cannot run without it.
@@ -589,12 +594,12 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// hook is what actually puts the link in front of them. A failure here
 	// costs a notification, never the attestation that already succeeded.
 	//
-	// Skipped under `chainloop trace run`, which reaches this point only
-	// after the agent it wrapped has exited: no hook of that agent can fire
-	// again, its terminal already showed the line above, and the record
-	// would just sit there waiting to be announced by an unrelated session.
-	if store.IsTraceRunActive() {
-		log.Debug().Msg("trace run owns this push; its terminal already showed the links")
+	// Skipped for callers that already showed the user, which the caller
+	// tells us directly rather than us inferring it from on-disk state: the
+	// trace-run sentinel outlives a killed run, and reading it here would
+	// silently suppress every later notification in that repository.
+	if opts.SkipAgentNotification {
+		log.Debug().Msg("caller already showed the links; not recording them for an agent hook")
 	} else if err := store.SavePendingLinks(links); err != nil {
 		log.Debug().Err(err).Msg("could not record session links for the agent hook")
 	}
