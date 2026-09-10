@@ -175,23 +175,18 @@ func TestTraceInitConfigSave(t *testing.T) {
 	})
 }
 
-// stubProvider names a settings file, which is all readHarnessConfig reads.
-type stubProvider struct{ settings string }
-
-func (s stubProvider) SettingsFile(string) string { return s.settings }
-
-// TestHarnessConfigRestore covers undoing what init wrote to a harness. The
+// TestFileSnapshotRestore covers undoing what init wrote to a file. The
 // case that matters is the second run over a repository already set up:
 // installing over hooks that are present changes nothing, so undoing by
 // uninstalling would strip a working configuration instead.
-func TestHarnessConfigRestore(t *testing.T) {
+func TestFileSnapshotRestore(t *testing.T) {
 	t.Run("a configuration that was already there comes back untouched", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "settings.json")
 		original := []byte(`{"hooks":{"SessionStart":"chainloop"},"mine":"keep me"}`)
 		require.NoError(t, os.WriteFile(path, original, 0o600))
 
-		before, err := readHarnessConfig(stubProvider{settings: path}, dir)
+		before, err := snapshotFile(path)
 		require.NoError(t, err)
 
 		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
@@ -206,7 +201,7 @@ func TestHarnessConfigRestore(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, ".claude", "settings.json")
 
-		before, err := readHarnessConfig(stubProvider{settings: path}, dir)
+		before, err := snapshotFile(path)
 		require.NoError(t, err)
 
 		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
@@ -220,12 +215,46 @@ func TestHarnessConfigRestore(t *testing.T) {
 		assert.True(t, os.IsNotExist(err), "nor the directory that came with it")
 	})
 
+	// opencode keeps its hook a level deeper, so undoing a run has to take
+	// every directory it created rather than only the last one.
+	t.Run("a nested path loses every directory this run created", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".opencode", "plugins", "chainloop-trace.ts")
+
+		before, err := snapshotFile(path)
+		require.NoError(t, err)
+
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte("export default {}"), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(filepath.Join(dir, ".opencode"))
+		assert.True(t, os.IsNotExist(err), "the outer directory came with the run too")
+	})
+
+	// An empty directory that was already there is not this run's to remove.
+	t.Run("a directory that predates the run stays, even empty", func(t *testing.T) {
+		dir := t.TempDir()
+		existing := filepath.Join(dir, ".claude")
+		require.NoError(t, os.MkdirAll(existing, 0o755))
+
+		path := filepath.Join(existing, "settings.json")
+		before, err := snapshotFile(path)
+		require.NoError(t, err)
+
+		require.NoError(t, os.WriteFile(path, []byte(`{"hooks":{}}`), 0o600))
+		require.NoError(t, before.restore())
+
+		_, err = os.Stat(existing)
+		assert.NoError(t, err, "the directory was not created by this run")
+	})
+
 	t.Run("a directory holding anything else is left alone", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, ".claude", "settings.json")
 		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
 
-		before, err := readHarnessConfig(stubProvider{settings: path}, dir)
+		before, err := snapshotFile(path)
 		require.NoError(t, err)
 
 		theirs := filepath.Join(filepath.Dir(path), "theirs.json")
@@ -247,18 +276,28 @@ func TestWriteTraceInitStateFailureLeavesNothing(t *testing.T) {
 	gitDir := filepath.Join(repoRoot, ".git")
 	require.NoError(t, os.MkdirAll(gitDir, 0o755))
 
-	// A directory where the configuration file goes, so saving it fails for any
-	// user rather than depending on who the test runs as.
-	require.NoError(t, os.MkdirAll(filepath.Join(repoRoot, chainloopYMLName), 0o755))
+	// A file where the trace state goes, so the step fails after saving the
+	// configuration rather than before it: failing on the first thing it does
+	// would leave nothing behind whatever the caller did about it.
+	require.NoError(t, os.WriteFile(filepath.Join(gitDir, "chainloop-trace"), []byte("x"), 0o600))
+
+	ymlPath := filepath.Join(repoRoot, chainloopYMLName)
+	before, err := snapshotFile(ymlPath)
+	require.NoError(t, err)
 
 	cfg := &traceInitConfig{project: "a-project", workflow: defaultTraceWorkflow, saveProject: true}
 	require.Error(t, writeTraceInitState(cfg, repoRoot, gitDir),
-		"a configuration that cannot be written has to fail the step")
+		"a trace directory that cannot be created has to fail the step")
 
-	// The state lives under the git directory, which is where the rest of the
-	// step would have written had it run.
-	_, err := os.Stat(filepath.Join(gitDir, "chainloop-trace"))
-	assert.True(t, os.IsNotExist(err), "no trace state should have been left behind")
+	// The step is not atomic on its own: it saved the configuration before it
+	// failed, which is exactly why the caller snapshots it.
+	_, err = os.Stat(ymlPath)
+	require.NoError(t, err, "the save this test relies on did happen")
+
+	require.NoError(t, before.restore())
+
+	_, err = os.Stat(ymlPath)
+	assert.True(t, os.IsNotExist(err), "the configuration must not outlive a failed run")
 }
 
 // TestWriteTraceNextSteps checks the closing message names the files that have

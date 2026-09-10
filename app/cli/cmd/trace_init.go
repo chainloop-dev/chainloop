@@ -120,21 +120,30 @@ The organization, project, workflow and require-trace values are saved to
 			// harness's own hook config file, written here, determines which of
 			// them can register sessions.
 			installed := make([]trace.Provider, 0, len(selectedProviders))
-			// before holds each harness's configuration as it stood, so a later
-			// failure puts back exactly what was there. Uninstalling instead
-			// would strip the hooks of a repository that was already set up,
-			// since installing over them changes nothing and still counts.
-			before := make([]harnessConfig, 0, len(selectedProviders))
+			// before holds every repository file init is about to write, as it
+			// stood, so a later failure puts back exactly what was there.
+			// Uninstalling the hooks instead would strip a repository that was
+			// already set up, since installing over hooks changes nothing and
+			// still counts as installed.
+			before := make([]fileSnapshot, 0, len(selectedProviders)+1)
 
 			for _, p := range selectedProviders {
-				snapshot, err := readHarnessConfig(p, repoRoot)
+				snapshot, err := snapshotFile(p.SettingsFile(repoRoot))
 				if err != nil {
 					logger.Warn().Err(err).Str("harness", p.Name()).Msg("could not read the harness configuration")
 					continue
 				}
 
 				if err := p.InstallHooks(repoRoot); err != nil {
+					// A write that failed part-way through leaves the file as it
+					// got to, so put it back before moving on.
+					if rerr := snapshot.restore(); rerr != nil {
+						logger.Debug().Err(rerr).Str("path", snapshot.path).
+							Msg("could not put the harness configuration back")
+					}
+
 					logger.Warn().Err(err).Str("harness", p.Name()).Msg("could not install harness hooks")
+
 					continue
 				}
 
@@ -147,14 +156,24 @@ The organization, project, workflow and require-trace values are saved to
 				return fmt.Errorf("no harness hooks could be installed, so no sessions would be recorded")
 			}
 
+			// .chainloop.yml is written by the step below, which stops at the
+			// first thing that fails, so it is recorded here alongside the rest.
+			ymlSnapshot, err := snapshotFile(filepath.Join(repoRoot, config.ChainloopYMLName(repoRoot)))
+			if err != nil {
+				return err
+			}
+
+			before = append(before, ymlSnapshot)
+
 			// The workflow exists and something records into it. What remains is
-			// local, but a failure in any of it would leave harness hooks behind
-			// calling a repository that is not set up.
+			// local, but a failure part-way through it would leave a repository
+			// half set up: harness hooks calling a configuration that is not
+			// there, or a configuration with nothing recording into it.
 			if err := writeTraceInitState(cfg, repoRoot, gitDir); err != nil {
 				for _, snapshot := range before {
 					if rerr := snapshot.restore(); rerr != nil {
 						logger.Debug().Err(rerr).Str("path", snapshot.path).
-							Msg("could not put the harness configuration back")
+							Msg("could not put the file back")
 					}
 				}
 
@@ -280,62 +299,95 @@ func joinWithOr(names []string) string {
 	}
 }
 
-// harnessConfig is a harness's configuration file as it stood before init
-// touched it. Installing hooks merges into whatever is already there, and
-// installing over hooks that are present changes nothing at all, so putting
-// the file back is the only way to undo a run without taking a working setup
-// with it.
-type harnessConfig struct {
+// fileSnapshot is a file init is about to write to, as it stood beforehand.
+// Every write init makes to the repository merges into or replaces something
+// that may already be there — a harness's hooks sit beside the rest of its
+// configuration, and installing over hooks that are present changes nothing at
+// all — so putting the file back is the only way to undo a run without taking a
+// working setup with it.
+type fileSnapshot struct {
 	path string
 	// content is what the file held, and existed distinguishes an empty file
 	// from one init created.
 	content []byte
 	mode    os.FileMode
 	existed bool
+	// existingAncestor is the closest directory that was already there, so
+	// restoring removes the directories init created and no others.
+	existingAncestor string
 }
 
-// harnessSettings is the slice of a provider readHarnessConfig needs: where the
-// harness keeps the configuration its hooks are written into.
-type harnessSettings interface {
-	SettingsFile(repoRoot string) string
-}
-
-// readHarnessConfig records a harness's configuration before it is written to.
-func readHarnessConfig(p harnessSettings, repoRoot string) (harnessConfig, error) {
-	path := p.SettingsFile(repoRoot)
-
+// snapshotFile records a file before it is written to.
+func snapshotFile(path string) (fileSnapshot, error) {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return harnessConfig{path: path}, nil
+		ancestor, err := closestExistingDir(filepath.Dir(path))
+		if err != nil {
+			return fileSnapshot{}, err
+		}
+
+		return fileSnapshot{path: path, existingAncestor: ancestor}, nil
 	}
 
 	if err != nil {
-		return harnessConfig{}, err
+		return fileSnapshot{}, err
 	}
 
 	// The mode is kept so restoring does not quietly widen or narrow it.
 	info, err := os.Stat(path)
 	if err != nil {
-		return harnessConfig{}, err
+		return fileSnapshot{}, err
 	}
 
-	return harnessConfig{path: path, content: content, mode: info.Mode().Perm(), existed: true}, nil
+	return fileSnapshot{path: path, content: content, mode: info.Mode().Perm(), existed: true}, nil
 }
 
-// restore puts the configuration back as it was, removing the file when init
-// was what created it. An empty directory left over from creating it goes too;
-// a directory holding anything else is left alone, which os.Remove does by
-// refusing to remove it.
-func (h harnessConfig) restore() error {
-	if h.existed {
-		return os.WriteFile(h.path, h.content, h.mode)
+// closestExistingDir walks up from dir to the first directory that is there,
+// which is the point below which anything is init's to remove again.
+func closestExistingDir(dir string) (string, error) {
+	for {
+		info, err := os.Stat(dir)
+		if err == nil {
+			if !info.IsDir() {
+				return "", fmt.Errorf("%s is not a directory", dir)
+			}
+
+			return dir, nil
+		}
+
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// The root, which always exists, so this is unreachable in practice.
+			return dir, nil
+		}
+
+		dir = parent
+	}
+}
+
+// restore puts the file back as it was, removing it when init was what created
+// it, along with the directories that came with it. A directory holding
+// anything else stays, which os.Remove sees to by refusing to remove it.
+func (f fileSnapshot) restore() error {
+	if f.existed {
+		return os.WriteFile(f.path, f.content, f.mode)
 	}
 
-	if err := os.Remove(h.path); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.Remove(f.path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 
-	_ = os.Remove(filepath.Dir(h.path))
+	for dir := filepath.Dir(f.path); dir != f.existingAncestor; dir = filepath.Dir(dir) {
+		if err := os.Remove(dir); err != nil {
+			// Not empty, or already gone: either way there is nothing more of
+			// init's to take back above it.
+			return nil
+		}
+	}
 
 	return nil
 }
