@@ -581,7 +581,23 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// Tell the user where each session landed. The organization comes from the
 	// control plane rather than opts.Organization, which is empty whenever the
 	// CLI's current org is used.
-	logAttestedSessions(log, res.UIDashboardURL, res.GetOrganization(), attestedSessions)
+	links := logAttestedSessions(log, res.UIDashboardURL, res.GetOrganization(), attestedSessions)
+
+	// Hand the links to the agent hook that runs after this push. When the
+	// push was driven by a coding agent's shell tool, the log line above is
+	// captured into that tool's output rather than shown to the user, so the
+	// hook is what actually puts the link in front of them. A failure here
+	// costs a notification, never the attestation that already succeeded.
+	//
+	// Skipped under `chainloop trace run`, which reaches this point only
+	// after the agent it wrapped has exited: no hook of that agent can fire
+	// again, its terminal already showed the line above, and the record
+	// would just sit there waiting to be announced by an unrelated session.
+	if store.IsTraceRunActive() {
+		log.Debug().Msg("trace run owns this push; its terminal already showed the links")
+	} else if err := store.SavePendingLinks(links); err != nil {
+		log.Debug().Err(err).Msg("could not record session links for the agent hook")
+	}
 
 	log.Debug().Msg("attestation pushed, wiping single-use trace state")
 
@@ -616,16 +632,28 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 // page, with the link inline so it reads as a sentence and stays clickable in
 // a terminal. Without a dashboard the line still names the session, so the
 // user gets confirmation of what was recorded either way.
-func logAttestedSessions(log zerolog.Logger, uiDashboardURL, orgName string, sessionIDs []string) {
+// It returns the links it logged, so the caller can hand them to the agent
+// hook that will show them to the user.
+func logAttestedSessions(log zerolog.Logger, uiDashboardURL, orgName string, sessionIDs []string) []string {
+	links := make([]string, 0, len(sessionIDs))
 	for _, id := range sessionIDs {
 		// The link already ends in the session ID, so a session field
 		// alongside it would only repeat itself in the rendered line.
 		if url := buildSessionViewURL(uiDashboardURL, orgName, id); url != "" {
-			log.Info().Msg("Coding Session Available at " + url)
+			log.Info().Msg(sessionLinkMessage(url))
+			links = append(links, url)
 			continue
 		}
 		log.Info().Str("session", id).Msg("Coding session attested")
 	}
+
+	return links
+}
+
+// sessionLinkMessage is the one place the user-facing wording lives, so the
+// pre-push log line and the agent's notification cannot drift apart.
+func sessionLinkMessage(url string) string {
+	return "Coding Session Available at " + url
 }
 
 // evidenceName returns the material name for a session evidence document.

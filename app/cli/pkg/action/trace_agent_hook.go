@@ -19,6 +19,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
@@ -173,6 +174,33 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 	}
 }
 
+// notifyPendingSessionLinks hands any session links left by a just-completed
+// trace push to the agent, so it can put them in front of the user. Links are
+// consumed on read, so a link is announced at most once.
+//
+// Best effort throughout: this is a notification, and neither a missing link
+// nor a provider that cannot deliver one is worth failing an agent's tool
+// call over.
+func notifyPendingSessionLinks(provider trace.Provider, store *state.Store, log zerolog.Logger) {
+	links := store.TakePendingLinks()
+	if len(links) == 0 {
+		return
+	}
+
+	// Same wording as the pre-push log line, so the two channels match.
+	lines := make([]string, 0, len(links))
+	for _, link := range links {
+		lines = append(lines, sessionLinkMessage(link))
+	}
+
+	if err := provider.AnnounceToUser(strings.Join(lines, "\n")); err != nil {
+		log.Debug().Err(err).Msg("could not surface session links through the agent")
+		return
+	}
+
+	log.Debug().Int("links", len(links)).Msg("session links handed to the agent")
+}
+
 // HandleAgentPostToolUse handles post-edit hooks across providers
 // (Claude's post-tool-use, Cursor's afterFileEdit) and records AI-attributed
 // line ranges for the edited file.
@@ -212,6 +240,12 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 		// Shell command: diff the before/after worktree snapshots and attribute
 		// every file the command changed to the AI.
 		recordCommandLineRanges(store, repoRoot, sessionID, log)
+
+		// The command may have been a `git push`, whose pre-push hook attested
+		// a session and left its link behind. Show it now: the pre-push output
+		// went to this tool call's captured stderr, which the user does not
+		// necessarily read.
+		notifyPendingSessionLinks(provider, store, log)
 
 		return nil
 	}

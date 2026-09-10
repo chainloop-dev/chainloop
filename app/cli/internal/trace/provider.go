@@ -97,6 +97,15 @@ type Provider interface {
 
 	// SystemMessage writes a message to stdout for the agent to display on session start.
 	SystemMessage(msg string) error
+
+	// AnnounceToUser writes a hook response to stdout so the agent puts msg
+	// in front of the user, after a shell command the agent ran. Which
+	// channel that uses is the provider's business: agents differ in whether
+	// they render text directly, relay it through the model, or both.
+	//
+	// Providers whose agent has no hook after a shell command implement this
+	// as a no-op.
+	AnnounceToUser(msg string) error
 }
 
 // HookInput represents parsed hook invocation data from an AI agent.

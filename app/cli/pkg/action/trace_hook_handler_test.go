@@ -748,7 +748,18 @@ func TestLogAttestedSessions(t *testing.T) {
 			var buf bytes.Buffer
 			log := zerolog.New(&buf).Level(zerolog.InfoLevel)
 
-			logAttestedSessions(log, tc.uiDashboardURL, tc.orgName, tc.sessionIDs)
+			gotLinks := logAttestedSessions(log, tc.uiDashboardURL, tc.orgName, tc.sessionIDs)
+
+			// The returned links are what gets handed to the agent hook, so
+			// they must match the links that were logged, and nothing is
+			// returned when there is no dashboard to link to.
+			wantLinks := []string{}
+			for _, w := range tc.want {
+				if link, found := strings.CutPrefix(w.Message, linkPrefix); found {
+					wantLinks = append(wantLinks, link)
+				}
+			}
+			assert.Equal(t, wantLinks, gotLinks)
 
 			var got []sessionLogEntry
 			for line := range strings.SplitSeq(strings.TrimSpace(buf.String()), "\n") {

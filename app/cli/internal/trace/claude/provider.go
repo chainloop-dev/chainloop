@@ -159,6 +159,39 @@ func (p *Provider) SystemMessage(msg string) error {
 	return json.NewEncoder(os.Stdout).Encode(resp)
 }
 
+// AnnounceToUser emits a PostToolUse hook response on both of Claude Code's
+// delivery channels: systemMessage, which the client prints to the user
+// without involving the model, and additionalContext, which reaches the model
+// so it can repeat the message in its own reply.
+//
+// Both are used because only the second is confirmed to render in every
+// build. Should systemMessage prove universally reliable, dropping
+// additionalContext here would spare the model a turn, and this is the one
+// place that would have to change.
+func (p *Provider) AnnounceToUser(msg string) error {
+	if msg == "" {
+		return nil
+	}
+
+	type hookSpecificOutput struct {
+		HookEventName     string `json:"hookEventName"`
+		AdditionalContext string `json:"additionalContext,omitempty"`
+	}
+
+	resp := struct {
+		SystemMessage      string             `json:"systemMessage"`
+		HookSpecificOutput hookSpecificOutput `json:"hookSpecificOutput"`
+	}{
+		SystemMessage: msg,
+		HookSpecificOutput: hookSpecificOutput{
+			HookEventName:     eventPostToolUse,
+			AdditionalContext: "Tell the user the following, including any link verbatim: " + msg,
+		},
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(resp)
+}
+
 // ParseSession parses a Claude Code session JSONL and returns structured evidence.
 func (p *Provider) ParseSession(_ context.Context, opts *trace.ParseOpts) (*aicodingsession.Evidence, error) {
 	jsonlPath, err := findJSONLPath(opts.SessionDir, opts.SessionID)

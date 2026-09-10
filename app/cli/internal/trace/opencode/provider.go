@@ -164,6 +164,14 @@ func (p *Provider) SystemMessage(_ string) error {
 	return nil
 }
 
+// AnnounceToUser is a no-op for OpenCode until its plugin's response shape
+// for surfacing a message is verified against a live session, the way Claude
+// Code's was. The hook after a shell command already fires, so wiring this up
+// later is a change to this method alone.
+func (p *Provider) AnnounceToUser(_ string) error {
+	return nil
+}
+
 // ParseSession reads the copied export JSON for sessionID and returns
 // structured evidence.
 func (p *Provider) ParseSession(_ context.Context, opts *trace.ParseOpts) (*aicodingsession.Evidence, error) {
