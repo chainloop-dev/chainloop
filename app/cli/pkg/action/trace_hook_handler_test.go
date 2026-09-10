@@ -696,7 +696,7 @@ func requireFileAttribution(t *testing.T, changes *aicodingsession.CodeChanges, 
 // sessionLogEntry is the subset of a logAttestedSessions log line under test.
 type sessionLogEntry struct {
 	Session string `json:"session"`
-	URL     string `json:"url"`
+	Message string `json:"message"`
 }
 
 func TestLogAttestedSessions(t *testing.T) {
@@ -707,6 +707,7 @@ func TestLogAttestedSessions(t *testing.T) {
 		orgName    = "acme corp"
 		orgInPath  = "acme%20corp"
 		sessionURL = testDashboardURL + "/u/" + orgInPath + "/sessions/"
+		linkPrefix = "Coding Session Available at "
 	)
 
 	testCases := []struct {
@@ -722,16 +723,16 @@ func TestLogAttestedSessions(t *testing.T) {
 			orgName:        orgName,
 			sessionIDs:     []string{testSessionID, "ses_2"},
 			want: []sessionLogEntry{
-				{Session: testSessionID, URL: sessionURL + testSessionID},
-				{Session: "ses_2", URL: sessionURL + "ses_2"},
+				{Message: linkPrefix + sessionURL + testSessionID},
+				{Message: linkPrefix + sessionURL + "ses_2"},
 			},
 		},
 		{
-			name:           "no dashboard still confirms the session, without a url",
+			name:           "no dashboard still confirms the session, without a link",
 			uiDashboardURL: "",
 			orgName:        orgName,
 			sessionIDs:     []string{testSessionID},
-			want:           []sessionLogEntry{{Session: testSessionID}},
+			want:           []sessionLogEntry{{Session: testSessionID, Message: "Coding session attested"}},
 		},
 		{
 			name:           "no sessions logs nothing",

@@ -611,17 +611,20 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	return nil
 }
 
-// logAttestedSessions reports one line per attested session, carrying a link
-// to the session's page when the deployment has a UI dashboard configured.
-// Without one the line still names the session, so the user gets confirmation
-// of what was recorded either way.
+// logAttestedSessions reports one line per attested session. When the
+// deployment has a UI dashboard configured the line points at the session's
+// page, with the link inline so it reads as a sentence and stays clickable in
+// a terminal. Without a dashboard the line still names the session, so the
+// user gets confirmation of what was recorded either way.
 func logAttestedSessions(log zerolog.Logger, uiDashboardURL, orgName string, sessionIDs []string) {
 	for _, id := range sessionIDs {
-		ev := log.Info().Str("session", id)
+		// The link already ends in the session ID, so a session field
+		// alongside it would only repeat itself in the rendered line.
 		if url := buildSessionViewURL(uiDashboardURL, orgName, id); url != "" {
-			ev = ev.Str("url", url)
+			log.Info().Msg("Coding Session Available at " + url)
+			continue
 		}
-		ev.Msg("AI coding session attested")
+		log.Info().Str("session", id).Msg("Coding session attested")
 	}
 }
 
