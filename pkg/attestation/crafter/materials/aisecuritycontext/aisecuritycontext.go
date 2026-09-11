@@ -116,6 +116,14 @@ type ScanStats struct {
 	// the frontier, nor a triage hole, nor abandoned after the retry cap. Zero
 	// alongside AdjudicationComplete is the drained queue.
 	PendingSurvivors int `json:"pending_survivors,omitempty"`
+	// TriageBudgetHit is true when the most recent triage run stopped because it
+	// reached its survivor budget (the --max-new-survivors cap) rather than
+	// because it exhausted its window, so known-untriaged history sits immediately
+	// behind Scan.Window.FromSHA. Cleared by a later run that exhausts its window
+	// without hitting the budget. It says nothing about the adjudication queue,
+	// and is not the same as a window that does not reach the repository root — a
+	// --last-bounded run does not either, and only git can answer that.
+	TriageBudgetHit bool `json:"triage_budget_hit,omitempty"`
 	// TriageInputTokens is the cumulative Phase-1 input tokens across every
 	// triage run.
 	TriageInputTokens int64 `json:"triage_input_tokens,omitempty"`

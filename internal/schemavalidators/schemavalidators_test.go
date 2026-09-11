@@ -325,12 +325,13 @@ func TestValidateSecurityContext(t *testing.T) {
 // triage/adjudicate split consolidated into the security context in place at
 // security-context-0.1: the top-level survivors queue and discard record, and
 // the scan_stats counters (adjudicated_commits, survivors_total,
-// pending_survivors, triage_input_tokens, triage_output_tokens,
-// adjudication_complete). An un-adjudicated (triage-only) context carries
-// survivors, discards and the triage counters, a fully-adjudicated context
-// carries the adjudication frontier, a combined-scan context omits them all, and
-// a genuinely unknown field is still rejected — so both the context object and
-// scan_stats keep their additionalProperties: false contract.
+// pending_survivors, triage_budget_hit, triage_input_tokens,
+// triage_output_tokens, adjudication_complete). An un-adjudicated (triage-only)
+// context carries survivors, discards and the triage counters, a
+// fully-adjudicated context carries the adjudication frontier, a combined-scan
+// context omits them all, and a genuinely unknown field is still rejected — so
+// both the context object and scan_stats keep their additionalProperties: false
+// contract.
 func TestValidateSecurityContextTriageFields(t *testing.T) {
 	load := func(t *testing.T) (map[string]any, map[string]any) {
 		t.Helper()
@@ -364,6 +365,9 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 		}
 		scan["survivors_total"] = 1
 		scan["pending_survivors"] = 1
+		// Budget-stopped rather than window-exhausted: known-untriaged history sits
+		// immediately behind scan.window.from_sha.
+		scan["triage_budget_hit"] = true
 		scan["triage_input_tokens"] = 8883
 		scan["triage_output_tokens"] = 83
 		scan["adjudication_complete"] = false

@@ -43,7 +43,8 @@
     "triage_output_tokens": 417,
     "adjudication_complete": false,
     "survivors_total": 3,
-    "pending_survivors": 3
+    "pending_survivors": 3,
+    "triage_budget_hit": true
   },
   "survivors": [
     {

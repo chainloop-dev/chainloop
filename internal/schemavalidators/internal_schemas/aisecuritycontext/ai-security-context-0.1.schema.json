@@ -339,6 +339,10 @@
           "minimum": 0,
           "description": "How many survivors still await adjudication — survivors that are neither in the frontier, nor a triage hole, nor abandoned after the retry cap. A count rather than a list because the list is already determined by survivors and adjudicated_commits; zero alongside adjudication_complete is the drained queue."
         },
+        "triage_budget_hit": {
+          "type": "boolean",
+          "description": "True when the most recent triage run stopped because it reached its survivor budget (the --max-new-survivors cap) rather than because it exhausted its window, which means there is known-untriaged history immediately behind scan.window.from_sha. Cleared by a later run that exhausts its window without hitting the budget. Not a statement about the adjudication queue — that is pending_survivors/adjudication_complete — and not the same as \"the window does not reach the repository root\": a --last-bounded run does not either, and that question needs git rather than this artifact."
+        },
         "triage_input_tokens": {
           "type": "integer",
           "minimum": 0,
