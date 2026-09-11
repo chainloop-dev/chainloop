@@ -4,7 +4,8 @@
   "additionalProperties": false,
   "properties": {
     "name": {
-      "pattern": "^[\\w]+$",
+      "description": "Word optionally separated with _ or -.\n Note: hyphenated names (e.g. \"my-annotation\") require the `index` template\n function syntax in Go template consumers like Dependency-Track:\n   {{ index .Material.Annotations \"my-annotation\" }}\n rather than direct field access {{ .Material.Annotations.my-annotation }}.",
+      "pattern": "^[\\w-]+$",
       "type": "string"
     },
     "value": {

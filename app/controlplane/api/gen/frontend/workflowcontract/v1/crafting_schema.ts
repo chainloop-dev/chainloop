@@ -623,7 +623,13 @@ export interface CraftingSchemaV2Spec {
 }
 
 export interface Annotation {
-  /** Single word optionally separated with _ */
+  /**
+   * Word optionally separated with _ or -.
+   * Note: hyphenated names (e.g. "my-annotation") require the `index` template
+   * function syntax in Go template consumers like Dependency-Track:
+   *   {{ index .Material.Annotations "my-annotation" }}
+   * rather than direct field access {{ .Material.Annotations.my-annotation }}.
+   */
   name: string;
   /** This value can be set in the contract or provided during the attestation */
   value: string;

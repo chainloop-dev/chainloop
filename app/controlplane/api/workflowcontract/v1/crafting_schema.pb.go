@@ -726,7 +726,12 @@ func (x *CraftingSchemaV2Spec) GetAnnotations() []*Annotation {
 
 type Annotation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` // Single word optionally separated with _
+	// Word optionally separated with _ or -.
+	// Note: hyphenated names (e.g. "my-annotation") require the `index` template
+	// function syntax in Go template consumers like Dependency-Track:
+	//   {{ index .Material.Annotations "my-annotation" }}
+	// rather than direct field access {{ .Material.Annotations.my-annotation }}.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// This value can be set in the contract or provided during the attestation
 	Value         string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -847,12 +852,11 @@ type PolicyAttachment struct {
 	// optional arguments for policies. Multivalued arguments can be set through multiline strings or comma separated values. It will be
 	// parsed and passed as an array value to the policy engine.
 	// with:
-	//
-	//	user: john
-	//	users: john, sarah
-	//	licenses: |
-	//	  AGPL-1.0
-	//	  AGPL-3.0
+	//   user: john
+	//   users: john, sarah
+	//   licenses: |
+	//     AGPL-1.0
+	//     AGPL-3.0
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// List of requirements this policy contributes to satisfy
 	Requirements []string `protobuf:"bytes,6,rep,name=requirements,proto3" json:"requirements,omitempty"`
@@ -1052,10 +1056,9 @@ type Metadata struct {
 	// Declares the structured output schema for policy violations.
 	// When set, the policy engine validates that violations conform to the
 	// corresponding proto message:
-	//
-	//	VULNERABILITY    -> attestation.v1.PolicyVulnerabilityFinding
-	//	SAST             -> attestation.v1.PolicySASTFinding
-	//	LICENSE_VIOLATION -> attestation.v1.PolicyLicenseViolationFinding
+	//   VULNERABILITY    -> attestation.v1.PolicyVulnerabilityFinding
+	//   SAST             -> attestation.v1.PolicySASTFinding
+	//   LICENSE_VIOLATION -> attestation.v1.PolicyLicenseViolationFinding
 	FindingType   *string `protobuf:"bytes,7,opt,name=finding_type,json=findingType,proto3,oneof" json:"finding_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2209,10 +2212,11 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06runner\x18\x03 \x01(\v2*.workflowcontract.v1.CraftingSchema.RunnerR\x06runner\x129\n" +
 	"\bpolicies\x18\x04 \x01(\v2\x1d.workflowcontract.v1.PoliciesR\bpolicies\x12O\n" +
 	"\rpolicy_groups\x18\x05 \x03(\v2*.workflowcontract.v1.PolicyGroupAttachmentR\fpolicyGroups\x12A\n" +
-	"\vannotations\x18\x06 \x03(\v2\x1f.workflowcontract.v1.AnnotationR\vannotations\"F\n" +
+	"\vannotations\x18\x06 \x03(\v2\x1f.workflowcontract.v1.AnnotationR\vannotations\"G\n" +
 	"\n" +
-	"Annotation\x12\"\n" +
-	"\x04name\x18\x01 \x01(\tB\x0e\xbaH\vr\t2\a^[\\w]+$R\x04name\x12\x14\n" +
+	"Annotation\x12#\n" +
+	"\x04name\x18\x01 \x01(\tB\x0f\xbaH\fr\n" +
+	"2\b^[\\w-]+$R\x04name\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x98\x01\n" +
 	"\bPolicies\x12C\n" +
 	"\tmaterials\x18\x01 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\tmaterials\x12G\n" +
