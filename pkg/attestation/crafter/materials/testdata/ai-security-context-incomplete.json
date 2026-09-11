@@ -1,0 +1,859 @@
+{
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_SECURITY_CONTEXT",
+  "schema": "https://schemas.chainloop.dev/aisecuritycontext/0.1/ai-security-context.schema.json",
+  "data": {
+    "schema_version": "security-context-0.1",
+    "generated_at": "2026-09-11T04:34:35Z",
+    "repo": {
+      "owner": "chainloop-dev",
+      "name": "chainloop",
+      "url": "https://github.com/chainloop-dev/chainloop",
+      "ref": "main",
+      "head_sha": "d7124adef46e2500aa922a2fe330774ef7ea97bc"
+    },
+    "provenance": {
+      "tool": "strata-go",
+      "tool_version": "dev",
+      "protocol": "codex-app-server",
+      "triage_model": "openai/gpt-5.6-luna:nitro",
+      "adjudication_model": "openai/gpt-5.6-terra:nitro",
+      "triage_prompt_id": "current-diff-only-v1",
+      "adjudication_prompt_id": "adjudicate-a0-v3",
+      "input_profile": "D0",
+      "decision_profile": "A0",
+      "cwe_catalog_version": "CWE-4.20",
+      "anchor_verification": "relocating"
+    },
+    "scan": {
+      "window": {
+        "from_sha": "63e96c315cf910401005c33cb60769d07b443017",
+        "to_sha": "d7124adef46e2500aa922a2fe330774ef7ea97bc",
+        "last_n": 500
+      },
+      "commits_scanned": 36,
+      "commits_triaged": 36,
+      "commits_skipped": 1,
+      "triage_candidates": 10,
+      "adjudicated": 5,
+      "findings": 2,
+      "abstained": 3,
+      "rejected": 0,
+      "no_finding": 0,
+      "triage_errors": 0,
+      "adjudication_errors": 0,
+      "anchors_verified": 19,
+      "anchors_relocated": 7,
+      "anchors_rejected": 0,
+      "input_tokens": 1261684,
+      "output_tokens": 21675,
+      "wall_clock_s": 71.306087083,
+      "reconciles": true,
+      "triage_input_tokens": 357276,
+      "triage_output_tokens": 3288,
+      "pending_survivors": 5,
+      "triage_budget_hit": true,
+      "adjudication_complete": false,
+      "adjudicated_commits": [
+        "0a3859a50dec0490758576dd384383fd909710ab",
+        "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+        "3846e43d3309e511ae0da02c1a4c5c3f2b45818b",
+        "5effbcae2ecc173c6d9cfb13a0f068be6aab26d4",
+        "f55111806027eddffd6fe48cd8715fe88f010d07"
+      ],
+      "survivors_total": 10,
+      "unresolved": [
+        {
+          "sha": "5e57a62d9c66803e45bdd9f707b44cc420ec57e2",
+          "reason": "diff too large (599136 bytes)"
+        }
+      ]
+    },
+    "survivors": [
+      {
+        "commit_sha": "f55111806027eddffd6fe48cd8715fe88f010d07",
+        "parent_sha": "151ee6a12e1d8200d428b1270622823dd72e616d",
+        "commit_date": "2026-09-10T13:10:03+02:00",
+        "subject": "feat(cli): ask for the organization and project on trace init (#3418)",
+        "patch_id": "7cd647b3d06903872b82b100ffaf044782f89fbc",
+        "diff_bytes": 288658
+      },
+      {
+        "commit_sha": "5effbcae2ecc173c6d9cfb13a0f068be6aab26d4",
+        "parent_sha": "003d344d7599b6e75893b432be0bc516a8baa27d",
+        "commit_date": "2026-09-09T13:53:02+02:00",
+        "subject": "fix: upgrade extras/dagger grpc to v1.83.2 (#3422)",
+        "patch_id": "8d0cab3edca83abaa43aa54e3a0991ab82015827",
+        "diff_bytes": 1709
+      },
+      {
+        "commit_sha": "3846e43d3309e511ae0da02c1a4c5c3f2b45818b",
+        "parent_sha": "5c634eb8772e1abd42a9d077c5c024e2686fdfb1",
+        "commit_date": "2026-09-09T11:12:31+02:00",
+        "subject": "chore(deps): bump google.golang.org/grpc from 1.83.1 to 1.83.2 (#3420)",
+        "patch_id": "a9aae8f6abc33db18908f35343d8885027b47824",
+        "diff_bytes": 1524
+      },
+      {
+        "commit_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+        "parent_sha": "1008f8216a9eebf089292146e78a3d088d78d84e",
+        "commit_date": "2026-09-08T17:35:47+02:00",
+        "subject": "fix(plugins): guard integration plugins against SSRF (#3407)",
+        "patch_id": "2d6b33f3e2054d421bfb9332d9e26cf57e8453d5",
+        "diff_bytes": 106471
+      },
+      {
+        "commit_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+        "parent_sha": "195701189daa1de3295031af7cb2d9cf12692a54",
+        "commit_date": "2026-09-08T08:14:54+02:00",
+        "subject": "fix(controlplane): cap the policy evaluations inlined by the workflow-run View API (#3408)",
+        "patch_id": "c45358367fb967255b61701125f819e38b7dd405",
+        "diff_bytes": 155516
+      },
+      {
+        "commit_sha": "e2828c6ea2cd4f5374f7b38f1d330433bb94b417",
+        "parent_sha": "e2dde78e4de970d69536faf24c90757eddc7c399",
+        "commit_date": "2026-09-04T22:21:50+02:00",
+        "subject": "fix(controlplane): enforce project-scoped RBAC on AttestationService/GetContract (#3401)",
+        "patch_id": "f755d3b8ec75906b1dbbbd5db14a50ed57ce1bdb",
+        "diff_bytes": 12324
+      },
+      {
+        "commit_sha": "06f546626637e0e173c93344bc91ff8c4935d50d",
+        "parent_sha": "39ede64f2c26cb866191502779812c998a50d77b",
+        "commit_date": "2026-09-04T20:07:18-03:00",
+        "subject": "fix: bump golang.org/x/crypto to v0.56.0 (#3403)",
+        "patch_id": "ce8eba562c6c1776eaefc347a76ccbc1f994e32e",
+        "diff_bytes": 1571
+      },
+      {
+        "commit_sha": "e2dde78e4de970d69536faf24c90757eddc7c399",
+        "parent_sha": "d2c4dd0d6256d3caaae15144c2c49d21d41e76c3",
+        "commit_date": "2026-09-04T18:37:47+02:00",
+        "subject": "fix(controlplane): enforce project RBAC on CAS download redirect lookups (PFM-6716) (#3400)",
+        "patch_id": "5d07fdf5f893b236c1b5e98347e59e9f669cf8d3",
+        "diff_bytes": 15248
+      },
+      {
+        "commit_sha": "4afdffb6e7be1526cfa5865260b720c4f1efc234",
+        "parent_sha": "809a484920ff040f04c11c3bfba831e381dd9cd7",
+        "commit_date": "2026-09-04T17:27:29+02:00",
+        "subject": "fix(cli): fail attestation verify when the bundle was never verified (#3398)",
+        "patch_id": "b771ed1268afb9f27010fde40d13538594973235",
+        "diff_bytes": 30079
+      },
+      {
+        "commit_sha": "3fe8434663b93b3077767d84e61223ebb00968b5",
+        "parent_sha": "25d45af1812f3a272c2ce364264491cb8472237d",
+        "commit_date": "2026-09-01T16:06:22+02:00",
+        "subject": "fix(policies): evaluate redacted materials against the content that was stored (#3383)",
+        "patch_id": "26bbdbaf3527ccb21da3b936eab41148f8a0918f",
+        "diff_bytes": 158912
+      }
+    ],
+    "discarded": [
+      "003d344d7599b6e75893b432be0bc516a8baa27d",
+      "1008f8216a9eebf089292146e78a3d088d78d84e",
+      "151ee6a12e1d8200d428b1270622823dd72e616d",
+      "195701189daa1de3295031af7cb2d9cf12692a54",
+      "1a6bbe680f62bc3efb031771ba36e02ead68d1d8",
+      "25d45af1812f3a272c2ce364264491cb8472237d",
+      "27afd6b45761765b2cc5d477d9a189eadcaee4ac",
+      "28d5c7d65a6fc2751fac8323a6bda164915dbef3",
+      "294cad656b333f873add717aae984c26cb5195dc",
+      "35cd46cd5065504e5aca79a4d0a77f4e76b40fbc",
+      "374a4ca17b97bb2492eb7a991ff013827b12a0a6",
+      "39ede64f2c26cb866191502779812c998a50d77b",
+      "59535d51fdc3a9ce4d28fede427cb685593eb3fb",
+      "5c634eb8772e1abd42a9d077c5c024e2686fdfb1",
+      "5fb81799e8b0199e5e4af4e11885da1bc53595c4",
+      "6037210405abf31b02fcb904e3069831b5d73d55",
+      "63e96c315cf910401005c33cb60769d07b443017",
+      "809a484920ff040f04c11c3bfba831e381dd9cd7",
+      "83360743bcb412b221bc80565f8bca0132290591",
+      "8ad6aa6196425287fac4a62c37812466d2da5c13",
+      "bc95e6ccb847ca44c5d01e1f9b20083303c96f95",
+      "cca8c4ee6d80fd80cac8e1de4558d2c1967589cf",
+      "d2c4dd0d6256d3caaae15144c2c49d21d41e76c3",
+      "d7124adef46e2500aa922a2fe330774ef7ea97bc",
+      "d88df06c810b75f56420b2fbd3c814f4fbd0eaa9",
+      "f3cf2fb5538934bf5e7741f5983f75fbaf6edf1c"
+    ],
+    "class_counts": {
+      "access_control": 1,
+      "resource_exhaustion": 1
+    },
+    "min_support": 2,
+    "top_risks": [
+      {
+        "component": "app/controlplane/internal/conf/controlplane/config/v1/conf.proto",
+        "kind": "source",
+        "classes": [
+          "access_control",
+          "resource_exhaustion"
+        ],
+        "severity": "high",
+        "fix_count": 2,
+        "recurring": true,
+        "severity_mass": 6,
+        "recency_weight": 1.99,
+        "cwe": [
+          "CWE-770",
+          "CWE-918"
+        ],
+        "evidence": [
+          "0a3859a50dec0490758576dd384383fd909710ab",
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/cmd/main.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/core/dependency-track/v1/client/sbom.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/core/dependency-track/v1/cmd/main.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/core/dependency-track/v1/extension.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/core/discord-webhook/v1/discord.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/core/slack-webhook/v1/slack_webhook.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/core/webhook/v1/webhook.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/plugins.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "component": "app/controlplane/plugins/sdk/readme-generator/main.go",
+        "kind": "source",
+        "classes": [
+          "access_control"
+        ],
+        "severity": "high",
+        "fix_count": 1,
+        "recurring": false,
+        "severity_mass": 4,
+        "recency_weight": 1,
+        "cwe": [
+          "CWE-918"
+        ],
+        "evidence": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      }
+    ],
+    "shared_surfaces": [
+      {
+        "surface": "Access Control — client.Post(webhookURL (+2 related sinkes)",
+        "class": "access_control",
+        "guard": [
+          "NewHTTPClient",
+          "isPubliclyRoutable",
+          "publicOnlyDialContext"
+        ],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "client.Post(webhookURL",
+          "http.DefaultClient.Do(req)",
+          "i.client.Do(req)"
+        ],
+        "entry_points": [
+          "app/controlplane/cmd/main.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.pb.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.proto",
+          "app/controlplane/plugins/core/dependency-track/v1/client/sbom.go",
+          "app/controlplane/plugins/core/dependency-track/v1/client/sbom_test.go",
+          "app/controlplane/plugins/core/dependency-track/v1/cmd/main.go",
+          "app/controlplane/plugins/core/dependency-track/v1/extension.go",
+          "app/controlplane/plugins/core/dependency-track/v1/extension_test.go",
+          "app/controlplane/plugins/core/discord-webhook/v1/discord.go",
+          "app/controlplane/plugins/core/discord-webhook/v1/discord_test.go",
+          "app/controlplane/plugins/core/slack-webhook/v1/slack_webhook.go",
+          "app/controlplane/plugins/core/slack-webhook/v1/slack_webhook_test.go",
+          "app/controlplane/plugins/core/webhook/v1/webhook.go",
+          "app/controlplane/plugins/core/webhook/v1/webhook_test.go",
+          "app/controlplane/plugins/plugins.go",
+          "app/controlplane/plugins/sdk/readme-generator/main.go",
+          "app/controlplane/plugins/sdk/v1/httpclient.go",
+          "app/controlplane/plugins/sdk/v1/httpclient_test.go",
+          "deployment/chainloop/Chart.yaml",
+          "deployment/chainloop/README.md",
+          "deployment/chainloop/templates/controlplane/configmap.yaml",
+          "deployment/chainloop/values.yaml",
+          "devel/integrations.md"
+        ],
+        "check_hint": "An integration URL supplied by a caller must not result in a connection to a non-publicly-routable address; DNS answers, redirects, and proxy routing must not bypass that restriction.",
+        "support": 1,
+        "origin_fixes": [
+          "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1"
+        ]
+      },
+      {
+        "surface": "Resource Exhaustion — bytes.Buffer (+2 related sinkes)",
+        "class": "resource_exhaustion",
+        "guard": [
+          "boundedBuffer",
+          "policyEvaluationsMaxInlineBytes",
+          "tooLargePolicyEvaluations"
+        ],
+        "guard_kind": "guard_added",
+        "sink_symbols": [
+          "bytes.Buffer",
+          "chainloop.PolicyEvaluationsFromBundle",
+          "s.casClient.Download"
+        ],
+        "entry_points": [
+          "app/cli/cmd/workflow_workflow_run_describe.go",
+          "app/cli/cmd/workflow_workflow_run_describe_test.go",
+          "app/cli/pkg/action/workflow_run_describe.go",
+          "app/controlplane/api/controlplane/v1/response_messages.pb.go",
+          "app/controlplane/api/controlplane/v1/response_messages.proto",
+          "app/controlplane/api/gen/frontend/controlplane/v1/response_messages.ts",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.AttestationItem.jsonschema.json",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.AttestationItem.schema.json",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.PolicyEvaluationsRef.jsonschema.json",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.PolicyEvaluationsRef.schema.json",
+          "app/controlplane/cmd/wire_gen.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.pb.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.proto",
+          "app/controlplane/internal/service/workflowrun.go",
+          "app/controlplane/internal/service/workflowrun_test.go",
+          "app/controlplane/pkg/biz/.mockery.yml",
+          "app/controlplane/pkg/biz/casclient.go",
+          "app/controlplane/pkg/biz/casclient_test.go",
+          "app/controlplane/pkg/biz/mocks/CASClient.go",
+          "pkg/casclient/.mockery.yml",
+          "pkg/casclient/casclient.go",
+          "pkg/casclient/mocks/Downloader.go",
+          "pkg/casclient/mocks/DownloaderUploader.go"
+        ],
+        "check_hint": "WorkflowRunService.View must not download, decode, cache, or inline a policy-evaluation bundle larger than the configured maximum, including when CAS size metadata is inaccurate.",
+        "support": 1,
+        "origin_fixes": [
+          "0a3859a50dec0490758576dd384383fd909710ab"
+        ]
+      }
+    ],
+    "fingerprints": [
+      {
+        "id": "fp_12468d68a7",
+        "patch_id": "2d6b33f3e2054d421bfb9332d9e26cf57e8453d5",
+        "commit_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+        "commit_date": "2026-09-08T17:35:47+02:00",
+        "commit_subject": "fix(plugins): guard integration plugins against SSRF (#3407)",
+        "class": "access_control",
+        "cwe": [
+          "CWE-918"
+        ],
+        "components": [
+          "app/controlplane/cmd/main.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.pb.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.proto",
+          "app/controlplane/plugins/core/dependency-track/v1/client/sbom.go",
+          "app/controlplane/plugins/core/dependency-track/v1/client/sbom_test.go",
+          "app/controlplane/plugins/core/dependency-track/v1/cmd/main.go",
+          "app/controlplane/plugins/core/dependency-track/v1/extension.go",
+          "app/controlplane/plugins/core/dependency-track/v1/extension_test.go",
+          "app/controlplane/plugins/core/discord-webhook/v1/discord.go",
+          "app/controlplane/plugins/core/discord-webhook/v1/discord_test.go",
+          "app/controlplane/plugins/core/slack-webhook/v1/slack_webhook.go",
+          "app/controlplane/plugins/core/slack-webhook/v1/slack_webhook_test.go",
+          "app/controlplane/plugins/core/webhook/v1/webhook.go",
+          "app/controlplane/plugins/core/webhook/v1/webhook_test.go",
+          "app/controlplane/plugins/plugins.go",
+          "app/controlplane/plugins/sdk/readme-generator/main.go",
+          "app/controlplane/plugins/sdk/v1/httpclient.go",
+          "app/controlplane/plugins/sdk/v1/httpclient_test.go",
+          "deployment/chainloop/Chart.yaml",
+          "deployment/chainloop/README.md",
+          "deployment/chainloop/templates/controlplane/configmap.yaml",
+          "deployment/chainloop/values.yaml",
+          "devel/integrations.md"
+        ],
+        "reachable_from": [
+          "app/controlplane/internal/dispatcher/dispatcher.go",
+          "app/controlplane/internal/service/integration.go",
+          "app/controlplane/pkg/authz/authz.go"
+        ],
+        "sink_symbols": [
+          "client.Post(webhookURL",
+          "http.DefaultClient.Do(req)",
+          "i.client.Do(req)"
+        ],
+        "guard_symbols": [
+          "NewHTTPClient",
+          "isPubliclyRoutable",
+          "publicOnlyDialContext"
+        ],
+        "sink": "Outbound HTTP requests made by integration plugins to registration-controlled webhook or Dependency-Track instance URLs.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Adds a DNS-aware, dial-time public-address allowlist and applies it unconditionally to Slack and Discord, and to generic webhook and Dependency-Track when block_private_targets is enabled.",
+        "severity": {
+          "level": "high",
+          "source": "model_estimate",
+          "score": 8.1,
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:L"
+        },
+        "confidence": "high",
+        "summary": "Guards integration-plugin outbound HTTP requests against SSRF to private and cloud-metadata targets.",
+        "poc": "A permitted integration registrar could cause the control plane to send HTTP requests to loopback, private, link-local, and cloud-metadata endpoints, including posting workflow attestation/SBOM data to a selected internal endpoint.",
+        "root_cause": "Integration plugins dereferenced registration-controlled URLs with standard HTTP clients that had no private-address, DNS-rebinding, redirect, or proxy bypass protection.",
+        "attacker_preconditions": "An authenticated principal granted PolicyRegisteredIntegrationAdd can register one of the affected integrations with an attacker-chosen URL; executing a workflow attachment triggers subsequent requests.",
+        "invariant": "An integration URL supplied by a caller must not result in a connection to a non-publicly-routable address; DNS answers, redirects, and proxy routing must not bypass that restriction.",
+        "fix_completeness": "partial",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "1008f8216a9eebf089292146e78a3d088d78d84e",
+            "path": "app/controlplane/plugins/core/webhook/v1/webhook.go",
+            "start_line": 110,
+            "end_line": 125,
+            "quoted_span": "\t// Validate the URL\n\tif err := validateURL(regReq.URL); err != nil {\n\t\ti.Logger.Errorw(\"invalid webhook URL\", \"error\", err, \"url\", regReq.URL)\n\t\treturn nil, fmt.Errorf(\"invalid webhook URL: %w\", err)\n\t}\n\n\t// Optionally, perform a test request to ensure the webhook URL is reachable\n\tif err := i.testWebhookURL(ctx, regReq.URL); err != nil {\n\t\ti.Logger.Errorw(\"unable to reach webhook URL\", \"error\", err, \"url\", regReq.URL)\n\t\treturn nil, fmt.Errorf(\"unable to reach webhook URL: %w\", err)\n\t}\n\n\t// Store the URL in credentials\n\tcredentials := \u0026sdk.Credentials{\n\t\tURL: regReq.URL, // Storing the URL in the URL field\n\t}",
+            "span_sha256": "3d6f80ad8bebea323bca8822aa3745d2bd1cee255879b153dc0d55afb1b9503d",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "1008f8216a9eebf089292146e78a3d088d78d84e",
+            "path": "app/controlplane/plugins/core/webhook/v1/webhook.go",
+            "start_line": 245,
+            "end_line": 259,
+            "quoted_span": "\treq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(payloadBytes))\n\tif err != nil {\n\t\ti.Logger.Errorw(\"failed to create HTTP request\", \"error\", err, \"url\", url)\n\t\treturn fmt.Errorf(\"creating HTTP request: %w\", err)\n\t}\n\n\tfor key, value := range headers {\n\t\treq.Header.Set(key, value)\n\t}\n\n\tresp, err := i.client.Do(req)\n\tif err != nil {\n\t\ti.Logger.Errorw(\"failed to send HTTP request\", \"error\", err, \"url\", url)\n\t\treturn fmt.Errorf(\"sending HTTP request: %w\", err)\n\t}",
+            "span_sha256": "8df5f6f70c5acd56110873f628ee7981923c313b63a2988cab73b8b090b55f6a",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "1008f8216a9eebf089292146e78a3d088d78d84e",
+            "path": "app/controlplane/plugins/core/dependency-track/v1/extension.go",
+            "start_line": 108,
+            "end_line": 116,
+            "quoted_span": "\t// Validate that the provided configuration is valid\n\tinstance, enableProjectCreation := request.InstanceURI, request.AllowAutoCreate\n\tchecker, err := client.NewIntegration(instance, request.APIKey, enableProjectCreation)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"checking integration: %w\", err)\n\t}\n\n\t// Validate that the provided configuration is valid against the remote service\n\tif err := checker.Validate(ctx); err != nil {",
+            "span_sha256": "90f4e417b873fac909accfd1a9b6f68d69621bfc3469320f6f3a4a12a840a413",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "parent",
+            "revision_sha": "1008f8216a9eebf089292146e78a3d088d78d84e",
+            "path": "app/controlplane/plugins/core/dependency-track/v1/client/sbom.go",
+            "start_line": 204,
+            "end_line": 214,
+            "quoted_span": "func teamPermissionsRequest(host *url.URL, apiKey string) (*teamPermissionsResponse, error) {\n\tapiEndpoint := host.JoinPath(\"/api/v1/team/self\")\n\n\treq, err := http.NewRequest(http.MethodGet, apiEndpoint.String(), nil)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treq.Header.Set(\"X-Api-Key\", apiKey)\n\t// Submit the request\n\tres, err := http.DefaultClient.Do(req)",
+            "span_sha256": "309bc47c60b3180e6e3f766c0d246f7f7ea8a0fa174617890851bf0d6cf5e668",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "app/controlplane/plugins/sdk/v1/httpclient.go",
+            "start_line": 101,
+            "end_line": 145,
+            "quoted_span": "// publicOnlyDialContext wraps dial so that a connection is only made to a\n// publicly routable address.\n//\n// The check runs here, at dial time, rather than against the URL, for two\n// reasons. It sees the address the connection will actually use, so a host\n// name that resolves to an allowed address for a check and to a blocked one\n// for the connection cannot slip through: the dial targets the very IP that\n// was validated. And because every redirect hop opens its own connection,\n// the whole chain is covered, not just the URL the caller supplied.\nfunc publicOnlyDialContext(resolve resolveFunc, dial dialFunc) dialFunc {\n\treturn func(ctx context.Context, network, addr string) (net.Conn, error) {\n\t\thost, port, err := net.SplitHostPort(addr)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"%w: malformed address %q\", ErrBlockedTarget, addr)\n\t\t}\n\n\t\tips, err := resolve(ctx, host)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"resolving %q: %w\", host, err)\n\t\t}\n\n\t\tif len(ips) == 0 {\n\t\t\treturn nil, fmt.Errorf(\"%w: %q did not resolve to any address\", ErrBlockedTarget, host)\n\t\t}\n\n\t\t// A host that answers with a mix of public and non-public addresses is\n\t\t// refused outright, so that retrying cannot land on the blocked one.\n\t\tfor _, ip := range ips {\n\t\t\tif !isPubliclyRoutable(ip.IP) {\n\t\t\t\treturn nil, fmt.Errorf(\"%w: %q resolves to non-public address %s\", ErrBlockedTarget, host, ip.IP)\n\t\t\t}\n\t\t}\n\n\t\tvar lastErr error\n\t\tfor _, ip := range ips {\n\t\t\tconn, err := dial(ctx, network, net.JoinHostPort(ip.IP.String(), port))\n\t\t\tif err == nil {\n\t\t\t\treturn conn, nil\n\t\t\t}\n\t\t\tlastErr = err\n\t\t}\n\n\t\treturn nil, lastErr\n\t}\n}",
+            "span_sha256": "1d8303b26c1354f62e2cb7a887db0e29096d8dd5fa37e1932a6cf16f12a47228",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "app/controlplane/plugins/sdk/v1/httpclient.go",
+            "start_line": 85,
+            "end_line": 92,
+            "quoted_span": "\tif opts.PublicTargetsOnly {\n\t\ttransport.DialContext = publicOnlyDialContext(net.DefaultResolver.LookupIPAddr, dialer.DialContext)\n\n\t\t// Through a proxy the only address this client connects to is the\n\t\t// proxy's own, which leaves the destination unchecked and the guard\n\t\t// above unenforced, so a public-only client never uses one.\n\t\ttransport.Proxy = nil\n\t}",
+            "span_sha256": "af9c7d6541c07509f86da2dc6426a2a7b736f752dfd00f091ff1eee56b6156ac",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "app/controlplane/plugins/core/webhook/v1/webhook.go",
+            "start_line": 97,
+            "end_line": 103,
+            "quoted_span": "\treturn \u0026Integration{\n\t\tFanOutIntegration: base,\n\t\tclient: sdk.NewHTTPClient(sdk.HTTPClientOptions{\n\t\t\tTimeout:           perAttemptTimeout,\n\t\t\tPublicTargetsOnly: netPolicy.BlockPrivateTargets,\n\t\t}),\n\t}, nil",
+            "span_sha256": "5acf301448ecc89d5bd6745539286843d5da81adf66a0bf47dd39eaf2b22cecf",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "app/controlplane/plugins/core/slack-webhook/v1/slack_webhook.go",
+            "start_line": 38,
+            "end_line": 43,
+            "quoted_span": "// publicOnlyClient builds the HTTP client used to reach the webhook. Slack is\n// a public service, so a destination inside the deployment's own network is\n// always refused, whatever the deployment's plugin network policy says.\nfunc publicOnlyClient() *http.Client {\n\treturn sdk.NewHTTPClient(sdk.HTTPClientOptions{PublicTargetsOnly: true})\n}",
+            "span_sha256": "bd5aec63f6843538529d3f4d98ecd77b33efffdb49cfdbaef5382fca67a1b0f1",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "deployment/chainloop/values.yaml",
+            "start_line": 169,
+            "end_line": 172,
+            "quoted_span": "  ## @extra controlplane.pluginsNetworkPolicy Outbound network policy for the plugins that accept an arbitrary target URL, currently the generic webhook and Dependency-Track plugins. Plugins whose destination is a known public service, such as the Slack and Discord webhooks, always refuse non-public destinations.\n  ## @param controlplane.pluginsNetworkPolicy.blockPrivateTargets Refuse requests to destinations that are not publicly routable, such as loopback, private ranges and cloud metadata endpoints\n  pluginsNetworkPolicy:\n    blockPrivateTargets: false",
+            "span_sha256": "4fe10c0db7129f1b254d2eed3a1b9ef524b6c90fd9a9b141ccbbc2bb0cf8c45d",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "app/controlplane/internal/service/integration.go",
+            "start_line": 79,
+            "end_line": 103,
+            "quoted_span": "func (s *IntegrationsService) Register(ctx context.Context, req *pb.IntegrationsServiceRegisterRequest) (*pb.IntegrationsServiceRegisterResponse, error) {\n\torg, err := requireCurrentOrg(ctx)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// lookup the integration\n\tintegration, err := s.integrations.FindByID(req.PluginId)\n\tif err != nil {\n\t\treturn nil, errors.NotFound(\"not found\", err.Error())\n\t}\n\n\ti, err := s.integrationUC.RegisterAndSave(ctx, org.ID, req.Name, req.Description, integration, req.Config)\n\tif err != nil {\n\t\tif biz.IsNotFound(err) {\n\t\t\treturn nil, errors.NotFound(\"not found\", err.Error())\n\t\t} else if biz.IsErrValidation(err) {\n\t\t\treturn nil, errors.BadRequest(\"wrong validation\", err.Error())\n\t\t}\n\n\t\treturn nil, handleUseCaseErr(err, s.log)\n\t}\n\n\treturn \u0026pb.IntegrationsServiceRegisterResponse{Result: bizIntegrationToPb(i)}, nil\n}",
+            "span_sha256": "1a723ce629bc690799197d49f3847f2650d3265f34dfe6f9a7041bb31479485a",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "app/controlplane/internal/dispatcher/dispatcher.go",
+            "start_line": 311,
+            "end_line": 315,
+            "quoted_span": "\treturn backoff.RetryNotify(\n\t\tfunc() error {\n\t\t\tlogger.Infow(\"msg\", \"executing integration\", \"integration\", plugin.String(), \"input\", inputType)\n\n\t\t\terr := plugin.Execute(ctx, opts)",
+            "span_sha256": "03ccfd44ff740a49e5566663af94b17460866d99e67f01764680ee9df4fc8275",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "12468d68a7e3dd2c47089cb6b298c01ec30e8ab1",
+            "path": "app/controlplane/pkg/authz/authz.go",
+            "start_line": 372,
+            "end_line": 374,
+            "quoted_span": "\t\"/controlplane.v1.IntegrationsService/ListRegistrations\":    {Policies: []*Policy{PolicyRegisteredIntegrationList}},\n\t\"/controlplane.v1.IntegrationsService/DescribeRegistration\": {Policies: []*Policy{PolicyRegisteredIntegrationRead}},\n\t\"/controlplane.v1.IntegrationsService/Register\":             {Policies: []*Policy{PolicyRegisteredIntegrationAdd}},",
+            "span_sha256": "b1affcbd3e54d786b5904e970c9adeff65deedc3dbd188acb9cd4c2fb957520d",
+            "verified": true,
+            "relocated": false
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "A principal authorized to register an integration could supply a private or metadata URL that the plugin HTTP client would request.",
+          "after": "Private targets are unreachable through Slack and Discord registrations; generic webhook and Dependency-Track private targets are unreachable when pluginsNetworkPolicy.blockPrivateTargets is enabled."
+        },
+        "failure_containment": "degraded",
+        "introduced_by": [
+          {
+            "commit_sha": "b8be94a351d608cb1a6408ee7dd6919139a3e992",
+            "description": "Dependency-Track outbound client",
+            "committed_at": "2023-03-07T22:09:35+01:00",
+            "verified": true
+          },
+          {
+            "commit_sha": "59caa39674fe9a6b2fe61cae5de711e22c4fc44c",
+            "description": "Discord webhook integration",
+            "committed_at": "2023-06-16T08:24:39+02:00",
+            "verified": true
+          },
+          {
+            "commit_sha": "95f814ffcc88babaf625dbd709beb7c7ed7cdfbc",
+            "description": "Slack webhook integration",
+            "committed_at": "2023-07-05T00:36:23+02:00",
+            "verified": true
+          },
+          {
+            "commit_sha": "88239fc5787b108cbee6aeea0177ecf24231c6ab",
+            "description": "generic webhook integration",
+            "committed_at": "2025-01-03T14:42:10+01:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 110658372
+      },
+      {
+        "id": "fp_0a3859a50d",
+        "patch_id": "c45358367fb967255b61701125f819e38b7dd405",
+        "commit_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+        "commit_date": "2026-09-08T08:14:54+02:00",
+        "commit_subject": "fix(controlplane): cap the policy evaluations inlined by the workflow-run View API (#3408)",
+        "class": "resource_exhaustion",
+        "cwe": [
+          "CWE-770"
+        ],
+        "components": [
+          "app/cli/cmd/workflow_workflow_run_describe.go",
+          "app/cli/cmd/workflow_workflow_run_describe_test.go",
+          "app/cli/pkg/action/workflow_run_describe.go",
+          "app/controlplane/api/controlplane/v1/response_messages.pb.go",
+          "app/controlplane/api/controlplane/v1/response_messages.proto",
+          "app/controlplane/api/gen/frontend/controlplane/v1/response_messages.ts",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.AttestationItem.jsonschema.json",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.AttestationItem.schema.json",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.PolicyEvaluationsRef.jsonschema.json",
+          "app/controlplane/api/gen/jsonschema/controlplane.v1.PolicyEvaluationsRef.schema.json",
+          "app/controlplane/cmd/wire_gen.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.pb.go",
+          "app/controlplane/internal/conf/controlplane/config/v1/conf.proto",
+          "app/controlplane/internal/service/workflowrun.go",
+          "app/controlplane/internal/service/workflowrun_test.go",
+          "app/controlplane/pkg/biz/.mockery.yml",
+          "app/controlplane/pkg/biz/casclient.go",
+          "app/controlplane/pkg/biz/casclient_test.go",
+          "app/controlplane/pkg/biz/mocks/CASClient.go",
+          "pkg/casclient/.mockery.yml",
+          "pkg/casclient/casclient.go",
+          "pkg/casclient/mocks/Downloader.go",
+          "pkg/casclient/mocks/DownloaderUploader.go"
+        ],
+        "reachable_from": [
+          "app/controlplane/api/controlplane/v1/workflow_run.proto",
+          "app/controlplane/pkg/authz/authz.go"
+        ],
+        "sink_symbols": [
+          "bytes.Buffer",
+          "chainloop.PolicyEvaluationsFromBundle",
+          "s.casClient.Download"
+        ],
+        "guard_symbols": [
+          "boundedBuffer",
+          "policyEvaluationsMaxInlineBytes",
+          "tooLargePolicyEvaluations"
+        ],
+        "sink": "Unbounded CAS download into bytes.Buffer followed by caching and decoding in WorkflowRunService.resolvePolicyEvaluations.",
+        "fix_kind": "guard_added",
+        "fix_shape": "Caps policy-evaluation bundles inlined by WorkflowRunService.View at 10 MiB by checking CAS metadata and enforcing the same limit on received bytes; oversized or unavailable bundles are returned by reference.",
+        "severity": {
+          "level": "medium",
+          "source": "model_estimate",
+          "score": 6.5
+        },
+        "confidence": "high",
+        "summary": "Fixes an authenticated resource-exhaustion vulnerability in workflow-run View policy-evaluation inlining.",
+        "poc": "An authorized user could make the control plane allocate and retain an unbounded downloaded bundle, decoded evaluations, regrouped data, and response objects, exhausting process memory and denying service.",
+        "root_cause": "WorkflowRunService.resolvePolicyEvaluations trusted an unbounded CAS download and materialized its contents several times without a size limit.",
+        "attacker_preconditions": "An authenticated principal with project-scoped PolicyWorkflowRunRead access to a workflow run whose policy-evaluation CAS bundle is oversized; this can be its own run, and repeated View requests amplify memory pressure.",
+        "invariant": "WorkflowRunService.View must not download, decode, cache, or inline a policy-evaluation bundle larger than the configured maximum, including when CAS size metadata is inaccurate.",
+        "fix_completeness": "complete",
+        "anchors": [
+          {
+            "revision": "parent",
+            "revision_sha": "195701189daa1de3295031af7cb2d9cf12692a54",
+            "path": "app/controlplane/internal/service/workflowrun.go",
+            "start_line": 114,
+            "end_line": 122,
+            "quoted_span": "\tvar buf bytes.Buffer\n\tif err := s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, \u0026buf, digest); err != nil {\n\t\treturn nil, fmt.Errorf(\"downloading policy eval bundle: %w\", err)\n\t}\n\n\tdata := buf.Bytes()\n\t_ = s.policyEvalCache.Set(ctx, digest, data)\n\n\treturn chainloop.PolicyEvaluationsFromBundle(data)",
+            "span_sha256": "bcf802c7eeff027ba32b89912a9e7ea24345bc564e615dc6a05c896e60492a26",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+            "path": "app/controlplane/internal/service/workflowrun.go",
+            "start_line": 94,
+            "end_line": 101,
+            "quoted_span": "// defaultPolicyEvaluationsMaxInlineBytes bounds the policy-evaluation bundle\n// the View API is willing to download and inline in a response. A single\n// attestation can carry a six-figure number of violations, and inlining one\n// holds the payload in memory several times over (download buffer, decoded\n// bundle, regrouped evaluations, response protos), which is enough to exhaust\n// the control plane. Bundles above the cap are returned as a reference so the\n// caller can fetch them directly from the CAS.\nconst defaultPolicyEvaluationsMaxInlineBytes = 10 \u003c\u003c 20 // 10MiB",
+            "span_sha256": "b22340aefababf7f73dc00ea3e9dd012f6142ecd23e2e80871d37d6760a3d453",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+            "path": "app/controlplane/internal/service/workflowrun.go",
+            "start_line": 164,
+            "end_line": 206,
+            "quoted_span": "\t// Ask for the size before paying for the transfer.\n\tinfo, err := s.casClient.Describe(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, digest)\n\tif err != nil {\n\t\ts.log.Warnw(\"msg\", \"describing policy evaluations bundle\", \"digest\", digest, \"err\", err)\n\t\treturn unavailablePolicyEvaluations(digest, 0, mediaType)\n\t}\n\n\tif info.Size \u003e maxInlineBytes {\n\t\ts.log.Infow(\"msg\", \"policy evaluations bundle too large to inline\", \"digest\", digest, \"size\", info.Size, \"max\", maxInlineBytes)\n\t\treturn tooLargePolicyEvaluations(digest, info.Size, mediaType)\n\t}\n\n\t// A size of zero means the backend did not report one, not that the object\n\t// is empty: some backends omit the content length and the proto getter then\n\t// yields zero. Downloading on that basis would be downloading blind.\n\tif info.Size \u003c= 0 {\n\t\ts.log.Warnw(\"msg\", \"policy evaluations bundle has no reported size\", \"digest\", digest)\n\t\treturn unavailablePolicyEvaluations(digest, 0, mediaType)\n\t}\n\n\t// The reported size is metadata, so bound the transfer itself as well.\n\t// A backend that under-reports cannot then push us past the cap.\n\tbuf := \u0026boundedBuffer{limit: maxInlineBytes}\n\terr = s.casClient.Download(ctx, string(mapping.CASBackend.Provider), mapping.CASBackend.SecretName, mapping.CASBackend.OrganizationID, buf, digest)\n\n\t// Checked before the error because a writer refusing to grow surfaces as a\n\t// download failure, and because the bound must hold even if an\n\t// implementation swallows the write error.\n\tif buf.exceeded {\n\t\ts.log.Warnw(\"msg\", \"policy evaluations bundle exceeded the cap while downloading\", \"digest\", digest, \"reportedSize\", info.Size, \"max\", maxInlineBytes)\n\t\t// The reported size is known to be wrong, so no size is reported at all.\n\t\treturn tooLargePolicyEvaluations(digest, 0, mediaType)\n\t}\n\n\tif err != nil {\n\t\ts.log.Warnw(\"msg\", \"downloading policy evaluations bundle\", \"digest\", digest, \"err\", err)\n\t\treturn unavailablePolicyEvaluations(digest, info.Size, mediaType)\n\t}\n\n\tdata := buf.Bytes()\n\t_ = s.policyEvalCache.Set(ctx, digest, data)\n\n\treturn s.decodePolicyEvaluations(data, digest, info.Size, mediaType)",
+            "span_sha256": "7c910407148d9cd75ff1c368620dd64f2c8110f5825ef773faee8a6f15bef524",
+            "verified": true,
+            "relocated": false
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+            "path": "app/controlplane/internal/service/workflowrun.go",
+            "start_line": 209,
+            "end_line": 230,
+            "quoted_span": "// boundedBuffer accumulates bytes in memory up to a limit and refuses the write\n// that would exceed it, recording that it did. It exists so the policy\n// evaluations cap is enforced against the bytes actually received rather than\n// against the size the CAS backend claims.\ntype boundedBuffer struct {\n\tbuf      bytes.Buffer\n\tlimit    int64\n\twritten  int64\n\texceeded bool\n}\n\nfunc (b *boundedBuffer) Write(p []byte) (int, error) {\n\tif b.written+int64(len(p)) \u003e b.limit {\n\t\tb.exceeded = true\n\t\treturn 0, fmt.Errorf(\"content exceeds the maximum of %d bytes\", b.limit)\n\t}\n\n\tn, err := b.buf.Write(p)\n\tb.written += int64(n)\n\n\treturn n, err\n}",
+            "span_sha256": "643ce1cf395d111295b4691171fa4f0b95e1942ddf20ca4047b2723217cda7bb",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+            "path": "app/controlplane/internal/service/workflowrun.go",
+            "start_line": 409,
+            "end_line": 450,
+            "quoted_span": "\t// Enforce project-scoped RBAC on the workflow run\n\tif err = s.authorizeResource(ctx, authz.PolicyWorkflowRunRead, authz.ResourceTypeProject, run.Workflow.ProjectID); err != nil {\n\t\treturn nil, err\n\t}\n\n\tvar verificationResult *pb.WorkflowRunServiceViewResponse_VerificationResult\n\tif req.Verify {\n\t\t// it might be nil if it doesn't apply\n\t\tvr, err := s.wrUseCase.VerifyRun(ctx, run)\n\t\tif err != nil {\n\t\t\treturn nil, handleUseCaseErr(err, s.log)\n\t\t}\n\t\tverificationResult = bizVerificationToPb(vr)\n\t}\n\n\tvar predicate chainloop.NormalizablePredicate\n\tvar policyEvaluationsRef *pb.PolicyEvaluationsRef\n\tif run.Attestation != nil \u0026\u0026 run.Attestation.Envelope != nil {\n\t\tpredicate, err = chainloop.ExtractPredicate(run.Attestation.Envelope)\n\t\tif err != nil {\n\t\t\treturn nil, handleUseCaseErr(err, s.log)\n\t\t}\n\n\t\tif resolved := s.resolvePolicyEvaluations(ctx, predicate.GetPolicyEvaluationsRef(), run.Workflow.OrgID); resolved != nil {\n\t\t\t// Either the evaluations are inlined, or the caller is handed the\n\t\t\t// reference to fetch them from the CAS itself.\n\t\t\tif resolved.ref != nil {\n\t\t\t\tpolicyEvaluationsRef = resolved.ref\n\t\t\t} else {\n\t\t\t\tpredicate = \u0026casResolvedPredicate{NormalizablePredicate: predicate, evals: resolved.evaluations}\n\t\t\t}\n\t\t}\n\t}\n\n\tattestation, err := bizAttestationToPb(run.Attestation, predicate)\n\tif err != nil {\n\t\treturn nil, handleUseCaseErr(err, s.log)\n\t}\n\n\tif attestation != nil {\n\t\tattestation.PolicyEvaluationsRef = policyEvaluationsRef\n\t}",
+            "span_sha256": "c03a624932e7318db1009af16bfb66b48fb589dde333e099278773c658cfe843",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+            "path": "app/controlplane/api/controlplane/v1/workflow_run.proto",
+            "start_line": 44,
+            "end_line": 47,
+            "quoted_span": "service WorkflowRunService {\n  rpc List(WorkflowRunServiceListRequest) returns (WorkflowRunServiceListResponse);\n  rpc View(WorkflowRunServiceViewRequest) returns (WorkflowRunServiceViewResponse);\n}",
+            "span_sha256": "d7f724aa8c1bb9075b6493de3076c49ab4691b331c2c5ee49d5faab7daeb99a4",
+            "verified": true,
+            "relocated": true
+          },
+          {
+            "revision": "commit",
+            "revision_sha": "0a3859a50dec0490758576dd384383fd909710ab",
+            "path": "app/controlplane/pkg/authz/authz.go",
+            "start_line": 389,
+            "end_line": 391,
+            "quoted_span": "\t// WorkflowRun\n\t\"/controlplane.v1.WorkflowRunService/List\": {Policies: []*Policy{PolicyWorkflowRunList}},\n\t\"/controlplane.v1.WorkflowRunService/View\": {Policies: []*Policy{PolicyWorkflowRunRead}},",
+            "span_sha256": "5e562df7caa195780cae792017ef99493871ca16251bb933c06d28c403492bea",
+            "verified": true,
+            "relocated": false
+          }
+        ],
+        "reachability": {
+          "verdict": "narrows",
+          "before": "The authorized WorkflowRunService.View RPC downloaded every referenced policy-evaluation bundle into an unbounded bytes.Buffer, then cached, decoded, and inlined it.",
+          "after": "The View RPC returns a PolicyEvaluationsRef for oversized, unknown-size, failed, or over-limit transfers and only decodes under-cap bundles."
+        },
+        "failure_containment": "crashes",
+        "introduced_by": [
+          {
+            "commit_sha": "ca80412e0bb42805e26b4facab9af709580f8dd2",
+            "description": "WorkflowRun View CAS policy-evaluation resolution",
+            "committed_at": "2026-03-30T14:59:42+02:00",
+            "verified": true
+          }
+        ],
+        "introduced_to_fixed_seconds": 13972512
+      }
+    ]
+  }
+}

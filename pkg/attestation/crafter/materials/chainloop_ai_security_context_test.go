@@ -428,3 +428,58 @@ func mustMarshal(t *testing.T, v any) []byte {
 	require.NoError(t, err)
 	return b
 }
+
+// TestChainloopAISecurityContextCrafter_IncompleteAnnotation covers the annotation
+// that says whether another run over the same HEAD would still make progress.
+//
+// It is published as one derived boolean because an annotation query is an exact
+// key/value match: a consumer cannot express "pending_survivors > 0", so it could
+// not otherwise distinguish a bounded cold-start context that is still catching up
+// from a finished one without downloading the payload.
+func TestChainloopAISecurityContextCrafter_IncompleteAnnotation(t *testing.T) {
+	testCases := []struct {
+		name             string
+		path             string
+		incomplete       string
+		pendingSurvivors string
+		budgetHit        string
+	}{
+		{
+			// The fully-adjudicated fixtures carry neither a pending queue nor a
+			// bounded walk, so nothing more is to be done on this HEAD.
+			name:             "a drained context is complete",
+			path:             "./testdata/ai-security-context.json",
+			incomplete:       "false",
+			pendingSurvivors: "0",
+			budgetHit:        "false",
+		},
+		{
+			name:             "a minimal drained context is complete",
+			path:             "./testdata/ai-security-context-minimal.json",
+			incomplete:       "false",
+			pendingSurvivors: "0",
+			budgetHit:        "false",
+		},
+		{
+			// A real bounded cold-start artifact: triage stopped on its survivor
+			// budget after 36 of 498 commits, and 5 of the 10 survivors it queued are
+			// still un-adjudicated. Both reasons to keep going are present at once.
+			name:             "a bounded cold-start context is incomplete",
+			path:             "./testdata/ai-security-context-incomplete.json",
+			incomplete:       "true",
+			pendingSurvivors: "5",
+			budgetHit:        "true",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := craftedMaterial(newSecurityContextCrafter(t).Craft(context.TODO(), tc.path))
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.incomplete, got.Annotations[annotationSecurityContextIncomplete])
+			assert.Equal(t, tc.pendingSurvivors, got.Annotations[annotationSecurityContextPendingSurvivors])
+			assert.Equal(t, tc.budgetHit, got.Annotations[annotationSecurityContextTriageBudgetHit])
+		})
+	}
+}

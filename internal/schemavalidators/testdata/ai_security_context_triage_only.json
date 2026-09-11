@@ -1,0 +1,85 @@
+{
+  "schema_version": "security-context-0.1",
+  "generated_at": "2026-09-10T19:34:26Z",
+  "repo": {
+    "owner": "chainloop-dev",
+    "name": "sample-repo-go",
+    "url": "https://github.com/chainloop-dev/sample-repo-go",
+    "ref": "fe5eb735",
+    "head_sha": "fe5eb735f979f5a4bda31bdff281acd680cf1e5b"
+  },
+  "provenance": {
+    "tool": "strata-go",
+    "tool_version": "dev",
+    "protocol": "",
+    "triage_model": "openai/gpt-5.6-luna:nitro",
+    "triage_prompt_id": "current-diff-only-v1",
+    "input_profile": "D0"
+  },
+  "scan": {
+    "window": {
+      "from_sha": "a6214f62be37e2234f1c816dfd7a84c25376c98f",
+      "to_sha": "fe5eb735f979f5a4bda31bdff281acd680cf1e5b"
+    },
+    "commits_scanned": 11,
+    "commits_triaged": 11,
+    "commits_skipped": 0,
+    "triage_candidates": 3,
+    "adjudicated": 0,
+    "findings": 0,
+    "abstained": 0,
+    "rejected": 0,
+    "no_finding": 0,
+    "triage_errors": 0,
+    "adjudication_errors": 0,
+    "anchors_verified": 0,
+    "anchors_relocated": 0,
+    "anchors_rejected": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "wall_clock_s": 0,
+    "reconciles": true,
+    "triage_input_tokens": 10930,
+    "triage_output_tokens": 417,
+    "adjudication_complete": false,
+    "survivors_total": 3,
+    "pending_survivors": 3,
+    "triage_budget_hit": true
+  },
+  "survivors": [
+    {
+      "commit_sha": "fe5eb735f979f5a4bda31bdff281acd680cf1e5b",
+      "parent_sha": "af5f2f747ea110af304d1feb9c0d88073005441e",
+      "commit_date": "2026-09-10T16:26:54-03:00",
+      "subject": "fix: reject absolute paths in the ls endpoint",
+      "patch_id": "cec8571ff951f25c91ba4581690b1c22018ed2f8",
+      "diff_bytes": 522
+    },
+    {
+      "commit_sha": "ff57f5cd0d76d4b02483d0c89a6c931557156ccb",
+      "parent_sha": "72a1590ff2f099f67b78a2cd47ea6dbb78a88a43",
+      "commit_date": "2026-09-10T16:24:44-03:00",
+      "subject": "fix: reject directory traversal in the ls endpoint",
+      "patch_id": "81e8ce4bae5aea1d2001440d9440d7dfc1e5f95d",
+      "diff_bytes": 510
+    },
+    {
+      "commit_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+      "parent_sha": "c8533df53b0af4b731cb1036ec61aee10e35c67b",
+      "commit_date": "2026-08-19T19:58:28-03:00",
+      "subject": "Avoid shell invoction in command handler",
+      "patch_id": "32d18a48dac298fa43bd3dcffdb3bbfe06a008aa",
+      "diff_bytes": 451
+    }
+  ],
+  "discarded": [
+    "0d7a7bd3a2f0f8b1c6e4a9f27b35d8e1c4a60f92",
+    "3b9c1f04e7a25d8c6b0f31e9a47d52c8f6013abd",
+    "a1f4c70e2b8d95a36c1e47f0b92d58ac6304e7f1"
+  ],
+  "class_counts": {},
+  "min_support": 2,
+  "top_risks": [],
+  "shared_surfaces": [],
+  "fingerprints": []
+}

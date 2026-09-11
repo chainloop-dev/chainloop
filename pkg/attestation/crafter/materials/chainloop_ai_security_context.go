@@ -35,6 +35,16 @@ var (
 	annotationSecurityContextHeadSHA      = api.CreateAnnotation("material.securitycontext.head_sha")
 	annotationSecurityContextFingerprints = api.CreateAnnotation("material.securitycontext.fingerprints")
 	annotationSecurityContextReconciles   = api.CreateAnnotation("material.securitycontext.reconciles")
+	// A context is INCOMPLETE when another run over the same HEAD would still make
+	// progress: survivors are queued but not adjudicated, or triage stopped on its
+	// survivor budget and left history inside its window un-examined. Published as
+	// one derived boolean rather than leaving it to be assembled from the two
+	// underlying fields, so a consumer can filter on it — an annotation query is an
+	// exact key/value match and cannot express "pending_survivors > 0".
+	annotationSecurityContextIncomplete = api.CreateAnnotation("material.securitycontext.incomplete")
+	// The two facts behind it, published for observability rather than filtering.
+	annotationSecurityContextPendingSurvivors = api.CreateAnnotation("material.securitycontext.pending_survivors")
+	annotationSecurityContextTriageBudgetHit  = api.CreateAnnotation("material.securitycontext.triage_budget_hit")
 )
 
 type ChainloopAISecurityContextCrafter struct {
@@ -140,6 +150,15 @@ func (c *ChainloopAISecurityContextCrafter) annotate(material *api.Attestation_M
 	// the scan is incomplete and must not be read as a clean result. Published so
 	// a policy can reject it without reading the payload.
 	material.Annotations[annotationSecurityContextReconciles] = strconv.FormatBool(data.Scan.Reconciles)
+
+	// Whether more work remains on this HEAD, and the two facts that decide it. An
+	// incomplete context is not a failed one: the bounded cold-start run publishes
+	// exactly this state on purpose, so that whatever schedules scans can tell
+	// "still catching up" from "done" without downloading the payload.
+	incomplete := data.Scan.PendingSurvivors > 0 || data.Scan.TriageBudgetHit
+	material.Annotations[annotationSecurityContextIncomplete] = strconv.FormatBool(incomplete)
+	material.Annotations[annotationSecurityContextPendingSurvivors] = strconv.Itoa(data.Scan.PendingSurvivors)
+	material.Annotations[annotationSecurityContextTriageBudgetHit] = strconv.FormatBool(data.Scan.TriageBudgetHit)
 }
 
 // annotateTool publishes the scanner through the shared material-tool
