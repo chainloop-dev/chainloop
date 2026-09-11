@@ -112,6 +112,10 @@ type ScanStats struct {
 	// SurvivorsTotal is how many survivors the context holds at the covered
 	// window.
 	SurvivorsTotal int `json:"survivors_total,omitempty"`
+	// PendingSurvivors is how many survivors still await adjudication: neither in
+	// the frontier, nor a triage hole, nor abandoned after the retry cap. Zero
+	// alongside AdjudicationComplete is the drained queue.
+	PendingSurvivors int `json:"pending_survivors,omitempty"`
 	// TriageInputTokens is the cumulative Phase-1 input tokens across every
 	// triage run.
 	TriageInputTokens int64 `json:"triage_input_tokens,omitempty"`
@@ -308,6 +312,12 @@ type Data struct {
 	// an un-adjudicated (triage-only) or incrementally-built context; absent for
 	// a combined triage+adjudicate scan.
 	Survivors []Survivor `json:"survivors,omitempty"`
+
+	// Discarded are the commits Phase-1 triage classified and REJECTED — SHAs
+	// only, because a discard carries nothing else worth recording. Together with
+	// Survivors and Scan.Unresolved it states the full set of commits ever handed
+	// to the classifier.
+	Discarded []string `json:"discarded,omitempty"`
 }
 
 // Evidence is the Chainloop material envelope around a security context.

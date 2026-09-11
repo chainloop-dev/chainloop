@@ -42,7 +42,8 @@
     "triage_input_tokens": 10930,
     "triage_output_tokens": 417,
     "adjudication_complete": false,
-    "survivors_total": 3
+    "survivors_total": 3,
+    "pending_survivors": 3
   },
   "survivors": [
     {
@@ -69,6 +70,11 @@
       "patch_id": "32d18a48dac298fa43bd3dcffdb3bbfe06a008aa",
       "diff_bytes": 451
     }
+  ],
+  "discarded": [
+    "0d7a7bd3a2f0f8b1c6e4a9f27b35d8e1c4a60f92",
+    "3b9c1f04e7a25d8c6b0f31e9a47d52c8f6013abd",
+    "a1f4c70e2b8d95a36c1e47f0b92d58ac6304e7f1"
   ],
   "class_counts": {},
   "min_support": 2,

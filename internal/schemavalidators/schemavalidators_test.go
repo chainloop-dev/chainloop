@@ -323,10 +323,11 @@ func TestValidateSecurityContext(t *testing.T) {
 
 // TestValidateSecurityContextTriageFields covers the optional fields the
 // triage/adjudicate split consolidated into the security context in place at
-// security-context-0.1: the top-level survivors queue and the scan_stats
-// counters (adjudicated_commits, survivors_total, triage_input_tokens,
-// triage_output_tokens, adjudication_complete). An un-adjudicated (triage-only)
-// context carries survivors and the triage counters, a fully-adjudicated context
+// security-context-0.1: the top-level survivors queue and discard record, and
+// the scan_stats counters (adjudicated_commits, survivors_total,
+// pending_survivors, triage_input_tokens, triage_output_tokens,
+// adjudication_complete). An un-adjudicated (triage-only) context carries
+// survivors, discards and the triage counters, a fully-adjudicated context
 // carries the adjudication frontier, a combined-scan context omits them all, and
 // a genuinely unknown field is still rejected — so both the context object and
 // scan_stats keep their additionalProperties: false contract.
@@ -357,7 +358,12 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 				"attempts":    0,
 			},
 		}
+		payload["discarded"] = []any{
+			"1b8f5aa595c0953995c40e92b1669282ba76dd08",
+			"c8533df53b0af4b731cb1036ec61aee10e35c67b",
+		}
 		scan["survivors_total"] = 1
+		scan["pending_survivors"] = 1
 		scan["triage_input_tokens"] = 8883
 		scan["triage_output_tokens"] = 83
 		scan["adjudication_complete"] = false
@@ -368,8 +374,23 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 		payload, scan := load(t)
 		scan["adjudicated_commits"] = []any{"8c948c742bdfc09c4aae6b3c386faeb98f925ff2"}
 		scan["survivors_total"] = 1
+		// The drained queue: the producer emits the zero rather than omitting it, so
+		// "nothing pending" is stated rather than inferred from an absent field.
+		scan["pending_survivors"] = 0
 		scan["adjudication_complete"] = true
 		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("a discard list of short SHAs is rejected", func(t *testing.T) {
+		payload, _ := load(t)
+		payload["discarded"] = []any{"1b8f5aa"}
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "pattern")
+	})
+
+	t.Run("a negative pending_survivors is rejected", func(t *testing.T) {
+		payload, scan := load(t)
+		scan["pending_survivors"] = -1
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "minimum")
 	})
 
 	t.Run("a combined-scan context validates without them", func(t *testing.T) {

@@ -81,6 +81,10 @@
       "items": {
         "$ref": "#/definitions/survivor"
       }
+    },
+    "discarded": {
+      "$ref": "#/definitions/sha_list",
+      "description": "Commits Phase-1 triage classified and REJECTED — the other half of the triage record, SHAs only because a discard carries nothing else worth recording. With survivors and scan.unresolved it states the full set of commits ever handed to the classifier, so a later walk that re-covers this ground can skip it instead of paying for it again. Absent on a context whose producer did not record it."
     }
   },
   "definitions": {
@@ -329,6 +333,11 @@
           "type": "integer",
           "minimum": 0,
           "description": "How many survivors the context holds at the covered window."
+        },
+        "pending_survivors": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many survivors still await adjudication — survivors that are neither in the frontier, nor a triage hole, nor abandoned after the retry cap. A count rather than a list because the list is already determined by survivors and adjudicated_commits; zero alongside adjudication_complete is the drained queue."
         },
         "triage_input_tokens": {
           "type": "integer",
