@@ -111,27 +111,51 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 		return nil
 	}
 
-	ensureSessionTracked(provider, store, repoRoot, input, log)
-
 	// Composing the banner costs a control-plane round trip, so it is only
 	// worth doing for an agent that can put it in front of the user. Cursor
-	// and opencode would discard it, and the developer would have paid the
-	// wait for nothing.
-	if !provider.SupportsSystemMessage() {
+	// would discard it, and the developer would have paid the wait for
+	// nothing.
+	//
+	// Start it before tracking the session rather than after: tracking shells
+	// out to the agent to copy its transcript, which for opencode is a
+	// subprocess of its own, and neither call needs the other's result. Run in
+	// turn they would make the developer wait for the sum of the two.
+	var dashboardURL <-chan string
+	if provider.SupportsSystemMessage() {
+		dashboardURL = fetchHookDashboardURLAsync(log)
+	}
+
+	ensureSessionTracked(provider, store, repoRoot, input, log)
+
+	if dashboardURL == nil {
 		return nil
 	}
 
 	banner := sessionStartBanner(
-		hookDashboardURL(log),
+		<-dashboardURL,
 		config.LoadOrganizationFromYML(repoRoot),
 		config.LoadProjectFromYML(repoRoot),
 	)
 
-	if err := provider.SystemMessage("\n\n" + banner + "\n"); err != nil {
+	// The banner goes out unadorned; how it is framed on screen is the
+	// provider's call, since a transcript and a toast want opposite things.
+	if err := provider.SystemMessage(banner); err != nil {
 		log.Debug().Err(err).Msg("session-start: failed to send system message")
 	}
 
 	return nil
+}
+
+// fetchHookDashboardURLAsync starts hookDashboardURL on its own goroutine and
+// returns the channel its single result arrives on. The channel is buffered so
+// the goroutine finishes even if the caller never reads it, rather than
+// leaking while blocked on a send.
+func fetchHookDashboardURLAsync(log zerolog.Logger) <-chan string {
+	ch := make(chan string, 1)
+
+	go func() { ch <- hookDashboardURL(log) }()
+
+	return ch
 }
 
 // hookDashboardURL asks the control plane where its web dashboard lives, so

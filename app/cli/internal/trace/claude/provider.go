@@ -152,7 +152,13 @@ func (p *Provider) SupportsSystemMessage() bool {
 	return true
 }
 
-// SystemMessage writes a message to stdout for Claude Code to display on session start.
+// SystemMessage writes a message to stdout for Claude Code to display on
+// session start.
+//
+// The blank lines around it are this client's presentation, not the message's:
+// Claude Code prints a systemMessage flush against the surrounding transcript,
+// so without them the banner reads as part of whatever came before. Providers
+// that frame the message themselves add nothing.
 func (p *Provider) SystemMessage(msg string) error {
 	if msg == "" {
 		return nil
@@ -160,7 +166,7 @@ func (p *Provider) SystemMessage(msg string) error {
 
 	resp := struct {
 		SystemMessage string `json:"systemMessage"`
-	}{SystemMessage: msg}
+	}{SystemMessage: "\n\n" + msg + "\n"}
 
 	return json.NewEncoder(os.Stdout).Encode(resp)
 }
@@ -191,7 +197,7 @@ func (p *Provider) AnnounceToUser(msg string) error {
 		SystemMessage: msg,
 		HookSpecificOutput: hookSpecificOutput{
 			HookEventName:     eventPostToolUse,
-			AdditionalContext: "Tell the user the following, including any link verbatim: " + msg,
+			AdditionalContext: trace.RelayToModelInstruction + msg,
 		},
 	}
 
