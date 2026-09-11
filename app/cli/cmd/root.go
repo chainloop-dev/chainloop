@@ -494,6 +494,11 @@ func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) erro
 		tags["token_type"] = authInfo.TokenType.String()
 		tags["user_id"] = authInfo.ID
 		tags["org_id"] = authInfo.OrgID
+		// Only federated tokens carry a CI namespace, and it is what keeps their events
+		// from collapsing into a single person shared by every CI run on earth.
+		if authInfo.CINamespaceID != "" {
+			tags["ci_namespace_id"] = authInfo.CINamespaceID
+		}
 	}
 
 	// Add organization name if available
