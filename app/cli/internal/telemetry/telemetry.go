@@ -112,8 +112,8 @@ func determineUserID(tags Tags) string {
 	tags["machine_id"] = machineID
 
 	// A federated session's user ID is the OIDC provider's issuer URL, which is the same
-	// value for every run of every repository, so it has to be scoped before it can
-	// identify anyone.
+	// value for every run of every repository and every installation, so it has to be
+	// scoped before it can identify anyone.
 	if id := federatedUserID(tags); id != "" {
 		return id
 	}
