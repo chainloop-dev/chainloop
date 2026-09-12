@@ -74,6 +74,11 @@ type ScanWindow struct {
 type Unresolved struct {
 	SHA    string `json:"sha"`
 	Reason string `json:"reason"`
+	// Retryable is true when a later run should re-examine this commit: a transient
+	// diff-load, triage, or backend/adjudication failure. Absent (false) for a
+	// deterministic hole (an oversize diff) or a context written before this field
+	// existed.
+	Retryable bool `json:"retryable,omitempty"`
 }
 
 // ScanStats is the funnel every stage reports into, so that a silent failure

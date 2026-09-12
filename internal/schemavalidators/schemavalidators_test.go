@@ -422,6 +422,26 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 		scan["unexpected_field"] = "x"
 		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "additionalProperties")
 	})
+
+	t.Run("an unresolved entry carrying a retryable flag validates", func(t *testing.T) {
+		payload, scan := load(t)
+		scan["unresolved"] = []any{map[string]any{
+			"sha":       "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+			"reason":    "adjudication: agent error",
+			"retryable": true,
+		}}
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("an unknown unresolved field is still rejected", func(t *testing.T) {
+		payload, scan := load(t)
+		scan["unresolved"] = []any{map[string]any{
+			"sha":            "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+			"reason":         "x",
+			"unexpected_key": "y",
+		}}
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "additionalProperties")
+	})
 }
 
 func TestValidateOpenAPI(t *testing.T) {

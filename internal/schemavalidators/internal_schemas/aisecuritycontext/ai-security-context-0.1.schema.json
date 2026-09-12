@@ -397,6 +397,10 @@
           "type": "string",
           "minLength": 1,
           "description": "Why it never resolved, e.g. \"diff too large\", \"triage: <error>\", or an adjudication timeout"
+        },
+        "retryable": {
+          "type": "boolean",
+          "description": "Whether a later run should re-examine this commit: a transient diff-load, triage, or backend/adjudication failure. Absent (false) for a deterministic hole (oversize diff) or a context written before this field existed."
         }
       }
     },
