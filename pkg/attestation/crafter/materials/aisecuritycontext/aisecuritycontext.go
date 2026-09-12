@@ -74,6 +74,11 @@ type ScanWindow struct {
 type Unresolved struct {
 	SHA    string `json:"sha"`
 	Reason string `json:"reason"`
+	// Retryable is true when a later run should re-examine this commit: a transient
+	// diff-load, triage, or backend/adjudication failure. Absent (false) for a
+	// deterministic hole (an oversize diff) or a context written before this field
+	// existed.
+	Retryable bool `json:"retryable,omitempty"`
 }
 
 // ScanStats is the funnel every stage reports into, so that a silent failure
@@ -134,6 +139,11 @@ type ScanStats struct {
 	// reached a terminal state — the signal that an empty fingerprints list is
 	// "clean" rather than "not adjudicated yet".
 	AdjudicationComplete bool `json:"adjudication_complete,omitempty"`
+	// Abandoned is how many survivors adjudication gave up on after the retry cap — a
+	// terminal coverage gap, distinct from a still-pending survivor. Nonzero alongside
+	// AdjudicationComplete means the queue drained partly by giving up: complete, but
+	// not a clean bill of health.
+	Abandoned int `json:"abandoned,omitempty"`
 }
 
 // Survivor is one commit that survived Phase-1 triage: an entry in the
@@ -152,6 +162,13 @@ type Survivor struct {
 	// Attempts counts failed adjudication tries; at the cap the survivor is
 	// abandoned.
 	Attempts int `json:"attempts,omitempty"`
+	// Verdict is the terminal adjudication outcome for a survivor that produced no
+	// fingerprint: no_finding | abstain | rejected. A survivor with a fingerprint is
+	// a finding and carries no verdict. Descriptive only — never affects scheduling.
+	Verdict string `json:"verdict,omitempty"`
+	// VerdictReason is the adjudicator's short explanation, carried only for
+	// abstentions (Verdict == "abstain"). Truncated by the producer.
+	VerdictReason string `json:"verdict_reason,omitempty"`
 }
 
 // TopRisk is a component with a security-fix history, ranked by severity mass
