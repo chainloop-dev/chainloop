@@ -49,10 +49,11 @@ type CASRedirectService struct {
 
 	casMappingUC    *biz.CASMappingUseCase
 	casCredsUseCase *biz.CASCredentialsUseCase
+	casBackendUC    *biz.CASBackendUseCase
 	casServerConf   *conf.Bootstrap_CASServer
 }
 
-func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCredentialsUseCase, conf *conf.Bootstrap_CASServer, opts ...NewOpt) (*CASRedirectService, error) {
+func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCredentialsUseCase, casBackendUC *biz.CASBackendUseCase, conf *conf.Bootstrap_CASServer, opts ...NewOpt) (*CASRedirectService, error) {
 	if conf == nil || conf.GetDownloadUrl() == "" {
 		return nil, errors.New("CASServer.downloadURL configuration is missing")
 	}
@@ -61,6 +62,7 @@ func NewCASRedirectService(casmUC *biz.CASMappingUseCase, casCredsUC *biz.CASCre
 		service:         newService(opts...),
 		casMappingUC:    casmUC,
 		casCredsUseCase: casCredsUC,
+		casBackendUC:    casBackendUC,
 		casServerConf:   conf,
 	}, nil
 }
@@ -103,16 +105,14 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		return nil, handleUseCaseErr(err, s.log)
 	}
 
-	backend := mapping.CASBackend
+	backend, err := s.casBackendUC.FindDownloadBackend(ctx, mapping.CASBackend)
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
 
 	// inline backends don't have a download URL
 	if backend.Inline {
 		return nil, kerrors.NotFound("not found", "CAS backend is inline")
-	}
-
-	// check if the backend is on a valid state, if not return an error
-	if backend.ValidationStatus != biz.CASBackendValidationOK {
-		return nil, pb.ErrorCasBackendErrorReasonInvalid("CAS Storage is in an invalid state and can't download artifacts, please fix it before attempting it again")
 	}
 
 	// Create an URL to download the artifact from the CAS backend

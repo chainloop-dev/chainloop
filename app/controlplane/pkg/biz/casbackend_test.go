@@ -72,6 +72,62 @@ func (s *casBackendTestSuite) TestFindDefaultBackendFound() {
 	assert.Equal(backend, wantBackend)
 }
 
+func (s *casBackendTestSuite) TestFindDownloadBackend() {
+	ctx := context.Background()
+	mapped := &biz.CASBackend{ID: uuid.New(), OrganizationID: s.validUUID, ValidationStatus: biz.CASBackendValidationOK}
+
+	got, err := s.useCase.FindDownloadBackend(ctx, mapped)
+	s.Require().NoError(err)
+	s.Same(mapped, got)
+
+	s.resetMock()
+	mapped.ValidationStatus = biz.CASBackendValidationFailed
+	defaultBackend := &biz.CASBackend{ID: uuid.New(), ValidationStatus: biz.CASBackendValidationOK}
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(defaultBackend, nil).Once()
+
+	got, err = s.useCase.FindDownloadBackend(ctx, mapped)
+	s.Require().NoError(err)
+	s.Same(defaultBackend, got)
+
+	s.resetMock()
+	defaultBackend.ValidationStatus = biz.CASBackendValidationFailed
+	fallbackBackend := &biz.CASBackend{ID: uuid.New(), ValidationStatus: biz.CASBackendValidationOK}
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(defaultBackend, nil).Once()
+	s.repo.On("FindFallbackBackend", mock.Anything, s.validUUID).Return(fallbackBackend, nil).Once()
+
+	got, err = s.useCase.FindDownloadBackend(ctx, mapped)
+	s.Require().NoError(err)
+	s.Same(fallbackBackend, got)
+
+	got, err = s.useCase.FindDownloadBackend(ctx, nil)
+	s.Nil(got)
+	s.True(biz.IsNotFound(err))
+
+	s.resetMock()
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(nil, nil).Once()
+
+	got, err = s.useCase.FindDownloadBackend(ctx, mapped)
+	s.Nil(got)
+	s.True(biz.IsNotFound(err))
+
+	s.resetMock()
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(defaultBackend, nil).Once()
+	s.repo.On("FindFallbackBackend", mock.Anything, s.validUUID).Return(nil, nil).Once()
+
+	got, err = s.useCase.FindDownloadBackend(ctx, mapped)
+	s.Nil(got)
+	s.True(biz.IsNotFound(err))
+
+	s.resetMock()
+	fallbackBackend.ValidationStatus = biz.CASBackendValidationFailed
+	s.repo.On("FindDefaultBackend", mock.Anything, s.validUUID).Return(defaultBackend, nil).Once()
+	s.repo.On("FindFallbackBackend", mock.Anything, s.validUUID).Return(fallbackBackend, nil).Once()
+
+	got, err = s.useCase.FindDownloadBackend(ctx, mapped)
+	s.Nil(got)
+	s.True(biz.IsErrValidation(err))
+}
+
 func (s *casBackendTestSuite) TestSaveInvalidUUID() {
 	repo, err := s.useCase.CreateOrUpdate(context.Background(), s.invalidUUID, "", "", "", backendType, true)
 	assert.True(s.T(), biz.IsErrInvalidUUID(err))
