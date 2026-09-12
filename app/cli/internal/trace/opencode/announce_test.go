@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package claude
+package opencode
 
 import (
 	"encoding/json"
@@ -25,11 +25,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestAnnounceToUser pins the wire shape Claude Code expects. systemMessage
-// must stay top-level: nested inside hookSpecificOutput it is silently ignored.
-func TestAnnounceToUser(t *testing.T) {
-	const msg = "Coding Session Available at https://app.chainloop.dev/u/chainloop/sessions/ses_1"
+const sessionLink = "Coding Session Available at https://app.chainloop.dev/u/chainloop/sessions/ses_1"
 
+// TestAnnounceToUser pins the wire shape the opencode plugin parses off the
+// hook's stdout. Both channels are populated: the plugin shows "message" as a
+// TUI toast and appends "relayToModel" to the shell tool's output, so a
+// dismissed toast is not the only chance the user gets to see the link.
+func TestAnnounceToUser(t *testing.T) {
 	testCases := []struct {
 		name        string
 		msg         string
@@ -37,7 +39,7 @@ func TestAnnounceToUser(t *testing.T) {
 	}{
 		{
 			name:        "a message goes out on both channels",
-			msg:         msg,
+			msg:         sessionLink,
 			wantEmitted: true,
 		},
 		{
@@ -54,46 +56,37 @@ func TestAnnounceToUser(t *testing.T) {
 			})
 
 			if !tc.wantEmitted {
-				assert.Empty(t, out, "no message means no stdout, so the hook stays a no-op")
+				assert.Empty(t, out, "no message means no stdout, so the plugin has nothing to parse")
 				return
 			}
 
 			var got map[string]any
 			require.NoError(t, json.Unmarshal([]byte(out), &got))
 
-			assert.Equal(t, tc.msg, got["systemMessage"], "systemMessage must be top-level")
-
-			hookOut, ok := got["hookSpecificOutput"].(map[string]any)
-			require.True(t, ok, "hookSpecificOutput must be present")
-			assert.Equal(t, "PostToolUse", hookOut["hookEventName"])
-
+			assert.Equal(t, tc.msg, got["message"], "the toast text must be the message verbatim")
 			// The model needs the message verbatim to be able to repeat it.
-			assert.Contains(t, hookOut["additionalContext"], tc.msg)
+			assert.Contains(t, got["relayToModel"], tc.msg)
 		})
 	}
 }
 
-// TestSystemMessage pins the blank lines Claude Code needs around a
-// session-start banner. The caller hands the banner over unadorned, so if this
-// framing is lost here it is lost altogether, and the banner runs straight
-// into whatever the transcript showed before it.
+// TestSystemMessage covers the session-start banner, which reaches the user as
+// a toast and so goes out exactly as given — a toast supplies its own frame.
 func TestSystemMessage(t *testing.T) {
 	const banner = "Chainloop Trace is recording this session."
 
 	testCases := []struct {
 		name        string
 		msg         string
-		want        string
 		wantEmitted bool
 	}{
 		{
-			name:        "the banner is framed with blank lines",
+			name:        "the banner goes out verbatim",
 			msg:         banner,
-			want:        "\n\n" + banner + "\n",
 			wantEmitted: true,
 		},
 		{
-			name:        "an empty banner emits nothing, framing included",
+			name:        "an empty banner emits nothing",
 			msg:         "",
 			wantEmitted: false,
 		},
@@ -110,10 +103,13 @@ func TestSystemMessage(t *testing.T) {
 				return
 			}
 
-			var got map[string]string
+			var got map[string]any
 			require.NoError(t, json.Unmarshal([]byte(out), &got))
 
-			assert.Equal(t, tc.want, got["systemMessage"])
+			assert.Equal(t, tc.msg, got["message"])
+			// The banner is not news the model has to repeat; it is shown
+			// once, at the top of the session, and nowhere else.
+			assert.NotContains(t, got, "relayToModel")
 		})
 	}
 }

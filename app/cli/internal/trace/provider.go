@@ -30,6 +30,15 @@ import (
 // single-use content can keep it rather than throw it away unseen.
 var ErrAnnounceUnsupported = errors.New("agent cannot show messages to the user")
 
+// RelayToModelInstruction prefixes a message delivered to the user through
+// the model rather than rendered directly. Agents differ in how that channel
+// is spelled — Claude Code's additionalContext, opencode's tool output — but
+// the instruction does not: the model reads the text as context, not as
+// something to pass on, so every provider using that channel has to say so.
+// Shared because tuning this wording for one agent and not the others would
+// be a silent divergence in what the user ends up reading.
+const RelayToModelInstruction = "Tell the user the following, including any link verbatim: "
+
 // Provider discovers and parses AI coding sessions for a specific agent.
 //
 // Providers are stateless singletons from a registry, so the state-touching

@@ -17,6 +17,7 @@ package opencode
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -158,24 +159,62 @@ func (p *Provider) CleanupAfterEdit(store *state.Store, input *trace.HookInput) 
 	store.DeleteFileSnapshot(input.SessionID, input.FilePath)
 }
 
-// SystemMessage is a no-op for opencode: the plugin system has no
-// systemMessage channel comparable to Claude Code's SessionStart output.
-func (p *Provider) SystemMessage(_ string) error {
-	return nil
+// hookResponse is the contract between a hook invocation and the opencode
+// plugin that spawned it. opencode defines no hook-response protocol of its
+// own — unlike Claude Code, where the shape is the client's — so the plugin
+// is the other half of this type and the two must be changed together.
+//
+// The plugin reads it off the hook's stdout and picks a channel per field;
+// an invocation with nothing to say writes nothing at all.
+type hookResponse struct {
+	// Message is shown to the user directly, as a TUI toast.
+	Message string `json:"message,omitempty"`
+
+	// RelayToModel is appended to the output of the shell tool whose hook
+	// produced it, so the model can repeat the message in its own reply.
+	RelayToModel string `json:"relayToModel,omitempty"`
 }
 
-// SupportsSystemMessage is false for opencode, so callers skip the cost of
-// composing a message that SystemMessage would drop.
+// SystemMessage writes the session-start banner for the plugin to show as a
+// TUI toast, which draws its own frame around whatever it is given.
+func (p *Provider) SystemMessage(msg string) error {
+	if msg == "" {
+		return nil
+	}
+
+	return writeHookResponse(&hookResponse{Message: msg})
+}
+
+// SupportsSystemMessage is true for opencode: the plugin captures the hook's
+// stdout and has a TUI channel to put the banner on.
 func (p *Provider) SupportsSystemMessage() bool {
-	return false
+	return true
 }
 
-// AnnounceToUser is unsupported for OpenCode until its plugin's response
-// shape for surfacing a message is verified against a live session, the way
-// Claude Code's was. The hook after a shell command already fires, so wiring
-// this up later is a change to this method alone.
-func (p *Provider) AnnounceToUser(_ string) error {
-	return trace.ErrAnnounceUnsupported
+// AnnounceToUser hands the message to the plugin on both of its channels: a
+// toast, which reaches the user without involving the model, and the shell
+// tool's output, which reaches the model so it can repeat the message in its
+// reply.
+//
+// Both are used because a toast is dismissed after a few seconds, and the
+// user who has looked away is exactly the one this message exists for. The
+// model's reply is what is still on screen afterwards.
+func (p *Provider) AnnounceToUser(msg string) error {
+	if msg == "" {
+		return nil
+	}
+
+	return writeHookResponse(&hookResponse{
+		Message:      msg,
+		RelayToModel: trace.RelayToModelInstruction + msg,
+	})
+}
+
+// writeHookResponse emits the response as a single JSON line on stdout, which
+// is reserved for it: the hook's logging goes to stderr and to the trace log
+// file, so nothing else can corrupt what the plugin parses.
+func writeHookResponse(resp *hookResponse) error {
+	return json.NewEncoder(os.Stdout).Encode(resp)
 }
 
 // ParseSession reads the copied export JSON for sessionID and returns

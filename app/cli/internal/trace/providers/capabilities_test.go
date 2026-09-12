@@ -47,8 +47,8 @@ func TestSupportsSystemMessage(t *testing.T) {
 		},
 		{
 			provider: opencode.Name,
-			want:     false,
-			why:      "opencode's plugin system has no equivalent channel",
+			want:     true,
+			why:      "the opencode plugin reads the hook's stdout and shows the banner as a TUI toast",
 		},
 	}
 

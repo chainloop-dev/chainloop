@@ -317,3 +317,33 @@ func TestPluginTemplateContainsPatchParsing(t *testing.T) {
 	// Verify the plugin loops over paths rather than sending a single path.
 	assert.Contains(t, content, "for (const fp of filePathsFromArgs")
 }
+
+// TestPluginTemplateSurfacesMessages pins the plugin end of the announcement
+// contract. The Go side writing a message to stdout only reaches the user if
+// the plugin captures that stdout and puts it on one of opencode's channels,
+// and the two halves live in different languages, so nothing but this test
+// catches them drifting apart.
+func TestPluginTemplateSurfacesMessages(t *testing.T) {
+	repoRoot := t.TempDir()
+	p := New()
+	require.NoError(t, p.InstallHooks(repoRoot))
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+	require.NoError(t, err)
+	content := string(data)
+
+	// stdout must be captured, not echoed: .text() implies .quiet(), so the
+	// hook's JSON reply never lands in the user's terminal as raw text.
+	assert.Contains(t, content, ".text()")
+
+	// The plugin reads the Go hookResponse fields by name.
+	assert.Contains(t, content, "res.message")
+	assert.Contains(t, content, "res.relayToModel")
+
+	// The two delivery channels: a TUI toast, and the shell tool's output.
+	assert.Contains(t, content, "client.tui.showToast")
+	assert.Contains(t, content, "output.output")
+
+	// The client is only available if the plugin asks for it.
+	assert.Contains(t, content, "async ({ $, client })")
+}
