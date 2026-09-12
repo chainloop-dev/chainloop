@@ -442,6 +442,15 @@
           "type": "integer",
           "minimum": 0,
           "description": "Failed adjudication tries; at the cap the survivor is abandoned."
+        },
+        "verdict": {
+          "type": "string",
+          "enum": ["no_finding", "abstain", "rejected"],
+          "description": "Terminal adjudication outcome for a survivor that produced no fingerprint. A survivor with a fingerprint is a finding and carries no verdict. Absent means: a finding, not adjudicated yet, or errored and still pending. Descriptive only — never affects scheduling."
+        },
+        "verdict_reason": {
+          "type": "string",
+          "description": "The adjudicator's own short explanation, carried only for abstentions (verdict == \"abstain\"). Truncated by the producer; never the full rationale. Absent for every other verdict."
         }
       }
     },

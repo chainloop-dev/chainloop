@@ -157,6 +157,13 @@ type Survivor struct {
 	// Attempts counts failed adjudication tries; at the cap the survivor is
 	// abandoned.
 	Attempts int `json:"attempts,omitempty"`
+	// Verdict is the terminal adjudication outcome for a survivor that produced no
+	// fingerprint: no_finding | abstain | rejected. A survivor with a fingerprint is
+	// a finding and carries no verdict. Descriptive only — never affects scheduling.
+	Verdict string `json:"verdict,omitempty"`
+	// VerdictReason is the adjudicator's short explanation, carried only for
+	// abstentions (Verdict == "abstain"). Truncated by the producer.
+	VerdictReason string `json:"verdict_reason,omitempty"`
 }
 
 // TopRisk is a component with a security-fix history, ranked by severity mass

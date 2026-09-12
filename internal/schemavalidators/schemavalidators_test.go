@@ -442,6 +442,34 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 		}}
 		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "additionalProperties")
 	})
+
+	t.Run("a survivor carrying an abstain verdict and reason validates", func(t *testing.T) {
+		payload, _ := load(t)
+		payload["survivors"] = []any{map[string]any{
+			"commit_sha":     "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+			"verdict":        "abstain",
+			"verdict_reason": "insufficient context to decide reachability",
+		}}
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("a no_finding verdict without a reason validates", func(t *testing.T) {
+		payload, _ := load(t)
+		payload["survivors"] = []any{map[string]any{
+			"commit_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+			"verdict":    "no_finding",
+		}}
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("a verdict outside the enum is rejected", func(t *testing.T) {
+		payload, _ := load(t)
+		payload["survivors"] = []any{map[string]any{
+			"commit_sha": "8c948c742bdfc09c4aae6b3c386faeb98f925ff2",
+			"verdict":    "finding",
+		}}
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "enum")
+	})
 }
 
 func TestValidateOpenAPI(t *testing.T) {
