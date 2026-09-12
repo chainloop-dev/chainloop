@@ -345,7 +345,9 @@ func newMinioInstance(t *testing.T) *minioInstance {
 	const port = "9000/tcp"
 
 	req := testcontainers.ContainerRequest{
-		Image:        "minio/minio:RELEASE.2023-09-04T19-57-37Z",
+		// Pinned to a fixed digest to keep the test reproducible; update the digest manually to adopt new MinIO releases.
+		// https://quay.io/repository/minio/minio/manifest/sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
+		Image:        "quay.io/minio/minio@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2",
 		ExposedPorts: []string{port},
 		Env: map[string]string{
 			"MINIO_ROOT_USER":     "root",
