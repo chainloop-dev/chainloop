@@ -139,6 +139,11 @@ type ScanStats struct {
 	// reached a terminal state — the signal that an empty fingerprints list is
 	// "clean" rather than "not adjudicated yet".
 	AdjudicationComplete bool `json:"adjudication_complete,omitempty"`
+	// Abandoned is how many survivors adjudication gave up on after the retry cap — a
+	// terminal coverage gap, distinct from a still-pending survivor. Nonzero alongside
+	// AdjudicationComplete means the queue drained partly by giving up: complete, but
+	// not a clean bill of health.
+	Abandoned int `json:"abandoned,omitempty"`
 }
 
 // Survivor is one commit that survived Phase-1 triage: an entry in the

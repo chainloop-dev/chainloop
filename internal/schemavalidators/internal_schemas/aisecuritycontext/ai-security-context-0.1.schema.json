@@ -356,6 +356,11 @@
         "adjudication_complete": {
           "type": "boolean",
           "description": "True when every survivor (outside holes/abandoned) reached a terminal state — the trust signal that an empty fingerprints list is 'clean' rather than 'not adjudicated yet'."
+        },
+        "abandoned": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many survivors adjudication gave up on after the retry cap — a terminal coverage gap, distinct from a still-pending survivor (which a later run retries). A count rather than a list because the list is already determined by survivors and adjudicated_commits. Nonzero alongside adjudication_complete means the queue drained partly by giving up: complete, but not a clean bill of health."
         }
       }
     },
