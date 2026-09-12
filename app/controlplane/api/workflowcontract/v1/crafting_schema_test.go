@@ -50,9 +50,19 @@ func TestValidateAnnotations(t *testing.T) {
 			value: "hello_world",
 		},
 		{
-			desc:    "invalid key hyphen",
-			name:    "hello-world",
-			value:   "hello-world",
+			desc:  "valid key hyphen",
+			name:  "hello-world",
+			value: "hello-world",
+		},
+		{
+			desc:  "valid key mixed hyphen underscore",
+			name:  "hello-world_test",
+			value: "hello-world_test",
+		},
+		{
+			desc:    "invalid key special char",
+			name:    "hello@world",
+			value:   "hello@world",
 			wantErr: true,
 		},
 		{

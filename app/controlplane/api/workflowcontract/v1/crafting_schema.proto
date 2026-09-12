@@ -241,7 +241,12 @@ message CraftingSchemaV2Spec {
 }
 
 message Annotation {
-  string name = 1 [(buf.validate.field).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
+  // Word optionally separated with _ or -.
+  // Note: hyphenated names (e.g. "my-annotation") require the `index` template
+  // function syntax in Go template consumers like Dependency-Track:
+  //   {{ index .Material.Annotations "my-annotation" }}
+  // rather than direct field access {{ .Material.Annotations.my-annotation }}.
+  string name = 1 [(buf.validate.field).string.pattern = "^[\\w-]+$"];
   // This value can be set in the contract or provided during the attestation
   string value = 2;
 }
