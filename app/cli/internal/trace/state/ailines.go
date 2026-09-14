@@ -30,11 +30,21 @@ import (
 type AILineAttribution struct {
 	SessionID string                                 `json:"session_id"`
 	Files     map[string][]aicodingsession.LineRange `json:"files"`
+	// Pending holds the files whose recorded ranges have not been committed
+	// yet, and is the only set a new commit may be matched against. Files
+	// keeps every range ever recorded because push-time enrichment needs the
+	// full history, but matching against it credits a finished session on
+	// every later commit that happens to touch a file it once edited.
+	Pending map[string]struct{} `json:"-"`
 }
 
-// newAILineAttribution returns an AILineAttribution with an initialized Files map.
+// newAILineAttribution returns an AILineAttribution with initialized maps.
 func newAILineAttribution(sessionID string) *AILineAttribution {
-	return &AILineAttribution{SessionID: sessionID, Files: make(map[string][]aicodingsession.LineRange)}
+	return &AILineAttribution{
+		SessionID: sessionID,
+		Files:     make(map[string][]aicodingsession.LineRange),
+		Pending:   make(map[string]struct{}),
+	}
 }
 
 // aiLinesPath returns the path for a session's AI line attribution file (JSONL).
@@ -49,6 +59,15 @@ type aiLineEntry struct {
 	SessionID string                      `json:"session_id,omitempty"`
 	File      string                      `json:"file"`
 	Ranges    []aicodingsession.LineRange `json:"ranges"`
+	// RecordedAt is the RFC3339 timestamp of the edit. Entries written before
+	// this field existed have none, and are never treated as pending — those
+	// ledgers predate consumption tracking, so their files would otherwise
+	// keep crediting their session forever.
+	RecordedAt string `json:"recorded_at,omitempty"`
+	// ConsumedBy is the SHA of the commit that committed the file's pending
+	// ranges. Set only on marker entries appended by MarkConsumed, which
+	// clear the file from Pending instead of contributing ranges.
+	ConsumedBy string `json:"consumed_by,omitempty"`
 }
 
 // LoadAILineAttribution loads the AI line attribution for a session by
@@ -63,6 +82,9 @@ func (s *Store) LoadAILineAttribution(sessionID string) *AILineAttribution {
 	}
 	defer func() { _ = f.Close() }()
 
+	// Entries are appended in order, so replaying them in order lets a file
+	// go pending -> consumed -> pending again across successive edits and
+	// commits.
 	dec := json.NewDecoder(f)
 	for dec.More() {
 		var entry aiLineEntry
@@ -72,7 +94,16 @@ func (s *Store) LoadAILineAttribution(sessionID string) *AILineAttribution {
 		if entry.SessionID != "" {
 			attr.SessionID = entry.SessionID
 		}
+
+		if entry.ConsumedBy != "" {
+			delete(attr.Pending, entry.File)
+			continue
+		}
+
 		attr.Files[entry.File] = append(attr.Files[entry.File], entry.Ranges...)
+		if entry.RecordedAt != "" {
+			attr.Pending[entry.File] = struct{}{}
+		}
 	}
 
 	return attr
@@ -81,6 +112,52 @@ func (s *Store) LoadAILineAttribution(sessionID string) *AILineAttribution {
 // RecordLineRanges appends line ranges for a file to a session's attribution JSONL.
 // An empty or nil ranges slice still records the file as touched (e.g., deletion-only edits).
 func (s *Store) RecordLineRanges(sessionID, filePath string, ranges []aicodingsession.LineRange) error {
+	return s.appendAILineEntries(sessionID, []aiLineEntry{{
+		SessionID:  sessionID,
+		File:       filePath,
+		Ranges:     ranges,
+		RecordedAt: NowTimestamp(),
+	}})
+}
+
+// MarkConsumed records that the pending ranges of the given files landed in
+// commit sha, so they stop crediting the session on later commits. Files the
+// session has nothing pending for are ignored, which keeps the ledger from
+// growing a marker per commit per file the session never touched.
+func (s *Store) MarkConsumed(sessionID string, files []string, sha string) error {
+	if sha == "" || len(files) == 0 {
+		return nil
+	}
+
+	pending := s.LoadAILineAttribution(sessionID).Pending
+	if len(pending) == 0 {
+		return nil
+	}
+
+	now := NowTimestamp()
+	entries := make([]aiLineEntry, 0, len(files))
+	for _, file := range files {
+		if _, ok := pending[file]; !ok {
+			continue
+		}
+		entries = append(entries, aiLineEntry{
+			SessionID:  sessionID,
+			File:       file,
+			RecordedAt: now,
+			ConsumedBy: sha,
+		})
+	}
+
+	return s.appendAILineEntries(sessionID, entries)
+}
+
+// appendAILineEntries appends entries to a session's attribution JSONL,
+// creating the file and its directory on first write.
+func (s *Store) appendAILineEntries(sessionID string, entries []aiLineEntry) error {
+	if len(entries) == 0 {
+		return nil
+	}
+
 	path := s.aiLinesPath(sessionID)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("create ai-lines dir: %w", err)
@@ -91,10 +168,15 @@ func (s *Store) RecordLineRanges(sessionID, filePath string, ranges []aicodingse
 		return err
 	}
 
-	if err := json.NewEncoder(f).Encode(aiLineEntry{SessionID: sessionID, File: filePath, Ranges: ranges}); err != nil {
-		_ = f.Close()
-		return err
+	enc := json.NewEncoder(f)
+	for i := range entries {
+		if err := enc.Encode(entries[i]); err != nil {
+			_ = f.Close()
+
+			return err
+		}
 	}
+
 	return f.Close()
 }
 
@@ -106,6 +188,7 @@ func (s *Store) LoadAllAILineAttributions() ([]*AILineAttribution, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 

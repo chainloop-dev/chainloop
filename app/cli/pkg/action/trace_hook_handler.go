@@ -84,8 +84,13 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 	return appendTrailer(msgFilePath, sessionIDs)
 }
 
-// matchSessionsToFiles returns session IDs that have AI line attribution for
-// any of the given files. The returned slice is sorted.
+// matchSessionsToFiles returns session IDs with uncommitted AI line
+// attribution for any of the given files. The returned slice is sorted.
+//
+// Matching is deliberately against Pending rather than Files: a session's full
+// range history outlives its commits, so intersecting it would credit a
+// long-finished session on every later commit that touches a file it once
+// edited, and that commit's whole diff would then be attributed to it.
 func matchSessionsToFiles(attrs []*state.AILineAttribution, files []string) []string {
 	fileSet := make(map[string]struct{}, len(files))
 	for _, f := range files {
@@ -94,7 +99,7 @@ func matchSessionsToFiles(attrs []*state.AILineAttribution, files []string) []st
 
 	var sessionIDs []string
 	for _, attr := range attrs {
-		for filePath := range attr.Files {
+		for filePath := range attr.Pending {
 			if _, ok := fileSet[filePath]; ok {
 				sessionIDs = append(sessionIDs, attr.SessionID)
 
@@ -191,20 +196,46 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 		return fmt.Errorf("save commit record: %w", err)
 	}
 
+	// The credited sessions' pending ranges have now landed, so retire them.
+	// Skipping this is what makes a session accumulate foreign commits: its
+	// files stay pending and keep matching every later commit that touches
+	// them. Post-commit errors only ever get logged — the commit already
+	// exists — so returning here costs nothing but surfaces the failure.
+	if len(sessionIDs) > 0 {
+		committed := commitFiles(client, repoRoot, sha)
+		for _, sid := range sessionIDs {
+			if err := store.MarkConsumed(sid, committed, sha); err != nil {
+				return fmt.Errorf("mark attribution consumed for session %s: %w", sid, err)
+			}
+		}
+	}
+
 	log.Info().Str("sha", sha).Msg("commit record saved")
 
 	return nil
 }
 
 // deriveSessionIDsForCommit scans ai-lines data and returns session IDs
-// that have modified any file that appears in the given commit.
+// that have uncommitted attribution for any file in the given commit.
 func deriveSessionIDsForCommit(client tracegit.Client, store *state.Store, repoRoot, headSHA string) []string {
 	attrs, err := store.LoadAllAILineAttributions()
 	if err != nil || len(attrs) == 0 {
 		return nil
 	}
 
-	changes, err := client.CodeChangesForRange(repoRoot, headSHA, headSHA)
+	files := commitFiles(client, repoRoot, headSHA)
+	if len(files) == 0 {
+		return nil
+	}
+
+	return matchSessionsToFiles(attrs, files)
+}
+
+// commitFiles returns the paths the commit at sha changed relative to its
+// parent. Returns nil when the diff cannot be read, which leaves callers
+// treating the commit as touching nothing rather than failing the hook.
+func commitFiles(client tracegit.Client, repoRoot, sha string) []string {
+	changes, err := client.CodeChangesForRange(repoRoot, sha, sha)
 	if err != nil || len(changes.Files) == 0 {
 		return nil
 	}
@@ -214,7 +245,7 @@ func deriveSessionIDsForCommit(client tracegit.Client, store *state.Store, repoR
 		files = append(files, f.Path)
 	}
 
-	return matchSessionsToFiles(attrs, files)
+	return files
 }
 
 // filterCurrentBranchCommits returns the subset of records whose SHA is
@@ -388,7 +419,13 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	}
 
 	if len(aiCommits) == 0 {
-		for sid := range sessionRecords {
+		for sid, rec := range sessionRecords {
+			// A session that has ended without contributing a commit to this
+			// branch has nothing new to say; attesting it on every later push
+			// republishes the same stale evidence.
+			if !rec.Active {
+				continue
+			}
 			sessionCommits[sid] = nil
 		}
 		if len(sessionCommits) == 0 {

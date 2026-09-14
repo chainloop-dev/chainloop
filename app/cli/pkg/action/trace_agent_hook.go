@@ -52,9 +52,36 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
 
+	setSessionActive(store, sessionID, false, log)
+
 	log.Debug().Str("session_id", sessionID).Msg("session ended")
 
 	return nil
+}
+
+// setSessionActive flips the Active flag on an existing session record. The
+// record is otherwise written once and never upserted, so without this a
+// session stays marked active for the life of the repository.
+//
+// Active is not a reliable liveness signal on its own and must not decide
+// attribution: session-end is not installed for `trace run`, and never fires
+// on SIGKILL or a closed terminal. It only narrows the set of sessions a push
+// attests when there are no commits to go on.
+func setSessionActive(store *state.Store, sessionID string, active bool, log zerolog.Logger) {
+	rec, err := store.LoadSessionRecord(sessionID)
+	if err != nil {
+		log.Debug().Err(err).Msg("load session record failed")
+
+		return
+	}
+	if rec == nil || rec.Active == active {
+		return
+	}
+
+	rec.Active = active
+	if err := store.SaveSessionRecord(rec); err != nil {
+		log.Debug().Err(err).Bool("active", active).Msg("update session record failed")
+	}
 }
 
 // sessionStartBanner is what the developer sees at the top of a traced
@@ -225,6 +252,11 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 
 	sessionID := input.SessionID
 	if store.SessionRecordExists(sessionID) {
+		// A resumed session fires session-start again after its end hook ran.
+		// Reviving the flag keeps StartedAt and the agent metadata captured on
+		// the first call intact.
+		setSessionActive(store, sessionID, true, log)
+
 		return
 	}
 

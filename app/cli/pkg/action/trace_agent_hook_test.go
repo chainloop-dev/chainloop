@@ -156,6 +156,58 @@ func TestHandleAgentSessionEnd(t *testing.T) {
 		withStdin(t, `{"session_id":"abc-123"}`)
 		require.NoError(t, HandleAgentSessionEnd(provider, zerolog.Nop()))
 	})
+
+	t.Run("marks the session inactive", func(t *testing.T) {
+		repoDir := initTempGitRepo(t)
+		store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+		require.NoError(t, store.InitTraceDir())
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+			SessionID: "abc-123", Provider: "claude-code", Active: true, StartedAt: "2026-03-28T00:00:00Z",
+		}))
+
+		withStdin(t, `{"session_id":"abc-123"}`)
+		require.NoError(t, HandleAgentSessionEnd(provider, zerolog.Nop()))
+
+		rec, err := store.LoadSessionRecord("abc-123")
+		require.NoError(t, err)
+		require.NotNil(t, rec)
+		assert.False(t, rec.Active)
+		assert.Equal(t, "2026-03-28T00:00:00Z", rec.StartedAt, "ending a session must not rewrite when it began")
+		assert.Equal(t, "claude-code", rec.Provider)
+	})
+
+	t.Run("a resumed session goes back to active", func(t *testing.T) {
+		repoDir := initTempGitRepo(t)
+		store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+		require.NoError(t, store.InitTraceDir())
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+			SessionID:    "abc-123",
+			Provider:     "claude-code",
+			AgentVersion: "1.2.3",
+			Active:       false,
+			StartedAt:    "2026-03-28T00:00:00Z",
+		}))
+
+		withStdin(t, `{"session_id":"abc-123","cwd":"/some/path"}`)
+		require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+
+		rec, err := store.LoadSessionRecord("abc-123")
+		require.NoError(t, err)
+		require.NotNil(t, rec)
+		assert.True(t, rec.Active, "an agent can resume a session after its end hook ran")
+		assert.Equal(t, "2026-03-28T00:00:00Z", rec.StartedAt)
+		assert.Equal(t, "1.2.3", rec.AgentVersion, "metadata captured on the first hook must survive")
+	})
 }
 
 func TestAutoInstallGitHooks(t *testing.T) {
