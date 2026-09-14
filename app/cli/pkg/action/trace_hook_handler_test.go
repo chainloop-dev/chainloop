@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
@@ -36,10 +37,12 @@ import (
 
 // Fixture names reused across the session-matching tests.
 const (
-	sessionA = "session-a"
-	srcFoo   = "src/foo.go"
-	srcBar   = "src/bar.go"
-	srcBaz   = "src/baz.go"
+	sessionA           = "session-a"
+	sessionB           = "session-b"
+	srcFoo             = "src/foo.go"
+	srcBar             = "src/bar.go"
+	srcBaz             = "src/baz.go"
+	providerClaudeCode = "claude-code"
 )
 
 func TestEvidenceName(t *testing.T) {
@@ -55,27 +58,28 @@ func TestEvidenceName(t *testing.T) {
 }
 
 func TestMatchSessionsToFiles(t *testing.T) {
+	edited := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
 	attrs := []*state.AILineAttribution{
 		{
 			SessionID: sessionA,
 			Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-			Pending:   map[string]struct{}{srcFoo: {}},
+			Pending:   map[string]time.Time{srcFoo: edited},
 		},
 		{
-			SessionID: "session-b",
+			SessionID: sessionB,
 			Files:     map[string][]aicodingsession.LineRange{srcBar: {{Start: 1, End: 5}}},
-			Pending:   map[string]struct{}{srcBar: {}},
+			Pending:   map[string]time.Time{srcBar: edited},
 		},
 		{
 			SessionID: "session-c",
 			Files:     map[string][]aicodingsession.LineRange{srcBaz: {{Start: 1, End: 3}}},
-			Pending:   map[string]struct{}{srcBaz: {}},
+			Pending:   map[string]time.Time{srcBaz: edited},
 		},
 	}
 
 	t.Run("matches sessions that touched staged files", func(t *testing.T) {
 		ids := matchSessionsToFiles(attrs, []string{srcFoo, srcBar})
-		assert.Equal(t, []string{sessionA, "session-b"}, ids)
+		assert.Equal(t, []string{sessionA, sessionB}, ids)
 	})
 
 	t.Run("no match returns nil", func(t *testing.T) {
@@ -105,7 +109,7 @@ func TestMatchSessionsToFiles(t *testing.T) {
 		committed := []*state.AILineAttribution{{
 			SessionID: sessionA,
 			Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-			Pending:   map[string]struct{}{},
+			Pending:   map[string]time.Time{},
 		}}
 
 		assert.Nil(t, matchSessionsToFiles(committed, []string{srcFoo}))
@@ -118,6 +122,65 @@ func TestMatchSessionsToFiles(t *testing.T) {
 		}}
 
 		assert.Nil(t, matchSessionsToFiles(legacy, []string{srcFoo}))
+	})
+
+	t.Run("the session that edited a file last owns it", func(t *testing.T) {
+		contested := []*state.AILineAttribution{
+			{
+				SessionID: sessionA,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]time.Time{srcFoo: edited},
+			},
+			{
+				SessionID: sessionB,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]time.Time{srcFoo: edited.Add(time.Minute)},
+			},
+		}
+
+		assert.Equal(t, []string{sessionB}, matchSessionsToFiles(contested, []string{srcFoo}))
+	})
+
+	t.Run("ownership is per file, not per session", func(t *testing.T) {
+		// session-b won src/foo.go, but session-a still owns the bar.go edit
+		// it has pending, so both belong on a commit staging the two files.
+		split := []*state.AILineAttribution{
+			{
+				SessionID: sessionA,
+				Files: map[string][]aicodingsession.LineRange{
+					srcFoo: {{Start: 1, End: 10}},
+					srcBar: {{Start: 1, End: 5}},
+				},
+				Pending: map[string]time.Time{srcFoo: edited, srcBar: edited},
+			},
+			{
+				SessionID: sessionB,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]time.Time{srcFoo: edited.Add(time.Minute)},
+			},
+		}
+
+		assert.Equal(t, []string{sessionA, sessionB}, matchSessionsToFiles(split, []string{srcFoo, srcBar}))
+	})
+
+	t.Run("a tie breaks deterministically", func(t *testing.T) {
+		tied := []*state.AILineAttribution{
+			{
+				SessionID: "session-z",
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]time.Time{srcFoo: edited},
+			},
+			{
+				SessionID: sessionA,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]time.Time{srcFoo: edited},
+			},
+		}
+
+		// Repeated because map iteration order varies between runs.
+		for range 20 {
+			assert.Equal(t, []string{sessionA}, matchSessionsToFiles(tied, []string{srcFoo}))
+		}
 	})
 }
 
@@ -472,6 +535,53 @@ func TestCommitLifecycle_SessionIsNotCreditedTwice(t *testing.T) {
 
 	// The ranges themselves survive, because push-time enrichment needs them.
 	assert.NotEmpty(t, store.LoadAILineAttribution("sess-first").Files["shared.go"])
+}
+
+// Two sessions in a row over the same file, neither having committed yet: the
+// first one records its ranges and ends, then a second one edits the same file.
+// Only the session that edited last may be credited — its edit rewrote the
+// lines the first one wrote, and crediting both would attach a finished session
+// to a commit, and to the pull request holding it, on the strength of work that
+// no longer exists.
+func TestCommitLifecycle_LaterSessionSupersedesFinishedOne(t *testing.T) {
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+
+	shared := filepath.Join(dir, "shared.go")
+
+	// Session one edits the file, then ends without committing.
+	require.NoError(t, os.WriteFile(shared, []byte("package main\n"), 0600))
+	require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+		SessionID: "sess-first", Provider: providerClaudeCode, Active: true, StartedAt: state.NowTimestamp(),
+	}))
+	require.NoError(t, store.RecordLineRanges("sess-first", "shared.go", []aicodingsession.LineRange{{Start: 1, End: 1}}))
+	setSessionActive(store, "sess-first", false, zerolog.Nop())
+
+	// Session two edits the same file afterwards.
+	require.NoError(t, os.WriteFile(shared, []byte("package main\n\nfunc main() {}\n"), 0600))
+	require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+		SessionID: "sess-second", Provider: providerClaudeCode, Active: true, StartedAt: state.NowTimestamp(),
+	}))
+	require.NoError(t, store.RecordLineRanges("sess-second", "shared.go", []aicodingsession.LineRange{{Start: 3, End: 3}}))
+
+	msg := filepath.Join(dir, "msg")
+	require.NoError(t, os.WriteFile(msg, []byte("feat: shared\n"), 0600))
+	runGit(t, dir, "add", "shared.go")
+	require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+
+	trailer, err := os.ReadFile(msg)
+	require.NoError(t, err)
+	assert.Contains(t, string(trailer), "Chainloop-Trace-Sessions: sess-second")
+	assert.NotContains(t, string(trailer), "sess-first", "the finished session's edit was overwritten")
+
+	runGit(t, dir, "commit", "-F", msg)
+	require.NoError(t, handlePostCommit(t.Context(), zerolog.Nop()))
+
+	commits, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	require.Len(t, commits, 1)
+	assert.Equal(t, []string{"sess-second"}, commits[0].SessionIDs)
 }
 
 // A session committing its work in logical chunks has to keep credit for the

@@ -23,6 +23,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
@@ -84,28 +85,64 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 	return appendTrailer(msgFilePath, sessionIDs)
 }
 
-// matchSessionsToFiles returns session IDs with uncommitted AI line
+// fileOwner is the session currently credited with a staged file's pending
+// attribution, and when it made the edit.
+type fileOwner struct {
+	sessionID string
+	editedAt  time.Time
+}
+
+// supersededBy reports whether an edit made at editedAt by sessionID takes the
+// file over from this owner. Equal timestamps fall to the lower session ID, so
+// the trailer stays stable instead of following map iteration order.
+func (o fileOwner) supersededBy(sessionID string, editedAt time.Time) bool {
+	if editedAt.Equal(o.editedAt) {
+		return sessionID < o.sessionID
+	}
+
+	return editedAt.After(o.editedAt)
+}
+
+// matchSessionsToFiles returns the session IDs that own uncommitted AI line
 // attribution for any of the given files. The returned slice is sorted.
 //
 // Matching is deliberately against Pending rather than Files: a session's full
 // range history outlives its commits, so intersecting it would credit a
 // long-finished session on every later commit that touches a file it once
 // edited, and that commit's whole diff would then be attributed to it.
+//
+// Each file is owned by the session that edited it last. When two sessions both
+// have it pending, the earlier edit no longer describes the file — the later
+// session rewrote those lines — so crediting both would attach a session that
+// has moved on to this commit and to the pull request carrying it.
 func matchSessionsToFiles(attrs []*state.AILineAttribution, files []string) []string {
 	fileSet := make(map[string]struct{}, len(files))
 	for _, f := range files {
 		fileSet[f] = struct{}{}
 	}
 
-	var sessionIDs []string
+	owners := make(map[string]fileOwner, len(fileSet))
 	for _, attr := range attrs {
-		for filePath := range attr.Pending {
-			if _, ok := fileSet[filePath]; ok {
-				sessionIDs = append(sessionIDs, attr.SessionID)
-
-				break
+		for filePath, editedAt := range attr.Pending {
+			if _, staged := fileSet[filePath]; !staged {
+				continue
 			}
+			if cur, claimed := owners[filePath]; claimed && !cur.supersededBy(attr.SessionID, editedAt) {
+				continue
+			}
+
+			owners[filePath] = fileOwner{sessionID: attr.SessionID, editedAt: editedAt}
 		}
+	}
+
+	seen := make(map[string]struct{}, len(owners))
+	var sessionIDs []string
+	for _, o := range owners {
+		if _, dup := seen[o.sessionID]; dup {
+			continue
+		}
+		seen[o.sessionID] = struct{}{}
+		sessionIDs = append(sessionIDs, o.sessionID)
 	}
 
 	sort.Strings(sessionIDs)

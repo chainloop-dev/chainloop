@@ -328,3 +328,13 @@ func removeIfExists(path string) error {
 func NowTimestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
+
+// NowTimestampPrecise returns the current UTC time in RFC3339 format with
+// sub-second precision. Used where two events have to be ordered against each
+// other — second resolution is too coarse to tell which of two edits to the
+// same file came last. Callers must compare parsed times, not the strings:
+// fractional-second forms do not sort lexicographically against whole-second
+// ones.
+func NowTimestampPrecise() string {
+	return time.Now().UTC().Format(time.RFC3339Nano)
+}

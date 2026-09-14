@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
@@ -30,12 +31,16 @@ import (
 type AILineAttribution struct {
 	SessionID string                                 `json:"session_id"`
 	Files     map[string][]aicodingsession.LineRange `json:"files"`
-	// Pending holds the files whose recorded ranges have not been committed
-	// yet, and is the only set a new commit may be matched against. Files
-	// keeps every range ever recorded because push-time enrichment needs the
-	// full history, but matching against it credits a finished session on
-	// every later commit that happens to touch a file it once edited.
-	Pending map[string]struct{} `json:"-"`
+	// Pending maps each file whose recorded ranges have not been committed yet
+	// to the time of its most recent edit, and is the only set a new commit may
+	// be matched against. Files keeps every range ever recorded because
+	// push-time enrichment needs the full history, but matching against it
+	// credits a finished session on every later commit that happens to touch a
+	// file it once edited.
+	//
+	// The timestamp resolves which session owns a file two of them both have
+	// pending: the later edit rewrote the earlier one's lines.
+	Pending map[string]time.Time `json:"-"`
 }
 
 // newAILineAttribution returns an AILineAttribution with initialized maps.
@@ -43,7 +48,7 @@ func newAILineAttribution(sessionID string) *AILineAttribution {
 	return &AILineAttribution{
 		SessionID: sessionID,
 		Files:     make(map[string][]aicodingsession.LineRange),
-		Pending:   make(map[string]struct{}),
+		Pending:   make(map[string]time.Time),
 	}
 }
 
@@ -59,10 +64,11 @@ type aiLineEntry struct {
 	SessionID string                      `json:"session_id,omitempty"`
 	File      string                      `json:"file"`
 	Ranges    []aicodingsession.LineRange `json:"ranges"`
-	// RecordedAt is the RFC3339 timestamp of the edit. Entries written before
-	// this field existed have none, and are never treated as pending — those
-	// ledgers predate consumption tracking, so their files would otherwise
-	// keep crediting their session forever.
+	// RecordedAt is the RFC3339 timestamp of the edit, with sub-second
+	// precision so two sessions editing one file can be ordered. Entries
+	// written before this field existed have none, and are never treated as
+	// pending — those ledgers predate consumption tracking, so their files
+	// would otherwise keep crediting their session forever.
 	RecordedAt string `json:"recorded_at,omitempty"`
 	// ConsumedBy is the SHA of the commit that committed the file's pending
 	// ranges. Set only on marker entries appended by MarkConsumed, which
@@ -101,8 +107,11 @@ func (s *Store) LoadAILineAttribution(sessionID string) *AILineAttribution {
 		}
 
 		attr.Files[entry.File] = append(attr.Files[entry.File], entry.Ranges...)
-		if entry.RecordedAt != "" {
-			attr.Pending[entry.File] = struct{}{}
+		// An entry with no parseable timestamp is never pending: it either
+		// predates consumption tracking, in which case its session is long
+		// gone, or it cannot be ordered against a competing session's edit.
+		if recordedAt, err := time.Parse(time.RFC3339, entry.RecordedAt); err == nil {
+			attr.Pending[entry.File] = recordedAt
 		}
 	}
 
@@ -116,7 +125,7 @@ func (s *Store) RecordLineRanges(sessionID, filePath string, ranges []aicodingse
 		SessionID:  sessionID,
 		File:       filePath,
 		Ranges:     ranges,
-		RecordedAt: NowTimestamp(),
+		RecordedAt: NowTimestampPrecise(),
 	}})
 }
 
@@ -134,7 +143,7 @@ func (s *Store) MarkConsumed(sessionID string, files []string, sha string) error
 		return nil
 	}
 
-	now := NowTimestamp()
+	now := NowTimestampPrecise()
 	entries := make([]aiLineEntry, 0, len(files))
 	for _, file := range files {
 		if _, ok := pending[file]; !ok {

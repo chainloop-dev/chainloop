@@ -427,6 +427,34 @@ func TestAILinePendingTracking(t *testing.T) {
 		assert.NotContains(t, attr.Files, "untouched.go")
 	})
 
+	t.Run("pending carries the time of the most recent edit", func(t *testing.T) {
+		// Second resolution cannot order two sessions editing one file, so the
+		// recorded timestamps must be finer than that.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+		require.NoError(t, store.RecordLineRanges("sess-2", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}))
+
+		first := store.LoadAILineAttribution("sess-1").Pending[fileA]
+		second := store.LoadAILineAttribution("sess-2").Pending[fileA]
+		require.False(t, first.IsZero())
+		require.False(t, second.IsZero())
+		assert.True(t, second.After(first), "the later edit must be ordered after the earlier one")
+	})
+
+	t.Run("re-editing a file advances its pending time", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+		firstEdit := store.LoadAILineAttribution("sess-1").Pending[fileA]
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}))
+
+		assert.True(t, store.LoadAILineAttribution("sess-1").Pending[fileA].After(firstEdit))
+	})
+
 	t.Run("a ledger written before consumption tracking is never pending", func(t *testing.T) {
 		// Ledgers already on disk have no recorded_at, and their sessions are
 		// long gone. Treating them as pending would keep stamping those

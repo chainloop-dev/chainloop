@@ -167,7 +167,7 @@ func TestHandleAgentSessionEnd(t *testing.T) {
 		t.Cleanup(func() { _ = os.Chdir(origDir) })
 
 		require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
-			SessionID: "abc-123", Provider: "claude-code", Active: true, StartedAt: "2026-03-28T00:00:00Z",
+			SessionID: "abc-123", Provider: providerClaudeCode, Active: true, StartedAt: "2026-03-28T00:00:00Z",
 		}))
 
 		withStdin(t, `{"session_id":"abc-123"}`)
@@ -178,7 +178,7 @@ func TestHandleAgentSessionEnd(t *testing.T) {
 		require.NotNil(t, rec)
 		assert.False(t, rec.Active)
 		assert.Equal(t, "2026-03-28T00:00:00Z", rec.StartedAt, "ending a session must not rewrite when it began")
-		assert.Equal(t, "claude-code", rec.Provider)
+		assert.Equal(t, providerClaudeCode, rec.Provider)
 	})
 
 	t.Run("a resumed session goes back to active", func(t *testing.T) {
@@ -192,7 +192,7 @@ func TestHandleAgentSessionEnd(t *testing.T) {
 
 		require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
 			SessionID:    "abc-123",
-			Provider:     "claude-code",
+			Provider:     providerClaudeCode,
 			AgentVersion: "1.2.3",
 			Active:       false,
 			StartedAt:    "2026-03-28T00:00:00Z",
