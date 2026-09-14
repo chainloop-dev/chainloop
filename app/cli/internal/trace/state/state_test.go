@@ -436,7 +436,7 @@ func TestAILinePendingTracking(t *testing.T) {
 		at := time.Date(2026, 4, 28, 10, 0, 0, 123456789, time.UTC)
 		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, at))
 
-		assert.Equal(t, at, store.LoadAILineAttribution("sess-1").Pending[fileA])
+		assert.Equal(t, at, store.LoadAILineAttribution("sess-1").Pending[fileA].At)
 	})
 
 	t.Run("the wall clock supplies a usable edit time", func(t *testing.T) {
@@ -447,19 +447,23 @@ func TestAILinePendingTracking(t *testing.T) {
 		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
 
 		got := store.LoadAILineAttribution("sess-1").Pending[fileA]
-		require.False(t, got.IsZero(), "an edit with no readable time is never pending")
-		assert.False(t, got.Before(before.Truncate(time.Second)))
+		require.False(t, got.At.IsZero(), "an edit with no readable time is never pending")
+		assert.False(t, got.At.Before(before.Truncate(time.Second)))
 	})
 
-	t.Run("re-editing a file advances its pending time", func(t *testing.T) {
+	t.Run("re-editing a file advances its pending edit", func(t *testing.T) {
 		store := NewGitStore(t.TempDir())
 		require.NoError(t, store.InitTraceDir())
 
 		at := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
 		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, at))
+		first := store.LoadAILineAttribution("sess-1").Pending[fileA]
+
 		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, at.Add(time.Minute)))
 
-		assert.Equal(t, at.Add(time.Minute), store.LoadAILineAttribution("sess-1").Pending[fileA])
+		second := store.LoadAILineAttribution("sess-1").Pending[fileA]
+		assert.Equal(t, at.Add(time.Minute), second.At)
+		assert.Greater(t, second.Seq, first.Seq, "ledger positions must advance with each append")
 	})
 
 	t.Run("a marker does not retire an edit recorded after it was built", func(t *testing.T) {
@@ -481,6 +485,44 @@ func TestAILinePendingTracking(t *testing.T) {
 
 		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA,
 			"the edit made after the snapshot was not in the commit")
+	})
+
+	t.Run("a racing edit sharing the snapshot's timestamp still survives", func(t *testing.T) {
+		// Same as above, but the racing edit lands in the same clock tick as the
+		// one being retired. Retirement is keyed off the ledger position rather
+		// than the time precisely so a tie here cannot sweep it up.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		tick := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, tick))
+
+		pendingBefore := store.LoadAILineAttribution("sess-1").Pending
+		require.Contains(t, pendingBefore, fileA)
+
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, tick))
+		require.NoError(t, store.markConsumedAt(pendingBefore, "sess-1", []string{fileA}, "sha-1"))
+
+		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA,
+			"an identical timestamp must not make the later edit indistinguishable")
+	})
+
+	t.Run("a marker with no ledger position retires the file outright", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, time.Now().UTC()))
+
+		// A marker shaped like the ones written before consumed_seq existed.
+		path := store.aiLinesPath("sess-1")
+		legacy := `{"session_id":"sess-1","file":"` + fileA + `","ranges":null,"consumed_by":"sha-1"}` + "\n"
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+		require.NoError(t, err)
+		_, err = f.WriteString(legacy)
+		require.NoError(t, err)
+		require.NoError(t, f.Close())
+
+		assert.NotContains(t, store.LoadAILineAttribution("sess-1").Pending, fileA)
 	})
 
 	t.Run("a ledger written before consumption tracking is never pending", func(t *testing.T) {

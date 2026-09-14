@@ -123,15 +123,15 @@ func matchSessionsToFiles(attrs []*state.AILineAttribution, files []string) []st
 
 	owners := make(map[string]fileOwner, len(fileSet))
 	for _, attr := range attrs {
-		for filePath, editedAt := range attr.Pending {
+		for filePath, edit := range attr.Pending {
 			if _, staged := fileSet[filePath]; !staged {
 				continue
 			}
-			if cur, claimed := owners[filePath]; claimed && !cur.supersededBy(attr.SessionID, editedAt) {
+			if cur, claimed := owners[filePath]; claimed && !cur.supersededBy(attr.SessionID, edit.At) {
 				continue
 			}
 
-			owners[filePath] = fileOwner{sessionID: attr.SessionID, editedAt: editedAt}
+			owners[filePath] = fileOwner{sessionID: attr.SessionID, editedAt: edit.At}
 		}
 	}
 

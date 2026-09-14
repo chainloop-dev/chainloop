@@ -31,16 +31,26 @@ import (
 type AILineAttribution struct {
 	SessionID string                                 `json:"session_id"`
 	Files     map[string][]aicodingsession.LineRange `json:"files"`
-	// Pending maps each file whose recorded ranges have not been committed yet
-	// to the time of its most recent edit, and is the only set a new commit may
-	// be matched against. Files keeps every range ever recorded because
-	// push-time enrichment needs the full history, but matching against it
-	// credits a finished session on every later commit that happens to touch a
-	// file it once edited.
-	//
-	// The timestamp resolves which session owns a file two of them both have
-	// pending: the later edit rewrote the earlier one's lines.
-	Pending map[string]time.Time `json:"-"`
+	// Pending holds each file whose recorded ranges have not been committed
+	// yet, and is the only set a new commit may be matched against. Files keeps
+	// every range ever recorded because push-time enrichment needs the full
+	// history, but matching against it credits a finished session on every
+	// later commit that happens to touch a file it once edited.
+	Pending map[string]PendingEdit `json:"-"`
+}
+
+// PendingEdit is an uncommitted edit to one file.
+type PendingEdit struct {
+	// At is when the edit was made. Ownership of a file that two sessions both
+	// have pending goes to the later edit, which rewrote the earlier one's
+	// lines.
+	At time.Time
+	// Seq is the edit's position in its ledger, counting from one. Retiring an
+	// edit is keyed off this rather than At because wall-clock times tie on a
+	// host with a coarse clock, whereas an append-only ledger's positions are
+	// unique and strictly increasing. Positions from different ledgers are not
+	// comparable, which is why ownership still goes by At.
+	Seq int
 }
 
 // newAILineAttribution returns an AILineAttribution with initialized maps.
@@ -48,7 +58,7 @@ func newAILineAttribution(sessionID string) *AILineAttribution {
 	return &AILineAttribution{
 		SessionID: sessionID,
 		Files:     make(map[string][]aicodingsession.LineRange),
-		Pending:   make(map[string]time.Time),
+		Pending:   make(map[string]PendingEdit),
 	}
 }
 
@@ -64,18 +74,22 @@ type aiLineEntry struct {
 	SessionID string                      `json:"session_id,omitempty"`
 	File      string                      `json:"file"`
 	Ranges    []aicodingsession.LineRange `json:"ranges"`
-	// RecordedAt is the RFC3339 timestamp of the edit this entry describes,
-	// with sub-second precision so two sessions editing one file can be
-	// ordered. On a ConsumedBy marker it is the time of the edit being
-	// retired, not when the marker was written. Entries written before this
-	// field existed have none, and are never treated as pending — those
-	// ledgers predate consumption tracking, so their files would otherwise
-	// keep crediting their session forever.
+	// RecordedAt is the RFC3339 timestamp of the edit, with sub-second
+	// precision so two sessions editing one file can be ordered. Entries
+	// written before this field existed have none, and are never treated as
+	// pending — those ledgers predate consumption tracking, so their files
+	// would otherwise keep crediting their session forever.
 	RecordedAt string `json:"recorded_at,omitempty"`
 	// ConsumedBy is the SHA of the commit that committed the file's pending
 	// ranges. Set only on marker entries appended by MarkConsumed, which
 	// clear the file from Pending instead of contributing ranges.
 	ConsumedBy string `json:"consumed_by,omitempty"`
+	// ConsumedSeq is the ledger position of the edit a marker retires. It
+	// bounds the marker to the snapshot MarkConsumed read, so an edit appended
+	// afterwards — which the commit cannot have contained — keeps its pending
+	// state. Zero on a marker written before this field existed, which retires
+	// the file outright.
+	ConsumedSeq int `json:"consumed_seq,omitempty"`
 }
 
 // LoadAILineAttribution loads the AI line attribution for a session by
@@ -93,12 +107,14 @@ func (s *Store) LoadAILineAttribution(sessionID string) *AILineAttribution {
 	// Entries are appended in order, so replaying them in order lets a file
 	// go pending -> consumed -> pending again across successive edits and
 	// commits.
+	seq := 0
 	dec := json.NewDecoder(f)
 	for dec.More() {
 		var entry aiLineEntry
 		if err := dec.Decode(&entry); err != nil {
 			break
 		}
+		seq++
 		if entry.SessionID != "" {
 			attr.SessionID = entry.SessionID
 		}
@@ -107,11 +123,10 @@ func (s *Store) LoadAILineAttribution(sessionID string) *AILineAttribution {
 			// Retire only the edit the commit actually contained. A concurrent
 			// RecordLineRanges can land between MarkConsumed reading the
 			// pending set and appending its markers, leaving a marker behind an
-			// edit it never saw; that edit's later timestamp keeps it pending.
-			// A marker with no readable time predates this and retires the file
-			// outright.
-			consumedAt, err := time.Parse(time.RFC3339, entry.RecordedAt)
-			if err != nil || !attr.Pending[entry.File].After(consumedAt) {
+			// edit it never saw; that edit sits past the marker's snapshot, so
+			// it keeps its pending state.
+			cur, pending := attr.Pending[entry.File]
+			if pending && (entry.ConsumedSeq == 0 || cur.Seq <= entry.ConsumedSeq) {
 				delete(attr.Pending, entry.File)
 			}
 
@@ -123,7 +138,7 @@ func (s *Store) LoadAILineAttribution(sessionID string) *AILineAttribution {
 		// predates consumption tracking, in which case its session is long
 		// gone, or it cannot be ordered against a competing session's edit.
 		if recordedAt, err := time.Parse(time.RFC3339, entry.RecordedAt); err == nil {
-			attr.Pending[entry.File] = recordedAt
+			attr.Pending[entry.File] = PendingEdit{At: recordedAt, Seq: seq}
 		}
 	}
 
@@ -164,25 +179,25 @@ func (s *Store) MarkConsumed(sessionID string, files []string, sha string) error
 // markConsumedAt writes the retirement markers for a pending snapshot. The
 // snapshot is a parameter because it is the boundary this has to be correct
 // across: an edit recorded after it was taken is not part of the commit, and
-// naming each marker's edit time is what keeps that edit pending.
-func (s *Store) markConsumedAt(pending map[string]time.Time, sessionID string, files []string, sha string) error {
+// pinning each marker to the position of the edit it retires is what keeps that
+// edit pending.
+func (s *Store) markConsumedAt(pending map[string]PendingEdit, sessionID string, files []string, sha string) error {
 	if len(pending) == 0 {
 		return nil
 	}
 
 	entries := make([]aiLineEntry, 0, len(files))
 	for _, file := range files {
-		editedAt, ok := pending[file]
+		edit, ok := pending[file]
 		if !ok {
 			continue
 		}
-		// The marker names the edit it retires, so an edit recorded after this
-		// snapshot is not swept up by a commit that never contained it.
 		entries = append(entries, aiLineEntry{
-			SessionID:  sessionID,
-			File:       file,
-			RecordedAt: editedAt.Format(time.RFC3339Nano),
-			ConsumedBy: sha,
+			SessionID:   sessionID,
+			File:        file,
+			RecordedAt:  edit.At.Format(time.RFC3339Nano),
+			ConsumedBy:  sha,
+			ConsumedSeq: edit.Seq,
 		})
 	}
 

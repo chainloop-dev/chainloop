@@ -63,17 +63,17 @@ func TestMatchSessionsToFiles(t *testing.T) {
 		{
 			SessionID: sessionA,
 			Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-			Pending:   map[string]time.Time{srcFoo: edited},
+			Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
 		},
 		{
 			SessionID: sessionB,
 			Files:     map[string][]aicodingsession.LineRange{srcBar: {{Start: 1, End: 5}}},
-			Pending:   map[string]time.Time{srcBar: edited},
+			Pending:   map[string]state.PendingEdit{srcBar: {At: edited}},
 		},
 		{
 			SessionID: "session-c",
 			Files:     map[string][]aicodingsession.LineRange{srcBaz: {{Start: 1, End: 3}}},
-			Pending:   map[string]time.Time{srcBaz: edited},
+			Pending:   map[string]state.PendingEdit{srcBaz: {At: edited}},
 		},
 	}
 
@@ -109,7 +109,7 @@ func TestMatchSessionsToFiles(t *testing.T) {
 		committed := []*state.AILineAttribution{{
 			SessionID: sessionA,
 			Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-			Pending:   map[string]time.Time{},
+			Pending:   map[string]state.PendingEdit{},
 		}}
 
 		assert.Nil(t, matchSessionsToFiles(committed, []string{srcFoo}))
@@ -129,12 +129,12 @@ func TestMatchSessionsToFiles(t *testing.T) {
 			{
 				SessionID: sessionA,
 				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-				Pending:   map[string]time.Time{srcFoo: edited},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
 			},
 			{
 				SessionID: sessionB,
 				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-				Pending:   map[string]time.Time{srcFoo: edited.Add(time.Minute)},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited.Add(time.Minute)}},
 			},
 		}
 
@@ -151,12 +151,12 @@ func TestMatchSessionsToFiles(t *testing.T) {
 					srcFoo: {{Start: 1, End: 10}},
 					srcBar: {{Start: 1, End: 5}},
 				},
-				Pending: map[string]time.Time{srcFoo: edited, srcBar: edited},
+				Pending: map[string]state.PendingEdit{srcFoo: {At: edited}, srcBar: {At: edited}},
 			},
 			{
 				SessionID: sessionB,
 				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-				Pending:   map[string]time.Time{srcFoo: edited.Add(time.Minute)},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited.Add(time.Minute)}},
 			},
 		}
 
@@ -168,12 +168,12 @@ func TestMatchSessionsToFiles(t *testing.T) {
 			{
 				SessionID: "session-z",
 				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-				Pending:   map[string]time.Time{srcFoo: edited},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
 			},
 			{
 				SessionID: sessionA,
 				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
-				Pending:   map[string]time.Time{srcFoo: edited},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
 			},
 		}
 
