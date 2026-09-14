@@ -1,0 +1,231 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Chainloop Controlplane API",
+    "termsOfService": "https://chainloop.dev/terms",
+    "version": "1.0",
+    "contact": {
+      "name": "Chainloop Support",
+      "url": "https://chainloop.dev",
+      "email": "support@chainloop.dev"
+    }
+  },
+  "tags": [
+    {
+      "name": "ReferrerService",
+      "description": "Referrer service for discovering referred content by digest"
+    }
+  ],
+  "host": "cp.chainloop.dev",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/discover/{digest}": {
+      "get": {
+        "summary": "Discover private referrer",
+        "description": "Returns the referrer item for a given digest in the organizations of the logged-in user",
+        "operationId": "ReferrerService_DiscoverPrivate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReferrerServiceDiscoverPrivateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "digest",
+            "description": "Digest is the unique identifier of the referrer to discover",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "kind",
+            "description": "Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\nUsed to filter and resolve ambiguities",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "pagination.cursor",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "Limit pagination to 100",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "project_name",
+            "description": "ProjectName optionally scopes the discovery to a project by name. Can be set on its own\n(project-wide filter) or together with project_version (project + version filter).",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "project_version",
+            "description": "ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).\nRequires project_name, since a version name is unique only within a project.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ReferrerService"
+        ],
+        "produces": [
+          "application/json"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1CursorPaginationRequest": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Limit pagination to 100"
+        }
+      }
+    },
+    "v1CursorPaginationResponse": {
+      "type": "object",
+      "properties": {
+        "next_cursor": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ReferrerItem": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "title": "Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ..."
+        },
+        "downloadable": {
+          "type": "boolean",
+          "title": "Downloadable indicates whether the referrer is downloadable or not from CAS"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ReferrerItem"
+          },
+          "title": "References contains the list of related referrer items"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "CreatedAt is the timestamp when the referrer was created"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Metadata contains additional descriptive information about the referrer"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Annotations are key-value pairs associated with the referrer"
+        }
+      },
+      "description": "It represents a referrer object in the system",
+      "title": "ReferrerItem"
+    },
+    "v1ReferrerServiceDiscoverPrivateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1ReferrerItem",
+          "title": "Result is the discovered referrer item"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1CursorPaginationResponse",
+          "title": "Pagination information for the references list"
+        }
+      },
+      "description": "Response for the DiscoverPrivate method",
+      "title": "ReferrerServiceDiscoverPrivateResponse"
+    }
+  },
+  "securityDefinitions": {
+    "bearerToken": {
+      "type": "apiKey",
+      "description": "Bearer token for authentication",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "bearerToken": []
+    }
+  ],
+  "externalDocs": {
+    "description": "Chainloop Official Documentation",
+    "url": "https://docs.chainloop.dev"
+  }
+}
