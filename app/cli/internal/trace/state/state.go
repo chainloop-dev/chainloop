@@ -180,6 +180,14 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 //
 // Liveness is deliberately not consulted: session-end does not always run, so
 // a leaked record stays Active forever and would never expire.
+//
+// Uncommitted attribution is deliberately not spared either, so a week-old
+// edit that is committed later is attributed to nobody rather than to the
+// session that made it. That is the safe direction: keeping the entry means a
+// session nothing has heard from in a week can still claim a file and pull the
+// whole commit's diff into its evidence, and by then its transcript is usually
+// gone — raw/ is wiped on every push — so the attestation it wins yields
+// nothing anyway. Under-crediting beats crediting the wrong session.
 func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struct{} {
 	records, err := s.LoadAllSessionRecords()
 	if err != nil {
@@ -327,14 +335,4 @@ func removeIfExists(path string) error {
 // NowTimestamp returns the current UTC time in RFC3339 format.
 func NowTimestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
-}
-
-// NowTimestampPrecise returns the current UTC time in RFC3339 format with
-// sub-second precision. Used where two events have to be ordered against each
-// other — second resolution is too coarse to tell which of two edits to the
-// same file came last. Callers must compare parsed times, not the strings:
-// fractional-second forms do not sort lexicographically against whole-second
-// ones.
-func NowTimestampPrecise() string {
-	return time.Now().UTC().Format(time.RFC3339Nano)
 }

@@ -140,6 +140,14 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 
 	ensureSessionTracked(provider, store, repoRoot, input, log)
 
+	// An agent can resume a session after its end hook ran, and the record is
+	// created once and never upserted, so revive the flag here. Only
+	// session-start may do this: the tool hooks share ensureSessionTracked, and
+	// one of those arriving late would resurrect a session that really has
+	// ended. Revival keeps StartedAt and the metadata captured on the first
+	// call intact.
+	setSessionActive(store, input.SessionID, true, log)
+
 	// Composing the banner costs a control-plane round trip, so it is only
 	// worth doing for an agent that can put it in front of the user. Cursor
 	// and opencode would discard it, and the developer would have paid the
@@ -252,11 +260,6 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 
 	sessionID := input.SessionID
 	if store.SessionRecordExists(sessionID) {
-		// A resumed session fires session-start again after its end hook ran.
-		// Reviving the flag keeps StartedAt and the agent metadata captured on
-		// the first call intact.
-		setSessionActive(store, sessionID, true, log)
-
 		return
 	}
 

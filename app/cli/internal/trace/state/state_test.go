@@ -427,32 +427,60 @@ func TestAILinePendingTracking(t *testing.T) {
 		assert.NotContains(t, attr.Files, "untouched.go")
 	})
 
-	t.Run("pending carries the time of the most recent edit", func(t *testing.T) {
-		// Second resolution cannot order two sessions editing one file, so the
-		// recorded timestamps must be finer than that.
+	t.Run("pending records the edit time with sub-second precision", func(t *testing.T) {
+		// Second resolution cannot order two sessions editing one file, so what
+		// round-trips through the ledger has to keep the fraction.
 		store := NewGitStore(t.TempDir())
 		require.NoError(t, store.InitTraceDir())
 
-		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
-		require.NoError(t, store.RecordLineRanges("sess-2", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}))
+		at := time.Date(2026, 4, 28, 10, 0, 0, 123456789, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, at))
 
-		first := store.LoadAILineAttribution("sess-1").Pending[fileA]
-		second := store.LoadAILineAttribution("sess-2").Pending[fileA]
-		require.False(t, first.IsZero())
-		require.False(t, second.IsZero())
-		assert.True(t, second.After(first), "the later edit must be ordered after the earlier one")
+		assert.Equal(t, at, store.LoadAILineAttribution("sess-1").Pending[fileA])
+	})
+
+	t.Run("the wall clock supplies a usable edit time", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		before := time.Now().UTC()
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		got := store.LoadAILineAttribution("sess-1").Pending[fileA]
+		require.False(t, got.IsZero(), "an edit with no readable time is never pending")
+		assert.False(t, got.Before(before.Truncate(time.Second)))
 	})
 
 	t.Run("re-editing a file advances its pending time", func(t *testing.T) {
 		store := NewGitStore(t.TempDir())
 		require.NoError(t, store.InitTraceDir())
 
-		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
-		firstEdit := store.LoadAILineAttribution("sess-1").Pending[fileA]
+		at := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, at))
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, at.Add(time.Minute)))
 
-		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}))
+		assert.Equal(t, at.Add(time.Minute), store.LoadAILineAttribution("sess-1").Pending[fileA])
+	})
 
-		assert.True(t, store.LoadAILineAttribution("sess-1").Pending[fileA].After(firstEdit))
+	t.Run("a marker does not retire an edit recorded after it was built", func(t *testing.T) {
+		// MarkConsumed reads the pending set and then appends; an agent editing
+		// the same file in between leaves a marker sitting behind an edit the
+		// commit never contained. That edit must stay pending.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		committed := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, committed))
+
+		pendingBefore := store.LoadAILineAttribution("sess-1").Pending
+		require.Contains(t, pendingBefore, fileA)
+
+		// The racing edit lands first, then the marker for the older one.
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, committed.Add(time.Second)))
+		require.NoError(t, store.markConsumedAt(pendingBefore, "sess-1", []string{fileA}, "sha-1"))
+
+		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA,
+			"the edit made after the snapshot was not in the commit")
 	})
 
 	t.Run("a ledger written before consumption tracking is never pending", func(t *testing.T) {

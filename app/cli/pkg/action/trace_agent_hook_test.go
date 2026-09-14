@@ -208,6 +208,31 @@ func TestHandleAgentSessionEnd(t *testing.T) {
 		assert.Equal(t, "2026-03-28T00:00:00Z", rec.StartedAt)
 		assert.Equal(t, "1.2.3", rec.AgentVersion, "metadata captured on the first hook must survive")
 	})
+
+	t.Run("a late tool hook does not revive an ended session", func(t *testing.T) {
+		// Only session-start means "resumed". The tool hooks share
+		// ensureSessionTracked, so reviving there would let one arriving after
+		// session-end resurrect a session that really has finished, and the
+		// next no-commit push would attest it.
+		dir, gitDir := initGitRepo(t)
+		store := state.NewGitStore(gitDir)
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+			SessionID: "abc-123", Provider: providerClaudeCode, Active: false, StartedAt: "2026-03-28T00:00:00Z",
+		}))
+
+		target := filepath.Join(dir, "late.txt")
+		require.NoError(t, os.WriteFile(target, []byte("one\n"), 0600))
+
+		withStdin(t, `{"session_id":"abc-123","tool_name":"Write","tool_input":{"file_path":"`+target+`"}}`)
+		require.NoError(t, HandleAgentPostToolUse(provider, zerolog.Nop()))
+
+		rec, err := store.LoadSessionRecord("abc-123")
+		require.NoError(t, err)
+		require.NotNil(t, rec)
+		assert.False(t, rec.Active)
+	})
 }
 
 func TestAutoInstallGitHooks(t *testing.T) {

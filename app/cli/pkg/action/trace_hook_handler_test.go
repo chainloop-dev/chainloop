@@ -550,12 +550,17 @@ func TestCommitLifecycle_LaterSessionSupersedesFinishedOne(t *testing.T) {
 
 	shared := filepath.Join(dir, "shared.go")
 
+	// Explicit edit times: the wall clock does not reliably advance between two
+	// calls on a host with a coarse clock, and which edit came last is the
+	// whole point here.
+	firstEdit := time.Now().UTC().Add(-time.Hour)
+
 	// Session one edits the file, then ends without committing.
 	require.NoError(t, os.WriteFile(shared, []byte("package main\n"), 0600))
 	require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
 		SessionID: "sess-first", Provider: providerClaudeCode, Active: true, StartedAt: state.NowTimestamp(),
 	}))
-	require.NoError(t, store.RecordLineRanges("sess-first", "shared.go", []aicodingsession.LineRange{{Start: 1, End: 1}}))
+	require.NoError(t, store.RecordLineRangesAt("sess-first", "shared.go", []aicodingsession.LineRange{{Start: 1, End: 1}}, firstEdit))
 	setSessionActive(store, "sess-first", false, zerolog.Nop())
 
 	// Session two edits the same file afterwards.
@@ -563,7 +568,7 @@ func TestCommitLifecycle_LaterSessionSupersedesFinishedOne(t *testing.T) {
 	require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
 		SessionID: "sess-second", Provider: providerClaudeCode, Active: true, StartedAt: state.NowTimestamp(),
 	}))
-	require.NoError(t, store.RecordLineRanges("sess-second", "shared.go", []aicodingsession.LineRange{{Start: 3, End: 3}}))
+	require.NoError(t, store.RecordLineRangesAt("sess-second", "shared.go", []aicodingsession.LineRange{{Start: 3, End: 3}}, firstEdit.Add(time.Minute)))
 
 	msg := filepath.Join(dir, "msg")
 	require.NoError(t, os.WriteFile(msg, []byte("feat: shared\n"), 0600))
