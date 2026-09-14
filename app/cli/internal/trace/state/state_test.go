@@ -19,10 +19,17 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+// Fixture names reused across the pending-tracking and stale-GC tests.
+const (
+	fileA   = "a.go"
+	sessOld = "sess-old"
 )
 
 func TestLogFilePath(t *testing.T) {
@@ -357,5 +364,250 @@ func TestAILineAttribution(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, attrs, 1)
 		assert.Equal(t, rawID, attrs[0].SessionID, "consumers key off the agent-assigned ID, not the filename")
+	})
+}
+
+func TestAILinePendingTracking(t *testing.T) {
+	t.Run("a recorded file is pending", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA)
+	})
+
+	t.Run("consuming clears pending but keeps the ranges", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+		require.NoError(t, store.MarkConsumed("sess-1", []string{fileA}, "sha-1"))
+
+		attr := store.LoadAILineAttribution("sess-1")
+		assert.Empty(t, attr.Pending, "a committed file must stop crediting the session")
+		assert.Len(t, attr.Files[fileA], 1, "push-time enrichment still needs the ranges")
+	})
+
+	t.Run("only the committed files are consumed", func(t *testing.T) {
+		// Staging one file of two must not retire the other: a session that
+		// commits its work in logical chunks has to keep credit for the rest.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+		require.NoError(t, store.RecordLineRanges("sess-1", "b.go", []aicodingsession.LineRange{{Start: 1, End: 5}}))
+		require.NoError(t, store.MarkConsumed("sess-1", []string{fileA}, "sha-1"))
+
+		pending := store.LoadAILineAttribution("sess-1").Pending
+		assert.NotContains(t, pending, fileA)
+		assert.Contains(t, pending, "b.go")
+	})
+
+	t.Run("editing a file again re-arms it", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+		require.NoError(t, store.MarkConsumed("sess-1", []string{fileA}, "sha-1"))
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}))
+
+		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA)
+	})
+
+	t.Run("consuming a file the session never touched is a no-op", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+		require.NoError(t, store.MarkConsumed("sess-1", []string{"untouched.go"}, "sha-1"))
+
+		attr := store.LoadAILineAttribution("sess-1")
+		assert.Contains(t, attr.Pending, fileA)
+		assert.NotContains(t, attr.Files, "untouched.go")
+	})
+
+	t.Run("pending records the edit time with sub-second precision", func(t *testing.T) {
+		// Second resolution cannot order two sessions editing one file, so what
+		// round-trips through the ledger has to keep the fraction.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		at := time.Date(2026, 4, 28, 10, 0, 0, 123456789, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, at))
+
+		assert.Equal(t, at, store.LoadAILineAttribution("sess-1").Pending[fileA].At)
+	})
+
+	t.Run("the wall clock supplies a usable edit time", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		before := time.Now().UTC()
+		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		got := store.LoadAILineAttribution("sess-1").Pending[fileA]
+		require.False(t, got.At.IsZero(), "an edit with no readable time is never pending")
+		assert.False(t, got.At.Before(before.Truncate(time.Second)))
+	})
+
+	t.Run("re-editing a file advances its pending edit", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		at := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, at))
+		first := store.LoadAILineAttribution("sess-1").Pending[fileA]
+
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, at.Add(time.Minute)))
+
+		second := store.LoadAILineAttribution("sess-1").Pending[fileA]
+		assert.Equal(t, at.Add(time.Minute), second.At)
+		assert.Greater(t, second.Seq, first.Seq, "ledger positions must advance with each append")
+	})
+
+	t.Run("a marker does not retire an edit recorded after it was built", func(t *testing.T) {
+		// MarkConsumed reads the pending set and then appends; an agent editing
+		// the same file in between leaves a marker sitting behind an edit the
+		// commit never contained. That edit must stay pending.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		committed := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, committed))
+
+		pendingBefore := store.LoadAILineAttribution("sess-1").Pending
+		require.Contains(t, pendingBefore, fileA)
+
+		// The racing edit lands first, then the marker for the older one.
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, committed.Add(time.Second)))
+		require.NoError(t, store.markConsumedAt(pendingBefore, "sess-1", []string{fileA}, "sha-1"))
+
+		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA,
+			"the edit made after the snapshot was not in the commit")
+	})
+
+	t.Run("a racing edit sharing the snapshot's timestamp still survives", func(t *testing.T) {
+		// Same as above, but the racing edit lands in the same clock tick as the
+		// one being retired. Retirement is keyed off the ledger position rather
+		// than the time precisely so a tie here cannot sweep it up.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		tick := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, tick))
+
+		pendingBefore := store.LoadAILineAttribution("sess-1").Pending
+		require.Contains(t, pendingBefore, fileA)
+
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, tick))
+		require.NoError(t, store.markConsumedAt(pendingBefore, "sess-1", []string{fileA}, "sha-1"))
+
+		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA,
+			"an identical timestamp must not make the later edit indistinguishable")
+	})
+
+	t.Run("a marker with no ledger position retires the file outright", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}, time.Now().UTC()))
+
+		// A marker shaped like the ones written before consumed_seq existed.
+		path := store.aiLinesPath("sess-1")
+		legacy := `{"session_id":"sess-1","file":"` + fileA + `","ranges":null,"consumed_by":"sha-1"}` + "\n"
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+		require.NoError(t, err)
+		_, err = f.WriteString(legacy)
+		require.NoError(t, err)
+		require.NoError(t, f.Close())
+
+		assert.NotContains(t, store.LoadAILineAttribution("sess-1").Pending, fileA)
+	})
+
+	t.Run("a ledger written before consumption tracking is never pending", func(t *testing.T) {
+		// Ledgers already on disk have no recorded_at, and their sessions are
+		// long gone. Treating them as pending would keep stamping those
+		// sessions onto new commits until the GC catches up.
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		path := store.aiLinesPath("sess-legacy")
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
+		legacy := `{"session_id":"sess-legacy","file":"legacy.go","ranges":[{"start":1,"end":5}]}` + "\n"
+		require.NoError(t, os.WriteFile(path, []byte(legacy), 0600))
+
+		attr := store.LoadAILineAttribution("sess-legacy")
+		assert.Empty(t, attr.Pending)
+		assert.Len(t, attr.Files["legacy.go"], 1, "the ranges are still readable for enrichment")
+	})
+}
+
+func TestGCOrphans_StaleSessions(t *testing.T) {
+	t.Run("prunes an aged-out session whose commits are all attested", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		old := time.Now().UTC().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
+		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+			SHA: "sha-1", SessionIDs: []string{sessOld}, Timestamp: old, Tracked: true,
+		}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: sessOld, Active: true, StartedAt: old}))
+		require.NoError(t, store.RecordLineRanges(sessOld, fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		require.NoError(t, store.GCOrphans(map[string]bool{"sha-1": true}))
+
+		// Still Active on disk, because session-end is unreliable — age plus
+		// "nothing left to attest" is what retires it.
+		assert.False(t, store.SessionRecordExists(sessOld))
+		assert.Empty(t, store.LoadAILineAttribution(sessOld).Files)
+	})
+
+	t.Run("keeps an aged-out session with an unattested commit", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		old := time.Now().UTC().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
+		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+			SHA: "sha-1", SessionIDs: []string{sessOld}, Timestamp: old, Tracked: false,
+		}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: sessOld, Active: false, StartedAt: old}))
+		require.NoError(t, store.RecordLineRanges(sessOld, fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		require.NoError(t, store.GCOrphans(map[string]bool{"sha-1": true}))
+
+		assert.True(t, store.SessionRecordExists(sessOld), "the next push still has to attest this commit")
+		assert.NotEmpty(t, store.LoadAILineAttribution(sessOld).Files)
+	})
+
+	t.Run("keeps a recent session", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		recent := time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339)
+		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+			SHA: "sha-1", SessionIDs: []string{"sess-new"}, Timestamp: recent, Tracked: true,
+		}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: "sess-new", Active: true, StartedAt: recent}))
+		require.NoError(t, store.RecordLineRanges("sess-new", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		require.NoError(t, store.GCOrphans(map[string]bool{"sha-1": true}))
+
+		assert.True(t, store.SessionRecordExists("sess-new"))
+		assert.NotEmpty(t, store.LoadAILineAttribution("sess-new").Files)
+	})
+
+	t.Run("an unparseable StartedAt is never treated as stale", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+			SHA: "sha-1", SessionIDs: []string{"sess-bad"}, Timestamp: "2026-03-28T00:00:00Z", Tracked: true,
+		}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: "sess-bad", StartedAt: "not-a-timestamp"}))
+
+		require.NoError(t, store.GCOrphans(map[string]bool{"sha-1": true}))
+
+		assert.True(t, store.SessionRecordExists("sess-bad"))
 	})
 }

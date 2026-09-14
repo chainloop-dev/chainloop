@@ -48,6 +48,12 @@ const (
 	commitRecordExt  = ".json"
 	sessionRecordExt = ".json"
 	aiLinesExt       = ".jsonl"
+
+	// staleSessionRetention is how long a session's records are kept once
+	// everything it produced has been attested. Reachability alone never
+	// expires them: a session referenced by one surviving commit pins itself
+	// into the repository for good.
+	staleSessionRetention = 7 * 24 * time.Hour
 )
 
 // InitTraceDir creates the <dir>/chainloop-trace/ directory structure.
@@ -89,7 +95,8 @@ func (s *Store) WipeTraceDir() error {
 //  1. Walk commits/, drop any record whose SHA isn't in liveSHAs (post-rebase
 //     orphan or commit on a deleted branch).
 //  2. Walk ai-lines/ and sessions/, drop any entry whose session ID is no
-//     longer referenced by a surviving CommitRecord.
+//     longer referenced by a surviving CommitRecord, or which is older than
+//     staleSessionRetention and has nothing left to attest.
 //
 // An empty liveSHAs is treated as a pathological signal (no local branches
 // readable, or the caller fed us garbage) and the GC short-circuits — wiping
@@ -107,6 +114,9 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 	}
 
 	liveSessions := make(map[string]struct{})
+	// Sessions with a surviving commit that has not been attested yet. Their
+	// state must survive the age check — the next push still needs it.
+	unattestedSessions := make(map[string]struct{})
 	for _, entry := range commitEntries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), commitRecordExt) {
 			continue
@@ -124,8 +134,13 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 		}
 		for _, sid := range rec.SessionIDs {
 			liveSessions[sanitizeID(sid)] = struct{}{}
+			if !rec.Tracked {
+				unattestedSessions[sanitizeID(sid)] = struct{}{}
+			}
 		}
 	}
+
+	stale := s.staleSessionIDs(unattestedSessions)
 
 	for _, child := range []struct {
 		sub string
@@ -148,13 +163,54 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 				continue
 			}
 			id := strings.TrimSuffix(entry.Name(), child.ext)
-			if _, alive := liveSessions[id]; !alive {
+			_, alive := liveSessions[id]
+			if _, expired := stale[id]; !alive || expired {
 				_ = os.Remove(filepath.Join(dir, entry.Name()))
 			}
 		}
 	}
 
 	return nil
+}
+
+// staleSessionIDs returns the sanitized IDs of session records older than
+// staleSessionRetention whose work has all been attested. Records with an
+// unparseable or missing StartedAt are never reported stale, so a bad
+// timestamp cannot cause data loss.
+//
+// Liveness is deliberately not consulted: session-end does not always run, so
+// a leaked record stays Active forever and would never expire.
+//
+// Uncommitted attribution is deliberately not spared either, so a week-old
+// edit that is committed later is attributed to nobody rather than to the
+// session that made it. That is the safe direction: keeping the entry means a
+// session nothing has heard from in a week can still claim a file and pull the
+// whole commit's diff into its evidence, and by then its transcript is usually
+// gone — raw/ is wiped on every push — so the attestation it wins yields
+// nothing anyway. Under-crediting beats crediting the wrong session.
+func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struct{} {
+	records, err := s.LoadAllSessionRecords()
+	if err != nil {
+		return nil
+	}
+
+	cutoff := time.Now().UTC().Add(-staleSessionRetention)
+	stale := make(map[string]struct{})
+	for _, rec := range records {
+		id := sanitizeID(rec.SessionID)
+		if _, ok := unattested[id]; ok {
+			continue
+		}
+		startedAt, err := time.Parse(time.RFC3339, rec.StartedAt)
+		if err != nil {
+			continue
+		}
+		if startedAt.Before(cutoff) {
+			stale[id] = struct{}{}
+		}
+	}
+
+	return stale
 }
 
 // RemoveTraceDir removes the entire <dir>/chainloop-trace/ directory.

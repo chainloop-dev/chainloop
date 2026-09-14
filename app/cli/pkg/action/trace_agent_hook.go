@@ -52,9 +52,36 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
 
+	setSessionActive(store, sessionID, false, log)
+
 	log.Debug().Str("session_id", sessionID).Msg("session ended")
 
 	return nil
+}
+
+// setSessionActive flips the Active flag on an existing session record. The
+// record is otherwise written once and never upserted, so without this a
+// session stays marked active for the life of the repository.
+//
+// Active is not a reliable liveness signal on its own and must not decide
+// attribution: session-end is not installed for `trace run`, and never fires
+// on SIGKILL or a closed terminal. It only narrows the set of sessions a push
+// attests when there are no commits to go on.
+func setSessionActive(store *state.Store, sessionID string, active bool, log zerolog.Logger) {
+	rec, err := store.LoadSessionRecord(sessionID)
+	if err != nil {
+		log.Debug().Err(err).Msg("load session record failed")
+
+		return
+	}
+	if rec == nil || rec.Active == active {
+		return
+	}
+
+	rec.Active = active
+	if err := store.SaveSessionRecord(rec); err != nil {
+		log.Debug().Err(err).Bool("active", active).Msg("update session record failed")
+	}
 }
 
 // sessionStartBanner is what the developer sees at the top of a traced
@@ -112,6 +139,14 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	}
 
 	ensureSessionTracked(provider, store, repoRoot, input, log)
+
+	// An agent can resume a session after its end hook ran, and the record is
+	// created once and never upserted, so revive the flag here. Only
+	// session-start may do this: the tool hooks share ensureSessionTracked, and
+	// one of those arriving late would resurrect a session that really has
+	// ended. Revival keeps StartedAt and the metadata captured on the first
+	// call intact.
+	setSessionActive(store, input.SessionID, true, log)
 
 	// Composing the banner costs a control-plane round trip, so it is only
 	// worth doing for an agent that can put it in front of the user. Cursor

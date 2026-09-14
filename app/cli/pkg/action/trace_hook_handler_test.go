@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
@@ -32,6 +33,16 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+// Fixture names reused across the session-matching tests.
+const (
+	sessionA           = "session-a"
+	sessionB           = "session-b"
+	srcFoo             = "src/foo.go"
+	srcBar             = "src/bar.go"
+	srcBaz             = "src/baz.go"
+	providerClaudeCode = "claude-code"
 )
 
 func TestEvidenceName(t *testing.T) {
@@ -47,15 +58,28 @@ func TestEvidenceName(t *testing.T) {
 }
 
 func TestMatchSessionsToFiles(t *testing.T) {
+	edited := time.Date(2026, 4, 28, 10, 0, 0, 0, time.UTC)
 	attrs := []*state.AILineAttribution{
-		{SessionID: "session-a", Files: map[string][]aicodingsession.LineRange{"src/foo.go": {{Start: 1, End: 10}}}},
-		{SessionID: "session-b", Files: map[string][]aicodingsession.LineRange{"src/bar.go": {{Start: 1, End: 5}}}},
-		{SessionID: "session-c", Files: map[string][]aicodingsession.LineRange{"src/baz.go": {{Start: 1, End: 3}}}},
+		{
+			SessionID: sessionA,
+			Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+			Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
+		},
+		{
+			SessionID: sessionB,
+			Files:     map[string][]aicodingsession.LineRange{srcBar: {{Start: 1, End: 5}}},
+			Pending:   map[string]state.PendingEdit{srcBar: {At: edited}},
+		},
+		{
+			SessionID: "session-c",
+			Files:     map[string][]aicodingsession.LineRange{srcBaz: {{Start: 1, End: 3}}},
+			Pending:   map[string]state.PendingEdit{srcBaz: {At: edited}},
+		},
 	}
 
 	t.Run("matches sessions that touched staged files", func(t *testing.T) {
-		ids := matchSessionsToFiles(attrs, []string{"src/foo.go", "src/bar.go"})
-		assert.Equal(t, []string{"session-a", "session-b"}, ids)
+		ids := matchSessionsToFiles(attrs, []string{srcFoo, srcBar})
+		assert.Equal(t, []string{sessionA, sessionB}, ids)
 	})
 
 	t.Run("no match returns nil", func(t *testing.T) {
@@ -69,13 +93,94 @@ func TestMatchSessionsToFiles(t *testing.T) {
 	})
 
 	t.Run("empty attrs returns nil", func(t *testing.T) {
-		ids := matchSessionsToFiles(nil, []string{"src/foo.go"})
+		ids := matchSessionsToFiles(nil, []string{srcFoo})
 		assert.Nil(t, ids)
 	})
 
 	t.Run("result is sorted", func(t *testing.T) {
-		ids := matchSessionsToFiles(attrs, []string{"src/baz.go", "src/foo.go"})
-		assert.Equal(t, []string{"session-a", "session-c"}, ids)
+		ids := matchSessionsToFiles(attrs, []string{srcBaz, srcFoo})
+		assert.Equal(t, []string{sessionA, "session-c"}, ids)
+	})
+
+	t.Run("ignores a session whose ranges were already committed", func(t *testing.T) {
+		// The regression this guards: a finished session keeps its full range
+		// history in Files, so matching on that would credit it on every later
+		// commit touching src/foo.go — days or weeks after it ended.
+		committed := []*state.AILineAttribution{{
+			SessionID: sessionA,
+			Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+			Pending:   map[string]state.PendingEdit{},
+		}}
+
+		assert.Nil(t, matchSessionsToFiles(committed, []string{srcFoo}))
+	})
+
+	t.Run("ignores a legacy attribution with no pending set", func(t *testing.T) {
+		legacy := []*state.AILineAttribution{{
+			SessionID: sessionA,
+			Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+		}}
+
+		assert.Nil(t, matchSessionsToFiles(legacy, []string{srcFoo}))
+	})
+
+	t.Run("the session that edited a file last owns it", func(t *testing.T) {
+		contested := []*state.AILineAttribution{
+			{
+				SessionID: sessionA,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
+			},
+			{
+				SessionID: sessionB,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited.Add(time.Minute)}},
+			},
+		}
+
+		assert.Equal(t, []string{sessionB}, matchSessionsToFiles(contested, []string{srcFoo}))
+	})
+
+	t.Run("ownership is per file, not per session", func(t *testing.T) {
+		// session-b won src/foo.go, but session-a still owns the bar.go edit
+		// it has pending, so both belong on a commit staging the two files.
+		split := []*state.AILineAttribution{
+			{
+				SessionID: sessionA,
+				Files: map[string][]aicodingsession.LineRange{
+					srcFoo: {{Start: 1, End: 10}},
+					srcBar: {{Start: 1, End: 5}},
+				},
+				Pending: map[string]state.PendingEdit{srcFoo: {At: edited}, srcBar: {At: edited}},
+			},
+			{
+				SessionID: sessionB,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited.Add(time.Minute)}},
+			},
+		}
+
+		assert.Equal(t, []string{sessionA, sessionB}, matchSessionsToFiles(split, []string{srcFoo, srcBar}))
+	})
+
+	t.Run("a tie breaks deterministically", func(t *testing.T) {
+		tied := []*state.AILineAttribution{
+			{
+				SessionID: "session-z",
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
+			},
+			{
+				SessionID: sessionA,
+				Files:     map[string][]aicodingsession.LineRange{srcFoo: {{Start: 1, End: 10}}},
+				Pending:   map[string]state.PendingEdit{srcFoo: {At: edited}},
+			},
+		}
+
+		// Repeated because map iteration order varies between runs.
+		for range 20 {
+			assert.Equal(t, []string{sessionA}, matchSessionsToFiles(tied, []string{srcFoo}))
+		}
 	})
 }
 
@@ -371,6 +476,155 @@ func TestHandlePostCommit_UsesTrailerWhenPresent(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, commits, 1)
 	assert.Equal(t, []string{"orig-1", "orig-2"}, commits[0].SessionIDs)
+}
+
+// A session's attribution must only credit the commit that actually lands it.
+// Before consumption tracking, the ai-lines ledger was matched in full on every
+// commit, so a session that once edited a file kept being stamped onto later
+// commits touching it — the whole foreign diff was then attributed to that
+// session, with every file it had no ranges for reported as human-written.
+func TestCommitLifecycle_SessionIsNotCreditedTwice(t *testing.T) {
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+
+	shared := filepath.Join(dir, "shared.go")
+	require.NoError(t, os.WriteFile(shared, []byte("package main\n"), 0600))
+	require.NoError(t, store.RecordLineRanges("sess-first", "shared.go", []aicodingsession.LineRange{{Start: 1, End: 1}}))
+
+	// Commit 1: the session edited shared.go, so it earns the trailer.
+	msg := filepath.Join(dir, "msg1")
+	require.NoError(t, os.WriteFile(msg, []byte("feat: first\n"), 0600))
+	runGit(t, dir, "add", "shared.go")
+	require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+
+	first, err := os.ReadFile(msg)
+	require.NoError(t, err)
+	require.Contains(t, string(first), "Chainloop-Trace-Sessions: sess-first")
+
+	runGit(t, dir, "commit", "-F", msg)
+	require.NoError(t, handlePostCommit(t.Context(), zerolog.Nop()))
+
+	// Commit 2: somebody else touches the same file. The finished session must
+	// not be credited, even though its ledger still lists shared.go.
+	require.NoError(t, os.WriteFile(shared, []byte("package main\n\nfunc main() {}\n"), 0600))
+	msg2 := filepath.Join(dir, "msg2")
+	require.NoError(t, os.WriteFile(msg2, []byte("chore: unrelated\n"), 0600))
+	runGit(t, dir, "add", "shared.go")
+	require.NoError(t, handleCommitMsg(msg2, zerolog.Nop()))
+
+	second, err := os.ReadFile(msg2)
+	require.NoError(t, err)
+	assert.NotContains(t, string(second), "Chainloop-Trace-Sessions",
+		"a session whose ranges are already committed must not be credited again")
+
+	runGit(t, dir, "commit", "-F", msg2)
+	require.NoError(t, handlePostCommit(t.Context(), zerolog.Nop()))
+
+	commits, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	require.Len(t, commits, 2)
+
+	credited := map[string][]string{}
+	for _, c := range commits {
+		subject := strings.SplitN(c.Message, "\n", 2)[0]
+		credited[subject] = c.SessionIDs
+	}
+	assert.Equal(t, []string{"sess-first"}, credited["feat: first"])
+	assert.Empty(t, credited["chore: unrelated"], "the second commit belongs to no session")
+
+	// The ranges themselves survive, because push-time enrichment needs them.
+	assert.NotEmpty(t, store.LoadAILineAttribution("sess-first").Files["shared.go"])
+}
+
+// Two sessions in a row over the same file, neither having committed yet: the
+// first one records its ranges and ends, then a second one edits the same file.
+// Only the session that edited last may be credited — its edit rewrote the
+// lines the first one wrote, and crediting both would attach a finished session
+// to a commit, and to the pull request holding it, on the strength of work that
+// no longer exists.
+func TestCommitLifecycle_LaterSessionSupersedesFinishedOne(t *testing.T) {
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+
+	shared := filepath.Join(dir, "shared.go")
+
+	// Explicit edit times: the wall clock does not reliably advance between two
+	// calls on a host with a coarse clock, and which edit came last is the
+	// whole point here.
+	firstEdit := time.Now().UTC().Add(-time.Hour)
+
+	// Session one edits the file, then ends without committing.
+	require.NoError(t, os.WriteFile(shared, []byte("package main\n"), 0600))
+	require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+		SessionID: "sess-first", Provider: providerClaudeCode, Active: true, StartedAt: state.NowTimestamp(),
+	}))
+	require.NoError(t, store.RecordLineRangesAt("sess-first", "shared.go", []aicodingsession.LineRange{{Start: 1, End: 1}}, firstEdit))
+	setSessionActive(store, "sess-first", false, zerolog.Nop())
+
+	// Session two edits the same file afterwards.
+	require.NoError(t, os.WriteFile(shared, []byte("package main\n\nfunc main() {}\n"), 0600))
+	require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+		SessionID: "sess-second", Provider: providerClaudeCode, Active: true, StartedAt: state.NowTimestamp(),
+	}))
+	require.NoError(t, store.RecordLineRangesAt("sess-second", "shared.go", []aicodingsession.LineRange{{Start: 3, End: 3}}, firstEdit.Add(time.Minute)))
+
+	msg := filepath.Join(dir, "msg")
+	require.NoError(t, os.WriteFile(msg, []byte("feat: shared\n"), 0600))
+	runGit(t, dir, "add", "shared.go")
+	require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+
+	trailer, err := os.ReadFile(msg)
+	require.NoError(t, err)
+	assert.Contains(t, string(trailer), "Chainloop-Trace-Sessions: sess-second")
+	assert.NotContains(t, string(trailer), "sess-first", "the finished session's edit was overwritten")
+
+	runGit(t, dir, "commit", "-F", msg)
+	require.NoError(t, handlePostCommit(t.Context(), zerolog.Nop()))
+
+	commits, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	require.Len(t, commits, 1)
+	assert.Equal(t, []string{"sess-second"}, commits[0].SessionIDs)
+}
+
+// A session committing its work in logical chunks has to keep credit for the
+// files it has not staged yet.
+func TestCommitLifecycle_PartialStagingKeepsCredit(t *testing.T) {
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+
+	for _, name := range []string{"a.go", "b.go"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("package main\n"), 0600))
+		require.NoError(t, store.RecordLineRanges("sess-1", name, []aicodingsession.LineRange{{Start: 1, End: 1}}))
+	}
+
+	commitOne := func(t *testing.T, file, subject string) string {
+		t.Helper()
+		msg := filepath.Join(dir, "msg-"+file)
+		require.NoError(t, os.WriteFile(msg, []byte(subject+"\n"), 0600))
+		runGit(t, dir, "add", file)
+		require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+		content, err := os.ReadFile(msg)
+		require.NoError(t, err)
+		runGit(t, dir, "commit", "-F", msg)
+		require.NoError(t, handlePostCommit(t.Context(), zerolog.Nop()))
+
+		return string(content)
+	}
+
+	assert.Contains(t, commitOne(t, "a.go", "feat: a"), "Chainloop-Trace-Sessions: sess-1")
+	assert.Contains(t, commitOne(t, "b.go", "feat: b"), "Chainloop-Trace-Sessions: sess-1",
+		"committing a.go must not retire the session's pending work on b.go")
+
+	commits, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	require.Len(t, commits, 2)
+	for _, c := range commits {
+		assert.Equal(t, []string{"sess-1"}, c.SessionIDs)
+	}
 }
 
 func TestHandlePostCommit_SkipsMergeCommit(t *testing.T) {
