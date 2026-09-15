@@ -21,6 +21,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/spf13/cobra"
 )
 
@@ -98,6 +99,7 @@ func newTraceHookGitPrePushCmd() *cobra.Command {
 			return action.HandlePrePushHook(cmd.Context(), requireTrace, logger, action.RunTracePushOpts{
 				ActionOpts: ActionOpts,
 				CLIVersion: Version,
+				Mode:       aicodingsession.ModeCoding,
 			})
 		},
 	}

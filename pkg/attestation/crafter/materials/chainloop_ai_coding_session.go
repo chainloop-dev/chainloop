@@ -33,7 +33,16 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var annotationAICodingModel = api.CreateAnnotation("material.aiagent.model")
+var (
+	annotationAICodingModel = api.CreateAnnotation("material.aiagent.model")
+	// How the session was driven, published so that a consumer can separate an
+	// ongoing coding session from a one-shot `chainloop trace run` without
+	// downloading and parsing the session itself — an annotation query is an
+	// exact key/value match. Always set, defaulting to the meaning of an absent
+	// mode, so that the filter behaves the same for sessions recorded before the
+	// field existed.
+	annotationAICodingSessionMode = api.CreateAnnotation("material.aisession.mode")
+)
 
 type ChainloopAICodingSessionCrafter struct {
 	*crafterCommon
@@ -134,6 +143,9 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 	if data.Model != nil && data.Model.Primary != "" {
 		material.Annotations[annotationAICodingModel] = data.Model.Primary
 	}
+
+	// Surface how the session was run
+	material.Annotations[annotationAICodingSessionMode] = aicodingsession.ResolveMode(data.Session.Mode)
 
 	return &CraftResult{Material: material, Content: redacted}, nil
 }

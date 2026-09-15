@@ -349,6 +349,77 @@ func TestChainloopAICodingSessionCrafter_Annotations(t *testing.T) {
 				_, exists := got.Annotations[annotationAICodingModel]
 				assert.False(t, exists, "model annotation should not be present")
 			}
+
+			// None of these fixtures carries a mode, so they all take the default.
+			assert.Equal(t, aicodingsession.ModeCoding, got.Annotations[annotationAICodingSessionMode])
 		})
 	}
+}
+
+// TestChainloopAICodingSessionCrafter_ModeAnnotation checks that the mode a
+// session declares reaches the attestation as an annotation, and that a session
+// with no mode is annotated as "coding" rather than left without the key. The
+// annotation is the cheap filter: it is an exact key/value match a consumer can
+// query without downloading and parsing the session itself.
+func TestChainloopAICodingSessionCrafter_ModeAnnotation(t *testing.T) {
+	testCases := []struct {
+		name         string
+		mode         string
+		expectedMode string
+	}{
+		{name: "no mode falls back to coding", mode: "", expectedMode: aicodingsession.ModeCoding},
+		{name: "an explicit coding mode", mode: aicodingsession.ModeCoding, expectedMode: aicodingsession.ModeCoding},
+		{name: "a generic mode from trace run", mode: aicodingsession.ModeGeneric, expectedMode: aicodingsession.ModeGeneric},
+		{name: "a mode this version predates", mode: "spec", expectedMode: "spec"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := sessionFixtureWithMode(t, "./testdata/ai-coding-session-minimal.json", tc.mode)
+
+			logger := zerolog.Nop()
+			schema := &schemaapi.CraftingSchema_Material{
+				Name: "test",
+				Type: schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION,
+			}
+
+			uploader := mUploader.NewUploader(t)
+			uploader.On("Upload", context.TODO(), mock.Anything, mock.Anything, mock.Anything).
+				Return(&casclient.UpDownStatus{Digest: "deadbeef", Filename: path}, nil)
+
+			crafter, err := NewChainloopAICodingSessionCrafter(schema, &casclient.CASBackend{Uploader: uploader}, &logger)
+			require.NoError(t, err)
+
+			got, err := craftedMaterial(crafter.Craft(context.TODO(), path))
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expectedMode, got.Annotations[annotationAICodingSessionMode])
+		})
+	}
+}
+
+// sessionFixtureWithMode copies a session fixture into a temp file, setting
+// data.session.mode to mode, or leaving it out when mode is empty.
+func sessionFixtureWithMode(t *testing.T, fixture, mode string) string {
+	t.Helper()
+
+	raw, err := os.ReadFile(fixture)
+	require.NoError(t, err)
+
+	var evidence struct {
+		ID     string               `json:"chainloop.material.evidence.id"`
+		Schema string               `json:"schema"`
+		Data   aicodingsession.Data `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &evidence))
+
+	evidence.Data.Session.Mode = mode
+
+	out, err := json.Marshal(evidence)
+	require.NoError(t, err)
+
+	path := filepath.Join(t.TempDir(), "session.json")
+	require.NoError(t, os.WriteFile(path, out, 0600))
+
+	return path
 }

@@ -46,6 +46,10 @@
           "type": "string",
           "description": "Human-readable session slug"
         },
+        "mode": {
+          "type": "string",
+          "description": "How the session was run: 'coding' for a session traced through the git hooks installed by `chainloop trace init` (the meaning of an absent mode), 'generic' for a single-shot `chainloop trace run`. Left unconstrained so further modes need no schema version bump."
+        },
         "started_at": {
           "type": "string",
           "minLength": 1,

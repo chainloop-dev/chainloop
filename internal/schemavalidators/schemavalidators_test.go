@@ -276,6 +276,69 @@ func TestValidateAICodingSession(t *testing.T) {
 	}
 }
 
+// TestValidateAICodingSessionMode covers session.mode, which records how
+// `chainloop trace` was driven. It is optional — an absent mode means "coding" —
+// and deliberately unconstrained beyond being a string, so that modes added
+// later need no schema version bump.
+func TestValidateAICodingSessionMode(t *testing.T) {
+	loadPayload := func(t *testing.T) map[string]any {
+		t.Helper()
+		f, err := os.ReadFile("./testdata/ai_coding_session_valid.json")
+		require.NoError(t, err)
+
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(f, &payload))
+		return payload
+	}
+
+	session := func(t *testing.T, payload map[string]any) map[string]any {
+		t.Helper()
+		s, ok := payload["session"].(map[string]any)
+		require.True(t, ok)
+		return s
+	}
+
+	t.Run("the fixture validates without a mode", func(t *testing.T) {
+		payload := loadPayload(t)
+		require.NotContains(t, session(t, payload), "mode")
+		require.NoError(t, schemavalidators.ValidateAICodingSession(payload, ""))
+	})
+
+	accepted := []struct {
+		name string
+		mode string
+	}{
+		{name: "coding", mode: "coding"},
+		{name: "generic", mode: "generic"},
+		{name: "a mode this schema version predates", mode: "spec"},
+	}
+
+	for _, tc := range accepted {
+		t.Run("accepts "+tc.name, func(t *testing.T) {
+			payload := loadPayload(t)
+			session(t, payload)["mode"] = tc.mode
+			require.NoError(t, schemavalidators.ValidateAICodingSession(payload, ""))
+		})
+	}
+
+	rejected := []struct {
+		name  string
+		key   string
+		value any
+	}{
+		{name: "a non-string mode", key: "mode", value: 3},
+		{name: "an unknown sibling of mode", key: "modality", value: "coding"},
+	}
+
+	for _, tc := range rejected {
+		t.Run("rejects "+tc.name, func(t *testing.T) {
+			payload := loadPayload(t)
+			session(t, payload)[tc.key] = tc.value
+			require.Error(t, schemavalidators.ValidateAICodingSession(payload, ""))
+		})
+	}
+}
+
 func TestValidateSecurityContext(t *testing.T) {
 	testCases := []struct {
 		name     string

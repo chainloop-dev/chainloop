@@ -46,6 +46,7 @@ var protectedPaths = []string{
 	"/data/agent/version",
 	"/data/session/id",
 	"/data/session/slug",
+	"/data/session/mode",
 	"/data/session/started_at",
 	"/data/session/ended_at",
 	"/data/git_context/branch",
