@@ -146,11 +146,17 @@ func TestResolveProjectName(t *testing.T) {
 			projectName: "{{.Attestation.Annotations.Version}}",
 			want:        "1.2.3",
 		},
+		{
+			name:        "hyphenated annotation interpolates via index",
+			projectName: `{{ index .Material.Annotations "my-annotation" }}`,
+			want:        "hyphen-ok",
+		},
 	}
 
 	sbomAnnotation := map[string]string{
-		"hello": "hola",
-		"world": "mundo",
+		"hello":         "hola",
+		"world":         "mundo",
+		"my-annotation": "hyphen-ok",
 	}
 
 	attAnnotation := map[string]string{
@@ -348,8 +354,9 @@ func TestVerifyAllFilters(t *testing.T) {
 	}
 
 	materialAnnotations := map[string]string{
-		"environment": "staging",
-		"critical":    "true",
+		"environment":   "staging",
+		"critical":      "true",
+		"release-stage": "ga",
 	}
 
 	testCases := []struct {
@@ -397,6 +404,10 @@ func TestVerifyAllFilters(t *testing.T) {
 			name:   "invalid filter format",
 			filter: "environment",
 			errMsg: "invalid filter segment",
+		},
+		{
+			name:   "hyphenated annotation name matches",
+			filter: "release-stage=ga",
 		},
 	}
 
