@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/rs/zerolog"
 )
 
@@ -196,6 +197,7 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		ProjectVersion:        opts.ProjectVersion,
 		IgnoreYAML:            true,
 		SkipAgentNotification: true,
+		Mode:                  aicodingsession.ModeGeneric,
 		ActionOpts:            opts.ActionOpts,
 		CLIVersion:            opts.CLIVersion,
 	})

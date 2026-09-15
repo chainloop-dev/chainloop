@@ -31,6 +31,7 @@ import (
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/rs/zerolog"
 )
 
@@ -359,6 +360,14 @@ type RunTracePushOpts struct {
 	// fire again, and its own terminal already showed the links.
 	SkipAgentNotification bool
 
+	// Mode records how the session was driven, as one of the
+	// aicodingsession.Mode* constants: ModeCoding for the git-hook path
+	// installed by `trace init`, ModeGeneric for `trace run`. Both entry
+	// points reach this same push, so the mode has to come from the caller —
+	// nothing in the session itself distinguishes them. Empty means
+	// ModeCoding.
+	Mode string
+
 	// ActionOpts is the root command's initialized options, used to build
 	// the attestation executor. Required: the push cannot run without it.
 	ActionOpts *ActionsOpts
@@ -396,7 +405,10 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		return err
 	}
 
-	log.Debug().Str("state_dir", store.Dir()).Str("repo_root", repoRoot).Bool("allow_empty", opts.AllowEmpty).Msg("trace push invoked")
+	sessionMode := aicodingsession.ResolveMode(opts.Mode)
+
+	log.Debug().Str("state_dir", store.Dir()).Str("repo_root", repoRoot).
+		Bool("allow_empty", opts.AllowEmpty).Str("mode", sessionMode).Msg("trace push invoked")
 
 	allCommits, err := store.LoadAllCommitRecords()
 	if err != nil {
@@ -530,6 +542,10 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 			log.Debug().Err(err).Str("session", sessionID).Msg("could not parse session, skipping")
 			continue
 		}
+
+		// Set by the caller rather than the provider: the mode is about how the
+		// session was driven, not about which agent produced it.
+		result.Data.Session.Mode = sessionMode
 
 		// Apply repo-wide context with per-session commit overrides
 		if gitCtxErr == nil {

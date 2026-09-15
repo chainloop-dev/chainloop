@@ -24,6 +24,29 @@ const (
 	EvidenceSchemaURL = "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json"
 )
 
+// How `chainloop trace` was driven for a session. Recorded so that consumers
+// can tell an ongoing coding session apart from a one-shot wrapped command
+// instead of presenting them as the same thing. More modes are expected, so the
+// field is a plain string rather than a closed enumeration.
+const (
+	// ModeCoding is a session traced through the agent and git hooks installed
+	// by `chainloop trace init`. It is what an absent mode means, so sessions
+	// recorded before the field existed keep their meaning.
+	ModeCoding = "coding"
+	// ModeGeneric is a single-shot session wrapped by `chainloop trace run`.
+	ModeGeneric = "generic"
+)
+
+// ResolveMode maps an unset mode onto the one an absent mode means, so that the
+// default is written down once instead of at each producer and consumer.
+func ResolveMode(mode string) string {
+	if mode == "" {
+		return ModeCoding
+	}
+
+	return mode
+}
+
 // Agent identifies the AI agent provider.
 type Agent struct {
 	Name    string `json:"name"`
@@ -32,8 +55,10 @@ type Agent struct {
 
 // Session holds timing and identity information for the coding session.
 type Session struct {
-	ID              string `json:"id"`
-	Slug            string `json:"slug,omitempty"`
+	ID   string `json:"id"`
+	Slug string `json:"slug,omitempty"`
+	// Mode is one of the Mode* constants. Empty means ModeCoding.
+	Mode            string `json:"mode,omitempty"`
 	StartedAt       string `json:"started_at"`
 	EndedAt         string `json:"ended_at,omitempty"`
 	DurationSeconds int    `json:"duration_seconds"`
