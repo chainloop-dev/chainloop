@@ -381,7 +381,16 @@ export interface PolicyVulnerabilityFinding {
   /** Version that fixes the vulnerability (e.g., "2.0.1", "1.3.4-patch1") */
   fixedVersion: string;
   /** Optional assessment context. See PolicyAssessmentResult. */
-  assessment?: PolicyAssessmentResult | undefined;
+  assessment?:
+    | PolicyAssessmentResult
+    | undefined;
+  /**
+   * Optional location of the affected component copy — a file path
+   * (e.g., "/opt/app/lib/ext/lib-1.2.3.jar") or, when no path is available,
+   * the SBOM component reference. Distinguishes multiple copies of the same
+   * package within a single artifact.
+   */
+  location: string;
 }
 
 /**
@@ -3362,6 +3371,7 @@ function createBasePolicyVulnerabilityFinding(): PolicyVulnerabilityFinding {
     description: "",
     fixedVersion: "",
     assessment: undefined,
+    location: "",
   };
 }
 
@@ -3396,6 +3406,9 @@ export const PolicyVulnerabilityFinding = {
     }
     if (message.assessment !== undefined) {
       PolicyAssessmentResult.encode(message.assessment, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.location !== "") {
+      writer.uint32(90).string(message.location);
     }
     return writer;
   },
@@ -3477,6 +3490,13 @@ export const PolicyVulnerabilityFinding = {
 
           message.assessment = PolicyAssessmentResult.decode(reader, reader.uint32());
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.location = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3498,6 +3518,7 @@ export const PolicyVulnerabilityFinding = {
       description: isSet(object.description) ? String(object.description) : "",
       fixedVersion: isSet(object.fixedVersion) ? String(object.fixedVersion) : "",
       assessment: isSet(object.assessment) ? PolicyAssessmentResult.fromJSON(object.assessment) : undefined,
+      location: isSet(object.location) ? String(object.location) : "",
     };
   },
 
@@ -3518,6 +3539,7 @@ export const PolicyVulnerabilityFinding = {
     message.fixedVersion !== undefined && (obj.fixedVersion = message.fixedVersion);
     message.assessment !== undefined &&
       (obj.assessment = message.assessment ? PolicyAssessmentResult.toJSON(message.assessment) : undefined);
+    message.location !== undefined && (obj.location = message.location);
     return obj;
   },
 
@@ -3539,6 +3561,7 @@ export const PolicyVulnerabilityFinding = {
     message.assessment = (object.assessment !== undefined && object.assessment !== null)
       ? PolicyAssessmentResult.fromPartial(object.assessment)
       : undefined;
+    message.location = object.location ?? "";
     return message;
   },
 };

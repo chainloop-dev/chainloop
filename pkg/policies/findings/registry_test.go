@@ -116,6 +116,27 @@ func TestValidateFinding(t *testing.T) {
 			},
 		},
 		{
+			name:        "valid vulnerability finding with location",
+			findingType: "VULNERABILITY",
+			raw: map[string]any{
+				"message":      "Found CVE-2024-5678",
+				"external_id":  "CVE-2024-5678",
+				"package_purl": "pkg:maven/com.example/lib@1.0.0",
+				"severity":     "HIGH",
+				"location":     "/opt/app/lib/ext/lib-1.0.0.jar",
+			},
+			checkFn: func(t *testing.T, msg interface{}) {
+				t.Helper()
+				f, ok := msg.(*v1.PolicyVulnerabilityFinding)
+				require.True(t, ok)
+				assert.Equal(t, "Found CVE-2024-5678", f.GetMessage())
+				assert.Equal(t, "CVE-2024-5678", f.GetExternalId())
+				assert.Equal(t, "pkg:maven/com.example/lib@1.0.0", f.GetPackagePurl())
+				assert.Equal(t, "HIGH", f.GetSeverity())
+				assert.Equal(t, "/opt/app/lib/ext/lib-1.0.0.jar", f.GetLocation())
+			},
+		},
+		{
 			name:        "vulnerability finding missing required field",
 			findingType: "VULNERABILITY",
 			raw: map[string]any{
