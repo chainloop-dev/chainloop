@@ -97,10 +97,10 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 	for _, parentRef := range referrers {
 		// This is the current item stored in DB
 		storedReferrer := storedMap[parentRef.MapID()]
-		// Iterate on the items it refer to (references)
+		// Iterate on the items it refers to (references)
 		var references []uuid.UUID
 		for _, ref := range parentRef.References {
-			// amd find it in the DB
+			// and find it in the DB
 			storedReference, ok := storedMap[ref.MapID()]
 			if !ok {
 				return fmt.Errorf("referrer %v not found", ref)
