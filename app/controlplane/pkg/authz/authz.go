@@ -362,6 +362,7 @@ var RolesMap = map[Role][]*Policy{
 var ServerOperationsMap = map[string]*OperationPolicy{
 	// Discover endpoint
 	"/controlplane.v1.ReferrerService/DiscoverPrivate": {Policies: []*Policy{PolicyReferrerRead}},
+	"/controlplane.v1.ReferrerService/DiscoverEdges":   {Policies: []*Policy{PolicyReferrerRead}},
 	// Download/Uploading artifacts
 	// There are no policies for the download endpoint, we do a manual check in the service layer
 	// to differentiate between upload and download requests

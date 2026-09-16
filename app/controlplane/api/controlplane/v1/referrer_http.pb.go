@@ -19,9 +19,12 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationReferrerServiceDiscoverEdges = "/controlplane.v1.ReferrerService/DiscoverEdges"
 const OperationReferrerServiceDiscoverPrivate = "/controlplane.v1.ReferrerService/DiscoverPrivate"
 
 type ReferrerServiceHTTPServer interface {
+	// DiscoverEdges DiscoverEdges returns the connections between a set of referrers the caller already holds
+	DiscoverEdges(context.Context, *ReferrerServiceDiscoverEdgesRequest) (*ReferrerServiceDiscoverEdgesResponse, error)
 	// DiscoverPrivate DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
 }
@@ -29,6 +32,7 @@ type ReferrerServiceHTTPServer interface {
 func RegisterReferrerServiceHTTPServer(s *http.Server, srv ReferrerServiceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/discover/{digest}", _ReferrerService_DiscoverPrivate0_HTTP_Handler(srv))
+	r.POST("/discover/edges", _ReferrerService_DiscoverEdges0_HTTP_Handler(srv))
 }
 
 func _ReferrerService_DiscoverPrivate0_HTTP_Handler(srv ReferrerServiceHTTPServer) func(ctx http.Context) error {
@@ -53,7 +57,30 @@ func _ReferrerService_DiscoverPrivate0_HTTP_Handler(srv ReferrerServiceHTTPServe
 	}
 }
 
+func _ReferrerService_DiscoverEdges0_HTTP_Handler(srv ReferrerServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ReferrerServiceDiscoverEdgesRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationReferrerServiceDiscoverEdges)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DiscoverEdges(ctx, req.(*ReferrerServiceDiscoverEdgesRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ReferrerServiceDiscoverEdgesResponse)
+		return ctx.Result(200, reply)
+	}
+}
+
 type ReferrerServiceHTTPClient interface {
+	DiscoverEdges(ctx context.Context, req *ReferrerServiceDiscoverEdgesRequest, opts ...http.CallOption) (rsp *ReferrerServiceDiscoverEdgesResponse, err error)
 	DiscoverPrivate(ctx context.Context, req *ReferrerServiceDiscoverPrivateRequest, opts ...http.CallOption) (rsp *ReferrerServiceDiscoverPrivateResponse, err error)
 }
 
@@ -63,6 +90,19 @@ type ReferrerServiceHTTPClientImpl struct {
 
 func NewReferrerServiceHTTPClient(client *http.Client) ReferrerServiceHTTPClient {
 	return &ReferrerServiceHTTPClientImpl{client}
+}
+
+func (c *ReferrerServiceHTTPClientImpl) DiscoverEdges(ctx context.Context, in *ReferrerServiceDiscoverEdgesRequest, opts ...http.CallOption) (*ReferrerServiceDiscoverEdgesResponse, error) {
+	var out ReferrerServiceDiscoverEdgesResponse
+	pattern := "/discover/edges"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationReferrerServiceDiscoverEdges))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
 }
 
 func (c *ReferrerServiceHTTPClientImpl) DiscoverPrivate(ctx context.Context, in *ReferrerServiceDiscoverPrivateRequest, opts ...http.CallOption) (*ReferrerServiceDiscoverPrivateResponse, error) {

@@ -136,3 +136,56 @@ func bizReferrerToPb(r *biz.StoredReferrer) *pb.ReferrerItem {
 
 	return item
 }
+
+// DiscoverEdges returns the connections between referrers the caller already holds, so a client
+// that has collected a set of them does not have to ask about each one separately.
+func (s *ReferrerService) DiscoverEdges(ctx context.Context, req *pb.ReferrerServiceDiscoverEdgesRequest) (*pb.ReferrerServiceDiscoverEdgesResponse, error) {
+	currentUser, currentToken, err := requireCurrentUserOrAPIToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	currentOrg, err := requireCurrentOrg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := make([]*biz.ReferrerRef, 0, len(req.GetNodes()))
+	for _, n := range req.GetNodes() {
+		nodes = append(nodes, &biz.ReferrerRef{Digest: n.GetDigest(), Kind: n.GetKind()})
+	}
+
+	var extraFilters []biz.GetFromRootFilter
+	if req.GetProjectName() != "" {
+		extraFilters = append(extraFilters, biz.WithProjectScope(req.GetProjectName(), req.GetProjectVersion()))
+	}
+
+	var edges []biz.ReferrerEdge
+	switch {
+	case currentUser != nil:
+		edges, err = s.referrerUC.EdgesAmongUser(ctx, nodes, currentUser.ID, extraFilters...)
+	case currentToken != nil:
+		orgUUID, parseErr := uuid.Parse(currentOrg.ID)
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid org UUID: %w", parseErr)
+		}
+
+		// An API token is scoped to one organization, and may be scoped to some of its projects.
+		orgsProjectsMap := make(map[uuid.UUID][]uuid.UUID)
+		if visibleProjects := s.visibleProjects(ctx); visibleProjects != nil {
+			orgsProjectsMap[orgUUID] = visibleProjects
+		}
+
+		edges, err = s.referrerUC.EdgesAmong(ctx, nodes, []uuid.UUID{orgUUID}, orgsProjectsMap, extraFilters...)
+	}
+	if err != nil {
+		return nil, handleUseCaseErr(err, s.log)
+	}
+
+	result := make([]*pb.ReferrerEdge, 0, len(edges))
+	for _, e := range edges {
+		result = append(result, &pb.ReferrerEdge{From: uint32(e.From), To: uint32(e.To)})
+	}
+
+	return &pb.ReferrerServiceDiscoverEdgesResponse{Edges: result}, nil
+}

@@ -1,0 +1,20 @@
+{
+  "$id": "controlplane.v1.ReferrerRef.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ReferrerRef identifies a referrer",
+  "properties": {
+    "digest": {
+      "description": "Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead",
+      "minLength": 1,
+      "type": "string"
+    },
+    "kind": {
+      "description": "Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD_COMMIT, ...",
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Referrer Ref",
+  "type": "object"
+}

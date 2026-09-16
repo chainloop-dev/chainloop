@@ -653,3 +653,143 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 func TestReferrerIntegration(t *testing.T) {
 	suite.Run(t, new(referrerIntegrationTestSuite))
 }
+
+// TestEdgesAmong covers the endpoint a client uses once it already holds a set of referrers and
+// only needs to know how they connect.
+func (s *referrerIntegrationTestSuite) TestEdgesAmong() {
+	ctx := context.Background()
+	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	attDigest, _, err := v1.SHA256(bytes.NewReader(envBytes))
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow1.ID.String()))
+
+	// Read back what the attestation is connected to, so the test does not hardcode the fixture.
+	root, _, err := s.Referrer.GetFromRootUser(ctx, attDigest.String(), "", s.user.ID, nil)
+	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), root.References)
+
+	attestation := &biz.ReferrerRef{Digest: root.Digest, Kind: root.Kind}
+	materials := make([]*biz.ReferrerRef, 0, len(root.References))
+	for _, ref := range root.References {
+		materials = append(materials, &biz.ReferrerRef{Digest: ref.Digest, Kind: ref.Kind})
+	}
+
+	s.Run("every material is reported as connected to the attestation, once", func() {
+		nodes := append([]*biz.ReferrerRef{attestation}, materials...)
+		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user.ID)
+		s.NoError(err)
+		s.Len(edges, len(materials), "one edge per material, not one per stored direction")
+
+		for _, e := range edges {
+			s.Less(e.From, e.To, "edges are normalised so the lower index comes first")
+			s.Equal(0, e.From, "every edge in this fixture hangs off the attestation at index 0")
+		}
+	})
+
+	s.Run("the order the caller gives is the order the indexes refer to", func() {
+		// Same set, attestation last: the indexes must follow.
+		nodes := append(append([]*biz.ReferrerRef{}, materials...), attestation)
+		attestationIndex := len(nodes) - 1
+		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user.ID)
+		s.NoError(err)
+		s.Len(edges, len(materials))
+		for _, e := range edges {
+			s.Equal(attestationIndex, e.To, "the attestation is now the higher index of every pair")
+		}
+	})
+
+	s.Run("materials alone have no edges between them", func() {
+		if len(materials) < 2 {
+			s.T().Skip("fixture has a single material")
+		}
+		edges, err := s.Referrer.EdgesAmongUser(ctx, materials, s.user.ID)
+		s.NoError(err)
+		s.Empty(edges, "materials are connected through their attestation, not to each other")
+	})
+
+	s.Run("a referrer the caller cannot see contributes no edges", func() {
+		nodes := append([]*biz.ReferrerRef{attestation}, materials...)
+		// user2 belongs to org2 only, where none of this was ingested.
+		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user2.ID)
+		s.NoError(err)
+		s.Empty(edges)
+	})
+
+	s.Run("an unknown referrer is ignored rather than failing", func() {
+		nodes := []*biz.ReferrerRef{
+			attestation,
+			{Digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000", Kind: "ATTESTATION"},
+		}
+		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user.ID)
+		s.NoError(err)
+		s.Empty(edges)
+	})
+
+	s.Run("the kind is part of the identity", func() {
+		// The same digest under a kind it was not stored as must not resolve.
+		nodes := []*biz.ReferrerRef{
+			{Digest: attestation.Digest, Kind: "CONTAINER_IMAGE"},
+			materials[0],
+		}
+		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user.ID)
+		s.NoError(err)
+		s.Empty(edges)
+	})
+
+	s.Run("fewer than two referrers is answered without touching the store", func() {
+		edges, err := s.Referrer.EdgesAmongUser(ctx, []*biz.ReferrerRef{attestation}, s.user.ID)
+		s.NoError(err)
+		s.Empty(edges)
+	})
+
+	s.Run("duplicated input still yields one edge per connection", func() {
+		nodes := []*biz.ReferrerRef{attestation, materials[0], materials[0]}
+		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user.ID)
+		s.NoError(err)
+		// The repeated material resolves to the same referrer, which the caller listed twice; the
+		// answer names whichever position it was indexed under, once.
+		s.Len(edges, 1)
+	})
+}
+
+// TestEveryConnectionIsWrittenFromTheAttestation pins the property EdgesAmong depends on to stay
+// bounded: it reads connections from the attestation side, so ingest must always write that row.
+// A future change that only recorded the material's side would make edges disappear from the
+// graph rather than fail loudly.
+func (s *referrerIntegrationTestSuite) TestEveryConnectionIsWrittenFromTheAttestation() {
+	ctx := context.Background()
+
+	// Cover the shapes ingest produces: materials, a git subject, and a dependent attestation.
+	dependent, _ := testEnvelope(s.T(), "testdata/attestations/dependent-attestation.json")
+	dependentDigest, _ := v1.NewHash("sha256:2dc17f7c933d20e06b49250a582a3d19bdfbadba9c4e5f3f856af6f261db79d4")
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, dependent, dependentDigest, s.workflow1.ID.String()))
+
+	withDependent, _ := testEnvelope(s.T(), "testdata/attestations/with-dependent-attestation.json")
+	withDependentDigest, _ := v1.NewHash("sha256:950c7b4c65447a3b86b6f769515005e7c44a67c8193bff790750eadf13207fbb")
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, withDependent, withDependentDigest, s.workflow1.ID.String()))
+
+	gitSubject, gitBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	gitDigest, _, err := v1.SHA256(bytes.NewReader(gitBytes))
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, gitSubject, gitDigest, s.workflow1.ID.String()))
+
+	// Every stored connection must have a row whose owning side is an attestation.
+	var orphaned int
+	row := s.Data.SQLDB.QueryRowContext(ctx, `
+		SELECT count(*) FROM referrer_references rr
+		JOIN referrers owner ON owner.id = rr.referrer_id
+		WHERE owner.kind <> 'ATTESTATION'
+		  AND NOT EXISTS (
+		    SELECT 1 FROM referrer_references mirror
+		    JOIN referrers mirror_owner ON mirror_owner.id = mirror.referrer_id
+		    WHERE mirror.referrer_id = rr.referred_by_id
+		      AND mirror.referred_by_id = rr.referrer_id
+		      AND mirror_owner.kind = 'ATTESTATION'
+		  )`)
+	require.NoError(s.T(), row.Scan(&orphaned))
+	s.Zero(orphaned, "every connection must be reachable from the attestation that created it")
+
+	var total int
+	require.NoError(s.T(), s.Data.SQLDB.QueryRowContext(ctx, `SELECT count(*) FROM referrer_references`).Scan(&total))
+	s.NotZero(total, "the fixture must actually have written connections")
+}

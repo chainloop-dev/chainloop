@@ -22,6 +22,39 @@ externalDocs:
   description: Chainloop Official Documentation
   url: https://docs.chainloop.dev
 paths:
+  /discover/edges:
+    post:
+      description: >-
+        Returns every connection between the given referrers that is visible to
+        the logged-in user, as pairs of indexes into the request. Referrers the
+        user cannot see contribute no edges.
+      operationId: ReferrerService_DiscoverEdges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1ReferrerServiceDiscoverEdgesRequest'
+        description: Request to discover the edges between a set of referrers
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1ReferrerServiceDiscoverEdgesResponse'
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
+          description: An unexpected error response.
+      summary: Discover the edges between known referrers
+      tags:
+        - ReferrerService
+      x-codegen-request-body-name: body
+      security:
+        - bearerToken: []
   /discover/{digest}:
     get:
       description: >-
@@ -204,7 +237,7 @@ components:
       type: object
     rpcStatus:
       example:
-        code: 0
+        code: 1
         details:
           - '@type': '@type'
           - '@type': '@type'
@@ -235,6 +268,22 @@ components:
       properties:
         next_cursor:
           type: string
+      type: object
+    v1ReferrerEdge:
+      description: A connection between two referrers, as indexes into the request
+      example:
+        from: 0
+        to: 6
+      properties:
+        from:
+          format: int64
+          title: Index of the lower end of the connection, always smaller than to
+          type: integer
+        to:
+          format: int64
+          title: Index of the higher end of the connection
+          type: integer
+      title: ReferrerEdge
       type: object
     v1ReferrerItem:
       description: It represents a referrer object in the system
@@ -284,6 +333,55 @@ components:
           title: Annotations are key-value pairs associated with the referrer
           type: object
       title: ReferrerItem
+      type: object
+    v1ReferrerRef:
+      description: A reference to a referrer by digest and kind
+      properties:
+        digest:
+          title: Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead
+          type: string
+        kind:
+          description: Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD_COMMIT, ...
+          type: string
+      title: ReferrerRef
+      type: object
+    v1ReferrerServiceDiscoverEdgesRequest:
+      description: Request to discover the edges between a set of referrers
+      properties:
+        nodes:
+          description: >-
+            The referrers to find connections between. A digest alone does not
+            identify a referrer, so
+
+            the kind travels with it.
+          items:
+            $ref: '#/components/schemas/v1ReferrerRef'
+          type: array
+        project_name:
+          title: Restricts the answer to a project, the same way DiscoverPrivate does
+          type: string
+        project_version:
+          title: >-
+            Only meaningful alongside project_name: version names are unique
+            within a project
+          type: string
+      title: ReferrerServiceDiscoverEdgesRequest
+      type: object
+    v1ReferrerServiceDiscoverEdgesResponse:
+      description: Response for the DiscoverEdges method
+      example:
+        edges:
+          - from: 0
+            to: 6
+          - from: 0
+            to: 6
+      properties:
+        edges:
+          items:
+            $ref: '#/components/schemas/v1ReferrerEdge'
+          title: Each connection once, regardless of the direction it is stored in
+          type: array
+      title: ReferrerServiceDiscoverEdgesResponse
       type: object
     v1ReferrerServiceDiscoverPrivateResponse:
       description: Response for the DiscoverPrivate method

@@ -7,6 +7,44 @@ import { CursorPaginationRequest, CursorPaginationResponse } from "./pagination"
 
 export const protobufPackage = "controlplane.v1";
 
+/** ReferrerServiceDiscoverEdgesRequest is the request for the DiscoverEdges method */
+export interface ReferrerServiceDiscoverEdgesRequest {
+  /**
+   * The referrers to find connections between. A digest alone does not identify a referrer, so
+   * the kind travels with it.
+   */
+  nodes: ReferrerRef[];
+  /** Restricts the answer to a project, the same way DiscoverPrivate does */
+  projectName: string;
+  /** Only meaningful alongside project_name: version names are unique within a project */
+  projectVersion: string;
+}
+
+/** ReferrerServiceDiscoverEdgesResponse is the response for the DiscoverEdges method */
+export interface ReferrerServiceDiscoverEdgesResponse {
+  /** Each connection once, regardless of the direction it is stored in */
+  edges: ReferrerEdge[];
+}
+
+/** ReferrerRef identifies a referrer */
+export interface ReferrerRef {
+  /** Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead */
+  digest: string;
+  /** Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD_COMMIT, ... */
+  kind: string;
+}
+
+/**
+ * ReferrerEdge is a connection between two of the requested referrers, given as indexes into the
+ * request's nodes so the digests do not travel back
+ */
+export interface ReferrerEdge {
+  /** Index of the lower end of the connection, always smaller than to */
+  from: number;
+  /** Index of the higher end of the connection */
+  to: number;
+}
+
 /** ReferrerServiceDiscoverPrivateRequest is the request for the DiscoverPrivate method */
 export interface ReferrerServiceDiscoverPrivateRequest {
   /** Digest is the unique identifier of the referrer to discover */
@@ -65,6 +103,301 @@ export interface ReferrerItem_AnnotationsEntry {
   key: string;
   value: string;
 }
+
+function createBaseReferrerServiceDiscoverEdgesRequest(): ReferrerServiceDiscoverEdgesRequest {
+  return { nodes: [], projectName: "", projectVersion: "" };
+}
+
+export const ReferrerServiceDiscoverEdgesRequest = {
+  encode(message: ReferrerServiceDiscoverEdgesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.nodes) {
+      ReferrerRef.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.projectName !== "") {
+      writer.uint32(18).string(message.projectName);
+    }
+    if (message.projectVersion !== "") {
+      writer.uint32(26).string(message.projectVersion);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerServiceDiscoverEdgesRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReferrerServiceDiscoverEdgesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.nodes.push(ReferrerRef.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.projectVersion = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReferrerServiceDiscoverEdgesRequest {
+    return {
+      nodes: Array.isArray(object?.nodes) ? object.nodes.map((e: any) => ReferrerRef.fromJSON(e)) : [],
+      projectName: isSet(object.projectName) ? String(object.projectName) : "",
+      projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+    };
+  },
+
+  toJSON(message: ReferrerServiceDiscoverEdgesRequest): unknown {
+    const obj: any = {};
+    if (message.nodes) {
+      obj.nodes = message.nodes.map((e) => e ? ReferrerRef.toJSON(e) : undefined);
+    } else {
+      obj.nodes = [];
+    }
+    message.projectName !== undefined && (obj.projectName = message.projectName);
+    message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReferrerServiceDiscoverEdgesRequest>, I>>(
+    base?: I,
+  ): ReferrerServiceDiscoverEdgesRequest {
+    return ReferrerServiceDiscoverEdgesRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReferrerServiceDiscoverEdgesRequest>, I>>(
+    object: I,
+  ): ReferrerServiceDiscoverEdgesRequest {
+    const message = createBaseReferrerServiceDiscoverEdgesRequest();
+    message.nodes = object.nodes?.map((e) => ReferrerRef.fromPartial(e)) || [];
+    message.projectName = object.projectName ?? "";
+    message.projectVersion = object.projectVersion ?? "";
+    return message;
+  },
+};
+
+function createBaseReferrerServiceDiscoverEdgesResponse(): ReferrerServiceDiscoverEdgesResponse {
+  return { edges: [] };
+}
+
+export const ReferrerServiceDiscoverEdgesResponse = {
+  encode(message: ReferrerServiceDiscoverEdgesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.edges) {
+      ReferrerEdge.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerServiceDiscoverEdgesResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReferrerServiceDiscoverEdgesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.edges.push(ReferrerEdge.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReferrerServiceDiscoverEdgesResponse {
+    return { edges: Array.isArray(object?.edges) ? object.edges.map((e: any) => ReferrerEdge.fromJSON(e)) : [] };
+  },
+
+  toJSON(message: ReferrerServiceDiscoverEdgesResponse): unknown {
+    const obj: any = {};
+    if (message.edges) {
+      obj.edges = message.edges.map((e) => e ? ReferrerEdge.toJSON(e) : undefined);
+    } else {
+      obj.edges = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReferrerServiceDiscoverEdgesResponse>, I>>(
+    base?: I,
+  ): ReferrerServiceDiscoverEdgesResponse {
+    return ReferrerServiceDiscoverEdgesResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReferrerServiceDiscoverEdgesResponse>, I>>(
+    object: I,
+  ): ReferrerServiceDiscoverEdgesResponse {
+    const message = createBaseReferrerServiceDiscoverEdgesResponse();
+    message.edges = object.edges?.map((e) => ReferrerEdge.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseReferrerRef(): ReferrerRef {
+  return { digest: "", kind: "" };
+}
+
+export const ReferrerRef = {
+  encode(message: ReferrerRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.digest !== "") {
+      writer.uint32(10).string(message.digest);
+    }
+    if (message.kind !== "") {
+      writer.uint32(18).string(message.kind);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerRef {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReferrerRef();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.digest = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.kind = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReferrerRef {
+    return {
+      digest: isSet(object.digest) ? String(object.digest) : "",
+      kind: isSet(object.kind) ? String(object.kind) : "",
+    };
+  },
+
+  toJSON(message: ReferrerRef): unknown {
+    const obj: any = {};
+    message.digest !== undefined && (obj.digest = message.digest);
+    message.kind !== undefined && (obj.kind = message.kind);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReferrerRef>, I>>(base?: I): ReferrerRef {
+    return ReferrerRef.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReferrerRef>, I>>(object: I): ReferrerRef {
+    const message = createBaseReferrerRef();
+    message.digest = object.digest ?? "";
+    message.kind = object.kind ?? "";
+    return message;
+  },
+};
+
+function createBaseReferrerEdge(): ReferrerEdge {
+  return { from: 0, to: 0 };
+}
+
+export const ReferrerEdge = {
+  encode(message: ReferrerEdge, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.from !== 0) {
+      writer.uint32(8).uint32(message.from);
+    }
+    if (message.to !== 0) {
+      writer.uint32(16).uint32(message.to);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ReferrerEdge {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseReferrerEdge();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.from = reader.uint32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.to = reader.uint32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ReferrerEdge {
+    return { from: isSet(object.from) ? Number(object.from) : 0, to: isSet(object.to) ? Number(object.to) : 0 };
+  },
+
+  toJSON(message: ReferrerEdge): unknown {
+    const obj: any = {};
+    message.from !== undefined && (obj.from = Math.round(message.from));
+    message.to !== undefined && (obj.to = Math.round(message.to));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ReferrerEdge>, I>>(base?: I): ReferrerEdge {
+    return ReferrerEdge.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ReferrerEdge>, I>>(object: I): ReferrerEdge {
+    const message = createBaseReferrerEdge();
+    message.from = object.from ?? 0;
+    message.to = object.to ?? 0;
+    return message;
+  },
+};
 
 function createBaseReferrerServiceDiscoverPrivateRequest(): ReferrerServiceDiscoverPrivateRequest {
   return { digest: "", kind: "", pagination: undefined, projectName: "", projectVersion: "" };
@@ -594,6 +927,11 @@ export interface ReferrerService {
     request: DeepPartial<ReferrerServiceDiscoverPrivateRequest>,
     metadata?: grpc.Metadata,
   ): Promise<ReferrerServiceDiscoverPrivateResponse>;
+  /** DiscoverEdges returns the connections between a set of referrers the caller already holds */
+  DiscoverEdges(
+    request: DeepPartial<ReferrerServiceDiscoverEdgesRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ReferrerServiceDiscoverEdgesResponse>;
 }
 
 export class ReferrerServiceClientImpl implements ReferrerService {
@@ -602,6 +940,7 @@ export class ReferrerServiceClientImpl implements ReferrerService {
   constructor(rpc: Rpc) {
     this.rpc = rpc;
     this.DiscoverPrivate = this.DiscoverPrivate.bind(this);
+    this.DiscoverEdges = this.DiscoverEdges.bind(this);
   }
 
   DiscoverPrivate(
@@ -611,6 +950,17 @@ export class ReferrerServiceClientImpl implements ReferrerService {
     return this.rpc.unary(
       ReferrerServiceDiscoverPrivateDesc,
       ReferrerServiceDiscoverPrivateRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  DiscoverEdges(
+    request: DeepPartial<ReferrerServiceDiscoverEdgesRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<ReferrerServiceDiscoverEdgesResponse> {
+    return this.rpc.unary(
+      ReferrerServiceDiscoverEdgesDesc,
+      ReferrerServiceDiscoverEdgesRequest.fromPartial(request),
       metadata,
     );
   }
@@ -631,6 +981,29 @@ export const ReferrerServiceDiscoverPrivateDesc: UnaryMethodDefinitionish = {
   responseType: {
     deserializeBinary(data: Uint8Array) {
       const value = ReferrerServiceDiscoverPrivateResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const ReferrerServiceDiscoverEdgesDesc: UnaryMethodDefinitionish = {
+  methodName: "DiscoverEdges",
+  service: ReferrerServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ReferrerServiceDiscoverEdgesRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = ReferrerServiceDiscoverEdgesResponse.decode(data);
       return {
         ...value,
         toObject() {

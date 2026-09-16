@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"slices"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -433,8 +434,12 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Sort references by creation date and ID in descending order for deterministic pagination
 	q := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().
-		// referrer_references is keyed on (referrer_id, referred_by_id), so a reference cannot
-		// repeat and the DISTINCT Ent adds by default only buys a sort over the jsonb columns.
+		// Ent adds a DISTINCT to any traversal by default. Here it can only cost: the selected
+		// columns include the referrer's primary key, so deduplicating them is a no-op unless a
+		// predicate multiplies rows, and none of the predicates above can — they are semi-joins
+		// (EXISTS, IN) and scalar comparisons. Dropping it keeps the jsonb columns out of the
+		// sort key. Any predicate added here must stay join-free or this silently starts
+		// returning a reference more than once, which would also shorten the page.
 		Unique(false).
 		Order(referrer.ByCreatedAt(sql.OrderDesc())).
 		Order(referrer.ByID(sql.OrderDesc())).
@@ -546,3 +551,170 @@ func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) {
 	out.WorkflowIDs = workflowIDs
 	out.OrgIDs = orgIDs
 }
+
+// EdgesAmong returns the connections between the given referrers, as index pairs into nodes.
+//
+// The work is bounded by the number of referrers asked about, not by how many references any of
+// them has: a shared material can be referenced by a hundred thousand attestations, and asking
+// "which of these hundred nodes are connected" must not walk that. It therefore reads the store
+// from the attestation side of each connection, whose degree is the number of materials in one
+// attestation rather than the number of attestations sharing a material.
+//
+// That is complete because of how connections are written: a connection only ever exists between
+// an attestation and one of its materials or subjects (or another attestation it depends on), and
+// the attestation's own row is always written, since ingest builds its reference list from every
+// material and subject it carries. The material's row pointing back is written too, but it is not
+// what this relies on — older data holds many connections in the attestation direction only.
+func (r *ReferrerRepo) EdgesAmong(ctx context.Context, nodes []*biz.ReferrerRef, orgIDs []uuid.UUID, filters ...biz.GetFromRootFilter) ([]biz.ReferrerEdge, error) {
+	ctx, span := otelx.Start(ctx, referrerRepoTracer, "ReferrerRepo.EdgesAmong")
+	defer span.End()
+
+	if len(nodes) < 2 {
+		return nil, nil
+	}
+
+	opts := &biz.GetFromRootFilters{}
+	for _, f := range filters {
+		f(opts)
+	}
+
+	// Resolve the referrers the caller may see. Anything invisible or unknown simply does not
+	// come back and so contributes no edges.
+	predicates := []predicate.Referrer{
+		referrerDigestKindIn(nodes),
+		referrerVisibleToOrgs(orgIDs),
+	}
+	if opts.ProjectName != nil && *opts.ProjectName != "" {
+		version := ""
+		if opts.ProjectVersion != nil {
+			version = *opts.ProjectVersion
+		}
+		projectPred := r.projectScopePredicate(*opts.ProjectName, version, orgIDs, opts.ProjectIDs)
+		predicates = append(predicates, referrer.Or(referrer.KindNEQ(biz.ReferrerAttestationType), projectPred))
+	}
+
+	visible, err := r.data.DB.Referrer.Query().
+		Where(predicates...).
+		Select(referrer.FieldID, referrer.FieldDigest, referrer.FieldKind).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve referrers: %w", err)
+	}
+	if len(visible) < 2 {
+		return nil, nil
+	}
+
+	// Index the answer by the position the caller gave each referrer, so only positions travel back.
+	indexOf := make(map[string]int, len(nodes))
+	for i, n := range nodes {
+		indexOf[newRefKey(n.Digest, n.Kind)] = i
+	}
+	position := make(map[uuid.UUID]int, len(visible))
+	attestationIDs := make([]uuid.UUID, 0, len(visible))
+	visibleIDs := make([]uuid.UUID, 0, len(visible))
+	for _, ref := range visible {
+		i, ok := indexOf[newRefKey(ref.Digest, ref.Kind)]
+		if !ok {
+			continue
+		}
+		position[ref.ID] = i
+		visibleIDs = append(visibleIDs, ref.ID)
+		if ref.Kind == biz.ReferrerAttestationType {
+			attestationIDs = append(attestationIDs, ref.ID)
+		}
+	}
+	if len(attestationIDs) == 0 || len(visibleIDs) < 2 {
+		return nil, nil
+	}
+
+	// Built with the dialect's builder so the placeholders are numbered for it, and run on the
+	// raw handle because the join table has no entity of its own to query through.
+	query, args := edgesAmongQuery(attestationIDs, visibleIDs)
+	rows, err := r.data.SQLDB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query edges: %w", err)
+	}
+	defer rows.Close()
+
+	// A connection can be read twice: once from each end when both ends are attestations, and
+	// once per stored direction where ingest wrote both. The pair is normalised and deduplicated
+	// so the caller sees each connection once.
+	seen := make(map[biz.ReferrerEdge]struct{})
+	edges := make([]biz.ReferrerEdge, 0)
+	for rows.Next() {
+		var from, to uuid.UUID
+		if err := rows.Scan(&from, &to); err != nil {
+			return nil, fmt.Errorf("failed to scan edge: %w", err)
+		}
+		a, okA := position[from]
+		b, okB := position[to]
+		if !okA || !okB || a == b {
+			continue
+		}
+		if a > b {
+			a, b = b, a
+		}
+		edge := biz.ReferrerEdge{From: a, To: b}
+		if _, dup := seen[edge]; dup {
+			continue
+		}
+		seen[edge] = struct{}{}
+		edges = append(edges, edge)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read edges: %w", err)
+	}
+
+	return edges, nil
+}
+
+// referrerDigestKindIn matches any of the given referrers, pairing each digest with its kind so a
+// digest stored under two kinds cannot be confused for the other. It is a single composite IN
+// rather than a chain of ORs, which keeps it usable through the unique index on (digest, kind).
+func referrerDigestKindIn(nodes []*biz.ReferrerRef) predicate.Referrer {
+	return func(s *sql.Selector) {
+		s.Where(sql.P().Append(func(b *sql.Builder) {
+			b.Wrap(func(nb *sql.Builder) {
+				nb.IdentComma(s.C(referrer.FieldDigest), s.C(referrer.FieldKind))
+			})
+			b.WriteString(" IN ")
+			b.Wrap(func(nb *sql.Builder) {
+				for i, n := range nodes {
+					if i > 0 {
+						nb.Comma()
+					}
+					nb.Wrap(func(vb *sql.Builder) {
+						vb.Args(n.Digest, n.Kind)
+					})
+				}
+			})
+		}))
+	}
+}
+
+// edgesAmongQuery reads the join table from the attestation side: for each attestation it walks
+// only that attestation's own references, restricted to the referrers the caller asked about.
+// Both columns are the table's primary key, so this is an index scan whose size is the number of
+// materials in the attestations involved.
+func edgesAmongQuery(fromIDs, toIDs []uuid.UUID) (string, []any) {
+	t := sql.Dialect(dialect.Postgres).Table(referrer.ReferencesTable)
+	from := make([]any, 0, len(fromIDs))
+	for _, id := range fromIDs {
+		from = append(from, id)
+	}
+	to := make([]any, 0, len(toIDs))
+	for _, id := range toIDs {
+		to = append(to, id)
+	}
+
+	return sql.Dialect(dialect.Postgres).
+		Select(referrer.ReferencesPrimaryKey[0], referrer.ReferencesPrimaryKey[1]).
+		From(t).
+		Where(sql.And(
+			sql.In(referrer.ReferencesPrimaryKey[0], from...),
+			sql.In(referrer.ReferencesPrimaryKey[1], to...),
+		)).
+		Query()
+}
+
+func newRefKey(digest, kind string) string { return kind + "-" + digest }

@@ -1,0 +1,17 @@
+{
+  "$id": "controlplane.v1.ReferrerServiceDiscoverEdgesResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ReferrerServiceDiscoverEdgesResponse is the response for the DiscoverEdges method",
+  "properties": {
+    "edges": {
+      "description": "Each connection once, regardless of the direction it is stored in",
+      "items": {
+        "$ref": "controlplane.v1.ReferrerEdge.jsonschema.json"
+      },
+      "type": "array"
+    }
+  },
+  "title": "Referrer Service Discover Edges Response",
+  "type": "object"
+}

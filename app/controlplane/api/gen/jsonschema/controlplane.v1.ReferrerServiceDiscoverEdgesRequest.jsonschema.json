@@ -1,0 +1,35 @@
+{
+  "$id": "controlplane.v1.ReferrerServiceDiscoverEdgesRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "ReferrerServiceDiscoverEdgesRequest is the request for the DiscoverEdges method",
+  "patternProperties": {
+    "^(project_name)$": {
+      "description": "Restricts the answer to a project, the same way DiscoverPrivate does",
+      "type": "string"
+    },
+    "^(project_version)$": {
+      "description": "Only meaningful alongside project_name: version names are unique within a project",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "nodes": {
+      "description": "The referrers to find connections between. A digest alone does not identify a referrer, so\n the kind travels with it.",
+      "items": {
+        "$ref": "controlplane.v1.ReferrerRef.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "projectName": {
+      "description": "Restricts the answer to a project, the same way DiscoverPrivate does",
+      "type": "string"
+    },
+    "projectVersion": {
+      "description": "Only meaningful alongside project_name: version names are unique within a project",
+      "type": "string"
+    }
+  },
+  "title": "Referrer Service Discover Edges Request",
+  "type": "object"
+}
