@@ -44,6 +44,24 @@ func renderProjectPredicate(t *testing.T, p func(*sql.Selector)) (string, []stri
 	return q, bound
 }
 
+// boundOrganizations counts the values the organization IN list binds, or zero when the filter
+// carries no such list. The pair list reads ("organization_id", "id") IN (...), so it cannot be
+// mistaken for this one.
+func boundOrganizations(query string) int {
+	const list = `"projects"."organization_id" IN (`
+	start := strings.Index(query, list)
+	if start < 0 {
+		return 0
+	}
+	rest := query[start+len(list):]
+	end := strings.Index(rest, ")")
+	if end < 0 {
+		return 0
+	}
+
+	return strings.Count(rest[:end], "$")
+}
+
 func TestProjectVisibilityPredicate(t *testing.T) {
 	orgs := make([]uuid.UUID, 0, 23)
 	for i := 0; i < 23; i++ {
@@ -114,14 +132,23 @@ func TestProjectVisibilityPredicate(t *testing.T) {
 			}
 			require.NotNil(t, got)
 
-			query, _ := renderProjectPredicate(t, got)
+			query, args := renderProjectPredicate(t, got)
 			// A condition per organization is the regression this guards against.
 			assert.Equal(t, tc.wantExistsSubqueries, strings.Count(query, "EXISTS"),
 				"the filter must not grow a subquery per organization: %s", query)
-			if tc.wantOrgs > 0 {
-				assert.Contains(t, query, `"projects"."organization_id" IN (`,
-					"organizations must be matched with a single IN list: %s", query)
+
+			// Every unrestricted organization has to land in that one list. Values are bound, so
+			// the list is counted by its placeholders rather than read out of the SQL.
+			assert.Equal(t, tc.wantOrgs, boundOrganizations(query),
+				"organizations must be matched with a single IN list: %s", query)
+
+			// Nothing else may be bound: one value per organization, and two per granted project.
+			grantedValues := 0
+			for _, projects := range tc.rbac {
+				grantedValues += len(projects) * 2
 			}
+			assert.Len(t, args, tc.wantOrgs+grantedValues,
+				"the filter binds one value per organization and a pair per grant: %s", query)
 			if tc.wantPairs {
 				assert.Contains(t, query, `("projects"."organization_id", "projects"."id") IN (`,
 					"granted projects must be matched as (org, project) pairs: %s", query)

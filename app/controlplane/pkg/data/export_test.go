@@ -16,10 +16,7 @@
 package data
 
 // Internals exposed to the package's external tests. This file is only compiled during tests, so
-// it does not widen the package's API. The visibility filters are reached from data_test because
-// asserting on them against a real database needs the shared suite in biz/testhelpers, which
+// it does not widen the package's API. The visibility filter is reached from data_test because
+// asserting on it against a real database needs the shared suite in biz/testhelpers, which
 // imports this package and therefore cannot be imported from inside it.
-var (
-	ReferrerVisibleToOrgsForTest      = referrerVisibleToOrgs
-	ProjectVisibilityPredicateForTest = projectVisibilityPredicate
-)
+var ReferrerVisibleToOrgsForTest = referrerVisibleToOrgs
