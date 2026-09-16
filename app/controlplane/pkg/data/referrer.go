@@ -289,6 +289,46 @@ func referrerVisibleToOrgs(orgIDs []uuid.UUID) predicate.Referrer {
 	}
 }
 
+// referrerVisibleInProjects narrows referrerVisibleToOrgs to the projects the caller can
+// actually see. Organization membership alone is not visibility: a member with role-based
+// restrictions reaches only the projects granted to them, and a referrer that belongs to no
+// other project must not be reachable through any endpoint.
+//
+// The project is matched on its own row rather than on the workflow's organization column, so a
+// grant cannot be satisfied by a project that lives in a different organization to the one it
+// was granted in.
+func referrerVisibleInProjects(orgIDs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) predicate.Referrer {
+	scope := projectVisibilityPredicate(orgIDs, visibleProjectsMap)
+	if scope == nil {
+		// No organization grants any project, so nothing is visible.
+		return func(s *sql.Selector) { s.Where(sql.False()) }
+	}
+
+	return func(s *sql.Selector) {
+		joinTable := sql.Table(referrer.WorkflowsTable).As("scoped_rw")
+		workflows := sql.Table(referrer.WorkflowsInverseTable).As("scoped_wf")
+		projects := sql.Table(project.Table).As("scoped_p")
+
+		visibleProject := sql.Dialect(s.Dialect()).
+			Select(projects.C(project.FieldID)).
+			From(projects).
+			Where(sql.ColumnsEQ(projects.C(project.FieldID), workflows.C(workflow.FieldProjectID)))
+		scope(visibleProject)
+
+		sub := sql.Dialect(s.Dialect()).
+			Select(joinTable.C(referrer.WorkflowsPrimaryKey[0])).
+			From(joinTable).
+			Join(workflows).
+			On(joinTable.C(referrer.WorkflowsPrimaryKey[1]), workflows.C(workflow.FieldID)).
+			Where(sql.And(
+				sql.ColumnsEQ(joinTable.C(referrer.WorkflowsPrimaryKey[0]), s.C(referrer.FieldID)),
+				sql.IsNull(workflows.C(workflow.FieldDeletedAt)),
+				sql.Exists(visibleProject),
+			))
+		s.Where(sql.Exists(sub))
+	}
+}
+
 // projectVisibilityPredicate builds a project predicate that accepts a project iff it belongs to
 // one of the allowed orgs AND, when RBAC applies to that org, the project is in the caller's
 // visible set. Returns nil when no org grants any project visibility, so callers can treat that
@@ -580,9 +620,12 @@ func (r *ReferrerRepo) EdgesAmong(ctx context.Context, nodes []*biz.ReferrerRef,
 
 	// Resolve the referrers the caller may see. Anything invisible or unknown simply does not
 	// come back and so contributes no edges.
+	// Role-based project visibility applies to every request, not only to the ones that name a
+	// project: the optional filter below narrows what the caller asked for, it does not decide
+	// what they are allowed to see.
 	predicates := []predicate.Referrer{
 		referrerDigestKindIn(nodes),
-		referrerVisibleToOrgs(orgIDs),
+		referrerVisibleInProjects(orgIDs, opts.ProjectIDs),
 	}
 	if opts.ProjectName != nil && *opts.ProjectName != "" {
 		version := ""

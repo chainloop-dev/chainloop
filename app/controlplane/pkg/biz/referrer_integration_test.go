@@ -686,6 +686,30 @@ func (s *referrerIntegrationTestSuite) TestEdgesAmong() {
 		}
 	})
 
+	// The caller's role-based project visibility is not an optional filter: a member who cannot
+	// reach the project must not learn that two of its referrers are connected, whether or not
+	// they name a project in the request.
+	s.Run("a caller restricted to no project in the org gets no edges", func() {
+		nodes := append([]*biz.ReferrerRef{attestation}, materials...)
+		// RBAC on for the org, nothing granted in it.
+		noProjects := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {}}
+		edges, err := s.Referrer.EdgesAmong(ctx, nodes, []uuid.UUID{s.org1UUID}, noProjects)
+		s.NoError(err)
+		s.Empty(edges, "org membership alone must not reveal connections")
+
+		// And the established endpoint agrees for the same caller.
+		_, _, err = s.Referrer.GetFromRoot(ctx, attestation.Digest, attestation.Kind, []uuid.UUID{s.org1UUID}, noProjects, nil)
+		s.Error(err, "the reference endpoint denies this caller, so the edges endpoint must too")
+	})
+
+	s.Run("a caller granted the project still gets every edge", func() {
+		nodes := append([]*biz.ReferrerRef{attestation}, materials...)
+		granted := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
+		edges, err := s.Referrer.EdgesAmong(ctx, nodes, []uuid.UUID{s.org1UUID}, granted)
+		s.NoError(err)
+		s.Len(edges, len(materials), "a granted project must not lose any connection")
+	})
+
 	s.Run("the order the caller gives is the order the indexes refer to", func() {
 		// Same set, attestation last: the indexes must follow.
 		nodes := append(append([]*biz.ReferrerRef{}, materials...), attestation)
