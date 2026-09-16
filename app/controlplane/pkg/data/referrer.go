@@ -266,26 +266,79 @@ func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs
 // one of the allowed orgs AND, when RBAC applies to that org, the project is in the caller's
 // visible set. Returns nil when no org grants any project visibility, so callers can treat that
 // as "nothing is visible".
+//
+// A caller reaches a project one of two ways, so the predicate has at most two branches:
+// every project of an org whose role carries no project restriction, or an individually
+// granted project in an org whose role does. Each branch is emitted once for the whole set
+// of orgs rather than once per org, which keeps the filter a constant size: a disjunction
+// that grows with the caller's org count stops the planner from using the root's index and
+// turns the surrounding referrer query into a full scan.
+//
+// The second branch matches (org, project) pairs rather than the two sets independently.
+// Intersecting the sets would also admit a project that belongs to one of the caller's
+// restricted orgs and happens to be granted in another, which is not a grant the caller
+// holds. Pairs cannot express that, and they keep the branch a single condition.
 func projectVisibilityPredicate(orgIDs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) predicate.Project {
-	perOrg := make([]predicate.Project, 0, len(orgIDs))
+	unrestrictedOrgs := make([]uuid.UUID, 0, len(orgIDs))
+	grants := make([]projectGrant, 0, len(orgIDs))
 	for _, orgID := range orgIDs {
-		visible, hasRBAC := visibleProjectsMap[orgID]
-		if !hasRBAC {
-			perOrg = append(perOrg, project.HasOrganizationWith(organization.ID(orgID)))
+		visible, restricted := visibleProjectsMap[orgID]
+		if !restricted {
+			unrestrictedOrgs = append(unrestrictedOrgs, orgID)
 			continue
 		}
-		if len(visible) == 0 {
-			continue // RBAC applies but no project is visible in this org
+		// Restricted: nothing in this org is visible beyond the projects granted in it,
+		// so an org with no grants contributes nothing.
+		for _, projectID := range visible {
+			grants = append(grants, projectGrant{orgID: orgID, projectID: projectID})
 		}
-		perOrg = append(perOrg, project.And(
-			project.HasOrganizationWith(organization.ID(orgID)),
-			project.IDIn(visible...),
-		))
 	}
-	if len(perOrg) == 0 {
+
+	predicates := make([]predicate.Project, 0, 2)
+	if len(unrestrictedOrgs) > 0 {
+		// The org is a column on the project row, so this needs no subquery.
+		predicates = append(predicates, project.OrganizationIDIn(unrestrictedOrgs...))
+	}
+	if len(grants) > 0 {
+		predicates = append(predicates, projectGrantsPredicate(grants))
+	}
+
+	switch len(predicates) {
+	case 0:
 		return nil
+	case 1:
+		return predicates[0]
+	default:
+		return project.Or(predicates...)
 	}
-	return project.Or(perOrg...)
+}
+
+// projectGrant is a project the caller may see and the org the grant was recorded under.
+type projectGrant struct {
+	orgID, projectID uuid.UUID
+}
+
+// projectGrantsPredicate matches a project iff it is one of the granted projects AND sits in the
+// org that grant was recorded under, as a single (organization_id, id) IN ((..), (..)) condition.
+func projectGrantsPredicate(grants []projectGrant) predicate.Project {
+	return func(s *sql.Selector) {
+		s.Where(sql.P().Append(func(b *sql.Builder) {
+			b.Wrap(func(nb *sql.Builder) {
+				nb.IdentComma(s.C(project.FieldOrganizationID), s.C(project.FieldID))
+			})
+			b.WriteString(" IN ")
+			b.Wrap(func(nb *sql.Builder) {
+				for i, g := range grants {
+					if i > 0 {
+						nb.Comma()
+					}
+					nb.Wrap(func(vb *sql.Builder) {
+						vb.Args(g.orgID, g.projectID)
+					})
+				}
+			})
+		}))
+	}
 }
 
 // max number of recursive levels to traverse
