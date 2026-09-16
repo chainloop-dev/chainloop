@@ -775,6 +775,15 @@ func (s *referrerIntegrationTestSuite) TestEdgesAmong() {
 		s.Equal([]biz.ReferrerEdge{{From: 0, To: 1}}, edges, "index 2 repeats index 1, which is the one named")
 	})
 
+	// Identity is the pair, not the two joined together: kind is whatever the caller sent, so a
+	// separator inside it must not make two different referrers count as one.
+	s.Run("referrers that differ only in where the kind ends are two referrers", func() {
+		nodes := []*biz.ReferrerRef{{Kind: "A", Digest: "B-C"}, {Kind: "A-B", Digest: "C"}}
+		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user.ID)
+		s.NoError(err, "these are two distinct referrers and must not be refused as one")
+		s.Empty(edges, "neither exists, so neither contributes an edge")
+	})
+
 	s.Run("the same referrer twice is not two referrers", func() {
 		_, err := s.Referrer.EdgesAmongUser(ctx, []*biz.ReferrerRef{attestation, attestation}, s.user.ID)
 		s.Error(err, "two positions naming one referrer describe no connection")

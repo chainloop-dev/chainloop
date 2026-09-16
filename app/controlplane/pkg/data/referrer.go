@@ -652,18 +652,20 @@ func (r *ReferrerRepo) EdgesAmong(ctx context.Context, nodes []*biz.ReferrerRef,
 	// Index the answer by the position the caller gave each referrer, so only positions travel back.
 	// A referrer the caller listed more than once is answered at the position it first appeared
 	// in, so the answer does not depend on the order the map happens to be written in.
-	indexOf := make(map[string]int, len(nodes))
+	// Keyed by the pair itself rather than by the two joined into a string: kind is whatever the
+	// caller sent, so any separator could appear inside it and make two different referrers look
+	// like one.
+	indexOf := make(map[biz.ReferrerRef]int, len(nodes))
 	for i, n := range nodes {
-		key := newRefKey(n.Digest, n.Kind)
-		if _, seen := indexOf[key]; !seen {
-			indexOf[key] = i
+		if _, seen := indexOf[*n]; !seen {
+			indexOf[*n] = i
 		}
 	}
 	position := make(map[uuid.UUID]int, len(visible))
 	attestationIDs := make([]uuid.UUID, 0, len(visible))
 	visibleIDs := make([]uuid.UUID, 0, len(visible))
 	for _, ref := range visible {
-		i, ok := indexOf[newRefKey(ref.Digest, ref.Kind)]
+		i, ok := indexOf[biz.ReferrerRef{Digest: ref.Digest, Kind: ref.Kind}]
 		if !ok {
 			continue
 		}
@@ -766,5 +768,3 @@ func edgesAmongQuery(fromIDs, toIDs []uuid.UUID) (string, []any) {
 		)).
 		Query()
 }
-
-func newRefKey(digest, kind string) string { return kind + "-" + digest }

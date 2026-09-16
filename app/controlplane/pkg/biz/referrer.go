@@ -254,9 +254,9 @@ func (s *ReferrerUseCase) EdgesAmong(ctx context.Context, nodes []*ReferrerRef, 
 	// nodes is a set. Naming the same referrer twice is accepted — a client that collected
 	// referrers from more than one attestation will have repeats — but fewer than two distinct
 	// ones describes no connection, and is a mistake rather than a question.
-	distinct := make(map[string]struct{}, len(nodes))
+	distinct := make(map[ReferrerRef]struct{}, len(nodes))
 	for _, n := range nodes {
-		distinct[newRef(n.Digest, n.Kind)] = struct{}{}
+		distinct[*n] = struct{}{}
 	}
 	if len(distinct) < 2 {
 		return nil, NewErrValidationStr("at least two distinct referrers are required")
