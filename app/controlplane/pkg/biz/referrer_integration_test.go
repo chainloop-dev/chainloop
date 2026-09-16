@@ -702,6 +702,25 @@ func (s *referrerIntegrationTestSuite) TestEdgesAmong() {
 		s.Error(err, "the reference endpoint denies this caller, so the edges endpoint must too")
 	})
 
+	// The grant names an organization as well as a project, and a project is reached through the
+	// organization it belongs to. Matching the two sets independently would let a project granted
+	// in one organization be reached from another the caller happens to share.
+	s.Run("a grant recorded against another organization does not reach the project", func() {
+		nodes := append([]*biz.ReferrerRef{attestation}, materials...)
+		crossOrg := map[biz.OrgID][]biz.ProjectID{
+			s.org1UUID: {},                      // restricted here, nothing granted
+			s.org2UUID: {s.workflow1.ProjectID}, // granted here, but the project lives in org1
+		}
+		orgs := []uuid.UUID{s.org1UUID, s.org2UUID}
+
+		edges, err := s.Referrer.EdgesAmong(ctx, nodes, orgs, crossOrg)
+		s.NoError(err)
+		s.Empty(edges, "the project belongs to an organization where nothing is granted")
+
+		_, _, err = s.Referrer.GetFromRoot(ctx, attestation.Digest, attestation.Kind, orgs, crossOrg, nil)
+		s.Error(err, "the reference endpoint must refuse it for the same reason")
+	})
+
 	s.Run("a caller granted the project still gets every edge", func() {
 		nodes := append([]*biz.ReferrerRef{attestation}, materials...)
 		granted := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
