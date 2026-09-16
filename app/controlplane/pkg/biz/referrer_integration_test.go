@@ -803,6 +803,12 @@ func (s *referrerIntegrationTestSuite) TestEdgesAmong() {
 		s.Empty(edges, "neither exists, so neither contributes an edge")
 	})
 
+	s.Run("a missing referrer is refused rather than dereferenced", func() {
+		_, err := s.Referrer.EdgesAmongUser(ctx, []*biz.ReferrerRef{attestation, nil}, s.user.ID)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+	})
+
 	s.Run("the same referrer twice is not two referrers", func() {
 		_, err := s.Referrer.EdgesAmongUser(ctx, []*biz.ReferrerRef{attestation, attestation}, s.user.ID)
 		s.Error(err, "two positions naming one referrer describe no connection")

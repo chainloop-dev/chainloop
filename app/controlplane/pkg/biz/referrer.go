@@ -256,6 +256,9 @@ func (s *ReferrerUseCase) EdgesAmong(ctx context.Context, nodes []*ReferrerRef, 
 	// ones describes no connection, and is a mistake rather than a question.
 	distinct := make(map[ReferrerRef]struct{}, len(nodes))
 	for _, n := range nodes {
+		if n == nil {
+			return nil, NewErrValidationStr("a referrer is missing")
+		}
 		distinct[*n] = struct{}{}
 	}
 	if len(distinct) < 2 {
