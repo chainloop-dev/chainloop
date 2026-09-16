@@ -211,10 +211,8 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 
 // projectScopePredicate returns a predicate matching referrers whose digest is the attestation
 // digest of a workflow run in the requested project (and, when non-empty, version), visible to
-// the caller. The predicate compiles to a SQL subquery — no digest list is materialized in Go,
-// so the cost is independent of how many runs the project has. Postgres plans this as a
-// semi-join via the index on workflow_run.attestation_digest, which is what makes the filter
-// scale at thousands of runs per project.
+// the caller. The predicate compiles to a SQL subquery rather than materializing a digest list in
+// Go, so the request carries no per-run data however many runs the project has.
 //
 // Visibility mirrors isReferrerVisible: a run is included when its workflow's project is in the
 // caller's RBAC-visible set. visibleProjectsMap follows the existing convention — an org entry
@@ -261,11 +259,10 @@ func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs
 // given organizations.
 //
 // It is written by hand rather than with referrer.HasWorkflowsWith because the generated form
-// emits an uncorrelated `id IN (subquery)`: the planner materialises every referrer reachable by
-// the caller's organizations and joins afterwards, which on a hub node means scanning the whole
-// join table. Correlating the subquery to the referrer row turns it into a lookup per candidate.
-// The organization is matched on the workflow's own column for the same reason the project filter
-// does: a nested relation predicate here is flattened back into the uncorrelated shape.
+// renders as `id IN (subquery)`, which describes a set to build rather than a condition to test.
+// Correlating the subquery to the referrer row says what is meant: for this referrer, does such a
+// workflow exist. The organization is matched on the workflow's own column rather than through a
+// nested relation predicate, which Ent renders back into the uncorrelated shape.
 func referrerVisibleToOrgs(orgIDs []uuid.UUID) predicate.Referrer {
 	orgs := make([]any, 0, len(orgIDs))
 	for _, id := range orgIDs {
@@ -474,12 +471,17 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Sort references by creation date and ID in descending order for deterministic pagination
 	q := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().
-		// Ent adds a DISTINCT to any traversal by default. Here it can only cost: the selected
-		// columns include the referrer's primary key, so deduplicating them is a no-op unless a
-		// predicate multiplies rows, and none of the predicates above can — they are semi-joins
-		// (EXISTS, IN) and scalar comparisons. Dropping it keeps the jsonb columns out of the
-		// sort key. Any predicate added here must stay join-free or this silently starts
-		// returning a reference more than once, which would also shorten the page.
+		// Ent adds a DISTINCT to any traversal by default, because an edge query can multiply
+		// rows. This one cannot: the join table is keyed on (referrer_id, referred_by_id), so a
+		// fixed root matches each referrer at most once, and the selected columns include the
+		// primary key, so there is nothing to collapse. Every predicate above is a semi-join
+		// (EXISTS, IN) or a scalar comparison.
+		//
+		// Any predicate added here must stay join-free. A join would return a reference twice,
+		// which consumes a slot in the page and leaves the cursor on the wrong row, so references
+		// are skipped rather than repeated. sql.OrPredicates applies each predicate to this same
+		// selector, so a joining predicate inside an Or leaks its join here while its WHERE is
+		// OR-ed away.
 		Unique(false).
 		Order(referrer.ByCreatedAt(sql.OrderDesc())).
 		Order(referrer.ByID(sql.OrderDesc())).
