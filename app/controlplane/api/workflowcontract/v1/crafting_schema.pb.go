@@ -847,11 +847,12 @@ type PolicyAttachment struct {
 	// optional arguments for policies. Multivalued arguments can be set through multiline strings or comma separated values. It will be
 	// parsed and passed as an array value to the policy engine.
 	// with:
-	//   user: john
-	//   users: john, sarah
-	//   licenses: |
-	//     AGPL-1.0
-	//     AGPL-3.0
+	//
+	//	user: john
+	//	users: john, sarah
+	//	licenses: |
+	//	  AGPL-1.0
+	//	  AGPL-3.0
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// List of requirements this policy contributes to satisfy
 	Requirements []string `protobuf:"bytes,6,rep,name=requirements,proto3" json:"requirements,omitempty"`
@@ -1051,9 +1052,10 @@ type Metadata struct {
 	// Declares the structured output schema for policy violations.
 	// When set, the policy engine validates that violations conform to the
 	// corresponding proto message:
-	//   VULNERABILITY    -> attestation.v1.PolicyVulnerabilityFinding
-	//   SAST             -> attestation.v1.PolicySASTFinding
-	//   LICENSE_VIOLATION -> attestation.v1.PolicyLicenseViolationFinding
+	//
+	//	VULNERABILITY    -> attestation.v1.PolicyVulnerabilityFinding
+	//	SAST             -> attestation.v1.PolicySASTFinding
+	//	LICENSE_VIOLATION -> attestation.v1.PolicyLicenseViolationFinding
 	FindingType   *string `protobuf:"bytes,7,opt,name=finding_type,json=findingType,proto3,oneof" json:"finding_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
