@@ -15,7 +15,7 @@
   },
   "properties": {
     "nodes": {
-      "description": "The referrers to find connections between. A digest alone does not identify a referrer, so\n the kind travels with it.",
+      "description": "The referrers to find connections between. A digest alone does not identify a referrer, so\n the kind travels with it.\n\n This is a set. A referrer may be listed more than once — a client that collected referrers\n from several attestations will have repeats — and is then reported at the position it first\n appeared in. At least two distinct referrers are required.",
       "items": {
         "$ref": "controlplane.v1.ReferrerRef.jsonschema.json"
       },

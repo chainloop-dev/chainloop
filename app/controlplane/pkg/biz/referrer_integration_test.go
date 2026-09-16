@@ -760,19 +760,25 @@ func (s *referrerIntegrationTestSuite) TestEdgesAmong() {
 		s.Empty(edges)
 	})
 
-	s.Run("fewer than two referrers is answered without touching the store", func() {
-		edges, err := s.Referrer.EdgesAmongUser(ctx, []*biz.ReferrerRef{attestation}, s.user.ID)
-		s.NoError(err)
-		s.Empty(edges)
+	s.Run("fewer than two referrers is refused without touching the store", func() {
+		_, err := s.Referrer.EdgesAmongUser(ctx, []*biz.ReferrerRef{attestation}, s.user.ID)
+		s.Error(err)
+		s.True(biz.IsErrValidation(err), "one referrer describes no connection")
 	})
 
-	s.Run("duplicated input still yields one edge per connection", func() {
+	// A client that collected referrers from more than one attestation will list a shared
+	// material twice. That is accepted, and the answer names the position it first appeared in.
+	s.Run("a referrer listed twice is answered at its first position", func() {
 		nodes := []*biz.ReferrerRef{attestation, materials[0], materials[0]}
 		edges, err := s.Referrer.EdgesAmongUser(ctx, nodes, s.user.ID)
 		s.NoError(err)
-		// The repeated material resolves to the same referrer, which the caller listed twice; the
-		// answer names whichever position it was indexed under, once.
-		s.Len(edges, 1)
+		s.Equal([]biz.ReferrerEdge{{From: 0, To: 1}}, edges, "index 2 repeats index 1, which is the one named")
+	})
+
+	s.Run("the same referrer twice is not two referrers", func() {
+		_, err := s.Referrer.EdgesAmongUser(ctx, []*biz.ReferrerRef{attestation, attestation}, s.user.ID)
+		s.Error(err, "two positions naming one referrer describe no connection")
+		s.True(biz.IsErrValidation(err))
 	})
 }
 

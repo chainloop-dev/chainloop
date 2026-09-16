@@ -251,8 +251,15 @@ func (s *ReferrerUseCase) EdgesAmong(ctx context.Context, nodes []*ReferrerRef, 
 	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.EdgesAmong")
 	defer span.End()
 
-	if len(nodes) < 2 {
-		return nil, nil
+	// nodes is a set. Naming the same referrer twice is accepted — a client that collected
+	// referrers from more than one attestation will have repeats — but fewer than two distinct
+	// ones describes no connection, and is a mistake rather than a question.
+	distinct := make(map[string]struct{}, len(nodes))
+	for _, n := range nodes {
+		distinct[newRef(n.Digest, n.Kind)] = struct{}{}
+	}
+	if len(distinct) < 2 {
+		return nil, NewErrValidationStr("at least two distinct referrers are required")
 	}
 
 	filters := make([]GetFromRootFilter, 0, len(extraFilters)+1)

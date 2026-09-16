@@ -45,6 +45,10 @@ type ReferrerServiceDiscoverEdgesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The referrers to find connections between. A digest alone does not identify a referrer, so
 	// the kind travels with it.
+	//
+	// This is a set. A referrer may be listed more than once — a client that collected referrers
+	// from several attestations will have repeats — and is then reported at the position it first
+	// appeared in. At least two distinct referrers are required.
 	Nodes []*ReferrerRef `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
 	// Restricts the answer to a project, the same way DiscoverPrivate does
 	ProjectName string `protobuf:"bytes,2,opt,name=project_name,json=projectName,proto3" json:"project_name,omitempty"`
@@ -108,7 +112,8 @@ func (x *ReferrerServiceDiscoverEdgesRequest) GetProjectVersion() string {
 // ReferrerServiceDiscoverEdgesResponse is the response for the DiscoverEdges method
 type ReferrerServiceDiscoverEdgesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Each connection once, regardless of the direction it is stored in
+	// Each connection once, regardless of the direction it is stored in, and referred to by the
+	// first position its referrers were listed under in the request
 	Edges         []*ReferrerEdge `protobuf:"bytes,1,rep,name=edges,proto3" json:"edges,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

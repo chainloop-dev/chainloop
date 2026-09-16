@@ -1,0 +1,4315 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Chainloop Controlplane API",
+    "termsOfService": "https://chainloop.dev/terms",
+    "version": "1.0",
+    "contact": {
+      "name": "Chainloop Support",
+      "url": "https://chainloop.dev",
+      "email": "support@chainloop.dev"
+    }
+  },
+  "tags": [
+    {
+      "name": "APITokenService"
+    },
+    {
+      "name": "AttestationStateService"
+    },
+    {
+      "name": "AuthService"
+    },
+    {
+      "name": "CASBackendService"
+    },
+    {
+      "name": "CASCredentialsService"
+    },
+    {
+      "name": "CASRedirectService"
+    },
+    {
+      "name": "ContextService"
+    },
+    {
+      "name": "GroupService"
+    },
+    {
+      "name": "IntegrationsService"
+    },
+    {
+      "name": "OrgInvitationService"
+    },
+    {
+      "name": "OrgMetricsService"
+    },
+    {
+      "name": "OrganizationService"
+    },
+    {
+      "name": "ProjectService"
+    },
+    {
+      "name": "ReferrerService",
+      "description": "Referrer service for discovering referred content by digest"
+    },
+    {
+      "name": "SigningService"
+    },
+    {
+      "name": "StatusService"
+    },
+    {
+      "name": "UserService"
+    },
+    {
+      "name": "WorkflowService"
+    },
+    {
+      "name": "WorkflowContractService"
+    },
+    {
+      "name": "AttestationService"
+    },
+    {
+      "name": "WorkflowRunService"
+    }
+  ],
+  "host": "cp.chainloop.dev",
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/discover/edges": {
+      "post": {
+        "summary": "Discover the edges between known referrers",
+        "description": "Returns every connection between the given referrers that is visible to the logged-in user, as pairs of indexes into the request. Referrers the user cannot see contribute no edges.",
+        "operationId": "ReferrerService_DiscoverEdges",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReferrerServiceDiscoverEdgesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Request to discover the edges between a set of referrers",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ReferrerServiceDiscoverEdgesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ReferrerService"
+        ],
+        "produces": [
+          "application/json"
+        ]
+      }
+    },
+    "/discover/{digest}": {
+      "get": {
+        "summary": "Discover private referrer",
+        "description": "Returns the referrer item for a given digest in the organizations of the logged-in user",
+        "operationId": "ReferrerService_DiscoverPrivate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReferrerServiceDiscoverPrivateResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "digest",
+            "description": "Digest is the unique identifier of the referrer to discover",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "kind",
+            "description": "Kind is the optional type of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ...\nUsed to filter and resolve ambiguities",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "pagination.cursor",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "pagination.limit",
+            "description": "Limit pagination to 100",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "project_name",
+            "description": "ProjectName optionally scopes the discovery to a project by name. Can be set on its own\n(project-wide filter) or together with project_version (project + version filter).",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "project_version",
+            "description": "ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).\nRequires project_name, since a version name is unique only within a project.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ReferrerService"
+        ],
+        "produces": [
+          "application/json"
+        ]
+      }
+    },
+    "/infoz": {
+      "get": {
+        "operationId": "StatusService_Infoz",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1InfozResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "StatusService"
+        ]
+      }
+    },
+    "/statusz": {
+      "get": {
+        "operationId": "StatusService_Statusz",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1StatuszResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "readiness",
+            "description": "Parameter that can be used by readiness probes\nThe main difference is that readiness probes will take into account that all\ndependent services are up and ready",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "StatusService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "APITokenServiceCreateResponseAPITokenFull": {
+      "type": "object",
+      "properties": {
+        "item": {
+          "$ref": "#/definitions/v1APITokenItem"
+        },
+        "jwt": {
+          "type": "string"
+        }
+      }
+    },
+    "APITokenServiceListRequestScope": {
+      "type": "string",
+      "enum": [
+        "SCOPE_UNSPECIFIED",
+        "SCOPE_PROJECT",
+        "SCOPE_GLOBAL"
+      ],
+      "default": "SCOPE_UNSPECIFIED"
+    },
+    "APITokenServiceListRequestStatusFilter": {
+      "type": "string",
+      "enum": [
+        "STATUS_FILTER_ACTIVE",
+        "STATUS_FILTER_REVOKED",
+        "STATUS_FILTER_ALL"
+      ],
+      "default": "STATUS_FILTER_ACTIVE",
+      "description": "buf:lint:ignore ENUM_ZERO_VALUE_SUFFIX\nSTATUS_FILTER_ACTIVE = 0 is intentional: active tokens are the default,\nmatching proto3 zero-value semantics and preserving backward compatibility.\n\n - STATUS_FILTER_ACTIVE: Only active (non-revoked) tokens. This is the default.\n - STATUS_FILTER_REVOKED: Only revoked tokens.\n - STATUS_FILTER_ALL: All tokens regardless of revocation status."
+    },
+    "AttestationAuth": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/AuthAuthType"
+        },
+        "id": {
+          "type": "string",
+          "title": "Identifier of the authentication (user ID, token ID, etc.)"
+        }
+      }
+    },
+    "AttestationCASBackend": {
+      "type": "object",
+      "properties": {
+        "cas_backend_id": {
+          "type": "string",
+          "title": "UUID of the CAS backend"
+        },
+        "cas_backend_name": {
+          "type": "string",
+          "title": "Name of the CAS backend"
+        },
+        "fallback": {
+          "type": "boolean",
+          "title": "Whether this is a fallback backend"
+        }
+      }
+    },
+    "AttestationItemEnvVariable": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "AttestationItemPolicyEvaluationStatus": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string"
+        },
+        "bypassed": {
+          "type": "boolean"
+        },
+        "blocked": {
+          "type": "boolean"
+        },
+        "has_violations": {
+          "type": "boolean"
+        },
+        "has_gated_violations": {
+          "type": "boolean"
+        },
+        "evaluations_count": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Deprecated: use summary.total instead."
+        },
+        "violations_count": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Deprecated: use summary.violated instead."
+        },
+        "summary": {
+          "$ref": "#/definitions/v1PolicyStatusSummary",
+          "description": "Canonical categorical status + counters. Single source of truth for UI\nconsumers — consumers that re-derive from the raw bools above tend to\ndisagree on semantics, especially around gating and bypass."
+        }
+      }
+    },
+    "AttestationServiceCancelRequestTriggerType": {
+      "type": "string",
+      "enum": [
+        "TRIGGER_TYPE_UNSPECIFIED",
+        "TRIGGER_TYPE_FAILURE",
+        "TRIGGER_TYPE_CANCELLATION"
+      ],
+      "default": "TRIGGER_TYPE_UNSPECIFIED"
+    },
+    "AuthAuthType": {
+      "type": "string",
+      "enum": [
+        "AUTH_TYPE_UNSPECIFIED",
+        "AUTH_TYPE_USER",
+        "AUTH_TYPE_API_TOKEN",
+        "AUTH_TYPE_FEDERATED"
+      ],
+      "default": "AUTH_TYPE_UNSPECIFIED"
+    },
+    "CASBackendItemLimits": {
+      "type": "object",
+      "properties": {
+        "max_bytes": {
+          "type": "string",
+          "format": "int64",
+          "title": "Max number of bytes allowed to be stored in this backend"
+        }
+      }
+    },
+    "CASBackendItemValidationStatus": {
+      "type": "string",
+      "enum": [
+        "VALIDATION_STATUS_UNSPECIFIED",
+        "VALIDATION_STATUS_OK",
+        "VALIDATION_STATUS_INVALID"
+      ],
+      "default": "VALIDATION_STATUS_UNSPECIFIED"
+    },
+    "CASCredentialsServiceGetRequestRole": {
+      "type": "string",
+      "enum": [
+        "ROLE_UNSPECIFIED",
+        "ROLE_DOWNLOADER",
+        "ROLE_UPLOADER"
+      ],
+      "default": "ROLE_UNSPECIFIED"
+    },
+    "CommitCommitVerification": {
+      "type": "object",
+      "properties": {
+        "attempted": {
+          "type": "boolean",
+          "title": "Whether verification was attempted"
+        },
+        "status": {
+          "$ref": "#/definitions/CommitVerificationVerificationStatus",
+          "title": "Verification status"
+        },
+        "reason": {
+          "type": "string",
+          "title": "Human-readable reason for the status"
+        },
+        "platform": {
+          "type": "string",
+          "title": "Platform that performed the verification (e.g., \"github\", \"gitlab\")"
+        },
+        "key_id": {
+          "type": "string",
+          "title": "Optional: The signing key ID if verified"
+        },
+        "signature_algorithm": {
+          "type": "string",
+          "title": "Optional: The signature algorithm used"
+        }
+      }
+    },
+    "CommitRemote": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "CommitVerificationVerificationStatus": {
+      "type": "string",
+      "enum": [
+        "unspecified",
+        "verified",
+        "unverified",
+        "unavailable",
+        "not_applicable"
+      ],
+      "default": "unspecified",
+      "description": "- verified: Successfully verified by platform\n - unverified: Platform checked but signature is invalid/unverified\n - unavailable: Verification could not be performed (no API access, network error, etc.)\n - not_applicable: Platform doesn't support verification or no commit signature present",
+      "title": "buf:lint:ignore ENUM_VALUE_UPPER_SNAKE_CASE\nbuf:lint:ignore ENUM_VALUE_PREFIX\nbuf:lint:ignore ENUM_ZERO_VALUE_SUFFIX"
+    },
+    "CraftingSchemaRunner": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/RunnerRunnerType"
+        }
+      }
+    },
+    "DailyRunsCountResponseTotalByDay": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "title": "string format: \"YYYY-MM-DD\""
+        },
+        "metrics": {
+          "$ref": "#/definitions/v1MetricsStatusCount"
+        }
+      }
+    },
+    "GroupServiceListProjectsResponseProjectInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier of the project"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the project"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description of the project"
+        },
+        "role": {
+          "$ref": "#/definitions/v1ProjectMemberRole",
+          "title": "Role of the group in the project (admin or viewer)"
+        },
+        "latest_version_id": {
+          "type": "string",
+          "title": "The latest version ID of the project, if available"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the membership was created"
+        }
+      },
+      "title": "ProjectInfo represents detailed information about a project that a group is a member of"
+    },
+    "MaterialArtifact": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "NOT USED, kept for compatibility with servers that still perform server-side validation``\nTODO: remove after some time"
+        },
+        "name": {
+          "type": "string",
+          "title": "filename, use for record purposes"
+        },
+        "digest": {
+          "type": "string",
+          "title": "the digest is enough to retrieve the artifact since it's stored in a CAS\nwhich also has annotated the fileName"
+        },
+        "is_subject": {
+          "type": "boolean"
+        },
+        "content": {
+          "type": "string",
+          "format": "byte",
+          "title": "Inline content of the artifact.\nThis is optional and is used for small artifacts that can be stored inline in the attestation"
+        }
+      }
+    },
+    "MaterialContainerImage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "NOT USED, kept for compatibility with servers that still perform server-side validation``\nTODO: remove after some time"
+        },
+        "name": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "is_subject": {
+          "type": "boolean"
+        },
+        "tag": {
+          "type": "string",
+          "title": "provided tag"
+        },
+        "signature_digest": {
+          "type": "string",
+          "title": "Digest of the found signature for the image"
+        },
+        "signature_provider": {
+          "type": "string",
+          "title": "The provider in charge of the signature"
+        },
+        "signature": {
+          "type": "string",
+          "title": "Base64 encoded signature payload, aka the OCI Signature Manifest"
+        },
+        "has_latest_tag": {
+          "type": "boolean",
+          "description": "Indicates if the image has the latest tag. The image being checked\nmight not explicitly have the latest tag, but it could also be tagged\nwith the latest tag."
+        }
+      }
+    },
+    "MaterialKeyVal": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "NOT USED, kept for compatibility with servers that still perform server-side validation``\nTODO: remove after some time"
+        },
+        "value": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        }
+      }
+    },
+    "MaterialMaterialType": {
+      "type": "string",
+      "enum": [
+        "MATERIAL_TYPE_UNSPECIFIED",
+        "STRING",
+        "CONTAINER_IMAGE",
+        "ARTIFACT",
+        "SBOM_CYCLONEDX_JSON",
+        "SBOM_SPDX_JSON",
+        "JUNIT_XML",
+        "OPENVEX",
+        "HELM_CHART",
+        "SARIF",
+        "EVIDENCE",
+        "ATTESTATION",
+        "CSAF_VEX",
+        "CSAF_INFORMATIONAL_ADVISORY",
+        "CSAF_SECURITY_ADVISORY",
+        "CSAF_SECURITY_INCIDENT_RESPONSE",
+        "GITLAB_SECURITY_REPORT",
+        "ZAP_DAST_ZIP",
+        "BLACKDUCK_SCA_JSON",
+        "TWISTCLI_SCAN_JSON",
+        "GHAS_CODE_SCAN",
+        "GHAS_SECRET_SCAN",
+        "GHAS_DEPENDENCY_SCAN",
+        "JACOCO_XML",
+        "SLSA_PROVENANCE",
+        "CHAINLOOP_RUNNER_CONTEXT",
+        "CHAINLOOP_PR_INFO",
+        "GITLEAKS_JSON",
+        "CHAINLOOP_AI_AGENT_CONFIG",
+        "CHAINLOOP_AI_CODING_SESSION",
+        "OPENAPI_SPEC",
+        "ASYNCAPI_SPEC",
+        "GRAPHQL_SPEC",
+        "YELP_DETECT_SECRETS_BASELINE",
+        "SYSINTERNALS_SIGCHECK",
+        "SYSINTERNALS_ACCESSCHK",
+        "CERTCC_DRANZER",
+        "OSSF_SCORECARD_JSON",
+        "RADAMSA_REPORT",
+        "RADAMSA_CRASHES",
+        "TRUFFLEHOG_JSON",
+        "COBERTURA_XML",
+        "CHECKMARX_JSON",
+        "OVERSECURED_JSON",
+        "PITEST_XML",
+        "CHAINLOOP_AI_SECURITY_CONTEXT"
+      ],
+      "default": "MATERIAL_TYPE_UNSPECIFIED",
+      "title": "- OPENVEX: https://github.com/openvex/spec\n - HELM_CHART: Static analysis output format\nhttps://github.com/microsoft/sarif-tutorials/blob/main/docs/1-Introduction.md\n - EVIDENCE: Pieces of evidences represent generic, additional context that don't fit\ninto one of the well known material types. For example, a custom approval report (in json), ...\n - ATTESTATION: Chainloop attestation coming from a different workflow.\n - CSAF_VEX: https://docs.oasis-open.org/csaf/csaf/v2.0/cs03/csaf-v2.0-cs03.html\n - GITLAB_SECURITY_REPORT: Gitlab Application Security Reports https://docs.gitlab.com/ee/user/application_security/\n - TWISTCLI_SCAN_JSON: Twistcli scan output in json format: https://docs.prismacloud.io/en/compute-edition/30/admin-guide/tools/twistcli-scan-images\n - GHAS_CODE_SCAN: GitHub Advanced Security API reports\nhttps://docs.github.com/en/rest/code-scanning/code-scanning?apiVersion=2022-11-28\n - GHAS_SECRET_SCAN: https://docs.github.com/en/rest/secret-scanning/secret-scanning?apiVersion=2022-11-28\n - GHAS_DEPENDENCY_SCAN: https://docs.github.com/en/rest/dependabot/alerts?apiVersion=2022-11-28\n - JACOCO_XML: Jacoco coverage reports https://www.jacoco.org/userdoc/importexport.html\n - SLSA_PROVENANCE: SLSA Provenance in the form of Sigstore Bundle\nhttps://slsa.dev/spec/v1.0/provenance\nhttps://docs.sigstore.dev/about/bundle/\n - CHAINLOOP_RUNNER_CONTEXT: The Chainloop CLI plugin for runner context\n - CHAINLOOP_PR_INFO: Pull Request / Merge Request metadata collected automatically during attestation\n - GITLEAKS_JSON: Gitleaks json report https://github.com/gitleaks/gitleaks/blob/master/README.md#reporting\n - CHAINLOOP_AI_AGENT_CONFIG: AI agent configuration collected automatically during attestation\n - CHAINLOOP_AI_CODING_SESSION: AI coding session telemetry collected during attestation\n - OPENAPI_SPEC: OpenAPI specification (v3.0, v3.1)\nhttps://spec.openapis.org/oas/latest.html\n - ASYNCAPI_SPEC: AsyncAPI specification (v2.6, v3.0)\nhttps://www.asyncapi.com/docs/reference/specification/latest\n - GRAPHQL_SPEC: GraphQL SDL schema\nhttps://spec.graphql.org/\n - YELP_DETECT_SECRETS_BASELINE: detect-secrets baseline file https://github.com/Yelp/detect-secrets\n - SYSINTERNALS_SIGCHECK: Sysinternals sigcheck output in CSV format\nhttps://learn.microsoft.com/en-us/sysinternals/downloads/sigcheck\n - SYSINTERNALS_ACCESSCHK: Sysinternals AccessChk text output https://learn.microsoft.com/en-us/sysinternals/downloads/accesschk\n - CERTCC_DRANZER: CERT/CC dranzer ActiveX/COM control test report (plain text): a single\nreport or an archive (zip or tar.gz) holding the per-mode reports of one\nrun (-b, -p, -s, -t) https://github.com/CERTCC/dranzer\n - OSSF_SCORECARD_JSON: OpenSSF Scorecard result in JSON format\nhttps://github.com/ossf/scorecard\n - RADAMSA_REPORT: radamsa -M metadata log, one record per generated iteration\nhttps://gitlab.com/akihe/radamsa\n - RADAMSA_CRASHES: radamsa crashing inputs, a single file or a crashes/ archive (tar.gz or zip)\n - TRUFFLEHOG_JSON: TruffleHog secret scanning report in JSONL format (one JSON finding per line)\nhttps://github.com/trufflesecurity/trufflehog\n - COBERTURA_XML: Cobertura code coverage report in XML format\nhttps://github.com/cobertura/cobertura\n - CHECKMARX_JSON: Checkmarx One native JSON report (ScanResultsCollection)\nhttps://github.com/Checkmarx/ast-cli/blob/main/internal/wrappers/results-json.go\n - OVERSECURED_JSON: Oversecured mobile (Android/iOS) scan report, whole-scan JSON export\nhttps://docs.oversecured.com/docs/guide-exporting-reports\n - PITEST_XML: PIT mutation testing report in its native XML format (mutations.xml)\nhttps://pitest.org/\n - CHAINLOOP_AI_SECURITY_CONTEXT: Chainloop AI security context: vulnerability fingerprints mined from a\nrepository's fix history, the attack surfaces they share, ranked risks,\nand byte-verifiable evidence anchors backing each claim"
+    },
+    "MaterialSBOMArtifact": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "$ref": "#/definitions/MaterialArtifact",
+          "title": "The actual SBOM artifact"
+        },
+        "main_component": {
+          "$ref": "#/definitions/SBOMArtifactMainComponent",
+          "title": "The Main component if any the SBOM is related to"
+        }
+      }
+    },
+    "MaterialSelectorMatchMode": {
+      "type": "string",
+      "enum": [
+        "UNSPECIFIED",
+        "EXACT",
+        "PREFIX"
+      ],
+      "default": "UNSPECIFIED",
+      "title": "Values are intentionally unprefixed for contract-author usability\n(\"match_mode: PREFIX\" reads better than \"MATCH_MODE_PREFIX\"), matching the\nother unprefixed enums in this file (RunnerType, MaterialType).\nbuf:lint:ignore ENUM_ZERO_VALUE_SUFFIX"
+    },
+    "OrgItemPolicyViolationBlockingStrategy": {
+      "type": "string",
+      "enum": [
+        "POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED",
+        "POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK",
+        "POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY"
+      ],
+      "default": "POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED"
+    },
+    "PolicyAttachmentMaterialSelector": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "material name"
+        },
+        "match_mode": {
+          "$ref": "#/definitions/MaterialSelectorMatchMode",
+          "description": "How `name` is matched against a material's name. Defaults to exact match\n(UNSPECIFIED behaves as EXACT), so existing selectors are unchanged. Use\nPREFIX to target a set of materials sharing a name prefix (e.g. an\narchive exploded into `\u003cname\u003e`, `\u003cname\u003e-1`, `\u003cname\u003e-2`)."
+        }
+      }
+    },
+    "PolicyEvaluationRawResult": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "format": "byte",
+          "title": "Input data provided to the policy engine"
+        },
+        "output": {
+          "type": "string",
+          "format": "byte",
+          "title": "Output data returned by the policy engine"
+        }
+      }
+    },
+    "PolicyEvaluationReference": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "org_name": {
+          "type": "string"
+        }
+      }
+    },
+    "PolicyEvaluationsRefReason": {
+      "type": "string",
+      "enum": [
+        "REASON_UNSPECIFIED",
+        "REASON_TOO_LARGE",
+        "REASON_UNAVAILABLE"
+      ],
+      "default": "REASON_UNSPECIFIED",
+      "title": "- REASON_TOO_LARGE: The bundle exceeds the maximum size the server inlines in a response\n - REASON_UNAVAILABLE: The bundle could not be resolved from CAS"
+    },
+    "PolicyGroupPolicyGroupPolicies": {
+      "type": "object",
+      "properties": {
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyGroupMaterial"
+          }
+        },
+        "attestation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyAttachment"
+          }
+        }
+      }
+    },
+    "PolicyGroupPolicyGroupSpec": {
+      "type": "object",
+      "properties": {
+        "policies": {
+          "$ref": "#/definitions/PolicyGroupPolicyGroupPolicies"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyInput"
+          }
+        }
+      }
+    },
+    "ProjectServiceListResponseProjectItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier of the project"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the project"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description of the project"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the project was created"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the project was last updated"
+        },
+        "can_create_workflow": {
+          "type": "boolean",
+          "description": "Whether the caller may create a workflow in this project. The listing is\nfiltered by what the caller can see, which is not the same as what they\ncan write to: a project viewer can read a project but not add a workflow\nto it. This is resolved server-side because a caller can hold several\nroles on the same project, directly and through products, and any one of\nthem granting the permission is enough."
+        }
+      },
+      "title": "ProjectItem represents a project of the organization"
+    },
+    "RawBodyFormat": {
+      "type": "string",
+      "enum": [
+        "FORMAT_UNSPECIFIED",
+        "FORMAT_JSON",
+        "FORMAT_YAML",
+        "FORMAT_CUE"
+      ],
+      "default": "FORMAT_UNSPECIFIED"
+    },
+    "RunnerRunnerType": {
+      "type": "string",
+      "enum": [
+        "RUNNER_TYPE_UNSPECIFIED",
+        "GITHUB_ACTION",
+        "GITLAB_PIPELINE",
+        "AZURE_PIPELINE",
+        "JENKINS_JOB",
+        "CIRCLECI_BUILD",
+        "DAGGER_PIPELINE",
+        "TEAMCITY_PIPELINE",
+        "TEKTON_PIPELINE",
+        "CHAINLOOP_SANDBOX"
+      ],
+      "default": "RUNNER_TYPE_UNSPECIFIED"
+    },
+    "SBOMArtifactMainComponent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the main component"
+        },
+        "version": {
+          "type": "string",
+          "title": "The version of the main component"
+        },
+        "kind": {
+          "type": "string",
+          "title": "The kind of the main component"
+        }
+      },
+      "title": "The main component of the SBOM"
+    },
+    "TopWorkflowsByRunsCountResponseTotalByStatus": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        },
+        "runs_total_by_status": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1MetricsStatusCount"
+          }
+        }
+      }
+    },
+    "WorkflowContractServiceApplyResponseApplyStatus": {
+      "type": "string",
+      "enum": [
+        "APPLY_STATUS_UNSPECIFIED",
+        "APPLY_STATUS_CREATED",
+        "APPLY_STATUS_UPDATED",
+        "APPLY_STATUS_UNCHANGED"
+      ],
+      "default": "APPLY_STATUS_UNSPECIFIED",
+      "description": "- APPLY_STATUS_CREATED: The resource did not exist and was created\n - APPLY_STATUS_UPDATED: The resource existed and its content changed\n - APPLY_STATUS_UNCHANGED: The resource existed and its content was identical",
+      "title": "ApplyStatus describes how the applied resource changed"
+    },
+    "WorkflowContractVersionItemRawBody": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string",
+          "format": "byte"
+        },
+        "format": {
+          "$ref": "#/definitions/RawBodyFormat"
+        }
+      }
+    },
+    "WorkflowRunServiceViewResponseVerificationResult": {
+      "type": "object",
+      "properties": {
+        "verified": {
+          "type": "boolean",
+          "title": "if it can be verified this will hold the result of the verification"
+        },
+        "failure_reason": {
+          "type": "string",
+          "title": "why it couldn't be verified, or the failure reason"
+        }
+      }
+    },
+    "attestationv1PolicyEvaluation": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The policy name from the policy spec"
+        },
+        "material_name": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string",
+          "title": "the body of the policy. This field will be empty if there is a FQDN reference to the policy"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Base64 representation of run scripts. It might be empty if there is a FQDN reference to the policy"
+        },
+        "reference_digest": {
+          "type": "string",
+          "title": "fully qualified reference to the policy\ni.e\nhttp://my-domain.com/foo.yaml\nfile://foo.yaml\nchainloop://my-provider.com/foo@sha256:1234\nNOTE: embedded policies will not have a reference\nDeprecated: use policy_reference instead"
+        },
+        "reference_name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyEvaluationViolation"
+          },
+          "title": "The policy violations, if any"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "arguments, as they come from the policy attachment"
+        },
+        "type": {
+          "$ref": "#/definitions/MaterialMaterialType",
+          "title": "material type, if any, of the evaluated policy"
+        },
+        "skipped": {
+          "type": "boolean",
+          "title": "whether this evaluation was skipped or not (because of an invalid input, for example)"
+        },
+        "skip_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evaluation messages, intended to communicate evaluation errors (invalid input)"
+        },
+        "policy_reference": {
+          "$ref": "#/definitions/PolicyEvaluationReference",
+          "title": "Group this evaluated policy belongs to, if any"
+        },
+        "group_reference": {
+          "$ref": "#/definitions/PolicyEvaluationReference"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of requirements this policy contributes to satisfy"
+        },
+        "raw_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/PolicyEvaluationRawResult"
+          },
+          "description": "Raw inputs and outputs from the policy engine, preserved for debugging."
+        },
+        "gate": {
+          "type": "boolean",
+          "title": "Whether the policy evaluation result should block the attestation (inherited from the policy attachment)"
+        },
+        "runtime_input_overrides": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of policy inputs whose values were supplied or overridden at runtime\n(e.g. via --policy-input-from-file) rather than coming solely from the\ncontract. The effective merged values live in `with`; this only records\nwhich input names were touched at runtime. Empty means no runtime override."
+        }
+      },
+      "title": "A policy executed against an attestation or material"
+    },
+    "attestationv1ProjectVersion": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "prerelease": {
+          "type": "boolean",
+          "title": "if it's pre-release"
+        },
+        "mark_as_released": {
+          "type": "boolean"
+        }
+      }
+    },
+    "controlplanev1PolicyEvaluation": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "material_name": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "type": {
+          "type": "string"
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyViolation"
+          }
+        },
+        "policy_reference": {
+          "$ref": "#/definitions/v1PolicyReference"
+        },
+        "skipped": {
+          "type": "boolean"
+        },
+        "skip_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "group_reference": {
+          "$ref": "#/definitions/v1PolicyReference"
+        },
+        "gate": {
+          "type": "boolean"
+        }
+      }
+    },
+    "controlplanev1ProjectVersion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "prerelease": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "released_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "when it was marked as released"
+        },
+        "latest": {
+          "type": "boolean"
+        }
+      }
+    },
+    "googlerpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\nThe JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
+    "v1APITokenItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "organization_id": {
+          "type": "string"
+        },
+        "organization_name": {
+          "type": "string"
+        },
+        "scoped_entity": {
+          "$ref": "#/definitions/v1ScopedEntity",
+          "title": "wether the token is scoped to an entity in the organization"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "revoked_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_used_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v1APITokenServiceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/APITokenServiceCreateResponseAPITokenFull"
+        }
+      }
+    },
+    "v1APITokenServiceListResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1APITokenItem"
+          }
+        }
+      }
+    },
+    "v1APITokenServiceRevokeResponse": {
+      "type": "object"
+    },
+    "v1Attestation": {
+      "type": "object",
+      "properties": {
+        "initialized_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "workflow": {
+          "$ref": "#/definitions/v1WorkflowMetadata"
+        },
+        "materials": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1AttestationMaterial"
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Annotations for the attestation"
+        },
+        "env_vars": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "List of env variables"
+        },
+        "runner_url": {
+          "type": "string"
+        },
+        "runner_type": {
+          "$ref": "#/definitions/RunnerRunnerType"
+        },
+        "head": {
+          "$ref": "#/definitions/v1Commit",
+          "title": "Head Commit of the environment where the attestation was executed (optional)"
+        },
+        "policy_evaluations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/attestationv1PolicyEvaluation"
+          },
+          "title": "Policies that materials in this attestation were validated against"
+        },
+        "block_on_policy_violation": {
+          "type": "boolean",
+          "title": "fail the attestation if policy evaluation fails"
+        },
+        "bypass_policy_check": {
+          "type": "boolean",
+          "title": "bypass policy check"
+        },
+        "signing_options": {
+          "$ref": "#/definitions/v1AttestationSigningOptions",
+          "title": "Signing options"
+        },
+        "runner_environment": {
+          "$ref": "#/definitions/v1RunnerEnvironment",
+          "title": "Runner environment in which the attestation was crafted"
+        },
+        "auth": {
+          "$ref": "#/definitions/AttestationAuth",
+          "title": "Authentication information used during attestation"
+        },
+        "policies_allowed_hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "array of hostnames that are allowed to be used in the policies"
+        },
+        "cas_backend": {
+          "$ref": "#/definitions/AttestationCASBackend",
+          "title": "CAS backend information used during attestation"
+        },
+        "skip_runner_env_vars": {
+          "type": "boolean",
+          "description": "skip storing the environment variables automatically discovered by the CI runner.\nThe contract's env_allow_list is not affected by this flag."
+        }
+      }
+    },
+    "v1AttestationItem": {
+      "type": "object",
+      "properties": {
+        "envelope": {
+          "type": "string",
+          "format": "byte",
+          "title": "encoded DSEE envelope"
+        },
+        "bundle": {
+          "type": "string",
+          "format": "byte",
+          "title": "Attestation bundle"
+        },
+        "digest_in_cas_backend": {
+          "type": "string",
+          "title": "sha256sum of the bundle containing the envelope, or the envelope in old attestations\nused as a key in the CAS backend"
+        },
+        "env_vars": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/AttestationItemEnvVariable"
+          },
+          "title": "denormalized envelope/statement content"
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1AttestationItemMaterial"
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "policy_evaluations": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1PolicyEvaluations"
+          }
+        },
+        "policy_evaluation_status": {
+          "$ref": "#/definitions/AttestationItemPolicyEvaluationStatus"
+        },
+        "policy_evaluations_ref": {
+          "$ref": "#/definitions/v1PolicyEvaluationsRef",
+          "description": "Reference to the policy-evaluation bundle in the CAS backend. Populated\nwhenever the attestation carries a bundle, whether or not the evaluations\nwere also inlined in policy_evaluations: see its \"inlined\" field. Fetch the\nbundle by digest to inspect the full set of evaluations.\nCounters and status in policy_evaluation_status remain complete either way."
+        }
+      }
+    },
+    "v1AttestationItemMaterial": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "description": "Deprecated: use raw_value instead. This field cannot represent binary content."
+        },
+        "filename": {
+          "type": "string",
+          "title": "filename of the artifact that was either uploaded or injected inline in \"value\""
+        },
+        "type": {
+          "type": "string",
+          "title": "Material type, i.e ARTIFACT"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tag": {
+          "type": "string",
+          "title": "in the case of a container image, the tag of the attested image"
+        },
+        "hash": {
+          "type": "string"
+        },
+        "uploaded_to_cas": {
+          "type": "boolean",
+          "title": "it's been uploaded to an actual CAS backend"
+        },
+        "embedded_inline": {
+          "type": "boolean",
+          "title": "the content instead if inline"
+        },
+        "raw_value": {
+          "type": "string",
+          "format": "byte",
+          "description": "Binary-safe material content. For inline artifacts, contains the raw bytes.\nFor string materials, contains the UTF-8 encoded value.\nFor non-inline materials (container images, uploaded artifacts), contains\nthe filename or image reference as UTF-8.\nClients should prefer this field over the deprecated string value field."
+        }
+      }
+    },
+    "v1AttestationMaterial": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "string": {
+          "$ref": "#/definitions/MaterialKeyVal"
+        },
+        "container_image": {
+          "$ref": "#/definitions/MaterialContainerImage"
+        },
+        "artifact": {
+          "$ref": "#/definitions/MaterialArtifact"
+        },
+        "sbom_artifact": {
+          "$ref": "#/definitions/MaterialSBOMArtifact"
+        },
+        "added_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "material_type": {
+          "$ref": "#/definitions/MaterialMaterialType"
+        },
+        "uploaded_to_cas": {
+          "type": "boolean",
+          "title": "Whether the material has been uploaded to the CAS"
+        },
+        "inline_cas": {
+          "type": "boolean",
+          "title": "If the material content has been injected inline in the attestation\nleveraging a form of inline CAS"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Annotations for the material"
+        },
+        "output": {
+          "type": "boolean"
+        },
+        "required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1AttestationPhase": {
+      "type": "string",
+      "enum": [
+        "ATTESTATION_PHASE_UNSPECIFIED",
+        "INIT",
+        "PUSH"
+      ],
+      "default": "ATTESTATION_PHASE_UNSPECIFIED",
+      "description": "Lifecycle phases that control when an attestation policy is evaluated.\nOnly applicable to policies with kind ATTESTATION in PolicySpecV2."
+    },
+    "v1AttestationServiceCancelResponse": {
+      "type": "object"
+    },
+    "v1AttestationServiceGetContractResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1AttestationServiceGetContractResponseResult"
+        }
+      }
+    },
+    "v1AttestationServiceGetContractResponseResult": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        },
+        "contract": {
+          "$ref": "#/definitions/v1WorkflowContractVersionItem"
+        }
+      }
+    },
+    "v1AttestationServiceGetPolicyGroupResponse": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "$ref": "#/definitions/v1PolicyGroup"
+        },
+        "reference": {
+          "$ref": "#/definitions/v1RemotePolicyReference",
+          "title": "FQDN of the policy in the provider"
+        }
+      }
+    },
+    "v1AttestationServiceGetPolicyResponse": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "$ref": "#/definitions/v1Policy"
+        },
+        "reference": {
+          "$ref": "#/definitions/v1RemotePolicyReference",
+          "title": "FQDN of the policy in the provider"
+        }
+      }
+    },
+    "v1AttestationServiceGetUploadCredsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1AttestationServiceGetUploadCredsResponseResult"
+        }
+      }
+    },
+    "v1AttestationServiceGetUploadCredsResponseResult": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "backend": {
+          "$ref": "#/definitions/v1CASBackendItem"
+        }
+      }
+    },
+    "v1AttestationServiceInitResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1AttestationServiceInitResponseResult"
+        }
+      }
+    },
+    "v1AttestationServiceInitResponseResult": {
+      "type": "object",
+      "properties": {
+        "workflow_run": {
+          "$ref": "#/definitions/v1WorkflowRunItem"
+        },
+        "organization": {
+          "type": "string",
+          "title": "organization name"
+        },
+        "block_on_policy_violation": {
+          "type": "boolean",
+          "title": "fail the attestation if there is a violation in any policy"
+        },
+        "signing_options": {
+          "$ref": "#/definitions/v1AttestationServiceInitResponseSigningOptions",
+          "title": "Signing options"
+        },
+        "policies_allowed_hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "array of hostnames that are allowed to be used in the policies"
+        },
+        "ui_dashboard_url": {
+          "type": "string",
+          "title": "URL pointing to the web dashboard. It might be empty if not available"
+        },
+        "enable_ai_agent_collector": {
+          "type": "boolean",
+          "title": "Whether AI agent config collection is enabled at the org level"
+        },
+        "skip_runner_env_vars": {
+          "type": "boolean",
+          "title": "Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation"
+        }
+      }
+    },
+    "v1AttestationServiceInitResponseSigningOptions": {
+      "type": "object",
+      "properties": {
+        "timestamp_authority_url": {
+          "type": "string",
+          "title": "TSA service to be used for signing"
+        },
+        "signing_ca": {
+          "type": "string",
+          "title": "If set, the attestation wil be signed with ephemeral certificates issued by this CA"
+        }
+      }
+    },
+    "v1AttestationServiceStoreResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1AttestationServiceStoreResponseResult"
+        }
+      }
+    },
+    "v1AttestationServiceStoreResponseResult": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "title": "attestation digest"
+        }
+      }
+    },
+    "v1AttestationSigningOptions": {
+      "type": "object",
+      "properties": {
+        "timestamp_authority_url": {
+          "type": "string",
+          "title": "TSA URL"
+        },
+        "signing_ca": {
+          "type": "string",
+          "title": "Signing CA to be used for signing"
+        }
+      }
+    },
+    "v1AttestationStateServiceInitializedResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1AttestationStateServiceInitializedResponseResult"
+        }
+      }
+    },
+    "v1AttestationStateServiceInitializedResponseResult": {
+      "type": "object",
+      "properties": {
+        "initialized": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1AttestationStateServiceReadResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1AttestationStateServiceReadResponseResult"
+        }
+      }
+    },
+    "v1AttestationStateServiceReadResponseResult": {
+      "type": "object",
+      "properties": {
+        "attestation_state": {
+          "$ref": "#/definitions/v1CraftingState"
+        },
+        "digest": {
+          "type": "string",
+          "title": "digest of the attestation state to implement Optimistic Concurrency Control"
+        }
+      }
+    },
+    "v1AttestationStateServiceResetResponse": {
+      "type": "object"
+    },
+    "v1AttestationStateServiceSaveResponse": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "title": "digest of the newly saved attestation state for Optimistic Concurrency Control"
+        }
+      }
+    },
+    "v1AuthServiceDeleteAccountResponse": {
+      "type": "object",
+      "description": "AuthServiceDeleteAccountResponse is the response for the DeleteAccount method."
+    },
+    "v1AutoMatch": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "title": "path to a policy script. It might consist of a URI reference\ndeprecated: use ref instead"
+        },
+        "embedded": {
+          "type": "string",
+          "title": "embedded source code (only Rego supported currently)"
+        },
+        "ref": {
+          "type": "string",
+          "title": "generic reference for file:// and http(s):// schemes"
+        }
+      },
+      "title": "Auto-matching policy specification"
+    },
+    "v1CASBackendItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string",
+          "title": "e.g. myregistry.io/myrepo s3 bucket and so on"
+        },
+        "description": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validation_status": {
+          "$ref": "#/definitions/CASBackendItemValidationStatus"
+        },
+        "provider": {
+          "type": "string",
+          "description": "OCI, S3, ..."
+        },
+        "default": {
+          "type": "boolean",
+          "title": "Wether it's the default backend in the organization"
+        },
+        "limits": {
+          "$ref": "#/definitions/CASBackendItemLimits",
+          "title": "Limits for this backend"
+        },
+        "is_inline": {
+          "type": "boolean",
+          "title": "Is it an inline backend?\ninline means that the content is stored in the attestation itself"
+        },
+        "validation_error": {
+          "type": "string",
+          "title": "Error message if validation failed"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "fallback": {
+          "type": "boolean",
+          "title": "Wether it's the fallback backend in the organization"
+        },
+        "is_managed": {
+          "type": "boolean",
+          "title": "Whether this backend is provisioned and operated by Chainloop using"
+        }
+      }
+    },
+    "v1CASBackendServiceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1CASBackendItem"
+        }
+      }
+    },
+    "v1CASBackendServiceDeleteResponse": {
+      "type": "object"
+    },
+    "v1CASBackendServiceListResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1CASBackendItem"
+          }
+        }
+      }
+    },
+    "v1CASBackendServiceRevalidateResponse": {
+      "type": "object"
+    },
+    "v1CASBackendServiceUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1CASBackendItem"
+        }
+      }
+    },
+    "v1CASCredentialsServiceGetResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1CASCredentialsServiceGetResponseResult"
+        }
+      }
+    },
+    "v1CASCredentialsServiceGetResponseResult": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "backend": {
+          "$ref": "#/definitions/v1CASBackendItem"
+        }
+      }
+    },
+    "v1CertificateChain": {
+      "type": "object",
+      "properties": {
+        "certificates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The PEM-encoded certificate chain, ordered from leaf to intermediate to root as applicable."
+        }
+      }
+    },
+    "v1Commit": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "author_email": {
+          "type": "string",
+          "title": "Commit authors might not include email i.e \"Flux \u003c\u003e\""
+        },
+        "author_name": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "remotes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/CommitRemote"
+          }
+        },
+        "signature": {
+          "type": "string"
+        },
+        "platform_verification": {
+          "$ref": "#/definitions/CommitCommitVerification",
+          "title": "Platform verification information (GitHub/GitLab signature verification)"
+        }
+      }
+    },
+    "v1ContextServiceCurrentResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1ContextServiceCurrentResponseResult"
+        }
+      }
+    },
+    "v1ContextServiceCurrentResponseResult": {
+      "type": "object",
+      "properties": {
+        "current_user": {
+          "$ref": "#/definitions/v1User"
+        },
+        "current_membership": {
+          "$ref": "#/definitions/v1OrgMembershipItem"
+        },
+        "current_cas_backend": {
+          "$ref": "#/definitions/v1CASBackendItem"
+        }
+      }
+    },
+    "v1CraftingSchema": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "title": "Version of the schema, do not confuse with the revision of the content"
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1CraftingSchemaMaterial"
+          }
+        },
+        "env_allow_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "runner": {
+          "$ref": "#/definitions/CraftingSchemaRunner"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workflowcontractv1Annotation"
+          },
+          "title": "List of annotations that can be used to add metadata to the attestation\nthis metadata can be used later on by the integrations engine to filter and interpolate data\nIt works in addition to the annotations defined in the materials and the runner"
+        },
+        "policies": {
+          "$ref": "#/definitions/v1Policies",
+          "title": "Policies to apply to this schema"
+        },
+        "policy_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyGroupAttachment"
+          },
+          "title": "Policy groups to apply to this schema"
+        }
+      },
+      "title": "Schema definition provided by the user to the tool\nthat defines the schema of the workflowRun"
+    },
+    "v1CraftingSchemaMaterial": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/MaterialMaterialType"
+        },
+        "name": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "output": {
+          "type": "boolean",
+          "title": "If a material is set as output it will get added to the subject in the statement"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workflowcontractv1Annotation"
+          },
+          "title": "List of annotations that can be used to add metadata to the material\nthis metadata can be used later on by the integrations engine to filter and interpolate data"
+        },
+        "skip_upload": {
+          "type": "boolean",
+          "title": "If true, skip uploading the material to CAS (only record metadata)\nDefaults to false (material will be uploaded)"
+        },
+        "group": {
+          "type": "string",
+          "description": "Choke group: materials sharing the same non-empty group value form an\n\"at least one of\" set, meaning at least one member must be present in the\nattestation. Materials without a group keep their individual required/optional behavior."
+        }
+      }
+    },
+    "v1CraftingSchemaV2": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1Metadata"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1CraftingSchemaV2Spec"
+        }
+      },
+      "title": "Schema definition provided by the user to the tool\nthat defines the schema of the workflowRun"
+    },
+    "v1CraftingSchemaV2Spec": {
+      "type": "object",
+      "properties": {
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1CraftingSchemaMaterial"
+          },
+          "title": "Materials that are expected to be present in the attestation"
+        },
+        "env_allow_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of environment variables that are allowed to be present in the attestation"
+        },
+        "runner": {
+          "$ref": "#/definitions/CraftingSchemaRunner",
+          "title": "Runner configuration for the contract"
+        },
+        "policies": {
+          "$ref": "#/definitions/v1Policies",
+          "title": "Policies to apply to this contract"
+        },
+        "policy_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyGroupAttachment"
+          },
+          "title": "Policy groups to apply to this contract"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/workflowcontractv1Annotation"
+          },
+          "title": "List of annotations that can be used to add metadata to the attestation\nthis metadata can be used later on by the integrations engine to filter and interpolate data\nIt works in addition to the annotations defined in the materials and the runner"
+        }
+      }
+    },
+    "v1CraftingState": {
+      "type": "object",
+      "properties": {
+        "input_schema": {
+          "$ref": "#/definitions/v1CraftingSchema"
+        },
+        "schema_v2": {
+          "$ref": "#/definitions/v1CraftingSchemaV2"
+        },
+        "attestation": {
+          "$ref": "#/definitions/v1Attestation"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "ui_dashboard_url": {
+          "type": "string",
+          "title": "External URL of the platform UI, if available"
+        }
+      },
+      "title": "Intermediate information that will get stored in the system while the run is being executed"
+    },
+    "v1CursorPaginationRequest": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Limit pagination to 100"
+        }
+      }
+    },
+    "v1CursorPaginationResponse": {
+      "type": "object",
+      "properties": {
+        "next_cursor": {
+          "type": "string"
+        }
+      }
+    },
+    "v1DailyRunsCountResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/DailyRunsCountResponseTotalByDay"
+          }
+        }
+      }
+    },
+    "v1DeleteMembershipResponse": {
+      "type": "object"
+    },
+    "v1FindOrCreateWorkflowResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        }
+      }
+    },
+    "v1GenerateSigningCertResponse": {
+      "type": "object",
+      "properties": {
+        "chain": {
+          "$ref": "#/definitions/v1CertificateChain"
+        }
+      }
+    },
+    "v1GetDownloadURLResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1GetDownloadURLResponseResult"
+        }
+      }
+    },
+    "v1GetDownloadURLResponseResult": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "v1GetTrustedRootResponse": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1CertificateChain"
+          },
+          "title": "map keyID (cert SubjectKeyIdentifier) to PEM encoded chains"
+        },
+        "timestamp_authorities": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1CertificateChain"
+          },
+          "title": "timestamp authorities"
+        }
+      }
+    },
+    "v1Group": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Unique identifier for the group"
+        },
+        "name": {
+          "type": "string",
+          "title": "Human-readable name of the group"
+        },
+        "description": {
+          "type": "string",
+          "title": "Additional details about the group's purpose"
+        },
+        "organization_id": {
+          "type": "string",
+          "title": "UUID of the organization that this group belongs to"
+        },
+        "member_count": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Count of members in the group"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the group was created"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the group was last modified"
+        }
+      },
+      "title": "Group represents a collection of users with shared access to resources"
+    },
+    "v1GroupMember": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/v1User",
+          "title": "The user who is a member of the group"
+        },
+        "is_maintainer": {
+          "type": "boolean",
+          "title": "Indicates whether the user has maintainer (admin) privileges in the group"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the group membership was created"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the group membership was last modified"
+        }
+      },
+      "title": "GroupMember represents a user's membership within a group with their role information"
+    },
+    "v1GroupServiceAddMemberResponse": {
+      "type": "object",
+      "title": "GroupServiceAddMemberResponse contains the information about the group member that was added"
+    },
+    "v1GroupServiceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "$ref": "#/definitions/v1Group",
+          "title": "The created group with all its attributes"
+        }
+      },
+      "title": "GroupServiceCreateResponse contains the newly created group"
+    },
+    "v1GroupServiceDeleteResponse": {
+      "type": "object",
+      "title": "GroupServiceDeleteResponse is returned upon successful deletion of a group"
+    },
+    "v1GroupServiceGetResponse": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "$ref": "#/definitions/v1Group",
+          "title": "The requested group with all its attributes"
+        }
+      },
+      "title": "GroupServiceGetResponse contains the requested group information"
+    },
+    "v1GroupServiceListMembersResponse": {
+      "type": "object",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1GroupMember"
+          },
+          "title": "List of members in the group"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        }
+      }
+    },
+    "v1GroupServiceListPendingInvitationsResponse": {
+      "type": "object",
+      "properties": {
+        "invitations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PendingGroupInvitation"
+          },
+          "title": "List of pending invitations for the group"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        }
+      },
+      "title": "GroupServiceListPendingInvitationsResponse contains a list of pending invitations for a group"
+    },
+    "v1GroupServiceListProjectsResponse": {
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/GroupServiceListProjectsResponseProjectInfo"
+          },
+          "title": "List of projects memberships matching the request criteria"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        }
+      },
+      "title": "GroupServiceListProjectsResponse contains a paginated list of projects for a group"
+    },
+    "v1GroupServiceListResponse": {
+      "type": "object",
+      "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Group"
+          },
+          "title": "List of groups matching the request criteria"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        }
+      },
+      "title": "GroupServiceListsResponse contains a paginated list of groups"
+    },
+    "v1GroupServiceRemoveMemberResponse": {
+      "type": "object",
+      "title": "GroupServiceRemoveMemberResponse is returned upon successful removal of a user from a group"
+    },
+    "v1GroupServiceUpdateMemberMaintainerStatusResponse": {
+      "type": "object",
+      "title": "GroupServiceUpdateMemberMaintainerStatusResponse is returned upon successful update of a member's maintainer status"
+    },
+    "v1GroupServiceUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "$ref": "#/definitions/v1Group",
+          "title": "The updated group with all its attributes"
+        }
+      },
+      "title": "GroupServiceUpdateResponse contains the updated group information"
+    },
+    "v1IdentityReference": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID is optional, but if provided, it must be a valid UUID."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name is optional, but if provided, it must be a non-empty string."
+        }
+      },
+      "description": "IdentityReference represents a reference to an identity in the system."
+    },
+    "v1InfozResponse": {
+      "type": "object",
+      "properties": {
+        "login_url": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "chart_version": {
+          "type": "string",
+          "title": "Version of the helm chart used during deployment"
+        },
+        "restricted_org_creation": {
+          "type": "boolean",
+          "title": "Whether organization creation is restricted to admins"
+        },
+        "ui_dashboard_url": {
+          "type": "string",
+          "title": "Link to the platform UI, if available"
+        }
+      }
+    },
+    "v1IntegrationAttachmentItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "config": {
+          "type": "string",
+          "format": "byte",
+          "title": "Arbitrary configuration for the attachment"
+        },
+        "integration": {
+          "$ref": "#/definitions/v1RegisteredIntegrationItem"
+        },
+        "workflow": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        }
+      }
+    },
+    "v1IntegrationAvailableItem": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Integration identifier"
+        },
+        "version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "fanout": {
+          "$ref": "#/definitions/v1PluginFanout"
+        }
+      }
+    },
+    "v1IntegrationsServiceAttachResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1IntegrationAttachmentItem"
+        }
+      }
+    },
+    "v1IntegrationsServiceDeregisterResponse": {
+      "type": "object"
+    },
+    "v1IntegrationsServiceDescribeRegistrationResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1RegisteredIntegrationItem"
+        }
+      }
+    },
+    "v1IntegrationsServiceDetachResponse": {
+      "type": "object"
+    },
+    "v1IntegrationsServiceListAvailableResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1IntegrationAvailableItem"
+          }
+        }
+      }
+    },
+    "v1IntegrationsServiceListRegistrationsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1RegisteredIntegrationItem"
+          }
+        }
+      }
+    },
+    "v1IntegrationsServiceRegisterResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1RegisteredIntegrationItem"
+        }
+      }
+    },
+    "v1JSONFilter": {
+      "type": "object",
+      "properties": {
+        "field_path": {
+          "type": "string"
+        },
+        "operator": {
+          "$ref": "#/definitions/v1JSONOperator"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "description": "JSONFilter represents a filter for JSON fields."
+    },
+    "v1JSONOperator": {
+      "type": "string",
+      "enum": [
+        "JSON_OPERATOR_UNSPECIFIED",
+        "JSON_OPERATOR_EQ",
+        "JSON_OPERATOR_NEQ",
+        "JSON_OPERATOR_IN"
+      ],
+      "default": "JSON_OPERATOR_UNSPECIFIED",
+      "description": "JSONOperator represents supported JSON filter operators."
+    },
+    "v1ListAttachmentsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1IntegrationAttachmentItem"
+          }
+        }
+      }
+    },
+    "v1MembershipRole": {
+      "type": "string",
+      "enum": [
+        "MEMBERSHIP_ROLE_UNSPECIFIED",
+        "MEMBERSHIP_ROLE_ORG_VIEWER",
+        "MEMBERSHIP_ROLE_ORG_ADMIN",
+        "MEMBERSHIP_ROLE_ORG_OWNER",
+        "MEMBERSHIP_ROLE_ORG_MEMBER",
+        "MEMBERSHIP_ROLE_ORG_CONTRIBUTOR"
+      ],
+      "default": "MEMBERSHIP_ROLE_UNSPECIFIED"
+    },
+    "v1Metadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "the name of the policy"
+        },
+        "description": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "organization": {
+          "type": "string"
+        },
+        "finding_type": {
+          "type": "string",
+          "title": "Declares the structured output schema for policy violations.\nWhen set, the policy engine validates that violations conform to the\ncorresponding proto message:\n  VULNERABILITY    -\u003e attestation.v1.PolicyVulnerabilityFinding\n  SAST             -\u003e attestation.v1.PolicySASTFinding\n  LICENSE_VIOLATION -\u003e attestation.v1.PolicyLicenseViolationFinding"
+        }
+      }
+    },
+    "v1MetricsRunnerCount": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "runner_type": {
+          "$ref": "#/definitions/RunnerRunnerType"
+        }
+      }
+    },
+    "v1MetricsStatusCount": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "status": {
+          "$ref": "#/definitions/v1RunStatus"
+        }
+      }
+    },
+    "v1MetricsTimeWindow": {
+      "type": "string",
+      "enum": [
+        "METRICS_TIME_WINDOW_UNSPECIFIED",
+        "METRICS_TIME_WINDOW_LAST_DAY",
+        "METRICS_TIME_WINDOW_LAST_7_DAYS",
+        "METRICS_TIME_WINDOW_LAST_30_DAYS",
+        "METRICS_TIME_WINDOW_LAST_90_DAYS"
+      ],
+      "default": "METRICS_TIME_WINDOW_UNSPECIFIED"
+    },
+    "v1OffsetPaginationRequest": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The (zero-based) offset of the first item returned in the collection."
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The maximum number of entries to return. If the value exceeds the maximum, then the maximum value will be used."
+        }
+      },
+      "title": "OffsetPaginationRequest is used to paginate the results"
+    },
+    "v1OffsetPaginationResponse": {
+      "type": "object",
+      "properties": {
+        "page": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The current page number"
+        },
+        "page_size": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The number of results per page"
+        },
+        "total_count": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The total number of results"
+        },
+        "total_pages": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The total number of pages"
+        }
+      },
+      "title": "OffsetPaginationResponse is used to return the pagination information"
+    },
+    "v1OrgInvitationItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "receiver_email": {
+          "type": "string"
+        },
+        "sender": {
+          "$ref": "#/definitions/v1User"
+        },
+        "organization": {
+          "$ref": "#/definitions/v1OrgItem"
+        },
+        "status": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/v1MembershipRole"
+        }
+      }
+    },
+    "v1OrgInvitationServiceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1OrgInvitationItem"
+        }
+      }
+    },
+    "v1OrgInvitationServiceListSentResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1OrgInvitationItem"
+          }
+        }
+      }
+    },
+    "v1OrgInvitationServiceRevokeResponse": {
+      "type": "object"
+    },
+    "v1OrgItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "default_policy_violation_strategy": {
+          "$ref": "#/definitions/OrgItemPolicyViolationBlockingStrategy"
+        },
+        "policy_allowed_hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prevent_implicit_workflow_creation": {
+          "type": "boolean",
+          "title": "prevent workflows and projects from being created implicitly during attestation init"
+        },
+        "restrict_contract_creation_to_org_admins": {
+          "type": "boolean",
+          "title": "restrict_contract_creation_to_org_admins restricts contract creation (org-level and project-level) to only organization admins (owner/admin roles)"
+        },
+        "api_token_max_days_inactive": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Maximum days of inactivity before API tokens are auto-revoked. Absent if disabled."
+        },
+        "enable_ai_agent_collector": {
+          "type": "boolean",
+          "title": "Whether AI agent config collection is automatically enabled during attestation init"
+        },
+        "block_attestations_on_released_versions": {
+          "type": "boolean",
+          "title": "Whether new attestations are rejected on project versions that are already released (prerelease == false)"
+        },
+        "skip_runner_env_vars": {
+          "type": "boolean",
+          "title": "Whether the environment variables automatically discovered by the CI runner are skipped from the attestation"
+        }
+      }
+    },
+    "v1OrgMembershipItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "org": {
+          "$ref": "#/definitions/v1OrgItem"
+        },
+        "user": {
+          "$ref": "#/definitions/v1User"
+        },
+        "current": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "role": {
+          "$ref": "#/definitions/v1MembershipRole"
+        }
+      }
+    },
+    "v1OrgMetricsServiceTotalsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1OrgMetricsServiceTotalsResponseResult"
+        }
+      }
+    },
+    "v1OrgMetricsServiceTotalsResponseResult": {
+      "type": "object",
+      "properties": {
+        "runs_total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "runs_total_by_status": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1MetricsStatusCount"
+          }
+        },
+        "runs_total_by_runner_type": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1MetricsRunnerCount"
+          }
+        }
+      }
+    },
+    "v1OrganizationServiceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1OrgItem"
+        }
+      }
+    },
+    "v1OrganizationServiceDeleteMembershipResponse": {
+      "type": "object"
+    },
+    "v1OrganizationServiceDeleteResponse": {
+      "type": "object"
+    },
+    "v1OrganizationServiceListMembershipsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1OrgMembershipItem"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        }
+      }
+    },
+    "v1OrganizationServiceUpdateMembershipResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1OrgMembershipItem"
+        }
+      }
+    },
+    "v1OrganizationServiceUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1OrgItem"
+        }
+      }
+    },
+    "v1PendingGroupInvitation": {
+      "type": "object",
+      "properties": {
+        "user_email": {
+          "type": "string",
+          "title": "The email address of the user invited to the group"
+        },
+        "invited_by": {
+          "$ref": "#/definitions/v1User",
+          "title": "The user who sent the invitation"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the invitation was created"
+        },
+        "invitation_id": {
+          "type": "string",
+          "title": "Unique identifier for the invitation"
+        }
+      },
+      "title": "PendingInvitation represents an invitation to join a group that has not yet been accepted"
+    },
+    "v1PendingProjectInvitation": {
+      "type": "object",
+      "properties": {
+        "user_email": {
+          "type": "string",
+          "title": "The email address of the user invited to the project"
+        },
+        "invited_by": {
+          "$ref": "#/definitions/v1User",
+          "title": "The user who sent the invitation"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the invitation was created"
+        },
+        "invitation_id": {
+          "type": "string",
+          "title": "Unique identifier for the invitation"
+        }
+      },
+      "title": "PendingInvitation represents an invitation to join a project that has not yet been accepted"
+    },
+    "v1PluginFanout": {
+      "type": "object",
+      "properties": {
+        "registration_schema": {
+          "type": "string",
+          "format": "byte",
+          "title": "Registration JSON schema"
+        },
+        "attachment_schema": {
+          "type": "string",
+          "format": "byte",
+          "title": "Attachment JSON schema"
+        },
+        "subscribed_materials": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of materials that the integration is subscribed to"
+        }
+      },
+      "title": "PluginFanout describes a plugin that can be used to fanout attestation and materials to multiple integrations"
+    },
+    "v1Policies": {
+      "type": "object",
+      "properties": {
+        "materials": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyAttachment"
+          },
+          "title": "Policies to be applied to materials"
+        },
+        "attestation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyAttachment"
+          },
+          "title": "Policies to be applied to attestation metadata"
+        }
+      }
+    },
+    "v1Policy": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1Metadata"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1PolicySpec"
+        }
+      },
+      "title": "Represents a policy to be applied to a material or attestation"
+    },
+    "v1PolicyAssessment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Platform assessment UUID."
+        },
+        "status": {
+          "type": "string",
+          "description": "Platform AssessmentStatus enum name, e.g. \"ASSESSMENT_STATUS_NOT_AFFECTED\"."
+        },
+        "scope": {
+          "type": "string",
+          "description": "Platform AssessmentScope enum name, e.g. \"ASSESSMENT_SCOPE_PROJECT\"."
+        }
+      },
+      "description": "Audit-critical subset of an assessment. Full record is reachable via\nAssessmentService.Get on the platform using `id`."
+    },
+    "v1PolicyAssessmentResult": {
+      "type": "object",
+      "properties": {
+        "effective_status": {
+          "type": "string",
+          "description": "Precedence-resolved status across `assessments`. Values use the\nplatform's AssessmentStatus enum names, e.g.\n\"ASSESSMENT_STATUS_NOT_AFFECTED\"."
+        },
+        "assessments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyAssessment"
+          },
+          "description": "Assessments matching the finding's identity tuple."
+        }
+      },
+      "description": "Assessment context attached to a policy finding by the policy engine via\nthe chainloop.effective_assessments builtin. Sent to CAS as part of the\nPolicyEvaluationBundle."
+    },
+    "v1PolicyAttachment": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "policy reference, it might be in URI format."
+        },
+        "embedded": {
+          "$ref": "#/definitions/v1Policy",
+          "title": "meant to be used to embed the policy in the contract"
+        },
+        "selector": {
+          "$ref": "#/definitions/PolicyAttachmentMaterialSelector",
+          "title": "rules to select a material or materials to be validated by the policy.\nIf none provided, the whole statement will be injected to the policy"
+        },
+        "disabled": {
+          "type": "boolean",
+          "title": "set to true to disable this rule"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "optional arguments for policies. Multivalued arguments can be set through multiline strings or comma separated values. It will be\nparsed and passed as an array value to the policy engine.\nwith:\n  user: john\n  users: john, sarah\n  licenses: |\n    AGPL-1.0\n    AGPL-3.0"
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "List of requirements this policy contributes to satisfy"
+        },
+        "gate": {
+          "type": "boolean",
+          "title": "Controls whether policy violations act as a gate.\n- true: policy violations are blocking for this policy\n- false: policy violations are non-blocking for this policy\n- unset: inherit organization-level default behavior"
+        }
+      },
+      "title": "A policy to be applied to this contract"
+    },
+    "v1PolicyEvaluationViolation": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "vulnerability": {
+          "$ref": "#/definitions/v1PolicyVulnerabilityFinding"
+        },
+        "sast": {
+          "$ref": "#/definitions/v1PolicySASTFinding"
+        },
+        "license_violation": {
+          "$ref": "#/definitions/v1PolicyLicenseViolationFinding"
+        },
+        "suppress": {
+          "type": "boolean",
+          "description": "Suppression hint set by the policy. When true the gate count\nexcludes this entry, but it is still stored in CAS and ingested\n(audit trail preserved). Set by the policy author (typically based\non `assessment.effective_status`) — the engine reads the bool\nwithout interpreting why."
+        }
+      }
+    },
+    "v1PolicyEvaluations": {
+      "type": "object",
+      "properties": {
+        "evaluations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/controlplanev1PolicyEvaluation"
+          }
+        }
+      }
+    },
+    "v1PolicyEvaluationsRef": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "title": "Digest of the bundle as stored in CAS, in \"sha256:\u003chex\u003e\" form"
+        },
+        "size_bytes": {
+          "type": "string",
+          "format": "int64",
+          "description": "Size of the bundle in bytes. Zero when the size could not be determined."
+        },
+        "media_type": {
+          "type": "string",
+          "title": "Media type of the bundle, i.e application/vnd.chainloop.policy-evaluations.v1+json"
+        },
+        "reason": {
+          "$ref": "#/definitions/PolicyEvaluationsRefReason",
+          "description": "Why the evaluations were not inlined. REASON_UNSPECIFIED when they were."
+        },
+        "inlined": {
+          "type": "boolean",
+          "description": "True when policy_evaluations carries the evaluations decoded from this\nbundle, i.e the reference is informational rather than a fallback."
+        }
+      },
+      "description": "Pointer to a policy-evaluation bundle held in a CAS backend. It is the\ncanonical location of the evaluations, returned both alongside them and, when\nthey could not be inlined, in their place."
+    },
+    "v1PolicyGatesFilter": {
+      "type": "string",
+      "enum": [
+        "POLICY_GATES_FILTER_UNSPECIFIED",
+        "POLICY_GATES_FILTER_WITH_GATES",
+        "POLICY_GATES_FILTER_WITHOUT_GATES"
+      ],
+      "default": "POLICY_GATES_FILTER_UNSPECIFIED",
+      "description": "Server-side filter aligned with PolicyStatusSummary.has_gates."
+    },
+    "v1PolicyGroup": {
+      "type": "object",
+      "properties": {
+        "api_version": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1Metadata"
+        },
+        "spec": {
+          "$ref": "#/definitions/PolicyGroupPolicyGroupSpec"
+        }
+      },
+      "title": "Represents a group or policies"
+    },
+    "v1PolicyGroupAttachment": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string",
+          "title": "Group reference, it might be an URL or a provider reference"
+        },
+        "with": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "group arguments"
+        },
+        "skip": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "policy names to skip (matched against metadata.name)"
+        },
+        "gate": {
+          "type": "boolean",
+          "title": "Controls whether policy violations act as a gate for this group.\n- true: policy violations are blocking for this policy group\n- false: policy violations are non-blocking for this policy group\n- unset: inherit organization-level default behavior"
+        }
+      },
+      "title": "Represents a group attachment in a contract"
+    },
+    "v1PolicyGroupMaterial": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/MaterialMaterialType"
+        },
+        "name": {
+          "type": "string",
+          "title": "Free form name, as we support placeholders eg `{{ inputs.input_name }}`\nIf no name is provided, material won't be enforced and will apply policies if `type` matches"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "match_mode": {
+          "$ref": "#/definitions/MaterialSelectorMatchMode",
+          "description": "How `name` is matched against a material's name. Defaults to exact match\n(UNSPECIFIED behaves as EXACT); PREFIX targets a set of materials sharing\na name prefix, mirroring PolicyAttachment.MaterialSelector."
+        },
+        "policies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyAttachment"
+          },
+          "title": "Policies to be applied to this material"
+        }
+      },
+      "title": "Policy group materials"
+    },
+    "v1PolicyInput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "default": {
+          "type": "string"
+        }
+      }
+    },
+    "v1PolicyLicenseViolationFinding": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "title": "Human-readable violation description"
+        },
+        "component_name": {
+          "type": "string",
+          "title": "Component name (e.g., \"lodash\")"
+        },
+        "package_purl": {
+          "type": "string",
+          "title": "Package URL (e.g., pkg:npm/lodash@4.17.21)"
+        },
+        "license_id": {
+          "type": "string",
+          "title": "License identifier (e.g., \"GPL-3.0\", \"AGPL-3.0\")"
+        },
+        "license_name": {
+          "type": "string",
+          "title": "Human-readable license name"
+        },
+        "component_version": {
+          "type": "string",
+          "title": "Component version"
+        },
+        "recommendation": {
+          "type": "string",
+          "title": "Suggested fix"
+        },
+        "assessment": {
+          "$ref": "#/definitions/v1PolicyAssessmentResult",
+          "description": "Optional assessment context. See PolicyAssessmentResult."
+        }
+      },
+      "description": "Output schema for license violation findings from policy evaluation.\nUsed when a policy declares finding_type: LICENSE_VIOLATION."
+    },
+    "v1PolicyReference": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "organization": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        }
+      }
+    },
+    "v1PolicySASTFinding": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "title": "Human-readable violation description"
+        },
+        "rule_id": {
+          "type": "string",
+          "title": "Tool-specific rule identifier (e.g., java:S1234, go-sec:G101)"
+        },
+        "severity": {
+          "type": "string",
+          "title": "Severity level (CRITICAL, HIGH, MEDIUM, LOW)"
+        },
+        "location": {
+          "type": "string",
+          "title": "File path where the issue was found"
+        },
+        "line_number": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Line number in the file"
+        },
+        "code_snippet": {
+          "type": "string",
+          "title": "Code snippet showing the issue"
+        },
+        "recommendation": {
+          "type": "string",
+          "title": "Suggested fix"
+        },
+        "severity_score": {
+          "type": "number",
+          "format": "double",
+          "title": "Optional numeric severity score from the scanner (scale is tool-defined)"
+        },
+        "assessment": {
+          "$ref": "#/definitions/v1PolicyAssessmentResult",
+          "description": "Optional assessment context. See PolicyAssessmentResult."
+        }
+      },
+      "description": "Output schema for SAST findings from policy evaluation.\nUsed when a policy declares finding_type: SAST."
+    },
+    "v1PolicySpec": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "title": "path to a policy script. It might consist of a URI reference"
+        },
+        "embedded": {
+          "type": "string",
+          "title": "embedded source code (only Rego supported currently)"
+        },
+        "type": {
+          "$ref": "#/definitions/MaterialMaterialType",
+          "description": "if set, it will match any material supported by Chainloop\nexcept those not having a direct schema (STRING, ARTIFACT, EVIDENCE), since their format cannot be guessed by the crafter.\nCONTAINER, HELM_CHART are also excluded, but we might implement custom policies for them in the future."
+        },
+        "policies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicySpecV2"
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PolicyInput"
+          },
+          "title": "Describe the supported inputs"
+        },
+        "auto_match": {
+          "$ref": "#/definitions/v1AutoMatch"
+        }
+      }
+    },
+    "v1PolicySpecV2": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "title": "path to a policy script. It might consist of a URI reference\ndeprecated: use ref instead"
+        },
+        "embedded": {
+          "type": "string",
+          "title": "embedded source code (only Rego supported currently)"
+        },
+        "ref": {
+          "type": "string",
+          "title": "generic reference for file:// and http(s):// schemes"
+        },
+        "kind": {
+          "$ref": "#/definitions/MaterialMaterialType",
+          "title": "if set, it will match any material supported by Chainloop"
+        },
+        "attestation_phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1AttestationPhase"
+          },
+          "description": "Controls at which attestation phases this policy is evaluated.\nEmpty means evaluate at all phases (INIT and PUSH) for backwards compatibility.\nOnly applicable when kind is ATTESTATION."
+        }
+      }
+    },
+    "v1PolicyStatus": {
+      "type": "string",
+      "enum": [
+        "POLICY_STATUS_UNSPECIFIED",
+        "POLICY_STATUS_NOT_APPLICABLE",
+        "POLICY_STATUS_PASSED",
+        "POLICY_STATUS_SKIPPED",
+        "POLICY_STATUS_WARNING",
+        "POLICY_STATUS_BLOCKED",
+        "POLICY_STATUS_BYPASSED"
+      ],
+      "default": "POLICY_STATUS_UNSPECIFIED",
+      "description": "Canonical, server-computed categorical policy outcome for an attestation.\nCollapses the raw enforcement/bypass/violation signals on\nAttestationItem.PolicyEvaluationStatus into a single flat value so that\nlist and describe surfaces can render a consistent badge without\nre-deriving.\n\n - POLICY_STATUS_NOT_APPLICABLE: No policies were evaluated on this run\n - POLICY_STATUS_PASSED: Policies ran with no violations and no skips\n - POLICY_STATUS_SKIPPED: No violations but at least one evaluation was skipped\n - POLICY_STATUS_WARNING: Has violations but enforcement is advisory — run succeeded\n - POLICY_STATUS_BLOCKED: Has gated violations or enforced strategy with violations; not bypassed\n - POLICY_STATUS_BYPASSED: Enforcement would have blocked the run but was bypassed"
+    },
+    "v1PolicyStatusFilter": {
+      "type": "string",
+      "enum": [
+        "POLICY_STATUS_FILTER_UNSPECIFIED",
+        "POLICY_STATUS_FILTER_NOT_APPLICABLE",
+        "POLICY_STATUS_FILTER_PASSED",
+        "POLICY_STATUS_FILTER_SKIPPED",
+        "POLICY_STATUS_FILTER_WARNING",
+        "POLICY_STATUS_FILTER_BLOCKED",
+        "POLICY_STATUS_FILTER_BYPASSED"
+      ],
+      "default": "POLICY_STATUS_FILTER_UNSPECIFIED",
+      "description": "Server-side filter aligned 1:1 with PolicyStatus values."
+    },
+    "v1PolicyStatusSummary": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/v1PolicyStatus"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Total number of policy evaluations that ran for this attestation"
+        },
+        "passed": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of evaluations with no violations and not skipped"
+        },
+        "skipped": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Number of evaluations that were skipped"
+        },
+        "violated": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Total number of violations across all evaluations"
+        },
+        "has_gates": {
+          "type": "boolean",
+          "description": "Whether this run had gates in effect — any policy marked gate:true or\nthe contract using the ENFORCED blocking strategy. Independent of status:\na PASSED run can still have has_gates=true."
+        },
+        "suppressed": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Number of suppressed violations across all evaluations. Excluded\nfrom violated; kept in the CAS audit trail."
+        }
+      },
+      "description": "PolicyStatusSummary bundles the canonical PolicyStatus with per-evaluation\ncounters. It is surfaced on both WorkflowRunItem (list response) and\nAttestationItem.PolicyEvaluationStatus (describe response) and is computed\nby a single backend helper so list and describe cannot drift."
+    },
+    "v1PolicyViolation": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "suppress": {
+          "type": "boolean",
+          "description": "Whether this violation was excluded from the policy gate (still kept\nin the CAS audit trail)."
+        },
+        "vulnerability": {
+          "$ref": "#/definitions/v1PolicyVulnerabilityFinding"
+        },
+        "sast": {
+          "$ref": "#/definitions/v1PolicySASTFinding"
+        },
+        "license_violation": {
+          "$ref": "#/definitions/v1PolicyLicenseViolationFinding"
+        }
+      }
+    },
+    "v1PolicyViolationsFilter": {
+      "type": "string",
+      "enum": [
+        "POLICY_VIOLATIONS_FILTER_UNSPECIFIED",
+        "POLICY_VIOLATIONS_FILTER_WITH_VIOLATIONS",
+        "POLICY_VIOLATIONS_FILTER_WITHOUT_VIOLATIONS"
+      ],
+      "default": "POLICY_VIOLATIONS_FILTER_UNSPECIFIED",
+      "description": "Deprecated: use PolicyStatusFilter which aligns 1:1 with PolicyStatus and\nlets callers distinguish warning/blocked/bypassed from the coarse with/\nwithout-violations split."
+    },
+    "v1PolicyVulnerabilityFinding": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "title": "Human-readable violation description"
+        },
+        "external_id": {
+          "type": "string",
+          "title": "Vulnerability identifier (e.g., CVE-2024-1234, GHSA-xxxx)"
+        },
+        "package_purl": {
+          "type": "string",
+          "title": "Package URL of the affected component (e.g., pkg:golang/example.com/lib@v1.0.0)"
+        },
+        "severity": {
+          "type": "string",
+          "title": "Severity level (CRITICAL, HIGH, MEDIUM, LOW)"
+        },
+        "cvss_v3_score": {
+          "type": "number",
+          "format": "double",
+          "title": "CVSS v3 score (0.0-10.0)"
+        },
+        "cwes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "CWE references (e.g., CWE-79, CWE-89)"
+        },
+        "recommendation": {
+          "type": "string",
+          "title": "Suggested fix or upgrade path"
+        },
+        "description": {
+          "type": "string",
+          "title": "Optional longer description of the vulnerability"
+        },
+        "fixed_version": {
+          "type": "string",
+          "title": "Version that fixes the vulnerability (e.g., \"2.0.1\", \"1.3.4-patch1\")"
+        },
+        "assessment": {
+          "$ref": "#/definitions/v1PolicyAssessmentResult",
+          "description": "Optional assessment context. See PolicyAssessmentResult."
+        }
+      },
+      "description": "Output schema for vulnerability findings from policy evaluation.\nUsed when a policy declares finding_type: VULNERABILITY."
+    },
+    "v1ProjectMember": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/v1User",
+          "title": "The user who is a member of the project"
+        },
+        "group": {
+          "$ref": "#/definitions/v1Group",
+          "title": "The group who is a member of the project"
+        },
+        "role": {
+          "$ref": "#/definitions/v1ProjectMemberRole",
+          "title": "The role of the user in the project"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the project membership was created"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Timestamp when the project membership was last modified"
+        },
+        "latest_project_version_id": {
+          "type": "string",
+          "title": "The ID of latest project version this member is associated with"
+        },
+        "parent_id": {
+          "type": "string",
+          "title": "Optional parent resource ID for nested project memberships"
+        }
+      },
+      "title": "ProjectMember represents an user or group who is a member of a project"
+    },
+    "v1ProjectMemberRole": {
+      "type": "string",
+      "enum": [
+        "PROJECT_MEMBER_ROLE_UNSPECIFIED",
+        "PROJECT_MEMBER_ROLE_ADMIN",
+        "PROJECT_MEMBER_ROLE_VIEWER"
+      ],
+      "default": "PROJECT_MEMBER_ROLE_UNSPECIFIED",
+      "description": "- PROJECT_MEMBER_ROLE_UNSPECIFIED: Default role for a project member\n - PROJECT_MEMBER_ROLE_ADMIN: Admin role for a project member\n - PROJECT_MEMBER_ROLE_VIEWER: Viewer role for a project member",
+      "title": "ProjectMemberRole defines the roles a member can have in a project"
+    },
+    "v1ProjectMembershipReference": {
+      "type": "object",
+      "properties": {
+        "user_email": {
+          "type": "string",
+          "title": "The user to add to the project"
+        },
+        "group_reference": {
+          "$ref": "#/definitions/v1IdentityReference",
+          "title": "The group to add to the project"
+        }
+      },
+      "title": "ProjectMembershipReference is used to reference a user or group in the context of project membership"
+    },
+    "v1ProjectServiceAddMemberResponse": {
+      "type": "object",
+      "title": "ProjectServiceAddMemberResponse contains the result of adding a user to a project"
+    },
+    "v1ProjectServiceListMembersResponse": {
+      "type": "object",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ProjectMember"
+          },
+          "title": "The list of members in the project"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        }
+      },
+      "title": "ProjectServiceListMembersResponse contains the list of members in a project"
+    },
+    "v1ProjectServiceListPendingInvitationsResponse": {
+      "type": "object",
+      "properties": {
+        "invitations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PendingProjectInvitation"
+          },
+          "title": "List of pending invitations for the project"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        }
+      },
+      "title": "ProjectServiceListPendingInvitationsResponse contains a list of pending invitations for a project"
+    },
+    "v1ProjectServiceListResponse": {
+      "type": "object",
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/ProjectServiceListResponseProjectItem"
+          },
+          "title": "List of projects matching the request criteria"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse",
+          "title": "Pagination information for the response"
+        },
+        "can_create_project": {
+          "type": "boolean",
+          "description": "Whether the caller may create a project in this organization. It is a\nproperty of their organization role, not of any project, so it does not\nbelong on the items: an organization contributor, for instance, can be an\nadministrator of several projects and still create none. Clients offering\nto create one need this to avoid an option that always fails."
+        }
+      },
+      "title": "ProjectServiceListResponse contains a paginated list of the organization's projects"
+    },
+    "v1ProjectServiceRemoveMemberResponse": {
+      "type": "object",
+      "title": "ProjectServiceRemoveMemberResponse is returned upon successful removal of a user from a project"
+    },
+    "v1ProjectServiceUpdateMemberRoleResponse": {
+      "type": "object",
+      "title": "ProjectServiceUpdateMemberRoleResponse is returned upon successful update of a member's role in a project"
+    },
+    "v1ReferrerEdge": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Index of the lower end of the connection, always smaller than to"
+        },
+        "to": {
+          "type": "integer",
+          "format": "int64",
+          "title": "Index of the higher end of the connection"
+        }
+      },
+      "description": "A connection between two referrers, as indexes into the request",
+      "title": "ReferrerEdge"
+    },
+    "v1ReferrerItem": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "title": "Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD, ..."
+        },
+        "downloadable": {
+          "type": "boolean",
+          "title": "Downloadable indicates whether the referrer is downloadable or not from CAS"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ReferrerItem"
+          },
+          "title": "References contains the list of related referrer items"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "title": "CreatedAt is the timestamp when the referrer was created"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Metadata contains additional descriptive information about the referrer"
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Annotations are key-value pairs associated with the referrer"
+        }
+      },
+      "description": "It represents a referrer object in the system",
+      "title": "ReferrerItem"
+    },
+    "v1ReferrerRef": {
+      "type": "object",
+      "properties": {
+        "digest": {
+          "type": "string",
+          "title": "Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD_COMMIT, ..."
+        }
+      },
+      "description": "A reference to a referrer by digest and kind",
+      "title": "ReferrerRef"
+    },
+    "v1ReferrerServiceDiscoverEdgesRequest": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ReferrerRef"
+          },
+          "description": "The referrers to find connections between. A digest alone does not identify a referrer, so\nthe kind travels with it.\n\nThis is a set. A referrer may be listed more than once — a client that collected referrers\nfrom several attestations will have repeats — and is then reported at the position it first\nappeared in. At least two distinct referrers are required."
+        },
+        "project_name": {
+          "type": "string",
+          "title": "Restricts the answer to a project, the same way DiscoverPrivate does"
+        },
+        "project_version": {
+          "type": "string",
+          "title": "Only meaningful alongside project_name: version names are unique within a project"
+        }
+      },
+      "description": "Request to discover the edges between a set of referrers",
+      "title": "ReferrerServiceDiscoverEdgesRequest"
+    },
+    "v1ReferrerServiceDiscoverEdgesResponse": {
+      "type": "object",
+      "properties": {
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ReferrerEdge"
+          },
+          "title": "Each connection once, regardless of the direction it is stored in, and referred to by the\nfirst position its referrers were listed under in the request"
+        }
+      },
+      "description": "Response for the DiscoverEdges method",
+      "title": "ReferrerServiceDiscoverEdgesResponse"
+    },
+    "v1ReferrerServiceDiscoverPrivateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1ReferrerItem",
+          "title": "Result is the discovered referrer item"
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1CursorPaginationResponse",
+          "title": "Pagination information for the references list"
+        }
+      },
+      "description": "Response for the DiscoverPrivate method",
+      "title": "ReferrerServiceDiscoverPrivateResponse"
+    },
+    "v1RegisteredIntegrationItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "title": "unique, DNS-like name for the registration"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "title": "Description of the registration, used for display purposes"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "config": {
+          "type": "string",
+          "format": "byte",
+          "title": "Arbitrary configuration for the integration"
+        }
+      }
+    },
+    "v1RemotePolicyReference": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        }
+      }
+    },
+    "v1RunStatus": {
+      "type": "string",
+      "enum": [
+        "RUN_STATUS_UNSPECIFIED",
+        "RUN_STATUS_INITIALIZED",
+        "RUN_STATUS_SUCCEEDED",
+        "RUN_STATUS_FAILED",
+        "RUN_STATUS_EXPIRED",
+        "RUN_STATUS_CANCELLED"
+      ],
+      "default": "RUN_STATUS_UNSPECIFIED"
+    },
+    "v1RunnerEnvironment": {
+      "type": "object",
+      "properties": {
+        "workflow_file_path": {
+          "type": "string",
+          "title": "Workflow file path that was used during build"
+        },
+        "environment": {
+          "type": "string",
+          "title": "Runner environment name, i.e. github-hosted"
+        },
+        "authenticated": {
+          "type": "boolean",
+          "title": "Whether the runner is authenticated, i.e. via the OIDC token"
+        },
+        "type": {
+          "$ref": "#/definitions/RunnerRunnerType",
+          "title": "Runner type"
+        },
+        "url": {
+          "type": "string",
+          "title": "Runner URL"
+        }
+      },
+      "title": "The runner environment in which the attestation was crafted"
+    },
+    "v1ScopedEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type is the type of the scoped entity i.e project or org"
+        },
+        "id": {
+          "type": "string",
+          "title": "ID is the id of the scoped entity"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the scoped entity"
+        }
+      }
+    },
+    "v1SetCurrentMembershipResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1OrgMembershipItem"
+        }
+      }
+    },
+    "v1StatuszResponse": {
+      "type": "object"
+    },
+    "v1TopWorkflowsByRunsCountResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/TopWorkflowsByRunsCountResponseTotalByStatus"
+          }
+        }
+      }
+    },
+    "v1User": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "instance_admin": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1UserServiceListMembershipsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1OrgMembershipItem"
+          }
+        }
+      }
+    },
+    "v1WorkflowActivityWindow": {
+      "type": "string",
+      "enum": [
+        "WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED",
+        "WORKFLOW_ACTIVITY_WINDOW_LAST_DAY",
+        "WORKFLOW_ACTIVITY_WINDOW_LAST_7_DAYS",
+        "WORKFLOW_ACTIVITY_WINDOW_LAST_30_DAYS"
+      ],
+      "default": "WORKFLOW_ACTIVITY_WINDOW_UNSPECIFIED",
+      "description": "WorkflowActivityWindow represents the time window for the last known workflow activity."
+    },
+    "v1WorkflowContractItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "title": "deprecated: description now belongs to the version, as it's versioned since the introduction of new contracts v2"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "latest_revision": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "latest_revision_created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "workflow_names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Workflows associated with this contract"
+        },
+        "workflow_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1WorkflowRef"
+          }
+        },
+        "scoped_entity": {
+          "$ref": "#/definitions/v1ScopedEntity",
+          "title": "wether the contract is scoped to an entity in the organization"
+        }
+      }
+    },
+    "v1WorkflowContractServiceApplyResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowContractItem"
+        },
+        "unchanged": {
+          "type": "boolean",
+          "title": "Deprecated: use changed instead"
+        },
+        "changed": {
+          "type": "boolean",
+          "title": "Whether the resource was changed"
+        },
+        "status": {
+          "$ref": "#/definitions/WorkflowContractServiceApplyResponseApplyStatus",
+          "title": "Detailed outcome of the apply operation"
+        },
+        "current_revision": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Current revision of the contract after the apply.\nFor a newly created contract this is the first revision; for an\nunchanged contract it stays at the existing revision; for dry runs it\nreflects the existing revision (0 when the contract does not exist yet)."
+        }
+      }
+    },
+    "v1WorkflowContractServiceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowContractItem"
+        }
+      }
+    },
+    "v1WorkflowContractServiceDeleteResponse": {
+      "type": "object"
+    },
+    "v1WorkflowContractServiceDescribeResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowContractServiceDescribeResponseResult"
+        }
+      }
+    },
+    "v1WorkflowContractServiceDescribeResponseResult": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "$ref": "#/definitions/v1WorkflowContractItem"
+        },
+        "revision": {
+          "$ref": "#/definitions/v1WorkflowContractVersionItem"
+        }
+      }
+    },
+    "v1WorkflowContractServiceListResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1WorkflowContractItem"
+          }
+        }
+      }
+    },
+    "v1WorkflowContractServiceUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowContractServiceUpdateResponseResult"
+        }
+      }
+    },
+    "v1WorkflowContractServiceUpdateResponseResult": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "$ref": "#/definitions/v1WorkflowContractItem"
+        },
+        "revision": {
+          "$ref": "#/definitions/v1WorkflowContractVersionItem"
+        }
+      }
+    },
+    "v1WorkflowContractVersionItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "v1": {
+          "$ref": "#/definitions/v1CraftingSchema",
+          "title": "Deprecated in favor of raw_contract"
+        },
+        "raw_contract": {
+          "$ref": "#/definitions/WorkflowContractVersionItemRawBody"
+        },
+        "contract_name": {
+          "type": "string",
+          "title": "The name of the contract"
+        },
+        "description": {
+          "type": "string",
+          "title": "The contract version description"
+        }
+      }
+    },
+    "v1WorkflowItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "project_id": {
+          "type": "string"
+        },
+        "team": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "runs_count": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "last_run": {
+          "$ref": "#/definitions/v1WorkflowRunItem"
+        },
+        "contract_name": {
+          "type": "string"
+        },
+        "contract_revision_latest": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Current, latest revision of the contract"
+        },
+        "public": {
+          "type": "boolean",
+          "description": "Deprecated: public workflows were removed. This field is always false and\nis retained only for wire compatibility; it will be removed in a future release."
+        },
+        "description": {
+          "type": "string"
+        },
+        "workflow_template_id": {
+          "type": "string",
+          "description": "Optional reference to the platform workflow template this workflow was created from.\nEmpty when the workflow is not bound to any template."
+        }
+      }
+    },
+    "v1WorkflowMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "project_version": {
+          "type": "string",
+          "title": "kept for backwards compatibility with remote state storage"
+        },
+        "version": {
+          "$ref": "#/definitions/attestationv1ProjectVersion",
+          "title": "project version"
+        },
+        "team": {
+          "type": "string"
+        },
+        "workflow_id": {
+          "type": "string"
+        },
+        "workflow_run_id": {
+          "type": "string",
+          "title": "Not required since we might be doing a dry-run"
+        },
+        "schema_revision": {
+          "type": "string"
+        },
+        "contract_name": {
+          "type": "string",
+          "title": "contract name (contract version is \"schema_revision\")"
+        },
+        "organization": {
+          "type": "string",
+          "title": "organization name"
+        }
+      }
+    },
+    "v1WorkflowRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "project_name": {
+          "type": "string"
+        }
+      }
+    },
+    "v1WorkflowRunItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "state": {
+          "type": "string",
+          "title": "TODO: use runStatus enum below\ndeprecated field, use status instead"
+        },
+        "status": {
+          "$ref": "#/definitions/v1RunStatus"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "workflow": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        },
+        "job_url": {
+          "type": "string"
+        },
+        "runner_type": {
+          "$ref": "#/definitions/RunnerRunnerType",
+          "title": "string runner_type = 8;"
+        },
+        "contract_version": {
+          "$ref": "#/definitions/v1WorkflowContractVersionItem"
+        },
+        "contract_revision_used": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The revision of the contract used for this run"
+        },
+        "contract_revision_latest": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The latest revision available for this contract at the time of the run"
+        },
+        "version": {
+          "$ref": "#/definitions/controlplanev1ProjectVersion",
+          "title": "The version of the project the attestation was initiated with"
+        },
+        "has_policy_violations": {
+          "type": "boolean",
+          "description": "Whether the run has policy violations (null if no policies were evaluated)\nDeprecated: use policy_summary.violated \u003e 0, or the richer\npolicy_summary.status, which also distinguishes skipped / warning /\nblocked / bypassed outcomes."
+        },
+        "policy_summary": {
+          "$ref": "#/definitions/v1PolicyStatusSummary",
+          "description": "Canonical policy status summary for this run (null if no policies were\nevaluated). Carries both the categorical PolicyStatus and per-evaluation\ncounters so list consumers can render a badge without calling View."
+        }
+      }
+    },
+    "v1WorkflowRunServiceListResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1WorkflowRunItem"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1CursorPaginationResponse"
+        }
+      }
+    },
+    "v1WorkflowRunServiceViewResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowRunServiceViewResponseResult"
+        }
+      }
+    },
+    "v1WorkflowRunServiceViewResponseResult": {
+      "type": "object",
+      "properties": {
+        "org_name": {
+          "type": "string"
+        },
+        "workflow_run": {
+          "$ref": "#/definitions/v1WorkflowRunItem"
+        },
+        "attestation": {
+          "$ref": "#/definitions/v1AttestationItem"
+        },
+        "verification": {
+          "$ref": "#/definitions/WorkflowRunServiceViewResponseVerificationResult",
+          "title": "It will be nil if the verification is not possible (old or non-keyless attestations)"
+        }
+      }
+    },
+    "v1WorkflowServiceCreateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        }
+      }
+    },
+    "v1WorkflowServiceDeleteResponse": {
+      "type": "object"
+    },
+    "v1WorkflowServiceListResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1WorkflowItem"
+          }
+        },
+        "pagination": {
+          "$ref": "#/definitions/v1OffsetPaginationResponse"
+        }
+      }
+    },
+    "v1WorkflowServiceUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        }
+      }
+    },
+    "v1WorkflowServiceViewResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1WorkflowItem"
+        }
+      }
+    },
+    "workflowcontractv1Annotation": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Single word optionally separated with _"
+        },
+        "value": {
+          "type": "string",
+          "title": "This value can be set in the contract or provided during the attestation"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "bearerToken": {
+      "type": "apiKey",
+      "description": "Bearer token for authentication",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "bearerToken": []
+    }
+  ],
+  "externalDocs": {
+    "description": "Chainloop Official Documentation",
+    "url": "https://docs.chainloop.dev"
+  }
+}

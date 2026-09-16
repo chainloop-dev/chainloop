@@ -5,7 +5,7 @@
   "description": "ReferrerServiceDiscoverEdgesResponse is the response for the DiscoverEdges method",
   "properties": {
     "edges": {
-      "description": "Each connection once, regardless of the direction it is stored in",
+      "description": "Each connection once, regardless of the direction it is stored in, and referred to by the\n first position its referrers were listed under in the request",
       "items": {
         "$ref": "controlplane.v1.ReferrerEdge.schema.json"
       },
