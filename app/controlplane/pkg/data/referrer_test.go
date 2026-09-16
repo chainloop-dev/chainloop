@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -169,4 +170,32 @@ func TestProjectVisibilityPredicateSkipsOrgsWithoutGrants(t *testing.T) {
 	assert.Contains(t, args, orgFull.String(), "the unrestricted org is matched")
 	assert.Contains(t, args, orgGranted.String(), "the org holding a grant is matched")
 	assert.NotContains(t, args, orgEmpty.String(), "an org with no grant is never named: %s", query)
+}
+
+// TestReferrerVisibleToOrgs pins the shape of the visibility filter. Ent's generated
+// HasWorkflowsWith emits an uncorrelated `id IN (subquery)`, which makes the planner materialise
+// every referrer in the caller's organizations before joining; correlating the subquery to the
+// referrer row keeps it a lookup per candidate.
+func TestReferrerVisibleToOrgs(t *testing.T) {
+	orgs := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
+
+	sel := sql.Dialect(dialect.Postgres).Select("id").From(sql.Table(referrer.Table))
+	referrerVisibleToOrgs(orgs)(sel)
+	query, args := sel.Query()
+
+	assert.Contains(t, query, "EXISTS", "the filter must be an EXISTS, not an IN over a materialised set: %s", query)
+	assert.NotContains(t, query, `"referrers"."id" IN (SELECT`,
+		"an uncorrelated IN is the shape this guards against: %s", query)
+	// Correlated to the outer referrer row.
+	assert.Contains(t, query, `"visible_rw"."referrer_id" = "referrers"."id"`,
+		"the subquery must be correlated to the referrer being filtered: %s", query)
+	// The organization is matched on the workflow's own column, not through a nested relation,
+	// which the planner would flatten back into the uncorrelated form.
+	assert.Contains(t, query, `"visible_wf"."organization_id" IN (`,
+		"organizations must be matched directly on the workflow column: %s", query)
+	assert.Contains(t, query, `"visible_wf"."deleted_at" IS NULL`, "deleted workflows never grant visibility")
+	// This predicate binds the UUIDs directly rather than as strings.
+	for _, o := range orgs {
+		assert.Contains(t, args, any(o), "every allowed organization is bound into the filter")
+	}
 }

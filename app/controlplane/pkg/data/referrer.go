@@ -23,7 +23,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
@@ -162,13 +161,8 @@ func (r *ReferrerRepo) GetFromRoot(ctx context.Context, digest string, orgIDs []
 		predicateReferrer = append(predicateReferrer, referrer.Kind(*opts.RootKind))
 	}
 
-	// Prepare the workflow query predicate
-	predicateWF := []predicate.Workflow{
-		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(orgIDs...)),
-	}
-
-	// Attach the workflow predicate
-	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
+	// Attach the visibility predicate
+	predicateReferrer = append(predicateReferrer, referrerVisibleToOrgs(orgIDs))
 
 	// If a project filter is requested, attach it as a subquery predicate. An attestation root
 	// matches only when its digest is one of the attestation_digests produced by a workflow run
@@ -259,6 +253,38 @@ func (r *ReferrerRepo) projectScopePredicate(projectName, version string, orgIDs
 			p(sub)
 		}
 		s.Where(sql.In(s.C(referrer.FieldDigest), sub))
+	}
+}
+
+// referrerVisibleToOrgs matches a referrer that is attached to at least one live workflow in the
+// given organizations.
+//
+// It is written by hand rather than with referrer.HasWorkflowsWith because the generated form
+// emits an uncorrelated `id IN (subquery)`: the planner materialises every referrer reachable by
+// the caller's organizations and joins afterwards, which on a hub node means scanning the whole
+// join table. Correlating the subquery to the referrer row turns it into a lookup per candidate.
+// The organization is matched on the workflow's own column for the same reason the project filter
+// does: a nested relation predicate here is flattened back into the uncorrelated shape.
+func referrerVisibleToOrgs(orgIDs []uuid.UUID) predicate.Referrer {
+	orgs := make([]any, 0, len(orgIDs))
+	for _, id := range orgIDs {
+		orgs = append(orgs, id)
+	}
+
+	return func(s *sql.Selector) {
+		joinTable := sql.Table(referrer.WorkflowsTable).As("visible_rw")
+		workflows := sql.Table(referrer.WorkflowsInverseTable).As("visible_wf")
+		sub := sql.Dialect(s.Dialect()).
+			Select(joinTable.C(referrer.WorkflowsPrimaryKey[0])).
+			From(joinTable).
+			Join(workflows).
+			On(joinTable.C(referrer.WorkflowsPrimaryKey[1]), workflows.C(workflow.FieldID)).
+			Where(sql.And(
+				sql.ColumnsEQ(joinTable.C(referrer.WorkflowsPrimaryKey[0]), s.C(referrer.FieldID)),
+				sql.IsNull(workflows.C(workflow.FieldDeletedAt)),
+				sql.In(workflows.C(workflow.FieldOrganizationID), orgs...),
+			))
+		s.Where(sql.Exists(sub))
 	}
 }
 
@@ -384,12 +410,8 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// and by the visibility if needed
 	predicateReferrer := []predicate.Referrer{}
 
-	predicateWF := []predicate.Workflow{
-		workflow.DeletedAtIsNil(), workflow.HasOrganizationWith(organization.IDIn(allowedOrgs...)),
-	}
-
-	// Attach the workflow predicate
-	predicateReferrer = append(predicateReferrer, referrer.HasWorkflowsWith(predicateWF...))
+	// Attach the visibility predicate
+	predicateReferrer = append(predicateReferrer, referrerVisibleToOrgs(allowedOrgs))
 
 	// When scoping to a project, attestation references must belong to that project (optionally
 	// narrowed to a version). Non-attestation references (materials/subjects) are kept as-is:
@@ -411,6 +433,9 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 
 	// Sort references by creation date and ID in descending order for deterministic pagination
 	q := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().
+		// referrer_references is keyed on (referrer_id, referred_by_id), so a reference cannot
+		// repeat and the DISTINCT Ent adds by default only buys a sort over the jsonb columns.
+		Unique(false).
 		Order(referrer.ByCreatedAt(sql.OrderDesc())).
 		Order(referrer.ByID(sql.OrderDesc())).
 		Limit(p.Limit + 1) // fetch limit+1 to detect next page
@@ -460,7 +485,7 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 			Where(
 				referrer.KindEQ(biz.ReferrerAttestationType),
 				projectPred,
-				referrer.HasWorkflowsWith(predicateWF...),
+				referrerVisibleToOrgs(allowedOrgs),
 			).
 			Exist(ctx)
 		if err != nil {
