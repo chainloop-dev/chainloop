@@ -121,7 +121,6 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 		grpc.UnaryInterceptor(
 			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
 		),
-		grpc.Options(grpcLib.StatsHandler(otelgrpc.NewServerHandler())),
 	}
 
 	if v := opts.ServerConfig.Grpc.Network; v != "" {
@@ -148,9 +147,14 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 		}
 	}
 
+	// Raw grpc-go server options must be passed in a single grpc.Options call:
+	// kratos' grpc.Options assigns s.grpcOpts instead of appending, so a second
+	// call (e.g. for MaxRecvMsgSize) would silently wipe the OTel stats handler.
+	grpcOpts := []grpcLib.ServerOption{grpcLib.StatsHandler(otelgrpc.NewServerHandler())}
 	if v := opts.ServerConfig.Grpc.GetMaxRecvMsgSize(); v > 0 {
-		serverOpts = append(serverOpts, grpc.Options(grpcLib.MaxRecvMsgSize(int(v))))
+		grpcOpts = append(grpcOpts, grpcLib.MaxRecvMsgSize(int(v)))
 	}
+	serverOpts = append(serverOpts, grpc.Options(grpcOpts...))
 
 	srv := grpc.NewServer(serverOpts...)
 	v1.RegisterWorkflowServiceServer(srv, opts.WorkflowSvc)
