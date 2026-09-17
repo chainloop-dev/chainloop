@@ -369,6 +369,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		BootstrapConfig:     bootstrap,
 		Credentials:         readerWriter,
 		Validator:           validator,
+		TracerProvider:      tracerProvider,
 	}
 	grpcServer, err := server.NewGRPCServer(opts)
 	if err != nil {

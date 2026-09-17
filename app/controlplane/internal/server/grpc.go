@@ -49,6 +49,7 @@ import (
 	protovalidateMiddleware "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/protovalidate"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/trace"
 	grpcLib "google.golang.org/grpc"
 )
 
@@ -98,6 +99,7 @@ type Opts struct {
 	BootstrapConfig     *conf.Bootstrap
 	Credentials         credentials.ReaderWriter
 	Validator           protovalidate.Validator
+	TracerProvider      trace.TracerProvider
 }
 
 var (
@@ -108,6 +110,26 @@ var (
 	robotAccountRequireRegexp              = regexp.MustCompile("controlplane.v1.AttestationService/.*|controlplane.v1.AttestationStateService/.*|controlplane.v1.SigningService/GenerateSigningCert")
 	allButOrganizationOperationsSkipRegexp = regexp.MustCompile("/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount")
 )
+
+// rawGRPCServerOptions returns the plain gRPC server options that Kratos forwards
+// to the underlying grpc-go server.
+//
+// They MUST all be passed in a single grpc.Options call: that Kratos option
+// assigns the slice rather than appending to it, so a second call silently drops
+// whatever the first one installed.
+func rawGRPCServerOptions(c *conf.Server_GRPC, tp trace.TracerProvider) []grpcLib.ServerOption {
+	// The stats handler is what opens the transport-level server span for gRPC,
+	// and for grpc-web too, since grpcweb re-dispatches through grpc.Server.ServeHTTP.
+	options := []grpcLib.ServerOption{
+		grpcLib.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithTracerProvider(tp))),
+	}
+
+	if v := c.GetMaxRecvMsgSize(); v > 0 {
+		options = append(options, grpcLib.MaxRecvMsgSize(int(v)))
+	}
+
+	return options
+}
 
 // NewGRPCServer new a gRPC server.
 func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
@@ -121,7 +143,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 		grpc.UnaryInterceptor(
 			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
 		),
-		grpc.Options(grpcLib.StatsHandler(otelgrpc.NewServerHandler())),
+		grpc.Options(rawGRPCServerOptions(opts.ServerConfig.GetGrpc(), opts.TracerProvider)...),
 	}
 
 	if v := opts.ServerConfig.Grpc.Network; v != "" {
@@ -146,10 +168,6 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 				MinVersion:   tls.VersionTLS12, // gosec complains about insecure minimum version we use default value
 			}))
 		}
-	}
-
-	if v := opts.ServerConfig.Grpc.GetMaxRecvMsgSize(); v > 0 {
-		serverOpts = append(serverOpts, grpc.Options(grpcLib.MaxRecvMsgSize(int(v))))
 	}
 
 	srv := grpc.NewServer(serverOpts...)

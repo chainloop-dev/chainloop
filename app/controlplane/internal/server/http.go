@@ -27,7 +27,9 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -40,12 +42,8 @@ import (
 
 // NewHTTPServer new an HTTP server.
 func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
-	middlewares := craftMiddleware(opts)
-	// important, the validation middleware should be the last one
-	middlewares = append(middlewares, protoValidateHTTPMiddleware(opts.Validator))
-
 	var serverOpts = []http.ServerOption{
-		http.Middleware(middlewares...),
+		http.Middleware(httpServerMiddlewares(opts)...),
 	}
 	// Prevent unmatched routes from falling through to http.DefaultServeMux,
 	// which would otherwise expose net/http/pprof's /debug/pprof/* endpoints
@@ -105,6 +103,32 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	})
 
 	return wrappedServer, nil
+}
+
+// httpServerMiddlewares returns the middleware chain for the HTTP transport.
+func httpServerMiddlewares(opts *Opts) []middleware.Middleware {
+	appMiddlewares := craftMiddleware(opts)
+
+	middlewares := make([]middleware.Middleware, 0, len(appMiddlewares)+2)
+	// The tracing middleware must come first so the transport-level server span is
+	// the root of the trace instead of whichever application middleware runs first.
+	middlewares = append(middlewares, serverTracingMiddleware(opts.TracerProvider))
+	middlewares = append(middlewares, appMiddlewares...)
+	// important, the validation middleware should be the last one
+	middlewares = append(middlewares, protoValidateHTTPMiddleware(opts.Validator))
+
+	return middlewares
+}
+
+// serverTracingMiddleware opens the transport-level server span for HTTP requests
+// and extracts any incoming trace context so the request joins the caller's trace.
+//
+// It is deliberately scoped to the HTTP transport: gRPC (and grpc-web, which
+// re-dispatches through grpc.Server.ServeHTTP) gets its server span from the
+// otelgrpc stats handler installed in NewGRPCServer, so adding this to the shared
+// middleware chain would produce a duplicate span per gRPC request.
+func serverTracingMiddleware(tp trace.TracerProvider) middleware.Middleware {
+	return tracing.Server(tracing.WithTracerProvider(tp))
 }
 
 // Custom kraos middleware based on the protovalidate middleware
