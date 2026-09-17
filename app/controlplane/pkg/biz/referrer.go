@@ -69,22 +69,6 @@ type ReferrerRepo interface {
 	// Exist Checks if a given referrer by digest exist.
 	// The query can be scoped further down if needed by providing the kind or visibility status
 	Exist(ctx context.Context, digest string, filters ...GetFromRootFilter) (bool, error)
-	// EdgesAmong returns the connections between the given referrers, as index pairs into nodes.
-	// Referrers the caller cannot see contribute no edges. Each connection is reported once even
-	// though the store holds both of its directions.
-	EdgesAmong(ctx context.Context, nodes []*ReferrerRef, orgIDs []uuid.UUID, filters ...GetFromRootFilter) ([]ReferrerEdge, error)
-}
-
-// ReferrerRef identifies a referrer. A digest alone is not enough: the same digest can be stored
-// under more than one kind.
-type ReferrerRef struct {
-	Digest, Kind string
-}
-
-// ReferrerEdge is a connection between two referrers, given as indexes into the slice the caller
-// asked about. From is always the smaller index.
-type ReferrerEdge struct {
-	From, To int
 }
 
 type Referrer struct {
@@ -224,59 +208,6 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 	}
 
 	return ref, nextCursor, nil
-}
-
-// EdgesAmongUser returns the connections between the given referrers that the user is allowed to
-// see. It is the companion of GetFromRootUser: a caller that has already collected a set of
-// referrers uses it to learn how they connect, instead of asking about each one separately.
-func (s *ReferrerUseCase) EdgesAmongUser(ctx context.Context, nodes []*ReferrerRef, userID string, extraFilters ...GetFromRootFilter) ([]ReferrerEdge, error) {
-	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.EdgesAmongUser")
-	defer span.End()
-
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return nil, NewErrInvalidUUID(err)
-	}
-
-	userOrgs, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.EdgesAmong(ctx, nodes, userOrgs, scopes.ProjectIDsByOrg(), extraFilters...)
-}
-
-// EdgesAmong returns the connections between the given referrers visible in the given orgs.
-func (s *ReferrerUseCase) EdgesAmong(ctx context.Context, nodes []*ReferrerRef, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, extraFilters ...GetFromRootFilter) ([]ReferrerEdge, error) {
-	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.EdgesAmong")
-	defer span.End()
-
-	// nodes is a set. Naming the same referrer twice is accepted — a client that collected
-	// referrers from more than one attestation will have repeats — but fewer than two distinct
-	// ones describes no connection, and is a mistake rather than a question.
-	distinct := make(map[ReferrerRef]struct{}, len(nodes))
-	for _, n := range nodes {
-		if n == nil {
-			return nil, NewErrValidationStr("a referrer is missing")
-		}
-		distinct[*n] = struct{}{}
-	}
-	if len(distinct) < 2 {
-		return nil, NewErrValidationStr("at least two distinct referrers are required")
-	}
-
-	filters := make([]GetFromRootFilter, 0, len(extraFilters)+1)
-	if projectIDs != nil {
-		filters = append(filters, WithVisibleProjectIDs(projectIDs))
-	}
-	filters = append(filters, extraFilters...)
-
-	edges, err := s.repo.EdgesAmong(ctx, nodes, orgIDs, filters...)
-	if err != nil {
-		return nil, fmt.Errorf("getting edges: %w", err)
-	}
-
-	return edges, nil
 }
 
 const (

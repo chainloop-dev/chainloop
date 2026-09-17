@@ -35,7 +35,6 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	ReferrerService_DiscoverPrivate_FullMethodName = "/controlplane.v1.ReferrerService/DiscoverPrivate"
-	ReferrerService_DiscoverEdges_FullMethodName   = "/controlplane.v1.ReferrerService/DiscoverEdges"
 )
 
 // ReferrerServiceClient is the client API for ReferrerService service.
@@ -44,8 +43,6 @@ const (
 type ReferrerServiceClient interface {
 	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(ctx context.Context, in *ReferrerServiceDiscoverPrivateRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverPrivateResponse, error)
-	// DiscoverEdges returns the connections between a set of referrers the caller already holds
-	DiscoverEdges(ctx context.Context, in *ReferrerServiceDiscoverEdgesRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverEdgesResponse, error)
 }
 
 type referrerServiceClient struct {
@@ -65,23 +62,12 @@ func (c *referrerServiceClient) DiscoverPrivate(ctx context.Context, in *Referre
 	return out, nil
 }
 
-func (c *referrerServiceClient) DiscoverEdges(ctx context.Context, in *ReferrerServiceDiscoverEdgesRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverEdgesResponse, error) {
-	out := new(ReferrerServiceDiscoverEdgesResponse)
-	err := c.cc.Invoke(ctx, ReferrerService_DiscoverEdges_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ReferrerServiceServer is the server API for ReferrerService service.
 // All implementations must embed UnimplementedReferrerServiceServer
 // for forward compatibility
 type ReferrerServiceServer interface {
 	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
 	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
-	// DiscoverEdges returns the connections between a set of referrers the caller already holds
-	DiscoverEdges(context.Context, *ReferrerServiceDiscoverEdgesRequest) (*ReferrerServiceDiscoverEdgesResponse, error)
 	mustEmbedUnimplementedReferrerServiceServer()
 }
 
@@ -91,9 +77,6 @@ type UnimplementedReferrerServiceServer struct {
 
 func (UnimplementedReferrerServiceServer) DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiscoverPrivate not implemented")
-}
-func (UnimplementedReferrerServiceServer) DiscoverEdges(context.Context, *ReferrerServiceDiscoverEdgesRequest) (*ReferrerServiceDiscoverEdgesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DiscoverEdges not implemented")
 }
 func (UnimplementedReferrerServiceServer) mustEmbedUnimplementedReferrerServiceServer() {}
 
@@ -126,24 +109,6 @@ func _ReferrerService_DiscoverPrivate_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ReferrerService_DiscoverEdges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReferrerServiceDiscoverEdgesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ReferrerServiceServer).DiscoverEdges(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ReferrerService_DiscoverEdges_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ReferrerServiceServer).DiscoverEdges(ctx, req.(*ReferrerServiceDiscoverEdgesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ReferrerService_ServiceDesc is the grpc.ServiceDesc for ReferrerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -154,10 +119,6 @@ var ReferrerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiscoverPrivate",
 			Handler:    _ReferrerService_DiscoverPrivate_Handler,
-		},
-		{
-			MethodName: "DiscoverEdges",
-			Handler:    _ReferrerService_DiscoverEdges_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

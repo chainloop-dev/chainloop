@@ -35,97 +35,9 @@ service ReferrerService {
       produces: ["application/json"]
     };
   }
-  // DiscoverEdges returns the connections between a set of referrers the caller already holds
-  rpc DiscoverEdges(ReferrerServiceDiscoverEdgesRequest) returns (ReferrerServiceDiscoverEdgesResponse) {
-    option (google.api.http) = {
-      post: "/discover/edges"
-      body: "*"
-    };
-    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary: "Discover the edges between known referrers"
-      description: "Returns every connection between the given referrers that is visible to the logged-in user, as pairs of indexes into the request. Referrers the user cannot see contribute no edges."
-      produces: ["application/json"]
-    };
-  }
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
     name: "ReferrerService"
     description: "Referrer service for discovering referred content by digest"
-  };
-}
-
-// ReferrerServiceDiscoverEdgesRequest is the request for the DiscoverEdges method
-message ReferrerServiceDiscoverEdgesRequest {
-  // The referrers to find connections between. A digest alone does not identify a referrer, so
-  // the kind travels with it.
-  //
-  // This is a set. A referrer may be listed more than once — a client that collected referrers
-  // from several attestations will have repeats — and is then reported at the position it first
-  // appeared in. At least two distinct referrers are required.
-  repeated ReferrerRef nodes = 1 [(buf.validate.field).repeated = {
-    min_items: 2
-    max_items: 1000
-  }];
-  // Restricts the answer to a project, the same way DiscoverPrivate does
-  string project_name = 2;
-  // Only meaningful alongside project_name: version names are unique within a project
-  string project_version = 3;
-
-  option (buf.validate.message).cel = {
-    id: "discover_edges_project_version_requires_project_name"
-    expression: "!(this.project_version != '' && this.project_name == '')"
-    message: "project_name must be set when project_version is set"
-  };
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "ReferrerServiceDiscoverEdgesRequest"
-      description: "Request to discover the edges between a set of referrers"
-    }
-  };
-}
-
-// ReferrerServiceDiscoverEdgesResponse is the response for the DiscoverEdges method
-message ReferrerServiceDiscoverEdgesResponse {
-  // Each connection once, regardless of the direction it is stored in, and referred to by the
-  // first position its referrers were listed under in the request
-  repeated ReferrerEdge edges = 1;
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "ReferrerServiceDiscoverEdgesResponse"
-      description: "Response for the DiscoverEdges method"
-    }
-  };
-}
-
-// ReferrerRef identifies a referrer
-message ReferrerRef {
-  // Digest of the referrer, i.e sha256:deadbeef or sha1:beefdead
-  string digest = 1 [(buf.validate.field).string = {min_len: 1}];
-  // Kind of referrer, i.e CONTAINER_IMAGE, GIT_HEAD_COMMIT, ...
-  string kind = 2 [(buf.validate.field).string = {min_len: 1}];
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "ReferrerRef"
-      description: "A reference to a referrer by digest and kind"
-    }
-  };
-}
-
-// ReferrerEdge is a connection between two of the requested referrers, given as indexes into the
-// request's nodes so the digests do not travel back
-message ReferrerEdge {
-  // Index of the lower end of the connection, always smaller than to
-  uint32 from = 1;
-  // Index of the higher end of the connection
-  uint32 to = 2;
-
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "ReferrerEdge"
-      description: "A connection between two referrers, as indexes into the request"
-    }
   };
 }
 
