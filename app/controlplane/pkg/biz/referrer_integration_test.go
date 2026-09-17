@@ -653,3 +653,37 @@ func (s *referrerIntegrationTestSuite) SetupTest() {
 func TestReferrerIntegration(t *testing.T) {
 	suite.Run(t, new(referrerIntegrationTestSuite))
 }
+
+// Project visibility is not an optional filter: a member restricted to a subset of an
+// organization's projects must not reach a referrer outside them, and a grant naming one
+// organization must not reach a project living in another.
+func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVisibility() {
+	ctx := context.Background()
+	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	attDigest, _, err := v1.SHA256(bytes.NewReader(envBytes))
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow1.ID.String()))
+	digest := attDigest.String()
+
+	s.Run("a caller granted the project reaches it", func() {
+		granted := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow1.ProjectID}}
+		got, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org1UUID}, granted, nil)
+		s.NoError(err)
+		s.Equal(digest, got.Digest)
+	})
+
+	s.Run("a caller restricted to no project in the organization does not", func() {
+		noProjects := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {}}
+		_, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org1UUID}, noProjects, nil)
+		s.Error(err)
+	})
+
+	s.Run("a grant recorded against another organization does not", func() {
+		crossOrg := map[biz.OrgID][]biz.ProjectID{
+			s.org1UUID: {},                      // restricted here, nothing granted
+			s.org2UUID: {s.workflow1.ProjectID}, // granted here, but the project lives in org1
+		}
+		_, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org1UUID, s.org2UUID}, crossOrg, nil)
+		s.Error(err)
+	})
+}
