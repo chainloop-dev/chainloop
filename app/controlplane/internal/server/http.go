@@ -27,7 +27,9 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -40,12 +42,8 @@ import (
 
 // NewHTTPServer new an HTTP server.
 func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
-	middlewares := craftMiddleware(opts)
-	// important, the validation middleware should be the last one
-	middlewares = append(middlewares, protoValidateHTTPMiddleware(opts.Validator))
-
 	var serverOpts = []http.ServerOption{
-		http.Middleware(middlewares...),
+		http.Middleware(httpMiddlewares(opts)...),
 	}
 	// Prevent unmatched routes from falling through to http.DefaultServeMux,
 	// which would otherwise expose net/http/pprof's /debug/pprof/* endpoints
@@ -66,18 +64,22 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	httpSrv := http.NewServer(serverOpts...)
 	// Relax secure cookie settings in development mode
 	opts.AuthSvc.SetDevMode(Version == "dev")
-	// NOTE: these non-grpc transcoded methods DO NOT RUN the middlewares
-	httpSrv.Handle(service.AuthLoginPath, middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterLoginHandler()))
-	httpSrv.Handle(service.AuthCallbackPath, middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterCallbackHandler()))
+	// NOTE: these non-grpc transcoded methods DO NOT RUN the middlewares, so
+	// they are wrapped with otelhttp individually to still produce server spans.
+	httpSrv.Handle(service.AuthLoginPath,
+		otelhttp.NewHandler(middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterLoginHandler()), "HTTP "+service.AuthLoginPath))
+	httpSrv.Handle(service.AuthCallbackPath,
+		otelhttp.NewHandler(middlewares_http.Logging(opts.Logger, opts.AuthSvc.RegisterCallbackHandler()), "HTTP "+service.AuthCallbackPath))
 	httpSrv.Handle(service.PrometheusMetricsPath,
-		middlewares_http.Logging(opts.Logger,
-			middlewares_http.AuthFromAuthorizationHeader(
-				loadJWTKeyFunc(opts.AuthConfig.GetGeneratedJwsHmacSecret()),
-				apiTokenCustomClaims(),
-				apitoken.SigningMethod,
-				opts.PrometheusSvc,
-			),
-		))
+		otelhttp.NewHandler(
+			middlewares_http.Logging(opts.Logger,
+				middlewares_http.AuthFromAuthorizationHeader(
+					loadJWTKeyFunc(opts.AuthConfig.GetGeneratedJwsHmacSecret()),
+					apiTokenCustomClaims(),
+					apitoken.SigningMethod,
+					opts.PrometheusSvc,
+				),
+			), "HTTP "+service.PrometheusMetricsPath))
 	statusSvc := service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase, opts.BootstrapConfig)
 	v1.RegisterStatusServiceHTTPServer(httpSrv, statusSvc)
 	v1.RegisterReferrerServiceHTTPServer(httpSrv, service.NewReferrerService(opts.ReferrerUseCase))
@@ -105,6 +107,21 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	})
 
 	return wrappedServer, nil
+}
+
+// httpMiddlewares returns the middleware chain for the HTTP server.
+// Transport-level tracing comes first: the gRPC server is instrumented via the
+// otelgrpc stats handler, but transcoded HTTP requests get no server span
+// otherwise, and tracing must be the outermost middleware so every other span
+// (middlewares, biz, data) nests under it. Note that the handlers registered
+// via httpSrv.Handle (auth login/callback, metrics) bypass this chain too, so
+// they are wrapped with otelhttp individually instead. /openapi.yaml and
+// /download/{digest} are kratos Context handlers that bypass the chain and
+// remain untraced (low-value static/redirect endpoints).
+func httpMiddlewares(opts *Opts) []middleware.Middleware {
+	middlewares := append([]middleware.Middleware{tracing.Server()}, craftMiddleware(opts)...)
+	// important, the validation middleware should be the last one
+	return append(middlewares, protoValidateHTTPMiddleware(opts.Validator))
 }
 
 // Custom kraos middleware based on the protovalidate middleware
