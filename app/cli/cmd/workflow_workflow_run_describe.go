@@ -368,9 +368,9 @@ func downloadPolicyEvaluationsHint(ref *action.PolicyEvaluationsRef) string {
 }
 
 // violationSummary builds a single-line description of a violation using the
-// structured finding when present (CVE id + severity + package + fix info,
-// or SAST rule + location, or license + component). Falls back to the first
-// line of Message — vuln policies emit a multi-line markdown report there
+// structured finding when present (CVE id + severity + package + location +
+// fix info, or SAST rule + location, or license + component). Falls back to
+// the first line of Message — vuln policies emit a multi-line markdown report there
 // which would otherwise break the row layout. The resolved assessment
 // status, if any, is appended inside the same severity-parens regardless
 // of suppression so AFFECTED / UNDER_INVESTIGATION / etc. surface on
@@ -390,6 +390,11 @@ func violationSummary(v *action.PolicyViolation) string {
 		}
 		if pkg := prettyPurl(f.GetPackagePurl()); pkg != "" {
 			head += " " + pkg
+		}
+		// Only set when the policy reports per-copy findings; it is what tells
+		// two findings for the same package in the same artifact apart.
+		if loc := f.GetLocation(); loc != "" {
+			head += " at " + loc
 		}
 		if fix := f.GetFixedVersion(); fix != "" {
 			head += " [fix: " + fix + "]"

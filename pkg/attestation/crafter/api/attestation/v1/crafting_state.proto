@@ -355,6 +355,11 @@ message PolicyVulnerabilityFinding {
   string fixed_version = 9;
   // Optional assessment context. See PolicyAssessmentResult.
   optional PolicyAssessmentResult assessment = 10;
+  // Optional location of the affected component copy — a file path
+  // (e.g., "/opt/app/lib/ext/lib-1.2.3.jar") or, when no path is available,
+  // the SBOM component reference. Distinguishes multiple copies of the same
+  // package within a single artifact.
+  string location = 11;
 }
 
 // Output schema for SAST findings from policy evaluation.

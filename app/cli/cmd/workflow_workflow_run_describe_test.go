@@ -81,6 +81,19 @@ func TestViolationSummary(t *testing.T) {
 			want: "CVE-2024-9999 (HIGH) lib@v1.0.0 [fix: 1.0.1]",
 		},
 		{
+			name: "vulnerability with location",
+			violation: &action.PolicyViolation{
+				Vulnerability: &attv1.PolicyVulnerabilityFinding{
+					ExternalId:   "CVE-2024-9999",
+					Severity:     "high",
+					PackagePurl:  "pkg:maven/com.example/lib@1.0.0",
+					Location:     "/opt/app/lib/ext/lib-1.0.0.jar",
+					FixedVersion: "1.0.1",
+				},
+			},
+			want: "CVE-2024-9999 (HIGH) lib@1.0.0 at /opt/app/lib/ext/lib-1.0.0.jar [fix: 1.0.1]",
+		},
+		{
 			name: "active vulnerability surfaces assessment status (AFFECTED)",
 			violation: &action.PolicyViolation{
 				Vulnerability: &attv1.PolicyVulnerabilityFinding{
