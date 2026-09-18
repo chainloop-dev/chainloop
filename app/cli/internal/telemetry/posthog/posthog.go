@@ -87,11 +87,11 @@ func (p *Tracker) TrackEvent(_ context.Context, eventName string, id string, tag
 	// command talked to, organization the tenant within it. They are set on a single Groups
 	// map because replacing the map would drop whichever group was assigned first.
 	groups := posthog.NewGroups()
-	if tags["cp_url_hash"] != "" {
-		groups.Set("cp_installation", tags["cp_url_hash"])
+	if cpURLHash := tags.String("cp_url_hash"); cpURLHash != "" {
+		groups.Set("cp_installation", cpURLHash)
 	}
-	if tags["org_id"] != "" {
-		groups.Set("organization", tags["org_id"])
+	if orgID := tags.String("org_id"); orgID != "" {
+		groups.Set("organization", orgID)
 	}
 	if len(groups) > 0 {
 		msg.Groups = groups
@@ -101,11 +101,12 @@ func (p *Tracker) TrackEvent(_ context.Context, eventName string, id string, tag
 	// still resolve to them. Only interactive user sessions qualify: API and federated tokens
 	// are shared identities running on ephemeral CI machines, where aliasing merges unrelated
 	// runners into a single person and emits an alias on every command.
+	machineID := tags.String("machine_id")
 	if tags.IsInteractiveUserSession() &&
-		(tags["machine_id"] != "" && tags["machine_id"] != id) && id != telemetry.UnrecognisedUserID {
+		(machineID != "" && machineID != id) && id != telemetry.UnrecognisedUserID {
 		if err := p.client.Enqueue(posthog.Alias{
 			DistinctId: id,
-			Alias:      tags["machine_id"],
+			Alias:      machineID,
 		}); err != nil {
 			return fmt.Errorf("failed to track event: %w", err)
 		}
