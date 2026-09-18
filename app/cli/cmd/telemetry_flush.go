@@ -37,6 +37,13 @@ const (
 	maxTelemetryPayloadBytes = 64 * 1024
 )
 
+// isTelemetryFlushInvocation reports whether this process was started as the detached
+// telemetry child. It reads the raw arguments because the answer is needed during
+// cobra.OnInitialize, before any command has been resolved.
+func isTelemetryFlushInvocation() bool {
+	return len(os.Args) > 2 && os.Args[1] == telemetryCmdUse && os.Args[2] == telemetryFlushCmdUse
+}
+
 // newTelemetryCmd builds the internal command tree the parent process re-execs into. It is
 // hidden because it is not something a user ever runs: `chainloop telemetry flush` is how a
 // finished command gets its event delivered without the user waiting for the network.
@@ -64,6 +71,14 @@ func newTelemetryFlushCmd() *cobra.Command {
 			skipActionOptsInit: trueString,
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
+			// The parent already refuses to spawn this process when telemetry is off, so
+			// reaching here with it disabled means somebody invoked the command by hand.
+			// Check anyway: DO_NOT_TRACK is a promise about the binary, not about one code
+			// path through it.
+			if isTelemetryDisabled() {
+				return nil
+			}
+
 			client, err := posthog.NewClient(posthogAPIKey, posthogEndpoint)
 			if err != nil {
 				logger.Debug().Err(err).Msg("creating telemetry client")

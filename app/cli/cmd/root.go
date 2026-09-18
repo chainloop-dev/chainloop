@@ -333,6 +333,14 @@ func initLogger(logger zerolog.Logger) (zerolog.Logger, error) {
 }
 
 func initConfigFile() {
+	// The telemetry child reads nothing from the config: everything it needs is either
+	// compiled in or arrived in its payload. Skipping the setup keeps it from creating the
+	// config directory and writing a default file, and from panicking below when that
+	// directory cannot be created, in a process whose only job is one HTTP request.
+	if isTelemetryFlushInvocation() {
+		return
+	}
+
 	// An existing config file was passed as a flag and we use it as is
 	if flagCfgFile != "" {
 		viper.SetConfigFile(flagCfgFile)

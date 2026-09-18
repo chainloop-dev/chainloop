@@ -39,6 +39,22 @@ const (
 	testCPURL           = "api.cp.chainloop.dev:443"
 )
 
+// newTestRootCommand builds a root with the same name the real one uses, so the helpers
+// that walk up to it behave as they do in production.
+func newTestRootCommand() *cobra.Command {
+	return &cobra.Command{Use: appName}
+}
+
+// newReportableCommand returns a plain subcommand attached to a root: the ordinary case
+// that telemetry does report.
+func newReportableCommand() *cobra.Command {
+	rootCmd := newTestRootCommand()
+	child := &cobra.Command{Use: testCmdList}
+	rootCmd.AddCommand(child)
+
+	return child
+}
+
 func TestClassifyError(t *testing.T) {
 	testCases := []struct {
 		name string

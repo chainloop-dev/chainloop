@@ -70,6 +70,13 @@ func reportCommand(executed *cobra.Command, d time.Duration, runErr error) {
 	payload := buildCompletedCommand(executed, d, runErr, telemetryIdentity(),
 		controlPlaneURL(), viper.GetString(confOptions.organization.viperKey))
 
+	// An empty command path means cobra resolved nothing to run: `chainloop` on its own,
+	// which prints help, or an unrecognised subcommand. Those are not commands anyone ran,
+	// and reporting them would file every one of them under the same empty name.
+	if payload.Command == "" {
+		return
+	}
+
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		logger.Debug().Err(err).Msg("encoding telemetry payload")
@@ -189,6 +196,18 @@ func classifyError(err error) string {
 	return errorKindOther
 }
 
+// telemetryFlushCommand resolves the command that delivers an event: this same binary,
+// re-executed as `chainloop telemetry flush`. It is a variable so a test can point the
+// spawn at a stub and assert on what the child actually receives.
+var telemetryFlushCommand = func() (string, []string, error) {
+	executable, err := os.Executable()
+	if err != nil {
+		return "", nil, err
+	}
+
+	return executable, []string{telemetryCmdUse, telemetryFlushCmdUse}, nil
+}
+
 // spawnTelemetryFlush starts a detached `chainloop telemetry flush` carrying the payload on
 // its stdin, and returns without waiting for it.
 //
@@ -198,7 +217,7 @@ func classifyError(err error) string {
 // outlive, so the parent can exit the moment this returns. Payloads are a few hundred
 // bytes, far below the pipe buffer, so the write never blocks.
 func spawnTelemetryFlush(payload []byte) error {
-	executable, err := os.Executable()
+	name, args, err := telemetryFlushCommand()
 	if err != nil {
 		return fmt.Errorf("locating executable: %w", err)
 	}
@@ -210,7 +229,7 @@ func spawnTelemetryFlush(payload []byte) error {
 	// The child reads until EOF, which only arrives once the write end is closed.
 	defer func() { _ = w.Close() }()
 
-	child := exec.Command(executable, telemetryCmdUse, telemetryFlushCmdUse) // nosemgrep
+	child := exec.Command(name, args...) // nosemgrep
 	child.Stdin = r
 	// Detach from this process' terminal and session so a shell hang-up, job control, or a
 	// CI runner reaping the step's process group cannot take the child down with it.
