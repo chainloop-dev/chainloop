@@ -73,6 +73,18 @@ func assertNoChildOutput(t *testing.T, path, msg string) {
 	assert.True(t, os.IsNotExist(err), msg)
 }
 
+// withReleaseVersion makes the binary look like a released one for the duration of a test.
+// Version is "dev" by default, and a dev build has telemetry switched off entirely, so
+// without this every test of reportCommand would return at the first line and pass no
+// matter what the code under it did.
+func withReleaseVersion(t *testing.T) {
+	t.Helper()
+
+	original := Version
+	Version = "v1.2.3"
+	t.Cleanup(func() { Version = original })
+}
+
 // TestSpawnTelemetryFlushDeliversThePayload covers the process boundary itself: what the
 // parent writes is what the child reads on its stdin.
 func TestSpawnTelemetryFlushDeliversThePayload(t *testing.T) {
@@ -173,6 +185,7 @@ func TestReportCommandIsSilentWhenTelemetryIsDisabled(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			withReleaseVersion(t)
 			t.Setenv(doNotTrackEnv, tc.value)
 			out := stubFlushCommand(t, `cat > "$1"`)
 
@@ -187,10 +200,24 @@ func TestReportCommandIsSilentWhenTelemetryIsDisabled(t *testing.T) {
 // subcommands, where cobra hands back the root command and there is no command path to
 // report.
 func TestReportCommandSkipsUnresolvedCommands(t *testing.T) {
+	withReleaseVersion(t)
 	t.Setenv(doNotTrackEnv, "")
 	out := stubFlushCommand(t, `cat > "$1"`)
 
 	reportCommand(newTestRootCommand(), time.Second, nil)
 
 	assertNoChildOutput(t, out, "the root command has no command path and must not be reported")
+}
+
+// TestReportCommandSpawnsForARealCommand is the positive case the two tests above are only
+// meaningful against: with telemetry on and a resolved command, a child really is started.
+// Without it, a reportCommand that returned early for every input would satisfy them both.
+func TestReportCommandSpawnsForARealCommand(t *testing.T) {
+	withReleaseVersion(t)
+	t.Setenv(doNotTrackEnv, "")
+	out := stubFlushCommand(t, `cat > "$1"`)
+
+	reportCommand(newReportableCommand(), 1500*time.Millisecond, nil)
+
+	assert.Contains(t, string(waitForFile(t, out)), `"duration_ms":1500`)
 }
