@@ -17,7 +17,8 @@ jobs:
     name: Package and push Sandbox Kit
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # required for SLSA provenance and keyless kit signing
+      contents: read
+      id-token: write # Docker Hub OIDC login, SLSA provenance and keyless kit signing
     env:
       CHAINLOOP_WORKFLOW_NAME: "sandbox-kit-package"
       CHAINLOOP_PROJECT: "chainloop"
@@ -38,11 +39,18 @@ jobs:
           sudo apt-get install -y /tmp/sbx.deb
           sbx version
 
+      # OIDC rather than a stored token: GitHub mints a short-lived identity token
+      # per run and Docker exchanges it for a registry token that expires with the
+      # job, so there is no long-lived Docker Hub credential in this repo. Access is
+      # governed by the connection's ruleset, which matches the subject claim
+      # repo:chainloop-dev/chainloop:ref:refs/heads/main - adding an `environment:`
+      # to this job would change that claim and stop it matching.
       - name: Docker login to Docker Hub
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        env:
+          DOCKERHUB_OIDC_CONNECTIONID: 361a9222-f648-4f62-baf4-5f500f7fbf54
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: chainloop
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
