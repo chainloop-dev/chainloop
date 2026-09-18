@@ -86,7 +86,14 @@ jobs:
           # GitHub OIDC token, and every push also attaches SLSA provenance.
           sbx kit push "./${KIT_DIR}" "${KIT_REPO}:${kit_version}" --sign
 
-          # Attest the published kit
+          # Move the floating tag to the same release. Note this is a second push
+          # rather than a retag, so :latest gets its own manifest digest even though
+          # the content is identical - compare the kit's `version:`, not the digest,
+          # to tell which release :latest currently points at.
+          sbx kit push "./${KIT_DIR}" "${KIT_REPO}:latest" --sign
+
+          # Attest the published kit. The immutable tag, not :latest, since the
+          # attestation should keep naming this artifact after the tag moves on.
           chainloop attestation add --name sandbox-kit --value "${KIT_REPO}:${kit_version}"
         env:
           # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
