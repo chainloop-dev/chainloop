@@ -17,6 +17,7 @@ package telemetry
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -35,10 +36,13 @@ const UnrecognisedUserID = "unrecognised"
 // read it from here so the two deadlines cannot drift apart.
 const FlushTimeout = 2 * time.Second
 
-// authTypeUser mirrors v1.Attestation_Auth_AUTH_TYPE_USER.String(). It is duplicated as a
-// literal so this package keeps no dependency on the attestation API; a test pins the two
-// values together.
-const authTypeUser = "AUTH_TYPE_USER"
+// authTypeUser and authTypeFederated mirror the matching
+// v1.Attestation_Auth_AuthType.String() values. They are duplicated as literals so this
+// package keeps no dependency on the attestation API; a test pins the values together.
+const (
+	authTypeUser      = "AUTH_TYPE_USER"
+	authTypeFederated = "AUTH_TYPE_FEDERATED"
+)
 
 // Tags represents a collection of event tags.
 type Tags map[string]string
@@ -107,6 +111,13 @@ func determineUserID(tags Tags) string {
 	machineID, _ := machineid.ProtectedID("chainloop")
 	tags["machine_id"] = machineID
 
+	// A federated session's user ID is the OIDC provider's issuer URL, which is the same
+	// value for every run of every repository and every installation, so it has to be
+	// scoped before it can identify anyone.
+	if id := federatedUserID(tags); id != "" {
+		return id
+	}
+
 	// Check if user ID is provided in tags.
 	// This won't happen in the unauthenticated case scenario.
 	if userID, ok := tags["user_id"]; ok && userID != "" {
@@ -147,4 +158,17 @@ func (tg Tags) WithEnvironmentInfo() Tags {
 	}
 
 	return tg
+}
+
+// federatedUserID returns the identity for a federated CI session, scoped to the control
+// plane installation and the CI namespace that owns the repository, or an empty string
+// when the session is not federated or the token carried no namespace to scope it with.
+// The value is deliberately readable rather than hashed: both parts are non-sensitive
+// already, and hashing would only make a person harder to trace back to its source.
+func federatedUserID(tags Tags) string {
+	if tags["token_type"] != authTypeFederated || tags["ci_namespace_id"] == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("ci:%s@%s", tags["ci_namespace_id"], tags["cp_url_hash"])
 }
