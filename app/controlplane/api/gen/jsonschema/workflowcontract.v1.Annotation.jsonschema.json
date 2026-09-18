@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "properties": {
     "name": {
-      "pattern": "^[\\w]+$",
+      "pattern": "^[\\w-]+$",
       "type": "string"
     },
     "value": {

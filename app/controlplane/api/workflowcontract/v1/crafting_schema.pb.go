@@ -726,7 +726,7 @@ func (x *CraftingSchemaV2Spec) GetAnnotations() []*Annotation {
 
 type Annotation struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` // Single word optionally separated with _
+	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` // Single word optionally separated with _ or -
 	// This value can be set in the contract or provided during the attestation
 	Value         string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -2209,10 +2209,11 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x06runner\x18\x03 \x01(\v2*.workflowcontract.v1.CraftingSchema.RunnerR\x06runner\x129\n" +
 	"\bpolicies\x18\x04 \x01(\v2\x1d.workflowcontract.v1.PoliciesR\bpolicies\x12O\n" +
 	"\rpolicy_groups\x18\x05 \x03(\v2*.workflowcontract.v1.PolicyGroupAttachmentR\fpolicyGroups\x12A\n" +
-	"\vannotations\x18\x06 \x03(\v2\x1f.workflowcontract.v1.AnnotationR\vannotations\"F\n" +
+	"\vannotations\x18\x06 \x03(\v2\x1f.workflowcontract.v1.AnnotationR\vannotations\"G\n" +
 	"\n" +
-	"Annotation\x12\"\n" +
-	"\x04name\x18\x01 \x01(\tB\x0e\xbaH\vr\t2\a^[\\w]+$R\x04name\x12\x14\n" +
+	"Annotation\x12#\n" +
+	"\x04name\x18\x01 \x01(\tB\x0f\xbaH\fr\n" +
+	"2\b^[\\w-]+$R\x04name\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\"\x98\x01\n" +
 	"\bPolicies\x12C\n" +
 	"\tmaterials\x18\x01 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\tmaterials\x12G\n" +
