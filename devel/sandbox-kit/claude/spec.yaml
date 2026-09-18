@@ -18,6 +18,10 @@
 schemaVersion: "2"
 kind: sandbox                                # REQUIRED: only kind:sandbox may set an entrypoint
 name: chainloop-trace-claude
+# Tracks the Chainloop release this kit ships the CLI of. Bumped automatically on
+# release by .github/workflows/utils/bump-chart-and-dagger-version.sh, alongside the
+# chart's appVersion - do not edit by hand.
+version: v1.109.0
 displayName: Claude Code (Chainloop-traced)
 description: >-
   Claude Code traced with Chainloop. Repos already initialized for `chainloop trace`

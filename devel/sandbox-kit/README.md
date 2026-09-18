@@ -6,7 +6,7 @@ already wired in, so a session working on this repo is recorded as an
 tools and MCP servers called, AI-vs-human line attribution — and attested to Chainloop without the developer
 setting anything up.
 
-`spec.yaml` here is the kit — self-contained, no secrets, and heavily commented; read it for the design
+`claude/spec.yaml` is the kit — self-contained, no secrets, and heavily commented; read it for the design
 rationale, the `extends: claude` inheritance notes, and the gRPC-vs-egress-proxy analysis. It started life in
 the `chainloop-trace-docker-sandbox` PoC repo, which additionally carries the long-form write-up and the
 running list of upstream Docker bugs.
@@ -51,7 +51,7 @@ value from your shell, and it overrides the kit's own default:
 ```bash
 export CHAINLOOP_TOKEN=cl_...
 
-sbx run --clone --kit ./devel/sandbox-kit -e CHAINLOOP_TOKEN chainloop-trace-claude
+sbx run --clone -e CHAINLOOP_TOKEN ./devel/sandbox-kit/claude
 ```
 
 …or skip the token entirely and **authenticate from your existing `chainloop auth login` session**, by
@@ -61,9 +61,9 @@ mounting the config the CLI already wrote on your machine:
 CFG="$HOME/Library/Application Support/chainloop"     # macOS
 # CFG="$HOME/.config/chainloop"                       # Linux
 
-sbx run --clone --kit ./devel/sandbox-kit \
+sbx run --clone \
   --kit-arg chainloopConfig="$CFG/config.toml" \
-  chainloop-trace-claude \
+  ./devel/sandbox-kit/claude \
   . "${CFG}:ro"
 ```
 
@@ -82,7 +82,7 @@ attach:
 |  | exported `$CHAINLOOP_TOKEN` | API token, explicit | `config.toml` |
 | --- | --- | --- | --- |
 | `sbx env run` | not supported — no `-e` flag, and nothing interpolates in the file | `--env-arg chainloopToken=…` | needs an overlay file (below) |
-| `sbx run --kit` | `-e CHAINLOOP_TOKEN` | `--kit-arg chainloopToken=…` | `--kit-arg chainloopConfig=…` + a `:ro` mount |
+| `sbx run ./devel/sandbox-kit/claude` | `-e CHAINLOOP_TOKEN` | `--kit-arg chainloopToken=…` | `--kit-arg chainloopConfig=…` + a `:ro` mount |
 
 Supply one of them. With no token **and** no config the sandbox refuses to start rather than run an untraced
 session — a session that records nothing is worse than one that never began, because you only find out when
@@ -111,9 +111,9 @@ same injection path, so it would flip the Chainloop hosts to the intercepted pat
 printf 'chainloopToken=%s\n' "$CHAINLOOP_TOKEN" > ~/.config/chainloop/kit-args
 chmod 600 ~/.config/chainloop/kit-args
 
-sbx run --clone --kit ./devel/sandbox-kit \
+sbx run --clone \
   --kit-args-file ~/.config/chainloop/kit-args \
-  chainloop-trace-claude
+  ./devel/sandbox-kit/claude
 ```
 
 `sbx env run` has the equivalent `--env-args-file`.
@@ -167,6 +167,11 @@ in the entrypoint wrapper, so attach once first.
 - `chainloopConfig` does not appear in `sbx env plan` — the plan only renders args pinned in a file. The
 value still reaches the sandbox; its absence is not a failure.
 - Mounts are fixed at creation. `sbx env run` on an existing sandbox re-attaches without re-provisioning.
+- **This kit is `kind: sandbox`, so it *is* the agent** — it goes in `sbx run`'s positional slot, not behind
+`--kit`, which takes mixins only. `sbx run --clone --kit ./devel/sandbox-kit/claude` fails with the unhelpful
+`'sbx run' requires at least 1 argument`, because the flag swallowed the reference and left no agent to run.
+`sbxenv.yaml` splits the same thing across two keys — `kits:` loads the artifact, `agent:` names what to run
+from it — which is why the kit's own name appears there and nowhere on an `sbx run` line.
 
 ## Why nightly
 
