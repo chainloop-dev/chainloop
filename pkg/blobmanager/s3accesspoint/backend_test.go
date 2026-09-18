@@ -26,7 +26,6 @@ import (
 	ststypes "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
-	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -294,14 +293,4 @@ func assertFailedClosed(t *testing.T, err error) {
 	require.Error(t, err)
 	require.Containsf(t, err.Error(), ErrMissingRequestingOrg.Error(),
 		"expected fail-closed missing-org error, got %q", err)
-}
-
-// TestBackend_SupportsStreaming asserts the s3accesspoint backend opts into
-// streaming uploads so the CAS service feeds it directly from the client stream
-// instead of buffering the whole artifact in memory (PFM-6923).
-func TestBackend_SupportsStreaming(t *testing.T) {
-	var b backend.UploaderDownloader = &Backend{}
-	su, ok := b.(backend.StreamingUploader)
-	require.True(t, ok, "s3accesspoint backend must implement backend.StreamingUploader")
-	assert.True(t, su.SupportsStreaming())
 }

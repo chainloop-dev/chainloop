@@ -46,7 +46,13 @@ type Bootstrap struct {
 	CredentialsService *v1.Credentials          `protobuf:"bytes,4,opt,name=credentials_service,json=credentialsService,proto3" json:"credentials_service,omitempty"`
 	// Optional NATS server configuration to publish audit events to the
 	// control-plane-owned stream. When unset, event publishing is disabled.
-	NatsServer    *Bootstrap_NatsServer `protobuf:"bytes,5,opt,name=nats_server,json=natsServer,proto3" json:"nats_server,omitempty"`
+	NatsServer *Bootstrap_NatsServer `protobuf:"bytes,5,opt,name=nats_server,json=natsServer,proto3" json:"nats_server,omitempty"`
+	// Local directory where uploads (and, later, downloads) are staged on disk
+	// and verified against the declared digest before reaching the backend. It
+	// must be a writable volume; in production a dedicated emptyDir is mounted
+	// here (NOT tmpfs/RAM, and NOT the /tmp secret mount). When unset the service
+	// falls back to the OS temp dir, which is only appropriate for local dev.
+	StagingDir    string `protobuf:"bytes,6,opt,name=staging_dir,json=stagingDir,proto3" json:"staging_dir,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -114,6 +120,13 @@ func (x *Bootstrap) GetNatsServer() *Bootstrap_NatsServer {
 		return x.NatsServer
 	}
 	return nil
+}
+
+func (x *Bootstrap) GetStagingDir() string {
+	if x != nil {
+		return x.StagingDir
+	}
+	return ""
 }
 
 type Server struct {
@@ -729,14 +742,16 @@ var File_conf_proto protoreflect.FileDescriptor
 const file_conf_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xb9\x05\n" +
+	"conf.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xda\x05\n" +
 	"\tBootstrap\x12\x1f\n" +
 	"\x06server\x18\x01 \x01(\v2\a.ServerR\x06server\x12\x19\n" +
 	"\x04auth\x18\x02 \x01(\v2\x05.AuthR\x04auth\x12>\n" +
 	"\robservability\x18\x03 \x01(\v2\x18.Bootstrap.ObservabilityR\robservability\x12L\n" +
 	"\x13credentials_service\x18\x04 \x01(\v2\x1b.credentials.v1.CredentialsR\x12credentialsService\x126\n" +
 	"\vnats_server\x18\x05 \x01(\v2\x15.Bootstrap.NatsServerR\n" +
-	"natsServer\x1aH\n" +
+	"natsServer\x12\x1f\n" +
+	"\vstaging_dir\x18\x06 \x01(\tR\n" +
+	"stagingDir\x1aH\n" +
 	"\n" +
 	"NatsServer\x12\x10\n" +
 	"\x03uri\x18\x01 \x01(\tR\x03uri\x12\x16\n" +

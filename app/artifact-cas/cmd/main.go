@@ -16,7 +16,9 @@
 package main
 
 import (
+	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -121,6 +123,12 @@ func main() {
 
 	_ = logger.Log(log.LevelInfo, "msg", "starting artifact-cas service", "version", Version)
 
+	// Ensure the upload staging directory is configured and writable before we
+	// accept any traffic: without it no upload can be verified.
+	if err := prepareStagingDir(&bc); err != nil {
+		panic(err)
+	}
+
 	flush, err := initSentry(&bc, logger)
 	defer flush()
 	if err != nil {
@@ -150,6 +158,44 @@ func main() {
 
 func newProtoValidator() (protovalidate.Validator, error) {
 	return protovalidate.New()
+}
+
+// prepareStagingDir creates the upload staging directory and proves it is
+// writable. It must be the same directory the service is configured with (see
+// serviceOpts / conf.staging_dir).
+//
+// staging_dir is required: uploads are verified by spilling them here first, so
+// a missing or unwritable directory means no upload can succeed. Failing at
+// startup surfaces that immediately, rather than letting the service report
+// healthy and reject every upload. The CAS container runs with a read-only root
+// filesystem and /tmp is a read-only secret mount, so the configured directory is
+// the only place uploads can be staged.
+//
+// The directory stays clean on its own: each upload removes its staging file on
+// every exit path, and the emptyDir backing it is cleared by Kubernetes when the
+// Pod is removed from the node.
+func prepareStagingDir(bc *conf.Bootstrap) error {
+	dir := bc.GetStagingDir()
+	if dir == "" {
+		return errors.New("staging_dir is required: it must point at a writable, pod-local directory")
+	}
+
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("creating staging dir %q: %w", dir, err)
+	}
+
+	// MkdirAll succeeds on a directory that already exists but cannot be written
+	// to, so probe it rather than discovering the problem on the first upload.
+	probe, err := os.CreateTemp(dir, ".writable-probe-*")
+	if err != nil {
+		return fmt.Errorf("staging dir %q is not writable: %w", dir, err)
+	}
+	_ = probe.Close()
+	if err := os.Remove(probe.Name()); err != nil {
+		return fmt.Errorf("removing staging dir probe file: %w", err)
+	}
+
+	return nil
 }
 
 func initSentry(c *conf.Bootstrap, logger log.Logger) (cleanupFunc func(), err error) {

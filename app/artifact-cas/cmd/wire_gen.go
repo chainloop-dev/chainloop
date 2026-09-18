@@ -37,7 +37,7 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 		return nil, nil, err
 	}
 	auditDispatcher := service.NewAuditDispatcher(auditLogPublisher, logger)
-	v := serviceOpts(logger, auditDispatcher)
+	v := serviceOpts(logger, auditDispatcher, bootstrap)
 	byteStreamService := service.NewByteStreamService(providers, v...)
 	resourceService := service.NewResourceService(providers, v...)
 	validator, err := newProtoValidator()
@@ -75,8 +75,8 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 
 // wire.go:
 
-func serviceOpts(l log.Logger, audit *service.AuditDispatcher) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l), service.WithAuditDispatcher(audit)}
+func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithAuditDispatcher(audit), service.WithStagingDir(bc.GetStagingDir())}
 }
 
 // newNatsConfig converts the proto config to a plain natsconn.Config, nil when unset

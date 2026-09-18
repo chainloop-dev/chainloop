@@ -492,3 +492,13 @@ Return the Nats connection string for the CAS
 {{- $port := required "nats server port not set" .Values.cas.nats.port }}
 {{- printf "nats://%s:%d" $host ($port | int) }}
 {{- end -}}
+
+{{/*
+Directory where the CAS stages and verifies uploads before sending them to the
+backend. Not configurable: it must be the dedicated per-pod emptyDir mounted by
+the CAS deployment, and it must not collide with /tmp, which the jwt-public-key
+secret already mounts read-only.
+*/}}
+{{- define "chainloop.cas.staging_dir" -}}
+/tmp-staging-fs
+{{- end -}}

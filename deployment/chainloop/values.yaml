@@ -1478,7 +1478,21 @@ cas:
       drop: ["ALL"]
     seccompProfile:
       type: "RuntimeDefault"
-  
+
+  ## CAS upload staging.
+  ## Uploads are streamed to a directory on local disk and verified against the
+  ## declared digest before being sent to the storage backend; nothing unverified
+  ## ever reaches the backend. The CAS mounts a dedicated emptyDir for this and
+  ## points staging_dir at it. There is nothing to configure: the path is fixed
+  ## because it must not collide with /tmp, which the jwt-public-key secret
+  ## already mounts read-only, and the volume must stay per-pod.
+  ##
+  ## The volume is sized by the node's ephemeral storage rather than by a
+  ## sizeLimit on the emptyDir: exceeding a sizeLimit gets the Pod EVICTED by the
+  ## kubelet instead of failing the offending upload. Bound uploads with the
+  ## per-request size cap, and set cas.resources ephemeral-storage requests to
+  ## have the scheduler account for the space.
+
   ## @param cas.automountServiceAccountToken Mount Service Account token in cas pods
   ##
   automountServiceAccountToken: false

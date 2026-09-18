@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -37,15 +38,7 @@ type Backend struct {
 	endpoint           string
 }
 
-var (
-	_ backend.UploaderDownloader = (*Backend)(nil)
-	_ backend.StreamingUploader  = (*Backend)(nil)
-)
-
-// SupportsStreaming reports that the azureblob backend can upload directly from
-// a streaming reader. Upload uses the SDK's UploadStream, which reads the artifact
-// in bounded-size blocks, so CAS never needs to buffer the whole blob in memory.
-func (b *Backend) SupportsStreaming() bool { return true }
+var _ backend.UploaderDownloader = (*Backend)(nil)
 
 func NewBackend(creds *Credentials) (*Backend, error) {
 	credential, err := azidentity.NewClientSecretCredential(creds.TenantID, creds.ClientID, creds.ClientSecret, nil)
@@ -128,11 +121,25 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 		return fmt.Errorf("failed to create Blob storage Container: %w", err)
 	}
 
+	metadata := map[string]*string{
+		annotationNameAuthor:   to.Ptr(backend.AuthorAnnotation),
+		annotationNameFilename: to.Ptr(resource.FileName),
+	}
+
+	// The CAS service stages verified content on local disk and hands us an
+	// *os.File. UploadFile reads it via ReadAt in bounded blocks, avoiding the
+	// intermediate block buffering that UploadStream needs for a non-seekable
+	// reader. Fall back to UploadStream for any other reader (still bounded by
+	// block size × concurrency).
+	if f, ok := r.(*os.File); ok {
+		_, err = client.UploadFile(ctx, b.container, resourceName(resource.Digest), f, &azblob.UploadFileOptions{
+			Metadata: metadata,
+		})
+		return err
+	}
+
 	_, err = client.UploadStream(ctx, b.container, resourceName(resource.Digest), r, &azblob.UploadStreamOptions{
-		Metadata: map[string]*string{
-			annotationNameAuthor:   to.Ptr(backend.AuthorAnnotation),
-			annotationNameFilename: to.Ptr(resource.FileName),
-		},
+		Metadata: metadata,
 	})
 
 	return err
