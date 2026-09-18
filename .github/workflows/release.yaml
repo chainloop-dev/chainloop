@@ -196,9 +196,13 @@ jobs:
           ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          # This needs to run AFTER goreleaser to make sure the source code is available
-
-          gh release download $RELEASE_TAG -A tar.gz -O /tmp/source-code.tar.gz
+          # This needs to run AFTER goreleaser to make sure the source code is available.
+          # Fetch the tag's source archive directly instead of via `gh release download -A`:
+          # GitHub only exposes the auto-built "Source code (tar.gz)" release asset once a
+          # release is published, but our release is still a draft at this point. The archive
+          # URL depends only on the git tag (which already exists), so it works either way and
+          # produces the same auto-generated tarball.
+          curl -sfL "https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${RELEASE_TAG}.tar.gz" -o /tmp/source-code.tar.gz
           chainloop attestation add --name source-code --value /tmp/source-code.tar.gz --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
 
       - name: Read current project version
@@ -274,6 +278,16 @@ jobs:
 
           # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
           gh release edit $RELEASE_TAG -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
+
+      # GoReleaser publishes the release as a draft (see release.draft in .goreleaser.yml).
+      # Flip it to published only after every post-release step above has succeeded so a
+      # failure leaves the release as a draft for a human to inspect/retry rather than
+      # publishing a broken release.
+      - name: Publish release
+        if: ${{ success() }}
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release edit "$RELEASE_TAG" --draft=false
 
       - name: Mark attestation as failed
         if: ${{ failure() }}
