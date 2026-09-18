@@ -52,12 +52,18 @@ args:
       Supply THIS or chainloopConfig — with neither, the kit's wrapper refuses
       to start rather than run an untraced session.
   kitPath:
-    default: ./devel/sandbox-kit
+    default: ./devel/sandbox-kit/claude
     description: >-
-      Path to the chainloop-trace-claude kit. Vendored into this repo so the
-      environment is self-contained; the upstream source is the PoC repo
-      (playground/chainloop-trace-docker-sandbox), and devel/sandbox-kit/README.md
-      says how to re-sync. Relative paths in kits: resolve against the INVOCATION
+      Path to the chainloop-trace-claude kit. Deliberately the IN-REPO copy and not
+      the published artifact, so this environment always runs the kit as it exists
+      on the current branch: no allowlist entry, no registry round trip, and a spec
+      edit takes effect without a release. Released copies go to
+      docker.io/chainloop/sbx-kit-claude:<version> via
+      .github/workflows/package_sandbox_kit.yaml, tagged with the `version:` in the
+      kit's own spec.yaml — pass
+      --env-arg kitPath=docker.io/chainloop/sbx-kit-claude:vX.Y.Z to pin one.
+      devel/sandbox-kit/README.md says how to re-sync with the upstream PoC repo
+      (playground/chainloop-trace-docker-sandbox). Relative paths in kits: resolve against the INVOCATION
       CWD, not this file's directory (docker/sbx-releases#493, still open;
       reproduced on nightly rc1-441 — `workspace:` resolves against the file's
       dir, `kits:` does not), so run `sbx env run` FROM the repo root, or pass

@@ -1,0 +1,129 @@
+name: Package Sandbox Kit
+
+on:
+  # Only push the kit if the kit sources have changed. The release bump PR
+  # rewrites each spec.yaml `version:`, so merging it is what triggers a publish
+  # — the same shape as package_chart.yaml reacting to deployment/chainloop/**
+  push:
+    branches:
+      - main
+    paths:
+      - devel/sandbox-kit/**
+
+permissions: read-all
+
+jobs:
+  package:
+    name: Package and push Sandbox Kit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Docker Hub OIDC login, SLSA provenance and keyless kit signing
+    env:
+      CHAINLOOP_WORKFLOW_NAME: "sandbox-kit-package"
+      CHAINLOOP_PROJECT: "chainloop"
+      # Docker Sandboxes ships Linux packages only on tagged releases, not on
+      # nightly, so this is pinned to a stable tag and bumped by hand.
+      SBX_VERSION: "v0.43.0"
+      KIT_DIR: "devel/sandbox-kit/claude"
+      KIT_REPO: "docker.io/chainloop/sbx-kit-claude"
+    steps:
+      - name: Install Chainloop
+        # Deliberately NOT `curl ... | bash`: this job holds an OIDC token that can
+        # mint Docker Hub credentials and sign artifacts, so the installer is
+        # fetched, pinned by digest and only then executed. The installer itself
+        # verifies the CLI's checksums (and cosign-verifies their signature), so
+        # this closes the remaining gap, which is the script in transit.
+        # If dl.chainloop.dev publishes a new installer this step fails with a
+        # digest mismatch; re-pin with:
+        #   curl -sfL https://dl.chainloop.dev/cli/install.sh | sha256sum
+        env:
+          INSTALLER_SHA256: 6ebcdb8edc6f22c92b6ac31a363f7d60da6e04c60c4fadda44169f18492ba46e
+        run: |
+          curl -sfL https://dl.chainloop.dev/cli/install.sh -o /tmp/chainloop-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/chainloop-install.sh" | sha256sum -c -
+          bash /tmp/chainloop-install.sh
+
+      - name: Install Docker Sandboxes CLI
+        run: |
+          curl -sfL -o /tmp/sbx.deb \
+            "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux-amd64-ubuntu2404.deb"
+          sudo apt-get install -y /tmp/sbx.deb
+          sbx version
+
+      # OIDC rather than a stored token: GitHub mints a short-lived identity token
+      # per run and Docker exchanges it for a registry token that expires with the
+      # job, so there is no long-lived Docker Hub credential in this repo. Access is
+      # governed by the connection's ruleset, which matches the subject claim
+      # repo:chainloop-dev/chainloop:ref:refs/heads/main - adding an `environment:`
+      # to this job would change that claim and stop it matching.
+      - name: Docker login to Docker Hub
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        env:
+          DOCKERHUB_OIDC_CONNECTIONID: 361a9222-f648-4f62-baf4-5f500f7fbf54
+        with:
+          username: chainloop
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+
+      - name: Read kit version
+        id: kit_version
+        run: |
+          # The kit's own spec.yaml is the source of truth; bump-chart-and-dagger-version.sh
+          # keeps it in step with the chart's appVersion on every release.
+          kit_version=$(yq -r '.version' "${KIT_DIR}/spec.yaml")
+          if [[ -z "${kit_version}" || "${kit_version}" == "null" ]]; then
+            echo "::error::${KIT_DIR}/spec.yaml declares no version:"
+            exit 1
+          fi
+          echo "kit_version=${kit_version}" >> $GITHUB_OUTPUT
+
+      - name: Validate kit
+        # Fails loudly here rather than halfway through a push if the pinned sbx
+        # release does not understand something the spec declares.
+        run: sbx kit validate "./${KIT_DIR}"
+
+      - name: Add Attestation (Sandbox Kit) and Push Kit
+        run: |
+          # KIT_VERSION arrives through env, not ${{ }} interpolation, so the value
+          # is never expanded into this script's source.
+
+          # Force the version declared in the kit spec and make sure it exists in
+          # the project by passing --existing-version; if it does not exist the
+          # attestation fails, and the version needs creating before a re-run.
+          chainloop attestation init --org chainloop --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version ${KIT_VERSION} --existing-version
+
+          # Push the kit. --sign is keyless (Fulcio + Rekor) off the ambient
+          # GitHub OIDC token, and every push also attaches SLSA provenance.
+          sbx kit push "./${KIT_DIR}" "${KIT_REPO}:${KIT_VERSION}" --sign
+
+          # Move the floating tag to the same release. Note this is a second push
+          # rather than a retag, so :latest gets its own manifest digest even though
+          # the content is identical - compare the kit's `version:`, not the digest,
+          # to tell which release :latest currently points at.
+          sbx kit push "./${KIT_DIR}" "${KIT_REPO}:latest" --sign
+
+          # Attest the published kit. The immutable tag, not :latest, since the
+          # attestation should keep naming this artifact after the tag moves on.
+          chainloop attestation add --name sandbox-kit --value "${KIT_REPO}:${KIT_VERSION}"
+        env:
+          KIT_VERSION: ${{ steps.kit_version.outputs.kit_version }}
+          # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Finish and Record Attestation
+        if: ${{ success() }}
+        run: |
+          chainloop attestation push
+
+      - name: Mark attestation as failed
+        if: ${{ failure() }}
+        run: |
+          chainloop attestation reset
+
+      - name: Mark attestation as cancelled
+        if: ${{ cancelled() }}
+        run: |
+          chainloop attestation reset --trigger cancellation

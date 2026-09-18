@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Bump Helm Chart version, appVersion to a given version number
+# Bump Helm Chart version, appVersion, Dagger and sandbox kit versions to a given version number
 
 set -e
 
@@ -58,4 +58,13 @@ platform_version=$(curl -sf https://api.app.chainloop.dev/infoz | jq -r '.versio
 if [[ -n "${platform_version}" && "${platform_version}" != "null" ]]; then
     sed -i "s/platformVersion  = \"v.*\"/platformVersion  = \"${platform_version}\"/" "${dagger_main}"
 fi
+
+## Update the Docker Sandboxes kit versions
+# Each kit declares the Chainloop release whose CLI it ships, so they track semVer
+# like appVersion does. The path is fixed rather than an argument because this is a
+# directory of kits that grows, and `schemaVersion:` is left alone by the ^version anchor.
+for kit_spec in devel/sandbox-kit/*/spec.yaml; do
+    [ -e "${kit_spec}" ] || continue
+    sed -i "s#^version:.*#version: ${semVer}#g" "${kit_spec}"
+done
 
