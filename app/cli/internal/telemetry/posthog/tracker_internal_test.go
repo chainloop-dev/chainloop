@@ -190,3 +190,28 @@ func TestTrackEventGroupsAndAlias(t *testing.T) {
 		})
 	}
 }
+
+// TestTrackEventPreservesPropertyTypes pins the property types that reach PostHog. A
+// duration delivered as "1234" rather than 1234 cannot be averaged or bucketed into
+// percentiles in an insight, which is the whole reason the event carries one.
+func TestTrackEventPreservesPropertyTypes(t *testing.T) {
+	client := &recordingClient{}
+	tracker := &Tracker{client: client}
+
+	err := tracker.TrackEvent(context.Background(), "command_executed", testMachineID, telemetry.Tags{
+		tagCPURLHash:  testCPHash,
+		tagMachineID:  testMachineID,
+		tagCI:         tagFalse,
+		"duration_ms": int64(4321),
+		"success":     true,
+	})
+	require.NoError(t, err)
+
+	require.Len(t, client.messages, 1)
+	capture, ok := client.messages[0].(posthog.Capture)
+	require.True(t, ok)
+
+	assert.Equal(t, int64(4321), capture.Properties["duration_ms"])
+	assert.Equal(t, true, capture.Properties["success"])
+	assert.Equal(t, testCPHash, capture.Properties[tagCPURLHash])
+}
