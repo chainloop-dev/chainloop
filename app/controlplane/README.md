@@ -78,8 +78,8 @@ The way you can make a change in the data model is
 
 **Update the schema**
 - Add a new/update an existing entity via a schema update. Schemas can be found at `pkg/data/ent/schema`
-- Generate the code changes associated with that schema change. `make generate`
-- Generate a new versioned migration `make migration_new`. This will create a new migration file at `pkg/data/ent/migrate/migrations 
+- Run `make -C app/controlplane generate`. It generates both the code changes associated with that schema change and, via `make migration_sync`, a new versioned migration at `pkg/data/ent/migrate/migrations`. Review and commit that generated file - do not hand-write it. Note the root `make generate` does **not** write migrations.
+- If the change also needs a data backfill, add a **second**, hand-written migration with `make -C app/controlplane migration_new` (which creates an empty file), as in the `last_run_at` backfill `20251001215625.sql`.
 
 **Apply the schema change in development DB**
 - `make migration_apply` will apply the migration to the development database
