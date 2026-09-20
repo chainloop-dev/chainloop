@@ -6,6 +6,8 @@ already wired in, so a session working on this repo is recorded as an
 tools and MCP servers called, AI-vs-human line attribution — and attested to Chainloop without the developer
 setting anything up.
 
+Full guide: **https://docs.chainloop.dev/guides/docker-sandboxes** _(publishing shortly — until it lands, this file is the reference)_
+
 `claude/spec.yaml` is the kit — self-contained, no secrets, and heavily commented; read it for the design
 rationale, the `extends: claude` inheritance notes, and the gRPC-vs-egress-proxy analysis. It started life in
 the `chainloop-trace-docker-sandbox` PoC repo, which additionally carries the long-form write-up and the
@@ -31,8 +33,15 @@ interactive login inside the sandbox. Independent of everything Chainloop.
 
 Every command here runs **from the repository root**, and both ways end up in the same place: this repo is
 already initialized for `chainloop trace` (`.chainloop.yml` + the hooks in `.claude/settings.json`), so the
-kit runs in **persistent** mode, takes its identity — org, project, workflow — from `.chainloop.yml`, and
-pushes the attestation on `git push`.
+kit takes its identity — org, project, workflow — from `.chainloop.yml` and pushes the attestation on
+`git push`.
+
+**The kit supports persistent tracing only, and refuses to start without it.** Point it at a repository that
+has not been initialized and it exits with instructions to run `chainloop trace init` there first. The CLI's
+other mode, `chainloop trace run`, is deliberately not offered: it ignores `.chainloop.yml` by design and its
+teardown wipes `.git/chainloop-trace/` and strips the committed hooks — destructive on exactly the repos this
+kit accepts. The trade-off is that **a session whose work is never pushed attests nothing**, so push from
+inside the sandbox before it is reclaimed.
 
 ### 1. Through the environment file
 
@@ -74,7 +83,7 @@ attach:
 
 ```
 [chainloop-trace] Adopted chainloop config from /Users/…/chainloop/config.toml
-[chainloop-trace] Repo already initialized for chainloop trace - persistent mode
+[chainloop-trace] Repo initialized for chainloop trace - persistent mode
 ```
 
 ### Which to use

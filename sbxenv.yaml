@@ -73,10 +73,10 @@ args:
 agent: chainloop-trace-claude
 kits:
   - source: ${{ env.args.kitPath }}
-    # The kit declares these; see its spec.yaml for the full list.
-    # chainloopOrg/chainloopProject are deliberately absent: they exist only for
-    # `trace run` mode, and in persistent mode the identity comes from this
-    # repo's own .chainloop.yml.
+    # The kit declares these; see its spec.yaml for the full list. There is no
+    # mode or identity argument: the kit runs persistent tracing only and reads
+    # org/project/workflow from this repo's own committed .chainloop.yml. It
+    # refuses to start on a repo that has not had `chainloop trace init` run.
     args:
       # CAVEAT: the environment plan prints this in CLEARTEXT — verified, and
       # moving it off `env:` did not help; only a literal `secrets:` value is
@@ -84,12 +84,6 @@ kits:
       # approval. Keep it out of shell history at least:
       #   sbx env run --env-args-file ~/.config/chainloop/sbxenv-args
       chainloopToken: ${{ env.args.chainloopToken }}
-      # Force persistent rather than leaving it to auto-detection. On THIS repo
-      # auto resolves to persistent anyway, but pinning it means a detection
-      # miss fails loudly instead of falling back to `trace run` — whose
-      # teardown wipes .git/chainloop-trace/ and strips the committed chainloop
-      # hooks from .claude/settings.json.
-      traceMode: persistent
 
   # Sign commits and tags with the SSH key forwarded from your host's agent, so
   # the agent's commits carry your signature and not just your name. A `kind:
