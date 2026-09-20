@@ -1,21 +1,50 @@
 name: Package Sandbox Kit
 
 on:
-  # Only push the kit if the kit sources have changed. The release bump PR
-  # rewrites each spec.yaml `version:`, so merging it is what triggers a publish
-  # — the same shape as package_chart.yaml reacting to deployment/chainloop/**
+  # Only the specs, not the README beside them: the release bump PR rewrites each
+  # spec.yaml `version:`, and that is what should trigger a publish.
   push:
     branches:
       - main
     paths:
-      - devel/sandbox-kit/**
+      - devel/sandbox-kit/*/spec.yaml
 
 permissions: read-all
 
 jobs:
-  package:
-    name: Package and push Sandbox Kit
+  # Every directory under devel/sandbox-kit/ holding a spec.yaml is a kit, so
+  # adding one needs no change here.
+  discover:
+    name: Discover kits
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      kits: ${{ steps.find.outputs.kits }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+      - id: find
+        run: |
+          kits=$(find devel/sandbox-kit -mindepth 2 -maxdepth 2 -name spec.yaml -printf '%h\n' \
+                 | sed 's|.*/||' | sort | jq -Rsc 'split("\n")[:-1]')
+          if [[ "${kits}" == "[]" ]]; then
+            echo "::error::no kits found under devel/sandbox-kit"
+            exit 1
+          fi
+          echo "kits=${kits}" >> $GITHUB_OUTPUT
+          echo "Publishing: ${kits}"
+
+  package:
+    name: Package and push ${{ matrix.kit }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      # One kit's failure must not cancel the others mid-publish.
+      fail-fast: false
+      matrix:
+        kit: ${{ fromJSON(needs.discover.outputs.kits) }}
     permissions:
       contents: read
       id-token: write # Docker Hub OIDC login, SLSA provenance and keyless kit signing
@@ -25,9 +54,25 @@ jobs:
       # Docker Sandboxes ships Linux packages only on tagged releases, not on
       # nightly, so this is pinned to a stable tag and bumped by hand.
       SBX_VERSION: "v0.43.0"
-      KIT_DIR: "devel/sandbox-kit/claude"
-      KIT_REPO: "docker.io/chainloop/sbx-kit-claude"
+      KIT_DIR: "devel/sandbox-kit/${{ matrix.kit }}"
+      KIT_REPO: "docker.io/chainloop/sbx-kit-${{ matrix.kit }}"
     steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+
+      - name: Read kit version
+        id: kit_version
+        run: |
+          # The kit's own spec.yaml is the source of truth; bump-chart-and-dagger-version.sh
+          # keeps it in step with the chart's appVersion on every release.
+          kit_version=$(yq -r '.version' "${KIT_DIR}/spec.yaml")
+          if [[ -z "${kit_version}" || "${kit_version}" == "null" ]]; then
+            echo "::error::${KIT_DIR}/spec.yaml declares no version:"
+            exit 1
+          fi
+          echo "kit_version=${kit_version}" >> $GITHUB_OUTPUT
+
       - name: Install Chainloop
         # Deliberately NOT `curl ... | bash`: this job holds an OIDC token that can
         # mint Docker Hub credentials and sign artifacts, so the installer is
@@ -64,28 +109,29 @@ jobs:
         with:
           username: chainloop
 
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          persist-credentials: false
-
-      - name: Read kit version
-        id: kit_version
+      - name: Skip if this version is already published
+        id: published
+        env:
+          KIT_VERSION: ${{ steps.kit_version.outputs.kit_version }}
         run: |
-          # The kit's own spec.yaml is the source of truth; bump-chart-and-dagger-version.sh
-          # keeps it in step with the chart's appVersion on every release.
-          kit_version=$(yq -r '.version' "${KIT_DIR}/spec.yaml")
-          if [[ -z "${kit_version}" || "${kit_version}" == "null" ]]; then
-            echo "::error::${KIT_DIR}/spec.yaml declares no version:"
-            exit 1
+          # The trigger fires on any spec.yaml change, not only a version bump, so
+          # a mid-cycle edit must not overwrite an already-signed, already-attested
+          # immutable tag with fresh content.
+          if sbx kit inspect "${KIT_REPO}:${KIT_VERSION}" >/dev/null 2>&1; then
+            echo "::notice::${KIT_REPO}:${KIT_VERSION} is already published, nothing to do"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
-          echo "kit_version=${kit_version}" >> $GITHUB_OUTPUT
 
       - name: Validate kit
+        if: steps.published.outputs.skip == 'false'
         # Fails loudly here rather than halfway through a push if the pinned sbx
         # release does not understand something the spec declares.
         run: sbx kit validate "./${KIT_DIR}"
 
       - name: Add Attestation (Sandbox Kit) and Push Kit
+        if: steps.published.outputs.skip == 'false'
         run: |
           # KIT_VERSION arrives through env, not ${{ }} interpolation, so the value
           # is never expanded into this script's source.
@@ -114,12 +160,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Finish and Record Attestation
-        if: ${{ success() }}
+        if: ${{ success() && steps.published.outputs.skip == 'false' }}
         run: |
           chainloop attestation push
 
       - name: Mark attestation as failed
-        if: ${{ failure() }}
+        if: ${{ failure() && steps.published.outputs.skip == 'false' }}
         run: |
           chainloop attestation reset
 

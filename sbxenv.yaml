@@ -112,7 +112,7 @@ workspace:
 # devel/sandbox-kit/README.md.
 
 # NOTE — deliberately NOT declared here:
-#   env:      nothing left to set. The Chainloop token and the mode reach the
+#   env:      nothing left to set. The Chainloop token reaches the
 #             sandbox as KIT arguments (above), not as environment variables, so
 #             the kit owns its own configuration surface. Path B still applies:
 #             the kit turns chainloopToken into CHAINLOOP_TOKEN inside the VM,

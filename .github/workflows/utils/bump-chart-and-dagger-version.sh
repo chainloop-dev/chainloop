@@ -60,11 +60,14 @@ if [[ -n "${platform_version}" && "${platform_version}" != "null" ]]; then
 fi
 
 ## Update the Docker Sandboxes kit versions
-# Each kit declares the Chainloop release whose CLI it ships, so they track semVer
-# like appVersion does. The path is fixed rather than an argument because this is a
-# directory of kits that grows, and `schemaVersion:` is left alone by the ^version anchor.
-for kit_spec in devel/sandbox-kit/*/spec.yaml; do
-    [ -e "${kit_spec}" ] || continue
-    sed -i "s#^version:.*#version: ${semVer}#g" "${kit_spec}"
+# Each kit declares the Chainloop release it belongs to, tracking semVer like
+# appVersion does. `schemaVersion:` is left alone by the ^version anchor.
+# Matching nothing is an error, not a no-op: a silent skip here would leave the
+# specs at the old version and the publish workflow would never fire.
+shopt -s nullglob
+kit_specs=(devel/sandbox-kit/*/spec.yaml)
+[ "${#kit_specs[@]}" -gt 0 ] || die "no kit specs found under devel/sandbox-kit (run from the repo root)"
+for kit_spec in "${kit_specs[@]}"; do
+    sed -i "s#^version:.*#version: ${semVer}#" "${kit_spec}"
 done
 

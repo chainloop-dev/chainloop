@@ -45,7 +45,7 @@ inside the sandbox before it is reclaimed.
 
 ### 1. Through the environment file
 
-The repo's `sbxenv.yaml` declares the agent, the kit, the clone-mode workspace and the trace mode, so the
+The repo's `sbxenv.yaml` declares the agent, the kit and the clone-mode workspace, so the
 only thing left to pass is the token:
 
 ```bash

@@ -22,9 +22,10 @@
 schemaVersion: "2"
 kind: sandbox                                # REQUIRED: only kind:sandbox may set an entrypoint
 name: chainloop-trace-claude
-# Tracks the Chainloop release this kit ships the CLI of. Bumped automatically on
-# release by .github/workflows/utils/bump-chart-and-dagger-version.sh, alongside the
-# chart's appVersion - do not edit by hand.
+# The Chainloop release this kit belongs to. Bumped automatically on release by
+# .github/workflows/utils/bump-chart-and-dagger-version.sh, alongside the chart's
+# appVersion - do not edit by hand. NOTE the install step below is not pinned to
+# it, so it is a release marker, not a statement about the CLI inside.
 version: v1.109.0
 displayName: Claude Code (Chainloop-traced)
 description: >-
@@ -87,10 +88,6 @@ setup:
         #!/usr/bin/env bash
         set -euo pipefail
 
-        run_plain() {
-          exec claude --dangerously-skip-permissions "$@"
-        }
-
         # Anything that would hand back an untraced agent is fatal: a sandbox
         # that quietly records nothing is worse than one that refuses to start.
         die() {
@@ -129,16 +126,8 @@ setup:
         # Persistent tracing only: the repo must already be initialized, and the
         # identity comes from its committed .chainloop.yml.
         repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
-        detected=0
-        for f in "$repo_root/.chainloop.yml" "$repo_root/.chainloop.yaml"; do
-          if [ -f "$f" ] && grep -qE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$f" \
-             && grep -q "chainloop trace hook" "$repo_root/.claude/settings.json" 2>/dev/null; then
-            detected=1
-            break
-          fi
-        done
-
-        if [ "$detected" != 1 ]; then
+        if ! grep -qsE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$repo_root"/.chainloop.y*ml \
+           || ! grep -qs "chainloop trace hook" "$repo_root/.claude/settings.json"; then
           die "this repository is not initialized for chainloop trace.
 
           Run this in the repository first, then start the sandbox again:
@@ -155,7 +144,7 @@ setup:
 
         echo "[chainloop-trace] Repo initialized for chainloop trace - persistent mode" >&2
         echo "[chainloop-trace]   identity from .chainloop.yml; attestation is pushed on 'git push'" >&2
-        run_plain "$@"
+        exec claude --dangerously-skip-permissions "$@"
 
 environment:
   variables:
