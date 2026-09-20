@@ -214,7 +214,7 @@ The organization, project, workflow and require-trace values are saved to
 
 // traceDocsURL is the guide covering what this command set up and what can be
 // done with it, which is more than belongs in a command's own output.
-const traceDocsURL = "https://docs.chainloop.dev/guides/chainloop-trace"
+const traceDocsURL = "https://docs.chainloop.dev/ai-sessions"
 
 // writeTraceInitSummary reports what the repository was set up with. It goes to
 // stdout rather than through the logger because it is the command's result,
