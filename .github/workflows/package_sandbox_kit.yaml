@@ -15,7 +15,7 @@ jobs:
   # Every directory under devel/sandbox-kit/ holding a spec.yaml is a kit, so
   # adding one needs no change here.
   discover:
-    name: Discover kits
+    name: Discover kits to publish
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,20 +25,46 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # needs the pushed range to diff each spec's version
       - id: find
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
         run: |
-          kits=$(find devel/sandbox-kit -mindepth 2 -maxdepth 2 -name spec.yaml -printf '%h\n' \
-                 | sed 's|.*/||' | sort | jq -Rsc 'split("\n")[:-1]')
-          if [[ "${kits}" == "[]" ]]; then
-            echo "::error::no kits found under devel/sandbox-kit"
-            exit 1
-          fi
-          echo "kits=${kits}" >> $GITHUB_OUTPUT
-          echo "Publishing: ${kits}"
+          # Publish a kit only when its `version:` actually changed in this push.
+          # Editing a comment in a spec must not republish a released tag under a
+          # version that already means something, and a re-run of a partly failed
+          # publish still selects the kit, so `latest` and the attestation get
+          # reconciled rather than skipped.
+          kits=()
+          for spec in devel/sandbox-kit/*/spec.yaml; do
+            [ -e "${spec}" ] || continue
+            kit=$(basename "$(dirname "${spec}")")
+            new=$(yq -r '.version // ""' "${spec}")
+            if [[ -z "${new}" || "${new}" == "null" ]]; then
+              echo "::error::${spec} declares no version:"
+              exit 1
+            fi
+            # An unknown or absent `before` (new branch, force push) counts as changed.
+            old=""
+            if git cat-file -e "${BEFORE}:${spec}" 2>/dev/null; then
+              old=$(git show "${BEFORE}:${spec}" | yq -r '.version // ""')
+            fi
+            if [[ "${new}" != "${old}" ]]; then
+              echo "${kit}: ${old:-<none>} -> ${new}"
+              kits+=("${kit}")
+            else
+              echo "${kit}: unchanged at ${new}, skipping"
+            fi
+          done
+          printf '%s\n' "${kits[@]+"${kits[@]}"}" | jq -Rsc 'split("\n") | map(select(length > 0))' \
+            | sed 's/^/kits=/' >> $GITHUB_OUTPUT
 
   package:
     name: Package and push ${{ matrix.kit }}
     needs: discover
+    # An empty matrix vector is an error, not a skip, so guard the whole job.
+    if: needs.discover.outputs.kits != '[]'
     runs-on: ubuntu-latest
     strategy:
       # One kit's failure must not cancel the others mid-publish.
@@ -109,29 +135,12 @@ jobs:
         with:
           username: chainloop
 
-      - name: Skip if this version is already published
-        id: published
-        env:
-          KIT_VERSION: ${{ steps.kit_version.outputs.kit_version }}
-        run: |
-          # The trigger fires on any spec.yaml change, not only a version bump, so
-          # a mid-cycle edit must not overwrite an already-signed, already-attested
-          # immutable tag with fresh content.
-          if sbx kit inspect "${KIT_REPO}:${KIT_VERSION}" >/dev/null 2>&1; then
-            echo "::notice::${KIT_REPO}:${KIT_VERSION} is already published, nothing to do"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Validate kit
-        if: steps.published.outputs.skip == 'false'
         # Fails loudly here rather than halfway through a push if the pinned sbx
         # release does not understand something the spec declares.
         run: sbx kit validate "./${KIT_DIR}"
 
       - name: Add Attestation (Sandbox Kit) and Push Kit
-        if: steps.published.outputs.skip == 'false'
         run: |
           # KIT_VERSION arrives through env, not ${{ }} interpolation, so the value
           # is never expanded into this script's source.
@@ -160,12 +169,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Finish and Record Attestation
-        if: ${{ success() && steps.published.outputs.skip == 'false' }}
+        if: ${{ success() }}
         run: |
           chainloop attestation push
 
       - name: Mark attestation as failed
-        if: ${{ failure() && steps.published.outputs.skip == 'false' }}
+        if: ${{ failure() }}
         run: |
           chainloop attestation reset
 

@@ -126,7 +126,10 @@ setup:
         # Persistent tracing only: the repo must already be initialized, and the
         # identity comes from its committed .chainloop.yml.
         repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
-        if ! grep -qsE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$repo_root"/.chainloop.y*ml \
+        # The two filenames the CLI reads, spelled out: a glob here would also
+        # accept files Chainloop never looks at, letting the sandbox start untraced.
+        if ! { grep -qsE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$repo_root/.chainloop.yml" \
+               || grep -qsE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$repo_root/.chainloop.yaml"; } \
            || ! grep -qs "chainloop trace hook" "$repo_root/.claude/settings.json"; then
           die "this repository is not initialized for chainloop trace.
 
@@ -165,8 +168,11 @@ credentials:
   # a duplicate credentials[].service across parent and child is an ERROR.
   #
   # Proxy-managed injection of the Chainloop token is not usable here: it needs
-  # the proxy to terminate TLS, which breaks the kit's gRPC traffic. See the
-  # README for the full reasoning and how to re-test it.
+  # the proxy to terminate TLS, which breaks the kit's gRPC traffic (see the
+  # README). Re-test with:
+  #   curl -sv --http2 --proxy "$HTTPS_PROXY" https://api.cp.chainloop.dev/
+  # and reconsider once the issuer is "Docker Sandboxes Proxy CA" AND h2 is
+  # still negotiated.
 
 permissions:
   # Egress is deny-by-default; the Anthropic/Claude hosts come from the parent.
