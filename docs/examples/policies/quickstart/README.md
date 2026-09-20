@@ -4,7 +4,7 @@ This quickstart guide walks you through creating and validating a basic Chainloo
 
 ## Documentation References
 
-- **CLI Reference**: [chainloop policy develop commands](https://docs.chainloop.dev/command-line-reference/cli-reference#chainloop-policy)
+- **CLI Reference**: [chainloop policy develop commands](https://docs.chainloop.dev/cli/reference#chainloop-policy)
 - **Policy Concepts**: [Understanding Chainloop Policies](https://docs.chainloop.dev/concepts/policies)
 - **Custom Policy Guide**: [Writing Custom Policies](https://docs.chainloop.dev/guides/custom-policies)
 - **Material Types**: [Available Material Types](https://docs.chainloop.dev/concepts/material-types#material-types)

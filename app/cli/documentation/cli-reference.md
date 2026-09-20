@@ -1,10 +1,6 @@
----
-title: Command Line Reference (OSS)
----
+# Command Line Reference (OSS)
 
-<Note>
-[The Enterprise Edition CLI](/command-line-reference/cli-ee-reference) provides additional platform management features, available with [paid plans](https://chainloop.dev/pricing).
-</Note>
+> [The Enterprise Edition CLI](https://docs.chainloop.dev/cli/reference) provides additional platform management features, available with [paid plans](https://chainloop.dev/pricing).
 
 Chainloop CLI is a command-line tool designed to streamline the process of crafting, managing, and storing software supply chain attestations. The CLI enables developers to generate and submit evidence-such as build artifacts, SBOMs, 
 and vulnerability reports-directly from their CI/CD workflows, ensuring compliance with organizational policies without introducing friction into the development process.
