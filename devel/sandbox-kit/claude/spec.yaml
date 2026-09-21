@@ -1,0 +1,201 @@
+# Claude Code in a Docker Sandbox, traced with Chainloop.
+#
+# GUIDE: https://docs.chainloop.dev/guides/docker-sandboxes  (publishing shortly)
+#
+# Quick start - the repository must already be initialized for tracing, and the
+# kit refuses to start if it is not:
+#
+#   chainloop trace init                     # once per repo, commit the result
+#   export CHAINLOOP_TOKEN=<org-scoped API token>
+#   sbx run --clone -e CHAINLOOP_TOKEN chainloop/sbx-kit-claude:latest
+#
+# Work as usual inside the sandbox; the session is attested when you `git push`
+# from it. No push, no attestation - push before the sandbox is reclaimed.
+#
+# Published on every release to docker.io/chainloop/sbx-kit-claude by
+# .github/workflows/package_sandbox_kit.yaml. To run the in-repo copy instead:
+#   sbx run --clone -e CHAINLOOP_TOKEN ./devel/sandbox-kit/claude
+# See devel/sandbox-kit/README.md for the sharp edges.
+#
+# Needs an sbx build whose `extends:` merges additively; on an affected build the
+# sandbox starts but records nothing. See "Why nightly" in the README.
+schemaVersion: "2"
+kind: sandbox                                # REQUIRED: only kind:sandbox may set an entrypoint
+name: chainloop-trace-claude
+# The Chainloop release this kit belongs to. Bumped automatically on release by
+# .github/workflows/utils/bump-chart-and-dagger-version.sh, alongside the chart's
+# appVersion - do not edit by hand. NOTE the install step below is not pinned to
+# it, so it is a release marker, not a statement about the CLI inside.
+version: v1.109.0
+displayName: Claude Code (Chainloop-traced)
+description: >-
+  Claude Code traced with Chainloop. Requires a repository already initialized
+  for `chainloop trace`: identity comes from its committed .chainloop.yml and the
+  attestation is pushed on `git push`. Fork of the built-in `claude` agent.
+
+# No secrets live here - everything the caller supplies is a kit argument, so
+# this file is committed as-is. There is no mode or identity argument: the kit
+# does persistent tracing only and reads org/project/workflow from the repo's
+# committed .chainloop.yml. See the README for why `chainloop trace run` is not
+# offered.
+args:
+  chainloopToken:
+    default: ""
+    description: >-
+      Chainloop org-scoped API token (chainloop organization api-token create).
+      Authenticates the attestation push, so it must have access to the org
+      pinned in the repo's .chainloop.yml.
+      OPTIONAL only because chainloopConfig is the other way to authenticate -
+      supply one or the other, or the wrapper refuses to start. When both are
+      present this one WINS: the CLI prefers an exported CHAINLOOP_TOKEN over a
+      config-file login session and logs "Both user credentials and
+      $CHAINLOOP_TOKEN set. Ignoring user credentials." (app/cli/cmd/root.go).
+  chainloopConfig:
+    default: ""
+    description: >-
+      Absolute path INSIDE the sandbox to a chainloop config.toml to adopt -
+      i.e. where you mounted the host's, which sbx mounts at the SAME absolute
+      path it has on the host. The wrapper copies it to
+      ~/.config/chainloop/config.toml so every later `chainloop` invocation
+      finds it, including the managed git hooks, which run as their own
+      processes (a --config flag would not reach those). Brings the org and the
+      control-plane/CAS/platform endpoints with it, which is what makes this
+      worthwhile for self-hosted. NOTE its [auth] token is your personal
+      login session: short-lived (~days) and your full identity. Prefer
+      chainloopToken for anything unattended.
+# Inherit the built-in `claude` agent - its image, Anthropic credential and
+# egress, MCP gateway registration and ~/.claude volumes - and declare only the
+# Chainloop delta below.
+extends: claude
+
+sandbox:
+  # Replaces the parent's entrypoint; the wrapper re-adds its flags.
+  entrypoint: ["/home/agent/.local/bin/cl-trace-wrap.sh"]
+
+setup:
+  install:
+    # The git hooks invoke `chainloop` by bare name, so it has to be on PATH.
+    - command: >-
+        mkdir -p /usr/local/bin &&
+        curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --path /usr/local/bin &&
+        chainloop version
+      user: "0"
+      description: Install the chainloop CLI on PATH
+  files:
+    - path: /home/agent/.local/bin/cl-trace-wrap.sh
+      mode: "0755"
+      content: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        # Anything that would hand back an untraced agent is fatal: a sandbox
+        # that quietly records nothing is worse than one that refuses to start.
+        die() {
+          echo "[chainloop-trace] ERROR: $1" >&2
+          exit 1
+        }
+
+        if ! command -v chainloop >/dev/null 2>&1; then
+          die "chainloop CLI not on PATH - the kit's install step did not complete
+        (check egress to dl.chainloop.dev). Refusing to start an untraced agent."
+        fi
+
+        # Adopt a mounted host config.toml. Copied into place rather than passed
+        # with --config, so the git hooks find it in their own processes too.
+        if [ -n "$CL_TRACE_CONFIG_SOURCE" ]; then
+          if [ ! -r "$CL_TRACE_CONFIG_SOURCE" ]; then
+            die "chainloopConfig points at '$CL_TRACE_CONFIG_SOURCE', which is not
+        readable in the sandbox. Mount it read-only and give the path it has ON
+        THE HOST - that is where sbx mounts it inside too, e.g.
+          sbx run ... \"\$HOME/Library/Application Support/chainloop:ro\""
+          fi
+          mkdir -p "$HOME/.config/chainloop"
+          install -m 600 "$CL_TRACE_CONFIG_SOURCE" "$HOME/.config/chainloop/config.toml"
+          echo "[chainloop-trace] Adopted chainloop config from $CL_TRACE_CONFIG_SOURCE" >&2
+        fi
+
+        # Without credentials nothing can be pushed, so refuse rather than
+        # record nothing. A token wins over a config-file login session.
+        if [ -z "$CHAINLOOP_TOKEN" ] && [ ! -r "$HOME/.config/chainloop/config.toml" ]; then
+          die "no Chainloop credentials. Pass an org-scoped API token with
+          --kit-arg chainloopToken=<token>
+        or mount your host config and point at it with
+          --kit-arg chainloopConfig=<path-inside-sandbox>"
+        fi
+
+        # Persistent tracing only: the repo must already be initialized, and the
+        # identity comes from its committed .chainloop.yml.
+        repo_root=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
+        # The two filenames the CLI reads, spelled out: a glob here would also
+        # accept files Chainloop never looks at, letting the sandbox start untraced.
+        if ! { grep -qsE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$repo_root/.chainloop.yml" \
+               || grep -qsE '^[[:space:]]*projectName:[[:space:]]*["'"'"']?[A-Za-z0-9]' "$repo_root/.chainloop.yaml"; } \
+           || ! grep -qs "chainloop trace hook" "$repo_root/.claude/settings.json"; then
+          die "this repository is not initialized for chainloop trace.
+
+          Run this in the repository first, then start the sandbox again:
+
+            chainloop trace init
+
+          It writes .chainloop.yml (organization + projectName) and the
+          'chainloop trace hook' entries in .claude/settings.json, which this kit
+          reads to know what to attest and when. Both must be committed - the
+          sandbox works on a clone, so uncommitted config does not reach it.
+
+          Refusing to start rather than run a session that records nothing."
+        fi
+
+        echo "[chainloop-trace] Repo initialized for chainloop trace - persistent mode" >&2
+        echo "[chainloop-trace]   identity from .chainloop.yml; attestation is pushed on 'git push'" >&2
+        exec claude --dangerously-skip-permissions "$@"
+
+environment:
+  variables:
+    # HOME is deliberately not declared: the agent and the hook subprocess must
+    # share it, and sbx already sets it on PID 1.
+    CHAINLOOP_TOKEN: ${{ kit.args.chainloopToken }}
+    # Path inside the sandbox of a mounted host config.toml for the wrapper to
+    # adopt. Not CHAINLOOP_-prefixed, so it cannot bind to the CLI's own flags.
+    CL_TRACE_CONFIG_SOURCE: ${{ kit.args.chainloopConfig }}
+    # The Chainloop hosts MUST bypass the egress proxy: `chainloop trace` speaks
+    # gRPC, and the proxy's intercepted path cannot negotiate h2, so anything that
+    # routes these hosts through it silently breaks attestation. See the README.
+    NO_PROXY: "localhost,127.0.0.1,::1,gateway.docker.internal,api.cp.chainloop.dev,api.cas.chainloop.dev,api.app.chainloop.dev"
+    no_proxy: "localhost,127.0.0.1,::1,gateway.docker.internal,api.cp.chainloop.dev,api.cas.chainloop.dev,api.app.chainloop.dev"
+
+credentials:
+  # No `anthropic` entry: it is inherited from the parent. Do NOT redeclare it -
+  # a duplicate credentials[].service across parent and child is an ERROR.
+  #
+  # Proxy-managed injection of the Chainloop token is not usable here: it needs
+  # the proxy to terminate TLS, which breaks the kit's gRPC traffic (see the
+  # README). Re-test with:
+  #   curl -sv --http2 --proxy "$HTTPS_PROXY" https://api.cp.chainloop.dev/
+  # and reconsider once the issuer is "Docker Sandboxes Proxy CA" AND h2 is
+  # still negotiated.
+
+permissions:
+  # Egress is deny-by-default; the Anthropic/Claude hosts come from the parent.
+  network:
+    allow:
+      - "api.cp.chainloop.dev:443"           # control plane
+      - "api.cas.chainloop.dev:443"          # CAS, when the org backend is external
+      - "api.app.chainloop.dev:443"          # platform backend
+      - "t.chainloop.dev:443"                # CLI telemetry
+      - "crb.chainloop.dev:443"              # CLI telemetry, older binaries
+      - "timestamp.digicert.com:80"          # RFC 3161 timestamp authority, used when signing
+      - "buf.build:443"                      # Buf Schema Registry, for `make api`
+      - "dl.chainloop.dev:443"               # CLI installer
+      - "chainloop-baafegchfnekdcde.z02.azurefd.net:443"  # CLI download CDN
+      - "github.com:443"                     # git push - the attestation egresses here.
+                                             # Other forges: add your own host.
+
+agentInstructions:
+  # filename is inherited (CLAUDE.md). `content` is a scalar, so this REPLACES
+  # the parent's text rather than appending to it.
+  content: |
+    ## Chainloop tracing
+    This session is recorded by Chainloop trace. Tool/MCP usage and coding
+    activity are attested and sent to Chainloop (as a CHAINLOOP_AI_CODING_SESSION
+    attestation) when you `git push` from this sandbox. No push, no record -
+    so push before the sandbox is reclaimed.

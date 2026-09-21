@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Bump Helm Chart version, appVersion to a given version number
+# Bump Helm Chart version, appVersion, Dagger and sandbox kit versions to a given version number
 
 set -e
 
@@ -58,4 +58,16 @@ platform_version=$(curl -sf https://api.app.chainloop.dev/infoz | jq -r '.versio
 if [[ -n "${platform_version}" && "${platform_version}" != "null" ]]; then
     sed -i "s/platformVersion  = \"v.*\"/platformVersion  = \"${platform_version}\"/" "${dagger_main}"
 fi
+
+## Update the Docker Sandboxes kit versions
+# Each kit declares the Chainloop release it belongs to, tracking semVer like
+# appVersion does. `schemaVersion:` is left alone by the ^version anchor.
+# Matching nothing is an error, not a no-op: a silent skip here would leave the
+# specs at the old version and the publish workflow would never fire.
+shopt -s nullglob
+kit_specs=(devel/sandbox-kit/*/spec.yaml)
+[ "${#kit_specs[@]}" -gt 0 ] || die "no kit specs found under devel/sandbox-kit (run from the repo root)"
+for kit_spec in "${kit_specs[@]}"; do
+    sed -i "s#^version:.*#version: ${semVer}#" "${kit_spec}"
+done
 

@@ -52,12 +52,18 @@ args:
       Supply THIS or chainloopConfig — with neither, the kit's wrapper refuses
       to start rather than run an untraced session.
   kitPath:
-    default: ./devel/sandbox-kit
+    default: ./devel/sandbox-kit/claude
     description: >-
-      Path to the chainloop-trace-claude kit. Vendored into this repo so the
-      environment is self-contained; the upstream source is the PoC repo
-      (playground/chainloop-trace-docker-sandbox), and devel/sandbox-kit/README.md
-      says how to re-sync. Relative paths in kits: resolve against the INVOCATION
+      Path to the chainloop-trace-claude kit. Deliberately the IN-REPO copy and not
+      the published artifact, so this environment always runs the kit as it exists
+      on the current branch: no allowlist entry, no registry round trip, and a spec
+      edit takes effect without a release. Released copies go to
+      docker.io/chainloop/sbx-kit-claude:<version> via
+      .github/workflows/package_sandbox_kit.yaml, tagged with the `version:` in the
+      kit's own spec.yaml — pass
+      --env-arg kitPath=docker.io/chainloop/sbx-kit-claude:vX.Y.Z to pin one.
+      devel/sandbox-kit/README.md says how to re-sync with the upstream PoC repo
+      (playground/chainloop-trace-docker-sandbox). Relative paths in kits: resolve against the INVOCATION
       CWD, not this file's directory (docker/sbx-releases#493, still open;
       reproduced on nightly rc1-441 — `workspace:` resolves against the file's
       dir, `kits:` does not), so run `sbx env run` FROM the repo root, or pass
@@ -67,10 +73,10 @@ args:
 agent: chainloop-trace-claude
 kits:
   - source: ${{ env.args.kitPath }}
-    # The kit declares these; see its spec.yaml for the full list.
-    # chainloopOrg/chainloopProject are deliberately absent: they exist only for
-    # `trace run` mode, and in persistent mode the identity comes from this
-    # repo's own .chainloop.yml.
+    # The kit declares these; see its spec.yaml for the full list. There is no
+    # mode or identity argument: the kit runs persistent tracing only and reads
+    # org/project/workflow from this repo's own committed .chainloop.yml. It
+    # refuses to start on a repo that has not had `chainloop trace init` run.
     args:
       # CAVEAT: the environment plan prints this in CLEARTEXT — verified, and
       # moving it off `env:` did not help; only a literal `secrets:` value is
@@ -78,12 +84,6 @@ kits:
       # approval. Keep it out of shell history at least:
       #   sbx env run --env-args-file ~/.config/chainloop/sbxenv-args
       chainloopToken: ${{ env.args.chainloopToken }}
-      # Force persistent rather than leaving it to auto-detection. On THIS repo
-      # auto resolves to persistent anyway, but pinning it means a detection
-      # miss fails loudly instead of falling back to `trace run` — whose
-      # teardown wipes .git/chainloop-trace/ and strips the committed chainloop
-      # hooks from .claude/settings.json.
-      traceMode: persistent
 
   # Sign commits and tags with the SSH key forwarded from your host's agent, so
   # the agent's commits carry your signature and not just your name. A `kind:
@@ -112,7 +112,7 @@ workspace:
 # devel/sandbox-kit/README.md.
 
 # NOTE — deliberately NOT declared here:
-#   env:      nothing left to set. The Chainloop token and the mode reach the
+#   env:      nothing left to set. The Chainloop token reaches the
 #             sandbox as KIT arguments (above), not as environment variables, so
 #             the kit owns its own configuration surface. Path B still applies:
 #             the kit turns chainloopToken into CHAINLOOP_TOKEN inside the VM,
