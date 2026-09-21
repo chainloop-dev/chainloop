@@ -142,8 +142,11 @@ jobs:
 
       - name: Add Attestation (Sandbox Kit) and Push Kit
         run: |
-          # KIT_VERSION arrives through env, not ${{ }} interpolation, so the value
-          # is never expanded into this script's source.
+          # KIT_VERSION arrives through env, not template interpolation, so the
+          # value is never expanded into this script's source. Do not write the
+          # literal expression syntax here either: GitHub expands it inside run
+          # bodies, shell comments included, and an empty one makes the whole
+          # workflow file fail to parse.
 
           # Force the version declared in the kit spec and make sure it exists in
           # the project by passing --existing-version; if it does not exist the
