@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,13 +30,12 @@ import (
 	"github.com/spf13/cobra/doc"
 )
 
-const fileHeader = `---
-title: Command Line Reference (OSS)
----
+// fileHeader is plain Markdown rather than MDX: this reference is read in the
+// repository, not published to the documentation site, so it carries its own
+// title instead of front matter and links out with absolute URLs.
+const fileHeader = `# Command Line Reference (OSS)
 
-<Note>
-[The Enterprise Edition CLI](/command-line-reference/cli-ee-reference) provides additional platform management features, available with [paid plans](https://chainloop.dev/pricing).
-</Note>
+> [The Enterprise Edition CLI](https://docs.chainloop.dev/cli/reference) provides additional platform management features, available with [paid plans](https://chainloop.dev/pricing).
 
 Chainloop CLI is a command-line tool designed to streamline the process of crafting, managing, and storing software supply chain attestations. The CLI enables developers to generate and submit evidence-such as build artifacts, SBOMs, 
 and vulnerability reports-directly from their CI/CD workflows, ensuring compliance with organizational policies without introducing friction into the development process.
@@ -68,7 +67,10 @@ func main() {
 	formatted := processFinalDocument(builder.String())
 	withHeader := fmt.Sprintf("%s%s", fileHeader, formatted)
 
-	err := os.WriteFile(filepath.Join(out, "cli-reference.mdx"), []byte(withHeader), 0600)
+	// The output directory is the argument in this file's go:generate directive,
+	// not anything a user of the CLI controls.
+	// nolint:gosec
+	err := os.WriteFile(filepath.Join(out, "cli-reference.md"), []byte(withHeader), 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
