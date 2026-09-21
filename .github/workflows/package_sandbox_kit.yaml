@@ -128,8 +128,11 @@ jobs:
       # governed by the connection's ruleset, which matches the subject claim
       # repo:chainloop-dev/chainloop:ref:refs/heads/main - adding an `environment:`
       # to this job would change that claim and stop it matching.
+      # Docker Hub OIDC landed in login-action v4.5.0; anything older ignores
+      # DOCKERHUB_OIDC_CONNECTIONID and fails with "Password required", so this
+      # pin must not be moved backwards.
       - name: Docker login to Docker Hub
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         env:
           DOCKERHUB_OIDC_CONNECTIONID: 361a9222-f648-4f62-baf4-5f500f7fbf54
         with:
