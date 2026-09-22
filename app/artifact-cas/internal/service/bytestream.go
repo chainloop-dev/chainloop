@@ -18,16 +18,11 @@ package service
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/gob"
-	"encoding/hex"
-	"fmt"
-	"hash"
-	"io"
-	"os"
-
 	"errors"
+	"fmt"
+	"io"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -59,8 +54,9 @@ func NewByteStreamService(bp backend.Providers, opts ...NewOpt) *ByteStreamServi
 }
 
 // Client-side streaming RPC for writing blobs.
-// Iterate on the stream of file chunks, aggregate them in a buffer,
-// send them to the backend and return a response with the commitedSize
+// Iterate on the stream of file chunks, spill them to the staging disk, verify
+// them against the declared digest, hand the verified file to the backend and
+// return a response with the committedSize
 func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) error {
 	ctx := stream.Context()
 	ctx, span := otelx.Start(ctx, byteStreamTracer, "ByteStreamService.Write")
@@ -177,68 +173,14 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 // errors (client disconnect, exceeded size cap, staging-disk write failure) are
 // returned unwrapped for the caller to classify.
 func (s *ByteStreamService) spillVerifyUpload(ctx context.Context, stream bytestream.ByteStream_WriteServer, storageBackend backend.Uploader, req *writeRequest, maxBytes int64) (int64, error) {
-	// os.CreateTemp falls back to the OS temp dir when given an empty path, which
-	// on the CAS container is a read-only secret mount. Refuse instead: an
-	// unconfigured staging dir is a deployment error, not something to paper over.
-	if s.stagingDir == "" {
-		return 0, errors.New("no staging directory configured")
-	}
-
-	f, err := os.CreateTemp(s.stagingDir, stagingFilePrefix+"*")
-	if err != nil {
-		return 0, fmt.Errorf("creating staging file: %w", err)
-	}
-
-	// Drop the directory entry straight away and keep working through the open
-	// file descriptor. The staged content stays fully readable and seekable, but
-	// it is now owned by this process rather than by the filesystem: the kernel
-	// releases the space when the descriptor goes away, including when the
-	// process is killed outright.
-	//
-	// This is what keeps the staging volume bounded. A deferred remove only runs
-	// when the handler returns, so a SIGKILL or an OOM kill mid-upload would
-	// strand a partial artifact on the volume, and nothing would ever reclaim it:
-	// the emptyDir backing it outlives container restarts and is cleared only
-	// when the Pod is removed from the node. Unlinking up front means an
-	// interrupted upload cannot leave anything behind, whatever kills us, so no
-	// sweep or reaper is needed to keep the volume from filling up.
-	if err := os.Remove(f.Name()); err != nil {
-		// Closing drops our handle but leaves the file itself in the staging
-		// directory, so try removing it once more rather than abandoning it there.
-		_ = f.Close()
-		if rmErr := os.Remove(f.Name()); rmErr != nil && !errors.Is(rmErr, os.ErrNotExist) {
-			s.log.Warnw("msg", "staging file left on disk", "path", f.Name(), "error", rmErr.Error())
-		}
-		return 0, fmt.Errorf("unlinking staging file: %w", err)
-	}
-
-	// Closing is now the whole cleanup: it drops the last reference to the
-	// unlinked inode and frees the space, on every exit path.
-	defer func() {
-		if err := f.Close(); err != nil {
-			s.log.Warnw("msg", "failed to close staging file", "error", err.Error())
-		}
-	}()
-
-	// Tee the stream into the file and a SHA256 hasher in one pass.
-	hasher := sha256.New()
-	size, err := spillStream(ctx, stream, io.MultiWriter(f, hasher), req.GetData(), maxBytes, s.log, req.resource.Digest)
+	f, size, err := s.stageAndVerify(stagingUpload, req.resource.Digest, func(w io.Writer) error {
+		return spillStream(ctx, stream, w, req.GetData(), maxBytes, s.log, req.resource.Digest)
+	})
 	if err != nil {
 		return 0, err
 	}
-
-	// Fail closed: if the streamed bytes do not hash to the declared digest,
-	// reject the upload and send nothing to the backend.
-	if got := hex.EncodeToString(hasher.Sum(nil)); got != req.resource.Digest {
-		return 0, &digestMismatchError{got: got, want: req.resource.Digest}
-	}
-
-	// Rewind so the backend reads from the start. A seekable body also lets the
-	// AWS SDK learn the exact length and take its zero-copy SectionReader fast
-	// path instead of buffering parts in memory.
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		return 0, fmt.Errorf("rewinding staging file: %w", err)
-	}
+	// Closing the unlinked staging file is the whole cleanup: it frees the space.
+	defer s.closeStagingFile(f)
 
 	s.log.Infow("msg", "artifact verified, uploading now to backend", "name", req.resource.FileName, "digest", req.resource.Digest, "size", size)
 	// IMPORTANT: hand the *os.File to Upload unwrapped. Wrapping it (io.TeeReader,
@@ -251,12 +193,6 @@ func (s *ByteStreamService) spillVerifyUpload(ctx context.Context, stream bytest
 	return size, nil
 }
 
-// stagingFilePrefix names the per-upload temporary files. They are unlinked as
-// soon as they are created, so the name never shows up in a directory listing;
-// it identifies them in the process's open descriptors, where an in-flight
-// upload appears as "<staging dir>/cas-upload-NNN (deleted)".
-const stagingFilePrefix = "cas-upload-"
-
 // backendUploadError marks a failure returned by the storage backend's Upload,
 // as opposed to an error reading the client stream. Backend failures are always
 // masked as internal errors and are never interpreted as a client disconnect or
@@ -266,21 +202,11 @@ type backendUploadError struct{ err error }
 func (e *backendUploadError) Error() string { return e.err.Error() }
 func (e *backendUploadError) Unwrap() error { return e.err }
 
-// digestMismatchError marks an upload whose streamed bytes do not hash to the
-// client-declared digest. It is surfaced to the client as InvalidArgument: the
-// request is malformed (the declared key does not describe the content), and no
-// bytes are ever written to the backend.
-type digestMismatchError struct{ got, want string }
-
-func (e *digestMismatchError) Error() string {
-	return fmt.Sprintf("uploaded content does not match the declared digest: got=%s, want=%s", e.got, e.want)
-}
-
 // spillStream forwards the artifact from the client stream into w (the staging
 // file tee'd into a SHA256 hasher), enforcing the max upload size as it goes.
-// firstData is the payload already read from the first request. It returns the
-// total number of bytes written. It reads the client stream straight into w.
-func spillStream(ctx context.Context, stream bytestream.ByteStream_WriteServer, w io.Writer, firstData []byte, maxSize int64, log *log.Helper, digest string) (int64, error) {
+// firstData is the payload already read from the first request.
+func spillStream(ctx context.Context, stream bytestream.ByteStream_WriteServer, w io.Writer, firstData []byte, maxSize int64, log *log.Helper, digest string) error {
+	// running total, needed to enforce the cap before each write
 	var size int64
 	write := func(data []byte) error {
 		if len(data) == 0 {
@@ -298,45 +224,47 @@ func spillStream(ctx context.Context, stream bytestream.ByteStream_WriteServer, 
 
 	// Write the data from the first request.
 	if err := write(firstData); err != nil {
-		return size, err
+		return err
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			// DeadlineExceeded, or Canceled
-			return size, ctx.Err()
+			return ctx.Err()
 		default:
 			// Extract the next chunk of data from the stream request
 			req, err := getWriteRequest(stream)
 			if err != nil {
 				// Finished reading the stream is not a real error
 				if errors.Is(err, io.EOF) {
-					return size, nil
+					return nil
 				}
-				return size, err
+				return err
 			}
 
 			// Write this request's data first: a spec-compliant client may set
 			// finish_write=true on the same message that carries the final chunk,
 			// so the data must be written before the finish check or it is lost.
 			if err := write(req.GetData()); err != nil {
-				return size, err
+				return err
 			}
 
 			log.Debugw("msg", "upload chunk received", "digest", digest, "currentSize", size, "maxSize", maxSize, "chunkSize", len(req.GetData()))
 
 			// Check if the client has finished sending data
 			if req.GetFinishWrite() {
-				return size, nil
+				return nil
 			}
 		}
 	}
 }
 
 // Server-side streaming RPC for reading blobs, implements the bytestream interface
-// NOTE: Due to the fact that we are using the OCI backend, we can not stream the content directly from the backend
-// but instead we need to download the whole artifact and then stream it to the client
+// NOTE: the content is not piped straight from the backend to the client. It is
+// staged on disk and verified first (see stageDownload), so the first byte only
+// leaves once the whole artifact is known to hash to the requested digest. The
+// client therefore sees no data until the backend fetch has completed.
 func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.ByteStream_ReadServer) error {
 	ctx := stream.Context()
 	ctx, span := otelx.Start(ctx, byteStreamTracer, "ByteStreamService.Read")
@@ -364,32 +292,47 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 		return sl.LogAndMaskErr(err, s.log)
 	}
 
-	// streamwriter will stream chunks of data to the client
-	sw := &streamWriter{stream: stream, log: s.log, wantChecksum: req.ResourceName, gotChecksum: sha256.New()}
-	if err := backend.Download(ctx, sw, req.ResourceName); err != nil {
-		if isClientDisconnect(err) {
-			s.log.Infow("msg", "download canceled", "digest", req.ResourceName)
-			return nil
-		}
+	// Stage the backend egress on local disk and verify it against the requested
+	// digest BEFORE the first byte is sent: the client never receives content
+	// that does not hash to the key it asked for, and CAS memory stays bounded
+	// because the artifact lives on disk.
+	f, size, err := s.stageDownload(ctx, backend, req.ResourceName)
+	if err != nil {
+		return s.downloadError(err, req.ResourceName)
+	}
+	defer s.closeStagingFile(f)
 
-		return sl.LogAndMaskErr(err, s.log)
+	if err := copyStaged(sendWriter{stream}, f); err != nil {
+		return s.downloadError(err, req.ResourceName)
 	}
 
-	// check if the file has been tampered with and notify the client
-	if sw.GetChecksum() != req.ResourceName {
-		return kerrors.Unauthorized("checksum", fmt.Sprintf("checksum mismatch: got=%s, want=%s", sw.GetChecksum(), req.ResourceName))
-	}
-
-	s.log.Infow("msg", "download finished", "digest", req.ResourceName)
+	s.log.Infow("msg", "download finished", "digest", req.ResourceName, "size", size)
 	s.audit.Dispatch(&events.CASArtifactDownloaded{
 		CASArtifactBase: &events.CASArtifactBase{
 			Digest:      req.ResourceName,
-			SizeBytes:   sw.size,
+			SizeBytes:   size,
 			BackendType: info.BackendType,
 		},
 	}, info)
 
 	return nil
+}
+
+// downloadError maps a staging or streaming failure of a download to its gRPC
+// status. A mismatch means the backend holds content that does not hash to its
+// key, corrupt or tampered, so it is reported as DataLoss with both digests
+// rather than blamed on the caller. A client that went away is not an error.
+// Anything else is masked.
+func (s *ByteStreamService) downloadError(err error, digest string) error {
+	if _, ok := errors.AsType[*digestMismatchError](err); ok {
+		return status.Error(codes.DataLoss, err.Error())
+	}
+	if isClientDisconnect(err) {
+		s.log.Infow("msg", "download canceled", "digest", digest)
+		return nil
+	}
+
+	return sl.LogAndMaskErr(err, s.log)
 }
 
 // checkUploadSize returns an ErrUploadSizeExceeded when total exceeds maxSize.
@@ -439,32 +382,13 @@ func decodeResource(b64encoded string) (*v1.CASResource, error) {
 	return resource, err
 }
 
-// io.Writer wrapper for bytestreams.ReadResponses
-type streamWriter struct {
+// sendWriter adapts a bytestream Read stream to io.Writer: each Write becomes
+// one ReadResponse. The content has already been verified on disk and the
+// chunking is decided by the caller (copyStaged), so this is a pure adapter.
+type sendWriter struct {
 	stream bytestream.ByteStream_ReadServer
-	log    *log.Helper
-	// expected wantChecksum of the data being sent
-	wantChecksum string
-	// calculated gotChecksum of the data sent
-	gotChecksum hash.Hash
-	// total number of bytes sent
-	size int64
 }
 
-// Send the chunk of data through the bytestream
-func (sw *streamWriter) Write(data []byte) (int, error) {
-	sw.log.Debugw("msg", "sending download chunk", "digest", sw.wantChecksum, "chunkSize", len(data))
-
-	// Update the checksum of the data being sent
-	if _, err := sw.gotChecksum.Write(data); err != nil {
-		return 0, err
-	}
-
-	sw.size += int64(len(data))
+func (sw sendWriter) Write(data []byte) (int, error) {
 	return len(data), sw.stream.Send(&bytestream.ReadResponse{Data: data})
-}
-
-// GetChecksum retrieves the sha256 checksum of the read contents
-func (sw *streamWriter) GetChecksum() string {
-	return hex.EncodeToString(sw.gotChecksum.Sum(nil))
 }

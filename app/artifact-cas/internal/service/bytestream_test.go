@@ -400,13 +400,10 @@ func (s *bytestreamSuite) TestDownloadFoundMistmathedDigest() {
 	reader, err := s.client.Read(s.downCtx, &bytestream.ReadRequest{ResourceName: "deadbeef"})
 	s.NoError(err)
 
-	// receive the data, it should contain all of it since the buffer is serverside is 1MB
+	// The content is verified on disk before anything is sent, so the very first
+	// Recv reports the mismatch and no data ever reaches the client.
 	got, err := reader.Recv()
-	s.NoError(err)
-	s.Equal("hello world", string(got.Data))
-	// Return a mistmached digest
-	got, err = reader.Recv()
-	s.ErrorContains(err, "checksum mismatch:")
+	assertGRPCError(s.T(), err, codes.DataLoss, "does not match the requested digest")
 	s.Nil(got)
 	// tampered downloads emit no events
 	s.Empty(s.audit.published)
@@ -435,8 +432,9 @@ type bytestreamSuite struct {
 	audit            *fakePublisher
 	upCtx            context.Context
 	downCtx          context.Context
-	// stagingDir is the per-test upload staging directory the service is
-	// configured with, so tests can assert it is left clean.
+	// stagingDir is the per-test staging directory (uploads and downloads) the
+	// service is configured with, so tests can assert it is left clean or make
+	// it unavailable.
 	stagingDir string
 }
 

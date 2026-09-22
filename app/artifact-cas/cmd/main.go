@@ -123,8 +123,8 @@ func main() {
 
 	_ = logger.Log(log.LevelInfo, "msg", "starting artifact-cas service", "version", Version)
 
-	// Ensure the upload staging directory is configured and writable before we
-	// accept any traffic: without it no upload can be verified.
+	// Ensure the staging directory is configured and writable before we accept
+	// any traffic: without it no upload or download can be verified.
 	if err := prepareStagingDir(&bc); err != nil {
 		panic(err)
 	}
@@ -160,20 +160,20 @@ func newProtoValidator() (protovalidate.Validator, error) {
 	return protovalidate.New()
 }
 
-// prepareStagingDir creates the upload staging directory and proves it is
-// writable. It must be the same directory the service is configured with (see
-// serviceOpts / conf.staging_dir).
+// prepareStagingDir creates the staging directory and proves it is writable. It
+// must be the same directory the service is configured with (see serviceOpts /
+// conf.staging_dir).
 //
-// staging_dir is required: uploads are verified by spilling them here first, so
-// a missing or unwritable directory means no upload can succeed. Failing at
-// startup surfaces that immediately, rather than letting the service report
-// healthy and reject every upload. The CAS container runs with a read-only root
-// filesystem and /tmp is a read-only secret mount, so the configured directory is
-// the only place uploads can be staged.
+// staging_dir is required: uploads and downloads are verified by spilling them
+// here first, so a missing or unwritable directory means no transfer can
+// succeed. Failing at startup surfaces that immediately, rather than letting the
+// service report healthy and reject every request. The CAS container runs with a
+// read-only root filesystem and /tmp is a read-only secret mount, so the
+// configured directory is the only place artifacts can be staged.
 //
-// The directory stays clean on its own: each upload removes its staging file on
-// every exit path, and the emptyDir backing it is cleared by Kubernetes when the
-// Pod is removed from the node.
+// The directory stays clean on its own: each request unlinks its staging file as
+// soon as it is created, and the emptyDir backing it is cleared by Kubernetes
+// when the Pod is removed from the node.
 func prepareStagingDir(bc *conf.Bootstrap) error {
 	dir := bc.GetStagingDir()
 	if dir == "" {

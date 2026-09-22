@@ -17,13 +17,12 @@ package service
 
 import (
 	"context"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -32,9 +31,9 @@ import (
 )
 
 // These tests lock down the DOWNLOAD digest-verification behavior — the server
-// must stream the stored bytes back, compute their sha256 across however many
+// must stage the stored bytes on disk, compute their sha256 across however many
 // chunks the backend produces, and reject any content whose digest does not
-// match the requested resource name.
+// match the requested resource name BEFORE the first byte reaches the client.
 
 // fakeReadServer is a minimal bytestream.ByteStream_ReadServer that records the
 // data chunks the streamWriter sends. Only Send is exercised by streamWriter.
@@ -51,35 +50,22 @@ func (f *fakeReadServer) Send(r *bytestream.ReadResponse) error {
 	return nil
 }
 
-// TestStreamWriter_ChecksumAcrossWrites verifies the download writer computes
-// the sha256 over the full stream regardless of how the content is chunked, and
-// forwards every byte to the client in order.
-func TestStreamWriter_ChecksumAcrossWrites(t *testing.T) {
+// TestSendWriter_ForwardsChunksInOrder verifies the download adapter turns
+// every Write into one ReadResponse carrying exactly those bytes, in order.
+// Hashing is not its job: content is verified on disk before the first Send.
+func TestSendWriter_ForwardsChunksInOrder(t *testing.T) {
 	content := []byte("chainloop download payload delivered in several writes")
-	digest := sha256Hex(content)
 
 	fake := &fakeReadServer{}
-	sw := &streamWriter{
-		stream:       fake,
-		log:          servicelogger.EmptyLogger(),
-		wantChecksum: digest,
-		gotChecksum:  sha256.New(),
-	}
+	sw := sendWriter{stream: fake}
 
-	// Feed the content in uneven pieces to mimic a backend emitting arbitrary
-	// chunk boundaries.
+	// Feed the content in uneven pieces to mimic arbitrary chunk boundaries.
 	for off := 0; off < len(content); off += 11 {
-		end := off + 11
-		if end > len(content) {
-			end = len(content)
-		}
+		end := min(off+11, len(content))
 		n, err := sw.Write(content[off:end])
 		require.NoError(t, err)
 		assert.Equal(t, end-off, n)
 	}
-
-	assert.Equal(t, digest, sw.GetChecksum(), "checksum must be computed over the whole stream")
-	assert.Equal(t, int64(len(content)), sw.size)
 
 	// The bytes forwarded to the client must reassemble to the exact content.
 	forwarded := make([]byte, 0, len(content))
@@ -87,14 +73,6 @@ func TestStreamWriter_ChecksumAcrossWrites(t *testing.T) {
 		forwarded = append(forwarded, c...)
 	}
 	assert.Equal(t, content, forwarded)
-}
-
-// TestStreamWriter_EmptyStreamChecksum: with no writes the computed checksum is
-// the sha256 of the empty input.
-func TestStreamWriter_EmptyStreamChecksum(t *testing.T) {
-	sw := &streamWriter{stream: &fakeReadServer{}, log: servicelogger.EmptyLogger(), gotChecksum: sha256.New()}
-	assert.Equal(t, sha256Hex([]byte{}), sw.GetChecksum())
-	assert.Equal(t, int64(0), sw.size)
 }
 
 // recvAllDownload drains a Read stream, returning the concatenated payload and
@@ -171,9 +149,10 @@ func (s *bytestreamSuite) TestDownloadEmptyContentChecksum() {
 	s.Equal(int64(0), info.SizeBytes)
 }
 
-// TestDownloadTamperedAcrossChunksRejected: if the streamed bytes do not hash to
-// the requested digest, the server reports a checksum mismatch and emits no
-// audit event — the tamper-detection guarantee of a CAS.
+// TestDownloadTamperedAcrossChunksRejected: if the stored bytes do not hash to
+// the requested digest, the server reports the content as lost/corrupt, sends
+// NOT A SINGLE BYTE to the client and emits no audit event — the
+// tamper-detection guarantee of a CAS.
 func (s *bytestreamSuite) TestDownloadTamperedAcrossChunksRejected() {
 	// The client asks for this digest, but the backend returns different bytes.
 	requested := sha256Hex([]byte("the authentic artifact contents"))
@@ -189,10 +168,31 @@ func (s *bytestreamSuite) TestDownloadTamperedAcrossChunksRejected() {
 	reader, err := s.client.Read(s.downCtx, &bytestream.ReadRequest{ResourceName: requested})
 	s.NoError(err)
 
-	_, err = recvAllDownload(reader)
-	s.ErrorContains(err, "checksum mismatch")
+	got, err := recvAllDownload(reader)
+	assertGRPCError(s.T(), err, codes.DataLoss, "does not match the requested digest")
+	s.ErrorContains(err, "got="+sha256Hex(tampered))
+	s.Empty(got, "no unverified byte may reach the client")
 	// tampered downloads emit no events
 	s.Empty(s.audit.published)
+}
+
+// TestDownloadStagingFailureMasked: when the download cannot be staged on disk
+// (here: the staging directory vanished) the failure is masked as Internal,
+// nothing is sent to the client and no audit event is emitted.
+func (s *bytestreamSuite) TestDownloadStagingFailureMasked() {
+	content := []byte("never leaves the server")
+	digest := sha256Hex(content)
+	s.Require().NoError(os.RemoveAll(s.stagingDir))
+
+	reader, err := s.client.Read(s.downCtx, &bytestream.ReadRequest{ResourceName: digest})
+	s.NoError(err)
+
+	got, err := recvAllDownload(reader)
+	assertGRPCError(s.T(), err, codes.Internal, "server error")
+	s.Empty(got)
+	s.Empty(s.audit.published)
+	// the backend is never asked for content that cannot be staged
+	s.ociBackend.AssertNotCalled(s.T(), "Download", mock.Anything, mock.Anything, mock.Anything)
 }
 
 // TestDownloadClientDisconnect: a backend Download failure that indicates the

@@ -126,8 +126,8 @@ spec:
               mountPath: "/data/conf"
             - name: jwt-public-key
               mountPath: "/tmp"
-            # Writable scratch volume for staging + verifying uploads before they
-            # reach the backend (the container root filesystem is read-only).
+            # Writable scratch volume for staging + verifying uploads and downloads
+            # before they are forwarded (the container root filesystem is read-only).
             - name: staging
               mountPath: {{ include "chainloop.cas.staging_dir" . | quote }}
             {{- if eq "gcpSecretManager" .Values.secretsBackend.backend  }}
@@ -162,9 +162,9 @@ spec:
         - name: jwt-public-key
           secret:
             secretName: {{ include "chainloop.cas.fullname" . }}-jwt-public-key
-        # Node-disk (NOT tmpfs/RAM) scratch space for staging + verifying uploads.
-        # No sizeLimit: breaching one evicts the Pod rather than failing the
-        # upload that overran it.
+        # Node-disk (NOT tmpfs/RAM) scratch space for staging + verifying uploads
+        # and downloads. No sizeLimit: breaching one evicts the Pod rather than
+        # failing the transfer that overran it.
         - name: staging
           emptyDir: {}
         {{- if include "cas.tls-secret-name" .  }}

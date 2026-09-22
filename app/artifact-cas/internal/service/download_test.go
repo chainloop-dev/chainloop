@@ -19,6 +19,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strconv"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -51,11 +53,15 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		content    string
-		claims     *casJWT.Claims
-		wantStatus int
-		wantEvents int
+		name    string
+		content string
+		claims  *casJWT.Claims
+		// removeStagingDir makes staging impossible before the request is served
+		removeStagingDir bool
+		wantStatus       int
+		// wantBodyContains is asserted on the response body when non-empty
+		wantBodyContains string
+		wantEvents       int
 	}{
 		{
 			name:       "successful download emits an event",
@@ -65,10 +71,19 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 			wantEvents: 1,
 		},
 		{
-			name:       "checksum mismatch emits no event",
-			content:    "tampered content",
-			claims:     downloaderClaims(false),
-			wantStatus: http.StatusUnauthorized,
+			name:             "checksum mismatch is reported as corrupt content, sends no bytes and emits no event",
+			content:          "tampered content",
+			claims:           downloaderClaims(false),
+			wantStatus:       http.StatusInternalServerError,
+			wantBodyContains: "does not match the requested digest",
+		},
+		{
+			name:             "staging failure is masked, sends no bytes and emits no event",
+			content:          "hello world",
+			claims:           downloaderClaims(false),
+			removeStagingDir: true,
+			wantStatus:       http.StatusInternalServerError,
+			wantBodyContains: "server error",
 		},
 		{
 			name:       "internal control plane traffic emits no event",
@@ -86,17 +101,25 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 			uploaderDownloader.On("Describe", mock.Anything, digestHex).Return(&v1.CASResource{
 				FileName: "test.txt", Digest: digestHex, Size: int64(len(tc.content)),
 			}, nil)
-			uploaderDownloader.On("Download", mock.Anything, mock.Anything, digestHex).Return(nil).
-				Run(func(args mock.Arguments) {
-					_, err := io.WriteString(args.Get(1).(io.Writer), tc.content)
-					require.NoError(t, err)
-				})
+			if !tc.removeStagingDir {
+				uploaderDownloader.On("Download", mock.Anything, mock.Anything, digestHex).Return(nil).
+					Run(func(args mock.Arguments) {
+						_, err := io.WriteString(args.Get(1).(io.Writer), tc.content)
+						require.NoError(t, err)
+					})
+			}
+
+			stagingDir := t.TempDir()
+			if tc.removeStagingDir {
+				require.NoError(t, os.RemoveAll(stagingDir))
+			}
 
 			audit := &fakePublisher{}
 			svc := NewDownloadService(
 				backend.Providers{backendType: provider},
 				WithLogger(log.DefaultLogger),
 				WithAuditDispatcher(newTestDispatcher(audit)),
+				WithStagingDir(stagingDir),
 			)
 
 			req := httptest.NewRequest(http.MethodGet, "/download/sha256:"+digestHex, nil)
@@ -107,6 +130,20 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 			svc.ServeHTTP(w, req)
 
 			assert.Equal(t, tc.wantStatus, w.Code)
+			if tc.wantStatus == http.StatusOK {
+				assert.Equal(t, tc.content, w.Body.String())
+				assert.Equal(t, strconv.Itoa(len(tc.content)), w.Header().Get("Content-Length"))
+				assert.Equal(t, "attachment; filename=test.txt", w.Header().Get("Content-Disposition"))
+			} else {
+				assert.NotContains(t, w.Body.String(), tc.content, "no unverified byte may reach the client")
+				assert.Contains(t, w.Body.String(), tc.wantBodyContains)
+			}
+			if !tc.removeStagingDir {
+				// the staging dir is left clean on every exit path
+				entries, err := os.ReadDir(stagingDir)
+				require.NoError(t, err)
+				assert.Empty(t, entries)
+			}
 			require.Len(t, audit.published, tc.wantEvents)
 			if tc.wantEvents == 0 {
 				return
