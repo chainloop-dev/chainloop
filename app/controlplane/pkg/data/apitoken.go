@@ -45,19 +45,22 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts) (*biz.APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.Create")
 	defer span.End()
 
 	token, err := r.data.DB.APIToken.Create().
-		SetName(name).
-		SetNillableDescription(description).
-		SetNillableExpiresAt(expiresAt).
-		SetNillableOrganizationID(organizationID).
-		SetNillableProjectID(projectID).
-		SetNillableWorkflowID(workflowID).
-		SetPolicies(policies).
-		SetIsSystem(isSystem).
+		SetName(opts.Name).
+		SetNillableDescription(opts.Description).
+		SetNillableExpiresAt(opts.ExpiresAt).
+		SetNillableOrganizationID(opts.OrganizationID).
+		SetNillableProjectID(opts.ProjectID).
+		SetNillableWorkflowID(opts.WorkflowID).
+		SetNillableScope(opts.Scope).
+		SetNillableScopeID(opts.ScopeID).
+		SetNillableScopeName(opts.ScopeName).
+		SetPolicies(opts.Policies).
+		SetIsSystem(opts.IsSystem).
 		Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
@@ -141,8 +144,11 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	switch filters.FilterByScope {
 	case biz.APITokenScopeProject:
 		query = query.Where(apitoken.ProjectIDNotNil())
+	case biz.APITokenScopeProduct:
+		query = query.Where(apitoken.ScopeEQ(authz.ResourceTypeProduct))
 	case biz.APITokenScopeGlobal:
-		query = query.Where(apitoken.ProjectIDIsNil())
+		// Organization-wide means confined to neither a project nor a scoped resource.
+		query = query.Where(apitoken.ProjectIDIsNil(), apitoken.ScopeIDIsNil())
 	case biz.APITokenScopeInstance:
 		query = query.Where(apitoken.OrganizationIDIsNil())
 	}
@@ -281,6 +287,12 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		result.WorkflowID = biz.ToPtr(w.ID)
 		result.WorkflowName = biz.ToPtr(w.Name)
 	}
+
+	// The scoped resource is not an entity in this database, so unlike the project and the
+	// workflow it has no edge to load: the three values come straight off the row.
+	result.Scope = t.Scope
+	result.ScopeID = t.ScopeID
+	result.ScopeName = t.ScopeName
 
 	return result
 }

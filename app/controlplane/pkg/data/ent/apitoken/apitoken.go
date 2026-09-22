@@ -3,10 +3,12 @@
 package apitoken
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/google/uuid"
 )
 
@@ -33,6 +35,12 @@ const (
 	FieldProjectID = "project_id"
 	// FieldWorkflowID holds the string denoting the workflow_id field in the database.
 	FieldWorkflowID = "workflow_id"
+	// FieldScope holds the string denoting the scope field in the database.
+	FieldScope = "scope"
+	// FieldScopeID holds the string denoting the scope_id field in the database.
+	FieldScopeID = "scope_id"
+	// FieldScopeName holds the string denoting the scope_name field in the database.
+	FieldScopeName = "scope_name"
 	// FieldPolicies holds the string denoting the policies field in the database.
 	FieldPolicies = "policies"
 	// FieldIsSystem holds the string denoting the is_system field in the database.
@@ -80,6 +88,9 @@ var Columns = []string{
 	FieldOrganizationID,
 	FieldProjectID,
 	FieldWorkflowID,
+	FieldScope,
+	FieldScopeID,
+	FieldScopeName,
 	FieldPolicies,
 	FieldIsSystem,
 }
@@ -102,6 +113,16 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+// ScopeValidator is a validator for the "scope" field enum values. It is called by the builders before save.
+func ScopeValidator(s authz.ResourceType) error {
+	switch s {
+	case "instance", "organization", "project", "group", "product":
+		return nil
+	default:
+		return fmt.Errorf("apitoken: invalid enum value for scope field: %q", s)
+	}
+}
 
 // OrderOption defines the ordering options for the APIToken queries.
 type OrderOption func(*sql.Selector)
@@ -154,6 +175,21 @@ func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
 // ByWorkflowID orders the results by the workflow_id field.
 func ByWorkflowID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWorkflowID, opts...).ToFunc()
+}
+
+// ByScope orders the results by the scope field.
+func ByScope(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScope, opts...).ToFunc()
+}
+
+// ByScopeID orders the results by the scope_id field.
+func ByScopeID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScopeID, opts...).ToFunc()
+}
+
+// ByScopeName orders the results by the scope_name field.
+func ByScopeName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScopeName, opts...).ToFunc()
 }
 
 // ByIsSystem orders the results by the is_system field.

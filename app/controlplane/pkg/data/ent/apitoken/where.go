@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/google/uuid"
 )
@@ -99,6 +100,16 @@ func ProjectID(v uuid.UUID) predicate.APIToken {
 // WorkflowID applies equality check predicate on the "workflow_id" field. It's identical to WorkflowIDEQ.
 func WorkflowID(v uuid.UUID) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldWorkflowID, v))
+}
+
+// ScopeID applies equality check predicate on the "scope_id" field. It's identical to ScopeIDEQ.
+func ScopeID(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldScopeID, v))
+}
+
+// ScopeName applies equality check predicate on the "scope_name" field. It's identical to ScopeNameEQ.
+func ScopeName(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldScopeName, v))
 }
 
 // IsSystem applies equality check predicate on the "is_system" field. It's identical to IsSystemEQ.
@@ -524,6 +535,171 @@ func WorkflowIDIsNil() predicate.APIToken {
 // WorkflowIDNotNil applies the NotNil predicate on the "workflow_id" field.
 func WorkflowIDNotNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotNull(FieldWorkflowID))
+}
+
+// ScopeEQ applies the EQ predicate on the "scope" field.
+func ScopeEQ(v authz.ResourceType) predicate.APIToken {
+	vc := v
+	return predicate.APIToken(sql.FieldEQ(FieldScope, vc))
+}
+
+// ScopeNEQ applies the NEQ predicate on the "scope" field.
+func ScopeNEQ(v authz.ResourceType) predicate.APIToken {
+	vc := v
+	return predicate.APIToken(sql.FieldNEQ(FieldScope, vc))
+}
+
+// ScopeIn applies the In predicate on the "scope" field.
+func ScopeIn(vs ...authz.ResourceType) predicate.APIToken {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.APIToken(sql.FieldIn(FieldScope, v...))
+}
+
+// ScopeNotIn applies the NotIn predicate on the "scope" field.
+func ScopeNotIn(vs ...authz.ResourceType) predicate.APIToken {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.APIToken(sql.FieldNotIn(FieldScope, v...))
+}
+
+// ScopeIsNil applies the IsNil predicate on the "scope" field.
+func ScopeIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldScope))
+}
+
+// ScopeNotNil applies the NotNil predicate on the "scope" field.
+func ScopeNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldScope))
+}
+
+// ScopeIDEQ applies the EQ predicate on the "scope_id" field.
+func ScopeIDEQ(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldScopeID, v))
+}
+
+// ScopeIDNEQ applies the NEQ predicate on the "scope_id" field.
+func ScopeIDNEQ(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNEQ(FieldScopeID, v))
+}
+
+// ScopeIDIn applies the In predicate on the "scope_id" field.
+func ScopeIDIn(vs ...uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldIn(FieldScopeID, vs...))
+}
+
+// ScopeIDNotIn applies the NotIn predicate on the "scope_id" field.
+func ScopeIDNotIn(vs ...uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotIn(FieldScopeID, vs...))
+}
+
+// ScopeIDGT applies the GT predicate on the "scope_id" field.
+func ScopeIDGT(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldGT(FieldScopeID, v))
+}
+
+// ScopeIDGTE applies the GTE predicate on the "scope_id" field.
+func ScopeIDGTE(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldGTE(FieldScopeID, v))
+}
+
+// ScopeIDLT applies the LT predicate on the "scope_id" field.
+func ScopeIDLT(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldLT(FieldScopeID, v))
+}
+
+// ScopeIDLTE applies the LTE predicate on the "scope_id" field.
+func ScopeIDLTE(v uuid.UUID) predicate.APIToken {
+	return predicate.APIToken(sql.FieldLTE(FieldScopeID, v))
+}
+
+// ScopeIDIsNil applies the IsNil predicate on the "scope_id" field.
+func ScopeIDIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldScopeID))
+}
+
+// ScopeIDNotNil applies the NotNil predicate on the "scope_id" field.
+func ScopeIDNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldScopeID))
+}
+
+// ScopeNameEQ applies the EQ predicate on the "scope_name" field.
+func ScopeNameEQ(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEQ(FieldScopeName, v))
+}
+
+// ScopeNameNEQ applies the NEQ predicate on the "scope_name" field.
+func ScopeNameNEQ(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNEQ(FieldScopeName, v))
+}
+
+// ScopeNameIn applies the In predicate on the "scope_name" field.
+func ScopeNameIn(vs ...string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldIn(FieldScopeName, vs...))
+}
+
+// ScopeNameNotIn applies the NotIn predicate on the "scope_name" field.
+func ScopeNameNotIn(vs ...string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotIn(FieldScopeName, vs...))
+}
+
+// ScopeNameGT applies the GT predicate on the "scope_name" field.
+func ScopeNameGT(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldGT(FieldScopeName, v))
+}
+
+// ScopeNameGTE applies the GTE predicate on the "scope_name" field.
+func ScopeNameGTE(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldGTE(FieldScopeName, v))
+}
+
+// ScopeNameLT applies the LT predicate on the "scope_name" field.
+func ScopeNameLT(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldLT(FieldScopeName, v))
+}
+
+// ScopeNameLTE applies the LTE predicate on the "scope_name" field.
+func ScopeNameLTE(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldLTE(FieldScopeName, v))
+}
+
+// ScopeNameContains applies the Contains predicate on the "scope_name" field.
+func ScopeNameContains(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldContains(FieldScopeName, v))
+}
+
+// ScopeNameHasPrefix applies the HasPrefix predicate on the "scope_name" field.
+func ScopeNameHasPrefix(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldHasPrefix(FieldScopeName, v))
+}
+
+// ScopeNameHasSuffix applies the HasSuffix predicate on the "scope_name" field.
+func ScopeNameHasSuffix(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldHasSuffix(FieldScopeName, v))
+}
+
+// ScopeNameIsNil applies the IsNil predicate on the "scope_name" field.
+func ScopeNameIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldScopeName))
+}
+
+// ScopeNameNotNil applies the NotNil predicate on the "scope_name" field.
+func ScopeNameNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldScopeName))
+}
+
+// ScopeNameEqualFold applies the EqualFold predicate on the "scope_name" field.
+func ScopeNameEqualFold(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldEqualFold(FieldScopeName, v))
+}
+
+// ScopeNameContainsFold applies the ContainsFold predicate on the "scope_name" field.
+func ScopeNameContainsFold(v string) predicate.APIToken {
+	return predicate.APIToken(sql.FieldContainsFold(FieldScopeName, v))
 }
 
 // PoliciesIsNil applies the IsNil predicate on the "policies" field.

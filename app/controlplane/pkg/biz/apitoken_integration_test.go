@@ -531,3 +531,101 @@ func (s *apiTokenTestSuite) TestUpdateLastUsedAt() {
 		s.True(biz.IsNotFound(err))
 	})
 }
+
+// The scope columns land before any writer that fills them, so this exercises them through
+// the repository directly: the business layer has no option to set a scope yet.
+func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
+	ctx := context.Background()
+	productID := uuid.New()
+	orgUUID := uuid.MustParse(s.org.ID)
+
+	created, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+		Name:           randomName(),
+		OrganizationID: &orgUUID,
+		Scope:          biz.ToPtr(authz.ResourceTypeProduct),
+		ScopeID:        &productID,
+		ScopeName:      biz.ToPtr("checkout-platform"),
+		Policies:       []*authz.Policy{},
+	})
+	s.Require().NoError(err)
+
+	s.Require().NotNil(created.Scope)
+	s.Equal(authz.ResourceTypeProduct, *created.Scope)
+	s.Require().NotNil(created.ScopeID)
+	s.Equal(productID, *created.ScopeID)
+	s.Require().NotNil(created.ScopeName)
+	s.Equal("checkout-platform", *created.ScopeName)
+	// A scoped token is confined to neither a project nor a workflow.
+	s.Nil(created.ProjectID)
+	s.Nil(created.WorkflowID)
+
+	reloaded, err := s.Repos.APITokenRepo.FindByID(ctx, created.ID)
+	s.Require().NoError(err)
+	s.Require().NotNil(reloaded.ScopeID)
+	s.Equal(productID, *reloaded.ScopeID)
+
+	// Every token minted through the business layer carries no scope, which is what keeps the
+	// rest of the control plane on its pre-change behaviour.
+	unscoped, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
+	s.Require().NoError(err)
+	s.Nil(unscoped.Scope)
+	s.Nil(unscoped.ScopeID)
+	s.Nil(unscoped.ScopeName)
+}
+
+// Names live in one namespace per scoped resource, and the organization-level index now
+// excludes scoped rows so the two namespaces cannot collide.
+func (s *apiTokenTestSuite) TestRepoScopedTokenNameUniqueness() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org.ID)
+	productA, productB := uuid.New(), uuid.New()
+
+	scoped := func(name string, productID uuid.UUID) error {
+		_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+			Name: name, OrganizationID: &orgUUID,
+			Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
+			ScopeName: biz.ToPtr("p"), Policies: []*authz.Policy{},
+		})
+		return err
+	}
+
+	s.Require().NoError(scoped("ci", productA))
+	s.Require().NoError(scoped("ci", productB), "the same name in a different product is allowed")
+	s.Error(scoped("ci", productA), "the same name in the same product is refused")
+
+	// An organization-level token may still take that name, and stays unique among its own.
+	_, err := s.APIToken.Create(ctx, "ci", nil, nil, &s.org.ID)
+	s.Require().NoError(err)
+	_, err = s.APIToken.Create(ctx, "ci", nil, nil, &s.org.ID)
+	s.Error(err)
+	s.True(biz.IsErrAlreadyExists(err))
+}
+
+// Global means confined to neither a project nor a scoped resource, so a scope-confined token
+// must not appear under it.
+func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org.ID)
+	productID := uuid.New()
+
+	productTokenName := randomName()
+	_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+		Name: productTokenName, OrganizationID: &orgUUID,
+		Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
+		ScopeName: biz.ToPtr("checkout"), Policies: []*authz.Policy{},
+	})
+	s.Require().NoError(err)
+
+	global, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(biz.APITokenScopeGlobal))
+	s.Require().NoError(err)
+	s.NotEmpty(global)
+	for _, t := range global {
+		s.Nil(t.ScopeID, "a scope-confined token must not appear under the global scope")
+		s.Nil(t.ProjectID)
+	}
+
+	products, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(biz.APITokenScopeProduct))
+	s.Require().NoError(err)
+	s.Require().Len(products, 1)
+	s.Equal(productTokenName, products[0].Name)
+}

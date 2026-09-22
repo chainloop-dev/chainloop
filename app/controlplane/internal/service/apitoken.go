@@ -213,12 +213,30 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 		res.LastUsedAt = timestamppb.New(*in.LastUsedAt)
 	}
 
+	// A token reports the one thing it is confined to. Chained, not independent: a row cannot
+	// carry both a project and a resource scope, and overwriting one with the other would hide
+	// a confinement from the artefact an operator audits.
 	if in.ProjectID != nil {
 		res.ScopedEntity = &pb.ScopedEntity{
 			Type: string(biz.ContractScopeProject),
 			Id:   in.ProjectID.String(),
 			Name: *in.ProjectName,
 		}
+	} else if in.ScopeID != nil {
+		// ScopedEntity is free-form over its type, so a resource outside this database needs
+		// no proto change. The name is display-only and may be absent or stale, hence the
+		// fallback to the id.
+		name := in.ScopeID.String()
+		if in.ScopeName != nil && *in.ScopeName != "" {
+			name = *in.ScopeName
+		}
+
+		scopeType := string(authz.ResourceTypeProduct)
+		if in.Scope != nil {
+			scopeType = string(*in.Scope)
+		}
+
+		res.ScopedEntity = &pb.ScopedEntity{Type: scopeType, Id: in.ScopeID.String(), Name: name}
 	}
 
 	return res

@@ -18,12 +18,15 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAPITokenService_Create_OrgTokenWithoutProjectIsRejected(t *testing.T) {
@@ -129,4 +132,75 @@ func TestAPITokenService_Revoke_OrgTokenCannotRevokeOrgTokens(t *testing.T) {
 
 func toUUIDPtr(id uuid.UUID) *uuid.UUID {
 	return &id
+}
+
+// A listing must report what the token is actually confined to. A scope-confined token has no
+// project, so without its own branch it would come back with no scoped entity at all and read
+// as organization-wide in the CLI and the UI.
+func TestAPITokenBizToPbScopedEntity(t *testing.T) {
+	t.Parallel()
+
+	projectID, productID := uuid.New(), uuid.New()
+	createdAt := time.Now()
+
+	testCases := []struct {
+		name  string
+		token *biz.APIToken
+		want  *pb.ScopedEntity
+	}{
+		{
+			name: "a project-scoped token reports its project",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
+			},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
+		},
+		{
+			name: "a product-scoped token reports its product",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ScopeName: biz.ToPtr("checkout"),
+			},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: "checkout"},
+		},
+		{
+			name: "no display name falls back to the id",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
+			},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
+		},
+		{
+			name: "an empty display name falls back to the id too",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ScopeName: biz.ToPtr(""),
+			},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
+		},
+		{
+			name:  "an organization-level token reports none",
+			token: &biz.APIToken{ID: uuid.New(), CreatedAt: &createdAt},
+			want:  nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := apiTokenBizToPb(tc.token).GetScopedEntity()
+			if tc.want == nil {
+				assert.Nil(t, got)
+				return
+			}
+
+			require.NotNil(t, got)
+			assert.Equal(t, tc.want.GetType(), got.GetType())
+			assert.Equal(t, tc.want.GetId(), got.GetId())
+			assert.Equal(t, tc.want.GetName(), got.GetName())
+		})
+	}
 }

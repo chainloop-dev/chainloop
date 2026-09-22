@@ -96,14 +96,36 @@ type APIToken struct {
 	// If the token is scoped to a specific workflow within a project
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
+	// If the token is confined to a resource that does not live in this database, e.g. a
+	// product. ScopeName is display-only and never consulted for authorization.
+	Scope     *authz.ResourceType
+	ScopeID   *uuid.UUID
+	ScopeName *string
 	// ACL policies for this token
 	Policies []*authz.Policy
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
 	IsSystem bool
 }
 
+// APITokenCreateOpts is everything the repository persists for a new token.
+type APITokenCreateOpts struct {
+	Name           string
+	Description    *string
+	ExpiresAt      *time.Time
+	OrganizationID *uuid.UUID
+	ProjectID      *uuid.UUID
+	WorkflowID     *uuid.UUID
+	// Scope confines the token to a resource outside this database. Scope, ScopeID and
+	// ScopeName are set together or not at all.
+	Scope     *authz.ResourceType
+	ScopeID   *uuid.UUID
+	ScopeName *string
+	Policies  []*authz.Policy
+	IsSystem  bool
+}
+
 type APITokenRepo interface {
-	Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*APIToken, error)
+	Create(ctx context.Context, opts *APITokenCreateOpts) (*APIToken, error)
 	List(ctx context.Context, orgID *uuid.UUID, filters *APITokenListFilters) ([]*APIToken, error)
 	Revoke(ctx context.Context, orgID *uuid.UUID, ID uuid.UUID) error
 	// FindInactive returns tokens in an organization that have been inactive since the given cutoff time.
@@ -262,7 +284,16 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
-	token, err := uc.apiTokenRepo.Create(ctx, name, description, expiresAt, orgUUID, projectID, workflowID, policies, options.isSystem)
+	token, err := uc.apiTokenRepo.Create(ctx, &APITokenCreateOpts{
+		Name:           name,
+		Description:    description,
+		ExpiresAt:      expiresAt,
+		OrganizationID: orgUUID,
+		ProjectID:      projectID,
+		WorkflowID:     workflowID,
+		Policies:       policies,
+		IsSystem:       options.isSystem,
+	})
 	if err != nil {
 		if IsErrAlreadyExists(err) {
 			return nil, NewErrAlreadyExistsStr("name already taken")
@@ -404,13 +435,19 @@ func WithIncludeSystemTokens() APITokenListOpt {
 type APITokenScope string
 
 const (
-	APITokenScopeProject  APITokenScope = "project"
+	APITokenScopeProject APITokenScope = "project"
+	// APITokenScopeProduct selects tokens confined to a product, whose reach is their rows in
+	// the memberships table rather than a column on the token.
+	APITokenScopeProduct APITokenScope = "product"
+	// APITokenScopeGlobal means organization-wide: confined to neither a project nor a
+	// resource outside this database.
 	APITokenScopeGlobal   APITokenScope = "global"
 	APITokenScopeInstance APITokenScope = "instance"
 )
 
 var availableAPITokenScopes = []APITokenScope{
 	APITokenScopeProject,
+	APITokenScopeProduct,
 	APITokenScopeGlobal,
 	APITokenScopeInstance,
 }
