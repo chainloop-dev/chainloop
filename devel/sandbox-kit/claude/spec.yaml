@@ -26,7 +26,7 @@ name: chainloop-trace-claude
 # .github/workflows/utils/bump-chart-and-dagger-version.sh, alongside the chart's
 # appVersion - do not edit by hand. NOTE the install step below is not pinned to
 # it, so it is a release marker, not a statement about the CLI inside.
-version: v1.110.0
+version: v1.110.1
 displayName: Claude Code (Chainloop-traced)
 description: >-
   Claude Code traced with Chainloop. Requires a repository already initialized
