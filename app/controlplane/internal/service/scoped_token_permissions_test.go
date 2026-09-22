@@ -20,6 +20,7 @@ import (
 	"io"
 	"testing"
 
+	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
@@ -537,6 +538,85 @@ func TestOutOfScopeMessageFallsBackToTheIDWhenUnnamed(t *testing.T) {
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.want)
 			assert.NotContains(t, err.Error(), `""`, "the refusal must never name an empty scope")
+		})
+	}
+}
+
+// An organization-wide token may only revoke tokens confined to a project. The guard has to
+// make that decision itself: authorizeResource returns on its first line for any caller whose
+// RBAC is disabled, which every organization-wide token is, so the resource check below it
+// cannot refuse a target the guard lets through.
+func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
+	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
+	productScope := authz.ResourceTypeProduct
+
+	testCases := []struct {
+		name        string
+		target      *biz.APIToken
+		wantAllowed bool
+	}{
+		{
+			name:        "an organization-wide target is refused",
+			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID},
+			wantAllowed: false,
+		},
+		{
+			name:        "a project-scoped target is allowed",
+			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, ProjectID: &projectID},
+			wantAllowed: true,
+		},
+		{
+			// The regression: keying the guard on IsOrgWide let this target through, and a
+			// CI credential could revoke every platform-issued product token in the
+			// organization -- tokens it cannot even see, since List forces the project scope.
+			name: "a resource-scoped target is refused",
+			target: &biz.APIToken{
+				ID: uuid.New(), Name: "t", OrganizationID: orgID,
+				Scope: &productScope, ScopeID: &productID,
+			},
+			wantAllowed: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := log.NewStdLogger(io.Discard)
+			enforcer, err := authz.NewCasbinEnforcer(&authz.Config{RolesMap: authz.RolesMap})
+			require.NoError(t, err)
+
+			caller := &entities.APIToken{ID: uuid.NewString(), Name: "ci"}
+
+			repo := mocks.NewAPITokenRepo(t)
+			repo.On("FindByIDInOrg", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(tc.target, nil)
+			repo.On("FindByID", mock.Anything, mock.Anything).Maybe().
+				Return(func(_ context.Context, id uuid.UUID) (*biz.APIToken, error) {
+					return &biz.APIToken{ID: id, Policies: defaultPoliciesForTest()}, nil
+				})
+			repo.On("Revoke", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
+
+			authzUC := biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{
+				CasbinEnforcer: enforcer, APITokenRepo: repo, Logger: logger,
+			})
+			// A nil publisher makes the auditor a no-op, so Revoke can run to completion and the
+			// test observes the authorization decision rather than a missing dependency.
+			uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, authzUC, nil,
+				biz.NewAuditorUseCase(nil, logger), logger)
+			require.NoError(t, err)
+
+			ctx := entities.WithCurrentAPIToken(context.Background(), caller)
+			ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: caller.ID}).String())
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: "acme"})
+
+			_, err = NewAPITokenService(uc, WithLogger(logger), WithEnforcer(authzUC)).
+				Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: tc.target.ID.String()})
+
+			if tc.wantAllowed {
+				assert.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err)
+			assert.True(t, kerrors.IsForbidden(err), "expected forbidden, got %v", err)
 		})
 	}
 }

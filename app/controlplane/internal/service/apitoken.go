@@ -174,10 +174,16 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
 	}
 
-	// Org-level API tokens cannot revoke other org-level tokens
+	// An organization-wide token may only revoke tokens confined to a project.
+	//
+	// NOTE: the predicate is "the target is not confined to a project", not "the target is
+	// organization-wide". Those were the same thing before a token could be confined to a
+	// resource outside this database; keying on IsOrgWide here would let such a target through,
+	// and the resource check below cannot refuse it: authorizeResource returns on its first
+	// line for any caller whose RBAC is disabled, which every organization-wide token is.
 	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
-		if t.IsOrgWide() {
-			return nil, errors.Forbidden("forbidden", "org-level API tokens cannot revoke org-level tokens")
+		if t.ProjectID == nil {
+			return nil, errors.Forbidden("forbidden", "org-level API tokens can only revoke project-scoped tokens")
 		}
 	}
 
