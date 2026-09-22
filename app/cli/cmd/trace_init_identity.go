@@ -357,9 +357,15 @@ func resolveInteractiveProject(ctx context.Context, lister projectLister, p prom
 	// Creating one is a permission of the organization role, not of any project:
 	// an organization contributor administering every project it can see still
 	// cannot create another. With nothing to pick either, there is no way
-	// forward, so say so instead of asking.
+	// forward, so say so instead of asking. Seeing no project at all and seeing
+	// only projects that cannot be written to are different dead ends, and what
+	// there is to ask an administrator for differs with them.
 	if !listing.CanCreateProject && len(writable) == 0 {
-		return nil, errors.New("you cannot create projects in this organization, and none of the projects you can see accepts a new workflow; ask an administrator for access to one")
+		if len(readOnly) == 0 {
+			return nil, errors.New("you do not belong to any project in this organization, and cannot create a new one; ask an administrator to add you to one")
+		}
+
+		return nil, errors.New("you can only view the projects in this organization, and cannot create a new one; ask an administrator for write access to one")
 	}
 
 	// Nothing to choose from, so go straight to naming one rather than showing a

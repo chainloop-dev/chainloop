@@ -685,12 +685,23 @@ func TestResolveInteractiveProject(t *testing.T) {
 		},
 		{
 			// Nothing to pick and nothing to create is a dead end, so it says so
-			// instead of asking for a name the control plane would refuse.
-			name:         "no writable project and no permission to create says so",
+			// instead of asking for a name the control plane would refuse. The
+			// projects are there to be seen, so the reason is the missing write
+			// access, not a missing membership.
+			name:         "projects that can only be viewed and no permission to create says so",
 			readOnly:     []string{"payments"},
 			cannotCreate: true,
 			repoDir:      repoDirMyRepo,
-			wantErr:      "you cannot create projects in this organization",
+			wantErr:      "you can only view the projects in this organization, and cannot create a new one",
+		},
+		{
+			// Seeing nothing at all is a different dead end: talking about the
+			// projects the caller can see, or about workflows, describes neither
+			// what happened nor what to ask an administrator for.
+			name:         "an organization with no project in sight says the membership is missing",
+			cannotCreate: true,
+			repoDir:      repoDirMyRepo,
+			wantErr:      "you do not belong to any project in this organization, and cannot create a new one",
 		},
 	}
 
