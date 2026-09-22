@@ -36,7 +36,7 @@ import (
 // match the requested resource name BEFORE the first byte reaches the client.
 
 // fakeReadServer is a minimal bytestream.ByteStream_ReadServer that records the
-// data chunks the streamWriter sends. Only Send is exercised by streamWriter.
+// data chunks the sendWriter sends. Only Send is exercised by sendWriter.
 type fakeReadServer struct {
 	bytestream.ByteStream_ReadServer
 	sent [][]byte
