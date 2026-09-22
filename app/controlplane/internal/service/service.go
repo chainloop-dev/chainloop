@@ -223,23 +223,20 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		return errors.Forbidden("forbidden", defaultMessage)
 	}
 
-	// A scoped token authorizes from a membership the Chainloop platform wrote, so the role on
-	// that membership must never widen what the token itself carries. The attestation
-	// endpoints are skipped by the authz middleware, making this the only place the token's
-	// ACL is consulted on that path — and RoleProjectAdmin grants PolicyAPITokenCreate and
-	// PolicyAPITokenRevoke, precisely the organization-level policies a scoped token is
-	// denied. On the paths the middleware covers this check is a no-op, and it keeps
-	// authorizeResource's answer in step with projectsAllowing, which enforces the same
-	// subject.
-	if token := entities.CurrentAPIToken(ctx); token != nil {
-		allowed, err := s.authz.Enforce(ctx, usercontext.CurrentAuthzSubject(ctx), op)
-		if err != nil {
-			return handleUseCaseErr(err, s.log)
-		}
-
-		if !allowed {
-			return errors.Forbidden("forbidden", defaultMessage)
-		}
+	// A scoped token authorizes from a membership the Chainloop platform wrote, and
+	// RoleProjectAdmin grants PolicyAPITokenCreate and PolicyAPITokenRevoke — organization-
+	// level policies such a token is deliberately never created with. Refuse those here, so
+	// the role cannot hand back what the token was denied. The attestation endpoints are
+	// absent from ServerOperationsMap, so this is the only place that refusal can happen.
+	//
+	// NOTE: only the organization-level set is refused, never everything missing from the
+	// token's own ACL. The ACL and RolesMap are separate vocabularies, neither a subset of the
+	// other: because the attestation endpoints are unmapped, no token ACL has ever carried
+	// workflow_run:create, while RoleProjectAdmin grants it precisely so a member can attest.
+	// Intersecting the two would deny every attestation to the credential this scope exists
+	// for, and would break again for any policy later routed through this path.
+	if token := entities.CurrentAPIToken(ctx); token.IsResourceScoped() && biz.IsOrgLevelTokenPolicy(op) {
+		return errors.Forbidden("forbidden", defaultMessage)
 	}
 
 	var matchingResources []*entities.ResourceMembership

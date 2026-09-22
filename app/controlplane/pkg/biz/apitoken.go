@@ -51,6 +51,19 @@ var orgLevelTokenPolicies = []*authz.Policy{
 	authz.PolicyRegisteredIntegrationRead,
 }
 
+// IsOrgLevelTokenPolicy reports whether a policy is one that only an organization-wide token
+// is granted. A token confined to a project, or to a resource outside this database, is never
+// created with these, so no membership role may hand one back to it.
+func IsOrgLevelTokenPolicy(p *authz.Policy) bool {
+	if p == nil {
+		return false
+	}
+
+	return slices.ContainsFunc(orgLevelTokenPolicies, func(o *authz.Policy) bool {
+		return o.Resource == p.Resource && o.Action == p.Action
+	})
+}
+
 // defaultAuthzPolicies are granted to every token regardless of scope, so each entry must be safe
 // for a caller confined to a single project. Org-wide capabilities go in orgLevelTokenPolicies.
 var defaultAuthzPolicies = []*authz.Policy{

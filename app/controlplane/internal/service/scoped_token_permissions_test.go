@@ -401,7 +401,7 @@ func TestAuthorizeResourceScopedTokenWithInsufficientRole(t *testing.T) {
 // membership branch enforces the membership ROLE. RoleProjectAdmin carries
 // PolicyAPITokenCreate and PolicyAPITokenRevoke, exactly the organization-level policies a
 // scoped token is denied, so a platform-written role must not hand them back.
-func TestAuthorizeResourceKeepsTheTokenACLAsTheCeiling(t *testing.T) {
+func TestAuthorizeResourceKeepsOrgLevelPoliciesOutOfReach(t *testing.T) {
 	productID, projectID := uuid.New(), uuid.New()
 
 	testCases := []struct {
@@ -421,10 +421,38 @@ func TestAuthorizeResourceKeepsTheTokenACLAsTheCeiling(t *testing.T) {
 			wantAllows:    true,
 		},
 		{
-			name:          "the role grants it but the token does not carry it",
+			// The ACL and RolesMap are separate vocabularies. A role legitimately grants
+			// things no token ACL lists, so the role alone decides outside the org-level set.
+			name:          "the role grants it and the token's ACL does not list it",
 			tokenPolicies: []*authz.Policy{authz.PolicyWorkflowRunRead},
 			role:          authz.RoleProjectAdmin,
 			op:            authz.PolicyWorkflowCreate,
+			wantAllows:    true,
+		},
+		{
+			// The concrete case: attestation is unmapped in ServerOperationsMap, so no token
+			// ACL carries workflow_run:create. Denying it here refuses every attestation to
+			// the very credential this scope exists to issue.
+			name:          "a project admin membership can attest",
+			tokenPolicies: defaultPoliciesForTest(),
+			role:          authz.RoleProjectAdmin,
+			op:            authz.PolicyWorkflowRunCreate,
+			wantAllows:    true,
+		},
+		{
+			name:          "a project admin membership can update a run it is attesting",
+			tokenPolicies: defaultPoliciesForTest(),
+			role:          authz.RoleProjectAdmin,
+			op:            authz.PolicyWorkflowRunUpdate,
+			wantAllows:    true,
+		},
+		{
+			// Every organization-level policy stays out of reach, not just the token-minting
+			// pair: a scoped token is created with none of them.
+			name:          "project admin cannot hand back the org-level integration policies",
+			tokenPolicies: defaultPoliciesForTest(),
+			role:          authz.RoleProjectAdmin,
+			op:            authz.PolicyRegisteredIntegrationRead,
 			wantAllows:    false,
 		},
 		{
