@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -224,6 +225,49 @@ func (s *workflowRunContractIntegrationTestSuite) TestRejectedAttestationIsNotPe
 	s.Empty(stored.Attestation.Digest, "a rejected attestation must not record a digest on the run")
 	s.Nil(stored.Attestation.Bundle, "a rejected attestation must not persist its bundle")
 	s.Nil(stored.Attestation.Envelope, "a rejected attestation must not persist its envelope")
+}
+
+// The synchronous CAS path uploads the bundle before SaveAttestation runs, so it
+// needs a check it can run first. This must reach the same verdict as the one
+// inside SaveAttestation while leaving the run untouched.
+func (s *workflowRunContractIntegrationTestSuite) TestValidateAttestationContractIsSideEffectFree() {
+	ctx := context.Background()
+
+	s.Run("rejects a violating attestation without touching the run", func() {
+		run := s.newRunWithContract("preflight-reject", `  materials:
+    - type: SARIF
+      name: static-analysis`)
+		bundleBytes := testhelpers.BundleBytesFromEnvelope(s.T(), attestationFull)
+
+		err := s.WorkflowRun.ValidateAttestationContract(ctx, run.ID.String(), bundleBytes)
+		require.Error(s.T(), err)
+		s.True(biz.IsErrValidation(err), "expected a validation error, got %T: %v", err, err)
+		s.ErrorContains(err, "some materials have not been crafted yet: static-analysis")
+
+		stored, err := s.WorkflowRun.GetByIDInOrg(ctx, s.org.ID, run.ID.String())
+		require.NoError(s.T(), err)
+		s.Empty(stored.Attestation.Digest, "the preflight check must not record anything")
+	})
+
+	s.Run("accepts a satisfying attestation and still allows the save", func() {
+		run := s.newRunWithContract("preflight-accept", `  materials:
+    - type: CONTAINER_IMAGE
+      name: image`)
+		bundleBytes := testhelpers.BundleBytesFromEnvelope(s.T(), attestationFull)
+
+		require.NoError(s.T(), s.WorkflowRun.ValidateAttestationContract(ctx, run.ID.String(), bundleBytes))
+
+		digest, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), bundleBytes)
+		require.NoError(s.T(), err)
+		s.NotNil(digest)
+	})
+
+	s.Run("reports an unknown run rather than passing it through", func() {
+		bundleBytes := testhelpers.BundleBytesFromEnvelope(s.T(), attestationFull)
+		err := s.WorkflowRun.ValidateAttestationContract(ctx, uuid.NewString(), bundleBytes)
+		require.Error(s.T(), err)
+		s.True(biz.IsNotFound(err), "expected a not-found error, got %T: %v", err, err)
+	})
 }
 
 func TestWorkflowRunContractEnforcement(t *testing.T) {

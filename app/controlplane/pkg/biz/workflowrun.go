@@ -417,6 +417,43 @@ func (uc *WorkflowRunUseCase) orgBlocksReleasedVersions(ctx context.Context, run
 	return org.BlockAttestationsOnReleasedVersions, nil
 }
 
+// ValidateAttestationContract checks a bundle against the contract revision
+// pinned on its workflow run without persisting anything.
+//
+// SaveAttestation runs the same check and is the authoritative one, since it
+// sits on the path every attestation takes. This entry point exists for callers
+// that push the bundle to a CAS backend before calling SaveAttestation: without
+// it, an attestation rejected for violating its contract would already have left
+// a blob behind in CAS.
+func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, runID string, bundle []byte) error {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.ValidateAttestationContract")
+	defer span.End()
+
+	id, err := uuid.Parse(runID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	run, err := uc.wfRunRepo.FindByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("finding workflow run: %w", err)
+	} else if run == nil {
+		return NewErrNotFound("workflow run")
+	}
+
+	dsseEnv, err := attestation.DSSEEnvelopeFromBundleBytes(bundle)
+	if err != nil {
+		return fmt.Errorf("extracting DSSE envelope: %w", err)
+	}
+
+	predicate, err := chainloop.ExtractPredicate(dsseEnv)
+	if err != nil {
+		return fmt.Errorf("extracting predicate: %w", err)
+	}
+
+	return uc.validateAgainstContract(ctx, run, predicate)
+}
+
 // validateAgainstContract rejects an attestation that does not satisfy the
 // contract revision pinned on the workflow run when it was initialized.
 //
