@@ -166,6 +166,117 @@ func TestCraftingStateValidateComplete(t *testing.T) {
 	}
 }
 
+func TestValidateMaterialsPresence(t *testing.T) {
+	art := workflowcontract.CraftingSchema_Material_ARTIFACT
+
+	craftedSet := func(names ...string) map[string]struct{} {
+		out := make(map[string]struct{}, len(names))
+		for _, n := range names {
+			out[n] = struct{}{}
+		}
+		return out
+	}
+
+	testCases := []struct {
+		name     string
+		expected []*workflowcontract.CraftingSchema_Material
+		crafted  map[string]struct{}
+		wantErr  string
+	}{
+		{
+			name:     "nil contract and nil crafted set",
+			expected: nil,
+			crafted:  nil,
+		},
+		{
+			name:     "contract with no materials accepts anything",
+			expected: []*workflowcontract.CraftingSchema_Material{},
+			crafted:  craftedSet("something", "else"),
+		},
+		{
+			name: "all required present",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "sbom"},
+				{Type: art, Name: "sarif"},
+			},
+			crafted: craftedSet("sbom", "sarif"),
+		},
+		{
+			name: "single required missing",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "sbom"},
+			},
+			crafted: craftedSet(),
+			wantErr: "some materials have not been crafted yet: sbom",
+		},
+		{
+			name: "several missing are reported in contract order",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "sbom"},
+				{Type: art, Name: "present"},
+				{Type: art, Name: "sarif"},
+			},
+			crafted: craftedSet("present"),
+			wantErr: "some materials have not been crafted yet: sbom, sarif",
+		},
+		{
+			name: "optional missing is allowed",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "sbom", Optional: true},
+			},
+			crafted: craftedSet(),
+		},
+		{
+			name: "choke group satisfied by one member",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "cyclonedx", Group: "sbom"},
+				{Type: art, Name: "spdx", Group: "sbom"},
+			},
+			crafted: craftedSet("spdx"),
+		},
+		{
+			name: "choke group unsatisfied lists every member",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "cyclonedx", Group: "sbom"},
+				{Type: art, Name: "spdx", Group: "sbom"},
+			},
+			crafted: craftedSet(),
+			wantErr: `at least one material from group "sbom" is required: cyclonedx, spdx`,
+		},
+		{
+			name: "grouped and ungrouped both unsatisfied are reported together",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "sarif"},
+				{Type: art, Name: "cyclonedx", Group: "sbom"},
+				{Type: art, Name: "spdx", Group: "sbom"},
+			},
+			crafted: craftedSet(),
+			wantErr: `some materials have not been crafted yet: sarif; at least one material from group "sbom" is required: cyclonedx, spdx`,
+		},
+		{
+			// Materials absent from the contract are legitimate: runtime-added
+			// evidence and exploded archives both produce undeclared names.
+			name: "materials not declared in the contract are ignored",
+			expected: []*workflowcontract.CraftingSchema_Material{
+				{Type: art, Name: "scan-report"},
+			},
+			crafted: craftedSet("scan-report", "scan-report-1", "scan-report-archive", "adhoc"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateMaterialsPresence(tc.expected, tc.crafted)
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Equal(t, tc.wantErr, err.Error())
+		})
+	}
+}
+
 func TestCraftingStateGetEnvAllowList(t *testing.T) {
 	testCases := []struct {
 		name         string

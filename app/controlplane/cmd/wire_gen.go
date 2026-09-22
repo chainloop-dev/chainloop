@@ -207,6 +207,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		WfrRepo:      workflowRunRepo,
 		WfRepo:       workflowRepo,
 		OrgRepo:      organizationRepo,
+		ContractRepo: workflowContractRepo,
 		SigningUC:    signingUseCase,
 		AuditorUC:    auditorUseCase,
 		Logger:       logger,

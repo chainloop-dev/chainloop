@@ -21,6 +21,8 @@ import (
 	"strings"
 
 	"buf.build/go/protovalidate"
+
+	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 )
 
 // Custom validations
@@ -38,9 +40,29 @@ func (state *CraftingState) ValidateComplete(dryRun bool) error {
 
 	// Semantic errors
 	// It has values for all the defined, non optional materials
-	var missing []string
-	expectedMaterials := state.GetMaterials()
 	craftedMaterials := state.GetAttestation().GetMaterials()
+	craftedNames := make(map[string]struct{}, len(craftedMaterials))
+	for name := range craftedMaterials {
+		craftedNames[name] = struct{}{}
+	}
+
+	return ValidateMaterialsPresence(state.GetMaterials(), craftedNames)
+}
+
+// ValidateMaterialsPresence checks that every material the contract requires is
+// present in craftedNames.
+//
+// Materials sharing the same non-empty group form an "at least one of" set, so
+// the group is satisfied as soon as one member has been crafted. Materials that
+// the contract does not declare are allowed and ignored: runtime-added evidence
+// and exploded archives (which emit "<name>-1", "<name>-archive", ...) both
+// legitimately produce names the contract never mentions.
+//
+// It is shared by the CLI, which runs it before pushing, and by the control
+// plane, which runs it against the contract revision pinned on the workflow run
+// at init time.
+func ValidateMaterialsPresence(expectedMaterials []*v1.CraftingSchema_Material, craftedNames map[string]struct{}) error {
+	var missing []string
 
 	// Choke groups: materials sharing the same non-empty group form an
 	// "at least one of" set. We track the members of each group and whether
@@ -52,7 +74,7 @@ func (state *CraftingState) ValidateComplete(dryRun bool) error {
 
 	// Iterate on the expected materials
 	for _, m := range expectedMaterials {
-		_, crafted := craftedMaterials[m.Name]
+		_, crafted := craftedNames[m.Name]
 
 		// Grouped materials are enforced at the group level, not individually.
 		if m.Group != "" {
