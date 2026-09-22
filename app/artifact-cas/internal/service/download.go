@@ -16,9 +16,7 @@
 package service
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -101,58 +99,55 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if filename == "" {
 		filename = info.FileName
 	}
-	// if the buffer contains the actual data we expect we proceed with sending it to the browser
-	// Set headers
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-	w.Header().Set("Content-Length", strconv.FormatInt(info.Size, 10))
 	s.log.Infow("msg", "download initialized", "digest", wantChecksum, "size", bytefmt.ByteSize(uint64(info.Size)))
 
-	gotChecksum := sha256.New()
-	// create temporary buffer to write to both the writer and the checksum
-	buf := bytes.NewBuffer(nil)
+	// Stage the backend egress on local disk and verify it against the requested
+	// digest before anything is written to the response: the browser never
+	// receives content that does not hash to the digest it asked for, and CAS
+	// memory stays bounded because the artifact lives on disk, not in a buffer.
+	f, size, err := s.stageDownload(ctx, b, wantChecksum.Hex)
+	if err != nil {
+		s.writeDownloadError(w, err, wantChecksum.Hex)
+		return
+	}
+	defer s.closeStagingFile(f)
 
-	// NOTE: we don't sent the file directly to the writer because we need to calculate the checksum
-	// and we want to send the file / even if partially only if the checksum matches
-	// this has a performance impact but it's the only way to ensure that the file is not corrupted
-	// and don't require client-side verification
-	mw := io.MultiWriter(buf, gotChecksum)
-	if err := b.Download(ctx, mw, wantChecksum.Hex); err != nil {
-		if isClientDisconnect(err) {
-			s.log.Infow("msg", "download canceled", "digest", wantChecksum)
-			return
-		}
+	// The content is verified: announce it to the browser with its exact size
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 
-		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+	// A plain io.Copy lets the response writer pull the file with sendfile, so
+	// the verified bytes go kernel-to-kernel without a user-space buffer.
+	if _, err := io.Copy(w, f); err != nil {
+		s.writeDownloadError(w, err, wantChecksum.Hex)
 		return
 	}
 
-	// Verify the checksum
-	if got, want := hex.EncodeToString(gotChecksum.Sum(nil)), wantChecksum.Hex; got != want {
-		msg := fmt.Sprintf("checksums mismatch: got: %s, want: %s", got, want)
-		s.log.Info(msg)
-		http.Error(w, msg, http.StatusUnauthorized)
-		return
-	}
-
-	// the backend egress completed and the content was verified, record the download
+	s.log.Infow("msg", "download finished", "digest", wantChecksum, "size", bytefmt.ByteSize(uint64(size)))
 	s.audit.Dispatch(&events.CASArtifactDownloaded{
 		CASArtifactBase: &events.CASArtifactBase{
 			Digest:      wantChecksum.Hex,
-			SizeBytes:   info.Size,
+			SizeBytes:   size,
 			FileName:    filename,
 			BackendType: auth.BackendType,
 		},
 	}, auth)
+}
 
-	if _, err := io.Copy(w, buf); err != nil {
-		if isClientDisconnect(err) {
-			s.log.Infow("msg", "download canceled during response write", "digest", wantChecksum)
-			return
-		}
-
-		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+// writeDownloadError maps a staging or streaming failure of a download to its
+// HTTP response. A mismatch means the backend holds content that does not hash
+// to its key, corrupt or tampered, so it is a 500 carrying both digests rather
+// than blamed on the caller. A client that went away gets nothing. Anything
+// else is masked.
+func (s *DownloadService) writeDownloadError(w http.ResponseWriter, err error, digest string) {
+	if _, ok := errors.AsType[*digestMismatchError](err); ok {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if isClientDisconnect(err) {
+		s.log.Infow("msg", "download canceled", "digest", digest)
 		return
 	}
 
-	s.log.Infow("msg", "download finished", "digest", wantChecksum, "size", bytefmt.ByteSize(uint64(info.Size)))
+	http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
 }

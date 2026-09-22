@@ -47,11 +47,11 @@ type Bootstrap struct {
 	// Optional NATS server configuration to publish audit events to the
 	// control-plane-owned stream. When unset, event publishing is disabled.
 	NatsServer *Bootstrap_NatsServer `protobuf:"bytes,5,opt,name=nats_server,json=natsServer,proto3" json:"nats_server,omitempty"`
-	// Local directory where uploads (and, later, downloads) are staged on disk
-	// and verified against the declared digest before reaching the backend. It
-	// must be a writable volume; in production a dedicated emptyDir is mounted
-	// here (NOT tmpfs/RAM, and NOT the /tmp secret mount). When unset the service
-	// falls back to the OS temp dir, which is only appropriate for local dev.
+	// Local directory where uploads and downloads are staged on disk and verified
+	// against their digest: uploads before reaching the backend, downloads before
+	// the first byte is sent to the client. It must be a writable volume; in
+	// production a dedicated emptyDir is mounted here (NOT tmpfs/RAM, and NOT the
+	// /tmp secret mount). Required: when unset the service refuses to start.
 	StagingDir    string `protobuf:"bytes,6,opt,name=staging_dir,json=stagingDir,proto3" json:"staging_dir,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

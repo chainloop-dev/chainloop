@@ -494,10 +494,10 @@ Return the Nats connection string for the CAS
 {{- end -}}
 
 {{/*
-Directory where the CAS stages and verifies uploads before sending them to the
-backend. Not configurable: it must be the dedicated per-pod emptyDir mounted by
-the CAS deployment, and it must not collide with /tmp, which the jwt-public-key
-secret already mounts read-only.
+Directory where the CAS stages and verifies uploads and downloads before
+forwarding them. Not configurable: it must be the dedicated per-pod emptyDir
+mounted by the CAS deployment, and it must not collide with /tmp, which the
+jwt-public-key secret already mounts read-only.
 */}}
 {{- define "chainloop.cas.staging_dir" -}}
 /tmp-staging-fs

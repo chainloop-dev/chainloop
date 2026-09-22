@@ -14,8 +14,8 @@ metadata:
   {{- end }}
 data:
   server.yaml: |
-    # Local directory where uploads are staged and verified against the declared
-    # digest before being sent to the backend. Backed by the staging emptyDir.
+    # Local directory where uploads and downloads are staged and verified against
+    # their digest before being forwarded. Backed by the staging emptyDir.
     staging_dir: {{ include "chainloop.cas.staging_dir" . | quote }}
     server:
       http:
