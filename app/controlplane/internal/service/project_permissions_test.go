@@ -17,7 +17,6 @@ package service
 
 import (
 	"context"
-	"io"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
@@ -25,28 +24,20 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // newTestService builds a service with a real casbin enforcer, so the
-// permission answers come from the same rules the enforcement path uses.
+// permission answers come from the same rules the enforcement path uses. Its
+// token repository resolves any token id to the default policy set, because
+// authorizeResource now enforces a token's own ACL as well as its membership
+// role and would otherwise have no repository to read it from.
 func newTestService(t *testing.T) *service {
 	t.Helper()
 
-	logger := log.NewStdLogger(io.Discard)
-	enforcer, err := authz.NewCasbinEnforcer(&authz.Config{RolesMap: authz.RolesMap})
-	require.NoError(t, err)
-
-	return &service{
-		log: log.NewHelper(logger),
-		authz: biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{
-			CasbinEnforcer: enforcer,
-			Logger:         logger,
-		}),
-	}
+	return newTestServiceWithTokenPolicies(t, defaultPoliciesForTest())
 }
 
 // projectMembership is one of the caller's roles on a project.

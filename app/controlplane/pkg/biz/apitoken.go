@@ -107,6 +107,19 @@ type APIToken struct {
 	IsSystem bool
 }
 
+// IsResourceScoped reports whether the token is confined to a resource that does not live in
+// this database, such as a product. It keys on the scope column, never on whether memberships
+// exist. Mirrors entities.APIToken.IsResourceScoped for the persisted row.
+func (t *APIToken) IsResourceScoped() bool {
+	return t != nil && t.ScopeID != nil
+}
+
+// IsOrgWide reports whether the token acts for the whole organization, i.e. is confined to
+// neither a project nor a resource outside this database.
+func (t *APIToken) IsOrgWide() bool {
+	return t != nil && t.ProjectID == nil && t.ScopeID == nil
+}
+
 // APITokenCreateOpts is everything the repository persists for a new token.
 type APITokenCreateOpts struct {
 	Name           string
@@ -174,10 +187,13 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig,
 }
 
 type apiTokenOptions struct {
-	project  *Project
-	workflow *Workflow
-	policies []*authz.Policy
-	isSystem bool
+	project   *Project
+	workflow  *Workflow
+	scope     *authz.ResourceType
+	scopeID   *uuid.UUID
+	scopeName *string
+	policies  []*authz.Policy
+	isSystem  bool
 }
 
 type APITokenCreateOpt func(*apiTokenOptions)
@@ -193,6 +209,22 @@ func APITokenWithProject(project *Project) APITokenCreateOpt {
 func APITokenWithWorkflow(workflow *Workflow) APITokenCreateOpt {
 	return func(o *apiTokenOptions) {
 		o.workflow = workflow
+	}
+}
+
+// APITokenWithScope confines the token to a resource that does not live in this database,
+// such as a product. The projects such a token reaches are its rows in the memberships
+// table, not a column on the token. scopeName is display-only: refusal messages and
+// listings print it, and authorization never reads it.
+func APITokenWithScope(scope authz.ResourceType, scopeID uuid.UUID, scopeName string) APITokenCreateOpt {
+	return func(o *apiTokenOptions) {
+		o.scope = &scope
+		o.scopeID = &scopeID
+		// An empty name is stored as no name, so the readers that fall back to the id do so
+		// rather than printing an empty pair of quotes.
+		if scopeName != "" {
+			o.scopeName = &scopeName
+		}
 	}
 }
 
@@ -271,6 +303,28 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		workflowID = ToPtr(options.workflow.ID)
 	}
 
+	// A resource scope replaces the project confinement rather than layering onto it: the gate
+	// functions key on scope_id, so a row carrying both would have every project check
+	// short-circuited and the project confinement enforced nowhere.
+	if options.scopeID != nil {
+		if projectID != nil {
+			return nil, NewErrValidationStr("a resource scope cannot be combined with a project scope")
+		}
+
+		// Only the product kind is mirrored into the JWT as a cross-check and selected by the
+		// product listing, so any other kind would be a confined token that no listing shows
+		// and no claim corroborates.
+		if options.scope == nil || *options.scope != authz.ResourceTypeProduct {
+			return nil, NewErrValidationStr(fmt.Sprintf("unsupported token scope, only %q is supported", authz.ResourceTypeProduct))
+		}
+
+		// An instance-level token has no organization to hold the scoped resource, and would
+		// come back from the middleware as instance-admin and RBAC-confined at once.
+		if orgUUID == nil {
+			return nil, NewErrValidationStr("a resource scope requires an organization")
+		}
+	}
+
 	// Use provided policies if present, otherwise use defaults
 	policies := options.policies
 	if policies == nil {
@@ -278,7 +332,10 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
-	if projectID == nil && orgUUID != nil {
+	// A token confined to a project OR to a resource outside this database is not
+	// organization-wide, so it must never receive the organization-level policies — which
+	// include minting further tokens and reading every registered integration.
+	if projectID == nil && options.scopeID == nil && orgUUID != nil {
 		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
@@ -291,6 +348,9 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		OrganizationID: orgUUID,
 		ProjectID:      projectID,
 		WorkflowID:     workflowID,
+		Scope:          options.scope,
+		ScopeID:        options.scopeID,
+		ScopeName:      options.scopeName,
 		Policies:       policies,
 		IsSystem:       options.isSystem,
 	})
@@ -323,6 +383,13 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	if options.workflow != nil {
 		generationOpts.WorkflowID = ToPtr(options.workflow.ID)
 		generationOpts.WorkflowName = ToPtr(options.workflow.Name)
+	}
+
+	// Mirror a product scope into the JWT so the middleware can cross-check it against the
+	// row. Only the product kind is mirrored: the claim exists to detect disagreement with a
+	// known column, not to describe arbitrary scopes.
+	if options.scope != nil && *options.scope == authz.ResourceTypeProduct {
+		generationOpts.ProductID = options.scopeID
 	}
 
 	// generate the JWT
@@ -388,6 +455,11 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 	if token.WorkflowID != nil {
 		generationOpts.WorkflowID = token.WorkflowID
 		generationOpts.WorkflowName = token.WorkflowName
+	}
+	// A regenerated JWT must keep mirroring the row's scope, or it stops cross-checking
+	// against the very column it was minted from.
+	if token.Scope != nil && *token.Scope == authz.ResourceTypeProduct {
+		generationOpts.ProductID = token.ScopeID
 	}
 
 	// generate the JWT

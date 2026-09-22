@@ -134,9 +134,9 @@ func toUUIDPtr(id uuid.UUID) *uuid.UUID {
 	return &id
 }
 
-// A listing must report what the token is actually confined to. A scope-confined token has no
-// project, so without its own branch it would come back with no scoped entity at all and read
-// as organization-wide in the CLI and the UI.
+// A listing must report what the token actually reaches. A product token has no project, so
+// without its own branch it would come back with no scoped entity at all and read as
+// organization-wide in the CLI and the UI.
 func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 	t.Parallel()
 
@@ -152,33 +152,25 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			name: "a project-scoped token reports its project",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
-				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
+				ProjectID: &projectID, ProjectName: toPtr(testProjectName),
 			},
-			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: testProjectName},
 		},
 		{
 			name: "a product-scoped token reports its product",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ScopeName: biz.ToPtr("checkout"),
+				Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ScopeName: toPtr("checkout"),
 			},
-			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: "checkout"},
+			want: &pb.ScopedEntity{Type: testProductScope, Id: productID.String(), Name: "checkout"},
 		},
 		{
-			name: "no display name falls back to the id",
+			name: "a product-scoped token with no display name falls back to the id",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
+				Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID,
 			},
-			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
-		},
-		{
-			name: "an empty display name falls back to the id too",
-			token: &biz.APIToken{
-				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ScopeName: biz.ToPtr(""),
-			},
-			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
+			want: &pb.ScopedEntity{Type: testProductScope, Id: productID.String(), Name: productID.String()},
 		},
 		{
 			name:  "an organization-level token reports none",

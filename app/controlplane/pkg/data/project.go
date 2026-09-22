@@ -180,11 +180,17 @@ func (r *ProjectRepo) ListMembers(ctx context.Context, orgID uuid.UUID, projectI
 		return nil, 0, biz.NewErrNotFound("project")
 	}
 
-	// Build the query with base conditions for all membership types
+	// Build the query with base conditions for all membership types that name a member a human
+	// would recognise. API tokens hold project memberships in their own right — the Chainloop
+	// platform writes them — and they are not people. Excluding them here rather than skipping
+	// them below keeps the total, the pagination window and the result in agreement; dropping
+	// them afterwards inflated the count and returned short pages with a next page that had
+	// nothing in it.
 	query := r.data.DB.Membership.Query().
 		Where(
 			membership.ResourceTypeEQ(authz.ResourceTypeProject),
 			membership.ResourceID(projectID),
+			membership.MembershipTypeIn(authz.MembershipTypeUser, authz.MembershipTypeGroup),
 		).WithParent()
 
 	// Get total count before applying pagination

@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -26,6 +27,7 @@ import (
 	bizMocks "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	userjwtbuilder "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -239,4 +241,135 @@ runner:
 			}
 		})
 	}
+}
+
+// A scoped token must arrive at the service layer with its memberships loaded, through the
+// same context value a user's memberships use — that is what makes the authorization path a
+// token takes the one people already take.
+func TestWithCurrentMembershipsMiddlewareForAPITokens(t *testing.T) {
+	productID, projectID := uuid.New(), uuid.New()
+
+	testCases := []struct {
+		name string
+		// scopeID set means the token row carries a resource scope
+		scopeID *uuid.UUID
+		// tokenMemberships is what the repository returns for the token
+		tokenMemberships []*biz.Membership
+		wantLoaded       bool
+		wantResources    []uuid.UUID
+	}{
+		{
+			name:    "a scoped token gets its memberships",
+			scopeID: &productID,
+			tokenMemberships: []*biz.Membership{{
+				ResourceType: authz.ResourceTypeProject, ResourceID: projectID, Role: authz.RoleProjectAdmin,
+			}},
+			wantLoaded:    true,
+			wantResources: []uuid.UUID{projectID},
+		},
+		{
+			// The product was deleted, so its memberships are gone. The membership value must
+			// still be present and empty: absent would read as "RBAC not applied".
+			name:             "a scoped token with no memberships gets an empty set, not nothing",
+			scopeID:          &productID,
+			tokenMemberships: []*biz.Membership{},
+			wantLoaded:       true,
+			wantResources:    []uuid.UUID{},
+		},
+		{
+			// Today's behaviour for project, organization and instance tokens: no memberships
+			// and no database call at all.
+			name:       "an unscoped token is left alone",
+			wantLoaded: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tokenID := uuid.New()
+			membershipUC := bizMocks.NewMembershipsRBAC(t)
+			if tc.scopeID != nil {
+				membershipUC.On("ListAllMembershipsForAPIToken", mock.Anything, tokenID).
+					Once().Return(tc.tokenMemberships, nil)
+			}
+
+			ctx := entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{
+				ID: tokenID.String(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: tc.scopeID,
+			})
+
+			var seen *entities.Membership
+			_, err := WithCurrentMembershipsMiddleware(membershipUC, newTestMembershipsCache(t))(
+				func(ctx context.Context, _ interface{}) (interface{}, error) {
+					seen = entities.CurrentMembership(ctx)
+					return nil, nil
+				})(ctx, nil)
+			require.NoError(t, err)
+
+			if !tc.wantLoaded {
+				assert.Nil(t, seen)
+				return
+			}
+
+			require.NotNil(t, seen)
+			assert.Equal(t, tokenID, seen.MemberID)
+			assert.Equal(t, authz.MembershipTypeAPIToken, seen.MemberType)
+
+			got := make([]uuid.UUID, 0, len(seen.Resources))
+			for _, rm := range seen.Resources {
+				got = append(got, rm.ResourceID)
+			}
+			assert.ElementsMatch(t, tc.wantResources, got)
+		})
+	}
+}
+
+// User ids and token ids are both UUIDs drawn from different namespaces, so an entry cached
+// for one principal kind must never be served to the other.
+func TestMembershipsCacheKeyIsNamespacedByMemberType(t *testing.T) {
+	sharedID := uuid.New()
+	cache := newTestMembershipsCache(t)
+
+	userProject, tokenProject := uuid.New(), uuid.New()
+
+	membershipUC := bizMocks.NewMembershipsRBAC(t)
+	membershipUC.On("ListAllMembershipsForUser", mock.Anything, sharedID).Once().
+		Return([]*biz.Membership{{ResourceType: authz.ResourceTypeProject, ResourceID: userProject, Role: authz.RoleProjectAdmin}}, nil)
+	membershipUC.On("ListAllMembershipsForAPIToken", mock.Anything, sharedID).Once().
+		Return([]*biz.Membership{{ResourceType: authz.ResourceTypeProject, ResourceID: tokenProject, Role: authz.RoleProjectAdmin}}, nil)
+
+	resourcesFor := func(ctx context.Context) []uuid.UUID {
+		var got []uuid.UUID
+		_, err := WithCurrentMembershipsMiddleware(membershipUC, cache)(
+			func(ctx context.Context, _ interface{}) (interface{}, error) {
+				for _, rm := range entities.CurrentMembership(ctx).Resources {
+					got = append(got, rm.ResourceID)
+				}
+				return nil, nil
+			})(ctx, nil)
+		require.NoError(t, err)
+
+		return got
+	}
+
+	userCtx := entities.WithCurrentUser(context.Background(), &entities.User{ID: sharedID.String()})
+	assert.Equal(t, []uuid.UUID{userProject}, resourcesFor(userCtx))
+
+	tokenCtx := entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{
+		ID: sharedID.String(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &sharedID,
+	})
+	assert.Equal(t, []uuid.UUID{tokenProject}, resourcesFor(tokenCtx),
+		"the token must not be served the user's cached memberships")
+
+	// And each principal's own entry is still cached: the mocks are Once().
+	assert.Equal(t, []uuid.UUID{userProject}, resourcesFor(userCtx))
+	assert.Equal(t, []uuid.UUID{tokenProject}, resourcesFor(tokenCtx))
+}
+
+func newTestMembershipsCache(t *testing.T) cache.Cache[*entities.Membership] {
+	t.Helper()
+
+	c, err := cache.New[*entities.Membership](cache.WithTTL(time.Minute))
+	require.NoError(t, err)
+
+	return c
 }

@@ -77,20 +77,19 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
-				// Project ID is optional
-				projectID, _ := genericClaims["project_id"].(string)
+				// Project, workflow and instance scope are all optional
+				claims := apiTokenClaims{}
+				claims.projectID, _ = genericClaims["project_id"].(string)
+				claims.workflowID, _ = genericClaims["workflow_id"].(string)
+				claims.productID, _ = genericClaims["product_id"].(string)
+				claims.instanceScope, _ = genericClaims["scope"].(string)
 
-				workflowID, _ := genericClaims["workflow_id"].(string)
-
-				// Scope is optional
-				scope, _ := genericClaims["scope"].(string)
-
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, workflowID, scope)
+				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
 
-				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "projectID", projectID)
+				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "projectID", claims.projectID)
 			}
 
 			return handler(ctx, req)
@@ -134,7 +133,12 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.WorkflowID, claims.Scope)
+			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, apiTokenClaims{
+				projectID:     claims.ProjectID,
+				workflowID:    claims.WorkflowID,
+				productID:     claims.ProductID,
+				instanceScope: claims.Scope,
+			})
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
@@ -170,8 +174,19 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 	return ctx, nil
 }
 
+// apiTokenClaims are the optional API-token claims the two entry points extract from the JWT.
+// Every one of them is a cross-check against the token row, never an authorization input: the
+// row decides what the token reaches. instanceScope is the exception — it selects the
+// instance-admin code path below and has no counterpart on the row.
+type apiTokenClaims struct {
+	projectID     string
+	workflowID    string
+	productID     string
+	instanceScope string
+}
+
 // Set the current organization and API-Token in the context
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, workflowIDInClaim, scope string) (context.Context, error) {
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID string, claims apiTokenClaims) (context.Context, error) {
 	if tokenID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
@@ -185,14 +200,24 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Make sure that the projectID that comes in the token claim matches the one in the DB
-	if projectIDInClaim != "" && token.ProjectID.String() != projectIDInClaim {
-		return nil, errors.New("API token project mismatch")
+	if claims.projectID != "" {
+		if token.ProjectID == nil || token.ProjectID.String() != claims.projectID {
+			return nil, errors.New("API token project mismatch")
+		}
 	}
 
 	// Same defense in depth for the workflow claim
-	if workflowIDInClaim != "" {
-		if token.WorkflowID == nil || token.WorkflowID.String() != workflowIDInClaim {
+	if claims.workflowID != "" {
+		if token.WorkflowID == nil || token.WorkflowID.String() != claims.workflowID {
 			return nil, errors.New("API token workflow mismatch")
+		}
+	}
+
+	// And for the product claim, which mirrors the row's scope_id. A claim naming a product
+	// the row does not carry is refused rather than ignored: the two must agree.
+	if claims.productID != "" {
+		if token.ScopeID == nil || token.ScopeID.String() != claims.productID {
+			return nil, errors.New("API token product mismatch")
 		}
 	}
 
@@ -203,7 +228,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Handle instance admin tokens
-	if scope == authz.ScopeInstanceAdmin {
+	if claims.instanceScope == authz.ScopeInstanceAdmin {
 		// Check if org name provided in header
 		orgName, _ := entities.GetOrganizationNameFromHeader(ctx)
 		if orgName != "" {
@@ -241,9 +266,13 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		ProjectName:  token.ProjectName,
 		WorkflowID:   token.WorkflowID,
 		WorkflowName: token.WorkflowName,
-		Policies:     token.Policies,
-		Scope:        scope,
-		IsSystem:     token.IsSystem,
+		// Every value here comes from token.*, i.e. the database row
+		Scope:         token.Scope,
+		ScopeID:       token.ScopeID,
+		ScopeName:     token.ScopeName,
+		Policies:      token.Policies,
+		InstanceScope: claims.instanceScope,
+		IsSystem:      token.IsSystem,
 	})
 
 	// Set the authorization subject that will be used to check the policies

@@ -76,8 +76,10 @@ type GenerateJWTOptions struct {
 	ProjectName  *string
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
-	ExpiresAt    *time.Time
-	Scope        *string
+	// ProductID mirrors the token row's scope_id for product-scoped tokens
+	ProductID *uuid.UUID
+	ExpiresAt *time.Time
+	Scope     *string
 }
 
 // GenerateJWT creates a new JWT token for the given organization and keyID
@@ -126,6 +128,10 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.WorkflowName = *opts.WorkflowName
 	}
 
+	if opts.ProductID != nil {
+		claims.ProductID = opts.ProductID.String()
+	}
+
 	// optional expiration value, i.e 30 days
 	if opts.ExpiresAt != nil {
 		claims.ExpiresAt = jwt.NewNumericDate(*opts.ExpiresAt)
@@ -143,6 +149,9 @@ type CustomClaims struct {
 	ProjectName  string `json:"project_name,omitempty"`
 	WorkflowID   string `json:"workflow_id,omitempty"`
 	WorkflowName string `json:"workflow_name,omitempty"`
-	Scope        string `json:"scope,omitempty"`
+	// ProductID mirrors the token row's scope_id for product-scoped tokens. Defence in depth
+	// only: it is compared against the row, never used to grant anything.
+	ProductID string `json:"product_id,omitempty"`
+	Scope     string `json:"scope,omitempty"`
 	jwt.RegisteredClaims
 }

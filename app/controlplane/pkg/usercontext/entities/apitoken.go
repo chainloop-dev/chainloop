@@ -33,11 +33,37 @@ type APIToken struct {
 	ProjectName  *string
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
+	// Scope confines the token to a resource that does not live in the control plane
+	// database, such as a product. It is loaded from the token row, never from a claim, and
+	// the projects such a token reaches are its rows in the memberships table. ScopeName is
+	// display-only and may be stale after a rename.
+	Scope     *authz.ResourceType
+	ScopeID   *uuid.UUID
+	ScopeName *string
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
-	Scope    string
+	// InstanceScope carries the "scope" claim, which today holds only
+	// authz.ScopeInstanceAdmin. It is unrelated to Scope above.
+	InstanceScope string
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
 	IsSystem bool
+}
+
+// IsResourceScoped reports whether the token is confined to a resource that does not live in
+// the control plane database, such as a product. Such a token authorizes from its memberships
+// the way a person does, rather than from a column on the token row.
+//
+// NOTE: this keys on the scope column, never on whether memberships exist. Deleting a product
+// removes its memberships, and a token whose product was deleted must stay confined rather
+// than widen to the whole organization.
+func (t *APIToken) IsResourceScoped() bool {
+	return t != nil && t.ScopeID != nil
+}
+
+// IsOrgWide reports whether the token acts for the whole organization, i.e. is confined to
+// neither a project nor a resource outside this database.
+func (t *APIToken) IsOrgWide() bool {
+	return t != nil && t.ProjectID == nil && t.ScopeID == nil
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {

@@ -1028,3 +1028,126 @@ func (s *membershipFilteringPaginationTestSuite) TestByOrgEdgeCases() {
 		s.Equal("test.user+special@example.com", memberships[0].User.Email)
 	})
 }
+
+// A token membership must not count as the project's owner: SetProjectOwner scans for an
+// existing RoleProjectAdmin and skips the assignment if it finds one, which would leave the
+// project with no owner at all. A group still counts, as it always has — changing that would
+// grant the first workflow author a direct membership on every group-administered project.
+func (s *membershipIntegrationTestSuite) TestSetProjectOwnerIgnoresAPITokenMemberships() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name           string
+		membershipType authz.MembershipType
+		// wantUserAdmins is how many user project-admins the project should end up with
+		wantUserAdmins int
+	}{
+		{name: "an api token holding project admin does not count", membershipType: authz.MembershipTypeAPIToken, wantUserAdmins: 1},
+		{name: "a group holding project admin still counts, as before", membershipType: authz.MembershipTypeGroup, wantUserAdmins: 0},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			org, err := s.Organization.CreateWithRandomName(ctx)
+			s.Require().NoError(err)
+			orgUUID := uuid.MustParse(org.ID)
+
+			project, err := s.Project.Create(ctx, org.ID, "owner-scan-"+randomName())
+			s.Require().NoError(err)
+
+			user, err := s.User.UpsertByEmail(ctx, fmt.Sprintf("owner-%s@example.com", uuid.NewString()), nil)
+			s.Require().NoError(err)
+
+			// The non-human member already holds RoleProjectAdmin on the project.
+			s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+				authz.ResourceTypeProject, project.ID, tc.membershipType, uuid.New(), authz.RoleProjectAdmin, nil))
+
+			s.Require().NoError(s.Membership.SetProjectOwner(ctx, orgUUID, project.ID, uuid.MustParse(user.ID)))
+
+			mm, err := s.Repos.Membership.ListAllByResource(ctx, authz.ResourceTypeProject, project.ID)
+			s.Require().NoError(err)
+
+			var userAdmins int
+			for _, m := range mm {
+				if m.MembershipType == authz.MembershipTypeUser && m.Role == authz.RoleProjectAdmin {
+					userAdmins++
+				}
+			}
+			s.Equal(tc.wantUserAdmins, userAdmins)
+		})
+	}
+}
+
+// A scoped token's memberships are its own rows in the memberships table, keyed by the token
+// id under the api_token member type. Tokens never belong to groups, so unlike a user's
+// listing there is no inherited-membership expansion.
+func (s *membershipIntegrationTestSuite) TestListAllMembershipsForAPIToken() {
+	ctx := context.Background()
+
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.Require().NoError(err)
+	orgUUID := uuid.MustParse(org.ID)
+
+	projectA, err := s.Project.Create(ctx, org.ID, "pa")
+	s.Require().NoError(err)
+	projectB, err := s.Project.Create(ctx, org.ID, "pb")
+	s.Require().NoError(err)
+
+	tokenID, otherTokenID, userID := uuid.New(), uuid.New(), uuid.New()
+
+	for _, p := range []uuid.UUID{projectA.ID, projectB.ID} {
+		s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+			authz.ResourceTypeProject, p, authz.MembershipTypeAPIToken, tokenID, authz.RoleProjectAdmin, nil))
+	}
+
+	// Another token, and a user whose member id happens to be a different UUID: neither may
+	// leak into this token's listing.
+	s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+		authz.ResourceTypeProject, projectA.ID, authz.MembershipTypeAPIToken, otherTokenID, authz.RoleProjectAdmin, nil))
+	s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+		authz.ResourceTypeProject, projectA.ID, authz.MembershipTypeUser, userID, authz.RoleProjectAdmin, nil))
+
+	got, err := s.Membership.ListAllMembershipsForAPIToken(ctx, tokenID)
+	s.Require().NoError(err)
+	s.Require().Len(got, 2, "only this token's memberships")
+
+	resourceIDs := make([]uuid.UUID, 0, len(got))
+	for _, m := range got {
+		resourceIDs = append(resourceIDs, m.ResourceID)
+		s.Equal(authz.MembershipTypeAPIToken, m.MembershipType)
+		s.Equal(tokenID, m.MemberID)
+	}
+	s.ElementsMatch([]uuid.UUID{projectA.ID, projectB.ID}, resourceIDs)
+
+	// A token with no memberships reaches nothing, and that is an empty listing rather than
+	// an error: the product may simply hold no projects.
+	none, err := s.Membership.ListAllMembershipsForAPIToken(ctx, uuid.New())
+	s.Require().NoError(err)
+	s.Empty(none)
+}
+
+// A user's listing must not pick up token memberships that share its member id, which is what
+// would happen if the member type were not part of the predicate.
+func (s *membershipIntegrationTestSuite) TestListAllMembershipsForUserExcludesTokenMemberships() {
+	ctx := context.Background()
+
+	org, err := s.Organization.CreateWithRandomName(ctx)
+	s.Require().NoError(err)
+	orgUUID := uuid.MustParse(org.ID)
+
+	project, err := s.Project.Create(ctx, org.ID, "p")
+	s.Require().NoError(err)
+
+	user, err := s.User.UpsertByEmail(ctx, fmt.Sprintf("member-%s@example.com", uuid.NewString()), nil)
+	s.Require().NoError(err)
+	userUUID := uuid.MustParse(user.ID)
+
+	s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+		authz.ResourceTypeProject, project.ID, authz.MembershipTypeAPIToken, userUUID, authz.RoleProjectAdmin, nil))
+
+	got, err := s.Membership.ListAllMembershipsForUser(ctx, userUUID)
+	s.Require().NoError(err)
+	for _, m := range got {
+		s.NotEqual(authz.MembershipTypeAPIToken, m.MembershipType)
+	}
+}

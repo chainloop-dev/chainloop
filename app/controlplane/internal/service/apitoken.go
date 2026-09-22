@@ -54,8 +54,8 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		return nil, errors.BadRequest("invalid", "project is required")
 	}
 
-	// Org-level API tokens can only create project-scoped tokens
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+	// Only organization-wide API tokens can mint tokens at all, and only project-scoped ones
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
 		if !req.ProjectReference.IsSet() {
 			return nil, errors.Forbidden("forbidden", "org-level API tokens must specify a project when creating new tokens")
 		}
@@ -110,7 +110,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 
 	// Org-level API tokens can only see project-scoped tokens
 	scope := mapTokenScope(req.Scope)
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
 		scope = biz.APITokenScopeProject
 	}
 
@@ -165,21 +165,38 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, errors.NotFound("not found", "API token not found")
 	}
 
-	// 1 - Only admins can manage global contracts
-	if t.ProjectID == nil && rbacEnabled(ctx) {
+	// 1 - Only admins can manage organization-wide tokens. A token confined to a resource
+	// outside this database is not one, so it goes to the resource check below rather than
+	// being refused here as "global". NOTE: RoleProductAdmin carries no policies in this
+	// repository's RolesMap — the platform defines them — so an RBAC caller is refused by
+	// that check until it does.
+	if t.IsOrgWide() && rbacEnabled(ctx) {
 		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
 	}
 
 	// Org-level API tokens cannot revoke other org-level tokens
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
-		if t.ProjectID == nil {
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
+		if t.IsOrgWide() {
 			return nil, errors.Forbidden("forbidden", "org-level API tokens cannot revoke org-level tokens")
 		}
 	}
 
-	// Make sure the user has permission to revoke the token in the project
-	if t.ProjectID != nil {
+	// Make sure the caller has permission to revoke the token where it lives
+	switch {
+	case t.ProjectID != nil:
 		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProject, *t.ProjectID); err != nil {
+			return nil, err
+		}
+	case t.ScopeID != nil:
+		// Create writes scope and scope_id together, but the two are independently nullable
+		// columns and an external writer could disagree. Refuse such a row rather than
+		// dereferencing a nil kind: it is confined to something we cannot name, so there is
+		// no resource to authorize the caller against.
+		if t.Scope == nil {
+			return nil, errors.BadRequest("invalid", "this API token carries an incomplete scope and cannot be managed here")
+		}
+
+		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, *t.Scope, *t.ScopeID); err != nil {
 			return nil, err
 		}
 	}
@@ -213,9 +230,9 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 		res.LastUsedAt = timestamppb.New(*in.LastUsedAt)
 	}
 
-	// A token reports the one thing it is confined to. Chained, not independent: a row cannot
-	// carry both a project and a resource scope, and overwriting one with the other would hide
-	// a confinement from the artefact an operator audits.
+	// A token reports the one thing it is confined to. Chained, not independent: Create
+	// refuses a row carrying both a project and a resource scope, and overwriting one with
+	// the other would hide a confinement from the artefact an operator audits.
 	if in.ProjectID != nil {
 		res.ScopedEntity = &pb.ScopedEntity{
 			Type: string(biz.ContractScopeProject),

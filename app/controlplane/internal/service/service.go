@@ -192,24 +192,56 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		return nil
 	}
 
-	// 1 - Authorize using API token
-	// For now we only support API tokens to authorize project resourceTypes
-	// NOTE we do not run s.enforcer here because API tokens do not have roles associated with resourceTypes
-	// the authorization has happened at the API level and we do not have attribute-based policies in casbin yet
-	if token := entities.CurrentAPIToken(ctx); token != nil {
-		if resourceType == authz.ResourceTypeProject && token.ProjectID != nil && token.ProjectID.String() == resourceID.String() {
+	// 1 - Authorize using an API token confined to a single project
+	// NOTE we do not run s.enforcer here because such tokens do not have roles associated with
+	// resourceTypes: the authorization has happened at the API level and we do not have
+	// attribute-based policies in casbin yet. A token confined to a resource outside this
+	// database has no such column to answer from, so it falls through to the membership walk
+	// below, exactly as a person does.
+	if token := entities.CurrentAPIToken(ctx); token != nil && !token.IsResourceScoped() {
+		if resourceType == authz.ResourceTypeProject && token.ProjectID != nil && *token.ProjectID == resourceID {
 			s.log.Debugw("msg", "authorized using API token", "resource_id", resourceID.String(), "resource_type", resourceType, "token_name", token.Name, "token_id", token.ID)
 			return nil
 		}
 
-		return errors.Forbidden("forbidden", fmt.Errorf("operation not allowed: This auth token is valid only with the project %q", *token.ProjectName).Error())
+		// ProjectName is nil for any token not confined to a project, so never dereference
+		// it blind: a panic recovered into a 500 tells the caller nothing.
+		confinedTo := "this organization"
+		if token.ProjectName != nil {
+			confinedTo = fmt.Sprintf("the project %q", *token.ProjectName)
+		}
+
+		return errors.Forbidden("forbidden", fmt.Sprintf("operation not allowed: this auth token is valid only with %s", confinedTo))
 	}
 
 	var defaultMessage = fmt.Sprintf("you do not have permissions to access the %q with id %q", resourceType, resourceID.String())
-	// 2 - We are a user
+	// 2 - We are a user, or a token scoped to a resource outside this database.
 	// find the resource membership that matches the resource type and ID
 	// for example admin in project1, then apply RBAC enforcement
 	m := entities.CurrentMembership(ctx)
+	if m == nil {
+		return errors.Forbidden("forbidden", defaultMessage)
+	}
+
+	// A scoped token authorizes from a membership the Chainloop platform wrote, so the role on
+	// that membership must never widen what the token itself carries. The attestation
+	// endpoints are skipped by the authz middleware, making this the only place the token's
+	// ACL is consulted on that path — and RoleProjectAdmin grants PolicyAPITokenCreate and
+	// PolicyAPITokenRevoke, precisely the organization-level policies a scoped token is
+	// denied. On the paths the middleware covers this check is a no-op, and it keeps
+	// authorizeResource's answer in step with projectsAllowing, which enforces the same
+	// subject.
+	if token := entities.CurrentAPIToken(ctx); token != nil {
+		allowed, err := s.authz.Enforce(ctx, usercontext.CurrentAuthzSubject(ctx), op)
+		if err != nil {
+			return handleUseCaseErr(err, s.log)
+		}
+
+		if !allowed {
+			return errors.Forbidden("forbidden", defaultMessage)
+		}
+	}
+
 	var matchingResources []*entities.ResourceMembership
 	var foundRoles []string
 	// First, collect all memberships that match the requested resource type and ID
@@ -222,6 +254,12 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 
 	// If no matching resources were found, return forbidden error
 	if len(matchingResources) == 0 {
+		// A scoped token is refused for a reason worth naming: the resource is outside its
+		// scope, not a permission it lacks.
+		if token := entities.CurrentAPIToken(ctx); token.IsResourceScoped() {
+			return errors.Forbidden("forbidden", outOfScopeMessage(token, resourceType))
+		}
+
 		return errors.Forbidden("forbidden", defaultMessage)
 	}
 
@@ -236,13 +274,32 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		}
 
 		if pass {
-			s.log.Debugw("msg", "authorized using user membership", "resource_id", resourceID.String(), "resource_type", resourceType, "role", rm.Role, "membership_id", rm.MembershipID, "user_id", m.UserID)
+			s.log.Debugw("msg", "authorized using membership", "resource_id", resourceID.String(), "resource_type", resourceType, "role", rm.Role, "membership_id", rm.MembershipID, "member_type", m.MemberType, "member_id", m.MemberID)
 			return nil
 		}
 	}
 
 	// If none of the roles pass, return forbidden error
 	return errors.Forbidden("forbidden", defaultMessage)
+}
+
+// outOfScopeMessage explains that the token's scope does not include the resource, so a
+// refused caller can tell that apart from a permission it lacks. The scope name is
+// display-only and may be stale after a rename, hence the fallback to the id.
+func outOfScopeMessage(token *entities.APIToken, resourceType authz.ResourceType) string {
+	// The name is written by the Chainloop platform, so do not trust it to be present: an
+	// empty one is as good as absent and the id is what actually identifies the scope.
+	name := token.ScopeID.String()
+	if token.ScopeName != nil && *token.ScopeName != "" {
+		name = *token.ScopeName
+	}
+
+	kind := "resource"
+	if token.Scope != nil {
+		kind = string(*token.Scope)
+	}
+
+	return fmt.Sprintf("operation not allowed: this token is scoped to %s %q, which does not include this %s", kind, name, resourceType)
 }
 
 // projectsAllowing reports, per project ID, whether the caller may perform op
@@ -285,9 +342,12 @@ func (s *service) projectsAllowing(ctx context.Context, op *authz.Policy, projec
 		return allowed, nil
 	}
 
-	// An API token is scoped to a single project, and reaching here means the
-	// API-level check already accepted the operation for it.
-	if token := entities.CurrentAPIToken(ctx); token != nil {
+	// An API token confined to a single project answers from the token itself, and reaching
+	// here means the API-level check already accepted the operation for it. A token scoped to
+	// a resource outside this database falls through to the membership walk below, the same
+	// way authorizeResource does — the two must agree, or a listing offers an action the call
+	// refuses, or hides one it would allow.
+	if token := entities.CurrentAPIToken(ctx); token != nil && !token.IsResourceScoped() {
 		for _, p := range projects {
 			allowed[p.ID] = token.ProjectID != nil && *token.ProjectID == p.ID
 		}
@@ -295,10 +355,15 @@ func (s *service) projectsAllowing(ctx context.Context, op *authz.Policy, projec
 		return allowed, nil
 	}
 
+	m := entities.CurrentMembership(ctx)
+	if m == nil {
+		return allowed, nil
+	}
+
 	// roleGrants caches the enforcer's answer per role, so a caller with many
 	// project memberships still enforces each distinct role only once.
 	roleGrants := make(map[authz.Role]bool)
-	for _, rm := range entities.CurrentMembership(ctx).Resources {
+	for _, rm := range m.Resources {
 		if rm.ResourceType != authz.ResourceTypeProject {
 			continue
 		}
@@ -379,8 +444,10 @@ func (s *service) canCreateProject(ctx context.Context) (bool, error) {
 		return authz.Role(usercontext.CurrentAuthzSubject(ctx)).IsAdmin(), nil
 	}
 
-	// Only org tokens can create projects
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID != nil {
+	// Only org tokens can create projects. A token confined to a project or to a resource
+	// outside this database is refused explicitly, rather than relying on its policy list
+	// happening not to carry PolicyProjectCreate.
+	if token := entities.CurrentAPIToken(ctx); token != nil && !token.IsOrgWide() {
 		return false, nil
 	}
 
@@ -398,16 +465,21 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 
 	projects := make([]uuid.UUID, 0)
 
-	// 1 - Check if we are using an API token
-	if token := entities.CurrentAPIToken(ctx); token != nil {
+	// 1 - An API token confined to a single project answers from the token itself
+	if token := entities.CurrentAPIToken(ctx); token != nil && !token.IsResourceScoped() {
 		if token.ProjectID != nil {
 			projects = append(projects, *token.ProjectID)
 		}
 		return projects
 	}
 
-	// 2 - We are a user
+	// 2 - A user, or a token scoped to a resource outside this database: both answer from
+	// their memberships
 	m := entities.CurrentMembership(ctx)
+	if m == nil {
+		return projects
+	}
+
 	for _, rm := range m.Resources {
 		if rm.ResourceType == authz.ResourceTypeProject {
 			projects = append(projects, rm.ResourceID)
@@ -489,13 +561,13 @@ func initializePaginationOpts(reqPagination *pb.OffsetPaginationRequest) (*pagin
 	return paginationOpts, nil
 }
 
-// RBAC feature is enabled if we are using a project scoped token or
-// it is a user with org role member
+// RBAC applies to a token confined to a project or to a resource outside this database, and
+// to a user whose organization role has it enabled.
 func rbacEnabled(ctx context.Context) bool {
 	// it's an API token
 	token := entities.CurrentAPIToken(ctx)
 	if token != nil {
-		return token.ProjectID != nil
+		return !token.IsOrgWide()
 	}
 
 	// we have an user

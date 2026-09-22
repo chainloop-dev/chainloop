@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	apitokenjwt "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
@@ -628,4 +629,300 @@ func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	s.Require().NoError(err)
 	s.Require().Len(products, 1)
 	s.Equal(productTokenName, products[0].Name)
+}
+
+// TestCreateWithProductScope covers a token confined to a resource that does not live in this
+// database. The scope is persisted on the row, because authorization reads the row and never
+// the JWT claim.
+func (s *apiTokenTestSuite) TestCreateWithProductScope() {
+	ctx := context.Background()
+	productID := uuid.New()
+
+	token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout-platform"))
+	s.Require().NoError(err)
+
+	s.Require().NotNil(token.Scope)
+	s.Equal(authz.ResourceTypeProduct, *token.Scope)
+	s.Require().NotNil(token.ScopeID)
+	s.Equal(productID, *token.ScopeID)
+	s.Require().NotNil(token.ScopeName)
+	s.Equal("checkout-platform", *token.ScopeName)
+
+	// A scoped token is confined to neither a project nor a workflow.
+	s.Nil(token.ProjectID)
+	s.Nil(token.WorkflowID)
+
+	// It survives a round trip through the database.
+	reloaded, err := s.APIToken.FindByID(ctx, token.ID.String())
+	s.Require().NoError(err)
+	s.Require().NotNil(reloaded.Scope)
+	s.Equal(authz.ResourceTypeProduct, *reloaded.Scope)
+	s.Require().NotNil(reloaded.ScopeID)
+	s.Equal(productID, *reloaded.ScopeID)
+	s.Require().NotNil(reloaded.ScopeName)
+	s.Equal("checkout-platform", *reloaded.ScopeName)
+}
+
+// A revoked scoped token releases its name, matching the project and organization indexes.
+func (s *apiTokenTestSuite) TestProductTokenNameFreedOnRevocation() {
+	ctx := context.Background()
+	productID := uuid.New()
+
+	token, err := s.APIToken.Create(ctx, "ci", nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "a"))
+	s.Require().NoError(err)
+
+	s.Require().NoError(s.APIToken.Revoke(ctx, s.org.ID, token.ID.String()))
+
+	_, err = s.APIToken.Create(ctx, "ci", nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "a"))
+	s.NoError(err)
+}
+
+// A scoped token carries exactly what a project-scoped token carries. The organization-level
+// policies include minting further tokens and reading every registered integration in the
+// organization, so a confined credential must never receive them.
+func (s *apiTokenTestSuite) TestScopedTokenPoliciesMatchProjectToken() {
+	ctx := context.Background()
+
+	projectToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
+	s.Require().NoError(err)
+	productToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New(), "checkout"))
+	s.Require().NoError(err)
+
+	s.ElementsMatch(projectToken.Policies, productToken.Policies,
+		"a scoped token is not organization-wide: its permission ceiling is the project token's")
+
+	for _, forbidden := range []*authz.Policy{
+		authz.PolicyAPITokenCreate, authz.PolicyAPITokenList, authz.PolicyAPITokenRevoke,
+		authz.PolicyRegisteredIntegrationAdd, authz.PolicyRegisteredIntegrationList,
+		authz.PolicyRegisteredIntegrationRead,
+	} {
+		s.NotContains(productToken.Policies, forbidden)
+	}
+
+	// The organization-level token still gets them, which is what makes the guard a narrowing
+	// rather than a removal.
+	orgToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
+	s.Require().NoError(err)
+	s.Contains(orgToken.Policies, authz.PolicyAPITokenCreate)
+}
+
+// Explicit policies survive untouched whatever the scope: a caller asking for a narrow policy
+// set must not receive the organization-level ones on top.
+func (s *apiTokenTestSuite) TestExplicitPoliciesAreNotWidenedForScopedTokens() {
+	ctx := context.Background()
+	explicit := []*authz.Policy{authz.PolicyWorkflowRunRead}
+
+	scoped, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+		biz.APITokenWithPolicies(explicit),
+		biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New(), "checkout"))
+	s.Require().NoError(err)
+	s.ElementsMatch(explicit, scoped.Policies)
+}
+
+// Global means confined to neither a project nor a scoped resource. Getting this wrong lists a
+// product token as an organization-wide one, in the listing whose whole job is to show what a
+// credential reaches.
+func (s *apiTokenTestSuite) TestListByScope() {
+	ctx := context.Background()
+	productID := uuid.New()
+
+	orgToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
+	s.Require().NoError(err)
+	productTokenName := randomName()
+	_, err = s.APIToken.Create(ctx, productTokenName, nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"))
+	s.Require().NoError(err)
+
+	s.Run("the global scope excludes scope-confined tokens", func() {
+		global, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(biz.APITokenScopeGlobal))
+		s.Require().NoError(err)
+		s.NotEmpty(global)
+
+		names := make([]string, 0, len(global))
+		for _, t := range global {
+			s.Nil(t.ScopeID, "a scope-confined token must not appear under the global scope")
+			s.Nil(t.ProjectID)
+			names = append(names, t.Name)
+		}
+		s.Contains(names, orgToken.Name)
+		s.NotContains(names, productTokenName)
+	})
+
+	s.Run("the product scope returns exactly the product tokens", func() {
+		products, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(biz.APITokenScopeProduct))
+		s.Require().NoError(err)
+		s.Require().Len(products, 1)
+		s.Equal(productTokenName, products[0].Name)
+		s.Require().NotNil(products[0].ScopeID)
+		s.Equal(productID, *products[0].ScopeID)
+	})
+
+	s.Run("the project scope is unaffected", func() {
+		projects, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(biz.APITokenScopeProject))
+		s.Require().NoError(err)
+		s.NotEmpty(projects)
+		for _, t := range projects {
+			s.NotNil(t.ProjectID)
+			s.Nil(t.ScopeID)
+		}
+	})
+
+	s.Run("an unknown scope is rejected", func() {
+		_, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope("nonsense"))
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+	})
+}
+
+// The product claim must be minted on creation and survive a JWT regeneration, so a
+// regenerated credential keeps cross-checking against the same row it always did.
+func (s *apiTokenTestSuite) TestGeneratedJWTCarriesTheProductScope() {
+	ctx := context.Background()
+	productID := uuid.New()
+
+	parseClaims := func(raw string) *apitokenjwt.CustomClaims {
+		claims := &apitokenjwt.CustomClaims{}
+		info, err := jwt.ParseWithClaims(raw, claims, func(_ *jwt.Token) (interface{}, error) {
+			return []byte("test"), nil
+		})
+		s.Require().NoError(err)
+		s.True(info.Valid)
+
+		return claims
+	}
+
+	token, err := s.APIToken.Create(ctx, randomName(), nil, toPtrDuration(24*time.Hour), &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"))
+	s.Require().NoError(err)
+	s.Equal(productID.String(), parseClaims(token.JWT).ProductID)
+
+	regenerated, err := s.APIToken.RegenerateJWT(ctx, token.ID, 48*time.Hour)
+	s.Require().NoError(err)
+	s.Equal(productID.String(), parseClaims(regenerated.JWT).ProductID,
+		"a regenerated JWT must keep mirroring the row's scope")
+
+	// A token with no scope carries no claim, so nothing changes for the tokens in existence.
+	unscoped, err := s.APIToken.Create(ctx, randomName(), nil, toPtrDuration(24*time.Hour), &s.org.ID)
+	s.Require().NoError(err)
+	s.Empty(parseClaims(unscoped.JWT).ProductID)
+}
+
+// A name identifies at most one token per project and per scoped resource, never one per
+// organization, so FindByNameInOrg can match several rows: two project tokens sharing a name,
+// or an organization-level token and a product token sharing one. An ambiguous match must
+// surface as such rather than as a raw ent NotSingularError the service layer masks into a
+// 500.
+func (s *apiTokenTestSuite) TestFindByNameInOrgIsAmbiguousNotInternal() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name  string
+		setup func(name string)
+	}{
+		{
+			name: "two project tokens sharing a name",
+			setup: func(n string) {
+				_, err := s.APIToken.Create(ctx, n, nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
+				s.Require().NoError(err)
+				_, err = s.APIToken.Create(ctx, n, nil, nil, &s.org.ID, biz.APITokenWithProject(s.p2))
+				s.Require().NoError(err)
+			},
+		},
+		{
+			name: "an organization-level token and a product token sharing a name",
+			setup: func(n string) {
+				_, err := s.APIToken.Create(ctx, n, nil, nil, &s.org.ID)
+				s.Require().NoError(err)
+				_, err = s.APIToken.Create(ctx, n, nil, nil, &s.org.ID,
+					biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New(), "checkout"))
+				s.Require().NoError(err)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			name := randomName()
+			tc.setup(name)
+
+			_, err := s.APIToken.FindByNameInOrg(ctx, s.org.ID, name)
+			s.Require().Error(err)
+			// Whatever the resolution, an ambiguous lookup is the caller's problem to see,
+			// not an opaque internal error.
+			s.False(biz.IsNotFound(err), "an ambiguous match is not a missing token")
+			s.True(biz.IsErrValidation(err), "expected a validation error, got %v", err)
+		})
+	}
+}
+
+// An empty display name is stored as no name, so every reader's documented fallback to the id
+// actually fires.
+func (s *apiTokenTestSuite) TestEmptyScopeNameIsStoredAsNoName() {
+	ctx := context.Background()
+	productID := uuid.New()
+
+	token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, ""))
+	s.Require().NoError(err)
+	s.Nil(token.ScopeName)
+
+	reloaded, err := s.APIToken.FindByID(ctx, token.ID.String())
+	s.Require().NoError(err)
+	s.Nil(reloaded.ScopeName)
+	s.Require().NotNil(reloaded.ScopeID)
+	s.Equal(productID, *reloaded.ScopeID)
+}
+
+// Create must refuse the scope combinations that would discard a confinement, because each of
+// them silently widens what the token reaches.
+func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
+	ctx := context.Background()
+	productID := uuid.New()
+
+	testCases := []struct {
+		name string
+		opts []biz.APITokenCreateOpt
+		org  *string
+	}{
+		{
+			// IsResourceScoped keys on scope_id, so every project check would be
+			// short-circuited and the project confinement enforced nowhere.
+			name: "a project scope together with a resource scope",
+			opts: []biz.APITokenCreateOpt{
+				biz.APITokenWithProject(s.p1),
+				biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"),
+			},
+			org: &s.org.ID,
+		},
+		{
+			// Only the product kind is mirrored into the JWT and selected by the product
+			// listing, so any other kind is confined but invisible and uncross-checked.
+			name: "a scope kind other than product",
+			opts: []biz.APITokenCreateOpt{
+				biz.APITokenWithScope(authz.ResourceTypeGroup, productID, "a-group"),
+			},
+			org: &s.org.ID,
+		},
+		{
+			// An instance-level token has no organization; scoping it to a resource inside
+			// one makes it both instance-admin and RBAC-confined.
+			name: "a resource scope on an instance-level token",
+			opts: []biz.APITokenCreateOpt{
+				biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"),
+			},
+			org: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			_, err := s.APIToken.Create(ctx, randomName(), nil, nil, tc.org, tc.opts...)
+			s.Require().Error(err)
+			s.True(biz.IsErrValidation(err), "expected a validation error, got %v", err)
+		})
+	}
 }
