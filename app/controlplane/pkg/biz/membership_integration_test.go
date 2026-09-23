@@ -1080,7 +1080,8 @@ func (s *membershipIntegrationTestSuite) TestSetProjectOwnerIgnoresAPITokenMembe
 
 // A scoped token's memberships are its own rows in the memberships table, keyed by the token
 // id under the api_token member type. Tokens never belong to groups, so unlike a user's
-// listing there is no inherited-membership expansion.
+// listing there is no group expansion; the rows it holds are both explicit (no parent) and
+// inherited from another of its own rows (a product membership), and both must be listed.
 func (s *membershipIntegrationTestSuite) TestListAllMembershipsForAPIToken() {
 	ctx := context.Background()
 
@@ -1093,12 +1094,20 @@ func (s *membershipIntegrationTestSuite) TestListAllMembershipsForAPIToken() {
 	projectB, err := s.Project.Create(ctx, org.ID, "pb")
 	s.Require().NoError(err)
 
-	tokenID, otherTokenID, userID := uuid.New(), uuid.New(), uuid.New()
+	tokenID, otherTokenID, userID, productID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
 
-	for _, p := range []uuid.UUID{projectA.ID, projectB.ID} {
-		s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
-			authz.ResourceTypeProject, p, authz.MembershipTypeAPIToken, tokenID, authz.RoleProjectAdmin, nil))
-	}
+	// An explicit project membership, plus a product membership whose project membership is
+	// inherited from it: the shape the Chainloop platform writes for a product token.
+	s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+		authz.ResourceTypeProject, projectA.ID, authz.MembershipTypeAPIToken, tokenID, authz.RoleProjectAdmin, nil))
+	s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+		authz.ResourceTypeProduct, productID, authz.MembershipTypeAPIToken, tokenID, authz.RoleProductAdmin, nil))
+	productMemberships, err := s.Repos.Membership.ListAllByResource(ctx, authz.ResourceTypeProduct, productID)
+	s.Require().NoError(err)
+	s.Require().Len(productMemberships, 1)
+	parentID := productMemberships[0].ID
+	s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+		authz.ResourceTypeProject, projectB.ID, authz.MembershipTypeAPIToken, tokenID, authz.RoleProjectAdmin, &parentID))
 
 	// Another token, and a user whose member id happens to be a different UUID: neither may
 	// leak into this token's listing.
@@ -1109,15 +1118,21 @@ func (s *membershipIntegrationTestSuite) TestListAllMembershipsForAPIToken() {
 
 	got, err := s.Membership.ListAllMembershipsForAPIToken(ctx, tokenID)
 	s.Require().NoError(err)
-	s.Require().Len(got, 2, "only this token's memberships")
+	s.Require().Len(got, 3, "only this token's memberships, explicit and inherited")
 
 	resourceIDs := make([]uuid.UUID, 0, len(got))
 	for _, m := range got {
 		resourceIDs = append(resourceIDs, m.ResourceID)
 		s.Equal(authz.MembershipTypeAPIToken, m.MembershipType)
 		s.Equal(tokenID, m.MemberID)
+		if m.ResourceID == projectB.ID {
+			s.Require().NotNil(m.ParentID, "the inherited membership keeps its parent")
+			s.Equal(parentID, *m.ParentID)
+		} else {
+			s.Nil(m.ParentID)
+		}
 	}
-	s.ElementsMatch([]uuid.UUID{projectA.ID, projectB.ID}, resourceIDs)
+	s.ElementsMatch([]uuid.UUID{projectA.ID, projectB.ID, productID}, resourceIDs)
 
 	// A token with no memberships reaches nothing, and that is an empty listing rather than
 	// an error: the product may simply hold no projects.

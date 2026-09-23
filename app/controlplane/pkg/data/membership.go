@@ -453,6 +453,9 @@ func (r *MembershipRepo) ListAllByAPIToken(ctx context.Context, tokenID uuid.UUI
 	mm, err := r.data.DB.Membership.Query().Where(
 		membership.MembershipTypeEQ(authz.MembershipTypeAPIToken),
 		membership.MemberID(tokenID),
+		// Always true, but it lets the planner use both partial indexes (parent_id IS NULL /
+		// IS NOT NULL) in a BitmapOr instead of seq-scanning the table on every token request.
+		membership.Or(membership.ParentIDIsNil(), membership.ParentIDNotNil()),
 	).WithOrganization().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query token memberships: %w", err)
