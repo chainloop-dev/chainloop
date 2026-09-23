@@ -54,12 +54,14 @@ func TestAPITokenService_Create_OrgTokenWithoutProjectIsRejected(t *testing.T) {
 func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	t.Parallel()
 
-	orgID, projectID := uuid.New(), uuid.New()
+	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 
 	testCases := []struct {
 		name string
 		// caller is the API token making the request; nil means a user
-		caller       *entities.APIToken
+		caller *entities.APIToken
+		// memberships the caller holds, as the memberships middleware loads them
+		memberships  *entities.Membership
 		requested    pb.APITokenServiceListRequest_Scope
 		wantScope    authz.ResourceType
 		wantProjects []uuid.UUID
@@ -74,6 +76,30 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 			caller:    &entities.APIToken{ID: uuid.NewString()},
 			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope: authz.ResourceTypeProject,
+		},
+		{
+			name:      "an organization token recording its scope is forced too",
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
+			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
+			wantScope: authz.ResourceTypeProject,
+		},
+		{
+			// Not organization-wide, so not forced: it is narrowed to its memberships instead.
+			name:   "a product token keeps the scope it asks for, narrowed to its projects",
+			caller: &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID},
+			memberships: &entities.Membership{Resources: []*entities.ResourceMembership{
+				{ResourceType: authz.ResourceTypeProject, ResourceID: projectID, Role: authz.RoleProjectAdmin},
+			}},
+			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
+			wantScope:    authz.ResourceTypeOrganization,
+			wantProjects: []uuid.UUID{projectID},
+		},
+		{
+			// Empty, not nil: nil would mean RBAC does not narrow this caller at all.
+			name:         "a product token with no memberships is narrowed to no project",
+			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID},
+			memberships:  &entities.Membership{},
+			wantProjects: []uuid.UUID{},
 		},
 		{
 			name:         "a project token keeps the scope it asks for",
@@ -106,6 +132,9 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 			require.NoError(t, err)
 
 			ctx := entities.WithCurrentOrg(context.Background(), &entities.Org{ID: orgID.String(), Name: "acme"})
+			if tc.memberships != nil {
+				ctx = entities.WithMembership(ctx, tc.memberships)
+			}
 			if tc.caller != nil {
 				ctx = entities.WithCurrentAPIToken(ctx, tc.caller)
 			} else {
@@ -119,60 +148,6 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 			assert.Equal(t, tc.wantProjects, got.FilterByProjects)
 		})
 	}
-}
-
-func TestAPITokenService_Revoke_OrgTokenCannotRevokeOrgTokens(t *testing.T) {
-	t.Parallel()
-
-	orgID := uuid.NewString()
-
-	tests := []struct {
-		name          string
-		callerToken   *entities.APIToken
-		targetToken   *biz.APIToken
-		wantForbidden bool
-	}{
-		{
-			name:        "org-level token revoking org-level token is forbidden",
-			callerToken: &entities.APIToken{ID: uuid.NewString(), ProjectID: nil},
-			targetToken: &biz.APIToken{
-				ID:             uuid.New(),
-				OrganizationID: uuid.MustParse(orgID),
-				ProjectID:      nil,
-			},
-			wantForbidden: true,
-		},
-		{
-			name:        "org-level token revoking project token is allowed",
-			callerToken: &entities.APIToken{ID: uuid.NewString(), ProjectID: nil},
-			targetToken: &biz.APIToken{
-				ID:             uuid.New(),
-				OrganizationID: uuid.MustParse(orgID),
-				ProjectID:      toUUIDPtr(uuid.New()),
-			},
-			wantForbidden: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			ctx = entities.WithCurrentAPIToken(ctx, tc.callerToken)
-
-			forbidden := false
-			if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
-				if tc.targetToken.ProjectID == nil {
-					forbidden = true
-				}
-			}
-
-			assert.Equal(t, tc.wantForbidden, forbidden)
-		})
-	}
-}
-
-func toUUIDPtr(id uuid.UUID) *uuid.UUID {
-	return &id
 }
 
 // A listing must report what the token actually reaches. A product token has no project, so
