@@ -166,6 +166,23 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: &pb.ScopedEntity{Type: testProductScope, Id: productID.String(), Name: productID.String()},
 		},
 		{
+			// Only a product is reported from the scope columns; nothing is guessed to be one.
+			name: "a scope id without a kind is not reported as a product",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				ScopeID: &productID,
+			},
+			want: nil,
+		},
+		{
+			name: "a kind other than product is not reported",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &productID,
+			},
+			want: nil,
+		},
+		{
 			name:  "an organization-level token reports none",
 			token: &biz.APIToken{ID: uuid.New(), CreatedAt: &createdAt},
 			want:  nil,

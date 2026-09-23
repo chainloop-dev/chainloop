@@ -1024,6 +1024,7 @@ func init() {
 	APITokensTable.Annotation.Checks = map[string]string{
 		"apitoken_scope_all_or_nothing":   "(scope IS NULL) = (scope_id IS NULL)",
 		"apitoken_scope_excludes_project": "project_id IS NULL OR scope_id IS NULL",
+		"apitoken_scope_product_only":     "scope IS NULL OR scope = 'product'",
 	}
 	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable

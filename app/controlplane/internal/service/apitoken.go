@@ -245,16 +245,11 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 			Id:   in.ProjectID.String(),
 			Name: *in.ProjectName,
 		}
-	} else if in.ScopeID != nil {
-		// ScopedEntity is free-form over its type, so a resource outside this database needs
-		// no proto change. Its name is not known here, so the id stands in for it; resolving
-		// it is the business of whoever owns the resource.
-		scopeType := string(authz.ResourceTypeProduct)
-		if in.Scope != nil {
-			scopeType = string(*in.Scope)
-		}
-
-		res.ScopedEntity = &pb.ScopedEntity{Type: scopeType, Id: in.ScopeID.String(), Name: in.ScopeID.String()}
+	} else if in.Scope != nil && *in.Scope == authz.ResourceTypeProduct && in.ScopeID != nil {
+		// ScopedEntity is free-form over its type, so a product needs no proto change. Its
+		// name is not known here, so the id stands in for it; resolving it is the business of
+		// whoever owns the product.
+		res.ScopedEntity = &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: in.ScopeID.String(), Name: in.ScopeID.String()}
 	}
 
 	return res
