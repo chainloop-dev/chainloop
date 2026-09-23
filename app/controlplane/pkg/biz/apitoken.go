@@ -451,6 +451,8 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		APITokenBase: &events.APITokenBase{
 			APITokenID:   &token.ID,
 			APITokenName: name,
+			Scope:        token.Scope,
+			ScopeID:      token.ScopeID,
 		},
 		APITokenDescription: description,
 		ExpiresAt:           expiresAt,
@@ -645,6 +647,8 @@ func (uc *APITokenUseCase) Revoke(ctx context.Context, orgID, id string) error {
 		APITokenBase: &events.APITokenBase{
 			APITokenID:   &tokenUUID,
 			APITokenName: token.Name,
+			Scope:        token.Scope,
+			ScopeID:      token.ScopeID,
 		},
 	}, orgUUID)
 
