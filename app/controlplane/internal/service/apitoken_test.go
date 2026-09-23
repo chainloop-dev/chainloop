@@ -51,12 +51,12 @@ func TestAPITokenService_List_OrgTokenForcesProjectScope(t *testing.T) {
 	tests := []struct {
 		name      string
 		token     *entities.APIToken
-		wantScope biz.APITokenScope
+		wantScope authz.ResourceType
 	}{
 		{
 			name:      "org-level token forces project scope",
 			token:     &entities.APIToken{ID: uuid.NewString(), ProjectID: nil},
-			wantScope: biz.APITokenScopeProject,
+			wantScope: authz.ResourceTypeProject,
 		},
 		{
 			name:      "project-scoped token does not override scope",
@@ -72,7 +72,7 @@ func TestAPITokenService_List_OrgTokenForcesProjectScope(t *testing.T) {
 
 			scope := mapTokenScope(pb.APITokenServiceListRequest_SCOPE_UNSPECIFIED)
 			if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
-				scope = biz.APITokenScopeProject
+				scope = authz.ResourceTypeProject
 			}
 
 			assert.Equal(t, tc.wantScope, scope)
@@ -214,6 +214,27 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			assert.Equal(t, tc.want.GetType(), got.GetType())
 			assert.Equal(t, tc.want.GetId(), got.GetId())
 			assert.Equal(t, tc.want.GetName(), got.GetName())
+		})
+	}
+}
+
+// The public listing scopes map onto resource kinds; "global" is the organization's own tokens.
+func TestMapTokenScope(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		in   pb.APITokenServiceListRequest_Scope
+		want authz.ResourceType
+	}{
+		{in: pb.APITokenServiceListRequest_SCOPE_UNSPECIFIED, want: ""},
+		{in: pb.APITokenServiceListRequest_SCOPE_PROJECT, want: authz.ResourceTypeProject},
+		{in: pb.APITokenServiceListRequest_SCOPE_GLOBAL, want: authz.ResourceTypeOrganization},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.in.String(), func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, mapTokenScope(tc.in))
 		})
 	}
 }

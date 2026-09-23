@@ -81,10 +81,10 @@ func (s *getContractRBACIntegrationSuite) SetupTest() {
 	// nothing — the shape a token has once its product is deleted.
 	s.productID, s.emptyProductID = uuid.New(), uuid.New()
 	s.productToken, err = s.APIToken.Create(ctx, "token-product", nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, s.productID))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &s.productID))
 	s.Require().NoError(err)
 	s.emptyProductToken, err = s.APIToken.Create(ctx, "token-empty-product", nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, s.emptyProductID))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &s.emptyProductID))
 	s.Require().NoError(err)
 
 	orgUUID := uuid.MustParse(s.org.ID)
