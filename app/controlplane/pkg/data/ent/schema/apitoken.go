@@ -59,9 +59,6 @@ func (APIToken) Fields() []ent.Field {
 		// arrangement cas_mappings.product_id uses, and for the same reason.
 		field.Enum("scope").GoType(authz.ResourceType("")).Optional().Nillable(),
 		field.UUID("scope_id", uuid.UUID{}).Optional().Nillable(),
-		// Display only: the scoped resource's name, for refusal messages and listings.
-		// Never read for authorization; may be stale after a rename.
-		field.String("scope_name").Optional().Nillable(),
 		// ACL policies for this token. NULL means role-based token (future), non-NULL means ACL mode.
 		// When set, contains the list of policies this token is allowed to perform.
 		field.JSON("policies", []*authz.Policy{}).Optional(),
@@ -77,8 +74,7 @@ func (APIToken) Fields() []ent.Field {
 //
 // Both halves matter because the gate functions key on scope_id: a row with scope set but
 // scope_id NULL reads as unconfined, and a row carrying a project_id as well would have its
-// project confinement skipped. scope_name is deliberately not covered — it is display only
-// and legitimately absent.
+// project confinement skipped.
 func (APIToken) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		//nolint:gosec // G101 false positive: these are CHECK expressions, not credentials

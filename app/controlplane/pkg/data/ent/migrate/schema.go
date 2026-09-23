@@ -20,7 +20,6 @@ var (
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
 		{Name: "scope", Type: field.TypeEnum, Nullable: true, Enums: []string{"instance", "organization", "project", "group", "product"}},
 		{Name: "scope_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "scope_name", Type: field.TypeString, Nullable: true},
 		{Name: "policies", Type: field.TypeJSON, Nullable: true},
 		{Name: "is_system", Type: field.TypeBool, Default: false},
 		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
@@ -35,19 +34,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_tokens_projects_project",
-				Columns:    []*schema.Column{APITokensColumns[12]},
+				Columns:    []*schema.Column{APITokensColumns[11]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_tokens_workflows_workflow",
-				Columns:    []*schema.Column{APITokensColumns[13]},
+				Columns:    []*schema.Column{APITokensColumns[12]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_tokens_organizations_api_tokens",
-				Columns:    []*schema.Column{APITokensColumns[14]},
+				Columns:    []*schema.Column{APITokensColumns[13]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -56,7 +55,7 @@ var (
 			{
 				Name:    "apitoken_name_organization_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[14]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[13]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NULL AND scope_id IS NULL",
 				},
@@ -72,7 +71,7 @@ var (
 			{
 				Name:    "apitoken_name_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[12]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
 				},

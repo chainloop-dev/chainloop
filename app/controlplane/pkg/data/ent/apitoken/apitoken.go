@@ -39,8 +39,6 @@ const (
 	FieldScope = "scope"
 	// FieldScopeID holds the string denoting the scope_id field in the database.
 	FieldScopeID = "scope_id"
-	// FieldScopeName holds the string denoting the scope_name field in the database.
-	FieldScopeName = "scope_name"
 	// FieldPolicies holds the string denoting the policies field in the database.
 	FieldPolicies = "policies"
 	// FieldIsSystem holds the string denoting the is_system field in the database.
@@ -90,7 +88,6 @@ var Columns = []string{
 	FieldWorkflowID,
 	FieldScope,
 	FieldScopeID,
-	FieldScopeName,
 	FieldPolicies,
 	FieldIsSystem,
 }
@@ -185,11 +182,6 @@ func ByScope(opts ...sql.OrderTermOption) OrderOption {
 // ByScopeID orders the results by the scope_id field.
 func ByScopeID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldScopeID, opts...).ToFunc()
-}
-
-// ByScopeName orders the results by the scope_name field.
-func ByScopeName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldScopeName, opts...).ToFunc()
 }
 
 // ByIsSystem orders the results by the is_system field.

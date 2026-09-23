@@ -58,7 +58,6 @@ func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts)
 		SetNillableWorkflowID(opts.WorkflowID).
 		SetNillableScope(opts.Scope).
 		SetNillableScopeID(opts.ScopeID).
-		SetNillableScopeName(opts.ScopeName).
 		SetPolicies(opts.Policies).
 		SetIsSystem(opts.IsSystem).
 		Save(ctx)
@@ -289,10 +288,9 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	}
 
 	// The scoped resource is not an entity in this database, so unlike the project and the
-	// workflow it has no edge to load: the three values come straight off the row.
+	// workflow it has no edge to load: both values come straight off the row.
 	result.Scope = t.Scope
 	result.ScopeID = t.ScopeID
-	result.ScopeName = t.ScopeName
 
 	return result
 }

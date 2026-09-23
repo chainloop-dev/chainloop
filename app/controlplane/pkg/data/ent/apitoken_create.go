@@ -174,20 +174,6 @@ func (_c *APITokenCreate) SetNillableScopeID(v *uuid.UUID) *APITokenCreate {
 	return _c
 }
 
-// SetScopeName sets the "scope_name" field.
-func (_c *APITokenCreate) SetScopeName(v string) *APITokenCreate {
-	_c.mutation.SetScopeName(v)
-	return _c
-}
-
-// SetNillableScopeName sets the "scope_name" field if the given value is not nil.
-func (_c *APITokenCreate) SetNillableScopeName(v *string) *APITokenCreate {
-	if v != nil {
-		_c.SetScopeName(*v)
-	}
-	return _c
-}
-
 // SetPolicies sets the "policies" field.
 func (_c *APITokenCreate) SetPolicies(v []*authz.Policy) *APITokenCreate {
 	_c.mutation.SetPolicies(v)
@@ -369,10 +355,6 @@ func (_c *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ScopeID(); ok {
 		_spec.SetField(apitoken.FieldScopeID, field.TypeUUID, value)
 		_node.ScopeID = &value
-	}
-	if value, ok := _c.mutation.ScopeName(); ok {
-		_spec.SetField(apitoken.FieldScopeName, field.TypeString, value)
-		_node.ScopeName = &value
 	}
 	if value, ok := _c.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
@@ -647,24 +629,6 @@ func (u *APITokenUpsert) ClearScopeID() *APITokenUpsert {
 	return u
 }
 
-// SetScopeName sets the "scope_name" field.
-func (u *APITokenUpsert) SetScopeName(v string) *APITokenUpsert {
-	u.Set(apitoken.FieldScopeName, v)
-	return u
-}
-
-// UpdateScopeName sets the "scope_name" field to the value that was provided on create.
-func (u *APITokenUpsert) UpdateScopeName() *APITokenUpsert {
-	u.SetExcluded(apitoken.FieldScopeName)
-	return u
-}
-
-// ClearScopeName clears the value of the "scope_name" field.
-func (u *APITokenUpsert) ClearScopeName() *APITokenUpsert {
-	u.SetNull(apitoken.FieldScopeName)
-	return u
-}
-
 // SetPolicies sets the "policies" field.
 func (u *APITokenUpsert) SetPolicies(v []*authz.Policy) *APITokenUpsert {
 	u.Set(apitoken.FieldPolicies, v)
@@ -926,27 +890,6 @@ func (u *APITokenUpsertOne) UpdateScopeID() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearScopeID() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearScopeID()
-	})
-}
-
-// SetScopeName sets the "scope_name" field.
-func (u *APITokenUpsertOne) SetScopeName(v string) *APITokenUpsertOne {
-	return u.Update(func(s *APITokenUpsert) {
-		s.SetScopeName(v)
-	})
-}
-
-// UpdateScopeName sets the "scope_name" field to the value that was provided on create.
-func (u *APITokenUpsertOne) UpdateScopeName() *APITokenUpsertOne {
-	return u.Update(func(s *APITokenUpsert) {
-		s.UpdateScopeName()
-	})
-}
-
-// ClearScopeName clears the value of the "scope_name" field.
-func (u *APITokenUpsertOne) ClearScopeName() *APITokenUpsertOne {
-	return u.Update(func(s *APITokenUpsert) {
-		s.ClearScopeName()
 	})
 }
 
@@ -1381,27 +1324,6 @@ func (u *APITokenUpsertBulk) UpdateScopeID() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearScopeID() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearScopeID()
-	})
-}
-
-// SetScopeName sets the "scope_name" field.
-func (u *APITokenUpsertBulk) SetScopeName(v string) *APITokenUpsertBulk {
-	return u.Update(func(s *APITokenUpsert) {
-		s.SetScopeName(v)
-	})
-}
-
-// UpdateScopeName sets the "scope_name" field to the value that was provided on create.
-func (u *APITokenUpsertBulk) UpdateScopeName() *APITokenUpsertBulk {
-	return u.Update(func(s *APITokenUpsert) {
-		s.UpdateScopeName()
-	})
-}
-
-// ClearScopeName clears the value of the "scope_name" field.
-func (u *APITokenUpsertBulk) ClearScopeName() *APITokenUpsertBulk {
-	return u.Update(func(s *APITokenUpsert) {
-		s.ClearScopeName()
 	})
 }
 
