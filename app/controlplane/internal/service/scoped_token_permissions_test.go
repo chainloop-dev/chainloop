@@ -506,7 +506,17 @@ func defaultPoliciesForTest() []*authz.Policy {
 // cannot refuse a target the guard lets through.
 func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
-	productScope := authz.ResourceTypeProduct
+	productScope, orgScope, projectScope := authz.ResourceTypeProduct, authz.ResourceTypeOrganization, authz.ResourceTypeProject
+
+	// Every new token records its scope, so an organization-wide caller or target may carry
+	// an organization scope or none at all; both must be treated the same.
+	callers := []struct {
+		name  string
+		token *entities.APIToken
+	}{
+		{name: "caller from before the scope columns", token: &entities.APIToken{ID: uuid.NewString(), Name: "ci"}},
+		{name: "organization-scoped caller", token: &entities.APIToken{ID: uuid.NewString(), Name: "ci", Scope: &orgScope, ScopeID: &orgID}},
+	}
 
 	testCases := []struct {
 		name        string
@@ -519,8 +529,21 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 			wantAllowed: false,
 		},
 		{
+			name:        "an organization-scoped target is refused",
+			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, Scope: &orgScope, ScopeID: &orgID},
+			wantAllowed: false,
+		},
+		{
 			name:        "a project-scoped target is allowed",
 			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, ProjectID: &projectID},
+			wantAllowed: true,
+		},
+		{
+			name: "a project-scoped target recording its scope is allowed",
+			target: &biz.APIToken{
+				ID: uuid.New(), Name: "t", OrganizationID: orgID, ProjectID: &projectID,
+				Scope: &projectScope, ScopeID: &projectID,
+			},
 			wantAllowed: true,
 		},
 		{
@@ -536,45 +559,47 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			logger := log.NewStdLogger(io.Discard)
-			enforcer, err := authz.NewCasbinEnforcer(&authz.Config{RolesMap: authz.RolesMap})
-			require.NoError(t, err)
+	for _, c := range callers {
+		for _, tc := range testCases {
+			t.Run(c.name+"/"+tc.name, func(t *testing.T) {
+				logger := log.NewStdLogger(io.Discard)
+				enforcer, err := authz.NewCasbinEnforcer(&authz.Config{RolesMap: authz.RolesMap})
+				require.NoError(t, err)
 
-			caller := &entities.APIToken{ID: uuid.NewString(), Name: "ci"}
+				caller := c.token
 
-			repo := mocks.NewAPITokenRepo(t)
-			repo.On("FindByIDInOrg", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(tc.target, nil)
-			repo.On("FindByID", mock.Anything, mock.Anything).Maybe().
-				Return(func(_ context.Context, id uuid.UUID) (*biz.APIToken, error) {
-					return &biz.APIToken{ID: id, Policies: defaultPoliciesForTest()}, nil
+				repo := mocks.NewAPITokenRepo(t)
+				repo.On("FindByIDInOrg", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(tc.target, nil)
+				repo.On("FindByID", mock.Anything, mock.Anything).Maybe().
+					Return(func(_ context.Context, id uuid.UUID) (*biz.APIToken, error) {
+						return &biz.APIToken{ID: id, Policies: defaultPoliciesForTest()}, nil
+					})
+				repo.On("Revoke", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
+
+				authzUC := biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{
+					CasbinEnforcer: enforcer, APITokenRepo: repo, Logger: logger,
 				})
-			repo.On("Revoke", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
+				// A nil publisher makes the auditor a no-op, so Revoke can run to completion and the
+				// test observes the authorization decision rather than a missing dependency.
+				uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, authzUC, nil,
+					biz.NewAuditorUseCase(nil, logger), logger)
+				require.NoError(t, err)
 
-			authzUC := biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{
-				CasbinEnforcer: enforcer, APITokenRepo: repo, Logger: logger,
+				ctx := entities.WithCurrentAPIToken(context.Background(), caller)
+				ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: caller.ID}).String())
+				ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: "acme"})
+
+				_, err = NewAPITokenService(uc, WithLogger(logger), WithEnforcer(authzUC)).
+					Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: tc.target.ID.String()})
+
+				if tc.wantAllowed {
+					assert.NoError(t, err)
+					return
+				}
+
+				require.Error(t, err)
+				assert.True(t, kerrors.IsForbidden(err), "expected forbidden, got %v", err)
 			})
-			// A nil publisher makes the auditor a no-op, so Revoke can run to completion and the
-			// test observes the authorization decision rather than a missing dependency.
-			uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, authzUC, nil,
-				biz.NewAuditorUseCase(nil, logger), logger)
-			require.NoError(t, err)
-
-			ctx := entities.WithCurrentAPIToken(context.Background(), caller)
-			ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: caller.ID}).String())
-			ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: "acme"})
-
-			_, err = NewAPITokenService(uc, WithLogger(logger), WithEnforcer(authzUC)).
-				Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: tc.target.ID.String()})
-
-			if tc.wantAllowed {
-				assert.NoError(t, err)
-				return
-			}
-
-			require.Error(t, err)
-			assert.True(t, kerrors.IsForbidden(err), "expected forbidden, got %v", err)
-		})
+		}
 	}
 }

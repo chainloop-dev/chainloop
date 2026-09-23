@@ -47,21 +47,23 @@ type APIToken struct {
 	IsSystem bool
 }
 
-// IsResourceScoped reports whether the token is confined to a resource that does not live in
-// the control plane database, such as a product. Such a token authorizes from its memberships
-// the way a person does, rather than from a column on the token row.
+// IsResourceScoped reports whether the token is confined to a product, which does not live in
+// the control plane database. Such a token authorizes from its memberships the way a person
+// does, rather than from a column on the token row.
 //
-// NOTE: this keys on the scope column, never on whether memberships exist. Deleting a product
-// removes its memberships, and a token whose product was deleted must stay confined rather
-// than widen to the whole organization.
+// NOTE: this keys on the scope kind. Every new token records a scope, but only a product scope
+// drives any logic for now: any other kind is read from project_id exactly as before. It
+// never keys on whether memberships exist either: deleting a product removes its memberships,
+// and a token whose product was deleted must stay confined rather than widen to the whole
+// organization.
 func (t *APIToken) IsResourceScoped() bool {
-	return t != nil && t.ScopeID != nil
+	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
 
 // IsOrgWide reports whether the token acts for the whole organization, i.e. is confined to
-// neither a project nor a resource outside this database.
+// neither a project nor a product.
 func (t *APIToken) IsOrgWide() bool {
-	return t != nil && t.ProjectID == nil && t.ScopeID == nil
+	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {

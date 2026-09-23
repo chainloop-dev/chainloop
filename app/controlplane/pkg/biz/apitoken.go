@@ -119,17 +119,17 @@ type APIToken struct {
 	IsSystem bool
 }
 
-// IsResourceScoped reports whether the token is confined to a resource that does not live in
-// this database, such as a product. It keys on the scope column, never on whether memberships
-// exist. Mirrors entities.APIToken.IsResourceScoped for the persisted row.
+// IsResourceScoped reports whether the token is confined to a product, which does not live in
+// this database. It keys on the scope kind, never on whether memberships exist. Mirrors
+// entities.APIToken.IsResourceScoped for the persisted row.
 func (t *APIToken) IsResourceScoped() bool {
-	return t != nil && t.ScopeID != nil
+	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
 
 // IsOrgWide reports whether the token acts for the whole organization, i.e. is confined to
-// neither a project nor a resource outside this database.
+// neither a project nor a product.
 func (t *APIToken) IsOrgWide() bool {
-	return t != nil && t.ProjectID == nil && t.ScopeID == nil
+	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.
@@ -307,9 +307,9 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		workflowID = ToPtr(options.workflow.ID)
 	}
 
-	// A resource scope replaces the project confinement rather than layering onto it: the gate
-	// functions key on scope_id, so a row carrying both would have every project check
-	// short-circuited and the project confinement enforced nowhere.
+	// A product scope replaces the project confinement rather than layering onto it: the gate
+	// functions skip every project check for a product-scoped token, so a row carrying both
+	// would have the project confinement enforced nowhere.
 	if options.scopeID != nil {
 		if projectID != nil {
 			return nil, NewErrValidationStr("a resource scope cannot be combined with a project scope")

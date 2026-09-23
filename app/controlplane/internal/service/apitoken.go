@@ -193,16 +193,14 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProject, *t.ProjectID); err != nil {
 			return nil, err
 		}
-	case t.ScopeID != nil:
-		// Create writes scope and scope_id together, but the two are independently nullable
-		// columns and an external writer could disagree. Refuse such a row rather than
-		// dereferencing a nil kind: it is confined to something we cannot name, so there is
-		// no resource to authorize the caller against.
-		if t.Scope == nil {
+	case t.IsResourceScoped():
+		// The database never stores a product scope without its id, but refuse such a row
+		// rather than dereferencing nil: there is no product to authorize the caller against.
+		if t.ScopeID == nil {
 			return nil, errors.BadRequest("invalid", "this API token carries an incomplete scope and cannot be managed here")
 		}
 
-		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, *t.Scope, *t.ScopeID); err != nil {
+		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProduct, *t.ScopeID); err != nil {
 			return nil, err
 		}
 	}

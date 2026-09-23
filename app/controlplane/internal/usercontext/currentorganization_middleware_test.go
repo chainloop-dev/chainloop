@@ -247,12 +247,15 @@ runner:
 // same context value a user's memberships use — that is what makes the authorization path a
 // token takes the one people already take.
 func TestWithCurrentMembershipsMiddlewareForAPITokens(t *testing.T) {
-	productID, projectID := uuid.New(), uuid.New()
+	productID, projectID, orgID := uuid.New(), uuid.New(), uuid.New()
+	product := toPtr(authz.ResourceTypeProduct)
 
 	testCases := []struct {
 		name string
-		// scopeID set means the token row carries a resource scope
-		scopeID *uuid.UUID
+		// the scope recorded on the token row; only a product scope loads memberships
+		scope     *authz.ResourceType
+		scopeID   *uuid.UUID
+		projectID *uuid.UUID
 		// tokenMemberships is what the repository returns for the token
 		tokenMemberships []*biz.Membership
 		wantLoaded       bool
@@ -260,6 +263,7 @@ func TestWithCurrentMembershipsMiddlewareForAPITokens(t *testing.T) {
 	}{
 		{
 			name:    "a scoped token gets its memberships",
+			scope:   product,
 			scopeID: &productID,
 			tokenMemberships: []*biz.Membership{{
 				ResourceType: authz.ResourceTypeProject, ResourceID: projectID, Role: authz.RoleProjectAdmin,
@@ -271,30 +275,31 @@ func TestWithCurrentMembershipsMiddlewareForAPITokens(t *testing.T) {
 			// The product was deleted, so its memberships are gone. The membership value must
 			// still be present and empty: absent would read as "RBAC not applied".
 			name:             "a scoped token with no memberships gets an empty set, not nothing",
+			scope:            product,
 			scopeID:          &productID,
 			tokenMemberships: []*biz.Membership{},
 			wantLoaded:       true,
 			wantResources:    []uuid.UUID{},
 		},
-		{
-			// Today's behaviour for project, organization and instance tokens: no memberships
-			// and no database call at all.
-			name:       "an unscoped token is left alone",
-			wantLoaded: false,
-		},
+		// Today's behaviour for project, organization and instance tokens: no memberships and
+		// no database call at all, whether or not the row records its scope.
+		{name: "a token from before the scope columns is left alone"},
+		{name: "an organization-scoped token is left alone", scope: toPtr(authz.ResourceTypeOrganization), scopeID: &orgID},
+		{name: "a project-scoped token is left alone", scope: toPtr(authz.ResourceTypeProject), scopeID: &projectID, projectID: &projectID},
+		{name: "an instance-scoped token is left alone", scope: toPtr(authz.ResourceTypeInstance)},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tokenID := uuid.New()
 			membershipUC := bizMocks.NewMembershipsRBAC(t)
-			if tc.scopeID != nil {
+			if tc.wantLoaded {
 				membershipUC.On("ListAllMembershipsForAPIToken", mock.Anything, tokenID).
 					Once().Return(tc.tokenMemberships, nil)
 			}
 
 			ctx := entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{
-				ID: tokenID.String(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: tc.scopeID,
+				ID: tokenID.String(), Scope: tc.scope, ScopeID: tc.scopeID, ProjectID: tc.projectID,
 			})
 
 			var seen *entities.Membership

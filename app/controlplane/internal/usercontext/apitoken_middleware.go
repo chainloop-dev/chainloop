@@ -213,10 +213,10 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		}
 	}
 
-	// And for the product claim, which mirrors the row's scope_id. A claim naming a product
-	// the row does not carry is refused rather than ignored: the two must agree.
+	// And for the product claim, which mirrors a product-scoped row's scope_id. A claim naming a
+	// product the row does not carry is refused rather than ignored: the two must agree.
 	if claims.productID != "" {
-		if token.ScopeID == nil || token.ScopeID.String() != claims.productID {
+		if !token.IsResourceScoped() || token.ScopeID == nil || token.ScopeID.String() != claims.productID {
 			return nil, errors.New("API token product mismatch")
 		}
 	}
