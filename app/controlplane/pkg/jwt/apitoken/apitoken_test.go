@@ -121,6 +121,17 @@ func TestGenerateJWT(t *testing.T) {
 			},
 		},
 		{
+			name: "with product scope",
+			opts: &GenerateJWTOptions{
+				OrgID:     toPtr(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				OrgName:   toPtr("org-name"),
+				KeyName:   "key-name",
+				KeyID:     uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
+				ProductID: toPtr(uuid.MustParse("423e4567-e89b-12d3-a456-426614174000")),
+				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+			},
+		},
+		{
 			name: "instance token - no orgID or orgName",
 			opts: &GenerateJWTOptions{
 				KeyName:   "key-name",
@@ -201,6 +212,12 @@ func TestGenerateJWT(t *testing.T) {
 			} else {
 				assert.Empty(t, claims.WorkflowID)
 				assert.Empty(t, claims.WorkflowName)
+			}
+
+			if tc.opts.ProductID != nil {
+				assert.Equal(t, tc.opts.ProductID.String(), claims.ProductID)
+			} else {
+				assert.Empty(t, claims.ProductID)
 			}
 
 			if tc.opts.Scope != nil {

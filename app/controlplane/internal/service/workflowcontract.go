@@ -172,10 +172,12 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 }
 
 func canCreateContractsInRestrictedMode(ctx context.Context) bool {
-	// it's an org-scoped API token
+	// it's an org-scoped API token, which stands in for an administrator. A token confined to
+	// a project or to a resource outside this database is not one, and must not be able to
+	// create an organization-level contract while the organization restricts that.
 	token := entities.CurrentAPIToken(ctx)
 	if token != nil {
-		return token.ProjectID == nil
+		return token.IsOrgWide()
 	}
 
 	// or it's an admin user

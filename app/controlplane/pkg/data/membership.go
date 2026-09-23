@@ -444,6 +444,23 @@ func (r *MembershipRepo) ListAllByUser(ctx context.Context, userID uuid.UUID) ([
 	return entMembershipsToBiz(mm), nil
 }
 
+// ListAllByAPIToken returns the memberships held by a scoped API token. Tokens never belong
+// to groups, so unlike ListAllByUser there is no inherited-membership expansion.
+func (r *MembershipRepo) ListAllByAPIToken(ctx context.Context, tokenID uuid.UUID) ([]*biz.Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.ListAllByAPIToken")
+	defer span.End()
+
+	mm, err := r.data.DB.Membership.Query().Where(
+		membership.MembershipTypeEQ(authz.MembershipTypeAPIToken),
+		membership.MemberID(tokenID),
+	).WithOrganization().All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query token memberships: %w", err)
+	}
+
+	return entMembershipsToBiz(mm), nil
+}
+
 // ListGroupMembershipsByUser returns all memberships of the users inherited from groups
 func (r *MembershipRepo) ListGroupMembershipsByUser(ctx context.Context, userID uuid.UUID) ([]*biz.Membership, error) {
 	ctx, span := otelx.Start(ctx, membershipRepoTracer, "MembershipRepo.ListGroupMembershipsByUser")

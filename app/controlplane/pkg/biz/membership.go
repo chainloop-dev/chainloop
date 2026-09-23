@@ -75,6 +75,8 @@ type MembershipRepo interface {
 	// RBAC methods
 
 	ListAllByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	// ListAllByAPIToken returns the memberships held by a scoped API token in its own right
+	ListAllByAPIToken(ctx context.Context, tokenID uuid.UUID) ([]*Membership, error)
 	// ListGroupMembershipsByUser returns all memberships of the users inherited from groups
 	ListGroupMembershipsByUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
 	ListAllByResource(ctx context.Context, rt authz.ResourceType, id uuid.UUID) ([]*Membership, error)
@@ -83,6 +85,7 @@ type MembershipRepo interface {
 
 type MembershipsRBAC interface {
 	ListAllMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]*Membership, error)
+	ListAllMembershipsForAPIToken(ctx context.Context, tokenID uuid.UUID) ([]*Membership, error)
 }
 
 type MembershipUseCase struct {
@@ -428,6 +431,21 @@ func (uc *MembershipUseCase) ListAllMembershipsForUser(ctx context.Context, user
 	return append(userMemberships, groupMemberships...), nil
 }
 
+// ListAllMembershipsForAPIToken retrieves the memberships a scoped API token holds. A token
+// cannot belong to a group, so there is nothing to expand: the rows keyed by the token id are
+// the whole answer.
+func (uc *MembershipUseCase) ListAllMembershipsForAPIToken(ctx context.Context, tokenID uuid.UUID) ([]*Membership, error) {
+	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.ListAllMembershipsForAPIToken")
+	defer span.End()
+
+	mm, err := uc.repo.ListAllByAPIToken(ctx, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list memberships for API token: %w", err)
+	}
+
+	return mm, nil
+}
+
 // SetProjectOwner sets the project owner (admin role). It skips the operation if an owner exists already
 func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, projectID, userID uuid.UUID) error {
 	ctx, span := otelx.Start(ctx, membershipTracer, "MembershipUseCase.SetProjectOwner")
@@ -439,6 +457,18 @@ func (uc *MembershipUseCase) SetProjectOwner(ctx context.Context, orgID, project
 	}
 
 	for _, m := range mm {
+		// An API token must not stand in for the project's owner: the Chainloop platform
+		// writes token memberships carrying RoleProjectAdmin, and counting one would leave
+		// the project with no owner at all.
+		//
+		// NOTE: only tokens are skipped. A group holding RoleProjectAdmin satisfies this
+		// check: excluding groups too would grant the first workflow author a direct
+		// membership on every group-administered project, outliving their membership in
+		// the group.
+		if m.MembershipType == authz.MembershipTypeAPIToken {
+			continue
+		}
+
 		if m.Role == authz.RoleProjectAdmin {
 			// Found one already
 			return nil

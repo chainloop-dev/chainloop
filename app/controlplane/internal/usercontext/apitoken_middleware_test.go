@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
@@ -205,4 +206,173 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 
 func toTimePtr(t time.Time) *time.Time {
 	return &t
+}
+
+// The resource scope must reach the service layer from the database row, never from a claim:
+// the row is the authorization input, the claim is only ever a cross-check.
+func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
+	logger := log.NewHelper(log.NewStdLogger(io.Discard))
+	productID := uuid.New()
+
+	testCases := []struct {
+		name string
+		// scope as stored on the token row
+		rowScope   *authz.ResourceType
+		rowScopeID *uuid.UUID
+		// the instance-admin claim, which is a different notion of "scope" entirely
+		instanceScopeClaim string
+	}{
+		{
+			name:       "a product-scoped token",
+			rowScope:   toPtr(authz.ResourceTypeProduct),
+			rowScopeID: &productID,
+		},
+		{
+			name: "an unscoped token carries no scope",
+		},
+		{
+			// The instance-admin claim and the resource scope are independent values.
+			name:               "an instance-admin token keeps its instance scope",
+			instanceScopeClaim: authz.ScopeInstanceAdmin,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			orgID := uuid.New()
+			token := &biz.APIToken{
+				ID: uuid.New(), Name: "ci", OrganizationID: orgID,
+				Scope: tc.rowScope, ScopeID: tc.rowScopeID,
+			}
+
+			apiTokenRepo := mocks.NewAPITokenRepo(t)
+			apiTokenRepo.On("FindByID", mock.Anything, token.ID).Return(token, nil)
+			orgRepo := mocks.NewOrganizationRepo(t)
+			orgRepo.On("FindByID", mock.Anything, orgID).Maybe().Return(&biz.Organization{ID: orgID.String()}, nil)
+
+			apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, nil, nil, nil, nil)
+			require.NoError(t, err)
+			orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)
+
+			claims := jwt.MapClaims{"aud": apitoken.Audience, "jti": token.ID.String()}
+			if tc.instanceScopeClaim != "" {
+				claims["scope"] = tc.instanceScopeClaim
+			}
+			ctx := jwtmiddleware.NewContext(context.Background(), claims)
+
+			var got *entities.APIToken
+			_, err = WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)(
+				func(ctx context.Context, _ interface{}) (interface{}, error) {
+					got = entities.CurrentAPIToken(ctx)
+					return nil, nil
+				})(ctx, nil)
+			require.NoError(t, err)
+
+			require.NotNil(t, got)
+			assert.Equal(t, tc.rowScope, got.Scope)
+			assert.Equal(t, tc.rowScopeID, got.ScopeID)
+			assert.Equal(t, tc.instanceScopeClaim, got.InstanceScope)
+		})
+	}
+}
+
+func toPtr[T any](v T) *T {
+	return &v
+}
+
+// The product claim mirrors the token row's scope_id. It is defence in depth only: it is
+// compared against the row and never used to grant anything, so a claim that disagrees with
+// the row must be refused rather than preferred either way.
+const errProductMismatch = "product mismatch"
+
+func TestWithCurrentAPITokenAndOrgMiddlewareCrossChecksProductClaim(t *testing.T) {
+	logger := log.NewHelper(log.NewStdLogger(io.Discard))
+	rowProduct, otherProduct, orgID := uuid.New(), uuid.New(), uuid.New()
+
+	testCases := []struct {
+		name string
+		// rowScope and rowScopeID are the scope stored on the token row; rowScope defaults to
+		// product when only rowScopeID is set
+		rowScope   *authz.ResourceType
+		rowScopeID *uuid.UUID
+		// productClaim is the product_id claim carried by the JWT
+		productClaim    string
+		wantErrContains string
+	}{
+		{
+			name:         "claim matches the row",
+			rowScopeID:   &rowProduct,
+			productClaim: rowProduct.String(),
+		},
+		{
+			name:            "claim names a different product",
+			rowScopeID:      &rowProduct,
+			productClaim:    otherProduct.String(),
+			wantErrContains: errProductMismatch,
+		},
+		{
+			// A forged claim on an organization-wide token must not confine it, and must not
+			// be silently ignored either.
+			name:            "claim present but the row carries no scope",
+			productClaim:    otherProduct.String(),
+			wantErrContains: errProductMismatch,
+		},
+		{
+			// A scoped token whose JWT predates the claim keeps working: the row decides.
+			name:       "no claim on a scoped row is fine",
+			rowScopeID: &rowProduct,
+		},
+		{
+			// Every new token records a scope, but only a product scope can back a product
+			// claim, even when the ids happen to agree.
+			name:            "claim names the id of an organization-scoped row",
+			rowScope:        toPtr(authz.ResourceTypeOrganization),
+			rowScopeID:      &orgID,
+			productClaim:    orgID.String(),
+			wantErrContains: errProductMismatch,
+		},
+		{
+			name:     "no claim on an organization-scoped row is fine",
+			rowScope: toPtr(authz.ResourceTypeOrganization), rowScopeID: &orgID,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			token := &biz.APIToken{ID: uuid.New(), Name: "ci", OrganizationID: orgID}
+			if tc.rowScopeID != nil {
+				token.Scope = tc.rowScope
+				if token.Scope == nil {
+					token.Scope = toPtr(authz.ResourceTypeProduct)
+				}
+				token.ScopeID = tc.rowScopeID
+			}
+
+			apiTokenRepo := mocks.NewAPITokenRepo(t)
+			apiTokenRepo.On("FindByID", mock.Anything, token.ID).Return(token, nil)
+			orgRepo := mocks.NewOrganizationRepo(t)
+			orgRepo.On("FindByID", mock.Anything, orgID).Maybe().Return(&biz.Organization{ID: orgID.String()}, nil)
+
+			apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, nil, nil, nil, nil)
+			require.NoError(t, err)
+			orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)
+
+			claims := jwt.MapClaims{"aud": apitoken.Audience, "jti": token.ID.String()}
+			if tc.productClaim != "" {
+				claims["product_id"] = tc.productClaim
+			}
+			ctx := jwtmiddleware.NewContext(context.Background(), claims)
+
+			_, err = WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)(
+				func(_ context.Context, _ interface{}) (interface{}, error) { return nil, nil })(ctx, nil)
+
+			if tc.wantErrContains == "" {
+				assert.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErrContains)
+		})
+	}
 }

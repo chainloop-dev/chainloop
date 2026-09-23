@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -42,6 +43,10 @@ type getContractRBACIntegrationSuite struct {
 	projectToken         *biz.APIToken
 	workflowToken        *biz.APIToken
 	orgToken             *biz.APIToken
+	productToken         *biz.APIToken
+	emptyProductToken    *biz.APIToken
+	productID            uuid.UUID
+	emptyProductID       uuid.UUID
 	svc                  *AttestationService
 }
 
@@ -71,6 +76,21 @@ func (s *getContractRBACIntegrationSuite) SetupTest() {
 	s.Require().NoError(err)
 	s.orgToken, err = s.APIToken.Create(ctx, "token-org", nil, nil, &s.org.ID)
 	s.Require().NoError(err)
+
+	// A token confined to a product holding project A only, and one whose product holds
+	// nothing — the shape a token has once its product is deleted.
+	s.productID, s.emptyProductID = uuid.New(), uuid.New()
+	s.productToken, err = s.APIToken.Create(ctx, "token-product", nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &s.productID))
+	s.Require().NoError(err)
+	s.emptyProductToken, err = s.APIToken.Create(ctx, "token-empty-product", nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &s.emptyProductID))
+	s.Require().NoError(err)
+
+	orgUUID := uuid.MustParse(s.org.ID)
+	s.Require().NoError(s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+		authz.ResourceTypeProject, s.projectA.ID, authz.MembershipTypeAPIToken,
+		s.productToken.ID, authz.RoleProjectAdmin, nil))
 
 	authzUC := biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{
 		CasbinEnforcer: s.Enforcer,
@@ -166,6 +186,8 @@ func (s *getContractRBACIntegrationSuite) ctxForToken(token *biz.APIToken) conte
 		ProjectName:  token.ProjectName,
 		WorkflowID:   token.WorkflowID,
 		WorkflowName: token.WorkflowName,
+		Scope:        token.Scope,
+		ScopeID:      token.ScopeID,
 	})
 	ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: token.ID.String()}).String())
 
@@ -173,6 +195,66 @@ func (s *getContractRBACIntegrationSuite) ctxForToken(token *biz.APIToken) conte
 		OrgID:       s.org.ID,
 		ProviderKey: attjwtmiddleware.APITokenProviderKey,
 	})
+}
+
+// ctxForScopedToken adds what WithCurrentMembershipsMiddleware loads for a scoped token: the
+// memberships that decide which projects it reaches.
+func (s *getContractRBACIntegrationSuite) ctxForScopedToken(token *biz.APIToken) context.Context {
+	ctx := s.ctxForToken(token)
+
+	mm, err := s.Membership.ListAllMembershipsForAPIToken(context.Background(), token.ID)
+	s.Require().NoError(err)
+
+	resources := make([]*entities.ResourceMembership, 0, len(mm))
+	for _, m := range mm {
+		resources = append(resources, &entities.ResourceMembership{
+			MembershipID: m.ID, Role: m.Role, ResourceType: m.ResourceType, ResourceID: m.ResourceID,
+		})
+	}
+
+	return entities.WithMembership(ctx, &entities.Membership{
+		MemberID: token.ID, MemberType: authz.MembershipTypeAPIToken, Resources: resources,
+	})
+}
+
+// A product-scoped token reaches exactly the projects its product currently holds.
+func (s *getContractRBACIntegrationSuite) TestProductScopedToken() {
+	s.Run("can read the workflow of a project its product holds", func() {
+		resp, err := s.svc.GetContract(s.ctxForScopedToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+			ProjectName:  s.projectA.Name,
+			WorkflowName: s.workflowA.Name,
+		})
+		s.Require().NoError(err)
+		s.Equal(s.workflowA.Name, resp.GetResult().GetWorkflow().GetName())
+		s.NotNil(resp.GetResult().GetContract())
+	})
+
+	s.Run("cannot read a project its product does not hold", func() {
+		_, err := s.svc.GetContract(s.ctxForScopedToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+			ProjectName:  s.projectB.Name,
+			WorkflowName: s.workflowB.Name,
+		})
+		s.Require().Error(err)
+		s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+		// The refusal must name the product and the resource, and must not be an internal
+		// error from dereferencing a project name the token does not have.
+		s.Contains(err.Error(), s.productID.String())
+		s.Contains(err.Error(), "project")
+	})
+}
+
+// A token whose product holds no projects authorizes nothing — the shape it has once the
+// product is deleted. It must not widen to the whole organization.
+func (s *getContractRBACIntegrationSuite) TestProductScopedTokenWithNoMemberships() {
+	for _, wf := range []*biz.Workflow{s.workflowA, s.workflowB} {
+		_, err := s.svc.GetContract(s.ctxForScopedToken(s.emptyProductToken), &pb.AttestationServiceGetContractRequest{
+			ProjectName:  wf.Project,
+			WorkflowName: wf.Name,
+		})
+		s.Require().Error(err, "an empty scope denies everything")
+		s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+		s.Contains(err.Error(), s.emptyProductID.String())
+	}
 }
 
 func TestGetContractRBACIntegration(t *testing.T) {

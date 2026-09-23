@@ -118,6 +118,13 @@ func (r *APITokenRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, nam
 			return nil, biz.NewErrNotFound("API token")
 		}
 
+		// A name is unique per project and per scoped resource, never per organization, so
+		// this lookup can legitimately match more than one token. Report that rather than
+		// letting ent's NotSingularError be masked into an internal error.
+		if ent.IsNotSingular(err) {
+			return nil, biz.NewErrValidationStr(fmt.Sprintf("more than one API token is named %q in this organization", name))
+		}
+
 		return nil, err
 	}
 

@@ -42,15 +42,20 @@ func WithCurrentMembershipsMiddleware(membershipUC biz.MembershipsRBAC, membersh
 			ctx, span := otelx.Start(ctx, currentOrgTracer, "WithCurrentMembershipsMiddleware")
 			defer span.End()
 
-			// Get the current user and return if not found, meaning we are probably coming from an API Token
-			u := entities.CurrentUser(ctx)
-			if u == nil {
-				return handler(ctx, req)
-			}
-
+			// Memberships belong to a user, or to an API token confined to a resource that
+			// does not live in this database. A token without such a scope reaches neither
+			// branch and continues with no memberships.
 			var err error
-			// Let's store all memberships in the context.
-			ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC, membershipsCache)
+			if u := entities.CurrentUser(ctx); u != nil {
+				ctx, err = setCurrentMembershipsForUser(ctx, u, membershipUC, membershipsCache)
+			} else {
+				token := entities.CurrentAPIToken(ctx)
+				if !token.IsResourceScoped() {
+					return handler(ctx, req)
+				}
+
+				ctx, err = setCurrentMembershipsForAPIToken(ctx, token, membershipUC, membershipsCache)
+			}
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org membership: %w", err)
 			}
@@ -113,19 +118,42 @@ func WithCurrentOrganizationMiddleware(userUseCase biz.UserOrgFinder, orgUC *biz
 
 // setCurrentMembershipsForUser retrieves all user memberships for RBAC
 func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, membershipUC biz.MembershipsRBAC, membershipsCache cache.Cache[*entities.Membership]) (context.Context, error) {
-	membership, ok, err := membershipsCache.Get(ctx, u.ID)
+	return setCurrentMemberships(ctx, authz.MembershipTypeUser, u.ID, membershipUC.ListAllMembershipsForUser, membershipsCache)
+}
+
+// setCurrentMembershipsForAPIToken retrieves the memberships a scoped API token holds. It goes
+// through the same context value and the same cache as the user variant, so the service layer
+// cannot tell the two principals apart when it authorizes them.
+func setCurrentMembershipsForAPIToken(ctx context.Context, token *entities.APIToken, membershipUC biz.MembershipsRBAC, membershipsCache cache.Cache[*entities.Membership]) (context.Context, error) {
+	return setCurrentMemberships(ctx, authz.MembershipTypeAPIToken, token.ID, membershipUC.ListAllMembershipsForAPIToken, membershipsCache)
+}
+
+// setCurrentMemberships loads a principal's memberships onto the context, through the cache.
+// The cache key is namespaced by member type: user ids and token ids are both UUIDs drawn from
+// different namespaces, and an entry written for one principal kind must never be served to
+// the other.
+func setCurrentMemberships(
+	ctx context.Context,
+	memberType authz.MembershipType,
+	memberID string,
+	list func(context.Context, uuid.UUID) ([]*biz.Membership, error),
+	membershipsCache cache.Cache[*entities.Membership],
+) (context.Context, error) {
+	cacheKey := fmt.Sprintf("%s:%s", memberType, memberID)
+
+	membership, ok, err := membershipsCache.Get(ctx, cacheKey)
 	if err != nil {
 		log.Warnf("memberships cache read failed, falling through to DB: %v", err)
 		ok = false
 	}
 
 	if !ok {
-		uid, err := uuid.Parse(u.ID)
+		id, err := uuid.Parse(memberID)
 		if err != nil {
 			return nil, err
 		}
 
-		mm, err := membershipUC.ListAllMembershipsForUser(ctx, uid)
+		mm, err := list(ctx, id)
 		if err != nil {
 			return nil, fmt.Errorf("error getting membership list: %w", err)
 		}
@@ -140,8 +168,8 @@ func setCurrentMembershipsForUser(ctx context.Context, u *entities.User, members
 			})
 		}
 
-		membership = &entities.Membership{UserID: uuid.MustParse(u.ID), Resources: resourceMemberships}
-		if err := membershipsCache.Set(ctx, u.ID, membership); err != nil {
+		membership = &entities.Membership{MemberID: id, MemberType: memberType, Resources: resourceMemberships}
+		if err := membershipsCache.Set(ctx, cacheKey, membership); err != nil {
 			log.Warnf("memberships cache write failed: %v", err)
 		}
 	}

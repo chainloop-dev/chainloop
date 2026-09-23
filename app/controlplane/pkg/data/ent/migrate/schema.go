@@ -352,7 +352,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "updated_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "role", Type: field.TypeEnum, Enums: []string{"role:instance:admin", "role:org:owner", "role:org:admin", "role:org:viewer", "role:org:member", "role:org:contributor", "role:project:admin", "role:project:viewer", "role:group:maintainer", "role:product:admin", "role:product:viewer"}},
-		{Name: "membership_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"user", "group"}},
+		{Name: "membership_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"user", "group", "api_token"}},
 		{Name: "member_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "resource_type", Type: field.TypeEnum, Nullable: true, Enums: []string{"instance", "organization", "project", "group", "product"}},
 		{Name: "resource_id", Type: field.TypeUUID, Nullable: true},

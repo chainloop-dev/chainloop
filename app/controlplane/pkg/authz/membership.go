@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 
 package authz
 
-// MembershipType represents a polymorphic membership subject (user or group)
+// MembershipType represents a polymorphic membership subject (user, group or API token)
 type MembershipType string
 
 // ResourceType represent a membership resource (organizations, projects)
@@ -24,6 +24,10 @@ type ResourceType string
 const (
 	MembershipTypeUser  MembershipType = "user"
 	MembershipTypeGroup MembershipType = "group"
+	// MembershipTypeAPIToken is a scoped API token holding memberships in its own right.
+	// The Chainloop platform writes these rows; nothing in this repository creates them.
+	// Any membership query listing members for human consumption must exclude this type.
+	MembershipTypeAPIToken MembershipType = "api_token"
 
 	ResourceTypeInstance     ResourceType = "instance"
 	ResourceTypeOrganization ResourceType = "organization"
@@ -37,6 +41,7 @@ func (MembershipType) Values() (values []string) {
 	values = append(values,
 		string(MembershipTypeUser),
 		string(MembershipTypeGroup),
+		string(MembershipTypeAPIToken),
 	)
 
 	return

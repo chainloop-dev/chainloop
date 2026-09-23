@@ -15,6 +15,7 @@ packages:
       structname: "{{.InterfaceName}}"
     interfaces:
       APITokenRepo:
+      MembershipsRBAC:
       CASBackendRepo:
       CASClient:
       CASMappingRepo:

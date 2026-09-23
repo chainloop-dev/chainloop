@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,9 +22,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// Membership holds the resource memberships of the current principal. That principal is a
+// user, or a scoped API token holding memberships in its own right.
 type Membership struct {
-	UserID    uuid.UUID
-	Resources []*ResourceMembership
+	// MemberID is the principal these memberships belong to: a user id, or an API token id
+	MemberID   uuid.UUID
+	MemberType authz.MembershipType
+	Resources  []*ResourceMembership
 }
 
 type ResourceMembership struct {

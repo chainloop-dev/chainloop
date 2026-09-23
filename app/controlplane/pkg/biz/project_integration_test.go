@@ -1881,3 +1881,32 @@ func (s *projectMembersIntegrationTestSuite) TestAddNonExistingMemberToProject()
 		s.True(biz.IsErrAlreadyExists(err), "Should get already exists error for invited users")
 	})
 }
+
+// A scoped API token holds project memberships in its own right, written by the Chainloop
+// platform. They are not people and must not surface in a member listing — nor be counted
+// into its total, which would inflate the member count, shorten pages and offer a next page
+// that returns nothing. Revoking the token does not remove the rows, so the drift would be
+// permanent.
+func (s *projectMembersIntegrationTestSuite) TestListMembersExcludesAPITokenMemberships() {
+	ctx := context.Background()
+	projectID := s.project.ID
+	projectRef := &biz.IdentityReference{ID: &projectID}
+
+	before, countBefore, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+	require.NoError(s.T(), err)
+
+	// Two token memberships, one direct and one inherited from a product, which is the shape
+	// the platform's propagation writes.
+	orgUUID := uuid.MustParse(s.org.ID)
+	for range 2 {
+		require.NoError(s.T(), s.Repos.Membership.AddResourceRole(ctx, orgUUID,
+			authz.ResourceTypeProject, projectID, authz.MembershipTypeAPIToken, uuid.New(),
+			authz.RoleProjectAdmin, nil))
+	}
+
+	after, countAfter, err := s.Project.ListMembers(ctx, uuid.MustParse(s.org.ID), projectRef, nil)
+	require.NoError(s.T(), err)
+
+	s.Equal(len(before), len(after), "token memberships must not appear in the listing")
+	s.Equal(countBefore, countAfter, "nor be counted into its total")
+}

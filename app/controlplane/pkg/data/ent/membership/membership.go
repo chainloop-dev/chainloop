@@ -129,7 +129,7 @@ func RoleValidator(r authz.Role) error {
 // MembershipTypeValidator is a validator for the "membership_type" field enum values. It is called by the builders before save.
 func MembershipTypeValidator(mt authz.MembershipType) error {
 	switch mt {
-	case "user", "group":
+	case "user", "group", "api_token":
 		return nil
 	default:
 		return fmt.Errorf("membership: invalid enum value for membership_type field: %q", mt)
