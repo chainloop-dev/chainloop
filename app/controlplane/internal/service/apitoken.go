@@ -111,7 +111,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	// Org-level API tokens can only see project-scoped tokens
 	scope := mapTokenScope(req.Scope)
 	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
-		scope = biz.APITokenScopeProject
+		scope = authz.ResourceTypeProject
 	}
 
 	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenStatusFilter(mapTokenStatusFilter(req.GetStatusFilter())), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(scope))
@@ -127,12 +127,12 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 	return &pb.APITokenServiceListResponse{Result: result}, nil
 }
 
-func mapTokenScope(scope pb.APITokenServiceListRequest_Scope) biz.APITokenScope {
+func mapTokenScope(scope pb.APITokenServiceListRequest_Scope) authz.ResourceType {
 	switch scope {
 	case pb.APITokenServiceListRequest_SCOPE_PROJECT:
-		return biz.APITokenScopeProject
+		return authz.ResourceTypeProject
 	case pb.APITokenServiceListRequest_SCOPE_GLOBAL:
-		return biz.APITokenScopeGlobal
+		return authz.ResourceTypeOrganization
 	}
 
 	return ""
@@ -218,7 +218,7 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 	// a confinement from the artefact an operator audits.
 	if in.ProjectID != nil {
 		res.ScopedEntity = &pb.ScopedEntity{
-			Type: string(biz.ContractScopeProject),
+			Type: string(authz.ResourceTypeProject),
 			Id:   in.ProjectID.String(),
 			Name: *in.ProjectName,
 		}
