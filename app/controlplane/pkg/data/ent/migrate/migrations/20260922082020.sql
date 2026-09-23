@@ -1,3 +1,2 @@
--- Modify "api_tokens" table: scope and scope_id are set together or not at all, and never
--- alongside project_id
-ALTER TABLE "api_tokens" ADD CONSTRAINT "apitoken_scope_all_or_nothing" CHECK ((scope IS NULL) = (scope_id IS NULL)), ADD CONSTRAINT "apitoken_scope_excludes_project" CHECK ((project_id IS NULL) OR (scope_id IS NULL));
+-- Modify "api_tokens" table: a scope agrees with the token it is on
+ALTER TABLE "api_tokens" ADD CONSTRAINT "apitoken_scope_id_presence" CHECK ((scope_id IS NOT NULL) = ((scope IS NOT NULL) AND ((scope)::text <> 'instance'::text))), ADD CONSTRAINT "apitoken_scope_matches_token" CHECK ((scope IS NULL) OR (((scope)::text = 'organization'::text) AND (project_id IS NULL) AND (NOT (scope_id IS DISTINCT FROM organization_id))) OR (((scope)::text = 'project'::text) AND (NOT (scope_id IS DISTINCT FROM project_id))) OR (((scope)::text = 'instance'::text) AND (organization_id IS NULL) AND (project_id IS NULL)) OR (((scope)::text = 'product'::text) AND (organization_id IS NOT NULL) AND (project_id IS NULL)));
