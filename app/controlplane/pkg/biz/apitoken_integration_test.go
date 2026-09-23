@@ -569,6 +569,49 @@ func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
 	s.Nil(unscoped.ScopeID)
 }
 
+// The scope columns are only ever used for a product. The database refuses every other kind,
+// including the ones the ent enum accepts, so any other token keeps both columns NULL and its
+// pre-change path. A refused row is malformed, not a name clash.
+func (s *apiTokenTestSuite) TestRepoRefusesAnyScopeButProduct() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org.ID)
+	resourceID := uuid.New()
+
+	testCases := []struct {
+		name      string
+		scope     *authz.ResourceType
+		scopeID   *uuid.UUID
+		projectID *uuid.UUID
+		wantErr   bool
+	}{
+		{name: "a product scope is stored", scope: biz.ToPtr(authz.ResourceTypeProduct), scopeID: &resourceID},
+		{name: "an organization kind is refused", scope: biz.ToPtr(authz.ResourceTypeOrganization), scopeID: &orgUUID, wantErr: true},
+		{name: "a project kind is refused", scope: biz.ToPtr(authz.ResourceTypeProject), scopeID: &s.p1.ID, wantErr: true},
+		{name: "an instance kind is refused", scope: biz.ToPtr(authz.ResourceTypeInstance), scopeID: &resourceID, wantErr: true},
+		{name: "a group kind is refused", scope: biz.ToPtr(authz.ResourceTypeGroup), scopeID: &resourceID, wantErr: true},
+		{name: "a scope id without a kind is refused", scopeID: &resourceID, wantErr: true},
+		{name: "a product kind without a scope id is refused", scope: biz.ToPtr(authz.ResourceTypeProduct), wantErr: true},
+		{name: "a product scope alongside a project is refused", scope: biz.ToPtr(authz.ResourceTypeProduct), scopeID: &resourceID, projectID: &s.p1.ID, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+				Name: randomName(), OrganizationID: &orgUUID, ProjectID: tc.projectID,
+				Scope: tc.scope, ScopeID: tc.scopeID, Policies: []*authz.Policy{},
+			})
+			if !tc.wantErr {
+				s.NoError(err)
+				return
+			}
+
+			s.Require().Error(err)
+			s.True(biz.IsErrValidation(err), "want a validation error, got %v", err)
+			s.False(biz.IsErrAlreadyExists(err), "a malformed scope is not a name clash")
+		})
+	}
+}
+
 // Names live in one namespace per scoped resource, and the organization-level index now
 // excludes scoped rows so the two namespaces cannot collide.
 func (s *apiTokenTestSuite) TestRepoScopedTokenNameUniqueness() {

@@ -72,15 +72,17 @@ func (APIToken) Fields() []ent.Field {
 // application-level checks in biz.APITokenUseCase.Create cannot be the only thing standing
 // between a half-written scope and the authorization path.
 //
-// Both halves matter because the gate functions key on scope_id: a row with scope set but
-// scope_id NULL reads as unconfined, and a row carrying a project_id as well would have its
-// project confinement skipped.
+// The gate functions key on scope_id: a row with scope set but scope_id NULL reads as
+// unconfined, and a row carrying a project_id as well would have its project confinement
+// skipped. The columns are only ever used for a product, which keeps every other token on
+// its pre-change path, with both columns NULL.
 func (APIToken) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		//nolint:gosec // G101 false positive: these are CHECK expressions, not credentials
 		entsql.Checks(map[string]string{
 			"apitoken_scope_all_or_nothing":   "(scope IS NULL) = (scope_id IS NULL)",
 			"apitoken_scope_excludes_project": "project_id IS NULL OR scope_id IS NULL",
+			"apitoken_scope_product_only":     "scope IS NULL OR scope = 'product'",
 		}),
 	}
 }

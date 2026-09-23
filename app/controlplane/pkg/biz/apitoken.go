@@ -96,8 +96,8 @@ type APIToken struct {
 	// If the token is scoped to a specific workflow within a project
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
-	// If the token is confined to a resource that does not live in this database, e.g. a
-	// product. The resource's name is not stored: it belongs to whoever owns the resource.
+	// If the token is confined to a product, which does not live in this database. Both are
+	// NULL for every other token. The product's name is not stored: it belongs to its owner.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
 	// ACL policies for this token
@@ -114,8 +114,8 @@ type APITokenCreateOpts struct {
 	OrganizationID *uuid.UUID
 	ProjectID      *uuid.UUID
 	WorkflowID     *uuid.UUID
-	// Scope confines the token to a resource outside this database. Scope and ScopeID are
-	// set together or not at all.
+	// Scope confines the token to a product, which lives outside this database. Scope and
+	// ScopeID are set together or not at all, and product is the only kind stored.
 	Scope    *authz.ResourceType
 	ScopeID  *uuid.UUID
 	Policies []*authz.Policy
