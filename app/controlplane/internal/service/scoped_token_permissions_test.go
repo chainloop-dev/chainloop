@@ -38,7 +38,6 @@ import (
 // Fixtures shared by the scoped-token tests in this package.
 const (
 	testProjectName  = "billing"
-	testProductName  = "checkout-platform"
 	testProductScope = string(authz.ResourceTypeProduct)
 )
 
@@ -62,11 +61,10 @@ func scopedTokenContext(token *entities.APIToken, memberships ...*entities.Resou
 // productToken is a token row as the middleware would put it on the context.
 func productToken(productID uuid.UUID) *entities.APIToken {
 	return &entities.APIToken{
-		ID:        uuid.NewString(),
-		Name:      "ci",
-		Scope:     toPtr(authz.ResourceTypeProduct),
-		ScopeID:   &productID,
-		ScopeName: toPtr(testProductName),
+		ID:      uuid.NewString(),
+		Name:    "ci",
+		Scope:   toPtr(authz.ResourceTypeProduct),
+		ScopeID: &productID,
 	}
 }
 
@@ -343,15 +341,7 @@ func TestAuthorizeResourceRefusalMessages(t *testing.T) {
 		{
 			name:         "a scoped token names the product and the resource kind",
 			ctx:          scopedTokenContext(productToken(productID)),
-			wantContains: []string{testProductScope, testProductName, string(authz.ResourceTypeProject)},
-		},
-		{
-			// The display name may be absent; the id still identifies the scope.
-			name: "a scoped token with no display name falls back to the id",
-			ctx: scopedTokenContext(&entities.APIToken{
-				ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID,
-			}),
-			wantContains: []string{productID.String()},
+			wantContains: []string{testProductScope, productID.String(), string(authz.ResourceTypeProject)},
 		},
 		{
 			// A scoped token whose memberships were never loaded must be refused, not
@@ -393,7 +383,7 @@ func TestAuthorizeResourceScopedTokenWithInsufficientRole(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, kerrors.IsForbidden(err), "expected forbidden, got %v", err)
 	assert.Contains(t, err.Error(), string(authz.RoleProjectViewer))
-	assert.NotContains(t, err.Error(), testProductName, "this is a missing permission, not an out-of-scope resource")
+	assert.NotContains(t, err.Error(), productID.String(), "this is a missing permission, not an out-of-scope resource")
 }
 
 // The token's own ACL is the ceiling on every path. The attestation endpoints are skipped by
@@ -507,38 +497,6 @@ func defaultPoliciesForTest() []*authz.Policy {
 		authz.PolicyAvailableIntegrationRead, authz.PolicyAvailableIntegrationList,
 		authz.PolicyAttachedIntegrationList, authz.PolicyAttachedIntegrationAttach,
 		authz.PolicyArtifactUpload,
-	}
-}
-
-// The refusal and the listing both fall back to the scope id when there is no display name.
-// The option stored a pointer to the empty string, so the fallback never fired and the message
-// named neither the product nor its id — the exact self-diagnosis it exists to provide.
-func TestOutOfScopeMessageFallsBackToTheIDWhenUnnamed(t *testing.T) {
-	productID, projectID := uuid.New(), uuid.New()
-
-	testCases := []struct {
-		name      string
-		scopeName *string
-		want      string
-	}{
-		{name: "a named scope prints the name", scopeName: toPtr(testProductName), want: testProductName},
-		{name: "no name falls back to the id", scopeName: nil, want: productID.String()},
-		{name: "an empty name falls back to the id", scopeName: toPtr(""), want: productID.String()},
-	}
-
-	s := newTestServiceWithTokenPolicies(t, defaultPoliciesForTest())
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := scopedTokenContext(&entities.APIToken{
-				ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct),
-				ScopeID: &productID, ScopeName: tc.scopeName,
-			})
-
-			err := s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, projectID)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tc.want)
-			assert.NotContains(t, err.Error(), `""`, "the refusal must never name an empty scope")
-		})
 	}
 }
 

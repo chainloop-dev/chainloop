@@ -200,13 +200,12 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig,
 }
 
 type apiTokenOptions struct {
-	project   *Project
-	workflow  *Workflow
-	scope     *authz.ResourceType
-	scopeID   *uuid.UUID
-	scopeName *string
-	policies  []*authz.Policy
-	isSystem  bool
+	project  *Project
+	workflow *Workflow
+	scope    *authz.ResourceType
+	scopeID  *uuid.UUID
+	policies []*authz.Policy
+	isSystem bool
 }
 
 type APITokenCreateOpt func(*apiTokenOptions)
@@ -227,17 +226,11 @@ func APITokenWithWorkflow(workflow *Workflow) APITokenCreateOpt {
 
 // APITokenWithScope confines the token to a resource that does not live in this database,
 // such as a product. The projects such a token reaches are its rows in the memberships
-// table, not a column on the token. scopeName is display-only: refusal messages and
-// listings print it, and authorization never reads it.
-func APITokenWithScope(scope authz.ResourceType, scopeID uuid.UUID, scopeName string) APITokenCreateOpt {
+// table, not a column on the token.
+func APITokenWithScope(scope authz.ResourceType, scopeID uuid.UUID) APITokenCreateOpt {
 	return func(o *apiTokenOptions) {
 		o.scope = &scope
 		o.scopeID = &scopeID
-		// An empty name is stored as no name, so the readers that fall back to the id do so
-		// rather than printing an empty pair of quotes.
-		if scopeName != "" {
-			o.scopeName = &scopeName
-		}
 	}
 }
 
@@ -363,7 +356,6 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		WorkflowID:     workflowID,
 		Scope:          options.scope,
 		ScopeID:        options.scopeID,
-		ScopeName:      options.scopeName,
 		Policies:       policies,
 		IsSystem:       options.isSystem,
 	})

@@ -269,7 +269,6 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		// Every value here comes from token.*, i.e. the database row
 		Scope:         token.Scope,
 		ScopeID:       token.ScopeID,
-		ScopeName:     token.ScopeName,
 		Policies:      token.Policies,
 		InstanceScope: claims.instanceScope,
 		IsSystem:      token.IsSystem,

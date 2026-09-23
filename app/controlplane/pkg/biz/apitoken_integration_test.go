@@ -639,15 +639,13 @@ func (s *apiTokenTestSuite) TestCreateWithProductScope() {
 	productID := uuid.New()
 
 	token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout-platform"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID))
 	s.Require().NoError(err)
 
 	s.Require().NotNil(token.Scope)
 	s.Equal(authz.ResourceTypeProduct, *token.Scope)
 	s.Require().NotNil(token.ScopeID)
 	s.Equal(productID, *token.ScopeID)
-	s.Require().NotNil(token.ScopeName)
-	s.Equal("checkout-platform", *token.ScopeName)
 
 	// A scoped token is confined to neither a project nor a workflow.
 	s.Nil(token.ProjectID)
@@ -660,8 +658,6 @@ func (s *apiTokenTestSuite) TestCreateWithProductScope() {
 	s.Equal(authz.ResourceTypeProduct, *reloaded.Scope)
 	s.Require().NotNil(reloaded.ScopeID)
 	s.Equal(productID, *reloaded.ScopeID)
-	s.Require().NotNil(reloaded.ScopeName)
-	s.Equal("checkout-platform", *reloaded.ScopeName)
 }
 
 // A revoked scoped token releases its name, matching the project and organization indexes.
@@ -670,13 +666,13 @@ func (s *apiTokenTestSuite) TestProductTokenNameFreedOnRevocation() {
 	productID := uuid.New()
 
 	token, err := s.APIToken.Create(ctx, "ci", nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "a"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID))
 	s.Require().NoError(err)
 
 	s.Require().NoError(s.APIToken.Revoke(ctx, s.org.ID, token.ID.String()))
 
 	_, err = s.APIToken.Create(ctx, "ci", nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "a"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID))
 	s.NoError(err)
 }
 
@@ -689,7 +685,7 @@ func (s *apiTokenTestSuite) TestScopedTokenPoliciesMatchProjectToken() {
 	projectToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
 	s.Require().NoError(err)
 	productToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New(), "checkout"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New()))
 	s.Require().NoError(err)
 
 	s.ElementsMatch(projectToken.Policies, productToken.Policies,
@@ -718,7 +714,7 @@ func (s *apiTokenTestSuite) TestExplicitPoliciesAreNotWidenedForScopedTokens() {
 
 	scoped, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
 		biz.APITokenWithPolicies(explicit),
-		biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New(), "checkout"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New()))
 	s.Require().NoError(err)
 	s.ElementsMatch(explicit, scoped.Policies)
 }
@@ -734,7 +730,7 @@ func (s *apiTokenTestSuite) TestListByScope() {
 	s.Require().NoError(err)
 	productTokenName := randomName()
 	_, err = s.APIToken.Create(ctx, productTokenName, nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID))
 	s.Require().NoError(err)
 
 	s.Run("the global scope excludes scope-confined tokens", func() {
@@ -796,7 +792,7 @@ func (s *apiTokenTestSuite) TestGeneratedJWTCarriesTheProductScope() {
 	}
 
 	token, err := s.APIToken.Create(ctx, randomName(), nil, toPtrDuration(24*time.Hour), &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, productID))
 	s.Require().NoError(err)
 	s.Equal(productID.String(), parseClaims(token.JWT).ProductID)
 
@@ -838,7 +834,7 @@ func (s *apiTokenTestSuite) TestFindByNameInOrgIsAmbiguousNotInternal() {
 				_, err := s.APIToken.Create(ctx, n, nil, nil, &s.org.ID)
 				s.Require().NoError(err)
 				_, err = s.APIToken.Create(ctx, n, nil, nil, &s.org.ID,
-					biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New(), "checkout"))
+					biz.APITokenWithScope(authz.ResourceTypeProduct, uuid.New()))
 				s.Require().NoError(err)
 			},
 		},
@@ -859,24 +855,6 @@ func (s *apiTokenTestSuite) TestFindByNameInOrgIsAmbiguousNotInternal() {
 	}
 }
 
-// An empty display name is stored as no name, so every reader's documented fallback to the id
-// actually fires.
-func (s *apiTokenTestSuite) TestEmptyScopeNameIsStoredAsNoName() {
-	ctx := context.Background()
-	productID := uuid.New()
-
-	token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, productID, ""))
-	s.Require().NoError(err)
-	s.Nil(token.ScopeName)
-
-	reloaded, err := s.APIToken.FindByID(ctx, token.ID.String())
-	s.Require().NoError(err)
-	s.Nil(reloaded.ScopeName)
-	s.Require().NotNil(reloaded.ScopeID)
-	s.Equal(productID, *reloaded.ScopeID)
-}
-
 // Create must refuse the scope combinations that would discard a confinement, because each of
 // them silently widens what the token reaches.
 func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
@@ -894,7 +872,7 @@ func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
 			name: "a project scope together with a resource scope",
 			opts: []biz.APITokenCreateOpt{
 				biz.APITokenWithProject(s.p1),
-				biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"),
+				biz.APITokenWithScope(authz.ResourceTypeProduct, productID),
 			},
 			org: &s.org.ID,
 		},
@@ -903,7 +881,7 @@ func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
 			// listing, so any other kind is confined but invisible and uncross-checked.
 			name: "a scope kind other than product",
 			opts: []biz.APITokenCreateOpt{
-				biz.APITokenWithScope(authz.ResourceTypeGroup, productID, "a-group"),
+				biz.APITokenWithScope(authz.ResourceTypeGroup, productID),
 			},
 			org: &s.org.ID,
 		},
@@ -912,7 +890,7 @@ func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
 			// one makes it both instance-admin and RBAC-confined.
 			name: "a resource scope on an instance-level token",
 			opts: []biz.APITokenCreateOpt{
-				biz.APITokenWithScope(authz.ResourceTypeProduct, productID, "checkout"),
+				biz.APITokenWithScope(authz.ResourceTypeProduct, productID),
 			},
 			org: nil,
 		},

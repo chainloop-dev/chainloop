@@ -35,11 +35,9 @@ type APIToken struct {
 	WorkflowName *string
 	// Scope confines the token to a resource that does not live in the control plane
 	// database, such as a product. It is loaded from the token row, never from a claim, and
-	// the projects such a token reaches are its rows in the memberships table. ScopeName is
-	// display-only and may be stale after a rename.
-	Scope     *authz.ResourceType
-	ScopeID   *uuid.UUID
-	ScopeName *string
+	// the projects such a token reaches are its rows in the memberships table.
+	Scope   *authz.ResourceType
+	ScopeID *uuid.UUID
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
 	// InstanceScope carries the "scope" claim, which today holds only

@@ -81,10 +81,10 @@ func (s *getContractRBACIntegrationSuite) SetupTest() {
 	// nothing — the shape a token has once its product is deleted.
 	s.productID, s.emptyProductID = uuid.New(), uuid.New()
 	s.productToken, err = s.APIToken.Create(ctx, "token-product", nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, s.productID, "checkout-platform"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, s.productID))
 	s.Require().NoError(err)
 	s.emptyProductToken, err = s.APIToken.Create(ctx, "token-empty-product", nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, s.emptyProductID, "empty-product"))
+		biz.APITokenWithScope(authz.ResourceTypeProduct, s.emptyProductID))
 	s.Require().NoError(err)
 
 	orgUUID := uuid.MustParse(s.org.ID)
@@ -188,7 +188,6 @@ func (s *getContractRBACIntegrationSuite) ctxForToken(token *biz.APIToken) conte
 		WorkflowName: token.WorkflowName,
 		Scope:        token.Scope,
 		ScopeID:      token.ScopeID,
-		ScopeName:    token.ScopeName,
 	})
 	ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: token.ID.String()}).String())
 
@@ -239,7 +238,7 @@ func (s *getContractRBACIntegrationSuite) TestProductScopedToken() {
 		s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
 		// The refusal must name the product and the resource, and must not be an internal
 		// error from dereferencing a project name the token does not have.
-		s.Contains(err.Error(), "checkout-platform")
+		s.Contains(err.Error(), s.productID.String())
 		s.Contains(err.Error(), "project")
 	})
 }
@@ -254,7 +253,7 @@ func (s *getContractRBACIntegrationSuite) TestProductScopedTokenWithNoMembership
 		})
 		s.Require().Error(err, "an empty scope denies everything")
 		s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
-		s.Contains(err.Error(), "empty-product")
+		s.Contains(err.Error(), s.emptyProductID.String())
 	}
 }
 

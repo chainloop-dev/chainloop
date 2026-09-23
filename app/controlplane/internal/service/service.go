@@ -281,22 +281,15 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 }
 
 // outOfScopeMessage explains that the token's scope does not include the resource, so a
-// refused caller can tell that apart from a permission it lacks. The scope name is
-// display-only and may be stale after a rename, hence the fallback to the id.
+// refused caller can tell that apart from a permission it lacks. The scope is named by id:
+// its display name belongs to whoever owns the resource.
 func outOfScopeMessage(token *entities.APIToken, resourceType authz.ResourceType) string {
-	// The name is written by the Chainloop platform, so do not trust it to be present: an
-	// empty one is as good as absent and the id is what actually identifies the scope.
-	name := token.ScopeID.String()
-	if token.ScopeName != nil && *token.ScopeName != "" {
-		name = *token.ScopeName
-	}
-
 	kind := "resource"
 	if token.Scope != nil {
 		kind = string(*token.Scope)
 	}
 
-	return fmt.Sprintf("operation not allowed: this token is scoped to %s %q, which does not include this %s", kind, name, resourceType)
+	return fmt.Sprintf("operation not allowed: this token is scoped to %s %q, which does not include this %s", kind, token.ScopeID.String(), resourceType)
 }
 
 // projectsAllowing reports, per project ID, whether the caller may perform op

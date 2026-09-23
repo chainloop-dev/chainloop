@@ -217,17 +217,15 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 	testCases := []struct {
 		name string
 		// scope as stored on the token row
-		rowScope     *authz.ResourceType
-		rowScopeID   *uuid.UUID
-		rowScopeName *string
+		rowScope   *authz.ResourceType
+		rowScopeID *uuid.UUID
 		// the instance-admin claim, which is a different notion of "scope" entirely
 		instanceScopeClaim string
 	}{
 		{
-			name:         "a product-scoped token",
-			rowScope:     toPtr(authz.ResourceTypeProduct),
-			rowScopeID:   &productID,
-			rowScopeName: toPtr("checkout-platform"),
+			name:       "a product-scoped token",
+			rowScope:   toPtr(authz.ResourceTypeProduct),
+			rowScopeID: &productID,
 		},
 		{
 			name: "an unscoped token carries no scope",
@@ -244,7 +242,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			orgID := uuid.New()
 			token := &biz.APIToken{
 				ID: uuid.New(), Name: "ci", OrganizationID: orgID,
-				Scope: tc.rowScope, ScopeID: tc.rowScopeID, ScopeName: tc.rowScopeName,
+				Scope: tc.rowScope, ScopeID: tc.rowScopeID,
 			}
 
 			apiTokenRepo := mocks.NewAPITokenRepo(t)
@@ -273,7 +271,6 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			require.NotNil(t, got)
 			assert.Equal(t, tc.rowScope, got.Scope)
 			assert.Equal(t, tc.rowScopeID, got.ScopeID)
-			assert.Equal(t, tc.rowScopeName, got.ScopeName)
 			assert.Equal(t, tc.instanceScopeClaim, got.InstanceScope)
 		})
 	}
