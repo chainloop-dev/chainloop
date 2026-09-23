@@ -247,19 +247,14 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 		}
 	} else if in.ScopeID != nil {
 		// ScopedEntity is free-form over its type, so a resource outside this database needs
-		// no proto change. The name is display-only and may be absent or stale, hence the
-		// fallback to the id.
-		name := in.ScopeID.String()
-		if in.ScopeName != nil && *in.ScopeName != "" {
-			name = *in.ScopeName
-		}
-
+		// no proto change. Its name is not known here, so the id stands in for it; resolving
+		// it is the business of whoever owns the resource.
 		scopeType := string(authz.ResourceTypeProduct)
 		if in.Scope != nil {
 			scopeType = string(*in.Scope)
 		}
 
-		res.ScopedEntity = &pb.ScopedEntity{Type: scopeType, Id: in.ScopeID.String(), Name: name}
+		res.ScopedEntity = &pb.ScopedEntity{Type: scopeType, Id: in.ScopeID.String(), Name: in.ScopeID.String()}
 	}
 
 	return res

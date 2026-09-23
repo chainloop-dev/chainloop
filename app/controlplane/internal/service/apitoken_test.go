@@ -157,15 +157,8 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: testProjectName},
 		},
 		{
-			name: "a product-scoped token reports its product",
-			token: &biz.APIToken{
-				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ScopeName: toPtr("checkout"),
-			},
-			want: &pb.ScopedEntity{Type: testProductScope, Id: productID.String(), Name: "checkout"},
-		},
-		{
-			name: "a product-scoped token with no display name falls back to the id",
+			// The product's name is not known to the control plane, so its id stands in for it.
+			name: "a product-scoped token reports its product by id",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
 				Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID,

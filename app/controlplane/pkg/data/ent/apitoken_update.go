@@ -215,26 +215,6 @@ func (_u *APITokenUpdate) ClearScopeID() *APITokenUpdate {
 	return _u
 }
 
-// SetScopeName sets the "scope_name" field.
-func (_u *APITokenUpdate) SetScopeName(v string) *APITokenUpdate {
-	_u.mutation.SetScopeName(v)
-	return _u
-}
-
-// SetNillableScopeName sets the "scope_name" field if the given value is not nil.
-func (_u *APITokenUpdate) SetNillableScopeName(v *string) *APITokenUpdate {
-	if v != nil {
-		_u.SetScopeName(*v)
-	}
-	return _u
-}
-
-// ClearScopeName clears the value of the "scope_name" field.
-func (_u *APITokenUpdate) ClearScopeName() *APITokenUpdate {
-	_u.mutation.ClearScopeName()
-	return _u
-}
-
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdate) SetPolicies(v []*authz.Policy) *APITokenUpdate {
 	_u.mutation.SetPolicies(v)
@@ -381,12 +361,6 @@ func (_u *APITokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ScopeIDCleared() {
 		_spec.ClearField(apitoken.FieldScopeID, field.TypeUUID)
-	}
-	if value, ok := _u.mutation.ScopeName(); ok {
-		_spec.SetField(apitoken.FieldScopeName, field.TypeString, value)
-	}
-	if _u.mutation.ScopeNameCleared() {
-		_spec.ClearField(apitoken.FieldScopeName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
@@ -688,26 +662,6 @@ func (_u *APITokenUpdateOne) ClearScopeID() *APITokenUpdateOne {
 	return _u
 }
 
-// SetScopeName sets the "scope_name" field.
-func (_u *APITokenUpdateOne) SetScopeName(v string) *APITokenUpdateOne {
-	_u.mutation.SetScopeName(v)
-	return _u
-}
-
-// SetNillableScopeName sets the "scope_name" field if the given value is not nil.
-func (_u *APITokenUpdateOne) SetNillableScopeName(v *string) *APITokenUpdateOne {
-	if v != nil {
-		_u.SetScopeName(*v)
-	}
-	return _u
-}
-
-// ClearScopeName clears the value of the "scope_name" field.
-func (_u *APITokenUpdateOne) ClearScopeName() *APITokenUpdateOne {
-	_u.mutation.ClearScopeName()
-	return _u
-}
-
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdateOne) SetPolicies(v []*authz.Policy) *APITokenUpdateOne {
 	_u.mutation.SetPolicies(v)
@@ -884,12 +838,6 @@ func (_u *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err 
 	}
 	if _u.mutation.ScopeIDCleared() {
 		_spec.ClearField(apitoken.FieldScopeID, field.TypeUUID)
-	}
-	if value, ok := _u.mutation.ScopeName(); ok {
-		_spec.SetField(apitoken.FieldScopeName, field.TypeString, value)
-	}
-	if _u.mutation.ScopeNameCleared() {
-		_spec.ClearField(apitoken.FieldScopeName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)

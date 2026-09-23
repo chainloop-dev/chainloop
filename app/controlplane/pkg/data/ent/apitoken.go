@@ -45,8 +45,6 @@ type APIToken struct {
 	Scope *authz.ResourceType `json:"scope,omitempty"`
 	// ScopeID holds the value of the "scope_id" field.
 	ScopeID *uuid.UUID `json:"scope_id,omitempty"`
-	// ScopeName holds the value of the "scope_name" field.
-	ScopeName *string `json:"scope_name,omitempty"`
 	// Policies holds the value of the "policies" field.
 	Policies []*authz.Policy `json:"policies,omitempty"`
 	// IsSystem holds the value of the "is_system" field.
@@ -114,7 +112,7 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case apitoken.FieldIsSystem:
 			values[i] = new(sql.NullBool)
-		case apitoken.FieldName, apitoken.FieldDescription, apitoken.FieldScope, apitoken.FieldScopeName:
+		case apitoken.FieldName, apitoken.FieldDescription, apitoken.FieldScope:
 			values[i] = new(sql.NullString)
 		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt, apitoken.FieldLastUsedAt:
 			values[i] = new(sql.NullTime)
@@ -208,13 +206,6 @@ func (_m *APIToken) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ScopeID = new(uuid.UUID)
 				*_m.ScopeID = *value.S.(*uuid.UUID)
-			}
-		case apitoken.FieldScopeName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field scope_name", values[i])
-			} else if value.Valid {
-				_m.ScopeName = new(string)
-				*_m.ScopeName = value.String
 			}
 		case apitoken.FieldPolicies:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -316,11 +307,6 @@ func (_m *APIToken) String() string {
 	if v := _m.ScopeID; v != nil {
 		builder.WriteString("scope_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
-	if v := _m.ScopeName; v != nil {
-		builder.WriteString("scope_name=")
-		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
 	builder.WriteString("policies=")

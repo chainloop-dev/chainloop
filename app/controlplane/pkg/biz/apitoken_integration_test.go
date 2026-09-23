@@ -545,7 +545,6 @@ func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
 		OrganizationID: &orgUUID,
 		Scope:          biz.ToPtr(authz.ResourceTypeProduct),
 		ScopeID:        &productID,
-		ScopeName:      biz.ToPtr("checkout-platform"),
 		Policies:       []*authz.Policy{},
 	})
 	s.Require().NoError(err)
@@ -554,8 +553,6 @@ func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
 	s.Equal(authz.ResourceTypeProduct, *created.Scope)
 	s.Require().NotNil(created.ScopeID)
 	s.Equal(productID, *created.ScopeID)
-	s.Require().NotNil(created.ScopeName)
-	s.Equal("checkout-platform", *created.ScopeName)
 	// A scoped token is confined to neither a project nor a workflow.
 	s.Nil(created.ProjectID)
 	s.Nil(created.WorkflowID)
@@ -571,7 +568,6 @@ func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
 	s.Require().NoError(err)
 	s.Nil(unscoped.Scope)
 	s.Nil(unscoped.ScopeID)
-	s.Nil(unscoped.ScopeName)
 }
 
 // Names live in one namespace per scoped resource, and the organization-level index now
@@ -585,7 +581,7 @@ func (s *apiTokenTestSuite) TestRepoScopedTokenNameUniqueness() {
 		_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
 			Name: name, OrganizationID: &orgUUID,
 			Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
-			ScopeName: biz.ToPtr("p"), Policies: []*authz.Policy{},
+			Policies: []*authz.Policy{},
 		})
 		return err
 	}
@@ -613,7 +609,7 @@ func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
 		Name: productTokenName, OrganizationID: &orgUUID,
 		Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
-		ScopeName: biz.ToPtr("checkout"), Policies: []*authz.Policy{},
+		Policies: []*authz.Policy{},
 	})
 	s.Require().NoError(err)
 

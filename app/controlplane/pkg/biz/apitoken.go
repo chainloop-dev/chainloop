@@ -110,10 +110,9 @@ type APIToken struct {
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
 	// If the token is confined to a resource that does not live in this database, e.g. a
-	// product. ScopeName is display-only and never consulted for authorization.
-	Scope     *authz.ResourceType
-	ScopeID   *uuid.UUID
-	ScopeName *string
+	// product. The resource's name is not stored: it belongs to whoever owns the resource.
+	Scope   *authz.ResourceType
+	ScopeID *uuid.UUID
 	// ACL policies for this token
 	Policies []*authz.Policy
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
@@ -141,13 +140,12 @@ type APITokenCreateOpts struct {
 	OrganizationID *uuid.UUID
 	ProjectID      *uuid.UUID
 	WorkflowID     *uuid.UUID
-	// Scope confines the token to a resource outside this database. Scope, ScopeID and
-	// ScopeName are set together or not at all.
-	Scope     *authz.ResourceType
-	ScopeID   *uuid.UUID
-	ScopeName *string
-	Policies  []*authz.Policy
-	IsSystem  bool
+	// Scope confines the token to a resource outside this database. Scope and ScopeID are
+	// set together or not at all.
+	Scope    *authz.ResourceType
+	ScopeID  *uuid.UUID
+	Policies []*authz.Policy
+	IsSystem bool
 }
 
 type APITokenRepo interface {

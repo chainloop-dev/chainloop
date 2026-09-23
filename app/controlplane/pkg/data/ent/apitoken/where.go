@@ -107,11 +107,6 @@ func ScopeID(v uuid.UUID) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldScopeID, v))
 }
 
-// ScopeName applies equality check predicate on the "scope_name" field. It's identical to ScopeNameEQ.
-func ScopeName(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldEQ(FieldScopeName, v))
-}
-
 // IsSystem applies equality check predicate on the "is_system" field. It's identical to IsSystemEQ.
 func IsSystem(v bool) predicate.APIToken {
 	return predicate.APIToken(sql.FieldEQ(FieldIsSystem, v))
@@ -625,81 +620,6 @@ func ScopeIDIsNil() predicate.APIToken {
 // ScopeIDNotNil applies the NotNil predicate on the "scope_id" field.
 func ScopeIDNotNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotNull(FieldScopeID))
-}
-
-// ScopeNameEQ applies the EQ predicate on the "scope_name" field.
-func ScopeNameEQ(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldEQ(FieldScopeName, v))
-}
-
-// ScopeNameNEQ applies the NEQ predicate on the "scope_name" field.
-func ScopeNameNEQ(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldNEQ(FieldScopeName, v))
-}
-
-// ScopeNameIn applies the In predicate on the "scope_name" field.
-func ScopeNameIn(vs ...string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldIn(FieldScopeName, vs...))
-}
-
-// ScopeNameNotIn applies the NotIn predicate on the "scope_name" field.
-func ScopeNameNotIn(vs ...string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldNotIn(FieldScopeName, vs...))
-}
-
-// ScopeNameGT applies the GT predicate on the "scope_name" field.
-func ScopeNameGT(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldGT(FieldScopeName, v))
-}
-
-// ScopeNameGTE applies the GTE predicate on the "scope_name" field.
-func ScopeNameGTE(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldGTE(FieldScopeName, v))
-}
-
-// ScopeNameLT applies the LT predicate on the "scope_name" field.
-func ScopeNameLT(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldLT(FieldScopeName, v))
-}
-
-// ScopeNameLTE applies the LTE predicate on the "scope_name" field.
-func ScopeNameLTE(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldLTE(FieldScopeName, v))
-}
-
-// ScopeNameContains applies the Contains predicate on the "scope_name" field.
-func ScopeNameContains(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldContains(FieldScopeName, v))
-}
-
-// ScopeNameHasPrefix applies the HasPrefix predicate on the "scope_name" field.
-func ScopeNameHasPrefix(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldHasPrefix(FieldScopeName, v))
-}
-
-// ScopeNameHasSuffix applies the HasSuffix predicate on the "scope_name" field.
-func ScopeNameHasSuffix(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldHasSuffix(FieldScopeName, v))
-}
-
-// ScopeNameIsNil applies the IsNil predicate on the "scope_name" field.
-func ScopeNameIsNil() predicate.APIToken {
-	return predicate.APIToken(sql.FieldIsNull(FieldScopeName))
-}
-
-// ScopeNameNotNil applies the NotNil predicate on the "scope_name" field.
-func ScopeNameNotNil() predicate.APIToken {
-	return predicate.APIToken(sql.FieldNotNull(FieldScopeName))
-}
-
-// ScopeNameEqualFold applies the EqualFold predicate on the "scope_name" field.
-func ScopeNameEqualFold(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldEqualFold(FieldScopeName, v))
-}
-
-// ScopeNameContainsFold applies the ContainsFold predicate on the "scope_name" field.
-func ScopeNameContainsFold(v string) predicate.APIToken {
-	return predicate.APIToken(sql.FieldContainsFold(FieldScopeName, v))
 }
 
 // PoliciesIsNil applies the IsNil predicate on the "policies" field.
