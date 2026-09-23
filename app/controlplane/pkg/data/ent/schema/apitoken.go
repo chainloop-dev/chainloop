@@ -53,10 +53,10 @@ func (APIToken) Fields() []ent.Field {
 		// Tokens can additionally be scoped to a specific workflow within a project.
 		// Only meaningful when project_id is also set.
 		field.UUID("workflow_id", uuid.UUID{}).Optional(),
-		// Scope kind for tokens confined to a resource that does not live in this database.
-		// Only "product" is written today, by the Chainloop platform. The resource itself is
-		// not an entity here, so scope_id is a bare UUID with no foreign key — the same
-		// arrangement cas_mappings.product_id uses, and for the same reason.
+		// What the token is scoped to, and the id of that resource. Every new token records it;
+		// only a product scope drives any logic for now, and rows from before these columns
+		// existed leave both NULL. A product is not an entity here, so scope_id is a bare UUID
+		// with no foreign key — the same arrangement cas_mappings.product_id uses.
 		field.Enum("scope").GoType(authz.ResourceType("")).Optional().Nillable(),
 		field.UUID("scope_id", uuid.UUID{}).Optional().Nillable(),
 		// ACL policies for this token. NULL means role-based token (future), non-NULL means ACL mode.
@@ -67,22 +67,25 @@ func (APIToken) Fields() []ent.Field {
 	}
 }
 
-// Annotations keeps the scope columns coherent in the database itself. The rows that carry
-// them are written by the Chainloop platform, i.e. from outside this module, so the
+// Annotations keeps the scope columns coherent in the database itself. The rows that carry a
+// product scope are written by the Chainloop platform, i.e. from outside this module, so the
 // application-level checks in biz.APITokenUseCase.Create cannot be the only thing standing
-// between a half-written scope and the authorization path.
+// between a malformed scope and the authorization path.
 //
-// The gate functions key on scope_id: a row with scope set but scope_id NULL reads as
-// unconfined, and a row carrying a project_id as well would have its project confinement
-// skipped. The columns are only ever used for a product, which keeps every other token on
-// its pre-change path, with both columns NULL.
+// A scope must agree with the row it is on: an organization or project scope names the
+// token's own organization or project, an instance scope has no id, and a product scope is
+// never combined with a project, whose confinement would otherwise be skipped. Rows from
+// before these columns existed carry no scope and pass untouched.
 func (APIToken) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		//nolint:gosec // G101 false positive: these are CHECK expressions, not credentials
 		entsql.Checks(map[string]string{
-			"apitoken_scope_all_or_nothing":   "(scope IS NULL) = (scope_id IS NULL)",
-			"apitoken_scope_excludes_project": "project_id IS NULL OR scope_id IS NULL",
-			"apitoken_scope_product_only":     "scope IS NULL OR scope = 'product'",
+			"apitoken_scope_id_presence": "(scope_id IS NOT NULL) = (scope IS NOT NULL AND scope <> 'instance')",
+			"apitoken_scope_matches_token": "scope IS NULL" +
+				" OR (scope = 'organization' AND project_id IS NULL AND scope_id IS NOT DISTINCT FROM organization_id)" +
+				" OR (scope = 'project' AND scope_id IS NOT DISTINCT FROM project_id)" +
+				" OR (scope = 'instance' AND organization_id IS NULL AND project_id IS NULL)" +
+				" OR (scope = 'product' AND organization_id IS NOT NULL AND project_id IS NULL)",
 		}),
 	}
 }
@@ -99,14 +102,15 @@ func (APIToken) Indexes() []ent.Index {
 	return []ent.Index{
 		// names are unique within a organization and affects only to non-deleted items
 		// These are for org level tokens, which are confined to neither a project nor a
-		// scoped resource
+		// product. Keyed on the kind, not on scope_id, so rows written before and after the
+		// scope columns existed share one namespace
 		index.Fields("name").Edges("organization").Unique().Annotations(
-			entsql.IndexWhere("revoked_at IS NULL AND project_id IS NULL AND scope_id IS NULL"),
+			entsql.IndexWhere("revoked_at IS NULL AND project_id IS NULL AND (scope IS NULL OR scope <> 'product')"),
 		),
 
-		// for scope-confined tokens, names are unique within their scoped resource
+		// for product-scoped tokens, names are unique within their product
 		index.Fields("name", "scope_id").Unique().Annotations(
-			entsql.IndexWhere("revoked_at IS NULL AND scope_id IS NOT NULL"),
+			entsql.IndexWhere("revoked_at IS NULL AND scope = 'product'"),
 		),
 
 		// for project level tokens, we scope the uniqueness to the organization and project

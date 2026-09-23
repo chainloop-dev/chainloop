@@ -96,8 +96,9 @@ type APIToken struct {
 	// If the token is scoped to a specific workflow within a project
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
-	// If the token is confined to a product, which does not live in this database. Both are
-	// NULL for every other token. The product's name is not stored: it belongs to its owner.
+	// What the token is scoped to: organization, project, instance or product. Only a product
+	// scope drives any logic for now; tokens from before these columns existed leave both NULL.
+	// A product's name is not stored: it belongs to whoever owns the product.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
 	// ACL policies for this token
@@ -114,8 +115,8 @@ type APITokenCreateOpts struct {
 	OrganizationID *uuid.UUID
 	ProjectID      *uuid.UUID
 	WorkflowID     *uuid.UUID
-	// Scope confines the token to a product, which lives outside this database. Scope and
-	// ScopeID are set together or not at all, and product is the only kind stored.
+	// Scope records what the token is scoped to. ScopeID names that resource, and is unset only
+	// for an instance-level token.
 	Scope    *authz.ResourceType
 	ScopeID  *uuid.UUID
 	Policies []*authz.Policy
@@ -208,6 +209,21 @@ func APITokenAsSystem() APITokenCreateOpt {
 	}
 }
 
+// newTokenScope is the scope recorded for a new token confined to the given organization and
+// project. Only a product scope drives any logic for now: for these kinds the columns mirror
+// project_id and organization_id, which stay the fields the control plane reads, and tokens
+// from before the columns existed keep both NULL.
+func newTokenScope(orgID, projectID *uuid.UUID) (*authz.ResourceType, *uuid.UUID) {
+	switch {
+	case projectID != nil:
+		return ToPtr(authz.ResourceTypeProject), projectID
+	case orgID != nil:
+		return ToPtr(authz.ResourceTypeOrganization), orgID
+	default:
+		return ToPtr(authz.ResourceTypeInstance), nil
+	}
+}
+
 // expires in is a string that can be parsed by time.ParseDuration
 func (uc *APITokenUseCase) Create(ctx context.Context, name string, description *string, expiresIn *time.Duration, orgID *string, opts ...APITokenCreateOpt) (*APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.Create")
@@ -280,6 +296,8 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
+	scope, scopeID := newTokenScope(orgUUID, projectID)
+
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
 	token, err := uc.apiTokenRepo.Create(ctx, &APITokenCreateOpts{
@@ -289,6 +307,8 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		OrganizationID: orgUUID,
 		ProjectID:      projectID,
 		WorkflowID:     workflowID,
+		Scope:          scope,
+		ScopeID:        scopeID,
 		Policies:       policies,
 		IsSystem:       options.isSystem,
 	})

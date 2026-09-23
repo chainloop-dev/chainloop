@@ -140,7 +140,7 @@ func toUUIDPtr(id uuid.UUID) *uuid.UUID {
 func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 	t.Parallel()
 
-	projectID, productID := uuid.New(), uuid.New()
+	projectID, productID, orgID := uuid.New(), uuid.New(), uuid.New()
 	createdAt := time.Now()
 
 	testCases := []struct {
@@ -175,12 +175,23 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "a kind other than product is not reported",
+			// New tokens record their scope for every kind, but only a product is reported
+			// from it: an organization token lists exactly as it did before.
+			name: "an organization-scoped token reports none",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &productID,
+				Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID,
 			},
 			want: nil,
+		},
+		{
+			name: "a project-scoped token still reports its project from project_id",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
+				Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID,
+			},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
 		},
 		{
 			name:  "an organization-level token reports none",

@@ -152,8 +152,9 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	case biz.APITokenScopeProduct:
 		query = query.Where(apitoken.ScopeEQ(authz.ResourceTypeProduct))
 	case biz.APITokenScopeGlobal:
-		// Organization-wide means confined to neither a project nor a scoped resource.
-		query = query.Where(apitoken.ProjectIDIsNil(), apitoken.ScopeIDIsNil())
+		// Organization-wide means confined to neither a project nor a product. Keyed on the
+		// kind: new organization tokens carry an organization scope, older ones none.
+		query = query.Where(apitoken.ProjectIDIsNil(), apitoken.Or(apitoken.ScopeIsNil(), apitoken.ScopeNEQ(authz.ResourceTypeProduct)))
 	case biz.APITokenScopeInstance:
 		query = query.Where(apitoken.OrganizationIDIsNil())
 	}

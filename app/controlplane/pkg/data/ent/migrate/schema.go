@@ -57,7 +57,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[13]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "revoked_at IS NULL AND project_id IS NULL AND scope_id IS NULL",
+					Where: "revoked_at IS NULL AND project_id IS NULL AND (scope IS NULL OR scope <> 'product')",
 				},
 			},
 			{
@@ -65,7 +65,7 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
-					Where: "revoked_at IS NULL AND scope_id IS NOT NULL",
+					Where: "revoked_at IS NULL AND scope = 'product'",
 				},
 			},
 			{
@@ -1022,9 +1022,8 @@ func init() {
 	APITokensTable.ForeignKeys[2].RefTable = OrganizationsTable
 	APITokensTable.Annotation = &entsql.Annotation{}
 	APITokensTable.Annotation.Checks = map[string]string{
-		"apitoken_scope_all_or_nothing":   "(scope IS NULL) = (scope_id IS NULL)",
-		"apitoken_scope_excludes_project": "project_id IS NULL OR scope_id IS NULL",
-		"apitoken_scope_product_only":     "scope IS NULL OR scope = 'product'",
+		"apitoken_scope_id_presence":   "(scope_id IS NOT NULL) = (scope IS NOT NULL AND scope <> 'instance')",
+		"apitoken_scope_matches_token": "scope IS NULL OR (scope = 'organization' AND project_id IS NULL AND scope_id IS NOT DISTINCT FROM organization_id) OR (scope = 'project' AND scope_id IS NOT DISTINCT FROM project_id) OR (scope = 'instance' AND organization_id IS NULL AND project_id IS NULL) OR (scope = 'product' AND organization_id IS NOT NULL AND project_id IS NULL)",
 	}
 	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
