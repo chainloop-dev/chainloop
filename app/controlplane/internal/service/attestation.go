@@ -743,6 +743,15 @@ func (s *AttestationService) findWorkflowFromTokenOrNameOrRunID(ctx context.Cont
 		}
 	}
 
+	// Legacy robot accounts are pinned to a single workflow, so they may only operate on that one.
+	// The API-token and federated middlewares reuse the same carrier with an empty WorkflowID, so
+	// only a populated one identifies a robot account and constrains the caller.
+	if robotAccount := usercontext.CurrentRobotAccount(ctx); robotAccount != nil && robotAccount.WorkflowID != "" {
+		if wf.ID.String() != robotAccount.WorkflowID {
+			return nil, errors.Forbidden("forbidden", "robot account is scoped to a different workflow")
+		}
+	}
+
 	return wf, nil
 }
 
