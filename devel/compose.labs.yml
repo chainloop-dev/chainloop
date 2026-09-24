@@ -66,12 +66,13 @@ services:
         condition: service_healthy
     command: "migrate apply --url postgres://postgres:@postgresql:5432/controlplane?sslmode=disable --dir file:///migrations"
 
-  # Optional Minio S3 backend. Run it with `--profile optional`
-  minio:
-    image: minio/minio@sha256:2f5049ec2e993621e8beed610fe381d92e6775c54a1b67ecaa866fc4b72e2935
+  # Optional S3-compatible backend (RustFS). Run it with `--profile optional`
+  rustfs:
+    image: rustfs/rustfs@sha256:8cc9801755448b71a786705ce76692c77e14936cccd87cf2fc31842e58f4d1ff
     ports:
       - 9002:9000
       - 9003:9001
-    command: server /data --console-address ":9001"
+    environment:
+      RUSTFS_CONSOLE_ENABLE: "true"
     profiles:
       - optional

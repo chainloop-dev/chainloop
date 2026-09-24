@@ -329,15 +329,14 @@ func newMinioInstance(t *testing.T) *minioInstance {
 	const port = "9000/tcp"
 
 	req := testcontainers.ContainerRequest{
-		// Pinned to a fixed digest to keep the test reproducible; update the digest manually to adopt new MinIO releases.
-		// https://quay.io/repository/minio/minio/manifest/sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2
-		Image:        "quay.io/minio/minio@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2",
+		// RustFS is an S3-compatible server. MinIO no longer publishes public images.
+		// Pinned to a fixed digest (v1.0.0) to keep the test reproducible; update the digest manually to adopt new releases.
+		Image:        "rustfs/rustfs@sha256:8cc9801755448b71a786705ce76692c77e14936cccd87cf2fc31842e58f4d1ff",
 		ExposedPorts: []string{port},
 		Env: map[string]string{
-			"MINIO_ROOT_USER":     "root",
-			"MINIO_ROOT_PASSWORD": "test-password",
+			"RUSTFS_ACCESS_KEY": "root",
+			"RUSTFS_SECRET_KEY": "test-password",
 		},
-		Cmd:        []string{"server", "/data"},
 		WaitingFor: wait.ForListeningPort(port).WithStartupTimeout(5 * time.Minute),
 	}
 
