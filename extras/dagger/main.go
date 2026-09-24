@@ -133,6 +133,11 @@ type ParentCIContext struct {
 }
 
 // Initialize a new attestation
+//
+// Cached only for the session: a new attestation must be initialized on every run,
+// reusing a cached attestation ID from a previous run fails once that attestation is gone
+//
+// +cache="session"
 func (m *Chainloop) Init(
 	ctx context.Context,
 	// Chainloop API token
@@ -341,6 +346,8 @@ func (m *Chainloop) Resume(
 }
 
 // Check the attestation status
+//
+// +cache="session"
 func (att *Attestation) Status(ctx context.Context) (string, error) {
 	return att.
 		Container(0).
@@ -419,6 +426,8 @@ func (m *Chainloop) WithInstance(
 }
 
 // Add a raw string piece of evidence to the attestation
+//
+// +cache="session"
 func (att *Attestation) AddRawEvidence(
 	ctx context.Context,
 	// Evidence name. Don't pass a name if the material
@@ -483,6 +492,8 @@ func (att *Attestation) AddRawEvidence(
 }
 
 // Add a file type piece of evidence to the attestation
+//
+// +cache="session"
 func (att *Attestation) AddFileEvidence(
 	ctx context.Context,
 	// Evidence name. Don't pass a name if the material
@@ -556,6 +567,7 @@ func (att *Attestation) AddFileEvidence(
 	return att, err
 }
 
+// +cache="session"
 func (att *Attestation) Debug() *dagger.Container {
 	return att.Container(0).Terminal()
 }
@@ -684,6 +696,8 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 }
 
 // Build an ephemeral container with everything needed to process the attestation
+//
+// +cache="session"
 func (att *Attestation) Container(
 	// Cache TTL for chainloop commands, in seconds
 	//  Defaults to 0: no caching
@@ -736,6 +750,8 @@ const (
 )
 
 // Generate, sign and push the attestation to the chainloop control plane
+//
+// +cache="session"
 func (att *Attestation) Push(
 	ctx context.Context,
 	// The private key to sign the attestation
@@ -781,6 +797,8 @@ func (att *Attestation) Push(
 }
 
 // Mark the attestation as failed
+//
+// +cache="session"
 func (att *Attestation) MarkFailed(
 	ctx context.Context,
 	// The reason for canceling, in human-readable form
@@ -791,6 +809,8 @@ func (att *Attestation) MarkFailed(
 }
 
 // Mark the attestation as canceled
+//
+// +cache="session"
 func (att *Attestation) MarkCanceled(
 	ctx context.Context,
 	// The reason for canceling, in human-readable form
@@ -833,6 +853,8 @@ func (att *Attestation) reset(ctx context.Context,
 /// standalone API calls
 
 // Create a new workflow
+//
+// +cache="session"
 func (m *Chainloop) WorkflowCreate(
 	ctx context.Context,
 	// Chainloop API token
