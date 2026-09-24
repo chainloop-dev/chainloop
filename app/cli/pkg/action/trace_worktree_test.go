@@ -140,11 +140,16 @@ func TestClaudeSessionForkedIntoWorktrees(t *testing.T) {
 
 					sessions, err := store.LoadAllSessionRecords()
 					require.NoError(t, err)
-					assert.Contains(t, sessions, sid,
+					require.Contains(t, sessions, sid,
 						"pre-push resolves the provider from the session record")
+					assert.Equal(t, mainRoot, sessions[sid].Cwd,
+						"the record keeps the directory the agent runs in")
 
-					// Pre-push refreshes the transcript before parsing it.
-					_ = p.CopySessionData(store, repoRoot, sid)
+					// Pre-push copies the transcript again before parsing it,
+					// from the directory in the session record. Drop the copy
+					// the tool hooks made, so only that path can pass.
+					require.NoError(t, os.RemoveAll(store.RawSessionDir()))
+					require.NoError(t, p.CopySessionData(store, agentCwdOr(sessions[sid].Cwd, repoRoot), sid))
 					_, err = p.ParseSession(t.Context(), &trace.ParseOpts{SessionDir: store.RawSessionDir(), SessionID: sid})
 					assert.NoError(t, err, "pre-push must find the session transcript")
 				})
