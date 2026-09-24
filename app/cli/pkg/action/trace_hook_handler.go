@@ -522,19 +522,21 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 			continue
 		}
 
-		// Fresh copy of session data before parsing — the session-start copy
-		// may be stale if more conversation happened between start and push.
-		if err := provider.CopySessionData(store, repoRoot, sessionID); err != nil {
-			log.Debug().Err(err).Str("session", sessionID).Msg("could not refresh session data")
-		}
-
 		parseOpts := &trace.ParseOpts{
 			SessionDir: rawDir,
 			SessionID:  sessionID,
 		}
+		var sessionCwd string
 		if rec, ok := sessionRecords[sessionID]; ok && rec != nil {
 			parseOpts.AgentVersion = rec.AgentVersion
 			parseOpts.Model = rec.Model
+			sessionCwd = rec.Cwd
+		}
+
+		// Fresh copy of session data before parsing — the session-start copy
+		// may be stale if more conversation happened between start and push.
+		if err := provider.CopySessionData(store, agentCwdOr(sessionCwd, repoRoot), sessionID); err != nil {
+			log.Debug().Err(err).Str("session", sessionID).Msg("could not refresh session data")
 		}
 
 		result, err := provider.ParseSession(ctx, parseOpts)

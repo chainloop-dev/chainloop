@@ -210,3 +210,79 @@ func TestHooksInstallFromWorktree(t *testing.T) {
 			"hook %s should NOT be written to worktree-private hooks dir", name)
 	}
 }
+
+// Agent hooks run from the directory the session started in, which is not
+// necessarily the checkout that owns the file being edited (PFM-7412), so the
+// lookup has to start from an explicit directory rather than cwd.
+func TestFindGitDirAndRootFrom(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git binary not found, skipping worktree test")
+	}
+
+	mainDir, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+	wtDir := filepath.Join(mainDir, ".claude", "worktrees", "feature")
+
+	run := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = mainDir
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "git %v failed: %s", args, string(out))
+	}
+	run("init", "-b", "main")
+	run("config", "user.email", "test@test.com")
+	run("config", "user.name", "Test")
+	run("commit", "--allow-empty", "-m", "init")
+	run("worktree", "add", wtDir, "-b", "feature")
+
+	// cwd is the main checkout throughout, as it is for an agent hook.
+	t.Chdir(mainDir)
+
+	tests := []struct {
+		name        string
+		dir         string
+		wantGitDir  string
+		wantRoot    string
+		errNotARepo bool
+	}{
+		{
+			name:       "main checkout",
+			dir:        mainDir,
+			wantGitDir: filepath.Join(mainDir, ".git"),
+			wantRoot:   mainDir,
+		},
+		{
+			name:       "worktree nested in the main checkout",
+			dir:        wtDir,
+			wantGitDir: filepath.Join(mainDir, ".git", "worktrees", "feature"),
+			wantRoot:   wtDir,
+		},
+		{
+			// A Write creating a file in a new directory: the directory does
+			// not exist yet when the pre-tool-use hook runs.
+			name:       "not yet created directory inside a worktree",
+			dir:        filepath.Join(wtDir, "new", "pkg"),
+			wantGitDir: filepath.Join(mainDir, ".git", "worktrees", "feature"),
+			wantRoot:   wtDir,
+		},
+		{
+			name:        "outside any repository",
+			dir:         t.TempDir(),
+			errNotARepo: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gitDir, root, err := FindGitDirAndRootFrom(tc.dir)
+			if tc.errNotARepo {
+				assert.ErrorIs(t, err, ErrNotARepository)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantGitDir, gitDir)
+			assert.Equal(t, tc.wantRoot, root)
+		})
+	}
+}

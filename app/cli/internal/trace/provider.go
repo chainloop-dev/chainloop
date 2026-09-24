@@ -54,7 +54,10 @@ type Provider interface {
 	// CopySessionData copies the agent's on-disk session artifacts into
 	// the store's raw/ directory so pre-push can parse them independently of
 	// the agent's own storage (which may be rotated/cleaned later).
-	CopySessionData(store *state.Store, repoRoot, sessionID string) error
+	// agentCwd is the directory the session runs in, which decides where the
+	// agent keeps its transcripts; it need not be the checkout that owns
+	// store.
+	CopySessionData(store *state.Store, agentCwd, sessionID string) error
 
 	// CaptureFileSnapshot is invoked from the pre-edit hook to record any
 	// state the provider needs to later reconstruct the file's pre-edit
@@ -132,6 +135,11 @@ type HookInput struct {
 	ToolName string `json:"tool_name,omitempty"`
 	// FilePath is the absolute path of the file being edited, set by provider's ReadHookInput.
 	FilePath string `json:"-"`
+	// Cwd is the directory the agent session runs in, which is where the
+	// agent files its transcripts. It can differ from the checkout that owns
+	// FilePath, e.g. for an edit in a linked git worktree. Empty when the
+	// agent does not report it.
+	Cwd string `json:"cwd,omitempty"`
 	// AgentVersion is the agent runtime version reported in the hook payload
 	// (e.g., Cursor's cursor_version). Captured at session-start so parsing
 	// can set Agent.Version even when the transcript itself doesn't carry it.

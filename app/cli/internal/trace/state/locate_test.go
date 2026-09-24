@@ -167,3 +167,40 @@ func TestLocate(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestLocateFrom(t *testing.T) {
+	t.Run("inside a git repository ignores cwd", func(t *testing.T) {
+		isolateCacheDir(t)
+
+		repo := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(repo, ".git"), 0755))
+		other := t.TempDir()
+		require.NoError(t, os.MkdirAll(filepath.Join(other, ".git"), 0755))
+		t.Chdir(other)
+
+		store, root, err := LocateFrom(filepath.Join(repo, "sub"))
+		require.NoError(t, err)
+		assert.True(t, store.IsGit())
+		assert.Equal(t, repo, root)
+		assert.Equal(t, filepath.Join(repo, ".git"), store.GitDir())
+	})
+
+	t.Run("no repository binds to the active run above dir", func(t *testing.T) {
+		isolateCacheDir(t)
+
+		dir := t.TempDir()
+		want, err := NonGitDir(dir)
+		require.NoError(t, err)
+		wantStore := NewOutOfTreeStore(want)
+		require.NoError(t, wantStore.InitTraceDir())
+		require.NoError(t, wantStore.MarkTraceRunActive())
+
+		t.Chdir(t.TempDir())
+
+		store, root, err := LocateFrom(filepath.Join(dir, "a", "b"))
+		require.NoError(t, err)
+		assert.False(t, store.IsGit())
+		assert.Equal(t, want, store.Dir())
+		assert.Equal(t, resolveDir(dir), root)
+	})
+}

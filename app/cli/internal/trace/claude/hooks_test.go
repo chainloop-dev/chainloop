@@ -221,6 +221,7 @@ func TestReadHookInput(t *testing.T) {
 		assert.Equal(t, "abc-123", input.SessionID)
 		assert.Equal(t, "SessionStart", input.HookEventName)
 		assert.Equal(t, "Edit", input.ToolName)
+		assert.Equal(t, "/some/path", input.Cwd)
 	})
 
 	t.Run("extracts tool metadata", func(t *testing.T) {

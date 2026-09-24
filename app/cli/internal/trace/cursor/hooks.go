@@ -172,6 +172,7 @@ type cursorHookInput struct {
 	HookEventName  string           `json:"hook_event_name"`
 	CursorVersion  string           `json:"cursor_version"`
 	Model          string           `json:"model"`
+	WorkspaceRoots []string         `json:"workspace_roots"`
 	FilePath       string           `json:"file_path"`
 	Edits          []cursorHookEdit `json:"edits"`
 }
@@ -210,6 +211,13 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		FilePath:      raw.FilePath,
 		AgentVersion:  raw.CursorVersion,
 		Model:         raw.Model,
+	}
+
+	// Cursor files transcripts under the workspace it was opened on. A
+	// multi-root workspace has no single answer; the first root is the one
+	// Cursor lists first and the best guess available.
+	if len(raw.WorkspaceRoots) > 0 {
+		input.Cwd = raw.WorkspaceRoots[0]
 	}
 
 	if raw.HookEventName == eventAfterFileEdit {

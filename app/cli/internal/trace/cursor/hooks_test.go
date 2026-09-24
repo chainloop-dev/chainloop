@@ -164,6 +164,7 @@ func TestReadHookInputAfterFileEdit(t *testing.T) {
 		"hook_event_name": "afterFileEdit",
 		"model": "claude-4",
 		"cursor_version": "0.48.0",
+		"workspace_roots": ["/abs/path", "/abs/other"],
 		"file_path": "/abs/path/file.go",
 		"edits": [
 			{"old_string": "foo", "new_string": "bar"},
@@ -178,6 +179,7 @@ func TestReadHookInputAfterFileEdit(t *testing.T) {
 	assert.Equal(t, "afterFileEdit", in.HookEventName, "HookEventName")
 	assert.Equal(t, syntheticEditToolName, in.ToolName, "ToolName")
 	assert.Equal(t, "/abs/path/file.go", in.FilePath, "FilePath")
+	assert.Equal(t, "/abs/path", in.Cwd, "Cwd is the first workspace root")
 	require.Len(t, in.Edits, 2, "Edits len")
 	assert.Equal(t, "foo", in.Edits[0].OldString, "first edit OldString")
 	assert.Equal(t, "bar", in.Edits[0].NewString, "first edit NewString")

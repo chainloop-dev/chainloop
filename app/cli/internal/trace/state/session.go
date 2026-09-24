@@ -36,6 +36,10 @@ type SessionRecord struct {
 	// Cursor's "model" field). Empty for providers whose hook payload does
 	// not carry the model. Recorded once on the first hook only.
 	Model string `json:"model,omitempty"`
+	// Cwd is the directory the agent session runs in, used to find its
+	// transcripts when this record lives in another checkout's state (a
+	// linked git worktree). Empty when the agent does not report it.
+	Cwd string `json:"cwd,omitempty"`
 	// Active reports whether the session is ongoing at the time of record write.
 	Active bool `json:"active"`
 	// StartedAt is the RFC3339 timestamp of when tracking began for this session.

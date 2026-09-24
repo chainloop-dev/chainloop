@@ -78,8 +78,8 @@ func (p *Provider) SessionDirForRepo(repoRoot string) string {
 // CopySessionData copies the Claude Code JSONL (and subagent files) from the
 // Claude project directory into the store's raw/ directory so pre-push can
 // parse them even if Claude rotates its own storage later.
-func (p *Provider) CopySessionData(store *state.Store, repoRoot, sessionID string) error {
-	sourceDir := p.SessionDirForRepo(repoRoot)
+func (p *Provider) CopySessionData(store *state.Store, agentCwd, sessionID string) error {
+	sourceDir := p.SessionDirForRepo(agentCwd)
 	if sourceDir == "" {
 		return nil
 	}

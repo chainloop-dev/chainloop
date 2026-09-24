@@ -46,6 +46,17 @@ func FindGitDirAndRoot() (gitDir, repoRoot string, err error) {
 	return findGitDirAndRoot()
 }
 
+// FindGitDirAndRootFrom is FindGitDirAndRoot starting from dir instead of
+// cwd. dir need not exist yet: the walk only probes for .git on the way up.
+func FindGitDirAndRootFrom(dir string) (gitDir, repoRoot string, err error) {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return "", "", fmt.Errorf("resolve %q: %w", dir, err)
+	}
+
+	return findGitDirAndRootFrom(abs)
+}
+
 // findGitDirAndRoot walks up from cwd to locate .git, avoiding go-git's strict
 // config validation which fails on repos with invalid branch config.
 func findGitDirAndRoot() (string, string, error) {
@@ -54,7 +65,10 @@ func findGitDirAndRoot() (string, string, error) {
 		return "", "", fmt.Errorf("get working directory: %w", err)
 	}
 
-	dir := cwd
+	return findGitDirAndRootFrom(cwd)
+}
+
+func findGitDirAndRootFrom(dir string) (string, string, error) {
 	for {
 		dotGit := filepath.Join(dir, ".git")
 		fi, err := os.Lstat(dotGit)
