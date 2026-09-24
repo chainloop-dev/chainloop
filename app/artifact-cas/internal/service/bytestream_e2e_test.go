@@ -278,13 +278,12 @@ func startMinio(t *testing.T) string {
 	instance, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			// Same pinned image the s3 backend suite uses.
-			Image:        "quay.io/minio/minio@sha256:a1a8bd4ac40ad7881a245bab97323e18f971e4d4cba2c2007ec1bedd21cbaba2",
+			Image:        "rustfs/rustfs@sha256:8cc9801755448b71a786705ce76692c77e14936cccd87cf2fc31842e58f4d1ff",
 			ExposedPorts: []string{port},
 			Env: map[string]string{
-				"MINIO_ROOT_USER":     "root",
-				"MINIO_ROOT_PASSWORD": "test-password",
+				"RUSTFS_ACCESS_KEY": "root",
+				"RUSTFS_SECRET_KEY": "test-password",
 			},
-			Cmd:        []string{"server", "/data"},
 			WaitingFor: wait.ForListeningPort(port).WithStartupTimeout(5 * time.Minute),
 		},
 		Started: true,

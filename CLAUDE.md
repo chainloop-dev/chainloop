@@ -193,7 +193,7 @@ chainloop --insecure auth login --skip-browser
 - **Dex OIDC**: `localhost:5556`, static users with password `"password"`
 - **Control Plane**: `localhost:9000` (gRPC) / `localhost:8000` (HTTP)
 - **Artifact CAS**: `localhost:9001` (gRPC) / `localhost:8001` (HTTP)
-- **Optional Minio S3**: `localhost:9002` (API) / `localhost:9003` (Console) with `--profile optional`
+- **Optional RustFS S3**: `localhost:9002` (API) / `localhost:9003/rustfs/console/index.html` (Console) with `--profile optional` (default credentials `rustfsadmin` / `rustfsadmin`)
 
 **Development Credentials**:
 - **OIDC Users**: `sarah@chainloop.local` / `john@chainloop.local` (password: `password`)
