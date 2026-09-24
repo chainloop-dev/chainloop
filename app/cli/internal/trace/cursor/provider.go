@@ -138,8 +138,8 @@ func (p *Provider) CleanupAfterEdit(_ *state.Store, _ *trace.HookInput) {}
 // the store's raw/<sessionID>.jsonl. Handles both flat and nested
 // source layouts; the destination is always flat so downstream consumers
 // (parse, pre-push) don't need to re-resolve.
-func (p *Provider) CopySessionData(store *state.Store, repoRoot, sessionID string) error {
-	sourceDir := p.SessionDirForRepo(repoRoot)
+func (p *Provider) CopySessionData(store *state.Store, agentCwd, sessionID string) error {
+	sourceDir := p.SessionDirForRepo(agentCwd)
 	if sourceDir == "" {
 		return nil
 	}

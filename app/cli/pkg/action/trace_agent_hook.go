@@ -48,7 +48,7 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 		return nil
 	}
 
-	if err := provider.CopySessionData(store, repoRoot, sessionID); err != nil {
+	if err := provider.CopySessionData(store, agentCwdOr(input.Cwd, repoRoot), sessionID); err != nil {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
 
@@ -200,7 +200,7 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 
 	log.Debug().Str("session_id", input.SessionID).Msg("pre-tool-use hook invoked")
 
-	store, repoRoot, err := state.Locate()
+	store, repoRoot, err := locateForHook(provider, input)
 	if err != nil {
 		log.Debug().Err(err).Msg("pre-tool-use: no trace state located")
 		return nil
@@ -270,6 +270,7 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 		Provider:     provider.Name(),
 		AgentVersion: input.AgentVersion,
 		Model:        input.Model,
+		Cwd:          input.Cwd,
 		Active:       true,
 		StartedAt:    state.NowTimestamp(),
 	}
@@ -278,9 +279,39 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 		return
 	}
 
-	if err := provider.CopySessionData(store, repoRoot, sessionID); err != nil {
+	if err := provider.CopySessionData(store, agentCwdOr(input.Cwd, repoRoot), sessionID); err != nil {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
+}
+
+// locateForHook returns the trace state an agent hook records into. A file
+// edit belongs to the checkout that owns the file, which is not necessarily
+// the one the hook runs from: agents run every hook from the directory the
+// session started in, even when the edit lands in a linked git worktree, and
+// that worktree's commits only read its own state (PFM-7412). Everything else
+// (session lifecycle, shell commands) has no file to go by and stays with cwd.
+//
+// Only file-writing tools qualify. Other tools can carry a path too (Claude's
+// Read does), and reading a file in another repository must not start a
+// session there.
+func locateForHook(provider trace.Provider, input *trace.HookInput) (*state.Store, string, error) {
+	if input.FilePath != "" && provider.IsFileWritingTool(input.ToolName) {
+		return state.LocateFrom(filepath.Dir(input.FilePath))
+	}
+
+	return state.Locate()
+}
+
+// agentCwdOr returns the directory the agent reported running in, falling
+// back to the checkout root for agents that do not report one. Transcript
+// lookups must use it: for a session recorded in a linked worktree, the
+// worktree root names a transcript directory the agent never wrote to.
+func agentCwdOr(agentCwd, repoRoot string) string {
+	if agentCwd != "" {
+		return agentCwd
+	}
+
+	return repoRoot
 }
 
 // notifyPendingSessionLinks hands any session links left by a just-completed
@@ -351,7 +382,7 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 
 	log.Debug().Str("session_id", sessionID).Str("tool", input.ToolName).Str("file", input.FilePath).Msg("post-tool-use hook invoked")
 
-	store, repoRoot, err := state.Locate()
+	store, repoRoot, err := locateForHook(provider, input)
 	if err != nil {
 		log.Debug().Err(err).Msg("post-tool-use: no trace state located")
 		return nil

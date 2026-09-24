@@ -42,7 +42,20 @@ import (
 // binding such a clone to an ancestor's out-of-tree state would silently
 // record its commits nowhere.
 func Locate() (store *Store, root string, err error) {
-	gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, "", fmt.Errorf("get working directory: %w", err)
+	}
+
+	return LocateFrom(cwd)
+}
+
+// LocateFrom is Locate starting from dir instead of cwd. Agent hooks use it to
+// file an edit under the checkout that owns the edited file: they run from the
+// directory the session started in, which for a file in a linked git worktree
+// is a different checkout with its own state (PFM-7412).
+func LocateFrom(start string) (store *Store, root string, err error) {
+	gitDir, repoRoot, err := tracegit.FindGitDirAndRootFrom(start)
 	switch {
 	case err == nil:
 		return NewGitStore(gitDir), repoRoot, nil
@@ -50,20 +63,18 @@ func Locate() (store *Store, root string, err error) {
 		return nil, "", err
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, "", fmt.Errorf("get working directory: %w", err)
-	}
-
 	base, err := nonGitBase()
 	if err != nil {
 		return nil, "", err
 	}
 
-	for dir := resolveDir(cwd); ; {
+	for dir := resolveDir(start); ; {
 		candidate := NewOutOfTreeStore(filepath.Join(base, hashDir(dir)))
 		if candidate.IsTraceRunActive() {
-			return candidate, dir, nil
+			// start may name a directory that does not exist yet (a file
+			// about to be created), which resolveDir cannot canonicalize;
+			// the ancestor holding the run does exist, so resolve it here.
+			return candidate, resolveDir(dir), nil
 		}
 
 		parent := filepath.Dir(dir)
@@ -73,7 +84,7 @@ func Locate() (store *Store, root string, err error) {
 		dir = parent
 	}
 
-	return nil, "", fmt.Errorf("not a git repository and no active chainloop trace run found from %q up to root", cwd)
+	return nil, "", fmt.Errorf("not a git repository and no active chainloop trace run found from %q up to root", start)
 }
 
 // NonGitDir returns the out-of-tree directory that parents trace state for a
