@@ -97,6 +97,16 @@ func TestHandleUseCaseErr(t *testing.T) {
 			wantMessage: "validation error: invalid input",
 		},
 		{
+			// An attestation rejected for not satisfying its contract must reach
+			// the CI job as a client error naming what was missing, not as a
+			// masked 500 the operator cannot act on.
+			name: "contract violation reaches the client as a bad request",
+			err: biz.NewErrValidation(fmt.Errorf("attestation does not satisfy contract revision 4: %w",
+				errors.New("some materials have not been crafted yet: sbom, sarif"))),
+			wantCode:    codes.InvalidArgument,
+			wantMessage: "validation error: attestation does not satisfy contract revision 4: some materials have not been crafted yet: sbom, sarif",
+		},
+		{
 			name:        "unknown error is masked as internal server error",
 			err:         errors.New("sensitive details"),
 			wantCode:    codes.Internal,

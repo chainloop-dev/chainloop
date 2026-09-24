@@ -107,6 +107,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		WfrRepo:      workflowRunRepo,
 		WfRepo:       workflowRepo,
 		OrgRepo:      organizationRepo,
+		ContractRepo: workflowContractRepo,
 		SigningUC:    signingUseCase,
 		AuditorUC:    auditorUseCase,
 		Logger:       logger,

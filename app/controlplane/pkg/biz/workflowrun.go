@@ -28,6 +28,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
+	attestationapi "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
@@ -123,11 +124,12 @@ type WorkflowRunRepo interface {
 }
 
 type WorkflowRunUseCase struct {
-	wfRunRepo WorkflowRunRepo
-	wfRepo    WorkflowRepo
-	orgRepo   OrganizationRepo
-	logger    *log.Helper
-	auditorUC *AuditorUseCase
+	wfRunRepo    WorkflowRunRepo
+	wfRepo       WorkflowRepo
+	orgRepo      OrganizationRepo
+	contractRepo WorkflowContractRepo
+	logger       *log.Helper
+	auditorUC    *AuditorUseCase
 
 	signingUseCase *SigningUseCase
 	bundleCache    *attestationbundle.Cache
@@ -139,6 +141,7 @@ type WorkflowRunUseCaseOpts struct {
 	WfrRepo      WorkflowRunRepo
 	WfRepo       WorkflowRepo
 	OrgRepo      OrganizationRepo
+	ContractRepo WorkflowContractRepo
 	SigningUC    *SigningUseCase
 	AuditorUC    *AuditorUseCase
 	Logger       log.Logger
@@ -157,6 +160,7 @@ func NewWorkflowRunUseCase(opts *WorkflowRunUseCaseOpts) (*WorkflowRunUseCase, e
 		wfRunRepo:      opts.WfrRepo,
 		wfRepo:         opts.WfRepo,
 		orgRepo:        opts.OrgRepo,
+		contractRepo:   opts.ContractRepo,
 		auditorUC:      opts.AuditorUC,
 		signingUseCase: opts.SigningUC,
 		logger:         log.NewHelper(logger),
@@ -413,6 +417,85 @@ func (uc *WorkflowRunUseCase) orgBlocksReleasedVersions(ctx context.Context, run
 	return org.BlockAttestationsOnReleasedVersions, nil
 }
 
+// ValidateAttestationContract checks a bundle against the contract revision
+// pinned on its workflow run without persisting anything.
+//
+// SaveAttestation runs the same check and is the authoritative one, since it
+// sits on the path every attestation takes. This entry point exists for callers
+// that push the bundle to a CAS backend before calling SaveAttestation: without
+// it, an attestation rejected for violating its contract would already have left
+// a blob behind in CAS.
+func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, runID string, bundle []byte) error {
+	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.ValidateAttestationContract")
+	defer span.End()
+
+	id, err := uuid.Parse(runID)
+	if err != nil {
+		return NewErrInvalidUUID(err)
+	}
+
+	run, err := uc.wfRunRepo.FindByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("finding workflow run: %w", err)
+	} else if run == nil {
+		return NewErrNotFound("workflow run")
+	}
+
+	dsseEnv, err := attestation.DSSEEnvelopeFromBundleBytes(bundle)
+	if err != nil {
+		return fmt.Errorf("extracting DSSE envelope: %w", err)
+	}
+
+	predicate, err := chainloop.ExtractPredicate(dsseEnv)
+	if err != nil {
+		return fmt.Errorf("extracting predicate: %w", err)
+	}
+
+	return uc.validateAgainstContract(ctx, run, predicate)
+}
+
+// validateAgainstContract rejects an attestation that does not satisfy the
+// contract revision pinned on the workflow run when it was initialized.
+//
+// The CLI runs the same check before pushing, but it signs the bundle with the
+// same client that decided whether to run it, so a valid signature says nothing
+// about contract compliance. The control plane is the authority here.
+func (uc *WorkflowRunUseCase) validateAgainstContract(ctx context.Context, run *WorkflowRun, predicate chainloop.NormalizablePredicate) error {
+	// Every run created through the attestation init endpoint pins a contract
+	// revision, so a run without one is an integrity problem rather than a
+	// reason to skip the check.
+	if run.ContractVersionID == uuid.Nil {
+		return NewErrValidation(errors.New("workflow run has no contract revision associated"))
+	}
+
+	contract, err := uc.contractRepo.FindVersionByID(ctx, run.ContractVersionID)
+	if err != nil {
+		return fmt.Errorf("finding contract version: %w", err)
+	} else if contract == nil || contract.Version == nil || contract.Version.Schema == nil {
+		return NewErrNotFound("contract version")
+	}
+
+	// Schema is the v1 form of the contract and is populated for v2 contracts
+	// too, so this covers both contract formats. A revision we cannot read is an
+	// error rather than an empty contract: treating it as "nothing required"
+	// would silently wave the attestation through.
+	schema := contract.Version.Schema.Schema
+	if schema == nil {
+		return NewErrValidation(fmt.Errorf("contract revision %d could not be read", run.ContractRevisionUsed))
+	}
+
+	craftedNames := make(map[string]struct{}, len(predicate.GetMaterials()))
+	for _, m := range predicate.GetMaterials() {
+		craftedNames[m.Name] = struct{}{}
+	}
+
+	if err := attestationapi.ValidateMaterialsPresence(schema.GetMaterials(), craftedNames); err != nil {
+		return NewErrValidation(fmt.Errorf("attestation does not satisfy contract revision %d: %w", run.ContractRevisionUsed, err))
+	}
+
+	return nil
+}
+
 func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte, opts ...SaveAttestationOption) (*v1.Hash, error) {
 	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.SaveAttestation")
 	defer span.End()
@@ -497,6 +580,10 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 				return nil, NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
 			}
 		}
+	}
+
+	if err := uc.validateAgainstContract(ctx, run, predicate); err != nil {
+		return nil, err
 	}
 
 	if options.skipBundlePersistence {

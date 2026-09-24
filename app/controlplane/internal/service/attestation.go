@@ -336,6 +336,14 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 			return nil, handleUseCaseErr(hashErr, s.log)
 		}
 
+		// On this path the bundle reaches CAS before SaveAttestation gets to
+		// validate it, so the contract is checked up front. Otherwise an
+		// attestation rejected for violating its contract would still have left
+		// a blob behind in the CAS backend.
+		if err = s.wrUseCase.ValidateAttestationContract(ctx, workflowRunID, bundle); err != nil {
+			return nil, handleUseCaseErr(err, s.log)
+		}
+
 		if err = s.uploadAttestationToCASWithRetry(ctx, bundle, casBackend, workflowRunID, digestHash); err != nil {
 			return nil, handleUseCaseErr(err, s.log)
 		}
