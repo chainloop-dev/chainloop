@@ -176,7 +176,23 @@ func getCASBackend(ctx context.Context, client pb.AttestationServiceClient, work
 		}
 	}
 
-	artifactCASConn, err := grpcconn.New(casURI, result.Token, opts...)
+	// The CAS token expires quickly, and crafting can take longer than that.
+	// Request a new token when the cached one is close to expiry.
+	tokenSource := newCASTokenSource(result.Token, func(ctx context.Context) (string, error) {
+		resp, err := client.GetUploadCreds(ctx, &pb.AttestationServiceGetUploadCredsRequest{
+			WorkflowRunId: workflowRunID,
+		})
+		if err != nil {
+			return "", fmt.Errorf("refreshing upload creds: %w", err)
+		}
+		if resp.GetResult().GetToken() == "" {
+			return "", fmt.Errorf("refreshing upload creds: empty token")
+		}
+		return resp.GetResult().GetToken(), nil
+	})
+	opts = append(opts, grpcconn.WithTokenProvider(tokenSource.Token))
+
+	artifactCASConn, err := grpcconn.New(casURI, "", opts...)
 	if err != nil {
 		logger.Warn().Err(err).Msg("failed to create CAS connection, will store inline")
 		return nil, nil, fmt.Errorf("creating CAS connection: %w", err)
