@@ -663,7 +663,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	if len(attestedSessions) == 0 {
 		log.Debug().Msg("no evidence successfully added, resetting attestation")
-		_ = executor.Reset(ctx, "trace-push", "no CHAINLOOP_AI_CODING_SESSION evidence added")
+		_ = executor.Reset(ctx, AttestationResetTriggerCancelled, "no CHAINLOOP_AI_CODING_SESSION evidence added")
 
 		return nil
 	}
