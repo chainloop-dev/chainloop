@@ -180,10 +180,16 @@ type WorkflowRunExpirerUseCase struct {
 	logger         *log.Helper
 }
 
+const (
+	defaultWorkflowRunExpirationWindow        = time.Hour
+	defaultWorkflowRunExpirationCheckInterval = time.Minute
+)
+
 type WorkflowRunExpirerOpts struct {
-	// Maximum time threshold for what a workflowRun will be considered expired
+	// Maximum time threshold for what a workflowRun will be considered expired. Defaults to 1 hour.
 	ExpirationWindow time.Duration
-	CheckInterval    time.Duration
+	// Interval between expiration sweeps. Defaults to 1 minute.
+	CheckInterval time.Duration
 }
 
 func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, po PromObservable, logger log.Logger) *WorkflowRunExpirerUseCase {
@@ -191,7 +197,26 @@ func NewWorkflowRunExpirerUseCase(wfrRepo WorkflowRunRepo, po PromObservable, lo
 	return &WorkflowRunExpirerUseCase{wfrRepo, po, log.NewHelper(logger)}
 }
 
+func resolveWorkflowRunExpirerOpts(opts *WorkflowRunExpirerOpts) WorkflowRunExpirerOpts {
+	resolved := WorkflowRunExpirerOpts{
+		ExpirationWindow: defaultWorkflowRunExpirationWindow,
+		CheckInterval:    defaultWorkflowRunExpirationCheckInterval,
+	}
+	if opts == nil {
+		return resolved
+	}
+	if opts.ExpirationWindow > 0 {
+		resolved.ExpirationWindow = opts.ExpirationWindow
+	}
+	if opts.CheckInterval > 0 {
+		resolved.CheckInterval = opts.CheckInterval
+	}
+
+	return resolved
+}
+
 func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunExpirerOpts) {
+	resolvedOpts := resolveWorkflowRunExpirerOpts(opts)
 	timer := time.NewTimer(0)
 
 	go func() {
@@ -201,18 +226,18 @@ func (uc *WorkflowRunExpirerUseCase) Run(ctx context.Context, opts *WorkflowRunE
 			case <-ctx.Done():
 				return
 			case <-timer.C:
-				threshold := time.Now().Add(-opts.ExpirationWindow)
+				threshold := time.Now().Add(-resolvedOpts.ExpirationWindow)
 
 				if err := uc.ExpirationSweep(ctx, threshold); err != nil {
 					uc.logger.Error(err)
 				}
 			}
 
-			timer.Reset(opts.CheckInterval)
+			timer.Reset(resolvedOpts.CheckInterval)
 		}
 	}()
 
-	uc.logger.Infof("periodic check enabled. interval=%s, expirationWindow=%s", opts.CheckInterval, opts.ExpirationWindow)
+	uc.logger.Infof("periodic check enabled. interval=%s, expirationWindow=%s", resolvedOpts.CheckInterval, resolvedOpts.ExpirationWindow)
 }
 
 // ExpirationSweep looks for runs older than the provider time and marks them as expired

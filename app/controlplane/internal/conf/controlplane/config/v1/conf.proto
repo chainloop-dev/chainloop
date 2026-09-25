@@ -160,6 +160,16 @@ message Attestations {
   // from exhausting the control plane's memory. Values <= 0 select the
   // built-in default.
   int64 policy_evaluations_max_inline_bytes = 2;
+
+  // Maximum amount of time an unfinished workflow run can remain active before
+  // it is marked as expired. When unset, the control plane defaults to 1 hour.
+  google.protobuf.Duration workflow_run_expiration_window = 3
+      [(buf.validate.field).duration.gt = {}];
+
+  // Interval between checks for unfinished workflow runs. When unset, the
+  // control plane defaults to 1 minute.
+  google.protobuf.Duration workflow_run_expiration_check_interval = 4
+      [(buf.validate.field).duration.gt = {}];
 }
 
 message OperationAuthorizationProvider {
