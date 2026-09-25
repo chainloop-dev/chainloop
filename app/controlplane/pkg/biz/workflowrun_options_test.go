@@ -49,6 +49,24 @@ func TestResolveWorkflowRunExpirerOpts(t *testing.T) {
 			wantCheckInterval:    time.Minute,
 		},
 		{
+			name: "positive expiration preserves override with zero check interval",
+			opts: &WorkflowRunExpirerOpts{
+				ExpirationWindow: 2 * time.Hour,
+				CheckInterval:    0,
+			},
+			wantExpirationWindow: 2 * time.Hour,
+			wantCheckInterval:    time.Minute,
+		},
+		{
+			name: "positive check interval preserves override with negative expiration",
+			opts: &WorkflowRunExpirerOpts{
+				ExpirationWindow: -time.Hour,
+				CheckInterval:    5 * time.Minute,
+			},
+			wantExpirationWindow: time.Hour,
+			wantCheckInterval:    5 * time.Minute,
+		},
+		{
 			name: "positive options are preserved",
 			opts: &WorkflowRunExpirerOpts{
 				ExpirationWindow: 2 * time.Hour,
