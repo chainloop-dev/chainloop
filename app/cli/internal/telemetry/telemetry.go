@@ -17,6 +17,7 @@ package telemetry
 
 import (
 	"context"
+	"maps"
 	"runtime"
 	"time"
 
@@ -29,10 +30,12 @@ import (
 const commandTrackerEventName = "command_executed"
 const UnrecognisedUserID = "unrecognised"
 
-// FlushTimeout bounds how long the CLI spends delivering a telemetry event. The PostHog
-// client takes it as the deadline for flushing its batch on close, and the command hook
-// takes it as the deadline after which it stops waiting on the delivery goroutine. Both
-// read it from here so the two deadlines cannot drift apart.
+// FlushTimeout bounds how long the detached `chainloop telemetry flush` process spends
+// delivering an event before giving up. The PostHog client takes it as the deadline for
+// flushing its batch on close, and the flush command takes it as the deadline on the
+// context it tracks with. Both read it from here so the two cannot drift apart. It does
+// not bound anything the user waits for: the command that produced the event has already
+// returned by the time the flush process runs.
 const FlushTimeout = 2 * time.Second
 
 // authTypeUser mirrors v1.Attestation_Auth_AUTH_TYPE_USER.String(). It is duplicated as a
@@ -40,8 +43,27 @@ const FlushTimeout = 2 * time.Second
 // values together.
 const authTypeUser = "AUTH_TYPE_USER"
 
-// Tags represents a collection of event tags.
-type Tags map[string]string
+// Tags represents a collection of event properties. Values are typed rather than
+// stringified so numbers and booleans reach the analytics backend as numbers and
+// booleans: a duration stored as "1234" cannot be averaged or bucketed into
+// percentiles in an insight. Use String to read a value back as a string.
+//
+// Note that "ci" stays a string ("true"/"false") on purpose. It reads like a boolean that
+// was missed, but it has been a string in every event the CLI has ever sent, and changing
+// its type now would split the existing dashboards across two property types.
+type Tags map[string]any
+
+// String returns the value of key when it is a string, and "" when the key is absent or
+// holds another type. Callers that compare a tag against a known string value go through
+// it so a mistyped value reads as absent instead of panicking.
+func (tg Tags) String(key string) string {
+	v, ok := tg[key].(string)
+	if !ok {
+		return ""
+	}
+
+	return v
+}
 
 // Client defines the interface for tracking events.
 type Client interface {
@@ -86,18 +108,15 @@ func (t *CommandTracker) Track(ctx context.Context, cmd string, tags Tags) error
 // is the same value for every Chainloop installation using that provider. Anything derived
 // from the machine the command ran on is only meaningful for the interactive case.
 func (tg Tags) IsInteractiveUserSession() bool {
-	return tg["token_type"] == authTypeUser && tg["ci"] == "false"
+	return tg.String("token_type") == authTypeUser && tg.String("ci") == "false"
 }
 
 // Merges two tag maps.
 func mergeTags(defaultTags, userTags Tags) Tags {
-	result := make(Tags)
-	for k, v := range defaultTags {
-		result[k] = v
-	}
-	for k, v := range userTags {
-		result[k] = v
-	}
+	result := make(Tags, len(defaultTags)+len(userTags))
+	maps.Copy(result, defaultTags)
+	maps.Copy(result, userTags)
+
 	return result
 }
 
@@ -109,7 +128,7 @@ func determineUserID(tags Tags) string {
 
 	// Check if user ID is provided in tags.
 	// This won't happen in the unauthenticated case scenario.
-	if userID, ok := tags["user_id"]; ok && userID != "" {
+	if userID := tags.String("user_id"); userID != "" {
 		return userID
 	}
 
