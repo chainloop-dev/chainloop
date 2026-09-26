@@ -49,8 +49,9 @@ func TestParse(t *testing.T) {
 			name:  "federated token",
 			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRldi1rZXkifQ.eyJpc3MiOiJodHRwczovL2NoYWlubG9vcC5naXRsYWIuY29tIiwic3ViIjoicHJvamVjdF9wYXRoOmNoYWlubG9vcC9wcm9qZWN0OnJlZl90eXBlOmJyYW5jaDpyZWY6bWFpbiIsImF1ZCI6ImNoYWlubG9vcCIsImV4cCI6MTczMDAwMDAwMCwibmJmIjoxNzI5OTk2NDAwLCJpYXQiOjE3Mjk5OTY0MDAsImp0aSI6ImpvYi05ODc2IiwicmVmIjoibWFpbiIsInJlZl90eXBlIjoiYnJhbmNoIiwicHJvamVjdF9pZCI6IjQyNDIiLCJwcm9qZWN0X3BhdGgiOiJjaGFpbmxvb3AvcHJvamVjdCIsIm5hbWVzcGFjZV9pZCI6IjQyNDMiLCJuYW1lc3BhY2VfcGF0aCI6ImNoYWlubG9vcCIsInVzZXJfbG9naW4iOiJnaXRsYWItY2ktdG9rZW4iLCJ1c2VyX2VtYWlsIjoiY2lAdXNlci5jb20iLCJ1c2VyX2FjY2Vzc19sZXZlbCI6ImRldmVsb3BlciIsInBpcGVsaW5lX2lkIjoiMTAxIiwicGlwZWxpbmVfc291cmNlIjoicHVzaCIsImpvYl9pZCI6IjIwMiIsInJlZl9wcm90ZWN0ZWQiOnRydWUsImVudmlyb25tZW50IjoicHJvZHVjdGlvbiIsImVudmlyb25tZW50X3Byb3RlY3RlZCI6dHJ1ZSwiZGVwbG95bWVudF90aWVyIjoicHJvZHVjdGlvbiJ9.LkNvVGVzdFNpZ25hdHVyZUNoYWluTG9vcA",
 			want: &ParsedToken{
-				ID:        "https://chainloop.gitlab.com",
-				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+				ID:            "https://chainloop.gitlab.com",
+				TokenType:     v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+				CINamespaceID: "4243",
 			},
 		},
 		{
@@ -59,6 +60,26 @@ func TestParse(t *testing.T) {
 			want: &ParsedToken{
 				ID:        "https://token.actions.githubusercontent.com",
 				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+			},
+		},
+		{
+			name:  "federated github token with an owner id",
+			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Rva2VuLmFjdGlvbnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiY2hhaW5sb29wIiwicmVwb3NpdG9yeSI6ImNoYWlubG9vcC1kZXYvY2hhaW5sb29wIiwicmVwb3NpdG9yeV9vd25lciI6ImNoYWlubG9vcC1kZXYiLCJyZXBvc2l0b3J5X293bmVyX2lkIjoiODQ2MDc0MDkiLCJzdWIiOiJyZXBvOmNoYWlubG9vcC1kZXYvY2hhaW5sb29wOnJlZjpyZWZzL2hlYWRzL21haW4ifQ.c2lnbmF0dXJl",
+			want: &ParsedToken{
+				ID:            "https://token.actions.githubusercontent.com",
+				TokenType:     v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+				CINamespaceID: "84607409",
+			},
+		},
+		{
+			// Both providers document the id as a string, but a JSON number is accepted
+			// so a provider encoding it unquoted does not silently lose the namespace.
+			name:  "federated github token with a numeric owner id",
+			token: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3Rva2VuLmFjdGlvbnMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiY2hhaW5sb29wIiwicmVwb3NpdG9yeV9vd25lcl9pZCI6ODQ2MDc0MDl9.c2lnbmF0dXJl",
+			want: &ParsedToken{
+				ID:            "https://token.actions.githubusercontent.com",
+				TokenType:     v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+				CINamespaceID: "84607409",
 			},
 		},
 		{
@@ -90,6 +111,7 @@ func TestParse(t *testing.T) {
 			assert.Equal(t, tt.want.ID, got.ID)
 			assert.Equal(t, tt.want.TokenType, got.TokenType)
 			assert.Equal(t, tt.want.OrgID, got.OrgID)
+			assert.Equal(t, tt.want.CINamespaceID, got.CINamespaceID)
 		})
 	}
 }
