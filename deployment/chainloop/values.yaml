@@ -144,6 +144,13 @@ controlplane:
   ## @param controlplane.grpcMaxRecvMsgSize Maximum size in bytes of received gRPC messages. Increase to allow larger attestations. Defaults to the gRPC standard 4MB (4194304) if not set.
   grpcMaxRecvMsgSize: ""
 
+  ## @extra controlplane.attestations Attestation processing configuration
+  ## @param controlplane.attestations.workflowRunExpirationWindow Maximum age of an unfinished workflow run before it is marked as expired
+  ## @param controlplane.attestations.workflowRunExpirationCheckInterval Interval between checks for unfinished workflow runs
+  attestations:
+    workflowRunExpirationWindow: "1h"
+    workflowRunExpirationCheckInterval: "1m"
+
   ## @param controlplane.containerPorts.http controlplane HTTP container port
   ## @param controlplane.containerPorts.grpc controlplane gRPC container port
   ## @param controlplane.containerPorts.metrics controlplane prometheus metrics container port

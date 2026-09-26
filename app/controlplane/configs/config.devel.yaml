@@ -125,3 +125,7 @@ ui_dashboard_url: http://localhost:3000
 
 attestations:
   skip_db_storage: true
+  # Unfinished workflow runs older than this are marked as expired.
+  workflow_run_expiration_window: 1h
+  # How often unfinished workflow runs are checked for expiration.
+  workflow_run_expiration_check_interval: 1m

@@ -335,8 +335,14 @@ type Attestations struct {
 	// from exhausting the control plane's memory. Values <= 0 select the
 	// built-in default.
 	PolicyEvaluationsMaxInlineBytes int64 `protobuf:"varint,2,opt,name=policy_evaluations_max_inline_bytes,json=policyEvaluationsMaxInlineBytes,proto3" json:"policy_evaluations_max_inline_bytes,omitempty"`
-	unknownFields                   protoimpl.UnknownFields
-	sizeCache                       protoimpl.SizeCache
+	// Maximum amount of time an unfinished workflow run can remain active before
+	// it is marked as expired. When unset, the control plane defaults to 1 hour.
+	WorkflowRunExpirationWindow *durationpb.Duration `protobuf:"bytes,3,opt,name=workflow_run_expiration_window,json=workflowRunExpirationWindow,proto3" json:"workflow_run_expiration_window,omitempty"`
+	// Interval between checks for unfinished workflow runs. When unset, the
+	// control plane defaults to 1 minute.
+	WorkflowRunExpirationCheckInterval *durationpb.Duration `protobuf:"bytes,4,opt,name=workflow_run_expiration_check_interval,json=workflowRunExpirationCheckInterval,proto3" json:"workflow_run_expiration_check_interval,omitempty"`
+	unknownFields                      protoimpl.UnknownFields
+	sizeCache                          protoimpl.SizeCache
 }
 
 func (x *Attestations) Reset() {
@@ -381,6 +387,20 @@ func (x *Attestations) GetPolicyEvaluationsMaxInlineBytes() int64 {
 		return x.PolicyEvaluationsMaxInlineBytes
 	}
 	return 0
+}
+
+func (x *Attestations) GetWorkflowRunExpirationWindow() *durationpb.Duration {
+	if x != nil {
+		return x.WorkflowRunExpirationWindow
+	}
+	return nil
+}
+
+func (x *Attestations) GetWorkflowRunExpirationCheckInterval() *durationpb.Duration {
+	if x != nil {
+		return x.WorkflowRunExpirationCheckInterval
+	}
+	return nil
 }
 
 type OperationAuthorizationProvider struct {
@@ -1859,10 +1879,12 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
 	"\x0eauthenticationJ\x04\b\b\x10\tR\x15referrer_shared_index\"J\n" +
 	"\x14PluginsNetworkPolicy\x122\n" +
-	"\x15block_private_targets\x18\x01 \x01(\bR\x13blockPrivateTargets\"\x84\x01\n" +
+	"\x15block_private_targets\x18\x01 \x01(\bR\x13blockPrivateTargets\"\xe7\x02\n" +
 	"\fAttestations\x12&\n" +
 	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\x12L\n" +
-	"#policy_evaluations_max_inline_bytes\x18\x02 \x01(\x03R\x1fpolicyEvaluationsMaxInlineBytes\"v\n" +
+	"#policy_evaluations_max_inline_bytes\x18\x02 \x01(\x03R\x1fpolicyEvaluationsMaxInlineBytes\x12h\n" +
+	"\x1eworkflow_run_expiration_window\x18\x03 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x02*\x00R\x1bworkflowRunExpirationWindow\x12w\n" +
+	"&workflow_run_expiration_check_interval\x18\x04 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x02*\x00R\"workflowRunExpirationCheckInterval\"v\n" +
 	"\x1eOperationAuthorizationProvider\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1e\n" +
@@ -1984,8 +2006,8 @@ var file_controlplane_config_v1_conf_proto_goTypes = []any{
 	(*CA_EJBCA)(nil),                        // 23: controlplane.config.v1.CA.EJBCA
 	(*v1.Credentials)(nil),                  // 24: credentials.v1.Credentials
 	(*v11.OnboardingSpec)(nil),              // 25: controlplane.config.v1.OnboardingSpec
-	(*v11.AllowList)(nil),                   // 26: controlplane.config.v1.AllowList
-	(*durationpb.Duration)(nil),             // 27: google.protobuf.Duration
+	(*durationpb.Duration)(nil),             // 26: google.protobuf.Duration
+	(*v11.AllowList)(nil),                   // 27: controlplane.config.v1.AllowList
 }
 var file_controlplane_config_v1_conf_proto_depIdxs = []int32{
 	6,  // 0: controlplane.config.v1.Bootstrap.server:type_name -> controlplane.config.v1.Server
@@ -2005,26 +2027,28 @@ var file_controlplane_config_v1_conf_proto_depIdxs = []int32{
 	3,  // 14: controlplane.config.v1.Bootstrap.operation_authorization_provider:type_name -> controlplane.config.v1.OperationAuthorizationProvider
 	2,  // 15: controlplane.config.v1.Bootstrap.attestations:type_name -> controlplane.config.v1.Attestations
 	1,  // 16: controlplane.config.v1.Bootstrap.plugins_network_policy:type_name -> controlplane.config.v1.PluginsNetworkPolicy
-	17, // 17: controlplane.config.v1.Server.http:type_name -> controlplane.config.v1.Server.HTTP
-	19, // 18: controlplane.config.v1.Server.grpc:type_name -> controlplane.config.v1.Server.GRPC
-	17, // 19: controlplane.config.v1.Server.http_metrics:type_name -> controlplane.config.v1.Server.HTTP
-	20, // 20: controlplane.config.v1.Data.database:type_name -> controlplane.config.v1.Data.Database
-	26, // 21: controlplane.config.v1.Auth.allow_list:type_name -> controlplane.config.v1.AllowList
-	21, // 22: controlplane.config.v1.Auth.oidc:type_name -> controlplane.config.v1.Auth.OIDC
-	22, // 23: controlplane.config.v1.CA.file_ca:type_name -> controlplane.config.v1.CA.FileCA
-	23, // 24: controlplane.config.v1.CA.ejbca_ca:type_name -> controlplane.config.v1.CA.EJBCA
-	15, // 25: controlplane.config.v1.Bootstrap.Observability.sentry:type_name -> controlplane.config.v1.Bootstrap.Observability.Sentry
-	16, // 26: controlplane.config.v1.Bootstrap.Observability.tracing:type_name -> controlplane.config.v1.Bootstrap.Observability.Tracing
-	19, // 27: controlplane.config.v1.Bootstrap.CASServer.grpc:type_name -> controlplane.config.v1.Server.GRPC
-	27, // 28: controlplane.config.v1.Server.HTTP.timeout:type_name -> google.protobuf.Duration
-	27, // 29: controlplane.config.v1.Server.GRPC.timeout:type_name -> google.protobuf.Duration
-	18, // 30: controlplane.config.v1.Server.GRPC.tls_config:type_name -> controlplane.config.v1.Server.TLS
-	27, // 31: controlplane.config.v1.Data.Database.max_conn_idle_time:type_name -> google.protobuf.Duration
-	32, // [32:32] is the sub-list for method output_type
-	32, // [32:32] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	26, // 17: controlplane.config.v1.Attestations.workflow_run_expiration_window:type_name -> google.protobuf.Duration
+	26, // 18: controlplane.config.v1.Attestations.workflow_run_expiration_check_interval:type_name -> google.protobuf.Duration
+	17, // 19: controlplane.config.v1.Server.http:type_name -> controlplane.config.v1.Server.HTTP
+	19, // 20: controlplane.config.v1.Server.grpc:type_name -> controlplane.config.v1.Server.GRPC
+	17, // 21: controlplane.config.v1.Server.http_metrics:type_name -> controlplane.config.v1.Server.HTTP
+	20, // 22: controlplane.config.v1.Data.database:type_name -> controlplane.config.v1.Data.Database
+	27, // 23: controlplane.config.v1.Auth.allow_list:type_name -> controlplane.config.v1.AllowList
+	21, // 24: controlplane.config.v1.Auth.oidc:type_name -> controlplane.config.v1.Auth.OIDC
+	22, // 25: controlplane.config.v1.CA.file_ca:type_name -> controlplane.config.v1.CA.FileCA
+	23, // 26: controlplane.config.v1.CA.ejbca_ca:type_name -> controlplane.config.v1.CA.EJBCA
+	15, // 27: controlplane.config.v1.Bootstrap.Observability.sentry:type_name -> controlplane.config.v1.Bootstrap.Observability.Sentry
+	16, // 28: controlplane.config.v1.Bootstrap.Observability.tracing:type_name -> controlplane.config.v1.Bootstrap.Observability.Tracing
+	19, // 29: controlplane.config.v1.Bootstrap.CASServer.grpc:type_name -> controlplane.config.v1.Server.GRPC
+	26, // 30: controlplane.config.v1.Server.HTTP.timeout:type_name -> google.protobuf.Duration
+	26, // 31: controlplane.config.v1.Server.GRPC.timeout:type_name -> google.protobuf.Duration
+	18, // 32: controlplane.config.v1.Server.GRPC.tls_config:type_name -> controlplane.config.v1.Server.TLS
+	26, // 33: controlplane.config.v1.Data.Database.max_conn_idle_time:type_name -> google.protobuf.Duration
+	34, // [34:34] is the sub-list for method output_type
+	34, // [34:34] is the sub-list for method input_type
+	34, // [34:34] is the sub-list for extension type_name
+	34, // [34:34] is the sub-list for extension extendee
+	0,  // [0:34] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_config_v1_conf_proto_init() }
