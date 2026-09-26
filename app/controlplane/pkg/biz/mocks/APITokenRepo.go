@@ -8,7 +8,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -42,8 +41,8 @@ func (_m *APITokenRepo) EXPECT() *APITokenRepo_Expecter {
 }
 
 // Create provides a mock function for the type APITokenRepo
-func (_mock *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error) {
-	ret := _mock.Called(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
+func (_mock *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts) (*biz.APIToken, error) {
+	ret := _mock.Called(ctx, opts)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -51,18 +50,18 @@ func (_mock *APITokenRepo) Create(ctx context.Context, name string, description 
 
 	var r0 *biz.APIToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, *uuid.UUID, []*authz.Policy, bool) (*biz.APIToken, error)); ok {
-		return returnFunc(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *biz.APITokenCreateOpts) (*biz.APIToken, error)); ok {
+		return returnFunc(ctx, opts)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, *uuid.UUID, []*authz.Policy, bool) *biz.APIToken); ok {
-		r0 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *biz.APITokenCreateOpts) *biz.APIToken); ok {
+		r0 = returnFunc(ctx, opts)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*biz.APIToken)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *string, *time.Time, *uuid.UUID, *uuid.UUID, *uuid.UUID, []*authz.Policy, bool) error); ok {
-		r1 = returnFunc(ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *biz.APITokenCreateOpts) error); ok {
+		r1 = returnFunc(ctx, opts)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -76,66 +75,24 @@ type APITokenRepo_Create_Call struct {
 
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
-//   - name string
-//   - description *string
-//   - expiresAt *time.Time
-//   - organizationID *uuid.UUID
-//   - projectID *uuid.UUID
-//   - workflowID *uuid.UUID
-//   - policies []*authz.Policy
-//   - isSystem bool
-func (_e *APITokenRepo_Expecter) Create(ctx interface{}, name interface{}, description interface{}, expiresAt interface{}, organizationID interface{}, projectID interface{}, workflowID interface{}, policies interface{}, isSystem interface{}) *APITokenRepo_Create_Call {
-	return &APITokenRepo_Create_Call{Call: _e.mock.On("Create", ctx, name, description, expiresAt, organizationID, projectID, workflowID, policies, isSystem)}
+//   - opts *biz.APITokenCreateOpts
+func (_e *APITokenRepo_Expecter) Create(ctx any, opts any) *APITokenRepo_Create_Call {
+	return &APITokenRepo_Create_Call{Call: _e.mock.On("Create", ctx, opts)}
 }
 
-func (_c *APITokenRepo_Create_Call) Run(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool)) *APITokenRepo_Create_Call {
+func (_c *APITokenRepo_Create_Call) Run(run func(ctx context.Context, opts *biz.APITokenCreateOpts)) *APITokenRepo_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 *biz.APITokenCreateOpts
 		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 *string
-		if args[2] != nil {
-			arg2 = args[2].(*string)
-		}
-		var arg3 *time.Time
-		if args[3] != nil {
-			arg3 = args[3].(*time.Time)
-		}
-		var arg4 *uuid.UUID
-		if args[4] != nil {
-			arg4 = args[4].(*uuid.UUID)
-		}
-		var arg5 *uuid.UUID
-		if args[5] != nil {
-			arg5 = args[5].(*uuid.UUID)
-		}
-		var arg6 *uuid.UUID
-		if args[6] != nil {
-			arg6 = args[6].(*uuid.UUID)
-		}
-		var arg7 []*authz.Policy
-		if args[7] != nil {
-			arg7 = args[7].([]*authz.Policy)
-		}
-		var arg8 bool
-		if args[8] != nil {
-			arg8 = args[8].(bool)
+			arg1 = args[1].(*biz.APITokenCreateOpts)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
-			arg6,
-			arg7,
-			arg8,
 		)
 	})
 	return _c
@@ -146,7 +103,7 @@ func (_c *APITokenRepo_Create_Call) Return(aPIToken *biz.APIToken, err error) *A
 	return _c
 }
 
-func (_c *APITokenRepo_Create_Call) RunAndReturn(run func(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error)) *APITokenRepo_Create_Call {
+func (_c *APITokenRepo_Create_Call) RunAndReturn(run func(ctx context.Context, opts *biz.APITokenCreateOpts) (*biz.APIToken, error)) *APITokenRepo_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -187,7 +144,7 @@ type APITokenRepo_FindByID_Call struct {
 // FindByID is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ID uuid.UUID
-func (_e *APITokenRepo_Expecter) FindByID(ctx interface{}, ID interface{}) *APITokenRepo_FindByID_Call {
+func (_e *APITokenRepo_Expecter) FindByID(ctx any, ID any) *APITokenRepo_FindByID_Call {
 	return &APITokenRepo_FindByID_Call{Call: _e.mock.On("FindByID", ctx, ID)}
 }
 
@@ -256,7 +213,7 @@ type APITokenRepo_FindByIDInOrg_Call struct {
 //   - ctx context.Context
 //   - orgID uuid.UUID
 //   - id uuid.UUID
-func (_e *APITokenRepo_Expecter) FindByIDInOrg(ctx interface{}, orgID interface{}, id interface{}) *APITokenRepo_FindByIDInOrg_Call {
+func (_e *APITokenRepo_Expecter) FindByIDInOrg(ctx any, orgID any, id any) *APITokenRepo_FindByIDInOrg_Call {
 	return &APITokenRepo_FindByIDInOrg_Call{Call: _e.mock.On("FindByIDInOrg", ctx, orgID, id)}
 }
 
@@ -330,7 +287,7 @@ type APITokenRepo_FindByNameInOrg_Call struct {
 //   - ctx context.Context
 //   - orgID uuid.UUID
 //   - name string
-func (_e *APITokenRepo_Expecter) FindByNameInOrg(ctx interface{}, orgID interface{}, name interface{}) *APITokenRepo_FindByNameInOrg_Call {
+func (_e *APITokenRepo_Expecter) FindByNameInOrg(ctx any, orgID any, name any) *APITokenRepo_FindByNameInOrg_Call {
 	return &APITokenRepo_FindByNameInOrg_Call{Call: _e.mock.On("FindByNameInOrg", ctx, orgID, name)}
 }
 
@@ -404,7 +361,7 @@ type APITokenRepo_FindInactive_Call struct {
 //   - ctx context.Context
 //   - orgID uuid.UUID
 //   - inactiveSince time.Time
-func (_e *APITokenRepo_Expecter) FindInactive(ctx interface{}, orgID interface{}, inactiveSince interface{}) *APITokenRepo_FindInactive_Call {
+func (_e *APITokenRepo_Expecter) FindInactive(ctx any, orgID any, inactiveSince any) *APITokenRepo_FindInactive_Call {
 	return &APITokenRepo_FindInactive_Call{Call: _e.mock.On("FindInactive", ctx, orgID, inactiveSince)}
 }
 
@@ -478,7 +435,7 @@ type APITokenRepo_List_Call struct {
 //   - ctx context.Context
 //   - orgID *uuid.UUID
 //   - filters *biz.APITokenListFilters
-func (_e *APITokenRepo_Expecter) List(ctx interface{}, orgID interface{}, filters interface{}) *APITokenRepo_List_Call {
+func (_e *APITokenRepo_Expecter) List(ctx any, orgID any, filters any) *APITokenRepo_List_Call {
 	return &APITokenRepo_List_Call{Call: _e.mock.On("List", ctx, orgID, filters)}
 }
 
@@ -541,7 +498,7 @@ type APITokenRepo_Revoke_Call struct {
 //   - ctx context.Context
 //   - orgID *uuid.UUID
 //   - ID uuid.UUID
-func (_e *APITokenRepo_Expecter) Revoke(ctx interface{}, orgID interface{}, ID interface{}) *APITokenRepo_Revoke_Call {
+func (_e *APITokenRepo_Expecter) Revoke(ctx any, orgID any, ID any) *APITokenRepo_Revoke_Call {
 	return &APITokenRepo_Revoke_Call{Call: _e.mock.On("Revoke", ctx, orgID, ID)}
 }
 
@@ -604,7 +561,7 @@ type APITokenRepo_UpdateExpiration_Call struct {
 //   - ctx context.Context
 //   - ID uuid.UUID
 //   - expiresAt time.Time
-func (_e *APITokenRepo_Expecter) UpdateExpiration(ctx interface{}, ID interface{}, expiresAt interface{}) *APITokenRepo_UpdateExpiration_Call {
+func (_e *APITokenRepo_Expecter) UpdateExpiration(ctx any, ID any, expiresAt any) *APITokenRepo_UpdateExpiration_Call {
 	return &APITokenRepo_UpdateExpiration_Call{Call: _e.mock.On("UpdateExpiration", ctx, ID, expiresAt)}
 }
 
@@ -667,7 +624,7 @@ type APITokenRepo_UpdateLastUsedAt_Call struct {
 //   - ctx context.Context
 //   - ID uuid.UUID
 //   - lastUsedAt time.Time
-func (_e *APITokenRepo_Expecter) UpdateLastUsedAt(ctx interface{}, ID interface{}, lastUsedAt interface{}) *APITokenRepo_UpdateLastUsedAt_Call {
+func (_e *APITokenRepo_Expecter) UpdateLastUsedAt(ctx any, ID any, lastUsedAt any) *APITokenRepo_UpdateLastUsedAt_Call {
 	return &APITokenRepo_UpdateLastUsedAt_Call{Call: _e.mock.On("UpdateLastUsedAt", ctx, ID, lastUsedAt)}
 }
 

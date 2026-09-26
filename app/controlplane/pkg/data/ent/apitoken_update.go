@@ -175,6 +175,46 @@ func (_u *APITokenUpdate) ClearWorkflowID() *APITokenUpdate {
 	return _u
 }
 
+// SetScope sets the "scope" field.
+func (_u *APITokenUpdate) SetScope(v authz.ResourceType) *APITokenUpdate {
+	_u.mutation.SetScope(v)
+	return _u
+}
+
+// SetNillableScope sets the "scope" field if the given value is not nil.
+func (_u *APITokenUpdate) SetNillableScope(v *authz.ResourceType) *APITokenUpdate {
+	if v != nil {
+		_u.SetScope(*v)
+	}
+	return _u
+}
+
+// ClearScope clears the value of the "scope" field.
+func (_u *APITokenUpdate) ClearScope() *APITokenUpdate {
+	_u.mutation.ClearScope()
+	return _u
+}
+
+// SetScopeID sets the "scope_id" field.
+func (_u *APITokenUpdate) SetScopeID(v uuid.UUID) *APITokenUpdate {
+	_u.mutation.SetScopeID(v)
+	return _u
+}
+
+// SetNillableScopeID sets the "scope_id" field if the given value is not nil.
+func (_u *APITokenUpdate) SetNillableScopeID(v *uuid.UUID) *APITokenUpdate {
+	if v != nil {
+		_u.SetScopeID(*v)
+	}
+	return _u
+}
+
+// ClearScopeID clears the value of the "scope_id" field.
+func (_u *APITokenUpdate) ClearScopeID() *APITokenUpdate {
+	_u.mutation.ClearScopeID()
+	return _u
+}
+
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdate) SetPolicies(v []*authz.Policy) *APITokenUpdate {
 	_u.mutation.SetPolicies(v)
@@ -258,6 +298,16 @@ func (_u *APITokenUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *APITokenUpdate) check() error {
+	if v, ok := _u.mutation.Scope(); ok {
+		if err := apitoken.ScopeValidator(v); err != nil {
+			return &ValidationError{Name: "scope", err: fmt.Errorf(`ent: validator failed for field "APIToken.scope": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *APITokenUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITokenUpdate {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -265,6 +315,9 @@ func (_u *APITokenUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITo
 }
 
 func (_u *APITokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(apitoken.Table, apitoken.Columns, sqlgraph.NewFieldSpec(apitoken.FieldID, field.TypeUUID))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -296,6 +349,18 @@ func (_u *APITokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LastUsedAtCleared() {
 		_spec.ClearField(apitoken.FieldLastUsedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Scope(); ok {
+		_spec.SetField(apitoken.FieldScope, field.TypeEnum, value)
+	}
+	if _u.mutation.ScopeCleared() {
+		_spec.ClearField(apitoken.FieldScope, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.ScopeID(); ok {
+		_spec.SetField(apitoken.FieldScopeID, field.TypeUUID, value)
+	}
+	if _u.mutation.ScopeIDCleared() {
+		_spec.ClearField(apitoken.FieldScopeID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
@@ -557,6 +622,46 @@ func (_u *APITokenUpdateOne) ClearWorkflowID() *APITokenUpdateOne {
 	return _u
 }
 
+// SetScope sets the "scope" field.
+func (_u *APITokenUpdateOne) SetScope(v authz.ResourceType) *APITokenUpdateOne {
+	_u.mutation.SetScope(v)
+	return _u
+}
+
+// SetNillableScope sets the "scope" field if the given value is not nil.
+func (_u *APITokenUpdateOne) SetNillableScope(v *authz.ResourceType) *APITokenUpdateOne {
+	if v != nil {
+		_u.SetScope(*v)
+	}
+	return _u
+}
+
+// ClearScope clears the value of the "scope" field.
+func (_u *APITokenUpdateOne) ClearScope() *APITokenUpdateOne {
+	_u.mutation.ClearScope()
+	return _u
+}
+
+// SetScopeID sets the "scope_id" field.
+func (_u *APITokenUpdateOne) SetScopeID(v uuid.UUID) *APITokenUpdateOne {
+	_u.mutation.SetScopeID(v)
+	return _u
+}
+
+// SetNillableScopeID sets the "scope_id" field if the given value is not nil.
+func (_u *APITokenUpdateOne) SetNillableScopeID(v *uuid.UUID) *APITokenUpdateOne {
+	if v != nil {
+		_u.SetScopeID(*v)
+	}
+	return _u
+}
+
+// ClearScopeID clears the value of the "scope_id" field.
+func (_u *APITokenUpdateOne) ClearScopeID() *APITokenUpdateOne {
+	_u.mutation.ClearScopeID()
+	return _u
+}
+
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdateOne) SetPolicies(v []*authz.Policy) *APITokenUpdateOne {
 	_u.mutation.SetPolicies(v)
@@ -653,6 +758,16 @@ func (_u *APITokenUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *APITokenUpdateOne) check() error {
+	if v, ok := _u.mutation.Scope(); ok {
+		if err := apitoken.ScopeValidator(v); err != nil {
+			return &ValidationError{Name: "scope", err: fmt.Errorf(`ent: validator failed for field "APIToken.scope": %w`, err)}
+		}
+	}
+	return nil
+}
+
 // Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
 func (_u *APITokenUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *APITokenUpdateOne {
 	_u.modifiers = append(_u.modifiers, modifiers...)
@@ -660,6 +775,9 @@ func (_u *APITokenUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AP
 }
 
 func (_u *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(apitoken.Table, apitoken.Columns, sqlgraph.NewFieldSpec(apitoken.FieldID, field.TypeUUID))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -708,6 +826,18 @@ func (_u *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err 
 	}
 	if _u.mutation.LastUsedAtCleared() {
 		_spec.ClearField(apitoken.FieldLastUsedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Scope(); ok {
+		_spec.SetField(apitoken.FieldScope, field.TypeEnum, value)
+	}
+	if _u.mutation.ScopeCleared() {
+		_spec.ClearField(apitoken.FieldScope, field.TypeEnum)
+	}
+	if value, ok := _u.mutation.ScopeID(); ok {
+		_spec.SetField(apitoken.FieldScopeID, field.TypeUUID, value)
+	}
+	if _u.mutation.ScopeIDCleared() {
+		_spec.ClearField(apitoken.FieldScopeID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
