@@ -50,7 +50,12 @@ type newOptionalArg struct {
 	orgName        string
 	cliVersion     string
 	maxRecvMsgSize int
+	tokenProvider  TokenProvider
 }
+
+// TokenProvider returns the bearer token for the next request. Use it when the
+// token expires quickly and the connection must get a new one per request.
+type TokenProvider func(ctx context.Context) (string, error)
 
 type Option func(*newOptionalArg)
 
@@ -84,6 +89,14 @@ func WithOrgName(orgName string) Option {
 func WithCLIVersion(version string) Option {
 	return func(opt *newOptionalArg) {
 		opt.cliVersion = version
+	}
+}
+
+// WithTokenProvider gets the bearer token from the provider on each request.
+// It replaces the static token given to New.
+func WithTokenProvider(p TokenProvider) Option {
+	return func(opt *newOptionalArg) {
+		opt.tokenProvider = p
 	}
 }
 
@@ -121,8 +134,9 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 	unaryInterceptors := []grpc.UnaryClientInterceptor{}
 	streamInterceptors := []grpc.StreamClientInterceptor{}
 
-	if authToken != "" {
+	if authToken != "" || optionalArgs.tokenProvider != nil {
 		grpcCreds := newTokenAuth(authToken, optionalArgs.insecure, optionalArgs.orgName)
+		grpcCreds.provider = optionalArgs.tokenProvider
 		opts = append(opts, grpc.WithPerRPCCredentials(grpcCreds))
 		unaryInterceptors = append(unaryInterceptors, grpc_retry.UnaryClientInterceptor())
 	}
@@ -221,19 +235,29 @@ type tokenAuth struct {
 	token    string
 	insecure bool
 	orgName  string
+	// provider, when set, supplies the token for each request instead of token
+	provider TokenProvider
 }
 
 // Implementation of PerRPCCredentials interface that sends a bearer token in each request.
 // https://pkg.go.dev/google.golang.org/grpc/credentials#PerRPCCredentials
 func newTokenAuth(token string, insecure bool, orgName string) *tokenAuth {
-	return &tokenAuth{token, insecure, orgName}
+	return &tokenAuth{token: token, insecure: insecure, orgName: orgName}
 }
 
 // Return value is mapped to request headers.
-func (t tokenAuth) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
+func (t tokenAuth) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
 	const OrganizationHeader = "Chainloop-Organization"
+	token := t.token
+	if t.provider != nil {
+		var err error
+		if token, err = t.provider(ctx); err != nil {
+			return nil, fmt.Errorf("getting auth token: %w", err)
+		}
+	}
+
 	return map[string]string{
-		"authorization":    "Bearer " + t.token,
+		"authorization":    "Bearer " + token,
 		OrganizationHeader: t.orgName,
 	}, nil
 }

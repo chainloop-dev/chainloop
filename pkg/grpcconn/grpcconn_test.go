@@ -19,12 +19,17 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/base64"
+	"errors"
+	"fmt"
+	"net"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -257,4 +262,68 @@ func TestBackwardCompatibility_OldClientNewConfig(t *testing.T) {
 		err = appendCAFromContent(configValue, certsPool2)
 	}
 	assert.NoError(t, err, "new client should load file path via detection")
+}
+
+func TestGetRequestMetadataWithTokenProvider(t *testing.T) {
+	testCases := []struct {
+		name        string
+		provider    TokenProvider
+		wantHeaders map[string]string
+		wantErr     bool
+	}{
+		{
+			name:        "provider token is sent",
+			provider:    func(context.Context) (string, error) { return "fresh", nil },
+			wantHeaders: map[string]string{"authorization": "Bearer fresh", "Chainloop-Organization": ""},
+		},
+		{
+			name:     "provider error fails the request",
+			provider: func(context.Context) (string, error) { return "", errors.New("boom") },
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			auth := &tokenAuth{provider: tc.provider}
+			got, err := auth.GetRequestMetadata(context.TODO())
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantHeaders, got)
+		})
+	}
+}
+
+func TestNewWithTokenProviderSendsTokenPerCall(t *testing.T) {
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	var gotAuth []string
+	srv := grpc.NewServer(grpc.UnaryInterceptor(func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		md, _ := metadata.FromIncomingContext(ctx)
+		gotAuth = append(gotAuth, md.Get("authorization")...)
+		return handler(ctx, req)
+	}))
+	healthpb.RegisterHealthServer(srv, health.NewServer())
+	go func() { _ = srv.Serve(lis) }()
+	t.Cleanup(srv.Stop)
+
+	calls := 0
+	conn, err := New(lis.Addr().String(), "", WithInsecure(true), WithTokenProvider(func(context.Context) (string, error) {
+		calls++
+		return fmt.Sprintf("token-%d", calls), nil
+	}))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	client := healthpb.NewHealthClient(conn)
+	for range 2 {
+		_, err := client.Check(context.Background(), &healthpb.HealthCheckRequest{})
+		require.NoError(t, err)
+	}
+
+	assert.Equal(t, []string{"Bearer token-1", "Bearer token-2"}, gotAuth)
 }
