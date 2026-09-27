@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"sigs.k8s.io/yaml"
 )
 
 func TestWorkflowRunExpirerOptsMapping(t *testing.T) {
@@ -92,34 +94,125 @@ func TestWorkflowRunExpirationDurationValidation(t *testing.T) {
 	}
 }
 
-func TestMalformedWorkflowRunExpirationWindow(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte(
-		"attestations:\n  workflow_run_expiration_window: definitely-not-a-duration\n",
-	), 0o600))
+// Duration fields are decoded with protojson, which only accepts seconds with
+// an "s" suffix. Go-style units such as "1m" or "1h" are rejected.
+func TestWorkflowRunExpirationDurationFormat(t *testing.T) {
+	testCases := []struct {
+		name         string
+		config       string
+		wantErr      bool
+		wantWindow   time.Duration
+		wantInterval time.Duration
+	}{
+		{
+			name:         "seconds",
+			config:       "attestations:\n  workflow_run_expiration_window: 3600s\n  workflow_run_expiration_check_interval: 60s\n",
+			wantWindow:   time.Hour,
+			wantInterval: time.Minute,
+		},
+		{
+			name:         "quoted seconds",
+			config:       "attestations:\n  workflow_run_expiration_window: \"3600s\"\n  workflow_run_expiration_check_interval: \"60s\"\n",
+			wantWindow:   time.Hour,
+			wantInterval: time.Minute,
+		},
+		{
+			name:         "fractional seconds",
+			config:       "attestations:\n  workflow_run_expiration_check_interval: 1.5s\n",
+			wantInterval: 1500 * time.Millisecond,
+		},
+		{
+			name:    "window in hours",
+			config:  "attestations:\n  workflow_run_expiration_window: 1h\n",
+			wantErr: true,
+		},
+		{
+			name:    "check interval in minutes",
+			config:  "attestations:\n  workflow_run_expiration_check_interval: 1m\n",
+			wantErr: true,
+		},
+		{
+			name:    "malformed window",
+			config:  "attestations:\n  workflow_run_expiration_window: definitely-not-a-duration\n",
+			wantErr: true,
+		},
+		{
+			name:    "malformed check interval",
+			config:  "attestations:\n  workflow_run_expiration_check_interval: definitely-not-a-duration\n",
+			wantErr: true,
+		},
+	}
 
-	c := config.New(config.WithSource(file.NewSource(configPath)))
-	t.Cleanup(func() {
-		require.NoError(t, c.Close())
-	})
-	require.NoError(t, c.Load())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			configPath := filepath.Join(t.TempDir(), "config.yaml")
+			require.NoError(t, os.WriteFile(configPath, []byte(tc.config), 0o600))
 
-	var bootstrap conf.Bootstrap
-	require.Error(t, c.Scan(&bootstrap))
+			bootstrap, err := loadBootstrap(t, configPath)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantWindow, bootstrap.GetAttestations().GetWorkflowRunExpirationWindow().AsDuration())
+			assert.Equal(t, tc.wantInterval, bootstrap.GetAttestations().GetWorkflowRunExpirationCheckInterval().AsDuration())
+		})
+	}
 }
 
-func TestMalformedWorkflowRunExpirationCheckInterval(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte(
-		"attestations:\n  workflow_run_expiration_check_interval: definitely-not-a-duration\n",
-	), 0o600))
+// The development configuration is loaded by `make run`, so it must parse.
+func TestDevelConfigLoads(t *testing.T) {
+	bootstrap, err := loadBootstrap(t, filepath.Join("..", "configs", "config.devel.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, time.Hour, bootstrap.GetAttestations().GetWorkflowRunExpirationWindow().AsDuration())
+	assert.Equal(t, time.Minute, bootstrap.GetAttestations().GetWorkflowRunExpirationCheckInterval().AsDuration())
+}
 
-	c := config.New(config.WithSource(file.NewSource(configPath)))
+// The Helm chart copies these values into the control plane configuration, so
+// the chart defaults must use a format that the control plane can parse.
+func TestHelmChartWorkflowRunExpirationDefaults(t *testing.T) {
+	var values struct {
+		Controlplane struct {
+			Attestations struct {
+				WorkflowRunExpirationWindow        string `json:"workflowRunExpirationWindow"`
+				WorkflowRunExpirationCheckInterval string `json:"workflowRunExpirationCheckInterval"`
+			} `json:"attestations"`
+		} `json:"controlplane"`
+	}
+
+	raw, err := os.ReadFile(filepath.Join("..", "..", "..", "deployment", "chainloop", "values.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, yaml.Unmarshal(raw, &values))
+
+	attestations := values.Controlplane.Attestations
+	// Same shape as templates/controlplane/configmap.yaml
+	rendered := fmt.Sprintf("attestations:\n  workflow_run_expiration_window: %q\n  workflow_run_expiration_check_interval: %q\n",
+		attestations.WorkflowRunExpirationWindow, attestations.WorkflowRunExpirationCheckInterval)
+
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(rendered), 0o600))
+
+	bootstrap, err := loadBootstrap(t, configPath)
+	require.NoError(t, err)
+	assert.Equal(t, time.Hour, bootstrap.GetAttestations().GetWorkflowRunExpirationWindow().AsDuration())
+	assert.Equal(t, time.Minute, bootstrap.GetAttestations().GetWorkflowRunExpirationCheckInterval().AsDuration())
+}
+
+// loadBootstrap loads a configuration file the same way as main.
+func loadBootstrap(t *testing.T, path string) (*conf.Bootstrap, error) {
+	t.Helper()
+
+	c := config.New(config.WithSource(file.NewSource(path)))
 	t.Cleanup(func() {
 		require.NoError(t, c.Close())
 	})
 	require.NoError(t, c.Load())
 
 	var bootstrap conf.Bootstrap
-	require.Error(t, c.Scan(&bootstrap))
+	if err := c.Scan(&bootstrap); err != nil {
+		return nil, err
+	}
+
+	return &bootstrap, nil
 }

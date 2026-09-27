@@ -337,9 +337,11 @@ type Attestations struct {
 	PolicyEvaluationsMaxInlineBytes int64 `protobuf:"varint,2,opt,name=policy_evaluations_max_inline_bytes,json=policyEvaluationsMaxInlineBytes,proto3" json:"policy_evaluations_max_inline_bytes,omitempty"`
 	// Maximum amount of time an unfinished workflow run can remain active before
 	// it is marked as expired. When unset, the control plane defaults to 1 hour.
+	// In YAML configuration, use seconds with an "s" suffix, for example "3600s".
 	WorkflowRunExpirationWindow *durationpb.Duration `protobuf:"bytes,3,opt,name=workflow_run_expiration_window,json=workflowRunExpirationWindow,proto3" json:"workflow_run_expiration_window,omitempty"`
 	// Interval between checks for unfinished workflow runs. When unset, the
 	// control plane defaults to 1 minute.
+	// In YAML configuration, use seconds with an "s" suffix, for example "60s".
 	WorkflowRunExpirationCheckInterval *durationpb.Duration `protobuf:"bytes,4,opt,name=workflow_run_expiration_check_interval,json=workflowRunExpirationCheckInterval,proto3" json:"workflow_run_expiration_check_interval,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache

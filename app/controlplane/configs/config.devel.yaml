@@ -125,7 +125,8 @@ ui_dashboard_url: http://localhost:3000
 
 attestations:
   skip_db_storage: true
+  # Durations use seconds with an "s" suffix. Units such as 1m or 1h are not supported.
   # Unfinished workflow runs older than this are marked as expired.
-  workflow_run_expiration_window: 1h
+  workflow_run_expiration_window: 3600s
   # How often unfinished workflow runs are checked for expiration.
-  workflow_run_expiration_check_interval: 1m
+  workflow_run_expiration_check_interval: 60s
