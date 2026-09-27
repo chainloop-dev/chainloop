@@ -762,6 +762,198 @@ func TestRebaseLifecycle(t *testing.T) {
 	assert.Equal(t, newSHA, filtered[0].SHA)
 }
 
+// Amending an AI-assisted commit with a new message replaces the trailer, and
+// post-commit finds nothing pending because the first commit already consumed
+// the session's ranges. The commit-msg hook copies the trailer of the replaced
+// commit, and the post-rewrite hook carries its sessions over to the local
+// record, so the pre-push still attests them.
+func TestCommitLifecycle_AmendKeepsSessions(t *testing.T) {
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+	runGit(t, dir, "update-ref", "refs/remotes/origin/main", "HEAD")
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n"), 0600))
+	require.NoError(t, store.RecordLineRanges("sess-1", "a.go", []aicodingsession.LineRange{{Start: 1, End: 1}}))
+
+	commit := func(t *testing.T, subject string, extra ...string) {
+		t.Helper()
+		msg := filepath.Join(dir, "msg")
+		require.NoError(t, os.WriteFile(msg, []byte(subject+"\n"), 0600))
+		require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+		runGit(t, dir, append([]string{"commit", "-F", msg}, extra...)...)
+		require.NoError(t, handlePostCommit(t.Context(), zerolog.Nop()))
+	}
+
+	runGit(t, dir, "add", "a.go")
+	commit(t, "fix: first message")
+	oldSHA := headSHA(t, dir)
+	require.Equal(t, []string{"sess-1"}, mustLoadRecord(t, store, oldSHA).SessionIDs)
+
+	commit(t, "fix: second message", "--amend")
+	newSHA := headSHA(t, dir)
+	require.NotEqual(t, oldSHA, newSHA)
+
+	require.NoError(t, handlePostRewrite(strings.NewReader(oldSHA+" "+newSHA+"\n"), zerolog.Nop()))
+
+	rec := mustLoadRecord(t, store, newSHA)
+	assert.Equal(t, []string{"sess-1"}, rec.SessionIDs, "the amended commit must keep the replaced commit's session")
+	assert.Equal(t, "fix: second message\n\nChainloop-Trace-Sessions: sess-1", rec.Message,
+		"the trailer must survive in the history, not only in the local record")
+
+	all, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	filtered := filterCurrentBranchCommits(tracegit.NewGoGitClient(), dir, all, zerolog.Nop())
+	require.Len(t, filtered, 1)
+	assert.Equal(t, newSHA, filtered[0].SHA)
+}
+
+// When nothing is staged, the only commit git can make is an amend of HEAD
+// (or an --allow-empty one), so commit-msg copies HEAD's trailer into the new
+// message. Git gives the hook no other way to see an amend done with -m.
+func TestHandleCommitMsg_NothingStaged(t *testing.T) {
+	const amendMsg = "fix: second\n"
+
+	cases := []struct {
+		name    string
+		headMsg string
+		stage   bool
+		msg     string
+		want    string
+	}{
+		{
+			name:    "copies the trailer of the commit being amended",
+			headMsg: "fix: first\n\nChainloop-Trace-Sessions: session-a, session-b\n",
+			msg:     amendMsg,
+			want:    amendMsg + "\nChainloop-Trace-Sessions: session-a, session-b\n",
+		},
+		{
+			name:    "leaves the message alone when HEAD has no trailer",
+			headMsg: "fix: first\n",
+			msg:     amendMsg,
+			want:    amendMsg,
+		},
+		{
+			name:    "keeps a trailer the user wrote",
+			headMsg: "fix: first\n\nChainloop-Trace-Sessions: session-a\n",
+			msg:     "fix: second\n\nChainloop-Trace-Sessions: session-b\n",
+			want:    "fix: second\n\nChainloop-Trace-Sessions: session-b\n",
+		},
+		{
+			name:    "does not copy HEAD's trailer onto a commit with staged changes",
+			headMsg: "fix: first\n\nChainloop-Trace-Sessions: session-a\n",
+			stage:   true,
+			msg:     "fix: unrelated\n",
+			want:    "fix: unrelated\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, gitDir := initGitRepo(t)
+			require.NoError(t, state.NewGitStore(gitDir).InitTraceDir())
+
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n"), 0600))
+			runGit(t, dir, "add", "a.go")
+			runGit(t, dir, "commit", "-m", tc.headMsg)
+
+			if tc.stage {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n\nfunc main() {}\n"), 0600))
+				runGit(t, dir, "add", "a.go")
+			}
+
+			msg := filepath.Join(dir, "msg")
+			require.NoError(t, os.WriteFile(msg, []byte(tc.msg), 0600))
+			require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+
+			got, err := os.ReadFile(msg)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, string(got))
+		})
+	}
+}
+
+func TestHandlePostRewrite(t *testing.T) {
+	const (
+		oldSHA     = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		otherSHA   = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		newSHA     = "cccccccccccccccccccccccccccccccccccccccc"
+		unknownSHA = "dddddddddddddddddddddddddddddddddddddddd"
+	)
+
+	cases := []struct {
+		name     string
+		records  []*state.CommitRecord
+		input    string
+		want     []string
+		noRecord bool
+	}{
+		{
+			name: "amend carries the old sessions over",
+			records: []*state.CommitRecord{
+				{SHA: oldSHA, SessionIDs: []string{sessionA}},
+				{SHA: newSHA},
+			},
+			input: oldSHA + " " + newSHA + "\n",
+			want:  []string{sessionA},
+		},
+		{
+			name: "squash unions the sessions of every replaced commit",
+			records: []*state.CommitRecord{
+				{SHA: oldSHA, SessionIDs: []string{sessionB}},
+				{SHA: otherSHA, SessionIDs: []string{sessionA}},
+				{SHA: newSHA, SessionIDs: []string{sessionB}},
+			},
+			input: oldSHA + " " + newSHA + "\n" + otherSHA + " " + newSHA + " extra-info\n",
+			want:  []string{sessionA, sessionB},
+		},
+		{
+			name: "unknown old commit leaves the new record alone",
+			records: []*state.CommitRecord{
+				{SHA: newSHA, SessionIDs: []string{sessionA}},
+			},
+			input: unknownSHA + " " + newSHA + "\n",
+			want:  []string{sessionA},
+		},
+		{
+			name: "no record for the new commit is not created",
+			records: []*state.CommitRecord{
+				{SHA: oldSHA, SessionIDs: []string{sessionA}},
+			},
+			input:    oldSHA + " " + newSHA + "\n",
+			noRecord: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, gitDir := initGitRepo(t)
+			store := state.NewGitStore(gitDir)
+			require.NoError(t, store.InitTraceDir())
+			for _, r := range tc.records {
+				require.NoError(t, store.SaveCommitRecord(r))
+			}
+
+			require.NoError(t, handlePostRewrite(strings.NewReader(tc.input), zerolog.Nop()))
+
+			all, err := store.LoadAllCommitRecords()
+			require.NoError(t, err)
+			var got *state.CommitRecord
+			for _, r := range all {
+				if r.SHA == newSHA {
+					got = r
+				}
+			}
+			if tc.noRecord {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			assert.Equal(t, tc.want, got.SessionIDs)
+		})
+	}
+}
+
 // headSHA returns the SHA of HEAD in dir.
 func headSHA(t *testing.T, dir string) string {
 	t.Helper()

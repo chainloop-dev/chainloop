@@ -51,6 +51,7 @@ func newTraceHookGitCmd() *cobra.Command {
 	cmd.AddCommand(
 		newTraceHookGitCommitMsgCmd(),
 		newTraceHookGitPostCommitCmd(),
+		newTraceHookGitPostRewriteCmd(),
 		newTraceHookGitPrePushCmd(),
 	)
 
@@ -82,6 +83,22 @@ func newTraceHookGitPostCommitCmd() *cobra.Command {
 			cleanup := InitHookLogger()
 			defer cleanup()
 			return action.HandlePostCommitHook(cmd.Context(), logger)
+		},
+	}
+}
+
+func newTraceHookGitPostRewriteCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "post-rewrite",
+		Short: "Handle the post-rewrite git hook",
+		Annotations: map[string]string{
+			"skipActionOptsInit": "true",
+		},
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cleanup := InitHookLogger()
+			defer cleanup()
+
+			return action.HandlePostRewriteHook(cmd.Context(), logger)
 		},
 	}
 }
