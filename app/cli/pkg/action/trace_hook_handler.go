@@ -74,7 +74,7 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 	// other sign of an amend done with -m, and that message replaces HEAD's
 	// trailer. The sessions cannot be matched again because HEAD already
 	// consumed their pending ranges, so HEAD's trailer is copied instead.
-	if len(stagedFiles) == 0 {
+	if len(stagedFiles) == 0 && commitsRegularIndex() {
 		_, headMsg, err := client.CommitHeadInfo(repoRoot)
 		if err != nil {
 			return fmt.Errorf("get HEAD commit: %w", err)
@@ -106,6 +106,15 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 	log.Debug().Strs("session_ids", sessionIDs).Msg("appending trace sessions trailer")
 
 	return appendTrailer(msgFilePath, sessionIDs)
+}
+
+// commitsRegularIndex reports whether git builds the commit from the regular
+// index, which is the one StagedFiles reads. For `git commit -a` and
+// `git commit <path>`, git builds the commit from a temporary index
+// (index.lock or next-index-*.lock) and names it in GIT_INDEX_FILE. The
+// regular index can then show nothing staged for a commit that changes files.
+func commitsRegularIndex() bool {
+	return !strings.HasSuffix(os.Getenv("GIT_INDEX_FILE"), ".lock")
 }
 
 // fileOwner is the session currently credited with a staged file's pending

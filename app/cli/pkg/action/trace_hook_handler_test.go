@@ -808,24 +808,53 @@ func TestCommitLifecycle_AmendKeepsSessions(t *testing.T) {
 	assert.Equal(t, newSHA, filtered[0].SHA)
 }
 
-// When nothing is staged, the only commit git can make is an amend of HEAD
-// (or an --allow-empty one), so commit-msg copies HEAD's trailer into the new
-// message. Git gives the hook no other way to see an amend done with -m.
+// When git commits the index as it is and nothing is staged, the only commit
+// git can make is an amend of HEAD (or an --allow-empty one), so commit-msg
+// copies HEAD's trailer into the new message. Git gives the hook no other way
+// to see an amend done with -m.
 func TestHandleCommitMsg_NothingStaged(t *testing.T) {
-	const amendMsg = "fix: second\n"
+	const (
+		amendMsg   = "fix: second\n"
+		headWithA  = "fix: first\n\nChainloop-Trace-Sessions: session-a\n"
+		trailerOfA = "\nChainloop-Trace-Sessions: session-a\n"
+	)
 
 	cases := []struct {
-		name    string
-		headMsg string
-		stage   bool
-		msg     string
-		want    string
+		name      string
+		headMsg   string
+		stage     bool
+		indexFile string
+		msg       string
+		want      string
 	}{
 		{
 			name:    "copies the trailer of the commit being amended",
 			headMsg: "fix: first\n\nChainloop-Trace-Sessions: session-a, session-b\n",
 			msg:     amendMsg,
 			want:    amendMsg + "\nChainloop-Trace-Sessions: session-a, session-b\n",
+		},
+		{
+			name:      "copies the trailer when git names the regular index",
+			headMsg:   headWithA,
+			indexFile: ".git/index",
+			msg:       amendMsg,
+			want:      amendMsg + trailerOfA,
+		},
+		{
+			// git commit -a (and --amend -a) commits from index.lock, which
+			// the hook cannot compare against HEAD.
+			name:      "does not copy HEAD's trailer onto git commit -a",
+			headMsg:   headWithA,
+			indexFile: "index.lock",
+			msg:       amendMsg,
+			want:      amendMsg,
+		},
+		{
+			name:      "does not copy HEAD's trailer onto git commit <path>",
+			headMsg:   headWithA,
+			indexFile: "next-index-123.lock",
+			msg:       amendMsg,
+			want:      amendMsg,
 		},
 		{
 			name:    "leaves the message alone when HEAD has no trailer",
@@ -835,13 +864,13 @@ func TestHandleCommitMsg_NothingStaged(t *testing.T) {
 		},
 		{
 			name:    "keeps a trailer the user wrote",
-			headMsg: "fix: first\n\nChainloop-Trace-Sessions: session-a\n",
+			headMsg: headWithA,
 			msg:     "fix: second\n\nChainloop-Trace-Sessions: session-b\n",
 			want:    "fix: second\n\nChainloop-Trace-Sessions: session-b\n",
 		},
 		{
 			name:    "does not copy HEAD's trailer onto a commit with staged changes",
-			headMsg: "fix: first\n\nChainloop-Trace-Sessions: session-a\n",
+			headMsg: headWithA,
 			stage:   true,
 			msg:     "fix: unrelated\n",
 			want:    "fix: unrelated\n",
@@ -861,6 +890,13 @@ func TestHandleCommitMsg_NothingStaged(t *testing.T) {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n\nfunc main() {}\n"), 0600))
 				runGit(t, dir, "add", "a.go")
 			}
+
+			// Set after the git calls above, so they use the regular index.
+			indexFile := tc.indexFile
+			if strings.HasSuffix(indexFile, ".lock") {
+				indexFile = filepath.Join(gitDir, indexFile)
+			}
+			t.Setenv("GIT_INDEX_FILE", indexFile)
 
 			msg := filepath.Join(dir, "msg")
 			require.NoError(t, os.WriteFile(msg, []byte(tc.msg), 0600))
