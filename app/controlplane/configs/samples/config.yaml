@@ -103,5 +103,7 @@ enable_profiler: true
 #   # Defaults to 1 hour when omitted.
 #   # Interval between expiration checks for unfinished workflow runs.
 #   # Defaults to 1 minute when omitted.
-#   workflow_run_expiration_check_interval: 1m
-#   workflow_run_expiration_window: 1h
+#   # Durations use seconds with an "s" suffix (for example 60s). Units
+#   # such as 1m or 1h are not supported.
+#   workflow_run_expiration_check_interval: 60s
+#   workflow_run_expiration_window: 3600s

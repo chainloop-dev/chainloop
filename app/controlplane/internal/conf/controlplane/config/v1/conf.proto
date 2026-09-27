@@ -163,10 +163,12 @@ message Attestations {
 
   // Maximum amount of time an unfinished workflow run can remain active before
   // it is marked as expired. When unset, the control plane defaults to 1 hour.
+  // In YAML configuration, use seconds with an "s" suffix, for example "3600s".
   google.protobuf.Duration workflow_run_expiration_window = 3 [(buf.validate.field).duration.gt = {}];
 
   // Interval between checks for unfinished workflow runs. When unset, the
   // control plane defaults to 1 minute.
+  // In YAML configuration, use seconds with an "s" suffix, for example "60s".
   google.protobuf.Duration workflow_run_expiration_check_interval = 4 [(buf.validate.field).duration.gt = {}];
 }
 
@@ -241,7 +243,7 @@ message Data {
     int32 min_open_conns = 3;
     // default max(4, runtime.NumCPU())
     int32 max_open_conns = 4;
-    // default 30 minutes
+    // default: no limit, idle connections are not closed because of idle time
     google.protobuf.Duration max_conn_idle_time = 5;
   }
   Database database = 1;
