@@ -99,3 +99,9 @@ enable_profiler: true
 #   # stored exclusively in the configured CAS backend. Has no effect when the
 #   # workflow run's CAS backend is inline.
 #   skip_db_storage: false
+#   # Maximum age of an unfinished workflow run before it is marked as expired.
+#   # Defaults to 1 hour when omitted.
+#   # Interval between expiration checks for unfinished workflow runs.
+#   # Defaults to 1 minute when omitted.
+#   workflow_run_expiration_check_interval: 1m
+#   workflow_run_expiration_window: 1h

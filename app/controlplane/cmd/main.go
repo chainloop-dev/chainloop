@@ -158,9 +158,7 @@ func main() {
 	}
 	defer cleanup()
 
-	// Run an expiration job every minute that expires unfinished runs older than 1 hour
-	// TODO: Make it configurable from the application config
-	app.runsExpirer.Run(ctx, &biz.WorkflowRunExpirerOpts{CheckInterval: 1 * time.Minute, ExpirationWindow: 1 * time.Hour})
+	app.runsExpirer.Run(ctx, workflowRunExpirerOpts(&bc))
 
 	// Sync user access
 	go func() {
@@ -207,6 +205,18 @@ func main() {
 
 func toPtr[T any](v T) *T {
 	return &v
+}
+
+func workflowRunExpirerOpts(c *conf.Bootstrap) *biz.WorkflowRunExpirerOpts {
+	opts := &biz.WorkflowRunExpirerOpts{}
+	if configured := c.GetAttestations().GetWorkflowRunExpirationWindow(); configured != nil {
+		opts.ExpirationWindow = configured.AsDuration()
+	}
+	if configured := c.GetAttestations().GetWorkflowRunExpirationCheckInterval(); configured != nil {
+		opts.CheckInterval = configured.AsDuration()
+	}
+
+	return opts
 }
 
 type app struct {

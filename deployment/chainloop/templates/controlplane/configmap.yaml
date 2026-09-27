@@ -50,6 +50,9 @@ data:
     plugins_dir: {{ .Values.controlplane.pluginsDir }}
     plugins_network_policy:
       block_private_targets: {{ .Values.controlplane.pluginsNetworkPolicy.blockPrivateTargets }}
+    attestations:
+      workflow_run_expiration_window: {{ .Values.controlplane.attestations.workflowRunExpirationWindow | quote }}
+      workflow_run_expiration_check_interval: {{ .Values.controlplane.attestations.workflowRunExpirationCheckInterval | quote }}
     restrict_org_creation: {{ .Values.controlplane.restrictOrgCreation }}
     {{- if .Values.controlplane.uiDashboardURL }}
     ui_dashboard_url: {{ .Values.controlplane.uiDashboardURL | quote }}
