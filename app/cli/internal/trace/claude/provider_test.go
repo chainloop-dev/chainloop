@@ -147,7 +147,7 @@ func TestCopySessionData(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			home := t.TempDir()
-			t.Setenv("HOME", home)
+			setTestHome(t, home)
 			p := New()
 
 			startDir := filepath.Join(home, "work", "repo")
@@ -185,6 +185,14 @@ func TestCopySessionData(t *testing.T) {
 			}
 		})
 	}
+}
+
+// setTestHome points os.UserHomeDir at dir. It reads HOME on Unix and
+// USERPROFILE on Windows.
+func setTestHome(t *testing.T, dir string) {
+	t.Helper()
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
 }
 
 func writeFile(t *testing.T, path, content string) {

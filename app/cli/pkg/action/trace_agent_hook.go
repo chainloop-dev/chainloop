@@ -48,6 +48,16 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 		return nil
 	}
 
+	// Pre-push finds the transcript through the session record, and this
+	// can be the first hook since its creation that reports the path.
+	if input.TranscriptPath != "" {
+		rec, err := store.LoadSessionRecord(sessionID)
+		if err != nil {
+			log.Debug().Err(err).Msg("load session record failed")
+		}
+		recordTranscriptPath(store, rec, input.TranscriptPath, log)
+	}
+
 	if err := provider.CopySessionData(store, sessionLocation(input.SessionID, input.Cwd, input.TranscriptPath, repoRoot)); err != nil {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
@@ -306,19 +316,29 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 // a record created by a hook that carried no transcript path would fall back
 // to the cwd lookup for the life of the session.
 func backfillTranscriptPath(provider trace.Provider, store *state.Store, repoRoot string, rec *state.SessionRecord, transcriptPath string, log zerolog.Logger) {
-	if rec.TranscriptPath != "" {
-		return
-	}
-
-	rec.TranscriptPath = transcriptPath
-	if err := store.SaveSessionRecord(rec); err != nil {
-		log.Debug().Err(err).Msg("backfill transcript path failed")
+	if !recordTranscriptPath(store, rec, transcriptPath, log) {
 		return
 	}
 
 	if err := provider.CopySessionData(store, sessionLocation(rec.SessionID, rec.Cwd, rec.TranscriptPath, repoRoot)); err != nil {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
+}
+
+// recordTranscriptPath saves transcriptPath on rec when rec has none yet,
+// and reports whether it did.
+func recordTranscriptPath(store *state.Store, rec *state.SessionRecord, transcriptPath string, log zerolog.Logger) bool {
+	if rec == nil || transcriptPath == "" || rec.TranscriptPath != "" {
+		return false
+	}
+
+	rec.TranscriptPath = transcriptPath
+	if err := store.SaveSessionRecord(rec); err != nil {
+		log.Debug().Err(err).Msg("backfill transcript path failed")
+		return false
+	}
+
+	return true
 }
 
 // locateForHook returns the trace state an agent hook records into. A file

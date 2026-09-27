@@ -64,7 +64,7 @@ func TestClaudeSessionForkedIntoWorktrees(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			home := t.TempDir()
-			t.Setenv("HOME", home)
+			setTestHome(t, home)
 
 			mainRoot := chdirToResolvedGitRepo(t)
 			runGit(t, mainRoot, "config", "user.email", "test@test.com")
@@ -190,7 +190,7 @@ func TestClaudeTranscriptFoundFromWorktreeCwd(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			home := t.TempDir()
-			t.Setenv("HOME", home)
+			setTestHome(t, home)
 
 			mainRoot := chdirToResolvedGitRepo(t)
 			runGit(t, mainRoot, "config", "user.email", "test@test.com")
@@ -278,7 +278,7 @@ func TestClaudeTranscriptFoundFromWorktreeCwd(t *testing.T) {
 // not move the recorded cwd.
 func TestEnsureSessionTracked_BackfillsTranscriptPath(t *testing.T) {
 	const sid = "7412c0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
-	t.Setenv("HOME", t.TempDir())
+	setTestHome(t, t.TempDir())
 
 	root := chdirToResolvedGitRepo(t)
 	store := state.NewGitStore(filepath.Join(root, ".git"))
@@ -302,6 +302,39 @@ func TestEnsureSessionTracked_BackfillsTranscriptPath(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, transcript, rec.TranscriptPath, "a later hook fills in the transcript path")
 	assert.Equal(t, root, rec.Cwd, "a later hook does not change the recorded cwd")
+}
+
+// Session end can be the only hook after the record was created, e.g. a
+// session that ran no tools. Pre-push reads the transcript path from the
+// record, so session end fills it in too.
+func TestHandleAgentSessionEnd_BackfillsTranscriptPath(t *testing.T) {
+	const sid = "7412d0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+	setTestHome(t, t.TempDir())
+
+	root := chdirToResolvedGitRepo(t)
+	store := state.NewGitStore(filepath.Join(root, ".git"))
+	p := claude.New()
+
+	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"SessionStart"}`, sid, root))
+	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+
+	transcript := filepath.Join(p.SessionDirForRepo("/elsewhere"), sid+".jsonl")
+	withStdin(t, fmt.Sprintf(`{"session_id":%q,"transcript_path":%q,"cwd":%q,"hook_event_name":"SessionEnd"}`, sid, transcript, root))
+	require.NoError(t, HandleAgentSessionEnd(p, zerolog.Nop()))
+
+	rec, err := store.LoadSessionRecord(sid)
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+	assert.Equal(t, transcript, rec.TranscriptPath, "session end fills in the transcript path")
+	assert.False(t, rec.Active, "session end still marks the session inactive")
+}
+
+// setTestHome points os.UserHomeDir at dir. It reads HOME on Unix and
+// USERPROFILE on Windows.
+func setTestHome(t *testing.T, dir string) {
+	t.Helper()
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
 }
 
 // Only edits follow the file to its checkout. Claude's Read carries a
