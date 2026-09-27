@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
@@ -471,7 +472,7 @@ func TestHandleAgentCommandTool_AttributesShellFileChanges(t *testing.T) {
 	assert.Empty(t, attr.Files["marker"])
 
 	// The pre-command signature is cleaned up afterwards.
-	_, err := store.LoadShellPreSignature("ses-cmd")
+	_, err := store.LoadShellPreSignature("ses-cmd", "")
 	assert.Error(t, err)
 }
 
@@ -546,8 +547,48 @@ func TestHandleAgentClaudeCodeSession(t *testing.T) {
 	assert.Equal(t, 4, genRanges[0].End) // whole 4-line generated file
 
 	// The pre-command signature is cleaned up after the Bash post hook.
-	_, err := store.LoadShellPreSignature(sid)
+	_, err := store.LoadShellPreSignature(sid, "")
 	assert.Error(t, err)
+}
+
+// A Claude Code subagent shares its parent's session_id. When the parent and
+// a subagent run shell commands that overlap in one store, each must keep its
+// own pre-command signature, or the first post hook deletes the other's and
+// the second command's file changes are lost.
+func TestHandleAgentCommandTool_ConcurrentSubagent(t *testing.T) {
+	root := chdirToResolvedGitRepo(t)
+	store := state.NewGitStore(filepath.Join(root, ".git"))
+	require.NoError(t, store.InitTraceDir())
+
+	p := claude.New()
+	const sid = "c0c0e0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+	const agentID = "afd65659e2015d48d"
+
+	bash := func(event, extra string, handler func(trace.Provider, zerolog.Logger) error) {
+		t.Helper()
+		withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":%q,"tool_name":"Bash","tool_input":{"command":"gen"}%s}`,
+			sid, root, event, extra))
+		require.NoError(t, handler(p, zerolog.Nop()))
+	}
+	sub := fmt.Sprintf(`,"agent_id":%q,"agent_type":"general-purpose"`, agentID)
+
+	bash("PreToolUse", "", HandleAgentPreToolUse)  // parent starts a command
+	bash("PreToolUse", sub, HandleAgentPreToolUse) // subagent starts a command
+
+	require.NoError(t, os.WriteFile(filepath.Join(root, "sub.txt"), []byte("sub\n"), 0600))
+	bash("PostToolUse", sub, HandleAgentPostToolUse) // subagent finishes first
+
+	require.NoError(t, os.WriteFile(filepath.Join(root, "parent.txt"), []byte("parent\n"), 0600))
+	bash("PostToolUse", "", HandleAgentPostToolUse) // parent finishes
+
+	attr := store.LoadAILineAttribution(sid)
+	assert.Contains(t, attr.Files, "sub.txt")
+	assert.Contains(t, attr.Files, "parent.txt", "the parent's command must keep its own pre-command signature")
+
+	for _, id := range []string{"", agentID} {
+		_, err := store.LoadShellPreSignature(sid, id)
+		assert.Error(t, err, "signature for agent %q is cleaned up", id)
+	}
 }
 
 // chdirToResolvedGitRepo creates a git repo, chdirs into its symlink-resolved

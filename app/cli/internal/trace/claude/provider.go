@@ -67,24 +67,83 @@ func (p *Provider) DiscoverSession(repoRoot string) (*trace.DiscoveredSession, e
 
 // SessionDirForRepo returns the Claude Code project directory for a given repo root.
 func (p *Provider) SessionDirForRepo(repoRoot string) string {
+	projectsDir := claudeProjectsDir()
+	if projectsDir == "" {
+		return ""
+	}
+
+	return filepath.Join(projectsDir, encodeCWDForClaudePath(repoRoot))
+}
+
+// claudeProjectsDir returns ~/.claude/projects, or "" when the home
+// directory is unknown.
+func claudeProjectsDir() string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
 
-	return filepath.Join(homeDir, ".claude", "projects", encodeCWDForClaudePath(repoRoot))
+	return filepath.Join(homeDir, ".claude", "projects")
 }
 
 // CopySessionData copies the Claude Code JSONL (and subagent files) from the
 // Claude project directory into the store's raw/ directory so pre-push can
 // parse them even if Claude rotates its own storage later.
-func (p *Provider) CopySessionData(store *state.Store, agentCwd, sessionID string) error {
-	sourceDir := p.SessionDirForRepo(agentCwd)
-	if sourceDir == "" {
+//
+// Claude files the transcript under the project directory of the directory
+// the session started in, and reports that file as transcript_path. The hook
+// cwd can be somewhere else, e.g. for a subagent in its own git worktree, so
+// the reported path wins and the cwd encoding is only a fallback for records
+// that lack it.
+func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation) error {
+	projectsDir := claudeProjectsDir()
+	if projectsDir == "" {
 		return nil
 	}
 
-	return store.CopySessionJSONL(sessionID, sourceDir)
+	sourceDir, err := transcriptSourceDir(projectsDir, loc.TranscriptPath, loc.SessionID)
+	if err != nil {
+		sourceDir = filepath.Join(projectsDir, encodeCWDForClaudePath(loc.Cwd))
+	}
+
+	return store.CopySessionJSONL(loc.SessionID, sourceDir)
+}
+
+// transcriptSourceDir returns the Claude project directory that holds the
+// transcripts of sessionID, given the transcript_path Claude reported. That
+// is either the main transcript, <dir>/<sessionID>.jsonl, or a subagent
+// transcript, <dir>/<sessionID>/subagents/<agent>.jsonl.
+//
+// The path comes from a hook payload, so it is checked before anything is
+// read from it: it must belong to sessionID and stay inside a project
+// directory under projectsDir.
+func transcriptSourceDir(projectsDir, transcriptPath, sessionID string) (string, error) {
+	if !state.ValidSessionID(sessionID) {
+		return "", fmt.Errorf("session ID %q cannot name a transcript file", sessionID)
+	}
+	if !filepath.IsAbs(transcriptPath) {
+		return "", fmt.Errorf("transcript path %q is not absolute", transcriptPath)
+	}
+
+	clean := filepath.Clean(transcriptPath)
+	parent := filepath.Dir(clean)
+
+	var dir string
+	switch {
+	case filepath.Base(clean) == sessionID+".jsonl":
+		dir = parent
+	case filepath.Base(parent) == "subagents" && filepath.Base(filepath.Dir(parent)) == sessionID:
+		dir = filepath.Dir(filepath.Dir(parent))
+	default:
+		return "", fmt.Errorf("transcript path %q does not belong to session %q", transcriptPath, sessionID)
+	}
+
+	// The directory must be a project directory: a direct child of projectsDir.
+	if filepath.Dir(dir) != filepath.Clean(projectsDir) {
+		return "", fmt.Errorf("transcript path %q is outside %q", transcriptPath, projectsDir)
+	}
+
+	return dir, nil
 }
 
 // CaptureFileSnapshot reads the file at input.FilePath and stores its

@@ -48,7 +48,7 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 		return nil
 	}
 
-	if err := provider.CopySessionData(store, agentCwdOr(input.Cwd, repoRoot), sessionID); err != nil {
+	if err := provider.CopySessionData(store, sessionLocation(input.SessionID, input.Cwd, input.TranscriptPath, repoRoot)); err != nil {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
 
@@ -212,7 +212,7 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 	case provider.IsCommandTool(input.ToolName):
 		// Shell command: snapshot the whole worktree so the post hook can diff
 		// it and attribute the command's file changes to the AI.
-		captureWorktreeSnapshot(store, repoRoot, input.SessionID, log)
+		captureWorktreeSnapshot(store, repoRoot, input.SessionID, input.AgentID, log)
 	case provider.IsFileWritingTool(input.ToolName):
 		if input.FilePath == "" {
 			log.Debug().Str("tool", input.ToolName).Msg("pre-tool-use: file-writing tool produced no file path, skipping")
@@ -230,15 +230,16 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 
 // captureWorktreeSnapshot records the working-tree signature before a shell
 // command runs, so HandleAgentPostToolUse can diff it and attribute the files
-// the command changed. Best-effort: failures are logged and never block the agent.
-func captureWorktreeSnapshot(store *state.Store, repoRoot, sessionID string, log zerolog.Logger) {
+// the command changed. agentID is empty for the main agent. Best-effort:
+// failures are logged and never block the agent.
+func captureWorktreeSnapshot(store *state.Store, repoRoot, sessionID, agentID string, log zerolog.Logger) {
 	sig, err := tracegit.NewGoGitClient().SnapshotWorktree(repoRoot)
 	if err != nil {
 		log.Debug().Err(err).Msg("pre-command: worktree snapshot failed")
 		return
 	}
 
-	if err := store.SaveShellPreSignature(sessionID, sig); err != nil {
+	if err := store.SaveShellPreSignature(sessionID, agentID, sig); err != nil {
 		log.Debug().Err(err).Msg("pre-command: save worktree signature failed")
 	}
 }
@@ -247,8 +248,9 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot, sessionID string, log
 // invocation — itself idempotent via hooks.IsInstalled), then creates a
 // session record if one doesn't already exist and copies the session data.
 // Idempotent so any hook entry point can call it safely. Per-input metadata
-// (e.g., AgentVersion) is captured on the first call only — subsequent
-// hooks for the same session are no-ops, no upsert.
+// (e.g., AgentVersion, Cwd) is captured on the first call only — subsequent
+// hooks for the same session are no-ops, no upsert. The one exception is
+// TranscriptPath, which a later hook fills in when the first one lacked it.
 func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot string, input *trace.HookInput, log zerolog.Logger) {
 	// Run install before any early return so hooks recover from missing
 	// state (deleted .git/hooks, project YAML appearing after session start).
@@ -259,27 +261,62 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 	}
 
 	sessionID := input.SessionID
-	if store.SessionRecordExists(sessionID) {
-		return
+	// A hook that reports a transcript path has to read the record, to see
+	// whether it still lacks one. Without a path, a stat is enough.
+	if input.TranscriptPath == "" {
+		if store.SessionRecordExists(sessionID) {
+			return
+		}
+	} else {
+		rec, err := store.LoadSessionRecord(sessionID)
+		if err != nil {
+			log.Debug().Err(err).Msg("load session record failed")
+			return
+		}
+		if rec != nil {
+			backfillTranscriptPath(provider, store, repoRoot, rec, input.TranscriptPath, log)
+			return
+		}
 	}
 
 	log.Debug().Str("session_id", sessionID).Str("state_dir", store.Dir()).Str("provider", provider.Name()).Msg("tracking new session")
 
 	rec := &state.SessionRecord{
-		SessionID:    sessionID,
-		Provider:     provider.Name(),
-		AgentVersion: input.AgentVersion,
-		Model:        input.Model,
-		Cwd:          input.Cwd,
-		Active:       true,
-		StartedAt:    state.NowTimestamp(),
+		SessionID:      sessionID,
+		Provider:       provider.Name(),
+		AgentVersion:   input.AgentVersion,
+		Model:          input.Model,
+		Cwd:            input.Cwd,
+		TranscriptPath: input.TranscriptPath,
+		Active:         true,
+		StartedAt:      state.NowTimestamp(),
 	}
 	if err := store.SaveSessionRecord(rec); err != nil {
 		log.Debug().Err(err).Msg("save session record failed")
 		return
 	}
 
-	if err := provider.CopySessionData(store, agentCwdOr(input.Cwd, repoRoot), sessionID); err != nil {
+	if err := provider.CopySessionData(store, sessionLocation(input.SessionID, input.Cwd, input.TranscriptPath, repoRoot)); err != nil {
+		log.Debug().Err(err).Msg("copy session data failed")
+	}
+}
+
+// backfillTranscriptPath records the transcript path on an existing session
+// record that lacks it, and copies the session data from there. Without it,
+// a record created by a hook that carried no transcript path would fall back
+// to the cwd lookup for the life of the session.
+func backfillTranscriptPath(provider trace.Provider, store *state.Store, repoRoot string, rec *state.SessionRecord, transcriptPath string, log zerolog.Logger) {
+	if rec.TranscriptPath != "" {
+		return
+	}
+
+	rec.TranscriptPath = transcriptPath
+	if err := store.SaveSessionRecord(rec); err != nil {
+		log.Debug().Err(err).Msg("backfill transcript path failed")
+		return
+	}
+
+	if err := provider.CopySessionData(store, sessionLocation(rec.SessionID, rec.Cwd, rec.TranscriptPath, repoRoot)); err != nil {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
 }
@@ -302,16 +339,19 @@ func locateForHook(provider trace.Provider, input *trace.HookInput) (*state.Stor
 	return state.Locate()
 }
 
-// agentCwdOr returns the directory the agent reported running in, falling
-// back to the checkout root for agents that do not report one. Transcript
-// lookups must use it: for a session recorded in a linked worktree, the
-// worktree root names a transcript directory the agent never wrote to.
-func agentCwdOr(agentCwd, repoRoot string) string {
-	if agentCwd != "" {
-		return agentCwd
+// sessionLocation returns where to find a session's transcripts, from what
+// the agent reported (in a hook payload or a session record).
+//
+// agentCwd falls back to the checkout root for agents that do not report
+// one. It must not be replaced by the checkout root otherwise: for a session
+// recorded in a linked worktree, the worktree root names a transcript
+// directory the agent never wrote to.
+func sessionLocation(sessionID, agentCwd, transcriptPath, repoRoot string) trace.SessionLocation {
+	if agentCwd == "" {
+		agentCwd = repoRoot
 	}
 
-	return repoRoot
+	return trace.SessionLocation{SessionID: sessionID, Cwd: agentCwd, TranscriptPath: transcriptPath}
 }
 
 // notifyPendingSessionLinks hands any session links left by a just-completed
@@ -395,7 +435,7 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 	if isCommand {
 		// Shell command: diff the before/after worktree snapshots and attribute
 		// every file the command changed to the AI.
-		recordCommandLineRanges(store, repoRoot, sessionID, log)
+		recordCommandLineRanges(store, repoRoot, sessionID, input.AgentID, log)
 
 		// The command may have been a `git push`, whose pre-push hook attested
 		// a session and left its link behind. Show it now: the pre-push output
@@ -447,15 +487,16 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 // command against the current worktree, and records every created/modified file
 // (whole-file range) and every deleted file as AI-attributed. Enrich later caps
 // the AI line count to each file's committed diff totals, so whole-file ranges
-// yield correct counts. Best-effort: never blocks the agent.
-func recordCommandLineRanges(store *state.Store, repoRoot, sessionID string, log zerolog.Logger) {
-	before, err := store.LoadShellPreSignature(sessionID)
+// yield correct counts. agentID is empty for the main agent. Best-effort:
+// never blocks the agent.
+func recordCommandLineRanges(store *state.Store, repoRoot, sessionID, agentID string, log zerolog.Logger) {
+	before, err := store.LoadShellPreSignature(sessionID, agentID)
 	if err != nil {
 		// No pre-command snapshot (missed pre hook, parallel overwrite) — skip.
 		log.Debug().Err(err).Msg("post-command: no pre-command worktree signature")
 		return
 	}
-	defer store.DeleteShellPreSignature(sessionID)
+	defer store.DeleteShellPreSignature(sessionID, agentID)
 
 	after, err := tracegit.NewGoGitClient().SnapshotWorktree(repoRoot)
 	if err != nil {

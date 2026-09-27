@@ -134,7 +134,7 @@ func TestCopySessionDataFromFlat(t *testing.T) {
 	require.NoError(t, os.MkdirAll(gitDir, 0755))
 
 	p := New()
-	require.NoError(t, p.CopySessionData(state.NewGitStore(gitDir), repoRoot, "conv-1"))
+	require.NoError(t, p.CopySessionData(state.NewGitStore(gitDir), trace.SessionLocation{SessionID: "conv-1", Cwd: repoRoot}))
 
 	dst := filepath.Join(gitDir, "chainloop-trace", "raw", "conv-1.jsonl")
 	got, err := os.ReadFile(dst)
@@ -157,7 +157,7 @@ func TestCopySessionDataFromNested(t *testing.T) {
 	require.NoError(t, os.MkdirAll(gitDir, 0755))
 
 	p := New()
-	require.NoError(t, p.CopySessionData(state.NewGitStore(gitDir), repoRoot, "conv-2"))
+	require.NoError(t, p.CopySessionData(state.NewGitStore(gitDir), trace.SessionLocation{SessionID: "conv-2", Cwd: repoRoot}))
 
 	dst := filepath.Join(gitDir, "chainloop-trace", "raw", "conv-2.jsonl")
 	_, err := os.Stat(dst)

@@ -526,22 +526,28 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 			SessionDir: rawDir,
 			SessionID:  sessionID,
 		}
-		var sessionCwd string
+		var sessionCwd, transcriptPath string
 		if rec, ok := sessionRecords[sessionID]; ok && rec != nil {
 			parseOpts.AgentVersion = rec.AgentVersion
 			parseOpts.Model = rec.Model
 			sessionCwd = rec.Cwd
+			transcriptPath = rec.TranscriptPath
 		}
 
 		// Fresh copy of session data before parsing — the session-start copy
 		// may be stale if more conversation happened between start and push.
-		if err := provider.CopySessionData(store, agentCwdOr(sessionCwd, repoRoot), sessionID); err != nil {
-			log.Debug().Err(err).Str("session", sessionID).Msg("could not refresh session data")
+		copyErr := provider.CopySessionData(store, sessionLocation(sessionID, sessionCwd, transcriptPath, repoRoot))
+		if copyErr != nil {
+			log.Debug().Err(copyErr).Str("session", sessionID).Msg("could not refresh session data")
 		}
 
 		result, err := provider.ParseSession(ctx, parseOpts)
 		if err != nil {
-			log.Debug().Err(err).Str("session", sessionID).Msg("could not parse session, skipping")
+			// Warn, not debug: commits carry this session in their trailer,
+			// so a missing attestation fails the checks on the pull request,
+			// and this is the only place that says why.
+			log.Warn().Err(err).AnErr("copy_error", copyErr).Str("session", sessionID).
+				Msg("could not read the transcript of an AI session named in the pushed commits; no evidence is sent for it")
 			continue
 		}
 

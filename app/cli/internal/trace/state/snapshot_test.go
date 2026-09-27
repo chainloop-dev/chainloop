@@ -23,21 +23,60 @@ import (
 )
 
 func TestShellPreSignatureRoundTrip(t *testing.T) {
-	store := NewGitStore(t.TempDir())
-	sessionID := "sess-123"
-	sig := map[string]string{
-		"a.go":       "hash-a",
-		"sub/b.json": "hash-b",
+	cases := []struct {
+		name    string
+		agentID string
+	}{
+		{name: "main session", agentID: ""},
+		{name: "subagent", agentID: "afd65659e2015d48d"},
 	}
 
-	require.NoError(t, store.SaveShellPreSignature(sessionID, sig))
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := NewGitStore(t.TempDir())
+			sessionID := "sess-123"
+			sig := map[string]string{
+				"a.go":       "hash-a",
+				"sub/b.json": "hash-b",
+			}
 
-	loaded, err := store.LoadShellPreSignature(sessionID)
+			require.NoError(t, store.SaveShellPreSignature(sessionID, tc.agentID, sig))
+
+			loaded, err := store.LoadShellPreSignature(sessionID, tc.agentID)
+			require.NoError(t, err)
+			assert.Equal(t, sig, loaded)
+
+			store.DeleteShellPreSignature(sessionID, tc.agentID)
+
+			_, err = store.LoadShellPreSignature(sessionID, tc.agentID)
+			assert.Error(t, err, "signature should be gone after delete")
+		})
+	}
+}
+
+// A subagent shares its parent's session ID. Their shell commands can overlap,
+// so each agent needs its own slot or one deletes the other's signature.
+func TestShellPreSignaturePerAgent(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	const sessionID = "sess-123"
+	parent := map[string]string{"a.go": "parent"}
+	sub1 := map[string]string{"a.go": "sub1"}
+	sub2 := map[string]string{"a.go": "sub2"}
+
+	require.NoError(t, store.SaveShellPreSignature(sessionID, "", parent))
+	require.NoError(t, store.SaveShellPreSignature(sessionID, "agent-1", sub1))
+	require.NoError(t, store.SaveShellPreSignature(sessionID, "agent-2", sub2))
+
+	store.DeleteShellPreSignature(sessionID, "agent-1")
+
+	got, err := store.LoadShellPreSignature(sessionID, "")
 	require.NoError(t, err)
-	assert.Equal(t, sig, loaded)
+	assert.Equal(t, parent, got)
 
-	store.DeleteShellPreSignature(sessionID)
+	got, err = store.LoadShellPreSignature(sessionID, "agent-2")
+	require.NoError(t, err)
+	assert.Equal(t, sub2, got)
 
-	_, err = store.LoadShellPreSignature(sessionID)
-	assert.Error(t, err, "signature should be gone after delete")
+	_, err = store.LoadShellPreSignature(sessionID, "agent-1")
+	assert.Error(t, err)
 }

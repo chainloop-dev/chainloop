@@ -83,7 +83,8 @@ func (p *Provider) SessionDirForRepo(_ string) string {
 // gracefully (returns nil) when the opencode binary is missing or the
 // export fails — the session is skipped rather than blocking the push,
 // and any partially-written file is removed.
-func (p *Provider) CopySessionData(store *state.Store, _, sessionID string) error {
+func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation) error {
+	sessionID := loc.SessionID
 	if !opencodeBinaryAvailable() {
 		return nil
 	}
