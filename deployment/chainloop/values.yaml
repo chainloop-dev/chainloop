@@ -262,7 +262,7 @@ controlplane:
   ## @param controlplane.externalDatabase.password Password for the non-root username
   ## @extra controlplane.externalDatabase.maxOpenConns Maximum number of open connections to the database. Default: max(4, num_cpus)
   ## @extra controlplane.externalDatabase.minOpenConns Min number of connections. Default: 0
-  ## @extra controlplane.externalDatabase.maxIdleTime Max time a connection may be idle, in seconds with an "s" suffix (for example "300s"). Default: 1800s
+  ## @extra controlplane.externalDatabase.maxIdleTime Max time a connection may be idle, in seconds with an "s" suffix (for example "300s"). Leave unset for no idle limit
   ##
   externalDatabase:
     host: ""

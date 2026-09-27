@@ -603,7 +603,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.externalDatabase.password`     | Password for the non-root username                                                                    | `""`   |
 | `controlplane.externalDatabase.maxOpenConns` | Maximum number of open connections to the database. Default: max(4, num_cpus)                         |        |
 | `controlplane.externalDatabase.minOpenConns` | Min number of connections. Default: 0                                                                 |        |
-| `controlplane.externalDatabase.maxIdleTime`  | Max time a connection may be idle, in seconds with an "s" suffix (for example "300s"). Default: 1800s |        |
+| `controlplane.externalDatabase.maxIdleTime`  | Max time a connection may be idle, in seconds with an "s" suffix (for example "300s"). Leave unset for no idle limit |        |
 
 ### Control Plane Authentication
 

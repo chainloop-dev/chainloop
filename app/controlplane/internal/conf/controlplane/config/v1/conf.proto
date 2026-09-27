@@ -243,7 +243,7 @@ message Data {
     int32 min_open_conns = 3;
     // default max(4, runtime.NumCPU())
     int32 max_open_conns = 4;
-    // default 30 minutes
+    // default: no limit, idle connections are not closed because of idle time
     google.protobuf.Duration max_conn_idle_time = 5;
   }
   Database database = 1;

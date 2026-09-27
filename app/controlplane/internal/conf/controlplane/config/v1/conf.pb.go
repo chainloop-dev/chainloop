@@ -1529,7 +1529,7 @@ type Data_Database struct {
 	MinOpenConns int32 `protobuf:"varint,3,opt,name=min_open_conns,json=minOpenConns,proto3" json:"min_open_conns,omitempty"`
 	// default max(4, runtime.NumCPU())
 	MaxOpenConns int32 `protobuf:"varint,4,opt,name=max_open_conns,json=maxOpenConns,proto3" json:"max_open_conns,omitempty"`
-	// default 30 minutes
+	// default: no limit, idle connections are not closed because of idle time
 	MaxConnIdleTime *durationpb.Duration `protobuf:"bytes,5,opt,name=max_conn_idle_time,json=maxConnIdleTime,proto3" json:"max_conn_idle_time,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
