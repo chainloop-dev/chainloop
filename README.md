@@ -20,7 +20,7 @@ Craft and store attestation metadata and artifacts via a single integration poin
 
 ![Chainloop Overview](./docs/img/overview-1.png)
 
-The result is having a SLSA level 3 compliant single Source of truth for metadata, artifacts and attestations built on OSS standards such as [Sigstore](https://www.sigstore.dev/), [in-toto](https://in-toto.io/), [SLSA](https://slsa.dev) and [OCI](https://github.com/opencontainers/image-spec/blob/main/spec.md).
+The result is having a SLSA level 3 compliant single source of truth for metadata, artifacts and attestations built on OSS standards such as [Sigstore](https://www.sigstore.dev/), [in-toto](https://in-toto.io/), [SLSA](https://slsa.dev) and [OCI](https://github.com/opencontainers/image-spec/blob/main/spec.md).
 
 Chainloop also makes sure the crafting of artifacts and attestation follows **best practices and meets the requirements** declared in their associated Workflow Contract.
 
