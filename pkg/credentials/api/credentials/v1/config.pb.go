@@ -533,7 +533,7 @@ var File_credentials_v1_config_proto protoreflect.FileDescriptor
 
 const file_credentials_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"\x1bcredentials/v1/config.proto\x12\x0ecredentials.v1\x1a\x1bbuf/validate/validate.proto\"\xba\t\n" +
+	"\x1bcredentials/v1/config.proto\x12\x0ecredentials.v1\x1a\x1bbuf/validate/validate.proto\"\xdb\t\n" +
 	"\vCredentials\x12\\\n" +
 	"\x12aws_secret_manager\x18\x01 \x01(\v2,.credentials.v1.Credentials.AWSSecretManagerH\x00R\x10awsSecretManager\x129\n" +
 	"\x05vault\x18\x02 \x01(\v2!.credentials.v1.Credentials.VaultH\x00R\x05vault\x12\\\n" +
@@ -547,7 +547,7 @@ const file_credentials_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"access_key\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\taccessKey\x12&\n" +
 	"\n" +
-	"secret_key\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tsecretKey\x1a\xa7\x02\n" +
+	"secret_key\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tsecretKey\x1a\xc8\x02\n" +
 	"\x05Vault\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12!\n" +
 	"\aaddress\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\aaddress\x12\x1d\n" +
@@ -559,7 +559,9 @@ const file_credentials_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"mount_path\x18\x02 \x01(\tR\tmountPath\x12\x1d\n" +
 	"\n" +
-	"token_path\x18\x03 \x01(\tR\ttokenPath\x1aj\n" +
+	"token_path\x18\x03 \x01(\tR\ttokenPath:\x1f\xbaH\x1c\"\x1a\n" +
+	"\x05token\n" +
+	"\x0fkubernetes_auth\x10\x01\x1aj\n" +
 	"\x10GCPSecretManager\x12&\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tprojectId\x12.\n" +
