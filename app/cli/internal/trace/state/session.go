@@ -40,6 +40,10 @@ type SessionRecord struct {
 	// transcripts when this record lives in another checkout's state (a
 	// linked git worktree). Empty when the agent does not report it.
 	Cwd string `json:"cwd,omitempty"`
+	// TranscriptPath is the transcript path the agent reported, preferred
+	// over Cwd to find the transcripts. Filled in by a later hook when the
+	// first one did not carry it. Empty when the agent does not report it.
+	TranscriptPath string `json:"transcript_path,omitempty"`
 	// Active reports whether the session is ongoing at the time of record write.
 	Active bool `json:"active"`
 	// StartedAt is the RFC3339 timestamp of when tracking began for this session.

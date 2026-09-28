@@ -38,7 +38,7 @@ func TestRealExportViaFile(t *testing.T) {
 
 	store := state.NewGitStore(t.TempDir())
 	provider := New()
-	err := provider.CopySessionData(store, "/repo", sessionID)
+	err := provider.CopySessionData(store, trace.SessionLocation{SessionID: sessionID, Cwd: "/repo"})
 	require.NoError(t, err)
 
 	rawDir := store.RawSessionDir()

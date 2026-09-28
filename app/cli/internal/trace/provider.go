@@ -54,10 +54,9 @@ type Provider interface {
 	// CopySessionData copies the agent's on-disk session artifacts into
 	// the store's raw/ directory so pre-push can parse them independently of
 	// the agent's own storage (which may be rotated/cleaned later).
-	// agentCwd is the directory the session runs in, which decides where the
-	// agent keeps its transcripts; it need not be the checkout that owns
-	// store.
-	CopySessionData(store *state.Store, agentCwd, sessionID string) error
+	// loc says where the agent keeps the session's transcripts; it need not
+	// be in the checkout that owns store.
+	CopySessionData(store *state.Store, loc SessionLocation) error
 
 	// CaptureFileSnapshot is invoked from the pre-edit hook to record any
 	// state the provider needs to later reconstruct the file's pre-edit
@@ -140,6 +139,15 @@ type HookInput struct {
 	// FilePath, e.g. for an edit in a linked git worktree. Empty when the
 	// agent does not report it.
 	Cwd string `json:"cwd,omitempty"`
+	// TranscriptPath is the path of the session transcript as the agent
+	// reports it. Unlike Cwd, it does not move when the agent works in
+	// another directory (e.g. a subagent in its own git worktree). Empty
+	// when the agent does not report it.
+	TranscriptPath string `json:"transcript_path,omitempty"`
+	// AgentID identifies the subagent the hook fires in. Subagents share
+	// their parent's SessionID, so this is what tells concurrent agents of
+	// one session apart. Empty for the main agent.
+	AgentID string `json:"agent_id,omitempty"`
 	// AgentVersion is the agent runtime version reported in the hook payload
 	// (e.g., Cursor's cursor_version). Captured at session-start so parsing
 	// can set Agent.Version even when the transcript itself doesn't carry it.
@@ -161,6 +169,18 @@ type HookEdit struct {
 	OldString string
 	// NewString is the text that replaced OldString.
 	NewString string
+}
+
+// SessionLocation tells a provider where to find a session's transcripts.
+type SessionLocation struct {
+	// SessionID identifies the session.
+	SessionID string
+	// Cwd is the directory the session runs in. Providers that key their
+	// storage by directory use it when TranscriptPath is empty.
+	Cwd string
+	// TranscriptPath is the transcript path the agent reported, if any.
+	// Providers that get one prefer it over Cwd.
+	TranscriptPath string
 }
 
 // DiscoveredSession represents a discovered AI coding session (agent-agnostic).
