@@ -261,6 +261,7 @@ func (f *fakeBranchClient) CodeChangesForCommits(string, []string) (*aicodingses
 }
 
 func (f *fakeBranchClient) CommitHeadInfo(string) (string, string, error) { return "", "", nil }
+func (f *fakeBranchClient) HeadAuthorTime(string) (time.Time, error)      { return time.Time{}, nil }
 func (f *fakeBranchClient) GeneratedMatcher(string) func(string) bool {
 	return func(string) bool { return false }
 }
@@ -760,6 +761,258 @@ func TestRebaseLifecycle(t *testing.T) {
 	filtered = filterCurrentBranchCommits(client, dir, all, zerolog.Nop())
 	require.Len(t, filtered, 1)
 	assert.Equal(t, newSHA, filtered[0].SHA)
+}
+
+// Amending an AI-assisted commit with a new message replaces the trailer, and
+// post-commit finds nothing pending because the first commit already consumed
+// the session's ranges. When commit-msg cannot see the amend (the handlers run
+// outside git here, so git exports no author date), the post-rewrite hook is
+// what carries the sessions over to the local record, so the pre-push still
+// attests them.
+func TestCommitLifecycle_AmendKeepsSessions(t *testing.T) {
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+	runGit(t, dir, "update-ref", "refs/remotes/origin/main", "HEAD")
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n"), 0600))
+	require.NoError(t, store.RecordLineRanges("sess-1", "a.go", []aicodingsession.LineRange{{Start: 1, End: 1}}))
+
+	commit := func(t *testing.T, subject string, extra ...string) {
+		t.Helper()
+		msg := filepath.Join(dir, "msg")
+		require.NoError(t, os.WriteFile(msg, []byte(subject+"\n"), 0600))
+		require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+		runGit(t, dir, append([]string{"commit", "-F", msg}, extra...)...)
+		require.NoError(t, handlePostCommit(t.Context(), zerolog.Nop()))
+	}
+
+	runGit(t, dir, "add", "a.go")
+	commit(t, "fix: first message")
+	oldSHA := headSHA(t, dir)
+	require.Equal(t, []string{"sess-1"}, mustLoadRecord(t, store, oldSHA).SessionIDs)
+
+	// The amend also stages a change that no session made.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n\n// human edit\n"), 0600))
+	runGit(t, dir, "add", "a.go")
+	commit(t, "fix: second message", "--amend")
+	newSHA := headSHA(t, dir)
+	require.NotEqual(t, oldSHA, newSHA)
+
+	rec := mustLoadRecord(t, store, newSHA)
+	require.Equal(t, "fix: second message", rec.Message, "commit-msg must not have added a trailer")
+	require.Empty(t, rec.SessionIDs, "post-commit alone loses the session")
+
+	require.NoError(t, handlePostRewrite(strings.NewReader(oldSHA+" "+newSHA+"\n"), zerolog.Nop()))
+
+	rec = mustLoadRecord(t, store, newSHA)
+	assert.Equal(t, []string{"sess-1"}, rec.SessionIDs, "the amended commit must keep the replaced commit's session")
+
+	all, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	filtered := filterCurrentBranchCommits(tracegit.NewGoGitClient(), dir, all, zerolog.Nop())
+	require.Len(t, filtered, 1)
+	assert.Equal(t, newSHA, filtered[0].SHA)
+}
+
+// During an amend git exports the author date of HEAD to the hooks, and
+// commit-msg uses it to copy HEAD's trailer into the new message: the amended
+// commit still holds HEAD's lines. Git gives the hook no other sign of an
+// amend done with -m. Any other commit, --allow-empty included, carries the
+// current time.
+func TestHandleCommitMsg_Amend(t *testing.T) {
+	const (
+		headDate   = "@1700000000 +0000"
+		amendMsg   = "fix: second\n"
+		headWithA  = "fix: first\n\nChainloop-Trace-Sessions: session-a\n"
+		trailerOfA = "\nChainloop-Trace-Sessions: session-a\n"
+	)
+
+	cases := []struct {
+		name       string
+		headMsg    string
+		authorDate string // empty unsets GIT_AUTHOR_DATE
+		stage      bool
+		aiEdit     bool // stage an AI edit of session-b
+		msg        string
+		want       string
+	}{
+		{
+			name:       "amend copies the trailer of HEAD",
+			headMsg:    "fix: first\n\nChainloop-Trace-Sessions: session-a, session-b\n",
+			authorDate: headDate,
+			msg:        amendMsg,
+			want:       amendMsg + "\nChainloop-Trace-Sessions: session-a, session-b\n",
+		},
+		{
+			name:       "amend with staged changes copies the trailer of HEAD",
+			headMsg:    headWithA,
+			authorDate: headDate,
+			stage:      true,
+			msg:        amendMsg,
+			want:       amendMsg + trailerOfA,
+		},
+		{
+			name:       "amend with a staged AI edit joins both sessions",
+			headMsg:    headWithA,
+			authorDate: headDate,
+			stage:      true,
+			aiEdit:     true,
+			msg:        amendMsg,
+			want:       amendMsg + "\nChainloop-Trace-Sessions: session-a, session-b\n",
+		},
+		{
+			name:       "allow-empty commit does not get the trailer of HEAD",
+			headMsg:    headWithA,
+			authorDate: "@1790000000 +0200",
+			msg:        amendMsg,
+			want:       amendMsg,
+		},
+		{
+			name:    "no author date from git does not copy the trailer",
+			headMsg: headWithA,
+			msg:     amendMsg,
+			want:    amendMsg,
+		},
+		{
+			name:       "author date in another format does not copy the trailer",
+			headMsg:    headWithA,
+			authorDate: "2023-11-14T22:13:20Z",
+			msg:        amendMsg,
+			want:       amendMsg,
+		},
+		{
+			name:       "amend of a commit with no trailer leaves the message alone",
+			headMsg:    "fix: first\n",
+			authorDate: headDate,
+			msg:        amendMsg,
+			want:       amendMsg,
+		},
+		{
+			name:       "amend keeps a trailer the user wrote",
+			headMsg:    headWithA,
+			authorDate: headDate,
+			msg:        "fix: second\n\nChainloop-Trace-Sessions: session-b\n",
+			want:       "fix: second\n\nChainloop-Trace-Sessions: session-b\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, gitDir := initGitRepo(t)
+			store := state.NewGitStore(gitDir)
+			require.NoError(t, store.InitTraceDir())
+
+			t.Setenv("GIT_AUTHOR_DATE", headDate)
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n"), 0600))
+			runGit(t, dir, "add", "a.go")
+			runGit(t, dir, "commit", "-m", tc.headMsg)
+
+			if tc.stage {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n\nfunc main() {}\n"), 0600))
+				runGit(t, dir, "add", "a.go")
+			}
+			if tc.aiEdit {
+				require.NoError(t, store.RecordLineRanges(sessionB, "a.go", []aicodingsession.LineRange{{Start: 3, End: 3}}))
+			}
+
+			// Set after the git calls above, as git sets it for the hook.
+			if tc.authorDate == "" {
+				require.NoError(t, os.Unsetenv("GIT_AUTHOR_DATE"))
+			} else {
+				t.Setenv("GIT_AUTHOR_DATE", tc.authorDate)
+			}
+
+			msg := filepath.Join(dir, "msg")
+			require.NoError(t, os.WriteFile(msg, []byte(tc.msg), 0600))
+			require.NoError(t, handleCommitMsg(msg, zerolog.Nop()))
+
+			got, err := os.ReadFile(msg)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, string(got))
+		})
+	}
+}
+
+func TestHandlePostRewrite(t *testing.T) {
+	const (
+		oldSHA     = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		otherSHA   = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		newSHA     = "cccccccccccccccccccccccccccccccccccccccc"
+		unknownSHA = "dddddddddddddddddddddddddddddddddddddddd"
+	)
+
+	cases := []struct {
+		name     string
+		records  []*state.CommitRecord
+		input    string
+		want     []string
+		noRecord bool
+	}{
+		{
+			name: "amend carries the old sessions over",
+			records: []*state.CommitRecord{
+				{SHA: oldSHA, SessionIDs: []string{sessionA}},
+				{SHA: newSHA},
+			},
+			input: oldSHA + " " + newSHA + "\n",
+			want:  []string{sessionA},
+		},
+		{
+			name: "squash unions the sessions of every replaced commit",
+			records: []*state.CommitRecord{
+				{SHA: oldSHA, SessionIDs: []string{sessionB}},
+				{SHA: otherSHA, SessionIDs: []string{sessionA}},
+				{SHA: newSHA, SessionIDs: []string{sessionB}},
+			},
+			input: oldSHA + " " + newSHA + "\n" + otherSHA + " " + newSHA + " extra-info\n",
+			want:  []string{sessionA, sessionB},
+		},
+		{
+			name: "unknown old commit leaves the new record alone",
+			records: []*state.CommitRecord{
+				{SHA: newSHA, SessionIDs: []string{sessionA}},
+			},
+			input: unknownSHA + " " + newSHA + "\n",
+			want:  []string{sessionA},
+		},
+		{
+			name: "no record for the new commit is not created",
+			records: []*state.CommitRecord{
+				{SHA: oldSHA, SessionIDs: []string{sessionA}},
+			},
+			input:    oldSHA + " " + newSHA + "\n",
+			noRecord: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, gitDir := initGitRepo(t)
+			store := state.NewGitStore(gitDir)
+			require.NoError(t, store.InitTraceDir())
+			for _, r := range tc.records {
+				require.NoError(t, store.SaveCommitRecord(r))
+			}
+
+			require.NoError(t, handlePostRewrite(strings.NewReader(tc.input), zerolog.Nop()))
+
+			all, err := store.LoadAllCommitRecords()
+			require.NoError(t, err)
+			var got *state.CommitRecord
+			for _, r := range all {
+				if r.SHA == newSHA {
+					got = r
+				}
+			}
+			if tc.noRecord {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			assert.Equal(t, tc.want, got.SessionIDs)
+		})
+	}
 }
 
 // headSHA returns the SHA of HEAD in dir.

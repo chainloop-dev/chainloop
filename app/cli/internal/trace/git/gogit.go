@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/go-git/go-billy/v6/osfs"
@@ -196,6 +197,25 @@ func (c *GoGitClient) CommitHeadInfo(repoRoot string) (sha, message string, err 
 	}
 
 	return head.Hash().String(), strings.TrimSpace(commit.Message), nil
+}
+
+func (c *GoGitClient) HeadAuthorTime(repoRoot string) (time.Time, error) {
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("open repo: %w", err)
+	}
+
+	head, err := repo.Head()
+	if err != nil {
+		return time.Time{}, fmt.Errorf("get HEAD: %w", err)
+	}
+
+	commit, err := repo.CommitObject(head.Hash())
+	if err != nil {
+		return time.Time{}, fmt.Errorf("get commit: %w", err)
+	}
+
+	return commit.Author.When, nil
 }
 
 // GeneratedMatcher returns a predicate that reports whether a repo-relative path

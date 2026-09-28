@@ -105,6 +105,35 @@ func setupBranchedRepo(t *testing.T) branchedRepo {
 	}
 }
 
+func TestHeadAuthorTime(t *testing.T) {
+	r := setupBranchedRepo(t)
+
+	// Give HEAD a known author date.
+	cmd := exec.Command("git", "commit", "-q", "--amend", "--no-edit", "--date=@1700000000 +0200")
+	cmd.Dir = r.dir
+	out, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(out))
+
+	clients := []struct {
+		name   string
+		client Client
+	}{
+		{"go-git", NewGoGitClient()},
+		{"exec", NewExecClient()},
+	}
+
+	for _, tc := range clients {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := tc.client.HeadAuthorTime(r.dir)
+			require.NoError(t, err)
+			assert.Equal(t, int64(1700000000), got.Unix())
+
+			_, err = tc.client.HeadAuthorTime(t.TempDir())
+			assert.Error(t, err, "a directory without a repository has no HEAD")
+		})
+	}
+}
+
 func TestGoGitClient_IsMergeCommit(t *testing.T) {
 	repo := setupBranchedRepo(t)
 	c := NewGoGitClient()

@@ -34,6 +34,7 @@ const (
 var managedHooks = []hookDef{
 	{"commit-msg", true},
 	{"post-commit", false},
+	{"post-rewrite", false},
 	{"pre-push", false},
 }
 
@@ -117,7 +118,7 @@ func hookContentWithChain(hookCmd, backupPath string, passArgs bool) string {
 // Hooks are always written to the *common* hooks dir, since git only reads
 // hooks/ from the shared .git/ even when invoked from a linked worktree.
 //
-// Pass skipPrePush=true to install only commit-msg and post-commit; used
+// Pass skipPrePush=true to install every hook except pre-push; used
 // by trace run, which drives the attestation push itself.
 func Install(gitDir string, skipPrePush bool) (string, error) {
 	hooksDir, err := resolveHooksDir(gitDir)

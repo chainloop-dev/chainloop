@@ -20,8 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,7 +38,8 @@ import (
 )
 
 // HandleCommitMsgHook appends a Chainloop-Trace-Sessions trailer to the commit
-// message when AI sessions have modified files staged for commit.
+// message when AI sessions have modified files staged for commit, or when the
+// commit amends one that has the trailer.
 // Errors are logged but never returned (to avoid blocking commits).
 func HandleCommitMsgHook(_ context.Context, msgFilePath string, log zerolog.Logger) error {
 	if err := handleCommitMsg(msgFilePath, log); err != nil {
@@ -62,21 +65,36 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 		return nil
 	}
 
+	client := tracegit.NewGoGitClient()
+
+	// An amend with a new message replaces HEAD's trailer, and its sessions
+	// cannot be matched again because HEAD already consumed their pending
+	// ranges. The amended commit still holds HEAD's lines, so HEAD's trailer
+	// is kept.
+	var sessionIDs []string
+	if isAmendOfHead(client, repoRoot) {
+		_, headMsg, err := client.CommitHeadInfo(repoRoot)
+		if err != nil {
+			return fmt.Errorf("get HEAD commit: %w", err)
+		}
+
+		sessionIDs = state.ParseSessionIDsFromTrailer(headMsg)
+		log.Debug().Strs("session_ids", sessionIDs).Msg("amending HEAD, keeping its trace sessions")
+	}
+
 	attrs, err := state.NewGitStore(gitDir).LoadAllAILineAttributions()
 	if err != nil {
 		return fmt.Errorf("load AI line attributions: %w", err)
 	}
-	if len(attrs) == 0 {
-		return nil
+	if len(attrs) > 0 {
+		stagedFiles, err := client.StagedFiles(repoRoot)
+		if err != nil {
+			return fmt.Errorf("get staged files: %w", err)
+		}
+
+		sessionIDs = mergeSessionIDs(sessionIDs, matchSessionsToFiles(attrs, stagedFiles))
 	}
 
-	client := tracegit.NewGoGitClient()
-	stagedFiles, err := client.StagedFiles(repoRoot)
-	if err != nil {
-		return fmt.Errorf("get staged files: %w", err)
-	}
-
-	sessionIDs := matchSessionsToFiles(attrs, stagedFiles)
 	if len(sessionIDs) == 0 {
 		return nil
 	}
@@ -84,6 +102,35 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 	log.Debug().Strs("session_ids", sessionIDs).Msg("appending trace sessions trailer")
 
 	return appendTrailer(msgFilePath, sessionIDs)
+}
+
+// isAmendOfHead reports whether the commit being made replaces HEAD. Git gives
+// the commit-msg hook no direct sign of an amend done with -m, but it exports
+// the author date of the new commit in GIT_AUTHOR_DATE as "@<unix> <tz>". An
+// amend keeps the author date of HEAD, and any other commit, --allow-empty
+// included, carries the current time.
+//
+// An amend with --reset-author, or an author date that the user set in
+// another format, is not seen here. The post-rewrite hook still carries the
+// sessions over to the local record for those.
+func isAmendOfHead(client tracegit.Client, repoRoot string) bool {
+	raw, ok := strings.CutPrefix(os.Getenv("GIT_AUTHOR_DATE"), "@")
+	if !ok {
+		return false
+	}
+
+	secs, _, _ := strings.Cut(raw, " ")
+	authored, err := strconv.ParseInt(secs, 10, 64)
+	if err != nil {
+		return false
+	}
+
+	headAuthored, err := client.HeadAuthorTime(repoRoot)
+	if err != nil {
+		return false
+	}
+
+	return headAuthored.Unix() == authored
 }
 
 // fileOwner is the session currently credited with a staged file's pending
@@ -251,6 +298,106 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 	log.Info().Str("sha", sha).Msg("commit record saved")
 
 	return nil
+}
+
+// HandlePostRewriteHook handles the post-rewrite git hook, which git runs after
+// `commit --amend` and `rebase` with one "<old-sha> <new-sha> [extra]" line per
+// rewritten commit on stdin.
+// Errors are logged but never returned (to avoid blocking the rewrite).
+func HandlePostRewriteHook(_ context.Context, log zerolog.Logger) error {
+	if err := handlePostRewrite(os.Stdin, log); err != nil {
+		log.Debug().Err(err).Msg("post-rewrite hook failed")
+	}
+
+	return nil
+}
+
+// handlePostRewrite copies the session IDs of each rewritten commit onto the
+// record of the commit that replaced it. Without this, an amend that replaces
+// the message loses the trailer, and post-commit cannot derive the sessions
+// again because the original commit already consumed their pending ranges. The
+// old record is then dropped as an orphan at push time, taking the sessions
+// with it.
+//
+// Only records that post-commit already wrote are updated: the rewrite hook
+// carries sessions forward, it does not decide which commits are recorded.
+func handlePostRewrite(r io.Reader, log zerolog.Logger) error {
+	gitDir, _, err := tracegit.FindGitDirAndRoot()
+	if err != nil {
+		return err
+	}
+
+	log.Debug().Str("git_dir", gitDir).Msg("post-rewrite hook invoked")
+
+	store := state.NewGitStore(gitDir)
+	records, err := store.LoadAllCommitRecords()
+	if err != nil {
+		return fmt.Errorf("load commit records: %w", err)
+	}
+
+	bySHA := make(map[string]*state.CommitRecord, len(records))
+	for _, rec := range records {
+		bySHA[rec.SHA] = rec
+	}
+
+	// A squash maps several old commits onto one new commit, so collect the
+	// sessions of all of them before writing.
+	inherited := make(map[string][]string)
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) < 2 {
+			continue
+		}
+
+		if old, ok := bySHA[fields[0]]; ok && len(old.SessionIDs) > 0 {
+			inherited[fields[1]] = append(inherited[fields[1]], old.SessionIDs...)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read rewritten commits: %w", err)
+	}
+
+	for newSHA, sessionIDs := range inherited {
+		rec, ok := bySHA[newSHA]
+		if !ok {
+			log.Debug().Str("sha", newSHA).Msg("no record for rewritten commit, skipping")
+			continue
+		}
+
+		merged := mergeSessionIDs(rec.SessionIDs, sessionIDs)
+		if len(merged) == len(rec.SessionIDs) {
+			continue
+		}
+
+		log.Debug().Str("sha", newSHA).Strs("session_ids", merged).Msg("carrying sessions over to rewritten commit")
+
+		rec.SessionIDs = merged
+		if err := store.SaveCommitRecord(rec); err != nil {
+			return fmt.Errorf("save commit record %s: %w", newSHA, err)
+		}
+	}
+
+	return nil
+}
+
+// mergeSessionIDs returns the sorted union of a and b without duplicates.
+func mergeSessionIDs(a, b []string) []string {
+	seen := make(map[string]struct{}, len(a)+len(b))
+	out := make([]string, 0, len(a)+len(b))
+	for _, list := range [][]string{a, b} {
+		for _, id := range list {
+			if _, dup := seen[id]; dup {
+				continue
+			}
+			seen[id] = struct{}{}
+			out = append(out, id)
+		}
+	}
+
+	sort.Strings(out)
+
+	return out
 }
 
 // deriveSessionIDsForCommit scans ai-lines data and returns session IDs
