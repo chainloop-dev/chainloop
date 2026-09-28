@@ -216,15 +216,18 @@ func (x *Credentials_AWSSecretManager) GetRegion() string {
 
 type Credentials_Vault struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// TODO: Use application role auth instead
+	// Static token. Set exactly one of token or kubernetes_auth.
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	// Instance address, including port
 	// i.e "http://127.0.0.1:8200"
 	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	// mount path of the kv engine, default /secret
-	MountPath     string `protobuf:"bytes,3,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	MountPath string `protobuf:"bytes,3,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
+	// Log in with the pod's service account token through Vault's Kubernetes auth method,
+	// instead of a static token. Set exactly one of token or kubernetes_auth.
+	KubernetesAuth *Credentials_Vault_KubernetesAuth `protobuf:"bytes,4,opt,name=kubernetes_auth,json=kubernetesAuth,proto3" json:"kubernetes_auth,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Credentials_Vault) Reset() {
@@ -276,6 +279,13 @@ func (x *Credentials_Vault) GetMountPath() string {
 		return x.MountPath
 	}
 	return ""
+}
+
+func (x *Credentials_Vault) GetKubernetesAuth() *Credentials_Vault_KubernetesAuth {
+	if x != nil {
+		return x.KubernetesAuth
+	}
+	return nil
 }
 
 type Credentials_GCPSecretManager struct {
@@ -456,11 +466,74 @@ func (x *Credentials_AWSSecretManager_Creds) GetSecretKey() string {
 	return ""
 }
 
+type Credentials_Vault_KubernetesAuth struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Vault role bound to the service account
+	Role string `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	// mount path of the Kubernetes auth method, default "kubernetes"
+	MountPath string `protobuf:"bytes,2,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
+	// path to the service account token, default /var/run/secrets/kubernetes.io/serviceaccount/token
+	TokenPath     string `protobuf:"bytes,3,opt,name=token_path,json=tokenPath,proto3" json:"token_path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Credentials_Vault_KubernetesAuth) Reset() {
+	*x = Credentials_Vault_KubernetesAuth{}
+	mi := &file_credentials_v1_config_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Credentials_Vault_KubernetesAuth) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Credentials_Vault_KubernetesAuth) ProtoMessage() {}
+
+func (x *Credentials_Vault_KubernetesAuth) ProtoReflect() protoreflect.Message {
+	mi := &file_credentials_v1_config_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Credentials_Vault_KubernetesAuth.ProtoReflect.Descriptor instead.
+func (*Credentials_Vault_KubernetesAuth) Descriptor() ([]byte, []int) {
+	return file_credentials_v1_config_proto_rawDescGZIP(), []int{0, 1, 0}
+}
+
+func (x *Credentials_Vault_KubernetesAuth) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *Credentials_Vault_KubernetesAuth) GetMountPath() string {
+	if x != nil {
+		return x.MountPath
+	}
+	return ""
+}
+
+func (x *Credentials_Vault_KubernetesAuth) GetTokenPath() string {
+	if x != nil {
+		return x.TokenPath
+	}
+	return ""
+}
+
 var File_credentials_v1_config_proto protoreflect.FileDescriptor
 
 const file_credentials_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"\x1bcredentials/v1/config.proto\x12\x0ecredentials.v1\x1a\x1bbuf/validate/validate.proto\"\xfa\a\n" +
+	"\x1bcredentials/v1/config.proto\x12\x0ecredentials.v1\x1a\x1bbuf/validate/validate.proto\"\xba\t\n" +
 	"\vCredentials\x12\\\n" +
 	"\x12aws_secret_manager\x18\x01 \x01(\v2,.credentials.v1.Credentials.AWSSecretManagerH\x00R\x10awsSecretManager\x129\n" +
 	"\x05vault\x18\x02 \x01(\v2!.credentials.v1.Credentials.VaultH\x00R\x05vault\x12\\\n" +
@@ -474,12 +547,19 @@ const file_credentials_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"access_key\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\taccessKey\x12&\n" +
 	"\n" +
-	"secret_key\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tsecretKey\x1ah\n" +
-	"\x05Vault\x12\x1d\n" +
-	"\x05token\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x05token\x12!\n" +
+	"secret_key\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tsecretKey\x1a\xa7\x02\n" +
+	"\x05Vault\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12!\n" +
 	"\aaddress\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\aaddress\x12\x1d\n" +
 	"\n" +
-	"mount_path\x18\x03 \x01(\tR\tmountPath\x1aj\n" +
+	"mount_path\x18\x03 \x01(\tR\tmountPath\x12Y\n" +
+	"\x0fkubernetes_auth\x18\x04 \x01(\v20.credentials.v1.Credentials.Vault.KubernetesAuthR\x0ekubernetesAuth\x1ak\n" +
+	"\x0eKubernetesAuth\x12\x1b\n" +
+	"\x04role\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04role\x12\x1d\n" +
+	"\n" +
+	"mount_path\x18\x02 \x01(\tR\tmountPath\x12\x1d\n" +
+	"\n" +
+	"token_path\x18\x03 \x01(\tR\ttokenPath\x1aj\n" +
 	"\x10GCPSecretManager\x12&\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tprojectId\x12.\n" +
@@ -503,7 +583,7 @@ func file_credentials_v1_config_proto_rawDescGZIP() []byte {
 	return file_credentials_v1_config_proto_rawDescData
 }
 
-var file_credentials_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_credentials_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_credentials_v1_config_proto_goTypes = []any{
 	(*Credentials)(nil),                        // 0: credentials.v1.Credentials
 	(*Credentials_AWSSecretManager)(nil),       // 1: credentials.v1.Credentials.AWSSecretManager
@@ -511,6 +591,7 @@ var file_credentials_v1_config_proto_goTypes = []any{
 	(*Credentials_GCPSecretManager)(nil),       // 3: credentials.v1.Credentials.GCPSecretManager
 	(*Credentials_AzureKeyVault)(nil),          // 4: credentials.v1.Credentials.AzureKeyVault
 	(*Credentials_AWSSecretManager_Creds)(nil), // 5: credentials.v1.Credentials.AWSSecretManager.Creds
+	(*Credentials_Vault_KubernetesAuth)(nil),   // 6: credentials.v1.Credentials.Vault.KubernetesAuth
 }
 var file_credentials_v1_config_proto_depIdxs = []int32{
 	1, // 0: credentials.v1.Credentials.aws_secret_manager:type_name -> credentials.v1.Credentials.AWSSecretManager
@@ -518,11 +599,12 @@ var file_credentials_v1_config_proto_depIdxs = []int32{
 	3, // 2: credentials.v1.Credentials.gcp_secret_manager:type_name -> credentials.v1.Credentials.GCPSecretManager
 	4, // 3: credentials.v1.Credentials.azure_key_vault:type_name -> credentials.v1.Credentials.AzureKeyVault
 	5, // 4: credentials.v1.Credentials.AWSSecretManager.creds:type_name -> credentials.v1.Credentials.AWSSecretManager.Creds
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	6, // 5: credentials.v1.Credentials.Vault.kubernetes_auth:type_name -> credentials.v1.Credentials.Vault.KubernetesAuth
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_credentials_v1_config_proto_init() }
@@ -542,7 +624,7 @@ func file_credentials_v1_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_credentials_v1_config_proto_rawDesc), len(file_credentials_v1_config_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
