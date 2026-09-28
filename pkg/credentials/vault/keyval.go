@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -42,7 +43,24 @@ type NewManagerOpts struct {
 	AuthToken, Address, MountPath, SecretPrefix string
 	Logger                                      log.Logger
 	Role                                        credentials.Role
+	// KubernetesAuth logs in with the pod's service account token instead of AuthToken. Set exactly one of them.
+	KubernetesAuth *KubernetesAuthOpts
 }
+
+// KubernetesAuthOpts configures Vault's Kubernetes auth method.
+type KubernetesAuthOpts struct {
+	// Role is the Vault role bound to the service account.
+	Role string
+	// MountPath of the auth method; defaults to "kubernetes".
+	MountPath string
+	// TokenPath is the service account token file; defaults to the in-pod projected token.
+	TokenPath string
+}
+
+const (
+	defaultKubernetesAuthMountPath = "kubernetes"
+	defaultServiceAccountTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec G101 -- a file path
+)
 
 type Role int64
 
@@ -59,8 +77,11 @@ const healthCheckNonExisting = "chainloop-non-existing"
 // Configured to write secrets in the KVv2 engine referenced by the provided mount path.
 // SecretPrefix is used to namespace secrets in the KVv2 engine during write operations.
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
-	if opts.AuthToken == "" || opts.Address == "" {
-		return nil, errors.New("auth token and instance address are required")
+	if opts.Address == "" {
+		return nil, errors.New("instance address is required")
+	}
+	if (opts.AuthToken == "") == (opts.KubernetesAuth == nil) {
+		return nil, errors.New("exactly one of auth token or kubernetes auth is required")
 	}
 
 	config := vault.DefaultConfig()
@@ -72,19 +93,28 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 		return nil, err
 	}
 
-	client.SetToken(opts.AuthToken)
-
-	mountPath := defaultKVMountPath
-	if opts.MountPath != "" {
-		mountPath = opts.MountPath
-	}
-
 	l := opts.Logger
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 
 	logger := servicelogger.ScopedHelper(l, "credentials/vault")
+
+	if opts.KubernetesAuth != nil {
+		login, err := kubernetesLogin(context.Background(), client, opts.KubernetesAuth)
+		if err != nil {
+			return nil, fmt.Errorf("logging in with kubernetes auth: %w", err)
+		}
+		go keepLoggedIn(client, opts.KubernetesAuth, login, logger)
+	} else {
+		client.SetToken(opts.AuthToken)
+	}
+
+	mountPath := defaultKVMountPath
+	if opts.MountPath != "" {
+		mountPath = opts.MountPath
+	}
+
 	logger.Infow("msg", "configuring vault", "address", opts.Address, "mount_path", mountPath, "prefix", opts.SecretPrefix, "role", opts.Role)
 
 	// Check address, token validity and mount path
@@ -100,6 +130,77 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}
 
 	return &Manager{kv, opts.SecretPrefix, logger}, nil
+}
+
+// kubernetesLogin exchanges the service account token for a Vault token and sets it on the client. The token file is
+// read on every login: a projected service account token is rotated by the kubelet.
+func kubernetesLogin(ctx context.Context, client *vault.Client, opts *KubernetesAuthOpts) (*vault.Secret, error) {
+	if opts.Role == "" {
+		return nil, errors.New("kubernetes auth role is required")
+	}
+	mount := opts.MountPath
+	if mount == "" {
+		mount = defaultKubernetesAuthMountPath
+	}
+	tokenPath := opts.TokenPath
+	if tokenPath == "" {
+		tokenPath = defaultServiceAccountTokenPath
+	}
+
+	jwt, err := os.ReadFile(tokenPath) // #nosec G304 -- operator-configured path
+	if err != nil {
+		return nil, fmt.Errorf("reading service account token: %w", err)
+	}
+
+	secret, err := client.Logical().WriteWithContext(ctx, fmt.Sprintf("auth/%s/login", strings.Trim(mount, "/")), map[string]any{
+		"role": opts.Role,
+		"jwt":  strings.TrimSpace(string(jwt)),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if secret == nil || secret.Auth == nil || secret.Auth.ClientToken == "" {
+		return nil, errors.New("kubernetes auth login returned no client token")
+	}
+
+	client.SetToken(secret.Auth.ClientToken)
+	return secret, nil
+}
+
+// keepLoggedIn renews the login's lease for as long as Vault allows, then logs in again. It runs for the life of the
+// process, like the manager itself.
+func keepLoggedIn(client *vault.Client, opts *KubernetesAuthOpts, login *vault.Secret, logger *log.Helper) {
+	for {
+		if login != nil && login.Auth != nil && login.Auth.Renewable {
+			watcher, err := client.NewLifetimeWatcher(&vault.LifetimeWatcherInput{Secret: login})
+			if err != nil {
+				logger.Errorw("msg", "vault token lifetime watcher", "error", err)
+			} else {
+				go watcher.Start()
+				for done := false; !done; {
+					select {
+					case err := <-watcher.DoneCh():
+						if err != nil {
+							logger.Warnw("msg", "vault token renewal stopped", "error", err)
+						}
+						done = true
+					case <-watcher.RenewCh():
+					}
+				}
+				watcher.Stop()
+			}
+		} else if login != nil && login.Auth != nil {
+			// Not renewable: log in again shortly before the lease ends.
+			time.Sleep(time.Duration(login.Auth.LeaseDuration) * time.Second * 9 / 10)
+		}
+
+		var err error
+		if login, err = kubernetesLogin(context.Background(), client, opts); err != nil {
+			logger.Errorw("msg", "vault kubernetes re-login", "error", err)
+			login = nil
+			time.Sleep(10 * time.Second)
+		}
+	}
 }
 
 // validateWriterClient checks if the client is valid by writing and deleting a secret

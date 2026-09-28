@@ -77,7 +77,18 @@ vault:
   token: {{ default "notasecret" $tokenEnvVar | quote }}
 {{- else if (required "vault backend selected but configuration not provided" .vault ) }}
   address: {{ required "vault address required" .vault.address | quote }}
-  token: {{ required "vault token required" .vault.token | quote }}
+  {{- with .vault.kubernetesAuth }}
+  kubernetes_auth:
+    role: {{ required "vault kubernetesAuth.role required" .role | quote }}
+    {{- with .mountPath }}
+    mount_path: {{ . | quote }}
+    {{- end }}
+    {{- with .tokenPath }}
+    token_path: {{ . | quote }}
+    {{- end }}
+  {{- else }}
+  token: {{ required "vault token (or kubernetesAuth) required" .vault.token | quote }}
+  {{- end }}
 {{- end }}
 
 {{- else if eq .backend "awsSecretManager" }}
