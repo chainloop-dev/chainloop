@@ -16,6 +16,8 @@
 package git
 
 import (
+	"time"
+
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
@@ -48,6 +50,8 @@ type Client interface {
 	CodeChangesForCommits(repoRoot string, shas []string) (*aicodingsession.CodeChanges, error)
 	// CommitHeadInfo returns the SHA and message of HEAD.
 	CommitHeadInfo(repoRoot string) (sha, message string, err error)
+	// HeadAuthorTime returns the author date of HEAD.
+	HeadAuthorTime(repoRoot string) (time.Time, error)
 	// GeneratedMatcher returns a predicate that reports whether a repo-relative
 	// path is marked linguist-generated=true in the repository's .gitattributes.
 	// Implementations must return a no-op matcher (always false) when attributes

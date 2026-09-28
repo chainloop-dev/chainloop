@@ -122,7 +122,7 @@ func TestInstall(t *testing.T) {
 		assert.Equal(t, filepath.Join(commonDir, "hooks"), hooksDir)
 
 		// Hooks must land under the common dir, not the worktree-private dir.
-		for _, name := range []string{"commit-msg", "post-commit", "pre-push"} {
+		for _, name := range []string{"commit-msg", "post-commit", "post-rewrite", "pre-push"} {
 			content, err := os.ReadFile(filepath.Join(commonDir, "hooks", name))
 			require.NoError(t, err, "hook %s should exist in common .git/hooks", name)
 			assert.Contains(t, string(content), HookMarker)
@@ -196,7 +196,7 @@ func TestHookScriptsExitZero(t *testing.T) {
 	_, err := Install(gitDir, false)
 	require.NoError(t, err)
 
-	for _, name := range []string{"commit-msg", "post-commit", "pre-push"} {
+	for _, name := range []string{"commit-msg", "post-commit", "post-rewrite", "pre-push"} {
 		//nolint:gosec // the hook path is derived from t.TempDir(), not from user input
 		cmd := exec.Command("/bin/sh", filepath.Join(hooksDir, name), "msgfile")
 		cmd.Env = []string{"PATH="}
@@ -214,7 +214,7 @@ func TestUninstall(t *testing.T) {
 		_, err = Uninstall(gitDir)
 		require.NoError(t, err)
 
-		for _, name := range []string{"commit-msg", "post-commit", "pre-push"} {
+		for _, name := range []string{"commit-msg", "post-commit", "post-rewrite", "pre-push"} {
 			_, err := os.Stat(filepath.Join(gitDir, "hooks", name))
 			assert.True(t, os.IsNotExist(err))
 		}

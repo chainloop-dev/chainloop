@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
@@ -275,6 +276,17 @@ func (c *ExecClient) CommitHeadInfo(repoRoot string) (sha, message string, err e
 
 	sha, message, _ = strings.Cut(out, "\n")
 	return sha, strings.TrimSpace(message), nil
+}
+
+// HeadAuthorTime returns the author date of HEAD.
+func (c *ExecClient) HeadAuthorTime(repoRoot string) (time.Time, error) {
+	out := gitOutput(repoRoot, "log", "-1", "--format=%at", "HEAD")
+	secs, err := strconv.ParseInt(out, 10, 64)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("git log HEAD author date %q: %w", out, err)
+	}
+
+	return time.Unix(secs, 0), nil
 }
 
 // StagedFiles returns repo-relative paths of files staged for the current commit.

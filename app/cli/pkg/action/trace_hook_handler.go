@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,7 +38,8 @@ import (
 )
 
 // HandleCommitMsgHook appends a Chainloop-Trace-Sessions trailer to the commit
-// message when AI sessions have modified files staged for commit.
+// message when AI sessions have modified files staged for commit, or when the
+// commit amends one that has the trailer.
 // Errors are logged but never returned (to avoid blocking commits).
 func HandleCommitMsgHook(_ context.Context, msgFilePath string, log zerolog.Logger) error {
 	if err := handleCommitMsg(msgFilePath, log); err != nil {
@@ -64,41 +66,35 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 	}
 
 	client := tracegit.NewGoGitClient()
-	stagedFiles, err := client.StagedFiles(repoRoot)
-	if err != nil {
-		return fmt.Errorf("get staged files: %w", err)
-	}
 
-	// With nothing staged, the new commit has HEAD's tree, so it can only be
-	// an amend of HEAD (or an --allow-empty commit). Git gives the hook no
-	// other sign of an amend done with -m, and that message replaces HEAD's
-	// trailer. The sessions cannot be matched again because HEAD already
-	// consumed their pending ranges, so HEAD's trailer is copied instead.
-	if len(stagedFiles) == 0 && commitsRegularIndex() {
+	// An amend with a new message replaces HEAD's trailer, and its sessions
+	// cannot be matched again because HEAD already consumed their pending
+	// ranges. The amended commit still holds HEAD's lines, so HEAD's trailer
+	// is kept.
+	var sessionIDs []string
+	if isAmendOfHead(client, repoRoot) {
 		_, headMsg, err := client.CommitHeadInfo(repoRoot)
 		if err != nil {
 			return fmt.Errorf("get HEAD commit: %w", err)
 		}
 
-		sessionIDs := state.ParseSessionIDsFromTrailer(headMsg)
-		if len(sessionIDs) == 0 {
-			return nil
-		}
-
-		log.Debug().Strs("session_ids", sessionIDs).Msg("nothing staged, keeping the trace sessions trailer of HEAD")
-
-		return appendTrailer(msgFilePath, sessionIDs)
+		sessionIDs = state.ParseSessionIDsFromTrailer(headMsg)
+		log.Debug().Strs("session_ids", sessionIDs).Msg("amending HEAD, keeping its trace sessions")
 	}
 
 	attrs, err := state.NewGitStore(gitDir).LoadAllAILineAttributions()
 	if err != nil {
 		return fmt.Errorf("load AI line attributions: %w", err)
 	}
-	if len(attrs) == 0 {
-		return nil
+	if len(attrs) > 0 {
+		stagedFiles, err := client.StagedFiles(repoRoot)
+		if err != nil {
+			return fmt.Errorf("get staged files: %w", err)
+		}
+
+		sessionIDs = mergeSessionIDs(sessionIDs, matchSessionsToFiles(attrs, stagedFiles))
 	}
 
-	sessionIDs := matchSessionsToFiles(attrs, stagedFiles)
 	if len(sessionIDs) == 0 {
 		return nil
 	}
@@ -108,13 +104,33 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 	return appendTrailer(msgFilePath, sessionIDs)
 }
 
-// commitsRegularIndex reports whether git builds the commit from the regular
-// index, which is the one StagedFiles reads. For `git commit -a` and
-// `git commit <path>`, git builds the commit from a temporary index
-// (index.lock or next-index-*.lock) and names it in GIT_INDEX_FILE. The
-// regular index can then show nothing staged for a commit that changes files.
-func commitsRegularIndex() bool {
-	return !strings.HasSuffix(os.Getenv("GIT_INDEX_FILE"), ".lock")
+// isAmendOfHead reports whether the commit being made replaces HEAD. Git gives
+// the commit-msg hook no direct sign of an amend done with -m, but it exports
+// the author date of the new commit in GIT_AUTHOR_DATE as "@<unix> <tz>". An
+// amend keeps the author date of HEAD, and any other commit, --allow-empty
+// included, carries the current time.
+//
+// An amend with --reset-author, or an author date that the user set in
+// another format, is not seen here. The post-rewrite hook still carries the
+// sessions over to the local record for those.
+func isAmendOfHead(client tracegit.Client, repoRoot string) bool {
+	raw, ok := strings.CutPrefix(os.Getenv("GIT_AUTHOR_DATE"), "@")
+	if !ok {
+		return false
+	}
+
+	secs, _, _ := strings.Cut(raw, " ")
+	authored, err := strconv.ParseInt(secs, 10, 64)
+	if err != nil {
+		return false
+	}
+
+	headAuthored, err := client.HeadAuthorTime(repoRoot)
+	if err != nil {
+		return false
+	}
+
+	return headAuthored.Unix() == authored
 }
 
 // fileOwner is the session currently credited with a staged file's pending
