@@ -304,7 +304,7 @@ func validateTokenScope(scope authz.ResourceType, scopeID, orgID, projectID *uui
 			return NewErrValidationStr("an instance scope has no id and belongs to an instance-level token")
 		}
 	case authz.ResourceTypeProduct:
-		// Not until the control plane confines such a token to its memberships: everything
+		// Not until the control plane confines such a token to its project list: everything
 		// else in it would read a token with no project as organization-wide.
 		return NewErrValidationStr(fmt.Sprintf("unsupported token scope %q", scope))
 	default:
@@ -562,6 +562,19 @@ func WithAPITokenScope(scope authz.ResourceType) APITokenListOpt {
 		opts.FilterByScope = scope
 	}
 }
+
+// Deprecated: use authz.ResourceType. Kept so that callers built against the older API, such as
+// the Chainloop platform's main branch, still compile against WithAPITokenScope.
+type APITokenScope = authz.ResourceType
+
+const (
+	// Deprecated: use authz.ResourceTypeProject.
+	APITokenScopeProject = authz.ResourceTypeProject
+	// Deprecated: use authz.ResourceTypeOrganization.
+	APITokenScopeGlobal = authz.ResourceTypeOrganization
+	// Deprecated: use authz.ResourceTypeInstance.
+	APITokenScopeInstance = authz.ResourceTypeInstance
+)
 
 // WithIncludeSystemTokens opts the listing in to also return system-managed tokens.
 // By default, system tokens are hidden.
