@@ -18,6 +18,7 @@ package data
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -114,6 +115,96 @@ func (r *APITokenRepo) liveProjectsInOrg(ctx context.Context, orgID *uuid.UUID, 
 	}
 
 	return canonical, nil
+}
+
+// SetScopeProjects sets the project list of every active token of the resource scope in the
+// organization, writing only the rows whose list differs, and returns how many it changed.
+func (r *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetScopeProjects")
+	defer span.End()
+
+	if !biz.IsResourceScopeKind(kind) {
+		return 0, biz.NewErrValidationStr(fmt.Sprintf("tokens scoped to %q carry no project list", kind))
+	}
+
+	ids, err := r.liveProjectsInOrg(ctx, &orgID, projectIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	tokens, err := r.scopeTokens(orgID, kind, scopeID).Select(apitoken.FieldID, apitoken.FieldProjectIds).All(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("listing the scope's tokens: %w", err)
+	}
+
+	changed := make([]uuid.UUID, 0, len(tokens))
+	for _, t := range tokens {
+		if !slices.Equal(t.ProjectIds, ids) {
+			changed = append(changed, t.ID)
+		}
+	}
+
+	// Never build an update from an empty IN list.
+	if len(changed) == 0 {
+		return 0, nil
+	}
+
+	n, err := r.data.DB.APIToken.Update().Where(apitoken.IDIn(changed...)).SetProjectIds(ids).Save(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("setting the scope's projects: %w", err)
+	}
+
+	return n, nil
+}
+
+// SetScopePolicies sets the policies of every active token of the resource scope in the
+// organization, writing only the rows whose list differs, and returns how many it changed.
+func (r *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetScopePolicies")
+	defer span.End()
+
+	if !biz.IsResourceScopeKind(kind) {
+		return 0, biz.NewErrValidationStr(fmt.Sprintf("tokens scoped to %q take their policies at creation", kind))
+	}
+
+	if slices.ContainsFunc(policies, biz.IsOrgLevelTokenPolicy) {
+		return 0, biz.NewErrValidationStr("a token confined to a resource cannot carry organization-level policies")
+	}
+
+	tokens, err := r.scopeTokens(orgID, kind, scopeID).Select(apitoken.FieldID, apitoken.FieldPolicies).All(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("listing the scope's tokens: %w", err)
+	}
+
+	changed := make([]uuid.UUID, 0, len(tokens))
+	for _, t := range tokens {
+		if !slices.EqualFunc(t.Policies, policies, func(a, b *authz.Policy) bool {
+			return a.Resource == b.Resource && a.Action == b.Action
+		}) {
+			changed = append(changed, t.ID)
+		}
+	}
+
+	if len(changed) == 0 {
+		return 0, nil
+	}
+
+	n, err := r.data.DB.APIToken.Update().Where(apitoken.IDIn(changed...)).SetPolicies(policies).Save(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("setting the scope's policies: %w", err)
+	}
+
+	return n, nil
+}
+
+// scopeTokens selects the active tokens of a resource scope in an organization.
+func (r *APITokenRepo) scopeTokens(orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID) *ent.APITokenQuery {
+	return r.data.DB.APIToken.Query().Where(
+		apitoken.OrganizationIDEQ(orgID),
+		apitoken.ScopeEQ(kind),
+		apitoken.ScopeIDEQ(scopeID),
+		apitoken.RevokedAtIsNil(),
+	)
 }
 
 func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {

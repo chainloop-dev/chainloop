@@ -1250,3 +1250,96 @@ func (s *apiTokenTestSuite) TestListProjectFilterDistinguishesEmptyFromNil() {
 		}
 	})
 }
+
+// The platform rewrites a product's tokens in one call: every active token of that product in
+// that organization, and only the rows that differ.
+func (s *apiTokenTestSuite) TestSetScopeProjects() {
+	ctx := context.Background()
+	orgID := uuid.MustParse(s.org.ID)
+	productID, otherProductID := uuid.New(), uuid.New()
+	mint := func(product uuid.UUID, ids ...uuid.UUID) *biz.APIToken {
+		t, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+			biz.APITokenWithScope(authz.ResourceTypeProduct, &product), biz.APITokenWithProjectIDs(ids))
+		s.Require().NoError(err)
+		return t
+	}
+	first, second := mint(productID, s.p1.ID), mint(productID)
+	revoked := mint(productID, s.p1.ID)
+	s.Require().NoError(s.APIToken.Revoke(ctx, s.org.ID, revoked.ID.String()))
+	other := mint(otherProductID, s.p1.ID)
+	want := biz.CanonicalProjectIDs([]uuid.UUID{s.p1.ID, s.p2.ID})
+
+	n, err := s.APIToken.SetScopeProjects(ctx, orgID, authz.ResourceTypeProduct, productID, []uuid.UUID{s.p2.ID, s.p1.ID})
+	s.Require().NoError(err)
+	s.Equal(2, n, "both active tokens of the product change")
+	for _, id := range []uuid.UUID{first.ID, second.ID} {
+		got, err := s.APIToken.FindByID(ctx, id.String())
+		s.Require().NoError(err)
+		s.Equal(want, got.ProjectIDs)
+	}
+
+	n, err = s.APIToken.SetScopeProjects(ctx, orgID, authz.ResourceTypeProduct, productID, []uuid.UUID{s.p1.ID, s.p2.ID, s.p1.ID})
+	s.Require().NoError(err)
+	s.Zero(n, "the same set in another order changes nothing")
+
+	for _, id := range []uuid.UUID{revoked.ID, other.ID} {
+		got, err := s.APIToken.FindByID(ctx, id.String())
+		s.Require().NoError(err)
+		s.Equal([]uuid.UUID{s.p1.ID}, got.ProjectIDs, "a revoked token and another product's token keep their list")
+	}
+
+	org2ID := uuid.MustParse(s.org2.ID)
+	n, err = s.APIToken.SetScopeProjects(ctx, org2ID, authz.ResourceTypeProduct, productID, []uuid.UUID{})
+	s.Require().NoError(err)
+	s.Zero(n, "another organization's call touches nothing here")
+}
+
+func (s *apiTokenTestSuite) TestSetScopeProjectsRefusals() {
+	ctx := context.Background()
+	orgID := uuid.MustParse(s.org.ID)
+	foreign, err := s.Project.Create(ctx, s.org2.ID, "foreign-set")
+	s.Require().NoError(err)
+
+	testCases := []struct {
+		name string
+		kind authz.ResourceType
+		ids  []uuid.UUID
+	}{
+		{name: "a project of another organization", kind: authz.ResourceTypeProduct, ids: []uuid.UUID{foreign.ID}},
+		{name: "an unknown project", kind: authz.ResourceTypeProduct, ids: []uuid.UUID{uuid.New()}},
+		{name: "a scope with no project list", kind: authz.ResourceTypeOrganization, ids: []uuid.UUID{s.p1.ID}},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			_, err := s.APIToken.SetScopeProjects(ctx, orgID, tc.kind, uuid.New(), tc.ids)
+			s.Require().Error(err)
+			s.True(biz.IsErrValidation(err), "got %v", err)
+		})
+	}
+}
+
+func (s *apiTokenTestSuite) TestSetScopePolicies() {
+	ctx := context.Background()
+	orgID := uuid.MustParse(s.org.ID)
+	productID := uuid.New()
+	token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil))
+	s.Require().NoError(err)
+	policies := []*authz.Policy{authz.PolicyWorkflowRunRead, authz.PolicyWorkflowContractDelete}
+
+	n, err := s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, policies)
+	s.Require().NoError(err)
+	s.Equal(1, n)
+	got, err := s.APIToken.FindByID(ctx, token.ID.String())
+	s.Require().NoError(err)
+	s.Equal(policies, got.Policies)
+
+	n, err = s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, policies)
+	s.Require().NoError(err)
+	s.Zero(n, "an unchanged list writes nothing")
+
+	_, err = s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, []*authz.Policy{authz.PolicyAPITokenCreate})
+	s.Require().Error(err)
+	s.True(biz.IsErrValidation(err), "organization-level policies are refused")
+}

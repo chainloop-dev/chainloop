@@ -182,6 +182,12 @@ type APITokenRepo interface {
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 	FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*APIToken, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
+	// SetScopeProjects sets the project list of every active token of a resource scope in the
+	// organization, writing only the rows whose list differs, and returns how many it changed.
+	SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)
+	// SetScopePolicies sets the policies of every active token of a resource scope in the
+	// organization, writing only the rows whose list differs, and returns how many it changed.
+	SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)
 }
 
 type APITokenUseCase struct {
@@ -767,4 +773,30 @@ func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string)
 	}
 
 	return nil
+}
+
+// SetScopeProjects sets the projects every active token of a resource scope reaches. The
+// Chainloop platform calls it whenever the resource's projects change; the repository validates
+// the list.
+func (uc *APITokenUseCase) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetScopeProjects")
+	defer span.End()
+
+	if !IsResourceScopeKind(kind) {
+		return 0, NewErrValidationStr(fmt.Sprintf("tokens scoped to %q carry no project list", kind))
+	}
+
+	return uc.apiTokenRepo.SetScopeProjects(ctx, orgID, kind, scopeID, projectIDs)
+}
+
+// SetScopePolicies sets the policies of every active token of a resource scope.
+func (uc *APITokenUseCase) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetScopePolicies")
+	defer span.End()
+
+	if !IsResourceScopeKind(kind) {
+		return 0, NewErrValidationStr(fmt.Sprintf("tokens scoped to %q take their policies at creation", kind))
+	}
+
+	return uc.apiTokenRepo.SetScopePolicies(ctx, orgID, kind, scopeID, policies)
 }

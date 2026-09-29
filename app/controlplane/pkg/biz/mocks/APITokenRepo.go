@@ -8,6 +8,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -531,6 +532,174 @@ func (_c *APITokenRepo_Revoke_Call) Return(err error) *APITokenRepo_Revoke_Call 
 }
 
 func (_c *APITokenRepo_Revoke_Call) RunAndReturn(run func(ctx context.Context, orgID *uuid.UUID, ID uuid.UUID) error) *APITokenRepo_Revoke_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetScopePolicies provides a mock function for the type APITokenRepo
+func (_mock *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
+	ret := _mock.Called(ctx, orgID, kind, scopeID, policies)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetScopePolicies")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, authz.ResourceType, uuid.UUID, []*authz.Policy) (int, error)); ok {
+		return returnFunc(ctx, orgID, kind, scopeID, policies)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, authz.ResourceType, uuid.UUID, []*authz.Policy) int); ok {
+		r0 = returnFunc(ctx, orgID, kind, scopeID, policies)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, authz.ResourceType, uuid.UUID, []*authz.Policy) error); ok {
+		r1 = returnFunc(ctx, orgID, kind, scopeID, policies)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// APITokenRepo_SetScopePolicies_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetScopePolicies'
+type APITokenRepo_SetScopePolicies_Call struct {
+	*mock.Call
+}
+
+// SetScopePolicies is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID uuid.UUID
+//   - kind authz.ResourceType
+//   - scopeID uuid.UUID
+//   - policies []*authz.Policy
+func (_e *APITokenRepo_Expecter) SetScopePolicies(ctx any, orgID any, kind any, scopeID any, policies any) *APITokenRepo_SetScopePolicies_Call {
+	return &APITokenRepo_SetScopePolicies_Call{Call: _e.mock.On("SetScopePolicies", ctx, orgID, kind, scopeID, policies)}
+}
+
+func (_c *APITokenRepo_SetScopePolicies_Call) Run(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy)) *APITokenRepo_SetScopePolicies_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 authz.ResourceType
+		if args[2] != nil {
+			arg2 = args[2].(authz.ResourceType)
+		}
+		var arg3 uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(uuid.UUID)
+		}
+		var arg4 []*authz.Policy
+		if args[4] != nil {
+			arg4 = args[4].([]*authz.Policy)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *APITokenRepo_SetScopePolicies_Call) Return(n int, err error) *APITokenRepo_SetScopePolicies_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *APITokenRepo_SetScopePolicies_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)) *APITokenRepo_SetScopePolicies_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetScopeProjects provides a mock function for the type APITokenRepo
+func (_mock *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
+	ret := _mock.Called(ctx, orgID, kind, scopeID, projectIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetScopeProjects")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, authz.ResourceType, uuid.UUID, []uuid.UUID) (int, error)); ok {
+		return returnFunc(ctx, orgID, kind, scopeID, projectIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, authz.ResourceType, uuid.UUID, []uuid.UUID) int); ok {
+		r0 = returnFunc(ctx, orgID, kind, scopeID, projectIDs)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, authz.ResourceType, uuid.UUID, []uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, orgID, kind, scopeID, projectIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// APITokenRepo_SetScopeProjects_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetScopeProjects'
+type APITokenRepo_SetScopeProjects_Call struct {
+	*mock.Call
+}
+
+// SetScopeProjects is a helper method to define mock.On call
+//   - ctx context.Context
+//   - orgID uuid.UUID
+//   - kind authz.ResourceType
+//   - scopeID uuid.UUID
+//   - projectIDs []uuid.UUID
+func (_e *APITokenRepo_Expecter) SetScopeProjects(ctx any, orgID any, kind any, scopeID any, projectIDs any) *APITokenRepo_SetScopeProjects_Call {
+	return &APITokenRepo_SetScopeProjects_Call{Call: _e.mock.On("SetScopeProjects", ctx, orgID, kind, scopeID, projectIDs)}
+}
+
+func (_c *APITokenRepo_SetScopeProjects_Call) Run(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID)) *APITokenRepo_SetScopeProjects_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 authz.ResourceType
+		if args[2] != nil {
+			arg2 = args[2].(authz.ResourceType)
+		}
+		var arg3 uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(uuid.UUID)
+		}
+		var arg4 []uuid.UUID
+		if args[4] != nil {
+			arg4 = args[4].([]uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *APITokenRepo_SetScopeProjects_Call) Return(n int, err error) *APITokenRepo_SetScopeProjects_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *APITokenRepo_SetScopeProjects_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)) *APITokenRepo_SetScopeProjects_Call {
 	_c.Call.Return(run)
 	return _c
 }
