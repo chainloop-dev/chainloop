@@ -353,6 +353,18 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Len(tokens, 2)
 	})
 
+	s.Run("the deprecated scope aliases build and list the same as authz.ResourceType", func() {
+		_, err := s.APIToken.Create(ctx, randomName(), nil, nil, nil, biz.APITokenWithScope(authz.ResourceTypeInstance, nil))
+		require.NoError(s.T(), err)
+
+		viaAlias, err := s.APIToken.List(ctx, "", biz.WithAPITokenScope(biz.APITokenScopeInstance))
+		s.NoError(err)
+		viaType, err := s.APIToken.List(ctx, "", biz.WithAPITokenScope(authz.ResourceTypeInstance))
+		s.NoError(err)
+		s.NotEmpty(viaType)
+		s.Equal(viaType, viaAlias)
+	})
+
 	s.Run("they are org scoped", func() {
 		tokens, err := s.APIToken.List(ctx, s.org.ID)
 		s.NoError(err)

@@ -605,6 +605,19 @@ func WithAPITokenScope(scope authz.ResourceType) APITokenListOpt {
 	}
 }
 
+// Deprecated: use authz.ResourceType. Kept so that callers built against the older API, such as
+// the Chainloop platform's main branch, still compile against WithAPITokenScope.
+type APITokenScope = authz.ResourceType
+
+const (
+	// Deprecated: use authz.ResourceTypeProject.
+	APITokenScopeProject = authz.ResourceTypeProject
+	// Deprecated: use authz.ResourceTypeOrganization.
+	APITokenScopeGlobal = authz.ResourceTypeOrganization
+	// Deprecated: use authz.ResourceTypeInstance.
+	APITokenScopeInstance = authz.ResourceTypeInstance
+)
+
 // WithIncludeSystemTokens opts the listing in to also return system-managed tokens.
 // By default, system tokens are hidden.
 func WithIncludeSystemTokens() APITokenListOpt {
