@@ -8,7 +8,7 @@ Chainloop is an open-source evidence store for Software Supply Chain attestation
 
 ## Design Specs
 
-Design specs live in `docs/specs/`. Each one records a design and its reasons at the time it was built. Read the relevant spec before you change that behavior. Cite requirement IDs (for example R-001) in PRs that implement them. When a change goes against an implemented spec, say so in the PR, and propose a new spec for a large change. Do not edit an implemented spec's design. Never put customer or user information in a spec. Parent tickets for specs live in the GitHub issues of this repository. Create and update specs with `br:eng-spec`, never by hand-rolling a new format.
+Design specs live in `docs/specs/`. Each one records an intended design and its reasons. Read the relevant spec before you change that behavior. Cite requirement IDs (for example R-001) in PRs that implement them. When a change goes against an implemented spec, say so in the PR, and propose a new spec for a large change. Do not edit an implemented spec's design. Never put customer or user information in a spec. Parent tickets for specs live in the GitHub issues of this repository. Create and update specs with `br:eng-spec`, never by hand-rolling a new format.
 
 ## Architecture
 
