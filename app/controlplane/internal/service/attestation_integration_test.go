@@ -254,6 +254,10 @@ func (s *getContractRBACIntegrationSuite) TestProductScopedTokenStaleProjectID()
 		WorkflowName: s.workflowA.Name,
 	})
 	s.Require().Error(err, "a soft-deleted project must not still be reachable through a stale id")
+	// The id is inert because every project lookup filters out a deleted project (the workflow
+	// lookup 404s before the RBAC/ReachesProject check ever runs) — not because the token's own
+	// project list was pruned.
+	s.True(kerrors.IsNotFound(err), "expected not found, got %v", err)
 }
 
 func TestGetContractRBACIntegration(t *testing.T) {
