@@ -154,8 +154,11 @@ func TestAuthorizeResourceForProductTokens(t *testing.T) {
 }
 
 // authorizeResource's refusal names what the token is confined to, and never dereferences a
-// field the token does not carry: ProjectName is nil for every token not confined to a project,
-// an organization token under withForceRBAC and every refused product token alike.
+// field the token does not carry. The panic this once fixed was a refused product token's
+// ProjectName: nil, since a product token names its product by id instead. The organization-token
+// case below cannot itself reach withForceRBAC's default branch in production - organization.go
+// requires a user before that path runs - it is here only to pin that the refusal still degrades
+// gracefully rather than panicking if that ever changed.
 func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
 	projectID, otherProject := uuid.New(), uuid.New()
 	projectName := testProjectName
@@ -182,7 +185,8 @@ func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
 			wantContains: []string{string(authz.ResourceTypeProduct), productID.String()},
 		},
 		{
-			// forceRBAC brings an organization token here, and it has no project name.
+			// Not a path production reaches under withForceRBAC (organization.go requires a user
+			// first), but the refusal must still degrade gracefully rather than panic.
 			name:         "an organization token is refused instead of panicking",
 			ctx:          entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}),
 			wantContains: []string{"not confined to this resource"},
@@ -239,18 +243,29 @@ func TestCheckContractAccessForProductTokens(t *testing.T) {
 	testCases := []struct {
 		name     string
 		contract *biz.WorkflowContract
-		wantErr  bool
+		checkErr func(t *testing.T, err error)
 	}{
-		{name: "an organization contract", contract: &biz.WorkflowContract{}, wantErr: true},
+		{
+			name:     "an organization contract",
+			contract: &biz.WorkflowContract{},
+			// The gate refuses a global contract before it ever looks at project reach.
+			checkErr: func(t *testing.T, err error) { t.Helper(); assert.True(t, kerrors.IsBadRequest(err), "got %v", err) },
+		},
 		{name: "a contract of a listed project", contract: &biz.WorkflowContract{ScopedEntity: &biz.ScopedEntity{Type: string(biz.ContractScopeProject), ID: listed}}},
-		{name: "a contract of an unlisted project", contract: &biz.WorkflowContract{ScopedEntity: &biz.ScopedEntity{Type: string(biz.ContractScopeProject), ID: unlisted}}, wantErr: true},
+		{
+			name:     "a contract of an unlisted project",
+			contract: &biz.WorkflowContract{ScopedEntity: &biz.ScopedEntity{Type: string(biz.ContractScopeProject), ID: unlisted}},
+			// The token is refused the same way a user without a role on the project would be.
+			checkErr: func(t *testing.T, err error) { t.Helper(); assert.True(t, kerrors.IsForbidden(err), "got %v", err) },
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := s.checkContractAccess(productTokenContext(listed), tc.contract, authz.PolicyWorkflowContractDelete, false)
-			if tc.wantErr {
-				assert.Error(t, err)
+			if tc.checkErr != nil {
+				require.Error(t, err)
+				tc.checkErr(t, err)
 				return
 			}
 			assert.NoError(t, err)

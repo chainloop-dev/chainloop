@@ -69,3 +69,38 @@ func TestAPITokenReach(t *testing.T) {
 		})
 	}
 }
+
+// ResourceScope names the resource a token is confined to when that resource does not live in
+// this database. Only a product scope, with an id, qualifies.
+func TestAPITokenResourceScope(t *testing.T) {
+	t.Parallel()
+
+	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
+	product, project, organization := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization
+
+	testCases := []struct {
+		name     string
+		token    *APIToken
+		wantKind authz.ResourceType
+		wantID   uuid.UUID
+		wantOK   bool
+	}{
+		{name: "no token", token: nil},
+		{name: "a legacy organization token", token: &APIToken{}},
+		{name: "an organization token recording its scope", token: &APIToken{Scope: &organization, ScopeID: &orgID}},
+		{name: "a project token recording its scope", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID}},
+		{name: "a product token", token: &APIToken{Scope: &product, ScopeID: &productID}, wantKind: product, wantID: productID, wantOK: true},
+		{name: "a product scope missing its id", token: &APIToken{Scope: &product}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			kind, id, ok := tc.token.ResourceScope()
+			assert.Equal(t, tc.wantOK, ok)
+			assert.Equal(t, tc.wantKind, kind)
+			assert.Equal(t, tc.wantID, id)
+		})
+	}
+}

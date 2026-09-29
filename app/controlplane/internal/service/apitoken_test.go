@@ -141,60 +141,6 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	}
 }
 
-func TestAPITokenService_Revoke_OrgTokenCannotRevokeOrgTokens(t *testing.T) {
-	t.Parallel()
-
-	orgID := uuid.NewString()
-
-	tests := []struct {
-		name          string
-		callerToken   *entities.APIToken
-		targetToken   *biz.APIToken
-		wantForbidden bool
-	}{
-		{
-			name:        "org-level token revoking org-level token is forbidden",
-			callerToken: &entities.APIToken{ID: uuid.NewString(), ProjectID: nil},
-			targetToken: &biz.APIToken{
-				ID:             uuid.New(),
-				OrganizationID: uuid.MustParse(orgID),
-				ProjectID:      nil,
-			},
-			wantForbidden: true,
-		},
-		{
-			name:        "org-level token revoking project token is allowed",
-			callerToken: &entities.APIToken{ID: uuid.NewString(), ProjectID: nil},
-			targetToken: &biz.APIToken{
-				ID:             uuid.New(),
-				OrganizationID: uuid.MustParse(orgID),
-				ProjectID:      toUUIDPtr(uuid.New()),
-			},
-			wantForbidden: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			ctx = entities.WithCurrentAPIToken(ctx, tc.callerToken)
-
-			forbidden := false
-			if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
-				if tc.targetToken.ProjectID == nil {
-					forbidden = true
-				}
-			}
-
-			assert.Equal(t, tc.wantForbidden, forbidden)
-		})
-	}
-}
-
-func toUUIDPtr(id uuid.UUID) *uuid.UUID {
-	return &id
-}
-
 // A listing reports what a token is confined to: its project, or its product. Every new token
 // records a scope, yet only a product is reported from it, so every other token lists exactly as
 // it did before.

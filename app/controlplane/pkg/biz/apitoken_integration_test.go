@@ -939,8 +939,9 @@ func (s *apiTokenTestSuite) TestProjectIDsConstraint() {
 }
 
 // The repository stores a product token's list in canonical form, and only live projects of the
-// token's organization. The use case cannot create a product token until the control plane
-// confines it; the platform writes these rows through the repository's validation all the same.
+// token's organization. The platform mints a product token through the use case, never the
+// repository directly; only SetScopeProjects and SetScopePolicies go through the repository. This
+// test calls the repository directly to exercise its validation in isolation from the use case.
 func (s *apiTokenTestSuite) TestRepoStoresTheProjectList() {
 	ctx := context.Background()
 	orgID := uuid.MustParse(s.org.ID)
@@ -1045,6 +1046,40 @@ func (s *apiTokenTestSuite) TestCreateWithProductScope() {
 	s.Equal(authz.ResourceTypeProduct, *reloaded.Scope)
 	s.Require().NotNil(reloaded.ScopeID)
 	s.Equal(productID, *reloaded.ScopeID)
+}
+
+// A product token minted through the use case is returned by a product-scoped listing, and only
+// by it: the organization and project tokens minted alongside it are not.
+func (s *apiTokenTestSuite) TestListReturnsAUseCaseMintedProductTokenUnderItsScope() {
+	ctx := context.Background()
+	productID := uuid.New()
+
+	productToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs([]uuid.UUID{s.p1.ID}))
+	s.Require().NoError(err)
+
+	products, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProduct))
+	s.Require().NoError(err)
+
+	names := make([]string, 0, len(products))
+	for _, t := range products {
+		names = append(names, t.Name)
+	}
+	s.Contains(names, productToken.Name)
+	s.NotContains(names, s.t1.Name, "an organization token must not appear under the product scope")
+	s.NotContains(names, s.t4.Name, "a project token must not appear under the product scope")
+
+	orgs, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeOrganization))
+	s.Require().NoError(err)
+	for _, t := range orgs {
+		s.NotEqual(productToken.Name, t.Name, "the product token must not appear under the organization scope")
+	}
+
+	projects, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProject))
+	s.Require().NoError(err)
+	for _, t := range projects {
+		s.NotEqual(productToken.Name, t.Name, "the product token must not appear under the project scope")
+	}
 }
 
 // A revoked scoped token releases its name, matching the project and organization indexes.
@@ -1182,6 +1217,11 @@ func (s *apiTokenTestSuite) TestCreateAProductTokenWithItsProjects() {
 		{
 			name:    "organization-level policies on a product token",
 			opts:    append(product([]uuid.UUID{s.p1.ID}), biz.APITokenWithPolicies([]*authz.Policy{authz.PolicyAPITokenCreate})),
+			wantErr: true,
+		},
+		{
+			name:    "a nil policy on a product token",
+			opts:    append(product([]uuid.UUID{s.p1.ID}), biz.APITokenWithPolicies([]*authz.Policy{nil})),
 			wantErr: true,
 		},
 	}
@@ -1355,14 +1395,15 @@ func (s *apiTokenTestSuite) TestSetScopePolicies() {
 	s.Require().Error(err)
 	s.True(biz.IsErrValidation(err), "organization-level policies are refused")
 
-	emptyCases := []struct {
+	refusedCases := []struct {
 		name     string
 		policies []*authz.Policy
 	}{
 		{name: "a nil list", policies: nil},
 		{name: "an empty list", policies: []*authz.Policy{}},
+		{name: "a list with a nil element", policies: []*authz.Policy{nil}},
 	}
-	for _, tc := range emptyCases {
+	for _, tc := range refusedCases {
 		s.Run(tc.name, func() {
 			_, err := s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, tc.policies)
 			s.Require().Error(err)
