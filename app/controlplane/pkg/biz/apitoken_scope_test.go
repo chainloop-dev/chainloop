@@ -35,6 +35,8 @@ func TestAPITokenScopePredicates(t *testing.T) {
 		token              *APIToken
 		wantResourceScoped bool
 		wantOrgWide        bool
+		// wantResource is the id ResourceScope reports; nil when it reports nothing
+		wantResource *uuid.UUID
 	}{
 		{name: "no token", token: nil},
 		{name: "an organization token from before the scope columns", token: &APIToken{}, wantOrgWide: true},
@@ -42,7 +44,9 @@ func TestAPITokenScopePredicates(t *testing.T) {
 		{name: "a project token from before the scope columns", token: &APIToken{ProjectID: &projectID}},
 		{name: "a project-scoped token", token: &APIToken{ProjectID: &projectID, Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID}},
 		{name: "an instance-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeInstance)}, wantOrgWide: true},
-		{name: "a product-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID}, wantResourceScoped: true},
+		{name: "a product-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID}, wantResourceScoped: true, wantResource: &productID},
+		// The database refuses this row; the accessor still reports nothing rather than a zero id.
+		{name: "a product-scoped token without its id", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct)}, wantResourceScoped: true},
 	}
 
 	for _, tc := range testCases {
@@ -51,6 +55,18 @@ func TestAPITokenScopePredicates(t *testing.T) {
 
 			assert.Equal(t, tc.wantResourceScoped, tc.token.IsResourceScoped())
 			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
+
+			kind, id, ok := tc.token.ResourceScope()
+			if tc.wantResource == nil {
+				assert.False(t, ok)
+				assert.Empty(t, kind)
+				assert.Equal(t, uuid.Nil, id)
+				return
+			}
+
+			assert.True(t, ok)
+			assert.Equal(t, authz.ResourceTypeProduct, kind)
+			assert.Equal(t, *tc.wantResource, id)
 		})
 	}
 }

@@ -194,13 +194,14 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 			return nil, err
 		}
 	case t.IsResourceScoped():
-		// The database never stores a product scope without its id, but refuse such a row
-		// rather than dereferencing nil: there is no product to authorize the caller against.
-		if t.ScopeID == nil {
+		// The database never stores a resource scope without its id, but refuse such a row
+		// rather than authorizing against nothing.
+		kind, id, ok := t.ResourceScope()
+		if !ok {
 			return nil, errors.BadRequest("invalid", "this API token carries an incomplete scope and cannot be managed here")
 		}
 
-		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProduct, *t.ScopeID); err != nil {
+		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, kind, id); err != nil {
 			return nil, err
 		}
 	}
@@ -243,11 +244,10 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 			Id:   in.ProjectID.String(),
 			Name: *in.ProjectName,
 		}
-	} else if in.Scope != nil && *in.Scope == authz.ResourceTypeProduct && in.ScopeID != nil {
-		// ScopedEntity is free-form over its type, so a product needs no proto change. Its
-		// name is not known here, so the id stands in for it; resolving it is the business of
-		// whoever owns the product.
-		res.ScopedEntity = &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: in.ScopeID.String(), Name: in.ScopeID.String()}
+	} else if kind, id, ok := in.ResourceScope(); ok {
+		// The resource lives outside this database, so its id stands in for its name; resolving
+		// it is the business of whoever owns it. ScopedEntity is free-form over its type.
+		res.ScopedEntity = &pb.ScopedEntity{Type: string(kind), Id: id.String(), Name: id.String()}
 	}
 
 	return res

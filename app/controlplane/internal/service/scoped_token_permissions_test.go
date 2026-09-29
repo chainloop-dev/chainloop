@@ -39,6 +39,8 @@ import (
 const (
 	testProjectName  = "billing"
 	testProductScope = string(authz.ResourceTypeProduct)
+	testOrgName      = "acme"
+	testJWTKey       = "test"
 )
 
 func toPtr[T any](v T) *T {
@@ -581,13 +583,13 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 				})
 				// A nil publisher makes the auditor a no-op, so Revoke can run to completion and the
 				// test observes the authorization decision rather than a missing dependency.
-				uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, authzUC, nil,
+				uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: testJWTKey}, authzUC, nil,
 					biz.NewAuditorUseCase(nil, logger), logger)
 				require.NoError(t, err)
 
 				ctx := entities.WithCurrentAPIToken(context.Background(), caller)
 				ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: caller.ID}).String())
-				ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: "acme"})
+				ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: testOrgName})
 
 				_, err = NewAPITokenService(uc, WithLogger(logger), WithEnforcer(authzUC)).
 					Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: tc.target.ID.String()})
@@ -601,5 +603,70 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 				assert.True(t, kerrors.IsForbidden(err), "expected forbidden, got %v", err)
 			})
 		}
+	}
+}
+
+// Revoking a resource-scoped token authorizes against the resource the token is confined to.
+// This repository's RolesMap grants no policies to RoleProductAdmin, so through the control
+// plane only an organization admin can revoke such a token; a member is refused whatever roles
+// it holds. Without the resource check a member could revoke every product token in its org.
+func TestRevokeOfAResourceScopedTokenByAUser(t *testing.T) {
+	orgID, productID, projectID := uuid.New(), uuid.New(), uuid.New()
+	productScope := authz.ResourceTypeProduct
+	target := &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, Scope: &productScope, ScopeID: &productID}
+
+	testCases := []struct {
+		name        string
+		role        authz.Role
+		memberships []*entities.ResourceMembership
+		wantAllowed bool
+	}{
+		{name: "an organization admin", role: authz.RoleAdmin, wantAllowed: true},
+		{
+			name:        "a member who administers the token's product",
+			role:        authz.RoleOrgMember,
+			memberships: []*entities.ResourceMembership{{ResourceType: authz.ResourceTypeProduct, ResourceID: productID, Role: authz.RoleProductAdmin}},
+		},
+		{
+			name:        "a member who administers a project",
+			role:        authz.RoleOrgMember,
+			memberships: []*entities.ResourceMembership{{ResourceType: authz.ResourceTypeProject, ResourceID: projectID, Role: authz.RoleProjectAdmin}},
+		},
+		{name: "a member with no role", role: authz.RoleOrgMember},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := log.NewStdLogger(io.Discard)
+			enforcer, err := authz.NewCasbinEnforcer(&authz.Config{RolesMap: authz.RolesMap})
+			require.NoError(t, err)
+
+			repo := mocks.NewAPITokenRepo(t)
+			repo.On("FindByIDInOrg", mock.Anything, mock.Anything, mock.Anything).Return(target, nil)
+			repo.On("FindByID", mock.Anything, mock.Anything).Maybe().Return(target, nil)
+			repo.On("Revoke", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
+
+			authzUC := biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{CasbinEnforcer: enforcer, APITokenRepo: repo, Logger: logger})
+			uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: testJWTKey}, authzUC, nil,
+				biz.NewAuditorUseCase(nil, logger), logger)
+			require.NoError(t, err)
+
+			userID := uuid.New()
+			ctx := entities.WithCurrentUser(context.Background(), &entities.User{ID: userID.String(), Email: "user@test.com"})
+			ctx = usercontext.WithAuthzSubject(ctx, string(tc.role))
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: testOrgName})
+			ctx = entities.WithMembership(ctx, &entities.Membership{MemberID: userID, MemberType: authz.MembershipTypeUser, Resources: tc.memberships})
+
+			_, err = NewAPITokenService(uc, WithLogger(logger), WithEnforcer(authzUC)).
+				Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: target.ID.String()})
+
+			if tc.wantAllowed {
+				assert.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err)
+			assert.True(t, kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+		})
 	}
 }

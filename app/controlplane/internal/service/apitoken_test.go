@@ -128,10 +128,10 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 			repo.On("List", mock.Anything, mock.Anything, mock.Anything).Once().
 				Run(func(args mock.Arguments) { got = args.Get(2).(*biz.APITokenListFilters) }).
 				Return([]*biz.APIToken{}, nil)
-			uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, nil, nil, nil, nil)
+			uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: testJWTKey}, nil, nil, nil, nil)
 			require.NoError(t, err)
 
-			ctx := entities.WithCurrentOrg(context.Background(), &entities.Org{ID: orgID.String(), Name: "acme"})
+			ctx := entities.WithCurrentOrg(context.Background(), &entities.Org{ID: orgID.String(), Name: testOrgName})
 			if tc.memberships != nil {
 				ctx = entities.WithMembership(ctx, tc.memberships)
 			}

@@ -127,6 +127,17 @@ func (t *APIToken) IsResourceScoped() bool {
 	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
 
+// ResourceScope returns the resource the token is confined to when that resource does not live
+// in this database, so callers can render and authorize it without naming its kind. ok is false
+// for every other token, and for a resource scope missing its id.
+func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
+	if !t.IsResourceScoped() || t.ScopeID == nil {
+		return "", uuid.Nil, false
+	}
+
+	return *t.Scope, *t.ScopeID, true
+}
+
 // IsOrgWide reports whether the token acts for the whole organization, i.e. is confined to
 // neither a project nor a product.
 func (t *APIToken) IsOrgWide() bool {
