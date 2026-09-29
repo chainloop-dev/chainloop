@@ -118,7 +118,9 @@ func (r *APITokenRepo) liveProjectsInOrg(ctx context.Context, orgID *uuid.UUID, 
 }
 
 // SetScopeProjects sets the project list of every active token of the resource scope in the
-// organization, writing only the rows whose list differs, and returns how many it changed.
+// organization, writing only the rows whose list differs, and returns how many it changed. It
+// reads the scope's tokens and then writes them: it is not atomic with a concurrent call for the
+// same scope, so callers must serialize their writes per scope themselves.
 func (r *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetScopeProjects")
 	defer span.End()
@@ -159,7 +161,8 @@ func (r *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, ki
 
 // SetScopePolicies sets the policies of every active token of the resource scope in the
 // organization to a non-empty list carrying no organization-level policy, writing only the rows
-// whose list differs, and returns how many it changed.
+// whose list differs, and returns how many it changed. Like SetScopeProjects, it reads then
+// writes, so callers must serialize their writes per scope.
 func (r *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetScopePolicies")
 	defer span.End()
@@ -174,6 +177,10 @@ func (r *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, ki
 		return 0, biz.NewErrValidationStr("a token confined to a resource needs its policies")
 	}
 
+	if slices.Contains(policies, nil) {
+		return 0, biz.NewErrValidationStr("a token confined to a resource cannot carry a nil policy")
+	}
+
 	if slices.ContainsFunc(policies, biz.IsOrgLevelTokenPolicy) {
 		return 0, biz.NewErrValidationStr("a token confined to a resource cannot carry organization-level policies")
 	}
@@ -186,6 +193,9 @@ func (r *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, ki
 	changed := make([]uuid.UUID, 0, len(tokens))
 	for _, t := range tokens {
 		if !slices.EqualFunc(t.Policies, policies, func(a, b *authz.Policy) bool {
+			if a == nil || b == nil {
+				return a == b
+			}
 			return a.Resource == b.Resource && a.Action == b.Action
 		}) {
 			changed = append(changed, t.ID)

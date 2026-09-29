@@ -184,11 +184,16 @@ type APITokenRepo interface {
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
 	// SetScopeProjects sets the project list of every active token of a resource scope in the
 	// organization, writing only the rows whose list differs, and returns how many it changed.
+	// It reads the scope's tokens and then writes them, so it is not atomic with a concurrent
+	// call for the same scope: callers must serialize their writes per scope themselves, e.g.
+	// with a per-resource lock, or a later write can be overwritten by an earlier one that reads
+	// stale data after it.
 	SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)
 	// SetScopePolicies sets the policies of every active token of a resource scope in the
 	// organization to a non-empty list carrying no organization-level policy, writing only the
 	// rows whose list differs, and returns how many it changed. It refuses a nil or empty list:
 	// writing one would deny-all the scope's tokens until a later call restores real policies.
+	// Like SetScopeProjects, it reads then writes: callers must serialize their writes per scope.
 	SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)
 }
 
@@ -438,6 +443,10 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 			return nil, NewErrValidationStr("a product scope requires the projects the token reaches")
 		}
 
+		if slices.Contains(policies, nil) {
+			return nil, NewErrValidationStr("a product-scoped token cannot carry a nil policy")
+		}
+
 		if slices.ContainsFunc(policies, IsOrgLevelTokenPolicy) {
 			return nil, NewErrValidationStr("a product-scoped token cannot carry organization-level policies")
 		}
@@ -647,8 +656,8 @@ const (
 )
 
 type APITokenListFilters struct {
-	// FilterByProjects is used to filter the result by a project list
-	// If it's empty, no filter will be applied
+	// FilterByProjects narrows the result to the given projects. nil means no filter is applied;
+	// a non-nil empty list matches no project at all.
 	FilterByProjects []uuid.UUID
 	// StatusFilter controls which tokens are returned based on revocation status.
 	// Defaults to APITokenStatusFilterActive.
@@ -796,7 +805,8 @@ func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string)
 
 // SetScopeProjects sets the projects every active token of a resource scope reaches. The
 // Chainloop platform calls it whenever the resource's projects change; the repository validates
-// the list.
+// the list. It reads the scope's tokens and then writes them, so the caller must serialize its
+// own writes per scope; the platform holds a per-product row lock for this.
 func (uc *APITokenUseCase) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetScopeProjects")
 	defer span.End()
@@ -810,7 +820,8 @@ func (uc *APITokenUseCase) SetScopeProjects(ctx context.Context, orgID uuid.UUID
 
 // SetScopePolicies sets the policies of every active token of a resource scope. policies must be
 // non-empty and carry no organization-level policy; the repository refuses anything else rather
-// than write it, since an empty list would deny-all the scope's tokens until a later call.
+// than write it, since an empty list would deny-all the scope's tokens until a later call. Like
+// SetScopeProjects, it reads then writes: the caller must serialize its own writes per scope.
 func (uc *APITokenUseCase) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetScopePolicies")
 	defer span.End()

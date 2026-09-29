@@ -61,6 +61,17 @@ func (t *APIToken) IsOrgWide() bool {
 	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
 }
 
+// ResourceScope returns the resource the token is confined to when that resource does not live
+// in this database, so callers can render and authorize it without naming its kind. ok is false
+// for every other token, and for a resource scope missing its id. Mirrors biz.APIToken.ResourceScope.
+func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
+	if !t.IsResourceScoped() || t.ScopeID == nil {
+		return "", uuid.Nil, false
+	}
+
+	return *t.Scope, *t.ScopeID, true
+}
+
 // ReachableProjects returns the projects a confined token reaches: its project, or its list. It
 // is never nil for a confined token, and nil for an organization-wide one, which no list confines.
 func (t *APIToken) ReachableProjects() []uuid.UUID {
@@ -74,9 +85,17 @@ func (t *APIToken) ReachableProjects() []uuid.UUID {
 	}
 }
 
-// ReachesProject reports whether a confined token reaches the project.
+// ReachesProject reports whether a confined token reaches the project, without copying its
+// project list.
 func (t *APIToken) ReachesProject(id uuid.UUID) bool {
-	return slices.Contains(t.ReachableProjects(), id)
+	switch {
+	case t == nil || t.IsOrgWide():
+		return false
+	case t.ProjectID != nil:
+		return *t.ProjectID == id
+	default:
+		return slices.Contains(t.ProjectIDs, id)
+	}
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {
