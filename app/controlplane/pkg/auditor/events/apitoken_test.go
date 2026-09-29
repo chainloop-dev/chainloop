@@ -24,6 +24,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +39,8 @@ func TestAPITokenEvents(t *testing.T) {
 	orgUUID, err := uuid.Parse("1089bb36-e27b-428b-8009-d015c8737c54")
 	require.NoError(t, err)
 	apiTokenName := "test-token"
+	productUUID := uuid.MustParse("3089bb36-e27b-428b-8009-d015c8737c56")
+	productScope, orgScope := authz.ResourceTypeProduct, authz.ResourceTypeOrganization
 	apiTokenDescription := "test description"
 	expirationDate, err := time.Parse(time.RFC3339, "2025-01-01T00:00:00Z")
 	require.NoError(t, err)
@@ -85,6 +88,51 @@ func TestAPITokenEvents(t *testing.T) {
 				ExpiresAt:           &expirationDate,
 			},
 			expected: "testdata/apitokens/api_token_created_with_expiration_date.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			// The scope is recorded for every token that has one; only a product scope is
+			// named in the description, since it is the only one that changes what the token
+			// reaches.
+			name: "API Token created with a product scope",
+			event: &events.APITokenCreated{
+				APITokenBase: &events.APITokenBase{
+					APITokenID:   uuidPtr(apiTokenUUID),
+					APITokenName: apiTokenName,
+					Scope:        &productScope,
+					ScopeID:      &productUUID,
+				},
+			},
+			expected: "testdata/apitokens/api_token_created_with_product_scope.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "API Token created with an organization scope",
+			event: &events.APITokenCreated{
+				APITokenBase: &events.APITokenBase{
+					APITokenID:   uuidPtr(apiTokenUUID),
+					APITokenName: apiTokenName,
+					Scope:        &orgScope,
+					ScopeID:      &orgUUID,
+				},
+			},
+			expected: "testdata/apitokens/api_token_created_with_organization_scope.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name: "API Token with a product scope revoked by user",
+			event: &events.APITokenRevoked{
+				APITokenBase: &events.APITokenBase{
+					APITokenID:   uuidPtr(apiTokenUUID),
+					APITokenName: apiTokenName,
+					Scope:        &productScope,
+					ScopeID:      &productUUID,
+				},
+			},
+			expected: "testdata/apitokens/api_token_revoked_with_product_scope.json",
 			actor:    auditor.ActorTypeUser,
 			actorID:  userUUID,
 		},
