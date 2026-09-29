@@ -117,6 +117,19 @@ func TestRedact(t *testing.T) {
 			mustContain:      []string{"[REDACTED:r1]"},
 		},
 		{
+			// The jwt rule permits backslashes inside a token, so a credential at
+			// the very end of a nested-JSON string is reported together with the
+			// backslash of the closing `\"`. That backslash belongs to the outer
+			// encoding, not to the secret.
+			name: "secret ending on an escape introducer keeps the leaf context",
+			doc: `{"a":"{\"url\":\"https://uploads.linear.app/file/abc?signature=` + fakeJWT +
+				`\"}"}`,
+			findings:         []Finding{{RuleID: "jwt", Secret: fakeJWT + `\`}},
+			wantReplacements: 1,
+			mustNotContain:   []string{fakeJWT},
+			mustContain:      []string{"uploads.linear.app", "file/abc?signature=[REDACTED:jwt]"},
+		},
+		{
 			name:     "protected path is left alone and recorded",
 			doc:      `{"keepme":"SEC","other":"plain"}`,
 			findings: []Finding{{RuleID: "r1", Secret: "SEC"}},
