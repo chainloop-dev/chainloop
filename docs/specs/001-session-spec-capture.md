@@ -107,14 +107,56 @@ sequenceDiagram
     CLI->>Folder: Delete session folder
 ```
 
-The attestation after one session with four sources:
+### Example: the spec field in the session material
+The session material lists one reference for each source. The text of each source is in the ARTIFACT material with that digest.
 
-```mermaid
-flowchart LR
-    S["Session material<br/>spec: kind, uri, digest"] -->|digest| T["ARTIFACT: ticket"]
-    S -->|digest| D["ARTIFACT: design document"]
-    S -->|digest| I["ARTIFACT: image description"]
-    S -->|digest| P["ARTIFACT: approved plan"]
+```json
+"spec": [
+  { "kind": "ticket",   "uri": "https://tracker.example.com/issue/ENG-1234",
+    "digest": "sha256:e4c2...", "captured_at": "2026-09-16T10:12:03Z" },
+  { "kind": "document", "uri": "file://docs/design.md",
+    "digest": "sha256:f5d9...", "captured_at": "2026-09-16T10:12:05Z" },
+  { "kind": "image",
+    "digest": "sha256:c2a1...", "captured_at": "2026-09-16T10:31:40Z" },
+  { "kind": "text",
+    "digest": "sha256:d3e7...", "captured_at": "2026-09-16T10:38:37Z" }
+]
+```
+
+### Example: the attestation
+One session that captured a ticket, a design document, a screenshot description and an approved plan:
+
+```text
+in-toto Statement (predicateType: chainloop.dev/attestation/v0.2)
+├── subject
+│   └── git.head  sha1:d7e1c3b9...
+└── predicate.materials
+    ├── ai-coding-session-fd4e67        CHAINLOOP_AI_CODING_SESSION   sha256:a9b3...
+    │     data.session, data.usage, data.code_changes, ...
+    │     data.spec[]  ──────────────────┐  references by digest
+    │     data.raw_session               │
+    │                                    │
+    ├── spec-fd4e67-ticket-eng-1234      ARTIFACT  ticket-eng-1234.md   sha256:e4c2...  ◄┤
+    ├── spec-fd4e67-design-proposal      ARTIFACT  design-proposal.md   sha256:f5d9...  ◄┤
+    ├── spec-fd4e67-dedup-screenshot     ARTIFACT  dedup-screenshot.md  sha256:c2a1...  ◄┤
+    └── spec-fd4e67-approved-plan        ARTIFACT  approved-plan.md     sha256:d3e7...  ◄┘
+```
+
+Each spec material in the predicate:
+
+```json
+{
+  "name": "ticket-eng-1234.md",
+  "digest": { "sha256": "e4c2..." },
+  "annotations": {
+    "chainloop.material.name": "spec-fd4e67-ticket-eng-1234",
+    "chainloop.material.type": "ARTIFACT",
+    "chainloop.material.cas": true,
+    "spec_session_id": "fd4e6754-3b26-4f54-9807-13c58465bb35",
+    "spec_kind": "ticket",
+    "spec_uri": "https://tracker.example.com/issue/ENG-1234"
+  }
+}
 ```
 
 ## Decision Record
