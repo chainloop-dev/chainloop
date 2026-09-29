@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Chainloop is an open-source evidence store for Software Supply Chain attestations, SBOMs, VEX, SARIF, and other compliance artifacts. The project consists of three main components: a Control Plane (server), Artifact Content Addressable Storage (CAS), and a CLI client.
 
+## Design Specs
+
+Design specs live in `docs/specs/`. Each one records a design and its reasons at the time it was built. Read the relevant spec before you change that behavior. Cite requirement IDs (for example R-001) in PRs that implement them. When a change goes against an implemented spec, say so in the PR, and propose a new spec for a large change. Do not edit an implemented spec's design. Never put customer or user information in a spec. Parent tickets for specs live in the GitHub issues of this repository. Create and update specs with `br:eng-spec`, never by hand-rolling a new format.
+
 ## Architecture
 
 The codebase follows a microservices architecture with three main components and shared libraries:
