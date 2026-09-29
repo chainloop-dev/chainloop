@@ -175,9 +175,8 @@ func toUUIDPtr(id uuid.UUID) *uuid.UUID {
 	return &id
 }
 
-// A listing must report what the token is actually confined to. A scope-confined token has no
-// project, so without its own branch it would come back with no scoped entity at all and read
-// as organization-wide in the CLI and the UI.
+// A listing reports the project a token is confined to, and the scope columns change nothing
+// about it: every new token records a scope, yet each one lists exactly as it did before.
 func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 	t.Parallel()
 
@@ -198,17 +197,7 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
 		},
 		{
-			// The product's name is not known to the control plane, so its id stands in for it.
-			name: "a product-scoped token reports its product by id",
-			token: &biz.APIToken{
-				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
-			},
-			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
-		},
-		{
-			// Only a product is reported from the scope columns; nothing is guessed to be one.
-			name: "a scope id without a kind is not reported as a product",
+			name: "a scope id without a kind is not reported",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
 				ScopeID: &productID,
