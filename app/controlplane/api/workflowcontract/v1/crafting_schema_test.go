@@ -13,18 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// limitations under the License.
-
 package v1_test
 
 import (
 	"errors"
 	"testing"
 
+	validate "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"buf.build/go/protovalidate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func TestValidateAnnotations(t *testing.T) {
@@ -50,15 +51,26 @@ func TestValidateAnnotations(t *testing.T) {
 			value: "hello_world",
 		},
 		{
-			desc:    "invalid key hyphen",
-			name:    "hello-world",
-			value:   "hello-world",
-			wantErr: true,
+			desc:  "valid key hyphen",
+			name:  "hello-world",
+			value: "hello-world",
 		},
 		{
 			desc:    "invalid key space",
 			name:    " hello",
 			value:   "hello-world",
+			wantErr: true,
+		},
+		{
+			desc:    "invalid key punctuation",
+			name:    "hello.world",
+			value:   "hello",
+			wantErr: true,
+		},
+		{
+			desc:    "invalid key slash",
+			name:    "hello/world",
+			value:   "hello",
 			wantErr: true,
 		},
 		{
@@ -92,6 +104,19 @@ func TestValidateAnnotations(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestAnnotationNameConstraintAllowsHyphen(t *testing.T) {
+	field := (&v1.Annotation{}).ProtoReflect().Descriptor().Fields().ByName("name")
+	require.NotNil(t, field)
+
+	opts, ok := field.Options().(*descriptorpb.FieldOptions)
+	require.True(t, ok)
+
+	constraints, ok := proto.GetExtension(opts, validate.E_Field).(*validate.FieldRules)
+	require.True(t, ok)
+	require.NotNil(t, constraints.GetString())
+	assert.Equal(t, `^[\w-]+$`, constraints.GetString().GetPattern())
 }
 
 func TestPolicyAttachment(t *testing.T) {
