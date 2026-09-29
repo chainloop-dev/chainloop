@@ -51,7 +51,10 @@ func TestValidateTokenScope(t *testing.T) {
 		{name: "project with no id", scope: authz.ResourceTypeProject, orgID: &org, projectID: &project, wantErr: true},
 		{name: "instance with an id", scope: authz.ResourceTypeInstance, scopeID: &product, wantErr: true},
 		{name: "instance on an organization token", scope: authz.ResourceTypeInstance, orgID: &org, wantErr: true},
-		{name: "product is not supported yet", scope: authz.ResourceTypeProduct, scopeID: &product, orgID: &org, wantErr: true},
+		{name: "product naming its product", scope: authz.ResourceTypeProduct, scopeID: &product, orgID: &org},
+		{name: "product alongside a project", scope: authz.ResourceTypeProduct, scopeID: &product, orgID: &org, projectID: &project, wantErr: true},
+		{name: "product on an instance-level token", scope: authz.ResourceTypeProduct, scopeID: &product, wantErr: true},
+		{name: "product with no id", scope: authz.ResourceTypeProduct, orgID: &org, wantErr: true},
 		{name: "a kind tokens are never scoped to", scope: authz.ResourceTypeGroup, scopeID: &product, orgID: &org, wantErr: true},
 		{name: "no kind at all", scope: "", orgID: &org, wantErr: true},
 	}

@@ -304,9 +304,22 @@ func validateTokenScope(scope authz.ResourceType, scopeID, orgID, projectID *uui
 			return NewErrValidationStr("an instance scope has no id and belongs to an instance-level token")
 		}
 	case authz.ResourceTypeProduct:
-		// Not until the control plane confines such a token to its memberships: everything
-		// else in it would read a token with no project as organization-wide.
-		return NewErrValidationStr(fmt.Sprintf("unsupported token scope %q", scope))
+		// A product scope replaces the project confinement rather than layering onto it: the
+		// gate functions skip every project check for a product-scoped token, so a row carrying
+		// both would have the project confinement enforced nowhere.
+		if projectID != nil {
+			return NewErrValidationStr("a product scope cannot be combined with a project scope")
+		}
+
+		// An instance-level token has no organization to hold the product, and would come back
+		// from the middleware as instance-admin and RBAC-confined at once.
+		if orgID == nil {
+			return NewErrValidationStr("a product scope requires an organization")
+		}
+
+		if scopeID == nil {
+			return NewErrValidationStr("a product scope must name the product")
+		}
 	default:
 		return NewErrValidationStr(fmt.Sprintf("unsupported token scope %q", scope))
 	}
@@ -409,6 +422,17 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	policies := options.policies
 	if policies == nil {
 		policies = uc.DefaultAuthzPolicies
+	}
+
+	// A product token always carries a project list, and never an organization-level policy.
+	if IsResourceScopeKind(*scope) {
+		if options.projectIDs == nil {
+			return nil, NewErrValidationStr("a product scope requires the projects the token reaches")
+		}
+
+		if slices.ContainsFunc(policies, IsOrgLevelTokenPolicy) {
+			return nil, NewErrValidationStr("a product-scoped token cannot carry organization-level policies")
+		}
 	}
 
 	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
