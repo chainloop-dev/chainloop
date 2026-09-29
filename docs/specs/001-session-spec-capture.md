@@ -48,8 +48,8 @@ The agent MUST write one text file for each source. A short header gives the kin
 The instruction MUST tell the agent to write nothing when the task has no spec, for example a typo fix or a question.
 
 ### R-005: Detached storage
-At push time, the system MUST upload each spec file to content-addressable storage as a separate attestation material of kind ARTIFACT.
-- Done when: the attestation lists one ARTIFACT material for each spec file, and the digest of each material downloads that file.
+At push time, the system MUST upload each spec file to content-addressable storage as a separate attestation material of kind EVIDENCE.
+- Done when: the attestation lists one EVIDENCE material for each spec file, and the digest of each material downloads that file.
 
 ### R-006: References in the session material
 The session material MUST list each spec source by kind, source address, digest, capture time and a truncation flag. It MUST NOT hold the spec content.
@@ -74,7 +74,7 @@ The system SHOULD make it possible to count the sessions that have spec material
 ## Proposal
 The user does nothing new. When a traced session starts, the trace hook adds the capture instruction to the context of the agent. The agent then resolves the sources that the task points at. It uses the tools it already has: an issue tracker connector, a web fetch, a local file read. It writes the actual text of each source into the session folder. If the task changes, the agent overwrites a file or adds one. The version on disk at push time is the one Chainloop records, so a reviewed plan replaces its draft.
 
-When the user pushes, the trace push command reads the session folder. It redacts each file, uploads it as an ARTIFACT material, and records the digest. It then writes the references into the session material and adds that material last. The attestation now holds the session material and one material for each source. Content-addressable storage keeps one copy of a ticket that ten sessions use.
+When the user pushes, the trace push command reads the session folder. It redacts each file, uploads it as an EVIDENCE material, and records the digest. It then writes the references into the session material and adds that material last. The attestation now holds the session material and one material for each source. Content-addressable storage keeps one copy of a ticket that ten sessions use.
 
 Each agent receives the instruction through its own channel:
 
@@ -105,14 +105,14 @@ sequenceDiagram
     User->>CLI: git push
     CLI->>Folder: Read spec files
     CLI->>CLI: Redact each file
-    CLI->>CAS: Upload each file as ARTIFACT material
+    CLI->>CAS: Upload each file as EVIDENCE material
     CLI->>CLI: Write digests into the session material
     CLI->>CP: Push attestation
     CLI->>Folder: Delete session folder
 ```
 
 ### Example: the spec field in the session material
-The session material lists one reference for each source. The text of each source is in the ARTIFACT material with that digest.
+The session material lists one reference for each source. The text of each source is in the EVIDENCE material with that digest.
 
 ```json
 "spec": [
@@ -140,10 +140,10 @@ in-toto Statement (predicateType: chainloop.dev/attestation/v0.2)
     │     data.spec[]  ──────────────────┐  references by digest
     │     data.raw_session               │
     │                                    │
-    ├── spec-fd4e67-ticket-eng-1234      ARTIFACT  ticket-eng-1234.md   sha256:e4c2...  ◄┤
-    ├── spec-fd4e67-design-proposal      ARTIFACT  design-proposal.md   sha256:f5d9...  ◄┤
-    ├── spec-fd4e67-dedup-screenshot     ARTIFACT  dedup-screenshot.md  sha256:c2a1...  ◄┤
-    └── spec-fd4e67-approved-plan        ARTIFACT  approved-plan.md     sha256:d3e7...  ◄┘
+    ├── spec-fd4e67-ticket-eng-1234      EVIDENCE  ticket-eng-1234.md   sha256:e4c2...  ◄┤
+    ├── spec-fd4e67-design-proposal      EVIDENCE  design-proposal.md   sha256:f5d9...  ◄┤
+    ├── spec-fd4e67-dedup-screenshot     EVIDENCE  dedup-screenshot.md  sha256:c2a1...  ◄┤
+    └── spec-fd4e67-approved-plan        EVIDENCE  approved-plan.md     sha256:d3e7...  ◄┘
 ```
 
 Each spec material in the predicate:
@@ -154,7 +154,7 @@ Each spec material in the predicate:
   "digest": { "sha256": "e4c2..." },
   "annotations": {
     "chainloop.material.name": "spec-fd4e67-ticket-eng-1234",
-    "chainloop.material.type": "ARTIFACT",
+    "chainloop.material.type": "EVIDENCE",
     "chainloop.material.cas": true,
     "spec_session_id": "fd4e6754-3b26-4f54-9807-13c58465bb35",
     "spec_kind": "ticket",
@@ -168,12 +168,13 @@ Each spec material in the predicate:
 | ID | Decision | Choice | Why (and what we rejected) | Source |
 |----|----------|--------|----------------------------|--------|
 | D-001 | Who decides what the spec is | The agent, told by an instruction at session start | Only the agent knows which input sets the task, and it reaches sources that the transcript never holds. Rejected: extraction from the transcript by the CLI (needs rules to pick the spec, misses sources the agent never opened, one extractor per agent). Rejected: extraction on the server after ingestion (the spec is not in the attestation). Both stay as a fallback if the capture rate is poor. | drafting |
-| D-002 | Where the spec content goes | One ARTIFACT material per source, with references in the session material | Content-addressable storage keeps one copy for all sessions, each source is verifiable alone, and policies can select it. Rejected: text inside the session material (copies in each session, no digest per source). | drafting |
+| D-002 | Where the spec content goes | One EVIDENCE material per source, with references in the session material | Content-addressable storage keeps one copy for all sessions, each source is verifiable alone, and policies can select it. Rejected: text inside the session material (copies in each session, no digest per source). | drafting |
 | D-003 | File format | Markdown with a short header for kind and source address | A model writes long Markdown reliably. Long text escaped inside JSON fails completely when one character is wrong. A bad header still keeps the content, and an unknown kind falls back to text. Rejected: JSON files. | drafting |
 | D-004 | Folder location | A folder in the working tree that ignores itself | The agent writes there without a permission prompt. Rejected: a folder in the git directory (write prompts, and the agent did not attempt the write in tests). | drafting |
 | D-005 | OpenCode channel | A context-only session message from the plugin | Documented in the OpenCode SDK. Rejected: the experimental system prompt hook (a reported bug drops plugin changes). | drafting |
 | D-006 | Skills as the trigger | Not used as the trigger | The model decides when to load a skill, no agent can make a skill always apply, and a skill cannot hold the session path. | drafting |
 | D-007 | User interface and scoring | Out of scope for this repository | They live in other products and consume the materials that this spec defines. | drafting |
+| D-008 | Material type for spec files | EVIDENCE | A spec file is supporting evidence for the session, not an output of the work. Rejected: ARTIFACT. | owner review |
 
 ## Open Questions
 - [ ] **Do we limit file size and file count?** The storage backend configuration already sets the upper limit for a material. Proposed: keep a file limit against an agent that writes one file per turn. Reviewers decide if a per-file cap in the CLI adds value.
@@ -185,7 +186,7 @@ Each spec material in the predicate:
 - [ ] **Do we add one shared skill that holds the long instruction text?** Proposed: not in the first version. Each hook injects the full instruction. A shared skill would give one copy of the text for all agents and fewer tokens for each session.
 
 ## Milestones
-1. **Detached storage for Claude Code.** Claude Code sessions push each spec file as an ARTIFACT material, with references in the session material.
+1. **Detached storage for Claude Code.** Claude Code sessions push each spec file as an EVIDENCE material, with references in the session material.
 2. **Cursor.** The Cursor session-start hook sends the instruction. Done after a test in Cursor shows that the model receives it.
 3. **OpenCode.** The OpenCode plugin sends the instruction as a context-only message. Done after a test shows that the model receives it and that the user sees no extra reply.
 
