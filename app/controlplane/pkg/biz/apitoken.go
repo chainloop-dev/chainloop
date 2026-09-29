@@ -51,6 +51,24 @@ var orgLevelTokenPolicies = []*authz.Policy{
 	authz.PolicyRegisteredIntegrationRead,
 }
 
+// IsOrgLevelTokenPolicy reports whether a policy is one only an organization-wide token holds.
+// A token confined to a project or to a resource outside this database never carries one.
+func IsOrgLevelTokenPolicy(p *authz.Policy) bool {
+	if p == nil {
+		return false
+	}
+
+	return slices.ContainsFunc(orgLevelTokenPolicies, func(o *authz.Policy) bool {
+		return o.Resource == p.Resource && o.Action == p.Action
+	})
+}
+
+// IsResourceScopeKind reports whether a scope kind confines a token to a resource that does not
+// live in this database. Only a product does.
+func IsResourceScopeKind(kind authz.ResourceType) bool {
+	return kind == authz.ResourceTypeProduct
+}
+
 // defaultAuthzPolicies are granted to every token regardless of scope, so each entry must be safe
 // for a caller confined to a single project. Org-wide capabilities go in orgLevelTokenPolicies.
 var defaultAuthzPolicies = []*authz.Policy{
@@ -105,6 +123,29 @@ type APIToken struct {
 	Policies []*authz.Policy
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
 	IsSystem bool
+}
+
+// IsResourceScoped reports whether the token is confined to a resource outside this database,
+// i.e. a product. It keys on the scope kind, never on scope_id, which every new token records.
+func (t *APIToken) IsResourceScoped() bool {
+	return t != nil && t.Scope != nil && IsResourceScopeKind(*t.Scope)
+}
+
+// ResourceScope returns the resource the token is confined to when that resource does not live
+// in this database, so callers can render and authorize it without naming its kind. ok is false
+// for every other token, and for a resource scope missing its id.
+func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
+	if !t.IsResourceScoped() || t.ScopeID == nil {
+		return "", uuid.Nil, false
+	}
+
+	return *t.Scope, *t.ScopeID, true
+}
+
+// IsOrgWide reports whether the token acts for the whole organization: confined to neither a
+// project nor a resource outside this database.
+func (t *APIToken) IsOrgWide() bool {
+	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.
@@ -324,17 +365,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		workflowID = ToPtr(options.workflow.ID)
 	}
 
-	// Use provided policies if present, otherwise use defaults
-	policies := options.policies
-	if policies == nil {
-		policies = uc.DefaultAuthzPolicies
-	}
-
-	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
-	if projectID == nil && orgUUID != nil {
-		policies = slices.Concat(policies, orgLevelTokenPolicies)
-	}
-
+	// Determine the scope (may be overridden by options.scope below)
 	scope, scopeID := newTokenScope(orgUUID, projectID)
 	if options.scope != nil {
 		if err := validateTokenScope(*options.scope, options.scopeID, orgUUID, projectID); err != nil {
@@ -342,6 +373,17 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		}
 
 		scope, scopeID = options.scope, options.scopeID
+	}
+
+	// Use provided policies if present, otherwise use defaults
+	policies := options.policies
+	if policies == nil {
+		policies = uc.DefaultAuthzPolicies
+	}
+
+	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
+	if projectID == nil && !IsResourceScopeKind(*scope) && orgUUID != nil {
+		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
