@@ -1,0 +1,155 @@
+---
+status: draft
+owner: jiparis
+ticket:
+prd:
+issue:
+---
+
+# Spec 001: Spec capture for AI coding sessions
+
+## Summary
+An AI coding session record shows what the agent changed, but not what the user asked for. This spec adds the spec of the session to its evidence. At session start, the trace hook tells the agent to write each source that sets the task into a session folder. At push time, the CLI stores each file as its own material in the attestation. The session material keeps only references to these materials. Reviewers and scoring tools can then compare the change with the request.
+
+## Problem
+- The session evidence has the diff, the transcript and the usage, but not the intent. A reviewer can see what changed, but not if it matches the request.
+- The spec usually lives outside the session: an issue tracker ticket, a design document, a page in a notes vault. The transcript keeps a link or a short reference, not the content.
+- A first version stores the spec text inside the session material. The same ticket is then copied into each session that uses it. Nobody can refer to it, download it or verify it alone.
+- Only Claude Code receives the capture instruction today. Cursor and OpenCode sessions have no spec.
+
+## Goals and Non-Goals
+- Goal: a traced session that started from a spec pushes that spec as part of its attestation.
+- Goal: each spec source is a separate material in content-addressable storage, addressed by its digest.
+- Goal: the same capture works for Claude Code, Cursor and OpenCode.
+- Goal: the capture rate is measurable from the pushed evidence.
+- Non-goal: Chainloop resolves sources itself. The CLI makes no calls to issue trackers or document tools.
+- Non-goal: extraction of the spec from the transcript by rules. The agent decides what the spec is.
+- Non-goal: the user interface that shows the spec, and the use of the spec in AI scoring. Other products consume the materials this spec defines.
+- Non-goal: redaction of images.
+
+## Requirements
+
+### R-001: Instruction at session start
+The system MUST give the agent the capture instruction and the absolute path of the session folder when a traced session starts.
+- Done when: a new session in each supported agent receives the instruction before its first turn.
+
+### R-002: Folder in the working tree, never committed
+The session folder MUST be inside the working tree and MUST be ignored by git without a change to the repository's own ignore file.
+- Done when: a file in the folder never shows as a change in the repository status.
+
+### R-003: One file per source
+The agent MUST write one text file for each source. A short header gives the kind (ticket, document, image, text) and an optional source address. The actual content follows the header.
+
+### R-004: Nothing to capture
+The instruction MUST tell the agent to write nothing when the task has no spec, for example a typo fix or a question.
+
+### R-005: Detached storage
+At push time, the system MUST upload each spec file to content-addressable storage as a separate attestation material of kind ARTIFACT.
+- Done when: the attestation lists one ARTIFACT material for each spec file, and the digest of each material downloads that file.
+
+### R-006: References in the session material
+The session material MUST list each spec source by kind, source address, digest, capture time and a truncation flag. It MUST NOT hold the spec content.
+
+### R-007: Redaction before upload
+The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The skip-redaction option MUST apply to both.
+
+### R-008: Failure never blocks the push
+A missing, empty or unreadable spec folder MUST NOT stop the push of the session. The system SHOULD record a warning in the session material when it drops or cuts spec content.
+
+### R-009: Clean up after push
+The system MUST delete the session folder after it pushes the attestation that holds its files. It MUST keep the folder when the push of that session fails.
+
+### R-010: Capture rate
+The system SHOULD make it possible to count the sessions that have spec materials, from the pushed evidence only.
+
+## Constraints
+- The repository is public. The spec format and the instruction text are visible to all users.
+- A write to the session folder must not cause a permission prompt in any permission mode of the agent. A path inside the git directory does cause prompts, and it is not an option.
+- The hook output of each agent is one document per hook call. The capture instruction and the user banner go into the same document.
+
+## Proposal
+The user does nothing new. When a traced session starts, the trace hook adds the capture instruction to the context of the agent. The agent then resolves the sources that the task points at. It uses the tools it already has: an issue tracker connector, a web fetch, a local file read. It writes the actual text of each source into the session folder. If the task changes, the agent overwrites a file or adds one. The version on disk at push time is the one Chainloop records, so a reviewed plan replaces its draft.
+
+When the user pushes, the trace push command reads the session folder. It redacts each file, uploads it as an ARTIFACT material, and records the digest. It then writes the references into the session material and adds that material last. The attestation now holds the session material and one material for each source. Content-addressable storage keeps one copy of a ticket that ten sessions use.
+
+Each agent receives the instruction through its own channel:
+
+| Agent | Channel at session start |
+|-------|--------------------------|
+| Claude Code | The additional context of the session-start hook response. |
+| Cursor | The additional context of the session-start hook response. Cursor documents this field. The current Cursor integration does not use it yet. |
+| OpenCode | The Chainloop plugin adds a context-only message to the session when OpenCode creates the session. The OpenCode SDK documents this mode as a message with no model reply. |
+
+The material names use the session ID as a prefix, so two sessions in one attestation never collide. Each spec material also carries annotations with the session ID, the kind and the source address. Policies can select spec materials by these annotations.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Agent as Coding agent
+    participant Hook as Trace hook or plugin
+    participant Folder as Session folder
+    participant CLI as Trace push
+    participant CAS as Content-addressable storage
+    participant CP as Control plane
+
+    User->>Agent: Start session with a task
+    Agent->>Hook: Session start event
+    Hook-->>Agent: Capture instruction and folder path
+    Agent->>Agent: Resolve ticket, document, image, text
+    Agent->>Folder: Write one file per source
+    Agent->>Agent: Do the work
+    User->>CLI: git push
+    CLI->>Folder: Read spec files
+    CLI->>CLI: Redact each file
+    CLI->>CAS: Upload each file as ARTIFACT material
+    CLI->>CLI: Write digests into the session material
+    CLI->>CP: Push attestation
+    CLI->>Folder: Delete session folder
+```
+
+The attestation after one session with four sources:
+
+```mermaid
+flowchart LR
+    S["Session material<br/>spec: kind, uri, digest"] -->|digest| T["ARTIFACT: ticket"]
+    S -->|digest| D["ARTIFACT: design document"]
+    S -->|digest| I["ARTIFACT: image description"]
+    S -->|digest| P["ARTIFACT: approved plan"]
+```
+
+## Decision Record
+
+| ID | Decision | Choice | Why (and what we rejected) | Source |
+|----|----------|--------|----------------------------|--------|
+| D-001 | Who decides what the spec is | The agent, told by an instruction at session start | Only the agent knows which input sets the task, and it reaches sources that the transcript never holds. Rejected: extraction from the transcript by the CLI (needs rules to pick the spec, misses sources the agent never opened, one extractor per agent). Rejected: extraction on the server after ingestion (the spec is not in the attestation). Both stay as a fallback if the capture rate is poor. | drafting |
+| D-002 | Where the spec content goes | One ARTIFACT material per source, with references in the session material | Content-addressable storage keeps one copy for all sessions, each source is verifiable alone, and policies can select it. Rejected: text inside the session material (copies in each session, no digest per source). | drafting |
+| D-003 | File format | Markdown with a short header for kind and source address | A model writes long Markdown reliably. Long text escaped inside JSON fails completely when one character is wrong. A bad header still keeps the content, and an unknown kind falls back to text. Rejected: JSON files. | drafting |
+| D-004 | Folder location | A folder in the working tree that ignores itself | The agent writes there without a permission prompt. Rejected: a folder in the git directory (write prompts, and the agent did not attempt the write in tests). | drafting |
+| D-005 | OpenCode channel | A context-only session message from the plugin | Documented in the OpenCode SDK. Rejected: the experimental system prompt hook (a reported bug drops plugin changes). | drafting |
+| D-006 | Skills as the trigger | Not used as the trigger | The model decides when to load a skill, no agent can make a skill always apply, and a skill cannot hold the session path. | drafting |
+| D-007 | User interface and scoring | Out of scope for this repository | They live in other products and consume the materials that this spec defines. | drafting |
+
+## Open Questions
+- [ ] **What capture rate is enough, and do we force the capture?** Proposed: measure first. If the rate is low, add a session-end hook that blocks one time when a session changed code and wrote no spec.
+- [ ] **Do we limit file size and file count?** The storage backend configuration already sets the upper limit for a material. Proposed: keep a file limit against an agent that writes one file per turn. Reviewers decide if a per-file cap in the CLI adds value.
+- [ ] **How do we store real images?** The model receives a pasted image as image input, not as a file. Its write tool writes text only, so it cannot write the image bytes. The only copy of the bytes is in the session transcript. Options:
+  - (a) The agent copies an image file that exists on disk, for example a file that the user dragged in. A pasted image stays a description.
+  - (b) A hybrid. The agent writes an image entry that names the paste, for example "Image #1". At push time, the CLI takes the bytes of that paste from the transcript.
+
+  Proposed: the first version stores a description only, and reviewers choose between (a) and (b).
+- [ ] **Do we add one shared skill that holds the long instruction text?** Proposed: not in the first version. Each hook injects the full instruction. A shared skill would give one copy of the text for all agents and fewer tokens for each session.
+
+## Milestones
+1. **Detached storage for Claude Code.** Claude Code sessions push each spec file as an ARTIFACT material, with references in the session material.
+2. **Cursor.** The Cursor session-start hook sends the instruction. Done after a test in Cursor shows that the model receives it.
+3. **OpenCode.** The OpenCode plugin sends the instruction as a context-only message. Done after a test shows that the model receives it and that the user sees no extra reply.
+
+## Risks
+
+| Risk | Mitigation |
+|------|------------|
+| The agent ignores the instruction, so capture is not guaranteed. | R-010 makes the rate measurable. The open question on a session-end hook gives a stronger option. |
+| The model paraphrases the source instead of copying it. | The instruction asks for the actual text. The source address lets a reviewer compare with the original. |
+| A workflow contract rejects materials that it does not declare. | Test how trace workflows handle extra materials before milestone 1. |
+| An agent changes or drops the documented channel. | Each agent integration declares if it supports the instruction. A session without the channel pushes as it does today, without a spec. |
+| Spec content contains customer names or internal details. | The same redaction and the same opt-out as the session material apply (R-007). A session that must not be recorded is one where trace is off. |
