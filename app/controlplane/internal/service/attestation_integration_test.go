@@ -18,6 +18,7 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
@@ -43,6 +44,10 @@ type getContractRBACIntegrationSuite struct {
 	projectToken         *biz.APIToken
 	workflowToken        *biz.APIToken
 	orgToken             *biz.APIToken
+	productToken         *biz.APIToken
+	emptyProductToken    *biz.APIToken
+	productID            uuid.UUID
+	emptyProductID       uuid.UUID
 	svc                  *AttestationService
 }
 
@@ -71,6 +76,18 @@ func (s *getContractRBACIntegrationSuite) SetupTest() {
 	s.workflowToken, err = s.APIToken.Create(ctx, "token-workflow-a", nil, nil, &s.org.ID, biz.APITokenWithProject(s.projectA), biz.APITokenWithWorkflow(s.workflowA))
 	s.Require().NoError(err)
 	s.orgToken, err = s.APIToken.Create(ctx, "token-org", nil, nil, &s.org.ID)
+	s.Require().NoError(err)
+
+	// A token confined to a product holding project A only, and one whose product holds no
+	// projects at all — the shape a token has once its product is deleted.
+	s.productID, s.emptyProductID = uuid.New(), uuid.New()
+	s.productToken, err = s.APIToken.Create(ctx, "token-product", nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &s.productID),
+		biz.APITokenWithProjectIDs([]uuid.UUID{s.projectA.ID}))
+	s.Require().NoError(err)
+	s.emptyProductToken, err = s.APIToken.Create(ctx, "token-empty-product", nil, nil, &s.org.ID,
+		biz.APITokenWithScope(authz.ResourceTypeProduct, &s.emptyProductID),
+		biz.APITokenWithProjectIDs(nil))
 	s.Require().NoError(err)
 
 	authzUC := biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{
@@ -174,6 +191,69 @@ func (s *getContractRBACIntegrationSuite) ctxForToken(token *biz.APIToken) conte
 		OrgID:       s.org.ID,
 		ProviderKey: attjwtmiddleware.APITokenProviderKey,
 	})
+}
+
+// ctxForProductToken is the context the attestation chain produces for a product token.
+func (s *getContractRBACIntegrationSuite) ctxForProductToken(token *biz.APIToken) context.Context {
+	ctx := s.ctxForToken(token)
+	return entities.WithCurrentAPIToken(ctx, &entities.APIToken{
+		ID: token.ID.String(), Name: token.Name,
+		Scope: token.Scope, ScopeID: token.ScopeID, ProjectIDs: token.ProjectIDs,
+		Policies: token.Policies,
+	})
+}
+
+// A product-scoped token reaches exactly the projects its product currently holds.
+func (s *getContractRBACIntegrationSuite) TestProductScopedToken() {
+	s.Run("can read the workflow of a project its product holds", func() {
+		resp, err := s.svc.GetContract(s.ctxForProductToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+			ProjectName:  s.projectA.Name,
+			WorkflowName: s.workflowA.Name,
+		})
+		s.Require().NoError(err)
+		s.Equal(s.workflowA.Name, resp.GetResult().GetWorkflow().GetName())
+		s.NotNil(resp.GetResult().GetContract())
+	})
+
+	s.Run("cannot read a project its product does not hold", func() {
+		_, err := s.svc.GetContract(s.ctxForProductToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+			ProjectName:  s.projectB.Name,
+			WorkflowName: s.workflowB.Name,
+		})
+		s.Require().Error(err)
+		s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+		// The refusal must name the product and the resource, and must not be an internal
+		// error from dereferencing a project name the token does not have.
+		s.Contains(err.Error(), s.productID.String())
+		s.Contains(err.Error(), "project")
+	})
+}
+
+// A token whose product holds no projects authorizes nothing — the shape it has once the
+// product is deleted. It must not widen to the whole organization.
+func (s *getContractRBACIntegrationSuite) TestProductScopedTokenWithNoProjects() {
+	for _, wf := range []*biz.Workflow{s.workflowA, s.workflowB} {
+		_, err := s.svc.GetContract(s.ctxForProductToken(s.emptyProductToken), &pb.AttestationServiceGetContractRequest{
+			ProjectName:  wf.Project,
+			WorkflowName: wf.Name,
+		})
+		s.Require().Error(err, "an empty scope denies everything")
+		s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+		s.Contains(err.Error(), s.emptyProductID.String())
+	}
+}
+
+// A project soft-deleted after it was written into a token's project list must not stay
+// reachable: the stale id must be refused, the same as a project the token was never given.
+func (s *getContractRBACIntegrationSuite) TestProductScopedTokenStaleProjectID() {
+	ctx := context.Background()
+	s.Require().NoError(s.Data.DB.Project.UpdateOneID(s.projectA.ID).SetDeletedAt(time.Now()).Exec(ctx))
+
+	_, err := s.svc.GetContract(s.ctxForProductToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+		ProjectName:  s.projectA.Name,
+		WorkflowName: s.workflowA.Name,
+	})
+	s.Require().Error(err, "a soft-deleted project must not still be reachable through a stale id")
 }
 
 func TestGetContractRBACIntegration(t *testing.T) {
