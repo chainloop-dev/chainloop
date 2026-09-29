@@ -62,7 +62,7 @@ A missing, empty or unreadable spec folder MUST NOT stop the push of the session
 
 ### R-009: Keep the spec until the session ends
 The system MUST keep the session folder after a push. Each push of a session MUST record all the spec files that are in the folder at that time. The system MUST delete the session folder when the session ends.
-- Done when: a second push of the same session holds its current spec files, including files that did not change, and the folder is gone after the session ends.
+- Done when: a second push of the same session holds its current spec files, including files that did not change. The folder is gone after the session ends.
 
 ### R-010: Capture rate
 The system SHOULD make it possible to count the sessions that have spec materials, from the pushed evidence only.
