@@ -16,6 +16,7 @@
 package biz
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"slices"
@@ -119,6 +120,9 @@ type APIToken struct {
 	// A product's name is not stored: it belongs to whoever owns the product.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
+	// ProjectIDs are the projects a product token reaches, kept consolidated by the Chainloop
+	// platform. Never nil on a product token, nil on every other kind.
+	ProjectIDs []uuid.UUID
 	// ACL policies for this token
 	Policies []*authz.Policy
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
@@ -158,10 +162,12 @@ type APITokenCreateOpts struct {
 	WorkflowID     *uuid.UUID
 	// Scope records what the token is scoped to. ScopeID names that resource, and is unset only
 	// for an instance-level token.
-	Scope    *authz.ResourceType
-	ScopeID  *uuid.UUID
-	Policies []*authz.Policy
-	IsSystem bool
+	Scope   *authz.ResourceType
+	ScopeID *uuid.UUID
+	// ProjectIDs is set on a product token only
+	ProjectIDs []uuid.UUID
+	Policies   []*authz.Policy
+	IsSystem   bool
 }
 
 type APITokenRepo interface {
@@ -214,12 +220,13 @@ func NewAPITokenUseCase(apiTokenRepo APITokenRepo, jwtConfig *APITokenJWTConfig,
 }
 
 type apiTokenOptions struct {
-	project  *Project
-	workflow *Workflow
-	scope    *authz.ResourceType
-	scopeID  *uuid.UUID
-	policies []*authz.Policy
-	isSystem bool
+	project    *Project
+	workflow   *Workflow
+	scope      *authz.ResourceType
+	scopeID    *uuid.UUID
+	projectIDs []uuid.UUID
+	policies   []*authz.Policy
+	isSystem   bool
 }
 
 type APITokenCreateOpt func(*apiTokenOptions)
@@ -260,6 +267,24 @@ func APITokenWithScope(scope authz.ResourceType, scopeID *uuid.UUID) APITokenCre
 		o.scope = &scope
 		o.scopeID = scopeID
 	}
+}
+
+// APITokenWithProjectIDs sets the projects a product-scoped token reaches, and is refused with
+// any other scope. A nil list reaches nothing, as an empty one does.
+func APITokenWithProjectIDs(ids []uuid.UUID) APITokenCreateOpt {
+	return func(o *apiTokenOptions) {
+		o.projectIDs = CanonicalProjectIDs(ids)
+	}
+}
+
+// CanonicalProjectIDs returns ids deduplicated and sorted, never nil, so that equal sets are
+// stored as equal lists and compare equal.
+func CanonicalProjectIDs(ids []uuid.UUID) []uuid.UUID {
+	out := make([]uuid.UUID, 0, len(ids))
+	out = append(out, ids...)
+	slices.SortFunc(out, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
+
+	return slices.Compact(out)
 }
 
 // validateTokenScope checks that an explicit scope agrees with the organization and project the
@@ -375,6 +400,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		scope, scopeID = options.scope, options.scopeID
 	}
 
+	// Only a product token carries a project list.
+	if !IsResourceScopeKind(*scope) && options.projectIDs != nil {
+		return nil, NewErrValidationStr("only a product-scoped token carries a project list")
+	}
+
 	// Use provided policies if present, otherwise use defaults
 	policies := options.policies
 	if policies == nil {
@@ -397,6 +427,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		WorkflowID:     workflowID,
 		Scope:          scope,
 		ScopeID:        scopeID,
+		ProjectIDs:     options.projectIDs,
 		Policies:       policies,
 		IsSystem:       options.isSystem,
 	})

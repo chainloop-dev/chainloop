@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts)
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.Create")
 	defer span.End()
 
-	token, err := r.data.DB.APIToken.Create().
+	create := r.data.DB.APIToken.Create().
 		SetName(opts.Name).
 		SetNillableDescription(opts.Description).
 		SetNillableExpiresAt(opts.ExpiresAt).
@@ -60,8 +61,18 @@ func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts)
 		SetNillableScope(opts.Scope).
 		SetNillableScopeID(opts.ScopeID).
 		SetPolicies(opts.Policies).
-		SetIsSystem(opts.IsSystem).
-		Save(ctx)
+		SetIsSystem(opts.IsSystem)
+
+	if opts.ProjectIDs != nil {
+		ids, err := r.liveProjectsInOrg(ctx, opts.OrganizationID, opts.ProjectIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		create = create.SetProjectIds(ids)
+	}
+
+	token, err := create.Save(ctx)
 	if err != nil {
 		// A CHECK violation is a malformed scope, not a name clash.
 		if sqlgraph.IsCheckConstraintError(err) {
@@ -76,6 +87,33 @@ func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts)
 	}
 
 	return r.FindByID(ctx, token.ID)
+}
+
+// liveProjectsInOrg returns ids in canonical form after checking that every one is a live
+// project of the organization. The list is written from outside this module, so this is the
+// check standing between a stray id and a token that reaches another organization's project.
+func (r *APITokenRepo) liveProjectsInOrg(ctx context.Context, orgID *uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error) {
+	canonical := biz.CanonicalProjectIDs(ids)
+	if len(canonical) == 0 {
+		return canonical, nil
+	}
+
+	if orgID == nil {
+		return nil, biz.NewErrValidationStr("a token without an organization reaches no project")
+	}
+
+	live, err := r.data.DB.Project.Query().
+		Where(project.IDIn(canonical...), project.OrganizationID(*orgID), project.DeletedAtIsNil()).
+		Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("checking the token's projects: %w", err)
+	}
+
+	if live != len(canonical) {
+		return nil, biz.NewErrValidationStr("every project a token reaches must be a live project of its organization")
+	}
+
+	return canonical, nil
 }
 
 func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {
@@ -298,6 +336,7 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	// workflow it has no edge to load: both values come straight off the row.
 	result.Scope = t.Scope
 	result.ScopeID = t.ScopeID
+	result.ProjectIDs = t.ProjectIds
 
 	return result
 }

@@ -544,6 +544,7 @@ func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
 		OrganizationID: &orgUUID,
 		Scope:          biz.ToPtr(authz.ResourceTypeProduct),
 		ScopeID:        &productID,
+		ProjectIDs:     []uuid.UUID{},
 		Policies:       []*authz.Policy{},
 	})
 	s.Require().NoError(err)
@@ -708,18 +709,19 @@ func (s *apiTokenTestSuite) TestRepoScopeMustAgreeWithTheToken() {
 	productID := uuid.New()
 
 	testCases := []struct {
-		name      string
-		org       *uuid.UUID
-		projectID *uuid.UUID
-		scope     *authz.ResourceType
-		scopeID   *uuid.UUID
-		wantErr   bool
+		name       string
+		org        *uuid.UUID
+		projectID  *uuid.UUID
+		scope      *authz.ResourceType
+		scopeID    *uuid.UUID
+		projectIDs []uuid.UUID
+		wantErr    bool
 	}{
 		{name: "a token from before this change carries no scope", org: &orgUUID},
 		{name: "an organization scope naming its organization", org: &orgUUID, scope: biz.ToPtr(authz.ResourceTypeOrganization), scopeID: &orgUUID},
 		{name: "a project scope naming its project", org: &orgUUID, projectID: &s.p1.ID, scope: biz.ToPtr(authz.ResourceTypeProject), scopeID: &s.p1.ID},
 		{name: "an instance scope with no id", scope: biz.ToPtr(authz.ResourceTypeInstance)},
-		{name: "a product scope", org: &orgUUID, scope: biz.ToPtr(authz.ResourceTypeProduct), scopeID: &productID},
+		{name: "a product scope", org: &orgUUID, scope: biz.ToPtr(authz.ResourceTypeProduct), scopeID: &productID, projectIDs: []uuid.UUID{}},
 
 		{name: "an organization scope naming another organization", org: &orgUUID, scope: biz.ToPtr(authz.ResourceTypeOrganization), scopeID: &otherOrg, wantErr: true},
 		{name: "an organization scope on a project token", org: &orgUUID, projectID: &s.p1.ID, scope: biz.ToPtr(authz.ResourceTypeOrganization), scopeID: &orgUUID, wantErr: true},
@@ -739,7 +741,7 @@ func (s *apiTokenTestSuite) TestRepoScopeMustAgreeWithTheToken() {
 		s.Run(tc.name, func() {
 			_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
 				Name: randomName(), OrganizationID: tc.org, ProjectID: tc.projectID,
-				Scope: tc.scope, ScopeID: tc.scopeID, Policies: []*authz.Policy{},
+				Scope: tc.scope, ScopeID: tc.scopeID, ProjectIDs: tc.projectIDs, Policies: []*authz.Policy{},
 			})
 			if !tc.wantErr {
 				s.NoError(err)
@@ -763,7 +765,7 @@ func (s *apiTokenTestSuite) TestRepoScopedTokenNameUniqueness() {
 		_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
 			Name: name, OrganizationID: &orgUUID,
 			Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
-			Policies: []*authz.Policy{},
+			ProjectIDs: []uuid.UUID{}, Policies: []*authz.Policy{},
 		})
 		return err
 	}
@@ -816,7 +818,7 @@ func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
 		Name: productTokenName, OrganizationID: &orgUUID,
 		Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
-		Policies: []*authz.Policy{},
+		ProjectIDs: []uuid.UUID{}, Policies: []*authz.Policy{},
 	})
 	s.Require().NoError(err)
 
@@ -918,4 +920,86 @@ func (s *apiTokenTestSuite) TestProjectIDsConstraint() {
 			s.NoError(err)
 		})
 	}
+}
+
+// The repository stores a product token's list in canonical form, and only live projects of the
+// token's organization. The use case cannot create a product token until the control plane
+// confines it; the platform writes these rows through the repository's validation all the same.
+func (s *apiTokenTestSuite) TestRepoStoresTheProjectList() {
+	ctx := context.Background()
+	orgID := uuid.MustParse(s.org.ID)
+	productID := uuid.New()
+	product := authz.ResourceTypeProduct
+	deleted, err := s.Project.Create(ctx, s.org.ID, "deleted-project")
+	s.Require().NoError(err)
+	s.Require().NoError(s.Data.DB.Project.UpdateOneID(deleted.ID).SetDeletedAt(time.Now()).Exec(ctx))
+	foreign, err := s.Project.Create(ctx, s.org2.ID, "foreign-project")
+	s.Require().NoError(err)
+
+	testCases := []struct {
+		name    string
+		ids     []uuid.UUID
+		want    []uuid.UUID
+		wantErr bool
+	}{
+		{name: "two projects, unsorted and repeated", ids: []uuid.UUID{s.p2.ID, s.p1.ID, s.p2.ID}, want: biz.CanonicalProjectIDs([]uuid.UUID{s.p1.ID, s.p2.ID})},
+		{name: "no projects", ids: []uuid.UUID{}, want: []uuid.UUID{}},
+		{name: "no list at all", ids: nil, wantErr: true},
+		{name: "a project of another organization", ids: []uuid.UUID{s.p1.ID, foreign.ID}, wantErr: true},
+		{name: "a deleted project", ids: []uuid.UUID{deleted.ID}, wantErr: true},
+		{name: "an unknown project", ids: []uuid.UUID{uuid.New()}, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			token, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+				Name: randomName(), OrganizationID: &orgID, Scope: &product, ScopeID: &productID, ProjectIDs: tc.ids,
+			})
+			if tc.wantErr {
+				s.Require().Error(err)
+				s.True(biz.IsErrValidation(err), "got %v", err)
+				return
+			}
+			s.Require().NoError(err)
+			s.Equal(tc.want, token.ProjectIDs)
+
+			reloaded, err := s.Repos.APITokenRepo.FindByID(ctx, token.ID)
+			s.Require().NoError(err)
+			s.Equal(tc.want, reloaded.ProjectIDs, "the list survives a round trip")
+		})
+	}
+}
+
+// Only a product token carries a project list; the use case refuses one on any other token.
+func (s *apiTokenTestSuite) TestCreateRefusesAProjectListOutsideAProductScope() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name string
+		opts []biz.APITokenCreateOpt
+	}{
+		{name: "an organization token", opts: []biz.APITokenCreateOpt{biz.APITokenWithProjectIDs([]uuid.UUID{s.p1.ID})}},
+		{name: "a project token", opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1), biz.APITokenWithProjectIDs([]uuid.UUID{s.p1.ID})}},
+		{name: "an empty list is still a list", opts: []biz.APITokenCreateOpt{biz.APITokenWithProjectIDs(nil)}},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			_, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, tc.opts...)
+			s.Require().Error(err)
+			s.True(biz.IsErrValidation(err), "got %v", err)
+		})
+	}
+}
+
+// Tokens of every other kind carry no list at all, not an empty one.
+func (s *apiTokenTestSuite) TestOtherTokensCarryNoProjectList() {
+	ctx := context.Background()
+	org, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID)
+	s.Require().NoError(err)
+	project, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithProject(s.p1))
+	s.Require().NoError(err)
+
+	s.Nil(org.ProjectIDs)
+	s.Nil(project.ProjectIDs)
 }
