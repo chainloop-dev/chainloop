@@ -180,8 +180,9 @@ func withForceRBAC() AuthorizeResourceOpt {
 // For example: `s.authorizeResource(ctx, authz.PolicyAttachedIntegrationDetach, authz.ResourceTypeProject, projectUUID);`
 // checks if the user has a role in the project that allows to detach integrations on it.
 // This method is available to every service that embeds `service`
-// It goes through all the memberships of the user, direct memberships and indirect memberships (Groups)
+// For a user, it goes through all the memberships of the user, direct memberships and indirect memberships (Groups)
 // and checks if the user has any role that allows the operation on the resourceType and resourceID.
+// An API token has no role: it passes only for a project it reaches.
 func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resourceType authz.ResourceType, resourceID uuid.UUID, opts ...AuthorizeResourceOpt) error {
 	options := &authorizeResourceOpts{}
 	for _, opt := range opts {
@@ -192,17 +193,15 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 		return nil
 	}
 
-	// 1 - Authorize using API token
-	// For now we only support API tokens to authorize project resourceTypes
-	// NOTE we do not run s.enforcer here because API tokens do not have roles associated with resourceTypes
-	// the authorization has happened at the API level and we do not have attribute-based policies in casbin yet
+	// 1 - Authorize using an API token. A token has no role: the operation was checked against its
+	// own policies at the API level, and here it passes only for a project it reaches.
 	if token := entities.CurrentAPIToken(ctx); token != nil {
-		if resourceType == authz.ResourceTypeProject && token.ProjectID != nil && token.ProjectID.String() == resourceID.String() {
+		if resourceType == authz.ResourceTypeProject && token.ReachesProject(resourceID) {
 			s.log.Debugw("msg", "authorized using API token", "resource_id", resourceID.String(), "resource_type", resourceType, "token_name", token.Name, "token_id", token.ID)
 			return nil
 		}
 
-		return errors.Forbidden("forbidden", fmt.Errorf("operation not allowed: This auth token is valid only with the project %q", *token.ProjectName).Error())
+		return errors.Forbidden("forbidden", tokenOutOfReachMessage(token))
 	}
 
 	var defaultMessage = fmt.Sprintf("you do not have permissions to access the %q with id %q", resourceType, resourceID.String())
@@ -245,6 +244,19 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	return errors.Forbidden("forbidden", defaultMessage)
 }
 
+// tokenOutOfReachMessage tells a refused token what it is confined to. A product is named by id:
+// its display name belongs to whoever owns it.
+func tokenOutOfReachMessage(token *entities.APIToken) string {
+	switch {
+	case token.ProjectName != nil:
+		return fmt.Sprintf("operation not allowed: This auth token is valid only with the project %q", *token.ProjectName)
+	case token.IsResourceScoped() && token.ScopeID != nil:
+		return fmt.Sprintf("operation not allowed: this auth token is valid only with the projects of the %s %q", *token.Scope, token.ScopeID.String())
+	default:
+		return "operation not allowed: this auth token is not confined to this resource"
+	}
+}
+
 // projectsAllowing reports, per project ID, whether the caller may perform op
 // on it. It answers for a whole listing in one pass, so a client does not have
 // to offer an action that would be refused the moment it is taken.
@@ -285,11 +297,13 @@ func (s *service) projectsAllowing(ctx context.Context, op *authz.Policy, projec
 		return allowed, nil
 	}
 
-	// An API token is scoped to a single project, and reaching here means the
-	// API-level check already accepted the operation for it.
+	// An API token under RBAC is confined to its project or to its list, and
+	// reaching here means the API-level check already accepted the operation
+	// for it against its own policies. It has no role to consult, so it is
+	// allowed exactly where authorizeResource would let it through.
 	if token := entities.CurrentAPIToken(ctx); token != nil {
 		for _, p := range projects {
-			allowed[p.ID] = token.ProjectID != nil && *token.ProjectID == p.ID
+			allowed[p.ID] = token.ReachesProject(p.ID)
 		}
 
 		return allowed, nil
@@ -379,8 +393,10 @@ func (s *service) canCreateProject(ctx context.Context) (bool, error) {
 		return authz.Role(usercontext.CurrentAuthzSubject(ctx)).IsAdmin(), nil
 	}
 
-	// Only org tokens can create projects
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID != nil {
+	// Only org tokens can create projects. A token confined to a project or to a
+	// product is refused explicitly, keyed on its kind rather than on a missing
+	// project, since a product token has none.
+	if token := entities.CurrentAPIToken(ctx); token != nil && !token.IsOrgWide() {
 		return false, nil
 	}
 
@@ -389,22 +405,21 @@ func (s *service) canCreateProject(ctx context.Context) (bool, error) {
 	return s.authz.Enforce(ctx, orgRole, authz.PolicyProjectCreate)
 }
 
-// visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer)
+// visibleProjects returns projects where the user has any role (currently ProjectAdmin and ProjectViewer),
+// or the projects an API token reaches
 func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 	if !rbacEnabled(ctx) {
 		// returning a NIL slice to denote that RBAC has not been applied, to differentiate from the empty slice case
 		return nil
 	}
 
-	projects := make([]uuid.UUID, 0)
-
-	// 1 - Check if we are using an API token
+	// 1 - Check if we are using an API token. RBAC applies only to a confined token, whose reach
+	// is never nil: an empty list reaches nothing.
 	if token := entities.CurrentAPIToken(ctx); token != nil {
-		if token.ProjectID != nil {
-			projects = append(projects, *token.ProjectID)
-		}
-		return projects
+		return token.ReachableProjects()
 	}
+
+	projects := make([]uuid.UUID, 0)
 
 	// 2 - We are a user
 	m := entities.CurrentMembership(ctx)
@@ -489,13 +504,14 @@ func initializePaginationOpts(reqPagination *pb.OffsetPaginationRequest) (*pagin
 	return paginationOpts, nil
 }
 
-// RBAC feature is enabled if we are using a project scoped token or
+// RBAC feature is enabled if we are using a token confined to a project or to a product, or
 // it is a user with org role member
 func rbacEnabled(ctx context.Context) bool {
 	// it's an API token
 	token := entities.CurrentAPIToken(ctx)
 	if token != nil {
-		return token.ProjectID != nil
+		// Keyed on the kind: a product token has no project_id and is confined all the same.
+		return !token.IsOrgWide()
 	}
 
 	// we have an user

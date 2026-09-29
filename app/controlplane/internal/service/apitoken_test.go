@@ -54,7 +54,7 @@ func TestAPITokenService_Create_OrgTokenWithoutProjectIsRejected(t *testing.T) {
 func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	t.Parallel()
 
-	orgID, projectID := uuid.New(), uuid.New()
+	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 
 	testCases := []struct {
 		name string
@@ -74,6 +74,26 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 			caller:    &entities.APIToken{ID: uuid.NewString()},
 			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope: authz.ResourceTypeProject,
+		},
+		{
+			name:      "an organization token recording its scope is forced too",
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
+			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
+			wantScope: authz.ResourceTypeProject,
+		},
+		{
+			// Not organization-wide, so not forced: it is narrowed to its projects instead.
+			name:         "a product token keeps the scope it asks for, narrowed to its projects",
+			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID}},
+			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
+			wantScope:    authz.ResourceTypeOrganization,
+			wantProjects: []uuid.UUID{projectID},
+		},
+		{
+			// Empty, not nil: nil would mean RBAC does not narrow this caller at all.
+			name:         "a product token reaching nothing is narrowed to no project",
+			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{}},
+			wantProjects: []uuid.UUID{},
 		},
 		{
 			name:         "a project token keeps the scope it asks for",
@@ -175,8 +195,9 @@ func toUUIDPtr(id uuid.UUID) *uuid.UUID {
 	return &id
 }
 
-// A listing reports the project a token is confined to, and the scope columns change nothing
-// about it: every new token records a scope, yet each one lists exactly as it did before.
+// A listing reports what a token is confined to: its project, or its product. Every new token
+// records a scope, yet only a product is reported from it, so every other token lists exactly as
+// it did before.
 func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 	t.Parallel()
 
@@ -195,6 +216,16 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
 			},
 			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
+		},
+		{
+			// The product's name is not known to the control plane, so its id stands in for it.
+			// Without its own branch a product token would read as organization-wide.
+			name: "a product-scoped token reports its product by id",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID},
+			},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
 		},
 		{
 			name: "a scope id without a kind is not reported",
