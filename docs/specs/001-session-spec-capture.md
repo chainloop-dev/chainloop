@@ -38,7 +38,11 @@ The session folder MUST be inside the working tree and MUST be ignored by git wi
 - Done when: a file in the folder never shows as a change in the repository status.
 
 ### R-003: One file per source
-The agent MUST write one text file for each source. A short header gives the kind (ticket, document, image, text) and an optional source address. The actual content follows the header.
+The agent MUST write one text file for each source. A short header gives the kind and an optional source address. The actual content follows the header. The kinds are:
+- `ticket`: an issue tracker item (Linear, Jira).
+- `document`: a written specification (a design doc, a vault page, an RFC).
+- `image`: a mockup or screenshot. The file holds what the agent transcribed from it.
+- `text`: a spec stated in the session itself, including a plan the session wrote and the user approved.
 
 ### R-004: Nothing to capture
 The instruction MUST tell the agent to write nothing when the task has no spec, for example a typo fix or a question.
