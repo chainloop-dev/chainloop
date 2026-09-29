@@ -134,6 +134,7 @@ spec:
             - name: gcp-secretmanager-serviceaccountkey
               mountPath: /gcp-secrets
             {{- end }}
+            {{- include "chainloop.vault.kubernetesAuth.volumeMount" . | nindent 12 }}
             {{- if include "cas.tls-secret-name" .  }}
             - name: server-certs
               mountPath: /data/server-certs
@@ -177,6 +178,7 @@ spec:
           secret:
             secretName: {{ include "chainloop.cas.fullname" . }}-gcp-secretmanager-serviceaccountkey
         {{- end }}
+        {{- include "chainloop.vault.kubernetesAuth.volume" . | nindent 8 }}
         {{- if (not (empty .Values.cas.customCAs)) }}
         - name: custom-cas
           projected:

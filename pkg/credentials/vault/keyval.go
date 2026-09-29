@@ -100,12 +100,12 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 	logger := servicelogger.ScopedHelper(l, "credentials/vault")
 
+	var login *vault.Secret
 	if opts.KubernetesAuth != nil {
-		login, err := kubernetesLogin(context.Background(), client, opts.KubernetesAuth)
+		login, err = kubernetesLogin(context.Background(), client, opts.KubernetesAuth)
 		if err != nil {
 			return nil, fmt.Errorf("logging in with kubernetes auth: %w", err)
 		}
-		go keepLoggedIn(client, opts.KubernetesAuth, login, logger)
 	} else {
 		client.SetToken(opts.AuthToken)
 	}
@@ -127,6 +127,11 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 		if err := validateWriterClient(kv, opts.SecretPrefix); err != nil {
 			return nil, fmt.Errorf("validating client: %w", err)
 		}
+	}
+
+	// Renewal starts only once the client is known to work, so a failed validation leaves nothing running.
+	if login != nil {
+		go keepLoggedIn(context.Background(), client, opts.KubernetesAuth, login, logger)
 	}
 
 	return &Manager{kv, opts.SecretPrefix, logger}, nil
@@ -167,39 +172,67 @@ func kubernetesLogin(ctx context.Context, client *vault.Client, opts *Kubernetes
 	return secret, nil
 }
 
-// keepLoggedIn renews the login's lease for as long as Vault allows, then logs in again. It runs for the life of the
+// keepLoggedIn renews the login's lease for as long as Vault allows, then logs in again, until ctx is done. It runs for the life of the
 // process, like the manager itself.
-func keepLoggedIn(client *vault.Client, opts *KubernetesAuthOpts, login *vault.Secret, logger *log.Helper) {
+func keepLoggedIn(ctx context.Context, client *vault.Client, opts *KubernetesAuthOpts, login *vault.Secret, logger *log.Helper) {
 	for {
 		if login != nil && login.Auth != nil && login.Auth.Renewable {
-			watcher, err := client.NewLifetimeWatcher(&vault.LifetimeWatcherInput{Secret: login})
-			if err != nil {
-				logger.Errorw("msg", "vault token lifetime watcher", "error", err)
-			} else {
-				go watcher.Start()
-				for done := false; !done; {
-					select {
-					case err := <-watcher.DoneCh():
-						if err != nil {
-							logger.Warnw("msg", "vault token renewal stopped", "error", err)
-						}
-						done = true
-					case <-watcher.RenewCh():
-					}
-				}
-				watcher.Stop()
+			if !watchUntilDone(ctx, client, login, logger) {
+				return
 			}
 		} else if login != nil && login.Auth != nil {
 			// Not renewable: log in again shortly before the lease ends.
-			time.Sleep(time.Duration(login.Auth.LeaseDuration) * time.Second * 9 / 10)
+			if !sleepCtx(ctx, time.Duration(login.Auth.LeaseDuration)*time.Second*9/10) {
+				return
+			}
 		}
 
 		var err error
-		if login, err = kubernetesLogin(context.Background(), client, opts); err != nil {
+		if login, err = kubernetesLogin(ctx, client, opts); err != nil {
 			logger.Errorw("msg", "vault kubernetes re-login", "error", err)
 			login = nil
-			time.Sleep(10 * time.Second)
+			if !sleepCtx(ctx, reloginBackoff) {
+				return
+			}
 		}
+	}
+}
+
+// reloginBackoff is how long a failed re-login waits before the next attempt.
+var reloginBackoff = 10 * time.Second
+
+// watchUntilDone renews the login's lease until Vault stops renewing it; false when ctx ended first.
+func watchUntilDone(ctx context.Context, client *vault.Client, login *vault.Secret, logger *log.Helper) bool {
+	watcher, err := client.NewLifetimeWatcher(&vault.LifetimeWatcherInput{Secret: login})
+	if err != nil {
+		logger.Errorw("msg", "vault token lifetime watcher", "error", err)
+		return ctx.Err() == nil
+	}
+	go watcher.Start()
+	defer watcher.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		case err := <-watcher.DoneCh():
+			if err != nil {
+				logger.Warnw("msg", "vault token renewal stopped", "error", err)
+			}
+			return true
+		case <-watcher.RenewCh():
+		}
+	}
+}
+
+// sleepCtx waits for d; false when ctx ended first.
+func sleepCtx(ctx context.Context, d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-t.C:
+		return true
 	}
 }
 

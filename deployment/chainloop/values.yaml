@@ -67,7 +67,8 @@ secretsBackend:
   ## @extra secretsBackend.vault.token Vault authentication token. Omit it when kubernetesAuth is set
   ## @extra secretsBackend.vault.kubernetesAuth.role Vault role for the Kubernetes auth method, used instead of token
   ## @extra secretsBackend.vault.kubernetesAuth.mountPath Mount path of the Kubernetes auth method (default "kubernetes")
-  ## @extra secretsBackend.vault.kubernetesAuth.tokenPath Service account token path (default: the pod's projected token)
+  ## @extra secretsBackend.vault.kubernetesAuth.tokenPath Service account token path (default: the chart's projected token)
+  ## @extra secretsBackend.vault.kubernetesAuth.audience Audience of the projected token (default: the API server's)
   ##
   # vault:
   #   address: ""
