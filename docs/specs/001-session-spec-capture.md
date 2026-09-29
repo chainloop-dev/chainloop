@@ -60,8 +60,9 @@ The system MUST apply the same secret redaction to spec files that it applies to
 ### R-008: Failure never blocks the push
 A missing, empty or unreadable spec folder MUST NOT stop the push of the session. The system SHOULD record a warning in the session material when it drops or cuts spec content.
 
-### R-009: Clean up after push
-The system MUST delete the session folder after it pushes the attestation that holds its files. It MUST keep the folder when the push of that session fails.
+### R-009: Keep the spec until the session ends
+The system MUST keep the session folder after a push. Each push of a session MUST record all the spec files that are in the folder at that time. The system MUST delete the session folder when the session ends.
+- Done when: a second push of the same session holds its current spec files, including files that did not change, and the folder is gone after the session ends.
 
 ### R-010: Capture rate
 The system SHOULD make it possible to count the sessions that have spec materials, from the pushed evidence only.
@@ -74,7 +75,7 @@ The system SHOULD make it possible to count the sessions that have spec material
 ## Proposal
 The user does nothing new. When a traced session starts, the trace hook adds the capture instruction to the context of the agent. The agent then resolves the sources that the task points at. It uses the tools it already has: an issue tracker connector, a web fetch, a local file read. It writes the actual text of each source into the session folder. If the task changes, the agent overwrites a file or adds one. The version on disk at push time is the one Chainloop records, so a reviewed plan replaces its draft.
 
-When the user pushes, the trace push command reads the session folder. It redacts each file, uploads it as an EVIDENCE material, and records the digest. It then writes the references into the session material and adds that material last. The attestation now holds the session material and one material for each source. Content-addressable storage keeps one copy of a ticket that ten sessions use.
+When the user pushes, the trace push command reads the session folder. It redacts each file, uploads it as an EVIDENCE material, and records the digest. It then writes the references into the session material and adds that material last. The attestation now holds the session material and one material for each source. Content-addressable storage keeps one copy of a ticket that ten sessions use. The session folder stays after the push, because a session can push more than one time. Each later push records the spec again, and storage keeps one copy of each file. The session-end hook deletes the folder.
 
 Each agent receives the instruction through its own channel:
 
@@ -108,7 +109,9 @@ sequenceDiagram
     CLI->>CAS: Upload each file as EVIDENCE material
     CLI->>CLI: Write digests into the session material
     CLI->>CP: Push attestation
-    CLI->>Folder: Delete session folder
+    User->>Agent: End session
+    Agent->>Hook: Session end event
+    Hook->>Folder: Delete session folder
 ```
 
 ### Example: the spec field in the session material
@@ -175,6 +178,7 @@ Each spec material in the predicate:
 | D-006 | Skills as the trigger | Not used as the trigger | The model decides when to load a skill, no agent can make a skill always apply, and a skill cannot hold the session path. | drafting |
 | D-007 | User interface and scoring | Out of scope for this repository | They live in other products and consume the materials that this spec defines. | drafting |
 | D-008 | Material type for spec files | EVIDENCE | A spec file is supporting evidence for the session, not an output of the work. Rejected: ARTIFACT. | owner review |
+| D-009 | When the session folder is deleted | When the session ends | A session can push more than one time, and each attestation must hold its spec. Content-addressable storage keeps one copy of each file, so a new push adds no storage. Rejected: delete after each push (a later push of the same session would have no spec). | owner review |
 
 ## Open Questions
 - [ ] **Do we limit file size and file count?** The storage backend configuration already sets the upper limit for a material. Proposed: keep a file limit against an agent that writes one file per turn. Reviewers decide if a per-file cap in the CLI adds value.
@@ -199,4 +203,5 @@ Each spec material in the predicate:
 | A workflow contract rejects materials that it does not declare. | Test how trace workflows handle extra materials before milestone 1. |
 | An agent changes or drops the documented channel. | Each agent integration declares if it supports the instruction. A session without the channel pushes as it does today, without a spec. |
 | A contract policy for all EVIDENCE materials also runs on the spec files. It receives Markdown where it expects JSON. | A policy author can limit the policy to named materials with a name selector. The spec material names start with `spec-`, so they do not match a selector for other materials. |
+| The user pushes after the session ends. The session-end hook already deleted the folder, so that push holds no spec. | Accepted for the first version. Every push during the session holds the spec. |
 | Spec content contains customer names or internal details. | The same redaction and the same opt-out as the session material apply (R-007). A session that must not be recorded is one where trace is off. |
