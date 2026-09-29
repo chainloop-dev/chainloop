@@ -176,7 +176,9 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
 	}
 
-	if len(filters.FilterByProjects) > 0 {
+	// nil means no RBAC filter, an empty slice means the caller reaches no project. Gating on
+	// len() collapsed the two and served every token in the organization.
+	if filters.FilterByProjects != nil {
 		query = query.Where(apitoken.ProjectIDIn(filters.FilterByProjects...))
 	}
 

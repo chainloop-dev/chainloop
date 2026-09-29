@@ -1221,3 +1221,32 @@ func (s *apiTokenTestSuite) TestGeneratedJWTCarriesTheProductScope() {
 	s.Require().NoError(err)
 	s.Empty(parseClaims(unscoped.JWT).ProductID)
 }
+
+// Same nil-versus-empty distinction as the contract listing: an empty visible-project set means
+// the caller reaches no project, not that no filter applies. Gated on len(), it listed every
+// token in the organization — org-level ones included.
+func (s *apiTokenTestSuite) TestListProjectFilterDistinguishesEmptyFromNil() {
+	ctx := context.Background()
+
+	s.Run("nil applies no project filter", func() {
+		got, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenProjectFilter(nil))
+		s.Require().NoError(err)
+		s.NotEmpty(got, "an unfiltered listing still returns the organization's tokens")
+	})
+
+	s.Run("an empty slice reaches no token", func() {
+		got, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenProjectFilter([]uuid.UUID{}))
+		s.Require().NoError(err)
+		s.Empty(got, "a caller that reaches no project must not be served the organization's tokens")
+	})
+
+	s.Run("a visible project reaches only its own tokens", func() {
+		got, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenProjectFilter([]uuid.UUID{s.p1.ID}))
+		s.Require().NoError(err)
+		s.Require().NotEmpty(got)
+		for _, t := range got {
+			s.Require().NotNil(t.ProjectID)
+			s.Equal(s.p1.ID, *t.ProjectID)
+		}
+	})
+}

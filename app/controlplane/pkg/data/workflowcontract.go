@@ -61,9 +61,12 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID, filter
 		QueryWorkflowContracts().
 		Where(workflowcontract.DeletedAtIsNil())
 
-	// If specific projects are provided
-	// we return the global contracts alongside the org scoped projects
-	if len(filter.FilterByProjects) > 0 {
+	// If a project filter is provided we return the global contracts alongside the ones scoped
+	// to those projects. NOTE: nil and empty mean different things here — nil is "RBAC does
+	// not narrow this caller", an empty slice is "RBAC narrows it to no project at all", and
+	// ent renders an IN with no arguments as FALSE, which is the fail-closed answer. Gating on
+	// len() collapsed the two and served every contract in the organization.
+	if filter.FilterByProjects != nil {
 		wcontractQuery = wcontractQuery.Where(
 			workflowcontract.Or(
 				workflowcontract.And(
