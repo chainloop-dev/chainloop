@@ -119,6 +119,9 @@ jobs:
         run: |
           curl -sfL -o /tmp/sbx.deb \
             "https://github.com/docker/sbx-releases/releases/download/${SBX_VERSION}/DockerSandboxes-linux-amd64-ubuntu2404.deb"
+          # The runner image's package index goes stale as Ubuntu supersedes
+          # versions, and the .deb's dependencies then 404 on the mirror.
+          sudo apt-get update
           sudo apt-get install -y /tmp/sbx.deb
           sbx version
 

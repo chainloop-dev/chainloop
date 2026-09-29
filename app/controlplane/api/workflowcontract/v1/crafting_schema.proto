@@ -241,7 +241,7 @@ message CraftingSchemaV2Spec {
 }
 
 message Annotation {
-  string name = 1 [(buf.validate.field).string.pattern = "^[\\w]+$"]; // Single word optionally separated with _
+  string name = 1 [(buf.validate.field).string.pattern = "^[\\w-]+$"]; // Single word optionally separated with _ or -
   // This value can be set in the contract or provided during the attestation
   string value = 2;
 }
