@@ -186,7 +186,9 @@ type APITokenRepo interface {
 	// organization, writing only the rows whose list differs, and returns how many it changed.
 	SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)
 	// SetScopePolicies sets the policies of every active token of a resource scope in the
-	// organization, writing only the rows whose list differs, and returns how many it changed.
+	// organization to a non-empty list carrying no organization-level policy, writing only the
+	// rows whose list differs, and returns how many it changed. It refuses a nil or empty list:
+	// writing one would deny-all the scope's tokens until a later call restores real policies.
 	SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)
 }
 
@@ -789,7 +791,9 @@ func (uc *APITokenUseCase) SetScopeProjects(ctx context.Context, orgID uuid.UUID
 	return uc.apiTokenRepo.SetScopeProjects(ctx, orgID, kind, scopeID, projectIDs)
 }
 
-// SetScopePolicies sets the policies of every active token of a resource scope.
+// SetScopePolicies sets the policies of every active token of a resource scope. policies must be
+// non-empty and carry no organization-level policy; the repository refuses anything else rather
+// than write it, since an empty list would deny-all the scope's tokens until a later call.
 func (uc *APITokenUseCase) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetScopePolicies")
 	defer span.End()

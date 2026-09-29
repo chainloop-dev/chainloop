@@ -1342,4 +1342,23 @@ func (s *apiTokenTestSuite) TestSetScopePolicies() {
 	_, err = s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, []*authz.Policy{authz.PolicyAPITokenCreate})
 	s.Require().Error(err)
 	s.True(biz.IsErrValidation(err), "organization-level policies are refused")
+
+	emptyCases := []struct {
+		name     string
+		policies []*authz.Policy
+	}{
+		{name: "a nil list", policies: nil},
+		{name: "an empty list", policies: []*authz.Policy{}},
+	}
+	for _, tc := range emptyCases {
+		s.Run(tc.name, func() {
+			_, err := s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, tc.policies)
+			s.Require().Error(err)
+			s.True(biz.IsErrValidation(err), "got %v", err)
+
+			got, err := s.APIToken.FindByID(ctx, token.ID.String())
+			s.Require().NoError(err)
+			s.Equal(policies, got.Policies, "the token's policies are unchanged")
+		})
+	}
 }

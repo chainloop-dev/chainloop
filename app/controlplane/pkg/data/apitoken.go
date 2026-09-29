@@ -158,13 +158,20 @@ func (r *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, ki
 }
 
 // SetScopePolicies sets the policies of every active token of the resource scope in the
-// organization, writing only the rows whose list differs, and returns how many it changed.
+// organization to a non-empty list carrying no organization-level policy, writing only the rows
+// whose list differs, and returns how many it changed.
 func (r *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetScopePolicies")
 	defer span.End()
 
 	if !biz.IsResourceScopeKind(kind) {
 		return 0, biz.NewErrValidationStr(fmt.Sprintf("tokens scoped to %q take their policies at creation", kind))
+	}
+
+	// An empty list would deny-all every token of the scope until a later call restores real
+	// policies. Refuse it rather than write it silently.
+	if len(policies) == 0 {
+		return 0, biz.NewErrValidationStr("a token confined to a resource needs its policies")
 	}
 
 	if slices.ContainsFunc(policies, biz.IsOrgLevelTokenPolicy) {
