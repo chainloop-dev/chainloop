@@ -623,7 +623,7 @@ export interface CraftingSchemaV2Spec {
 }
 
 export interface Annotation {
-  /** Single word optionally separated with _ */
+  /** Single word optionally separated with _ or - */
   name: string;
   /** This value can be set in the contract or provided during the attestation */
   value: string;
