@@ -130,7 +130,6 @@ flowchart LR
 | D-007 | User interface and scoring | Out of scope for this repository | They live in other products and consume the materials that this spec defines. | drafting |
 
 ## Open Questions
-- [ ] **What capture rate is enough, and do we force the capture?** Proposed: measure first. If the rate is low, add a session-end hook that blocks one time when a session changed code and wrote no spec.
 - [ ] **Do we limit file size and file count?** The storage backend configuration already sets the upper limit for a material. Proposed: keep a file limit against an agent that writes one file per turn. Reviewers decide if a per-file cap in the CLI adds value.
 - [ ] **How do we store real images?** The model receives a pasted image as image input, not as a file. Its write tool writes text only, so it cannot write the image bytes. The only copy of the bytes is in the session transcript. Options:
   - (a) The agent copies an image file that exists on disk, for example a file that the user dragged in. A pasted image stays a description.
@@ -148,7 +147,7 @@ flowchart LR
 
 | Risk | Mitigation |
 |------|------------|
-| The agent ignores the instruction, so capture is not guaranteed. | R-010 makes the rate measurable. The open question on a session-end hook gives a stronger option. |
+| The agent ignores the instruction, so capture is not guaranteed. | R-010 makes the rate measurable. |
 | The model paraphrases the source instead of copying it. | The instruction asks for the actual text. The source address lets a reviewer compare with the original. |
 | A workflow contract rejects materials that it does not declare. | Test how trace workflows handle extra materials before milestone 1. |
 | An agent changes or drops the documented channel. | Each agent integration declares if it supports the instruction. A session without the channel pushes as it does today, without a spec. |
