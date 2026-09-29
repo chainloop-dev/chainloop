@@ -17,6 +17,7 @@ package entities
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -35,9 +36,47 @@ type APIToken struct {
 	WorkflowName *string
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
-	Scope    string
+	// Scope and ScopeID name what the token is scoped to. They are loaded from the row, never
+	// from a claim; only a product scope drives any logic.
+	Scope   *authz.ResourceType
+	ScopeID *uuid.UUID
+	// ProjectIDs are the projects a product token reaches, loaded from the row.
+	ProjectIDs []uuid.UUID
+	// InstanceScope carries the "scope" claim, which holds only authz.ScopeInstanceAdmin. It is
+	// unrelated to Scope above.
+	InstanceScope string
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
 	IsSystem bool
+}
+
+// IsResourceScoped reports whether the token is confined to a product, a resource that does not
+// live in the control plane database. It keys on the scope kind, never on scope_id.
+func (t *APIToken) IsResourceScoped() bool {
+	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
+}
+
+// IsOrgWide reports whether the token acts for the whole organization: confined to neither a
+// project nor a product.
+func (t *APIToken) IsOrgWide() bool {
+	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
+}
+
+// ReachableProjects returns the projects a confined token reaches: its project, or its list. It
+// is never nil for a confined token, and nil for an organization-wide one, which no list confines.
+func (t *APIToken) ReachableProjects() []uuid.UUID {
+	switch {
+	case t == nil || t.IsOrgWide():
+		return nil
+	case t.ProjectID != nil:
+		return []uuid.UUID{*t.ProjectID}
+	default:
+		return append(make([]uuid.UUID, 0, len(t.ProjectIDs)), t.ProjectIDs...)
+	}
+}
+
+// ReachesProject reports whether a confined token reaches the project.
+func (t *APIToken) ReachesProject(id uuid.UUID) bool {
+	return slices.Contains(t.ReachableProjects(), id)
 }
 
 func WithCurrentAPIToken(ctx context.Context, token *APIToken) context.Context {

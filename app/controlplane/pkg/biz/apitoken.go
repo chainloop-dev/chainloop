@@ -476,6 +476,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
+	// Mirror a product scope into the JWT so the middleware can cross-check it against the row.
+	if IsResourceScopeKind(*scope) {
+		generationOpts.ProductID = scopeID
+	}
+
 	if projectID != nil {
 		generationOpts.ProjectID = ToPtr(options.project.ID)
 		generationOpts.ProjectName = ToPtr(options.project.Name)
@@ -549,6 +554,9 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 	if token.WorkflowID != nil {
 		generationOpts.WorkflowID = token.WorkflowID
 		generationOpts.WorkflowName = token.WorkflowName
+	}
+	if token.IsResourceScoped() {
+		generationOpts.ProductID = token.ScopeID
 	}
 
 	// generate the JWT
