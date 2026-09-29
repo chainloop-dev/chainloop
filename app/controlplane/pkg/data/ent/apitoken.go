@@ -41,6 +41,10 @@ type APIToken struct {
 	ProjectID uuid.UUID `json:"project_id,omitempty"`
 	// WorkflowID holds the value of the "workflow_id" field.
 	WorkflowID uuid.UUID `json:"workflow_id,omitempty"`
+	// Scope holds the value of the "scope" field.
+	Scope *authz.ResourceType `json:"scope,omitempty"`
+	// ScopeID holds the value of the "scope_id" field.
+	ScopeID *uuid.UUID `json:"scope_id,omitempty"`
 	// Policies holds the value of the "policies" field.
 	Policies []*authz.Policy `json:"policies,omitempty"`
 	// IsSystem holds the value of the "is_system" field.
@@ -102,11 +106,13 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case apitoken.FieldScopeID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case apitoken.FieldPolicies:
 			values[i] = new([]byte)
 		case apitoken.FieldIsSystem:
 			values[i] = new(sql.NullBool)
-		case apitoken.FieldName, apitoken.FieldDescription:
+		case apitoken.FieldName, apitoken.FieldDescription, apitoken.FieldScope:
 			values[i] = new(sql.NullString)
 		case apitoken.FieldCreatedAt, apitoken.FieldExpiresAt, apitoken.FieldRevokedAt, apitoken.FieldLastUsedAt:
 			values[i] = new(sql.NullTime)
@@ -186,6 +192,20 @@ func (_m *APIToken) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field workflow_id", values[i])
 			} else if value != nil {
 				_m.WorkflowID = *value
+			}
+		case apitoken.FieldScope:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field scope", values[i])
+			} else if value.Valid {
+				_m.Scope = new(authz.ResourceType)
+				*_m.Scope = authz.ResourceType(value.String)
+			}
+		case apitoken.FieldScopeID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field scope_id", values[i])
+			} else if value.Valid {
+				_m.ScopeID = new(uuid.UUID)
+				*_m.ScopeID = *value.S.(*uuid.UUID)
 			}
 		case apitoken.FieldPolicies:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -278,6 +298,16 @@ func (_m *APIToken) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("workflow_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.WorkflowID))
+	builder.WriteString(", ")
+	if v := _m.Scope; v != nil {
+		builder.WriteString("scope=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ScopeID; v != nil {
+		builder.WriteString("scope_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("policies=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Policies))

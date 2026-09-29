@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -45,21 +46,28 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts) (*biz.APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.Create")
 	defer span.End()
 
 	token, err := r.data.DB.APIToken.Create().
-		SetName(name).
-		SetNillableDescription(description).
-		SetNillableExpiresAt(expiresAt).
-		SetNillableOrganizationID(organizationID).
-		SetNillableProjectID(projectID).
-		SetNillableWorkflowID(workflowID).
-		SetPolicies(policies).
-		SetIsSystem(isSystem).
+		SetName(opts.Name).
+		SetNillableDescription(opts.Description).
+		SetNillableExpiresAt(opts.ExpiresAt).
+		SetNillableOrganizationID(opts.OrganizationID).
+		SetNillableProjectID(opts.ProjectID).
+		SetNillableWorkflowID(opts.WorkflowID).
+		SetNillableScope(opts.Scope).
+		SetNillableScopeID(opts.ScopeID).
+		SetPolicies(opts.Policies).
+		SetIsSystem(opts.IsSystem).
 		Save(ctx)
 	if err != nil {
+		// A CHECK violation is a malformed scope, not a name clash.
+		if sqlgraph.IsCheckConstraintError(err) {
+			return nil, biz.NewErrValidation(err)
+		}
+
 		if ent.IsConstraintError(err) {
 			return nil, biz.NewErrAlreadyExists(err)
 		}
@@ -139,11 +147,15 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	}
 
 	switch filters.FilterByScope {
-	case biz.APITokenScopeProject:
+	case authz.ResourceTypeProject:
 		query = query.Where(apitoken.ProjectIDNotNil())
-	case biz.APITokenScopeGlobal:
-		query = query.Where(apitoken.ProjectIDIsNil())
-	case biz.APITokenScopeInstance:
+	case authz.ResourceTypeProduct:
+		query = query.Where(apitoken.ScopeEQ(authz.ResourceTypeProduct))
+	case authz.ResourceTypeOrganization:
+		// Organization-wide means confined to neither a project nor a product. Keyed on the
+		// kind: new organization tokens carry an organization scope, older ones none.
+		query = query.Where(apitoken.ProjectIDIsNil(), apitoken.Or(apitoken.ScopeIsNil(), apitoken.ScopeNEQ(authz.ResourceTypeProduct)))
+	case authz.ResourceTypeInstance:
 		query = query.Where(apitoken.OrganizationIDIsNil())
 	}
 
@@ -281,6 +293,11 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		result.WorkflowID = biz.ToPtr(w.ID)
 		result.WorkflowName = biz.ToPtr(w.Name)
 	}
+
+	// The scoped resource is not an entity in this database, so unlike the project and the
+	// workflow it has no edge to load: both values come straight off the row.
+	result.Scope = t.Scope
+	result.ScopeID = t.ScopeID
 
 	return result
 }
