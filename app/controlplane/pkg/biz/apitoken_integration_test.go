@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
@@ -848,4 +849,73 @@ func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	projects, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProject))
 	s.Require().NoError(err)
 	s.Len(projects, 3, "the project listing is unchanged")
+}
+
+// The database keeps project_ids to product tokens, and keeps it an array.
+func (s *apiTokenTestSuite) TestProjectIDsConstraint() {
+	ctx := context.Background()
+	productID := uuid.New()
+	orgID := uuid.MustParse(s.org.ID)
+	product := authz.ResourceTypeProduct
+	organization := authz.ResourceTypeOrganization
+
+	testCases := []struct {
+		name    string
+		build   func(c *ent.APITokenCreate) *ent.APITokenCreate
+		wantErr bool
+	}{
+		{
+			name: "a product token with a list",
+			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+				return c.SetScope(product).SetScopeID(productID).SetProjectIds([]uuid.UUID{s.p1.ID})
+			},
+		},
+		{
+			name: "a product token with an empty list",
+			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+				return c.SetScope(product).SetScopeID(productID).SetProjectIds([]uuid.UUID{})
+			},
+		},
+		{
+			name: "a product token without a list",
+			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+				return c.SetScope(product).SetScopeID(productID)
+			},
+			wantErr: true,
+		},
+		{
+			// ent writes a nil slice as JSON null, which is not SQL NULL
+			name: "a product token whose list is JSON null",
+			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+				return c.SetScope(product).SetScopeID(productID).SetProjectIds(nil)
+			},
+			wantErr: true,
+		},
+		{
+			name: "an organization token with a list",
+			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+				return c.SetScope(organization).SetScopeID(orgID).SetProjectIds([]uuid.UUID{s.p1.ID})
+			},
+			wantErr: true,
+		},
+		{
+			name: "a legacy token with a list",
+			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+				return c.SetProjectIds([]uuid.UUID{s.p1.ID})
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			c := s.Data.DB.APIToken.Create().SetName(randomName()).SetOrganizationID(orgID)
+			_, err := tc.build(c).Save(ctx)
+			if tc.wantErr {
+				s.Error(err)
+				return
+			}
+			s.NoError(err)
+		})
+	}
 }

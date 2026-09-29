@@ -174,6 +174,12 @@ func (_c *APITokenCreate) SetNillableScopeID(v *uuid.UUID) *APITokenCreate {
 	return _c
 }
 
+// SetProjectIds sets the "project_ids" field.
+func (_c *APITokenCreate) SetProjectIds(v []uuid.UUID) *APITokenCreate {
+	_c.mutation.SetProjectIds(v)
+	return _c
+}
+
 // SetPolicies sets the "policies" field.
 func (_c *APITokenCreate) SetPolicies(v []*authz.Policy) *APITokenCreate {
 	_c.mutation.SetPolicies(v)
@@ -355,6 +361,10 @@ func (_c *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ScopeID(); ok {
 		_spec.SetField(apitoken.FieldScopeID, field.TypeUUID, value)
 		_node.ScopeID = &value
+	}
+	if value, ok := _c.mutation.ProjectIds(); ok {
+		_spec.SetField(apitoken.FieldProjectIds, field.TypeJSON, value)
+		_node.ProjectIds = value
 	}
 	if value, ok := _c.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
@@ -629,6 +639,24 @@ func (u *APITokenUpsert) ClearScopeID() *APITokenUpsert {
 	return u
 }
 
+// SetProjectIds sets the "project_ids" field.
+func (u *APITokenUpsert) SetProjectIds(v []uuid.UUID) *APITokenUpsert {
+	u.Set(apitoken.FieldProjectIds, v)
+	return u
+}
+
+// UpdateProjectIds sets the "project_ids" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateProjectIds() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldProjectIds)
+	return u
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (u *APITokenUpsert) ClearProjectIds() *APITokenUpsert {
+	u.SetNull(apitoken.FieldProjectIds)
+	return u
+}
+
 // SetPolicies sets the "policies" field.
 func (u *APITokenUpsert) SetPolicies(v []*authz.Policy) *APITokenUpsert {
 	u.Set(apitoken.FieldPolicies, v)
@@ -890,6 +918,27 @@ func (u *APITokenUpsertOne) UpdateScopeID() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearScopeID() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearScopeID()
+	})
+}
+
+// SetProjectIds sets the "project_ids" field.
+func (u *APITokenUpsertOne) SetProjectIds(v []uuid.UUID) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetProjectIds(v)
+	})
+}
+
+// UpdateProjectIds sets the "project_ids" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateProjectIds() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateProjectIds()
+	})
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (u *APITokenUpsertOne) ClearProjectIds() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearProjectIds()
 	})
 }
 
@@ -1324,6 +1373,27 @@ func (u *APITokenUpsertBulk) UpdateScopeID() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearScopeID() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearScopeID()
+	})
+}
+
+// SetProjectIds sets the "project_ids" field.
+func (u *APITokenUpsertBulk) SetProjectIds(v []uuid.UUID) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetProjectIds(v)
+	})
+}
+
+// UpdateProjectIds sets the "project_ids" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateProjectIds() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateProjectIds()
+	})
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (u *APITokenUpsertBulk) ClearProjectIds() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearProjectIds()
 	})
 }
 

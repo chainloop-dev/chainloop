@@ -20,6 +20,7 @@ var (
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
 		{Name: "scope", Type: field.TypeEnum, Nullable: true, Enums: []string{"instance", "organization", "project", "group", "product"}},
 		{Name: "scope_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "project_ids", Type: field.TypeJSON, Nullable: true},
 		{Name: "policies", Type: field.TypeJSON, Nullable: true},
 		{Name: "is_system", Type: field.TypeBool, Default: false},
 		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
@@ -34,19 +35,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_tokens_projects_project",
-				Columns:    []*schema.Column{APITokensColumns[11]},
+				Columns:    []*schema.Column{APITokensColumns[12]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_tokens_workflows_workflow",
-				Columns:    []*schema.Column{APITokensColumns[12]},
+				Columns:    []*schema.Column{APITokensColumns[13]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_tokens_organizations_api_tokens",
-				Columns:    []*schema.Column{APITokensColumns[13]},
+				Columns:    []*schema.Column{APITokensColumns[14]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -55,7 +56,7 @@ var (
 			{
 				Name:    "apitoken_name_organization_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[13]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[14]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NULL AND (scope IS NULL OR scope <> 'product')",
 				},
@@ -71,7 +72,7 @@ var (
 			{
 				Name:    "apitoken_name_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[11]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[12]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
 				},
@@ -82,6 +83,14 @@ var (
 				Columns: []*schema.Column{APITokensColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND organization_id IS NULL",
+				},
+			},
+			{
+				Name:    "apitoken_scope_id",
+				Unique:  false,
+				Columns: []*schema.Column{APITokensColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "scope = 'product' AND revoked_at IS NULL",
 				},
 			},
 		},
@@ -1022,8 +1031,9 @@ func init() {
 	APITokensTable.ForeignKeys[2].RefTable = OrganizationsTable
 	APITokensTable.Annotation = &entsql.Annotation{}
 	APITokensTable.Annotation.Checks = map[string]string{
-		"apitoken_scope_id_presence":   "(scope_id IS NOT NULL) = (scope IS NOT NULL AND scope <> 'instance')",
-		"apitoken_scope_matches_token": "scope IS NULL OR (scope = 'organization' AND project_id IS NULL AND scope_id IS NOT DISTINCT FROM organization_id) OR (scope = 'project' AND scope_id IS NOT DISTINCT FROM project_id) OR (scope = 'instance' AND organization_id IS NULL AND project_id IS NULL) OR (scope = 'product' AND organization_id IS NOT NULL AND project_id IS NULL)",
+		"apitoken_project_ids_only_for_product": "(project_ids IS NOT NULL) = (scope IS NOT DISTINCT FROM 'product') AND (project_ids IS NULL OR jsonb_typeof(project_ids) = 'array')",
+		"apitoken_scope_id_presence":            "(scope_id IS NOT NULL) = (scope IS NOT NULL AND scope <> 'instance')",
+		"apitoken_scope_matches_token":          "scope IS NULL OR (scope = 'organization' AND project_id IS NULL AND scope_id IS NOT DISTINCT FROM organization_id) OR (scope = 'project' AND scope_id IS NOT DISTINCT FROM project_id) OR (scope = 'instance' AND organization_id IS NULL AND project_id IS NULL) OR (scope = 'product' AND organization_id IS NOT NULL AND project_id IS NULL)",
 	}
 	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable

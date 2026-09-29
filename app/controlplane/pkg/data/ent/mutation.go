@@ -84,6 +84,8 @@ type APITokenMutation struct {
 	last_used_at        *time.Time
 	scope               *authz.ResourceType
 	scope_id            *uuid.UUID
+	project_ids         *[]uuid.UUID
+	appendproject_ids   []uuid.UUID
 	policies            *[]*authz.Policy
 	appendpolicies      []*authz.Policy
 	is_system           *bool
@@ -716,6 +718,71 @@ func (m *APITokenMutation) ResetScopeID() {
 	delete(m.clearedFields, apitoken.FieldScopeID)
 }
 
+// SetProjectIds sets the "project_ids" field.
+func (m *APITokenMutation) SetProjectIds(u []uuid.UUID) {
+	m.project_ids = &u
+	m.appendproject_ids = nil
+}
+
+// ProjectIds returns the value of the "project_ids" field in the mutation.
+func (m *APITokenMutation) ProjectIds() (r []uuid.UUID, exists bool) {
+	v := m.project_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectIds returns the old "project_ids" field's value of the APIToken entity.
+// If the APIToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APITokenMutation) OldProjectIds(ctx context.Context) (v []uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectIds: %w", err)
+	}
+	return oldValue.ProjectIds, nil
+}
+
+// AppendProjectIds adds u to the "project_ids" field.
+func (m *APITokenMutation) AppendProjectIds(u []uuid.UUID) {
+	m.appendproject_ids = append(m.appendproject_ids, u...)
+}
+
+// AppendedProjectIds returns the list of values that were appended to the "project_ids" field in this mutation.
+func (m *APITokenMutation) AppendedProjectIds() ([]uuid.UUID, bool) {
+	if len(m.appendproject_ids) == 0 {
+		return nil, false
+	}
+	return m.appendproject_ids, true
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (m *APITokenMutation) ClearProjectIds() {
+	m.project_ids = nil
+	m.appendproject_ids = nil
+	m.clearedFields[apitoken.FieldProjectIds] = struct{}{}
+}
+
+// ProjectIdsCleared returns if the "project_ids" field was cleared in this mutation.
+func (m *APITokenMutation) ProjectIdsCleared() bool {
+	_, ok := m.clearedFields[apitoken.FieldProjectIds]
+	return ok
+}
+
+// ResetProjectIds resets all changes to the "project_ids" field.
+func (m *APITokenMutation) ResetProjectIds() {
+	m.project_ids = nil
+	m.appendproject_ids = nil
+	delete(m.clearedFields, apitoken.FieldProjectIds)
+}
+
 // SetPolicies sets the "policies" field.
 func (m *APITokenMutation) SetPolicies(a []*authz.Policy) {
 	m.policies = &a
@@ -932,7 +999,7 @@ func (m *APITokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APITokenMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.name != nil {
 		fields = append(fields, apitoken.FieldName)
 	}
@@ -965,6 +1032,9 @@ func (m *APITokenMutation) Fields() []string {
 	}
 	if m.scope_id != nil {
 		fields = append(fields, apitoken.FieldScopeID)
+	}
+	if m.project_ids != nil {
+		fields = append(fields, apitoken.FieldProjectIds)
 	}
 	if m.policies != nil {
 		fields = append(fields, apitoken.FieldPolicies)
@@ -1002,6 +1072,8 @@ func (m *APITokenMutation) Field(name string) (ent.Value, bool) {
 		return m.Scope()
 	case apitoken.FieldScopeID:
 		return m.ScopeID()
+	case apitoken.FieldProjectIds:
+		return m.ProjectIds()
 	case apitoken.FieldPolicies:
 		return m.Policies()
 	case apitoken.FieldIsSystem:
@@ -1037,6 +1109,8 @@ func (m *APITokenMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldScope(ctx)
 	case apitoken.FieldScopeID:
 		return m.OldScopeID(ctx)
+	case apitoken.FieldProjectIds:
+		return m.OldProjectIds(ctx)
 	case apitoken.FieldPolicies:
 		return m.OldPolicies(ctx)
 	case apitoken.FieldIsSystem:
@@ -1127,6 +1201,13 @@ func (m *APITokenMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetScopeID(v)
 		return nil
+	case apitoken.FieldProjectIds:
+		v, ok := value.([]uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectIds(v)
+		return nil
 	case apitoken.FieldPolicies:
 		v, ok := value.([]*authz.Policy)
 		if !ok {
@@ -1198,6 +1279,9 @@ func (m *APITokenMutation) ClearedFields() []string {
 	if m.FieldCleared(apitoken.FieldScopeID) {
 		fields = append(fields, apitoken.FieldScopeID)
 	}
+	if m.FieldCleared(apitoken.FieldProjectIds) {
+		fields = append(fields, apitoken.FieldProjectIds)
+	}
 	if m.FieldCleared(apitoken.FieldPolicies) {
 		fields = append(fields, apitoken.FieldPolicies)
 	}
@@ -1242,6 +1326,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 	case apitoken.FieldScopeID:
 		m.ClearScopeID()
 		return nil
+	case apitoken.FieldProjectIds:
+		m.ClearProjectIds()
+		return nil
 	case apitoken.FieldPolicies:
 		m.ClearPolicies()
 		return nil
@@ -1285,6 +1372,9 @@ func (m *APITokenMutation) ResetField(name string) error {
 		return nil
 	case apitoken.FieldScopeID:
 		m.ResetScopeID()
+		return nil
+	case apitoken.FieldProjectIds:
+		m.ResetProjectIds()
 		return nil
 	case apitoken.FieldPolicies:
 		m.ResetPolicies()

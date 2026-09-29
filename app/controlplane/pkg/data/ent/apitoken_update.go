@@ -215,6 +215,24 @@ func (_u *APITokenUpdate) ClearScopeID() *APITokenUpdate {
 	return _u
 }
 
+// SetProjectIds sets the "project_ids" field.
+func (_u *APITokenUpdate) SetProjectIds(v []uuid.UUID) *APITokenUpdate {
+	_u.mutation.SetProjectIds(v)
+	return _u
+}
+
+// AppendProjectIds appends value to the "project_ids" field.
+func (_u *APITokenUpdate) AppendProjectIds(v []uuid.UUID) *APITokenUpdate {
+	_u.mutation.AppendProjectIds(v)
+	return _u
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (_u *APITokenUpdate) ClearProjectIds() *APITokenUpdate {
+	_u.mutation.ClearProjectIds()
+	return _u
+}
+
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdate) SetPolicies(v []*authz.Policy) *APITokenUpdate {
 	_u.mutation.SetPolicies(v)
@@ -361,6 +379,17 @@ func (_u *APITokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ScopeIDCleared() {
 		_spec.ClearField(apitoken.FieldScopeID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ProjectIds(); ok {
+		_spec.SetField(apitoken.FieldProjectIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedProjectIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apitoken.FieldProjectIds, value)
+		})
+	}
+	if _u.mutation.ProjectIdsCleared() {
+		_spec.ClearField(apitoken.FieldProjectIds, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
@@ -662,6 +691,24 @@ func (_u *APITokenUpdateOne) ClearScopeID() *APITokenUpdateOne {
 	return _u
 }
 
+// SetProjectIds sets the "project_ids" field.
+func (_u *APITokenUpdateOne) SetProjectIds(v []uuid.UUID) *APITokenUpdateOne {
+	_u.mutation.SetProjectIds(v)
+	return _u
+}
+
+// AppendProjectIds appends value to the "project_ids" field.
+func (_u *APITokenUpdateOne) AppendProjectIds(v []uuid.UUID) *APITokenUpdateOne {
+	_u.mutation.AppendProjectIds(v)
+	return _u
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (_u *APITokenUpdateOne) ClearProjectIds() *APITokenUpdateOne {
+	_u.mutation.ClearProjectIds()
+	return _u
+}
+
 // SetPolicies sets the "policies" field.
 func (_u *APITokenUpdateOne) SetPolicies(v []*authz.Policy) *APITokenUpdateOne {
 	_u.mutation.SetPolicies(v)
@@ -838,6 +885,17 @@ func (_u *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err 
 	}
 	if _u.mutation.ScopeIDCleared() {
 		_spec.ClearField(apitoken.FieldScopeID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ProjectIds(); ok {
+		_spec.SetField(apitoken.FieldProjectIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedProjectIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apitoken.FieldProjectIds, value)
+		})
+	}
+	if _u.mutation.ProjectIdsCleared() {
+		_spec.ClearField(apitoken.FieldProjectIds, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)

@@ -622,6 +622,16 @@ func ScopeIDNotNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldNotNull(FieldScopeID))
 }
 
+// ProjectIdsIsNil applies the IsNil predicate on the "project_ids" field.
+func ProjectIdsIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldProjectIds))
+}
+
+// ProjectIdsNotNil applies the NotNil predicate on the "project_ids" field.
+func ProjectIdsNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldProjectIds))
+}
+
 // PoliciesIsNil applies the IsNil predicate on the "policies" field.
 func PoliciesIsNil() predicate.APIToken {
 	return predicate.APIToken(sql.FieldIsNull(FieldPolicies))

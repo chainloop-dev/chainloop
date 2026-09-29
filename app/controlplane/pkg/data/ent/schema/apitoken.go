@@ -49,6 +49,7 @@ func (APIToken) Fields() []ent.Field {
 		field.UUID("organization_id", uuid.UUID{}).Optional(),
 		// Tokens can be associated with a project
 		// if this value is not set, the token is an organization level token
+		// Deprecated: project tokens move to project_ids; product tokens already use it.
 		field.UUID("project_id", uuid.UUID{}).Optional(),
 		// Tokens can additionally be scoped to a specific workflow within a project.
 		// Only meaningful when project_id is also set.
@@ -59,6 +60,9 @@ func (APIToken) Fields() []ent.Field {
 		// with no foreign key — the same arrangement cas_mappings.product_id uses.
 		field.Enum("scope").GoType(authz.ResourceType("")).Optional().Nillable(),
 		field.UUID("scope_id", uuid.UUID{}).Optional().Nillable(),
+		// The projects a product token reaches. Set on product tokens only; the Chainloop
+		// platform keeps it consolidated as the product changes. An empty list reaches nothing.
+		field.JSON("project_ids", []uuid.UUID{}).Optional(),
 		// ACL policies for this token. NULL means role-based token (future), non-NULL means ACL mode.
 		// When set, contains the list of policies this token is allowed to perform.
 		field.JSON("policies", []*authz.Policy{}).Optional(),
@@ -86,6 +90,8 @@ func (APIToken) Annotations() []schema.Annotation {
 				" OR (scope = 'project' AND scope_id IS NOT DISTINCT FROM project_id)" +
 				" OR (scope = 'instance' AND organization_id IS NULL AND project_id IS NULL)" +
 				" OR (scope = 'product' AND organization_id IS NOT NULL AND project_id IS NULL)",
+			"apitoken_project_ids_only_for_product": "(project_ids IS NOT NULL) = (scope IS NOT DISTINCT FROM 'product')" +
+				" AND (project_ids IS NULL OR jsonb_typeof(project_ids) = 'array')",
 		}),
 	}
 }
@@ -121,6 +127,11 @@ func (APIToken) Indexes() []ent.Index {
 		// for instance-level tokens, names must be unique across all instance tokens
 		index.Fields("name").Unique().Annotations(
 			entsql.IndexWhere("revoked_at IS NULL AND organization_id IS NULL"),
+		),
+
+		// the Chainloop platform looks a product's tokens up by product to keep their lists current
+		index.Fields("scope_id").Annotations(
+			entsql.IndexWhere("scope = 'product' AND revoked_at IS NULL"),
 		),
 	}
 }

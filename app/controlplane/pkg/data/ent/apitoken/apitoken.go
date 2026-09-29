@@ -39,6 +39,8 @@ const (
 	FieldScope = "scope"
 	// FieldScopeID holds the string denoting the scope_id field in the database.
 	FieldScopeID = "scope_id"
+	// FieldProjectIds holds the string denoting the project_ids field in the database.
+	FieldProjectIds = "project_ids"
 	// FieldPolicies holds the string denoting the policies field in the database.
 	FieldPolicies = "policies"
 	// FieldIsSystem holds the string denoting the is_system field in the database.
@@ -88,6 +90,7 @@ var Columns = []string{
 	FieldWorkflowID,
 	FieldScope,
 	FieldScopeID,
+	FieldProjectIds,
 	FieldPolicies,
 	FieldIsSystem,
 }
