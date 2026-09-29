@@ -198,4 +198,5 @@ Each spec material in the predicate:
 | The model paraphrases the source instead of copying it. | The instruction asks for the actual text. The source address lets a reviewer compare with the original. |
 | A workflow contract rejects materials that it does not declare. | Test how trace workflows handle extra materials before milestone 1. |
 | An agent changes or drops the documented channel. | Each agent integration declares if it supports the instruction. A session without the channel pushes as it does today, without a spec. |
+| A contract policy for all EVIDENCE materials also runs on the spec files. It receives Markdown where it expects JSON. | A policy author can limit the policy to named materials with a name selector. The spec material names start with `spec-`, so they do not match a selector for other materials. |
 | Spec content contains customer names or internal details. | The same redaction and the same opt-out as the session material apply (R-007). A session that must not be recorded is one where trace is off. |
