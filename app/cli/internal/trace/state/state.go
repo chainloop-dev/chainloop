@@ -43,6 +43,10 @@ const (
 	traceDirCommits    = "commits"
 	traceDirSnapshots  = "snapshots"
 	traceDirAILines    = "ai-lines"
+	// traceDirSpecRedactions holds the redacted copies of each session's
+	// spec files, so a later push of the session does not scan an unchanged
+	// file again. It lives for the session, not for one push.
+	traceDirSpecRedactions = "spec-redactions"
 
 	// Per-record file extensions inside the subdirectories above.
 	commitRecordExt  = ".json"
@@ -84,6 +88,22 @@ func (s *Store) WipeTraceDir() error {
 
 	// Re-create empty subdirectories
 	return s.InitTraceDir()
+}
+
+// SpecRedactionDir returns the directory holding the redacted copies of a
+// session's spec files.
+func (s *Store) SpecRedactionDir(sessionID string) string {
+	return filepath.Join(s.traceDirPath(), traceDirSpecRedactions, SanitizeID(sessionID))
+}
+
+// RemoveSpecRedactions drops the redacted copies of a session's spec files,
+// once the session has ended. A session with none is not an error.
+func (s *Store) RemoveSpecRedactions(sessionID string) error {
+	if err := os.RemoveAll(s.SpecRedactionDir(sessionID)); err != nil {
+		return fmt.Errorf("remove spec redactions: %w", err)
+	}
+
+	return nil
 }
 
 // GCOrphans drops trace state whose underlying commit is no longer reachable

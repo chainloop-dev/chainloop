@@ -19,8 +19,10 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -69,6 +71,90 @@ func TestAnnounceToUser(t *testing.T) {
 
 			// The model needs the message verbatim to be able to repeat it.
 			assert.Contains(t, hookOut["additionalContext"], tc.msg)
+		})
+	}
+}
+
+// TestAnnounceSessionStart pins the session-start wire shape. The two channels
+// travel in one document because Claude Code parses a hook's stdout as a single
+// JSON value: a second write would be discarded together with whatever it
+// carried, which is why they are one call rather than two.
+func TestAnnounceSessionStart(t *testing.T) {
+	const (
+		banner      = "Chainloop Trace is recording this session."
+		instruction = "Write the specification this session is working from into /repo/.chainloop/specs/abc-123 now."
+	)
+
+	testCases := []struct {
+		name            string
+		msg             trace.SessionStartMessage
+		wantBanner      string
+		wantInstruction string
+		wantEmitted     bool
+	}{
+		{
+			name:            "both channels in one document",
+			msg:             trace.SessionStartMessage{Banner: banner, Instruction: instruction},
+			wantBanner:      banner,
+			wantInstruction: instruction,
+			wantEmitted:     true,
+		},
+		{
+			// What the hook emits once a spec is already captured: the user
+			// still gets the banner, the model is told nothing.
+			name:        "a banner with nothing to instruct",
+			msg:         trace.SessionStartMessage{Banner: banner},
+			wantBanner:  banner,
+			wantEmitted: true,
+		},
+		{
+			name:            "an instruction with no banner",
+			msg:             trace.SessionStartMessage{Instruction: instruction},
+			wantInstruction: instruction,
+			wantEmitted:     true,
+		},
+		{
+			name:        "nothing to say emits nothing",
+			msg:         trace.SessionStartMessage{},
+			wantEmitted: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := captureStdout(t, func() {
+				require.NoError(t, New().AnnounceSessionStart(tc.msg))
+			})
+
+			if !tc.wantEmitted {
+				assert.Empty(t, out, "no message means no stdout, so the hook stays a no-op")
+				return
+			}
+
+			dec := json.NewDecoder(strings.NewReader(out))
+
+			var got map[string]any
+			require.NoError(t, dec.Decode(&got))
+
+			// The constraint this whole shape exists to respect: one document,
+			// never two.
+			require.ErrorIs(t, dec.Decode(&map[string]any{}), io.EOF, "stdout must carry exactly one JSON document")
+
+			if tc.wantBanner == "" {
+				assert.NotContains(t, got, "systemMessage", "nothing to show means no empty banner to render")
+			} else {
+				assert.Equal(t, tc.wantBanner, got["systemMessage"], "systemMessage must be top-level")
+			}
+
+			hookOut, ok := got["hookSpecificOutput"].(map[string]any)
+			require.True(t, ok, "hookSpecificOutput must be present")
+			assert.Equal(t, "SessionStart", hookOut["hookEventName"], "the event must be the one that fired")
+
+			if tc.wantInstruction == "" {
+				assert.NotContains(t, hookOut, "additionalContext")
+				return
+			}
+			assert.Equal(t, tc.wantInstruction, hookOut["additionalContext"], "the model needs the instruction verbatim")
 		})
 	}
 }

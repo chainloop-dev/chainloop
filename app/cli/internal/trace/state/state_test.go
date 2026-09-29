@@ -611,3 +611,32 @@ func TestGCOrphans_StaleSessions(t *testing.T) {
 		assert.True(t, store.SessionRecordExists("sess-bad"))
 	})
 }
+
+// TestSpecRedactions covers where the redacted copies of a session's spec
+// files live: inside the trace state, one directory per session, kept across
+// pushes and dropped only for the session that ends.
+func TestSpecRedactions(t *testing.T) {
+	store := NewGitStore(filepath.Join(t.TempDir(), ".git"))
+	require.NoError(t, store.InitTraceDir())
+
+	dirA := store.SpecRedactionDir("sess-a")
+	dirB := store.SpecRedactionDir("sess-b")
+	assert.NotEqual(t, dirA, dirB)
+	assert.Equal(t, filepath.Join(store.traceDirPath(), traceDirSpecRedactions), filepath.Dir(dirA))
+
+	for _, dir := range []string{dirA, dirB} {
+		require.NoError(t, os.MkdirAll(dir, 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "copy"), []byte("x"), 0o600))
+	}
+
+	// A push wipes single-use state, and the copies are not single-use.
+	require.NoError(t, store.WipeTraceDir())
+	assert.FileExists(t, filepath.Join(dirA, "copy"))
+
+	require.NoError(t, store.RemoveSpecRedactions("sess-a"))
+	assert.NoDirExists(t, dirA)
+	assert.FileExists(t, filepath.Join(dirB, "copy"))
+
+	// Removing what is not there is not an error.
+	require.NoError(t, store.RemoveSpecRedactions("sess-a"))
+}

@@ -67,6 +67,39 @@
       },
       "additionalProperties": false
     },
+    "spec": {
+      "type": "array",
+      "description": "References to the sources this session was built from, one entry per source the agent resolved, in capture order. The text of each source is a separate EVIDENCE material in the same attestation, found by its digest",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "digest",
+          "captured_at"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "What this entry was resolved from: 'ticket', 'document', 'image', or 'text' for a spec stated in the session itself. Left unconstrained so further kinds need no schema version bump; a producer normalises anything it does not recognise to 'text'."
+          },
+          "uri": {
+            "type": "string",
+            "description": "Where the text came from, absent when the task was stated in the session itself rather than resolved from an external source"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$",
+            "description": "Digest of the EVIDENCE material that holds the text of this source"
+          },
+          "captured_at": {
+            "type": "string",
+            "minLength": 1,
+            "description": "ISO 8601 timestamp of when the agent wrote this entry. Self-reported by the producer, not a trusted timestamp."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "git_context": {
       "type": "object",
       "description": "Repository and commit information"

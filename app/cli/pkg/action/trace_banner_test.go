@@ -28,19 +28,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// bannerProvider is a real provider with its banner capability forced, so a
-// test can drive both sides of the gate without a second agent.
+// bannerProvider is a real provider with its session-start capability forced,
+// so a test can drive both sides of the gate without a second agent. It also
+// captures what it was handed, keeping the message off the test's stdout.
 type bannerProvider struct {
 	trace.Provider
 
-	supports bool
-	sysCalls int
+	banner      bool
+	instruction bool
+	sysCalls    int
+	last        trace.SessionStartMessage
 }
 
-func (p *bannerProvider) SupportsSystemMessage() bool { return p.supports }
+func (p *bannerProvider) SupportsSessionStartBanner() bool      { return p.banner }
+func (p *bannerProvider) SupportsSessionStartInstruction() bool { return p.instruction }
 
-func (p *bannerProvider) SystemMessage(string) error {
+func (p *bannerProvider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
 	p.sysCalls++
+	p.last = msg
 
 	return nil
 }
@@ -121,23 +126,39 @@ func TestSessionStartBanner(t *testing.T) {
 	}
 }
 
-// TestSessionStartBannerGate checks that an agent which cannot display the
-// banner is never handed one. Building it costs a control-plane round trip,
-// which is not worth paying for a string the agent throws away.
-func TestSessionStartBannerGate(t *testing.T) {
+// TestSessionStartChannelGate checks that each part of the session-start
+// message is composed only for an agent that can receive it. Building the
+// banner costs a control-plane round trip, which is not worth paying for a
+// string the agent throws away, and an agent with no model channel has no use
+// for the instruction.
+func TestSessionStartChannelGate(t *testing.T) {
 	testCases := []struct {
-		name     string
-		supports bool
-		wantSent int
+		name            string
+		banner          bool
+		instruction     bool
+		wantSent        int
+		wantBanner      bool
+		wantInstruction bool
 	}{
 		{
-			name:     "an agent that shows messages gets the banner",
-			supports: true,
-			wantSent: 1,
+			name:   "an agent with both channels gets both",
+			banner: true, instruction: true,
+			wantSent: 1, wantBanner: true, wantInstruction: true,
 		},
 		{
-			name:     "an agent that discards them is not asked",
-			supports: false,
+			// Cursor and opencode: the model hears the instruction, and
+			// nobody pays for a banner.
+			name:        "an agent with only a model channel gets only the instruction",
+			instruction: true,
+			wantSent:    1, wantInstruction: true,
+		},
+		{
+			name:     "an agent with only a user channel gets only the banner",
+			banner:   true,
+			wantSent: 1, wantBanner: true,
+		},
+		{
+			name:     "an agent with neither is not asked",
 			wantSent: 0,
 		},
 	}
@@ -155,10 +176,20 @@ func TestSessionStartBannerGate(t *testing.T) {
 
 			withStdin(t, `{"session_id":"abc-123"}`)
 
-			p := &bannerProvider{Provider: claude.New(), supports: tc.supports}
+			p := &bannerProvider{Provider: claude.New(), banner: tc.banner, instruction: tc.instruction}
 			require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
 
 			assert.Equal(t, tc.wantSent, p.sysCalls)
+			if tc.wantBanner {
+				assert.Contains(t, p.last.Banner, "Chainloop Trace is recording this session.")
+			} else {
+				assert.Empty(t, p.last.Banner)
+			}
+			if tc.wantInstruction {
+				assert.Contains(t, p.last.Instruction, "Write the specification")
+			} else {
+				assert.Empty(t, p.last.Instruction)
+			}
 			assert.True(t, store.SessionRecordExists("abc-123"), "the session is tracked either way")
 		})
 	}

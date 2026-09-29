@@ -339,6 +339,103 @@ func TestValidateAICodingSessionMode(t *testing.T) {
 	}
 }
 
+// TestValidateAICodingSessionSpec covers data.spec, the references to the
+// sources a session was built from. It is optional, it is a list because one session can be built
+// from a ticket and a design document at once, and its kind is deliberately
+// unconstrained beyond being a string so that kinds added later need no schema
+// version bump.
+func TestValidateAICodingSessionSpec(t *testing.T) {
+	const (
+		capturedAt = "2026-09-16T10:12:03Z"
+		keyKind    = "kind"
+		keyDigest  = "digest"
+		keyURI     = "uri"
+		digest     = "sha256:3f786850e387550fdab836ed7e6dc881de23001b4a7b8f6d7e1a3d5c9b2e4f10"
+	)
+
+	loadPayload := func(t *testing.T) map[string]any {
+		t.Helper()
+		f, err := os.ReadFile("./testdata/ai_coding_session_valid.json")
+		require.NoError(t, err)
+
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(f, &payload))
+		return payload
+	}
+
+	entry := func(overrides map[string]any) map[string]any {
+		e := map[string]any{keyKind: "text", keyDigest: digest, "captured_at": capturedAt}
+		for k, v := range overrides {
+			if v == nil {
+				delete(e, k)
+				continue
+			}
+			e[k] = v
+		}
+		return e
+	}
+
+	t.Run("the fixture validates without a spec", func(t *testing.T) {
+		payload := loadPayload(t)
+		require.NotContains(t, payload, "spec")
+		require.NoError(t, schemavalidators.ValidateAICodingSession(payload, ""))
+	})
+
+	accepted := []struct {
+		name string
+		spec any
+	}{
+		{name: "no entries", spec: []any{}},
+		{name: "the minimum an entry needs", spec: []any{entry(nil)}},
+		{name: "an entry naming its source", spec: []any{
+			entry(map[string]any{keyKind: "ticket", keyURI: "https://linear.app/chainloop/issue/PFM-7289"}),
+		}},
+		{name: "one session built from several sources", spec: []any{
+			entry(map[string]any{keyKind: "ticket", keyURI: "https://linear.app/chainloop/issue/PFM-7289"}),
+			entry(map[string]any{keyKind: "document", keyURI: "https://linear.app/chainloop/document/x"}),
+		}},
+		// Kinds are open for the same reason modes are: one a newer CLI emits
+		// must not be rejected by a control plane that predates it.
+		{name: "a kind this schema version predates", spec: []any{entry(map[string]any{keyKind: "design"})}},
+	}
+
+	for _, tc := range accepted {
+		t.Run("accepts "+tc.name, func(t *testing.T) {
+			payload := loadPayload(t)
+			payload["spec"] = tc.spec
+			require.NoError(t, schemavalidators.ValidateAICodingSession(payload, ""))
+		})
+	}
+
+	rejected := []struct {
+		name string
+		spec any
+	}{
+		{name: "an entry with no digest", spec: []any{entry(map[string]any{keyDigest: nil})}},
+		{name: "a digest without its algorithm", spec: []any{entry(map[string]any{keyDigest: "3f786850e387550fdab836ed7e6dc881de23001b4a7b8f6d7e1a3d5c9b2e4f10"})}},
+		{name: "a digest of the wrong length", spec: []any{entry(map[string]any{keyDigest: "sha256:3f78"})}},
+		// The text lives in its own material. Inline content in the session
+		// document is what this field replaced, and must not creep back.
+		{name: "inline content", spec: []any{entry(map[string]any{"content": "ship it"})}},
+		{name: "an entry with no kind", spec: []any{entry(map[string]any{keyKind: nil})}},
+		{name: "an entry with no captured_at", spec: []any{entry(map[string]any{"captured_at": nil})}},
+		{name: "a non-string kind", spec: []any{entry(map[string]any{keyKind: 3})}},
+		// The stored file is the whole file, so nothing is ever cut.
+		{name: "a truncated flag", spec: []any{entry(map[string]any{"truncated": true})}},
+		{name: "an unknown sibling within an entry", spec: []any{entry(map[string]any{"source": "linear"})}},
+		{name: "a spec that is not a list", spec: entry(nil)},
+		{name: "an entry that is not an object", spec: []any{"just the text"}},
+	}
+
+	for _, tc := range rejected {
+		t.Run("rejects "+tc.name, func(t *testing.T) {
+			payload := loadPayload(t)
+			payload["spec"] = tc.spec
+			require.Error(t, schemavalidators.ValidateAICodingSession(payload, ""))
+		})
+	}
+}
+
 func TestValidateSecurityContext(t *testing.T) {
 	testCases := []struct {
 		name     string

@@ -92,18 +92,35 @@ func (p *Provider) IsCommandTool(_ string) bool {
 	return false
 }
 
-// SystemMessage is a no-op for Cursor: the documented hook response channel
-// does not include a "systemMessage"-style announcement path comparable to
-// Claude Code's SessionStart output. We log nothing to stdout to avoid
-// confusing Cursor's JSON response parser.
-func (p *Provider) SystemMessage(_ string) error {
-	return nil
+// AnnounceSessionStart writes Cursor's sessionStart hook response. Cursor adds
+// its additional_context field to the conversation's initial system context,
+// which is how the model receives the instruction. The response has no field
+// that Cursor shows to the user, so the banner is dropped.
+//
+// A message with no instruction writes nothing, so that Cursor's JSON response
+// parser never sees an empty document.
+func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
+	if msg.Instruction == "" {
+		return nil
+	}
+
+	resp := struct {
+		AdditionalContext string `json:"additional_context"`
+	}{AdditionalContext: msg.Instruction}
+
+	return json.NewEncoder(os.Stdout).Encode(resp)
 }
 
-// SupportsSystemMessage is false for Cursor, so callers skip the cost of
-// composing a message that SystemMessage would drop.
-func (p *Provider) SupportsSystemMessage() bool {
+// SupportsSessionStartBanner is false for Cursor: its sessionStart response has
+// no field that reaches the user.
+func (p *Provider) SupportsSessionStartBanner() bool {
 	return false
+}
+
+// SupportsSessionStartInstruction is true for Cursor: additional_context in the
+// sessionStart response reaches the model.
+func (p *Provider) SupportsSessionStartInstruction() bool {
+	return true
 }
 
 // AnnounceToUser is unsupported for Cursor: it installs only sessionStart,

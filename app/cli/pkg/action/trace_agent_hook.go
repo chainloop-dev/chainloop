@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/rs/zerolog"
 )
@@ -63,6 +64,17 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 	}
 
 	setSessionActive(store, sessionID, false, log)
+
+	// The spec stays on disk for the whole session, so that every push of it
+	// records the spec as it is at that moment. The session end is where it
+	// goes, with the redacted copies that spared each later push a scan. A
+	// push after this point attests the session without its spec.
+	if err := spec.Remove(repoRoot, sessionID); err != nil {
+		log.Debug().Err(err).Str("session_id", sessionID).Msg("session-end: could not remove the session spec")
+	}
+	if err := store.RemoveSpecRedactions(sessionID); err != nil {
+		log.Debug().Err(err).Str("session_id", sessionID).Msg("session-end: could not remove the redacted spec copies")
+	}
 
 	log.Debug().Str("session_id", sessionID).Msg("session ended")
 
@@ -158,22 +170,30 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	// call intact.
 	setSessionActive(store, input.SessionID, true, log)
 
-	// Composing the banner costs a control-plane round trip, so it is only
-	// worth doing for an agent that can put it in front of the user. Cursor
-	// and opencode would discard it, and the developer would have paid the
-	// wait for nothing.
-	if !provider.SupportsSystemMessage() {
+	// Each part is composed only for an agent that can receive it. The banner
+	// in particular costs a control-plane round trip, and an agent that
+	// discards it would make the developer pay the wait for nothing.
+	var msg trace.SessionStartMessage
+
+	if provider.SupportsSessionStartInstruction() {
+		msg.Instruction = sessionSpecInstruction(repoRoot, input.SessionID, log)
+	}
+
+	if provider.SupportsSessionStartBanner() {
+		banner := sessionStartBanner(
+			hookDashboardURL(log),
+			config.LoadOrganizationFromYML(repoRoot),
+			config.LoadProjectFromYML(repoRoot),
+		)
+		msg.Banner = "\n\n" + banner + "\n"
+	}
+
+	if msg.Empty() {
 		return nil
 	}
 
-	banner := sessionStartBanner(
-		hookDashboardURL(log),
-		config.LoadOrganizationFromYML(repoRoot),
-		config.LoadProjectFromYML(repoRoot),
-	)
-
-	if err := provider.SystemMessage("\n\n" + banner + "\n"); err != nil {
-		log.Debug().Err(err).Msg("session-start: failed to send system message")
+	if err := provider.AnnounceSessionStart(msg); err != nil {
+		log.Debug().Err(err).Msg("session-start: failed to send the session-start message")
 	}
 
 	return nil
