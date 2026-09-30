@@ -17,11 +17,14 @@ package redaction
 
 import (
 	"context"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
 	betterleaksconfig "github.com/betterleaks/betterleaks/config"
+	betterleaksregexp "github.com/betterleaks/betterleaks/regexp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -274,6 +277,267 @@ func TestRedactCredentialInURIConverges(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, string(once), string(twice))
 	assert.False(t, report.Changed())
+}
+
+// TestDefaultScannerUsesRE2 pins the regex engine. The library default is the
+// standard library engine, which is several times slower on the default ruleset
+// and made large sessions take tens of minutes to redact.
+func TestDefaultScannerUsesRE2(t *testing.T) {
+	_, err := DefaultScanner()
+	require.NoError(t, err)
+
+	assert.Equal(t, "re2", betterleaksregexp.Version())
+}
+
+func TestSplitLines(t *testing.T) {
+	testCases := []struct {
+		name    string
+		text    string
+		size    int
+		overlap int
+		want    []string
+	}{
+		{
+			name: "empty text is a single empty chunk",
+			text: "",
+			size: 4,
+			want: []string{""},
+		},
+		{
+			name: "text that fits is a single chunk",
+			text: "a\nb\n",
+			size: 16,
+			want: []string{"a\nb\n"},
+		},
+		{
+			name: "splits only at line ends",
+			text: "a\nb\nc\nd\n",
+			size: 4,
+			want: []string{"a\nb\n", "c\nd\n"},
+		},
+		{
+			name:    "each chunk re-reads the last lines of the previous one",
+			text:    "a\nb\nc\nd\n",
+			size:    4,
+			overlap: 1,
+			want:    []string{"a\nb\n", "b\nc\nd\n"},
+		},
+		{
+			name: "a final line without a newline is kept",
+			text: "a\nb\nc",
+			size: 4,
+			want: []string{"a\nb\n", "c"},
+		},
+		{
+			name: "a line longer than the chunk size is never split",
+			text: "aaaaaaaa\nb\n",
+			size: 4,
+			want: []string{"aaaaaaaa\n", "b\n"},
+		},
+		{
+			// Without the cap, a run of huge lines would be scanned again by
+			// every following chunk.
+			name:    "overlap is capped at the chunk size in bytes",
+			text:    "aaaaaaaa\nb\nc\n",
+			size:    4,
+			overlap: 1,
+			want:    []string{"aaaaaaaa\n", "b\nc\n"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got []string
+			for _, c := range splitLines(tc.text, tc.size, tc.overlap) {
+				got = append(got, tc.text[c.start:c.end])
+			}
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestSplitLinesCoversText checks that chunking never drops content: the chunks
+// start at the beginning, end at the end, each one moves forward, and none leaves
+// a gap after its predecessor.
+func TestSplitLinesCoversText(t *testing.T) {
+	var sb strings.Builder
+	for i := range 500 {
+		sb.WriteString(strings.Repeat("x", i%37))
+		sb.WriteString("\n")
+	}
+	sb.WriteString("tail without newline")
+	text := sb.String()
+
+	for _, overlap := range []int{0, 1, 5, 64} {
+		chunks := splitLines(text, 256, overlap)
+		require.Greater(t, len(chunks), 1)
+
+		assert.Equal(t, 0, chunks[0].start)
+		assert.Equal(t, len(text), chunks[len(chunks)-1].end)
+		for i := 1; i < len(chunks); i++ {
+			prev, cur := chunks[i-1], chunks[i]
+			assert.Equal(t, byte('\n'), text[prev.end-1], "overlap=%d: chunk %d must end at a line end", overlap, i-1)
+			assert.LessOrEqual(t, cur.start, prev.end, "overlap=%d: chunk %d leaves a gap", overlap, i)
+			assert.Greater(t, cur.end, prev.end, "overlap=%d: chunk %d adds no new text", overlap, i)
+			if overlap == 0 {
+				assert.Equal(t, prev.end, cur.start, "chunks must not overlap without an overlap")
+			}
+		}
+	}
+}
+
+// TestChunkOverlapCoversComponentWindows is the gate on chunkOverlapLines. A
+// composite rule only fires when its components sit within a window of lines
+// around the primary match, so a chunk has to re-read at least that many lines of
+// its predecessor or a pair straddling the boundary is missed. Checked against the
+// shipped ruleset so that upgrading it cannot silently widen a window.
+func TestChunkOverlapCoversComponentWindows(t *testing.T) {
+	cfg, err := betterleaksconfig.Default()
+	require.NoError(t, err)
+
+	lines := regexp.MustCompile(`(\d+)L`)
+	for id, rule := range cfg.Rules {
+		for _, c := range rule.Components {
+			if c.Within == "" {
+				// Unbounded: the component may be anywhere in the fragment. With
+				// chunking that means anywhere in the same chunk, which is how
+				// betterleaks itself treats files.
+				continue
+			}
+			matches := lines.FindAllStringSubmatch(c.Within, -1)
+			require.NotEmpty(t, matches, "rule %q component %q has a window %q without a line bound; chunking only preserves line windows", id, c.RuleID, c.Within)
+			for _, m := range matches {
+				n, err := strconv.Atoi(m[1])
+				require.NoError(t, err)
+				assert.LessOrEqual(t, n, chunkOverlapLines, "rule %q component %q window %q exceeds the chunk overlap", id, c.RuleID, c.Within)
+			}
+		}
+	}
+}
+
+// chunkedScanner returns a scanner with a small chunk size, so that tests can
+// exercise chunk boundaries without multi-megabyte inputs.
+func chunkedScanner(t *testing.T, size int) *betterleaksScanner {
+	t.Helper()
+	s, err := newBetterleaksScanner()
+	require.NoError(t, err)
+	s.chunkSize = size
+	return s
+}
+
+func TestChunkedScanDetects(t *testing.T) {
+	const size = 512
+	filler := func(n int) string {
+		var sb strings.Builder
+		for i := range n {
+			sb.WriteString(`  "content": "ordinary transcript line ` + strconv.Itoa(i) + `",` + "\n")
+		}
+		return sb.String()
+	}
+
+	keyLine := `  "content": "AWS_ACCESS_KEY_ID=` + fakeAWSKey + `",` + "\n"
+	secretLine := `  "content": "AWS_SECRET_ACCESS_KEY=` + fakeAWSSecret + `",` + "\n"
+	// Pads the text so that the next chunk boundary falls right after keyLine.
+	pad := `  "content": "` + strings.Repeat("p", size-len(keyLine)-len(`  "content": "",`)-1) + `",` + "\n"
+
+	testCases := []struct {
+		name      string
+		text      string
+		wantRules []string
+	}{
+		{
+			name:      "secrets in chunks far apart are all found",
+			text:      `  "repository": "https://oauth2:` + fakeGitHubPAT + `@github.com/example/repo.git",` + "\n" + filler(200) + `  "content": "ANTHROPIC_API_KEY=` + fakeAnthropicKey + `"` + "\n",
+			wantRules: []string{"github-pat", "anthropic-api-key"},
+		},
+		{
+			// aws-access-token needs its secret access key within 5 lines. The
+			// boundary falls between the two, so only the overlap lets the chunk
+			// holding the secret also see the key id.
+			name:      "a composite pair straddling a chunk boundary is found",
+			text:      pad + keyLine + secretLine + filler(50),
+			wantRules: []string{"aws-access-token", "aws-secret-access-key"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scanner := chunkedScanner(t, size)
+			require.Greater(t, len(splitLines(tc.text, size, chunkOverlapLines)), 1, "the test text must span several chunks")
+
+			findings, err := scanner.Scan(context.Background(), tc.text)
+			require.NoError(t, err)
+
+			var rules []string
+			for _, f := range findings {
+				rules = append(rules, f.RuleID)
+				assert.Contains(t, tc.text, f.Secret)
+			}
+			for _, want := range tc.wantRules {
+				assert.Contains(t, rules, want)
+			}
+		})
+	}
+}
+
+// TestChunkedScanIsDeterministic guards the order of findings. Chunks are
+// scanned concurrently, but when two rules report the same secret the first
+// finding names the placeholder, so the order has to be stable or the redacted
+// document's digest would change from one run to the next.
+func TestChunkedScanIsDeterministic(t *testing.T) {
+	scanner := chunkedScanner(t, 256)
+
+	// A distinct token per chunk, so that the order in which concurrently
+	// scanned chunks report is visible in the result rather than deduplicated
+	// away.
+	var sb strings.Builder
+	const tokens = 60
+	for i := range tokens {
+		pat := fakeGitHubPAT[:len(fakeGitHubPAT)-2] + string(rune('A'+i%26)) + string(rune('a'+i/26))
+		sb.WriteString(`  "repository": "https://oauth2:` + pat + `@github.com/example/repo.git",` + "\n")
+		sb.WriteString(`  "content": "` + strings.Repeat("ordinary transcript text ", 10) + `",` + "\n")
+	}
+	text := sb.String()
+
+	first, err := scanner.Scan(context.Background(), text)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(first), tokens)
+
+	for range 10 {
+		again, err := scanner.Scan(context.Background(), text)
+		require.NoError(t, err)
+		assert.Equal(t, first, again)
+	}
+}
+
+// TestChunkedRedact runs the whole redaction over a document that spans many
+// chunks and checks that nothing is left behind.
+func TestChunkedRedact(t *testing.T) {
+	scanner := chunkedScanner(t, 256)
+
+	var sb strings.Builder
+	sb.WriteString(`{"data":{"raw_session":{"main":[`)
+	for i := range 200 {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		content := "ordinary transcript text " + strconv.Itoa(i)
+		switch i {
+		case 3:
+			content = "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
+		case 197:
+			content = "ANTHROPIC_API_KEY=" + fakeAnthropicKey
+		}
+		sb.WriteString(`{"role":"user","content":"` + content + `"}`)
+	}
+	sb.WriteString(`]}}}`)
+
+	out, report, err := New(scanner).Redact(context.Background(), []byte(sb.String()))
+	require.NoError(t, err)
+	assert.NotContains(t, string(out), fakeGitHubPAT)
+	assert.NotContains(t, string(out), fakeAnthropicKey)
+	assert.Equal(t, 1, report.ByRule["github-pat"])
+	assert.Equal(t, 1, report.ByRule["anthropic-api-key"])
 }
 
 func BenchmarkDefaultScannerInit(b *testing.B) {
