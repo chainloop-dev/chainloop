@@ -250,6 +250,42 @@ func TestProjectsAllowingForProductTokens(t *testing.T) {
 	}
 }
 
+// An organization-wide token reaches every project of its organization, and RBAC does not apply
+// to it: it passes the resource check, may act on every project and sees them all. Forced RBAC
+// still refuses it, since it holds no role on the resource.
+func TestProjectGatesForOrgWideTokens(t *testing.T) {
+	a, b, orgID := uuid.New(), uuid.New(), uuid.New()
+	projects := []*biz.Project{{ID: a}, {ID: b}}
+	orgScope := authz.ResourceTypeOrganization
+
+	testCases := []struct {
+		name  string
+		token *entities.APIToken
+	}{
+		{name: "a legacy organization token", token: &entities.APIToken{ID: uuid.NewString()}},
+		{name: "an organization token recording its scope", token: &entities.APIToken{ID: uuid.NewString(), Scope: &orgScope, ScopeID: &orgID}},
+	}
+
+	s := newTestServiceWithTokenPolicies(t, []*authz.Policy{authz.PolicyWorkflowCreate})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := entities.WithCurrentAPIToken(context.Background(), tc.token)
+			ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: tc.token.ID}).String())
+
+			assert.NoError(t, s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, a))
+
+			err := s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, a, withForceRBAC())
+			assert.True(t, kerrors.IsForbidden(err), "got %v", err)
+
+			allowed, err := s.projectsAllowing(ctx, authz.PolicyWorkflowCreate, projects)
+			require.NoError(t, err)
+			assert.Equal(t, map[uuid.UUID]bool{a: true, b: true}, allowed)
+
+			assert.Nil(t, s.visibleProjects(ctx), "nil means the listing is not filtered")
+		})
+	}
+}
+
 // A product token deletes contracts only where it reaches: never an organization contract, and
 // only the project contracts of its projects.
 func TestCheckContractAccessForProductTokens(t *testing.T) {

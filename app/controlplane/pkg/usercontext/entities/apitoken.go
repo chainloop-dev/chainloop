@@ -76,8 +76,9 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 	}
 }
 
-// ReachableProjects returns the projects a confined token reaches: its project, or its list. It
-// is never nil for a confined token, and nil for an organization-wide one, which no list confines.
+// ReachableProjects returns the projects a token is restricted to: its project, or its product's
+// list, never nil. It returns nil for an organization-wide token, meaning no restriction: that
+// token reaches every project of its organization.
 func (t *APIToken) ReachableProjects() []uuid.UUID {
 	switch {
 	case t == nil || t.IsOrgWide():
@@ -89,12 +90,15 @@ func (t *APIToken) ReachableProjects() []uuid.UUID {
 	}
 }
 
-// ReachesProject reports whether a confined token reaches the project, without copying its
-// project list.
+// ReachesProject reports whether the token reaches the project, without copying its project
+// list. An organization-wide token reaches every project of its organization; no token reaches
+// nothing.
 func (t *APIToken) ReachesProject(id uuid.UUID) bool {
 	switch {
-	case t == nil || t.IsOrgWide():
+	case t == nil:
 		return false
+	case t.IsOrgWide():
+		return true
 	case t.ProjectID != nil:
 		return *t.ProjectID == id
 	default:

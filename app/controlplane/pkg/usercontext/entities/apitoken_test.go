@@ -56,8 +56,14 @@ func TestAPITokenReach(t *testing.T) {
 			assert.Equal(t, tc.wantScoped, tc.token.IsResourceScoped())
 
 			got := tc.token.ReachableProjects()
-			if tc.wantReach == nil {
-				assert.Nil(t, got, "an organization-wide token is confined to no list")
+			if tc.wantOrgWide {
+				assert.Nil(t, got, "nil means an organization-wide token is not restricted to a list")
+				assert.True(t, tc.token.ReachesProject(uuid.New()), "an organization-wide token reaches every project of its organization")
+				return
+			}
+			if tc.token == nil {
+				assert.Nil(t, got)
+				assert.False(t, tc.token.ReachesProject(uuid.New()), "no token reaches nothing")
 				return
 			}
 			assert.NotNil(t, got, "a confined token's reach is never nil")

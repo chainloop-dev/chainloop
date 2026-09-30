@@ -194,9 +194,10 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	}
 
 	// 1 - Authorize using an API token. A token has no role: the operation was checked against its
-	// own policies at the API level, and here it passes only for a project it reaches.
+	// own policies at the API level, and here it passes only for a project it reaches. Forced RBAC
+	// also brings an organization-wide token here, and with no role on the resource it is refused.
 	if token := entities.CurrentAPIToken(ctx); token != nil {
-		if resourceType == authz.ResourceTypeProject && token.ReachesProject(resourceID) {
+		if resourceType == authz.ResourceTypeProject && !token.IsOrgWide() && token.ReachesProject(resourceID) {
 			s.log.Debugw("msg", "authorized using API token", "resource_id", resourceID.String(), "resource_type", resourceType, "token_name", token.Name, "token_id", token.ID)
 			return nil
 		}
