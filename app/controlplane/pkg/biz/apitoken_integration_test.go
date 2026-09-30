@@ -24,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	apitokenjwt "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -729,8 +728,8 @@ func (s *apiTokenTestSuite) TestCreateRecordsTheScopeOfEveryNewToken() {
 	}
 }
 
-// The scope must agree with the row it is on. The database holds that because the platform
-// writes these rows from outside this module; a refused row is malformed, not a name clash.
+// The scope must agree with the row it is on. The repository holds that for every writer, the
+// platform included; a refused row is malformed, not a name clash.
 // Rows from before this change carry no scope at all and are untouched.
 func (s *apiTokenTestSuite) TestRepoScopeMustAgreeWithTheToken() {
 	ctx := context.Background()
@@ -916,8 +915,9 @@ func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	s.Len(projects, 3, "the project listing is unchanged")
 }
 
-// The database keeps project_ids to product tokens, and keeps it an array.
-func (s *apiTokenTestSuite) TestProjectIDsConstraint() {
+// The repository keeps project_ids to product tokens: a product token always carries a list, empty
+// when it reaches nothing, and no other token carries one.
+func (s *apiTokenTestSuite) TestRepoKeepsTheProjectListToProductTokens() {
 	ctx := context.Background()
 	productID := uuid.New()
 	orgID := uuid.MustParse(s.org.ID)
@@ -926,58 +926,25 @@ func (s *apiTokenTestSuite) TestProjectIDsConstraint() {
 
 	testCases := []struct {
 		name    string
-		build   func(c *ent.APITokenCreate) *ent.APITokenCreate
+		opts    biz.APITokenCreateOpts
 		wantErr bool
 	}{
-		{
-			name: "a product token with a list",
-			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
-				return c.SetScope(product).SetScopeID(productID).SetProjectIds([]uuid.UUID{s.p1.ID})
-			},
-		},
-		{
-			name: "a product token with an empty list",
-			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
-				return c.SetScope(product).SetScopeID(productID).SetProjectIds([]uuid.UUID{})
-			},
-		},
-		{
-			name: "a product token without a list",
-			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
-				return c.SetScope(product).SetScopeID(productID)
-			},
-			wantErr: true,
-		},
-		{
-			// ent writes a nil slice as JSON null, which is not SQL NULL
-			name: "a product token whose list is JSON null",
-			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
-				return c.SetScope(product).SetScopeID(productID).SetProjectIds(nil)
-			},
-			wantErr: true,
-		},
-		{
-			name: "an organization token with a list",
-			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
-				return c.SetScope(organization).SetScopeID(orgID).SetProjectIds([]uuid.UUID{s.p1.ID})
-			},
-			wantErr: true,
-		},
-		{
-			name: "a legacy token with a list",
-			build: func(c *ent.APITokenCreate) *ent.APITokenCreate {
-				return c.SetProjectIds([]uuid.UUID{s.p1.ID})
-			},
-			wantErr: true,
-		},
+		{name: "a product token with a list", opts: biz.APITokenCreateOpts{Scope: &product, ScopeID: &productID, ProjectIDs: []uuid.UUID{s.p1.ID}}},
+		{name: "a product token with an empty list", opts: biz.APITokenCreateOpts{Scope: &product, ScopeID: &productID, ProjectIDs: []uuid.UUID{}}},
+		{name: "a product token without a list", opts: biz.APITokenCreateOpts{Scope: &product, ScopeID: &productID}, wantErr: true},
+		{name: "an organization token with a list", opts: biz.APITokenCreateOpts{Scope: &organization, ScopeID: &orgID, ProjectIDs: []uuid.UUID{s.p1.ID}}, wantErr: true},
+		{name: "a token without a scope with a list", opts: biz.APITokenCreateOpts{ProjectIDs: []uuid.UUID{s.p1.ID}}, wantErr: true},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			c := s.Data.DB.APIToken.Create().SetName(randomName()).SetOrganizationID(orgID)
-			_, err := tc.build(c).Save(ctx)
+			opts := tc.opts
+			opts.Name = randomName()
+			opts.OrganizationID = &orgID
+			_, err := s.Repos.APITokenRepo.Create(ctx, &opts)
 			if tc.wantErr {
-				s.Error(err)
+				s.Require().Error(err)
+				s.True(biz.IsErrValidation(err), "got %v", err)
 				return
 			}
 			s.NoError(err)
