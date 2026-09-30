@@ -25,17 +25,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 )
 
-// fieldPathRegexp matches a safe JSON field path expressed in dot notation.
-// A path is a dot-separated sequence of identifiers (starting with a letter or
-// underscore) optionally followed by numeric array indices, e.g. "name",
-// "labels.env" or "items[0].name".
-//
-// This allowlist is security-critical: the underlying ent sqljson helpers
-// concatenate path segments verbatim into single-quoted PostgreSQL JSON path
-// literals without escaping, so any character outside this set (e.g. a single
-// quote) would allow breaking out of the literal and injecting arbitrary SQL.
-var fieldPathRegexp = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*|\[[0-9]+\])*$`)
-
 // columnRegexp matches a safe SQL column identifier (a single unqualified
 // identifier such as "metadata").
 //
@@ -83,13 +72,6 @@ func BuildEntSelectorFromJSONFilter(jsonFilter *JSONFilter) (*entsql.Predicate, 
 		return nil, err
 	}
 
-	// Validate the field path before it reaches the SQL builder. The ent
-	// sqljson helpers concatenate the path segments unescaped into the query,
-	// so an unsafe value would allow SQL injection.
-	if err := validateFieldPath(jsonFilter.FieldPath); err != nil {
-		return nil, err
-	}
-
 	// Convert the dot notation to the path that Ent expects.
 	dotPath := sqljson.DotPath(jsonFilter.FieldPath)
 
@@ -129,21 +111,6 @@ func BuildEntSelectorFromJSONFilter(jsonFilter *JSONFilter) (*entsql.Predicate, 
 func validateColumn(column string) error {
 	if !columnRegexp.MatchString(column) {
 		return fmt.Errorf("invalid column %q: must be a valid identifier", column)
-	}
-
-	return nil
-}
-
-// validateFieldPath ensures the JSON field path only contains safe characters
-// before it is concatenated into the SQL query by the ent sqljson helpers.
-// An empty path is allowed: it targets the column itself and is not injectable.
-func validateFieldPath(fieldPath string) error {
-	if fieldPath == "" {
-		return nil
-	}
-
-	if !fieldPathRegexp.MatchString(fieldPath) {
-		return fmt.Errorf("invalid field path %q: must be dot-separated identifiers with optional numeric array indices", fieldPath)
 	}
 
 	return nil
