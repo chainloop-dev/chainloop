@@ -229,11 +229,21 @@ func (d *documentScanner) Scan(ctx context.Context, text string) ([]Finding, err
 		d.chunks, d.lines = lineSpans(text, chunks), lines
 	}
 
-	perChunk := make([][]Finding, len(chunks))
+	// Hashing the whole document is serial work on every pass otherwise.
 	digests := make([][sha256.Size]byte, len(chunks))
-	var stale []int
+	var g errgroup.Group
+	g.SetLimit(runtime.GOMAXPROCS(0))
 	for i, c := range chunks {
-		digests[i] = sha256.Sum256([]byte(text[c.start:c.end]))
+		g.Go(func() error {
+			digests[i] = sha256.Sum256([]byte(text[c.start:c.end]))
+			return nil
+		})
+	}
+	_ = g.Wait()
+
+	perChunk := make([][]Finding, len(chunks))
+	var stale []int
+	for i := range chunks {
 		if found, ok := d.findings[digests[i]]; ok {
 			perChunk[i] = found
 			continue

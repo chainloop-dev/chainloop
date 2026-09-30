@@ -390,30 +390,27 @@ func (w *rewriter) redactLeaf(s, path string) string {
 		return s
 	}
 
-	type hit struct {
-		sr    secretRule
-		count int
-	}
-	var hits []hit
+	var (
+		n        int
+		lastRule string
+	)
 	for _, sr := range w.secrets {
 		c := strings.Count(body, sr.secret)
 		if c == 0 {
 			continue
 		}
+		if n == 0 && !w.pathFilter(path) {
+			return s
+		}
 		body = strings.ReplaceAll(body, sr.secret, w.placeholder(sr.ruleID))
-		hits = append(hits, hit{sr: sr, count: c})
+		n += c
+		w.byRule[sr.ruleID] += c
+		w.located[sr.secret] = struct{}{}
+		lastRule = sr.ruleID
 	}
-	if len(hits) == 0 || !w.pathFilter(path) {
+	if n == 0 {
 		return s
 	}
-
-	var n int
-	for _, h := range hits {
-		n += h.count
-		w.byRule[h.sr.ruleID] += h.count
-		w.located[h.sr.secret] = struct{}{}
-	}
-	lastRule := hits[len(hits)-1].sr.ruleID
 	w.count += n
 
 	var out string
@@ -539,6 +536,10 @@ func rejectDuplicateKeys(doc []byte) error {
 
 // encode serialises v. HTML escaping is disabled so transcript text keeps its
 // angle brackets and ampersands instead of being mangled into \u sequences.
+//
+// Newlines inside strings are escaped, so rewriting a leaf never changes the
+// number of lines in the indented rendering. The betterleaks scanner relies on
+// that to rescan only the chunks that changed between passes.
 func encode(v any, indent bool) (string, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

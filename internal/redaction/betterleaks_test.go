@@ -525,8 +525,7 @@ func TestChunkedScanIsDeterministic(t *testing.T) {
 	var sb strings.Builder
 	const tokens = 60
 	for i := range tokens {
-		pat := fakeGitHubPAT[:len(fakeGitHubPAT)-2] + string(rune('A'+i%26)) + string(rune('a'+i/26))
-		sb.WriteString(`  "repository": "https://oauth2:` + pat + `@github.com/example/repo.git",` + "\n")
+		sb.WriteString(`  "repository": "https://oauth2:` + distinctPAT(i) + `@github.com/example/repo.git",` + "\n")
 		sb.WriteString(`  "content": "` + strings.Repeat("ordinary transcript text ", 10) + `",` + "\n")
 	}
 	text := sb.String()
@@ -547,29 +546,47 @@ func TestChunkedScanIsDeterministic(t *testing.T) {
 func TestChunkedRedact(t *testing.T) {
 	scanner := chunkedScanner(t, 256)
 
-	var sb strings.Builder
-	sb.WriteString(`{"data":{"raw_session":{"main":[`)
-	for i := range 200 {
-		if i > 0 {
-			sb.WriteString(",")
-		}
-		content := "ordinary transcript text " + strconv.Itoa(i)
+	doc := sessionDoc(200, func(i int) string {
 		switch i {
 		case 3:
-			content = "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
+			return "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
 		case 197:
-			content = "ANTHROPIC_API_KEY=" + fakeAnthropicKey
+			return "ANTHROPIC_API_KEY=" + fakeAnthropicKey
 		}
-		sb.WriteString(`{"role":"user","content":"` + content + `"}`)
-	}
-	sb.WriteString(`]}}}`)
+		return ""
+	})
 
-	out, report, err := New(scanner).Redact(context.Background(), []byte(sb.String()))
+	out, report, err := New(scanner).Redact(context.Background(), doc)
 	require.NoError(t, err)
 	assert.NotContains(t, string(out), fakeGitHubPAT)
 	assert.NotContains(t, string(out), fakeAnthropicKey)
 	assert.Equal(t, 1, report.ByRule["github-pat"])
 	assert.Equal(t, 1, report.ByRule["anthropic-api-key"])
+}
+
+// distinctPAT returns a GitHub token of the same shape as fakeGitHubPAT, and a
+// different one for every i below 26*26.
+func distinctPAT(i int) string {
+	return fakeGitHubPAT[:len(fakeGitHubPAT)-2] + string(rune('A'+i%26)) + string(rune('a'+i/26))
+}
+
+// sessionDoc builds an AI coding session document with the given number of
+// turns. content returns the text of turn i, or "" for ordinary text.
+func sessionDoc(turns int, content func(i int) string) []byte {
+	var sb strings.Builder
+	sb.WriteString(`{"data":{"raw_session":{"main":[`)
+	for i := range turns {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		c := content(i)
+		if c == "" {
+			c = "ordinary transcript text " + strconv.Itoa(i)
+		}
+		sb.WriteString(`{"role":"user","content":"` + c + `"}`)
+	}
+	sb.WriteString(`]}}}`)
+	return []byte(sb.String())
 }
 
 // multiChunkText is indented-JSON-shaped text spanning many 256-byte chunks, with
@@ -578,8 +595,7 @@ func multiChunkText() string {
 	var sb strings.Builder
 	for i := range 300 {
 		if i%10 == 0 {
-			pat := fakeGitHubPAT[:len(fakeGitHubPAT)-2] + string(rune('A'+i/10%26)) + "x"
-			sb.WriteString(`  "repository": "https://oauth2:` + pat + `@github.com/example/repo.git",` + "\n")
+			sb.WriteString(`  "repository": "https://oauth2:` + distinctPAT(i/10) + `@github.com/example/repo.git",` + "\n")
 			continue
 		}
 		sb.WriteString(`  "content": "ordinary transcript line ` + strconv.Itoa(i) + `",` + "\n")
@@ -703,25 +719,17 @@ func TestDocumentScannerRescansOnlyChangedChunks(t *testing.T) {
 // TestRedactIncrementalMatchesFullRescan runs whole redactions with and without
 // incremental rescanning and requires the same result.
 func TestRedactIncrementalMatchesFullRescan(t *testing.T) {
-	var sb strings.Builder
-	sb.WriteString(`{"data":{"raw_session":{"main":[`)
-	for i := range 200 {
-		if i > 0 {
-			sb.WriteString(",")
-		}
-		content := "ordinary transcript text " + strconv.Itoa(i)
+	doc := sessionDoc(200, func(i int) string {
 		switch i % 50 {
 		case 3:
-			content = "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
+			return "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
 		case 17:
-			content = "ANTHROPIC_API_KEY=" + fakeAnthropicKey
+			return "ANTHROPIC_API_KEY=" + fakeAnthropicKey
 		case 31:
-			content = "export " + awsPair
+			return "export " + awsPair
 		}
-		sb.WriteString(`{"role":"user","content":"` + content + `"}`)
-	}
-	sb.WriteString(`]}}}`)
-	doc := []byte(sb.String())
+		return ""
+	})
 
 	scanner := chunkedScanner(t, 256)
 	// Embedding hides forDocument, so this one scans every pass from scratch.
