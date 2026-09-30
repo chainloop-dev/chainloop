@@ -17,6 +17,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,6 +31,9 @@ const (
 	chainloopYMLFile  = ".chainloop.yml"
 	chainloopYAMLFile = ".chainloop.yaml"
 )
+
+// ErrChainloopYMLNotFound indicates that neither supported config filename exists.
+var ErrChainloopYMLNotFound = errors.New(".chainloop.yml not found")
 
 // traceWorkflowName is the default workflow name used for trace attestations
 // when no override is configured in .chainloop.yml.
@@ -84,20 +88,27 @@ type ChainloopYML struct {
 	WorkflowName string `yaml:"workflowName,omitempty"`
 }
 
-// FindChainloopYML looks for a .chainloop.yml (or .chainloop.yaml) file
-// starting from dir and walking up to the git repository root.
-// Returns the parsed config if found (with a non-empty projectName), or nil.
-func FindChainloopYML(dir string) *ChainloopYML {
+// LoadChainloopYML loads the nearest .chainloop.yml (or .chainloop.yaml),
+// walking from dir to the git repository root. In each directory, .yml takes
+// precedence over .yaml. A config without projectName is still valid.
+func LoadChainloopYML(dir string) (*ChainloopYML, string, error) {
 	dir = resolveDir(dir)
-	repoRoot, err := tracegit.RepoRoot()
+	_, repoRoot, err := tracegit.FindGitDirAndRootFrom(dir)
 	if err != nil {
-		return loadChainloopYMLWithProject(dir)
+		if !errors.Is(err, tracegit.ErrNotARepository) {
+			return nil, "", err
+		}
+		repoRoot = dir
 	}
 	repoRoot = resolveDir(repoRoot)
 
 	for {
-		if cfg := loadChainloopYMLWithProject(dir); cfg != nil {
-			return cfg
+		cfg, path, found, err := loadChainloopYMLFromDir(dir)
+		if err != nil {
+			return nil, path, err
+		}
+		if found {
+			return cfg, path, nil
 		}
 		if dir == repoRoot {
 			break
@@ -108,7 +119,18 @@ func FindChainloopYML(dir string) *ChainloopYML {
 		}
 		dir = parent
 	}
-	return nil
+
+	return nil, "", ErrChainloopYMLNotFound
+}
+
+// FindChainloopYML returns the nearest repository config, or nil when it
+// cannot be loaded. Call LoadChainloopYML when the path or error is needed.
+func FindChainloopYML(dir string) *ChainloopYML {
+	cfg, _, err := LoadChainloopYML(dir)
+	if err != nil {
+		return nil
+	}
+	return cfg
 }
 
 // LoadProjectFromYML looks for a .chainloop.yml (or .chainloop.yaml) file
@@ -155,9 +177,8 @@ func SaveOrganizationToYML(dir, org string) error {
 
 // LoadOrganizationFromYML looks for .chainloop.yml starting from dir and returns
 // the organization value. Returns empty string when the field is absent.
-// Unlike FindChainloopYML, this does not require projectName to be set.
 func LoadOrganizationFromYML(dir string) string {
-	cfg := findChainloopYMLAny(dir)
+	cfg := FindChainloopYML(dir)
 	if cfg == nil {
 		return ""
 	}
@@ -173,9 +194,8 @@ func SaveWorkflowToYML(dir, workflow string) error {
 
 // LoadWorkflowFromYML looks for .chainloop.yml starting from dir and returns
 // the workflowName value. Returns empty string when the field is absent.
-// Unlike FindChainloopYML, this does not require projectName to be set.
 func LoadWorkflowFromYML(dir string) string {
-	cfg := findChainloopYMLAny(dir)
+	cfg := FindChainloopYML(dir)
 	if cfg == nil {
 		return ""
 	}
@@ -301,43 +321,13 @@ func setYAMLField(doc *yaml.Node, key string, value any) error {
 // LoadRequireTraceFromYML looks for .chainloop.yml starting from dir
 // and returns the requireTrace value. Returns false when the field is
 // absent or nil (default-off).
-// Unlike FindChainloopYML, this does not require projectName to be set.
 func LoadRequireTraceFromYML(dir string) bool {
-	cfg := findChainloopYMLAny(dir)
+	cfg := FindChainloopYML(dir)
 	if cfg == nil || cfg.RequireTrace == nil {
 		return false
 	}
 
 	return *cfg.RequireTrace
-}
-
-// findChainloopYMLAny looks for a .chainloop.yml (or .chainloop.yaml) file
-// starting from dir and walking up to the git repository root.
-// Unlike FindChainloopYML, it returns any parseable config regardless of
-// whether projectName is set.
-func findChainloopYMLAny(dir string) *ChainloopYML {
-	dir = resolveDir(dir)
-	repoRoot, err := tracegit.RepoRoot()
-	if err != nil {
-		return loadChainloopYMLFromDir(dir)
-	}
-	repoRoot = resolveDir(repoRoot)
-
-	for {
-		if cfg := loadChainloopYMLFromDir(dir); cfg != nil {
-			return cfg
-		}
-		if dir == repoRoot {
-			break
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-
-	return nil
 }
 
 // ChainloopYMLName returns the base name of the Chainloop config file in dir:
@@ -360,29 +350,23 @@ func resolveChainloopYMLPath(dir string) string {
 	return filepath.Join(dir, chainloopYMLFile)
 }
 
-// loadChainloopYMLFromDir loads the ChainloopYML struct from the given directory, or nil if not found.
-func loadChainloopYMLFromDir(dir string) *ChainloopYML {
+// loadChainloopYMLFromDir loads the preferred config from dir.
+func loadChainloopYMLFromDir(dir string) (*ChainloopYML, string, bool, error) {
 	for _, name := range []string{chainloopYMLFile, chainloopYAMLFile} {
-		data, err := os.ReadFile(filepath.Join(dir, name))
-		if err != nil {
+		path := filepath.Join(dir, name)
+		data, err := os.ReadFile(path)
+		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
+		if err != nil {
+			return nil, path, true, fmt.Errorf("read %s: %w", filepath.Base(path), err)
+		}
+
 		var cfg ChainloopYML
 		if err := yaml.Unmarshal(data, &cfg); err != nil {
-			continue
+			return nil, path, true, fmt.Errorf("parse %s: %w", filepath.Base(path), err)
 		}
-		return &cfg
+		return &cfg, path, true, nil
 	}
-	return nil
-}
-
-// loadChainloopYMLWithProject is like loadChainloopYMLFromDir but only returns
-// a config that has a non-empty projectName. This ensures directory walking
-// skips empty or incomplete .chainloop.yml files.
-func loadChainloopYMLWithProject(dir string) *ChainloopYML {
-	cfg := loadChainloopYMLFromDir(dir)
-	if cfg != nil && cfg.ProjectName != "" {
-		return cfg
-	}
-	return nil
+	return nil, "", false, nil
 }
