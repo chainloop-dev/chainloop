@@ -166,22 +166,12 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, errors.NotFound("not found", "API token not found")
 	}
 
-	// 1 - Only admins can manage organization-wide tokens. A token confined to a resource
-	// outside this database is not one, so it goes to the resource check below rather than
-	// being refused here as "global". NOTE: RoleProductAdmin carries no policies in this
-	// repository's RolesMap — the platform defines them — so an RBAC caller is refused by
-	// that check until it does.
+	// 1 - Only admins can manage organization-wide tokens
 	if t.IsOrgWide() && rbacEnabled(ctx) {
 		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
 	}
 
-	// An organization-wide token may only revoke tokens confined to a project.
-	//
-	// NOTE: the predicate is "the target is not confined to a project", not "the target is
-	// organization-wide". Those were the same thing before a token could be confined to a
-	// resource outside this database; keying on IsOrgWide here would let such a target through,
-	// and the resource check below cannot refuse it: authorizeResource returns on its first
-	// line for any caller whose RBAC is disabled, which every organization-wide token is.
+	// An organization-wide token may only revoke project tokens
 	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
 		if t.ProjectID == nil {
 			return nil, errors.Forbidden("forbidden", "org-level API tokens can only revoke project-scoped tokens")
