@@ -54,7 +54,7 @@ At push time, the system MUST upload each spec file to content-addressable stora
 The session material MUST list each spec source by kind, source address, digest, capture time and a truncation flag. The digest MUST be the one that content-addressable storage uses for the stored file. The session material MUST NOT hold the spec content.
 
 ### R-007: Redaction before upload
-The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The redaction covers the whole file, so it removes secrets from the source address and from the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the file.
+The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The redaction covers the whole file, so it takes secrets out of the source address and out of the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the file.
 - Done when: a second push runs no secret scan on an unchanged spec file. It records the same digest as the first push.
 
 ### R-008: Failure never blocks the push
