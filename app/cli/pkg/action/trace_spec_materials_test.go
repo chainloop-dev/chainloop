@@ -155,7 +155,7 @@ func TestAttachSpecs(t *testing.T) {
 		pngBytes := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\xff\xfe")
 		image := spec.Capture{
 			FileName: "mockup.png", Kind: aicodingsession.SpecKindImage,
-			CapturedAt: "2026-09-16T10:31:40Z", Raw: pngBytes, Binary: true,
+			CapturedAt: "2026-09-16T10:31:40Z", Raw: pngBytes, Verbatim: true,
 		}
 
 		entries, warnings := attachSpecs(context.Background(), adder, redactor, materialNames{}, sessionID, []spec.Capture{image}, zerolog.Nop())
@@ -182,6 +182,9 @@ func TestAttachSpecs(t *testing.T) {
 		assert.Equal(t, "sha256:spec-7412a0-approved-plan", entries[0].Digest)
 		require.Len(t, warnings, 1)
 		assert.Contains(t, warnings[0], "ticket-pfm-7289.md")
+		// The raw error stays in the local log: the warning goes into the
+		// uploaded evidence.
+		assert.NotContains(t, warnings[0], "upload refused")
 	})
 
 	t.Run("files that name the same material stay apart", func(t *testing.T) {

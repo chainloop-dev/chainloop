@@ -707,8 +707,9 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		// the missing spec is visible to whoever reads the session.
 		captures, specWarnings, err := spec.ReadAll(repoRoot, sessionID)
 		if err != nil {
+			// The error stays in the local log: its text carries local paths.
 			log.Warn().Err(err).Str("session", sessionID).Msg("could not read the session spec; the session is attested without it")
-			specWarnings = append(specWarnings, fmt.Sprintf("the session spec was not recorded: %v", err))
+			specWarnings = append(specWarnings, "the session spec was not recorded: the spec folder could not be read")
 		}
 		result.Data.Warnings = append(result.Data.Warnings, specWarnings...)
 

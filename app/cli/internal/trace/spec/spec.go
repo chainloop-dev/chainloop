@@ -155,7 +155,7 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 
 		info, err := e.Info()
 		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("spec file %q was not recorded: %v", e.Name(), err))
+			warnings = append(warnings, notRecorded(e.Name(), err))
 			continue
 		}
 
@@ -180,14 +180,14 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 	for _, c := range candidates {
 		doc, err := os.ReadFile(c.path)
 		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("spec file %q was not recorded: %v", c.name, err))
+			warnings = append(warnings, notRecorded(c.name, err))
 			continue
 		}
 
-		// A file that is not text is an image or a document the agent copied
-		// in. Parsing it as text would only mangle it.
-		if !utf8.Valid(doc) {
-			entries = append(entries, binaryCapture(c.name, doc, c.modTime))
+		// An image, or a file that is not text, is something the agent copied
+		// in rather than wrote. Parsing it as text would only mangle it.
+		if isImage(c.name, doc) || !utf8.Valid(doc) {
+			entries = append(entries, verbatimCapture(c.name, doc, c.modTime))
 			continue
 		}
 
@@ -256,4 +256,16 @@ func RemoveDir(repoRoot string) error {
 // walk into.
 func isCandidate(e fs.DirEntry) bool {
 	return e.Type().IsRegular() && !strings.HasPrefix(e.Name(), ".")
+}
+
+// notRecorded is the warning for a spec file that could not be read. It goes
+// into the uploaded evidence, so it names the file and the kind of failure,
+// never the error text, which carries the local path to the file.
+func notRecorded(name string, err error) string {
+	reason := "it could not be read"
+	if errors.Is(err, fs.ErrPermission) {
+		reason = "permission denied"
+	}
+
+	return fmt.Sprintf("spec file %q was not recorded: %s", name, reason)
 }

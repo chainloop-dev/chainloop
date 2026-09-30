@@ -84,8 +84,10 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 
 		entry, err := storeCapture(ctx, adder, redactor, filepath.Join(tmpDir, strconv.Itoa(i)), name, sessionID, c)
 		if err != nil {
-			log.Debug().Err(err).Str("session", sessionID).Str("file", c.FileName).Msg("could not record a spec entry")
-			warnings = append(warnings, fmt.Sprintf("spec entry %q was not recorded: %v", c.FileName, err))
+			// The error stays in the local log. The warning goes into the
+			// uploaded evidence, and error text can carry local paths.
+			log.Warn().Err(err).Str("session", sessionID).Str("file", c.FileName).Msg("could not record a spec entry")
+			warnings = append(warnings, fmt.Sprintf("spec entry %q was not recorded", c.FileName))
 
 			continue
 		}
@@ -126,9 +128,9 @@ func storeCapture(ctx context.Context, adder specMaterialAdder, redactor *specRe
 // Redaction fails closed, as it does for the session material: a file that
 // could not be scanned is not uploaded at all.
 func redactCapture(ctx context.Context, redactor *specRedactor, c spec.Capture) (spec.Capture, error) {
-	// A binary file, such as an image, has no text for the scanner to read,
-	// and rewriting it as text would break it. It is stored as it is.
-	if c.Binary {
+	// An image, or any file that is not text, is stored as it is: the text
+	// scanner has nothing to read in it, and a rewrite would break it.
+	if c.Verbatim {
 		return c, nil
 	}
 

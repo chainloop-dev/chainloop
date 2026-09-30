@@ -216,12 +216,29 @@ func TestReadAll(t *testing.T) {
 
 		assert.Equal(t, "mockup.png", entries[0].FileName)
 		assert.Equal(t, aicodingsession.SpecKindImage, entries[0].Kind)
-		assert.True(t, entries[0].Binary)
+		assert.True(t, entries[0].Verbatim)
 		assert.Equal(t, pngBytes, entries[0].Raw, "a binary file is never rewritten")
 		assert.Empty(t, entries[0].URI, "a binary file has no header to carry one")
 
 		assert.Equal(t, aicodingsession.SpecKindDocument, entries[1].Kind)
-		assert.True(t, entries[1].Binary)
+		assert.True(t, entries[1].Verbatim)
+	})
+
+	t.Run("an image in a text format is kept as it is too", func(t *testing.T) {
+		// An SVG is valid UTF-8, so only its type tells it apart from a spec
+		// the agent wrote. Parsing and redacting it as text could break it.
+		root := t.TempDir()
+		svg := `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>`
+		writeSpec(t, root, sessionID, "logo.svg", svg, time.Now())
+
+		entries, warnings, err := ReadAll(root, sessionID)
+
+		require.NoError(t, err)
+		assert.Empty(t, warnings)
+		require.Len(t, entries, 1)
+		assert.Equal(t, aicodingsession.SpecKindImage, entries[0].Kind)
+		assert.True(t, entries[0].Verbatim)
+		assert.Equal(t, []byte(svg), entries[0].Raw)
 	})
 
 	t.Run("one unreadable file costs that file only, and says so", func(t *testing.T) {
@@ -243,6 +260,9 @@ func TestReadAll(t *testing.T) {
 		assert.Equal(t, "the ticket", entries[0].Content)
 		require.Len(t, warnings, 1)
 		assert.Contains(t, warnings[0], "locked.md")
+		// Warnings go into the uploaded evidence, so they name the file and
+		// never the local path to it.
+		assert.NotContains(t, warnings[0], root)
 	})
 
 	t.Run("caps the number of entries and reports the rest", func(t *testing.T) {

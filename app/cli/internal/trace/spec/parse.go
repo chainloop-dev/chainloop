@@ -17,6 +17,7 @@ package spec
 
 import (
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -52,16 +53,17 @@ type Capture struct {
 	// Raw is the file as the agent wrote it, header included. It is what
 	// gets redacted before anything from the file is stored.
 	Raw []byte
-	// Binary reports a file that is not text, such as an image the agent
-	// copied into the folder. It has no header, and it is stored as it is.
-	Binary bool
+	// Verbatim reports a file that is stored exactly as it is on disk: an
+	// image, or any file that is not text. The agent copied it into the
+	// folder, so it has no header and nothing in it is rewritten.
+	Verbatim bool
 }
 
-// binaryCapture describes a file that is not text. Its kind comes from its
-// content, since it has no header to state one, and it carries no URI.
-func binaryCapture(name string, doc []byte, modTime time.Time) Capture {
+// verbatimCapture describes a file that is stored as it is. Its kind comes
+// from its content, since it has no header to state one, and it carries no URI.
+func verbatimCapture(name string, doc []byte, modTime time.Time) Capture {
 	kind := aicodingsession.SpecKindDocument
-	if strings.HasPrefix(http.DetectContentType(doc), "image/") {
+	if isImage(name, doc) {
 		kind = aicodingsession.SpecKindImage
 	}
 
@@ -70,7 +72,7 @@ func binaryCapture(name string, doc []byte, modTime time.Time) Capture {
 		Kind:       kind,
 		CapturedAt: modTime.UTC().Format(time.RFC3339),
 		Raw:        doc,
-		Binary:     true,
+		Verbatim:   true,
 	}
 }
 
@@ -150,4 +152,15 @@ func split(doc string) (header, body string) {
 // carriage return a CRLF document leaves behind and any trailing whitespace.
 func isDelimiter(line string) bool {
 	return strings.TrimRight(line, "\r\t ") == delimiter
+}
+
+// isImage reports whether a spec file is an image. Content sniffing finds the
+// binary formats. An SVG is text, so only its extension tells it apart from a
+// spec the agent wrote.
+func isImage(name string, doc []byte) bool {
+	if strings.EqualFold(filepath.Ext(name), ".svg") {
+		return true
+	}
+
+	return strings.HasPrefix(http.DetectContentType(doc), "image/")
 }

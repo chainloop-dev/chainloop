@@ -37,7 +37,7 @@ The session folder MUST be inside the working tree and MUST be ignored by git wi
 - Done when: a file in the folder never shows as a change in the repository status.
 
 ### R-003: One file per source
-The agent MUST write one file for each source. A text file starts with a short header that gives the kind and an optional source address. The actual content follows the header. An image file is the exception: the agent copies it into the folder as it is, with no header. The kinds are:
+The agent MUST write one file for each source. A text file starts with a short header that gives the kind and an optional source address. The actual content follows the header. Images and other files that are not text, such as a PDF, are the exception. The agent copies such a file into the folder as it is, with no header. The system takes its kind from its content: `image` for an image, `document` for any other file. The kinds are:
 - `ticket`: an issue tracker item (Linear, Jira).
 - `document`: a written specification (a design doc, a vault page, an RFC).
 - `image`: a mockup or screenshot. The file is the image itself when the agent can reach it as a file. For a pasted image, it is a description that the agent writes.
@@ -54,7 +54,7 @@ At push time, the system MUST upload each spec file to content-addressable stora
 The session material MUST list each spec source by kind, source address, digest and capture time. The digest MUST be the one that content-addressable storage uses for the stored file. The session material MUST NOT hold the spec content.
 
 ### R-007: Redaction before upload
-The system MUST apply the same secret redaction to text spec files that it applies to the session material, before it uploads them. A binary file, such as an image, has no text to redact, so the system stores it as it is. The redaction covers the whole file, so it takes secrets out of the source address and out of the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the source file on disk, before redaction. This digest is not the one that R-006 records.
+The system MUST apply the same secret redaction to text spec files that it applies to the session material, before it uploads them. An image, or a file that is not text, has no text to redact, so the system stores it as it is. The redaction covers the whole file, so it takes secrets out of the source address and out of the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the source file on disk, before redaction. This digest is not the one that R-006 records.
 - Done when: a second push runs no secret scan on an unchanged spec file. It records the same digest as the first push.
 
 ### R-008: Failure never blocks the push
