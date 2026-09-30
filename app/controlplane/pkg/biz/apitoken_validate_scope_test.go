@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// The database refuses most incoherent scopes too; this pins the check Create makes itself,
+// The repository refuses incoherent scopes too; this pins the check Create makes itself,
 // before anything is written.
 func TestValidateTokenScope(t *testing.T) {
 	t.Parallel()

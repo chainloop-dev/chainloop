@@ -45,7 +45,7 @@ func TestAPITokenScopePredicates(t *testing.T) {
 		{name: "a project-scoped token", token: &APIToken{ProjectID: &projectID, Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID}},
 		{name: "an instance-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeInstance)}, wantOrgWide: true},
 		{name: "a product-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID}, wantResourceScoped: true, wantResource: &productID},
-		// The database refuses this row; the accessor still reports nothing rather than a zero id.
+		// The repository refuses this row; the accessor still reports nothing rather than a zero id.
 		{name: "a product-scoped token without its id", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct)}, wantResourceScoped: true},
 	}
 

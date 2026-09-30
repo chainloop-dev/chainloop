@@ -314,6 +314,45 @@ func validateTokenScope(scope authz.ResourceType, scopeID, orgID, projectID *uui
 	return nil
 }
 
+// ValidateTokenShape reports whether a token row is coherent: an organization or project scope
+// names the token's own organization or project, an instance scope has no id, a product scope
+// belongs to an organization and never to a project, and only a product token carries a project
+// list, which it always does. A row from before the scope columns carries neither a scope nor a
+// list. The repository checks this before every write, whoever the writer is.
+func ValidateTokenShape(scope *authz.ResourceType, scopeID, orgID, projectID *uuid.UUID, projectIDs []uuid.UUID) error {
+	if (scope != nil && IsResourceScopeKind(*scope)) != (projectIDs != nil) {
+		return NewErrValidationStr("only a product-scoped token carries a project list, and it always carries one")
+	}
+
+	if scope == nil {
+		if scopeID != nil {
+			return NewErrValidationStr("a scope id needs a scope kind")
+		}
+
+		return nil
+	}
+
+	same := func(a, b *uuid.UUID) bool { return a != nil && b != nil && *a == *b }
+
+	var coherent bool
+	switch *scope {
+	case authz.ResourceTypeOrganization:
+		coherent = projectID == nil && same(scopeID, orgID)
+	case authz.ResourceTypeProject:
+		coherent = same(scopeID, projectID)
+	case authz.ResourceTypeInstance:
+		coherent = scopeID == nil && orgID == nil && projectID == nil
+	case authz.ResourceTypeProduct:
+		coherent = scopeID != nil && orgID != nil && projectID == nil
+	}
+
+	if !coherent {
+		return NewErrValidationStr(fmt.Sprintf("a %q scope does not agree with the token it is on", *scope))
+	}
+
+	return nil
+}
+
 // newTokenScope is the scope recorded for a new token confined to the given organization and
 // project. Only a product scope drives any logic for now: for these kinds the columns mirror
 // project_id and organization_id, which stay the fields the control plane reads, and tokens

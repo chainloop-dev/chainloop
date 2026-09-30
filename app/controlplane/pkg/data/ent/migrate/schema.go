@@ -1029,12 +1029,6 @@ func init() {
 	APITokensTable.ForeignKeys[0].RefTable = ProjectsTable
 	APITokensTable.ForeignKeys[1].RefTable = WorkflowsTable
 	APITokensTable.ForeignKeys[2].RefTable = OrganizationsTable
-	APITokensTable.Annotation = &entsql.Annotation{}
-	APITokensTable.Annotation.Checks = map[string]string{
-		"apitoken_project_ids_only_for_product": "(project_ids IS NOT NULL) = (scope IS NOT DISTINCT FROM 'product') AND (project_ids IS NULL OR jsonb_typeof(project_ids) = 'array')",
-		"apitoken_scope_id_presence":            "(scope_id IS NOT NULL) = (scope IS NOT NULL AND scope <> 'instance')",
-		"apitoken_scope_matches_token":          "scope IS NULL OR (scope = 'organization' AND project_id IS NULL AND scope_id IS NOT DISTINCT FROM organization_id) OR (scope = 'project' AND scope_id IS NOT DISTINCT FROM project_id) OR (scope = 'instance' AND organization_id IS NULL AND project_id IS NULL) OR (scope = 'product' AND organization_id IS NOT NULL AND project_id IS NULL)",
-	}
 	AttestationsTable.ForeignKeys[0].RefTable = WorkflowRunsTable
 	CasBackendsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	CasMappingsTable.ForeignKeys[0].RefTable = CasBackendsTable

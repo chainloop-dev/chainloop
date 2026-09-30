@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
@@ -63,6 +62,10 @@ func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts)
 		SetPolicies(opts.Policies).
 		SetIsSystem(opts.IsSystem)
 
+	if err := biz.ValidateTokenShape(opts.Scope, opts.ScopeID, opts.OrganizationID, opts.ProjectID, opts.ProjectIDs); err != nil {
+		return nil, err
+	}
+
 	if opts.ProjectIDs != nil {
 		ids, err := r.liveProjectsInOrg(ctx, opts.OrganizationID, opts.ProjectIDs)
 		if err != nil {
@@ -74,11 +77,6 @@ func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts)
 
 	token, err := create.Save(ctx)
 	if err != nil {
-		// A CHECK violation is a malformed scope, not a name clash.
-		if sqlgraph.IsCheckConstraintError(err) {
-			return nil, biz.NewErrValidation(err)
-		}
-
 		if ent.IsConstraintError(err) {
 			return nil, biz.NewErrAlreadyExists(err)
 		}

@@ -20,7 +20,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
-	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -68,31 +67,6 @@ func (APIToken) Fields() []ent.Field {
 		field.JSON("policies", []*authz.Policy{}).Optional(),
 		// System tokens are minted by internal code paths and hidden from the public API.
 		field.Bool("is_system").Default(false).Immutable(),
-	}
-}
-
-// Annotations keeps the scope columns coherent in the database itself. The rows that carry a
-// product scope are written by the Chainloop platform, i.e. from outside this module, so the
-// application-level checks in biz.APITokenUseCase.Create cannot be the only thing standing
-// between a malformed scope and the authorization path.
-//
-// A scope must agree with the row it is on: an organization or project scope names the
-// token's own organization or project, an instance scope has no id, and a product scope is
-// never combined with a project, whose confinement would otherwise be skipped. Rows from
-// before these columns existed carry no scope and pass untouched.
-func (APIToken) Annotations() []schema.Annotation {
-	return []schema.Annotation{
-		//nolint:gosec // G101 false positive: these are CHECK expressions, not credentials
-		entsql.Checks(map[string]string{
-			"apitoken_scope_id_presence": "(scope_id IS NOT NULL) = (scope IS NOT NULL AND scope <> 'instance')",
-			"apitoken_scope_matches_token": "scope IS NULL" +
-				" OR (scope = 'organization' AND project_id IS NULL AND scope_id IS NOT DISTINCT FROM organization_id)" +
-				" OR (scope = 'project' AND scope_id IS NOT DISTINCT FROM project_id)" +
-				" OR (scope = 'instance' AND organization_id IS NULL AND project_id IS NULL)" +
-				" OR (scope = 'product' AND organization_id IS NOT NULL AND project_id IS NULL)",
-			"apitoken_project_ids_only_for_product": "(project_ids IS NOT NULL) = (scope IS NOT DISTINCT FROM 'product')" +
-				" AND (project_ids IS NULL OR jsonb_typeof(project_ids) = 'array')",
-		}),
 	}
 }
 
