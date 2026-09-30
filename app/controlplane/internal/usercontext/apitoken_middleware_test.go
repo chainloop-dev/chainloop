@@ -39,6 +39,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// authorizationHeader carries the bearer token the attestation entry point reads.
+const authorizationHeader = "Authorization"
+
 type middlewareTestCase struct {
 	name          string
 	receivedToken bool
@@ -330,7 +333,7 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 			return err
 		},
 		"attestation": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed string, handler middleware.Handler) error {
-			ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{"Authorization": {"Bearer " + signed}}})
+			ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{authorizationHeader: {"Bearer " + signed}}})
 			_, err := middleware.Chain(
 				attjwtmiddleware.WithJWTMulti(log.NewStdLogger(io.Discard), attjwtmiddleware.NewAPITokenProvider(signingKey)),
 				WithAttestationContextFromAPIToken(apiTokenUC, orgUC, logger),
@@ -419,8 +422,8 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 		},
 		"attestation": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error {
 			ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{
-				"Authorization": {"Bearer " + signed},
-				orgHeader:       {header},
+				authorizationHeader: {"Bearer " + signed},
+				orgHeader:           {header},
 			}})
 			_, err := middleware.Chain(
 				attjwtmiddleware.WithJWTMulti(log.NewStdLogger(io.Discard), attjwtmiddleware.NewAPITokenProvider(signingKey)),
