@@ -52,16 +52,18 @@ func (f *fakeScanner) Scan(ctx context.Context, text string) ([]Finding, error) 
 	return out, nil
 }
 
-// fakeDocumentScanner is a fakeScanner that also binds itself to a document, to
-// check how Redact uses a scanner that can rescan incrementally.
+// fakeDocumentScanner binds a new fakeScanner to every document, to check how
+// Redact uses a scanner that can rescan incrementally. Its own Scan must never
+// be called once Redact has bound a document scanner.
 type fakeDocumentScanner struct {
 	fakeScanner
-	documents int
+	bound []*fakeScanner
 }
 
 func (f *fakeDocumentScanner) forDocument() Scanner {
-	f.documents++
-	return &f.fakeScanner
+	s := &fakeScanner{findings: f.findings, requirePresent: f.requirePresent}
+	f.bound = append(f.bound, s)
+	return s
 }
 
 // TestRedactBindsOneScannerPerDocument checks that every pass over a document
@@ -77,10 +79,11 @@ func TestRedactBindsOneScannerPerDocument(t *testing.T) {
 	for i := 1; i <= 2; i++ {
 		_, report, err := r.Redact(context.Background(), []byte(`{"a":"x SEC x"}`))
 		require.NoError(t, err)
-		assert.Equal(t, i, scanner.documents)
-		assert.Equal(t, 2*i, scanner.calls, "both passes use the bound scanner")
 		assert.Equal(t, 2, report.Passes)
+		require.Len(t, scanner.bound, i, "each document gets its own scanner")
+		assert.Equal(t, 2, scanner.bound[i-1].calls, "both passes use the scanner bound to the document")
 	}
+	assert.Zero(t, scanner.calls, "the unbound scanner is never used")
 }
 
 func TestRedact(t *testing.T) {

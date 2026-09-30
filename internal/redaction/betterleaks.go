@@ -220,6 +220,12 @@ type lineSpan struct {
 }
 
 func (d *documentScanner) Scan(ctx context.Context, text string) ([]Finding, error) {
+	// Checked here as well as in scanChunks, which a pass whose chunks are all
+	// unchanged never reaches.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	lines := strings.Count(text, "\n") + 1
 	var chunks []span
 	if d.chunks != nil && lines == d.lines {

@@ -716,6 +716,21 @@ func TestDocumentScannerRescansOnlyChangedChunks(t *testing.T) {
 	assert.Less(t, scanned, uint64(len(edited)/4), "only the chunks around the change are scanned again")
 }
 
+// TestDocumentScannerCancelledContext checks that cancellation is honoured
+// even when every chunk could be answered from what the previous pass found.
+func TestDocumentScannerCancelledContext(t *testing.T) {
+	doc := chunkedScanner(t, 256).forDocument()
+	text := multiChunkText()
+
+	_, err := doc.Scan(context.Background(), text)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = doc.Scan(ctx, text)
+	require.ErrorIs(t, err, context.Canceled)
+}
+
 // TestRedactIncrementalMatchesFullRescan runs whole redactions with and without
 // incremental rescanning and requires the same result.
 func TestRedactIncrementalMatchesFullRescan(t *testing.T) {
