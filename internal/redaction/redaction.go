@@ -379,13 +379,13 @@ func (w *rewriter) redactLeaf(s string) string {
 		lastRule string
 	)
 	for _, sr := range w.secrets {
-		c := strings.Count(body, sr.secret)
-		if c == 0 {
+		occurrences := replaceOccurrences(body, sr.secret, w.placeholder(sr.ruleID))
+		if occurrences.count == 0 {
 			continue
 		}
-		body = strings.ReplaceAll(body, sr.secret, w.placeholder(sr.ruleID))
-		n += c
-		w.byRule[sr.ruleID] += c
+		body = occurrences.body
+		n += occurrences.count
+		w.byRule[sr.ruleID] += occurrences.count
 		w.located[sr.secret] = struct{}{}
 		lastRule = sr.ruleID
 	}
@@ -401,6 +401,76 @@ func (w *rewriter) redactLeaf(s string) string {
 		return w.placeholder(lastRule)
 	}
 	return out
+}
+
+// replacement is the outcome of one substitution pass over a leaf.
+type replacement struct {
+	body  string
+	count int
+}
+
+// replaceOccurrences substitutes every non-overlapping occurrence of secret with
+// placeholder, the way strings.ReplaceAll does, except that a match ending on the
+// backslash that introduces the escape sequence right after it is shortened by
+// that backslash.
+//
+// Leaves are scanned in their JSON-encoded form, and a rule whose character class
+// admits a backslash — betterleaks' jwt rule does — therefore reports a credential
+// sitting at the end of a nested-JSON string together with the `\` of the closing
+// `\"`. Removing it along with the secret leaves a bare quote, so re-encoding the
+// leaf fails and the caller loses the whole leaf: the host of a presigned URL is
+// precisely the context the ai-config-no-secrets policies need in order to tell a
+// short-lived signature from a leaked credential. That backslash is outer encoding
+// rather than credential material, so it survives.
+func replaceOccurrences(body, secret, placeholder string) replacement {
+	var (
+		out   strings.Builder
+		count int
+		pos   int
+	)
+	for {
+		i := strings.Index(body[pos:], secret)
+		if i < 0 {
+			break
+		}
+		i += pos
+		end := i + len(secret)
+		if isOuterEscapeIntroducer(body, i, end) {
+			end--
+		}
+		out.WriteString(body[pos:i])
+		out.WriteString(placeholder)
+		pos = end
+		count++
+	}
+	if count == 0 {
+		return replacement{body: body}
+	}
+	out.WriteString(body[pos:])
+	return replacement{body: out.String(), count: count}
+}
+
+// isOuterEscapeIntroducer reports whether the character just before end is the
+// backslash opening the escape sequence that starts at end, rather than part of
+// the secret itself. Shortening a match that only spans that backslash would
+// redact nothing, so a one-character match is never shortened.
+func isOuterEscapeIntroducer(body string, i, end int) bool {
+	if end <= i+1 || end >= len(body) || body[end-1] != '\\' {
+		return false
+	}
+	switch body[end] {
+	case '"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u':
+	default:
+		return false
+	}
+
+	// A run of backslashes of even length is a sequence of escaped backslashes, so
+	// its last character is literal credential material and has to be removed.
+	run := 0
+	for p := end - 1; p >= i && body[p] == '\\'; p-- {
+		run++
+	}
+	return run%2 == 1
 }
 
 // decodeObject parses doc into a value tree, keeping numbers in their original

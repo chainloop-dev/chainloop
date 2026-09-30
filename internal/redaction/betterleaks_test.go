@@ -276,6 +276,48 @@ func TestRedactCredentialInURIConverges(t *testing.T) {
 	assert.False(t, report.Changed())
 }
 
+// fakeJWT is an unsigned, syntactically-shaped token: the ruleset matches on
+// structure, so nothing here is a credential. It is assembled from fragments the
+// same way the AWS pair above is, to keep the literal out of a single string.
+var fakeJWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
+	"." + "eyJ1cmwiOiJodHRwczovL3VwbG9hZHMubGluZWFyLmFwcC9maWxlIn0" +
+	"." + "ZmFrZXNpZ25hdHVyZS1ub3QtYS1jcmVkZW50aWFs"
+
+// TestRedactJWTAtEndOfNestedJSONLeafKeepsTheLeaf covers the shape an MCP tool
+// result has: a JSON document carried inside a text block, so the leaf the
+// scanner walks is the JSON-encoded form and the closing quote of the nested
+// document arrives as `\"`. The jwt rule admits backslashes in the second and
+// third segments, so it reports the token together with the backslash that opens
+// that escape. It is outer encoding rather than credential material: dropping it
+// unbalances the escapes, the leaf no longer re-encodes, and the fail-closed path
+// used to replace the whole transcript with a single placeholder — taking the
+// presigned URL's host with it, which is what the policies read.
+func TestRedactJWTAtEndOfNestedJSONLeafKeepsTheLeaf(t *testing.T) {
+	scanner, err := DefaultScanner()
+	require.NoError(t, err)
+
+	doc := []byte(`{"type":"text","text":"{\"issue\":{\"url\":\"https://uploads.linear.app/file/abc?signature=` +
+		fakeJWT + `\"}}"}`)
+
+	out, report, err := New(scanner).Redact(context.Background(), doc)
+	require.NoError(t, err)
+	require.True(t, report.Changed())
+
+	assert.NotContains(t, string(out), fakeJWT)
+	assert.Contains(t, string(out), "[REDACTED:jwt]")
+	// The context around the secret survives, so a policy can still see which
+	// host issued the signature.
+	assert.Contains(t, string(out), "uploads.linear.app")
+	assert.Contains(t, string(out), "issue")
+	assert.Equal(t, 1, report.Replacements)
+
+	// Re-running is a no-op rather than a second round of damage.
+	again, secondReport, err := New(scanner).Redact(context.Background(), out)
+	require.NoError(t, err)
+	assert.Equal(t, string(out), string(again))
+	assert.False(t, secondReport.Changed())
+}
+
 func BenchmarkDefaultScannerInit(b *testing.B) {
 	for b.Loop() {
 		if _, err := newBetterleaksScanner(); err != nil {
