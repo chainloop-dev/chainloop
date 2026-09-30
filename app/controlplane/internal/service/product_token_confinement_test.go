@@ -151,13 +151,10 @@ func TestAuthorizeResourceForProductTokens(t *testing.T) {
 
 // authorizeResource's refusal names what the token is confined to, and never dereferences a
 // field the token does not carry: a product token has no ProjectName and names its product by id.
-// The organization-token cases cannot reach withForceRBAC's default branch in production -
-// organization.go requires a user before that path runs - they pin that the refusal degrades
-// gracefully rather than panicking.
 func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
-	projectID, otherProject, orgID := uuid.New(), uuid.New(), uuid.New()
+	projectID, otherProject := uuid.New(), uuid.New()
 	projectName := testProjectName
-	projectScope, orgScope, productScope := authz.ResourceTypeProject, authz.ResourceTypeOrganization, authz.ResourceTypeProduct
+	projectScope, productScope := authz.ResourceTypeProject, authz.ResourceTypeProduct
 
 	product := productTokenContext(otherProject)
 	productID := entities.CurrentAPIToken(product).ScopeID
@@ -197,16 +194,6 @@ func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
 		{
 			name:        "a product scope missing its id names nothing",
 			ctx:         withToken(&entities.APIToken{Scope: &productScope, ProjectIDs: []uuid.UUID{otherProject}}),
-			wantMessage: wantNotConfined,
-		},
-		{
-			name:        "an organization token is refused instead of panicking",
-			ctx:         withToken(&entities.APIToken{}),
-			wantMessage: wantNotConfined,
-		},
-		{
-			name:        "an organization token recording its scope is refused instead of panicking",
-			ctx:         withToken(&entities.APIToken{Scope: &orgScope, ScopeID: &orgID}),
 			wantMessage: wantNotConfined,
 		},
 	}
@@ -251,8 +238,8 @@ func TestProjectsAllowingForProductTokens(t *testing.T) {
 }
 
 // An organization-wide token reaches every project of its organization, and RBAC does not apply
-// to it: it passes the resource check, may act on every project and sees them all. Forced RBAC
-// still refuses it, since it holds no role on the resource.
+// to it: it passes the resource check, may act on every project and sees them all, forced RBAC
+// included. A resource other than a project still refuses it, and names nothing it is confined to.
 func TestProjectGatesForOrgWideTokens(t *testing.T) {
 	a, b, orgID := uuid.New(), uuid.New(), uuid.New()
 	projects := []*biz.Project{{ID: a}, {ID: b}}
@@ -274,8 +261,12 @@ func TestProjectGatesForOrgWideTokens(t *testing.T) {
 
 			assert.NoError(t, s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, a))
 
-			err := s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, a, withForceRBAC())
+			assert.NoError(t, s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, a, withForceRBAC()))
+
+			err := s.authorizeResource(ctx, authz.PolicyOrganizationDelete, authz.ResourceTypeOrganization, orgID, withForceRBAC())
+			require.Error(t, err)
 			assert.True(t, kerrors.IsForbidden(err), "got %v", err)
+			assert.Equal(t, "operation not allowed: this auth token is not confined to this resource", kerrors.FromError(err).Message)
 
 			allowed, err := s.projectsAllowing(ctx, authz.PolicyWorkflowCreate, projects)
 			require.NoError(t, err)
@@ -506,7 +497,7 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 			// Keying the guard on IsOrgWide would let this target through, and a CI credential
 			// could revoke every platform-issued product token in the organization -- tokens it
 			// cannot even see, since List forces the project scope.
-			name: "a resource-scoped target is refused",
+			name: "a product-scoped target is refused",
 			target: &biz.APIToken{
 				ID: uuid.New(), Name: "t", OrganizationID: orgID,
 				Scope: &productScope, ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID},
@@ -560,7 +551,7 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 	}
 }
 
-// Revoking a resource-scoped token authorizes against the resource the token is confined to.
+// Revoking a product-scoped token authorizes against the product the token is confined to.
 // This repository's RolesMap grants no policies to RoleProductAdmin, so through the control
 // plane only an organization admin can revoke such a token; a member is refused whatever roles
 // it holds. Without the resource check a member could revoke every product token in its org.
