@@ -47,18 +47,18 @@ The agent MUST write one text file for each source. A short header gives the kin
 The instruction MUST tell the agent to write nothing when the task has no spec, for example a typo fix or a question.
 
 ### R-005: Detached storage
-At push time, the system MUST upload each spec file to content-addressable storage as a separate attestation material of kind EVIDENCE.
+At push time, the system MUST upload each spec file to content-addressable storage as a separate attestation material of kind EVIDENCE. The stored file MUST be the file in the session folder, header included. Redaction (R-007) is the only change the system makes to it.
 - Done when: the attestation lists one EVIDENCE material for each spec file, and the digest of each material downloads that file.
 
 ### R-006: References in the session material
-The session material MUST list each spec source by kind, source address, digest, capture time and a truncation flag. The digest MUST be the one that content-addressable storage uses for the stored file. The session material MUST NOT hold the spec content.
+The session material MUST list each spec source by kind, source address, digest and capture time. The digest MUST be the one that content-addressable storage uses for the stored file. The session material MUST NOT hold the spec content.
 
 ### R-007: Redaction before upload
 The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The redaction covers the whole file, so it takes secrets out of the source address and out of the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the file.
 - Done when: a second push runs no secret scan on an unchanged spec file. It records the same digest as the first push.
 
 ### R-008: Failure never blocks the push
-A missing, empty or unreadable spec folder MUST NOT stop the push of the session. The system SHOULD record a warning in the session material when it drops or cuts spec content.
+A missing, empty or unreadable spec folder MUST NOT stop the push of the session. The system SHOULD record a warning in the session material when it drops spec content.
 
 ### R-009: Keep the spec until the session ends
 The system MUST keep the session folder after a push. Each push that sends an attestation for the session MUST record all the spec files that are in the folder at that time. A push with no new AI-assisted commits sends no attestation, so it records nothing. The system MUST delete the session folder and the redacted copies of R-007 when the session ends.
@@ -181,9 +181,9 @@ Each spec material in the predicate:
 | D-009 | When the session folder is deleted | When the session ends | A session can push more than one time, and each attestation must hold its spec. Content-addressable storage keeps one copy of each file, so a new push adds no storage. Rejected: delete after each push (a later push of the same session would have no spec). | owner review |
 | D-010 | Images in the first version | The image kind holds a description that the agent writes | The model cannot write the bytes of a pasted image, and the only copy of the bytes is in the session transcript. A later version takes the bytes from the transcript: the agent writes an image entry that names the paste, and the push command extracts it. | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3491#discussion_r4138700249) |
 | D-011 | Redaction on later pushes | Keep the redacted copy of each file, keyed by the digest of the source file, and reuse it while the file does not change | Redaction runs in the client before the upload and is expensive. Rejected: scan again on each push (repeated cost for the same result). Rejected: write the redacted text back into the session folder (the agent sees its own file change). | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3491#discussion_r4138546059) |
+| D-012 | Size of a spec file | No cut in the CLI. A limit on the number of files for each session stays | The stored file must be the file on disk, and the storage backend configuration already limits the size of a material. The file limit protects the session material from an agent that writes one file per turn. Rejected: cut the text at a fixed size (the stored file would differ from the file on disk). | owner review |
 
 ## Open Questions
-- [ ] **Do we limit file size and file count?** The storage backend configuration already sets the upper limit for a material. Proposed: keep a file limit against an agent that writes one file per turn. Reviewers decide if a per-file cap in the CLI adds value.
 - [ ] **Do Cursor and OpenCode keep the bytes of a pasted image in their transcripts?** D-010 depends on it for these agents. Proposed: test both agents before the image work starts.
 - [ ] **Do we add one shared skill that holds the long instruction text?** Proposed: not in the first version. Each hook injects the full instruction. A shared skill would give one copy of the text for all agents and fewer tokens for each session.
 
