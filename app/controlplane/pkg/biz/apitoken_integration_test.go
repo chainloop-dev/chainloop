@@ -661,6 +661,15 @@ func findAPIToken(tokens []*biz.APIToken, id uuid.UUID) *biz.APIToken {
 	return nil
 }
 
+func tokenNames(tokens []*biz.APIToken) []string {
+	names := make([]string, 0, len(tokens))
+	for _, t := range tokens {
+		names = append(names, t.Name)
+	}
+
+	return names
+}
+
 // A caller such as the platform may name the scope itself. It must agree with the
 // organization and project the token is created for, and is refused otherwise.
 func (s *apiTokenTestSuite) TestCreateWithAnExplicitScope() {
@@ -709,6 +718,11 @@ func (s *apiTokenTestSuite) TestCreateWithAnExplicitScope() {
 		},
 		{name: "a product scope with no id", org: &s.org.ID, opts: opts(biz.APITokenWithScope(authz.ResourceTypeProduct, nil), biz.APITokenWithProjectIDs(nil)), wantErr: true},
 		{name: "a kind tokens are never scoped to", org: &s.org.ID, opts: opts(biz.APITokenWithScope(authz.ResourceTypeGroup, &productID)), wantErr: true},
+		{name: "a project scope without an organization", opts: opts(biz.APITokenWithProject(s.p1), biz.APITokenWithScope(authz.ResourceTypeProject, &s.p1.ID)), wantErr: true},
+		// A product scope replaces the project confinement: on a project token, the token's own
+		// project would be enforced nowhere
+		{name: "a product scope on a project token", org: &s.org.ID, opts: opts(biz.APITokenWithProject(s.p1), biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil)), wantErr: true},
+		{name: "a product scope on an instance-level token", opts: opts(biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil)), wantErr: true},
 	}
 
 	for _, tc := range testCases {
@@ -758,9 +772,7 @@ func (s *apiTokenTestSuite) TestListRejectsAScopeTokensAreNotListedBy() {
 	}
 }
 
-// Every token minted from now on records what it is scoped to, so the columns can later back
-// a single implementation. Only a product scope drives any logic for now: for the other kinds
-// they mirror project_id and organization_id, which stay the fields the control plane reads.
+// Every token minted records what it is scoped to.
 func (s *apiTokenTestSuite) TestCreateRecordsTheScopeOfEveryNewToken() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org.ID)
@@ -793,7 +805,6 @@ func (s *apiTokenTestSuite) TestCreateRecordsTheScopeOfEveryNewToken() {
 				s.Require().NotNil(got.Scope)
 				s.Equal(tc.wantScope, *got.Scope)
 				s.Equal(tc.wantScopeID, got.ScopeID)
-				// The fields the existing logic reads are unchanged.
 				s.Equal(tc.wantProject, got.ProjectID)
 			}
 		})
@@ -801,8 +812,8 @@ func (s *apiTokenTestSuite) TestCreateRecordsTheScopeOfEveryNewToken() {
 }
 
 // The scope must agree with the row it is on. The repository holds that for every writer, the
-// platform included; a refused row is malformed, not a name clash.
-// Rows from before this change carry no scope at all and are untouched.
+// platform included; a refused row is malformed, not a name clash. A row may still record no
+// scope, as one written by a control plane from before the scope columns.
 func (s *apiTokenTestSuite) TestRepoScopeMustAgreeWithTheToken() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org.ID)
@@ -818,7 +829,7 @@ func (s *apiTokenTestSuite) TestRepoScopeMustAgreeWithTheToken() {
 		projectIDs []uuid.UUID
 		wantErr    bool
 	}{
-		{name: "a token from before this change carries no scope", org: &orgUUID},
+		{name: "a row recording no scope", org: &orgUUID},
 		{name: "an organization scope naming its organization", org: &orgUUID, scope: biz.ToPtr(authz.ResourceTypeOrganization), scopeID: &orgUUID},
 		{name: "a project scope naming its project", org: &orgUUID, projectID: &s.p1.ID, scope: biz.ToPtr(authz.ResourceTypeProject), scopeID: &s.p1.ID},
 		{name: "an instance scope with no id", scope: biz.ToPtr(authz.ResourceTypeInstance)},
@@ -883,8 +894,8 @@ func (s *apiTokenTestSuite) TestRepoScopedTokenNameUniqueness() {
 	s.True(biz.IsErrAlreadyExists(err))
 }
 
-// Organization tokens from before this change carry no scope, new ones carry an organization
-// scope. They are the same kind of token, so they share one name namespace.
+// An organization row recording no scope, as one written by a control plane from before the scope
+// columns, shares one name namespace with the organization-scoped rows.
 func (s *apiTokenTestSuite) TestOrgTokenNamesStayUniqueAcrossOldAndNewRows() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org.ID)
@@ -908,8 +919,6 @@ func (s *apiTokenTestSuite) TestOrgTokenNamesStayUniqueAcrossOldAndNewRows() {
 	s.True(biz.IsErrAlreadyExists(err))
 }
 
-// Global means confined to neither a project nor a product: organization tokens from before
-// and after this change appear under it, product tokens never do.
 // A listing narrowed to projects never includes a product token, even one reaching those projects.
 // Who may see a product token follows the product, which the control plane doesn't know: product
 // tokens are listed by callers that see the whole organization, and per product by the platform.
@@ -926,23 +935,17 @@ func (s *apiTokenTestSuite) TestListNarrowedToProjectsLeavesProductTokensOut() {
 	})
 	s.Require().NoError(err)
 
-	names := func(tokens []*biz.APIToken) []string {
-		out := make([]string, 0, len(tokens))
-		for _, t := range tokens {
-			out = append(out, t.Name)
-		}
-		return out
-	}
-
 	narrowed, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProduct), biz.WithAPITokenProjectFilter([]uuid.UUID{s.p1.ID}))
 	s.Require().NoError(err)
-	s.NotContains(names(narrowed), name, "a caller narrowed to the token's project doesn't see it")
+	s.NotContains(tokenNames(narrowed), name, "a caller narrowed to the token's project doesn't see it")
 
 	whole, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProduct))
 	s.Require().NoError(err)
-	s.Contains(names(whole), name, "a caller that sees the whole organization does")
+	s.Contains(tokenNames(whole), name, "a caller that sees the whole organization does")
 }
 
+// Global means confined to neither a project nor a product: organization tokens appear under it,
+// whether or not their row records a scope, and product tokens never do.
 func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org.ID)
@@ -956,24 +959,23 @@ func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	})
 	s.Require().NoError(err)
 
-	preChangeName := randomName()
+	noScopeName := randomName()
 	_, err = s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
-		Name: preChangeName, OrganizationID: &orgUUID, Policies: []*authz.Policy{},
+		Name: noScopeName, OrganizationID: &orgUUID, Policies: []*authz.Policy{},
 	})
 	s.Require().NoError(err)
 
 	global, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeOrganization))
 	s.Require().NoError(err)
 
-	names := make([]string, 0, len(global))
 	for _, t := range global {
-		names = append(names, t.Name)
 		s.Nil(t.ProjectID)
 		if t.Scope != nil {
 			s.NotEqual(authz.ResourceTypeProduct, *t.Scope, "a product token must not appear under the global scope")
 		}
 	}
-	s.Contains(names, preChangeName, "an organization token from before this change")
+	names := tokenNames(global)
+	s.Contains(names, noScopeName, "an organization row recording no scope")
 	s.Contains(names, s.t1.Name, "an organization token minted with a scope")
 	s.NotContains(names, productTokenName)
 
@@ -1136,67 +1138,6 @@ func (s *apiTokenTestSuite) TestOtherTokensCarryNoProjectList() {
 	s.Nil(project.ProjectIDs)
 }
 
-// A product-scoped token is minted like any other, confined to neither a project nor a workflow.
-func (s *apiTokenTestSuite) TestCreateWithProductScope() {
-	ctx := context.Background()
-	productID := uuid.New()
-
-	token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil))
-	s.Require().NoError(err)
-
-	s.Require().NotNil(token.Scope)
-	s.Equal(authz.ResourceTypeProduct, *token.Scope)
-	s.Require().NotNil(token.ScopeID)
-	s.Equal(productID, *token.ScopeID)
-
-	// A scoped token is confined to neither a project nor a workflow.
-	s.Nil(token.ProjectID)
-	s.Nil(token.WorkflowID)
-
-	// It survives a round trip through the database.
-	reloaded, err := s.APIToken.FindByID(ctx, token.ID.String())
-	s.Require().NoError(err)
-	s.Require().NotNil(reloaded.Scope)
-	s.Equal(authz.ResourceTypeProduct, *reloaded.Scope)
-	s.Require().NotNil(reloaded.ScopeID)
-	s.Equal(productID, *reloaded.ScopeID)
-}
-
-// A product token minted through the use case is returned by a product-scoped listing, and only
-// by it: the organization and project tokens minted alongside it are not.
-func (s *apiTokenTestSuite) TestListReturnsAUseCaseMintedProductTokenUnderItsScope() {
-	ctx := context.Background()
-	productID := uuid.New()
-
-	productToken, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs([]uuid.UUID{s.p1.ID}))
-	s.Require().NoError(err)
-
-	products, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProduct))
-	s.Require().NoError(err)
-
-	names := make([]string, 0, len(products))
-	for _, t := range products {
-		names = append(names, t.Name)
-	}
-	s.Contains(names, productToken.Name)
-	s.NotContains(names, s.t1.Name, "an organization token must not appear under the product scope")
-	s.NotContains(names, s.t4.Name, "a project token must not appear under the product scope")
-
-	orgs, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeOrganization))
-	s.Require().NoError(err)
-	for _, t := range orgs {
-		s.NotEqual(productToken.Name, t.Name, "the product token must not appear under the organization scope")
-	}
-
-	projects, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProject))
-	s.Require().NoError(err)
-	for _, t := range projects {
-		s.NotEqual(productToken.Name, t.Name, "the product token must not appear under the project scope")
-	}
-}
-
 // A revoked scoped token releases its name, matching the project and organization indexes.
 func (s *apiTokenTestSuite) TestProductTokenNameFreedOnRevocation() {
 	ctx := context.Background()
@@ -1254,60 +1195,6 @@ func (s *apiTokenTestSuite) TestExplicitPoliciesAreNotWidenedForScopedTokens() {
 		biz.APITokenWithScope(authz.ResourceTypeProduct, biz.ToPtr(uuid.New())), biz.APITokenWithProjectIDs(nil))
 	s.Require().NoError(err)
 	s.ElementsMatch(explicit, scoped.Policies)
-}
-
-// A product scope replaces the project confinement rather than layering onto it, and a resource
-// scope only ever makes sense alongside an organization: each of these must be refused before
-// anything is written.
-func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
-	ctx := context.Background()
-	productID := uuid.New()
-
-	testCases := []struct {
-		name string
-		opts []biz.APITokenCreateOpt
-		org  *string
-	}{
-		{
-			// IsProductScoped keys on the scope kind, so a product scope on a project token
-			// would route every project check through its project list, and the token's own
-			// project would be enforced nowhere.
-			name: "a project scope together with a resource scope",
-			opts: []biz.APITokenCreateOpt{
-				biz.APITokenWithProject(s.p1),
-				biz.APITokenWithScope(authz.ResourceTypeProduct, &productID),
-				biz.APITokenWithProjectIDs(nil),
-			},
-			org: &s.org.ID,
-		},
-		{
-			// Only the product kind is mirrored into the JWT and selected by the product
-			// listing, so any other kind is confined but invisible and uncross-checked.
-			name: "a scope kind other than product",
-			opts: []biz.APITokenCreateOpt{
-				biz.APITokenWithScope(authz.ResourceTypeGroup, &productID),
-			},
-			org: &s.org.ID,
-		},
-		{
-			// An instance-level token has no organization; scoping it to a resource inside
-			// one makes it both instance-admin and RBAC-confined.
-			name: "a resource scope on an instance-level token",
-			opts: []biz.APITokenCreateOpt{
-				biz.APITokenWithScope(authz.ResourceTypeProduct, &productID),
-				biz.APITokenWithProjectIDs(nil),
-			},
-			org: nil,
-		},
-	}
-
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			_, err := s.APIToken.Create(ctx, randomName(), nil, nil, tc.org, tc.opts...)
-			s.Require().Error(err)
-			s.True(biz.IsErrValidation(err), "expected a validation error, got %v", err)
-		})
-	}
 }
 
 // A product token is created with the projects it reaches, stored deduplicated and sorted.

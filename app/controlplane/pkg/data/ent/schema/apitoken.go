@@ -53,10 +53,10 @@ func (APIToken) Fields() []ent.Field {
 		// Tokens can additionally be scoped to a specific workflow within a project.
 		// Only meaningful when project_id is also set.
 		field.UUID("workflow_id", uuid.UUID{}).Optional(),
-		// What the token is scoped to, and the id of that resource. Every new token records it;
-		// only a product scope drives any logic for now, and rows from before these columns
-		// existed leave both NULL. A product is not an entity here, so scope_id is a bare UUID
-		// with no foreign key — the same arrangement cas_mappings.product_id uses.
+		// What the token is scoped to, and the id of that resource. Every token records it, rows
+		// from before these columns through the scope backfill migration. A product is not an
+		// entity here, so scope_id is a bare UUID with no foreign key — the same arrangement
+		// cas_mappings.product_id uses.
 		field.Enum("scope").GoType(authz.ResourceType("")).Optional().Nillable(),
 		field.UUID("scope_id", uuid.UUID{}).Optional().Nillable(),
 		// The projects a product token reaches. Set on product tokens only; the Chainloop

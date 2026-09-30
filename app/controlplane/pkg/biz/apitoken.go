@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
@@ -124,27 +125,28 @@ type APIToken struct {
 	IsSystem bool
 }
 
+// scopeView is the token's scope as the request context carries it, so that a token read here and
+// one read off the context classify a scope the same way.
+func (t *APIToken) scopeView() *entities.APIToken {
+	if t == nil {
+		return nil
+	}
+
+	return &entities.APIToken{Scope: t.Scope, ScopeID: t.ScopeID}
+}
+
 // IsProductScoped reports whether the token is confined to a product: it reaches the projects in
 // its ProjectIDs rather than a project of its own. It keys on the scope kind, never on scope_id,
 // which organization and project tokens carry too.
 func (t *APIToken) IsProductScoped() bool {
-	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
+	return t.scopeView().IsProductScoped()
 }
 
 // ResourceScope returns the resource the token is confined to, its project or its product, so
 // callers can render and authorize it without naming its kind. ok is false for a token acting
 // for its whole organization or instance, and for one recording no scope or no scope id.
 func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
-	if t == nil || t.Scope == nil || t.ScopeID == nil {
-		return "", uuid.Nil, false
-	}
-
-	switch *t.Scope {
-	case authz.ResourceTypeProject, authz.ResourceTypeProduct:
-		return *t.Scope, *t.ScopeID, true
-	default:
-		return "", uuid.Nil, false
-	}
+	return t.scopeView().ResourceScope()
 }
 
 // IsInstanceScoped reports whether the token acts for the whole instance, with no organization of
@@ -156,8 +158,7 @@ func (t *APIToken) IsInstanceScoped() bool {
 // IsOrgWide reports whether the token acts for its whole organization or instance: confined to
 // neither a project nor a product. A token recording no scope is not.
 func (t *APIToken) IsOrgWide() bool {
-	return t != nil && t.Scope != nil &&
-		(*t.Scope == authz.ResourceTypeOrganization || *t.Scope == authz.ResourceTypeInstance)
+	return t.scopeView().IsOrgWide()
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.
@@ -295,51 +296,12 @@ func CanonicalProjectIDs(ids []uuid.UUID) []uuid.UUID {
 	return slices.Compact(out)
 }
 
-// validateTokenScope checks that an explicit scope agrees with the organization and project the
-// token is created for, which stay the fields the control plane reads for these kinds.
-func validateTokenScope(scope authz.ResourceType, scopeID, orgID, projectID *uuid.UUID) error {
-	switch scope {
-	case authz.ResourceTypeOrganization:
-		if orgID == nil || projectID != nil || scopeID == nil || *scopeID != *orgID {
-			return NewErrValidationStr("an organization scope must name the organization of an organization-level token")
-		}
-	case authz.ResourceTypeProject:
-		if orgID == nil || projectID == nil || scopeID == nil || *scopeID != *projectID {
-			return NewErrValidationStr("a project scope must name the project the token is created for, in its organization")
-		}
-	case authz.ResourceTypeInstance:
-		if orgID != nil || projectID != nil || scopeID != nil {
-			return NewErrValidationStr("an instance scope has no id and belongs to an instance-level token")
-		}
-	case authz.ResourceTypeProduct:
-		// A product scope replaces the project confinement rather than layering onto it: the
-		// gate functions skip every project check for a product-scoped token, so a row carrying
-		// both would have the project confinement enforced nowhere.
-		if projectID != nil {
-			return NewErrValidationStr("a product scope cannot be combined with a project scope")
-		}
-
-		// An instance-level token has no organization to hold the product, and would come back
-		// from the middleware as instance-admin and RBAC-confined at once.
-		if orgID == nil {
-			return NewErrValidationStr("a product scope requires an organization")
-		}
-
-		if scopeID == nil {
-			return NewErrValidationStr("a product scope must name the product")
-		}
-	default:
-		return NewErrValidationStr(fmt.Sprintf("unsupported token scope %q", scope))
-	}
-
-	return nil
-}
-
 // ValidateTokenShape reports whether a token row is coherent: an organization or project scope
 // names the token's own organization or project, an instance scope has no id, a product scope
 // belongs to an organization and never to a project, and only a product token carries a project
-// list, which it always does. A row from before the scope columns carries neither a scope nor a
-// list. The repository checks this before every write, whoever the writer is.
+// list, which it always does. A row may record no scope, as one written by a control plane from
+// before the scope columns does; it then carries no list either. Create checks it against the
+// scope it settles on, and the repository before every write, whoever the writer is.
 func ValidateTokenShape(scope *authz.ResourceType, scopeID, orgID, projectID *uuid.UUID, projectIDs []uuid.UUID) error {
 	if (scope != nil && *scope == authz.ResourceTypeProduct) != (projectIDs != nil) {
 		return NewErrValidationStr("only a product-scoped token carries a project list, and it always carries one")
@@ -454,19 +416,14 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		workflowID = ToPtr(options.workflow.ID)
 	}
 
-	// Determine the scope (may be overridden by options.scope below)
+	// The scope a new token of this shape records, unless one is named, which must agree with it
 	scope, scopeID := newTokenScope(orgUUID, projectID)
 	if options.scope != nil {
-		if err := validateTokenScope(*options.scope, options.scopeID, orgUUID, projectID); err != nil {
-			return nil, err
-		}
-
 		scope, scopeID = options.scope, options.scopeID
 	}
 
-	// Only a product token carries a project list.
-	if *scope != authz.ResourceTypeProduct && options.projectIDs != nil {
-		return nil, NewErrValidationStr("only a product-scoped token carries a project list")
+	if err := ValidateTokenShape(scope, scopeID, orgUUID, projectID, options.projectIDs); err != nil {
+		return nil, err
 	}
 
 	// Use provided policies if present, otherwise use defaults
@@ -475,15 +432,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		policies = uc.DefaultAuthzPolicies
 	}
 
-	// A product token always carries a project list. Its policies come only from the platform,
-	// in-process: the refusals below are defence in depth against the organization-level grant
-	// this function appends to organization-wide tokens, not a classification of every policy.
-	// What confines the token is its project list.
+	// A product token's policies come only from the platform, in-process: the refusals below
+	// are defence in depth against the organization-level grant this function appends to
+	// organization-wide tokens, not a classification of every policy. What confines the token
+	// is its project list.
 	if *scope == authz.ResourceTypeProduct {
-		if options.projectIDs == nil {
-			return nil, NewErrValidationStr("a product scope requires the projects the token reaches")
-		}
-
 		if len(policies) == 0 {
 			return nil, NewErrValidationStr("a product-scoped token needs at least one policy")
 		}
@@ -498,7 +451,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
-	if projectID == nil && *scope != authz.ResourceTypeProduct && orgUUID != nil {
+	if *scope == authz.ResourceTypeOrganization {
 		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
@@ -644,7 +597,7 @@ func WithAPITokenStatusFilter(filter APITokenStatusFilter) APITokenListOpt {
 }
 
 // WithAPITokenScope selects the tokens scoped to the given kind of resource. Organization
-// selects the organization-wide tokens, from before and after the scope columns existed.
+// selects the organization-wide tokens.
 func WithAPITokenScope(scope authz.ResourceType) APITokenListOpt {
 	return func(opts *APITokenListFilters) {
 		opts.FilterByScope = scope

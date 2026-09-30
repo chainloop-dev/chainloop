@@ -399,10 +399,8 @@ func (s *service) canCreateProject(ctx context.Context) (bool, error) {
 		return authz.Role(usercontext.CurrentAuthzSubject(ctx)).IsAdmin(), nil
 	}
 
-	// Only org tokens can create projects. A token confined to a project or to a
-	// product is refused explicitly, keyed on its kind rather than on a missing
-	// project, since a product token has none.
-	if token := entities.CurrentAPIToken(ctx); token != nil && !token.IsOrgWide() {
+	// Only org tokens can create projects, and RBAC applies to every other token
+	if token := entities.CurrentAPIToken(ctx); token != nil {
 		return false, nil
 	}
 

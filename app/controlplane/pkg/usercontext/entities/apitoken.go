@@ -62,7 +62,7 @@ func (t *APIToken) IsOrgWide() bool {
 // ResourceScope returns the resource the token is confined to, its project or its product, so
 // callers can render and authorize it without naming its kind. ok is false for a token acting
 // for its whole organization or instance, and for one recording no scope or no scope id.
-// Mirrors biz.APIToken.ResourceScope.
+// biz.APIToken classifies its scope through this one.
 func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
 	if t == nil || t.Scope == nil || t.ScopeID == nil {
 		return "", uuid.Nil, false
