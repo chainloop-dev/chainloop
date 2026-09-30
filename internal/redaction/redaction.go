@@ -207,6 +207,38 @@ func IsDefaultPlaceholder(s string) bool {
 	return defaultPlaceholderPattern.MatchString(s)
 }
 
+// RedactText returns a copy of text with every detected secret replaced.
+// Redact rewrites the string leaves of a JSON document, so the text is carried
+// as the single leaf of one. When nothing is detected the input is returned
+// verbatim, byte for byte.
+func (r *Redactor) RedactText(ctx context.Context, text string) (string, *Report, error) {
+	doc, err := json.Marshal(textDocument{Text: text})
+	if err != nil {
+		return "", nil, fmt.Errorf("encoding the text: %w", err)
+	}
+
+	redacted, report, err := r.Redact(ctx, doc)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if !report.Changed() {
+		return text, report, nil
+	}
+
+	var out textDocument
+	if err := json.Unmarshal(redacted, &out); err != nil {
+		return "", nil, fmt.Errorf("decoding the redacted text: %w", err)
+	}
+
+	return out.Text, report, nil
+}
+
+// textDocument is the envelope RedactText hands to Redact.
+type textDocument struct {
+	Text string `json:"text"`
+}
+
 // Redact returns a copy of doc with every detected secret replaced. When
 // nothing is detected the input is returned verbatim, so that a document
 // without secrets keeps its original digest.

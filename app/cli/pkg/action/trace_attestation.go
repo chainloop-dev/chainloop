@@ -243,15 +243,6 @@ func (e *AttestationExecutor) Init(ctx context.Context, workflow, project, versi
 	return id, nil
 }
 
-// AddEvidence adds an AI coding session evidence material to the attestation.
-func (e *AttestationExecutor) AddEvidence(ctx context.Context, name, filePath string) error {
-	if _, err := e.AddMaterial(ctx, name, filePath, "CHAINLOOP_AI_CODING_SESSION", nil); err != nil {
-		return fmt.Errorf("attestation add evidence: %w", err)
-	}
-
-	return nil
-}
-
 // AddMaterial adds a material of the given kind to the attestation and returns
 // the digest it was stored under.
 // Empty attestation ID is passed upstream so the crafter uses LocalStatePath

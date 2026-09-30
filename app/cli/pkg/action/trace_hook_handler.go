@@ -34,6 +34,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/rs/zerolog"
 )
@@ -801,7 +802,10 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// Add evidence for each session: its spec materials first, so that the
 	// session material can record their digests, then the session itself.
 	attestedSessions := make([]string, 0, len(sessions))
-	names := materialNames{}
+	// One allocator for the whole attestation: names taken from the start of
+	// a session ID can repeat across sessions, and a repeated name would
+	// replace an earlier material.
+	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
 		entries, warnings := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
 		se.evidence.Data.Spec = entries
@@ -930,7 +934,9 @@ func addSessionEvidence(ctx context.Context, executor *AttestationExecutor, name
 		return fmt.Errorf("write evidence: %w", err)
 	}
 
-	return executor.AddEvidence(ctx, name, tmpFile.Name())
+	_, err = executor.AddMaterial(ctx, name, tmpFile.Name(), "CHAINLOOP_AI_CODING_SESSION", nil)
+
+	return err
 }
 
 // evidenceName returns the material name for a session evidence document.

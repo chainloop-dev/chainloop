@@ -16,9 +16,9 @@
 package spec
 
 import (
+	"strings"
 	"testing"
 	"time"
-	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/stretchr/testify/assert"
@@ -136,19 +136,11 @@ func TestParse(t *testing.T) {
 			require.NotNil(t, got)
 			assert.Equal(t, tc.wantKind, got.Kind)
 			assert.Equal(t, tc.wantURI, got.URI)
-			assert.Equal(t, tc.wantContent, got.Content)
+			// What follows the header is the text: split decides where the
+			// header ends, which is also what decides the kind and the URI.
+			_, body := split(tc.doc)
+			assert.Equal(t, tc.wantContent, strings.TrimSpace(body))
 			assert.Equal(t, "2026-09-16T10:12:03Z", got.CapturedAt)
 		})
 	}
-}
-
-// TestParseRepairsInvalidUTF8 checks that invalid UTF-8 in a spec is replaced
-// rather than rejected, so the text can always be encoded as JSON.
-func TestParseRepairsInvalidUTF8(t *testing.T) {
-	got := Parse([]byte{'a', 0xff, 'b'}, capturedAt)
-
-	require.NotNil(t, got)
-	assert.True(t, utf8.ValidString(got.Content))
-	assert.Contains(t, got.Content, "a")
-	assert.Contains(t, got.Content, "b")
 }

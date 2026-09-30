@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/rs/zerolog"
 )
@@ -63,7 +64,7 @@ type specMaterialAdder interface {
 // a warning, rather than failing the push: evidence without one of its specs
 // is still evidence, and a reference to a material that is not in the
 // attestation would point nowhere.
-func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names materialNames, sessionID string, captures []spec.Capture, log zerolog.Logger) ([]aicodingsession.SpecEntry, []string) {
+func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names *materials.NameAllocator, sessionID string, captures []spec.Capture, log zerolog.Logger) ([]aicodingsession.SpecEntry, []string) {
 	if len(captures) == 0 {
 		return nil, nil
 	}
@@ -80,7 +81,7 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	for i, c := range captures {
-		name := names.allocate(specMaterialName(sessionID, c.FileName))
+		name := names.AllocateNamed(specMaterialName(sessionID, c.FileName))
 
 		entry, err := storeCapture(ctx, adder, redactor, filepath.Join(tmpDir, strconv.Itoa(i)), name, sessionID, c)
 		if err != nil {
@@ -147,7 +148,6 @@ func redactCapture(ctx context.Context, redactor *specRedactor, c spec.Capture) 
 	}
 
 	c.URI = parsed.URI
-	c.Content = parsed.Content
 	c.Raw = doc
 
 	return c, nil
@@ -225,64 +225,23 @@ func (r *specRedactor) Redact(ctx context.Context, doc []byte) ([]byte, error) {
 	return redacted, nil
 }
 
-// specMaterialName derives a material name from the session and the file name
-// the agent chose: spec-<first 6 characters of the session ID>-<file name>.
-// Material names admit only lowercase letters, digits and hyphens, so
-// everything else becomes a hyphen.
+// specMaterialName derives the base of a material name from the session and
+// the file name the agent chose: spec-<first 6 characters of the session
+// ID>-<file name>. The allocator sanitizes it into a valid material name and
+// makes it unique within the attestation.
 func specMaterialName(sessionID, fileName string) string {
 	short := sessionID
 	if len(short) > 6 {
 		short = short[:6]
 	}
 
-	stem := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	slug := slugify(stem)
-	if len(slug) > maxSpecSlugLen {
-		slug = strings.TrimRight(slug[:maxSpecSlugLen], "-")
+	stem := materials.SanitizeMaterialName(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
+	if len(stem) > maxSpecSlugLen {
+		stem = strings.TrimRight(stem[:maxSpecSlugLen], "-")
 	}
-	if slug == "" {
-		slug = "source"
-	}
-
-	return "spec-" + slugify(short) + "-" + slug
-}
-
-// materialNames hands out material names for one attestation. It is shared
-// by every session in the attestation: a name taken from the start of a
-// session ID can repeat across sessions, and the attestation keeps materials
-// by name, so a repeated name would replace an earlier material.
-type materialNames map[string]bool
-
-// allocate returns base, or base with the first numeric suffix that nothing
-// has taken, and reserves the name it returns. A suffixed name is reserved
-// too, so a later file whose own name is that suffix gets a new one.
-func (n materialNames) allocate(base string) string {
-	name := base
-	for i := 2; n[name]; i++ {
-		name = base + "-" + strconv.Itoa(i)
-	}
-	n[name] = true
-
-	return name
-}
-
-// slugify lowercases s and turns every run of characters outside [a-z0-9]
-// into one hyphen, trimming hyphens from both ends.
-func slugify(s string) string {
-	var b strings.Builder
-	pendingHyphen := false
-	for _, r := range strings.ToLower(s) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			if pendingHyphen && b.Len() > 0 {
-				b.WriteByte('-')
-			}
-			pendingHyphen = false
-			b.WriteRune(r)
-
-			continue
-		}
-		pendingHyphen = true
+	if stem == "" {
+		stem = "source"
 	}
 
-	return b.String()
+	return "spec-" + short + "-" + stem
 }

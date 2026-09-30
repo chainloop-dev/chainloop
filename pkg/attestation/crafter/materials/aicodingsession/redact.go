@@ -108,33 +108,7 @@ func RedactSpecText(ctx context.Context, text string) (string, *redaction.Report
 		return "", nil, fmt.Errorf("initialising the secret scanner: %w", err)
 	}
 
-	// The redactor rewrites the string leaves of a JSON object, so the text is
-	// carried as the single leaf of one.
-	doc, err := json.Marshal(specTextDocument{Text: text})
-	if err != nil {
-		return "", nil, fmt.Errorf("encoding the spec text: %w", err)
-	}
-
-	redacted, report, err := redaction.New(scanner).Redact(ctx, doc)
-	if err != nil {
-		return "", nil, err
-	}
-
-	if !report.Changed() {
-		return text, report, nil
-	}
-
-	var out specTextDocument
-	if err := json.Unmarshal(redacted, &out); err != nil {
-		return "", nil, fmt.Errorf("decoding the redacted spec text: %w", err)
-	}
-
-	return out.Text, report, nil
-}
-
-// specTextDocument is the envelope RedactSpecText hands to the redactor.
-type specTextDocument struct {
-	Text string `json:"text"`
+	return redaction.New(scanner).RedactText(ctx, text)
 }
 
 // eligible reports whether the string leaf at path may be rewritten.

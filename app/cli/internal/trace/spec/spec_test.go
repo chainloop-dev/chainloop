@@ -168,7 +168,7 @@ func TestReadAll(t *testing.T) {
 		assert.Empty(t, warnings)
 
 		assert.Equal(t, aicodingsession.SpecKindTicket, entries[0].Kind)
-		assert.Equal(t, "the ticket", entries[0].Content)
+		assert.Contains(t, string(entries[0].Raw), "the ticket")
 		// The file name the agent chose is what names the stored material.
 		assert.Equal(t, "aaa-ticket.md", entries[0].FileName)
 		// The file as written, header included: what the push redacts and
@@ -195,7 +195,7 @@ func TestReadAll(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Len(t, entries, 1)
-		assert.Equal(t, "the ticket", entries[0].Content)
+		assert.Contains(t, string(entries[0].Raw), "the ticket")
 		assert.Empty(t, warnings)
 	})
 
@@ -257,7 +257,7 @@ func TestReadAll(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Len(t, entries, 1)
-		assert.Equal(t, "the ticket", entries[0].Content)
+		assert.Contains(t, string(entries[0].Raw), "the ticket")
 		require.Len(t, warnings, 1)
 		assert.Contains(t, warnings[0], "locked.md")
 		// Warnings go into the uploaded evidence, so they name the file and
@@ -282,7 +282,7 @@ func TestReadAll(t *testing.T) {
 		assert.Contains(t, warnings[0], "3 spec entries")
 		// The oldest survive, so what the session started from is never the
 		// thing that gets dropped.
-		assert.Equal(t, "entry 0", entries[0].Content)
+		assert.Equal(t, "entry 0", string(entries[0].Raw))
 	})
 }
 

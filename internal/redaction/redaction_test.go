@@ -369,3 +369,30 @@ func TestReportRuleIDs(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, r.RuleIDs())
 	assert.Nil(t, (*Report)(nil).RuleIDs())
 }
+
+// TestRedactText covers plain text, which Redact cannot take directly: it
+// rewrites the string leaves of a JSON document.
+func TestRedactText(t *testing.T) {
+	const secret = "s3cr3t-value-0123456789"
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "test-token", Secret: secret}}, requirePresent: true}
+
+	testCases := []struct {
+		name        string
+		text        string
+		want        string
+		wantChanged bool
+	}{
+		{name: "a secret is replaced", text: "use " + secret + " now", want: "use [REDACTED:test-token] now", wantChanged: true},
+		{name: "text without secrets comes back unchanged", text: "nothing to see", want: "nothing to see"},
+		{name: "line breaks and quotes survive", text: "a \"quoted\"\nline " + secret, want: "a \"quoted\"\nline [REDACTED:test-token]", wantChanged: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, report, err := New(scanner).RedactText(context.Background(), tc.text)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.wantChanged, report.Changed())
+		})
+	}
+}

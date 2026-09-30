@@ -186,8 +186,8 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 
 		// An image, or a file that is not text, is something the agent copied
 		// in rather than wrote. Parsing it as text would only mangle it.
-		if isImage(c.name, doc) || !utf8.Valid(doc) {
-			entries = append(entries, verbatimCapture(c.name, doc, c.modTime))
+		if image := isImage(c.name, doc); image || !utf8.Valid(doc) {
+			entries = append(entries, verbatimCapture(c.name, doc, c.modTime, image))
 			continue
 		}
 

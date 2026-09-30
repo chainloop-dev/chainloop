@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"gopkg.in/yaml.v3"
@@ -46,8 +45,6 @@ type Capture struct {
 	Kind string
 	// URI is where the text came from, empty for a spec stated in the session.
 	URI string
-	// Content is the spec text, without its frontmatter.
-	Content string
 	// CapturedAt is the file's modification time, RFC3339.
 	CapturedAt string
 	// Raw is the file as the agent wrote it, header included. It is what
@@ -61,9 +58,9 @@ type Capture struct {
 
 // verbatimCapture describes a file that is stored as it is. Its kind comes
 // from its content, since it has no header to state one, and it carries no URI.
-func verbatimCapture(name string, doc []byte, modTime time.Time) Capture {
+func verbatimCapture(name string, doc []byte, modTime time.Time, image bool) Capture {
 	kind := aicodingsession.SpecKindDocument
-	if isImage(name, doc) {
+	if image {
 		kind = aicodingsession.SpecKindImage
 	}
 
@@ -106,19 +103,13 @@ func Parse(doc []byte, capturedAt time.Time) *Capture {
 		}
 	}
 
-	content := strings.TrimSpace(body)
-	if content == "" {
+	if strings.TrimSpace(body) == "" {
 		return nil
 	}
-
-	// Explicit rather than leaning on encoding/json to substitute silently
-	// later: what is attested should be what this function decided on.
-	content = strings.ToValidUTF8(content, string(utf8.RuneError))
 
 	return &Capture{
 		Kind:       aicodingsession.ResolveSpecKind(meta.Kind),
 		URI:        strings.TrimSpace(meta.URI),
-		Content:    content,
 		CapturedAt: capturedAt.UTC().Format(time.RFC3339),
 	}
 }
