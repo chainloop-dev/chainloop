@@ -124,12 +124,10 @@ type APIToken struct {
 	IsSystem bool
 }
 
-// IsResourceScoped reports whether the token is confined to a resource outside this database,
-// i.e. a product, which reaches the projects in its ProjectIDs rather than a project of its own.
-// It is false for a project token, unlike ResourceScope: a resource-scoped token that also has a
-// project is malformed. It keys on the scope kind, never on scope_id, which organization and
-// project tokens carry too.
-func (t *APIToken) IsResourceScoped() bool {
+// IsProductScoped reports whether the token is confined to a product: it reaches the projects in
+// its ProjectIDs rather than a project of its own. It keys on the scope kind, never on scope_id,
+// which organization and project tokens carry too.
+func (t *APIToken) IsProductScoped() bool {
 	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
 
@@ -142,7 +140,7 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 		return "", uuid.Nil, false
 	case t.ProjectID != nil:
 		return authz.ResourceTypeProject, *t.ProjectID, true
-	case t.IsResourceScoped() && t.ScopeID != nil:
+	case t.IsProductScoped() && t.ScopeID != nil:
 		return *t.Scope, *t.ScopeID, true
 	default:
 		return "", uuid.Nil, false
@@ -159,7 +157,7 @@ func (t *APIToken) IsInstanceScoped() bool {
 // IsOrgWide reports whether the token acts for the whole organization: confined to neither a
 // project nor a product.
 func (t *APIToken) IsOrgWide() bool {
-	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
+	return t != nil && t.ProjectID == nil && !t.IsProductScoped()
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.

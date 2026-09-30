@@ -1272,7 +1272,7 @@ func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
 		org  *string
 	}{
 		{
-			// IsResourceScoped keys on the scope kind, so a product scope on a project token
+			// IsProductScoped keys on the scope kind, so a product scope on a project token
 			// would route every project check through its project list, and the token's own
 			// project would be enforced nowhere.
 			name: "a project scope together with a resource scope",

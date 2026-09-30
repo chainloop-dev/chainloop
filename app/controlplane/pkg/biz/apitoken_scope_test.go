@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Only a product scope makes a token resource-scoped. ResourceScope names what a token is
+// Only a product scope makes a token product-scoped. ResourceScope names what a token is
 // confined to, a project or a product, and nothing for a token acting for its whole organization
 // or instance.
 func TestAPITokenScopePredicates(t *testing.T) {
@@ -69,7 +69,7 @@ func TestAPITokenScopePredicates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tc.wantResourceScoped, tc.token.IsResourceScoped())
+			assert.Equal(t, tc.wantResourceScoped, tc.token.IsProductScoped())
 			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
 
 			kind, id, ok := tc.token.ResourceScope()

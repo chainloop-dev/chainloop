@@ -337,7 +337,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 
 	// Apply has no project to scope a new contract to, so what it creates is organization-level,
 	// which a product token never changes. Create asks such a caller for a project instead.
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.IsResourceScoped() {
+	if token := entities.CurrentAPIToken(ctx); token != nil && token.IsProductScoped() {
 		return nil, errors.Forbidden("forbidden", "a product-scoped token cannot create an organization-level contract; create it in one of the product's projects")
 	}
 

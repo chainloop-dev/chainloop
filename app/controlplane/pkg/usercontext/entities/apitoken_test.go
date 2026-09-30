@@ -53,7 +53,7 @@ func TestAPITokenReach(t *testing.T) {
 			t.Parallel()
 
 			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
-			assert.Equal(t, tc.wantScoped, tc.token.IsResourceScoped())
+			assert.Equal(t, tc.wantScoped, tc.token.IsProductScoped())
 
 			got := tc.token.ReachableProjects()
 			if tc.wantOrgWide {
