@@ -225,8 +225,8 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 		rowScopeID     *uuid.UUID
 		rowProjectIDs  []uuid.UUID
 		wantProjectIDs []uuid.UUID
-		// the instance-admin claim, which is a different notion of "scope" entirely
-		instanceScopeClaim string
+		// instanceAdminClaim signs the JWT with the instance-admin "scope" claim
+		instanceAdminClaim bool
 	}{
 		{
 			name:           "a product-scoped token",
@@ -239,9 +239,9 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			name: "an unscoped token carries no scope",
 		},
 		{
-			// The instance-admin claim and the resource scope are independent values.
-			name:               "an instance-admin token keeps its instance scope",
-			instanceScopeClaim: authz.ScopeInstanceAdmin,
+			// The instance-admin claim never becomes the token's resource scope.
+			name:               "an instance-admin claim carries no scope",
+			instanceAdminClaim: true,
 		},
 	}
 
@@ -263,8 +263,8 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)
 
 			claims := jwt.MapClaims{"aud": apitoken.Audience, "jti": token.ID.String()}
-			if tc.instanceScopeClaim != "" {
-				claims["scope"] = tc.instanceScopeClaim
+			if tc.instanceAdminClaim {
+				claims["scope"] = authz.ScopeInstanceAdmin
 			}
 			ctx := jwtmiddleware.NewContext(context.Background(), claims)
 
@@ -279,7 +279,6 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			require.NotNil(t, got)
 			assert.Equal(t, tc.rowScope, got.Scope)
 			assert.Equal(t, tc.rowScopeID, got.ScopeID)
-			assert.Equal(t, tc.instanceScopeClaim, got.InstanceScope)
 			assert.Equal(t, tc.wantProjectIDs, got.ProjectIDs)
 		})
 	}
@@ -373,6 +372,112 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 				require.NotNil(t, got)
 				assert.Equal(t, tc.rowScope, got.Scope)
 				assert.Equal(t, tc.rowScopeID, got.ScopeID)
+			})
+		}
+	}
+}
+
+// Only a JWT whose "scope" claim is authz.ScopeInstanceAdmin takes the instance-admin path, which
+// reads the organization from the request header rather than from the token row. Any other token,
+// whatever else its "scope" claim holds, gets its row's organization. Both entry points agree.
+func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
+	const (
+		signingKey = "test"
+		orgHeader  = "Chainloop-Organization"
+	)
+	logger := log.NewHelper(log.NewStdLogger(io.Discard))
+	rowOrg := &biz.Organization{ID: uuid.NewString(), Name: "row-org"}
+	headerOrg := &biz.Organization{ID: uuid.NewString(), Name: "header-org"}
+
+	testCases := []struct {
+		name string
+		// scopeClaim is the JWT's "scope" claim
+		scopeClaim string
+		// rowOrg is the organization on the token row, nil for an instance token
+		rowOrg *biz.Organization
+		// header is the organization named in the request header
+		header  string
+		wantOrg *biz.Organization
+	}{
+		{name: "an instance-admin token takes the organization in the header", scopeClaim: authz.ScopeInstanceAdmin, header: headerOrg.Name, wantOrg: headerOrg},
+		{name: "an instance-admin token without the header has no organization", scopeClaim: authz.ScopeInstanceAdmin},
+		{name: "an organization token takes its row's organization", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
+		{name: "another scope claim is not instance-admin", scopeClaim: "PRODUCT", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
+	}
+
+	type entryPoint func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error
+	entryPoints := map[string]entryPoint{
+		"API": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error {
+			claims := jwt.MapClaims{}
+			if _, _, err := jwt.NewParser().ParseUnverified(signed, claims); err != nil {
+				return err
+			}
+
+			ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{orgHeader: {header}}})
+			_, err := WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)(handler)(jwtmiddleware.NewContext(ctx, claims), nil)
+			return err
+		},
+		"attestation": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error {
+			ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{
+				"Authorization": {"Bearer " + signed},
+				orgHeader:       {header},
+			}})
+			_, err := middleware.Chain(
+				attjwtmiddleware.WithJWTMulti(log.NewStdLogger(io.Discard), attjwtmiddleware.NewAPITokenProvider(signingKey)),
+				WithAttestationContextFromAPIToken(apiTokenUC, orgUC, logger),
+			)(handler)(ctx, nil)
+			return err
+		},
+	}
+
+	for _, tc := range testCases {
+		for entry, run := range entryPoints {
+			t.Run(entry+"/"+tc.name, func(t *testing.T) {
+				token := &biz.APIToken{ID: uuid.New(), Name: "ci"}
+				jwtClaims := apitoken.CustomClaims{
+					KeyName:          token.Name,
+					Scope:            tc.scopeClaim,
+					RegisteredClaims: jwt.RegisteredClaims{ID: token.ID.String(), Issuer: "test", Audience: jwt.ClaimStrings{apitoken.Audience}},
+				}
+
+				apiTokenRepo := mocks.NewAPITokenRepo(t)
+				orgRepo := mocks.NewOrganizationRepo(t)
+				if tc.rowOrg != nil {
+					token.OrganizationID = uuid.MustParse(tc.rowOrg.ID)
+					jwtClaims.OrgID, jwtClaims.OrgName = tc.rowOrg.ID, tc.rowOrg.Name
+					orgRepo.On("FindByID", mock.Anything, token.OrganizationID).Return(tc.rowOrg, nil)
+				}
+				if tc.wantOrg == headerOrg {
+					orgRepo.On("FindByName", mock.Anything, headerOrg.Name).Return(headerOrg, nil)
+				}
+				apiTokenRepo.On("FindByID", mock.Anything, token.ID).Return(token, nil)
+
+				apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &biz.APITokenJWTConfig{SymmetricHmacKey: signingKey}, nil, nil, nil, nil)
+				require.NoError(t, err)
+				orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)
+
+				signed, err := jwt.NewWithClaims(apitoken.SigningMethod, jwtClaims).SignedString([]byte(signingKey))
+				require.NoError(t, err)
+
+				var gotOrg *entities.Org
+				var gotToken *entities.APIToken
+				var gotSubject string
+				err = run(apiTokenUC, orgUC, signed, tc.header, func(ctx context.Context, _ interface{}) (interface{}, error) {
+					gotOrg, gotToken, gotSubject = entities.CurrentOrg(ctx), entities.CurrentAPIToken(ctx), CurrentAuthzSubject(ctx)
+					return nil, nil
+				})
+				require.NoError(t, err)
+
+				require.NotNil(t, gotToken)
+				assert.Equal(t, token.ID.String(), gotToken.ID)
+				assert.Equal(t, (&authz.SubjectAPIToken{ID: token.ID.String()}).String(), gotSubject)
+				if tc.wantOrg == nil {
+					assert.Nil(t, gotOrg)
+					return
+				}
+				require.NotNil(t, gotOrg)
+				assert.Equal(t, tc.wantOrg.ID, gotOrg.ID)
+				assert.Equal(t, tc.wantOrg.Name, gotOrg.Name)
 			})
 		}
 	}

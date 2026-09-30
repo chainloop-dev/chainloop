@@ -28,7 +28,7 @@ func TestAPITokenReach(t *testing.T) {
 	t.Parallel()
 
 	orgID, projectID, productID, a, b := uuid.New(), uuid.New(), uuid.New(), uuid.New(), uuid.New()
-	product, project, organization := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization
+	product, project, organization, instance := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization, authz.ResourceTypeInstance
 
 	testCases := []struct {
 		name        string
@@ -40,7 +40,7 @@ func TestAPITokenReach(t *testing.T) {
 		{name: "no token", token: nil},
 		{name: "a legacy organization token", token: &APIToken{}, wantOrgWide: true},
 		{name: "an organization token recording its scope", token: &APIToken{Scope: &organization, ScopeID: &orgID}, wantOrgWide: true},
-		{name: "an instance-admin token", token: &APIToken{InstanceScope: authz.ScopeInstanceAdmin}, wantOrgWide: true},
+		{name: "an instance token recording its scope", token: &APIToken{Scope: &instance}, wantOrgWide: true},
 		{name: "a legacy project token", token: &APIToken{ProjectID: &projectID}, wantReach: []uuid.UUID{projectID}},
 		{name: "a project token recording its scope", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID}, wantReach: []uuid.UUID{projectID}},
 		{name: "a product token", token: &APIToken{Scope: &product, ScopeID: &productID, ProjectIDs: []uuid.UUID{a, b}}, wantScoped: true, wantReach: []uuid.UUID{a, b}},

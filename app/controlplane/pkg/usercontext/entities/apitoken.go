@@ -42,9 +42,6 @@ type APIToken struct {
 	ScopeID *uuid.UUID
 	// ProjectIDs are the projects a product token reaches, loaded from the row.
 	ProjectIDs []uuid.UUID
-	// InstanceScope carries the "scope" claim, which holds only authz.ScopeInstanceAdmin. It is
-	// unrelated to Scope above.
-	InstanceScope string
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
 	IsSystem bool
 }

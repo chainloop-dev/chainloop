@@ -77,11 +77,12 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
-				// Project, workflow and instance scope are all optional
-				claims := apiTokenClaims{}
+				// Every claim is optional
+				claims := &apiTokenClaims{}
 				claims.projectID, _ = genericClaims["project_id"].(string)
 				claims.workflowID, _ = genericClaims["workflow_id"].(string)
-				claims.instanceScope, _ = genericClaims["scope"].(string)
+				scope, _ := genericClaims["scope"].(string)
+				claims.instanceAdmin = scope == authz.ScopeInstanceAdmin
 
 				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims)
 				if err != nil {
@@ -132,10 +133,10 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, apiTokenClaims{
+			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, &apiTokenClaims{
 				projectID:     claims.ProjectID,
 				workflowID:    claims.WorkflowID,
-				instanceScope: claims.Scope,
+				instanceAdmin: claims.Scope == authz.ScopeInstanceAdmin,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
@@ -174,16 +175,18 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 
 // apiTokenClaims are the optional API-token claims the two entry points extract from the JWT.
 // The project and workflow claims are cross-checked against the token row, never an
-// authorization input: the row decides what the token reaches. instanceScope selects the
-// instance-admin code path below and has no counterpart on the row.
+// authorization input: the row decides what the token reaches.
 type apiTokenClaims struct {
-	projectID     string
-	workflowID    string
-	instanceScope string
+	projectID  string
+	workflowID string
+	// instanceAdmin is true for an instance-admin token: the JWT's "scope" claim is set only on
+	// those, to authz.ScopeInstanceAdmin. It selects the code path that takes the organization
+	// from the request header instead of from the token row.
+	instanceAdmin bool
 }
 
 // Set the current organization and API-Token in the context
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID string, claims apiTokenClaims) (context.Context, error) {
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID string, claims *apiTokenClaims) (context.Context, error) {
 	if tokenID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
@@ -217,7 +220,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Handle instance admin tokens
-	if claims.instanceScope == authz.ScopeInstanceAdmin {
+	if claims.instanceAdmin {
 		// Check if org name provided in header
 		orgName, _ := entities.GetOrganizationNameFromHeader(ctx)
 		if orgName != "" {
@@ -256,12 +259,11 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		WorkflowID:   token.WorkflowID,
 		WorkflowName: token.WorkflowName,
 		// Every value here comes from token.*, i.e. the database row
-		Scope:         token.Scope,
-		ScopeID:       token.ScopeID,
-		ProjectIDs:    token.ProjectIDs,
-		Policies:      token.Policies,
-		InstanceScope: claims.instanceScope,
-		IsSystem:      token.IsSystem,
+		Scope:      token.Scope,
+		ScopeID:    token.ScopeID,
+		ProjectIDs: token.ProjectIDs,
+		Policies:   token.Policies,
+		IsSystem:   token.IsSystem,
 	})
 
 	// Set the authorization subject that will be used to check the policies

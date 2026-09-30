@@ -67,7 +67,7 @@ func productTokenContext(projects ...uuid.UUID) context.Context {
 // RBAC keys on the token's kind: a product token is always under it, whatever its list holds.
 func TestRBACEnabledForTokens(t *testing.T) {
 	projectID, orgID := uuid.New(), uuid.New()
-	orgScope := authz.ResourceTypeOrganization
+	orgScope, instanceScope := authz.ResourceTypeOrganization, authz.ResourceTypeInstance
 
 	testCases := []struct {
 		name string
@@ -79,13 +79,7 @@ func TestRBACEnabledForTokens(t *testing.T) {
 		{name: "a legacy project token", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID}), want: true},
 		{name: "a legacy organization token", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}), want: false},
 		{name: "an organization token recording its scope", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), Scope: &orgScope, ScopeID: &orgID}), want: false},
-		{
-			// The instance-admin claim lives in its own field and must not be read as a resource
-			// scope that pulls the token under RBAC.
-			name: "an instance-admin token",
-			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), InstanceScope: authz.ScopeInstanceAdmin}),
-			want: false,
-		},
+		{name: "an instance token", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), Scope: &instanceScope}), want: false},
 	}
 
 	for _, tc := range testCases {
