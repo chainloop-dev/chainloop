@@ -81,8 +81,6 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 				claims := &apiTokenClaims{}
 				claims.projectID, _ = genericClaims["project_id"].(string)
 				claims.workflowID, _ = genericClaims["workflow_id"].(string)
-				scope, _ := genericClaims["scope"].(string)
-				claims.instanceAdmin = scope == authz.ScopeInstanceAdmin
 
 				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims)
 				if err != nil {
@@ -134,9 +132,8 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 			}
 
 			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, &apiTokenClaims{
-				projectID:     claims.ProjectID,
-				workflowID:    claims.WorkflowID,
-				instanceAdmin: claims.Scope == authz.ScopeInstanceAdmin,
+				projectID:  claims.ProjectID,
+				workflowID: claims.WorkflowID,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
@@ -179,10 +176,6 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 type apiTokenClaims struct {
 	projectID  string
 	workflowID string
-	// instanceAdmin is true for an instance-admin token: the JWT's "scope" claim is set only on
-	// those, to authz.ScopeInstanceAdmin. It selects the code path that takes the organization
-	// from the request header instead of from the token row.
-	instanceAdmin bool
 }
 
 // Set the current organization and API-Token in the context
@@ -220,7 +213,8 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Handle instance admin tokens
-	if claims.instanceAdmin {
+	// An instance token has no organization of its own: it takes the one named in the header.
+	if token.IsInstanceScoped() {
 		// Check if org name provided in header
 		orgName, _ := entities.GetOrganizationNameFromHeader(ctx)
 		if orgName != "" {

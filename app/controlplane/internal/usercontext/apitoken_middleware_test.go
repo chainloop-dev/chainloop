@@ -406,6 +406,9 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 		{name: "an instance-admin token without the header has no organization", scopeClaim: authz.ScopeInstanceAdmin},
 		{name: "an organization token takes its row's organization", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
 		{name: "another scope claim is not instance-admin", scopeClaim: "PRODUCT", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
+		// The row decides, not the claim.
+		{name: "an instance token without the claim is instance-admin", header: headerOrg.Name, wantOrg: headerOrg},
+		{name: "an organization token carrying the claim takes its row's organization", scopeClaim: authz.ScopeInstanceAdmin, rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
 	}
 
 	type entryPoint func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error
@@ -445,11 +448,15 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 
 				apiTokenRepo := mocks.NewAPITokenRepo(t)
 				orgRepo := mocks.NewOrganizationRepo(t)
+				var rowOrgID *uuid.UUID
 				if tc.rowOrg != nil {
 					token.OrganizationID = uuid.MustParse(tc.rowOrg.ID)
+					rowOrgID = &token.OrganizationID
 					jwtClaims.OrgID, jwtClaims.OrgName = tc.rowOrg.ID, tc.rowOrg.Name
 					orgRepo.On("FindByID", mock.Anything, token.OrganizationID).Return(tc.rowOrg, nil)
 				}
+				// The repository fills the scope of every row it reads.
+				token.Scope, token.ScopeID = biz.DefaultTokenScope(rowOrgID, nil)
 				if tc.wantOrg == headerOrg {
 					orgRepo.On("FindByName", mock.Anything, headerOrg.Name).Return(headerOrg, nil)
 				}

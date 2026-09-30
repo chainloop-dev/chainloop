@@ -149,6 +149,13 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 	}
 }
 
+// IsInstanceScoped reports whether the token acts for the whole instance, with no organization of
+// its own. Every token read from the repository carries its scope, so this holds for rows from
+// before the scope columns too.
+func (t *APIToken) IsInstanceScoped() bool {
+	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeInstance
+}
+
 // IsOrgWide reports whether the token acts for the whole organization: confined to neither a
 // project nor a product.
 func (t *APIToken) IsOrgWide() bool {
