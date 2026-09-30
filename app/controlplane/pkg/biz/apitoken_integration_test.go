@@ -24,7 +24,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	apitokenjwt "github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
@@ -1361,14 +1360,14 @@ func (s *apiTokenTestSuite) TestCreateAProductTokenWithItsProjects() {
 	}
 }
 
-// The JWT mirrors a product-scoped token's scope_id as a product_id claim, defence in depth for
-// the middleware's cross-check against the row. An unscoped token carries no such claim.
-func (s *apiTokenTestSuite) TestGeneratedJWTCarriesTheProductScope() {
+// A product token's JWT names no product, on creation or regeneration: the row decides what the
+// token is confined to.
+func (s *apiTokenTestSuite) TestGeneratedJWTCarriesNoProductClaim() {
 	ctx := context.Background()
 	productID := uuid.New()
 
-	parseClaims := func(raw string) *apitokenjwt.CustomClaims {
-		claims := &apitokenjwt.CustomClaims{}
+	claimsOf := func(raw string) jwt.MapClaims {
+		claims := jwt.MapClaims{}
 		info, err := jwt.ParseWithClaims(raw, claims, func(_ *jwt.Token) (interface{}, error) {
 			return []byte("test"), nil
 		})
@@ -1381,17 +1380,16 @@ func (s *apiTokenTestSuite) TestGeneratedJWTCarriesTheProductScope() {
 	token, err := s.APIToken.Create(ctx, randomName(), nil, toPtrDuration(24*time.Hour), &s.org.ID,
 		biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil))
 	s.Require().NoError(err)
-	s.Equal(productID.String(), parseClaims(token.JWT).ProductID)
 
 	regenerated, err := s.APIToken.RegenerateJWT(ctx, token.ID, 48*time.Hour)
 	s.Require().NoError(err)
-	s.Equal(productID.String(), parseClaims(regenerated.JWT).ProductID,
-		"a regenerated JWT must keep mirroring the row's scope")
 
-	// A token with no scope carries no claim, so nothing changes for the tokens in existence.
-	unscoped, err := s.APIToken.Create(ctx, randomName(), nil, toPtrDuration(24*time.Hour), &s.org.ID)
-	s.Require().NoError(err)
-	s.Empty(parseClaims(unscoped.JWT).ProductID)
+	for minted, raw := range map[string]string{"created": token.JWT, "regenerated": regenerated.JWT} {
+		claims := claimsOf(raw)
+		s.NotContains(claims, "product_id", minted)
+		s.Equal(token.ID.String(), claims["jti"], minted)
+		s.Equal(s.org.ID, claims["org_id"], minted)
+	}
 }
 
 // Same nil-versus-empty distinction as the contract listing: an empty visible-project set means

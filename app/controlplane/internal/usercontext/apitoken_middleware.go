@@ -81,7 +81,6 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 				claims := apiTokenClaims{}
 				claims.projectID, _ = genericClaims["project_id"].(string)
 				claims.workflowID, _ = genericClaims["workflow_id"].(string)
-				claims.productID, _ = genericClaims["product_id"].(string)
 				claims.instanceScope, _ = genericClaims["scope"].(string)
 
 				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims)
@@ -136,7 +135,6 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, apiTokenClaims{
 				projectID:     claims.ProjectID,
 				workflowID:    claims.WorkflowID,
-				productID:     claims.ProductID,
 				instanceScope: claims.Scope,
 			})
 			if err != nil {
@@ -175,13 +173,12 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 }
 
 // apiTokenClaims are the optional API-token claims the two entry points extract from the JWT.
-// Every one of them is a cross-check against the token row, never an authorization input: the
-// row decides what the token reaches. instanceScope is the exception — it selects the
+// The project and workflow claims are cross-checked against the token row, never an
+// authorization input: the row decides what the token reaches. instanceScope selects the
 // instance-admin code path below and has no counterpart on the row.
 type apiTokenClaims struct {
 	projectID     string
 	workflowID    string
-	productID     string
 	instanceScope string
 }
 
@@ -210,14 +207,6 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	if claims.workflowID != "" {
 		if token.WorkflowID == nil || token.WorkflowID.String() != claims.workflowID {
 			return nil, errors.New("API token workflow mismatch")
-		}
-	}
-
-	// And for the product claim, which mirrors a product-scoped row's scope_id. A claim naming a
-	// product the row does not carry is refused rather than ignored: the two must agree.
-	if claims.productID != "" {
-		if !token.IsResourceScoped() || token.ScopeID == nil || token.ScopeID.String() != claims.productID {
-			return nil, errors.New("API token product mismatch")
 		}
 	}
 
