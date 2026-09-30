@@ -352,16 +352,30 @@ func (s *apiTokenTestSuite) TestList() {
 		s.Len(tokens, 2)
 	})
 
-	s.Run("the deprecated scope aliases build and list the same as authz.ResourceType", func() {
+	s.Run("the deprecated scope aliases name the same kinds as authz.ResourceType", func() {
+		s.Equal(authz.ResourceTypeProject, biz.APITokenScopeProject)
+		s.Equal(authz.ResourceTypeOrganization, biz.APITokenScopeGlobal)
+		s.Equal(authz.ResourceTypeInstance, biz.APITokenScopeInstance)
+
 		_, err := s.APIToken.Create(ctx, randomName(), nil, nil, nil, biz.APITokenWithScope(authz.ResourceTypeInstance, nil))
 		require.NoError(s.T(), err)
+		tokens, err := s.APIToken.List(ctx, "", biz.WithAPITokenScope(biz.APITokenScopeInstance))
+		s.NoError(err)
+		s.NotEmpty(tokens)
+	})
 
-		viaAlias, err := s.APIToken.List(ctx, "", biz.WithAPITokenScope(biz.APITokenScopeInstance))
+	s.Run("listing organization tokens across organizations leaves instance tokens out", func() {
+		instance, err := s.APIToken.Create(ctx, randomName(), nil, nil, nil, biz.APITokenWithScope(authz.ResourceTypeInstance, nil))
+		require.NoError(s.T(), err)
+
+		tokens, err := s.APIToken.List(ctx, "", biz.WithAPITokenScope(authz.ResourceTypeOrganization))
 		s.NoError(err)
-		viaType, err := s.APIToken.List(ctx, "", biz.WithAPITokenScope(authz.ResourceTypeInstance))
-		s.NoError(err)
-		s.NotEmpty(viaType)
-		s.Equal(viaType, viaAlias)
+		s.NotEmpty(tokens)
+		for _, token := range tokens {
+			s.NotEqual(instance.ID, token.ID, "an instance token listed as an organization token")
+			s.NotEqual(uuid.Nil, token.OrganizationID, "token %s has no organization", token.Name)
+			s.Nil(token.ProjectID)
+		}
 	})
 
 	s.Run("they are org scoped", func() {
@@ -1000,6 +1014,35 @@ func (s *apiTokenTestSuite) TestCreateRefusesAProjectListOutsideAProductScope() 
 			_, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, tc.opts...)
 			s.Require().Error(err)
 			s.True(biz.IsErrValidation(err), "got %v", err)
+		})
+	}
+}
+
+// A project token always belongs to an organization. Without one, Create would write a project row
+// with no organization and sign it as an instance-level token.
+func (s *apiTokenTestSuite) TestCreateRefusesAProjectTokenWithoutAnOrganization() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name string
+		opts []biz.APITokenCreateOpt
+	}{
+		{name: "the scope taken from the project", opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1)}},
+		{name: "an explicit project scope", opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1), biz.APITokenWithScope(authz.ResourceTypeProject, &s.p1.ID)}},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			name := randomName()
+			_, err := s.APIToken.Create(ctx, name, nil, nil, nil, tc.opts...)
+			s.Require().Error(err)
+			s.True(biz.IsErrValidation(err), "got %v", err)
+
+			tokens, err := s.APIToken.List(ctx, "", biz.WithAPITokenStatusFilter(biz.APITokenStatusFilterAll))
+			s.Require().NoError(err)
+			for _, token := range tokens {
+				s.NotEqual(name, token.Name, "a refused create writes nothing")
+			}
 		})
 	}
 }
