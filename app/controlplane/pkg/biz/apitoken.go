@@ -309,8 +309,8 @@ func validateTokenScope(scope authz.ResourceType, scopeID, orgID, projectID *uui
 			return NewErrValidationStr("an organization scope must name the organization of an organization-level token")
 		}
 	case authz.ResourceTypeProject:
-		if projectID == nil || scopeID == nil || *scopeID != *projectID {
-			return NewErrValidationStr("a project scope must name the project the token is created for")
+		if orgID == nil || projectID == nil || scopeID == nil || *scopeID != *projectID {
+			return NewErrValidationStr("a project scope must name the project the token is created for, in its organization")
 		}
 	case authz.ResourceTypeInstance:
 		if orgID != nil || projectID != nil || scopeID != nil {
@@ -403,6 +403,12 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	var projectID *uuid.UUID
 	if options.project != nil {
 		projectID = ToPtr(options.project.ID)
+	}
+
+	// A project token belongs to an organization. Without one it would be written with no
+	// organization and signed as an instance-level token.
+	if projectID != nil && orgUUID == nil {
+		return nil, NewErrValidationStr("a project-scoped token requires an organization")
 	}
 
 	var workflowID *uuid.UUID

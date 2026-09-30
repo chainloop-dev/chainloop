@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Mirrors entities.TestAPITokenScopePredicates for the persisted row: only a product scope
-// confines a token to its memberships.
+// Only a product scope makes a persisted token resource-scoped; every other kind, and a row from
+// before the scope columns, keeps reading organization_id and project_id.
 func TestAPITokenScopePredicates(t *testing.T) {
 	t.Parallel()
 

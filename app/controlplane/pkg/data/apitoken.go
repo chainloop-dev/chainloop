@@ -300,9 +300,10 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	case authz.ResourceTypeProduct:
 		query = query.Where(apitoken.ScopeEQ(authz.ResourceTypeProduct))
 	case authz.ResourceTypeOrganization:
-		// Organization-wide means confined to neither a project nor a product. Keyed on the
-		// kind: new organization tokens carry an organization scope, older ones none.
-		query = query.Where(apitoken.ProjectIDIsNil(), apitoken.Or(apitoken.ScopeIsNil(), apitoken.ScopeNEQ(authz.ResourceTypeProduct)))
+		// Organization-wide means belonging to an organization and confined to neither a project
+		// nor a product. Keyed on the kind: new organization tokens carry an organization scope,
+		// older ones none, so the organization is what tells an older one from an instance token.
+		query = query.Where(apitoken.OrganizationIDNotNil(), apitoken.ProjectIDIsNil(), apitoken.Or(apitoken.ScopeIsNil(), apitoken.ScopeNEQ(authz.ResourceTypeProduct)))
 	case authz.ResourceTypeInstance:
 		query = query.Where(apitoken.OrganizationIDIsNil())
 	}
