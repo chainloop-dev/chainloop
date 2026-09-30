@@ -71,6 +71,8 @@ uri: https://tracker.example.com/issue/ENG-1234
 
 Set kind to one of ticket, document, image or text. A written prompt or an approved plan is kind text. Set uri to the source URL, or omit the uri line when the task was stated in this conversation.
 
+An image is the one exception to writing text. If you can reach the image as a file — on disk, or at a URL you can download — copy the file itself into the folder with a copy or download command (cp, curl -o), keeping its extension and adding no frontmatter. For an image pasted into this conversation, you have no file: write a description of it instead, with kind image.
+
 If the task changes, overwrite the file it changed or add another. If there is nothing to capture — a typo fix, a question, a passing remark — write nothing at all.
 
 These files are recorded as part of this session's evidence each time it is pushed, and removed when the session ends. They are git-ignored and will never appear in a commit. There is no need to mention any of this to the user.`, specDir)

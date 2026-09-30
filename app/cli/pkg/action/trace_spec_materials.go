@@ -118,7 +118,7 @@ func storeCapture(ctx context.Context, adder specMaterialAdder, redactor *specRe
 	}, nil
 }
 
-// redactCapture redacts the file a capture was read from. The redacted file
+// redactCapture redacts the text file a capture was read from. The redacted file
 // is what gets stored, header included, so it is the file on disk with only
 // its secrets taken out. It is parsed again for the source address that the
 // annotation and the reference carry, so that address is redacted too.
@@ -126,6 +126,12 @@ func storeCapture(ctx context.Context, adder specMaterialAdder, redactor *specRe
 // Redaction fails closed, as it does for the session material: a file that
 // could not be scanned is not uploaded at all.
 func redactCapture(ctx context.Context, redactor *specRedactor, c spec.Capture) (spec.Capture, error) {
+	// A binary file, such as an image, has no text for the scanner to read,
+	// and rewriting it as text would break it. It is stored as it is.
+	if c.Binary {
+		return c, nil
+	}
+
 	doc, err := redactor.Redact(ctx, c.Raw)
 	if err != nil {
 		return c, fmt.Errorf("scanning for secrets: %w", err)

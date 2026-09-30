@@ -145,6 +145,32 @@ func TestAttachSpecs(t *testing.T) {
 		assert.Equal(t, wantURI, entries[0].URI)
 	})
 
+	t.Run("a binary file is stored byte for byte and never scanned", func(t *testing.T) {
+		adder := &fakeMaterialAdder{}
+		scans := 0
+		redactor := &specRedactor{dir: t.TempDir(), redact: func(_ context.Context, doc []byte) ([]byte, error) {
+			scans++
+			return doc, nil
+		}}
+		pngBytes := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\xff\xfe")
+		image := spec.Capture{
+			FileName: "mockup.png", Kind: aicodingsession.SpecKindImage,
+			CapturedAt: "2026-09-16T10:31:40Z", Raw: pngBytes, Binary: true,
+		}
+
+		entries, warnings := attachSpecs(context.Background(), adder, redactor, materialNames{}, sessionID, []spec.Capture{image}, zerolog.Nop())
+
+		assert.Empty(t, warnings)
+		assert.Zero(t, scans, "a text scanner has nothing to read in an image, and a rewrite would break it")
+		require.Len(t, adder.added, 1)
+		assert.Equal(t, string(pngBytes), adder.added[0].content)
+		assert.Equal(t, "mockup.png", adder.added[0].fileName)
+		assert.Equal(t, aicodingsession.SpecKindImage, adder.added[0].annotations[specAnnotationKind])
+		assert.NotContains(t, adder.added[0].annotations, specAnnotationURI)
+		require.Len(t, entries, 1)
+		assert.Equal(t, aicodingsession.SpecKindImage, entries[0].Kind)
+	})
+
 	t.Run("a failed add drops that entry only, and says so", func(t *testing.T) {
 		adder := &fakeMaterialAdder{failOn: map[string]bool{"spec-7412a0-ticket-pfm-7289": true}}
 

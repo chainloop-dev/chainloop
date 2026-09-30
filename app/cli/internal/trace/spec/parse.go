@@ -16,6 +16,7 @@
 package spec
 
 import (
+	"net/http"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -51,6 +52,26 @@ type Capture struct {
 	// Raw is the file as the agent wrote it, header included. It is what
 	// gets redacted before anything from the file is stored.
 	Raw []byte
+	// Binary reports a file that is not text, such as an image the agent
+	// copied into the folder. It has no header, and it is stored as it is.
+	Binary bool
+}
+
+// binaryCapture describes a file that is not text. Its kind comes from its
+// content, since it has no header to state one, and it carries no URI.
+func binaryCapture(name string, doc []byte, modTime time.Time) Capture {
+	kind := aicodingsession.SpecKindDocument
+	if strings.HasPrefix(http.DetectContentType(doc), "image/") {
+		kind = aicodingsession.SpecKindImage
+	}
+
+	return Capture{
+		FileName:   name,
+		Kind:       kind,
+		CapturedAt: modTime.UTC().Format(time.RFC3339),
+		Raw:        doc,
+		Binary:     true,
+	}
 }
 
 // Parse converts one spec document into a capture. It never fails.

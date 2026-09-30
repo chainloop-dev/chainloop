@@ -199,6 +199,31 @@ func TestReadAll(t *testing.T) {
 		assert.Empty(t, warnings)
 	})
 
+	t.Run("a binary file is kept as it is, with a kind from its content", func(t *testing.T) {
+		root := t.TempDir()
+		// The first bytes of a PNG: enough to identify it, and not valid
+		// UTF-8, as no image file is.
+		pngBytes := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89")
+		pdfBytes := append([]byte("%PDF-1.7\n"), 0xff, 0xfe, 0x00, 0x01)
+		writeSpec(t, root, sessionID, "mockup.png", string(pngBytes), time.Now())
+		writeSpec(t, root, sessionID, "design.pdf", string(pdfBytes), time.Now().Add(time.Second))
+
+		entries, warnings, err := ReadAll(root, sessionID)
+
+		require.NoError(t, err)
+		assert.Empty(t, warnings)
+		require.Len(t, entries, 2)
+
+		assert.Equal(t, "mockup.png", entries[0].FileName)
+		assert.Equal(t, aicodingsession.SpecKindImage, entries[0].Kind)
+		assert.True(t, entries[0].Binary)
+		assert.Equal(t, pngBytes, entries[0].Raw, "a binary file is never rewritten")
+		assert.Empty(t, entries[0].URI, "a binary file has no header to carry one")
+
+		assert.Equal(t, aicodingsession.SpecKindDocument, entries[1].Kind)
+		assert.True(t, entries[1].Binary)
+	})
+
 	t.Run("one unreadable file costs that file only, and says so", func(t *testing.T) {
 		if os.Geteuid() == 0 {
 			t.Skip("root reads a file whatever its mode")

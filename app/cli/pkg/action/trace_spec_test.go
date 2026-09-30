@@ -56,6 +56,8 @@ func TestSpecCaptureInstruction(t *testing.T) {
 		{name: "a text kind", want: "text", why: whyVocabulary},
 		{name: "the text, not a link", want: "Not a link to it, not your summary of it", why: "a link is worthless as evidence once the source moves"},
 		{name: "one file per source", want: "One file per source", why: "several sources become several entries, not one blob"},
+		{name: "an image file is copied", want: "copy the file itself into the folder", why: "an image the agent can reach as a file is stored as the image, not as a description"},
+		{name: "a pasted image is described", want: "pasted into this conversation, you have no file", why: "the agent cannot recover the bytes of a pasted image, so it writes a description"},
 		{name: "an approved plan", want: "a plan approved in this session", why: "a plan the session wrote and the user approved is what the work ran against"},
 		{name: "each push", want: "each time it is pushed", why: "the files stay for the whole session, and every push records them"},
 		{name: "the way out", want: "write nothing at all", why: "without it a model invents a spec for a typo fix"},

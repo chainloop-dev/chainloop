@@ -40,6 +40,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 )
@@ -180,6 +181,13 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 		doc, err := os.ReadFile(c.path)
 		if err != nil {
 			warnings = append(warnings, fmt.Sprintf("spec file %q was not recorded: %v", c.name, err))
+			continue
+		}
+
+		// A file that is not text is an image or a document the agent copied
+		// in. Parsing it as text would only mangle it.
+		if !utf8.Valid(doc) {
+			entries = append(entries, binaryCapture(c.name, doc, c.modTime))
 			continue
 		}
 

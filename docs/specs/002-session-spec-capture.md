@@ -37,10 +37,10 @@ The session folder MUST be inside the working tree and MUST be ignored by git wi
 - Done when: a file in the folder never shows as a change in the repository status.
 
 ### R-003: One file per source
-The agent MUST write one text file for each source. A short header gives the kind and an optional source address. The actual content follows the header. The kinds are:
+The agent MUST write one file for each source. A text file starts with a short header that gives the kind and an optional source address. The actual content follows the header. An image file is the exception: the agent copies it into the folder as it is, with no header. The kinds are:
 - `ticket`: an issue tracker item (Linear, Jira).
 - `document`: a written specification (a design doc, a vault page, an RFC).
-- `image`: a mockup or screenshot. The file holds what the agent transcribed from it.
+- `image`: a mockup or screenshot. The file is the image itself when the agent can reach it as a file. For a pasted image, it is a description that the agent writes.
 - `text`: a spec stated in the session itself, including a plan the session wrote and the user approved.
 
 ### R-004: Nothing to capture
@@ -54,7 +54,7 @@ At push time, the system MUST upload each spec file to content-addressable stora
 The session material MUST list each spec source by kind, source address, digest and capture time. The digest MUST be the one that content-addressable storage uses for the stored file. The session material MUST NOT hold the spec content.
 
 ### R-007: Redaction before upload
-The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The redaction covers the whole file, so it takes secrets out of the source address and out of the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the source file on disk, before redaction. This digest is not the one that R-006 records.
+The system MUST apply the same secret redaction to text spec files that it applies to the session material, before it uploads them. A binary file, such as an image, has no text to redact, so the system stores it as it is. The redaction covers the whole file, so it takes secrets out of the source address and out of the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the source file on disk, before redaction. This digest is not the one that R-006 records.
 - Done when: a second push runs no secret scan on an unchanged spec file. It records the same digest as the first push.
 
 ### R-008: Failure never blocks the push
@@ -179,7 +179,7 @@ Each spec material in the predicate:
 | D-007 | User interface and scoring | Out of scope for this repository | They live in other products and consume the materials that this spec defines. | drafting |
 | D-008 | Material type for spec files | EVIDENCE | A spec file is supporting evidence for the session, not an output of the work. Rejected: ARTIFACT. | owner review |
 | D-009 | When the session folder is deleted | When the session ends | A session can push more than one time, and each attestation must hold its spec. Content-addressable storage keeps one copy of each file, so a new push adds no storage. Rejected: delete after each push (a later push of the same session would have no spec). | owner review |
-| D-010 | Images in the first version | The image kind holds a description that the agent writes | The model cannot write the bytes of a pasted image, and the only copy of the bytes is in the session transcript. A later version takes the bytes from the transcript: the agent writes an image entry that names the paste, and the push command extracts it. | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3491#discussion_r4138700249) |
+| D-010 | Images | An image that the agent can reach as a file is copied into the folder and stored byte for byte. Its kind comes from its content. A pasted image becomes a description that the agent writes | The agent writes files through its tools, so it can copy an image from disk, download one, or store generated output. It cannot recover the bytes of a pasted image from what it sees, and the only copy of those bytes is in the session transcript. A later version takes them from the transcript at push time. A binary file skips the text redaction, because it has no text to scan and a rewrite would break it. | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3491#discussion_r4138700249) |
 | D-011 | Redaction on later pushes | Keep the redacted copy of each file, keyed by the digest of the source file, and reuse it while the file does not change | Redaction runs in the client before the upload and is expensive. Rejected: scan again on each push (repeated cost for the same result). Rejected: write the redacted text back into the session folder (the agent sees its own file change). | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3491#discussion_r4138546059) |
 | D-012 | Size of a spec file | No cut in the CLI. A limit on the number of files for each session stays | The stored file must be the file on disk, and the storage backend configuration already limits the size of a material. The file limit protects the session material from an agent that writes one file per turn. Rejected: cut the text at a fixed size (the stored file would differ from the file on disk). | owner review |
 
