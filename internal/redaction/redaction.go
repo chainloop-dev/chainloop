@@ -75,6 +75,14 @@ type Scanner interface {
 	Scan(ctx context.Context, text string) ([]Finding, error)
 }
 
+// documentBinder is implemented by scanners that scan a document faster when
+// they know that successive texts are passes over the same document.
+type documentBinder interface {
+	// forDocument returns a scanner for the passes over a single document. It
+	// may remember earlier passes, so it is never shared between documents.
+	forDocument() Scanner
+}
+
 // PathFilter reports whether the string leaf at the given path may be rewritten.
 // Paths look like "/data/raw_session/main/0/content": a leading slash, object
 // keys and array indices separated by slashes.
@@ -216,6 +224,13 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 	skip := make(map[string]struct{})
 	converged := false
 
+	// Every pass scans a new version of the same document, which a scanner that
+	// knows so can scan faster.
+	scanner := r.scanner
+	if b, ok := scanner.(documentBinder); ok {
+		scanner = b.forDocument()
+	}
+
 	for pass := 1; pass <= r.maxPasses; pass++ {
 		report.Passes = pass
 
@@ -227,7 +242,7 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 			return nil, nil, fmt.Errorf("rendering document: %w", err)
 		}
 
-		findings, err := r.scanner.Scan(ctx, text)
+		findings, err := scanner.Scan(ctx, text)
 		if err != nil {
 			return nil, nil, fmt.Errorf("scanning for secrets: %w", err)
 		}

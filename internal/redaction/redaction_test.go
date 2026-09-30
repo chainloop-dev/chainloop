@@ -52,6 +52,37 @@ func (f *fakeScanner) Scan(ctx context.Context, text string) ([]Finding, error) 
 	return out, nil
 }
 
+// fakeDocumentScanner is a fakeScanner that also binds itself to a document, to
+// check how Redact uses a scanner that can rescan incrementally.
+type fakeDocumentScanner struct {
+	fakeScanner
+	documents int
+}
+
+func (f *fakeDocumentScanner) forDocument() Scanner {
+	f.documents++
+	return &f.fakeScanner
+}
+
+// TestRedactBindsOneScannerPerDocument checks that every pass over a document
+// goes through the scanner bound to it, and that each Redact binds a new one:
+// what that scanner remembers belongs to a single document.
+func TestRedactBindsOneScannerPerDocument(t *testing.T) {
+	scanner := &fakeDocumentScanner{fakeScanner: fakeScanner{
+		findings:       []Finding{{RuleID: "r1", Secret: "SEC"}},
+		requirePresent: true,
+	}}
+	r := New(scanner)
+
+	for i := 1; i <= 2; i++ {
+		_, report, err := r.Redact(context.Background(), []byte(`{"a":"x SEC x"}`))
+		require.NoError(t, err)
+		assert.Equal(t, i, scanner.documents)
+		assert.Equal(t, 2*i, scanner.calls, "both passes use the bound scanner")
+		assert.Equal(t, 2, report.Passes)
+	}
+}
+
 func TestRedact(t *testing.T) {
 	testCases := []struct {
 		name     string
