@@ -181,12 +181,16 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 	// Make sure the caller has permission to revoke the token where it lives
 	if !t.IsOrgWide() {
 		kind, id, ok := t.ResourceScope()
-		if !ok {
+		switch {
+		case ok:
+			if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, kind, id); err != nil {
+				return nil, err
+			}
+		case t.Scope == nil && !rbacEnabled(ctx):
+			// A row recording no scope reaches nothing, so revoking it only takes it away: a
+			// caller RBAC does not narrow may do so.
+		default:
 			return nil, errors.BadRequest("invalid", "this API token carries an incomplete scope and cannot be managed here")
-		}
-
-		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, kind, id); err != nil {
-			return nil, err
 		}
 	}
 

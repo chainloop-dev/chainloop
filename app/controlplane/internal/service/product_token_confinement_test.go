@@ -485,6 +485,12 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 			wantAllowed: false,
 		},
 		{
+			// It reaches nothing, so revoking it only takes it away
+			name:        "a project target recording no scope is allowed",
+			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, ProjectID: &projectID},
+			wantAllowed: true,
+		},
+		{
 			name:        "an organization-scoped target is refused",
 			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, Scope: &orgScope, ScopeID: &orgID},
 			wantAllowed: false,
@@ -627,7 +633,8 @@ func TestRevokeOfAResourceScopedTokenByAUser(t *testing.T) {
 // Revoke authorizes against what the target is confined to, for every kind of token: an
 // organization-wide one only an admin manages, a project one whoever may revoke tokens in that
 // project, a product one whoever administers the product, and a product scope missing its id no
-// one. Neither may anyone revoke a row recording no scope: rerunning the scope backfill gives it one.
+// one. A row recording no scope reaches nothing, so revoking it only takes it away: whoever RBAC
+// does not narrow may do so, and no one else.
 func TestRevokeAuthorizesWhereTheTargetIsConfined(t *testing.T) {
 	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 	orgScope, projectScope, productScope := authz.ResourceTypeOrganization, authz.ResourceTypeProject, authz.ResourceTypeProduct
@@ -662,7 +669,7 @@ func TestRevokeAuthorizesWhereTheTargetIsConfined(t *testing.T) {
 		{name: "a project admin cannot revoke a product token reaching the project", target: product, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsForbidden},
 		{name: "an admin cannot revoke a product scope missing its id", target: productWithoutID, role: authz.RoleAdmin, memberships: admin, wantErr: kerrors.IsBadRequest},
 		{name: "a member cannot revoke a product scope missing its id", target: productWithoutID, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
-		{name: "an admin cannot revoke a row recording no scope", target: noScope, role: authz.RoleAdmin, memberships: admin, wantErr: kerrors.IsBadRequest},
+		{name: "an admin revokes a row recording no scope", target: noScope, role: authz.RoleAdmin, memberships: admin},
 		{name: "a project admin cannot revoke a row recording no scope", target: noScope, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
 	}
 
