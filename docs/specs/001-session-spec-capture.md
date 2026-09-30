@@ -55,13 +55,14 @@ At push time, the system MUST upload each spec file to content-addressable stora
 The session material MUST list each spec source by kind, source address, digest, capture time and a truncation flag. It MUST NOT hold the spec content.
 
 ### R-007: Redaction before upload
-The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The skip-redaction option MUST apply to both.
+The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The skip-redaction option MUST apply to both. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session.
+- Done when: a second push runs no secret scan on an unchanged spec file. It records the same digest as the first push.
 
 ### R-008: Failure never blocks the push
 A missing, empty or unreadable spec folder MUST NOT stop the push of the session. The system SHOULD record a warning in the session material when it drops or cuts spec content.
 
 ### R-009: Keep the spec until the session ends
-The system MUST keep the session folder after a push. Each push of a session MUST record all the spec files that are in the folder at that time. The system MUST delete the session folder when the session ends.
+The system MUST keep the session folder after a push. Each push of a session MUST record all the spec files that are in the folder at that time. The system MUST delete the session folder and the redacted copies of R-007 when the session ends.
 - Done when: a second push of the same session holds its current spec files, including files that did not change. The folder is gone after the session ends.
 
 ### R-010: Capture rate
@@ -75,7 +76,7 @@ The system SHOULD make it possible to count the sessions that have spec material
 ## Proposal
 The user does nothing new. When a traced session starts, the trace hook adds the capture instruction to the context of the agent. The agent then resolves the sources that the task points at. It uses the tools it already has: an issue tracker connector, a web fetch, a local file read. It writes the actual text of each source into the session folder. If the task changes, the agent overwrites a file or adds one. The version on disk at push time is the one Chainloop records, so a reviewed plan replaces its draft.
 
-When the user pushes, the trace push command reads the session folder. It redacts each file, uploads it as an EVIDENCE material, and records the digest. It then writes the references into the session material and adds that material last. The attestation now holds the session material and one material for each source. Content-addressable storage keeps one copy of a ticket that ten sessions use. The session folder stays after the push, because a session can push more than one time. Each later push records the spec again, and storage keeps one copy of each file. The session-end hook deletes the folder.
+When the user pushes, the trace push command reads the session folder. It redacts each file, uploads it as an EVIDENCE material, and records the digest. It then writes the references into the session material and adds that material last. The attestation now holds the session material and one material for each source. Content-addressable storage keeps one copy of a ticket that ten sessions use. Redaction runs in the client and is expensive. The CLI keeps the redacted copy of each file in the trace state, with the digest of the source file. A later push reuses that copy when the source file did not change. The session folder stays after the push, because a session can push more than one time. Each later push records the spec again, and storage keeps one copy of each file. The session-end hook deletes the folder.
 
 Each agent receives the instruction through its own channel:
 
@@ -179,14 +180,12 @@ Each spec material in the predicate:
 | D-007 | User interface and scoring | Out of scope for this repository | They live in other products and consume the materials that this spec defines. | drafting |
 | D-008 | Material type for spec files | EVIDENCE | A spec file is supporting evidence for the session, not an output of the work. Rejected: ARTIFACT. | owner review |
 | D-009 | When the session folder is deleted | When the session ends | A session can push more than one time, and each attestation must hold its spec. Content-addressable storage keeps one copy of each file, so a new push adds no storage. Rejected: delete after each push (a later push of the same session would have no spec). | owner review |
+| D-010 | Images in the first version | The image kind holds a description that the agent writes | The model cannot write the bytes of a pasted image, and the only copy of the bytes is in the session transcript. A later version takes the bytes from the transcript: the agent writes an image entry that names the paste, and the push command extracts it. | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3491#discussion_r4138700249) |
+| D-011 | Redaction on later pushes | Keep the redacted copy of each file, keyed by the digest of the source file, and reuse it while the file does not change | Redaction runs in the client before the upload and is expensive. Rejected: scan again on each push (repeated cost for the same result). Rejected: write the redacted text back into the session folder (the agent sees its own file change). | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3491#discussion_r4138546059) |
 
 ## Open Questions
 - [ ] **Do we limit file size and file count?** The storage backend configuration already sets the upper limit for a material. Proposed: keep a file limit against an agent that writes one file per turn. Reviewers decide if a per-file cap in the CLI adds value.
-- [ ] **How do we store real images?** The model receives a pasted image as image input, not as a file. Its write tool writes text only, so it cannot write the image bytes. The only copy of the bytes is in the session transcript. Options:
-  - (a) The agent copies an image file that exists on disk, for example a file that the user dragged in. A pasted image stays a description.
-  - (b) A hybrid. The agent writes an image entry that names the paste, for example "Image #1". At push time, the CLI takes the bytes of that paste from the transcript.
-
-  Proposed: the first version stores a description only, and reviewers choose between (a) and (b).
+- [ ] **Do Cursor and OpenCode keep the bytes of a pasted image in their transcripts?** D-010 depends on it for these agents. Proposed: test both agents before the image work starts.
 - [ ] **Do we add one shared skill that holds the long instruction text?** Proposed: not in the first version. Each hook injects the full instruction. A shared skill would give one copy of the text for all agents and fewer tokens for each session.
 
 ## Milestones
