@@ -196,20 +196,10 @@ func (s *getContractRBACIntegrationSuite) ctxForToken(token *biz.APIToken) conte
 	})
 }
 
-// ctxForProductToken is the context the attestation chain produces for a product token.
-func (s *getContractRBACIntegrationSuite) ctxForProductToken(token *biz.APIToken) context.Context {
-	ctx := s.ctxForToken(token)
-	return entities.WithCurrentAPIToken(ctx, &entities.APIToken{
-		ID: token.ID.String(), Name: token.Name,
-		Scope: token.Scope, ScopeID: token.ScopeID, ProjectIDs: token.ProjectIDs,
-		Policies: token.Policies,
-	})
-}
-
 // A product-scoped token reaches exactly the projects its product currently holds.
 func (s *getContractRBACIntegrationSuite) TestProductScopedToken() {
 	s.Run("can read the workflow of a project its product holds", func() {
-		resp, err := s.svc.GetContract(s.ctxForProductToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+		resp, err := s.svc.GetContract(s.ctxForToken(s.productToken), &pb.AttestationServiceGetContractRequest{
 			ProjectName:  s.projectA.Name,
 			WorkflowName: s.workflowA.Name,
 		})
@@ -219,7 +209,7 @@ func (s *getContractRBACIntegrationSuite) TestProductScopedToken() {
 	})
 
 	s.Run("cannot read a project its product does not hold", func() {
-		_, err := s.svc.GetContract(s.ctxForProductToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+		_, err := s.svc.GetContract(s.ctxForToken(s.productToken), &pb.AttestationServiceGetContractRequest{
 			ProjectName:  s.projectB.Name,
 			WorkflowName: s.workflowB.Name,
 		})
@@ -236,7 +226,7 @@ func (s *getContractRBACIntegrationSuite) TestProductScopedToken() {
 // product is deleted. It must not widen to the whole organization.
 func (s *getContractRBACIntegrationSuite) TestProductScopedTokenWithNoProjects() {
 	for _, wf := range []*biz.Workflow{s.workflowA, s.workflowB} {
-		_, err := s.svc.GetContract(s.ctxForProductToken(s.emptyProductToken), &pb.AttestationServiceGetContractRequest{
+		_, err := s.svc.GetContract(s.ctxForToken(s.emptyProductToken), &pb.AttestationServiceGetContractRequest{
 			ProjectName:  wf.Project,
 			WorkflowName: wf.Name,
 		})
@@ -255,7 +245,7 @@ func (s *getContractRBACIntegrationSuite) TestProductScopedTokenStaleProjectIDIs
 	ctx := context.Background()
 	s.Require().NoError(s.Data.DB.Project.UpdateOneID(s.projectA.ID).SetDeletedAt(time.Now()).Exec(ctx))
 
-	_, err := s.svc.GetContract(s.ctxForProductToken(s.productToken), &pb.AttestationServiceGetContractRequest{
+	_, err := s.svc.GetContract(s.ctxForToken(s.productToken), &pb.AttestationServiceGetContractRequest{
 		ProjectName:  s.projectA.Name,
 		WorkflowName: s.workflowA.Name,
 	})

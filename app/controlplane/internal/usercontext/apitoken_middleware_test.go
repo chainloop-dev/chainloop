@@ -224,19 +224,17 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 	testCases := []struct {
 		name string
 		// scope as stored on the token row
-		rowScope       *authz.ResourceType
-		rowScopeID     *uuid.UUID
-		rowProjectIDs  []uuid.UUID
-		wantProjectIDs []uuid.UUID
+		rowScope      *authz.ResourceType
+		rowScopeID    *uuid.UUID
+		rowProjectIDs []uuid.UUID
 		// instanceAdminClaim signs the JWT with the instance-admin "scope" claim
 		instanceAdminClaim bool
 	}{
 		{
-			name:           "a product-scoped token",
-			rowScope:       toPtr(authz.ResourceTypeProduct),
-			rowScopeID:     &productID,
-			rowProjectIDs:  []uuid.UUID{projectA},
-			wantProjectIDs: []uuid.UUID{projectA},
+			name:          "a product-scoped token",
+			rowScope:      biz.ToPtr(authz.ResourceTypeProduct),
+			rowScopeID:    &productID,
+			rowProjectIDs: []uuid.UUID{projectA},
 		},
 		{
 			name: "an unscoped token carries no scope",
@@ -282,13 +280,9 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			require.NotNil(t, got)
 			assert.Equal(t, tc.rowScope, got.Scope)
 			assert.Equal(t, tc.rowScopeID, got.ScopeID)
-			assert.Equal(t, tc.wantProjectIDs, got.ProjectIDs)
+			assert.Equal(t, tc.rowProjectIDs, got.ProjectIDs)
 		})
 	}
-}
-
-func toPtr[T any](v T) *T {
-	return &v
 }
 
 // preProductClaimRemoval are the claims a product token was signed with while the control plane
@@ -380,9 +374,9 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 	}
 }
 
-// Only a JWT whose "scope" claim is authz.ScopeInstanceAdmin takes the instance-admin path, which
-// reads the organization from the request header rather than from the token row. Any other token,
-// whatever else its "scope" claim holds, gets its row's organization. Both entry points agree.
+// A token's row decides whether it takes the instance-admin path, which reads the organization
+// from the request header rather than from the token row; the JWT "scope" claim is ignored. Both
+// entry points agree.
 func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 	const (
 		signingKey = "test"
@@ -405,7 +399,6 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 		{name: "an instance-admin token takes the organization in the header", scopeClaim: authz.ScopeInstanceAdmin, header: headerOrg.Name, wantOrg: headerOrg},
 		{name: "an instance-admin token without the header has no organization", scopeClaim: authz.ScopeInstanceAdmin},
 		{name: "an organization token takes its row's organization", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
-		{name: "another scope claim is not instance-admin", scopeClaim: "PRODUCT", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
 		// The row decides, not the claim.
 		{name: "an instance token without the claim is instance-admin", header: headerOrg.Name, wantOrg: headerOrg},
 		{name: "an organization token carrying the claim takes its row's organization", scopeClaim: authz.ScopeInstanceAdmin, rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},

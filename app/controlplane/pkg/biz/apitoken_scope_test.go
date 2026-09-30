@@ -32,10 +32,10 @@ func TestAPITokenScopePredicates(t *testing.T) {
 	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 
 	testCases := []struct {
-		name               string
-		token              *APIToken
-		wantResourceScoped bool
-		wantOrgWide        bool
+		name              string
+		token             *APIToken
+		wantProductScoped bool
+		wantOrgWide       bool
 		// wantKind and wantResource are what ResourceScope reports; wantResource is nil when
 		// it reports nothing
 		wantKind     authz.ResourceType
@@ -57,20 +57,20 @@ func TestAPITokenScopePredicates(t *testing.T) {
 		},
 		{name: "an instance-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeInstance)}, wantOrgWide: true},
 		{
-			name:               "a product-scoped token",
-			token:              &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID},
-			wantResourceScoped: true,
-			wantKind:           authz.ResourceTypeProduct, wantResource: &productID,
+			name:              "a product-scoped token",
+			token:             &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID},
+			wantProductScoped: true,
+			wantKind:          authz.ResourceTypeProduct, wantResource: &productID,
 		},
 		// The repository refuses this row; the accessor still reports nothing rather than a zero id.
-		{name: "a product-scoped token without its id", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct)}, wantResourceScoped: true},
+		{name: "a product-scoped token without its id", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct)}, wantProductScoped: true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tc.wantResourceScoped, tc.token.IsProductScoped())
+			assert.Equal(t, tc.wantProductScoped, tc.token.IsProductScoped())
 			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
 
 			kind, id, ok := tc.token.ResourceScope()

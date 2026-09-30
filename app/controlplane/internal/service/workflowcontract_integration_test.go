@@ -262,7 +262,7 @@ func (s *workflowContractApplyIntegrationTestSuite) TestApplyRefusesAProductToke
 	ctx := entities.WithCurrentAPIToken(s.ctx, &entities.APIToken{
 		ID:         uuid.NewString(),
 		Name:       "ci",
-		Scope:      toPtr(authz.ResourceTypeProduct),
+		Scope:      biz.ToPtr(authz.ResourceTypeProduct),
 		ScopeID:    &productID,
 		ProjectIDs: []uuid.UUID{},
 	})

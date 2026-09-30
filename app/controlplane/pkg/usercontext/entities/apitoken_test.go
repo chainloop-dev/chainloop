@@ -23,31 +23,54 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// What a token reaches follows its kind, never whether scope_id or a list is present.
-func TestAPITokenReach(t *testing.T) {
+// What a token reaches, and the resource it names, follow its kind, never whether scope_id or a
+// list is present. A token acting for its whole organization or instance names nothing and
+// reaches every project; a token recording no scope, or a scope missing its id, names and reaches
+// nothing.
+func TestAPITokenScope(t *testing.T) {
 	t.Parallel()
 
 	orgID, projectID, productID, a, b := uuid.New(), uuid.New(), uuid.New(), uuid.New(), uuid.New()
 	product, project, organization, instance := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization, authz.ResourceTypeInstance
 
 	testCases := []struct {
-		name        string
-		token       *APIToken
-		wantOrgWide bool
-		wantScoped  bool
-		wantReach   []uuid.UUID
+		name              string
+		token             *APIToken
+		wantOrgWide       bool
+		wantProductScoped bool
+		wantReach         []uuid.UUID
+		// wantKind and wantID are what ResourceScope names, when wantOK
+		wantKind authz.ResourceType
+		wantID   uuid.UUID
+		wantOK   bool
 	}{
 		{name: "no token", token: nil, wantReach: []uuid.UUID{}},
-		{name: "a token recording no scope reaches nothing", token: &APIToken{}, wantReach: []uuid.UUID{}},
-		{name: "a project id without a scope reaches nothing", token: &APIToken{ProjectID: &projectID}, wantReach: []uuid.UUID{}},
+		{name: "a token recording no scope", token: &APIToken{}, wantReach: []uuid.UUID{}},
+		{name: "a project id without a scope", token: &APIToken{ProjectID: &projectID}, wantReach: []uuid.UUID{}},
 		{name: "an organization token", token: &APIToken{Scope: &organization, ScopeID: &orgID}, wantOrgWide: true},
 		{name: "an instance token", token: &APIToken{Scope: &instance}, wantOrgWide: true},
-		{name: "a project token", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID}, wantReach: []uuid.UUID{projectID}},
-		{name: "a project scope is read from its scope id", token: &APIToken{Scope: &project, ScopeID: &projectID}, wantReach: []uuid.UUID{projectID}},
-		{name: "a project scope missing its id reaches nothing", token: &APIToken{Scope: &project, ProjectID: &projectID}, wantReach: []uuid.UUID{}},
-		{name: "a product token", token: &APIToken{Scope: &product, ScopeID: &productID, ProjectIDs: []uuid.UUID{a, b}}, wantScoped: true, wantReach: []uuid.UUID{a, b}},
-		{name: "a product token reaching nothing", token: &APIToken{Scope: &product, ScopeID: &productID, ProjectIDs: []uuid.UUID{}}, wantScoped: true, wantReach: []uuid.UUID{}},
-		{name: "a product token whose list is missing", token: &APIToken{Scope: &product, ScopeID: &productID}, wantScoped: true, wantReach: []uuid.UUID{}},
+		{
+			name: "a project token", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID},
+			wantReach: []uuid.UUID{projectID}, wantKind: project, wantID: projectID, wantOK: true,
+		},
+		{
+			name: "a project scope is read from its scope id", token: &APIToken{Scope: &project, ScopeID: &projectID},
+			wantReach: []uuid.UUID{projectID}, wantKind: project, wantID: projectID, wantOK: true,
+		},
+		{name: "a project scope missing its id", token: &APIToken{Scope: &project, ProjectID: &projectID}, wantReach: []uuid.UUID{}},
+		{
+			name: "a product token", token: &APIToken{Scope: &product, ScopeID: &productID, ProjectIDs: []uuid.UUID{a, b}},
+			wantProductScoped: true, wantReach: []uuid.UUID{a, b}, wantKind: product, wantID: productID, wantOK: true,
+		},
+		{
+			name: "a product token reaching nothing", token: &APIToken{Scope: &product, ScopeID: &productID, ProjectIDs: []uuid.UUID{}},
+			wantProductScoped: true, wantReach: []uuid.UUID{}, wantKind: product, wantID: productID, wantOK: true,
+		},
+		{
+			name: "a product token whose list is missing", token: &APIToken{Scope: &product, ScopeID: &productID},
+			wantProductScoped: true, wantReach: []uuid.UUID{}, wantKind: product, wantID: productID, wantOK: true,
+		},
+		{name: "a product scope missing its id", token: &APIToken{Scope: &product}, wantProductScoped: true, wantReach: []uuid.UUID{}},
 	}
 
 	for _, tc := range testCases {
@@ -55,7 +78,12 @@ func TestAPITokenReach(t *testing.T) {
 			t.Parallel()
 
 			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
-			assert.Equal(t, tc.wantScoped, tc.token.IsProductScoped())
+			assert.Equal(t, tc.wantProductScoped, tc.token.IsProductScoped())
+
+			kind, id, ok := tc.token.ResourceScope()
+			assert.Equal(t, tc.wantOK, ok)
+			assert.Equal(t, tc.wantKind, kind)
+			assert.Equal(t, tc.wantID, id)
 
 			got := tc.token.ReachableProjects()
 			if tc.wantOrgWide {
@@ -69,46 +97,6 @@ func TestAPITokenReach(t *testing.T) {
 				assert.True(t, tc.token.ReachesProject(id))
 			}
 			assert.False(t, tc.token.ReachesProject(uuid.New()))
-		})
-	}
-}
-
-// ResourceScope names the resource a token is confined to: its project, or its product. A token
-// acting for its whole organization or instance is confined to nothing, and a product scope
-// missing its id names nothing rather than a zero id.
-func TestAPITokenResourceScope(t *testing.T) {
-	t.Parallel()
-
-	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
-	product, project, organization, instance := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization, authz.ResourceTypeInstance
-
-	testCases := []struct {
-		name     string
-		token    *APIToken
-		wantKind authz.ResourceType
-		wantID   uuid.UUID
-		wantOK   bool
-	}{
-		{name: "no token", token: nil},
-		{name: "a token recording no scope", token: &APIToken{}},
-		{name: "a project id without a scope names nothing", token: &APIToken{ProjectID: &projectID}},
-		{name: "an organization token", token: &APIToken{Scope: &organization, ScopeID: &orgID}},
-		{name: "an instance token", token: &APIToken{Scope: &instance}},
-		{name: "a project token", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID}, wantKind: project, wantID: projectID, wantOK: true},
-		{name: "a project scope is read from its scope id", token: &APIToken{Scope: &project, ScopeID: &projectID}, wantKind: project, wantID: projectID, wantOK: true},
-		{name: "a project scope missing its id names nothing", token: &APIToken{Scope: &project, ProjectID: &projectID}},
-		{name: "a product token", token: &APIToken{Scope: &product, ScopeID: &productID}, wantKind: product, wantID: productID, wantOK: true},
-		{name: "a product scope missing its id", token: &APIToken{Scope: &product}},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			kind, id, ok := tc.token.ResourceScope()
-			assert.Equal(t, tc.wantOK, ok)
-			assert.Equal(t, tc.wantKind, kind)
-			assert.Equal(t, tc.wantID, id)
 		})
 	}
 }

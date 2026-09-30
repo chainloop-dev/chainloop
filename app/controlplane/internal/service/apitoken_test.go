@@ -40,7 +40,7 @@ func TestAPITokenService_Create_OrgTokenWithoutProjectIsRejected(t *testing.T) {
 	orgID := uuid.New()
 	ctx := context.Background()
 	ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String()})
-	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID})
+	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID})
 
 	req := &pb.APITokenServiceCreateRequest{Name: "test-token"}
 
@@ -67,12 +67,12 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	}{
 		{
 			name:      "an organization token is forced to project tokens",
-			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
 			wantScope: authz.ResourceTypeProject,
 		},
 		{
 			name:      "an organization token asking for global tokens is still forced",
-			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
 			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope: authz.ResourceTypeProject,
 		},
@@ -87,7 +87,7 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 		{
 			// Not organization-wide, so not forced: it is narrowed to its projects instead.
 			name:         "a product token keeps the scope it asks for, narrowed to its projects",
-			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID}},
+			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID}},
 			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope:    authz.ResourceTypeOrganization,
 			wantProjects: []uuid.UUID{projectID},
@@ -95,12 +95,12 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 		{
 			// Empty, not nil: nil would mean RBAC does not narrow this caller at all.
 			name:         "a product token reaching nothing is narrowed to no project",
-			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{}},
+			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{}},
 			wantProjects: []uuid.UUID{},
 		},
 		{
 			name:         "a project token keeps the scope it asks for",
-			caller:       &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID, Scope: toPtr(authz.ResourceTypeProject), ScopeID: &projectID},
+			caller:       &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID, Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},
 			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope:    authz.ResourceTypeOrganization,
 			wantProjects: []uuid.UUID{projectID},
@@ -173,7 +173,7 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			name: "a product-scoped token reports its product by id",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: toPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID},
+				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID},
 			},
 			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
 		},
@@ -219,7 +219,7 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			name: "a product scope missing its id is not reported",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
-				Scope: toPtr(authz.ResourceTypeProduct), ProjectIDs: []uuid.UUID{projectID},
+				Scope: biz.ToPtr(authz.ResourceTypeProduct), ProjectIDs: []uuid.UUID{projectID},
 			},
 			want: nil,
 		},
