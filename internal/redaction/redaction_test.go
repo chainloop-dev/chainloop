@@ -127,6 +127,20 @@ func TestRedact(t *testing.T) {
 			wantUnlocated: map[string]int{"r1": 1},
 		},
 		{
+			name:     "a secret in a protected and an eligible leaf is replaced only where eligible",
+			doc:      `{"keepme":"SEC","other":"x SEC"}`,
+			findings: []Finding{{RuleID: "r1", Secret: "SEC"}},
+			opts: []Option{WithPathFilter(func(p string) bool {
+				return p != "/keepme"
+			})},
+			wantReplacements: 1,
+			wantByRule:       map[string]int{"r1": 1},
+			// The copy left in the protected leaf is still found on the next
+			// pass, where no eligible leaf holds it any more.
+			wantUnlocated: map[string]int{"r1": 1},
+			mustContain:   []string{`"keepme":"SEC"`, `"other":"x [REDACTED:r1]"`},
+		},
+		{
 			name:          "finding present nowhere is classified as an artifact",
 			doc:           `{"a":"plain"}`,
 			findings:      []Finding{{RuleID: "r1", Secret: "NOT-IN-DOC"}},
@@ -254,6 +268,26 @@ func TestRedact(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestRedactFiltersOnlyMatchingLeaves pins the cost of the path filter. It is
+// consulted for the leaves that hold a pending secret, not for every leaf on
+// every pass: a transcript has millions of leaves and only a handful of secrets,
+// and the AI coding session filter is not cheap.
+func TestRedactFiltersOnlyMatchingLeaves(t *testing.T) {
+	var consulted []string
+	filter := func(p string) bool {
+		consulted = append(consulted, p)
+		return true
+	}
+
+	doc := `{"a":"plain","b":{"c":"x SEC x","d":["plain","plain"]},"e":"plain"}`
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "r1", Secret: "SEC"}}, requirePresent: true}
+
+	_, report, err := New(scanner, WithPathFilter(filter)).Redact(context.Background(), []byte(doc))
+	require.NoError(t, err)
+	require.Equal(t, 1, report.Replacements)
+	assert.Equal(t, []string{"/b/c"}, consulted)
 }
 
 func TestRedactIsIdempotent(t *testing.T) {

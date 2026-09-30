@@ -353,10 +353,7 @@ func (w *rewriter) rewrite(node any, path string) any {
 		}
 		return v
 	case string:
-		if !w.pathFilter(path) {
-			return v
-		}
-		return w.redactLeaf(v)
+		return w.redactLeaf(v, path)
 	default:
 		// Numbers, booleans and null cannot carry a secret the scanner reported
 		// as a string.
@@ -368,30 +365,40 @@ func (w *rewriter) rewrite(node any, path string) any {
 // against the leaf's JSON-encoded form, because that is the text the scanner
 // saw: a secret containing a newline, for instance, reaches us as the two
 // characters `\n`.
-func (w *rewriter) redactLeaf(s string) string {
+//
+// The path filter is consulted only once the leaf is known to hold a secret, and
+// nothing is recorded for a leaf it protects. Nearly every leaf holds none, and
+// the filter runs for each leaf on every pass otherwise.
+func (w *rewriter) redactLeaf(s, path string) string {
 	body, err := encodeStringBody(s)
 	if err != nil {
 		return s
 	}
 
-	var (
-		n        int
-		lastRule string
-	)
+	type hit struct {
+		sr    secretRule
+		count int
+	}
+	var hits []hit
 	for _, sr := range w.secrets {
 		c := strings.Count(body, sr.secret)
 		if c == 0 {
 			continue
 		}
 		body = strings.ReplaceAll(body, sr.secret, w.placeholder(sr.ruleID))
-		n += c
-		w.byRule[sr.ruleID] += c
-		w.located[sr.secret] = struct{}{}
-		lastRule = sr.ruleID
+		hits = append(hits, hit{sr: sr, count: c})
 	}
-	if n == 0 {
+	if len(hits) == 0 || !w.pathFilter(path) {
 		return s
 	}
+
+	var n int
+	for _, h := range hits {
+		n += h.count
+		w.byRule[h.sr.ruleID] += h.count
+		w.located[h.sr.secret] = struct{}{}
+	}
+	lastRule := hits[len(hits)-1].sr.ruleID
 	w.count += n
 
 	var out string
