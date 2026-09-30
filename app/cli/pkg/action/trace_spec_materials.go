@@ -63,7 +63,7 @@ type specMaterialAdder interface {
 // a warning, rather than failing the push: evidence without one of its specs
 // is still evidence, and a reference to a material that is not in the
 // attestation would point nowhere.
-func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, sessionID string, captures []spec.Capture, log zerolog.Logger) ([]aicodingsession.SpecEntry, []string) {
+func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names materialNames, sessionID string, captures []spec.Capture, log zerolog.Logger) ([]aicodingsession.SpecEntry, []string) {
 	if len(captures) == 0 {
 		return nil, nil
 	}
@@ -79,9 +79,8 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	used := make(map[string]int, len(captures))
 	for i, c := range captures {
-		name := uniqueName(specMaterialName(sessionID, c.FileName), used)
+		name := names.allocate(specMaterialName(sessionID, c.FileName))
 
 		entry, err := storeCapture(ctx, adder, redactor, filepath.Join(tmpDir, strconv.Itoa(i)), name, sessionID, c)
 		if err != nil {
@@ -240,13 +239,21 @@ func specMaterialName(sessionID, fileName string) string {
 	return "spec-" + slugify(short) + "-" + slug
 }
 
-// uniqueName returns name, or name with a numeric suffix when an earlier
-// capture of the same session already took it.
-func uniqueName(name string, used map[string]int) string {
-	used[name]++
-	if n := used[name]; n > 1 {
-		return name + "-" + strconv.Itoa(n)
+// materialNames hands out material names for one attestation. It is shared
+// by every session in the attestation: a name taken from the start of a
+// session ID can repeat across sessions, and the attestation keeps materials
+// by name, so a repeated name would replace an earlier material.
+type materialNames map[string]bool
+
+// allocate returns base, or base with the first numeric suffix that nothing
+// has taken, and reserves the name it returns. A suffixed name is reserved
+// too, so a later file whose own name is that suffix gets a new one.
+func (n materialNames) allocate(base string) string {
+	name := base
+	for i := 2; n[name]; i++ {
+		name = base + "-" + strconv.Itoa(i)
 	}
+	n[name] = true
 
 	return name
 }

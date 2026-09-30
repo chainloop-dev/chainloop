@@ -85,6 +85,15 @@ func TestParse(t *testing.T) {
 			wantContent: specBody,
 		},
 		{
+			// A decoder can fill some fields before it fails on a later
+			// line. The broken header must cost all of its metadata, not
+			// leave half of it behind.
+			name:        "a header that breaks after a valid kind",
+			doc:         "---\nkind: ticket\nuri: [unclosed\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindText,
+			wantContent: specBody,
+		},
+		{
 			name:        "an unterminated frontmatter block",
 			doc:         "---\nkind: ticket\nthe body, with no closing fence",
 			wantKind:    aicodingsession.SpecKindText,
@@ -133,9 +142,8 @@ func TestParse(t *testing.T) {
 	}
 }
 
-// TestParseTruncates covers the size limit. An oversized spec is cut rather
-// than dropped: a clipped spec still says what the session was asked to build,
-// and nothing here is worth failing a push over.
+// TestParseRepairsInvalidUTF8 checks that invalid UTF-8 in a spec is replaced
+// rather than rejected, so the text can always be encoded as JSON.
 func TestParseRepairsInvalidUTF8(t *testing.T) {
 	got := Parse([]byte{'a', 0xff, 'b'}, capturedAt)
 

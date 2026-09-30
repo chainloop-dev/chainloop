@@ -118,21 +118,24 @@ func Exists(repoRoot, sessionID string) bool {
 }
 
 // ReadAll returns the specs captured for a session, oldest first, along with
-// the number of entries dropped for exceeding MaxEntries.
+// a warning for each file it could not read and for the entries dropped for
+// exceeding MaxEntries.
 //
 // A session that captured nothing — by far the common case — yields no entries
 // and no error. Individual files that carry nothing are skipped rather than
-// recorded as empty entries.
-func ReadAll(repoRoot, sessionID string) ([]Capture, int, error) {
+// recorded as empty entries. A file that cannot be read costs that file only:
+// the others are still returned. The error is kept for a folder that cannot be
+// read at all.
+func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 	dir := SessionDir(repoRoot, sessionID)
 
 	dirEntries, err := os.ReadDir(dir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, 0, nil
+			return nil, nil, nil
 		}
 
-		return nil, 0, fmt.Errorf("read spec directory: %w", err)
+		return nil, nil, fmt.Errorf("read spec directory: %w", err)
 	}
 
 	type candidate struct {
@@ -140,6 +143,8 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, int, error) {
 		modTime time.Time
 		name    string
 	}
+
+	var warnings []string
 
 	candidates := make([]candidate, 0, len(dirEntries))
 	for _, e := range dirEntries {
@@ -149,7 +154,8 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, int, error) {
 
 		info, err := e.Info()
 		if err != nil {
-			return nil, 0, fmt.Errorf("stat spec file %q: %w", e.Name(), err)
+			warnings = append(warnings, fmt.Sprintf("spec file %q was not recorded: %v", e.Name(), err))
+			continue
 		}
 
 		candidates = append(candidates, candidate{
@@ -173,7 +179,8 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, int, error) {
 	for _, c := range candidates {
 		doc, err := os.ReadFile(c.path)
 		if err != nil {
-			return nil, 0, fmt.Errorf("read spec file %q: %w", c.name, err)
+			warnings = append(warnings, fmt.Sprintf("spec file %q was not recorded: %v", c.name, err))
+			continue
 		}
 
 		if entry := Parse(doc, c.modTime); entry != nil {
@@ -183,11 +190,14 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, int, error) {
 		}
 	}
 
-	if len(entries) <= MaxEntries {
-		return entries, 0, nil
+	if len(entries) > MaxEntries {
+		// Dropping entries silently removes something that would have been
+		// attested, so it is reported.
+		warnings = append(warnings, fmt.Sprintf("%d spec entries beyond the first %d were dropped", len(entries)-MaxEntries, MaxEntries))
+		entries = entries[:MaxEntries]
 	}
 
-	return entries[:MaxEntries], len(entries) - MaxEntries, nil
+	return entries, warnings, nil
 }
 
 // Remove drops a session's captured specs, once they are somewhere durable. A
@@ -214,7 +224,13 @@ func RemoveDir(repoRoot string) error {
 	parent := filepath.Join(repoRoot, dirName)
 
 	info, err := os.Stat(parent)
-	if err != nil || !info.IsDir() {
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("check spec directory: %w", err)
+	}
+	if !info.IsDir() {
 		return nil
 	}
 

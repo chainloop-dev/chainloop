@@ -190,6 +190,23 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 		}
 	}
 
+	// The redacted spec copies of a session go with its records. The session
+	// end normally drops them, but it never runs when the agent is killed,
+	// and nothing else would.
+	redactionsDir := filepath.Join(s.traceDirPath(), traceDirSpecRedactions)
+	redactions, err := os.ReadDir(redactionsDir)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("read %s dir: %w", traceDirSpecRedactions, err)
+	}
+	for _, entry := range redactions {
+		if !entry.IsDir() {
+			continue
+		}
+		record := filepath.Join(s.traceDirPath(), traceDirSessions, entry.Name()+sessionRecordExt)
+		if _, err := os.Stat(record); errors.Is(err, os.ErrNotExist) {
+			_ = os.RemoveAll(filepath.Join(redactionsDir, entry.Name()))
+		}
+	}
 	return nil
 }
 

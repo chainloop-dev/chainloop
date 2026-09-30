@@ -78,6 +78,12 @@ func TestSpecCaptureInstruction(t *testing.T) {
 	first, _, ok := strings.Cut(got, "\n")
 	require.True(t, ok)
 	assert.True(t, strings.HasPrefix(first, "Write the specification"), "the instruction must lead with the action")
+
+	// The header example is copied as written. A list of alternatives in it
+	// becomes the literal kind "ticket | document | image | text", which the
+	// parser can only read as text.
+	assert.NotContains(t, got, "kind: ticket | document", "the example header must hold one real kind")
+	assert.Contains(t, got, "Set kind to one of ticket, document, image or text", "the choice of kind is stated outside the example")
 }
 
 func TestSessionSpecInstruction(t *testing.T) {

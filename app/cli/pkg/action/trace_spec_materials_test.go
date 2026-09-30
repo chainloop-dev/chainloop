@@ -92,7 +92,7 @@ func TestAttachSpecs(t *testing.T) {
 	t.Run("each capture becomes an EVIDENCE material and a reference", func(t *testing.T) {
 		adder := &fakeMaterialAdder{}
 
-		entries, warnings := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
+		entries, warnings := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materialNames{}, sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 2)
@@ -132,7 +132,7 @@ func TestAttachSpecs(t *testing.T) {
 			"---\nkind: ticket\nuri: https://tracker.example.com/issue/1?token="+pat+"\n---\nconfigured with the token "+pat+" and still a 401",
 			"2026-09-16T10:12:03Z")
 
-		entries, warnings := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), sessionID, []spec.Capture{withSecret}, zerolog.Nop())
+		entries, warnings := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materialNames{}, sessionID, []spec.Capture{withSecret}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 1)
@@ -148,7 +148,7 @@ func TestAttachSpecs(t *testing.T) {
 	t.Run("a failed add drops that entry only, and says so", func(t *testing.T) {
 		adder := &fakeMaterialAdder{failOn: map[string]bool{"spec-7412a0-ticket-pfm-7289": true}}
 
-		entries, warnings := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
+		entries, warnings := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materialNames{}, sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
 
 		// A reference to a material that is not in the attestation would point
 		// nowhere, so the entry goes with it.
@@ -158,18 +158,37 @@ func TestAttachSpecs(t *testing.T) {
 		assert.Contains(t, warnings[0], "ticket-pfm-7289.md")
 	})
 
-	t.Run("two files that name the same material stay apart", func(t *testing.T) {
+	t.Run("files that name the same material stay apart", func(t *testing.T) {
 		adder := &fakeMaterialAdder{}
 		a := ticket
 		a.FileName = "Design.md"
 		b := ticket
 		b.FileName = "design.txt"
+		// Its own name is the suffix the second file would get, so the suffix
+		// must skip it.
+		c := ticket
+		c.FileName = "design-2.md"
 
-		entries, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), sessionID, []spec.Capture{a, b}, zerolog.Nop())
+		entries, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materialNames{}, sessionID, []spec.Capture{a, b, c}, zerolog.Nop())
 
-		require.Len(t, entries, 2)
-		assert.Equal(t, "spec-7412a0-design", adder.added[0].name)
-		assert.Equal(t, "spec-7412a0-design-2", adder.added[1].name)
+		require.Len(t, entries, 3)
+		names := []string{adder.added[0].name, adder.added[1].name, adder.added[2].name}
+		assert.Equal(t, []string{"spec-7412a0-design", "spec-7412a0-design-2", "spec-7412a0-design-2-2"}, names)
+	})
+
+	t.Run("sessions whose IDs share a prefix stay apart", func(t *testing.T) {
+		// OpenCode session IDs all start with "ses_", so two of them often
+		// share the six characters a material name takes from the ID.
+		adder := &fakeMaterialAdder{}
+		names := materialNames{}
+
+		first := specCapture(t, "ticket.md", "the first ticket", "2026-09-16T10:12:03Z")
+		second := specCapture(t, "ticket.md", "the second ticket", "2026-09-16T10:12:04Z")
+		_, _ = attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), names, "ses_3AbC9x", []spec.Capture{first}, zerolog.Nop())
+		_, _ = attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), names, "ses_3AbZ7y", []spec.Capture{second}, zerolog.Nop())
+
+		require.Len(t, adder.added, 2)
+		assert.NotEqual(t, adder.added[0].name, adder.added[1].name, "one attestation must never hold two materials under one name")
 	})
 }
 

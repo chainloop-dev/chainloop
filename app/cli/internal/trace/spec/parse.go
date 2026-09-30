@@ -75,8 +75,12 @@ func Parse(doc []byte, capturedAt time.Time) *Capture {
 
 	var meta frontmatter
 	if header != "" {
-		// A header we cannot read costs the metadata, never the body.
-		_ = yaml.Unmarshal([]byte(header), &meta)
+		// A header we cannot read costs the metadata, never the body. The
+		// decoder can fill some fields before it fails, so a failure clears
+		// what it filled.
+		if err := yaml.Unmarshal([]byte(header), &meta); err != nil {
+			meta = frontmatter{}
+		}
 	}
 
 	content := strings.TrimSpace(body)

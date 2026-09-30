@@ -65,8 +65,11 @@ func TestPluginPostsSessionStartInstruction(t *testing.T) {
 			content := string(data)
 
 			assert.Contains(t, content, "async ({ $, client })", "the plugin needs the SDK client to post the message")
-			assert.Contains(t, content, "client.session\n      .prompt(")
+			assert.Contains(t, content, "client.session.prompt(")
 			assert.Contains(t, content, "noReply: true")
+			// The handler waits until the message is stored, so a first turn
+			// sent right away cannot reach the model without it.
+			assert.Contains(t, content, "await postInstruction(sessionID, instruction)")
 			assert.Contains(t, content, ".instruction")
 			// A child session belongs to a subagent, whose parent already has
 			// the instruction.

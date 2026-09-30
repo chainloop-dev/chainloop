@@ -55,15 +55,17 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
   }
 
   // postInstruction adds the instruction to the session as a context-only
-  // message: noReply stores it without asking the model for an answer.
-  // It is not awaited, so the session never waits on it.
-  function postInstruction(sessionID: string, instruction: string) {
-    client.session
-      .prompt({
+  // message: noReply stores it without asking the model for an answer. The
+  // caller waits for it, so a first turn sent right away still finds it.
+  async function postInstruction(sessionID: string, instruction: string) {
+    try {
+      await client.session.prompt({
         path: { id: sessionID },
         body: { noReply: true, parts: [{ type: "text", text: instruction, synthetic: true }] },
       })
-      .catch((err: unknown) => console.error(`chainloop-trace: could not post the session instruction: ${err}`))
+    } catch (err) {
+      console.error(`chainloop-trace: could not post the session instruction: ${err}`)
+    }
   }
 
   return {
@@ -74,7 +76,7 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
         const instruction = await startSession(sessionID)
         // A child session belongs to a subagent, whose parent already has
         // the instruction.
-        if (instruction && !info?.parentID) postInstruction(sessionID, instruction)
+        if (instruction && !info?.parentID) await postInstruction(sessionID, instruction)
       }
       if (event.type === "session.deleted") {
         const sessionID = event.properties?.info?.id ?? ""

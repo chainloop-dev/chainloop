@@ -62,14 +62,14 @@ func specCaptureInstruction(specDir string) string {
 
 Use your file-writing tool, one call per file — not a shell redirect or heredoc, which a sandboxed or worktree-isolated session refuses. It creates the directory for you.
 
-Resolve whatever the task points at — a ticket, a design document, an image, a written prompt, a plan approved in this session — and write its actual text. Not a link to it, not your summary of it. Use whatever tool reaches it: an issue tracker, a URL fetch, a local file. One file per source, named for what it is (ticket-eng-1234.md, design-proposal.md). Begin each file with exactly this frontmatter, then the text:
+Resolve whatever the task points at — a ticket, a design document, an image, a written prompt, a plan approved in this session — and write its actual text. Not a link to it, not your summary of it. Use whatever tool reaches it: an issue tracker, a URL fetch, a local file. One file per source, named for what it is (ticket-eng-1234.md, design-proposal.md). Begin each file with a frontmatter block like this one, then the text:
 
 ---
-kind: ticket | document | image | text
-uri: the source URL, or omit this line when the task was stated in this conversation
+kind: ticket
+uri: https://tracker.example.com/issue/ENG-1234
 ---
 
-A written prompt or an approved plan is kind text.
+Set kind to one of ticket, document, image or text. A written prompt or an approved plan is kind text. Set uri to the source URL, or omit the uri line when the task was stated in this conversation.
 
 If the task changes, overwrite the file it changed or add another. If there is nothing to capture — a typo fix, a question, a passing remark — write nothing at all.
 

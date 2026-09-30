@@ -640,3 +640,24 @@ func TestSpecRedactions(t *testing.T) {
 	// Removing what is not there is not an error.
 	require.NoError(t, store.RemoveSpecRedactions("sess-a"))
 }
+
+// TestGCOrphansDropsSpecRedactions covers the redacted spec copies of a session
+// whose session end never ran, for example after the agent was killed. They go
+// with the session records, so they cannot outlive the session they belong to.
+func TestGCOrphansDropsSpecRedactions(t *testing.T) {
+	store := NewGitStore(filepath.Join(t.TempDir(), ".git"))
+	require.NoError(t, store.InitTraceDir())
+
+	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "sha-live", SessionIDs: []string{"sess-live"}, Timestamp: "2026-03-28T00:00:00Z"}))
+	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "sha-orphan", SessionIDs: []string{"sess-orphan"}, Timestamp: "2026-03-28T00:00:00Z"}))
+	for _, id := range []string{"sess-live", "sess-orphan"} {
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: id, Active: true, StartedAt: time.Now().UTC().Format(time.RFC3339)}))
+		require.NoError(t, os.MkdirAll(store.SpecRedactionDir(id), 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(store.SpecRedactionDir(id), "copy"), []byte("x"), 0o600))
+	}
+
+	require.NoError(t, store.GCOrphans(map[string]bool{"sha-live": true}))
+
+	assert.FileExists(t, filepath.Join(store.SpecRedactionDir("sess-live"), "copy"))
+	assert.NoDirExists(t, store.SpecRedactionDir("sess-orphan"))
+}

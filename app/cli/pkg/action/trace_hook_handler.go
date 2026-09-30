@@ -703,16 +703,14 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		// the session-start hook handed it. Most sessions have none, and a
 		// failure to read them is never a reason to lose the session: evidence
 		// without a spec is still evidence.
-		captures, dropped, err := spec.ReadAll(repoRoot, sessionID)
+		// A spec left out of the evidence is recorded as a warning, so that
+		// the missing spec is visible to whoever reads the session.
+		captures, specWarnings, err := spec.ReadAll(repoRoot, sessionID)
 		if err != nil {
-			log.Debug().Err(err).Str("session", sessionID).Msg("could not read the session spec")
+			log.Warn().Err(err).Str("session", sessionID).Msg("could not read the session spec; the session is attested without it")
+			specWarnings = append(specWarnings, fmt.Sprintf("the session spec was not recorded: %v", err))
 		}
-		// Dropping entries silently removes something that would have been
-		// attested, so it is recorded.
-		if dropped > 0 {
-			result.Data.Warnings = append(result.Data.Warnings,
-				fmt.Sprintf("%d spec entries beyond the first %d were dropped", dropped, spec.MaxEntries))
-		}
+		result.Data.Warnings = append(result.Data.Warnings, specWarnings...)
 
 		// Apply repo-wide context with per-session commit overrides
 		if gitCtxErr == nil {
@@ -802,14 +800,17 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// Add evidence for each session: its spec materials first, so that the
 	// session material can record their digests, then the session itself.
 	attestedSessions := make([]string, 0, len(sessions))
+	names := materialNames{}
 	for _, se := range sessions {
-		entries, warnings := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), se.sessionID, se.specs, log)
+		entries, warnings := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
 		se.evidence.Data.Spec = entries
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
 
 		name := evidenceName(se.sessionID)
 		if err := addSessionEvidence(ctx, executor, name, se.evidence); err != nil {
-			log.Debug().Err(err).Str("session", se.sessionID).Msg("could not add evidence")
+			// Warn, not debug: the session is left out of the attestation,
+			// and this is the only place that says why.
+			log.Warn().Err(err).Str("session", se.sessionID).Msg("could not add the evidence of an AI session; it is left out of the attestation")
 			continue
 		}
 		attestedSessions = append(attestedSessions, se.sessionID)

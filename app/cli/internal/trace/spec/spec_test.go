@@ -145,11 +145,11 @@ func TestExists(t *testing.T) {
 
 func TestReadAll(t *testing.T) {
 	t.Run("no directory yields nothing", func(t *testing.T) {
-		entries, dropped, err := ReadAll(t.TempDir(), sessionID)
+		entries, warnings, err := ReadAll(t.TempDir(), sessionID)
 
 		require.NoError(t, err)
 		assert.Empty(t, entries)
-		assert.Zero(t, dropped)
+		assert.Empty(t, warnings)
 	})
 
 	t.Run("orders by capture time and dates each entry from its own file", func(t *testing.T) {
@@ -161,11 +161,11 @@ func TestReadAll(t *testing.T) {
 		writeSpec(t, root, sessionID, "zzz-doc.md", "---\nkind: document\n---\nthe design", second)
 		writeSpec(t, root, sessionID, "aaa-ticket.md", "---\nkind: ticket\nuri: https://example.com/1\n---\nthe ticket", first)
 
-		entries, dropped, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID)
 
 		require.NoError(t, err)
 		require.Len(t, entries, 2)
-		assert.Zero(t, dropped)
+		assert.Empty(t, warnings)
 
 		assert.Equal(t, aicodingsession.SpecKindTicket, entries[0].Kind)
 		assert.Equal(t, "the ticket", entries[0].Content)
@@ -191,12 +191,33 @@ func TestReadAll(t *testing.T) {
 		require.NoError(t, os.MkdirAll(filepath.Join(SessionDir(root, sessionID), "nested"), 0755))
 		require.NoError(t, os.WriteFile(filepath.Join(SessionDir(root, sessionID), "empty.md"), []byte("  \n"), 0600))
 
-		entries, dropped, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID)
 
 		require.NoError(t, err)
 		require.Len(t, entries, 1)
 		assert.Equal(t, "the ticket", entries[0].Content)
-		assert.Zero(t, dropped)
+		assert.Empty(t, warnings)
+	})
+
+	t.Run("one unreadable file costs that file only, and says so", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("root reads a file whatever its mode")
+		}
+
+		root := t.TempDir()
+		writeSpec(t, root, sessionID, "ticket.md", "the ticket", time.Now())
+		writeSpec(t, root, sessionID, "locked.md", "the design", time.Now())
+		locked := filepath.Join(SessionDir(root, sessionID), "locked.md")
+		require.NoError(t, os.Chmod(locked, 0o000))
+		t.Cleanup(func() { _ = os.Chmod(locked, 0o600) })
+
+		entries, warnings, err := ReadAll(root, sessionID)
+
+		require.NoError(t, err)
+		require.Len(t, entries, 1)
+		assert.Equal(t, "the ticket", entries[0].Content)
+		require.Len(t, warnings, 1)
+		assert.Contains(t, warnings[0], "locked.md")
 	})
 
 	t.Run("caps the number of entries and reports the rest", func(t *testing.T) {
@@ -208,11 +229,12 @@ func TestReadAll(t *testing.T) {
 			writeSpec(t, root, sessionID, name, fmt.Sprintf("entry %d", i), base.Add(time.Duration(i)*time.Minute))
 		}
 
-		entries, dropped, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID)
 
 		require.NoError(t, err)
 		assert.Len(t, entries, MaxEntries)
-		assert.Equal(t, 3, dropped)
+		require.Len(t, warnings, 1)
+		assert.Contains(t, warnings[0], "3 spec entries")
 		// The oldest survive, so what the session started from is never the
 		// thing that gets dropped.
 		assert.Equal(t, "entry 0", entries[0].Content)
@@ -256,6 +278,21 @@ func TestRemoveDir(t *testing.T) {
 
 	t.Run("nothing to remove is not an error", func(t *testing.T) {
 		assert.NoError(t, RemoveDir(t.TempDir()))
+	})
+
+	t.Run("a directory it cannot look into is an error", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("root reads a directory whatever its mode")
+		}
+
+		// Reporting success here would tell the cleanup that the specs are
+		// gone while they are still on disk.
+		root := t.TempDir()
+		writeSpec(t, root, sessionID, "ticket.md", "body", time.Now())
+		require.NoError(t, os.Chmod(root, 0o000))
+		t.Cleanup(func() { _ = os.Chmod(root, 0o700) })
+
+		assert.Error(t, RemoveDir(root))
 	})
 
 	t.Run("never deletes a plain file carrying the same name", func(t *testing.T) {
