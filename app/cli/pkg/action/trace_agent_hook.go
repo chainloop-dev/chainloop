@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
@@ -183,7 +184,7 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 		banner := sessionStartBanner(
 			hookDashboardURL(log),
 			config.LoadOrganizationFromYML(repoRoot),
-			config.LoadProjectFromYML(repoRoot),
+			repositoryconfig.LoadProjectFromYML(repoRoot),
 		)
 		msg.Banner = "\n\n" + banner + "\n"
 	}
@@ -587,7 +588,7 @@ func autoInstallGitHooks(store *state.Store, repoRoot string, log zerolog.Logger
 		return
 	}
 
-	if config.LoadProjectFromYML(repoRoot) == "" {
+	if repositoryconfig.LoadProjectFromYML(repoRoot) == "" {
 		return // can't auto-install without a project name
 	}
 

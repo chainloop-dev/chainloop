@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/cmd/output"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -57,19 +58,15 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
 
-			// load version from the file if not set and not using --latest-version
+			// Load version from the repository config if not set and not using --latest-version.
 			if projectVersion == "" && !useLatestVersion {
-				// load the cfg from the file
-				cfg, path, err := loadDotChainloopConfigWithParentTraversal()
-				// we do gracefully load, if not found, or any other error we continue
+				cfg, path, err := repositoryconfig.LoadChainloopYML(".")
 				if err != nil {
 					logger.Debug().Msgf("failed to load chainloop config: %s", err)
-					return nil
+				} else {
+					logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
+					projectVersion = cfg.ProjectVersion
 				}
-
-				logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
-
-				projectVersion = cfg.ProjectVersion
 			}
 
 			if useLatestVersion && projectVersion != "" {
