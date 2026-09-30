@@ -37,9 +37,10 @@ func TestAPITokenService_Create_OrgTokenWithoutProjectIsRejected(t *testing.T) {
 
 	svc := &APITokenService{service: newService()}
 
+	orgID := uuid.New()
 	ctx := context.Background()
-	ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: uuid.NewString()})
-	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: uuid.NewString(), ProjectID: nil})
+	ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String()})
+	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID})
 
 	req := &pb.APITokenServiceCreateRequest{Name: "test-token"}
 
@@ -66,20 +67,22 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	}{
 		{
 			name:      "an organization token is forced to project tokens",
-			caller:    &entities.APIToken{ID: uuid.NewString()},
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
 			wantScope: authz.ResourceTypeProject,
 		},
 		{
 			name:      "an organization token asking for global tokens is still forced",
-			caller:    &entities.APIToken{ID: uuid.NewString()},
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
 			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope: authz.ResourceTypeProject,
 		},
 		{
-			name:      "an organization token recording its scope is forced too",
-			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
-			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
-			wantScope: authz.ResourceTypeProject,
+			// Not organization-wide either, and confined to nothing: narrowed to no project.
+			name:         "a token recording no scope is narrowed to no project",
+			caller:       &entities.APIToken{ID: uuid.NewString()},
+			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
+			wantScope:    authz.ResourceTypeOrganization,
+			wantProjects: []uuid.UUID{},
 		},
 		{
 			// Not organization-wide, so not forced: it is narrowed to its projects instead.
@@ -97,7 +100,7 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 		},
 		{
 			name:         "a project token keeps the scope it asks for",
-			caller:       &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID},
+			caller:       &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID, Scope: toPtr(authz.ResourceTypeProject), ScopeID: &projectID},
 			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope:    authz.ResourceTypeOrganization,
 			wantProjects: []uuid.UUID{projectID},
@@ -160,6 +163,7 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
 				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
+				Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID,
 			},
 			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
 		},
@@ -182,8 +186,7 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: nil,
 		},
 		{
-			// New tokens record their scope for every kind, but only a product is reported
-			// from it: an organization token lists exactly as it did before.
+			// An organization token is confined to no resource it could report.
 			name: "an organization-scoped token reports none",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
@@ -192,16 +195,15 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "a project-scoped token still reports its project from project_id",
+			name: "a project id without a scope is not reported",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
 				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
-				Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID,
 			},
-			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
+			want: nil,
 		},
 		{
-			name:  "an organization-level token reports none",
+			name:  "a token recording no scope reports none",
 			token: &biz.APIToken{ID: uuid.New(), CreatedAt: &createdAt},
 			want:  nil,
 		},

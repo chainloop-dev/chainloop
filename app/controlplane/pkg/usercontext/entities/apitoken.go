@@ -37,7 +37,7 @@ type APIToken struct {
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
 	// Scope and ScopeID name what the token is scoped to. They are loaded from the row, never
-	// from a claim, and are set for every token read from the database.
+	// from a claim. Every row records them; a token recording none is confined to nothing.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
 	// ProjectIDs are the projects a product token reaches, loaded from the row.
@@ -52,23 +52,24 @@ func (t *APIToken) IsProductScoped() bool {
 	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
 
-// IsOrgWide reports whether the token acts for the whole organization: confined to neither a
-// project nor a product.
+// IsOrgWide reports whether the token acts for its whole organization or instance: confined to
+// neither a project nor a product. A token recording no scope is not.
 func (t *APIToken) IsOrgWide() bool {
-	return t != nil && t.ProjectID == nil && !t.IsProductScoped()
+	return t != nil && t.Scope != nil &&
+		(*t.Scope == authz.ResourceTypeOrganization || *t.Scope == authz.ResourceTypeInstance)
 }
 
 // ResourceScope returns the resource the token is confined to, its project or its product, so
 // callers can render and authorize it without naming its kind. ok is false for a token acting
-// for its whole organization or instance, and for a product scope missing its id. Mirrors
-// biz.APIToken.ResourceScope.
+// for its whole organization or instance, and for one recording no scope or no scope id.
+// Mirrors biz.APIToken.ResourceScope.
 func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
-	switch {
-	case t == nil:
+	if t == nil || t.Scope == nil || t.ScopeID == nil {
 		return "", uuid.Nil, false
-	case t.ProjectID != nil:
-		return authz.ResourceTypeProject, *t.ProjectID, true
-	case t.IsProductScoped() && t.ScopeID != nil:
+	}
+
+	switch *t.Scope {
+	case authz.ResourceTypeProject, authz.ResourceTypeProduct:
 		return *t.Scope, *t.ScopeID, true
 	default:
 		return "", uuid.Nil, false
@@ -77,29 +78,37 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 
 // ReachableProjects returns the projects a token is restricted to: its project, or its product's
 // list, never nil. It returns nil for an organization-wide token, meaning no restriction: that
-// token reaches every project of its organization.
+// token reaches every project of its organization. A token confined to nothing gets an empty list.
 func (t *APIToken) ReachableProjects() []uuid.UUID {
-	switch {
-	case t == nil || t.IsOrgWide():
+	if t.IsOrgWide() {
 		return nil
-	case t.ProjectID != nil:
-		return []uuid.UUID{*t.ProjectID}
+	}
+
+	kind, id, ok := t.ResourceScope()
+	switch {
+	case !ok:
+		return []uuid.UUID{}
+	case kind == authz.ResourceTypeProject:
+		return []uuid.UUID{id}
 	default:
 		return append(make([]uuid.UUID, 0, len(t.ProjectIDs)), t.ProjectIDs...)
 	}
 }
 
 // ReachesProject reports whether the token reaches the project, without copying its project
-// list. An organization-wide token reaches every project of its organization; no token reaches
-// nothing.
+// list. An organization-wide token reaches every project of its organization; no token, and a
+// token confined to nothing, reach none.
 func (t *APIToken) ReachesProject(id uuid.UUID) bool {
-	switch {
-	case t == nil:
-		return false
-	case t.IsOrgWide():
+	if t.IsOrgWide() {
 		return true
-	case t.ProjectID != nil:
-		return *t.ProjectID == id
+	}
+
+	kind, scopeID, ok := t.ResourceScope()
+	switch {
+	case !ok:
+		return false
+	case kind == authz.ResourceTypeProject:
+		return scopeID == id
 	default:
 		return slices.Contains(t.ProjectIDs, id)
 	}

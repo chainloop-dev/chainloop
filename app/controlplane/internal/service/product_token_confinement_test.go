@@ -67,7 +67,7 @@ func productTokenContext(projects ...uuid.UUID) context.Context {
 // RBAC keys on the token's kind: a product token is always under it, whatever its list holds.
 func TestRBACEnabledForTokens(t *testing.T) {
 	projectID, orgID := uuid.New(), uuid.New()
-	orgScope, instanceScope := authz.ResourceTypeOrganization, authz.ResourceTypeInstance
+	orgScope, instanceScope, projectScope := authz.ResourceTypeOrganization, authz.ResourceTypeInstance, authz.ResourceTypeProject
 
 	testCases := []struct {
 		name string
@@ -76,8 +76,8 @@ func TestRBACEnabledForTokens(t *testing.T) {
 	}{
 		{name: "a product token", ctx: productTokenContext(uuid.New()), want: true},
 		{name: "a product token reaching nothing", ctx: productTokenContext(), want: true},
-		{name: "a legacy project token", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID}), want: true},
-		{name: "a legacy organization token", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}), want: false},
+		{name: "a project token", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID, Scope: &projectScope, ScopeID: &projectID}), want: true},
+		{name: "a token recording no scope is under RBAC", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}), want: true},
 		{name: "an organization token recording its scope", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), Scope: &orgScope, ScopeID: &orgID}), want: false},
 		{name: "an instance token", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), Scope: &instanceScope}), want: false},
 	}
@@ -91,7 +91,8 @@ func TestRBACEnabledForTokens(t *testing.T) {
 
 // nil means "RBAC not applied, everything visible", so a confined token never returns it.
 func TestVisibleProjectsForTokens(t *testing.T) {
-	a, b, projectID := uuid.New(), uuid.New(), uuid.New()
+	a, b, projectID, orgID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	projectScope, orgScope := authz.ResourceTypeProject, authz.ResourceTypeOrganization
 
 	testCases := []struct {
 		name string
@@ -100,8 +101,9 @@ func TestVisibleProjectsForTokens(t *testing.T) {
 	}{
 		{name: "a product token sees its list", ctx: productTokenContext(a, b), want: []uuid.UUID{a, b}},
 		{name: "an empty product sees nothing", ctx: productTokenContext(), want: []uuid.UUID{}},
-		{name: "a legacy project token sees its project", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID}), want: []uuid.UUID{projectID}},
-		{name: "a legacy organization token is not filtered", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}), want: nil},
+		{name: "a project token sees its project", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID, Scope: &projectScope, ScopeID: &projectID}), want: []uuid.UUID{projectID}},
+		{name: "an organization token is not filtered", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), Scope: &orgScope, ScopeID: &orgID}), want: nil},
+		{name: "a token recording no scope sees nothing", ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}), want: []uuid.UUID{}},
 	}
 
 	s := newTestService(t)
@@ -175,11 +177,6 @@ func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
 		wantMessage string
 	}{
 		{
-			name:        "a legacy project token names its project",
-			ctx:         withToken(&entities.APIToken{ProjectID: &otherProject, ProjectName: &projectName}),
-			wantMessage: wantProjectMessage,
-		},
-		{
 			name: "a project token recording its scope names its project",
 			ctx: withToken(&entities.APIToken{
 				ProjectID: &otherProject, ProjectName: &projectName, Scope: &projectScope, ScopeID: &otherProject,
@@ -190,6 +187,11 @@ func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
 			name:        "a product token names its product by id",
 			ctx:         product,
 			wantMessage: fmt.Sprintf("operation not allowed: this auth token is valid only with the projects of the product %q", productID.String()),
+		},
+		{
+			name:        "a project id without a scope names nothing",
+			ctx:         withToken(&entities.APIToken{ProjectID: &otherProject, ProjectName: &projectName}),
+			wantMessage: wantNotConfined,
 		},
 		{
 			name:        "a product scope missing its id names nothing",
@@ -249,7 +251,6 @@ func TestProjectGatesForOrgWideTokens(t *testing.T) {
 		name  string
 		token *entities.APIToken
 	}{
-		{name: "a legacy organization token", token: &entities.APIToken{ID: uuid.NewString()}},
 		{name: "an organization token recording its scope", token: &entities.APIToken{ID: uuid.NewString(), Scope: &orgScope, ScopeID: &orgID}},
 	}
 
@@ -319,7 +320,8 @@ func TestCheckContractAccessForProductTokens(t *testing.T) {
 // A product token must not be offered project creation: it acts inside a product it does not
 // own, and the create call would refuse it anyway.
 func TestCanCreateProjectForTokens(t *testing.T) {
-	projectID := uuid.New()
+	projectID, orgID := uuid.New(), uuid.New()
+	projectScope := authz.ResourceTypeProject
 
 	testCases := []struct {
 		name string
@@ -337,14 +339,21 @@ func TestCanCreateProjectForTokens(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "a legacy project token may not, as before",
-			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID}),
+			name: "a project token may not",
+			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID, Scope: &projectScope, ScopeID: &projectID}),
 			want: false,
 		},
 		{
-			name: "a legacy organization token still may",
-			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}),
+			name: "an organization token may",
+			ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{
+				ID: uuid.NewString(), Scope: toPtr(authz.ResourceTypeOrganization), ScopeID: &orgID,
+			}),
 			want: true,
+		},
+		{
+			name: "a token recording no scope may not",
+			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}),
+			want: false,
 		},
 	}
 
@@ -380,14 +389,16 @@ func TestCanCreateContractsInRestrictedModeForTokens(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "a legacy project token may not, as before",
-			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID}),
+			name: "a project token may not",
+			ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{
+				ID: uuid.NewString(), ProjectID: &projectID, Scope: toPtr(authz.ResourceTypeProject), ScopeID: &projectID,
+			}),
 			want: false,
 		},
 		{
-			name: "a legacy organization token still may",
+			name: "a token recording no scope may not",
 			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}),
-			want: true,
+			want: false,
 		},
 		{
 			name: "an organization token recording its scope still may",
@@ -455,13 +466,11 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 	productScope, orgScope, projectScope := authz.ResourceTypeProduct, authz.ResourceTypeOrganization, authz.ResourceTypeProject
 
-	// Every new token records its scope, so an organization-wide caller or target may carry
-	// an organization scope or none at all; both must be treated the same.
+	// Every token records its scope, the older ones through the scope backfill migration.
 	callers := []struct {
 		name  string
 		token *entities.APIToken
 	}{
-		{name: "caller from before the scope columns", token: &entities.APIToken{ID: uuid.NewString(), Name: "ci"}},
 		{name: "organization-scoped caller", token: &entities.APIToken{ID: uuid.NewString(), Name: "ci", Scope: &orgScope, ScopeID: &orgID}},
 	}
 
@@ -471,7 +480,7 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 		wantAllowed bool
 	}{
 		{
-			name:        "an organization-wide target is refused",
+			name:        "a target recording no scope is refused",
 			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID},
 			wantAllowed: false,
 		},
@@ -479,11 +488,6 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 			name:        "an organization-scoped target is refused",
 			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, Scope: &orgScope, ScopeID: &orgID},
 			wantAllowed: false,
-		},
-		{
-			name:        "a project-scoped target is allowed",
-			target:      &biz.APIToken{ID: uuid.New(), Name: "t", OrganizationID: orgID, ProjectID: &projectID},
-			wantAllowed: true,
 		},
 		{
 			name: "a project-scoped target recording its scope is allowed",
@@ -620,10 +624,10 @@ func TestRevokeOfAResourceScopedTokenByAUser(t *testing.T) {
 	}
 }
 
-// Revoke authorizes against what the target is confined to, for every kind of token and whether
-// or not its row records a scope: an organization-wide one only an admin manages, a project one
-// whoever may revoke tokens in that project, a product one whoever administers the product, and
-// a product scope missing its id no one.
+// Revoke authorizes against what the target is confined to, for every kind of token: an
+// organization-wide one only an admin manages, a project one whoever may revoke tokens in that
+// project, a product one whoever administers the product, and a product scope missing its id no
+// one. Neither may anyone revoke a row recording no scope: rerunning the scope backfill gives it one.
 func TestRevokeAuthorizesWhereTheTargetIsConfined(t *testing.T) {
 	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 	orgScope, projectScope, productScope := authz.ResourceTypeOrganization, authz.ResourceTypeProject, authz.ResourceTypeProduct
@@ -633,9 +637,8 @@ func TestRevokeAuthorizesWhereTheTargetIsConfined(t *testing.T) {
 		tok.ID, tok.Name, tok.OrganizationID = uuid.New(), "t", orgID
 		return &tok
 	}
-	legacyOrg := target(biz.APIToken{})
+	noScope := target(biz.APIToken{ProjectID: &projectID, ProjectName: &projectName})
 	scopedOrg := target(biz.APIToken{Scope: &orgScope, ScopeID: &orgID})
-	legacyProject := target(biz.APIToken{ProjectID: &projectID, ProjectName: &projectName})
 	scopedProject := target(biz.APIToken{ProjectID: &projectID, ProjectName: &projectName, Scope: &projectScope, ScopeID: &projectID})
 	product := target(biz.APIToken{Scope: &productScope, ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID}})
 	productWithoutID := target(biz.APIToken{Scope: &productScope, ProjectIDs: []uuid.UUID{projectID}})
@@ -651,18 +654,16 @@ func TestRevokeAuthorizesWhereTheTargetIsConfined(t *testing.T) {
 		// wantErr classifies the refusal; nil when the revoke goes through
 		wantErr func(error) bool
 	}{
-		{name: "an admin revokes a legacy organization token", target: legacyOrg, role: authz.RoleAdmin, memberships: admin},
-		{name: "a member cannot manage a legacy organization token", target: legacyOrg, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
 		{name: "an admin revokes an organization token recording its scope", target: scopedOrg, role: authz.RoleAdmin, memberships: admin},
 		{name: "a member cannot manage an organization token recording its scope", target: scopedOrg, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
-		{name: "a project admin revokes a legacy project token", target: legacyProject, role: authz.RoleOrgMember, memberships: projectAdmin},
-		{name: "a member with no role cannot revoke a legacy project token", target: legacyProject, role: authz.RoleOrgMember, wantErr: kerrors.IsForbidden},
 		{name: "a project admin revokes a project token recording its scope", target: scopedProject, role: authz.RoleOrgMember, memberships: projectAdmin},
 		{name: "a member with no role cannot revoke a project token recording its scope", target: scopedProject, role: authz.RoleOrgMember, wantErr: kerrors.IsForbidden},
 		{name: "an admin revokes a product token", target: product, role: authz.RoleAdmin, memberships: admin},
 		{name: "a project admin cannot revoke a product token reaching the project", target: product, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsForbidden},
 		{name: "an admin cannot revoke a product scope missing its id", target: productWithoutID, role: authz.RoleAdmin, memberships: admin, wantErr: kerrors.IsBadRequest},
 		{name: "a member cannot revoke a product scope missing its id", target: productWithoutID, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
+		{name: "an admin cannot revoke a row recording no scope", target: noScope, role: authz.RoleAdmin, memberships: admin, wantErr: kerrors.IsBadRequest},
+		{name: "a project admin cannot revoke a row recording no scope", target: noScope, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
 	}
 
 	for _, tc := range testCases {
@@ -699,4 +700,27 @@ func TestRevokeAuthorizesWhereTheTargetIsConfined(t *testing.T) {
 			assert.True(t, tc.wantErr(err), "unexpected refusal: %v", err)
 		})
 	}
+}
+
+// A token recording no scope, such as a row a control plane from before the scope columns wrote
+// after the backfill ran, is confined to nothing: it passes no project check, forced RBAC
+// included, and may create neither projects nor organization-level contracts.
+func TestTokensRecordingNoScopeReachNothing(t *testing.T) {
+	token := &entities.APIToken{ID: uuid.NewString()}
+	ctx := entities.WithCurrentAPIToken(context.Background(), token)
+	ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: token.ID}).String())
+
+	s := newTestServiceWithTokenPolicies(t, []*authz.Policy{authz.PolicyWorkflowCreate})
+
+	assert.Error(t, s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, uuid.New()))
+	assert.Error(t, s.authorizeResource(ctx, authz.PolicyWorkflowCreate, authz.ResourceTypeProject, uuid.New(), withForceRBAC()))
+
+	canCreate, err := s.canCreateProject(ctx)
+	require.NoError(t, err)
+	assert.False(t, canCreate)
+	assert.False(t, canCreateContractsInRestrictedMode(ctx))
+
+	visible := s.visibleProjects(ctx)
+	require.NotNil(t, visible)
+	assert.Empty(t, visible)
 }

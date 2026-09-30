@@ -184,6 +184,9 @@ func (s *getContractRBACIntegrationSuite) ctxForToken(token *biz.APIToken) conte
 		ProjectName:  token.ProjectName,
 		WorkflowID:   token.WorkflowID,
 		WorkflowName: token.WorkflowName,
+		Scope:        token.Scope,
+		ScopeID:      token.ScopeID,
+		ProjectIDs:   token.ProjectIDs,
 	})
 	ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: token.ID.String()}).String())
 
@@ -393,8 +396,10 @@ func (s *robotAccountWorkflowBindingIntegrationSuite) ctxForRobotAccount(wf *biz
 func (s *robotAccountWorkflowBindingIntegrationSuite) ctxForOrgAPIToken() context.Context {
 	ctx := entities.WithCurrentOrg(context.Background(), &entities.Org{ID: s.org.ID, Name: s.org.Name})
 	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
-		ID:   s.orgToken.ID.String(),
-		Name: s.orgToken.Name,
+		ID:      s.orgToken.ID.String(),
+		Name:    s.orgToken.Name,
+		Scope:   s.orgToken.Scope,
+		ScopeID: s.orgToken.ScopeID,
 	})
 	ctx = usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: s.orgToken.ID.String()}).String())
 

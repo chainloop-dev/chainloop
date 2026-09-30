@@ -42,13 +42,14 @@ func TestAPITokenScopePredicates(t *testing.T) {
 		wantResource *uuid.UUID
 	}{
 		{name: "no token", token: nil},
-		{name: "an organization token from before the scope columns", token: &APIToken{}, wantOrgWide: true},
-		{name: "an organization-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}, wantOrgWide: true},
+		{name: "a token recording no scope is confined to nothing", token: &APIToken{}},
+		{name: "a project id without a scope names nothing", token: &APIToken{ProjectID: &projectID}},
 		{
-			name:     "a project token from before the scope columns",
-			token:    &APIToken{ProjectID: &projectID},
+			name:     "a project scope is read from its scope id",
+			token:    &APIToken{Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},
 			wantKind: authz.ResourceTypeProject, wantResource: &projectID,
 		},
+		{name: "an organization-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}, wantOrgWide: true},
 		{
 			name:     "a project-scoped token",
 			token:    &APIToken{ProjectID: &projectID, Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},

@@ -284,13 +284,18 @@ func TestRBACScopesForOrg(t *testing.T) {
 	}{
 		{
 			name: "project-scoped API token is limited to its project",
-			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ProjectID: &projectID}),
+			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ProjectID: &projectID, Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID}),
 			want: biz.RBACScopes{orgID: biz.RBACScope{ProjectIDs: []uuid.UUID{projectID}}},
 		},
 		{
 			name: "org-scoped API token has no RBAC filter",
-			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{}),
+			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}),
 			want: biz.RBACScopes{},
+		},
+		{
+			name: "an API token recording no scope sees no project",
+			ctx:  entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{}),
+			want: biz.RBACScopes{orgID: biz.RBACScope{ProjectIDs: []uuid.UUID{}}},
 		},
 		{
 			name: "user with an RBAC-enabled role is limited to its memberships",

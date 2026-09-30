@@ -187,9 +187,12 @@ func (s *casDownloadRBACIntegrationSuite) TestCASCredentialsGet() {
 func (s *casDownloadRBACIntegrationSuite) ctxForToken(token *biz.APIToken) context.Context {
 	ctx := entities.WithCurrentOrg(context.Background(), &entities.Org{ID: s.org.ID, Name: s.org.Name})
 	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
-		ID:        token.ID.String(),
-		Name:      token.Name,
-		ProjectID: token.ProjectID,
+		ID:         token.ID.String(),
+		Name:       token.Name,
+		ProjectID:  token.ProjectID,
+		Scope:      token.Scope,
+		ScopeID:    token.ScopeID,
+		ProjectIDs: token.ProjectIDs,
 	})
 
 	return usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: token.ID.String()}).String())

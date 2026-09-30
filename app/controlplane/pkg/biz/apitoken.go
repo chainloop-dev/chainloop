@@ -133,14 +133,14 @@ func (t *APIToken) IsProductScoped() bool {
 
 // ResourceScope returns the resource the token is confined to, its project or its product, so
 // callers can render and authorize it without naming its kind. ok is false for a token acting
-// for its whole organization or instance, and for a product scope missing its id.
+// for its whole organization or instance, and for one recording no scope or no scope id.
 func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
-	switch {
-	case t == nil:
+	if t == nil || t.Scope == nil || t.ScopeID == nil {
 		return "", uuid.Nil, false
-	case t.ProjectID != nil:
-		return authz.ResourceTypeProject, *t.ProjectID, true
-	case t.IsProductScoped() && t.ScopeID != nil:
+	}
+
+	switch *t.Scope {
+	case authz.ResourceTypeProject, authz.ResourceTypeProduct:
 		return *t.Scope, *t.ScopeID, true
 	default:
 		return "", uuid.Nil, false
@@ -148,16 +148,16 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 }
 
 // IsInstanceScoped reports whether the token acts for the whole instance, with no organization of
-// its own. Every token read from the repository carries its scope, so this holds for rows from
-// before the scope columns too.
+// its own. It keys on the recorded scope alone: a row recording none is not an instance token.
 func (t *APIToken) IsInstanceScoped() bool {
 	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeInstance
 }
 
-// IsOrgWide reports whether the token acts for the whole organization: confined to neither a
-// project nor a product.
+// IsOrgWide reports whether the token acts for its whole organization or instance: confined to
+// neither a project nor a product. A token recording no scope is not.
 func (t *APIToken) IsOrgWide() bool {
-	return t != nil && t.ProjectID == nil && !t.IsProductScoped()
+	return t != nil && t.Scope != nil &&
+		(*t.Scope == authz.ResourceTypeOrganization || *t.Scope == authz.ResourceTypeInstance)
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.
