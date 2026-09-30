@@ -146,6 +146,40 @@ func (_c *APITokenCreate) SetNillableWorkflowID(v *uuid.UUID) *APITokenCreate {
 	return _c
 }
 
+// SetScope sets the "scope" field.
+func (_c *APITokenCreate) SetScope(v authz.ResourceType) *APITokenCreate {
+	_c.mutation.SetScope(v)
+	return _c
+}
+
+// SetNillableScope sets the "scope" field if the given value is not nil.
+func (_c *APITokenCreate) SetNillableScope(v *authz.ResourceType) *APITokenCreate {
+	if v != nil {
+		_c.SetScope(*v)
+	}
+	return _c
+}
+
+// SetScopeID sets the "scope_id" field.
+func (_c *APITokenCreate) SetScopeID(v uuid.UUID) *APITokenCreate {
+	_c.mutation.SetScopeID(v)
+	return _c
+}
+
+// SetNillableScopeID sets the "scope_id" field if the given value is not nil.
+func (_c *APITokenCreate) SetNillableScopeID(v *uuid.UUID) *APITokenCreate {
+	if v != nil {
+		_c.SetScopeID(*v)
+	}
+	return _c
+}
+
+// SetProjectIds sets the "project_ids" field.
+func (_c *APITokenCreate) SetProjectIds(v []uuid.UUID) *APITokenCreate {
+	_c.mutation.SetProjectIds(v)
+	return _c
+}
+
 // SetPolicies sets the "policies" field.
 func (_c *APITokenCreate) SetPolicies(v []*authz.Policy) *APITokenCreate {
 	_c.mutation.SetPolicies(v)
@@ -252,6 +286,11 @@ func (_c *APITokenCreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "APIToken.created_at"`)}
 	}
+	if v, ok := _c.mutation.Scope(); ok {
+		if err := apitoken.ScopeValidator(v); err != nil {
+			return &ValidationError{Name: "scope", err: fmt.Errorf(`ent: validator failed for field "APIToken.scope": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.IsSystem(); !ok {
 		return &ValidationError{Name: "is_system", err: errors.New(`ent: missing required field "APIToken.is_system"`)}
 	}
@@ -314,6 +353,18 @@ func (_c *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.LastUsedAt(); ok {
 		_spec.SetField(apitoken.FieldLastUsedAt, field.TypeTime, value)
 		_node.LastUsedAt = value
+	}
+	if value, ok := _c.mutation.Scope(); ok {
+		_spec.SetField(apitoken.FieldScope, field.TypeEnum, value)
+		_node.Scope = &value
+	}
+	if value, ok := _c.mutation.ScopeID(); ok {
+		_spec.SetField(apitoken.FieldScopeID, field.TypeUUID, value)
+		_node.ScopeID = &value
+	}
+	if value, ok := _c.mutation.ProjectIds(); ok {
+		_spec.SetField(apitoken.FieldProjectIds, field.TypeJSON, value)
+		_node.ProjectIds = value
 	}
 	if value, ok := _c.mutation.Policies(); ok {
 		_spec.SetField(apitoken.FieldPolicies, field.TypeJSON, value)
@@ -552,6 +603,60 @@ func (u *APITokenUpsert) ClearWorkflowID() *APITokenUpsert {
 	return u
 }
 
+// SetScope sets the "scope" field.
+func (u *APITokenUpsert) SetScope(v authz.ResourceType) *APITokenUpsert {
+	u.Set(apitoken.FieldScope, v)
+	return u
+}
+
+// UpdateScope sets the "scope" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateScope() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldScope)
+	return u
+}
+
+// ClearScope clears the value of the "scope" field.
+func (u *APITokenUpsert) ClearScope() *APITokenUpsert {
+	u.SetNull(apitoken.FieldScope)
+	return u
+}
+
+// SetScopeID sets the "scope_id" field.
+func (u *APITokenUpsert) SetScopeID(v uuid.UUID) *APITokenUpsert {
+	u.Set(apitoken.FieldScopeID, v)
+	return u
+}
+
+// UpdateScopeID sets the "scope_id" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateScopeID() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldScopeID)
+	return u
+}
+
+// ClearScopeID clears the value of the "scope_id" field.
+func (u *APITokenUpsert) ClearScopeID() *APITokenUpsert {
+	u.SetNull(apitoken.FieldScopeID)
+	return u
+}
+
+// SetProjectIds sets the "project_ids" field.
+func (u *APITokenUpsert) SetProjectIds(v []uuid.UUID) *APITokenUpsert {
+	u.Set(apitoken.FieldProjectIds, v)
+	return u
+}
+
+// UpdateProjectIds sets the "project_ids" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateProjectIds() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldProjectIds)
+	return u
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (u *APITokenUpsert) ClearProjectIds() *APITokenUpsert {
+	u.SetNull(apitoken.FieldProjectIds)
+	return u
+}
+
 // SetPolicies sets the "policies" field.
 func (u *APITokenUpsert) SetPolicies(v []*authz.Policy) *APITokenUpsert {
 	u.Set(apitoken.FieldPolicies, v)
@@ -771,6 +876,69 @@ func (u *APITokenUpsertOne) UpdateWorkflowID() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearWorkflowID() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearWorkflowID()
+	})
+}
+
+// SetScope sets the "scope" field.
+func (u *APITokenUpsertOne) SetScope(v authz.ResourceType) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetScope(v)
+	})
+}
+
+// UpdateScope sets the "scope" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateScope() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateScope()
+	})
+}
+
+// ClearScope clears the value of the "scope" field.
+func (u *APITokenUpsertOne) ClearScope() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearScope()
+	})
+}
+
+// SetScopeID sets the "scope_id" field.
+func (u *APITokenUpsertOne) SetScopeID(v uuid.UUID) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetScopeID(v)
+	})
+}
+
+// UpdateScopeID sets the "scope_id" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateScopeID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateScopeID()
+	})
+}
+
+// ClearScopeID clears the value of the "scope_id" field.
+func (u *APITokenUpsertOne) ClearScopeID() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearScopeID()
+	})
+}
+
+// SetProjectIds sets the "project_ids" field.
+func (u *APITokenUpsertOne) SetProjectIds(v []uuid.UUID) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetProjectIds(v)
+	})
+}
+
+// UpdateProjectIds sets the "project_ids" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateProjectIds() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateProjectIds()
+	})
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (u *APITokenUpsertOne) ClearProjectIds() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearProjectIds()
 	})
 }
 
@@ -1163,6 +1331,69 @@ func (u *APITokenUpsertBulk) UpdateWorkflowID() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearWorkflowID() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearWorkflowID()
+	})
+}
+
+// SetScope sets the "scope" field.
+func (u *APITokenUpsertBulk) SetScope(v authz.ResourceType) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetScope(v)
+	})
+}
+
+// UpdateScope sets the "scope" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateScope() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateScope()
+	})
+}
+
+// ClearScope clears the value of the "scope" field.
+func (u *APITokenUpsertBulk) ClearScope() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearScope()
+	})
+}
+
+// SetScopeID sets the "scope_id" field.
+func (u *APITokenUpsertBulk) SetScopeID(v uuid.UUID) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetScopeID(v)
+	})
+}
+
+// UpdateScopeID sets the "scope_id" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateScopeID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateScopeID()
+	})
+}
+
+// ClearScopeID clears the value of the "scope_id" field.
+func (u *APITokenUpsertBulk) ClearScopeID() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearScopeID()
+	})
+}
+
+// SetProjectIds sets the "project_ids" field.
+func (u *APITokenUpsertBulk) SetProjectIds(v []uuid.UUID) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetProjectIds(v)
+	})
+}
+
+// UpdateProjectIds sets the "project_ids" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateProjectIds() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateProjectIds()
+	})
+}
+
+// ClearProjectIds clears the value of the "project_ids" field.
+func (u *APITokenUpsertBulk) ClearProjectIds() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearProjectIds()
 	})
 }
 
