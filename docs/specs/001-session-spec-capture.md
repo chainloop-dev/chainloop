@@ -51,17 +51,17 @@ At push time, the system MUST upload each spec file to content-addressable stora
 - Done when: the attestation lists one EVIDENCE material for each spec file, and the digest of each material downloads that file.
 
 ### R-006: References in the session material
-The session material MUST list each spec source by kind, source address, digest, capture time and a truncation flag. It MUST NOT hold the spec content.
+The session material MUST list each spec source by kind, source address, digest, capture time and a truncation flag. The digest MUST be the one that content-addressable storage uses for the stored file. The session material MUST NOT hold the spec content.
 
 ### R-007: Redaction before upload
-The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The skip-redaction option MUST apply to both. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session.
+The system MUST apply the same secret redaction to spec files that it applies to the session material, before it uploads them. The redaction covers the whole file, so it removes secrets from the source address and from the text. The system MUST NOT redact a spec file again when the file did not change since an earlier push of the same session. The system detects a change by the digest of the file.
 - Done when: a second push runs no secret scan on an unchanged spec file. It records the same digest as the first push.
 
 ### R-008: Failure never blocks the push
 A missing, empty or unreadable spec folder MUST NOT stop the push of the session. The system SHOULD record a warning in the session material when it drops or cuts spec content.
 
 ### R-009: Keep the spec until the session ends
-The system MUST keep the session folder after a push. Each push of a session MUST record all the spec files that are in the folder at that time. The system MUST delete the session folder and the redacted copies of R-007 when the session ends.
+The system MUST keep the session folder after a push. Each push that sends an attestation for the session MUST record all the spec files that are in the folder at that time. A push with no new AI-assisted commits sends no attestation, so it records nothing. The system MUST delete the session folder and the redacted copies of R-007 when the session ends.
 - Done when: a second push of the same session holds its current spec files, including files that did not change. The folder is gone after the session ends.
 
 ### R-010: Capture rate
@@ -202,4 +202,4 @@ Each spec material in the predicate:
 | An agent changes or drops the documented channel. | Each agent integration declares if it supports the instruction. A session without the channel pushes as it does today, without a spec. |
 | A contract policy for all EVIDENCE materials also runs on the spec files. It receives Markdown where it expects JSON. | A policy author can limit the policy to named materials with a name selector. The spec material names start with `spec-`, so they do not match a selector for other materials. |
 | The user pushes after the session ends. The session-end hook already deleted the folder, so that push holds no spec. | Accepted for the first version. Every push during the session holds the spec. |
-| Spec content contains customer names or internal details. | The same redaction and the same opt-out as the session material apply (R-007). A session that must not be recorded is one where trace is off. |
+| Spec content contains customer names or internal details. | The same redaction as the session material applies (R-007). A session that must not be recorded is one where trace is off. |
