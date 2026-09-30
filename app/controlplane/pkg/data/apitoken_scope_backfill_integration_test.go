@@ -111,12 +111,23 @@ func TestAPITokenScopeBackfillMigration(t *testing.T) {
 
 	backfill, err := os.ReadFile(scopeBackfillMigration)
 	require.NoError(t, err)
-	// Twice: rerunning the statement is how a row written without a scope after the migration
-	// ran gets repaired, so it must leave already-backfilled rows as they are.
-	for range 2 {
-		_, err = tu.Data.SQLDB.ExecContext(ctx, string(backfill))
-		require.NoError(t, err)
-	}
+	_, err = tu.Data.SQLDB.ExecContext(ctx, string(backfill))
+	require.NoError(t, err)
+
+	// Rerunning the statement is how a row written without a scope after the migration ran, by a
+	// control plane from before the scope columns, gets repaired. It must leave the rows already
+	// backfilled as they are.
+	late, err := tu.Data.DB.APIToken.Create().SetName("late-" + uuid.NewString()).SetOrganizationID(orgID).Save(ctx)
+	require.NoError(t, err)
+	require.Nil(t, late.Scope, "the row must record no scope before the rerun")
+	_, err = tu.Data.SQLDB.ExecContext(ctx, string(backfill))
+	require.NoError(t, err)
+
+	repaired, err := tu.Data.DB.APIToken.Get(ctx, late.ID)
+	require.NoError(t, err)
+	require.NotNil(t, repaired.Scope, "the rerun repairs a row written after the migration ran")
+	assert.Equal(t, authz.ResourceTypeOrganization, *repaired.Scope)
+	assert.Equal(t, &orgID, repaired.ScopeID)
 
 	optional := func(id uuid.UUID) *uuid.UUID {
 		if id == uuid.Nil {

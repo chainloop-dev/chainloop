@@ -118,6 +118,8 @@ func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 			require.NotNil(t, got)
 
 			assert.Equal(t, tc.wantScope, got.Scope)
+			assert.Equal(t, opts.ScopeID, got.ScopeID)
+			assert.Equal(t, opts.ProjectID, got.ProjectID)
 			assert.Equal(t, tc.wantOrgWide, got.IsOrgWide())
 			if tc.wantOrgWide {
 				assert.Nil(t, got.ReachableProjects())
