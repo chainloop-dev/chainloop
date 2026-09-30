@@ -276,7 +276,7 @@ func TestRego_WithRestrictiveMode(t *testing.T) {
 
 		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "eval_builtin_error: http.send: unallowed host: github.com")
+		assert.Contains(t, err.Error(), "eval_builtin_error: http.send: disallowed host: github.com")
 	})
 
 	t.Run("allowed network requests from defaults", func(t *testing.T) {
