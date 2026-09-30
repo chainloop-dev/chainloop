@@ -285,7 +285,9 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	}
 
 	// nil means no RBAC filter, an empty slice means the caller reaches no project. Gating on
-	// len() collapsed the two and served every token in the organization.
+	// len() collapsed the two and served every token in the organization. A product token has no
+	// project_id, so a listing narrowed to projects never includes one: who may see it follows the
+	// product, which this service doesn't know.
 	if filters.FilterByProjects != nil {
 		query = query.Where(apitoken.ProjectIDIn(filters.FilterByProjects...))
 	}

@@ -839,6 +839,39 @@ func (s *apiTokenTestSuite) TestOrgTokenNamesStayUniqueAcrossOldAndNewRows() {
 
 // Global means confined to neither a project nor a product: organization tokens from before
 // and after this change appear under it, product tokens never do.
+// A listing narrowed to projects never includes a product token, even one reaching those projects.
+// Who may see a product token follows the product, which the control plane doesn't know: product
+// tokens are listed by callers that see the whole organization, and per product by the platform.
+func (s *apiTokenTestSuite) TestListNarrowedToProjectsLeavesProductTokensOut() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org.ID)
+	productID := uuid.New()
+
+	name := randomName()
+	_, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+		Name: name, OrganizationID: &orgUUID,
+		Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID,
+		ProjectIDs: []uuid.UUID{s.p1.ID}, Policies: []*authz.Policy{},
+	})
+	s.Require().NoError(err)
+
+	names := func(tokens []*biz.APIToken) []string {
+		out := make([]string, 0, len(tokens))
+		for _, t := range tokens {
+			out = append(out, t.Name)
+		}
+		return out
+	}
+
+	narrowed, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProduct), biz.WithAPITokenProjectFilter([]uuid.UUID{s.p1.ID}))
+	s.Require().NoError(err)
+	s.NotContains(names(narrowed), name, "a caller narrowed to the token's project doesn't see it")
+
+	whole, err := s.APIToken.List(ctx, s.org.ID, biz.WithAPITokenScope(authz.ResourceTypeProduct))
+	s.Require().NoError(err)
+	s.Contains(names(whole), name, "a caller that sees the whole organization does")
+}
+
 func (s *apiTokenTestSuite) TestListByScopeSeparatesProductFromGlobal() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org.ID)
@@ -1197,8 +1230,9 @@ func (s *apiTokenTestSuite) TestCreateRejectsIncoherentScopes() {
 		org  *string
 	}{
 		{
-			// IsResourceScoped keys on scope_id, so every project check would be
-			// short-circuited and the project confinement enforced nowhere.
+			// IsResourceScoped keys on the scope kind, so a product scope on a project token
+			// would route every project check through its project list, and the token's own
+			// project would be enforced nowhere.
 			name: "a project scope together with a resource scope",
 			opts: []biz.APITokenCreateOpt{
 				biz.APITokenWithProject(s.p1),

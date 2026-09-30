@@ -443,7 +443,10 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		policies = uc.DefaultAuthzPolicies
 	}
 
-	// A product token always carries a project list, and never an organization-level policy.
+	// A product token always carries a project list. Its policies come only from the platform,
+	// in-process: the refusals below are defence in depth against the organization-level grant
+	// this function appends to organization-wide tokens, not a classification of every policy.
+	// What confines the token is its project list.
 	if IsResourceScopeKind(*scope) {
 		if options.projectIDs == nil {
 			return nil, NewErrValidationStr("a product scope requires the projects the token reaches")

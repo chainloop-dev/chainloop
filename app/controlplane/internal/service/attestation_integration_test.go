@@ -244,8 +244,11 @@ func (s *getContractRBACIntegrationSuite) TestProductScopedTokenWithNoProjects()
 }
 
 // A project soft-deleted after it was written into a token's project list must not stay
-// reachable: the stale id must be refused, the same as a project the token was never given.
-func (s *getContractRBACIntegrationSuite) TestProductScopedTokenStaleProjectID() {
+// reachable. The id stays on the list until the platform next syncs it, and is inert meanwhile:
+// every project lookup filters out a deleted project, so the contract lookup a product token makes
+// finds nothing, as it would for any other caller. The list itself is exercised by the unlisted
+// and empty-list cases above.
+func (s *getContractRBACIntegrationSuite) TestProductScopedTokenStaleProjectIDIsInert() {
 	ctx := context.Background()
 	s.Require().NoError(s.Data.DB.Project.UpdateOneID(s.projectA.ID).SetDeletedAt(time.Now()).Exec(ctx))
 
