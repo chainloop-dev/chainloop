@@ -588,25 +588,23 @@ func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
 	s.Equal(productID, *reloaded.ScopeID)
 }
 
-// Rows from before the scope columns existed keep both NULL in the database. Every read derives
-// the scope a new token would record from their organization and project, and the listing
-// filters, which key on the columns, still find them.
-func (s *apiTokenTestSuite) TestLegacyRowsReadBackWithTheirDerivedScope() {
+// A row recording no scope, such as one a control plane from before the scope columns writes
+// after the backfill ran, reads back with none from every read: nothing derives one. The listing
+// filters, which key on the organization and project columns, still find it.
+func (s *apiTokenTestSuite) TestRowsRecordingNoScopeReadBackWithNone() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org.ID)
 
 	testCases := []struct {
-		name        string
-		org         *uuid.UUID
-		project     *uuid.UUID
-		wantScope   authz.ResourceType
-		wantScopeID *uuid.UUID
+		name    string
+		org     *uuid.UUID
+		project *uuid.UUID
 		// listedBy is the listing scope that must still find the row
 		listedBy authz.ResourceType
 	}{
-		{name: "a legacy organization token", org: &orgUUID, wantScope: authz.ResourceTypeOrganization, wantScopeID: &orgUUID, listedBy: authz.ResourceTypeOrganization},
-		{name: "a legacy project token", org: &orgUUID, project: &s.p1.ID, wantScope: authz.ResourceTypeProject, wantScopeID: &s.p1.ID, listedBy: authz.ResourceTypeProject},
-		{name: "a legacy instance token", wantScope: authz.ResourceTypeInstance, listedBy: authz.ResourceTypeInstance},
+		{name: "an organization row", org: &orgUUID, listedBy: authz.ResourceTypeOrganization},
+		{name: "a project row", org: &orgUUID, project: &s.p1.ID, listedBy: authz.ResourceTypeProject},
+		{name: "a row with no organization", listedBy: authz.ResourceTypeInstance},
 	}
 
 	for _, tc := range testCases {
@@ -619,8 +617,8 @@ func (s *apiTokenTestSuite) TestLegacyRowsReadBackWithTheirDerivedScope() {
 
 			row, err := s.Data.DB.APIToken.Get(ctx, created.ID)
 			s.Require().NoError(err)
-			s.Nil(row.Scope, "the database is not backfilled")
-			s.Nil(row.ScopeID, "the database is not backfilled")
+			s.Nil(row.Scope, "the row records no scope")
+			s.Nil(row.ScopeID, "the row records no scope")
 
 			reads := map[string]*biz.APIToken{"Create": created}
 			reads["FindByID"], err = s.APIToken.FindByID(ctx, created.ID.String())
@@ -644,9 +642,8 @@ func (s *apiTokenTestSuite) TestLegacyRowsReadBackWithTheirDerivedScope() {
 
 			for read, got := range reads {
 				s.Require().NotNil(got, read)
-				s.Require().NotNil(got.Scope, read)
-				s.Equal(tc.wantScope, *got.Scope, read)
-				s.Equal(tc.wantScopeID, got.ScopeID, read)
+				s.Nil(got.Scope, read)
+				s.Nil(got.ScopeID, read)
 				s.Equal(tc.project, got.ProjectID, read)
 				s.Nil(got.ProjectIDs, read)
 			}

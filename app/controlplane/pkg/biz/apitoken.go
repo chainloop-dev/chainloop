@@ -109,10 +109,10 @@ type APIToken struct {
 	// If the token is scoped to a specific workflow within a project
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
-	// What the token is scoped to: organization, project, instance or product. Rows from before
-	// these columns existed store both NULL and are read back with the scope DefaultTokenScope
-	// derives from their organization and project. A product's name is not stored: it belongs to
-	// whoever owns the product.
+	// What the token is scoped to: organization, project, instance or product. Every row records
+	// it, rows from before these columns through the scope backfill migration; a row recording
+	// none is confined to nothing. A product's name is not stored: it belongs to whoever owns
+	// the product.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
 	// ProjectIDs are the projects a product token reaches, kept consolidated by the Chainloop
@@ -374,11 +374,9 @@ func ValidateTokenShape(scope *authz.ResourceType, scopeID, orgID, projectID *uu
 	return nil
 }
 
-// DefaultTokenScope is the scope of a token confined to the given organization and project when
-// no scope is named: the one a new token records, and the one a row from before the scope
-// columns existed is read back with. For these kinds the columns mirror project_id and
-// organization_id, which stay the fields the control plane reads.
-func DefaultTokenScope(orgID, projectID *uuid.UUID) (*authz.ResourceType, *uuid.UUID) {
+// newTokenScope is the scope a new token records when none is named: its project, else its
+// organization, else the instance. The scope backfill migration gave older rows the same one.
+func newTokenScope(orgID, projectID *uuid.UUID) (*authz.ResourceType, *uuid.UUID) {
 	switch {
 	case projectID != nil:
 		return ToPtr(authz.ResourceTypeProject), projectID
@@ -457,7 +455,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Determine the scope (may be overridden by options.scope below)
-	scope, scopeID := DefaultTokenScope(orgUUID, projectID)
+	scope, scopeID := newTokenScope(orgUUID, projectID)
 	if options.scope != nil {
 		if err := validateTokenScope(*options.scope, options.scopeID, orgUUID, projectID); err != nil {
 			return nil, err

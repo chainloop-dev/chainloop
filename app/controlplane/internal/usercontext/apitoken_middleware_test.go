@@ -455,8 +455,12 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 					jwtClaims.OrgID, jwtClaims.OrgName = tc.rowOrg.ID, tc.rowOrg.Name
 					orgRepo.On("FindByID", mock.Anything, token.OrganizationID).Return(tc.rowOrg, nil)
 				}
-				// The repository fills the scope of every row it reads.
-				token.Scope, token.ScopeID = biz.DefaultTokenScope(rowOrgID, nil)
+				// The row records its scope: its organization's, or the instance's when it has none
+				if rowOrgID != nil {
+					token.Scope, token.ScopeID = biz.ToPtr(authz.ResourceTypeOrganization), rowOrgID
+				} else {
+					token.Scope = biz.ToPtr(authz.ResourceTypeInstance)
+				}
 				if tc.wantOrg == headerOrg {
 					orgRepo.On("FindByName", mock.Anything, headerOrg.Name).Return(headerOrg, nil)
 				}

@@ -33,9 +33,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// A token row from before the scope columns existed reaches the service layer naming its scope,
-// derived from its organization and project when the row is read.
-func TestAPITokenMiddlewareCarriesTheScopeOfLegacyRows(t *testing.T) {
+// The token the service layer sees carries exactly the scope its row records. A row recording
+// none, such as one a control plane from before the scope columns wrote after the backfill ran,
+// is confined to nothing, and with no organization either it is refused.
+func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 	if !testhelpers.IntegrationTestsEnabled() {
 		t.Skip()
 	}
@@ -49,33 +50,54 @@ func TestAPITokenMiddlewareCarriesTheScopeOfLegacyRows(t *testing.T) {
 	org, err := tu.Organization.CreateWithRandomName(ctx)
 	require.NoError(t, err)
 	orgID := uuid.MustParse(org.ID)
-	project, err := tu.Project.Create(ctx, org.ID, "legacy")
+	project, err := tu.Project.Create(ctx, org.ID, "scoped")
 	require.NoError(t, err)
 
 	testCases := []struct {
-		name        string
-		org         *uuid.UUID
-		project     *uuid.UUID
-		wantScope   authz.ResourceType
-		wantScopeID *uuid.UUID
+		name      string
+		opts      biz.APITokenCreateOpts
+		wantErr   bool
+		wantScope *authz.ResourceType
+		// wantOrgWide and wantReach are what the service layer reads off the token
+		wantOrgWide bool
+		wantReach   []uuid.UUID
 	}{
-		{name: "an organization token", org: &orgID, wantScope: authz.ResourceTypeOrganization, wantScopeID: &orgID},
-		{name: "a project token", org: &orgID, project: &project.ID, wantScope: authz.ResourceTypeProject, wantScopeID: &project.ID},
-		{name: "an instance token", wantScope: authz.ResourceTypeInstance},
+		{
+			name:      "an organization row",
+			opts:      biz.APITokenCreateOpts{OrganizationID: &orgID, Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
+			wantScope: biz.ToPtr(authz.ResourceTypeOrganization), wantOrgWide: true,
+		},
+		{
+			name:      "a project row",
+			opts:      biz.APITokenCreateOpts{OrganizationID: &orgID, ProjectID: &project.ID, Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &project.ID},
+			wantScope: biz.ToPtr(authz.ResourceTypeProject), wantReach: []uuid.UUID{project.ID},
+		},
+		{
+			// No organization of its own and no org header: the org context stays unset, and the
+			// token acts for the whole instance
+			name:      "an instance row",
+			opts:      biz.APITokenCreateOpts{Scope: biz.ToPtr(authz.ResourceTypeInstance)},
+			wantScope: biz.ToPtr(authz.ResourceTypeInstance), wantOrgWide: true,
+		},
+		{
+			name:      "an organization row recording no scope is confined to nothing",
+			opts:      biz.APITokenCreateOpts{OrganizationID: &orgID},
+			wantReach: []uuid.UUID{},
+		},
+		{
+			name:    "a row with neither an organization nor a scope is refused",
+			opts:    biz.APITokenCreateOpts{},
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			row, err := tu.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
-				Name: "legacy-" + uuid.NewString(), OrganizationID: tc.org, ProjectID: tc.project, Policies: []*authz.Policy{},
-			})
+			opts := tc.opts
+			opts.Name, opts.Policies = "row-"+uuid.NewString(), []*authz.Policy{}
+			row, err := tu.Repos.APITokenRepo.Create(ctx, &opts)
 			require.NoError(t, err)
 
-			stored, err := tu.Data.DB.APIToken.Get(ctx, row.ID)
-			require.NoError(t, err)
-			require.Nil(t, stored.Scope, "the row must be one from before the scope columns")
-
-			// The JWT the control plane signs for this row, project and instance-admin claims included
 			signed, err := tu.APIToken.RegenerateJWT(ctx, row.ID, time.Hour)
 			require.NoError(t, err)
 			claims := jwt.MapClaims{}
@@ -88,13 +110,20 @@ func TestAPITokenMiddlewareCarriesTheScopeOfLegacyRows(t *testing.T) {
 					got = entities.CurrentAPIToken(ctx)
 					return nil, nil
 				})(jwtmiddleware.NewContext(ctx, claims), nil)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
-
 			require.NotNil(t, got)
-			require.NotNil(t, got.Scope)
-			assert.Equal(t, tc.wantScope, *got.Scope)
-			assert.Equal(t, tc.wantScopeID, got.ScopeID)
-			assert.Equal(t, tc.project, got.ProjectID)
+
+			assert.Equal(t, tc.wantScope, got.Scope)
+			assert.Equal(t, tc.wantOrgWide, got.IsOrgWide())
+			if tc.wantOrgWide {
+				assert.Nil(t, got.ReachableProjects())
+				return
+			}
+			assert.Equal(t, tc.wantReach, got.ReachableProjects())
 		})
 	}
 }
