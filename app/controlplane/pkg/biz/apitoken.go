@@ -191,19 +191,19 @@ type APITokenRepo interface {
 	FindByID(ctx context.Context, ID uuid.UUID) (*APIToken, error)
 	FindByIDInOrg(ctx context.Context, orgID uuid.UUID, id uuid.UUID) (*APIToken, error)
 	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*APIToken, error)
-	// SetScopeProjects sets the project list of every active token of a resource scope in the
-	// organization, writing only the rows whose list differs, and returns how many it changed.
-	// It reads the scope's tokens and then writes them, so it is not atomic with a concurrent
-	// call for the same scope: callers must serialize their writes per scope themselves, e.g.
-	// with a per-resource lock, or a later write can be overwritten by an earlier one that reads
-	// stale data after it.
-	SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)
-	// SetScopePolicies sets the policies of every active token of a resource scope in the
-	// organization to a non-empty list carrying no organization-level policy, writing only the
-	// rows whose list differs, and returns how many it changed. It refuses a nil or empty list:
-	// writing one would deny-all the scope's tokens until a later call restores real policies.
-	// Like SetScopeProjects, it reads then writes: callers must serialize their writes per scope.
-	SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)
+	// SetProjectsOfTokensScopedTo replaces the project list of the active tokens in orgID whose
+	// scope is exactly (kind, scopeID), e.g. every token of one product. Only a product scope
+	// carries a list. It returns how many tokens changed; a token already holding the list is not
+	// written. The Chainloop platform calls it when the product's projects change, and its
+	// reconciler calls it to repair drift. It reads and then writes, so callers must serialize
+	// calls for the same scope, e.g. with a lock on the product.
+	SetProjectsOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)
+	// SetPoliciesOfTokensScopedTo replaces the policies of the active tokens in orgID whose scope
+	// is exactly (kind, scopeID), e.g. every token of one product. policies must be non-empty and
+	// hold no organization-level policy. It returns how many tokens changed; a token already
+	// holding the list is not written. The Chainloop platform's reconciler calls it to carry the
+	// product token policies to existing tokens. Callers must serialize calls for the same scope.
+	SetPoliciesOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)
 }
 
 type APITokenUseCase struct {
@@ -852,32 +852,34 @@ func (uc *APITokenUseCase) UpdateLastUsedAt(ctx context.Context, tokenID string)
 	return nil
 }
 
-// SetScopeProjects sets the projects every active token of a resource scope reaches. The
-// Chainloop platform calls it whenever the resource's projects change; the repository validates
-// the list. It reads the scope's tokens and then writes them, so the caller must serialize its
-// own writes per scope; the platform holds a per-product row lock for this.
-func (uc *APITokenUseCase) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
-	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetScopeProjects")
+// SetProjectsOfTokensScopedTo replaces the projects reached by the active tokens in orgID whose
+// scope is exactly (kind, scopeID), e.g. every token of one product, and returns how many tokens
+// changed. Only a product scope is accepted. The Chainloop platform calls it when the product's
+// projects change, and its reconciler calls it to repair drift. It reads and then writes, so
+// callers must serialize calls for the same scope; the platform holds the product's row lock.
+func (uc *APITokenUseCase) SetProjectsOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetProjectsOfTokensScopedTo")
 	defer span.End()
 
 	if !IsResourceScopeKind(kind) {
 		return 0, NewErrValidationStr(fmt.Sprintf("tokens scoped to %q carry no project list", kind))
 	}
 
-	return uc.apiTokenRepo.SetScopeProjects(ctx, orgID, kind, scopeID, projectIDs)
+	return uc.apiTokenRepo.SetProjectsOfTokensScopedTo(ctx, orgID, kind, scopeID, projectIDs)
 }
 
-// SetScopePolicies sets the policies of every active token of a resource scope. policies must be
-// non-empty and carry no organization-level policy; the repository refuses anything else rather
-// than write it, since an empty list would deny-all the scope's tokens until a later call. Like
-// SetScopeProjects, it reads then writes: the caller must serialize its own writes per scope.
-func (uc *APITokenUseCase) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
-	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetScopePolicies")
+// SetPoliciesOfTokensScopedTo replaces the policies of the active tokens in orgID whose scope is
+// exactly (kind, scopeID), e.g. every token of one product, and returns how many tokens changed.
+// Only a product scope is accepted, and policies must be non-empty and hold no
+// organization-level policy. The Chainloop platform's reconciler calls it to carry the product
+// token policies to existing tokens. Callers must serialize calls for the same scope.
+func (uc *APITokenUseCase) SetPoliciesOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetPoliciesOfTokensScopedTo")
 	defer span.End()
 
 	if !IsResourceScopeKind(kind) {
 		return 0, NewErrValidationStr(fmt.Sprintf("tokens scoped to %q take their policies at creation", kind))
 	}
 
-	return uc.apiTokenRepo.SetScopePolicies(ctx, orgID, kind, scopeID, policies)
+	return uc.apiTokenRepo.SetPoliciesOfTokensScopedTo(ctx, orgID, kind, scopeID, policies)
 }

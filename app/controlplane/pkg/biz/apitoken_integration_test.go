@@ -1029,7 +1029,7 @@ func (s *apiTokenTestSuite) TestRepoKeepsTheProjectListToProductTokens() {
 
 // The repository stores a product token's list in canonical form, and only live projects of the
 // token's organization. The platform mints a product token through the use case, never the
-// repository directly; only SetScopeProjects and SetScopePolicies go through the repository. This
+// repository directly; only SetProjectsOfTokensScopedTo and SetPoliciesOfTokensScopedTo go through the repository. This
 // test calls the repository directly to exercise its validation in isolation from the use case.
 func (s *apiTokenTestSuite) TestRepoStoresTheProjectList() {
 	ctx := context.Background()
@@ -1423,7 +1423,7 @@ func (s *apiTokenTestSuite) TestListProjectFilterDistinguishesEmptyFromNil() {
 
 // The platform rewrites a product's tokens in one call: every active token of that product in
 // that organization, and only the rows that differ.
-func (s *apiTokenTestSuite) TestSetScopeProjects() {
+func (s *apiTokenTestSuite) TestSetProjectsOfTokensScopedTo() {
 	ctx := context.Background()
 	orgID := uuid.MustParse(s.org.ID)
 	productID, otherProductID := uuid.New(), uuid.New()
@@ -1439,7 +1439,7 @@ func (s *apiTokenTestSuite) TestSetScopeProjects() {
 	other := mint(otherProductID, s.p1.ID)
 	want := biz.CanonicalProjectIDs([]uuid.UUID{s.p1.ID, s.p2.ID})
 
-	n, err := s.APIToken.SetScopeProjects(ctx, orgID, authz.ResourceTypeProduct, productID, []uuid.UUID{s.p2.ID, s.p1.ID})
+	n, err := s.APIToken.SetProjectsOfTokensScopedTo(ctx, orgID, authz.ResourceTypeProduct, productID, []uuid.UUID{s.p2.ID, s.p1.ID})
 	s.Require().NoError(err)
 	s.Equal(2, n, "both active tokens of the product change")
 	for _, id := range []uuid.UUID{first.ID, second.ID} {
@@ -1448,7 +1448,7 @@ func (s *apiTokenTestSuite) TestSetScopeProjects() {
 		s.Equal(want, got.ProjectIDs)
 	}
 
-	n, err = s.APIToken.SetScopeProjects(ctx, orgID, authz.ResourceTypeProduct, productID, []uuid.UUID{s.p1.ID, s.p2.ID, s.p1.ID})
+	n, err = s.APIToken.SetProjectsOfTokensScopedTo(ctx, orgID, authz.ResourceTypeProduct, productID, []uuid.UUID{s.p1.ID, s.p2.ID, s.p1.ID})
 	s.Require().NoError(err)
 	s.Zero(n, "the same set in another order changes nothing")
 
@@ -1459,12 +1459,12 @@ func (s *apiTokenTestSuite) TestSetScopeProjects() {
 	}
 
 	org2ID := uuid.MustParse(s.org2.ID)
-	n, err = s.APIToken.SetScopeProjects(ctx, org2ID, authz.ResourceTypeProduct, productID, []uuid.UUID{})
+	n, err = s.APIToken.SetProjectsOfTokensScopedTo(ctx, org2ID, authz.ResourceTypeProduct, productID, []uuid.UUID{})
 	s.Require().NoError(err)
 	s.Zero(n, "another organization's call touches nothing here")
 }
 
-func (s *apiTokenTestSuite) TestSetScopeProjectsRefusals() {
+func (s *apiTokenTestSuite) TestSetProjectsOfTokensScopedToRefusals() {
 	ctx := context.Background()
 	orgID := uuid.MustParse(s.org.ID)
 	foreign, err := s.Project.Create(ctx, s.org2.ID, "foreign-set")
@@ -1482,14 +1482,14 @@ func (s *apiTokenTestSuite) TestSetScopeProjectsRefusals() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			_, err := s.APIToken.SetScopeProjects(ctx, orgID, tc.kind, uuid.New(), tc.ids)
+			_, err := s.APIToken.SetProjectsOfTokensScopedTo(ctx, orgID, tc.kind, uuid.New(), tc.ids)
 			s.Require().Error(err)
 			s.True(biz.IsErrValidation(err), "got %v", err)
 		})
 	}
 }
 
-func (s *apiTokenTestSuite) TestSetScopePolicies() {
+func (s *apiTokenTestSuite) TestSetPoliciesOfTokensScopedTo() {
 	ctx := context.Background()
 	orgID := uuid.MustParse(s.org.ID)
 	productID := uuid.New()
@@ -1498,18 +1498,18 @@ func (s *apiTokenTestSuite) TestSetScopePolicies() {
 	s.Require().NoError(err)
 	policies := []*authz.Policy{authz.PolicyWorkflowRunRead, authz.PolicyWorkflowContractDelete}
 
-	n, err := s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, policies)
+	n, err := s.APIToken.SetPoliciesOfTokensScopedTo(ctx, orgID, authz.ResourceTypeProduct, productID, policies)
 	s.Require().NoError(err)
 	s.Equal(1, n)
 	got, err := s.APIToken.FindByID(ctx, token.ID.String())
 	s.Require().NoError(err)
 	s.Equal(policies, got.Policies)
 
-	n, err = s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, policies)
+	n, err = s.APIToken.SetPoliciesOfTokensScopedTo(ctx, orgID, authz.ResourceTypeProduct, productID, policies)
 	s.Require().NoError(err)
 	s.Zero(n, "an unchanged list writes nothing")
 
-	_, err = s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, []*authz.Policy{authz.PolicyAPITokenCreate})
+	_, err = s.APIToken.SetPoliciesOfTokensScopedTo(ctx, orgID, authz.ResourceTypeProduct, productID, []*authz.Policy{authz.PolicyAPITokenCreate})
 	s.Require().Error(err)
 	s.True(biz.IsErrValidation(err), "organization-level policies are refused")
 
@@ -1523,7 +1523,7 @@ func (s *apiTokenTestSuite) TestSetScopePolicies() {
 	}
 	for _, tc := range refusedCases {
 		s.Run(tc.name, func() {
-			_, err := s.APIToken.SetScopePolicies(ctx, orgID, authz.ResourceTypeProduct, productID, tc.policies)
+			_, err := s.APIToken.SetPoliciesOfTokensScopedTo(ctx, orgID, authz.ResourceTypeProduct, productID, tc.policies)
 			s.Require().Error(err)
 			s.True(biz.IsErrValidation(err), "got %v", err)
 

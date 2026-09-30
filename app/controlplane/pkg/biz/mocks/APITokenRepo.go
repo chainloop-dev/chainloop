@@ -536,12 +536,12 @@ func (_c *APITokenRepo_Revoke_Call) RunAndReturn(run func(ctx context.Context, o
 	return _c
 }
 
-// SetScopePolicies provides a mock function for the type APITokenRepo
-func (_mock *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
+// SetPoliciesOfTokensScopedTo provides a mock function for the type APITokenRepo
+func (_mock *APITokenRepo) SetPoliciesOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
 	ret := _mock.Called(ctx, orgID, kind, scopeID, policies)
 
 	if len(ret) == 0 {
-		panic("no return value specified for SetScopePolicies")
+		panic("no return value specified for SetPoliciesOfTokensScopedTo")
 	}
 
 	var r0 int
@@ -562,22 +562,22 @@ func (_mock *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID
 	return r0, r1
 }
 
-// APITokenRepo_SetScopePolicies_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetScopePolicies'
-type APITokenRepo_SetScopePolicies_Call struct {
+// APITokenRepo_SetPoliciesOfTokensScopedTo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetPoliciesOfTokensScopedTo'
+type APITokenRepo_SetPoliciesOfTokensScopedTo_Call struct {
 	*mock.Call
 }
 
-// SetScopePolicies is a helper method to define mock.On call
+// SetPoliciesOfTokensScopedTo is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID uuid.UUID
 //   - kind authz.ResourceType
 //   - scopeID uuid.UUID
 //   - policies []*authz.Policy
-func (_e *APITokenRepo_Expecter) SetScopePolicies(ctx any, orgID any, kind any, scopeID any, policies any) *APITokenRepo_SetScopePolicies_Call {
-	return &APITokenRepo_SetScopePolicies_Call{Call: _e.mock.On("SetScopePolicies", ctx, orgID, kind, scopeID, policies)}
+func (_e *APITokenRepo_Expecter) SetPoliciesOfTokensScopedTo(ctx any, orgID any, kind any, scopeID any, policies any) *APITokenRepo_SetPoliciesOfTokensScopedTo_Call {
+	return &APITokenRepo_SetPoliciesOfTokensScopedTo_Call{Call: _e.mock.On("SetPoliciesOfTokensScopedTo", ctx, orgID, kind, scopeID, policies)}
 }
 
-func (_c *APITokenRepo_SetScopePolicies_Call) Run(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy)) *APITokenRepo_SetScopePolicies_Call {
+func (_c *APITokenRepo_SetPoliciesOfTokensScopedTo_Call) Run(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy)) *APITokenRepo_SetPoliciesOfTokensScopedTo_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -610,22 +610,22 @@ func (_c *APITokenRepo_SetScopePolicies_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *APITokenRepo_SetScopePolicies_Call) Return(n int, err error) *APITokenRepo_SetScopePolicies_Call {
+func (_c *APITokenRepo_SetPoliciesOfTokensScopedTo_Call) Return(n int, err error) *APITokenRepo_SetPoliciesOfTokensScopedTo_Call {
 	_c.Call.Return(n, err)
 	return _c
 }
 
-func (_c *APITokenRepo_SetScopePolicies_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)) *APITokenRepo_SetScopePolicies_Call {
+func (_c *APITokenRepo_SetPoliciesOfTokensScopedTo_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error)) *APITokenRepo_SetPoliciesOfTokensScopedTo_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// SetScopeProjects provides a mock function for the type APITokenRepo
-func (_mock *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
+// SetProjectsOfTokensScopedTo provides a mock function for the type APITokenRepo
+func (_mock *APITokenRepo) SetProjectsOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
 	ret := _mock.Called(ctx, orgID, kind, scopeID, projectIDs)
 
 	if len(ret) == 0 {
-		panic("no return value specified for SetScopeProjects")
+		panic("no return value specified for SetProjectsOfTokensScopedTo")
 	}
 
 	var r0 int
@@ -646,22 +646,22 @@ func (_mock *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID
 	return r0, r1
 }
 
-// APITokenRepo_SetScopeProjects_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetScopeProjects'
-type APITokenRepo_SetScopeProjects_Call struct {
+// APITokenRepo_SetProjectsOfTokensScopedTo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetProjectsOfTokensScopedTo'
+type APITokenRepo_SetProjectsOfTokensScopedTo_Call struct {
 	*mock.Call
 }
 
-// SetScopeProjects is a helper method to define mock.On call
+// SetProjectsOfTokensScopedTo is a helper method to define mock.On call
 //   - ctx context.Context
 //   - orgID uuid.UUID
 //   - kind authz.ResourceType
 //   - scopeID uuid.UUID
 //   - projectIDs []uuid.UUID
-func (_e *APITokenRepo_Expecter) SetScopeProjects(ctx any, orgID any, kind any, scopeID any, projectIDs any) *APITokenRepo_SetScopeProjects_Call {
-	return &APITokenRepo_SetScopeProjects_Call{Call: _e.mock.On("SetScopeProjects", ctx, orgID, kind, scopeID, projectIDs)}
+func (_e *APITokenRepo_Expecter) SetProjectsOfTokensScopedTo(ctx any, orgID any, kind any, scopeID any, projectIDs any) *APITokenRepo_SetProjectsOfTokensScopedTo_Call {
+	return &APITokenRepo_SetProjectsOfTokensScopedTo_Call{Call: _e.mock.On("SetProjectsOfTokensScopedTo", ctx, orgID, kind, scopeID, projectIDs)}
 }
 
-func (_c *APITokenRepo_SetScopeProjects_Call) Run(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID)) *APITokenRepo_SetScopeProjects_Call {
+func (_c *APITokenRepo_SetProjectsOfTokensScopedTo_Call) Run(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID)) *APITokenRepo_SetProjectsOfTokensScopedTo_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -694,12 +694,12 @@ func (_c *APITokenRepo_SetScopeProjects_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *APITokenRepo_SetScopeProjects_Call) Return(n int, err error) *APITokenRepo_SetScopeProjects_Call {
+func (_c *APITokenRepo_SetProjectsOfTokensScopedTo_Call) Return(n int, err error) *APITokenRepo_SetProjectsOfTokensScopedTo_Call {
 	_c.Call.Return(n, err)
 	return _c
 }
 
-func (_c *APITokenRepo_SetScopeProjects_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)) *APITokenRepo_SetScopeProjects_Call {
+func (_c *APITokenRepo_SetProjectsOfTokensScopedTo_Call) RunAndReturn(run func(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error)) *APITokenRepo_SetProjectsOfTokensScopedTo_Call {
 	_c.Call.Return(run)
 	return _c
 }

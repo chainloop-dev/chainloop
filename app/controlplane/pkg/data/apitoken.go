@@ -115,12 +115,11 @@ func (r *APITokenRepo) liveProjectsInOrg(ctx context.Context, orgID *uuid.UUID, 
 	return canonical, nil
 }
 
-// SetScopeProjects sets the project list of every active token of the resource scope in the
-// organization, writing only the rows whose list differs, and returns how many it changed. It
-// reads the scope's tokens and then writes them: it is not atomic with a concurrent call for the
-// same scope, so callers must serialize their writes per scope themselves.
-func (r *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
-	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetScopeProjects")
+// SetProjectsOfTokensScopedTo replaces the project list of the active tokens in orgID whose scope
+// is exactly (kind, scopeID), writing only the rows whose list differs, and returns how many it
+// changed. It reads and then writes, so callers must serialize calls for the same scope.
+func (r *APITokenRepo) SetProjectsOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, projectIDs []uuid.UUID) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetProjectsOfTokensScopedTo")
 	defer span.End()
 
 	if !biz.IsResourceScopeKind(kind) {
@@ -157,12 +156,12 @@ func (r *APITokenRepo) SetScopeProjects(ctx context.Context, orgID uuid.UUID, ki
 	return n, nil
 }
 
-// SetScopePolicies sets the policies of every active token of the resource scope in the
-// organization to a non-empty list carrying no organization-level policy, writing only the rows
-// whose list differs, and returns how many it changed. Like SetScopeProjects, it reads then
-// writes, so callers must serialize their writes per scope.
-func (r *APITokenRepo) SetScopePolicies(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
-	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetScopePolicies")
+// SetPoliciesOfTokensScopedTo replaces the policies of the active tokens in orgID whose scope is
+// exactly (kind, scopeID) with a non-empty list holding no organization-level policy, writing
+// only the rows whose list differs, and returns how many it changed. It reads and then writes, so
+// callers must serialize calls for the same scope.
+func (r *APITokenRepo) SetPoliciesOfTokensScopedTo(ctx context.Context, orgID uuid.UUID, kind authz.ResourceType, scopeID uuid.UUID, policies []*authz.Policy) (int, error) {
+	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetPoliciesOfTokensScopedTo")
 	defer span.End()
 
 	if !biz.IsResourceScopeKind(kind) {
