@@ -488,6 +488,10 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 			return nil, NewErrValidationStr("a product scope requires the projects the token reaches")
 		}
 
+		if len(policies) == 0 {
+			return nil, NewErrValidationStr("a product-scoped token needs at least one policy")
+		}
+
 		if slices.Contains(policies, nil) {
 			return nil, NewErrValidationStr("a product-scoped token cannot carry a nil policy")
 		}

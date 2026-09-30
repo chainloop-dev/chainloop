@@ -1343,6 +1343,12 @@ func (s *apiTokenTestSuite) TestCreateAProductTokenWithItsProjects() {
 			opts:    append(product([]uuid.UUID{s.p1.ID}), biz.APITokenWithPolicies([]*authz.Policy{nil})),
 			wantErr: true,
 		},
+		{
+			// It would authorize nothing, with nothing to say why.
+			name:    "an empty policy list on a product token",
+			opts:    append(product([]uuid.UUID{s.p1.ID}), biz.APITokenWithPolicies([]*authz.Policy{})),
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
