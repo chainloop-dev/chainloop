@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -45,20 +46,36 @@ func NewAPITokenRepo(data *Data, logger log.Logger) biz.APITokenRepo {
 }
 
 // Persist the APIToken to the database.
-func (r *APITokenRepo) Create(ctx context.Context, name string, description *string, expiresAt *time.Time, organizationID *uuid.UUID, projectID *uuid.UUID, workflowID *uuid.UUID, policies []*authz.Policy, isSystem bool) (*biz.APIToken, error) {
+func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts) (*biz.APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.Create")
 	defer span.End()
 
-	token, err := r.data.DB.APIToken.Create().
-		SetName(name).
-		SetNillableDescription(description).
-		SetNillableExpiresAt(expiresAt).
-		SetNillableOrganizationID(organizationID).
-		SetNillableProjectID(projectID).
-		SetNillableWorkflowID(workflowID).
-		SetPolicies(policies).
-		SetIsSystem(isSystem).
-		Save(ctx)
+	create := r.data.DB.APIToken.Create().
+		SetName(opts.Name).
+		SetNillableDescription(opts.Description).
+		SetNillableExpiresAt(opts.ExpiresAt).
+		SetNillableOrganizationID(opts.OrganizationID).
+		SetNillableProjectID(opts.ProjectID).
+		SetNillableWorkflowID(opts.WorkflowID).
+		SetNillableScope(opts.Scope).
+		SetNillableScopeID(opts.ScopeID).
+		SetPolicies(opts.Policies).
+		SetIsSystem(opts.IsSystem)
+
+	if err := biz.ValidateTokenShape(opts.Scope, opts.ScopeID, opts.OrganizationID, opts.ProjectID, opts.ProjectIDs); err != nil {
+		return nil, err
+	}
+
+	if opts.ProjectIDs != nil {
+		ids, err := r.liveProjectsInOrg(ctx, opts.OrganizationID, opts.ProjectIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		create = create.SetProjectIds(ids)
+	}
+
+	token, err := create.Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
 			return nil, biz.NewErrAlreadyExists(err)
@@ -68,6 +85,33 @@ func (r *APITokenRepo) Create(ctx context.Context, name string, description *str
 	}
 
 	return r.FindByID(ctx, token.ID)
+}
+
+// liveProjectsInOrg returns ids in canonical form after checking that every one is a live
+// project of the organization. The list is written from outside this module, so this is the
+// check standing between a stray id and a token that reaches another organization's project.
+func (r *APITokenRepo) liveProjectsInOrg(ctx context.Context, orgID *uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error) {
+	canonical := biz.CanonicalProjectIDs(ids)
+	if len(canonical) == 0 {
+		return canonical, nil
+	}
+
+	if orgID == nil {
+		return nil, biz.NewErrValidationStr("a token without an organization reaches no project")
+	}
+
+	live, err := r.data.DB.Project.Query().
+		Where(project.IDIn(canonical...), project.OrganizationID(*orgID), project.DeletedAtIsNil()).
+		Count(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("checking the token's projects: %w", err)
+	}
+
+	if live != len(canonical) {
+		return nil, biz.NewErrValidationStr("every project a token reaches must be a live project of its organization")
+	}
+
+	return canonical, nil
 }
 
 func (r *APITokenRepo) FindByID(ctx context.Context, id uuid.UUID) (*biz.APIToken, error) {
@@ -139,11 +183,16 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 	}
 
 	switch filters.FilterByScope {
-	case biz.APITokenScopeProject:
+	case authz.ResourceTypeProject:
 		query = query.Where(apitoken.ProjectIDNotNil())
-	case biz.APITokenScopeGlobal:
-		query = query.Where(apitoken.ProjectIDIsNil())
-	case biz.APITokenScopeInstance:
+	case authz.ResourceTypeProduct:
+		query = query.Where(apitoken.ScopeEQ(authz.ResourceTypeProduct))
+	case authz.ResourceTypeOrganization:
+		// Organization-wide means belonging to an organization and confined to neither a project
+		// nor a product. Keyed on the kind: new organization tokens carry an organization scope,
+		// older ones none, so the organization is what tells an older one from an instance token.
+		query = query.Where(apitoken.OrganizationIDNotNil(), apitoken.ProjectIDIsNil(), apitoken.Or(apitoken.ScopeIsNil(), apitoken.ScopeNEQ(authz.ResourceTypeProduct)))
+	case authz.ResourceTypeInstance:
 		query = query.Where(apitoken.OrganizationIDIsNil())
 	}
 
@@ -281,6 +330,12 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		result.WorkflowID = biz.ToPtr(w.ID)
 		result.WorkflowName = biz.ToPtr(w.Name)
 	}
+
+	// The scoped resource is not an entity in this database, so unlike the project and the
+	// workflow it has no edge to load: both values come straight off the row.
+	result.Scope = t.Scope
+	result.ScopeID = t.ScopeID
+	result.ProjectIDs = t.ProjectIds
 
 	return result
 }

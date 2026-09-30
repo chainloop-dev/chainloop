@@ -48,10 +48,20 @@ func (APIToken) Fields() []ent.Field {
 		field.UUID("organization_id", uuid.UUID{}).Optional(),
 		// Tokens can be associated with a project
 		// if this value is not set, the token is an organization level token
+		// Deprecated: project tokens move to project_ids; product tokens already use it.
 		field.UUID("project_id", uuid.UUID{}).Optional(),
 		// Tokens can additionally be scoped to a specific workflow within a project.
 		// Only meaningful when project_id is also set.
 		field.UUID("workflow_id", uuid.UUID{}).Optional(),
+		// What the token is scoped to, and the id of that resource. Every new token records it;
+		// only a product scope drives any logic for now, and rows from before these columns
+		// existed leave both NULL. A product is not an entity here, so scope_id is a bare UUID
+		// with no foreign key — the same arrangement cas_mappings.product_id uses.
+		field.Enum("scope").GoType(authz.ResourceType("")).Optional().Nillable(),
+		field.UUID("scope_id", uuid.UUID{}).Optional().Nillable(),
+		// The projects a product token reaches. Set on product tokens only; the Chainloop
+		// platform keeps it consolidated as the product changes. An empty list reaches nothing.
+		field.JSON("project_ids", []uuid.UUID{}).Optional(),
 		// ACL policies for this token. NULL means role-based token (future), non-NULL means ACL mode.
 		// When set, contains the list of policies this token is allowed to perform.
 		field.JSON("policies", []*authz.Policy{}).Optional(),
@@ -71,9 +81,16 @@ func (APIToken) Edges() []ent.Edge {
 func (APIToken) Indexes() []ent.Index {
 	return []ent.Index{
 		// names are unique within a organization and affects only to non-deleted items
-		// These are for org level tokens
+		// These are for org level tokens, which are confined to neither a project nor a
+		// product. Keyed on the kind, not on scope_id, so rows written before and after the
+		// scope columns existed share one namespace
 		index.Fields("name").Edges("organization").Unique().Annotations(
-			entsql.IndexWhere("revoked_at IS NULL AND project_id IS NULL"),
+			entsql.IndexWhere("revoked_at IS NULL AND project_id IS NULL AND (scope IS NULL OR scope <> 'product')"),
+		),
+
+		// for product-scoped tokens, names are unique within their product
+		index.Fields("name", "scope_id").Unique().Annotations(
+			entsql.IndexWhere("revoked_at IS NULL AND scope = 'product'"),
 		),
 
 		// for project level tokens, we scope the uniqueness to the organization and project
@@ -84,6 +101,11 @@ func (APIToken) Indexes() []ent.Index {
 		// for instance-level tokens, names must be unique across all instance tokens
 		index.Fields("name").Unique().Annotations(
 			entsql.IndexWhere("revoked_at IS NULL AND organization_id IS NULL"),
+		),
+
+		// the Chainloop platform looks a product's tokens up by product to keep their lists current
+		index.Fields("scope_id").Annotations(
+			entsql.IndexWhere("scope = 'product' AND revoked_at IS NULL"),
 		),
 	}
 }

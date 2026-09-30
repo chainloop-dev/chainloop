@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	chainloopVersion = "v1.111.2"
+	chainloopVersion = "v1.111.3"
 	platformVersion  = "v1.115.0"
 )
 
