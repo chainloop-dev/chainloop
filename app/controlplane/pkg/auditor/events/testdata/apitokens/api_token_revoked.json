@@ -10,7 +10,9 @@
   "Description": "test-token has revoked the API token test-token",
   "Info": {
     "api_token_id": "2089bb36-e27b-428b-8009-d015c8737c55",
-    "api_token_name": "test-token"
+    "api_token_name": "test-token",
+    "scope": "organization",
+    "scope_id": "1089bb36-e27b-428b-8009-d015c8737c54"
   },
-  "Digest": "sha256:bc5eda0247c58cee660f7c83ce5378e3965db738c6c0b998138ee86313c802b8"
+  "Digest": "sha256:09050457e4cb6e514ad9039ecf6fb16087ab67515e5cf42cccc7490bb1626f0b"
 }

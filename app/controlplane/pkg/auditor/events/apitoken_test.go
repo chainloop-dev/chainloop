@@ -45,6 +45,16 @@ func TestAPITokenEvents(t *testing.T) {
 	expirationDate, err := time.Parse(time.RFC3339, "2025-01-01T00:00:00Z")
 	require.NoError(t, err)
 
+	// Every token carries a scope, so every event records one; these are organization tokens.
+	orgTokenBase := func() *events.APITokenBase {
+		return &events.APITokenBase{
+			APITokenID:   uuidPtr(apiTokenUUID),
+			APITokenName: apiTokenName,
+			Scope:        &orgScope,
+			ScopeID:      &orgUUID,
+		}
+	}
+
 	tests := []struct {
 		name     string
 		event    auditor.LogEntry
@@ -53,26 +63,15 @@ func TestAPITokenEvents(t *testing.T) {
 		actorID  uuid.UUID
 	}{
 		{
-			name: "API Token created by user",
-			event: &events.APITokenCreated{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-				},
-			},
+			name:     "API Token created by user",
+			event:    &events.APITokenCreated{APITokenBase: orgTokenBase()},
 			expected: "testdata/apitokens/api_token_created.json",
 			actor:    auditor.ActorTypeUser,
 			actorID:  userUUID,
 		},
 		{
-			name: "API Token created with description by user",
-			event: &events.APITokenCreated{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-				},
-				APITokenDescription: &apiTokenDescription,
-			},
+			name:     "API Token created with description by user",
+			event:    &events.APITokenCreated{APITokenBase: orgTokenBase(), APITokenDescription: &apiTokenDescription},
 			expected: "testdata/apitokens/api_token_created_with_description.json",
 			actor:    auditor.ActorTypeUser,
 			actorID:  userUUID,
@@ -80,10 +79,7 @@ func TestAPITokenEvents(t *testing.T) {
 		{
 			name: "API Token created with expires at by user",
 			event: &events.APITokenCreated{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-				},
+				APITokenBase:        orgTokenBase(),
 				APITokenDescription: &apiTokenDescription,
 				ExpiresAt:           &expirationDate,
 			},
@@ -92,70 +88,15 @@ func TestAPITokenEvents(t *testing.T) {
 			actorID:  userUUID,
 		},
 		{
-			// The scope is recorded for every token that has one; only a product scope is
-			// named in the description, since it is the only one that changes what the token
-			// reaches.
-			name: "API Token created with a product scope",
-			event: &events.APITokenCreated{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-					Scope:        &productScope,
-					ScopeID:      &productUUID,
-				},
-			},
-			expected: "testdata/apitokens/api_token_created_with_product_scope.json",
-			actor:    auditor.ActorTypeUser,
-			actorID:  userUUID,
-		},
-		{
-			name: "API Token created with an organization scope",
-			event: &events.APITokenCreated{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-					Scope:        &orgScope,
-					ScopeID:      &orgUUID,
-				},
-			},
-			expected: "testdata/apitokens/api_token_created_with_organization_scope.json",
-			actor:    auditor.ActorTypeUser,
-			actorID:  userUUID,
-		},
-		{
-			name: "API Token with a product scope revoked by user",
-			event: &events.APITokenRevoked{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-					Scope:        &productScope,
-					ScopeID:      &productUUID,
-				},
-			},
-			expected: "testdata/apitokens/api_token_revoked_with_product_scope.json",
-			actor:    auditor.ActorTypeUser,
-			actorID:  userUUID,
-		},
-		{
-			name: "API Token revoked by user",
-			event: &events.APITokenRevoked{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-				},
-			},
+			name:     "API Token revoked by user",
+			event:    &events.APITokenRevoked{APITokenBase: orgTokenBase()},
 			expected: "testdata/apitokens/api_token_revoked.json",
 			actor:    auditor.ActorTypeAPIToken,
 			actorID:  apiTokenUUID,
 		},
 		{
-			name: "API Token auto-revoked by system",
-			event: &events.APITokenRevoked{
-				APITokenBase: &events.APITokenBase{
-					APITokenID:   uuidPtr(apiTokenUUID),
-					APITokenName: apiTokenName,
-				},
-			},
+			name:     "API Token auto-revoked by system",
+			event:    &events.APITokenRevoked{APITokenBase: orgTokenBase()},
 			expected: "testdata/apitokens/api_token_revoked_by_system.json",
 			actor:    auditor.ActorTypeSystem,
 			actorID:  uuid.Nil,
@@ -199,4 +140,24 @@ func TestAPITokenEvents(t *testing.T) {
 			assert.Equal(t, string(want), string(got))
 		})
 	}
+
+	// A product scope is the only one the description names, since it is the only one that
+	// changes what the token reaches.
+	t.Run("a product-scoped token is named by its product", func(t *testing.T) {
+		base := &events.APITokenBase{APITokenID: uuidPtr(apiTokenUUID), APITokenName: apiTokenName, Scope: &productScope, ScopeID: &productUUID}
+		for _, event := range []auditor.LogEntry{&events.APITokenCreated{APITokenBase: base}, &events.APITokenRevoked{APITokenBase: base}} {
+			payload, err := auditor.GenerateAuditEvent(event, auditor.WithOrgID(orgUUID), auditor.WithActor(auditor.ActorTypeUser, userUUID, testEmail, testName))
+			require.NoError(t, err)
+
+			assert.Contains(t, payload.Data.Description, " scoped to product "+productUUID.String())
+
+			var info struct {
+				Scope   string `json:"scope"`
+				ScopeID string `json:"scope_id"`
+			}
+			require.NoError(t, json.Unmarshal(payload.Data.Info, &info))
+			assert.Equal(t, string(productScope), info.Scope)
+			assert.Equal(t, productUUID.String(), info.ScopeID)
+		}
+	})
 }
