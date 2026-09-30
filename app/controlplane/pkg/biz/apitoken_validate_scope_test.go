@@ -23,8 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// The repository refuses incoherent scopes too; this pins the check Create makes itself,
-// before anything is written.
+// The repository refuses most incoherent scopes too (ValidateTokenShape), but Create is stricter:
+// it also requires an organization for a project scope and refuses kinds it doesn't create yet.
+// This pins the check Create makes itself, before anything is written.
 func TestValidateTokenScope(t *testing.T) {
 	t.Parallel()
 
