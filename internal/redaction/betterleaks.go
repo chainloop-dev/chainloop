@@ -194,8 +194,9 @@ type span struct {
 
 // splitLines cuts text into chunks that each carry at least size bytes of new
 // text, ending at a line end. Each chunk after the first also begins with up to
-// overlap trailing lines of its predecessor, capped at size bytes so that a run
-// of very long lines is not scanned again and again.
+// overlap trailing lines of its predecessor. Only the last of those may be
+// longer than size bytes; the others must fit within size bytes together, so
+// that a run of very long lines is not scanned again and again.
 //
 // A line is never split, even when it is longer than size. That is what keeps a
 // secret whole, and it relies on how Redactor renders the document: as indented
@@ -217,14 +218,16 @@ func splitLines(text string, size, overlap int) []span {
 		}
 		chunks = append(chunks, span{start, pos})
 
-		// Walk back over the trailing lines the next chunk re-reads.
+		// Walk back over the trailing lines the next chunk re-reads. The last
+		// line always is, however long: a composite match on it may have its
+		// component at the start of the next chunk.
 		start = pos
 		for range overlap {
 			if start == 0 {
 				break
 			}
 			lineStart := strings.LastIndexByte(text[:start-1], '\n') + 1
-			if pos-lineStart > size {
+			if pos-lineStart > size && start != pos {
 				break
 			}
 			start = lineStart

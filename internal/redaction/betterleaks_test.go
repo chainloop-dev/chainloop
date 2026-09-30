@@ -335,13 +335,22 @@ func TestSplitLines(t *testing.T) {
 			want: []string{"aaaaaaaa\n", "b\n"},
 		},
 		{
-			// Without the cap, a run of huge lines would be scanned again by
-			// every following chunk.
-			name:    "overlap is capped at the chunk size in bytes",
+			// A composite primary on a long line can have its component on the
+			// next line, so the last line is re-read however long it is.
+			name:    "the last line is re-read even when it is longer than the chunk size",
 			text:    "aaaaaaaa\nb\nc\n",
 			size:    4,
 			overlap: 1,
-			want:    []string{"aaaaaaaa\n", "b\nc\n"},
+			want:    []string{"aaaaaaaa\n", "aaaaaaaa\nb\nc\n"},
+		},
+		{
+			// Without the cap, a run of huge lines would be scanned again by
+			// every following chunk.
+			name:    "earlier lines are re-read only within the chunk size in bytes",
+			text:    "aaaaaaaa\nbbbbbbbb\nc\n",
+			size:    4,
+			overlap: 2,
+			want:    []string{"aaaaaaaa\n", "aaaaaaaa\nbbbbbbbb\n", "bbbbbbbb\nc\n"},
 		},
 	}
 
@@ -439,11 +448,17 @@ func TestChunkedScanDetects(t *testing.T) {
 	secretLine := `  "content": "AWS_SECRET_ACCESS_KEY=` + fakeAWSSecret + `",` + "\n"
 	// Pads the text so that the next chunk boundary falls right after keyLine.
 	pad := `  "content": "` + strings.Repeat("p", size-len(keyLine)-len(`  "content": "",`)-1) + `",` + "\n"
+	// A key id at the end of a line longer than a whole chunk: the line is a
+	// chunk of its own, and its secret starts the next one.
+	longKeyLine := `  "content": "` + strings.Repeat("p ", size) + `AWS_ACCESS_KEY_ID=` + fakeAWSKey + `",` + "\n"
 
 	testCases := []struct {
 		name      string
 		text      string
 		wantRules []string
+		// straddle, when set, names two substrings the test relies on being in
+		// different chunks once the overlap is left out.
+		straddle [2]string
 	}{
 		{
 			name:      "secrets in chunks far apart are all found",
@@ -457,6 +472,13 @@ func TestChunkedScanDetects(t *testing.T) {
 			name:      "a composite pair straddling a chunk boundary is found",
 			text:      pad + keyLine + secretLine + filler(50),
 			wantRules: []string{"aws-access-token", "aws-secret-access-key"},
+			straddle:  [2]string{fakeAWSKey, fakeAWSSecret},
+		},
+		{
+			name:      "a composite pair straddling a boundary after a line longer than a chunk is found",
+			text:      filler(1) + longKeyLine + secretLine + filler(50),
+			wantRules: []string{"aws-access-token", "aws-secret-access-key"},
+			straddle:  [2]string{fakeAWSKey, fakeAWSSecret},
 		},
 	}
 
@@ -464,6 +486,16 @@ func TestChunkedScanDetects(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			scanner := chunkedScanner(t, size)
 			require.Greater(t, len(splitLines(tc.text, size, chunkOverlapLines)), 1, "the test text must span several chunks")
+
+			// Pins the premise: without the overlap no chunk holds both halves, so
+			// the case really goes through the overlap rather than past it.
+			if tc.straddle != [2]string{} {
+				for _, c := range splitLines(tc.text, size, 0) {
+					chunk := tc.text[c.start:c.end]
+					require.False(t, strings.Contains(chunk, tc.straddle[0]) && strings.Contains(chunk, tc.straddle[1]),
+						"the pair must straddle a chunk boundary")
+				}
+			}
 
 			findings, err := scanner.Scan(context.Background(), tc.text)
 			require.NoError(t, err)
