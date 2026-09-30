@@ -1,9 +1,8 @@
 ---
 status: draft
 owner: jiparis
-ticket:
+ticket: https://github.com/chainloop-dev/chainloop/issues/3495
 prd:
-issue: https://github.com/chainloop-dev/chainloop/issues/3495
 ---
 
 # Spec 001: Spec capture for AI coding sessions
