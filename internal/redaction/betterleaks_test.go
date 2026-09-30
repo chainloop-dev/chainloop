@@ -525,8 +525,7 @@ func TestChunkedScanIsDeterministic(t *testing.T) {
 	var sb strings.Builder
 	const tokens = 60
 	for i := range tokens {
-		pat := fakeGitHubPAT[:len(fakeGitHubPAT)-2] + string(rune('A'+i%26)) + string(rune('a'+i/26))
-		sb.WriteString(`  "repository": "https://oauth2:` + pat + `@github.com/example/repo.git",` + "\n")
+		sb.WriteString(`  "repository": "https://oauth2:` + distinctPAT(i) + `@github.com/example/repo.git",` + "\n")
 		sb.WriteString(`  "content": "` + strings.Repeat("ordinary transcript text ", 10) + `",` + "\n")
 	}
 	text := sb.String()
@@ -547,29 +546,218 @@ func TestChunkedScanIsDeterministic(t *testing.T) {
 func TestChunkedRedact(t *testing.T) {
 	scanner := chunkedScanner(t, 256)
 
-	var sb strings.Builder
-	sb.WriteString(`{"data":{"raw_session":{"main":[`)
-	for i := range 200 {
-		if i > 0 {
-			sb.WriteString(",")
-		}
-		content := "ordinary transcript text " + strconv.Itoa(i)
+	doc := sessionDoc(200, func(i int) string {
 		switch i {
 		case 3:
-			content = "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
+			return "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
 		case 197:
-			content = "ANTHROPIC_API_KEY=" + fakeAnthropicKey
+			return "ANTHROPIC_API_KEY=" + fakeAnthropicKey
 		}
-		sb.WriteString(`{"role":"user","content":"` + content + `"}`)
-	}
-	sb.WriteString(`]}}}`)
+		return ""
+	})
 
-	out, report, err := New(scanner).Redact(context.Background(), []byte(sb.String()))
+	out, report, err := New(scanner).Redact(context.Background(), doc)
 	require.NoError(t, err)
 	assert.NotContains(t, string(out), fakeGitHubPAT)
 	assert.NotContains(t, string(out), fakeAnthropicKey)
 	assert.Equal(t, 1, report.ByRule["github-pat"])
 	assert.Equal(t, 1, report.ByRule["anthropic-api-key"])
+}
+
+// distinctPAT returns a GitHub token of the same shape as fakeGitHubPAT, and a
+// different one for every i below 26*26.
+func distinctPAT(i int) string {
+	return fakeGitHubPAT[:len(fakeGitHubPAT)-2] + string(rune('A'+i%26)) + string(rune('a'+i/26))
+}
+
+// sessionDoc builds an AI coding session document with the given number of
+// turns. content returns the text of turn i, or "" for ordinary text.
+func sessionDoc(turns int, content func(i int) string) []byte {
+	var sb strings.Builder
+	sb.WriteString(`{"data":{"raw_session":{"main":[`)
+	for i := range turns {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		c := content(i)
+		if c == "" {
+			c = "ordinary transcript text " + strconv.Itoa(i)
+		}
+		sb.WriteString(`{"role":"user","content":"` + c + `"}`)
+	}
+	sb.WriteString(`]}}}`)
+	return []byte(sb.String())
+}
+
+// multiChunkText is indented-JSON-shaped text spanning many 256-byte chunks, with
+// a distinct token on every tenth line.
+func multiChunkText() string {
+	var sb strings.Builder
+	for i := range 300 {
+		if i%10 == 0 {
+			sb.WriteString(`  "repository": "https://oauth2:` + distinctPAT(i/10) + `@github.com/example/repo.git",` + "\n")
+			continue
+		}
+		sb.WriteString(`  "content": "ordinary transcript line ` + strconv.Itoa(i) + `",` + "\n")
+	}
+	return sb.String()
+}
+
+// uniqueFindings is the set of findings, which is what must not change however
+// the text is chunked.
+func uniqueFindings(findings []Finding) []Finding {
+	seen := make(map[Finding]struct{}, len(findings))
+	var out []Finding
+	for _, f := range findings {
+		if _, dup := seen[f]; !dup {
+			seen[f] = struct{}{}
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// TestLineSpansRoundTrip checks that chunks converted to line ranges and back
+// are the same byte ranges, which is what lets a later pass reuse them.
+func TestLineSpansRoundTrip(t *testing.T) {
+	testCases := []struct {
+		name    string
+		text    string
+		size    int
+		overlap int
+	}{
+		{name: "empty", text: "", size: 4},
+		{name: "single chunk", text: "a\nb\n", size: 16},
+		{name: "trailing newline", text: multiChunkText(), size: 256, overlap: chunkOverlapLines},
+		{name: "no trailing newline", text: strings.TrimSuffix(multiChunkText(), "\n"), size: 256, overlap: chunkOverlapLines},
+		{name: "no overlap", text: multiChunkText(), size: 256},
+		{name: "long lines", text: "aaaaaaaa\nbbbbbbbb\nc", size: 4, overlap: 2},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			spans := splitLines(tc.text, tc.size, tc.overlap)
+			assert.Equal(t, spans, byteSpans(tc.text, lineSpans(tc.text, spans)))
+		})
+	}
+}
+
+// TestDocumentScannerMatchesFreshScan is the safety property of rescanning
+// incrementally: after the document changes, the scanner bound to it reports the
+// same secrets as a scan from scratch would.
+func TestDocumentScannerMatchesFreshScan(t *testing.T) {
+	replaceFirst := func(text string) string {
+		i := strings.Index(text, "ghp_")
+		return text[:i] + "[REDACTED:github-pat]" + text[i+len(fakeGitHubPAT):]
+	}
+
+	testCases := []struct {
+		name string
+		edit func(string) string
+	}{
+		{name: "unchanged", edit: func(s string) string { return s }},
+		{name: "one secret replaced in place", edit: replaceFirst},
+		{name: "every secret replaced in place", edit: func(s string) string {
+			for strings.Contains(s, "ghp_") {
+				s = replaceFirst(s)
+			}
+			return s
+		}},
+		{name: "a line inserted", edit: func(s string) string {
+			return `  "content": "ANTHROPIC_API_KEY=` + fakeAnthropicKey + `",` + "\n" + s
+		}},
+		{name: "a line removed", edit: func(s string) string {
+			return s[strings.IndexByte(s, '\n')+1:]
+		}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scanner := chunkedScanner(t, 256)
+			doc := scanner.forDocument()
+			text := multiChunkText()
+
+			first, err := doc.Scan(context.Background(), text)
+			require.NoError(t, err)
+			fresh, err := scanner.Scan(context.Background(), text)
+			require.NoError(t, err)
+			require.Equal(t, fresh, first, "the first scan of a document is a scan from scratch")
+
+			edited := tc.edit(text)
+			got, err := doc.Scan(context.Background(), edited)
+			require.NoError(t, err)
+			want, err := scanner.Scan(context.Background(), edited)
+			require.NoError(t, err)
+			assert.ElementsMatch(t, uniqueFindings(want), uniqueFindings(got))
+		})
+	}
+}
+
+// TestDocumentScannerRescansOnlyChangedChunks pins the point of scanning
+// incrementally: a pass after a few in-place replacements scans the chunks that
+// changed, not the whole document again.
+func TestDocumentScannerRescansOnlyChangedChunks(t *testing.T) {
+	scanner := chunkedScanner(t, 256)
+	doc := scanner.forDocument()
+	text := multiChunkText()
+
+	_, err := doc.Scan(context.Background(), text)
+	require.NoError(t, err)
+
+	i := strings.Index(text, "ghp_")
+	edited := text[:i] + "[REDACTED:github-pat]" + text[i+len(fakeGitHubPAT):]
+
+	before := scanner.detector.TotalBytes.Load()
+	_, err = doc.Scan(context.Background(), edited)
+	require.NoError(t, err)
+	scanned := scanner.detector.TotalBytes.Load() - before
+
+	assert.Positive(t, scanned, "the changed chunk has to be scanned again")
+	assert.Less(t, scanned, uint64(len(edited)/4), "only the chunks around the change are scanned again")
+}
+
+// TestDocumentScannerCancelledContext checks that cancellation is honoured
+// even when every chunk could be answered from what the previous pass found.
+func TestDocumentScannerCancelledContext(t *testing.T) {
+	doc := chunkedScanner(t, 256).forDocument()
+	text := multiChunkText()
+
+	_, err := doc.Scan(context.Background(), text)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = doc.Scan(ctx, text)
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+// TestRedactIncrementalMatchesFullRescan runs whole redactions with and without
+// incremental rescanning and requires the same result.
+func TestRedactIncrementalMatchesFullRescan(t *testing.T) {
+	doc := sessionDoc(200, func(i int) string {
+		switch i % 50 {
+		case 3:
+			return "git clone https://oauth2:" + fakeGitHubPAT + "@github.com/example/repo.git"
+		case 17:
+			return "ANTHROPIC_API_KEY=" + fakeAnthropicKey
+		case 31:
+			return "export " + awsPair
+		}
+		return ""
+	})
+
+	scanner := chunkedScanner(t, 256)
+	// Embedding hides forDocument, so this one scans every pass from scratch.
+	full := struct{ Scanner }{scanner}
+
+	want, wantReport, err := New(full).Redact(context.Background(), doc)
+	require.NoError(t, err)
+	got, gotReport, err := New(scanner).Redact(context.Background(), doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, string(want), string(got))
+	assert.Equal(t, wantReport, gotReport)
+	assert.True(t, gotReport.Changed())
 }
 
 func BenchmarkDefaultScannerInit(b *testing.B) {

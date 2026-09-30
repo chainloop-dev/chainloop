@@ -17,6 +17,7 @@ package redaction
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"runtime"
 	"slices"
@@ -124,6 +125,16 @@ func newBetterleaksScanner() (*betterleaksScanner, error) {
 }
 
 func (s *betterleaksScanner) Scan(ctx context.Context, text string) ([]Finding, error) {
+	perChunk, err := s.scanChunks(ctx, text, splitLines(text, s.chunkSize, chunkOverlapLines))
+	if err != nil {
+		return nil, err
+	}
+	return slices.Concat(perChunk...), nil
+}
+
+// scanChunks scans the given chunks of text and returns the findings of each
+// one, in the order of chunks.
+func (s *betterleaksScanner) scanChunks(ctx context.Context, text string, chunks []span) ([][]Finding, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -131,7 +142,7 @@ func (s *betterleaksScanner) Scan(ctx context.Context, text string) ([]Finding, 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	source := chunkedSource{text: text, chunks: splitLines(text, s.chunkSize, chunkOverlapLines)}
+	source := chunkedSource{text: text, chunks: chunks}
 
 	// Chunks are scanned concurrently, so findings arrive interleaved. They are
 	// collected per chunk and joined in chunk order, which keeps the result
@@ -175,7 +186,147 @@ func (s *betterleaksScanner) Scan(ctx context.Context, text string) ([]Finding, 
 		return nil, err
 	}
 
+	return perChunk, nil
+}
+
+// forDocument returns a scanner for the passes over a single document.
+func (s *betterleaksScanner) forDocument() Scanner {
+	return &documentScanner{base: s}
+}
+
+// documentScanner scans successive versions of one document, and scans again
+// only the chunks whose text changed since the previous version.
+//
+// Redaction replaces text inside string leaves, which never adds or removes a
+// line of the rendered document. So after the first pass the chunks are fixed as
+// ranges of lines rather than of bytes, and a chunk far from any replacement has
+// exactly the same text as before. The detector is deterministic, so its
+// findings for that text are the ones found last time.
+type documentScanner struct {
+	base *betterleaksScanner
+	// chunks are the line ranges the document was cut into on its first scan.
+	chunks []lineSpan
+	// lines is the number of lines the document had then. A version with a
+	// different count is cut afresh.
+	lines int
+	// findings holds the findings of each chunk of the previous version, by the
+	// digest of its text.
+	findings map[[sha256.Size]byte][]Finding
+}
+
+// lineSpan is a half-open range [start, end) of line indices.
+type lineSpan struct {
+	start, end int
+}
+
+func (d *documentScanner) Scan(ctx context.Context, text string) ([]Finding, error) {
+	// Checked here as well as in scanChunks, which a pass whose chunks are all
+	// unchanged never reaches.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	lines := strings.Count(text, "\n") + 1
+	var chunks []span
+	if d.chunks != nil && lines == d.lines {
+		chunks = byteSpans(text, d.chunks)
+	} else {
+		chunks = splitLines(text, d.base.chunkSize, chunkOverlapLines)
+		d.chunks, d.lines = lineSpans(text, chunks), lines
+	}
+
+	// Hashing the whole document is serial work on every pass otherwise.
+	digests := make([][sha256.Size]byte, len(chunks))
+	var g errgroup.Group
+	g.SetLimit(runtime.GOMAXPROCS(0))
+	for i, c := range chunks {
+		g.Go(func() error {
+			digests[i] = sha256.Sum256([]byte(text[c.start:c.end]))
+			return nil
+		})
+	}
+	_ = g.Wait()
+
+	perChunk := make([][]Finding, len(chunks))
+	var stale []int
+	for i := range chunks {
+		if found, ok := d.findings[digests[i]]; ok {
+			perChunk[i] = found
+			continue
+		}
+		stale = append(stale, i)
+	}
+
+	if len(stale) > 0 {
+		toScan := make([]span, len(stale))
+		for j, i := range stale {
+			toScan[j] = chunks[i]
+		}
+		scanned, err := d.base.scanChunks(ctx, text, toScan)
+		if err != nil {
+			return nil, err
+		}
+		for j, i := range stale {
+			perChunk[i] = scanned[j]
+		}
+	}
+
+	// Only the previous version is ever compared against, so older findings
+	// are dropped rather than kept for the life of the document.
+	d.findings = make(map[[sha256.Size]byte][]Finding, len(chunks))
+	for i := range chunks {
+		d.findings[digests[i]] = perChunk[i]
+	}
+
 	return slices.Concat(perChunk...), nil
+}
+
+// lineSpans converts byte spans of text, each starting at a line start, into
+// line ranges.
+func lineSpans(text string, spans []span) []lineSpan {
+	out := make([]lineSpan, len(spans))
+	// Spans are ordered and may overlap, so the line count is carried forward
+	// from the previous span's start rather than recounted from the beginning.
+	offset, line := 0, 0
+	for i, s := range spans {
+		line += strings.Count(text[offset:s.start], "\n")
+		offset = s.start
+		end := line + strings.Count(text[s.start:s.end], "\n")
+		if s.end == len(text) && !strings.HasSuffix(text, "\n") {
+			// The final line has no newline to count.
+			end++
+		}
+		out[i] = lineSpan{start: line, end: end}
+	}
+	return out
+}
+
+// byteSpans converts line ranges back into byte spans of text. A range whose
+// last line has no newline runs to the end of the text.
+func byteSpans(text string, ranges []lineSpan) []span {
+	out := make([]span, len(ranges))
+	offset, line := 0, 0
+	// advance moves offset to the start of the given line.
+	advance := func(to int) {
+		for ; line < to; line++ {
+			nl := strings.IndexByte(text[offset:], '\n')
+			if nl < 0 {
+				offset = len(text)
+				line = to
+				return
+			}
+			offset += nl + 1
+		}
+	}
+	for i, r := range ranges {
+		advance(r.start)
+		start := offset
+		advance(r.end)
+		out[i] = span{start: start, end: offset}
+		// The next range starts at or before this end, so rewind.
+		line, offset = r.start, start
+	}
+	return out
 }
 
 // appendSecret records a locatable secret. A finding without one cannot be

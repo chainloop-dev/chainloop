@@ -52,6 +52,40 @@ func (f *fakeScanner) Scan(ctx context.Context, text string) ([]Finding, error) 
 	return out, nil
 }
 
+// fakeDocumentScanner binds a new fakeScanner to every document, to check how
+// Redact uses a scanner that can rescan incrementally. Its own Scan must never
+// be called once Redact has bound a document scanner.
+type fakeDocumentScanner struct {
+	fakeScanner
+	bound []*fakeScanner
+}
+
+func (f *fakeDocumentScanner) forDocument() Scanner {
+	s := &fakeScanner{findings: f.findings, requirePresent: f.requirePresent}
+	f.bound = append(f.bound, s)
+	return s
+}
+
+// TestRedactBindsOneScannerPerDocument checks that every pass over a document
+// goes through the scanner bound to it, and that each Redact binds a new one:
+// what that scanner remembers belongs to a single document.
+func TestRedactBindsOneScannerPerDocument(t *testing.T) {
+	scanner := &fakeDocumentScanner{fakeScanner: fakeScanner{
+		findings:       []Finding{{RuleID: "r1", Secret: "SEC"}},
+		requirePresent: true,
+	}}
+	r := New(scanner)
+
+	for i := 1; i <= 2; i++ {
+		_, report, err := r.Redact(context.Background(), []byte(`{"a":"x SEC x"}`))
+		require.NoError(t, err)
+		assert.Equal(t, 2, report.Passes)
+		require.Len(t, scanner.bound, i, "each document gets its own scanner")
+		assert.Equal(t, 2, scanner.bound[i-1].calls, "both passes use the scanner bound to the document")
+	}
+	assert.Zero(t, scanner.calls, "the unbound scanner is never used")
+}
+
 func TestRedact(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -125,6 +159,20 @@ func TestRedact(t *testing.T) {
 			})},
 			wantUnchanged: true,
 			wantUnlocated: map[string]int{"r1": 1},
+		},
+		{
+			name:     "a secret in a protected and an eligible leaf is replaced only where eligible",
+			doc:      `{"keepme":"SEC","other":"x SEC"}`,
+			findings: []Finding{{RuleID: "r1", Secret: "SEC"}},
+			opts: []Option{WithPathFilter(func(p string) bool {
+				return p != "/keepme"
+			})},
+			wantReplacements: 1,
+			wantByRule:       map[string]int{"r1": 1},
+			// The copy left in the protected leaf is still found on the next
+			// pass, where no eligible leaf holds it any more.
+			wantUnlocated: map[string]int{"r1": 1},
+			mustContain:   []string{`"keepme":"SEC"`, `"other":"x [REDACTED:r1]"`},
 		},
 		{
 			name:          "finding present nowhere is classified as an artifact",
@@ -254,6 +302,26 @@ func TestRedact(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestRedactFiltersOnlyMatchingLeaves pins the cost of the path filter. It is
+// consulted for the leaves that hold a pending secret, not for every leaf on
+// every pass: a transcript has millions of leaves and only a handful of secrets,
+// and the AI coding session filter is not cheap.
+func TestRedactFiltersOnlyMatchingLeaves(t *testing.T) {
+	var consulted []string
+	filter := func(p string) bool {
+		consulted = append(consulted, p)
+		return true
+	}
+
+	doc := `{"a":"plain","b":{"c":"x SEC x","d":["plain","plain"]},"e":"plain"}`
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "r1", Secret: "SEC"}}, requirePresent: true}
+
+	_, report, err := New(scanner, WithPathFilter(filter)).Redact(context.Background(), []byte(doc))
+	require.NoError(t, err)
+	require.Equal(t, 1, report.Replacements)
+	assert.Equal(t, []string{"/b/c"}, consulted)
 }
 
 func TestRedactIsIdempotent(t *testing.T) {

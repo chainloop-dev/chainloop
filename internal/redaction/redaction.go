@@ -75,6 +75,14 @@ type Scanner interface {
 	Scan(ctx context.Context, text string) ([]Finding, error)
 }
 
+// documentBinder is implemented by scanners that scan a document faster when
+// they know that successive texts are passes over the same document.
+type documentBinder interface {
+	// forDocument returns a scanner for the passes over a single document. It
+	// may remember earlier passes, so it is never shared between documents.
+	forDocument() Scanner
+}
+
 // PathFilter reports whether the string leaf at the given path may be rewritten.
 // Paths look like "/data/raw_session/main/0/content": a leading slash, object
 // keys and array indices separated by slashes.
@@ -216,6 +224,13 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 	skip := make(map[string]struct{})
 	converged := false
 
+	// Every pass scans a new version of the same document, which a scanner that
+	// knows so can scan faster.
+	scanner := r.scanner
+	if b, ok := scanner.(documentBinder); ok {
+		scanner = b.forDocument()
+	}
+
 	for pass := 1; pass <= r.maxPasses; pass++ {
 		report.Passes = pass
 
@@ -227,7 +242,7 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 			return nil, nil, fmt.Errorf("rendering document: %w", err)
 		}
 
-		findings, err := r.scanner.Scan(ctx, text)
+		findings, err := scanner.Scan(ctx, text)
 		if err != nil {
 			return nil, nil, fmt.Errorf("scanning for secrets: %w", err)
 		}
@@ -353,10 +368,7 @@ func (w *rewriter) rewrite(node any, path string) any {
 		}
 		return v
 	case string:
-		if !w.pathFilter(path) {
-			return v
-		}
-		return w.redactLeaf(v)
+		return w.redactLeaf(v, path)
 	default:
 		// Numbers, booleans and null cannot carry a secret the scanner reported
 		// as a string.
@@ -368,7 +380,11 @@ func (w *rewriter) rewrite(node any, path string) any {
 // against the leaf's JSON-encoded form, because that is the text the scanner
 // saw: a secret containing a newline, for instance, reaches us as the two
 // characters `\n`.
-func (w *rewriter) redactLeaf(s string) string {
+//
+// The path filter is consulted only once the leaf is known to hold a secret, and
+// nothing is recorded for a leaf it protects. Nearly every leaf holds none, and
+// the filter runs for each leaf on every pass otherwise.
+func (w *rewriter) redactLeaf(s, path string) string {
 	body, err := encodeStringBody(s)
 	if err != nil {
 		return s
@@ -382,6 +398,9 @@ func (w *rewriter) redactLeaf(s string) string {
 		c := strings.Count(body, sr.secret)
 		if c == 0 {
 			continue
+		}
+		if n == 0 && !w.pathFilter(path) {
+			return s
 		}
 		body = strings.ReplaceAll(body, sr.secret, w.placeholder(sr.ruleID))
 		n += c
@@ -517,6 +536,10 @@ func rejectDuplicateKeys(doc []byte) error {
 
 // encode serialises v. HTML escaping is disabled so transcript text keeps its
 // angle brackets and ampersands instead of being mangled into \u sequences.
+//
+// Newlines inside strings are escaped, so rewriting a leaf never changes the
+// number of lines in the indented rendering. The betterleaks scanner relies on
+// that to rescan only the chunks that changed between passes.
 func encode(v any, indent bool) (string, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
