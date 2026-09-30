@@ -115,9 +115,10 @@ type APIToken struct {
 	// If the token is scoped to a specific workflow within a project
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
-	// What the token is scoped to: organization, project, instance or product. Only a product
-	// scope drives any logic for now; tokens from before these columns existed leave both NULL.
-	// A product's name is not stored: it belongs to whoever owns the product.
+	// What the token is scoped to: organization, project, instance or product. Rows from before
+	// these columns existed store both NULL and are read back with the scope DefaultTokenScope
+	// derives from their organization and project. A product's name is not stored: it belongs to
+	// whoever owns the product.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
 	// ProjectIDs are the projects a product token reaches, kept consolidated by the Chainloop
@@ -130,20 +131,28 @@ type APIToken struct {
 }
 
 // IsResourceScoped reports whether the token is confined to a resource outside this database,
-// i.e. a product. It keys on the scope kind, never on scope_id, which every new token records.
+// i.e. a product, which reaches the projects in its ProjectIDs rather than a project of its own.
+// It is false for a project token, unlike ResourceScope: a resource-scoped token that also has a
+// project is malformed. It keys on the scope kind, never on scope_id, which organization and
+// project tokens carry too.
 func (t *APIToken) IsResourceScoped() bool {
 	return t != nil && t.Scope != nil && IsResourceScopeKind(*t.Scope)
 }
 
-// ResourceScope returns the resource the token is confined to when that resource does not live
-// in this database, so callers can render and authorize it without naming its kind. ok is false
-// for every other token, and for a resource scope missing its id.
+// ResourceScope returns the resource the token is confined to, its project or its product, so
+// callers can render and authorize it without naming its kind. ok is false for a token acting
+// for its whole organization or instance, and for a product scope missing its id.
 func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
-	if !t.IsResourceScoped() || t.ScopeID == nil {
+	switch {
+	case t == nil:
+		return "", uuid.Nil, false
+	case t.ProjectID != nil:
+		return authz.ResourceTypeProject, *t.ProjectID, true
+	case t.IsResourceScoped() && t.ScopeID != nil:
+		return *t.Scope, *t.ScopeID, true
+	default:
 		return "", uuid.Nil, false
 	}
-
-	return *t.Scope, *t.ScopeID, true
 }
 
 // IsOrgWide reports whether the token acts for the whole organization: confined to neither a
@@ -379,11 +388,11 @@ func ValidateTokenShape(scope *authz.ResourceType, scopeID, orgID, projectID *uu
 	return nil
 }
 
-// newTokenScope is the scope recorded for a new token confined to the given organization and
-// project. Only a product scope drives any logic for now: for these kinds the columns mirror
-// project_id and organization_id, which stay the fields the control plane reads, and tokens
-// from before the columns existed keep both NULL.
-func newTokenScope(orgID, projectID *uuid.UUID) (*authz.ResourceType, *uuid.UUID) {
+// DefaultTokenScope is the scope of a token confined to the given organization and project when
+// no scope is named: the one a new token records, and the one a row from before the scope
+// columns existed is read back with. For these kinds the columns mirror project_id and
+// organization_id, which stay the fields the control plane reads.
+func DefaultTokenScope(orgID, projectID *uuid.UUID) (*authz.ResourceType, *uuid.UUID) {
 	switch {
 	case projectID != nil:
 		return ToPtr(authz.ResourceTypeProject), projectID
@@ -462,7 +471,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Determine the scope (may be overridden by options.scope below)
-	scope, scopeID := newTokenScope(orgUUID, projectID)
+	scope, scopeID := DefaultTokenScope(orgUUID, projectID)
 	if options.scope != nil {
 		if err := validateTokenScope(*options.scope, options.scopeID, orgUUID, projectID); err != nil {
 			return nil, err

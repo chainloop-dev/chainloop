@@ -589,6 +589,82 @@ func (s *apiTokenTestSuite) TestRepoPersistsAndReadsTheResourceScope() {
 	s.Equal(productID, *reloaded.ScopeID)
 }
 
+// Rows from before the scope columns existed keep both NULL in the database. Every read derives
+// the scope a new token would record from their organization and project, and the listing
+// filters, which key on the columns, still find them.
+func (s *apiTokenTestSuite) TestLegacyRowsReadBackWithTheirDerivedScope() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org.ID)
+
+	testCases := []struct {
+		name        string
+		org         *uuid.UUID
+		project     *uuid.UUID
+		wantScope   authz.ResourceType
+		wantScopeID *uuid.UUID
+		// listedBy is the listing scope that must still find the row
+		listedBy authz.ResourceType
+	}{
+		{name: "a legacy organization token", org: &orgUUID, wantScope: authz.ResourceTypeOrganization, wantScopeID: &orgUUID, listedBy: authz.ResourceTypeOrganization},
+		{name: "a legacy project token", org: &orgUUID, project: &s.p1.ID, wantScope: authz.ResourceTypeProject, wantScopeID: &s.p1.ID, listedBy: authz.ResourceTypeProject},
+		{name: "a legacy instance token", wantScope: authz.ResourceTypeInstance, listedBy: authz.ResourceTypeInstance},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			name := randomName()
+			created, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+				Name: name, OrganizationID: tc.org, ProjectID: tc.project, Policies: []*authz.Policy{},
+			})
+			s.Require().NoError(err)
+
+			row, err := s.Data.DB.APIToken.Get(ctx, created.ID)
+			s.Require().NoError(err)
+			s.Nil(row.Scope, "the database is not backfilled")
+			s.Nil(row.ScopeID, "the database is not backfilled")
+
+			reads := map[string]*biz.APIToken{"Create": created}
+			reads["FindByID"], err = s.APIToken.FindByID(ctx, created.ID.String())
+			s.Require().NoError(err)
+
+			var listOrg string
+			if tc.org != nil {
+				listOrg = tc.org.String()
+				reads["FindByIDInOrg"], err = s.APIToken.FindByIDInOrg(ctx, listOrg, created.ID.String())
+				s.Require().NoError(err)
+				reads["FindByNameInOrg"], err = s.APIToken.FindByNameInOrg(ctx, listOrg, name)
+				s.Require().NoError(err)
+				inactive, err := s.Repos.APITokenRepo.FindInactive(ctx, *tc.org, time.Now().Add(time.Hour))
+				s.Require().NoError(err)
+				reads["FindInactive"] = findAPIToken(inactive, created.ID)
+			}
+
+			listed, err := s.APIToken.List(ctx, listOrg, biz.WithAPITokenScope(tc.listedBy))
+			s.Require().NoError(err)
+			reads["List"] = findAPIToken(listed, created.ID)
+
+			for read, got := range reads {
+				s.Require().NotNil(got, read)
+				s.Require().NotNil(got.Scope, read)
+				s.Equal(tc.wantScope, *got.Scope, read)
+				s.Equal(tc.wantScopeID, got.ScopeID, read)
+				s.Equal(tc.project, got.ProjectID, read)
+				s.Nil(got.ProjectIDs, read)
+			}
+		})
+	}
+}
+
+func findAPIToken(tokens []*biz.APIToken, id uuid.UUID) *biz.APIToken {
+	for _, t := range tokens {
+		if t.ID == id {
+			return t
+		}
+	}
+
+	return nil
+}
+
 // A caller such as the platform may name the scope itself. It must agree with the
 // organization and project the token is created for, and is refused otherwise.
 func (s *apiTokenTestSuite) TestCreateWithAnExplicitScope() {

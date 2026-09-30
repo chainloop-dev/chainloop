@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2026 The Chainloop Authors.
+// Copyright 2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,13 +70,14 @@ func TestAPITokenReach(t *testing.T) {
 	}
 }
 
-// ResourceScope names the resource a token is confined to when that resource does not live in
-// this database. Only a product scope, with an id, qualifies.
+// ResourceScope names the resource a token is confined to: its project, or its product. A token
+// acting for its whole organization or instance is confined to nothing, and a product scope
+// missing its id names nothing rather than a zero id.
 func TestAPITokenResourceScope(t *testing.T) {
 	t.Parallel()
 
 	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
-	product, project, organization := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization
+	product, project, organization, instance := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization, authz.ResourceTypeInstance
 
 	testCases := []struct {
 		name     string
@@ -88,7 +89,9 @@ func TestAPITokenResourceScope(t *testing.T) {
 		{name: "no token", token: nil},
 		{name: "a legacy organization token", token: &APIToken{}},
 		{name: "an organization token recording its scope", token: &APIToken{Scope: &organization, ScopeID: &orgID}},
-		{name: "a project token recording its scope", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID}},
+		{name: "an instance token recording its scope", token: &APIToken{Scope: &instance}},
+		{name: "a legacy project token", token: &APIToken{ProjectID: &projectID}, wantKind: project, wantID: projectID, wantOK: true},
+		{name: "a project token recording its scope", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID}, wantKind: project, wantID: projectID, wantOK: true},
 		{name: "a product token", token: &APIToken{Scope: &product, ScopeID: &productID}, wantKind: product, wantID: productID, wantOK: true},
 		{name: "a product scope missing its id", token: &APIToken{Scope: &product}},
 	}

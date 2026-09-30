@@ -179,14 +179,7 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 	}
 
 	// Make sure the caller has permission to revoke the token where it lives
-	switch {
-	case t.ProjectID != nil:
-		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProject, *t.ProjectID); err != nil {
-			return nil, err
-		}
-	case t.IsResourceScoped():
-		// The database never stores a resource scope without its id, but refuse such a row
-		// rather than authorizing against nothing.
+	if !t.IsOrgWide() {
 		kind, id, ok := t.ResourceScope()
 		if !ok {
 			return nil, errors.BadRequest("invalid", "this API token carries an incomplete scope and cannot be managed here")
@@ -226,19 +219,15 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 		res.LastUsedAt = timestamppb.New(*in.LastUsedAt)
 	}
 
-	// A token reports the one thing it is confined to. Chained, not independent: Create
-	// refuses a row carrying both a project and a resource scope, and overwriting one with
-	// the other would hide a confinement from the artefact an operator audits.
-	if in.ProjectID != nil {
-		res.ScopedEntity = &pb.ScopedEntity{
-			Type: string(authz.ResourceTypeProject),
-			Id:   in.ProjectID.String(),
-			Name: *in.ProjectName,
+	// A token reports what it is confined to. A product lives outside this database, so its id
+	// stands in for its name.
+	if kind, id, ok := in.ResourceScope(); ok {
+		name := id.String()
+		if kind == authz.ResourceTypeProject && in.ProjectName != nil {
+			name = *in.ProjectName
 		}
-	} else if kind, id, ok := in.ResourceScope(); ok {
-		// The resource lives outside this database, so its id stands in for its name; resolving
-		// it is the business of whoever owns it. ScopedEntity is free-form over its type.
-		res.ScopedEntity = &pb.ScopedEntity{Type: string(kind), Id: id.String(), Name: id.String()}
+
+		res.ScopedEntity = &pb.ScopedEntity{Type: string(kind), Id: id.String(), Name: name}
 	}
 
 	return res

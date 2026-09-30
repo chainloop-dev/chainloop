@@ -247,15 +247,20 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 // tokenOutOfReachMessage tells a refused token what it is confined to. A product is named by id:
 // its display name belongs to whoever owns it.
 func tokenOutOfReachMessage(token *entities.APIToken) string {
-	if token.ProjectName != nil {
-		return fmt.Sprintf("operation not allowed: This auth token is valid only with the project %q", *token.ProjectName)
-	}
+	kind, id, ok := token.ResourceScope()
+	switch {
+	case !ok:
+		return "operation not allowed: this auth token is not confined to this resource"
+	case kind == authz.ResourceTypeProject:
+		name := id.String()
+		if token.ProjectName != nil {
+			name = *token.ProjectName
+		}
 
-	if kind, id, ok := token.ResourceScope(); ok {
+		return fmt.Sprintf("operation not allowed: This auth token is valid only with the project %q", name)
+	default:
 		return fmt.Sprintf("operation not allowed: this auth token is valid only with the projects of the %s %q", kind, id.String())
 	}
-
-	return "operation not allowed: this auth token is not confined to this resource"
 }
 
 // projectsAllowing reports, per project ID, whether the caller may perform op

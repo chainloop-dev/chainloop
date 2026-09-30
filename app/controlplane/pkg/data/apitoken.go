@@ -443,10 +443,23 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 	}
 
 	// The scoped resource is not an entity in this database, so unlike the project and the
-	// workflow it has no edge to load: both values come straight off the row.
-	result.Scope = t.Scope
-	result.ScopeID = t.ScopeID
+	// workflow it has no edge to load: both values come straight off the row. A row from before
+	// the scope columns existed stores none, so it is given the scope a new token would record.
+	result.Scope, result.ScopeID = t.Scope, t.ScopeID
+	if result.Scope == nil {
+		result.Scope, result.ScopeID = biz.DefaultTokenScope(nonNilUUID(t.OrganizationID), nonNilUUID(t.ProjectID))
+	}
+
 	result.ProjectIDs = t.ProjectIds
 
 	return result
+}
+
+// nonNilUUID returns a pointer to id, or nil for the zero UUID an unset optional column reads as.
+func nonNilUUID(id uuid.UUID) *uuid.UUID {
+	if id == uuid.Nil {
+		return nil
+	}
+
+	return &id
 }

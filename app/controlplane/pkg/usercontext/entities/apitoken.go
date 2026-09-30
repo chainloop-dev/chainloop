@@ -37,7 +37,7 @@ type APIToken struct {
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
 	// Scope and ScopeID name what the token is scoped to. They are loaded from the row, never
-	// from a claim; only a product scope drives any logic.
+	// from a claim, and are set for every token read from the database.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
 	// ProjectIDs are the projects a product token reaches, loaded from the row.
@@ -50,7 +50,8 @@ type APIToken struct {
 }
 
 // IsResourceScoped reports whether the token is confined to a product, a resource that does not
-// live in the control plane database. It keys on the scope kind, never on scope_id.
+// live in the control plane database, which reaches the projects in its ProjectIDs. It is false
+// for a project token, unlike ResourceScope. It keys on the scope kind, never on scope_id.
 func (t *APIToken) IsResourceScoped() bool {
 	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
@@ -61,15 +62,21 @@ func (t *APIToken) IsOrgWide() bool {
 	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
 }
 
-// ResourceScope returns the resource the token is confined to when that resource does not live
-// in this database, so callers can render and authorize it without naming its kind. ok is false
-// for every other token, and for a resource scope missing its id. Mirrors biz.APIToken.ResourceScope.
+// ResourceScope returns the resource the token is confined to, its project or its product, so
+// callers can render and authorize it without naming its kind. ok is false for a token acting
+// for its whole organization or instance, and for a product scope missing its id. Mirrors
+// biz.APIToken.ResourceScope.
 func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bool) {
-	if !t.IsResourceScoped() || t.ScopeID == nil {
+	switch {
+	case t == nil:
+		return "", uuid.Nil, false
+	case t.ProjectID != nil:
+		return authz.ResourceTypeProject, *t.ProjectID, true
+	case t.IsResourceScoped() && t.ScopeID != nil:
+		return *t.Scope, *t.ScopeID, true
+	default:
 		return "", uuid.Nil, false
 	}
-
-	return *t.Scope, *t.ScopeID, true
 }
 
 // ReachableProjects returns the projects a confined token reaches: its project, or its list. It

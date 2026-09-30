@@ -141,9 +141,9 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	}
 }
 
-// A listing reports what a token is confined to: its project, or its product. Every new token
-// records a scope, yet only a product is reported from it, so every other token lists exactly as
-// it did before.
+// A listing reports what a token is confined to: its project by name, or its product by id. A
+// token acting for its whole organization or instance reports nothing, whether or not its row
+// records a scope.
 func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 	t.Parallel()
 
@@ -204,6 +204,22 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			name:  "an organization-level token reports none",
 			token: &biz.APIToken{ID: uuid.New(), CreatedAt: &createdAt},
 			want:  nil,
+		},
+		{
+			name: "an instance-scoped token reports none",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeInstance),
+			},
+			want: nil,
+		},
+		{
+			name: "a product scope missing its id is not reported",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: toPtr(authz.ResourceTypeProduct), ProjectIDs: []uuid.UUID{projectID},
+			},
+			want: nil,
 		},
 	}
 

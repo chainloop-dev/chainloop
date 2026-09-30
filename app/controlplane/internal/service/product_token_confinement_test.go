@@ -17,6 +17,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 
@@ -40,6 +41,7 @@ const (
 	testProjectName = "billing"
 	testOrgName     = "acme"
 	testJWTKey      = "test"
+	testUserEmail   = "user@test.com"
 )
 
 func toPtr[T any](v T) *T {
@@ -154,42 +156,64 @@ func TestAuthorizeResourceForProductTokens(t *testing.T) {
 }
 
 // authorizeResource's refusal names what the token is confined to, and never dereferences a
-// field the token does not carry. The panic this once fixed was a refused product token's
-// ProjectName: nil, since a product token names its product by id instead. The organization-token
-// case below cannot itself reach withForceRBAC's default branch in production - organization.go
-// requires a user before that path runs - it is here only to pin that the refusal still degrades
-// gracefully rather than panicking if that ever changed.
+// field the token does not carry: a product token has no ProjectName and names its product by id.
+// The organization-token cases cannot reach withForceRBAC's default branch in production -
+// organization.go requires a user before that path runs - they pin that the refusal degrades
+// gracefully rather than panicking.
 func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
-	projectID, otherProject := uuid.New(), uuid.New()
+	projectID, otherProject, orgID := uuid.New(), uuid.New(), uuid.New()
 	projectName := testProjectName
+	projectScope, orgScope, productScope := authz.ResourceTypeProject, authz.ResourceTypeOrganization, authz.ResourceTypeProduct
 
 	product := productTokenContext(otherProject)
 	productID := entities.CurrentAPIToken(product).ScopeID
 
+	const (
+		wantProjectMessage = `operation not allowed: This auth token is valid only with the project "billing"`
+		wantNotConfined    = "operation not allowed: this auth token is not confined to this resource"
+	)
+
+	withToken := func(token *entities.APIToken) context.Context {
+		token.ID = uuid.NewString()
+		return entities.WithCurrentAPIToken(context.Background(), token)
+	}
+
 	testCases := []struct {
-		name string
-		ctx  context.Context
-		// substrings the refusal must carry, so the caller can act on it
-		wantContains []string
+		name        string
+		ctx         context.Context
+		wantMessage string
 	}{
 		{
-			name: "a legacy project token names its project",
-			ctx: entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{
-				ID: uuid.NewString(), ProjectID: &otherProject, ProjectName: &projectName,
+			name:        "a legacy project token names its project",
+			ctx:         withToken(&entities.APIToken{ProjectID: &otherProject, ProjectName: &projectName}),
+			wantMessage: wantProjectMessage,
+		},
+		{
+			name: "a project token recording its scope names its project",
+			ctx: withToken(&entities.APIToken{
+				ProjectID: &otherProject, ProjectName: &projectName, Scope: &projectScope, ScopeID: &otherProject,
 			}),
-			wantContains: []string{testProjectName},
+			wantMessage: wantProjectMessage,
 		},
 		{
-			name:         "a product token names its product by id",
-			ctx:          product,
-			wantContains: []string{string(authz.ResourceTypeProduct), productID.String()},
+			name:        "a product token names its product by id",
+			ctx:         product,
+			wantMessage: fmt.Sprintf("operation not allowed: this auth token is valid only with the projects of the product %q", productID.String()),
 		},
 		{
-			// Not a path production reaches under withForceRBAC (organization.go requires a user
-			// first), but the refusal must still degrade gracefully rather than panic.
-			name:         "an organization token is refused instead of panicking",
-			ctx:          entities.WithCurrentAPIToken(context.Background(), &entities.APIToken{ID: uuid.NewString()}),
-			wantContains: []string{"not confined to this resource"},
+			name:        "a product scope missing its id names nothing",
+			ctx:         withToken(&entities.APIToken{Scope: &productScope, ProjectIDs: []uuid.UUID{otherProject}}),
+			wantMessage: wantNotConfined,
+		},
+		{
+			name:        "an organization token is refused instead of panicking",
+			ctx:         withToken(&entities.APIToken{}),
+			wantMessage: wantNotConfined,
+		},
+		{
+			name:        "an organization token recording its scope is refused instead of panicking",
+			ctx:         withToken(&entities.APIToken{Scope: &orgScope, ScopeID: &orgID}),
+			wantMessage: wantNotConfined,
 		},
 	}
 
@@ -200,9 +224,7 @@ func TestAuthorizeResourceRefusalMessagesForTokens(t *testing.T) {
 
 			require.Error(t, err)
 			assert.True(t, kerrors.IsForbidden(err), "got %v", err)
-			for _, want := range tc.wantContains {
-				assert.Contains(t, err.Error(), want)
-			}
+			assert.Equal(t, tc.wantMessage, kerrors.FromError(err).Message)
 		})
 	}
 }
@@ -558,7 +580,7 @@ func TestRevokeOfAResourceScopedTokenByAUser(t *testing.T) {
 			require.NoError(t, err)
 
 			userID := uuid.New()
-			ctx := entities.WithCurrentUser(context.Background(), &entities.User{ID: userID.String(), Email: "user@test.com"})
+			ctx := entities.WithCurrentUser(context.Background(), &entities.User{ID: userID.String(), Email: testUserEmail})
 			ctx = usercontext.WithAuthzSubject(ctx, string(tc.role))
 			ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: testOrgName})
 			ctx = entities.WithMembership(ctx, &entities.Membership{UserID: userID, Resources: tc.memberships})
@@ -573,6 +595,87 @@ func TestRevokeOfAResourceScopedTokenByAUser(t *testing.T) {
 
 			require.Error(t, err)
 			assert.True(t, kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+		})
+	}
+}
+
+// Revoke authorizes against what the target is confined to, for every kind of token and whether
+// or not its row records a scope: an organization-wide one only an admin manages, a project one
+// whoever may revoke tokens in that project, a product one whoever administers the product, and
+// a product scope missing its id no one.
+func TestRevokeAuthorizesWhereTheTargetIsConfined(t *testing.T) {
+	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
+	orgScope, projectScope, productScope := authz.ResourceTypeOrganization, authz.ResourceTypeProject, authz.ResourceTypeProduct
+	projectName := testProjectName
+
+	target := func(tok biz.APIToken) *biz.APIToken {
+		tok.ID, tok.Name, tok.OrganizationID = uuid.New(), "t", orgID
+		return &tok
+	}
+	legacyOrg := target(biz.APIToken{})
+	scopedOrg := target(biz.APIToken{Scope: &orgScope, ScopeID: &orgID})
+	legacyProject := target(biz.APIToken{ProjectID: &projectID, ProjectName: &projectName})
+	scopedProject := target(biz.APIToken{ProjectID: &projectID, ProjectName: &projectName, Scope: &projectScope, ScopeID: &projectID})
+	product := target(biz.APIToken{Scope: &productScope, ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID}})
+	productWithoutID := target(biz.APIToken{Scope: &productScope, ProjectIDs: []uuid.UUID{projectID}})
+
+	admin := []*entities.ResourceMembership(nil)
+	projectAdmin := []*entities.ResourceMembership{{ResourceType: authz.ResourceTypeProject, ResourceID: projectID, Role: authz.RoleProjectAdmin}}
+
+	testCases := []struct {
+		name        string
+		target      *biz.APIToken
+		role        authz.Role
+		memberships []*entities.ResourceMembership
+		// wantErr classifies the refusal; nil when the revoke goes through
+		wantErr func(error) bool
+	}{
+		{name: "an admin revokes a legacy organization token", target: legacyOrg, role: authz.RoleAdmin, memberships: admin},
+		{name: "a member cannot manage a legacy organization token", target: legacyOrg, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
+		{name: "an admin revokes an organization token recording its scope", target: scopedOrg, role: authz.RoleAdmin, memberships: admin},
+		{name: "a member cannot manage an organization token recording its scope", target: scopedOrg, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
+		{name: "a project admin revokes a legacy project token", target: legacyProject, role: authz.RoleOrgMember, memberships: projectAdmin},
+		{name: "a member with no role cannot revoke a legacy project token", target: legacyProject, role: authz.RoleOrgMember, wantErr: kerrors.IsForbidden},
+		{name: "a project admin revokes a project token recording its scope", target: scopedProject, role: authz.RoleOrgMember, memberships: projectAdmin},
+		{name: "a member with no role cannot revoke a project token recording its scope", target: scopedProject, role: authz.RoleOrgMember, wantErr: kerrors.IsForbidden},
+		{name: "an admin revokes a product token", target: product, role: authz.RoleAdmin, memberships: admin},
+		{name: "a project admin cannot revoke a product token reaching the project", target: product, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsForbidden},
+		{name: "an admin cannot revoke a product scope missing its id", target: productWithoutID, role: authz.RoleAdmin, memberships: admin, wantErr: kerrors.IsBadRequest},
+		{name: "a member cannot revoke a product scope missing its id", target: productWithoutID, role: authz.RoleOrgMember, memberships: projectAdmin, wantErr: kerrors.IsBadRequest},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := log.NewStdLogger(io.Discard)
+			enforcer, err := authz.NewCasbinEnforcer(&authz.Config{RolesMap: authz.RolesMap})
+			require.NoError(t, err)
+
+			repo := mocks.NewAPITokenRepo(t)
+			repo.On("FindByIDInOrg", mock.Anything, mock.Anything, mock.Anything).Return(tc.target, nil)
+			repo.On("FindByID", mock.Anything, mock.Anything).Maybe().Return(tc.target, nil)
+			repo.On("Revoke", mock.Anything, mock.Anything, mock.Anything).Maybe().Return(nil)
+
+			authzUC := biz.NewAuthzUseCase(&biz.AuthzUseCaseConfig{CasbinEnforcer: enforcer, APITokenRepo: repo, Logger: logger})
+			uc, err := biz.NewAPITokenUseCase(repo, &biz.APITokenJWTConfig{SymmetricHmacKey: testJWTKey}, authzUC, nil,
+				biz.NewAuditorUseCase(nil, logger), logger)
+			require.NoError(t, err)
+
+			userID := uuid.New()
+			ctx := entities.WithCurrentUser(context.Background(), &entities.User{ID: userID.String(), Email: testUserEmail})
+			ctx = usercontext.WithAuthzSubject(ctx, string(tc.role))
+			ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String(), Name: testOrgName})
+			ctx = entities.WithMembership(ctx, &entities.Membership{UserID: userID, Resources: tc.memberships})
+
+			_, err = NewAPITokenService(uc, WithLogger(logger), WithEnforcer(authzUC)).
+				Revoke(ctx, &pb.APITokenServiceRevokeRequest{Id: tc.target.ID.String()})
+
+			if tc.wantErr == nil {
+				assert.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err)
+			assert.True(t, tc.wantErr(err), "unexpected refusal: %v", err)
 		})
 	}
 }
