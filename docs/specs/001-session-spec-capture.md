@@ -159,9 +159,9 @@ Each spec material in the predicate:
     "chainloop.material.name": "spec-fd4e67-ticket-eng-1234",
     "chainloop.material.type": "EVIDENCE",
     "chainloop.material.cas": true,
-    "spec_session_id": "fd4e6754-3b26-4f54-9807-13c58465bb35",
-    "spec_kind": "ticket",
-    "spec_uri": "https://tracker.example.com/issue/ENG-1234"
+    "chainloop.spec.session_id": "fd4e6754-3b26-4f54-9807-13c58465bb35",
+    "chainloop.spec.kind": "ticket",
+    "chainloop.spec.uri": "https://tracker.example.com/issue/ENG-1234"
   }
 }
 ```
