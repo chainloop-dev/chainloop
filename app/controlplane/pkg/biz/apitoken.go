@@ -53,7 +53,7 @@ var orgLevelTokenPolicies = []*authz.Policy{
 }
 
 // IsOrgLevelTokenPolicy reports whether a policy is one only an organization-wide token holds.
-// A token confined to a project or to a resource outside this database never carries one.
+// A token confined to a project or to a product never carries one.
 func IsOrgLevelTokenPolicy(p *authz.Policy) bool {
 	if p == nil {
 		return false
@@ -62,12 +62,6 @@ func IsOrgLevelTokenPolicy(p *authz.Policy) bool {
 	return slices.ContainsFunc(orgLevelTokenPolicies, func(o *authz.Policy) bool {
 		return o.Resource == p.Resource && o.Action == p.Action
 	})
-}
-
-// IsResourceScopeKind reports whether a scope kind confines a token to a resource that does not
-// live in this database. Only a product does.
-func IsResourceScopeKind(kind authz.ResourceType) bool {
-	return kind == authz.ResourceTypeProduct
 }
 
 // defaultAuthzPolicies are granted to every token regardless of scope, so each entry must be safe
@@ -136,7 +130,7 @@ type APIToken struct {
 // project is malformed. It keys on the scope kind, never on scope_id, which organization and
 // project tokens carry too.
 func (t *APIToken) IsResourceScoped() bool {
-	return t != nil && t.Scope != nil && IsResourceScopeKind(*t.Scope)
+	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
 
 // ResourceScope returns the resource the token is confined to, its project or its product, so
@@ -156,7 +150,7 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 }
 
 // IsOrgWide reports whether the token acts for the whole organization: confined to neither a
-// project nor a resource outside this database.
+// project nor a product.
 func (t *APIToken) IsOrgWide() bool {
 	return t != nil && t.ProjectID == nil && !t.IsResourceScoped()
 }
@@ -355,7 +349,7 @@ func validateTokenScope(scope authz.ResourceType, scopeID, orgID, projectID *uui
 // list, which it always does. A row from before the scope columns carries neither a scope nor a
 // list. The repository checks this before every write, whoever the writer is.
 func ValidateTokenShape(scope *authz.ResourceType, scopeID, orgID, projectID *uuid.UUID, projectIDs []uuid.UUID) error {
-	if (scope != nil && IsResourceScopeKind(*scope)) != (projectIDs != nil) {
+	if (scope != nil && *scope == authz.ResourceTypeProduct) != (projectIDs != nil) {
 		return NewErrValidationStr("only a product-scoped token carries a project list, and it always carries one")
 	}
 
@@ -481,7 +475,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Only a product token carries a project list.
-	if !IsResourceScopeKind(*scope) && options.projectIDs != nil {
+	if *scope != authz.ResourceTypeProduct && options.projectIDs != nil {
 		return nil, NewErrValidationStr("only a product-scoped token carries a project list")
 	}
 
@@ -495,7 +489,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	// in-process: the refusals below are defence in depth against the organization-level grant
 	// this function appends to organization-wide tokens, not a classification of every policy.
 	// What confines the token is its project list.
-	if IsResourceScopeKind(*scope) {
+	if *scope == authz.ResourceTypeProduct {
 		if options.projectIDs == nil {
 			return nil, NewErrValidationStr("a product scope requires the projects the token reaches")
 		}
@@ -510,7 +504,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
-	if projectID == nil && !IsResourceScopeKind(*scope) && orgUUID != nil {
+	if projectID == nil && *scope != authz.ResourceTypeProduct && orgUUID != nil {
 		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
@@ -861,7 +855,7 @@ func (uc *APITokenUseCase) SetProjectsOfTokensScopedTo(ctx context.Context, orgI
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetProjectsOfTokensScopedTo")
 	defer span.End()
 
-	if !IsResourceScopeKind(kind) {
+	if kind != authz.ResourceTypeProduct {
 		return 0, NewErrValidationStr(fmt.Sprintf("tokens scoped to %q carry no project list", kind))
 	}
 
@@ -877,7 +871,7 @@ func (uc *APITokenUseCase) SetPoliciesOfTokensScopedTo(ctx context.Context, orgI
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.SetPoliciesOfTokensScopedTo")
 	defer span.End()
 
-	if !IsResourceScopeKind(kind) {
+	if kind != authz.ResourceTypeProduct {
 		return 0, NewErrValidationStr(fmt.Sprintf("tokens scoped to %q take their policies at creation", kind))
 	}
 

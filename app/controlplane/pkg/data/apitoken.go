@@ -122,7 +122,7 @@ func (r *APITokenRepo) SetProjectsOfTokensScopedTo(ctx context.Context, orgID uu
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetProjectsOfTokensScopedTo")
 	defer span.End()
 
-	if !biz.IsResourceScopeKind(kind) {
+	if kind != authz.ResourceTypeProduct {
 		return 0, biz.NewErrValidationStr(fmt.Sprintf("tokens scoped to %q carry no project list", kind))
 	}
 
@@ -164,7 +164,7 @@ func (r *APITokenRepo) SetPoliciesOfTokensScopedTo(ctx context.Context, orgID uu
 	ctx, span := otelx.Start(ctx, apiTokenRepoTracer, "APITokenRepo.SetPoliciesOfTokensScopedTo")
 	defer span.End()
 
-	if !biz.IsResourceScopeKind(kind) {
+	if kind != authz.ResourceTypeProduct {
 		return 0, biz.NewErrValidationStr(fmt.Sprintf("tokens scoped to %q take their policies at creation", kind))
 	}
 
