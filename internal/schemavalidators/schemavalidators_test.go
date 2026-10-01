@@ -412,7 +412,7 @@ func TestValidateAICodingSessionSpec(t *testing.T) {
 		spec any
 	}{
 		{name: "an entry with no digest", spec: []any{entry(map[string]any{keyDigest: nil})}},
-		{name: "a digest without its algorithm", spec: []any{entry(map[string]any{keyDigest: "3f786850e387550fdab836ed7e6dc881de23001b4a7b8f6d7e1a3d5c9b2e4f10"})}},
+		{name: "a digest without its algorithm", spec: []any{entry(map[string]any{keyDigest: strings.TrimPrefix(digest, "sha256:")})}},
 		{name: "a digest of the wrong length", spec: []any{entry(map[string]any{keyDigest: "sha256:3f78"})}},
 		// The text lives in its own material. Inline content in the session
 		// document is what this field replaced, and must not creep back.
