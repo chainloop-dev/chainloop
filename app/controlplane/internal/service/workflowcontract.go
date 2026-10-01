@@ -172,10 +172,12 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 }
 
 func canCreateContractsInRestrictedMode(ctx context.Context) bool {
-	// it's an org-scoped API token
+	// it's an org-scoped or instance API token, which stands in for an administrator. A token
+	// confined to a project or to a product is not one, and must not be able to create an
+	// organization-level contract while the organization restricts that.
 	token := entities.CurrentAPIToken(ctx)
 	if token != nil {
-		return token.ProjectID == nil
+		return token.IsOrgScoped() || token.IsInstanceScoped()
 	}
 
 	// or it's an admin user
@@ -331,6 +333,12 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		if !canCreateContractsInRestrictedMode(ctx) {
 			return nil, errors.Forbidden("forbidden", "contract creation is restricted to organization administrators and service accounts. Please contact your administrator")
 		}
+	}
+
+	// Apply has no project to scope a new contract to, so what it creates is organization-level,
+	// which a product token never changes. Create asks such a caller for a project instead.
+	if entities.CurrentAPIToken(ctx).IsProductScoped() {
+		return nil, errors.Forbidden("forbidden", "a product-scoped token cannot create an organization-level contract; create it in one of the product's projects")
 	}
 
 	// On a dry run we report that the contract would be created, without persisting it

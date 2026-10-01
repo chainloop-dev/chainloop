@@ -54,8 +54,8 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		return nil, errors.BadRequest("invalid", "project is required")
 	}
 
-	// Org-level API tokens can only create project-scoped tokens
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+	// Org-level and instance API tokens can only create project-scoped tokens
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgScoped() || token.IsInstanceScoped() {
 		if !req.ProjectReference.IsSet() {
 			return nil, errors.Forbidden("forbidden", "org-level API tokens must specify a project when creating new tokens")
 		}
@@ -108,9 +108,10 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		defaultProjectFilter = []uuid.UUID{project.ID}
 	}
 
-	// Org-level API tokens can only see project-scoped tokens
+	// Org-level and instance API tokens can only see project-scoped tokens. A product token is
+	// neither: it is narrowed to its projects by the filter above instead.
 	scope := mapTokenScope(req.Scope)
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgScoped() || token.IsInstanceScoped() {
 		scope = authz.ResourceTypeProject
 	}
 
@@ -165,22 +166,31 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, errors.NotFound("not found", "API token not found")
 	}
 
-	// 1 - Only admins can manage global contracts
-	if t.ProjectID == nil && rbacEnabled(ctx) {
+	// 1 - Only admins can manage organization and instance tokens
+	if (t.IsOrgScoped() || t.IsInstanceScoped()) && rbacEnabled(ctx) {
 		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
 	}
 
-	// Org-level API tokens cannot revoke other org-level tokens
-	if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
+	// An organization or instance token may only revoke project tokens
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgScoped() || token.IsInstanceScoped() {
 		if t.ProjectID == nil {
-			return nil, errors.Forbidden("forbidden", "org-level API tokens cannot revoke org-level tokens")
+			return nil, errors.Forbidden("forbidden", "org-level API tokens can only revoke project-scoped tokens")
 		}
 	}
 
-	// Make sure the user has permission to revoke the token in the project
-	if t.ProjectID != nil {
-		if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, authz.ResourceTypeProject, *t.ProjectID); err != nil {
-			return nil, err
+	// Make sure the caller has permission to revoke the token where it lives
+	if !t.IsOrgScoped() && !t.IsInstanceScoped() {
+		kind, id, ok := t.ResourceScope()
+		switch {
+		case ok:
+			if err := s.authorizeResource(ctx, authz.PolicyAPITokenRevoke, kind, id); err != nil {
+				return nil, err
+			}
+		case t.Scope == nil && !rbacEnabled(ctx):
+			// A row recording no scope reaches nothing, so revoking it only takes it away: a
+			// caller RBAC does not narrow may do so.
+		default:
+			return nil, errors.BadRequest("invalid", "this API token carries an incomplete scope and cannot be managed here")
 		}
 	}
 
@@ -213,12 +223,15 @@ func apiTokenBizToPb(in *biz.APIToken) *pb.APITokenItem {
 		res.LastUsedAt = timestamppb.New(*in.LastUsedAt)
 	}
 
-	if in.ProjectID != nil {
-		res.ScopedEntity = &pb.ScopedEntity{
-			Type: string(authz.ResourceTypeProject),
-			Id:   in.ProjectID.String(),
-			Name: *in.ProjectName,
+	// A token reports what it is confined to. A product lives outside this database, so its id
+	// stands in for its name.
+	if kind, id, ok := in.ResourceScope(); ok {
+		name := id.String()
+		if kind == authz.ResourceTypeProject && in.ProjectName != nil {
+			name = *in.ProjectName
 		}
+
+		res.ScopedEntity = &pb.ScopedEntity{Type: string(kind), Id: id.String(), Name: name}
 	}
 
 	return res

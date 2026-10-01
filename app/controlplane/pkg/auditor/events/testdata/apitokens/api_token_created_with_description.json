@@ -11,7 +11,9 @@
   "Info": {
     "api_token_id": "2089bb36-e27b-428b-8009-d015c8737c55",
     "api_token_name": "test-token",
+    "scope": "organization",
+    "scope_id": "1089bb36-e27b-428b-8009-d015c8737c54",
     "description": "test description"
   },
-  "Digest": "sha256:53df6d855b95c7d86e11b57af445306ee536abffa682fdbc0ecd1e58bd1e52ee"
+  "Digest": "sha256:3aee57f85ad6af884b38c2c6d15f76c589d1f06064fddd77367621445b19c720"
 }

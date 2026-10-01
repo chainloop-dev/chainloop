@@ -23,8 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Only a product scope makes a persisted token resource-scoped; every other kind, and a row from
-// before the scope columns, keeps reading organization_id and project_id.
+// Only a product scope makes a token product-scoped. ResourceScope names what a token is
+// confined to, a project or a product, and nothing for a token acting for its whole organization
+// or instance.
 func TestAPITokenScopePredicates(t *testing.T) {
 	t.Parallel()
 
@@ -33,28 +34,46 @@ func TestAPITokenScopePredicates(t *testing.T) {
 	testCases := []struct {
 		name               string
 		token              *APIToken
-		wantResourceScoped bool
-		wantOrgWide        bool
-		// wantResource is the id ResourceScope reports; nil when it reports nothing
+		wantProductScoped  bool
+		wantOrgScoped      bool
+		wantInstanceScoped bool
+		// wantKind and wantResource are what ResourceScope reports; wantResource is nil when
+		// it reports nothing
+		wantKind     authz.ResourceType
 		wantResource *uuid.UUID
 	}{
 		{name: "no token", token: nil},
-		{name: "an organization token from before the scope columns", token: &APIToken{}, wantOrgWide: true},
-		{name: "an organization-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}, wantOrgWide: true},
-		{name: "a project token from before the scope columns", token: &APIToken{ProjectID: &projectID}},
-		{name: "a project-scoped token", token: &APIToken{ProjectID: &projectID, Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID}},
-		{name: "an instance-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeInstance)}, wantOrgWide: true},
-		{name: "a product-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID}, wantResourceScoped: true, wantResource: &productID},
+		{name: "a token recording no scope is confined to nothing", token: &APIToken{}},
+		{name: "a project id without a scope names nothing", token: &APIToken{ProjectID: &projectID}},
+		{
+			name:     "a project scope is read from its scope id",
+			token:    &APIToken{Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},
+			wantKind: authz.ResourceTypeProject, wantResource: &projectID,
+		},
+		{name: "an organization-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}, wantOrgScoped: true},
+		{
+			name:     "a project-scoped token",
+			token:    &APIToken{ProjectID: &projectID, Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},
+			wantKind: authz.ResourceTypeProject, wantResource: &projectID,
+		},
+		{name: "an instance-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeInstance)}, wantInstanceScoped: true},
+		{
+			name:              "a product-scoped token",
+			token:             &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID},
+			wantProductScoped: true,
+			wantKind:          authz.ResourceTypeProduct, wantResource: &productID,
+		},
 		// The repository refuses this row; the accessor still reports nothing rather than a zero id.
-		{name: "a product-scoped token without its id", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct)}, wantResourceScoped: true},
+		{name: "a product-scoped token without its id", token: &APIToken{Scope: ToPtr(authz.ResourceTypeProduct)}, wantProductScoped: true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tc.wantResourceScoped, tc.token.IsResourceScoped())
-			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
+			assert.Equal(t, tc.wantProductScoped, tc.token.IsProductScoped())
+			assert.Equal(t, tc.wantOrgScoped, tc.token.IsOrgScoped())
+			assert.Equal(t, tc.wantInstanceScoped, tc.token.IsInstanceScoped())
 
 			kind, id, ok := tc.token.ResourceScope()
 			if tc.wantResource == nil {
@@ -65,7 +84,7 @@ func TestAPITokenScopePredicates(t *testing.T) {
 			}
 
 			assert.True(t, ok)
-			assert.Equal(t, authz.ResourceTypeProduct, kind)
+			assert.Equal(t, tc.wantKind, kind)
 			assert.Equal(t, *tc.wantResource, id)
 		})
 	}

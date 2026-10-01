@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 
 	"github.com/google/uuid"
 )
@@ -40,6 +41,19 @@ const (
 type APITokenBase struct {
 	APITokenID   *uuid.UUID `json:"api_token_id,omitempty"`
 	APITokenName string     `json:"api_token_name,omitempty"`
+	// Scope and ScopeID are what the token is scoped to, when its row records it.
+	Scope   *authz.ResourceType `json:"scope,omitempty"`
+	ScopeID *uuid.UUID          `json:"scope_id,omitempty"`
+}
+
+// scopeSuffix names a product scope, the only kind that changes what a token reaches; the
+// others follow from the organization and project the event already belongs to.
+func (a *APITokenBase) scopeSuffix() string {
+	if a.Scope == nil || *a.Scope != authz.ResourceTypeProduct || a.ScopeID == nil {
+		return ""
+	}
+
+	return fmt.Sprintf(" scoped to product %s", a.ScopeID)
 }
 
 func (a *APITokenBase) RequiresActor() bool {
@@ -86,9 +100,9 @@ func (a *APITokenCreated) ActionInfo() (json.RawMessage, error) {
 
 func (a *APITokenCreated) Description() string {
 	if a.ExpiresAt != nil {
-		return fmt.Sprintf("%s has created the API token %s expiring at %s", auditor.GetActorIdentifier(), a.APITokenName, a.ExpiresAt.Format(time.RFC3339))
+		return fmt.Sprintf("%s has created the API token %s%s expiring at %s", auditor.GetActorIdentifier(), a.APITokenName, a.scopeSuffix(), a.ExpiresAt.Format(time.RFC3339))
 	}
-	return fmt.Sprintf("%s has created the API token %s", auditor.GetActorIdentifier(), a.APITokenName)
+	return fmt.Sprintf("%s has created the API token %s%s", auditor.GetActorIdentifier(), a.APITokenName, a.scopeSuffix())
 }
 
 type APITokenRevoked struct {
@@ -115,5 +129,5 @@ func (a *APITokenRevoked) ActionInfo() (json.RawMessage, error) {
 }
 
 func (a *APITokenRevoked) Description() string {
-	return fmt.Sprintf("%s has revoked the API token %s", auditor.GetActorIdentifier(), a.APITokenName)
+	return fmt.Sprintf("%s has revoked the API token %s%s", auditor.GetActorIdentifier(), a.APITokenName, a.scopeSuffix())
 }

@@ -442,3 +442,54 @@ func (s *workflowContractIntegrationTestSuite) SetupTest() {
 	_, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract-scoped-to-project-2", ProjectID: &p2.ID})
 	s.Require().NoError(err)
 }
+
+// nil and empty mean different things: nil is "RBAC does not apply to this caller", an empty
+// slice is "RBAC applies and the caller sees no project". The filter was gated on len(), so an
+// empty slice read as nil and returned every contract in the organization — including the
+// project-scoped ones the caller cannot reach.
+func (s *workflowContractIntegrationTestSuite) TestListProjectFilterDistinguishesEmptyFromNil() {
+	ctx := context.Background()
+
+	testCases := []struct {
+		name          string
+		projects      []uuid.UUID
+		wantContracts []string
+	}{
+		{
+			// A caller RBAC does not narrow sees everything.
+			name:          "nil means no RBAC filter",
+			projects:      nil,
+			wantContracts: []string{s.contractOrg1.Name, s.contractScopedToProject.Name, "a-valid-contract-scoped-to-project-2"},
+		},
+		{
+			// A scoped token whose product holds no projects, or an RBAC user with no project
+			// memberships: reaches the organization-level contracts and no project's.
+			name:          "an empty slice reaches no project's contracts",
+			projects:      []uuid.UUID{},
+			wantContracts: []string{s.contractOrg1.Name},
+		},
+		{
+			name:          "a visible project reaches its own contracts and the global ones",
+			projects:      []uuid.UUID{s.p1.ID},
+			wantContracts: []string{s.contractOrg1.Name, s.contractScopedToProject.Name},
+		},
+		{
+			name:          "an unrelated project reaches only the global ones",
+			projects:      []uuid.UUID{uuid.New()},
+			wantContracts: []string{s.contractOrg1.Name},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			got, err := s.WorkflowContract.List(ctx, s.org.ID, biz.WithProjectFilter(tc.projects))
+			s.Require().NoError(err)
+
+			names := make([]string, 0, len(got))
+			for _, c := range got {
+				names = append(names, c.Name)
+			}
+			s.ElementsMatch(tc.wantContracts, names)
+		})
+	}
+}

@@ -174,7 +174,10 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 		query = query.Where(apitoken.OrganizationIDEQ(*orgID))
 	}
 
-	if len(filters.FilterByProjects) > 0 {
+	// nil means no RBAC filter, an empty slice means the caller reaches no project. A product
+	// token has no project_id, so a listing narrowed to projects never includes one: who may see
+	// it follows the product, which this service doesn't know.
+	if filters.FilterByProjects != nil {
 		query = query.Where(apitoken.ProjectIDIn(filters.FilterByProjects...))
 	}
 
@@ -189,8 +192,8 @@ func (r *APITokenRepo) List(ctx context.Context, orgID *uuid.UUID, filters *biz.
 		query = query.Where(apitoken.ScopeEQ(authz.ResourceTypeProduct))
 	case authz.ResourceTypeOrganization:
 		// Organization-wide means belonging to an organization and confined to neither a project
-		// nor a product. Keyed on the kind: new organization tokens carry an organization scope,
-		// older ones none, so the organization is what tells an older one from an instance token.
+		// nor a product. A row recording no scope, as one written by a control plane from before
+		// the scope columns, is listed here too, so an administrator can find and revoke it.
 		query = query.Where(apitoken.OrganizationIDNotNil(), apitoken.ProjectIDIsNil(), apitoken.Or(apitoken.ScopeIsNil(), apitoken.ScopeNEQ(authz.ResourceTypeProduct)))
 	case authz.ResourceTypeInstance:
 		query = query.Where(apitoken.OrganizationIDIsNil())
@@ -314,6 +317,9 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		OrganizationID: t.OrganizationID,
 		Policies:       t.Policies,
 		IsSystem:       t.IsSystem,
+		Scope:          t.Scope,
+		ScopeID:        t.ScopeID,
+		ProjectIDs:     t.ProjectIds,
 	}
 
 	// Add organization name if present
@@ -330,12 +336,6 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		result.WorkflowID = biz.ToPtr(w.ID)
 		result.WorkflowName = biz.ToPtr(w.Name)
 	}
-
-	// The scoped resource is not an entity in this database, so unlike the project and the
-	// workflow it has no edge to load: both values come straight off the row.
-	result.Scope = t.Scope
-	result.ScopeID = t.ScopeID
-	result.ProjectIDs = t.ProjectIds
 
 	return result
 }

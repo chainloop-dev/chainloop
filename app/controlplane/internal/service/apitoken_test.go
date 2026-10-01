@@ -37,9 +37,10 @@ func TestAPITokenService_Create_OrgTokenWithoutProjectIsRejected(t *testing.T) {
 
 	svc := &APITokenService{service: newService()}
 
+	orgID := uuid.New()
 	ctx := context.Background()
-	ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: uuid.NewString()})
-	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: uuid.NewString(), ProjectID: nil})
+	ctx = entities.WithCurrentOrg(ctx, &entities.Org{ID: orgID.String()})
+	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID})
 
 	req := &pb.APITokenServiceCreateRequest{Name: "test-token"}
 
@@ -54,7 +55,7 @@ func TestAPITokenService_Create_OrgTokenWithoutProjectIsRejected(t *testing.T) {
 func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	t.Parallel()
 
-	orgID, projectID := uuid.New(), uuid.New()
+	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 
 	testCases := []struct {
 		name string
@@ -66,18 +67,40 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	}{
 		{
 			name:      "an organization token is forced to project tokens",
-			caller:    &entities.APIToken{ID: uuid.NewString()},
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
 			wantScope: authz.ResourceTypeProject,
 		},
 		{
 			name:      "an organization token asking for global tokens is still forced",
-			caller:    &entities.APIToken{ID: uuid.NewString()},
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
 			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope: authz.ResourceTypeProject,
 		},
 		{
+			// Not organization-wide either, and confined to nothing: narrowed to no project.
+			name:         "a token recording no scope is narrowed to no project",
+			caller:       &entities.APIToken{ID: uuid.NewString()},
+			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
+			wantScope:    authz.ResourceTypeOrganization,
+			wantProjects: []uuid.UUID{},
+		},
+		{
+			// Not organization-wide, so not forced: it is narrowed to its projects instead.
+			name:         "a product token keeps the scope it asks for, narrowed to its projects",
+			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID}},
+			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
+			wantScope:    authz.ResourceTypeOrganization,
+			wantProjects: []uuid.UUID{projectID},
+		},
+		{
+			// Empty, not nil: nil would mean RBAC does not narrow this caller at all.
+			name:         "a product token reaching nothing is narrowed to no project",
+			caller:       &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{}},
+			wantProjects: []uuid.UUID{},
+		},
+		{
 			name:         "a project token keeps the scope it asks for",
-			caller:       &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID},
+			caller:       &entities.APIToken{ID: uuid.NewString(), ProjectID: &projectID, Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},
 			requested:    pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope:    authz.ResourceTypeOrganization,
 			wantProjects: []uuid.UUID{projectID},
@@ -121,62 +144,9 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 	}
 }
 
-func TestAPITokenService_Revoke_OrgTokenCannotRevokeOrgTokens(t *testing.T) {
-	t.Parallel()
-
-	orgID := uuid.NewString()
-
-	tests := []struct {
-		name          string
-		callerToken   *entities.APIToken
-		targetToken   *biz.APIToken
-		wantForbidden bool
-	}{
-		{
-			name:        "org-level token revoking org-level token is forbidden",
-			callerToken: &entities.APIToken{ID: uuid.NewString(), ProjectID: nil},
-			targetToken: &biz.APIToken{
-				ID:             uuid.New(),
-				OrganizationID: uuid.MustParse(orgID),
-				ProjectID:      nil,
-			},
-			wantForbidden: true,
-		},
-		{
-			name:        "org-level token revoking project token is allowed",
-			callerToken: &entities.APIToken{ID: uuid.NewString(), ProjectID: nil},
-			targetToken: &biz.APIToken{
-				ID:             uuid.New(),
-				OrganizationID: uuid.MustParse(orgID),
-				ProjectID:      toUUIDPtr(uuid.New()),
-			},
-			wantForbidden: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
-			ctx = entities.WithCurrentAPIToken(ctx, tc.callerToken)
-
-			forbidden := false
-			if token := entities.CurrentAPIToken(ctx); token != nil && token.ProjectID == nil {
-				if tc.targetToken.ProjectID == nil {
-					forbidden = true
-				}
-			}
-
-			assert.Equal(t, tc.wantForbidden, forbidden)
-		})
-	}
-}
-
-func toUUIDPtr(id uuid.UUID) *uuid.UUID {
-	return &id
-}
-
-// A listing reports the project a token is confined to, and the scope columns change nothing
-// about it: every new token records a scope, yet each one lists exactly as it did before.
+// A listing reports what a token is confined to: its project by name, or its product by id. A
+// token acting for its whole organization or instance reports nothing, whether or not its row
+// records a scope.
 func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 	t.Parallel()
 
@@ -193,8 +163,19 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
 				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
+				Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID,
 			},
 			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
+		},
+		{
+			// The product's name is not known to the control plane, so its id stands in for it.
+			// Without its own branch a product token would read as organization-wide.
+			name: "a product-scoped token reports its product by id",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeProduct), ScopeID: &productID, ProjectIDs: []uuid.UUID{projectID},
+			},
+			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProduct), Id: productID.String(), Name: productID.String()},
 		},
 		{
 			name: "a scope id without a kind is not reported",
@@ -205,8 +186,7 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: nil,
 		},
 		{
-			// New tokens record their scope for every kind, but only a product is reported
-			// from it: an organization token lists exactly as it did before.
+			// An organization token is confined to no resource it could report.
 			name: "an organization-scoped token reports none",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
@@ -215,18 +195,33 @@ func TestAPITokenBizToPbScopedEntity(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "a project-scoped token still reports its project from project_id",
+			name: "a project id without a scope is not reported",
 			token: &biz.APIToken{
 				ID: uuid.New(), CreatedAt: &createdAt,
 				ProjectID: &projectID, ProjectName: biz.ToPtr("billing"),
-				Scope: biz.ToPtr(authz.ResourceTypeProject), ScopeID: &projectID,
 			},
-			want: &pb.ScopedEntity{Type: string(authz.ResourceTypeProject), Id: projectID.String(), Name: "billing"},
+			want: nil,
 		},
 		{
-			name:  "an organization-level token reports none",
+			name:  "a token recording no scope reports none",
 			token: &biz.APIToken{ID: uuid.New(), CreatedAt: &createdAt},
 			want:  nil,
+		},
+		{
+			name: "an instance-scoped token reports none",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeInstance),
+			},
+			want: nil,
+		},
+		{
+			name: "a product scope missing its id is not reported",
+			token: &biz.APIToken{
+				ID: uuid.New(), CreatedAt: &createdAt,
+				Scope: biz.ToPtr(authz.ResourceTypeProduct), ProjectIDs: []uuid.UUID{projectID},
+			},
+			want: nil,
 		},
 	}
 

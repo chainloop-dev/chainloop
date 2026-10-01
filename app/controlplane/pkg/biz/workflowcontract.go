@@ -154,8 +154,8 @@ func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *polic
 }
 
 type WorkflowContractListFilters struct {
-	// FilterByProjects is used to filter the result by a project list
-	// If it's empty, no filter will be applied
+	// FilterByProjects narrows the result to the given projects. nil means no filter is applied;
+	// a non-nil empty list matches no project, so only the organization's global contracts.
 	FilterByProjects []uuid.UUID
 }
 

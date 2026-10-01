@@ -17,13 +17,17 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/transport"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -248,6 +252,40 @@ func (s *workflowContractApplyIntegrationTestSuite) TestApplyBatchExemption() {
 			s.True(resp.GetChanged())
 		})
 	}
+}
+
+// A product token reaches only its projects, and Apply has no project to scope a new contract to,
+// so it can't create one: that would be an organization-level contract. Create requires a project
+// of such a caller for the same reason.
+func (s *workflowContractApplyIntegrationTestSuite) TestApplyRefusesAProductTokenCreatingAContract() {
+	productID := uuid.New()
+	ctx := entities.WithCurrentAPIToken(s.ctx, &entities.APIToken{
+		ID:         uuid.NewString(),
+		Name:       "ci",
+		Scope:      biz.ToPtr(authz.ResourceTypeProduct),
+		ScopeID:    &productID,
+		ProjectIDs: []uuid.UUID{},
+	})
+
+	for _, dryRun := range []bool{true, false} {
+		s.Run(fmt.Sprintf("dry run %t", dryRun), func() {
+			_, err := s.svc.Apply(ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: []byte(applyContractV1), DryRun: dryRun})
+			s.Require().Error(err)
+			s.True(kerrors.IsForbidden(err), "got %v", err)
+			s.Equal(0, s.latestRevision(), "nothing is created")
+		})
+	}
+
+	s.Run("nor update an existing organization-level contract", func() {
+		s.apply(applyContractV1, false)
+		before := s.latestRevision()
+
+		_, err := s.svc.Apply(ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: []byte(applyContractV2)})
+		s.Require().Error(err)
+		s.True(kerrors.IsBadRequest(err), "got %v", err)
+		s.ErrorContains(err, "you can not manage a global contract")
+		s.Equal(before, s.latestRevision(), "the contract is unchanged")
+	})
 }
 
 func TestWorkflowContractApply(t *testing.T) {

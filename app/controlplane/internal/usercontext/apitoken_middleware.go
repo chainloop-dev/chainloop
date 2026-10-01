@@ -82,10 +82,7 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 
 				workflowID, _ := genericClaims["workflow_id"].(string)
 
-				// Scope is optional
-				scope, _ := genericClaims["scope"].(string)
-
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, workflowID, scope)
+				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, workflowID)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
@@ -134,7 +131,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.WorkflowID, claims.Scope)
+			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.WorkflowID)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
@@ -170,8 +167,10 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 	return ctx, nil
 }
 
-// Set the current organization and API-Token in the context
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, workflowIDInClaim, scope string) (context.Context, error) {
+// Set the current organization and API-Token in the context. The project and workflow claims are
+// cross-checked against the token row, never an authorization input: the row decides what the
+// token reaches.
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, workflowIDInClaim string) (context.Context, error) {
 	if tokenID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
@@ -185,8 +184,10 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Make sure that the projectID that comes in the token claim matches the one in the DB
-	if projectIDInClaim != "" && token.ProjectID.String() != projectIDInClaim {
-		return nil, errors.New("API token project mismatch")
+	if projectIDInClaim != "" {
+		if token.ProjectID == nil || token.ProjectID.String() != projectIDInClaim {
+			return nil, errors.New("API token project mismatch")
+		}
 	}
 
 	// Same defense in depth for the workflow claim
@@ -203,7 +204,8 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Handle instance admin tokens
-	if scope == authz.ScopeInstanceAdmin {
+	// An instance token has no organization of its own: it takes the one named in the header.
+	if token.IsInstanceScoped() {
 		// Check if org name provided in header
 		orgName, _ := entities.GetOrganizationNameFromHeader(ctx)
 		if orgName != "" {
@@ -241,9 +243,12 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		ProjectName:  token.ProjectName,
 		WorkflowID:   token.WorkflowID,
 		WorkflowName: token.WorkflowName,
-		Policies:     token.Policies,
-		Scope:        scope,
-		IsSystem:     token.IsSystem,
+		// Every value here comes from token.*, i.e. the database row
+		Scope:      token.Scope,
+		ScopeID:    token.ScopeID,
+		ProjectIDs: token.ProjectIDs,
+		Policies:   token.Policies,
+		IsSystem:   token.IsSystem,
 	})
 
 	// Set the authorization subject that will be used to check the policies
