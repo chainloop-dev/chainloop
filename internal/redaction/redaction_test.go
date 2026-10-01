@@ -396,3 +396,20 @@ func TestRedactText(t *testing.T) {
 		})
 	}
 }
+
+// TestRedactPlaceholderNeedingEscape checks that a placeholder is inserted in
+// its JSON-escaped form. A raw quote or backslash in it would break the string
+// the leaf is rebuilt from, and the whole leaf would then be lost to the
+// placeholder.
+func TestRedactPlaceholderNeedingEscape(t *testing.T) {
+	const secret = "s3cr3t-value-0123456789"
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "test-token", Secret: secret}}, requirePresent: true}
+	placeholder := func(ruleID string) string { return `<"` + ruleID + `"\removed>` }
+	matches := func(s string) bool { return strings.HasPrefix(s, `<"`) }
+
+	got, report, err := New(scanner, WithPlaceholder(placeholder, matches)).RedactText(context.Background(), "use "+secret+" now")
+
+	require.NoError(t, err)
+	assert.True(t, report.Changed())
+	assert.Equal(t, `use <"test-token"\removed> now`, got, "the text around the secret survives")
+}

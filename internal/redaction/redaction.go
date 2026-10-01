@@ -434,7 +434,14 @@ func (w *rewriter) redactLeaf(s, path string) string {
 		if n == 0 && !w.pathFilter(path) {
 			return s
 		}
-		body = strings.ReplaceAll(body, sr.secret, w.placeholder(sr.ruleID))
+		// The placeholder goes into the escaped form of the string, so it is
+		// escaped too. A raw quote or backslash in it would otherwise break
+		// the string the leaf is rebuilt from below.
+		placeholder, err := encodeStringBody(w.placeholder(sr.ruleID))
+		if err != nil {
+			return w.placeholder(sr.ruleID)
+		}
+		body = strings.ReplaceAll(body, sr.secret, placeholder)
 		n += c
 		w.byRule[sr.ruleID] += c
 		w.located[sr.secret] = struct{}{}
