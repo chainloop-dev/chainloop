@@ -332,10 +332,39 @@ func byteSpans(text string, ranges []lineSpan) []span {
 // appendSecret records a locatable secret. A finding without one cannot be
 // searched for in the document, so it is dropped rather than reported.
 func appendSecret(dst []Finding, ruleID, secret string) []Finding {
+	if ruleID == jwtRuleID {
+		secret = cutAtTerminatorEscape(secret)
+	}
 	if secret == "" {
 		return dst
 	}
 	return append(dst, Finding{RuleID: ruleID, Secret: secret})
+}
+
+// jwtRuleID is the default ruleset's rule for JSON Web Tokens.
+const jwtRuleID = "jwt"
+
+// jwtTerminatorEscapes are the JSON escapes that decode to a character a JWT
+// cannot contain, so a JWT ends where one of them starts.
+var jwtTerminatorEscapes = []string{`\"`, `\n`, `\r`, `\t`}
+
+// cutAtTerminatorEscape removes the text from the first whitespace or quote
+// escape onwards.
+//
+// The jwt rule allows a backslash in its last two segments, so in JSON-encoded
+// text its match runs through an escape such as `\n` and into the word after
+// it. Replacing that match would remove text that is not part of the token. A
+// JWT is base64url, so the part before such an escape is the whole token. Other
+// escapes, such as `\/` or `\\`, are kept: they are not proof that the token has
+// ended, and keeping them can only over-redact.
+func cutAtTerminatorEscape(secret string) string {
+	end := len(secret)
+	for _, esc := range jwtTerminatorEscapes {
+		if i := strings.Index(secret, esc); i >= 0 && i < end {
+			end = i
+		}
+	}
+	return secret[:end]
 }
 
 // span is a half-open byte range [start, end) of a text.

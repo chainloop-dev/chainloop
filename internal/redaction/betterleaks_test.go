@@ -17,6 +17,7 @@ package redaction
 
 import (
 	"context"
+	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
@@ -42,6 +43,7 @@ const (
 	fakeAWSKey    = "AKIA" + "4G7TI63VCBIRS4GW"
 	fakeAWSSecret = "kQ7zXn2VbW9pLm4RtY6" + "uHs3JdF8gA1cE5oPzQwXn"
 	fakeGitHubPAT = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
+	fakeJWT       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" + ".eyJzdWIiOiJmYWtlLXVwbG9hZCIsImV4cCI6MTc5MDAwMDAwMH0" + ".c2lnbmF0dXJlLWZha2UtZm9yLXJlcHJv"
 )
 
 var fakeAnthropicKey = "sk-ant-api03-" + strings.Repeat("a", 93) + "AA"
@@ -277,6 +279,64 @@ func TestRedactCredentialInURIConverges(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, string(once), string(twice))
 	assert.False(t, report.Changed())
+}
+
+// TestRedactJWTKeepsSurroundingText covers a JWT that is followed by a JSON
+// escape sequence in its string leaf. The jwt rule allows a backslash in its
+// last segments, so the scanner reports the secret with the backslash that
+// starts the escape. Only the JWT must be replaced: the text around it, such as
+// the host of a presigned URL, is what lets policies tell a short-lived URL
+// signature from a leaked credential.
+func TestRedactJWTKeepsSurroundingText(t *testing.T) {
+	scanner, err := DefaultScanner()
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name string
+		leaf string
+		want string
+	}{
+		{
+			// A tool result that holds a JSON document as text: the quote after
+			// the JWT is escaped in the leaf.
+			name: "followed by an escaped quote in a nested JSON string",
+			leaf: `{"url":"https://uploads.example.com/o/a/b?signature=` + fakeJWT + `"}`,
+			want: `{"url":"https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]"}`,
+		},
+		{
+			name: "followed by an escaped newline",
+			leaf: "https://uploads.example.com/o/a/b?signature=" + fakeJWT + "\nnext line",
+			want: "https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]\nnext line",
+		},
+		{
+			// The literal backslash is a complete `\\` escape, which is kept in
+			// the secret: the leaf loses that one character but not its context.
+			name: "followed by a literal backslash",
+			leaf: `https://uploads.example.com/o/a/b?signature=` + fakeJWT + `\"`,
+			want: `https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]"`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc, err := json.Marshal(map[string]string{"text": tc.leaf})
+			require.NoError(t, err)
+
+			once, report, err := New(scanner).Redact(context.Background(), doc)
+			require.NoError(t, err)
+			require.True(t, report.Changed())
+			assert.Equal(t, map[string]int{"jwt": 1}, report.ByRule)
+
+			var got map[string]string
+			require.NoError(t, json.Unmarshal(once, &got))
+			assert.Equal(t, tc.want, got["text"], "only the JWT is replaced")
+
+			twice, report, err := New(scanner).Redact(context.Background(), once)
+			require.NoError(t, err)
+			assert.Equal(t, string(once), string(twice))
+			assert.False(t, report.Changed())
+		})
+	}
 }
 
 // TestDefaultScannerUsesRE2 pins the regex engine. The library default is the

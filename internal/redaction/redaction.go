@@ -312,23 +312,24 @@ func pendingSecrets(findings []Finding, skip map[string]struct{}, isPlaceholder 
 	out := make([]secretRule, 0, len(findings))
 
 	for _, f := range findings {
-		if f.Secret == "" {
+		secret := trimPartialEscape(f.Secret)
+		if secret == "" {
 			continue
 		}
-		if _, skipped := skip[f.Secret]; skipped {
+		if _, skipped := skip[secret]; skipped {
 			continue
 		}
 		// A finding whose whole secret is a placeholder is a rule matching the
 		// position it sits in, not a credential. Rewriting it would churn the
 		// document on every run and never terminate.
-		if isPlaceholder != nil && isPlaceholder(f.Secret) {
+		if isPlaceholder != nil && isPlaceholder(secret) {
 			continue
 		}
-		if _, dup := seen[f.Secret]; dup {
+		if _, dup := seen[secret]; dup {
 			continue
 		}
-		seen[f.Secret] = struct{}{}
-		out = append(out, secretRule{secret: f.Secret, ruleID: f.RuleID})
+		seen[secret] = struct{}{}
+		out = append(out, secretRule{secret: secret, ruleID: f.RuleID})
 	}
 
 	sort.Slice(out, func(i, j int) bool {
@@ -338,6 +339,24 @@ func pendingSecrets(findings []Finding, skip map[string]struct{}, isPlaceholder 
 		return out[i].secret < out[j].secret
 	})
 	return out
+}
+
+// trimPartialEscape removes a trailing backslash that starts a JSON escape
+// sequence the secret does not include.
+//
+// The scanner sees JSON-encoded text, where every backslash starts or completes
+// an escape. A rule whose character class allows a backslash can end its match
+// on the first character of an escape such as `\"` or `\n`. Replacing that
+// secret would leave the rest of the escape behind, the leaf would no longer
+// decode, and the whole leaf would be replaced. An odd run of trailing
+// backslashes is the sign of that: an even run is a set of complete `\\`
+// escapes, which are part of the secret.
+func trimPartialEscape(secret string) string {
+	run := len(secret) - len(strings.TrimRight(secret, `\`))
+	if run%2 == 1 {
+		return secret[:len(secret)-1]
+	}
+	return secret
 }
 
 // rewriter walks a decoded JSON value tree replacing secrets in eligible string
