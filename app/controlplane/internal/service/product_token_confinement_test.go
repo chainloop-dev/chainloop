@@ -474,9 +474,9 @@ func TestRevokeConfinesWhatAnOrgWideTokenCanDestroy(t *testing.T) {
 			wantAllowed: true,
 		},
 		{
-			// Keying the guard on IsOrgWide would let this target through, and a CI credential
-			// could revoke every platform-issued product token in the organization -- tokens it
-			// cannot even see, since List forces the project scope.
+			// Refusing only organization and instance targets would let this one through, and a CI
+			// credential could revoke every platform-issued product token in the organization --
+			// tokens it cannot even see, since List forces the project scope.
 			name: "a product-scoped target is refused",
 			target: &biz.APIToken{
 				ID: uuid.New(), Name: "t", OrganizationID: orgID,

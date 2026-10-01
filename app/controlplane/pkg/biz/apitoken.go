@@ -152,13 +152,13 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 // IsInstanceScoped reports whether the token acts for the whole instance, with no organization of
 // its own. It keys on the recorded scope alone: a row recording none is not an instance token.
 func (t *APIToken) IsInstanceScoped() bool {
-	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeInstance
+	return t.scopeView().IsInstanceScoped()
 }
 
-// IsOrgWide reports whether the token acts for its whole organization or instance: confined to
-// neither a project nor a product. A token recording no scope is not.
-func (t *APIToken) IsOrgWide() bool {
-	return t.scopeView().IsOrgWide()
+// IsOrgScoped reports whether the token acts for its whole organization. A token recording no
+// scope is not.
+func (t *APIToken) IsOrgScoped() bool {
+	return t.scopeView().IsOrgScoped()
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.

@@ -32,10 +32,11 @@ func TestAPITokenScopePredicates(t *testing.T) {
 	orgID, projectID, productID := uuid.New(), uuid.New(), uuid.New()
 
 	testCases := []struct {
-		name              string
-		token             *APIToken
-		wantProductScoped bool
-		wantOrgWide       bool
+		name               string
+		token              *APIToken
+		wantProductScoped  bool
+		wantOrgScoped      bool
+		wantInstanceScoped bool
 		// wantKind and wantResource are what ResourceScope reports; wantResource is nil when
 		// it reports nothing
 		wantKind     authz.ResourceType
@@ -49,13 +50,13 @@ func TestAPITokenScopePredicates(t *testing.T) {
 			token:    &APIToken{Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},
 			wantKind: authz.ResourceTypeProject, wantResource: &projectID,
 		},
-		{name: "an organization-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}, wantOrgWide: true},
+		{name: "an organization-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}, wantOrgScoped: true},
 		{
 			name:     "a project-scoped token",
 			token:    &APIToken{ProjectID: &projectID, Scope: ToPtr(authz.ResourceTypeProject), ScopeID: &projectID},
 			wantKind: authz.ResourceTypeProject, wantResource: &projectID,
 		},
-		{name: "an instance-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeInstance)}, wantOrgWide: true},
+		{name: "an instance-scoped token", token: &APIToken{Scope: ToPtr(authz.ResourceTypeInstance)}, wantInstanceScoped: true},
 		{
 			name:              "a product-scoped token",
 			token:             &APIToken{Scope: ToPtr(authz.ResourceTypeProduct), ScopeID: &productID},
@@ -71,7 +72,8 @@ func TestAPITokenScopePredicates(t *testing.T) {
 			t.Parallel()
 
 			assert.Equal(t, tc.wantProductScoped, tc.token.IsProductScoped())
-			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
+			assert.Equal(t, tc.wantOrgScoped, tc.token.IsOrgScoped())
+			assert.Equal(t, tc.wantInstanceScoped, tc.token.IsInstanceScoped())
 
 			kind, id, ok := tc.token.ResourceScope()
 			if tc.wantResource == nil {

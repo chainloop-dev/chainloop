@@ -515,7 +515,7 @@ func rbacEnabled(ctx context.Context) bool {
 	token := entities.CurrentAPIToken(ctx)
 	if token != nil {
 		// Keyed on the kind: a product token has no project_id and is confined all the same.
-		return !token.IsOrgWide()
+		return !token.IsOrgScoped() && !token.IsInstanceScoped()
 	}
 
 	// we have an user

@@ -52,11 +52,16 @@ func (t *APIToken) IsProductScoped() bool {
 	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeProduct
 }
 
-// IsOrgWide reports whether the token acts for its whole organization or instance: confined to
-// neither a project nor a product. A token recording no scope is not.
-func (t *APIToken) IsOrgWide() bool {
-	return t != nil && t.Scope != nil &&
-		(*t.Scope == authz.ResourceTypeOrganization || *t.Scope == authz.ResourceTypeInstance)
+// IsOrgScoped reports whether the token acts for its whole organization. A token recording no
+// scope is not.
+func (t *APIToken) IsOrgScoped() bool {
+	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeOrganization
+}
+
+// IsInstanceScoped reports whether the token acts for the whole instance, with no organization of
+// its own. A token recording no scope is not.
+func (t *APIToken) IsInstanceScoped() bool {
+	return t != nil && t.Scope != nil && *t.Scope == authz.ResourceTypeInstance
 }
 
 // ResourceScope returns the resource the token is confined to, its project or its product, so
@@ -77,10 +82,11 @@ func (t *APIToken) ResourceScope() (kind authz.ResourceType, id uuid.UUID, ok bo
 }
 
 // ReachableProjects returns the projects a token is restricted to: its project, or its product's
-// list, never nil. It returns nil for an organization-wide token, meaning no restriction: that
-// token reaches every project of its organization. A token confined to nothing gets an empty list.
+// list, never nil. It returns nil for an organization or instance token, meaning no restriction:
+// that token reaches every project of its organization. A token confined to nothing gets an empty
+// list.
 func (t *APIToken) ReachableProjects() []uuid.UUID {
-	if t.IsOrgWide() {
+	if t.IsOrgScoped() || t.IsInstanceScoped() {
 		return nil
 	}
 
@@ -96,10 +102,10 @@ func (t *APIToken) ReachableProjects() []uuid.UUID {
 }
 
 // ReachesProject reports whether the token reaches the project, without copying its project
-// list. An organization-wide token reaches every project of its organization; no token, and a
-// token confined to nothing, reach none.
+// list. An organization or instance token reaches every project of its organization; no token,
+// and a token confined to nothing, reach none.
 func (t *APIToken) ReachesProject(id uuid.UUID) bool {
-	if t.IsOrgWide() {
+	if t.IsOrgScoped() || t.IsInstanceScoped() {
 		return true
 	}
 

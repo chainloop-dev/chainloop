@@ -54,8 +54,8 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 		return nil, errors.BadRequest("invalid", "project is required")
 	}
 
-	// Org-level API tokens can only create project-scoped tokens
-	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
+	// Org-level and instance API tokens can only create project-scoped tokens
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgScoped() || token.IsInstanceScoped() {
 		if !req.ProjectReference.IsSet() {
 			return nil, errors.Forbidden("forbidden", "org-level API tokens must specify a project when creating new tokens")
 		}
@@ -108,10 +108,10 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 		defaultProjectFilter = []uuid.UUID{project.ID}
 	}
 
-	// Org-level API tokens can only see project-scoped tokens. A product token is not one: it is
-	// narrowed to its projects by the filter above instead.
+	// Org-level and instance API tokens can only see project-scoped tokens. A product token is
+	// neither: it is narrowed to its projects by the filter above instead.
 	scope := mapTokenScope(req.Scope)
-	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgScoped() || token.IsInstanceScoped() {
 		scope = authz.ResourceTypeProject
 	}
 
@@ -166,20 +166,20 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 		return nil, errors.NotFound("not found", "API token not found")
 	}
 
-	// 1 - Only admins can manage organization-wide tokens
-	if t.IsOrgWide() && rbacEnabled(ctx) {
+	// 1 - Only admins can manage organization and instance tokens
+	if (t.IsOrgScoped() || t.IsInstanceScoped()) && rbacEnabled(ctx) {
 		return nil, errors.BadRequest("invalid", "you can not manage a global API token")
 	}
 
-	// An organization-wide token may only revoke project tokens
-	if token := entities.CurrentAPIToken(ctx); token.IsOrgWide() {
+	// An organization or instance token may only revoke project tokens
+	if token := entities.CurrentAPIToken(ctx); token.IsOrgScoped() || token.IsInstanceScoped() {
 		if t.ProjectID == nil {
 			return nil, errors.Forbidden("forbidden", "org-level API tokens can only revoke project-scoped tokens")
 		}
 	}
 
 	// Make sure the caller has permission to revoke the token where it lives
-	if !t.IsOrgWide() {
+	if !t.IsOrgScoped() && !t.IsInstanceScoped() {
 		kind, id, ok := t.ResourceScope()
 		switch {
 		case ok:

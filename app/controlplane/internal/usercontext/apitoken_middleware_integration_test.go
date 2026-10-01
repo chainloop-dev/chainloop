@@ -58,14 +58,15 @@ func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 		opts      biz.APITokenCreateOpts
 		wantErr   bool
 		wantScope *authz.ResourceType
-		// wantOrgWide and wantReach are what the service layer reads off the token
-		wantOrgWide bool
-		wantReach   []uuid.UUID
+		// wantOrgScoped, wantInstanceScoped and wantReach are what the service layer reads off the token
+		wantOrgScoped      bool
+		wantInstanceScoped bool
+		wantReach          []uuid.UUID
 	}{
 		{
 			name:      "an organization row",
 			opts:      biz.APITokenCreateOpts{OrganizationID: &orgID, Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
-			wantScope: biz.ToPtr(authz.ResourceTypeOrganization), wantOrgWide: true,
+			wantScope: biz.ToPtr(authz.ResourceTypeOrganization), wantOrgScoped: true,
 		},
 		{
 			name:      "a project row",
@@ -77,7 +78,7 @@ func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 			// token acts for the whole instance
 			name:      "an instance row",
 			opts:      biz.APITokenCreateOpts{Scope: biz.ToPtr(authz.ResourceTypeInstance)},
-			wantScope: biz.ToPtr(authz.ResourceTypeInstance), wantOrgWide: true,
+			wantScope: biz.ToPtr(authz.ResourceTypeInstance), wantInstanceScoped: true,
 		},
 		{
 			name:      "an organization row recording no scope is confined to nothing",
@@ -120,8 +121,9 @@ func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 			assert.Equal(t, tc.wantScope, got.Scope)
 			assert.Equal(t, opts.ScopeID, got.ScopeID)
 			assert.Equal(t, opts.ProjectID, got.ProjectID)
-			assert.Equal(t, tc.wantOrgWide, got.IsOrgWide())
-			if tc.wantOrgWide {
+			assert.Equal(t, tc.wantOrgScoped, got.IsOrgScoped())
+			assert.Equal(t, tc.wantInstanceScoped, got.IsInstanceScoped())
+			if tc.wantOrgScoped || tc.wantInstanceScoped {
 				assert.Nil(t, got.ReachableProjects())
 				return
 			}

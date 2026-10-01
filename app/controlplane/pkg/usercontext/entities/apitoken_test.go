@@ -34,11 +34,12 @@ func TestAPITokenScope(t *testing.T) {
 	product, project, organization, instance := authz.ResourceTypeProduct, authz.ResourceTypeProject, authz.ResourceTypeOrganization, authz.ResourceTypeInstance
 
 	testCases := []struct {
-		name              string
-		token             *APIToken
-		wantOrgWide       bool
-		wantProductScoped bool
-		wantReach         []uuid.UUID
+		name               string
+		token              *APIToken
+		wantOrgScoped      bool
+		wantInstanceScoped bool
+		wantProductScoped  bool
+		wantReach          []uuid.UUID
 		// wantKind and wantID are what ResourceScope names, when wantOK
 		wantKind authz.ResourceType
 		wantID   uuid.UUID
@@ -47,8 +48,8 @@ func TestAPITokenScope(t *testing.T) {
 		{name: "no token", token: nil, wantReach: []uuid.UUID{}},
 		{name: "a token recording no scope", token: &APIToken{}, wantReach: []uuid.UUID{}},
 		{name: "a project id without a scope", token: &APIToken{ProjectID: &projectID}, wantReach: []uuid.UUID{}},
-		{name: "an organization token", token: &APIToken{Scope: &organization, ScopeID: &orgID}, wantOrgWide: true},
-		{name: "an instance token", token: &APIToken{Scope: &instance}, wantOrgWide: true},
+		{name: "an organization token", token: &APIToken{Scope: &organization, ScopeID: &orgID}, wantOrgScoped: true},
+		{name: "an instance token", token: &APIToken{Scope: &instance}, wantInstanceScoped: true},
 		{
 			name: "a project token", token: &APIToken{ProjectID: &projectID, Scope: &project, ScopeID: &projectID},
 			wantReach: []uuid.UUID{projectID}, wantKind: project, wantID: projectID, wantOK: true,
@@ -77,7 +78,8 @@ func TestAPITokenScope(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, tc.wantOrgWide, tc.token.IsOrgWide())
+			assert.Equal(t, tc.wantOrgScoped, tc.token.IsOrgScoped())
+			assert.Equal(t, tc.wantInstanceScoped, tc.token.IsInstanceScoped())
 			assert.Equal(t, tc.wantProductScoped, tc.token.IsProductScoped())
 
 			kind, id, ok := tc.token.ResourceScope()
@@ -86,9 +88,9 @@ func TestAPITokenScope(t *testing.T) {
 			assert.Equal(t, tc.wantID, id)
 
 			got := tc.token.ReachableProjects()
-			if tc.wantOrgWide {
-				assert.Nil(t, got, "nil means an organization-wide token is not restricted to a list")
-				assert.True(t, tc.token.ReachesProject(uuid.New()), "an organization-wide token reaches every project of its organization")
+			if tc.wantOrgScoped || tc.wantInstanceScoped {
+				assert.Nil(t, got, "nil means an organization or instance token is not restricted to a list")
+				assert.True(t, tc.token.ReachesProject(uuid.New()), "an organization or instance token reaches every project of its organization")
 				return
 			}
 			assert.NotNil(t, got, "a confined token's reach is never nil")
