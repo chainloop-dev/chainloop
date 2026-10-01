@@ -37,6 +37,57 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Credentials_AzureKeyVault_AuthType int32
+
+const (
+	Credentials_AzureKeyVault_AUTH_TYPE_UNSPECIFIED Credentials_AzureKeyVault_AuthType = 0
+	// Use the service principal client secret.
+	Credentials_AzureKeyVault_AUTH_TYPE_CREDENTIALS Credentials_AzureKeyVault_AuthType = 1
+	// Use AKS Workload Identity for client_id: the federated token the workload identity webhook projects into the pod.
+	Credentials_AzureKeyVault_AUTH_TYPE_WORKLOAD_IDENTITY Credentials_AzureKeyVault_AuthType = 2
+)
+
+// Enum value maps for Credentials_AzureKeyVault_AuthType.
+var (
+	Credentials_AzureKeyVault_AuthType_name = map[int32]string{
+		0: "AUTH_TYPE_UNSPECIFIED",
+		1: "AUTH_TYPE_CREDENTIALS",
+		2: "AUTH_TYPE_WORKLOAD_IDENTITY",
+	}
+	Credentials_AzureKeyVault_AuthType_value = map[string]int32{
+		"AUTH_TYPE_UNSPECIFIED":       0,
+		"AUTH_TYPE_CREDENTIALS":       1,
+		"AUTH_TYPE_WORKLOAD_IDENTITY": 2,
+	}
+)
+
+func (x Credentials_AzureKeyVault_AuthType) Enum() *Credentials_AzureKeyVault_AuthType {
+	p := new(Credentials_AzureKeyVault_AuthType)
+	*p = x
+	return p
+}
+
+func (x Credentials_AzureKeyVault_AuthType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Credentials_AzureKeyVault_AuthType) Descriptor() protoreflect.EnumDescriptor {
+	return file_credentials_v1_config_proto_enumTypes[0].Descriptor()
+}
+
+func (Credentials_AzureKeyVault_AuthType) Type() protoreflect.EnumType {
+	return &file_credentials_v1_config_proto_enumTypes[0]
+}
+
+func (x Credentials_AzureKeyVault_AuthType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Credentials_AzureKeyVault_AuthType.Descriptor instead.
+func (Credentials_AzureKeyVault_AuthType) EnumDescriptor() ([]byte, []int) {
+	return file_credentials_v1_config_proto_rawDescGZIP(), []int{0, 3, 0}
+}
+
 // Where the credentials to access the backends are stored
 type Credentials struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -338,10 +389,13 @@ type Credentials_AzureKeyVault struct {
 	TenantId string `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
 	// Registered application / service principal client ID
 	ClientId string `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	// Registered application / service principal client secret
+	// Registered application / service principal client secret.
+	// Required for AUTH_TYPE_CREDENTIALS, rejected for AUTH_TYPE_WORKLOAD_IDENTITY.
 	ClientSecret string `protobuf:"bytes,3,opt,name=client_secret,json=clientSecret,proto3" json:"client_secret,omitempty"`
 	// Azure Key Vault URL
-	VaultUri      string `protobuf:"bytes,4,opt,name=vault_uri,json=vaultUri,proto3" json:"vault_uri,omitempty"`
+	VaultUri string `protobuf:"bytes,4,opt,name=vault_uri,json=vaultUri,proto3" json:"vault_uri,omitempty"`
+	// How to authenticate. AUTH_TYPE_UNSPECIFIED is treated as AUTH_TYPE_CREDENTIALS.
+	AuthType      Credentials_AzureKeyVault_AuthType `protobuf:"varint,5,opt,name=auth_type,json=authType,proto3,enum=credentials.v1.Credentials_AzureKeyVault_AuthType" json:"auth_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -404,6 +458,13 @@ func (x *Credentials_AzureKeyVault) GetVaultUri() string {
 	return ""
 }
 
+func (x *Credentials_AzureKeyVault) GetAuthType() Credentials_AzureKeyVault_AuthType {
+	if x != nil {
+		return x.AuthType
+	}
+	return Credentials_AzureKeyVault_AUTH_TYPE_UNSPECIFIED
+}
+
 type Credentials_AWSSecretManager_Creds struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessKey     string                 `protobuf:"bytes,1,opt,name=access_key,json=accessKey,proto3" json:"access_key,omitempty"`
@@ -460,7 +521,7 @@ var File_credentials_v1_config_proto protoreflect.FileDescriptor
 
 const file_credentials_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"\x1bcredentials/v1/config.proto\x12\x0ecredentials.v1\x1a\x1bbuf/validate/validate.proto\"\xfa\a\n" +
+	"\x1bcredentials/v1/config.proto\x12\x0ecredentials.v1\x1a\x1bbuf/validate/validate.proto\"\xaf\t\n" +
 	"\vCredentials\x12\\\n" +
 	"\x12aws_secret_manager\x18\x01 \x01(\v2,.credentials.v1.Credentials.AWSSecretManagerH\x00R\x10awsSecretManager\x129\n" +
 	"\x05vault\x18\x02 \x01(\v2!.credentials.v1.Credentials.VaultH\x00R\x05vault\x12\\\n" +
@@ -483,12 +544,17 @@ const file_credentials_v1_config_proto_rawDesc = "" +
 	"\x10GCPSecretManager\x12&\n" +
 	"\n" +
 	"project_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\tprojectId\x12.\n" +
-	"\x13service_account_key\x18\x02 \x01(\tR\x11serviceAccountKey\x1a\xb0\x01\n" +
+	"\x13service_account_key\x18\x02 \x01(\tR\x11serviceAccountKey\x1a\xe5\x02\n" +
 	"\rAzureKeyVault\x12$\n" +
 	"\ttenant_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\btenantId\x12$\n" +
-	"\tclient_id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\bclientId\x12,\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\fclientSecret\x12%\n" +
-	"\tvault_uri\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x90\x01\x01R\bvaultUriB\x10\n" +
+	"\tclient_id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\bclientId\x12#\n" +
+	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12%\n" +
+	"\tvault_uri\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x90\x01\x01R\bvaultUri\x12Y\n" +
+	"\tauth_type\x18\x05 \x01(\x0e22.credentials.v1.Credentials.AzureKeyVault.AuthTypeB\b\xbaH\x05\x82\x01\x02\x10\x01R\bauthType\"a\n" +
+	"\bAuthType\x12\x19\n" +
+	"\x15AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15AUTH_TYPE_CREDENTIALS\x10\x01\x12\x1f\n" +
+	"\x1bAUTH_TYPE_WORKLOAD_IDENTITY\x10\x02B\x10\n" +
 	"\abackend\x12\x05\xbaH\x02\b\x01BJZHgithub.com/chainloop-dev/chainloop/pkg/credentials/api/credentials/v1;v1b\x06proto3"
 
 var (
@@ -503,26 +569,29 @@ func file_credentials_v1_config_proto_rawDescGZIP() []byte {
 	return file_credentials_v1_config_proto_rawDescData
 }
 
+var file_credentials_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_credentials_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_credentials_v1_config_proto_goTypes = []any{
-	(*Credentials)(nil),                        // 0: credentials.v1.Credentials
-	(*Credentials_AWSSecretManager)(nil),       // 1: credentials.v1.Credentials.AWSSecretManager
-	(*Credentials_Vault)(nil),                  // 2: credentials.v1.Credentials.Vault
-	(*Credentials_GCPSecretManager)(nil),       // 3: credentials.v1.Credentials.GCPSecretManager
-	(*Credentials_AzureKeyVault)(nil),          // 4: credentials.v1.Credentials.AzureKeyVault
-	(*Credentials_AWSSecretManager_Creds)(nil), // 5: credentials.v1.Credentials.AWSSecretManager.Creds
+	(Credentials_AzureKeyVault_AuthType)(0),    // 0: credentials.v1.Credentials.AzureKeyVault.AuthType
+	(*Credentials)(nil),                        // 1: credentials.v1.Credentials
+	(*Credentials_AWSSecretManager)(nil),       // 2: credentials.v1.Credentials.AWSSecretManager
+	(*Credentials_Vault)(nil),                  // 3: credentials.v1.Credentials.Vault
+	(*Credentials_GCPSecretManager)(nil),       // 4: credentials.v1.Credentials.GCPSecretManager
+	(*Credentials_AzureKeyVault)(nil),          // 5: credentials.v1.Credentials.AzureKeyVault
+	(*Credentials_AWSSecretManager_Creds)(nil), // 6: credentials.v1.Credentials.AWSSecretManager.Creds
 }
 var file_credentials_v1_config_proto_depIdxs = []int32{
-	1, // 0: credentials.v1.Credentials.aws_secret_manager:type_name -> credentials.v1.Credentials.AWSSecretManager
-	2, // 1: credentials.v1.Credentials.vault:type_name -> credentials.v1.Credentials.Vault
-	3, // 2: credentials.v1.Credentials.gcp_secret_manager:type_name -> credentials.v1.Credentials.GCPSecretManager
-	4, // 3: credentials.v1.Credentials.azure_key_vault:type_name -> credentials.v1.Credentials.AzureKeyVault
-	5, // 4: credentials.v1.Credentials.AWSSecretManager.creds:type_name -> credentials.v1.Credentials.AWSSecretManager.Creds
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 0: credentials.v1.Credentials.aws_secret_manager:type_name -> credentials.v1.Credentials.AWSSecretManager
+	3, // 1: credentials.v1.Credentials.vault:type_name -> credentials.v1.Credentials.Vault
+	4, // 2: credentials.v1.Credentials.gcp_secret_manager:type_name -> credentials.v1.Credentials.GCPSecretManager
+	5, // 3: credentials.v1.Credentials.azure_key_vault:type_name -> credentials.v1.Credentials.AzureKeyVault
+	6, // 4: credentials.v1.Credentials.AWSSecretManager.creds:type_name -> credentials.v1.Credentials.AWSSecretManager.Creds
+	0, // 5: credentials.v1.Credentials.AzureKeyVault.auth_type:type_name -> credentials.v1.Credentials.AzureKeyVault.AuthType
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_credentials_v1_config_proto_init() }
@@ -541,13 +610,14 @@ func file_credentials_v1_config_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_credentials_v1_config_proto_rawDesc), len(file_credentials_v1_config_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_credentials_v1_config_proto_goTypes,
 		DependencyIndexes: file_credentials_v1_config_proto_depIdxs,
+		EnumInfos:         file_credentials_v1_config_proto_enumTypes,
 		MessageInfos:      file_credentials_v1_config_proto_msgTypes,
 	}.Build()
 	File_credentials_v1_config_proto = out.File

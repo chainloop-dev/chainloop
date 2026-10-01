@@ -388,6 +388,31 @@ secretsBackend:
 
 ```
 
+To authenticate without a stored secret, select [AKS Workload Identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview) explicitly and leave `clientSecret` unset. The pods need the `azure.workload.identity/use: "true"` label (set through `commonLabels`), and the controlplane and CAS service accounts need the `azure.workload.identity/client-id: [CLIENT_ID]` annotation
+
+```yaml
+secretsBackend:
+  backend: azureKeyVault
+  azureKeyVault:
+    authType: AUTH_TYPE_WORKLOAD_IDENTITY
+    tenantID: [TENANT_ID]
+    clientID: [CLIENT_ID]
+    vaultURI: [VAULT URI]
+
+commonLabels:
+  azure.workload.identity/use: "true"
+
+controlplane:
+  serviceAccount:
+    annotations:
+      azure.workload.identity/client-id: [CLIENT_ID]
+
+cas:
+  serviceAccount:
+    annotations:
+      azure.workload.identity/client-id: [CLIENT_ID]
+```
+
 ### Deploy in keyless mode with file-based CA
 
 You can enable keyless signing mode by providing a custom Certificate Authority.
@@ -547,7 +572,8 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                                              |             |
 | `secretsBackend.azureKeyVault.tenantID`             | Active Directory Tenant ID                                                                |             |
 | `secretsBackend.azureKeyVault.clientID`             | Registered application / service principal client ID                                      |             |
-| `secretsBackend.azureKeyVault.clientSecret`         | Service principal client secret                                                           |             |
+| `secretsBackend.azureKeyVault.authType`             | AUTH_TYPE_CREDENTIALS (default, client secret) or AUTH_TYPE_WORKLOAD_IDENTITY             |             |
+| `secretsBackend.azureKeyVault.clientSecret`         | Service principal client secret (AUTH_TYPE_CREDENTIALS only)                              |             |
 | `secretsBackend.azureKeyVault.vaultURI`             | Azure Key Vault URL                                                                       |             |
 
 ### Authentication

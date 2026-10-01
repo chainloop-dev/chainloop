@@ -50,13 +50,26 @@ type SecretsRW interface {
 	DeleteSecret(ctx context.Context, secretName string, options *azsecrets.DeleteSecretOptions) (azsecrets.DeleteSecretResponse, error)
 }
 
+// AuthType selects how the manager authenticates to Azure. The zero value is AuthTypeCredentials, so a configuration
+// that does not choose keeps using the client secret.
+type AuthType int
+
+const (
+	// AuthTypeCredentials uses the service principal ClientSecret.
+	AuthTypeCredentials AuthType = iota
+	// AuthTypeWorkloadIdentity uses AKS Workload Identity for ClientID, so no secret is stored.
+	AuthTypeWorkloadIdentity
+)
+
 type NewManagerOpts struct {
 	// Active Directory Tenant ID
 	TenantID string
 	// Registered application / service principal client ID
 	ClientID string
-	// Registered application / service principal client secret
+	// Registered application / service principal client secret. Required for AuthTypeCredentials, rejected for
+	// AuthTypeWorkloadIdentity.
 	ClientSecret string
+	AuthType     AuthType
 	// Vault URL
 	VaultURI string
 	// Optional secret prefix
@@ -76,15 +89,48 @@ func (o *NewManagerOpts) Validate() error {
 		return fmt.Errorf("%w: missing client ID", ErrValidation)
 	}
 
-	if o.ClientSecret == "" {
-		return fmt.Errorf("%w: missing client secret", ErrValidation)
-	}
-
 	if o.VaultURI == "" {
 		return fmt.Errorf("%w: missing VAULT URI", ErrValidation)
 	}
 
+	// The operator chooses workload identity explicitly, so a forgotten secret fails here instead of silently
+	// switching the authentication method.
+	switch o.AuthType {
+	case AuthTypeCredentials:
+		if o.ClientSecret == "" {
+			return fmt.Errorf("%w: missing client secret", ErrValidation)
+		}
+	case AuthTypeWorkloadIdentity:
+		if o.ClientSecret != "" {
+			return fmt.Errorf("%w: client secret must not be set for the workload identity auth type", ErrValidation)
+		}
+	default:
+		return fmt.Errorf("%w: unknown auth type %d", ErrValidation, o.AuthType)
+	}
+
 	return nil
+}
+
+// newCredential uses the service principal secret for AuthTypeCredentials, and AKS Workload Identity for the same
+// tenant and client ID for AuthTypeWorkloadIdentity: the federated token file the workload identity webhook projects
+// into the pod (AZURE_FEDERATED_TOKEN_FILE).
+func newCredential(opts *NewManagerOpts) (azcore.TokenCredential, error) {
+	if opts.AuthType == AuthTypeCredentials {
+		credential, err := azidentity.NewClientSecretCredential(opts.TenantID, opts.ClientID, opts.ClientSecret, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Azure Service principal Credential: %w", err)
+		}
+		return credential, nil
+	}
+
+	credential, err := azidentity.NewWorkloadIdentityCredential(&azidentity.WorkloadIdentityCredentialOptions{
+		TenantID: opts.TenantID,
+		ClientID: opts.ClientID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Azure Workload Identity Credential: %w", err)
+	}
+	return credential, nil
 }
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
@@ -100,9 +146,9 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
-	credential, err := azidentity.NewClientSecretCredential(opts.TenantID, opts.ClientID, opts.ClientSecret, nil)
+	credential, err := newCredential(opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Azure Service principal Credential: %w", err)
+		return nil, err
 	}
 
 	// Establish a connection to the Key Vault client

@@ -64,10 +64,16 @@ func newAzureKBManager(conf *api.Credentials_AzureKeyVault, prefix string, r cre
 		return nil, fmt.Errorf("uncompleted configuration for Azure Key Vault: %w", err)
 	}
 
+	authType := azurekv.AuthTypeCredentials
+	if conf.GetAuthType() == api.Credentials_AzureKeyVault_AUTH_TYPE_WORKLOAD_IDENTITY {
+		authType = azurekv.AuthTypeWorkloadIdentity
+	}
+
 	opts := &azurekv.NewManagerOpts{
 		TenantID:     conf.GetTenantId(),
 		ClientID:     conf.GetClientId(),
 		ClientSecret: conf.GetClientSecret(),
+		AuthType:     authType,
 		VaultURI:     conf.GetVaultUri(),
 		Logger:       l,
 		SecretPrefix: prefix,

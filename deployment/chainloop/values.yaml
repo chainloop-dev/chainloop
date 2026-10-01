@@ -88,10 +88,14 @@ secretsBackend:
 
   ## @extra secretsBackend.azureKeyVault.tenantID Active Directory Tenant ID
   ## @extra secretsBackend.azureKeyVault.clientID Registered application / service principal client ID
-  ## @extra secretsBackend.azureKeyVault.clientSecret Service principal client secret
+  ## @extra secretsBackend.azureKeyVault.authType AUTH_TYPE_CREDENTIALS (default, client secret) or AUTH_TYPE_WORKLOAD_IDENTITY
+  ## @extra secretsBackend.azureKeyVault.clientSecret Service principal client secret (AUTH_TYPE_CREDENTIALS only)
+  ## (AUTH_TYPE_WORKLOAD_IDENTITY: set commonLabels azure.workload.identity/use: "true", and annotate the controlplane and
+  ## cas service accounts azure.workload.identity/client-id: <clientID>)
   ## @extra secretsBackend.azureKeyVault.vaultURI Azure Key Vault URL
   ##
   # azureKeyVault:
+  #   authType: AUTH_TYPE_CREDENTIALS
   #   tenantID: ""
   #   clientID: ""
   #   clientSecret: ""

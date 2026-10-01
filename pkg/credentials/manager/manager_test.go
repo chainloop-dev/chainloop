@@ -68,6 +68,7 @@ func (s *testSuite) TestNewAzureManagerFromConfig() {
 		clientID      string
 		clientSecret  string
 		vaultURI      string
+		authType      v1.Credentials_AzureKeyVault_AuthType
 		Role          credentials.Role
 		expectedError bool
 	}{
@@ -75,6 +76,8 @@ func (s *testSuite) TestNewAzureManagerFromConfig() {
 		{name: "missing clientID", tenantID: "tenantID", clientID: "", clientSecret: "clientSecret", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
 		{name: "missing clientSecret", tenantID: "tenantID", clientID: "clientID", clientSecret: "", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
 		{name: "missing vaultURI", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "", Role: credentials.RoleReader, expectedError: true},
+		{name: "workload identity with a clientSecret", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", authType: v1.Credentials_AzureKeyVault_AUTH_TYPE_WORKLOAD_IDENTITY, Role: credentials.RoleReader, expectedError: true},
+		{name: "undefined auth type", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", authType: 99, Role: credentials.RoleReader, expectedError: true},
 	}
 
 	for _, tc := range testCases {
@@ -82,7 +85,7 @@ func (s *testSuite) TestNewAzureManagerFromConfig() {
 			conf := &v1.Credentials{
 				Backend: &v1.Credentials_AzureKeyVault_{
 					AzureKeyVault: &v1.Credentials_AzureKeyVault{
-						TenantId: tc.tenantID, ClientId: tc.clientID, ClientSecret: tc.clientSecret, VaultUri: tc.vaultURI,
+						TenantId: tc.tenantID, ClientId: tc.clientID, ClientSecret: tc.clientSecret, VaultUri: tc.vaultURI, AuthType: tc.authType,
 					},
 				},
 			}

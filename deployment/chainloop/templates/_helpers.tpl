@@ -95,10 +95,20 @@ gcpSecretManager:
   {{- fail ".Values.secretsBackend.gcpSecretManager.serviceAccountKey not set" }}
   {{- end }}
 {{- else if eq .backend "azureKeyVault" }}
+{{- $authType := .azureKeyVault.authType | default "AUTH_TYPE_CREDENTIALS" }}
 azure_key_vault:
   tenant_id: {{ required "AD tenantID required" .azureKeyVault.tenantID | quote }}
   client_id: {{ required "Service principal ID required" .azureKeyVault.clientID | quote }}
+  auth_type: {{ $authType | quote }}
+  {{- if eq $authType "AUTH_TYPE_CREDENTIALS" }}
   client_secret: {{ required "Service principal secret required" .azureKeyVault.clientSecret | quote }}
+  {{- else if eq $authType "AUTH_TYPE_WORKLOAD_IDENTITY" }}
+  {{- if .azureKeyVault.clientSecret }}
+  {{- fail "secretsBackend.azureKeyVault: clientSecret must not be set with authType AUTH_TYPE_WORKLOAD_IDENTITY" }}
+  {{- end }}
+  {{- else }}
+  {{- fail (printf "secretsBackend.azureKeyVault.authType %q is not one of AUTH_TYPE_CREDENTIALS, AUTH_TYPE_WORKLOAD_IDENTITY" $authType) }}
+  {{- end }}
   vault_uri: {{ required "Azure Vault URL required" .azureKeyVault.vaultURI | quote }}
 {{- end }}
 {{- end }}
