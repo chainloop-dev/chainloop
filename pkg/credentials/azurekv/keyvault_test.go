@@ -19,6 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -37,12 +39,19 @@ func (s *testSuite) TestNewManager() {
 		clientID      string
 		clientSecret  string
 		vaultURI      string
+		authType      AuthType
 		Role          credentials.Role
 		expectedError bool
+		// federatedTokenFile stands in for the AKS workload identity webhook's projected token.
+		federatedTokenFile bool
 	}{
 		{name: "missing tenantID", tenantID: "", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
 		{name: "missing clientID", tenantID: "tenantID", clientID: "", clientSecret: "clientSecret", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
-		{name: "missing clientSecret", tenantID: "tenantID", clientID: "clientID", clientSecret: "", vaultURI: "vaultURI", Role: credentials.RoleReader, expectedError: true},
+		{name: "missing clientSecret", tenantID: "tenantID", clientID: "clientID", clientSecret: "", vaultURI: "vaultURI", Role: credentials.RoleReader, federatedTokenFile: true, expectedError: true},
+		{name: "workload identity", tenantID: "tenantID", clientID: "clientID", vaultURI: "vaultURI", authType: AuthTypeWorkloadIdentity, Role: credentials.RoleReader, federatedTokenFile: true},
+		{name: "workload identity without a federated token", tenantID: "tenantID", clientID: "clientID", vaultURI: "vaultURI", authType: AuthTypeWorkloadIdentity, Role: credentials.RoleReader, expectedError: true},
+		{name: "workload identity with a clientSecret", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", authType: AuthTypeWorkloadIdentity, Role: credentials.RoleReader, federatedTokenFile: true, expectedError: true},
+		{name: "unknown auth type", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", authType: AuthType(99), Role: credentials.RoleReader, expectedError: true},
 		{name: "missing vaultURI", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "", Role: credentials.RoleReader, expectedError: true},
 		{name: "valid reader configuration", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", Role: credentials.RoleReader},
 		{name: "valid writer configuration", tenantID: "tenantID", clientID: "clientID", clientSecret: "clientSecret", vaultURI: "vaultURI", Role: credentials.RoleWriter},
@@ -50,7 +59,17 @@ func (s *testSuite) TestNewManager() {
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			opts := &NewManagerOpts{TenantID: tc.tenantID, ClientID: tc.clientID, ClientSecret: tc.clientSecret, VaultURI: tc.vaultURI, Role: tc.Role}
+			tokenFile := ""
+			if tc.federatedTokenFile {
+				tokenFile = filepath.Join(t.TempDir(), "token")
+				assert.NoError(t, os.WriteFile(tokenFile, []byte("federated-token"), 0o600))
+			}
+			// Setenv first so the variable is restored afterwards; an empty value would still count as set.
+			t.Setenv("AZURE_FEDERATED_TOKEN_FILE", tokenFile)
+			if tokenFile == "" {
+				assert.NoError(t, os.Unsetenv("AZURE_FEDERATED_TOKEN_FILE"))
+			}
+			opts := &NewManagerOpts{TenantID: tc.tenantID, ClientID: tc.clientID, ClientSecret: tc.clientSecret, AuthType: tc.authType, VaultURI: tc.vaultURI, Role: tc.Role}
 			_, err := NewManager(opts)
 			if tc.expectedError {
 				assert.Error(t, err)
