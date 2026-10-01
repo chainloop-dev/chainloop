@@ -77,7 +77,16 @@ vault:
   token: {{ default "notasecret" $tokenEnvVar | quote }}
 {{- else if (required "vault backend selected but configuration not provided" .vault ) }}
   address: {{ required "vault address required" .vault.address | quote }}
-  token: {{ required "vault token required" .vault.token | quote }}
+  {{- with .vault.kubernetesAuth }}
+  kubernetes_auth:
+    role: {{ required "vault kubernetesAuth.role required" .role | quote }}
+    {{- with .mountPath }}
+    mount_path: {{ . | quote }}
+    {{- end }}
+    token_path: {{ default (include "chainloop.vault.kubernetesAuth.tokenPath" $) .tokenPath | quote }}
+  {{- else }}
+  token: {{ required "vault token (or kubernetesAuth) required" .vault.token | quote }}
+  {{- end }}
 {{- end }}
 
 {{- else if eq .backend "awsSecretManager" }}
@@ -501,4 +510,39 @@ jwt-public-key secret already mounts read-only.
 */}}
 {{- define "chainloop.cas.staging_dir" -}}
 /tmp-staging-fs
+{{- end -}}
+
+{{/*
+Vault Kubernetes auth: whether it is selected, and where the chart mounts the projected service account token it logs
+in with. controlplane and cas default to automountServiceAccountToken: false, so the kubelet's default token path does
+not exist in their pods; the token is projected explicitly instead, only when this auth method is selected.
+*/}}
+{{- define "chainloop.vault.kubernetesAuth.enabled" -}}
+{{- with .Values.secretsBackend }}{{- if and (eq .backend "vault") .vault }}{{- if .vault.kubernetesAuth }}true{{- end }}{{- end }}{{- end }}
+{{- end -}}
+
+{{- define "chainloop.vault.kubernetesAuth.tokenPath" -}}
+/var/run/secrets/chainloop/vault/token
+{{- end -}}
+
+{{- define "chainloop.vault.kubernetesAuth.volumeMount" -}}
+{{- if include "chainloop.vault.kubernetesAuth.enabled" . }}
+- name: vault-sa-token
+  mountPath: /var/run/secrets/chainloop/vault
+  readOnly: true
+{{- end }}
+{{- end -}}
+
+{{- define "chainloop.vault.kubernetesAuth.volume" -}}
+{{- if include "chainloop.vault.kubernetesAuth.enabled" . }}
+- name: vault-sa-token
+  projected:
+    sources:
+      - serviceAccountToken:
+          path: token
+          expirationSeconds: 3600
+          {{- with .Values.secretsBackend.vault.kubernetesAuth.audience }}
+          audience: {{ . | quote }}
+          {{- end }}
+{{- end }}
 {{- end -}}

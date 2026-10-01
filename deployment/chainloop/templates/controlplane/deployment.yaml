@@ -175,6 +175,7 @@ spec:
             - name: gcp-secretmanager-serviceaccountkey
               mountPath: /gcp-secrets
             {{- end }}
+            {{- include "chainloop.vault.kubernetesAuth.volumeMount" . | nindent 12 }}
             {{- if (not (empty .Values.controlplane.customCAs)) }}
             - name: custom-cas
               # NOTE: /etc/ssl/certs already contains the system CA certs
@@ -235,6 +236,7 @@ spec:
           secret:
             secretName: {{ include "chainloop.controlplane.fullname" . }}-gcp-secretmanager-serviceaccountkey
         {{- end }}
+        {{- include "chainloop.vault.kubernetesAuth.volume" . | nindent 8 }}
         {{- if and .Values.controlplane.keylessSigning.enabled }}
         {{- range $index, $backend := .Values.controlplane.keylessSigning.backends }}
         - name: sign-backend-{{$backend.type | lower}}-{{$index}}

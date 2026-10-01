@@ -539,7 +539,11 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `secretsBackend.backend`                            | Secrets backend type ("vault", "awsSecretManager" or "gcpSecretManager", "azureKeyVault") | `vault`     |
 | `secretsBackend.secretPrefix`                       | Prefix that will be pre-pended to all secrets in the storage backend                      | `chainloop` |
 | `secretsBackend.vault.address`                      | Vault address                                                                             |             |
-| `secretsBackend.vault.token`                        | Vault authentication token                                                                |             |
+| `secretsBackend.vault.token`                        | Vault authentication token. Omit it when kubernetesAuth is set                            |             |
+| `secretsBackend.vault.kubernetesAuth.role`          | Vault role for the Kubernetes auth method, used instead of token                          |             |
+| `secretsBackend.vault.kubernetesAuth.mountPath`     | Mount path of the Kubernetes auth method (default "kubernetes")                           |             |
+| `secretsBackend.vault.kubernetesAuth.tokenPath`     | Service account token path (default: the chart's projected token)                         |             |
+| `secretsBackend.vault.kubernetesAuth.audience`      | Audience of the projected token (default: the API server's)                               |             |
 | `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                                         |             |
 | `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                                            |             |
 | `secretsBackend.awsSecretManager.region`            | AWS Secrets Manager Region                                                                |             |
