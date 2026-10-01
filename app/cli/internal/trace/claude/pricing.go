@@ -31,7 +31,7 @@ type modelPricing struct {
 	CacheWrite float64 `json:"cache_write"`
 	// CacheWrite1h is the price per 1M tokens written to the 1-hour prompt cache tier (2x base input).
 	CacheWrite1h float64 `json:"cache_write_1h"`
-	// CacheRead is the price per 1M tokens read from the prompt cache (0.1x base input).
+	// CacheRead is the price per 1M tokens read from the prompt cache (0.1x base input on most models; see pricing.json notes for exceptions).
 	CacheRead float64 `json:"cache_read"`
 }
 
