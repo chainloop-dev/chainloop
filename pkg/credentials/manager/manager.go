@@ -97,9 +97,15 @@ func newAWSCredentialsManager(conf *api.Credentials_AWSSecretManager, prefix str
 		return nil, fmt.Errorf("uncompleted configuration for AWS secret manager: %w", err)
 	}
 
+	authType := aws.AuthTypeCredentials
+	if conf.GetAuthType() == api.Credentials_AWSSecretManager_AUTH_TYPE_AMBIENT {
+		authType = aws.AuthTypeAmbient
+	}
+
 	opts := &aws.NewManagerOpts{
 		Region:    conf.Region,
 		AccessKey: conf.GetCreds().GetAccessKey(), SecretKey: conf.GetCreds().GetSecretKey(),
+		AuthType:     authType,
 		Logger:       l,
 		SecretPrefix: prefix,
 		Role:         r,

@@ -361,6 +361,16 @@ secretsBackend:
     region: [REGION]
 ```
 
+To authenticate without stored keys (EKS Pod Identity, IRSA or an instance role), select the AWS SDK default credential chain explicitly and leave the keys unset
+
+```yaml
+secretsBackend:
+  backend: awsSecretManager
+  awsSecretManager:
+    authType: AUTH_TYPE_AMBIENT
+    region: [REGION]
+```
+
 ### Use GCP secret manager
 
 Or [Google Cloud Secret Manager](https://cloud.google.com/secret-manager) with the following settings
@@ -540,8 +550,9 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `secretsBackend.secretPrefix`                       | Prefix that will be pre-pended to all secrets in the storage backend                      | `chainloop` |
 | `secretsBackend.vault.address`                      | Vault address                                                                             |             |
 | `secretsBackend.vault.token`                        | Vault authentication token                                                                |             |
-| `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID                                                                         |             |
-| `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key                                                                            |             |
+| `secretsBackend.awsSecretManager.authType`          | AUTH_TYPE_CREDENTIALS (default, static keys) or AUTH_TYPE_AMBIENT (default chain)         |             |
+| `secretsBackend.awsSecretManager.accessKey`         | AWS Access KEY ID (AUTH_TYPE_CREDENTIALS only)                                            |             |
+| `secretsBackend.awsSecretManager.secretKey`         | AWS Secret Key (AUTH_TYPE_CREDENTIALS only)                                               |             |
 | `secretsBackend.awsSecretManager.region`            | AWS Secrets Manager Region                                                                |             |
 | `secretsBackend.gcpSecretManager.projectId`         | GCP Project ID                                                                            |             |
 | `secretsBackend.gcpSecretManager.serviceAccountKey` | GCP Auth Key                                                                              |             |
