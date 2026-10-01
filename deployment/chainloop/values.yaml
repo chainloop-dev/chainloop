@@ -70,11 +70,13 @@ secretsBackend:
   #   address: ""
   #   token: ""
 
-  ## @extra secretsBackend.awsSecretManager.accessKey AWS Access KEY ID
-  ## @extra secretsBackend.awsSecretManager.secretKey AWS Secret Key
+  ## @extra secretsBackend.awsSecretManager.authType AUTH_TYPE_CREDENTIALS (default, static keys) or AUTH_TYPE_AMBIENT (default chain)
+  ## @extra secretsBackend.awsSecretManager.accessKey AWS Access KEY ID (AUTH_TYPE_CREDENTIALS only)
+  ## @extra secretsBackend.awsSecretManager.secretKey AWS Secret Key (AUTH_TYPE_CREDENTIALS only)
   ## @extra secretsBackend.awsSecretManager.region AWS Secrets Manager Region
   ##
   # awsSecretManager:
+  #   authType: AUTH_TYPE_CREDENTIALS
   #   accessKey: ""
   #   secretKey: ""
   #   region: ""

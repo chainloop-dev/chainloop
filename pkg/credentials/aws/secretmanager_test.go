@@ -19,6 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -35,14 +37,31 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// isolateAWSEnv keeps the default credential chain off the developer's machine and the network: no ~/.aws files, no
+// profile, no IMDS (the pkg/blobmanager/s3accesspoint tests' pattern).
+func isolateAWSEnv(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	for _, f := range []string{"config", "credentials"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, f), nil, 0o600))
+	}
+	t.Setenv("AWS_CONFIG_FILE", filepath.Join(dir, "config"))
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(dir, "credentials"))
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	t.Setenv("AWS_PROFILE", "")
+	require.NoError(t, os.Unsetenv("AWS_PROFILE"))
+}
+
 func (s *testSuite) TestNewManager() {
 	assert := assert.New(s.T())
+	isolateAWSEnv(s.T())
 
 	testCases := []struct {
 		name          string
 		region        string
 		accessKey     string
 		secretKey     string
+		authType      AuthType
 		path          string
 		expectedError bool
 	}{
@@ -50,11 +69,16 @@ func (s *testSuite) TestNewManager() {
 		{name: "missing accessKey", region: "r", accessKey: "", secretKey: "sk", expectedError: true},
 		{name: "missing secretKey", region: "r", accessKey: "ak", secretKey: "", expectedError: true},
 		{name: "valid manager", region: "r", accessKey: "ak", secretKey: "sk", path: "foo"},
+		{name: "credentials auth type without keys", region: "r", path: "foo", expectedError: true},
+		{name: "ambient auth type uses the default credential chain", region: "r", authType: AuthTypeAmbient, path: "foo"},
+		{name: "ambient auth type with an access key", region: "r", accessKey: "ak", authType: AuthTypeAmbient, expectedError: true},
+		{name: "ambient auth type with a secret key", region: "r", secretKey: "sk", authType: AuthTypeAmbient, expectedError: true},
+		{name: "unknown auth type", region: "r", accessKey: "ak", secretKey: "sk", authType: AuthType(99), expectedError: true},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			opts := &NewManagerOpts{Region: tc.region, AccessKey: tc.accessKey, SecretKey: tc.secretKey, SecretPrefix: tc.path}
+			opts := &NewManagerOpts{Region: tc.region, AccessKey: tc.accessKey, SecretKey: tc.secretKey, AuthType: tc.authType, SecretPrefix: tc.path}
 			_, err := NewManager(opts)
 			if tc.expectedError {
 				assert.Error(err)
@@ -63,6 +87,27 @@ func (s *testSuite) TestNewManager() {
 			}
 		})
 	}
+}
+
+// The credentials auth type uses only the static keys; the ambient one resolves credentials through the default
+// chain — shown here through the environment, the chain's first source, so no cloud metadata endpoint is contacted.
+func TestLoadConfig(t *testing.T) {
+	isolateAWSEnv(t)
+	t.Setenv("AWS_ACCESS_KEY_ID", "env-access-key")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "env-secret-key")
+
+	static, err := loadConfig(&NewManagerOpts{Region: "r", AccessKey: "ak", SecretKey: "sk"})
+	require.NoError(t, err)
+	got, err := static.Credentials.Retrieve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "ak", got.AccessKeyID, "explicit keys win over ambient credentials")
+
+	chain, err := loadConfig(&NewManagerOpts{Region: "r", AuthType: AuthTypeAmbient})
+	require.NoError(t, err)
+	assert.Equal(t, "r", chain.Region)
+	got, err = chain.Credentials.Retrieve(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "env-access-key", got.AccessKeyID)
 }
 
 const orgID = "test-org"

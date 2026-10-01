@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	smtypes "github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
@@ -49,15 +50,41 @@ type Manager struct {
 	logger       *log.Helper
 }
 
+// AuthType selects how the manager authenticates to AWS. The zero value is AuthTypeCredentials, so a configuration
+// that does not choose keeps using static keys.
+type AuthType int
+
+const (
+	// AuthTypeCredentials uses the static AccessKey and SecretKey.
+	AuthTypeCredentials AuthType = iota
+	// AuthTypeAmbient uses the AWS SDK default credential chain (EKS Pod Identity, IRSA, instance role).
+	AuthTypeAmbient
+)
+
 type NewManagerOpts struct {
 	Region, AccessKey, SecretKey, SecretPrefix string
+	AuthType                                   AuthType
 	Logger                                     log.Logger
 	Role                                       credentials.Role
 }
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
-	if opts.Region == "" || opts.AccessKey == "" || opts.SecretKey == "" {
-		return nil, errors.New("region, accessKey and the secretKey are required")
+	if opts.Region == "" {
+		return nil, errors.New("region is required")
+	}
+	// The operator chooses ambient authentication explicitly, so forgotten keys fail here instead of silently
+	// falling through to whatever the default chain finds (for example the node's instance role).
+	switch opts.AuthType {
+	case AuthTypeCredentials:
+		if opts.AccessKey == "" || opts.SecretKey == "" {
+			return nil, errors.New("accessKey and secretKey are required for the credentials auth type")
+		}
+	case AuthTypeAmbient:
+		if opts.AccessKey != "" || opts.SecretKey != "" {
+			return nil, errors.New("accessKey and secretKey must not be set for the ambient auth type")
+		}
+	default:
+		return nil, fmt.Errorf("unknown auth type %d", opts.AuthType)
 	}
 
 	l := opts.Logger
@@ -66,19 +93,31 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	}
 
 	logger := servicelogger.ScopedHelper(l, "credentials/aws-secrets-manager")
-	logger.Infow("msg", "configuring secrets-manager", "region", opts.Region, "role", opts.Role, "prefix", opts.SecretPrefix)
+	logger.Infow("msg", "configuring secrets-manager", "region", opts.Region, "role", opts.Role, "prefix", opts.SecretPrefix, "ambient", opts.AuthType == AuthTypeAmbient)
 
-	// Using AWS config directly instead of using config.LoadDefaultConfig
-	// to avoid the default credential chain and use only the static credentials
-	config := aws.Config{
-		Region:      opts.Region,
-		Credentials: awscreds.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""),
+	cfg, err := loadConfig(opts)
+	if err != nil {
+		return nil, fmt.Errorf("loading AWS configuration: %w", err)
 	}
 
 	return &Manager{
-		client:       secretsmanager.NewFromConfig(config),
+		client:       secretsmanager.NewFromConfig(cfg),
 		secretPrefix: opts.SecretPrefix, logger: logger,
 	}, nil
+}
+
+// loadConfig uses only the static keys for AuthTypeCredentials, never falling through to ambient credentials. For
+// AuthTypeAmbient it resolves credentials through the SDK's default chain, so no long-lived key has to be stored for
+// the control plane or CAS.
+func loadConfig(opts *NewManagerOpts) (aws.Config, error) {
+	if opts.AuthType == AuthTypeCredentials {
+		return aws.Config{
+			Region:      opts.Region,
+			Credentials: awscreds.NewStaticCredentialsProvider(opts.AccessKey, opts.SecretKey, ""),
+		}, nil
+	}
+
+	return awsconfig.LoadDefaultConfig(context.Background(), awsconfig.WithRegion(opts.Region))
 }
 
 // SaveCredentials saves credentials. If opts includes WithExistingSecret, upserts at the given path.
