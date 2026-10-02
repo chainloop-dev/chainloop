@@ -16,6 +16,8 @@
 package token
 
 import (
+	"strconv"
+
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -29,6 +31,12 @@ type ParsedToken struct {
 	ID        string
 	OrgID     string
 	TokenType v1.Attestation_Auth_AuthType
+	// CINamespaceID identifies the CI namespace a federated token was minted for: the
+	// GitHub organization that owns the repository, or the GitLab namespace that owns
+	// the project. Empty for every other token type, and for a provider that emits
+	// neither claim. It exists for telemetry and must stay out of the attestation auth
+	// metadata, which is keyed on ID.
+	CINamespaceID string
 }
 
 const (
@@ -36,6 +44,13 @@ const (
 	//nolint:gosec
 	apiTokenAudience       = "api-token-auth.chainloop"
 	federatedTokenAudience = "chainloop"
+
+	// githubOwnerIDClaim is GitHub Actions' ID of the organization owning the repository
+	// the workflow runs from.
+	githubOwnerIDClaim = "repository_owner_id"
+	// gitlabNamespaceIDClaim is GitLab's ID of the namespace owning the project the job
+	// runs from.
+	gitlabNamespaceIDClaim = "namespace_id"
 )
 
 // Parse the token and return the type of token. At the moment in Chainloop we have 3 types of tokens:
@@ -117,6 +132,7 @@ func Parse(token string) (*ParsedToken, error) {
 		} else {
 			return nil, nil
 		}
+		pToken.CINamespaceID = ciNamespaceID(claims)
 	default:
 		return nil, nil
 	}
@@ -128,4 +144,24 @@ func Parse(token string) (*ParsedToken, error) {
 	}
 
 	return pToken, nil
+}
+
+// ciNamespaceID returns the provider's identifier for the namespace that owns the
+// repository a federated token was minted for. Both providers expose it as a numeric id
+// that survives a rename, unlike the matching name claims, and both document it as a
+// string, so a JSON number is accepted too rather than silently dropping the namespace.
+// Returns an empty string when the provider emits neither claim.
+func ciNamespaceID(claims jwt.MapClaims) string {
+	for _, claim := range []string{githubOwnerIDClaim, gitlabNamespaceIDClaim} {
+		switch v := claims[claim].(type) {
+		case string:
+			if v != "" {
+				return v
+			}
+		case float64:
+			return strconv.FormatInt(int64(v), 10)
+		}
+	}
+
+	return ""
 }

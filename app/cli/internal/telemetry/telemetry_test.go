@@ -156,3 +156,104 @@ func TestCommandTrackerTrackWithCustomTags(t *testing.T) {
 
 	mockedClient.AssertNumberOfCalls(t, "TrackEvent", 1)
 }
+
+func TestCommandTrackerTrackIdentity(t *testing.T) {
+	const (
+		cpURLHash = "1cc62eb758e48e1cc0bce5454d86036cd824638378fc54ad0cde5882af00248a"
+		issuer    = "https://token.actions.githubusercontent.com"
+	)
+
+	testCases := []struct {
+		name string
+		tags telemetry.Tags
+		// want is the distinct_id the event is expected to be sent under. An empty
+		// value means "whatever the machine ID resolves to", which is host dependent.
+		want          string
+		wantMachineID bool
+	}{
+		{
+			name: "user token keeps its user id",
+			tags: telemetry.Tags{
+				tagTokenType:  v1.Attestation_Auth_AUTH_TYPE_USER.String(),
+				"user_id":     "bc0b2199-ca85-42ab-a857-042e9c109d43",
+				"cp_url_hash": cpURLHash,
+			},
+			want: "bc0b2199-ca85-42ab-a857-042e9c109d43",
+		},
+		{
+			name: "api token keeps its token id",
+			tags: telemetry.Tags{
+				tagTokenType:  v1.Attestation_Auth_AUTH_TYPE_API_TOKEN.String(),
+				"user_id":     "4b0f0dd4-4538-4269-92a9-ab5b0fce0258",
+				"cp_url_hash": cpURLHash,
+			},
+			want: "4b0f0dd4-4538-4269-92a9-ab5b0fce0258",
+		},
+		{
+			name: "federated token is scoped to its CI namespace and installation",
+			tags: telemetry.Tags{
+				tagTokenType:      v1.Attestation_Auth_AUTH_TYPE_FEDERATED.String(),
+				"user_id":         issuer,
+				"ci_namespace_id": "84607409",
+				"cp_url_hash":     cpURLHash,
+			},
+			want: "ci:84607409@" + cpURLHash,
+		},
+		{
+			// Two different CI namespaces on the same installation must not collapse
+			// into the shared issuer-URL person.
+			name: "a second CI namespace gets its own identity",
+			tags: telemetry.Tags{
+				tagTokenType:      v1.Attestation_Auth_AUTH_TYPE_FEDERATED.String(),
+				"user_id":         issuer,
+				"ci_namespace_id": "9919",
+				"cp_url_hash":     cpURLHash,
+			},
+			want: "ci:9919@" + cpURLHash,
+		},
+		{
+			// A provider that emits no namespace claim falls back to the previous
+			// behaviour rather than producing a half-formed identity.
+			name: "federated token without a namespace falls back to the issuer",
+			tags: telemetry.Tags{
+				tagTokenType:  v1.Attestation_Auth_AUTH_TYPE_FEDERATED.String(),
+				"user_id":     issuer,
+				"cp_url_hash": cpURLHash,
+			},
+			want: issuer,
+		},
+		{
+			name:          "unauthenticated falls back to the machine id",
+			tags:          telemetry.Tags{"cp_url_hash": cpURLHash},
+			wantMachineID: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockedClient := mocks.NewClient(t)
+			mockedClient.
+				On("TrackEvent", mock.Anything, "command_executed", mock.Anything, mock.Anything).
+				Return(func(_ context.Context, _ string, id string, tags telemetry.Tags) error {
+					if tc.wantMachineID {
+						assert.Equal(t, tags["machine_id"], id)
+						return nil
+					}
+
+					assert.Equal(t, tc.want, id)
+					return nil
+				})
+
+			err := telemetry.NewCommandTracker(mockedClient).Track(context.Background(), "test-command", tc.tags)
+			assert.NoError(t, err)
+			mockedClient.AssertNumberOfCalls(t, "TrackEvent", 1)
+		})
+	}
+}
+
+// TestAuthTypeConstants pins the literals the telemetry package duplicates to the
+// attestation API values they mirror, so a rename on either side fails here.
+func TestAuthTypeConstants(t *testing.T) {
+	assert.Equal(t, "AUTH_TYPE_USER", v1.Attestation_Auth_AUTH_TYPE_USER.String())
+	assert.Equal(t, "AUTH_TYPE_FEDERATED", v1.Attestation_Auth_AUTH_TYPE_FEDERATED.String())
+}
