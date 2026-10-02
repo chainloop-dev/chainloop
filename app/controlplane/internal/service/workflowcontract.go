@@ -338,7 +338,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 	// Apply has no project to scope a new contract to, so what it creates is organization-level,
 	// which a caller confined to projects never changes. Create asks such a caller for a project instead.
 	if rbacEnabled(ctx) {
-		return nil, errors.Forbidden("forbidden", "only organization administrators and organization-scoped tokens can create an organization-level contract; create it in a project instead")
+		return nil, errors.Forbidden("forbidden", "you can not create an organization-level contract; create it in a project instead")
 	}
 
 	// On a dry run we report that the contract would be created, without persisting it

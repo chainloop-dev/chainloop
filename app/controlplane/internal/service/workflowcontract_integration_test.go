@@ -295,8 +295,9 @@ func (s *workflowContractApplyIntegrationTestSuite) apiTokenContext(scope authz.
 	return entities.WithCurrentAPIToken(s.ctx, token)
 }
 
-// confinedTokens are the API tokens confined to projects that reach the given one. Each holds the
-// contract create and update policies Apply asks for, since every token gets them by default.
+// confinedTokens are the API tokens confined to projects that reach the given one. Apply keys on
+// the token's scope kind, so the scope is all they need here. Their policies are checked before,
+// by the authz interceptor: every token holds contract create and update by default.
 func (s *workflowContractApplyIntegrationTestSuite) confinedTokens(projectID uuid.UUID) []applyCaller {
 	workflowID, productID := uuid.New(), uuid.New()
 
@@ -313,8 +314,8 @@ func (s *workflowContractApplyIntegrationTestSuite) confinedTokens(projectID uui
 	}
 }
 
-// confinedCallers adds to the confined tokens the users confined to projects. Members and
-// contributors hold the contract create and update policies through their organization role.
+// confinedCallers adds to the confined tokens the users confined to projects. Apply keys on their
+// organization role, through which members and contributors also hold contract create and update.
 func (s *workflowContractApplyIntegrationTestSuite) confinedCallers() []applyCaller {
 	return append(s.confinedTokens(uuid.New()),
 		applyCaller{name: "org member", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOrgMember))},
