@@ -17,6 +17,7 @@ package opencode
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -159,16 +160,35 @@ func (p *Provider) CleanupAfterEdit(store *state.Store, input *trace.HookInput) 
 	store.DeleteFileSnapshot(input.SessionID, input.FilePath)
 }
 
-// SystemMessage is a no-op for opencode: the plugin system has no
-// systemMessage channel comparable to Claude Code's SessionStart output.
-func (p *Provider) SystemMessage(_ string) error {
-	return nil
+// AnnounceSessionStart writes the session-start response that the Chainloop
+// plugin reads. The plugin posts the instruction to the session as a
+// context-only message (no model reply), which is how the model receives it.
+// opencode has no channel that shows a message to the user, so the banner is
+// dropped.
+//
+// A message with no instruction writes nothing, and the plugin posts nothing.
+func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
+	if msg.Instruction == "" {
+		return nil
+	}
+
+	resp := struct {
+		Instruction string `json:"instruction"`
+	}{Instruction: msg.Instruction}
+
+	return json.NewEncoder(os.Stdout).Encode(resp)
 }
 
-// SupportsSystemMessage is false for opencode, so callers skip the cost of
-// composing a message that SystemMessage would drop.
-func (p *Provider) SupportsSystemMessage() bool {
+// SupportsSessionStartBanner is false for opencode: the plugin has no channel
+// to the user.
+func (p *Provider) SupportsSessionStartBanner() bool {
 	return false
+}
+
+// SupportsSessionStartInstruction is true for opencode: the plugin posts the
+// instruction to the session.
+func (p *Provider) SupportsSessionStartInstruction() bool {
+	return true
 }
 
 // AnnounceToUser is unsupported for OpenCode until its plugin's response

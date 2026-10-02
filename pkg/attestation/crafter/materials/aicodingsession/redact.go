@@ -49,6 +49,9 @@ var protectedPaths = []string{
 	"/data/session/mode",
 	"/data/session/started_at",
 	"/data/session/ended_at",
+	"/data/spec/*/kind",
+	"/data/spec/*/captured_at",
+	"/data/spec/*/digest",
 	"/data/git_context/branch",
 	"/data/git_context/commit_start",
 	"/data/git_context/commit_end",
@@ -90,6 +93,22 @@ func Redact(ctx context.Context, evidence []byte) ([]byte, *redaction.Report, er
 	}
 
 	return redacted, report, nil
+}
+
+// RedactSpecText removes detected secrets from the text of one captured spec.
+//
+// A spec is stored as its own material rather than inside the session
+// document, so it does not pass through Redact. It gets the same scanner and
+// the same placeholders here, so a credential pasted into a ticket body is
+// removed exactly as it would be from the transcript. Text with no detected
+// secrets is returned unchanged.
+func RedactSpecText(ctx context.Context, text string) (string, *redaction.Report, error) {
+	scanner, err := redaction.DefaultScanner()
+	if err != nil {
+		return "", nil, fmt.Errorf("initialising the secret scanner: %w", err)
+	}
+
+	return redaction.New(scanner).RedactText(ctx, text)
 }
 
 // eligible reports whether the string leaf at path may be rewritten.

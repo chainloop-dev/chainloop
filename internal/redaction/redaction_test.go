@@ -385,3 +385,47 @@ func TestReportRuleIDs(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, r.RuleIDs())
 	assert.Nil(t, (*Report)(nil).RuleIDs())
 }
+
+// TestRedactText covers plain text, which Redact cannot take directly: it
+// rewrites the string leaves of a JSON document.
+func TestRedactText(t *testing.T) {
+	const secret = "s3cr3t-value-0123456789"
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "test-token", Secret: secret}}, requirePresent: true}
+
+	testCases := []struct {
+		name        string
+		text        string
+		want        string
+		wantChanged bool
+	}{
+		{name: "a secret is replaced", text: "use " + secret + " now", want: "use [REDACTED:test-token] now", wantChanged: true},
+		{name: "text without secrets comes back unchanged", text: "nothing to see", want: "nothing to see"},
+		{name: "line breaks and quotes survive", text: "a \"quoted\"\nline " + secret, want: "a \"quoted\"\nline [REDACTED:test-token]", wantChanged: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, report, err := New(scanner).RedactText(context.Background(), tc.text)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.wantChanged, report.Changed())
+		})
+	}
+}
+
+// TestRedactPlaceholderNeedingEscape checks that a placeholder is inserted in
+// its JSON-escaped form. A raw quote or backslash in it would break the string
+// the leaf is rebuilt from, and the whole leaf would then be lost to the
+// placeholder.
+func TestRedactPlaceholderNeedingEscape(t *testing.T) {
+	const secret = "s3cr3t-value-0123456789"
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "test-token", Secret: secret}}, requirePresent: true}
+	placeholder := func(ruleID string) string { return `<"` + ruleID + `"\removed>` }
+	matches := func(s string) bool { return strings.HasPrefix(s, `<"`) }
+
+	got, report, err := New(scanner, WithPlaceholder(placeholder, matches)).RedactText(context.Background(), "use "+secret+" now")
+
+	require.NoError(t, err)
+	assert.True(t, report.Changed())
+	assert.Equal(t, `use <"test-token"\removed> now`, got, "the text around the secret survives")
+}

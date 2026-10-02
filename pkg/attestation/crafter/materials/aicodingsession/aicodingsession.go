@@ -15,7 +15,10 @@
 
 package aicodingsession
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
 
 const (
 	// EvidenceID is the identifier for the AI coding session material type
@@ -45,6 +48,63 @@ func ResolveMode(mode string) string {
 	}
 
 	return mode
+}
+
+// What a captured spec entry was resolved from, as a closed vocabulary that
+// consumers switch on. Unlike Mode, this value originates in a model's output
+// rather than in a Chainloop release, so a value outside the set is a mistake
+// to normalise away rather than a future kind to pass through. The schema
+// nonetheless leaves the field an open string, so a kind added by a later CLI
+// is not rejected by a control plane that predates it.
+const (
+	// SpecKindTicket is an issue tracker item: a Linear or Jira ticket.
+	SpecKindTicket = "ticket"
+	// SpecKindDocument is a written specification: a design doc, a page in a
+	// vault, an RFC.
+	SpecKindDocument = "document"
+	// SpecKindImage is a spec given as a picture — a mockup or a screenshot —
+	// of which the stored content is whatever the agent transcribed.
+	SpecKindImage = "image"
+	// SpecKindText is a spec stated in the session itself rather than resolved
+	// from somewhere, and the fallback for anything unrecognised.
+	SpecKindText = "text"
+)
+
+// ResolveSpecKind maps a captured kind onto the vocabulary above, so the
+// normalisation is written down once instead of at each producer and consumer.
+func ResolveSpecKind(kind string) string {
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case SpecKindTicket:
+		return SpecKindTicket
+	case SpecKindDocument:
+		return SpecKindDocument
+	case SpecKindImage:
+		return SpecKindImage
+	default:
+		return SpecKindText
+	}
+}
+
+// SpecEntry is one source a coding session was built from: the ticket,
+// document or prompt that set the task, resolved by the agent. It is what the
+// work gets judged against, which no amount of diff can answer on its own.
+//
+// The entry is a reference. The text itself is a separate EVIDENCE material in
+// the same attestation, found by Digest, so that a source shared by many
+// sessions is stored once and can be fetched and verified on its own.
+type SpecEntry struct {
+	// Kind is one of the SpecKind* constants.
+	Kind string `json:"kind"`
+	// URI is where the text came from. Empty when the task was stated in the
+	// session itself and there is no external source to point at.
+	URI string `json:"uri,omitempty"`
+	// Digest identifies the EVIDENCE material holding the spec text, as
+	// "sha256:<hex>".
+	Digest string `json:"digest"`
+	// CapturedAt is when the agent wrote this entry, RFC3339. It comes from the
+	// file's modification time, so it is the last write rather than the first,
+	// and it is trivially forgeable: not a trusted timestamp.
+	CapturedAt string `json:"captured_at"`
 }
 
 // Agent identifies the AI agent provider.
@@ -158,18 +218,21 @@ type Conversation struct {
 
 // Data is the AI coding session payload.
 type Data struct {
-	SchemaVersion string                       `json:"schema_version"`
-	Agent         Agent                        `json:"agent"`
-	Session       Session                      `json:"session"`
-	GitContext    *GitContext                  `json:"git_context,omitempty"`
-	CodeChanges   *CodeChanges                 `json:"code_changes,omitempty"`
-	Model         *Model                       `json:"model,omitempty"`
-	Usage         *Usage                       `json:"usage,omitempty"`
-	ToolsUsed     *ToolsUsed                   `json:"tools_used,omitempty"`
-	Conversation  *Conversation                `json:"conversation,omitempty"`
-	Subagents     []Subagent                   `json:"subagents,omitempty"`
-	RawSession    map[string][]json.RawMessage `json:"raw_session,omitempty"`
-	Warnings      []string                     `json:"warnings,omitempty"`
+	SchemaVersion string  `json:"schema_version"`
+	Agent         Agent   `json:"agent"`
+	Session       Session `json:"session"`
+	// Spec is what the session was asked to build, one entry per source the
+	// agent resolved. Empty for a session that captured none.
+	Spec         []SpecEntry                  `json:"spec,omitempty"`
+	GitContext   *GitContext                  `json:"git_context,omitempty"`
+	CodeChanges  *CodeChanges                 `json:"code_changes,omitempty"`
+	Model        *Model                       `json:"model,omitempty"`
+	Usage        *Usage                       `json:"usage,omitempty"`
+	ToolsUsed    *ToolsUsed                   `json:"tools_used,omitempty"`
+	Conversation *Conversation                `json:"conversation,omitempty"`
+	Subagents    []Subagent                   `json:"subagents,omitempty"`
+	RawSession   map[string][]json.RawMessage `json:"raw_session,omitempty"`
+	Warnings     []string                     `json:"warnings,omitempty"`
 }
 
 // Evidence represents the complete evidence structure for AI coding session.

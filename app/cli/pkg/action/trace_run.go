@@ -26,6 +26,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/rs/zerolog"
@@ -355,6 +356,13 @@ func CleanupTrace(store *state.Store, repoRoot string, log zerolog.Logger) error
 	if err := store.RemoveTraceDir(); err != nil {
 		log.Warn().Err(err).Msg("could not remove trace directory")
 		errs = append(errs, fmt.Errorf("remove trace directory: %w", err))
+	}
+
+	// Captured specs live in the working tree rather than under .git, so
+	// nothing else in this cleanup would ever reach them.
+	if err := spec.RemoveDir(repoRoot); err != nil {
+		log.Warn().Err(err).Msg("could not remove the spec directory")
+		errs = append(errs, fmt.Errorf("remove spec directory: %w", err))
 	}
 
 	// The out-of-tree state directory is ours alone, so drop it too rather

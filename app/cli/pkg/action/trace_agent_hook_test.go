@@ -17,17 +17,20 @@ package action
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -126,6 +129,63 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		assert.Contains(t, stdout, "Chainloop Trace is recording this session.")
 	})
 
+	t.Run("carries the banner and the spec instruction in one document", func(t *testing.T) {
+		repoDir := initTempGitRepo(t)
+		store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+		require.NoError(t, store.InitTraceDir())
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		withStdin(t, `{"session_id":"spec-test"}`)
+		stdout := captureStdout(t, func() {
+			require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		})
+
+		// Claude Code parses a hook's stdout as a single JSON value, so the two
+		// channels have to share one document or one of them is lost.
+		dec := json.NewDecoder(strings.NewReader(stdout))
+
+		var got map[string]any
+		require.NoError(t, dec.Decode(&got))
+		require.ErrorIs(t, dec.Decode(&map[string]any{}), io.EOF, "stdout must carry exactly one JSON document")
+
+		assert.Contains(t, got["systemMessage"], "Chainloop Trace is recording this session.")
+
+		hookOut, ok := got["hookSpecificOutput"].(map[string]any)
+		require.True(t, ok)
+		assert.Contains(t, hookOut["additionalContext"], spec.SessionDir(repoDir, "spec-test"))
+	})
+
+	t.Run("stops asking for a spec once one is captured", func(t *testing.T) {
+		repoDir := initTempGitRepo(t)
+		store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+		require.NoError(t, store.InitTraceDir())
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		require.NoError(t, spec.EnsureDir(repoDir))
+		require.NoError(t, os.MkdirAll(spec.SessionDir(repoDir, "spec-done"), 0755))
+		require.NoError(t, os.WriteFile(
+			filepath.Join(spec.SessionDir(repoDir, "spec-done"), "ticket.md"), []byte("the ticket"), 0600))
+
+		withStdin(t, `{"session_id":"spec-done"}`)
+		stdout := captureStdout(t, func() {
+			require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		})
+
+		var got map[string]any
+		require.NoError(t, json.Unmarshal([]byte(stdout), &got))
+
+		hookOut, ok := got["hookSpecificOutput"].(map[string]any)
+		require.True(t, ok)
+		assert.NotContains(t, hookOut, "additionalContext", "the instruction is not worth repeating")
+		assert.Contains(t, got["systemMessage"], "Chainloop Trace is recording this session.", "the banner still goes out")
+	})
+
 	t.Run("ignores malformed stdin", func(t *testing.T) {
 		withStdin(t, `not json`)
 		assert.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
@@ -156,6 +216,34 @@ func TestHandleAgentSessionEnd(t *testing.T) {
 
 		withStdin(t, `{"session_id":"abc-123"}`)
 		require.NoError(t, HandleAgentSessionEnd(provider, zerolog.Nop()))
+	})
+
+	t.Run("deletes the spec of the ended session only", func(t *testing.T) {
+		repoDir := initTempGitRepo(t)
+		store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+		require.NoError(t, store.InitTraceDir())
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		// The spec stays for every push of the session, so the session end is
+		// the only point where it goes. Another session's spec is untouched.
+		// The redacted copies of the files go with them.
+		for _, id := range []string{"abc-123", "other-456"} {
+			for _, dir := range []string{spec.SessionDir(repoDir, id), store.SpecRedactionDir(id)} {
+				require.NoError(t, os.MkdirAll(dir, 0o755))
+				require.NoError(t, os.WriteFile(filepath.Join(dir, "ticket.md"), []byte("the ticket"), 0o600))
+			}
+		}
+
+		withStdin(t, `{"session_id":"abc-123"}`)
+		require.NoError(t, HandleAgentSessionEnd(provider, zerolog.Nop()))
+
+		assert.NoDirExists(t, spec.SessionDir(repoDir, "abc-123"))
+		assert.NoDirExists(t, store.SpecRedactionDir("abc-123"))
+		assert.FileExists(t, filepath.Join(spec.SessionDir(repoDir, "other-456"), "ticket.md"))
+		assert.FileExists(t, filepath.Join(store.SpecRedactionDir("other-456"), "ticket.md"))
 	})
 
 	t.Run("marks the session inactive", func(t *testing.T) {

@@ -1,0 +1,6 @@
+# Findings that are known not to be secrets, one fingerprint per line. Both gitleaks and betterleaks read this file.
+# (<commit>:<file>:<rule>:<line>).
+
+# A made-up SHA-256 hex digest in a schema test case. Later commits build the
+# value from a constant, so only this commit holds the literal.
+03956e33e297cc1074152897f70c88e2d1b0fd95:internal/schemavalidators/schemavalidators_test.go:generic-api-key:415

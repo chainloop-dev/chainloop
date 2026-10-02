@@ -243,10 +243,11 @@ func (e *AttestationExecutor) Init(ctx context.Context, workflow, project, versi
 	return id, nil
 }
 
-// AddEvidence adds an evidence material to the attestation.
+// AddMaterial adds a material of the given kind to the attestation and returns
+// the digest it was stored under.
 // Empty attestation ID is passed upstream so the crafter uses LocalStatePath
 // instead of forcing remote state.
-func (e *AttestationExecutor) AddEvidence(ctx context.Context, name, filePath string) error {
+func (e *AttestationExecutor) AddMaterial(ctx context.Context, name, filePath, kind string, annotations map[string]string) (string, error) {
 	a, err := NewAttestationAdd(&AttestationAddOpts{
 		ActionsOpts:        e.actionOpts,
 		LocalStatePath:     e.localStatePath,
@@ -255,14 +256,19 @@ func (e *AttestationExecutor) AddEvidence(ctx context.Context, name, filePath st
 		ConnectionInsecure: casInsecure(),
 	})
 	if err != nil {
-		return fmt.Errorf("create attestation add action: %w", err)
+		return "", fmt.Errorf("create attestation add action: %w", err)
 	}
 
-	if _, err := a.Run(ctx, "", name, filePath, "CHAINLOOP_AI_CODING_SESSION", nil, nil, nil); err != nil {
-		return fmt.Errorf("attestation add evidence: %w", err)
+	added, err := a.Run(ctx, "", name, filePath, kind, annotations, nil, nil)
+	if err != nil {
+		return "", fmt.Errorf("attestation add %s: %w", kind, err)
 	}
 
-	return nil
+	if len(added) == 0 || added[0].Material == nil {
+		return "", fmt.Errorf("attestation add %s: no material recorded", kind)
+	}
+
+	return added[0].Hash, nil
 }
 
 // Reset cancels the current attestation.

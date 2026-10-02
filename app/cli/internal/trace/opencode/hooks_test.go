@@ -45,6 +45,39 @@ func TestInstallHooksCreatesPluginFile(t *testing.T) {
 	assert.Contains(t, content, `const fileWritingTools = ["edit","write","apply_patch"]`)
 }
 
+// TestPluginPostsSessionStartInstruction pins how the model receives the spec
+// capture instruction: the plugin reads the session-start response and posts it
+// to the session as a context-only message, which gets no model reply.
+func TestPluginPostsSessionStartInstruction(t *testing.T) {
+	for _, install := range []struct {
+		name string
+		fn   func(*Provider, string) error
+	}{
+		{name: "full install", fn: (*Provider).InstallHooks},
+		{name: "trace run install", fn: (*Provider).InstallHooksForTraceRun},
+	} {
+		t.Run(install.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			require.NoError(t, install.fn(New(), repoRoot))
+
+			data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+			require.NoError(t, err)
+			content := string(data)
+
+			assert.Contains(t, content, "async ({ $, client })", "the plugin needs the SDK client to post the message")
+			assert.Contains(t, content, "client.session.prompt(")
+			assert.Contains(t, content, "noReply: true")
+			// The handler waits until the message is stored, so a first turn
+			// sent right away cannot reach the model without it.
+			assert.Contains(t, content, "await postInstruction(sessionID, instruction)")
+			assert.Contains(t, content, ".instruction")
+			// A child session belongs to a subagent, whose parent already has
+			// the instruction.
+			assert.Contains(t, content, "parentID")
+		})
+	}
+}
+
 func TestInstallHooksForTraceRunOmitsSessionEnd(t *testing.T) {
 	repoRoot := t.TempDir()
 	p := New()
