@@ -50,3 +50,23 @@ func TestPricingEmbedLoads(t *testing.T) {
 	assert.Equal(t, 4.00, sonnet5.CacheWrite1h)
 	assert.Equal(t, 0.20, sonnet5.CacheRead)
 }
+
+func TestPricingModelRates(t *testing.T) {
+	testCases := []struct {
+		model string
+		want  modelPricing
+	}{
+		{"claude-fable-5-1", modelPricing{Input: 10.00, Output: 50.00, CacheWrite: 12.50, CacheWrite1h: 20.00, CacheRead: 0.25}},
+		{"claude-mythos-5-1", modelPricing{Input: 10.00, Output: 50.00, CacheWrite: 12.50, CacheWrite1h: 20.00, CacheRead: 0.25}},
+		{"claude-opus-5-5", modelPricing{Input: 4.00, Output: 20.00, CacheWrite: 5.00, CacheWrite1h: 8.00, CacheRead: 0.20}},
+		{"claude-sonnet-5-5", modelPricing{Input: 2.00, Output: 10.00, CacheWrite: 2.50, CacheWrite1h: 4.00, CacheRead: 0.20}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.model, func(t *testing.T) {
+			got, ok := pricing[tc.model]
+			require.True(t, ok, "expected %s in embedded pricing table", tc.model)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
