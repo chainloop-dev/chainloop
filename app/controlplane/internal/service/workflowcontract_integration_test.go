@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
@@ -69,7 +70,12 @@ func (s *workflowContractApplyIntegrationTestSuite) apply(rawSchema string, dryR
 }
 
 func (s *workflowContractApplyIntegrationTestSuite) latestRevision() int {
-	contract, err := s.WorkflowContract.FindByNameInOrg(s.ctx, s.org.ID, applyContractName)
+	return s.revisionOf(applyContractName)
+}
+
+// revisionOf returns the latest revision of the named contract, or 0 if it doesn't exist.
+func (s *workflowContractApplyIntegrationTestSuite) revisionOf(name string) int {
+	contract, err := s.WorkflowContract.FindByNameInOrg(s.ctx, s.org.ID, name)
 	if err != nil && biz.IsNotFound(err) {
 		return 0
 	}
@@ -254,38 +260,151 @@ func (s *workflowContractApplyIntegrationTestSuite) TestApplyBatchExemption() {
 	}
 }
 
-// A product token reaches only its projects, and Apply has no project to scope a new contract to,
-// so it can't create one: that would be an organization-level contract. Create requires a project
-// of such a caller for the same reason.
-func (s *workflowContractApplyIntegrationTestSuite) TestApplyRefusesAProductTokenCreatingAContract() {
-	productID := uuid.New()
-	ctx := entities.WithCurrentAPIToken(s.ctx, &entities.APIToken{
-		ID:         uuid.NewString(),
-		Name:       "ci",
-		Scope:      biz.ToPtr(authz.ResourceTypeProduct),
-		ScopeID:    &productID,
-		ProjectIDs: []uuid.UUID{},
-	})
-
-	for _, dryRun := range []bool{true, false} {
-		s.Run(fmt.Sprintf("dry run %t", dryRun), func() {
-			_, err := s.svc.Apply(ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: []byte(applyContractV1), DryRun: dryRun})
-			s.Require().Error(err)
-			s.True(kerrors.IsForbidden(err), "got %v", err)
-			s.Equal(0, s.latestRevision(), "nothing is created")
-		})
+// namedContract returns a minimal contract with the given name, so each case applies its own.
+// Extra materials change its content.
+func namedContract(name string, extraMaterials ...string) []byte {
+	raw := `
+apiVersion: chainloop.dev/v1
+kind: Contract
+metadata:
+  name: ` + name + `
+spec:
+  materials:
+    - type: ARTIFACT
+      name: my-artifact
+`
+	for _, m := range extraMaterials {
+		raw += "    - type: ARTIFACT\n      name: " + m + "\n"
 	}
 
-	s.Run("nor update an existing organization-level contract", func() {
-		s.apply(applyContractV1, false)
-		before := s.latestRevision()
+	return []byte(raw)
+}
 
-		_, err := s.svc.Apply(ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: []byte(applyContractV2)})
-		s.Require().Error(err)
-		s.True(kerrors.IsBadRequest(err), "got %v", err)
-		s.ErrorContains(err, "you can not manage a global contract")
-		s.Equal(before, s.latestRevision(), "the contract is unchanged")
-	})
+type applyCaller struct {
+	name string
+	ctx  context.Context
+}
+
+// apiTokenContext returns the suite context acting as an API token with the given scope.
+func (s *workflowContractApplyIntegrationTestSuite) apiTokenContext(scope authz.ResourceType, configure func(*entities.APIToken)) context.Context {
+	token := &entities.APIToken{ID: uuid.NewString(), Name: "ci", Scope: &scope}
+	if configure != nil {
+		configure(token)
+	}
+
+	return entities.WithCurrentAPIToken(s.ctx, token)
+}
+
+// confinedTokens are the API tokens confined to projects that reach the given one. Each holds the
+// contract create and update policies Apply asks for, since every token gets them by default.
+func (s *workflowContractApplyIntegrationTestSuite) confinedTokens(projectID uuid.UUID) []applyCaller {
+	workflowID, productID := uuid.New(), uuid.New()
+
+	return []applyCaller{
+		{name: "project token", ctx: s.apiTokenContext(authz.ResourceTypeProject, func(t *entities.APIToken) {
+			t.ScopeID, t.ProjectID = &projectID, &projectID
+		})},
+		{name: "workflow token", ctx: s.apiTokenContext(authz.ResourceTypeProject, func(t *entities.APIToken) {
+			t.ScopeID, t.ProjectID, t.WorkflowID = &projectID, &projectID, &workflowID
+		})},
+		{name: "product token", ctx: s.apiTokenContext(authz.ResourceTypeProduct, func(t *entities.APIToken) {
+			t.ScopeID, t.ProjectIDs = &productID, []uuid.UUID{projectID}
+		})},
+	}
+}
+
+// confinedCallers adds to the confined tokens the users confined to projects. Members and
+// contributors hold the contract create and update policies through their organization role.
+func (s *workflowContractApplyIntegrationTestSuite) confinedCallers() []applyCaller {
+	return append(s.confinedTokens(uuid.New()),
+		applyCaller{name: "org member", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOrgMember))},
+		applyCaller{name: "org contributor", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOrgContributor))},
+	)
+}
+
+// Apply has no project to scope a new contract to, so what it creates is organization-level. A
+// caller confined to projects can't create one, not even on a dry run. Create requires a project of
+// such a caller for the same reason.
+func (s *workflowContractApplyIntegrationTestSuite) TestApplyRefusesAConfinedCallerCreatingAContract() {
+	for i, tc := range s.confinedCallers() {
+		s.Run(tc.name, func() {
+			name := fmt.Sprintf("confined-create-%d", i)
+
+			for _, dryRun := range []bool{true, false} {
+				_, err := s.svc.Apply(tc.ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: namedContract(name), DryRun: dryRun})
+				s.Require().Error(err, "dry run %t", dryRun)
+				s.True(kerrors.IsForbidden(err), "dry run %t: got %v", dryRun, err)
+				s.Equal(0, s.revisionOf(name), "dry run %t: nothing is created", dryRun)
+			}
+		})
+	}
+}
+
+// Updating an organization-level contract through Apply was already refused to a confined caller.
+func (s *workflowContractApplyIntegrationTestSuite) TestApplyRefusesAConfinedCallerUpdatingAnOrgContract() {
+	s.apply(applyContractV1, false)
+
+	for _, tc := range s.confinedCallers() {
+		s.Run(tc.name, func() {
+			_, err := s.svc.Apply(tc.ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: []byte(applyContractV2)})
+			s.Require().Error(err)
+			s.True(kerrors.IsBadRequest(err), "got %v", err)
+			s.ErrorContains(err, "you can not manage a global contract")
+			s.Equal(1, s.latestRevision(), "the contract is unchanged")
+		})
+	}
+}
+
+// A token confined to a project still updates that project's contracts through Apply.
+func (s *workflowContractApplyIntegrationTestSuite) TestApplyLetsAConfinedTokenUpdateItsProjectContract() {
+	project, err := s.Project.Create(context.Background(), s.org.ID, "apply-project")
+	s.Require().NoError(err)
+
+	for i, tc := range s.confinedTokens(project.ID) {
+		s.Run(tc.name, func() {
+			name := fmt.Sprintf("project-update-%d", i)
+			_, err := s.WorkflowContract.Create(context.Background(), &biz.WorkflowContractCreateOpts{
+				OrgID:     s.org.ID,
+				Name:      name,
+				RawSchema: namedContract(name),
+				ProjectID: &project.ID,
+			})
+			s.Require().NoError(err)
+
+			resp, err := s.svc.Apply(tc.ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: namedContract(name, "another-artifact")})
+			s.Require().NoError(err)
+			s.Equal(pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_UPDATED, resp.GetStatus())
+			s.Equal(2, s.revisionOf(name))
+		})
+	}
+}
+
+// Organization-wide tokens and organization administrators still create contracts through Apply.
+func (s *workflowContractApplyIntegrationTestSuite) TestApplyLetsAnUnconfinedCallerCreateAContract() {
+	testCases := []applyCaller{
+		{name: "org token", ctx: s.apiTokenContext(authz.ResourceTypeOrganization, func(t *entities.APIToken) {
+			orgID := uuid.MustParse(s.org.ID)
+			t.ScopeID = &orgID
+		})},
+		{name: "instance token", ctx: s.apiTokenContext(authz.ResourceTypeInstance, nil)},
+		{name: "org owner", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOwner))},
+		{name: "org admin", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleAdmin))},
+	}
+
+	for i, tc := range testCases {
+		s.Run(tc.name, func() {
+			name := fmt.Sprintf("unconfined-create-%d", i)
+
+			resp, err := s.svc.Apply(tc.ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: namedContract(name), DryRun: true})
+			s.Require().NoError(err)
+			s.Equal(pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_CREATED, resp.GetStatus())
+
+			resp, err = s.svc.Apply(tc.ctx, &pb.WorkflowContractServiceApplyRequest{RawSchema: namedContract(name)})
+			s.Require().NoError(err)
+			s.Equal(pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_CREATED, resp.GetStatus())
+			s.Equal(1, s.revisionOf(name))
+		})
+	}
 }
 
 func TestWorkflowContractApply(t *testing.T) {
