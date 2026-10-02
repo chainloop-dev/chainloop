@@ -17,6 +17,7 @@ package redaction
 
 import (
 	"context"
+	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
@@ -42,6 +43,7 @@ const (
 	fakeAWSKey    = "AKIA" + "4G7TI63VCBIRS4GW"
 	fakeAWSSecret = "kQ7zXn2VbW9pLm4RtY6" + "uHs3JdF8gA1cE5oPzQwXn"
 	fakeGitHubPAT = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
+	fakeJWT       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" + ".eyJzdWIiOiJmYWtlLXVwbG9hZCIsImV4cCI6MTc5MDAwMDAwMH0" + ".c2lnbmF0dXJlLWZha2UtZm9yLXJlcHJv"
 )
 
 var fakeAnthropicKey = "sk-ant-api03-" + strings.Repeat("a", 93) + "AA"
@@ -277,6 +279,101 @@ func TestRedactCredentialInURIConverges(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, string(once), string(twice))
 	assert.False(t, report.Changed())
+}
+
+// TestRedactJWTKeepsSurroundingText covers a JWT that is followed by a JSON
+// escape sequence in its string leaf. The jwt rule allows a backslash in its
+// last segments, so the scanner reports the secret with the backslash that
+// starts the escape. Only the JWT must be replaced: the text around it, such as
+// the host of a presigned URL, is what lets policies tell a short-lived URL
+// signature from a leaked credential.
+func TestRedactJWTKeepsSurroundingText(t *testing.T) {
+	scanner, err := DefaultScanner()
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name string
+		leaf string
+		want string
+	}{
+		{
+			// A tool result that holds a JSON document as text: the quote after
+			// the JWT is escaped in the leaf.
+			name: "followed by an escaped quote in a nested JSON string",
+			leaf: `{"url":"https://uploads.example.com/o/a/b?signature=` + fakeJWT + `"}`,
+			want: `{"url":"https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]"}`,
+		},
+		{
+			name: "followed by an escaped newline",
+			leaf: "https://uploads.example.com/o/a/b?signature=" + fakeJWT + "\nnext line",
+			want: "https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]\nnext line",
+		},
+		{
+			name: "followed by an escaped carriage return",
+			leaf: "https://uploads.example.com/o/a/b?signature=" + fakeJWT + "\rnext line",
+			want: "https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]\rnext line",
+		},
+		{
+			name: "followed by an escaped tab",
+			leaf: "https://uploads.example.com/o/a/b?signature=" + fakeJWT + "\tnext line",
+			want: "https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]\tnext line",
+		},
+		{
+			// The literal backslash is a complete `\\` escape, which is kept in
+			// the secret: the leaf loses that one character but not its context.
+			name: "followed by a literal backslash",
+			leaf: `https://uploads.example.com/o/a/b?signature=` + fakeJWT + `\"`,
+			want: `https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]"`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			doc, err := json.Marshal(map[string]string{"text": tc.leaf})
+			require.NoError(t, err)
+
+			once, report, err := New(scanner).Redact(context.Background(), doc)
+			require.NoError(t, err)
+			require.True(t, report.Changed())
+			assert.Equal(t, map[string]int{"jwt": 1}, report.ByRule)
+
+			var got map[string]string
+			require.NoError(t, json.Unmarshal(once, &got))
+			assert.Equal(t, tc.want, got["text"], "only the JWT is replaced")
+
+			twice, report, err := New(scanner).Redact(context.Background(), once)
+			require.NoError(t, err)
+			assert.Equal(t, string(once), string(twice))
+			assert.False(t, report.Changed())
+		})
+	}
+}
+
+// TestCutAtTerminatorEscape checks that the cut is made only at a real escape.
+// In JSON-encoded text a backslash that belongs to a `\\` escape does not start
+// another escape, so `\\n` is a literal backslash followed by the letter n.
+func TestCutAtTerminatorEscape(t *testing.T) {
+	testCases := []struct {
+		name   string
+		secret string
+		want   string
+	}{
+		{name: "no escape", secret: `plain`, want: `plain`},
+		{name: "escaped quote", secret: `quote\"after`, want: `quote`},
+		{name: "escaped newline", secret: `newline\nafter`, want: `newline`},
+		{name: "escaped carriage return", secret: `return\rafter`, want: `return`},
+		{name: "escaped tab", secret: `tab\tafter`, want: `tab`},
+		{name: "escaped backslash then n is not a newline", secret: `bs\\nafter`, want: `bs\\nafter`},
+		{name: "escaped backslash then quote escape", secret: `bsquote\\\"after`, want: `bsquote\\`},
+		{name: "escaped slash is kept", secret: `slash\/kept\nafter`, want: `slash\/kept`},
+		{name: "trailing lone backslash is left to the engine", secret: `lone\`, want: `lone\`},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, cutAtTerminatorEscape(tc.secret))
+		})
+	}
 }
 
 // TestDefaultScannerUsesRE2 pins the regex engine. The library default is the

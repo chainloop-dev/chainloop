@@ -151,6 +151,22 @@ func TestRedact(t *testing.T) {
 			mustContain:      []string{"[REDACTED:r1]"},
 		},
 		{
+			name:             "secret ending on the backslash of an escape keeps the leaf",
+			doc:              `{"a":"{\"url\":\"https://h/x?sig=SEC\"}"}`,
+			findings:         []Finding{{RuleID: "r1", Secret: `SEC\`}},
+			wantReplacements: 1,
+			wantByRule:       map[string]int{"r1": 1},
+			mustContain:      []string{`{"a":"{\"url\":\"https://h/x?sig=[REDACTED:r1]\"}"}`},
+		},
+		{
+			name:             "secret ending on a complete escaped backslash keeps it",
+			doc:              `{"a":"SEC\\ after"}`,
+			findings:         []Finding{{RuleID: "r1", Secret: `SEC\\`}},
+			wantReplacements: 1,
+			wantByRule:       map[string]int{"r1": 1},
+			mustContain:      []string{`{"a":"[REDACTED:r1] after"}`},
+		},
+		{
 			name:     "protected path is left alone and recorded",
 			doc:      `{"keepme":"SEC","other":"plain"}`,
 			findings: []Finding{{RuleID: "r1", Secret: "SEC"}},
