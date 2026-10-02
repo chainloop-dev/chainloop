@@ -30,12 +30,28 @@ import (
 // unknownValue stands in for a model or tool name the export didn't carry.
 const unknownValue = "unknown"
 
+// Part types, shared by OpenCode 1.x parts and OpenCode 2 assistant content.
+const (
+	partText = "text"
+	partTool = "tool"
+)
+
 // parseExport reads and parses the opencode export JSON at path into
-// structured evidence. Unknown fields are ignored.
+// structured evidence. It reads both the OpenCode 1.x and the OpenCode 2
+// export format. Unknown fields are ignored.
 func parseExport(path string) (*aicodingsession.Evidence, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read export file: %w", err)
+	}
+
+	if isExportV2(data) {
+		var export exportDataV2
+		if err := json.Unmarshal(data, &export); err != nil {
+			return nil, fmt.Errorf("parse export JSON: %w", err)
+		}
+
+		return buildEvidence(export.toExportData()), nil
 	}
 
 	var export exportData
@@ -44,6 +60,70 @@ func parseExport(path string) (*aicodingsession.Evidence, error) {
 	}
 
 	return buildEvidence(&export), nil
+}
+
+// isExportV2 reports whether data is an OpenCode 2 export. Only the OpenCode 2
+// session info has a location; OpenCode 1.x has a directory instead.
+func isExportV2(data []byte) bool {
+	var probe struct {
+		Info struct {
+			Location json.RawMessage `json:"location"`
+		} `json:"info"`
+	}
+
+	return json.Unmarshal(data, &probe) == nil && len(probe.Info.Location) > 0
+}
+
+// toExportData maps an OpenCode 2 export onto the OpenCode 1.x shape that
+// buildEvidence reads. It keeps only user and assistant messages, because
+// the other message types (idle markers, compactions, agent and model
+// switches, ...) are not conversation turns. Reasoning content is dropped,
+// as OpenCode 1.x reasoning parts are.
+func (e *exportDataV2) toExportData() *exportData {
+	out := &exportData{
+		Info: sessionInfo{
+			ID:     e.Info.ID,
+			Cost:   e.Info.Cost,
+			Tokens: e.Info.Tokens,
+			Time:   e.Info.Time,
+		},
+	}
+
+	for _, msg := range e.Messages {
+		entry := messageEntry{
+			Info: messageInfo{
+				Role:   msg.Type,
+				ID:     msg.ID,
+				Cost:   msg.Cost,
+				Tokens: msg.Tokens,
+				Time:   msg.Time,
+			},
+		}
+
+		switch msg.Type {
+		case "user":
+			entry.Parts = []part{{Type: partText, Text: msg.Text}}
+		case "assistant":
+			if msg.Model != nil {
+				entry.Info.ModelID = msg.Model.ID
+				entry.Info.ProviderID = msg.Model.ProviderID
+			}
+			for _, c := range msg.Content {
+				switch c.Type {
+				case partText:
+					entry.Parts = append(entry.Parts, part{Type: partText, Text: c.Text})
+				case partTool:
+					entry.Parts = append(entry.Parts, part{Type: partTool, ID: c.ID, Tool: c.Name, State: c.State})
+				}
+			}
+		default:
+			continue
+		}
+
+		out.Messages = append(out.Messages, entry)
+	}
+
+	return out
 }
 
 // buildEvidence converts the parsed export into an aicodingsession.Evidence.
@@ -79,7 +159,7 @@ func buildEvidence(export *exportData) *aicodingsession.Evidence {
 
 		// Count completed tool invocations from tool parts.
 		for _, part := range msg.Parts {
-			if part.Type == "tool" && part.State != nil && part.State.Status == "completed" {
+			if part.Type == partTool && part.State != nil && part.State.Status == "completed" {
 				name := part.Tool
 				if name == "" {
 					name = unknownValue
@@ -217,11 +297,11 @@ func buildRawSessionEntries(messages []messageEntry) []json.RawMessage {
 		var blocks []any
 		for _, p := range msg.Parts {
 			switch p.Type {
-			case "text":
+			case partText:
 				if p.Text != "" {
-					blocks = append(blocks, trace.RawSessionTextBlock{Type: "text", Text: p.Text})
+					blocks = append(blocks, trace.RawSessionTextBlock{Type: partText, Text: p.Text})
 				}
-			case "tool":
+			case partTool:
 				if p.State == nil || p.State.Status != "completed" {
 					continue
 				}
