@@ -39,6 +39,42 @@ func initGitRepo(t *testing.T, dir string) {
 	require.NoError(t, cmd.Run())
 }
 
+func TestLoadChainloopYML(t *testing.T) {
+	t.Run("returns nearest config and path without requiring projectName", func(t *testing.T) {
+		repoDir := initTempGitRepo(t)
+		child := filepath.Join(repoDir, "subdir")
+		require.NoError(t, os.Mkdir(child, 0755))
+		path := filepath.Join(child, ".chainloop.yml")
+		require.NoError(t, os.WriteFile(path, []byte("organization: my-org\nprojectVersion: v1.2.3\n"), 0600))
+
+		cfg, gotPath, err := LoadChainloopYML(child)
+		require.NoError(t, err)
+		assert.Equal(t, resolveDir(path), gotPath)
+		assert.Equal(t, "my-org", cfg.Organization)
+		assert.Equal(t, "v1.2.3", cfg.ProjectVersion)
+		assert.Empty(t, cfg.ProjectName)
+	})
+
+	t.Run("returns parse error from preferred file", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, ".chainloop.yml")
+		require.NoError(t, os.WriteFile(path, []byte(":\ninvalid: [yaml\n"), 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yaml"), []byte("projectName: ignored\n"), 0600))
+
+		cfg, gotPath, err := LoadChainloopYML(dir)
+		assert.Nil(t, cfg)
+		assert.Equal(t, resolveDir(path), gotPath)
+		assert.ErrorContains(t, err, "parse .chainloop.yml")
+	})
+
+	t.Run("returns not found error", func(t *testing.T) {
+		cfg, path, err := LoadChainloopYML(t.TempDir())
+		assert.Nil(t, cfg)
+		assert.Empty(t, path)
+		assert.ErrorIs(t, err, ErrChainloopYMLNotFound)
+	})
+}
+
 func TestLoadProjectFromYML(t *testing.T) {
 	t.Run("reads projectName from .chainloop.yml", func(t *testing.T) {
 		dir := t.TempDir()
@@ -491,22 +527,16 @@ func TestFindChainloopYML(t *testing.T) {
 		assert.Nil(t, cfg.RequireTrace)
 	})
 
-	t.Run("skips file without projectName and walks up", func(t *testing.T) {
+	t.Run("does not skip nearest file without projectName", func(t *testing.T) {
 		repoDir := initTempGitRepo(t)
 		child := filepath.Join(repoDir, "subdir")
 		require.NoError(t, os.Mkdir(child, 0755))
-		// Child has a .chainloop.yml without projectName
-		require.NoError(t, os.WriteFile(filepath.Join(child, ".chainloop.yml"), []byte("otherField: value\n"), 0600))
-		// Parent has the real config
-		require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("projectName: parent\nprojectVersion: v3.0.0\n"), 0600))
-
-		origDir, _ := os.Getwd()
-		require.NoError(t, os.Chdir(child))
-		t.Cleanup(func() { _ = os.Chdir(origDir) })
+		require.NoError(t, os.WriteFile(filepath.Join(child, ".chainloop.yml"), []byte("projectVersion: child\n"), 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("projectName: parent\nprojectVersion: parent\n"), 0600))
 
 		cfg := FindChainloopYML(child)
 		require.NotNil(t, cfg)
-		assert.Equal(t, "parent", cfg.ProjectName)
-		assert.Equal(t, "v3.0.0", cfg.ProjectVersion)
+		assert.Empty(t, cfg.ProjectName)
+		assert.Equal(t, "child", cfg.ProjectVersion)
 	})
 }
