@@ -38,125 +38,154 @@ const (
 // fileWritingTools is the single source of truth for opencode tool names
 // that modify files. The TypeScript plugin's array is generated from this
 // slice (see {{FileWritingToolsArray}}) so the plugin and IsFileWritingTool
-// can never drift.
-var fileWritingTools = []string{"edit", "write", "apply_patch"}
+// can never drift. OpenCode 1.x names the patch tool apply_patch, and
+// OpenCode 2 names it patch.
+var fileWritingTools = []string{"edit", "write", "apply_patch", "patch"}
 
 // commandTools are opencode tool names that run shell commands. Their file
 // changes are captured via a before/after working-tree snapshot (they have no
 // single file-path argument), so the plugin fires the pre/post-tool-use hooks
 // for them without a file_path and the handler branches on the tool kind.
-var commandTools = []string{"bash"}
-
-// bt is a single backtick, used to splice backticks into Go raw string literals.
-const bt = "`"
+// OpenCode 1.x names the shell tool bash, and OpenCode 2 names it shell.
+var commandTools = []string{"bash", "shell"}
 
 // pluginTemplate is the TypeScript plugin written to .opencode/plugins/chainloop-trace.ts.
 // It fires chainloop trace hook subcommands on session lifecycle and tool events.
 // The {{SessionEndBlock}} placeholder is replaced with the session.deleted handler
 // for full install, or removed entirely for trace-run install.
 //
-// Go raw string literals cannot contain backticks, so the TypeScript template
-// literal (Bun shell) lines are split at backtick boundaries and spliced with bt.
-const pluginTemplate = `import type { Plugin } from "@opencode-ai/plugin"
+// One file serves both plugin APIs through its default export: OpenCode 1.x
+// (1.3.4 and later) calls server(), and OpenCode 2 calls setup(). OpenCode 2
+// rejects a plugin without a default export (PFM-7555).
+const pluginTemplate = `import { spawn } from "node:child_process"
 
-export const ChainloopTrace: Plugin = async ({ $ }) => {
-  const fileWritingTools = {{FileWritingToolsArray}}
-  const commandTools = {{CommandToolsArray}}
+const fileWritingTools = {{FileWritingToolsArray}}
+const commandTools = {{CommandToolsArray}}
 
-  function filePathsFromArgs(args: any): string[] {
-    if (args?.filePath) return [args.filePath]
-    if (args?.path) return [args.path]
-    if (args?.patchText) return parsePatchPaths(args.patchText)
-    return []
-  }
+function filePathsFromArgs(args: any): string[] {
+  if (args?.filePath) return [args.filePath]
+  if (args?.path) return [args.path]
+  if (args?.patchText) return parsePatchPaths(args.patchText)
+  return []
+}
 
-  // parsePatchPaths extracts affected file paths from an apply_patch
-  // patchText payload. Each section starts with *** Add File:, *** Update
-  // File:, or *** Delete File: followed by the path. Paths are deduplicated
-  // while preserving first-seen order.
-  function parsePatchPaths(patchText: string): string[] {
-    const paths: string[] = []
-    const seen = new Set<string>()
-    const re = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm
-    let m
-    while ((m = re.exec(patchText)) !== null) {
-      const p = m[1].trim()
-      if (p && !seen.has(p)) {
-        seen.add(p)
-        paths.push(p)
-      }
+// parsePatchPaths extracts affected file paths from an apply_patch
+// patchText payload. Each section starts with *** Add File:, *** Update
+// File:, or *** Delete File: followed by the path. Paths are deduplicated
+// while preserving first-seen order.
+function parsePatchPaths(patchText: string): string[] {
+  const paths: string[] = []
+  const seen = new Set<string>()
+  const re = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/gm
+  let m
+  while ((m = re.exec(patchText)) !== null) {
+    const p = m[1].trim()
+    if (p && !seen.has(p)) {
+      seen.add(p)
+      paths.push(p)
     }
-    return paths
   }
+  return paths
+}
 
-  // fire-and-forget: tracing must never block tool execution. If chainloop
-  // is unavailable or errors, log to stderr and move on.
-  async function fire(event: string, payload: Record<string, any>) {
-    const json = JSON.stringify(payload)
+// fire runs the chainloop hook from the session directory, with the payload
+// on stdin. Tracing must never block or fail a tool call: if chainloop is
+// unavailable or errors, log to stderr and move on.
+function fire(directory: string, event: string, payload: Record<string, any>): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false
+    const done = (err?: unknown) => {
+      if (settled) return
+      settled = true
+      if (err) console.error("chainloop-trace: " + event + " hook failed: " + err)
+      resolve()
+    }
     try {
-      await $` + bt + `echo ${json} | chainloop trace hook opencode ${event}` + bt + `
+      const child = spawn("chainloop", ["trace", "hook", "opencode", event], { cwd: directory, stdio: ["pipe", "ignore", "ignore"] })
+      child.on("error", done)
+      child.on("close", (code) => done(code === 0 ? undefined : "exit code " + code))
+      child.stdin.on("error", () => {})
+      child.stdin.end(JSON.stringify(payload))
     } catch (err) {
-      console.error(` + bt + `chainloop-trace: ${event} hook failed: ${err}` + bt + `)
+      done(err)
     }
-  }
+  })
+}
 
-  return {
-    event: async ({ event }) => {
-      if (event.type === "session.created") {
-        const sessionID = event.properties?.info?.id ?? ""
-        await fire("session-start", { session_id: sessionID, hook_event_name: "session.created" })
-      }
+async function sessionEvent(directory: string, type: string, sessionID: string) {
+  if (type === "session.created") {
+    await fire(directory, "session-start", { session_id: sessionID, hook_event_name: type })
+  }
 {{SessionEndBlock}}
+}
+
+async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, args: any) {
+  const payload = { session_id: sessionID, hook_event_name: hookEventName, tool_name: tool }
+  if (commandTools.includes(tool)) {
+    await fire(directory, hook, payload)
+    return
+  }
+  if (!fileWritingTools.includes(tool)) return
+  for (const fp of filePathsFromArgs(args)) {
+    await fire(directory, hook, { ...payload, file_path: fp })
+  }
+}
+
+// server is the OpenCode 1.x entry point.
+async function server({ directory }: any) {
+  return {
+    event: async ({ event }: any) => {
+      await sessionEvent(directory, event.type, event.properties?.info?.id ?? "")
     },
-    "tool.execute.before": async (input, output) => {
-      if (commandTools.includes(input.tool)) {
-        await fire("pre-tool-use", {
-          session_id: input.sessionID,
-          hook_event_name: "tool.execute.before",
-          tool_name: input.tool,
-        })
-        return
-      }
-      if (!fileWritingTools.includes(input.tool)) return
-      for (const fp of filePathsFromArgs(output.args)) {
-        await fire("pre-tool-use", {
-          session_id: input.sessionID,
-          hook_event_name: "tool.execute.before",
-          tool_name: input.tool,
-          file_path: fp,
-        })
-      }
+    "tool.execute.before": async (input: any, output: any) => {
+      await toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, output.args)
     },
-    "tool.execute.after": async (input) => {
-      if (commandTools.includes(input.tool)) {
-        await fire("post-tool-use", {
-          session_id: input.sessionID,
-          hook_event_name: "tool.execute.after",
-          tool_name: input.tool,
-        })
-        return
-      }
-      if (!fileWritingTools.includes(input.tool)) return
-      for (const fp of filePathsFromArgs(input.args)) {
-        await fire("post-tool-use", {
-          session_id: input.sessionID,
-          hook_event_name: "tool.execute.after",
-          tool_name: input.tool,
-          file_path: fp,
-        })
-      }
+    "tool.execute.after": async (input: any) => {
+      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.args)
     },
   }
+}
+
+// setup is the OpenCode 2 entry point. OpenCode 2 runs plugins in a shared
+// background server, so the session directory is the plugin location, not
+// the process working directory.
+async function setup(ctx: any) {
+  const directory = ctx.location.directory
+  await ctx.tool.hook("execute.before", async (event: any) => {
+    await toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.input)
+  })
+  await ctx.tool.hook("execute.after", async (event: any) => {
+    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.input)
+  })
+
+  const controller = new AbortController()
+  const consuming = (async () => {
+    for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+      await sessionEvent(directory, event.type, event.data?.sessionID ?? "")
+    }
+  })().catch((err) => {
+    if (!controller.signal.aborted) console.error("chainloop-trace: event subscription failed: " + err)
+  })
+
+  return async () => {
+    controller.abort()
+    await consuming
+  }
+}
+
+export default {
+  id: "chainloop-trace",
+  server,
+  setup,
 }
 `
 
 // sessionDeletedHandler is the session.deleted block inserted for full install.
 // session.idle fires at the end of every agent turn and would prematurely end
 // the trace session; session.deleted fires only when the session is destroyed.
-const sessionDeletedHandler = `      if (event.type === "session.deleted") {
-        const sessionID = event.properties?.info?.id ?? ""
-        await fire("session-end", { session_id: sessionID, hook_event_name: "session.deleted" })
-      }`
+const sessionDeletedHandler = `  if (type === "session.deleted") {
+    await fire(directory, "session-end", { session_id: sessionID, hook_event_name: type })
+  }`
 
 // SettingsFile returns the absolute path to the plugin file for the given repo.
 func (p *Provider) SettingsFile(repoRoot string) string {
@@ -224,7 +253,8 @@ const maxHookPayloadBytes = 16 * 1024 * 1024
 
 // ReadHookInput reads and parses the opencode hook JSON from the given reader.
 // The plugin pipes JSON to stdin with fields: session_id, hook_event_name,
-// tool_name, file_path.
+// tool_name, file_path. A relative file_path is resolved against the working
+// directory.
 func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	data, err := io.ReadAll(io.LimitReader(r, maxHookPayloadBytes))
 	if err != nil {
@@ -241,11 +271,23 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		return nil, err
 	}
 
+	// OpenCode 2 tools take paths relative to the session directory, which
+	// is the directory the plugin runs this hook from. The handlers need an
+	// absolute path to find the checkout that owns the file.
+	filePath := raw.FilePath
+	if filePath != "" && !filepath.IsAbs(filePath) {
+		abs, err := filepath.Abs(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("resolve file path %q: %w", filePath, err)
+		}
+		filePath = abs
+	}
+
 	return &trace.HookInput{
 		SessionID:     raw.SessionID,
 		HookEventName: raw.HookEventName,
 		ToolName:      raw.ToolName,
-		FilePath:      raw.FilePath,
+		FilePath:      filePath,
 	}, nil
 }
 
