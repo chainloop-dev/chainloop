@@ -481,8 +481,11 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 		// The command may have been a `git push`, whose pre-push hook attested
 		// a session and left its link behind. Show it now: the pre-push output
 		// went to this tool call's captured stderr, which the user does not
-		// necessarily read.
-		notifyPendingSessionLinks(provider, store, log)
+		// necessarily read. A failed call expects a different hook response,
+		// so its links stay on disk for the next command that succeeds.
+		if !input.ToolFailed {
+			notifyPendingSessionLinks(provider, store, log)
+		}
 
 		return nil
 	}

@@ -18,6 +18,7 @@ package claude
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -45,6 +46,9 @@ func TestInstallHooks(t *testing.T) {
 		assertHookCommand(t, hooks, "SessionStart", "chainloop trace hook claude session-start")
 		assertHookCommand(t, hooks, "PreToolUse", "chainloop trace hook claude pre-tool-use")
 		assertHookCommand(t, hooks, "PostToolUse", "chainloop trace hook claude post-tool-use")
+		// A failed tool call fires PostToolUseFailure instead of PostToolUse,
+		// and a failed shell command can still have changed files.
+		assertHookCommand(t, hooks, "PostToolUseFailure", "chainloop trace hook claude post-tool-use")
 	})
 
 	t.Run("installs PreToolUse and PostToolUse with matchers", func(t *testing.T) {
@@ -63,6 +67,11 @@ func TestInstallHooks(t *testing.T) {
 		postEntries := hooks["PostToolUse"].([]any)
 		postEntry := postEntries[0].(map[string]any)
 		assert.Equal(t, "Edit|Write|MultiEdit|Bash", postEntry["matcher"])
+
+		// PostToolUseFailure should have the same matcher
+		failureEntries := hooks["PostToolUseFailure"].([]any)
+		failureEntry := failureEntries[0].(map[string]any)
+		assert.Equal(t, "Edit|Write|MultiEdit|Bash", failureEntry["matcher"])
 
 		// SessionStart should NOT have matcher
 		startEntries := hooks["SessionStart"].([]any)
@@ -203,6 +212,7 @@ func TestUninstallHooks(t *testing.T) {
 		assert.Contains(t, hooks, "PostToolUse")
 		assert.NotContains(t, hooks, "SessionStart")
 		assert.NotContains(t, hooks, "PreToolUse")
+		assert.NotContains(t, hooks, "PostToolUseFailure")
 	})
 
 	t.Run("noop when file does not exist", func(t *testing.T) {
@@ -246,6 +256,33 @@ func TestReadHookInput(t *testing.T) {
 		assert.Equal(t, "abc-123", input.SessionID)
 		assert.Equal(t, "SessionStart", input.HookEventName)
 		assert.Empty(t, input.FilePath)
+	})
+
+	t.Run("flags failed tool calls", func(t *testing.T) {
+		testCases := []struct {
+			event      string
+			wantFailed bool
+		}{
+			{event: "PreToolUse", wantFailed: false},
+			{event: "PostToolUse", wantFailed: false},
+			{event: "PostToolUseFailure", wantFailed: true},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.event, func(t *testing.T) {
+				r := bytes.NewBufferString(fmt.Sprintf(`{
+					"session_id": "abc-123",
+					"hook_event_name": %q,
+					"tool_name": "Bash",
+					"tool_input": {"command": "make lint"},
+					"error": "Exit code 1",
+					"is_interrupt": false
+				}`, tc.event))
+				input, err := provider.ReadHookInput(r)
+				require.NoError(t, err)
+				assert.Equal(t, tc.wantFailed, input.ToolFailed)
+			})
+		}
 	})
 
 	t.Run("returns empty for empty session ID", func(t *testing.T) {
@@ -316,6 +353,7 @@ func TestInstallHooksForTraceRun(t *testing.T) {
 		assert.Contains(t, hooks, "SessionStart")
 		assert.Contains(t, hooks, "PreToolUse")
 		assert.Contains(t, hooks, "PostToolUse")
+		assert.Contains(t, hooks, "PostToolUseFailure")
 		assert.NotContains(t, hooks, "SessionEnd", "trace run must not install SessionEnd; trace run drives end-of-session itself")
 	})
 }

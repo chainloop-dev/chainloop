@@ -192,6 +192,11 @@ type HookInput struct {
 	// only emit post-edit events (e.g., Cursor's afterFileEdit) populate it so
 	// consumers can reconstruct the "before" content via reverse application.
 	Edits []HookEdit `json:"-"`
+	// ToolFailed reports that the hook fires after a tool call that failed
+	// (Claude's PostToolUseFailure). The tool can still have changed files,
+	// so its changes are recorded. But the agent expects a different hook
+	// response for a failure, so nothing is written back to it.
+	ToolFailed bool `json:"-"`
 }
 
 // HookEdit represents a single old_string → new_string replacement applied to a file.

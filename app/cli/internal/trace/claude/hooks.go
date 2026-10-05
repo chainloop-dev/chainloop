@@ -35,7 +35,12 @@ const (
 	eventSessionStart = "SessionStart"
 	eventPreToolUse   = "PreToolUse"
 	eventPostToolUse  = "PostToolUse"
-	eventSessionEnd   = "SessionEnd"
+	// eventPostToolUseFailure fires instead of PostToolUse when a tool call
+	// fails. A failed shell command can still have changed files (e.g. a
+	// script that writes files and then runs a failing linter), so it runs
+	// the same handler.
+	eventPostToolUseFailure = "PostToolUseFailure"
+	eventSessionEnd         = "SessionEnd"
 )
 
 // fileWritingTools is the single source of truth for Claude tool names that modify files.
@@ -61,6 +66,7 @@ var hookEvents = []hookEvent{
 	{eventSessionStart, "chainloop trace hook claude session-start", ""},
 	{eventPreToolUse, "chainloop trace hook claude pre-tool-use", hookToolMatcher},
 	{eventPostToolUse, "chainloop trace hook claude post-tool-use", hookToolMatcher},
+	{eventPostToolUseFailure, "chainloop trace hook claude post-tool-use", hookToolMatcher},
 	{eventSessionEnd, "chainloop trace hook claude session-end", ""},
 }
 
@@ -194,6 +200,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	if raw.ToolInput.FilePath != "" {
 		input.FilePath = raw.ToolInput.FilePath
 	}
+	input.ToolFailed = input.HookEventName == eventPostToolUseFailure
 
 	return &input, nil
 }

@@ -679,6 +679,50 @@ func TestHandleAgentCommandTool_ConcurrentSubagent(t *testing.T) {
 	}
 }
 
+// A shell command that fails still changes the files it wrote before it
+// failed. Claude Code reports such a call through PostToolUseFailure, not
+// PostToolUse, so the handler must attribute the command's changes from that
+// payload too.
+func TestHandleAgentCommandTool_FailedCommand(t *testing.T) {
+	root := chdirToResolvedGitRepo(t)
+	store := state.NewGitStore(filepath.Join(root, ".git"))
+	require.NoError(t, store.InitTraceDir())
+
+	p := claude.New()
+	const sid = "d1e2f3a4-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+	bashInput := `"tool_name":"Bash","tool_input":{"command":"python3 gen.py && npx eslint ."}`
+
+	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"PreToolUse",%s}`, sid, root, bashInput))
+	require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
+
+	// The command writes three files, then its linter step fails.
+	for _, name := range []string{"colors.ts", "check.tsx", "card.tsx"} {
+		require.NoError(t, os.WriteFile(filepath.Join(root, name), []byte("export {}\n"), 0600))
+	}
+
+	// A link left by an earlier push must wait for a successful command: the
+	// link announcement is a PostToolUse response, which does not match the
+	// failure event.
+	const link = "https://app.chainloop.dev/u/org/sessions/ses_1"
+	require.NoError(t, store.SavePendingLinks([]string{link}))
+
+	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"PostToolUseFailure",%s,"error":"Exit code 1","is_interrupt":false}`, sid, root, bashInput))
+	out := captureStdout(t, func() {
+		require.NoError(t, HandleAgentPostToolUse(p, zerolog.Nop()))
+	})
+
+	attr := store.LoadAILineAttribution(sid)
+	for _, name := range []string{"colors.ts", "check.tsx", "card.tsx"} {
+		assert.Contains(t, attr.Files, name, "a file written by a failed command is AI-made")
+	}
+
+	_, err := store.LoadShellPreSignature(sid, "")
+	assert.Error(t, err, "the pre-command signature is cleaned up")
+
+	assert.Empty(t, out, "a failed tool call gets no hook response")
+	assert.Equal(t, []string{link}, store.PendingLinks(), "the link stays for the next successful command")
+}
+
 // chdirToResolvedGitRepo creates a git repo, chdirs into its symlink-resolved
 // path, and returns that canonical root. Using the resolved path mirrors the
 // canonical absolute paths Claude Code passes in hook payloads and keeps
