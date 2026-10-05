@@ -71,23 +71,18 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 
 			// We've received an API-token
 			if claimsHaveAudience(genericClaims, apitoken.Audience) {
-				var err error
-				tokenID, ok := genericClaims["jti"].(string)
-				if !ok || tokenID == "" {
+				claims, err := apitoken.ClaimsFromMap(genericClaims)
+				if err != nil || claims.ID == "" {
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
-				// Project ID is optional
-				projectID, _ := genericClaims["project_id"].(string)
-
-				workflowID, _ := genericClaims["workflow_id"].(string)
-
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, workflowID)
+				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
 
-				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "projectID", projectID)
+				// legacy_claims counts the tokens minted before the scope claims, to plan their sunset
+				logger.Infow("msg", "[authN] processed credentials", "id", claims.ID, "type", "API-token", "projectID", claims.ProjectID, "legacy_claims", claims.ScopeType == "")
 			}
 
 			return handler(ctx, req)
@@ -131,12 +126,12 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
 			}
 
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.WorkflowID)
+			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
 
-			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
+			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "legacy_claims", claims.ScopeType == "")
 
 			return handler(ctx, req)
 		}
@@ -167,34 +162,31 @@ func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUs
 	return ctx, nil
 }
 
-// Set the current organization and API-Token in the context. The project and workflow claims are
-// cross-checked against the token row, never an authorization input: the row decides what the
-// token reaches.
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, workflowIDInClaim string) (context.Context, error) {
-	if tokenID == "" {
+// Set the current organization and API-Token in the context. The row must agree with the claims
+// the token was signed with: they bind its scope, organization, project and workflow, and the row
+// only confirms them. What the row adds, its policies, its project list and its revocation, is
+// read from the row.
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, claims *apitoken.CustomClaims, logger *log.Helper) (context.Context, error) {
+	if claims == nil || claims.ID == "" {
 		return nil, errors.New("error retrieving the key ID from the API token")
 	}
 
 	// Check that the token exists and is not revoked
-	token, err := apiTokenUC.FindByID(ctx, tokenID)
+	token, err := apiTokenUC.FindByID(ctx, claims.ID)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving the API token: %w", err)
 	} else if token == nil {
 		return nil, errors.New("API token not found")
 	}
 
-	// Make sure that the projectID that comes in the token claim matches the one in the DB
-	if projectIDInClaim != "" {
-		if token.ProjectID == nil || token.ProjectID.String() != projectIDInClaim {
-			return nil, errors.New("API token project mismatch")
+	if err := token.VerifyClaims(claims); err != nil {
+		// A row should never disagree with its signed claims: something wrote it wrongly. The raw
+		// JWT is never logged.
+		if errors.Is(err, biz.ErrAPITokenClaimsMismatch) {
+			logger.Errorw("msg", "[authN] API token row disagrees with its signed claims", "id", claims.ID, "error", err)
 		}
-	}
 
-	// Same defense in depth for the workflow claim
-	if workflowIDInClaim != "" {
-		if token.WorkflowID == nil || token.WorkflowID.String() != workflowIDInClaim {
-			return nil, errors.New("API token workflow mismatch")
-		}
+		return nil, err
 	}
 
 	// Note: Expiration time does not need to be checked because that's done at the JWT

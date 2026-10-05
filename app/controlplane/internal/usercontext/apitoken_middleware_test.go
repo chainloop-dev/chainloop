@@ -39,6 +39,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Claim names and error substrings the tests of both entry points share.
+const (
+	claimAud          = "aud"
+	claimJTI          = "jti"
+	claimOrgID        = "org_id"
+	claimProjectID    = "project_id"
+	claimScopeType    = "scope_type"
+	errScopeMismatch  = "scope mismatch"
+	errRecordsNoScope = "records no scope"
+	entryAPI          = "API"
+	entryAttestation  = "attestation"
+	claimOrgName      = "org_name"
+)
+
 // authorizationHeader carries the bearer token the attestation entry point reads.
 const authorizationHeader = "Authorization"
 
@@ -53,6 +67,8 @@ type middlewareTestCase struct {
 	workflowIDClaim string
 	// tokenWorkflowID, if set, is the workflow_id stored on the DB row
 	tokenWorkflowID *uuid.UUID
+	// extraClaims are added to the JWT claims
+	extraClaims jwt.MapClaims
 	// the middleware logic got skipped
 	skipped         bool
 	wantErr         bool
@@ -63,6 +79,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
 	matchingWorkflowID := uuid.New()
 	otherWorkflowID := uuid.New()
+	projectID := uuid.New()
 	testCases := []middlewareTestCase{
 		{
 			name:          "invalid audience", // in this case it gets ignored
@@ -134,12 +151,29 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			wantErr:         true,
 			wantErrContains: "workflow mismatch",
 		},
+		{
+			name:            "scope claims disagree with the DB row",
+			receivedToken:   true,
+			audience:        apitoken.Audience,
+			tokenExists:     true,
+			extraClaims:     jwt.MapClaims{claimScopeType: "product", "scope_id": uuid.NewString()},
+			wantErr:         true,
+			wantErrContains: errScopeMismatch,
+		},
+		{
+			name:            "a claim of the wrong type is refused",
+			receivedToken:   true,
+			audience:        apitoken.Audience,
+			extraClaims:     jwt.MapClaims{claimProjectID: 42},
+			wantErr:         true,
+			wantErrContains: "mapping the API-token claims",
+		},
 	}
 
 	for _, tc := range testCases {
 		wantOrgID := uuid.New()
 		wantOrg := &biz.Organization{ID: wantOrgID.String()}
-		wantToken := &biz.APIToken{ID: uuid.New(), OrganizationID: wantOrgID}
+		wantToken := &biz.APIToken{ID: uuid.New(), OrganizationID: wantOrgID, Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &wantOrgID}
 
 		t.Run(tc.name, func(t *testing.T) {
 			apiTokenRepo := mocks.NewAPITokenRepo(t)
@@ -152,11 +186,20 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			ctx := context.Background()
 			if tc.receivedToken {
 				c := jwt.MapClaims{
-					"aud": tc.audience,
-					"jti": wantToken.ID.String(),
+					claimAud:   tc.audience,
+					claimJTI:   wantToken.ID.String(),
+					claimOrgID: wantOrgID.String(),
 				}
 				if tc.workflowIDClaim != "" {
+					// A workflow claim always comes with its project
 					c["workflow_id"] = tc.workflowIDClaim
+					c[claimProjectID] = projectID.String()
+					wantToken.ProjectID = &projectID
+					wantToken.Scope = biz.ToPtr(authz.ResourceTypeProject)
+					wantToken.ScopeID = &projectID
+				}
+				for k, v := range tc.extraClaims {
+					c[k] = v
 				}
 
 				ctx = jwtmiddleware.NewContext(ctx, c)
@@ -214,43 +257,50 @@ func toTimePtr(t time.Time) *time.Time {
 	return &t
 }
 
-// The resource scope must reach the service layer from the database row, never from a claim:
-// the row is the authorization input, the claim is only ever a cross-check.
+// The scope reaches the service layer from the database row, once the row has confirmed the
+// claims the token was signed with.
 func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
 	productID := uuid.New()
 	projectA := uuid.New()
+	orgID := uuid.New()
 
 	testCases := []struct {
 		name string
 		// scope as stored on the token row
+		rowOrg        uuid.UUID
 		rowScope      *authz.ResourceType
 		rowScopeID    *uuid.UUID
 		rowProjectIDs []uuid.UUID
-		// instanceAdminClaim signs the JWT with the instance-admin "scope" claim
-		instanceAdminClaim bool
+		// claims the token was signed with, besides aud and jti
+		claims jwt.MapClaims
 	}{
 		{
 			name:          "a product-scoped token",
+			rowOrg:        orgID,
 			rowScope:      biz.ToPtr(authz.ResourceTypeProduct),
 			rowScopeID:    &productID,
 			rowProjectIDs: []uuid.UUID{projectA},
+			claims:        jwt.MapClaims{claimOrgID: orgID.String(), claimScopeType: "product", "scope_id": productID.String()},
 		},
 		{
-			name: "an unscoped token carries no scope",
+			name:       "an organization token with legacy claims",
+			rowOrg:     orgID,
+			rowScope:   biz.ToPtr(authz.ResourceTypeOrganization),
+			rowScopeID: &orgID,
+			claims:     jwt.MapClaims{claimOrgID: orgID.String()},
 		},
 		{
-			// The instance-admin claim never becomes the token's resource scope.
-			name:               "an instance-admin claim carries no scope",
-			instanceAdminClaim: true,
+			name:     "an instance token",
+			rowScope: biz.ToPtr(authz.ResourceTypeInstance),
+			claims:   jwt.MapClaims{claimOrgID: "", "scope": authz.ScopeInstanceAdmin, claimScopeType: "instance"},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			orgID := uuid.New()
 			token := &biz.APIToken{
-				ID: uuid.New(), Name: "ci", OrganizationID: orgID,
+				ID: uuid.New(), Name: "ci", OrganizationID: tc.rowOrg,
 				Scope: tc.rowScope, ScopeID: tc.rowScopeID, ProjectIDs: tc.rowProjectIDs,
 			}
 
@@ -263,9 +313,9 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			require.NoError(t, err)
 			orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)
 
-			claims := jwt.MapClaims{"aud": apitoken.Audience, "jti": token.ID.String()}
-			if tc.instanceAdminClaim {
-				claims["scope"] = authz.ScopeInstanceAdmin
+			claims := jwt.MapClaims{claimAud: apitoken.Audience, claimJTI: token.ID.String()}
+			for k, v := range tc.claims {
+				claims[k] = v
 			}
 			ctx := jwtmiddleware.NewContext(context.Background(), claims)
 
@@ -292,9 +342,9 @@ type preProductClaimRemoval struct {
 	ProductID string `json:"product_id,omitempty"`
 }
 
-// A JWT minted before the product_id claim was dropped may still carry one. The row decides what
-// a token is confined to, so both entry points accept such a JWT and ignore the claim, whatever
-// product it names.
+// A JWT minted before the product_id claim was dropped may still carry one. Both entry points
+// ignore it, whatever product it names: the signed scope claims, confirmed by the row, decide
+// what the token is confined to.
 func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 	const signingKey = "test"
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
@@ -306,18 +356,22 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 		// rowScope and rowScopeID are the scope stored on the token row
 		rowScope   *authz.ResourceType
 		rowScopeID *uuid.UUID
+		// signScope signs the row's scope into the scope claims
+		signScope bool
 		// productClaim is the product_id claim the JWT carries
 		productClaim uuid.UUID
+		wantErr      string
 	}{
-		{name: "the claim names the row's product", rowScope: &product, rowScopeID: &rowProduct, productClaim: rowProduct},
-		{name: "the claim names another product", rowScope: &product, rowScopeID: &rowProduct, productClaim: otherProduct},
+		{name: "the claim names the row's product", rowScope: &product, rowScopeID: &rowProduct, signScope: true, productClaim: rowProduct},
+		{name: "the claim names another product", rowScope: &product, rowScopeID: &rowProduct, signScope: true, productClaim: otherProduct},
 		{name: "the claim is on an organization-scoped row", rowScope: &organization, rowScopeID: &orgID, productClaim: orgID},
-		{name: "the claim is on a row that records no scope", productClaim: otherProduct},
+		{name: "a product token minted before the scope claims", rowScope: &product, rowScopeID: &rowProduct, productClaim: rowProduct, wantErr: "create a new one"},
+		{name: "the claim is on a row that records no scope", productClaim: otherProduct, wantErr: errRecordsNoScope},
 	}
 
 	type entryPoint func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed string, handler middleware.Handler) error
 	entryPoints := map[string]entryPoint{
-		"API": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed string, handler middleware.Handler) error {
+		entryAPI: func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed string, handler middleware.Handler) error {
 			claims := jwt.MapClaims{}
 			if _, _, err := jwt.NewParser().ParseUnverified(signed, claims); err != nil {
 				return err
@@ -326,7 +380,7 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 			_, err := WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)(handler)(jwtmiddleware.NewContext(context.Background(), claims), nil)
 			return err
 		},
-		"attestation": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed string, handler middleware.Handler) error {
+		entryAttestation: func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed string, handler middleware.Handler) error {
 			ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{authorizationHeader: {"Bearer " + signed}}})
 			_, err := middleware.Chain(
 				attjwtmiddleware.WithJWTMulti(log.NewStdLogger(io.Discard), attjwtmiddleware.NewAPITokenProvider(signingKey)),
@@ -344,18 +398,23 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 				apiTokenRepo := mocks.NewAPITokenRepo(t)
 				apiTokenRepo.On("FindByID", mock.Anything, token.ID).Return(token, nil)
 				orgRepo := mocks.NewOrganizationRepo(t)
-				orgRepo.On("FindByID", mock.Anything, orgID).Return(&biz.Organization{ID: orgID.String()}, nil)
+				orgRepo.On("FindByID", mock.Anything, orgID).Maybe().Return(&biz.Organization{ID: orgID.String()}, nil)
 
 				apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &biz.APITokenJWTConfig{SymmetricHmacKey: signingKey}, nil, nil, nil, nil)
 				require.NoError(t, err)
 				orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)
 
+				jwtClaims := apitoken.CustomClaims{
+					OrgID: orgID.String(), OrgName: "acme", KeyName: token.Name,
+					RegisteredClaims: jwt.RegisteredClaims{ID: token.ID.String(), Issuer: "test", Audience: jwt.ClaimStrings{apitoken.Audience}},
+				}
+				if tc.signScope {
+					jwtClaims.ScopeType, jwtClaims.ScopeID = string(*tc.rowScope), tc.rowScopeID.String()
+				}
+
 				signed, err := jwt.NewWithClaims(apitoken.SigningMethod, preProductClaimRemoval{
-					CustomClaims: apitoken.CustomClaims{
-						OrgID: orgID.String(), OrgName: "acme", KeyName: token.Name,
-						RegisteredClaims: jwt.RegisteredClaims{ID: token.ID.String(), Issuer: "test", Audience: jwt.ClaimStrings{apitoken.Audience}},
-					},
-					ProductID: tc.productClaim.String(),
+					CustomClaims: jwtClaims,
+					ProductID:    tc.productClaim.String(),
 				}).SignedString([]byte(signingKey))
 				require.NoError(t, err)
 
@@ -364,6 +423,10 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 					got = entities.CurrentAPIToken(ctx)
 					return nil, nil
 				})
+				if tc.wantErr != "" {
+					require.ErrorContains(t, err, tc.wantErr)
+					return
+				}
 				require.NoError(t, err)
 
 				require.NotNil(t, got)
@@ -375,7 +438,7 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 }
 
 // A token's row decides whether it takes the instance-admin path, which reads the organization
-// from the request header rather than from the token row; the JWT "scope" claim is ignored. Both
+// from the request header rather than from the token row; the JWT's claims must name the same scope. Both
 // entry points agree.
 func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 	const (
@@ -395,18 +458,19 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 		// header is the organization named in the request header
 		header  string
 		wantOrg *biz.Organization
+		wantErr string
 	}{
 		{name: "an instance-admin token takes the organization in the header", scopeClaim: authz.ScopeInstanceAdmin, header: headerOrg.Name, wantOrg: headerOrg},
 		{name: "an instance-admin token without the header has no organization", scopeClaim: authz.ScopeInstanceAdmin},
 		{name: "an organization token takes its row's organization", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
-		// The row decides, not the claim.
-		{name: "an instance token without the claim is instance-admin", header: headerOrg.Name, wantOrg: headerOrg},
-		{name: "an organization token carrying the claim takes its row's organization", scopeClaim: authz.ScopeInstanceAdmin, rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
+		// The signed claims and the row must agree, and the claims must agree with themselves.
+		{name: "an instance row whose JWT names no scope is refused", header: headerOrg.Name, wantErr: "scope claims"},
+		{name: "an organization row whose JWT carries the instance-admin claim is refused", scopeClaim: authz.ScopeInstanceAdmin, rowOrg: rowOrg, header: headerOrg.Name, wantErr: "scope claims"},
 	}
 
 	type entryPoint func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error
 	entryPoints := map[string]entryPoint{
-		"API": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error {
+		entryAPI: func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error {
 			claims := jwt.MapClaims{}
 			if _, _, err := jwt.NewParser().ParseUnverified(signed, claims); err != nil {
 				return err
@@ -416,7 +480,7 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 			_, err := WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)(handler)(jwtmiddleware.NewContext(ctx, claims), nil)
 			return err
 		},
-		"attestation": func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error {
+		entryAttestation: func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, header string, handler middleware.Handler) error {
 			ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{
 				authorizationHeader: {"Bearer " + signed},
 				orgHeader:           {header},
@@ -446,7 +510,7 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 					token.OrganizationID = uuid.MustParse(tc.rowOrg.ID)
 					rowOrgID = &token.OrganizationID
 					jwtClaims.OrgID, jwtClaims.OrgName = tc.rowOrg.ID, tc.rowOrg.Name
-					orgRepo.On("FindByID", mock.Anything, token.OrganizationID).Return(tc.rowOrg, nil)
+					orgRepo.On("FindByID", mock.Anything, token.OrganizationID).Maybe().Return(tc.rowOrg, nil)
 				}
 				// The row records its scope: its organization's, or the instance's when it has none
 				if rowOrgID != nil {
@@ -473,6 +537,10 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 					gotOrg, gotToken, gotSubject = entities.CurrentOrg(ctx), entities.CurrentAPIToken(ctx), CurrentAuthzSubject(ctx)
 					return nil, nil
 				})
+				if tc.wantErr != "" {
+					require.ErrorContains(t, err, tc.wantErr)
+					return
+				}
 				require.NoError(t, err)
 
 				require.NotNil(t, gotToken)
