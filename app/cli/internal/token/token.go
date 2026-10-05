@@ -16,6 +16,8 @@
 package token
 
 import (
+	"strings"
+
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -28,6 +30,7 @@ const (
 type ParsedToken struct {
 	ID        string
 	OrgID     string
+	OrgName   string
 	TokenType v1.Attestation_Auth_AuthType
 }
 
@@ -105,6 +108,9 @@ func Parse(token string) (*ParsedToken, error) {
 		if orgID, ok := claims["org_id"].(string); ok {
 			pToken.OrgID = orgID
 		}
+		if orgName, ok := claims["org_name"].(string); ok {
+			pToken.OrgName = orgName
+		}
 	case userAudience:
 		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_USER
 		if userID, ok := claims["user_id"].(string); ok {
@@ -128,4 +134,16 @@ func Parse(token string) (*ParsedToken, error) {
 	}
 
 	return pToken, nil
+}
+
+// MismatchedOrganization returns the API token's organization when it differs
+// from the selected organization. A missing organization claim is allowed:
+// instance-admin tokens intentionally use the organization header.
+func MismatchedOrganization(rawToken, organization string) string {
+	parsed, err := Parse(rawToken)
+	if err != nil || parsed == nil || parsed.TokenType != v1.Attestation_Auth_AUTH_TYPE_API_TOKEN || parsed.OrgName == "" || strings.EqualFold(parsed.OrgName, organization) {
+		return ""
+	}
+
+	return parsed.OrgName
 }

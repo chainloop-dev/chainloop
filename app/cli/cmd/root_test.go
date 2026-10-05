@@ -115,6 +115,18 @@ func TestLoadAuthToken(t *testing.T) {
 	}
 }
 
+func TestNewRootCmdBindsOrganizationEnvironment(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+	t.Setenv(CalculateEnvVarName(confOptions.organization.viperKey), "environment-org")
+
+	root := NewRootCmd(zerolog.Nop())
+	assert.Equal(t, "environment-org", viper.GetString(confOptions.organization.viperKey))
+
+	require.NoError(t, root.PersistentFlags().Set(confOptions.organization.flagName, "flag-org"))
+	assert.Equal(t, "flag-org", viper.GetString(confOptions.organization.viperKey))
+}
+
 // Cobra rejects unknown subcommands and invalid flags before PersistentPreRunE
 // runs, so main prints those errors through a Logger() that PersistentPreRunE
 // never got to initialize. NewRootCmd must leave the root logger usable.
