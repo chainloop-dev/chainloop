@@ -77,6 +77,7 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 		{name: "an instance-admin claim on an organization row", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin}, wantErr: "scope claims", mismatch: true},
 		{name: "a project row widened to its organization, signed claims", row: &APIToken{OrganizationID: org, ProjectID: &project, Scope: &orgKind, ScopeID: &org}, claims: signedProject, wantErr: errScopeMismatch, mismatch: true},
 		{name: "a project row widened to its organization, legacy claims", row: &APIToken{OrganizationID: org, ProjectID: &project, Scope: &orgKind, ScopeID: &org}, claims: legacyProject, wantErr: errScopeMismatch, mismatch: true},
+		{name: "an organization row recording no scope id", row: &APIToken{OrganizationID: org, Scope: &orgKind}, claims: signedOrg, wantErr: errScopeMismatch, mismatch: true},
 		{name: "an organization row made an instance row, signed claims", row: &APIToken{OrganizationID: org, Scope: &instanceKind}, claims: signedOrg, wantErr: errScopeMismatch, mismatch: true},
 		{name: "an organization row made an instance row, legacy claims", row: &APIToken{OrganizationID: org, Scope: &instanceKind}, claims: legacyOrg, wantErr: errScopeMismatch, mismatch: true},
 		{name: "a project row moved to another project", row: &APIToken{OrganizationID: org, ProjectID: &project, Scope: &projectKind, ScopeID: &otherProject}, claims: signedProject, wantErr: errScopeMismatch, mismatch: true},
