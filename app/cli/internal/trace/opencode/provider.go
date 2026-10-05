@@ -191,6 +191,27 @@ func (p *Provider) SupportsSessionStartInstruction() bool {
 	return true
 }
 
+// SupportsPromptReminder is true for opencode: the plugin posts the reminder
+// to the session at each user message.
+func (p *Provider) SupportsPromptReminder() bool {
+	return true
+}
+
+// AnnouncePromptSubmit writes the prompt-submit response that the Chainloop
+// plugin reads, in the same shape as the session-start one. The plugin posts
+// the reminder to the session as a context-only message.
+func (p *Provider) AnnouncePromptSubmit(reminder string) error {
+	if reminder == "" {
+		return nil
+	}
+
+	resp := struct {
+		Instruction string `json:"instruction"`
+	}{Instruction: reminder}
+
+	return json.NewEncoder(os.Stdout).Encode(resp)
+}
+
 // AnnounceToUser is unsupported for OpenCode until its plugin's response
 // shape for surfacing a message is verified against a live session, the way
 // Claude Code's was. The hook after a shell command already fires, so wiring

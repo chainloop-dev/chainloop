@@ -641,6 +641,48 @@ func TestSpecRedactions(t *testing.T) {
 	require.NoError(t, store.RemoveSpecRedactions("sess-a"))
 }
 
+// TestRecordedSpecFiles covers the list of spec files that earlier pushes of
+// a session recorded. A later push keeps those files first when the session
+// has more than the limit, so the list must survive a push and go with the
+// session.
+func TestRecordedSpecFiles(t *testing.T) {
+	const (
+		ticketFile = "ticket.md"
+		planFile   = "plan.md"
+	)
+
+	store := NewGitStore(filepath.Join(t.TempDir(), ".git"))
+	require.NoError(t, store.InitTraceDir())
+
+	got, err := store.RecordedSpecFiles("sess-a")
+	require.NoError(t, err)
+	assert.Empty(t, got, "a session that never pushed has recorded nothing")
+
+	require.NoError(t, store.AddRecordedSpecFiles("sess-a", []string{ticketFile, planFile}))
+	// A file recorded again keeps its first place, and a new one goes last.
+	require.NoError(t, store.AddRecordedSpecFiles("sess-a", []string{planFile, "design.md", ticketFile}))
+
+	got, err = store.RecordedSpecFiles("sess-a")
+	require.NoError(t, err)
+	assert.Equal(t, []string{ticketFile, planFile, "design.md"}, got)
+
+	other, err := store.RecordedSpecFiles("sess-b")
+	require.NoError(t, err)
+	assert.Empty(t, other, "the list belongs to one session")
+
+	// A push wipes single-use state, and the list is not single-use.
+	require.NoError(t, store.WipeTraceDir())
+	got, err = store.RecordedSpecFiles("sess-a")
+	require.NoError(t, err)
+	assert.Len(t, got, 3)
+
+	// It goes when the session ends, with the redacted copies.
+	require.NoError(t, store.RemoveSpecRedactions("sess-a"))
+	got, err = store.RecordedSpecFiles("sess-a")
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
 // TestGCOrphansDropsSpecRedactions covers the redacted spec copies of a session
 // whose session end never ran, for example after the agent was killed. They go
 // with the session records, so they cannot outlive the session they belong to.
