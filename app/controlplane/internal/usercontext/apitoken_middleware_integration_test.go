@@ -283,6 +283,14 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 			wantErr: "create a new one",
 		},
 		{
+			name: "revoked organization token",
+			row: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+				return c.SetOrganizationID(orgID).SetRevokedAt(time.Now())
+			},
+			claims:  orgClaims,
+			wantErr: "revoked",
+		},
+		{
 			name:          "organization row written with no scope after the backfill",
 			row:           func(c *ent.APITokenCreate) *ent.APITokenCreate { return c.SetOrganizationID(orgID) },
 			claims:        orgClaims,

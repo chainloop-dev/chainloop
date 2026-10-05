@@ -16,6 +16,7 @@
 package usercontext
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -51,6 +52,7 @@ const (
 	entryAPI          = "API"
 	entryAttestation  = "attestation"
 	claimOrgName      = "org_name"
+	claimScopeID      = "scope_id"
 )
 
 // authorizationHeader carries the bearer token the attestation entry point reads.
@@ -96,12 +98,13 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:          "token revoked",
-			receivedToken: true,
-			audience:      apitoken.Audience,
-			tokenExists:   true,
-			tokenRevoked:  true,
-			wantErr:       true,
+			name:            "token revoked",
+			receivedToken:   true,
+			audience:        apitoken.Audience,
+			tokenExists:     true,
+			tokenRevoked:    true,
+			wantErr:         true,
+			wantErrContains: "revoked",
 		},
 		{
 			name:          "token does not exist",
@@ -111,11 +114,12 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			wantErr:       true,
 		},
 		{
-			name:          "org does not exist",
-			receivedToken: true,
-			audience:      apitoken.Audience,
-			tokenExists:   true,
-			wantErr:       true,
+			name:            "org does not exist",
+			receivedToken:   true,
+			audience:        apitoken.Audience,
+			tokenExists:     true,
+			wantErr:         true,
+			wantErrContains: "organization not found",
 		},
 		{
 			name:          "no token received",
@@ -156,7 +160,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			receivedToken:   true,
 			audience:        apitoken.Audience,
 			tokenExists:     true,
-			extraClaims:     jwt.MapClaims{claimScopeType: "product", "scope_id": uuid.NewString()},
+			extraClaims:     jwt.MapClaims{claimScopeType: "product", claimScopeID: uuid.NewString()},
 			wantErr:         true,
 			wantErrContains: errScopeMismatch,
 		},
@@ -281,7 +285,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			rowScope:      biz.ToPtr(authz.ResourceTypeProduct),
 			rowScopeID:    &productID,
 			rowProjectIDs: []uuid.UUID{projectA},
-			claims:        jwt.MapClaims{claimOrgID: orgID.String(), claimScopeType: "product", "scope_id": productID.String()},
+			claims:        jwt.MapClaims{claimOrgID: orgID.String(), claimScopeType: "product", claimScopeID: productID.String()},
 		},
 		{
 			name:       "an organization token with legacy claims",
@@ -333,6 +337,38 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			assert.Equal(t, tc.rowProjectIDs, got.ProjectIDs)
 		})
 	}
+}
+
+// A row that disagrees with its signed claims is logged as a security event, with the token id
+// and never the raw token.
+func TestWithCurrentAPITokenAndOrgMiddlewareLogsAClaimsMismatch(t *testing.T) {
+	const signedToken = "raw.signed.token"
+	orgID := uuid.New()
+	token := &biz.APIToken{ID: uuid.New(), OrganizationID: orgID, Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID}
+
+	apiTokenRepo := mocks.NewAPITokenRepo(t)
+	apiTokenRepo.On("FindByID", mock.Anything, token.ID).Return(token, nil)
+	orgRepo := mocks.NewOrganizationRepo(t)
+	apiTokenUC, err := biz.NewAPITokenUseCase(apiTokenRepo, &biz.APITokenJWTConfig{SymmetricHmacKey: "test"}, nil, nil, nil, nil)
+	require.NoError(t, err)
+	orgUC := biz.NewOrganizationUseCase(orgRepo, nil, nil, nil, nil, nil, nil)
+
+	var buf bytes.Buffer
+	logger := log.NewHelper(log.NewStdLogger(&buf))
+
+	claims := jwt.MapClaims{
+		claimAud: apitoken.Audience, claimJTI: token.ID.String(), claimOrgID: orgID.String(),
+		claimScopeType: string(authz.ResourceTypeProduct), claimScopeID: uuid.NewString(),
+		"raw": signedToken,
+	}
+
+	_, err = WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)(
+		func(context.Context, interface{}) (interface{}, error) { return nil, nil })(jwtmiddleware.NewContext(context.Background(), claims), nil)
+
+	require.Error(t, err)
+	assert.Contains(t, buf.String(), "disagrees with its signed claims")
+	assert.Contains(t, buf.String(), token.ID.String())
+	assert.NotContains(t, buf.String(), signedToken)
 }
 
 // preProductClaimRemoval are the claims a product token was signed with while the control plane

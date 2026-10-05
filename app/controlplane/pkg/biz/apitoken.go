@@ -171,13 +171,24 @@ func (t *APIToken) IsOrgScoped() bool {
 // what the token was granted: its scope and its organization, and its project and workflow when
 // they name one. The row may only confirm them, so a row that disagrees refuses the token
 // instead of widening or moving it. A product token minted before the scope claims existed is
-// refused: its claims name only its organization.
+// refused: its claims name only its organization. A row recording no scope under claims that
+// sign one has had its scope cleared, which is a mismatch.
 func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
+	if t == nil {
+		return errors.New("API token not found")
+	}
+
 	if claims == nil {
 		return errors.New("API token has no claims")
 	}
 
 	if t.Scope == nil {
+		// Claims naming a scope mean the row was minted with one: it was cleared afterwards. Legacy
+		// claims name none, and a row that predates the scope columns records none.
+		if claims.ScopeType != "" {
+			return fmt.Errorf("API token records no scope: %w", ErrAPITokenClaimsMismatch)
+		}
+
 		return errors.New("API token records no scope")
 	}
 

@@ -72,6 +72,7 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 		{name: "legacy instance token", row: instanceRow, claims: apitoken.CustomClaims{Scope: authz.ScopeInstanceAdmin}},
 
 		{name: "a row recording no scope", row: &APIToken{OrganizationID: org}, claims: legacyOrg, wantErr: "records no scope"},
+		{name: "a signed token whose row's scope was cleared", row: &APIToken{OrganizationID: org}, claims: signedOrg, wantErr: "records no scope", mismatch: true},
 		{name: "a product token minted before the scope claims", row: productRow, claims: legacyOrg, wantErr: "create a new one"},
 		{name: "malformed scope claims", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), ScopeType: string(authz.ResourceTypeOrganization)}, wantErr: "scope claims", mismatch: true},
 		{name: "an instance-admin claim on an organization row", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin}, wantErr: "scope claims", mismatch: true},
@@ -100,6 +101,11 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 			assert.Equal(t, tc.mismatch, errors.Is(err, ErrAPITokenClaimsMismatch))
 		})
 	}
+
+	t.Run("no token", func(t *testing.T) {
+		var missing *APIToken
+		assert.ErrorContains(t, missing.VerifyClaims(&legacyOrg), "not found")
+	})
 
 	t.Run("no claims", func(t *testing.T) {
 		assert.ErrorContains(t, orgRow.VerifyClaims(nil), "no claims")

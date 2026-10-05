@@ -72,7 +72,16 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 			// We've received an API-token
 			if claimsHaveAudience(genericClaims, apitoken.Audience) {
 				claims, err := apitoken.ClaimsFromMap(genericClaims)
-				if err != nil || claims.ID == "" {
+				if err != nil {
+					// A claim of the wrong type is not something this control plane signs. The
+					// raw token and the claims map are never logged.
+					id, _ := genericClaims["jti"].(string)
+					logger.Errorw("msg", "[authN] API token claims do not decode", "id", id, "error", err)
+
+					return nil, errors.New("error mapping the API-token claims")
+				}
+
+				if claims.ID == "" {
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
