@@ -741,8 +741,17 @@ func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (
 
 	// Without keyless signing there is nothing to verify against, and a run
 	// that has no attestation yet has nothing to verify
-	if !uc.signingUseCase.KeylessEnabled() || run.Attestation == nil || len(run.Attestation.Bundle) == 0 {
+	if !uc.signingUseCase.KeylessEnabled() || run.Attestation == nil {
 		return nil, nil
+	}
+
+	if len(run.Attestation.Bundle) == 0 {
+		if run.Attestation.Digest == "" {
+			return nil, nil
+		}
+		// The run has an attestation, but its bundle could not be loaded, for
+		// example because the CAS backend is unavailable
+		return &VerificationResult{Result: false, FailureReason: "the attestation bundle could not be retrieved"}, nil
 	}
 
 	opts, err := verifyOptionsForRun(run)

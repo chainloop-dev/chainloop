@@ -61,6 +61,8 @@ const (
 	bundleWithoutMaterial
 	// a raw DSSE envelope instead of a Sigstore bundle
 	bundleRawEnvelope
+	// carries a valid keyless certificate, but the signature does not match the payload
+	bundleWithCertTamperedSignature
 )
 
 // newSignedTestBundle signs the test attestation with a certificate issued by
@@ -82,7 +84,13 @@ func newSignedTestBundle(t *testing.T, signing *biz.SigningUseCase, orgID string
 	chain, err := signing.CreateSigningCert(context.Background(), orgID, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER}))
 	require.NoError(t, err)
 
-	digest := sha256.Sum256(dsse.PAE(env.PayloadType, payload))
+	signedPayload := payload
+	if kind == bundleWithCertTamperedSignature {
+		// sign other content, so the signature does not match the payload in the envelope
+		signedPayload = append([]byte("tampered"), payload...)
+	}
+
+	digest := sha256.Sum256(dsse.PAE(env.PayloadType, signedPayload))
 	sig, err := ecdsa.SignASN1(rand.Reader, key, digest[:])
 	require.NoError(t, err)
 
@@ -101,7 +109,7 @@ func newSignedTestBundle(t *testing.T, signing *biz.SigningUseCase, orgID string
 	bundle, err := attestation.BundleFromDSSEEnvelope(signed)
 	require.NoError(t, err)
 
-	if kind == bundleWithCert {
+	if kind == bundleWithCert || kind == bundleWithCertTamperedSignature {
 		block, _ := pem.Decode([]byte(chain[0]))
 		require.NotNil(t, block)
 		bundle.VerificationMaterial.Content = &protobundle.VerificationMaterial_Certificate{
@@ -132,6 +140,11 @@ func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 		{
 			name:         "keyless certificate issued to another organization",
 			bundle:       newSignedTestBundle(t, signing, otherOrgID.String(), bundleWithCert),
+			wantRejected: true,
+		},
+		{
+			name:         "keyless certificate issued to the run organization, with a tampered signature",
+			bundle:       newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
 			wantRejected: true,
 		},
 		{
@@ -179,6 +192,7 @@ func TestVerifyRunKeyless(t *testing.T) {
 		name       string
 		signing    *biz.SigningUseCase
 		bundle     []byte
+		digest     string
 		wantNil    bool
 		wantResult bool
 		wantReason string
@@ -194,6 +208,18 @@ func TestVerifyRunKeyless(t *testing.T) {
 			signing:    signing,
 			bundle:     newSignedTestBundle(t, signing, uuid.NewString(), bundleWithCert),
 			wantReason: "organization mismatch",
+		},
+		{
+			name:       "keyless certificate issued to the run organization, with a tampered signature",
+			signing:    signing,
+			bundle:     newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
+			wantReason: "validating the DSSE envelope",
+		},
+		{
+			name:       "attestation digest recorded, but its bundle could not be retrieved",
+			signing:    signing,
+			digest:     "sha256:0f9b2a1c",
+			wantReason: "could not be retrieved",
 		},
 		{
 			name:       "no verification material with keyless signing enabled",
@@ -221,7 +247,7 @@ func TestVerifyRunKeyless(t *testing.T) {
 
 			got, err := uc.VerifyRun(context.Background(), &biz.WorkflowRun{
 				Workflow:    &biz.Workflow{OrgID: orgID},
-				Attestation: &biz.Attestation{Bundle: tc.bundle},
+				Attestation: &biz.Attestation{Bundle: tc.bundle, Digest: tc.digest},
 			})
 			require.NoError(t, err)
 			if tc.wantNil {
