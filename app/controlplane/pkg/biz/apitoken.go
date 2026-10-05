@@ -18,6 +18,7 @@ package biz
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -33,6 +34,11 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+// ErrAPITokenClaimsMismatch is a token whose row disagrees with the claims it was signed with,
+// or whose claims are malformed. Something wrote the row wrongly, so it is a security event, not
+// an expired or legacy credential.
+var ErrAPITokenClaimsMismatch = errors.New("API token claims do not match its row")
 
 var apiTokenTracer = otelx.Tracer("chainloop-controlplane", "biz/apitoken")
 
@@ -159,6 +165,63 @@ func (t *APIToken) IsInstanceScoped() bool {
 // scope is not.
 func (t *APIToken) IsOrgScoped() bool {
 	return t.scopeView().IsOrgScoped()
+}
+
+// VerifyClaims checks the token's row against the claims its JWT was signed with. The claims bind
+// what the token was granted: its scope and its organization, and its project and workflow when
+// they name one. The row may only confirm them, so a row that disagrees refuses the token
+// instead of widening or moving it. A product token minted before the scope claims existed is
+// refused: its claims name only its organization.
+func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
+	if claims == nil {
+		return errors.New("API token has no claims")
+	}
+
+	if t.Scope == nil {
+		return errors.New("API token records no scope")
+	}
+
+	if claims.ScopeType == "" && t.IsProductScoped() {
+		return errors.New("API token was minted before its scope was signed, create a new one")
+	}
+
+	kind, id, err := claims.SignedScope()
+	if err != nil {
+		return fmt.Errorf("API token scope claims: %w: %w", err, ErrAPITokenClaimsMismatch)
+	}
+
+	if *t.Scope != kind || !sameScopeID(t.ScopeID, id) {
+		return fmt.Errorf("API token scope mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	// An instance token has no organization, and its org_id claim is empty
+	orgID := ""
+	if t.OrganizationID != uuid.Nil {
+		orgID = t.OrganizationID.String()
+	}
+
+	if claims.OrgID != orgID {
+		return fmt.Errorf("API token organization mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	if claims.ProjectID != "" && (t.ProjectID == nil || t.ProjectID.String() != claims.ProjectID) {
+		return fmt.Errorf("API token project mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	if claims.WorkflowID != "" && (t.WorkflowID == nil || t.WorkflowID.String() != claims.WorkflowID) {
+		return fmt.Errorf("API token workflow mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	return nil
+}
+
+// sameScopeID reports whether two optional scope ids are equal, both unset included.
+func sameScopeID(a, b *uuid.UUID) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return *a == *b
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.
