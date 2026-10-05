@@ -166,9 +166,11 @@ type CustomClaims struct {
 	ProjectName  string `json:"project_name,omitempty"`
 	WorkflowID   string `json:"workflow_id,omitempty"`
 	WorkflowName string `json:"workflow_name,omitempty"`
-	Scope        string `json:"scope,omitempty"`
-	// ScopeType and ScopeID bind the token to what it was granted. A token minted before they
-	// existed carries neither, and SignedScope derives its scope from the claims it does carry.
+	// Scope is the older instance-admin claim ("INSTANCE_ADMIN"), set only on instance tokens.
+	// Despite its name it is not the token's scope: that is ScopeType and ScopeID.
+	Scope string `json:"scope,omitempty"`
+	// ScopeType and ScopeID say what the token was granted. A token minted before they existed
+	// carries neither, and SignedScope works its scope out from the claims it does carry.
 	ScopeType string `json:"scope_type,omitempty"`
 	ScopeID   string `json:"scope_id,omitempty"`
 	jwt.RegisteredClaims
@@ -180,10 +182,10 @@ func (c *CustomClaims) HasScopeClaims() bool {
 	return c.ScopeType != ""
 }
 
-// SignedScope returns the scope the claims bind the token to, and refuses claims that contradict
-// themselves. A token minted with the scope_type and scope_id claims gets those. An older token
-// gets the scope its other claims imply, by the rule the scope backfill migration applied to its
-// row. A product token minted before the scope claims implies only its organization.
+// SignedScope returns the scope the claims bind the token to. For a token minted with the
+// scope_type and scope_id claims, that is what they say. For an older token, it is the scope its
+// other claims imply (see legacyScope), so an older product token comes out as its organization.
+// Claims that contradict themselves are an error.
 func (c *CustomClaims) SignedScope() (authz.ResourceType, *uuid.UUID, error) {
 	kind, id, err := c.namedScope()
 	if err != nil {
@@ -249,11 +251,14 @@ func (c *CustomClaims) legacyScope() (authz.ResourceType, *uuid.UUID, error) {
 	return kind, &id, nil
 }
 
-// agreesWith checks that the other claims fit the scope, so that every reader of the token, the
-// platform's included, reads the same scope off it. Only an instance token carries the
-// instance-admin claim, and it names no organization. An organization token names its own
-// organization, a project token the project it is scoped to, and a workflow comes with its
-// project.
+// agreesWith checks that the rest of the claims fit the scope, so that the control plane and the
+// platform read the same scope from the token:
+//   - only an instance token carries the instance-admin claim, and it names no organization or
+//     project;
+//   - an organization token names its own organization and no project;
+//   - a project token names its organization and the project it is scoped to;
+//   - a product token names its organization and no project;
+//   - a workflow claim always comes with a project claim.
 func (c *CustomClaims) agreesWith(kind authz.ResourceType, id *uuid.UUID) error {
 	if (c.Scope == authz.ScopeInstanceAdmin) != (kind == authz.ResourceTypeInstance) {
 		return errors.New("the instance-admin claim does not agree with the scope")

@@ -145,10 +145,10 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 	}
 }
 
-// Set the current organization and API-Token in the context, and return the token's row. The row
-// must agree with the claims the token was signed with: they bind its scope, organization,
-// project and workflow, and the row only confirms them. What the row adds, its policies, its
-// project list and its revocation, is read from the row.
+// setCurrentOrgAndAPIToken loads the token's row, checks it against the claims the token was
+// signed with, and puts the organization and the token in the context. It returns the row.
+// The claims fix the token's scope, organization, project and workflow, and the row must match
+// them. The policies, the product project list and revocation come from the row alone.
 func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, claims *apitoken.CustomClaims, logger *log.Helper) (context.Context, *biz.APIToken, error) {
 	if claims == nil || claims.ID == "" {
 		return nil, nil, errors.New("error retrieving the key ID from the API token")

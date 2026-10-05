@@ -35,9 +35,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// ErrAPITokenClaimsMismatch is a token whose row disagrees with the claims it was signed with,
-// or whose claims are malformed. Something wrote the row wrongly, so it is a security event, not
-// an expired or legacy credential.
+// ErrAPITokenClaimsMismatch marks a token whose row disagrees with the claims it was signed with,
+// or whose claims are malformed. It means something wrote the row wrongly, so it is a security
+// event, not an expired or old credential.
 var ErrAPITokenClaimsMismatch = errors.New("API token claims do not match its row")
 
 var apiTokenTracer = otelx.Tracer("chainloop-controlplane", "biz/apitoken")
@@ -167,12 +167,13 @@ func (t *APIToken) IsOrgScoped() bool {
 	return t.scopeView().IsOrgScoped()
 }
 
-// VerifyClaims checks the token's row against the claims its JWT was signed with. The claims bind
-// what the token was granted: its scope and its organization, and its project and workflow when
-// they name one. The row may only confirm them, so a row that disagrees refuses the token
-// instead of widening or moving it. A product token minted before the scope claims existed is
-// refused: its claims name only its organization. A row recording no scope under claims that
-// sign one has had its scope cleared, which is a mismatch.
+// VerifyClaims checks that the token's row matches the claims its JWT was signed with: the same
+// scope and organization, and the same project and workflow when the claims name them. Any
+// difference refuses the token, so a wrong row can never widen the token or move it elsewhere.
+//
+// A mismatch wraps ErrAPITokenClaimsMismatch. Two expected states of older tokens are refused
+// without it: a row that records no scope when the claims carry none either, and a product token
+// minted before the scope claims existed, which has to be created again.
 func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
 	if t == nil {
 		return errors.New("API token not found")
@@ -193,6 +194,9 @@ func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
 		return err
 	}
 
+	// This runs before SignedScope on purpose. An older product token's claims name only its
+	// organization, so SignedScope would read it as an organization scope, and the comparison
+	// below would log it as a security event rather than ask for a new token.
 	if !claims.HasScopeClaims() && t.IsProductScoped() {
 		return errors.New("API token was minted before its scope was signed, create a new one")
 	}
@@ -601,8 +605,9 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 }
 
 // RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are
-// not invalidated. The new JWT signs the scope the row records, so the caller must know the row is
-// the token it means to re-sign: a row whose shape is coherent but wrong would be signed as it is.
+// not invalidated. The new JWT signs the scope the row records. A row with no scope, or with a
+// scope that contradicts its other columns, is refused. A row that is consistent but wrong would
+// still be signed, so callers must be sure it is the token they mean.
 func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresIn time.Duration) (*APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.RegenerateJWT")
 	defer span.End()
