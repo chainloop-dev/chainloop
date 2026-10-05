@@ -200,6 +200,9 @@ func TestParseExport(t *testing.T) {
 // sampleExportV2 is a minimal export in the OpenCode 2 format, as printed by
 // `opencode session export`. Messages are flat and tagged by type, assistant
 // output is in content, and the session directory is in info.location.
+// info.time.updated is when the session record last changed (its title, set
+// seconds in), not when the session last did anything, so the session runs
+// until its idle marker.
 const sampleExportV2 = `{
   "info": {
     "id": "ses_v2abc",
@@ -211,7 +214,7 @@ const sampleExportV2 = `{
     "outcome": "succeeded",
     "cost": 0.0523,
     "tokens": { "input": 12000, "output": 3000, "reasoning": 500, "cache": { "read": 2000, "write": 1000 } },
-    "time": { "created": 1751702400000, "updated": 1751702700000, "idle": 1751702710000 }
+    "time": { "created": 1751702400000, "updated": 1751702402000, "idle": 1751702710000 }
   },
   "messages": [
     { "type": "user", "id": "msg_001", "text": "Fix the auth bug", "files": [], "agents": [], "time": { "created": 1751702400000 } },
@@ -281,7 +284,8 @@ func TestParseExportV2(t *testing.T) {
 	assert.Empty(t, result.Data.Agent.Version)
 	assert.Equal(t, "ses_v2abc", result.Data.Session.ID)
 	assert.Equal(t, "2025-07-05T08:00:00Z", result.Data.Session.StartedAt)
-	assert.Equal(t, 300, result.Data.Session.DurationSeconds)
+	assert.Equal(t, "2025-07-05T08:05:10Z", result.Data.Session.EndedAt)
+	assert.Equal(t, 310, result.Data.Session.DurationSeconds)
 
 	require.NotNil(t, result.Data.Model)
 	assert.Equal(t, "claude-sonnet-4-5", result.Data.Model.Primary)

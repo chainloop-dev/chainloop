@@ -90,6 +90,13 @@ func (e *exportDataV2) toExportData() *exportData {
 	}
 
 	for _, msg := range e.Messages {
+		// info.time.updated is when the session record last changed, which
+		// can be seconds into the session. The session lasts until its last
+		// message of any type, such as the idle marker at the end of a turn.
+		if msg.Time != nil {
+			out.Info.Time.Updated = max(out.Info.Time.Updated, msg.Time.Created, msg.Time.Completed)
+		}
+
 		entry := messageEntry{
 			Info: messageInfo{
 				Role:   msg.Type,
