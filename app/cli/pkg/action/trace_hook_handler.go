@@ -27,12 +27,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/rs/zerolog"
 )
@@ -646,19 +649,15 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	isGenerated := gitClient.GeneratedMatcher(repoRoot)
 
-	// Build evidence for each session
+	// Build evidence for each session. It is written out only once the
+	// attestation exists, because it records the digests of the spec materials
+	// added to it first.
 	type sessionEvidence struct {
 		sessionID string
-		tmpPath   string
+		evidence  *aicodingsession.Evidence
+		specs     []spec.Capture
 	}
-	var evidenceFiles []sessionEvidence
-
-	// Register cleanup before the loop so mid-loop returns are covered
-	defer func() {
-		for _, ef := range evidenceFiles {
-			_ = os.Remove(ef.tmpPath)
-		}
-	}()
+	var sessions []sessionEvidence
 
 	for sessionID, commits := range sessionCommits {
 		log.Debug().Str("session", sessionID).Int("commits", len(commits)).Msg("processing session")
@@ -702,6 +701,20 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		// session was driven, not about which agent produced it.
 		result.Data.Session.Mode = sessionMode
 
+		// The sources the agent resolved at session start, from the directory
+		// the session-start hook handed it. Most sessions have none, and a
+		// failure to read them is never a reason to lose the session: evidence
+		// without a spec is still evidence.
+		// A spec left out of the evidence is recorded as a warning, so that
+		// the missing spec is visible to whoever reads the session.
+		captures, specWarnings, err := spec.ReadAll(repoRoot, sessionID)
+		if err != nil {
+			// The error stays in the local log: its text carries local paths.
+			log.Warn().Err(err).Str("session", sessionID).Msg("could not read the session spec; the session is attested without it")
+			specWarnings = append(specWarnings, "the session spec was not recorded: the spec folder could not be read")
+		}
+		result.Data.Warnings = append(result.Data.Warnings, specWarnings...)
+
 		// Apply repo-wide context with per-session commit overrides
 		if gitCtxErr == nil {
 			sessionCtx := *gitCtx
@@ -734,31 +747,16 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 			}
 		}
 
-		// Write evidence to temp file
-		tmpFile, err := os.CreateTemp("", "chainloop-trace-*.json")
-		if err != nil {
-			return fmt.Errorf("create temp file: %w", err)
-		}
-
-		enc := json.NewEncoder(tmpFile)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
-			_ = tmpFile.Close()
-			_ = os.Remove(tmpFile.Name())
-
-			return fmt.Errorf("write evidence: %w", err)
-		}
-		_ = tmpFile.Close()
-
 		log.Debug().Str("session", sessionID).Msg("generated evidence")
 
-		evidenceFiles = append(evidenceFiles, sessionEvidence{
+		sessions = append(sessions, sessionEvidence{
 			sessionID: sessionID,
-			tmpPath:   tmpFile.Name(),
+			evidence:  result,
+			specs:     captures,
 		})
 	}
 
-	if len(evidenceFiles) == 0 {
+	if len(sessions) == 0 {
 		log.Debug().Msg("no session evidence could be generated")
 
 		return nil
@@ -802,16 +800,27 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	log.Debug().Str("attestation_id", attestationID).Msg("attestation initialized")
 
-	// Add evidence for each session
-	attestedSessions := make([]string, 0, len(evidenceFiles))
-	for _, ef := range evidenceFiles {
-		name := evidenceName(ef.sessionID)
-		if err := executor.AddEvidence(ctx, name, ef.tmpPath); err != nil {
-			log.Debug().Err(err).Str("session", ef.sessionID).Msg("could not add evidence")
+	// Add evidence for each session: its spec materials first, so that the
+	// session material can record their digests, then the session itself.
+	attestedSessions := make([]string, 0, len(sessions))
+	// One allocator for the whole attestation: names taken from the start of
+	// a session ID can repeat across sessions, and a repeated name would
+	// replace an earlier material.
+	names := materials.NewNameAllocator(nil)
+	for _, se := range sessions {
+		entries, warnings := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
+		se.evidence.Data.Spec = entries
+		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
+
+		name := evidenceName(se.sessionID)
+		if err := addSessionEvidence(ctx, executor, name, se.evidence); err != nil {
+			// Warn, not debug: the session is left out of the attestation,
+			// and this is the only place that says why.
+			log.Warn().Err(err).Str("session", se.sessionID).Msg("could not add the evidence of an AI session; it is left out of the attestation")
 			continue
 		}
-		attestedSessions = append(attestedSessions, ef.sessionID)
-		log.Debug().Str("session", ef.sessionID).Str("name", name).Msg("evidence added")
+		attestedSessions = append(attestedSessions, se.sessionID)
+		log.Debug().Str("session", se.sessionID).Str("name", name).Int("spec_entries", len(entries)).Msg("evidence added")
 	}
 
 	if len(attestedSessions) == 0 {
@@ -906,6 +915,31 @@ func sessionLinkMessage(url string) string {
 	return "Coding Session Available at " + url
 }
 
+// addSessionEvidence writes one session's evidence to a temporary file and adds
+// it to the attestation.
+func addSessionEvidence(ctx context.Context, executor *AttestationExecutor, name string, evidence *aicodingsession.Evidence) error {
+	tmpFile, err := os.CreateTemp("", "chainloop-trace-*.json")
+	if err != nil {
+		return fmt.Errorf("create temp file: %w", err)
+	}
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+
+	enc := json.NewEncoder(tmpFile)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(evidence); err != nil {
+		_ = tmpFile.Close()
+
+		return fmt.Errorf("write evidence: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return fmt.Errorf("write evidence: %w", err)
+	}
+
+	_, err = executor.AddMaterial(ctx, name, tmpFile.Name(), "CHAINLOOP_AI_CODING_SESSION", nil)
+
+	return err
+}
+
 // evidenceName returns the material name for a session evidence document.
 // Format: ai-coding-session-<first 6 chars of session ID>. Underscores are
 // replaced with hyphens because material names may only contain lowercase
@@ -946,7 +980,7 @@ func resolvePushIdentity(repoRoot string, opts RunTracePushOpts) (project, org, 
 	workflow = opts.WorkflowName
 
 	if !opts.IgnoreYAML && (project == "" || org == "" || workflow == "") {
-		if yml := config.FindChainloopYML(repoRoot); yml != nil {
+		if yml := repositoryconfig.FindChainloopYML(repoRoot); yml != nil {
 			if project == "" {
 				project = yml.ProjectName
 			}

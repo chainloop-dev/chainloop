@@ -16,7 +16,6 @@
 package cmd
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -24,12 +23,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
+	"time"
 
 	"github.com/adrg/xdg"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/telemetry/posthog"
-	token "github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -82,13 +78,32 @@ const (
 	cliReferenceURL = "https://github.com/chainloop-dev/chainloop/blob/main/app/cli/documentation/cli-reference.md"
 )
 
-var telemetryWg sync.WaitGroup
-
 // Environment variable prefix for vipers
 const envPrefix = "CHAINLOOP"
 
+// pluginLessCommands are the commands that never make use of plugins, keyed by the first
+// argument on the command line. Loading plugins starts a subprocess per installed plugin,
+// so it is skipped for the commands that cannot benefit from it.
+var pluginLessCommands = map[string]bool{
+	"completion":    true,
+	"help":          true,
+	telemetryCmdUse: true,
+}
+
+// processStart is when this process began, as close to it as a package variable gets. The
+// reported duration is measured from here rather than from the top of Execute because
+// NewRootCmd runs first and loads plugins, which starts a subprocess and an RPC handshake
+// per plugin. Timing from Execute would leave that out for exactly the users who have
+// plugins installed, making their numbers incomparable with everyone else's.
+var processStart = time.Now()
+
 func Execute(rootCmd *cobra.Command) error {
-	if err := rootCmd.Execute(); err != nil {
+	// The command outcome is reported from here, the only place that sees both ends of
+	// every command, including the ones that fail and so skip cobra's post-run hooks.
+	executed, err := rootCmd.ExecuteC()
+	reportCommand(executed, time.Since(processStart), err)
+
+	if err != nil {
 		// The local file is pointing to the wrong organization, we remove it
 		if v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
 			if err := setLocalOrganization(""); err != nil {
@@ -218,44 +233,6 @@ Command reference: ` + cliReferenceURL,
 				return fmt.Errorf("failed to register discover builtin: %w", err)
 			}
 
-			if !isTelemetryDisabled() {
-				logger.Debug().Msg("Telemetry enabled, to disable it use DO_NOT_TRACK=1")
-
-				telemetryWg.Add(1)
-				go func() {
-					defer telemetryWg.Done()
-
-					// Stop waiting on the delivery goroutine after the flush deadline, so a slow
-					// or unreachable telemetry endpoint cannot hold up the command.
-					ctx, cancel := context.WithTimeout(context.Background(), telemetry.FlushTimeout)
-					defer cancel()
-					done := make(chan struct{})
-
-					go func() {
-						// For telemetry reasons we parse the token to know the type of token is being used when executing the CLI
-						// Once we have the token type we can send it to the telemetry service by injecting it on the context
-						authToken, err := token.Parse(authToken)
-						if err != nil {
-							logger.Debug().Err(err).Msg("parsing token for telemetry")
-							return
-						}
-
-						err = recordCommand(cmd, authToken)
-						if err != nil {
-							logger.Debug().Err(err).Msg("sending command to telemetry")
-						}
-						close(done)
-					}()
-
-					select {
-					case <-done:
-						// The parsing and recording finished successfully within the timeout
-					case <-ctx.Done():
-						// The operation took more than timeout
-					}
-				}()
-			}
-
 			return nil
 		},
 		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
@@ -313,11 +290,14 @@ Command reference: ` + cliReferenceURL,
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
 		newIntegrationCmd(), newOrganizationCmd(), newCASBackendCmd(),
 		newReferrerDiscoverCmd(), newPolicyCmd(), newApplyCmd(),
-		newTraceCmd(),
+		newTraceCmd(), newTelemetryCmd(),
 	)
 
-	// Load plugins for root command and subcommands (except completion and help)
-	if len(os.Args) == 1 || (len(os.Args) > 1 && os.Args[1] != "completion" && os.Args[1] != "help") {
+	// Load plugins for root command and subcommands, except for the ones that cannot use
+	// them. `telemetry` is in that list because it is the detached child that delivers an
+	// analytics event: loading plugins there would spawn a subprocess and an RPC handshake
+	// per installed plugin, for a process whose whole job is one HTTP request.
+	if len(os.Args) == 1 || (len(os.Args) > 1 && !pluginLessCommands[os.Args[1]]) {
 		pluginManager = plugins.NewManager(&logger)
 		if err := loadAllPlugins(rootCmd); err != nil {
 			logger.Error().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
@@ -341,11 +321,6 @@ func CalculateEnvVarName(key string) string {
 
 func init() {
 	cobra.OnInitialize(initConfigFile)
-	// Using the cobra.OnFinalize because the hooks don't work on error
-	cobra.OnFinalize(func() {
-		// In some cases the command is faster than the telemetry, in that case we wait
-		telemetryWg.Wait()
-	})
 }
 
 // isTelemetryDisabled checks if the telemetry is disabled by the user or if we are running a development version
@@ -370,6 +345,14 @@ func initLogger(logger zerolog.Logger) (zerolog.Logger, error) {
 }
 
 func initConfigFile() {
+	// The telemetry child reads nothing from the config: everything it needs is either
+	// compiled in or arrived in its payload. Skipping the setup keeps it from creating the
+	// config directory and writing a default file, and from panicking below when that
+	// directory cannot be created, in a process whose only job is one HTTP request.
+	if isTelemetryFlushInvocation() {
+		return
+	}
+
 	// An existing config file was passed as a flag and we use it as is
 	if flagCfgFile != "" {
 		viper.SetConfigFile(flagCfgFile)
@@ -482,65 +465,32 @@ var (
 	posthogEndpoint = "https://t.chainloop.dev"
 )
 
-// recordCommand sends the command to the telemetry service
-func recordCommand(executedCmd *cobra.Command, authInfo *token.ParsedToken) error {
-	telemetryClient, err := posthog.NewClient(posthogAPIKey, posthogEndpoint)
-	if err != nil {
-		logger.Debug().Err(err).Msgf("creating telemetry client: %v", err)
-		return nil
-	}
-
-	cmdTracker := telemetry.NewCommandTracker(telemetryClient)
-	controlplaneURL, controlplaneHash := hashControlPlaneURL()
-
-	tags := telemetry.Tags{
-		"cli_version":         Version,
-		"edition":             Edition,
-		"cp_url_hash":         controlplaneHash,
-		"cp_installation_url": controlplaneURL,
-		"chainloop_source":    "cli",
-	}
-
-	// It tries to extract the token from the context and add it to the tags. If it fails, it will ignore it.
-	if authInfo != nil {
-		tags["token_type"] = authInfo.TokenType.String()
-		tags["user_id"] = authInfo.ID
-		tags["org_id"] = authInfo.OrgID
-	}
-
-	// Add organization name if available
-	orgName := viper.GetString(confOptions.organization.viperKey)
-	if orgName != "" {
-		tags["organization_name"] = orgName
-	}
-
-	if err = cmdTracker.Track(executedCmd.Context(), extractCmdLineFromCommand(executedCmd), tags); err != nil {
-		return fmt.Errorf("sending event: %w", err)
-	}
-
-	return nil
-}
-
 // extractCmdLineFromCommand returns the full command hierarchy as a string from a cobra.Command
 func extractCmdLineFromCommand(cmd *cobra.Command) string {
 	var cmdHierarchy []string
-	currentCmd := cmd
-	// While the current command is not the root command, keep iteration.
-	// This is done to get the full hierarchy of the command and remove the root command from the hierarchy.
-	for currentCmd.Use != "chainloop" {
+	// Walk up to the root command, which is dropped from the hierarchy. The nil check is
+	// what terminates the walk for a command that is not attached to the root: this runs on
+	// the exit path of every command, including the ones that failed, and telemetry must
+	// never be the reason the CLI panics.
+	for currentCmd := cmd; currentCmd != nil && currentCmd.Use != appName; currentCmd = currentCmd.Parent() {
 		cmdHierarchy = append([]string{currentCmd.Use}, cmdHierarchy...)
-		currentCmd = currentCmd.Parent()
 	}
 
 	cmdLine := strings.Join(cmdHierarchy, " ")
 	return cmdLine
 }
 
-// hashControlPlaneURL returns a hash of the control plane URL
-func hashControlPlaneURL() (url string, hash string) {
-	url = viper.GetString(confOptions.controlplaneAPI.viperKey)
+// controlPlaneURL returns the control plane the CLI is configured to talk to.
+func controlPlaneURL() string {
+	return viper.GetString(confOptions.controlplaneAPI.viperKey)
+}
+
+// hashURL is the hash telemetry groups events by. It takes the URL rather than reading the
+// configuration so that the telemetry child, which only receives the URL, computes the
+// same value as the parent would.
+func hashURL(url string) string {
 	sum := sha256.Sum256([]byte(url))
-	return url, hex.EncodeToString(sum[:])
+	return hex.EncodeToString(sum[:])
 }
 
 func apiInsecure() bool {

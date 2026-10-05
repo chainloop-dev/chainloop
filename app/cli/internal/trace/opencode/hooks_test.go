@@ -73,6 +73,48 @@ func TestPluginDefaultExportServesBothOpenCodeMajors(t *testing.T) {
 	assert.NotContains(t, content, "$`")
 }
 
+// TestPluginPostsSessionStartInstruction pins how the model receives the spec
+// capture instruction: the plugin reads the session-start response and posts it
+// to the session as a context-only message, which gets no model reply. Each
+// OpenCode major posts it through its own API.
+func TestPluginPostsSessionStartInstruction(t *testing.T) {
+	for _, install := range []struct {
+		name string
+		fn   func(*Provider, string) error
+	}{
+		{name: "full install", fn: (*Provider).InstallHooks},
+		{name: "trace run install", fn: (*Provider).InstallHooksForTraceRun},
+	} {
+		t.Run(install.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			require.NoError(t, install.fn(New(), repoRoot))
+
+			data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+			require.NoError(t, err)
+			content := string(data)
+
+			assert.Contains(t, content, ".instruction")
+			// OpenCode 1.x: the SDK client posts the message, and noReply
+			// stores it without a model reply.
+			assert.Contains(t, content, "server({ directory, client }", "the plugin needs the SDK client to post the message")
+			assert.Contains(t, content, "client.session.prompt(")
+			assert.Contains(t, content, "noReply: true")
+			// OpenCode 2: a synthetic message, and resume: false stores it
+			// without a model reply.
+			assert.Contains(t, content, "ctx.session.synthetic({ sessionID, text: instruction, resume: false })")
+			// The handler waits until the message is stored, so a first turn
+			// sent right away cannot reach the model without it. OpenCode 2
+			// delivers events asynchronously, so its prompt hook also waits for
+			// a session start still in flight.
+			assert.Contains(t, content, "await post(sessionID, instruction)")
+			assert.Contains(t, content, `ctx.session.hook("prompt"`)
+			// A child session belongs to a subagent, whose parent already has
+			// the instruction.
+			assert.Contains(t, content, "parentID")
+		})
+	}
+}
+
 func TestInstallHooksForTraceRunOmitsSessionEnd(t *testing.T) {
 	repoRoot := t.TempDir()
 	p := New()
@@ -288,7 +330,7 @@ func TestPluginRunsHookFromSessionDirectory(t *testing.T) {
 
 	assert.Contains(t, content, `spawn("chainloop", ["trace", "hook", "opencode", event], { cwd: directory`)
 	// OpenCode 1.x passes the session directory to server().
-	assert.Contains(t, content, "async function server({ directory }: any)")
+	assert.Contains(t, content, "async function server({ directory, client }: any)")
 	// OpenCode 2.x passes it as the plugin location.
 	assert.Contains(t, content, "const directory = ctx.location.directory")
 }

@@ -29,10 +29,12 @@ import (
 )
 
 const (
-	tagCI        = "ci"
-	tagTokenType = "token_type"
-	tagFalse     = "false"
-	tagTrue      = "true"
+	tagCI         = "ci"
+	tagTokenType  = "token_type"
+	tagFalse      = "false"
+	tagTrue       = "true"
+	tagDurationMs = "duration_ms"
+	tagSuccess    = "success"
 )
 
 func TestTagsIsInteractiveUserSession(t *testing.T) {
@@ -69,6 +71,53 @@ func TestTagsIsInteractiveUserSession(t *testing.T) {
 			assert.Equal(t, tc.want, tc.tags.IsInteractiveUserSession())
 		})
 	}
+}
+
+func TestTagsString(t *testing.T) {
+	tags := telemetry.Tags{
+		"command":     "workflow list",
+		tagDurationMs: int64(1234),
+		tagSuccess:    true,
+	}
+
+	testCases := []struct {
+		name string
+		key  string
+		want string
+	}{
+		{name: "string value", key: "command", want: "workflow list"},
+		{name: "numeric value reads as absent", key: tagDurationMs},
+		{name: "boolean value reads as absent", key: tagSuccess},
+		{name: "missing key", key: "nope"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tags.String(tc.key))
+		})
+	}
+}
+
+// TestCommandTrackerTrackPreservesTypedTags covers the path that carries the command
+// duration: a non-string tag has to survive the merge with the default tags unchanged.
+func TestCommandTrackerTrackPreservesTypedTags(t *testing.T) {
+	mockedClient := mocks.NewClient(t)
+
+	mockedClient.
+		On("TrackEvent", mock.Anything, "command_executed", mock.Anything, mock.Anything).
+		Return(func(_ context.Context, _ string, _ string, tags telemetry.Tags) error {
+			assert.Equal(t, int64(4321), tags[tagDurationMs])
+			assert.Equal(t, true, tags[tagSuccess])
+			return nil
+		})
+
+	err := telemetry.NewCommandTracker(mockedClient).Track(context.Background(), "attestation push", telemetry.Tags{
+		tagDurationMs: int64(4321),
+		tagSuccess:    true,
+	})
+	assert.NoError(t, err)
+
+	mockedClient.AssertNumberOfCalls(t, "TrackEvent", 1)
 }
 
 func TestTagsWithEnvironmentInfo(t *testing.T) {

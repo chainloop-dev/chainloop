@@ -107,6 +107,11 @@ func TestEligible(t *testing.T) {
 		{"/data/tools_used/summary/4/tool_name", false},
 		{"/data/subagents/0/id", false},
 		{"/data/subagents/0/type", false},
+		{"/data/spec/0/kind", false},
+		{"/data/spec/0/captured_at", false},
+		{"/data/spec/3/digest", false},
+		// A source URL is a common place for an embedded token.
+		{"/data/spec/0/uri", true},
 
 		// Eligible: free-form text, wherever it lives.
 		{"/data/git_context/repository", true},
@@ -317,4 +322,46 @@ func jsonAt(t *testing.T, doc []byte, path string) string {
 	out, err := json.Marshal(node)
 	require.NoError(t, err)
 	return string(out)
+}
+
+func TestRedactSpecText(t *testing.T) {
+	testCases := []struct {
+		name           string
+		text           string
+		wantText       string
+		wantChanged    bool
+		mustNotContain string
+	}{
+		{
+			name:     "text without secrets comes back unchanged",
+			text:     "Keep the fix to the retry path; do not touch the scheduler.",
+			wantText: "Keep the fix to the retry path; do not touch the scheduler.",
+		},
+		{
+			// A pasted ticket body is one of the likeliest places for a real
+			// credential, and the text around it must survive.
+			name:           "a secret in a ticket body is replaced",
+			text:           "The runner is configured with the token " + fixtureGitHubPAT + " and still gets a 401.",
+			wantText:       "The runner is configured with the token [REDACTED:github-pat] and still gets a 401.",
+			wantChanged:    true,
+			mustNotContain: fixtureGitHubPAT,
+		},
+		{
+			name:     "markdown and line breaks survive",
+			text:     "## Problem\n\n- item one\n- item \"two\"\n",
+			wantText: "## Problem\n\n- item one\n- item \"two\"\n",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, report, err := RedactSpecText(context.Background(), tc.text)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantText, got)
+			assert.Equal(t, tc.wantChanged, report.Changed())
+			if tc.mustNotContain != "" {
+				assert.NotContains(t, got, tc.mustNotContain)
+			}
+		})
+	}
 }

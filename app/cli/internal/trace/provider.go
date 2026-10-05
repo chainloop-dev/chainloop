@@ -30,6 +30,29 @@ import (
 // single-use content can keep it rather than throw it away unseen.
 var ErrAnnounceUnsupported = errors.New("agent cannot show messages to the user")
 
+// SessionStartMessage is everything the session-start hook has to say, on the
+// two channels an agent offers: one the user reads, one the model reads.
+//
+// It is one value rather than two calls because an agent parses a hook's stdout
+// as a single JSON document. A second write would be discarded, silently,
+// together with whatever it carried — so the two channels are made inseparable
+// here rather than left to each caller to remember.
+type SessionStartMessage struct {
+	// Banner is shown to the user verbatim by the agent client, without
+	// costing a model turn. Empty means nothing is shown.
+	Banner string
+
+	// Instruction is addressed to the model rather than the user: it reaches
+	// the session's context so the agent can act on it. Empty means the model
+	// is told nothing.
+	Instruction string
+}
+
+// Empty reports that there is nothing to deliver on either channel.
+func (m SessionStartMessage) Empty() bool {
+	return m.Banner == "" && m.Instruction == ""
+}
+
 // Provider discovers and parses AI coding sessions for a specific agent.
 //
 // Providers are stateless singletons from a registry, so the state-touching
@@ -104,14 +127,22 @@ type Provider interface {
 	// working-tree snapshot instead of a per-file snapshot.
 	IsCommandTool(toolName string) bool
 
-	// SystemMessage writes a message to stdout for the agent to display on session start.
-	SystemMessage(msg string) error
+	// AnnounceSessionStart writes the session-start hook response to stdout,
+	// as the one document the agent will read. A message with nothing on
+	// either channel emits nothing, so the hook stays a no-op rather than
+	// handing the agent an empty envelope to parse.
+	AnnounceSessionStart(msg SessionStartMessage) error
 
-	// SupportsSystemMessage reports whether SystemMessage reaches the user
-	// rather than being discarded. Callers check it before assembling a
-	// message that costs something to produce, since for agents without
-	// such a channel that work buys nothing.
-	SupportsSystemMessage() bool
+	// SupportsSessionStartBanner reports whether the Banner of a message
+	// handed to AnnounceSessionStart reaches the user rather than being
+	// discarded. Callers check it before composing the banner, which costs a
+	// control-plane round trip.
+	SupportsSessionStartBanner() bool
+
+	// SupportsSessionStartInstruction reports whether the Instruction of a
+	// message handed to AnnounceSessionStart reaches the model rather than
+	// being discarded.
+	SupportsSessionStartInstruction() bool
 
 	// AnnounceToUser writes a hook response to stdout so the agent puts msg
 	// in front of the user, after a shell command the agent ran. Which

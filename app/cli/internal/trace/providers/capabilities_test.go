@@ -25,30 +25,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestSupportsSystemMessage pins which agents can actually show the
-// session-start banner. Callers use this to decide whether building the
-// banner is worth its cost, so a provider claiming support it does not have
-// buys a control-plane round trip for a message nobody reads.
-func TestSupportsSystemMessage(t *testing.T) {
+// TestSessionStartChannels pins which agents can actually receive each part of
+// the session-start message. Callers use this to decide whether building a
+// part is worth its cost, so a provider claiming support it does not have buys
+// a control-plane round trip for a banner nobody reads, or an instruction no
+// model acts on.
+func TestSessionStartChannels(t *testing.T) {
 	testCases := []struct {
-		provider string
-		want     bool
-		why      string
+		provider        string
+		wantBanner      bool
+		wantInstruction bool
+		why             string
 	}{
 		{
-			provider: claude.Name,
-			want:     true,
-			why:      "Claude Code renders the systemMessage field of a hook response",
+			provider:        claude.Name,
+			wantBanner:      true,
+			wantInstruction: true,
+			why:             "Claude Code renders systemMessage to the user and feeds additionalContext to the model",
 		},
 		{
-			provider: cursor.Name,
-			want:     false,
-			why:      "Cursor's hook response has no channel for displaying text",
+			provider:        cursor.Name,
+			wantBanner:      false,
+			wantInstruction: true,
+			why:             "Cursor's sessionStart response feeds additional_context to the model and has no field the user sees",
 		},
 		{
-			provider: opencode.Name,
-			want:     false,
-			why:      "opencode's plugin system has no equivalent channel",
+			provider:        opencode.Name,
+			wantBanner:      false,
+			wantInstruction: true,
+			why:             "the opencode plugin posts the instruction as a context-only message and has no banner",
 		},
 	}
 
@@ -57,18 +62,19 @@ func TestSupportsSystemMessage(t *testing.T) {
 			p := ByName(tc.provider)
 			require.NotNil(t, p, "provider %q is not registered", tc.provider)
 
-			assert.Equal(t, tc.want, p.SupportsSystemMessage(), tc.why)
+			assert.Equal(t, tc.wantBanner, p.SupportsSessionStartBanner(), tc.why)
+			assert.Equal(t, tc.wantInstruction, p.SupportsSessionStartInstruction(), tc.why)
 		})
 	}
 }
 
-// TestSupportsSystemMessageCoversEveryProvider fails when a provider is added
+// TestSessionStartChannelsCoverEveryProvider fails when a provider is added
 // without a decision recorded above, since the default zero value would
 // silently claim no support.
-func TestSupportsSystemMessageCoversEveryProvider(t *testing.T) {
+func TestSessionStartChannelsCoverEveryProvider(t *testing.T) {
 	known := map[string]bool{claude.Name: true, cursor.Name: true, opencode.Name: true}
 
 	for _, p := range All() {
-		assert.True(t, known[p.Name()], "provider %q has no SupportsSystemMessage expectation", p.Name())
+		assert.True(t, known[p.Name()], "provider %q has no session-start channel expectation", p.Name())
 	}
 }

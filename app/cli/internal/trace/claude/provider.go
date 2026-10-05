@@ -205,21 +205,46 @@ func (p *Provider) IsCommandTool(toolName string) bool {
 	return slices.Contains(commandTools, toolName)
 }
 
-// SupportsSystemMessage is true for Claude Code: it renders the
+// SupportsSessionStartBanner is true for Claude Code: it renders the
 // systemMessage field of a hook response directly to the user.
-func (p *Provider) SupportsSystemMessage() bool {
+func (p *Provider) SupportsSessionStartBanner() bool {
 	return true
 }
 
-// SystemMessage writes a message to stdout for Claude Code to display on session start.
-func (p *Provider) SystemMessage(msg string) error {
-	if msg == "" {
+// SupportsSessionStartInstruction is true for Claude Code: it feeds the
+// additionalContext field of a SessionStart hook response to the model.
+func (p *Provider) SupportsSessionStartInstruction() bool {
+	return true
+}
+
+// AnnounceSessionStart emits a SessionStart hook response carrying both of
+// Claude Code's delivery channels in one document: systemMessage, which the
+// client prints to the user without involving the model, and additionalContext,
+// which the model reads and acts on.
+//
+// systemMessage must stay top-level; nested inside hookSpecificOutput it is
+// silently ignored. The event name is the one that fired, not the one
+// AnnounceToUser hardcodes for its own, different hook.
+func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
+	if msg.Empty() {
 		return nil
 	}
 
+	type hookSpecificOutput struct {
+		HookEventName     string `json:"hookEventName"`
+		AdditionalContext string `json:"additionalContext,omitempty"`
+	}
+
 	resp := struct {
-		SystemMessage string `json:"systemMessage"`
-	}{SystemMessage: msg}
+		SystemMessage      string             `json:"systemMessage,omitempty"`
+		HookSpecificOutput hookSpecificOutput `json:"hookSpecificOutput"`
+	}{
+		SystemMessage: msg.Banner,
+		HookSpecificOutput: hookSpecificOutput{
+			HookEventName:     eventSessionStart,
+			AdditionalContext: msg.Instruction,
+		},
+	}
 
 	return json.NewEncoder(os.Stdout).Encode(resp)
 }
