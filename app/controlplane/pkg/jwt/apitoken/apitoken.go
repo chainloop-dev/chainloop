@@ -16,9 +16,12 @@
 package apitoken
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -77,7 +80,13 @@ type GenerateJWTOptions struct {
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
 	ExpiresAt    *time.Time
-	Scope        *string
+	// Scope is the legacy instance-admin claim. The platform and control planes up to v1.112
+	// read it, so instance tokens keep carrying it.
+	Scope *string
+	// ScopeType and ScopeID are what the token is scoped to, as its row records them. ScopeType
+	// is required. ScopeID is unset only for an instance token.
+	ScopeType *authz.ResourceType
+	ScopeID   *uuid.UUID
 }
 
 // GenerateJWT creates a new JWT token for the given organization and keyID
@@ -126,6 +135,22 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.WorkflowName = *opts.WorkflowName
 	}
 
+	if opts.ScopeID != nil && opts.ScopeType == nil {
+		return "", errors.New("scopeType is required when scopeID is set")
+	}
+
+	if opts.ScopeType != nil {
+		claims.ScopeType = string(*opts.ScopeType)
+		if opts.ScopeID != nil {
+			claims.ScopeID = opts.ScopeID.String()
+		}
+
+		// Never sign a token whose claims contradict themselves
+		if _, _, err := claims.SignedScope(); err != nil {
+			return "", fmt.Errorf("inconsistent token scope: %w", err)
+		}
+	}
+
 	// optional expiration value, i.e 30 days
 	if opts.ExpiresAt != nil {
 		claims.ExpiresAt = jwt.NewNumericDate(*opts.ExpiresAt)
@@ -144,5 +169,129 @@ type CustomClaims struct {
 	WorkflowID   string `json:"workflow_id,omitempty"`
 	WorkflowName string `json:"workflow_name,omitempty"`
 	Scope        string `json:"scope,omitempty"`
+	// ScopeType and ScopeID bind the token to what it was granted. A token minted before they
+	// existed carries neither, and SignedScope derives its scope from the claims it does carry.
+	ScopeType string `json:"scope_type,omitempty"`
+	ScopeID   string `json:"scope_id,omitempty"`
 	jwt.RegisteredClaims
+}
+
+// SignedScope returns the scope the claims bind the token to, and refuses claims that contradict
+// themselves. A token minted with the scope_type and scope_id claims gets those. An older token
+// gets the scope its other claims imply, by the rule the scope backfill migration applied to its
+// row. A product token minted before the scope claims implies only its organization.
+func (c *CustomClaims) SignedScope() (authz.ResourceType, *uuid.UUID, error) {
+	kind, id, err := c.namedScope()
+	if err != nil {
+		return "", nil, err
+	}
+
+	if err := c.agreesWith(kind, id); err != nil {
+		return "", nil, err
+	}
+
+	return kind, id, nil
+}
+
+// namedScope is the scope the scope_type and scope_id claims name, else the one the claims of an
+// older token imply.
+func (c *CustomClaims) namedScope() (authz.ResourceType, *uuid.UUID, error) {
+	if c.ScopeType == "" {
+		return c.legacyScope()
+	}
+
+	kind := authz.ResourceType(c.ScopeType)
+	switch kind {
+	case authz.ResourceTypeInstance:
+		if c.ScopeID != "" {
+			return "", nil, errors.New("an instance scope names no resource")
+		}
+
+		return kind, nil, nil
+	case authz.ResourceTypeOrganization, authz.ResourceTypeProject, authz.ResourceTypeProduct:
+		id, err := uuid.Parse(c.ScopeID)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid scope_id claim: %w", err)
+		}
+
+		return kind, &id, nil
+	default:
+		return "", nil, fmt.Errorf("unknown scope_type claim %q", c.ScopeType)
+	}
+}
+
+// legacyScope is the scope the claims of a token minted before the scope_type claim imply: the
+// instance for the instance-admin claim, else its project, else its organization.
+func (c *CustomClaims) legacyScope() (authz.ResourceType, *uuid.UUID, error) {
+	var kind authz.ResourceType
+	var raw string
+	switch {
+	case c.Scope == authz.ScopeInstanceAdmin:
+		return authz.ResourceTypeInstance, nil, nil
+	case c.ProjectID != "":
+		kind, raw = authz.ResourceTypeProject, c.ProjectID
+	case c.OrgID != "":
+		kind, raw = authz.ResourceTypeOrganization, c.OrgID
+	default:
+		return "", nil, errors.New("the claims name no scope")
+	}
+
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid %s claim: %w", kind, err)
+	}
+
+	return kind, &id, nil
+}
+
+// agreesWith checks that the other claims fit the scope, so that every reader of the token, the
+// platform's included, reads the same scope off it. Only an instance token carries the
+// instance-admin claim, and it names no organization. An organization token names its own
+// organization, a project token the project it is scoped to, and a workflow comes with its
+// project.
+func (c *CustomClaims) agreesWith(kind authz.ResourceType, id *uuid.UUID) error {
+	if (c.Scope == authz.ScopeInstanceAdmin) != (kind == authz.ResourceTypeInstance) {
+		return errors.New("the instance-admin claim does not agree with the scope")
+	}
+
+	if c.WorkflowID != "" && c.ProjectID == "" {
+		return errors.New("a workflow claim needs a project claim")
+	}
+
+	switch kind {
+	case authz.ResourceTypeInstance:
+		if c.OrgID != "" || c.ProjectID != "" {
+			return errors.New("an instance scope names no organization or project")
+		}
+	case authz.ResourceTypeOrganization:
+		if c.OrgID != id.String() || c.ProjectID != "" {
+			return errors.New("an organization scope names its own organization and no project")
+		}
+	case authz.ResourceTypeProject:
+		if c.OrgID == "" || c.ProjectID != id.String() {
+			return errors.New("a project scope names its organization and its own project")
+		}
+	case authz.ResourceTypeProduct:
+		if c.OrgID == "" || c.ProjectID != "" {
+			return errors.New("a product scope names its organization and no project")
+		}
+	}
+
+	return nil
+}
+
+// ClaimsFromMap reads API-token claims that were parsed generically, as the API entry point
+// receives them. A claim of the wrong type is an error, not an absent claim.
+func ClaimsFromMap(m jwt.MapClaims) (*CustomClaims, error) {
+	raw, err := json.Marshal(m)
+	if err != nil {
+		return nil, fmt.Errorf("encoding claims: %w", err)
+	}
+
+	claims := &CustomClaims{}
+	if err := json.Unmarshal(raw, claims); err != nil {
+		return nil, fmt.Errorf("decoding claims: %w", err)
+	}
+
+	return claims, nil
 }
