@@ -38,7 +38,7 @@ The system MUST give the agent a short capture reminder at each user prompt, in 
 ### R-003: Four cases only
 The reminder MUST tell the agent to capture in these cases only:
 - The user pastes or gives a new spec.
-- The user gives an image as a file path or a URL. The agent copies the file. For a pasted image, the agent writes a description, as D-010 of Spec 002 says.
+- The user gives an image as a file path or a URL. The agent copies the file. The agent does not capture a pasted image (D-009).
 - The user approves a plan. The agent captures it as kind `text`.
 - A spec changes, also when the session itself edits it.
 
@@ -60,7 +60,7 @@ The user does nothing new.
 
 At session start, the trace hook gives the full capture instruction, as in Spec 002. The instruction no longer lists "a written prompt" as a source. It tells the agent that the transcript already holds the conversation, so a prompt is not a spec. Kind `text` stays for a plan that the user approved in the session and for spec text that came from outside the conversation.
 
-At each user prompt, the trace hook adds a short reminder to the agent context. The reminder names the session folder and covers four cases. When the user pastes or gives a new spec, copy it. When the user gives an image file or URL, copy it. For a pasted image, write a description. When the user approves a plan, write it as kind `text`. When a spec changes, copy it again. The reminder says nothing else. A spec that the session writes, for example a design note in a local notes folder, is a spec that changes. Its local path is the source address. The push records the content on disk at push time, so the final version of a plan replaces its drafts.
+At each user prompt, the trace hook adds a short reminder to the agent context. The reminder names the session folder and covers four cases. When the user pastes or gives a new spec, copy it. When the user gives an image file or URL, copy it. When the user approves a plan, write it as kind `text`. When a spec changes, copy it again. The reminder says nothing else. A spec that the session writes, for example a design note in a local notes folder, is a spec that changes. Its local path is the source address. The push records the content on disk at push time, so the final version of a plan replaces its drafts.
 
 The reminder replaces the old rule that gave the session-start instruction only while the folder was empty. A resumed session gets the reminder at its first user prompt, so it does not need the full instruction again.
 
@@ -110,6 +110,7 @@ sequenceDiagram
 | D-006 | Relation to Spec 002 | This spec changes Spec 002 and does not supersede it | Most of the capture design does not change. | drafting |
 | D-007 | Control of overcapture from the reminder | Measure the number of spec files for each session after release. Make the reminder narrower if the number grows | The four cases are already narrow. Data from real sessions shows if more limits are necessary. | drafting |
 | D-008 | Cursor | The session-start instruction only, until Cursor documents a channel that adds context at prompt submit | No channel to use today. | drafting |
+| D-009 | Pasted images | Do not capture a pasted image. Record it as a known limitation | The agent cannot copy the bytes of a pasted image into the folder. A description that the agent writes is not the image, so it adds little value. Rejected: a description of kind `image` (D-010 of Spec 002). This spec changes that decision. | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3516#discussion_r4183303763) |
 
 ## Open Questions
 None.
@@ -121,3 +122,4 @@ None.
 | The agent ignores the reminder, as it ignored the instruction to add a file when the task changed. | The reminder comes at each turn, near the work, and not only at session start. The capture rate of Spec 002 (R-010) stays measurable. |
 | A spec written and pushed in the same turn is not captured, because the next reminder comes later. | The session-start instruction still says to update the folder when the task changes. The next push with a new commit records it. |
 | The reminder adds tokens to each turn. | Keep it to a few lines. The full instruction stays at session start only. |
+| Known limitation: the evidence does not hold a pasted image as a spec (D-009). | The transcript still holds the conversation. A later version can take the image bytes from the transcript at push time. |
