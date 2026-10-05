@@ -141,10 +141,13 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
     },
     "tool.execute.before": async (input, output) => {
       if (commandTools.includes(input.tool)) {
+        // callID pairs this hook with the tool.execute.after of the same
+        // call, so overlapping commands keep their own snapshots.
         await fire("pre-tool-use", {
           session_id: input.sessionID,
           hook_event_name: "tool.execute.before",
           tool_name: input.tool,
+          tool_use_id: input.callID,
         })
         return
       }
@@ -164,6 +167,7 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
           session_id: input.sessionID,
           hook_event_name: "tool.execute.after",
           tool_name: input.tool,
+          tool_use_id: input.callID,
         })
         return
       }
@@ -267,6 +271,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		HookEventName string `json:"hook_event_name"`
 		ToolName      string `json:"tool_name"`
 		FilePath      string `json:"file_path"`
+		ToolUseID     string `json:"tool_use_id"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -277,6 +282,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		HookEventName: raw.HookEventName,
 		ToolName:      raw.ToolName,
 		FilePath:      raw.FilePath,
+		ToolUseID:     raw.ToolUseID,
 	}, nil
 }
 

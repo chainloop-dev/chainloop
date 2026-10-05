@@ -16,67 +16,99 @@
 package state
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+const shellSessionID = "sess-123"
+
 func TestShellPreSignatureRoundTrip(t *testing.T) {
 	cases := []struct {
-		name    string
-		agentID string
+		name string
+		key  ShellCallKey
 	}{
-		{name: "main session", agentID: ""},
-		{name: "subagent", agentID: "afd65659e2015d48d"},
+		{name: "main session", key: ShellCallKey{SessionID: shellSessionID}},
+		{name: "subagent", key: ShellCallKey{SessionID: shellSessionID, AgentID: "afd65659e2015d48d"}},
+		{name: "tool call", key: ShellCallKey{SessionID: shellSessionID, ToolUseID: "toolu_01ABC"}},
+		{name: "subagent tool call", key: ShellCallKey{SessionID: shellSessionID, AgentID: "afd65659e2015d48d", ToolUseID: "toolu_01ABC"}},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := NewGitStore(t.TempDir())
-			sessionID := "sess-123"
-			sig := map[string]string{
-				"a.go":       "hash-a",
-				"sub/b.json": "hash-b",
+			sig := WorktreeSignatures{
+				"/repo/home": {
+					fileA:        "hash-a",
+					"sub/b.json": "hash-b",
+				},
+				"/repo/other": {
+					"c.ts": "hash-c",
+				},
 			}
 
-			require.NoError(t, store.SaveShellPreSignature(sessionID, tc.agentID, sig))
+			require.NoError(t, store.SaveShellPreSignature(tc.key, sig))
 
-			loaded, err := store.LoadShellPreSignature(sessionID, tc.agentID)
+			loaded, err := store.LoadShellPreSignature(tc.key)
 			require.NoError(t, err)
 			assert.Equal(t, sig, loaded)
 
-			store.DeleteShellPreSignature(sessionID, tc.agentID)
+			store.DeleteShellPreSignature(tc.key)
 
-			_, err = store.LoadShellPreSignature(sessionID, tc.agentID)
+			_, err = store.LoadShellPreSignature(tc.key)
 			assert.Error(t, err, "signature should be gone after delete")
 		})
 	}
 }
 
-// A subagent shares its parent's session ID. Their shell commands can overlap,
-// so each agent needs its own slot or one deletes the other's signature.
-func TestShellPreSignaturePerAgent(t *testing.T) {
+// Shell commands can overlap: a subagent shares its parent's session ID, and
+// one agent can run several commands at once. Each command needs its own slot,
+// or the first post hook to finish deletes a signature another command still
+// needs.
+func TestShellPreSignatureSlots(t *testing.T) {
+	keys := []ShellCallKey{
+		{SessionID: shellSessionID},
+		{SessionID: shellSessionID, AgentID: "agent-1"},
+		{SessionID: shellSessionID, AgentID: "agent-2"},
+		{SessionID: shellSessionID, ToolUseID: "toolu_1"},
+		{SessionID: shellSessionID, ToolUseID: "toolu_2"},
+		{SessionID: shellSessionID, AgentID: "agent-1", ToolUseID: "toolu_3"},
+	}
+
 	store := NewGitStore(t.TempDir())
-	const sessionID = "sess-123"
-	parent := map[string]string{"a.go": "parent"}
-	sub1 := map[string]string{"a.go": "sub1"}
-	sub2 := map[string]string{"a.go": "sub2"}
+	for i, key := range keys {
+		require.NoError(t, store.SaveShellPreSignature(key, WorktreeSignatures{"/repo": {fileA: fmt.Sprint(i)}}))
+	}
 
-	require.NoError(t, store.SaveShellPreSignature(sessionID, "", parent))
-	require.NoError(t, store.SaveShellPreSignature(sessionID, "agent-1", sub1))
-	require.NoError(t, store.SaveShellPreSignature(sessionID, "agent-2", sub2))
+	deleted := keys[1]
+	store.DeleteShellPreSignature(deleted)
 
-	store.DeleteShellPreSignature(sessionID, "agent-1")
+	for i, key := range keys {
+		got, err := store.LoadShellPreSignature(key)
+		if key == deleted {
+			assert.Error(t, err, "deleted slot %+v", key)
+			continue
+		}
 
-	got, err := store.LoadShellPreSignature(sessionID, "")
-	require.NoError(t, err)
-	assert.Equal(t, parent, got)
+		require.NoError(t, err, "slot %+v", key)
+		assert.Equal(t, WorktreeSignatures{"/repo": {fileA: fmt.Sprint(i)}}, got, "slot %+v keeps its own signature", key)
+	}
+}
 
-	got, err = store.LoadShellPreSignature(sessionID, "agent-2")
-	require.NoError(t, err)
-	assert.Equal(t, sub2, got)
+// A CLI upgrade can land between the pre and post hooks of one command. The
+// earlier single-checkout format must then be rejected, not misread.
+func TestShellPreSignatureRejectsSingleCheckoutFormat(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	key := ShellCallKey{SessionID: shellSessionID}
 
-	_, err = store.LoadShellPreSignature(sessionID, "agent-1")
+	path := store.shellPreSignaturePath(key)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
+	require.NoError(t, os.WriteFile(path, []byte(`{"a.go":"hash-a"}`), 0600))
+
+	_, err := store.LoadShellPreSignature(key)
 	assert.Error(t, err)
 }

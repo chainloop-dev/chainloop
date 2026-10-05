@@ -139,6 +139,16 @@ func TestReadHookInputParsesValidInput(t *testing.T) {
 	assert.Equal(t, "/some/file.go", input.FilePath)
 }
 
+// The plugin sends opencode's callID as tool_use_id on shell hooks, so that
+// the pre and post hooks of one command pair their snapshots.
+func TestReadHookInputParsesToolUseID(t *testing.T) {
+	r := bytes.NewBufferString(`{"session_id":"ses_1","hook_event_name":"tool.execute.before","tool_name":"bash","tool_use_id":"call_01"}`)
+	p := New()
+	input, err := p.ReadHookInput(r)
+	require.NoError(t, err)
+	assert.Equal(t, "call_01", input.ToolUseID)
+}
+
 func TestReadHookInputApplyPatchSingleFile(t *testing.T) {
 	// apply_patch fires one hook per file, so each invocation still carries
 	// a single file_path — this is the shape the plugin emits after the fix.
