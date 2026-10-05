@@ -89,6 +89,7 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
       }
       if (event.type === "session.deleted") {
         const sessionID = event.properties?.info?.id ?? ""
+        childSessions.delete(sessionID)
         await fire("session-end", { session_id: sessionID, hook_event_name: "session.deleted" })
       }
     },

@@ -796,13 +796,13 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// Add evidence for each session: its spec materials first, so that the
 	// session material can record their digests, then the session itself.
 	attestedSessions := make([]string, 0, len(sessions))
-	attestedSpecs := make(map[string][]spec.Capture, len(sessions))
+	attestedSpecs := make(map[string][]string, len(sessions))
 	// One allocator for the whole attestation: names taken from the start of
 	// a session ID can repeat across sessions, and a repeated name would
 	// replace an earlier material.
 	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
-		entries, warnings := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
+		entries, warnings, stored := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
 		se.evidence.Data.Spec = entries
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
 
@@ -814,7 +814,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 			continue
 		}
 		attestedSessions = append(attestedSessions, se.sessionID)
-		attestedSpecs[se.sessionID] = se.specs
+		attestedSpecs[se.sessionID] = stored
 		log.Debug().Str("session", se.sessionID).Str("name", name).Int("spec_entries", len(entries)).Msg("evidence added")
 	}
 
@@ -857,8 +857,8 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	// A later push of each session keeps the spec files recorded here, so
 	// that the limit never drops a spec that is already in the evidence.
-	for sessionID, captures := range attestedSpecs {
-		recordPushedSpecs(store, sessionID, captures, log)
+	for sessionID, fileNames := range attestedSpecs {
+		recordPushedSpecs(store, sessionID, fileNames, log)
 	}
 
 	// Mark every AI commit included in this attestation as tracked so that a

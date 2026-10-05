@@ -110,7 +110,7 @@ These files are recorded as part of this session's evidence each time it is push
 // more.
 func specCaptureReminder(specDir string) string {
 	return fmt.Sprintf(`Chainloop spec capture. Folder: %s
-Capture only in these cases, with your file-writing tool, one file per source, each starting with frontmatter (kind: ticket, document, image or text; uri: the source, when there is one):
+Capture only in these cases, one file per source. Write each text file with your file-writing tool, starting with frontmatter (kind: ticket, document, image or text; uri: the source, when there is one). Copy an image file as it is, with no frontmatter:
 - The user pasted or gave a new spec: write its actual text.
 - The user gave an image as a file path or a URL: copy the file.
 - The user approved a plan: write it as kind text.
@@ -139,20 +139,13 @@ func readSessionSpecs(store *state.Store, repoRoot, sessionID string, log zerolo
 	return captures, warnings
 }
 
-// recordPushedSpecs keeps the names of the spec files that a push recorded,
-// for the later pushes of the session. A failure costs a later push its
-// order, never this push its evidence.
-func recordPushedSpecs(store *state.Store, sessionID string, captures []spec.Capture, log zerolog.Logger) {
-	if len(captures) == 0 {
-		return
-	}
-
-	names := make([]string, 0, len(captures))
-	for _, c := range captures {
-		names = append(names, c.FileName)
-	}
-
-	if err := store.AddRecordedSpecFiles(sessionID, names); err != nil {
+// recordPushedSpecs keeps the names of the spec files that a push stored, for
+// the next push of the session. The list replaces the one of the push before:
+// that push put its files first, so each of them that is still on disk is in
+// this list too. The list then never holds more than spec.MaxEntries names.
+// A failure costs a later push its order, never this push its evidence.
+func recordPushedSpecs(store *state.Store, sessionID string, fileNames []string, log zerolog.Logger) {
+	if err := store.SetRecordedSpecFiles(sessionID, fileNames); err != nil {
 		log.Debug().Err(err).Str("session", sessionID).Msg("could not keep the spec files this push recorded")
 	}
 }

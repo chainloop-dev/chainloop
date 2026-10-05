@@ -124,9 +124,10 @@ func Exists(repoRoot, sessionID string) bool {
 // each file it could not read and for the entries dropped for exceeding
 // MaxEntries.
 //
-// recorded names the files that earlier pushes of the session recorded, in
-// the order they were first recorded. Those come first and are never the ones
-// dropped. The other files follow, oldest first. The modification time alone
+// recorded names the files that the last push of the session stored, in the
+// order that push read them. Those come first and are never the ones dropped:
+// they are never more than MaxEntries, and each push puts the files of the
+// push before it first, so a file stays on the list from one push to the next. The other files follow, oldest first. The modification time alone
 // cannot give this order: an overwrite moves a file to the end, and the ticket
 // the session started from is the file the agent is most likely to update.
 //

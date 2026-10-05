@@ -214,8 +214,11 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
 // sessionDeletedHandler is the session.deleted block inserted for full install.
 // session.idle fires at the end of every agent turn and would prematurely end
 // the trace session; session.deleted fires only when the session is destroyed.
+// A deleted session gets no more messages, so it also leaves childSessions.
+// Trace run needs no such cleanup: the plugin ends with the wrapped command.
 const sessionDeletedHandler = `      if (event.type === "session.deleted") {
         const sessionID = event.properties?.info?.id ?? ""
+        childSessions.delete(sessionID)
         await fire("session-end", { session_id: sessionID, hook_event_name: "session.deleted" })
       }`
 

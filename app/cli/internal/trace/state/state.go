@@ -49,7 +49,7 @@ const (
 	// file again. It lives for the session, not for one push.
 	traceDirSpecRedactions = "spec-redactions"
 	// recordedSpecFilesName lists, inside a session's spec-redactions
-	// directory, the spec files that earlier pushes of the session recorded.
+	// directory, the spec files that the last push of the session stored.
 	recordedSpecFilesName = "recorded.json"
 
 	// Per-record file extensions inside the subdirectories above.
@@ -100,8 +100,8 @@ func (s *Store) SpecRedactionDir(sessionID string) string {
 	return filepath.Join(s.traceDirPath(), traceDirSpecRedactions, SanitizeID(sessionID))
 }
 
-// RecordedSpecFiles returns the names of the spec files that earlier pushes of
-// a session recorded, in the order they were first recorded. A session that
+// RecordedSpecFiles returns the names of the spec files that the last push of
+// a session stored, in the order that push read them. A session that
 // never pushed a spec has none.
 //
 // The list lives beside the redacted copies, whose names are digests and so
@@ -123,44 +123,48 @@ func (s *Store) RecordedSpecFiles(sessionID string) ([]string, error) {
 	return names, nil
 }
 
-// AddRecordedSpecFiles adds the spec files that a push recorded to the list
-// of the session. A file already on the list keeps its place, and a new one
-// goes last.
-func (s *Store) AddRecordedSpecFiles(sessionID string, names []string) error {
-	current, err := s.RecordedSpecFiles(sessionID)
-	if err != nil {
-		return err
+// SetRecordedSpecFiles replaces the list of the session with the spec files
+// that a push stored. An empty list removes it.
+//
+// The list is replaced, never merged, so there is no read before the write
+// for a concurrent push to race with. The new list goes to a temporary file
+// that is then renamed over the old one, so a reader never sees half of it.
+func (s *Store) SetRecordedSpecFiles(sessionID string, names []string) error {
+	path := s.recordedSpecFilesPath(sessionID)
+
+	if len(names) == 0 {
+		return removeIfExists(path)
 	}
 
-	seen := make(map[string]bool, len(current)+len(names))
-	for _, n := range current {
-		seen[n] = true
-	}
-
-	changed := false
-	for _, n := range names {
-		if seen[n] {
-			continue
-		}
-		seen[n] = true
-		current = append(current, n)
-		changed = true
-	}
-
-	if !changed {
-		return nil
-	}
-
-	data, err := json.Marshal(current)
+	data, err := json.Marshal(names)
 	if err != nil {
 		return fmt.Errorf("encode recorded spec files: %w", err)
 	}
 
-	if err := os.MkdirAll(s.SpecRedactionDir(sessionID), 0o700); err != nil {
+	dir := s.SpecRedactionDir(sessionID)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("create spec redaction directory: %w", err)
 	}
 
-	return os.WriteFile(s.recordedSpecFilesPath(sessionID), data, 0o600)
+	tmp, err := os.CreateTemp(dir, "."+recordedSpecFilesName+"-*")
+	if err != nil {
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Store) recordedSpecFilesPath(sessionID string) string {

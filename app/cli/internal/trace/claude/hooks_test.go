@@ -132,6 +132,9 @@ func TestInstallHooks(t *testing.T) {
 		sessionStart := hooks["SessionStart"].([]any)
 		assert.Len(t, sessionStart, 1)
 
+		promptSubmit := hooks["UserPromptSubmit"].([]any)
+		assert.Len(t, promptSubmit, 1)
+
 		preToolUse := hooks["PreToolUse"].([]any)
 		assert.Len(t, preToolUse, 1)
 
@@ -355,6 +358,7 @@ func TestInstallHooksForTraceRun(t *testing.T) {
 		hooks := settings["hooks"].(map[string]any)
 
 		assert.Contains(t, hooks, "SessionStart")
+		assert.Contains(t, hooks, "UserPromptSubmit")
 		assert.Contains(t, hooks, "PreToolUse")
 		assert.Contains(t, hooks, "PostToolUse")
 		assert.Contains(t, hooks, "PostToolUseFailure")

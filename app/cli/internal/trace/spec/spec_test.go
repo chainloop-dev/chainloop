@@ -323,13 +323,22 @@ func TestReadAll(t *testing.T) {
 
 	t.Run("a recorded file that is gone frees its place", func(t *testing.T) {
 		root := t.TempDir()
-		writeSpec(t, root, sessionID, "ticket.md", "the ticket", time.Now())
+		base := time.Date(2026, 9, 16, 10, 0, 0, 0, time.UTC)
+
+		// One more file than the limit is on disk. If the missing recorded
+		// file kept a place, two files would be dropped instead of one.
+		writeSpec(t, root, sessionID, "ticket.md", "the ticket", base)
+		for i := range MaxEntries {
+			name := fmt.Sprintf("spec-%02d.md", i)
+			writeSpec(t, root, sessionID, name, fmt.Sprintf("entry %d", i), base.Add(time.Duration(i+1)*time.Minute))
+		}
 
 		entries, warnings, err := ReadAll(root, sessionID, []string{"removed.md", "ticket.md"})
 
 		require.NoError(t, err)
-		assert.Empty(t, warnings)
-		require.Len(t, entries, 1)
+		require.Len(t, entries, MaxEntries, "every place goes to a file on disk")
+		require.Len(t, warnings, 1)
+		assert.Contains(t, warnings[0], "1 spec entries")
 		assert.Equal(t, "ticket.md", entries[0].FileName)
 	})
 }

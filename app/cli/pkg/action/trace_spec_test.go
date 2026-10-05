@@ -124,6 +124,7 @@ func TestSpecCaptureReminder(t *testing.T) {
 		{name: "no request prompt", want: "Do not capture the user's request prompt", why: "the transcript already holds it"},
 		{name: "the way out", want: "do nothing", why: "most turns have nothing to capture"},
 		{name: "the tool to use", want: "file-writing tool", why: "a shell heredoc is refused in a worktree-isolated session"},
+		{name: "an image keeps no header", want: "Copy an image file as it is, with no frontmatter", why: "a header written into an image file breaks the image"},
 	}
 
 	for _, tc := range testCases {
@@ -197,7 +198,7 @@ func TestSessionSpecsAcrossPushes(t *testing.T) {
 	captures, warnings := readSessionSpecs(store, root, sessionID, zerolog.Nop())
 	require.Len(t, captures, 1)
 	assert.Empty(t, warnings)
-	recordPushedSpecs(store, sessionID, captures, zerolog.Nop())
+	recordPushedSpecs(store, sessionID, fileNames(captures), zerolog.Nop())
 
 	// The session then adds more files than the limit allows, and overwrites
 	// the ticket last.
@@ -211,6 +212,27 @@ func TestSessionSpecsAcrossPushes(t *testing.T) {
 	require.Len(t, warnings, 1)
 	assert.Equal(t, "ticket.md", captures[0].FileName, "the starting ticket must stay")
 	assert.Contains(t, string(captures[0].Raw), "the updated ticket", "the push records the content at push time")
+
+	// The second push stores these files. The agent then deletes a note and
+	// adds one. The next push keeps every file the second push stored that
+	// is still on disk. The free place goes to the oldest new file: the note
+	// that the second push dropped, not the file added last.
+	recordPushedSpecs(store, sessionID, fileNames(captures), zerolog.Nop())
+	require.NoError(t, os.Remove(filepath.Join(dir, "note-00.md")))
+	write("late.md", "a late spec", base.Add(2*time.Hour))
+
+	captures, warnings = readSessionSpecs(store, root, sessionID, zerolog.Nop())
+	require.Len(t, captures, spec.MaxEntries)
+	require.Len(t, warnings, 1)
+	got := fileNames(captures)
+	assert.Equal(t, "ticket.md", got[0])
+	assert.Contains(t, got, fmt.Sprintf("note-%02d.md", spec.MaxEntries-1))
+	assert.NotContains(t, got, "late.md")
+
+	// The list holds one push only, so it never grows past the limit.
+	recorded, err := store.RecordedSpecFiles(sessionID)
+	require.NoError(t, err)
+	assert.LessOrEqual(t, len(recorded), spec.MaxEntries)
 }
 
 func TestSessionSpecInstructionOnResume(t *testing.T) {
@@ -266,4 +288,14 @@ func TestSessionSpecInstruction(t *testing.T) {
 
 		assert.Empty(t, sessionSpecInstruction(root, sessionID, true, zerolog.Nop()))
 	})
+}
+
+// fileNames returns the file names of captures, in order.
+func fileNames(captures []spec.Capture) []string {
+	names := make([]string, 0, len(captures))
+	for _, c := range captures {
+		names = append(names, c.FileName)
+	}
+
+	return names
 }
