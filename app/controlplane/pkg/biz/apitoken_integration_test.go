@@ -1261,15 +1261,19 @@ func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: randomName(), OrgID: s.org.ID, Project: s.p1.Name})
 	s.Require().NoError(err)
 
-	claimsOf := func(raw string) *apitoken.CustomClaims {
-		claims := &apitoken.CustomClaims{}
-		info, err := jwt.ParseWithClaims(raw, claims, func(_ *jwt.Token) (interface{}, error) {
+	// claimsOf verifies raw and returns its payload, as parsed and as the typed claims
+	claimsOf := func(raw string) (jwt.MapClaims, *apitoken.CustomClaims) {
+		payload := jwt.MapClaims{}
+		info, err := jwt.ParseWithClaims(raw, payload, func(_ *jwt.Token) (interface{}, error) {
 			return []byte("test"), nil
 		})
 		s.Require().NoError(err)
 		s.True(info.Valid)
 
-		return claims
+		claims, err := apitoken.ClaimsFromMap(payload)
+		s.Require().NoError(err)
+
+		return payload, claims
 	}
 
 	testCases := []struct {
@@ -1298,16 +1302,13 @@ func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 			s.Require().NoError(err)
 
 			for minted, raw := range map[string]string{"created": created.JWT, "regenerated": regenerated.JWT} {
-				claims := claimsOf(raw)
+				payload, claims := claimsOf(raw)
 				s.Equal(string(tc.wantScopeType), claims.ScopeType, minted)
 				s.Equal(tc.wantScopeID, claims.ScopeID, minted)
 				s.Equal(tc.wantScope, claims.Scope, minted)
 				s.NoError(stored.VerifyClaims(claims), minted)
 
 				// What changes during a token's life never goes into the JWT
-				payload := jwt.MapClaims{}
-				_, _, err := jwt.NewParser().ParseUnverified(raw, payload)
-				s.Require().NoError(err)
 				s.NotContains(payload, "project_ids", minted)
 				s.NotContains(payload, "policies", minted)
 				s.NotContains(payload, "product_id", minted)

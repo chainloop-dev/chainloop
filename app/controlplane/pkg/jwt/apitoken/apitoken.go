@@ -174,6 +174,12 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+// HasScopeClaims reports whether the token was signed with the scope_type claim. A token without
+// it was minted before the scope claims existed.
+func (c *CustomClaims) HasScopeClaims() bool {
+	return c.ScopeType != ""
+}
+
 // SignedScope returns the scope the claims bind the token to, and refuses claims that contradict
 // themselves. A token minted with the scope_type and scope_id claims gets those. An older token
 // gets the scope its other claims imply, by the rule the scope backfill migration applied to its
@@ -194,7 +200,7 @@ func (c *CustomClaims) SignedScope() (authz.ResourceType, *uuid.UUID, error) {
 // namedScope is the scope the scope_type and scope_id claims name, else the one the claims of an
 // older token imply.
 func (c *CustomClaims) namedScope() (authz.ResourceType, *uuid.UUID, error) {
-	if c.ScopeType == "" {
+	if !c.HasScopeClaims() {
 		return c.legacyScope()
 	}
 
@@ -219,7 +225,8 @@ func (c *CustomClaims) namedScope() (authz.ResourceType, *uuid.UUID, error) {
 }
 
 // legacyScope is the scope the claims of a token minted before the scope_type claim imply: the
-// instance for the instance-admin claim, else its project, else its organization.
+// instance for the instance-admin claim, else its project, else its organization. It is the rule
+// biz.newTokenScope and the scope backfill migration apply to the row, so the two agree.
 func (c *CustomClaims) legacyScope() (authz.ResourceType, *uuid.UUID, error) {
 	var kind authz.ResourceType
 	var raw string

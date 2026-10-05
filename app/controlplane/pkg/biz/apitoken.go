@@ -185,14 +185,15 @@ func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
 	if t.Scope == nil {
 		// Claims naming a scope mean the row was minted with one: it was cleared afterwards. Legacy
 		// claims name none, and a row that predates the scope columns records none.
-		if claims.ScopeType != "" {
-			return fmt.Errorf("API token records no scope: %w", ErrAPITokenClaimsMismatch)
+		err := errors.New("API token records no scope")
+		if claims.HasScopeClaims() {
+			err = fmt.Errorf("%w: %w", err, ErrAPITokenClaimsMismatch)
 		}
 
-		return errors.New("API token records no scope")
+		return err
 	}
 
-	if claims.ScopeType == "" && t.IsProductScoped() {
+	if !claims.HasScopeClaims() && t.IsProductScoped() {
 		return errors.New("API token was minted before its scope was signed, create a new one")
 	}
 

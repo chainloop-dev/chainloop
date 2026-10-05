@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
@@ -30,9 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/middleware"
 	jwtmiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
-	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -140,46 +137,30 @@ type authenticated struct {
 // naming orgName in the organization header.
 func authenticateAtBothEntryPoints(t *testing.T, tu *testhelpers.TestingUseCases, signed, orgName string) map[string]authenticated {
 	t.Helper()
-	const orgHeader = "Chainloop-Organization"
-	logger := log.NewHelper(log.NewStdLogger(io.Discard))
 
-	capture := func(out *authenticated) middleware.Handler {
-		return func(ctx context.Context, _ interface{}) (interface{}, error) {
-			out.token, out.org = entities.CurrentAPIToken(ctx), entities.CurrentOrg(ctx)
+	results := make(map[string]authenticated, len(apiTokenEntryPoints))
+	for entry, run := range apiTokenEntryPoints {
+		var got authenticated
+		got.err = run(tu.APIToken, tu.Organization, signed, orgName, func(ctx context.Context, _ interface{}) (interface{}, error) {
+			got.token, got.org = entities.CurrentAPIToken(ctx), entities.CurrentOrg(ctx)
 			return nil, nil
-		}
+		})
+		results[entry] = got
 	}
 
-	var api, attestation authenticated
-
-	claims := jwt.MapClaims{}
-	_, _, err := jwt.NewParser().ParseUnverified(signed, claims)
-	require.NoError(t, err)
-	ctx := transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{orgHeader: {orgName}}})
-	_, api.err = WithCurrentAPITokenAndOrgMiddleware(tu.APIToken, tu.Organization, logger)(capture(&api))(jwtmiddleware.NewContext(ctx, claims), nil)
-
-	ctx = transport.NewServerContext(context.Background(), &fakeTransport{header: headerCarrier{
-		authorizationHeader: {"Bearer " + signed},
-		orgHeader:           {orgName},
-	}})
-	_, attestation.err = middleware.Chain(
-		attjwtmiddleware.WithJWTMulti(log.NewStdLogger(io.Discard), attjwtmiddleware.NewAPITokenProvider("test")),
-		WithAttestationContextFromAPIToken(tu.APIToken, tu.Organization, logger),
-	)(capture(&attestation))(ctx, nil)
-
-	return map[string]authenticated{entryAPI: api, entryAttestation: attestation}
+	return results
 }
 
 // signLegacy signs claims the way a control plane from before the scope claims did, with the
 // testhelpers' signing key.
 func signLegacy(t *testing.T, tokenID uuid.UUID, claims jwt.MapClaims) string {
 	t.Helper()
-	all := jwt.MapClaims{"token_name": "legacy", claimJTI: tokenID.String(), "iss": "cp.chainloop", claimAud: []string{apitoken.Audience}}
+	all := jwt.MapClaims{"token_name": "legacy", claimJTI: tokenID.String(), "iss": testIssuer, claimAud: []string{apitoken.Audience}}
 	for k, v := range claims {
 		all[k] = v
 	}
 
-	signed, err := jwt.NewWithClaims(apitoken.SigningMethod, all).SignedString([]byte("test"))
+	signed, err := jwt.NewWithClaims(apitoken.SigningMethod, all).SignedString([]byte(testSigningKey))
 	require.NoError(t, err)
 
 	return signed
@@ -218,7 +199,8 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 
 	testCases := []struct {
 		name string
-		// row writes the columns the control plane that minted the token wrote
+		// row writes the columns the control plane that minted the token wrote. nil writes none,
+		// as for an instance token
 		row    func(*ent.APITokenCreate) *ent.APITokenCreate
 		claims jwt.MapClaims
 		header string
@@ -226,24 +208,24 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 		// the scope columns does during a rolling upgrade or after a rollback
 		afterBackfill bool
 
-		wantErr      string
-		wantScope    authz.ResourceType
-		wantScopeID  *uuid.UUID
-		wantOrg      *uuid.UUID
-		wantReachAll bool
-		wantReach    []uuid.UUID
+		wantErr     string
+		wantScope   authz.ResourceType
+		wantScopeID *uuid.UUID
+		wantOrg     *uuid.UUID
+		// wantReach is what the token is confined to, nil for every project of its organization
+		wantReach []uuid.UUID
 	}{
 		{
 			name:      "oldest organization token, no org_name claim",
 			row:       func(c *ent.APITokenCreate) *ent.APITokenCreate { return c.SetOrganizationID(orgID) },
 			claims:    jwt.MapClaims{claimOrgID: org.ID},
-			wantScope: authz.ResourceTypeOrganization, wantScopeID: &orgID, wantOrg: &orgID, wantReachAll: true,
+			wantScope: authz.ResourceTypeOrganization, wantScopeID: &orgID, wantOrg: &orgID,
 		},
 		{
 			name:   "organization token ignores the organization header",
 			row:    func(c *ent.APITokenCreate) *ent.APITokenCreate { return c.SetOrganizationID(orgID) },
 			claims: orgClaims, header: headerOrg.Name,
-			wantScope: authz.ResourceTypeOrganization, wantScopeID: &orgID, wantOrg: &orgID, wantReachAll: true,
+			wantScope: authz.ResourceTypeOrganization, wantScopeID: &orgID, wantOrg: &orgID,
 		},
 		{
 			name: "project token",
@@ -264,15 +246,13 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 		},
 		{
 			name:   "instance token takes the organization header",
-			row:    func(c *ent.APITokenCreate) *ent.APITokenCreate { return c },
 			claims: instanceClaims, header: headerOrg.Name,
-			wantScope: authz.ResourceTypeInstance, wantOrg: &headerOrgID, wantReachAll: true,
+			wantScope: authz.ResourceTypeInstance, wantOrg: &headerOrgID,
 		},
 		{
 			name:      "instance token without the header has no organization",
-			row:       func(c *ent.APITokenCreate) *ent.APITokenCreate { return c },
 			claims:    instanceClaims,
-			wantScope: authz.ResourceTypeInstance, wantReachAll: true,
+			wantScope: authz.ResourceTypeInstance,
 		},
 		{
 			name: "product token minted before the scope claims",
@@ -299,23 +279,27 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 		},
 		{
 			name:          "instance row written with no scope after the backfill",
-			row:           func(c *ent.APITokenCreate) *ent.APITokenCreate { return c },
 			claims:        instanceClaims,
 			afterBackfill: true,
 			wantErr:       errRecordsNoScope,
 		},
 	}
 
-	create := func(i int) uuid.UUID {
-		row, err := testCases[i].row(tu.Data.DB.APIToken.Create().SetName("legacy-" + uuid.NewString())).Save(ctx)
+	create := func(row func(*ent.APITokenCreate) *ent.APITokenCreate) uuid.UUID {
+		c := tu.Data.DB.APIToken.Create().SetName("legacy-" + uuid.NewString())
+		if row != nil {
+			c = row(c)
+		}
+
+		saved, err := c.Save(ctx)
 		require.NoError(t, err)
-		return row.ID
+		return saved.ID
 	}
 
 	ids := make([]uuid.UUID, len(testCases))
 	for i, tc := range testCases {
 		if !tc.afterBackfill {
-			ids[i] = create(i)
+			ids[i] = create(tc.row)
 		}
 	}
 
@@ -326,7 +310,7 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 
 	for i, tc := range testCases {
 		if tc.afterBackfill {
-			ids[i] = create(i)
+			ids[i] = create(tc.row)
 		}
 	}
 
@@ -350,7 +334,7 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 					require.NotNil(t, got.org, entry)
 					assert.Equal(t, tc.wantOrg.String(), got.org.ID, entry)
 				}
-				if tc.wantReachAll {
+				if tc.wantReach == nil {
 					assert.Nil(t, got.token.ReachableProjects(), entry)
 					assert.True(t, got.token.ReachesProject(other.ID), entry)
 				} else {

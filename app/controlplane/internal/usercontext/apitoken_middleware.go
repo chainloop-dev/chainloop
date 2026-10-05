@@ -85,13 +85,13 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
+				ctx, _, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
 
 				// legacy_claims counts the tokens minted before the scope claims, to plan their sunset
-				logger.Infow("msg", "[authN] processed credentials", "id", claims.ID, "type", "API-token", "projectID", claims.ProjectID, "legacy_claims", claims.ScopeType == "")
+				logger.Infow("msg", "[authN] processed credentials", "id", claims.ID, "type", "API-token", "projectID", claims.ProjectID, "legacy_claims", !claims.HasScopeClaims())
 			}
 
 			return handler(ctx, req)
@@ -130,62 +130,36 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, errors.New("error mapping the API-token claims")
 			}
 
-			ctx, err := setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
-			if err != nil {
-				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
-			}
-
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
+			ctx, token, err := setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
 
-			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "legacy_claims", claims.ScopeType == "")
+			// The robot account comes from the row the claims have just confirmed
+			ctx = WithRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String(), ProviderKey: attjwtmiddleware.APITokenProviderKey})
+
+			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "legacy_claims", !claims.HasScopeClaims())
 
 			return handler(ctx, req)
 		}
 	}
 }
 
-func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, tokenID string) (context.Context, error) {
-	if tokenID == "" {
-		return nil, errors.New("error retrieving the key ID from the API token")
-	}
-
-	// Check that the token exists and is not revoked
-	token, err := apiTokenUC.FindByID(ctx, tokenID)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving the API token: %w", err)
-	} else if token == nil {
-		return nil, errors.New("API token not found")
-	}
-
-	// Note: Expiration time does not need to be checked because that's done at the JWT
-	// verification layer, which happens before this middleware is called
-	if token.RevokedAt != nil {
-		return nil, errors.New("API token revoked")
-	}
-
-	ctx = WithRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String(), ProviderKey: attjwtmiddleware.APITokenProviderKey})
-
-	return ctx, nil
-}
-
-// Set the current organization and API-Token in the context. The row must agree with the claims
-// the token was signed with: they bind its scope, organization, project and workflow, and the row
-// only confirms them. What the row adds, its policies, its project list and its revocation, is
-// read from the row.
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, claims *apitoken.CustomClaims, logger *log.Helper) (context.Context, error) {
+// Set the current organization and API-Token in the context, and return the token's row. The row
+// must agree with the claims the token was signed with: they bind its scope, organization,
+// project and workflow, and the row only confirms them. What the row adds, its policies, its
+// project list and its revocation, is read from the row.
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, claims *apitoken.CustomClaims, logger *log.Helper) (context.Context, *biz.APIToken, error) {
 	if claims == nil || claims.ID == "" {
-		return nil, errors.New("error retrieving the key ID from the API token")
+		return nil, nil, errors.New("error retrieving the key ID from the API token")
 	}
 
 	// Check that the token exists and is not revoked
 	token, err := apiTokenUC.FindByID(ctx, claims.ID)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving the API token: %w", err)
+		return nil, nil, fmt.Errorf("error retrieving the API token: %w", err)
 	} else if token == nil {
-		return nil, errors.New("API token not found")
+		return nil, nil, errors.New("API token not found")
 	}
 
 	if err := token.VerifyClaims(claims); err != nil {
@@ -195,13 +169,13 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 			logger.Errorw("msg", "[authN] API token row disagrees with its signed claims", "id", claims.ID, "error", err)
 		}
 
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Note: Expiration time does not need to be checked because that's done at the JWT
 	// verification layer, which happens before this middleware is called
 	if token.RevokedAt != nil {
-		return nil, errors.New("API token revoked")
+		return nil, nil, errors.New("API token revoked")
 	}
 
 	// Handle instance admin tokens
@@ -213,9 +187,9 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 			// Load organization from header
 			org, err := orgUC.FindByName(ctx, orgName)
 			if err != nil {
-				return nil, fmt.Errorf("error retrieving the organization: %w", err)
+				return nil, nil, fmt.Errorf("error retrieving the organization: %w", err)
 			} else if org == nil {
-				return nil, errors.New("organization not found")
+				return nil, nil, errors.New("organization not found")
 			}
 
 			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt, Suspended: org.Suspended})
@@ -226,9 +200,9 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	} else {
 		org, err := orgUC.FindByID(ctx, token.OrganizationID.String())
 		if err != nil {
-			return nil, fmt.Errorf("error retrieving the organization: %w", err)
+			return nil, nil, fmt.Errorf("error retrieving the organization: %w", err)
 		} else if org == nil {
-			return nil, errors.New("organization not found")
+			return nil, nil, errors.New("organization not found")
 		}
 
 		// Set the current organization in the context
@@ -257,7 +231,7 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	subjectAPIToken := authz.SubjectAPIToken{ID: token.ID.String()}
 	ctx = WithAuthzSubject(ctx, subjectAPIToken.String())
 
-	return ctx, nil
+	return ctx, token, nil
 }
 
 func WithAPITokenUsageUpdater(apiTokenUC *biz.APITokenUseCase, logger *log.Helper) middleware.Middleware {
