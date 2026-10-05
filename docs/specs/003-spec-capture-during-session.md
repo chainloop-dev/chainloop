@@ -38,7 +38,7 @@ The system MUST give the agent a short capture reminder at each user prompt, in 
 ### R-003: Four cases only
 The reminder MUST tell the agent to capture in these cases only:
 - The user pastes or gives a new spec.
-- The user pastes or gives an image.
+- The user gives an image as a file path or a URL. The agent copies the file. For a pasted image, the agent writes a description, as D-010 of Spec 002 says.
 - The user approves a plan. The agent captures it as kind `text`.
 - A spec changes, also when the session itself edits it.
 
@@ -47,7 +47,8 @@ For a changed spec, the agent MUST overwrite its spec file with the current cont
 - Done when: the user approves a plan in the session. The push records that plan as a `text` spec.
 
 ### R-004: Higher file limit
-The push MUST record at most 25 spec files for each session. When there are more, it MUST keep the oldest files and record a warning, as Spec 002 does today.
+The push MUST record at most 25 spec files for each session. When there are more, it MUST record a warning, as Spec 002 does today. The push MUST NOT drop a file that an earlier push of the session recorded, also when the agent overwrote that file later. New files fill the remaining places, oldest first. The order of files on disk changes when the agent overwrites a file, so it MUST NOT decide which files the push keeps.
+- Done when: a session goes over 25 files after the agent overwrites its starting ticket. The push still records the starting ticket.
 
 ## Constraints
 - The repository is public. The instruction and the reminder text are visible to all users.
@@ -59,11 +60,11 @@ The user does nothing new.
 
 At session start, the trace hook gives the full capture instruction, as in Spec 002. The instruction no longer lists "a written prompt" as a source. It tells the agent that the transcript already holds the conversation, so a prompt is not a spec. Kind `text` stays for a plan that the user approved in the session and for spec text that came from outside the conversation.
 
-At each user prompt, the trace hook adds a short reminder to the agent context. The reminder names the session folder and covers four cases. When the user pastes or gives a new spec, copy it. When the user pastes or gives an image, copy it. When the user approves a plan, write it as kind `text`. When a spec changes, copy it again. The reminder says nothing else. A spec that the session writes, for example a design note in a local notes folder, is a spec that changes. Its local path is the source address. The push records the content on disk at push time, so the final version of a plan replaces its drafts.
+At each user prompt, the trace hook adds a short reminder to the agent context. The reminder names the session folder and covers four cases. When the user pastes or gives a new spec, copy it. When the user gives an image file or URL, copy it. For a pasted image, write a description. When the user approves a plan, write it as kind `text`. When a spec changes, copy it again. The reminder says nothing else. A spec that the session writes, for example a design note in a local notes folder, is a spec that changes. Its local path is the source address. The push records the content on disk at push time, so the final version of a plan replaces its drafts.
 
 The reminder replaces the old rule that gave the session-start instruction only while the folder was empty. A resumed session gets the reminder at its first user prompt, so it does not need the full instruction again.
 
-The push keeps the rules of Spec 002, with a limit of 25 files instead of 10. A push with no new AI-assisted commits still sends no attestation. The next AI-assisted commit records a spec that the agent added after the last push. The session-end hook still deletes the folder.
+The push keeps the rules of Spec 002, with a limit of 25 files instead of 10. Over the limit, it never drops a file that an earlier push of the session recorded. A push with no new AI-assisted commits still sends no attestation. The next AI-assisted commit records a spec that the agent added after the last push. The session-end hook still deletes the folder.
 
 Each agent receives the reminder through its own channel:
 
@@ -93,7 +94,7 @@ sequenceDiagram
         Agent->>Folder: Copy it, or overwrite its file
     end
     User->>CLI: git push
-    CLI->>Folder: Read up to 25 spec files
+    CLI->>Folder: Read up to 25 spec files, earlier recorded files first
     CLI->>CLI: Redact, upload, reference (as in Spec 002)
 ```
 
@@ -105,7 +106,7 @@ sequenceDiagram
 | D-002 | How the system finds specs after session start | A short reminder at each user prompt, with four cases: a new spec, a new image, an approved plan, a changed spec. The agent decides what a spec is | Simple, and it keeps D-001 of Spec 002. It covers resumed sessions. Four narrow cases keep the reminder short, so it does not overload the session. Rejected: a general rule to capture anything that looks like a spec (too much capture). Rejected: a list of known spec locations that a hook watches (a new configuration, and it misses specs at other paths). Rejected: the hook copies matching files itself (the CLI decides what a spec is, and captures noise). Rejected: a check at push time against the transcript (needs transcript analysis for each agent). Rejected: a reminder after each Markdown write (misses a spec that the agent only reads, and more hook logic). | drafting |
 | D-003 | A spec added after the last push, with no new AI-assisted commit | Record it with the next AI-assisted commit, as today | An attestation with no new commit is a duplicate of the session. Rejected: push a new attestation when the set of spec digests changed. | drafting |
 | D-004 | A push after the session ends | No change: the session-end hook deletes the folder, and that push holds no spec | Accepted in Spec 002. Rejected: keep the folder until the next push, with an age limit (state to track and clean for a rare case). | drafting |
-| D-005 | Spec file limit | Raise from 10 to 25 and keep the oldest files | The reminder makes more spec files likely in a long session. The oldest files are the sources the session started from. Rejected: keep the newest files (the start ticket can drop). | drafting |
+| D-005 | Spec file limit | Raise from 10 to 25. Never drop a file that an earlier push recorded. New files fill the remaining places, oldest first | The reminder makes more spec files likely in a long session. The oldest files are the sources the session started from. An overwrite changes the modification time of a file, so an order by modification time can drop an edited start ticket. Rejected: keep the newest files (the start ticket can drop). Rejected: keep the oldest files by modification time only (an overwritten file moves to the end). | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3516#discussion_r4182950724) |
 | D-006 | Relation to Spec 002 | This spec changes Spec 002 and does not supersede it | Most of the capture design does not change. | drafting |
 | D-007 | Control of overcapture from the reminder | Measure the number of spec files for each session after release. Make the reminder narrower if the number grows | The four cases are already narrow. Data from real sessions shows if more limits are necessary. | drafting |
 | D-008 | Cursor | The session-start instruction only, until Cursor documents a channel that adds context at prompt submit | No channel to use today. | drafting |
