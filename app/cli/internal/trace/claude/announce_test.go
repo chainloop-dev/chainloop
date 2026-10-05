@@ -159,6 +159,46 @@ func TestAnnounceSessionStart(t *testing.T) {
 	}
 }
 
+// TestAnnouncePromptSubmit pins the prompt-submit wire shape: Claude Code adds
+// additionalContext of a UserPromptSubmit response to the context of the turn.
+func TestAnnouncePromptSubmit(t *testing.T) {
+	const reminder = "Chainloop spec capture. Folder: /repo/.chainloop/specs/abc-123"
+
+	testCases := []struct {
+		name        string
+		reminder    string
+		wantEmitted bool
+	}{
+		{name: "a reminder reaches the model", reminder: reminder, wantEmitted: true},
+		{name: "nothing to say emits nothing", reminder: "", wantEmitted: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := captureStdout(t, func() {
+				require.NoError(t, New().AnnouncePromptSubmit(tc.reminder))
+			})
+
+			if !tc.wantEmitted {
+				assert.Empty(t, out)
+				return
+			}
+
+			var got map[string]any
+			require.NoError(t, json.Unmarshal([]byte(out), &got))
+
+			// The reminder is for the model only: a banner at every turn
+			// would distract the user.
+			assert.NotContains(t, got, "systemMessage")
+
+			hookOut, ok := got["hookSpecificOutput"].(map[string]any)
+			require.True(t, ok, "hookSpecificOutput must be present")
+			assert.Equal(t, "UserPromptSubmit", hookOut["hookEventName"], "the event must be the one that fired")
+			assert.Equal(t, tc.reminder, hookOut["additionalContext"])
+		})
+	}
+}
+
 // captureStdout runs fn with os.Stdout redirected to a pipe and returns
 // everything written to it. Reads to EOF rather than into a fixed buffer: a
 // truncated read would corrupt the payload these tests parse as JSON.

@@ -701,18 +701,11 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		// session was driven, not about which agent produced it.
 		result.Data.Session.Mode = sessionMode
 
-		// The sources the agent resolved at session start, from the directory
-		// the session-start hook handed it. Most sessions have none, and a
-		// failure to read them is never a reason to lose the session: evidence
-		// without a spec is still evidence.
-		// A spec left out of the evidence is recorded as a warning, so that
-		// the missing spec is visible to whoever reads the session.
-		captures, specWarnings, err := spec.ReadAll(repoRoot, sessionID)
-		if err != nil {
-			// The error stays in the local log: its text carries local paths.
-			log.Warn().Err(err).Str("session", sessionID).Msg("could not read the session spec; the session is attested without it")
-			specWarnings = append(specWarnings, "the session spec was not recorded: the spec folder could not be read")
-		}
+		// The sources the agent captured in the directory the session-start
+		// hook handed it. A spec left out of the evidence is recorded as a
+		// warning, so that the missing spec is visible to whoever reads the
+		// session.
+		captures, specWarnings := readSessionSpecs(store, repoRoot, sessionID, log)
 		result.Data.Warnings = append(result.Data.Warnings, specWarnings...)
 
 		// Apply repo-wide context with per-session commit overrides
@@ -803,12 +796,13 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// Add evidence for each session: its spec materials first, so that the
 	// session material can record their digests, then the session itself.
 	attestedSessions := make([]string, 0, len(sessions))
+	attestedSpecs := make(map[string][]string, len(sessions))
 	// One allocator for the whole attestation: names taken from the start of
 	// a session ID can repeat across sessions, and a repeated name would
 	// replace an earlier material.
 	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
-		entries, warnings := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
+		entries, warnings, stored := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
 		se.evidence.Data.Spec = entries
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
 
@@ -820,6 +814,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 			continue
 		}
 		attestedSessions = append(attestedSessions, se.sessionID)
+		attestedSpecs[se.sessionID] = stored
 		log.Debug().Str("session", se.sessionID).Str("name", name).Int("spec_entries", len(entries)).Msg("evidence added")
 	}
 
@@ -859,6 +854,12 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	}
 
 	log.Debug().Msg("attestation pushed, wiping single-use trace state")
+
+	// A later push of each session keeps the spec files recorded here, so
+	// that the limit never drops a spec that is already in the evidence.
+	for sessionID, fileNames := range attestedSpecs {
+		recordPushedSpecs(store, sessionID, fileNames, log)
+	}
 
 	// Mark every AI commit included in this attestation as tracked so that a
 	// subsequent `git push` with no new commits short-circuits at the skip

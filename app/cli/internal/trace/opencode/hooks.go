@@ -100,18 +100,26 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
     }
   }
 
-  // startSession fires the session-start hook and returns what it wrote to
-  // stdout: the instruction for the model, if Chainloop has one.
-  async function startSession(sessionID: string): Promise<string> {
-    const json = JSON.stringify({ session_id: sessionID, hook_event_name: "session.created" })
+  // instructionFrom fires a hook that can answer with an instruction for the
+  // model, and returns what it wrote to stdout: that instruction, if
+  // Chainloop has one.
+  async function instructionFrom(event: string, sessionID: string, hookEventName: string): Promise<string> {
+    const json = JSON.stringify({ session_id: sessionID, hook_event_name: hookEventName })
     try {
-      const out = await $` + bt + `echo ${json} | chainloop trace hook opencode session-start` + bt + `.text()
+      const out = await $` + bt + `echo ${json} | chainloop trace hook opencode ${event}` + bt + `.text()
       return out.trim() ? (JSON.parse(out).instruction ?? "") : ""
     } catch (err) {
-      console.error(` + bt + `chainloop-trace: session-start hook failed: ${err}` + bt + `)
+      console.error(` + bt + `chainloop-trace: ${event} hook failed: ${err}` + bt + `)
       return ""
     }
   }
+
+  // childSessions holds the sessions of subagents, whose parent session
+  // already gets the instruction and the reminder.
+  const childSessions = new Set<string>()
+  // reminding holds the sessions that have a reminder being posted. The post
+  // is a message too, and must not ask for another reminder.
+  const reminding = new Set<string>()
 
   // postInstruction adds the instruction to the session as a context-only
   // message: noReply stores it without asking the model for an answer. The
@@ -132,12 +140,30 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
       if (event.type === "session.created") {
         const info = event.properties?.info
         const sessionID = info?.id ?? ""
-        const instruction = await startSession(sessionID)
         // A child session belongs to a subagent, whose parent already has
         // the instruction.
+        if (info?.parentID) childSessions.add(sessionID)
+        const instruction = await instructionFrom("session-start", sessionID, "session.created")
         if (instruction && !info?.parentID) await postInstruction(sessionID, instruction)
       }
 {{SessionEndBlock}}
+    },
+    // At each user message, the user-prompt-submit hook can answer with a
+    // short reminder to capture a new or changed spec. A message made only of
+    // synthetic parts is one that the plugin posted itself.
+    "chat.message": async (input, output) => {
+      const sessionID = input.sessionID
+      if (childSessions.has(sessionID) || reminding.has(sessionID)) return
+      const parts: any[] = output?.parts ?? []
+      if (parts.length > 0 && parts.every((p) => p?.synthetic)) return
+      const reminder = await instructionFrom("user-prompt-submit", sessionID, "chat.message")
+      if (!reminder) return
+      reminding.add(sessionID)
+      try {
+        await postInstruction(sessionID, reminder)
+      } finally {
+        reminding.delete(sessionID)
+      }
     },
     "tool.execute.before": async (input, output) => {
       if (commandTools.includes(input.tool)) {
@@ -188,8 +214,11 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
 // sessionDeletedHandler is the session.deleted block inserted for full install.
 // session.idle fires at the end of every agent turn and would prematurely end
 // the trace session; session.deleted fires only when the session is destroyed.
+// A deleted session gets no more messages, so it also leaves childSessions.
+// Trace run needs no such cleanup: the plugin ends with the wrapped command.
 const sessionDeletedHandler = `      if (event.type === "session.deleted") {
         const sessionID = event.properties?.info?.id ?? ""
+        childSessions.delete(sessionID)
         await fire("session-end", { session_id: sessionID, hook_event_name: "session.deleted" })
       }`
 

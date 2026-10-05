@@ -64,19 +64,17 @@ type specMaterialAdder interface {
 // a warning, rather than failing the push: evidence without one of its specs
 // is still evidence, and a reference to a material that is not in the
 // attestation would point nowhere.
-func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names *materials.NameAllocator, sessionID string, captures []spec.Capture, log zerolog.Logger) ([]aicodingsession.SpecEntry, []string) {
+//
+// It also returns the names of the files it stored, in order, so that a
+// later push of the session keeps them first.
+func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names *materials.NameAllocator, sessionID string, captures []spec.Capture, log zerolog.Logger) (entries []aicodingsession.SpecEntry, warnings, stored []string) {
 	if len(captures) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
-
-	var (
-		entries  []aicodingsession.SpecEntry
-		warnings []string
-	)
 
 	tmpDir, err := os.MkdirTemp("", "chainloop-trace-spec-*")
 	if err != nil {
-		return nil, []string{fmt.Sprintf("%d spec entries were not recorded: %v", len(captures), err)}
+		return nil, []string{fmt.Sprintf("%d spec entries were not recorded: %v", len(captures), err)}, nil
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -94,9 +92,10 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 		}
 
 		entries = append(entries, entry)
+		stored = append(stored, c.FileName)
 	}
 
-	return entries, warnings
+	return entries, warnings, stored
 }
 
 // storeCapture redacts one capture, adds it to the attestation, and returns

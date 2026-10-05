@@ -178,7 +178,7 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	var msg trace.SessionStartMessage
 
 	if provider.SupportsSessionStartInstruction() {
-		msg.Instruction = sessionSpecInstruction(repoRoot, input.SessionID, log)
+		msg.Instruction = sessionSpecInstruction(repoRoot, input.SessionID, provider.SupportsPromptReminder(), log)
 	}
 
 	if provider.SupportsSessionStartBanner() {
@@ -196,6 +196,37 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 
 	if err := provider.AnnounceSessionStart(msg); err != nil {
 		log.Debug().Err(err).Msg("session-start: failed to send the session-start message")
+	}
+
+	return nil
+}
+
+// HandleAgentPromptSubmit handles the agent prompt-submit hook. It adds the
+// short spec capture reminder to the context of the turn, so that a spec given
+// or changed after the session start also reaches the evidence. It never
+// blocks the prompt: any failure only drops the reminder.
+func HandleAgentPromptSubmit(provider trace.Provider, log zerolog.Logger) error {
+	if !provider.SupportsPromptReminder() {
+		return nil
+	}
+
+	input, err := provider.ReadHookInput(os.Stdin)
+	if err != nil || !state.ValidSessionID(input.SessionID) {
+		log.Debug().Err(err).Msg("prompt-submit: no valid input")
+		return nil
+	}
+
+	log.Debug().Str("session_id", input.SessionID).Msg("prompt-submit hook invoked")
+
+	_, repoRoot, err := state.Locate()
+	if err != nil {
+		log.Debug().Err(err).Msg("prompt-submit: no trace state located")
+		return nil
+	}
+
+	reminder := sessionSpecReminder(repoRoot, input.SessionID, log)
+	if err := provider.AnnouncePromptSubmit(reminder); err != nil {
+		log.Debug().Err(err).Msg("prompt-submit: failed to send the spec reminder")
 	}
 
 	return nil
