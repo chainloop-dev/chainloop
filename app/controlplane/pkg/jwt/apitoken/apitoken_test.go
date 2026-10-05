@@ -69,6 +69,11 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
+const (
+	testKeyName = "key-name"
+	claimJTI    = "jti"
+)
+
 func TestGenerateJWT(t *testing.T) {
 	const hmacSecret = "my-secret"
 	org := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
@@ -86,39 +91,39 @@ func TestGenerateJWT(t *testing.T) {
 	}{
 		{
 			name: "organization token",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)), ScopeType: &orgScope, ScopeID: &org},
 		},
 		{
 			name: "no expiration",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ScopeType: &orgScope, ScopeID: &org},
 		},
 		{
 			name: "project token",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ProjectID: &project, ProjectName: toPtr("project-name"), ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
 				ScopeType: &projectScope, ScopeID: &project},
 		},
 		{
 			name: "workflow-pinned token",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ProjectID: &project, ProjectName: toPtr("project-name"), WorkflowID: &workflow, WorkflowName: toPtr("workflow-name"),
 				ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)), ScopeType: &projectScope, ScopeID: &project},
 		},
 		{
 			name: "product token",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ScopeType: &productScope, ScopeID: &product},
 		},
 		{
 			name: "instance token keeps the instance-admin claim",
-			opts: &GenerateJWTOptions{KeyName: "key-name", KeyID: keyID, ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
+			opts: &GenerateJWTOptions{KeyName: testKeyName, KeyID: keyID, ExpiresAt: toPtr(time.Now().Add(1 * time.Hour)),
 				Scope: toPtr("INSTANCE_ADMIN"), ScopeType: &instanceScope},
 		},
 		{
 			name: "missing keyID",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name",
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName,
 				ScopeType: &orgScope, ScopeID: &org},
 			wantErr: true,
 		},
@@ -130,24 +135,24 @@ func TestGenerateJWT(t *testing.T) {
 		},
 		{
 			name:    "a scope id without a scope type",
-			opts:    &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID, ScopeID: &org},
+			opts:    &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID, ScopeID: &org},
 			wantErr: true,
 		},
 		{
 			name: "an organization scope naming another organization",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ScopeType: &orgScope, ScopeID: &product},
 			wantErr: true,
 		},
 		{
 			name: "the instance-admin claim on an organization scope",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				Scope: toPtr("INSTANCE_ADMIN"), ScopeType: &orgScope, ScopeID: &org},
 			wantErr: true,
 		},
 		{
 			name: "a project scope naming another project",
-			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: "key-name", KeyID: keyID,
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ProjectID: &project, ProjectName: toPtr("project-name"), ScopeType: &projectScope, ScopeID: &product},
 			wantErr: true,
 		},
@@ -238,36 +243,36 @@ func TestSignedScope(t *testing.T) {
 		wantID   *uuid.UUID
 		wantErr  bool
 	}{
-		{name: "signed organization scope", claims: CustomClaims{OrgID: org.String(), ScopeType: "organization", ScopeID: org.String()}, wantKind: authz.ResourceTypeOrganization, wantID: &org},
-		{name: "signed project scope", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: "project", ScopeID: project.String()}, wantKind: authz.ResourceTypeProject, wantID: &project},
-		{name: "signed workflow-pinned scope", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), WorkflowID: workflow.String(), ScopeType: "project", ScopeID: project.String()}, wantKind: authz.ResourceTypeProject, wantID: &project},
-		{name: "signed product scope", claims: CustomClaims{OrgID: org.String(), ScopeType: "product", ScopeID: product.String()}, wantKind: authz.ResourceTypeProduct, wantID: &product},
-		{name: "signed instance scope", claims: CustomClaims{Scope: authz.ScopeInstanceAdmin, ScopeType: "instance"}, wantKind: authz.ResourceTypeInstance},
+		{name: "signed organization scope", claims: CustomClaims{OrgID: org.String(), ScopeType: string(authz.ResourceTypeOrganization), ScopeID: org.String()}, wantKind: authz.ResourceTypeOrganization, wantID: &org},
+		{name: "signed project scope", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: string(authz.ResourceTypeProject), ScopeID: project.String()}, wantKind: authz.ResourceTypeProject, wantID: &project},
+		{name: "signed workflow-pinned scope", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), WorkflowID: workflow.String(), ScopeType: string(authz.ResourceTypeProject), ScopeID: project.String()}, wantKind: authz.ResourceTypeProject, wantID: &project},
+		{name: "signed product scope", claims: CustomClaims{OrgID: org.String(), ScopeType: string(authz.ResourceTypeProduct), ScopeID: product.String()}, wantKind: authz.ResourceTypeProduct, wantID: &product},
+		{name: "signed instance scope", claims: CustomClaims{Scope: authz.ScopeInstanceAdmin, ScopeType: string(authz.ResourceTypeInstance)}, wantKind: authz.ResourceTypeInstance},
 		{name: "legacy instance-admin token", claims: CustomClaims{Scope: authz.ScopeInstanceAdmin}, wantKind: authz.ResourceTypeInstance},
 		{name: "legacy project token", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String()}, wantKind: authz.ResourceTypeProject, wantID: &project},
 		{name: "legacy workflow-pinned token", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), WorkflowID: workflow.String()}, wantKind: authz.ResourceTypeProject, wantID: &project},
 		{name: "legacy organization token", claims: CustomClaims{OrgID: org.String()}, wantKind: authz.ResourceTypeOrganization, wantID: &org},
 
 		// Malformed scope claims
-		{name: "an instance scope naming a resource", claims: CustomClaims{Scope: authz.ScopeInstanceAdmin, ScopeType: "instance", ScopeID: org.String()}, wantErr: true},
-		{name: "a resource scope without an id", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: "project"}, wantErr: true},
-		{name: "a scope id that is not a uuid", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: "project", ScopeID: "nope"}, wantErr: true},
+		{name: "an instance scope naming a resource", claims: CustomClaims{Scope: authz.ScopeInstanceAdmin, ScopeType: string(authz.ResourceTypeInstance), ScopeID: org.String()}, wantErr: true},
+		{name: "a resource scope without an id", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: string(authz.ResourceTypeProject)}, wantErr: true},
+		{name: "a scope id that is not a uuid", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: string(authz.ResourceTypeProject), ScopeID: "nope"}, wantErr: true},
 		{name: "a scope type no token has", claims: CustomClaims{OrgID: org.String(), ScopeType: "group", ScopeID: org.String()}, wantErr: true},
 		{name: "legacy claims naming nothing", claims: CustomClaims{}, wantErr: true},
 		{name: "a legacy project claim that is not a uuid", claims: CustomClaims{OrgID: org.String(), ProjectID: "nope"}, wantErr: true},
 
 		// Claims that contradict themselves: every reader must see the same scope
-		{name: "the instance-admin claim on an organization scope", claims: CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin, ScopeType: "organization", ScopeID: org.String()}, wantErr: true},
-		{name: "an instance scope without the instance-admin claim", claims: CustomClaims{ScopeType: "instance"}, wantErr: true},
-		{name: "an instance scope naming an organization", claims: CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin, ScopeType: "instance"}, wantErr: true},
+		{name: "the instance-admin claim on an organization scope", claims: CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin, ScopeType: string(authz.ResourceTypeOrganization), ScopeID: org.String()}, wantErr: true},
+		{name: "an instance scope without the instance-admin claim", claims: CustomClaims{ScopeType: string(authz.ResourceTypeInstance)}, wantErr: true},
+		{name: "an instance scope naming an organization", claims: CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin, ScopeType: string(authz.ResourceTypeInstance)}, wantErr: true},
 		{name: "a legacy instance-admin claim naming an organization", claims: CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin}, wantErr: true},
-		{name: "an organization scope naming another organization", claims: CustomClaims{OrgID: org.String(), ScopeType: "organization", ScopeID: other.String()}, wantErr: true},
-		{name: "an organization scope with a project claim", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: "organization", ScopeID: org.String()}, wantErr: true},
-		{name: "a project scope naming another project", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: "project", ScopeID: other.String()}, wantErr: true},
-		{name: "a project scope without an organization", claims: CustomClaims{ProjectID: project.String(), ScopeType: "project", ScopeID: project.String()}, wantErr: true},
-		{name: "a product scope with a project claim", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: "product", ScopeID: product.String()}, wantErr: true},
-		{name: "a product scope without an organization", claims: CustomClaims{ScopeType: "product", ScopeID: product.String()}, wantErr: true},
-		{name: "a workflow claim without a project claim", claims: CustomClaims{OrgID: org.String(), WorkflowID: workflow.String(), ScopeType: "organization", ScopeID: org.String()}, wantErr: true},
+		{name: "an organization scope naming another organization", claims: CustomClaims{OrgID: org.String(), ScopeType: string(authz.ResourceTypeOrganization), ScopeID: other.String()}, wantErr: true},
+		{name: "an organization scope with a project claim", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: string(authz.ResourceTypeOrganization), ScopeID: org.String()}, wantErr: true},
+		{name: "a project scope naming another project", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: string(authz.ResourceTypeProject), ScopeID: other.String()}, wantErr: true},
+		{name: "a project scope without an organization", claims: CustomClaims{ProjectID: project.String(), ScopeType: string(authz.ResourceTypeProject), ScopeID: project.String()}, wantErr: true},
+		{name: "a product scope with a project claim", claims: CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: string(authz.ResourceTypeProduct), ScopeID: product.String()}, wantErr: true},
+		{name: "a product scope without an organization", claims: CustomClaims{ScopeType: string(authz.ResourceTypeProduct), ScopeID: product.String()}, wantErr: true},
+		{name: "a workflow claim without a project claim", claims: CustomClaims{OrgID: org.String(), WorkflowID: workflow.String(), ScopeType: string(authz.ResourceTypeOrganization), ScopeID: org.String()}, wantErr: true},
 	}
 
 	for _, tc := range testCases {
@@ -295,24 +300,24 @@ func TestClaimsFromMap(t *testing.T) {
 		{
 			name: "every claim is read",
 			in: jwt.MapClaims{
-				"jti": "id", "aud": []any{Audience}, "org_id": "o", "org_name": "on", "token_name": "t",
+				claimJTI: "id", "aud": []any{Audience}, "org_id": "o", "org_name": "on", "token_name": "t",
 				"project_id": "p", "workflow_id": "w", "scope": authz.ScopeInstanceAdmin, "scope_type": "project", "scope_id": "s",
 			},
 			want: &CustomClaims{
 				OrgID: "o", OrgName: "on", KeyName: "t", ProjectID: "p", WorkflowID: "w",
-				Scope: authz.ScopeInstanceAdmin, ScopeType: "project", ScopeID: "s",
+				Scope: authz.ScopeInstanceAdmin, ScopeType: string(authz.ResourceTypeProject), ScopeID: "s",
 				RegisteredClaims: jwt.RegisteredClaims{ID: "id", Audience: jwt.ClaimStrings{Audience}},
 			},
 		},
 		{
 			name: "a single audience string is read",
-			in:   jwt.MapClaims{"jti": "id", "aud": Audience},
+			in:   jwt.MapClaims{claimJTI: "id", "aud": Audience},
 			want: &CustomClaims{RegisteredClaims: jwt.RegisteredClaims{ID: "id", Audience: jwt.ClaimStrings{Audience}}},
 		},
 		{
 			// The API entry point used to drop such a claim silently and skip its cross-check
 			name:    "a claim of the wrong type is refused",
-			in:      jwt.MapClaims{"jti": "id", "project_id": 42},
+			in:      jwt.MapClaims{claimJTI: "id", "project_id": 42},
 			wantErr: true,
 		},
 	}
