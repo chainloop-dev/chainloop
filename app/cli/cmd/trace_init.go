@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
@@ -482,7 +483,7 @@ func resolveTraceInitConfig(cmd *cobra.Command, repoRoot, projectFlag string) (*
 	// A project may still be missing here. resolveTraceIdentity either asks for
 	// one or, when nobody can be asked, reports that it is required.
 	if cfg.project == "" {
-		cfg.project = config.LoadProjectFromYML(repoRoot)
+		cfg.project = repositoryconfig.LoadProjectFromYML(repoRoot)
 	}
 
 	// --org is inherited from the root command, so it is only meant for this

@@ -17,95 +17,20 @@ package config
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// initTempGitRepo creates a temp dir and runs git init in it.
-func initTempGitRepo(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	initGitRepo(t, dir)
-	return dir
-}
-
-func initGitRepo(t *testing.T, dir string) {
-	t.Helper()
-	cmd := exec.Command("git", "init", dir)
-	require.NoError(t, cmd.Run())
-}
-
-func TestLoadProjectFromYML(t *testing.T) {
-	t.Run("reads projectName from .chainloop.yml", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte("projectName: my-project\n"), 0600))
-		assert.Equal(t, "my-project", LoadProjectFromYML(dir))
-	})
-
-	t.Run("reads projectName from .chainloop.yaml", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yaml"), []byte("projectName: yaml-project\n"), 0600))
-		assert.Equal(t, "yaml-project", LoadProjectFromYML(dir))
-	})
-
-	t.Run("prefers .chainloop.yml over .chainloop.yaml", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte("projectName: from-yml\n"), 0600))
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yaml"), []byte("projectName: from-yaml\n"), 0600))
-		assert.Equal(t, "from-yml", LoadProjectFromYML(dir))
-	})
-
-	t.Run("walks up to git repo root", func(t *testing.T) {
-		repoDir := initTempGitRepo(t)
-		child := filepath.Join(repoDir, "subdir")
-		require.NoError(t, os.Mkdir(child, 0755))
-		require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("projectName: parent-project\n"), 0600))
-
-		// Run from inside the child dir so git rev-parse finds our repo
-		origDir, _ := os.Getwd()
-		require.NoError(t, os.Chdir(child))
-		t.Cleanup(func() { _ = os.Chdir(origDir) })
-
-		assert.Equal(t, "parent-project", LoadProjectFromYML(child))
-	})
-
-	t.Run("does not walk above git repo root", func(t *testing.T) {
-		parent := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(parent, ".chainloop.yml"), []byte("projectName: outside-repo\n"), 0600))
-
-		repoDir := filepath.Join(parent, "repo")
-		require.NoError(t, os.Mkdir(repoDir, 0755))
-		initGitRepo(t, repoDir)
-
-		origDir, _ := os.Getwd()
-		require.NoError(t, os.Chdir(repoDir))
-		t.Cleanup(func() { _ = os.Chdir(origDir) })
-
-		assert.Empty(t, LoadProjectFromYML(repoDir))
-	})
-
-	t.Run("returns empty when no file found", func(t *testing.T) {
-		dir := t.TempDir()
-		assert.Empty(t, LoadProjectFromYML(dir))
-	})
-
-	t.Run("skips file without projectName", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte("otherField: value\n"), 0600))
-		assert.Empty(t, LoadProjectFromYML(dir))
-	})
-}
 
 func TestSaveProjectToYML(t *testing.T) {
 	t.Run("creates new file", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, SaveProjectToYML(dir, "new-project"))
 
-		got := LoadProjectFromYML(dir)
+		got := repositoryconfig.LoadProjectFromYML(dir)
 		assert.Equal(t, "new-project", got)
 	})
 
@@ -127,7 +52,7 @@ func TestSaveProjectToYML(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte("projectName: old\n"), 0600))
 
 		require.NoError(t, SaveProjectToYML(dir, "new"))
-		assert.Equal(t, "new", LoadProjectFromYML(dir))
+		assert.Equal(t, "new", repositoryconfig.LoadProjectFromYML(dir))
 	})
 
 	t.Run("respects existing .chainloop.yaml extension", func(t *testing.T) {
@@ -430,83 +355,4 @@ func TestResolveContract(t *testing.T) {
 			assert.Equal(t, tc.wantRequired, required)
 		})
 	}
-}
-
-func TestFindChainloopYML(t *testing.T) {
-	t.Run("reads both fields from .chainloop.yml", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte("projectName: my-project\nprojectVersion: v1.2.3\n"), 0600))
-		cfg := FindChainloopYML(dir)
-		require.NotNil(t, cfg)
-		assert.Equal(t, "my-project", cfg.ProjectName)
-		assert.Equal(t, "v1.2.3", cfg.ProjectVersion)
-	})
-
-	t.Run("returns nil when no file found", func(t *testing.T) {
-		dir := t.TempDir()
-		assert.Nil(t, FindChainloopYML(dir))
-	})
-
-	t.Run("returns empty version when not set", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte("projectName: my-project\n"), 0600))
-		cfg := FindChainloopYML(dir)
-		require.NotNil(t, cfg)
-		assert.Equal(t, "my-project", cfg.ProjectName)
-		assert.Empty(t, cfg.ProjectVersion)
-	})
-
-	t.Run("walks up to git repo root", func(t *testing.T) {
-		repoDir := initTempGitRepo(t)
-		child := filepath.Join(repoDir, "subdir")
-		require.NoError(t, os.Mkdir(child, 0755))
-		require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("projectName: p\nprojectVersion: v2.0.0\n"), 0600))
-
-		origDir, _ := os.Getwd()
-		require.NoError(t, os.Chdir(child))
-		t.Cleanup(func() { _ = os.Chdir(origDir) })
-
-		cfg := FindChainloopYML(child)
-		require.NotNil(t, cfg)
-		assert.Equal(t, "p", cfg.ProjectName)
-		assert.Equal(t, "v2.0.0", cfg.ProjectVersion)
-	})
-
-	t.Run("reads requireTrace field", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"),
-			[]byte("projectName: p\nrequireTrace: false\n"), 0600))
-		cfg := FindChainloopYML(dir)
-		require.NotNil(t, cfg)
-		require.NotNil(t, cfg.RequireTrace)
-		assert.False(t, *cfg.RequireTrace)
-	})
-
-	t.Run("requireTrace nil when not set", func(t *testing.T) {
-		dir := t.TempDir()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"),
-			[]byte("projectName: p\n"), 0600))
-		cfg := FindChainloopYML(dir)
-		require.NotNil(t, cfg)
-		assert.Nil(t, cfg.RequireTrace)
-	})
-
-	t.Run("skips file without projectName and walks up", func(t *testing.T) {
-		repoDir := initTempGitRepo(t)
-		child := filepath.Join(repoDir, "subdir")
-		require.NoError(t, os.Mkdir(child, 0755))
-		// Child has a .chainloop.yml without projectName
-		require.NoError(t, os.WriteFile(filepath.Join(child, ".chainloop.yml"), []byte("otherField: value\n"), 0600))
-		// Parent has the real config
-		require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("projectName: parent\nprojectVersion: v3.0.0\n"), 0600))
-
-		origDir, _ := os.Getwd()
-		require.NoError(t, os.Chdir(child))
-		t.Cleanup(func() { _ = os.Chdir(origDir) })
-
-		cfg := FindChainloopYML(child)
-		require.NotNil(t, cfg)
-		assert.Equal(t, "parent", cfg.ProjectName)
-		assert.Equal(t, "v3.0.0", cfg.ProjectVersion)
-	})
 }

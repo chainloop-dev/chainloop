@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
@@ -979,7 +980,7 @@ func resolvePushIdentity(repoRoot string, opts RunTracePushOpts) (project, org, 
 	workflow = opts.WorkflowName
 
 	if !opts.IgnoreYAML && (project == "" || org == "" || workflow == "") {
-		if yml := config.FindChainloopYML(repoRoot); yml != nil {
+		if yml := repositoryconfig.FindChainloopYML(repoRoot); yml != nil {
 			if project == "" {
 				project = yml.ProjectName
 			}

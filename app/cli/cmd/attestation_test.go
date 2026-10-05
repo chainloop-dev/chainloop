@@ -77,6 +77,35 @@ func TestOrgFromLocalState(t *testing.T) {
 	})
 }
 
+func TestAttestationInitValidatesFlagsRegardlessOfRepositoryConfig(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		setup func(t *testing.T, dir string)
+	}{
+		{name: "missing"},
+		{name: "unreadable", setup: func(t *testing.T, dir string) {
+			require.NoError(t, os.Mkdir(filepath.Join(dir, ".chainloop.yml"), 0o700))
+		}},
+		{name: "present", setup: func(t *testing.T, dir string) {
+			require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte("{}\n"), 0o600))
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.setup != nil {
+				tc.setup(t, dir)
+			}
+			t.Chdir(dir)
+
+			cmd := newAttestationInitCmd()
+			require.NoError(t, cmd.Flags().Set("workflow", "build"))
+			require.NoError(t, cmd.Flags().Set("release", "true"))
+
+			assert.EqualError(t, cmd.PreRunE(cmd, nil), "project version is required when using --release")
+		})
+	}
+}
+
 func TestExtractAnnotations(t *testing.T) {
 	testCases := []struct {
 		input   []string
