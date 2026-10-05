@@ -20,6 +20,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
@@ -252,6 +253,7 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 		if err := provider.CaptureFileSnapshot(store, input); err != nil {
 			log.Debug().Err(err).Str("file", input.FilePath).Msg("pre-tool-use: capture snapshot failed")
 		}
+		registerSessionCheckout(input.SessionID, repoRoot, log)
 	default:
 		log.Debug().Str("tool", input.ToolName).Msg("pre-tool-use: not a tracked tool, skipping")
 	}
@@ -265,20 +267,101 @@ func shellCallKey(input *trace.HookInput) state.ShellCallKey {
 	return state.ShellCallKey{SessionID: input.SessionID, AgentID: input.AgentID, ToolUseID: input.ToolUseID}
 }
 
-// captureWorktreeSnapshot records the working-tree signature before a shell
-// command runs, so HandleAgentPostToolUse can diff it and attribute the files
-// the command changed. Best-effort: failures are logged and never block the
-// agent.
+// captureWorktreeSnapshot records the working-tree signatures before a shell
+// command runs, so HandleAgentPostToolUse can diff them and attribute the
+// files the command changed. It snapshots the session's own checkout and
+// every other checkout that the session edited with a file tool: a command
+// like `cd <other checkout> && …` changes files there, and shell hooks only
+// run in the session's own checkout. Best-effort: failures are logged and
+// never block the agent.
 func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
-	sig, err := tracegit.NewGoGitClient().SnapshotWorktree(repoRoot)
-	if err != nil {
-		log.Debug().Err(err).Msg("pre-command: worktree snapshot failed")
+	client := tracegit.NewGoGitClient()
+	sigs := make(state.WorktreeSignatures)
+	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
+		sig, err := client.SnapshotWorktree(root)
+		if err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: worktree snapshot failed")
+			continue
+		}
+		sigs[root] = sig
+	}
+
+	if len(sigs) == 0 {
 		return
 	}
 
-	if err := store.SaveShellPreSignature(key, sig); err != nil {
+	if err := store.SaveShellPreSignature(key, sigs); err != nil {
 		log.Debug().Err(err).Msg("pre-command: save worktree signature failed")
 	}
+}
+
+// shellSnapshotRoots returns the checkouts that a shell command of the session
+// is diffed in: the session's own checkout, then the other checkouts on its
+// session record that still exist.
+func shellSnapshotRoots(store *state.Store, repoRoot, sessionID string) []string {
+	roots := []string{repoRoot}
+
+	rec, err := store.LoadSessionRecord(sessionID)
+	if err != nil || rec == nil {
+		return roots
+	}
+
+	for _, root := range rec.Checkouts {
+		if sameDir(root, repoRoot) {
+			continue
+		}
+		if _, err := os.Stat(root); err != nil {
+			continue
+		}
+		roots = append(roots, root)
+	}
+
+	return roots
+}
+
+// registerSessionCheckout adds fileRoot to the checkout list on the session
+// record of the session's own checkout, when a file tool edits a file in a
+// different checkout. Shell hooks then also snapshot that checkout.
+//
+// The record is never created here: it is missing only when the session's
+// directory is not a repository (shell hooks record nothing then) or the hooks
+// were installed partway through the session, and creating it would also copy
+// the transcripts into that checkout. Best-effort: failures are logged and
+// never block the agent.
+func registerSessionCheckout(sessionID, fileRoot string, log zerolog.Logger) {
+	homeStore, homeRoot, err := state.Locate()
+	if err != nil || sameDir(homeRoot, fileRoot) {
+		return
+	}
+
+	rec, err := homeStore.LoadSessionRecord(sessionID)
+	if err != nil || rec == nil {
+		log.Debug().Err(err).Str("root", fileRoot).Msg("no session record in the session's checkout; shell commands will not snapshot this checkout")
+		return
+	}
+
+	if slices.Contains(rec.Checkouts, fileRoot) {
+		return
+	}
+
+	rec.Checkouts = append(rec.Checkouts, fileRoot)
+	slices.Sort(rec.Checkouts)
+	if err := homeStore.SaveSessionRecord(rec); err != nil {
+		log.Debug().Err(err).Str("root", fileRoot).Msg("register session checkout failed")
+	}
+}
+
+// sameDir reports whether a and b name the same directory, ignoring symlinks
+// (e.g. /var and /private/var on macOS).
+func sameDir(a, b string) bool {
+	if filepath.Clean(a) == filepath.Clean(b) {
+		return true
+	}
+
+	ra, errA := filepath.EvalSymlinks(a)
+	rb, errB := filepath.EvalSymlinks(b)
+
+	return errA == nil && errB == nil && ra == rb
 }
 
 // ensureSessionTracked auto-installs git hooks (unconditionally, on every
@@ -482,7 +565,7 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 	if isCommand {
 		// Shell command: diff the before/after worktree snapshots and attribute
 		// every file the command changed to the AI.
-		recordCommandLineRanges(store, repoRoot, shellCallKey(input), log)
+		recordCommandLineRanges(provider, input, store, repoRoot, log)
 
 		// The command may have been a `git push`, whose pre-push hook attested
 		// a session and left its link behind. Show it now: the pre-push output
@@ -495,6 +578,9 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 
 		return nil
 	}
+
+	// Cursor has no pre-tool-use, so the post hook registers the checkout too.
+	registerSessionCheckout(sessionID, repoRoot, log)
 
 	after, err := os.ReadFile(input.FilePath)
 	if err != nil {
@@ -533,13 +619,13 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 	return nil
 }
 
-// recordCommandLineRanges diffs the worktree signature captured before a shell
-// command against the current worktree, and records every created/modified file
-// (whole-file range) and every deleted file as AI-attributed. Enrich later caps
-// the AI line count to each file's committed diff totals, so whole-file ranges
-// yield correct counts. Best-effort: never blocks the agent.
-func recordCommandLineRanges(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
-	sessionID := key.SessionID
+// recordCommandLineRanges diffs each worktree signature captured before a
+// shell command against its current worktree, and records the changes in the
+// ledger of the checkout that holds them. store and repoRoot are the
+// session's own checkout, which holds the signatures. Best-effort: never
+// blocks the agent.
+func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, store *state.Store, repoRoot string, log zerolog.Logger) {
+	key := shellCallKey(input)
 	before, err := store.LoadShellPreSignature(key)
 	if err != nil {
 		// No pre-command snapshot (missed pre hook, or an overlapping call
@@ -549,9 +635,31 @@ func recordCommandLineRanges(store *state.Store, repoRoot string, key state.Shel
 	}
 	defer store.DeleteShellPreSignature(key)
 
+	for root, rootBefore := range before {
+		rootStore := store
+		if !sameDir(root, repoRoot) {
+			s, r, err := state.LocateFrom(root)
+			if err != nil {
+				log.Debug().Err(err).Str("root", root).Msg("post-command: no trace state for checkout")
+				continue
+			}
+			ensureSessionTracked(provider, s, r, input, log)
+			rootStore, root = s, r
+		}
+
+		recordRootChanges(rootStore, root, rootBefore, key.SessionID, log)
+	}
+}
+
+// recordRootChanges diffs the signature of one checkout captured before a
+// shell command against its current worktree, and records every
+// created/modified file (whole-file range) and every deleted file as
+// AI-attributed. Enrich later caps the AI line count to each file's committed
+// diff totals, so whole-file ranges yield correct counts.
+func recordRootChanges(store *state.Store, repoRoot string, before map[string]string, sessionID string, log zerolog.Logger) {
 	after, err := tracegit.NewGoGitClient().SnapshotWorktree(repoRoot)
 	if err != nil {
-		log.Debug().Err(err).Msg("post-command: worktree snapshot failed")
+		log.Debug().Err(err).Str("root", repoRoot).Msg("post-command: worktree snapshot failed")
 		return
 	}
 
@@ -578,7 +686,7 @@ func recordCommandLineRanges(store *state.Store, repoRoot string, key state.Shel
 		}
 	}
 
-	log.Debug().Int("changed", len(changed)).Int("deleted", len(deleted)).Str("session_id", sessionID).Msg("command line ranges recorded")
+	log.Debug().Int("changed", len(changed)).Int("deleted", len(deleted)).Str("session_id", sessionID).Str("root", repoRoot).Msg("command line ranges recorded")
 }
 
 // autoInstallGitHooks installs git hooks if they're not already present

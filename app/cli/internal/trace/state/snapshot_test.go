@@ -17,29 +17,38 @@ package state
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+const shellSessionID = "sess-123"
+
 func TestShellPreSignatureRoundTrip(t *testing.T) {
 	cases := []struct {
 		name string
 		key  ShellCallKey
 	}{
-		{name: "main session", key: ShellCallKey{SessionID: "sess-123"}},
-		{name: "subagent", key: ShellCallKey{SessionID: "sess-123", AgentID: "afd65659e2015d48d"}},
-		{name: "tool call", key: ShellCallKey{SessionID: "sess-123", ToolUseID: "toolu_01ABC"}},
-		{name: "subagent tool call", key: ShellCallKey{SessionID: "sess-123", AgentID: "afd65659e2015d48d", ToolUseID: "toolu_01ABC"}},
+		{name: "main session", key: ShellCallKey{SessionID: shellSessionID}},
+		{name: "subagent", key: ShellCallKey{SessionID: shellSessionID, AgentID: "afd65659e2015d48d"}},
+		{name: "tool call", key: ShellCallKey{SessionID: shellSessionID, ToolUseID: "toolu_01ABC"}},
+		{name: "subagent tool call", key: ShellCallKey{SessionID: shellSessionID, AgentID: "afd65659e2015d48d", ToolUseID: "toolu_01ABC"}},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := NewGitStore(t.TempDir())
-			sig := map[string]string{
-				"a.go":       "hash-a",
-				"sub/b.json": "hash-b",
+			sig := WorktreeSignatures{
+				"/repo/home": {
+					fileA:        "hash-a",
+					"sub/b.json": "hash-b",
+				},
+				"/repo/other": {
+					"c.ts": "hash-c",
+				},
 			}
 
 			require.NoError(t, store.SaveShellPreSignature(tc.key, sig))
@@ -61,20 +70,18 @@ func TestShellPreSignatureRoundTrip(t *testing.T) {
 // or the first post hook to finish deletes a signature another command still
 // needs.
 func TestShellPreSignatureSlots(t *testing.T) {
-	const sessionID = "sess-123"
-
 	keys := []ShellCallKey{
-		{SessionID: sessionID},
-		{SessionID: sessionID, AgentID: "agent-1"},
-		{SessionID: sessionID, AgentID: "agent-2"},
-		{SessionID: sessionID, ToolUseID: "toolu_1"},
-		{SessionID: sessionID, ToolUseID: "toolu_2"},
-		{SessionID: sessionID, AgentID: "agent-1", ToolUseID: "toolu_3"},
+		{SessionID: shellSessionID},
+		{SessionID: shellSessionID, AgentID: "agent-1"},
+		{SessionID: shellSessionID, AgentID: "agent-2"},
+		{SessionID: shellSessionID, ToolUseID: "toolu_1"},
+		{SessionID: shellSessionID, ToolUseID: "toolu_2"},
+		{SessionID: shellSessionID, AgentID: "agent-1", ToolUseID: "toolu_3"},
 	}
 
 	store := NewGitStore(t.TempDir())
 	for i, key := range keys {
-		require.NoError(t, store.SaveShellPreSignature(key, map[string]string{"a.go": fmt.Sprint(i)}))
+		require.NoError(t, store.SaveShellPreSignature(key, WorktreeSignatures{"/repo": {fileA: fmt.Sprint(i)}}))
 	}
 
 	deleted := keys[1]
@@ -88,6 +95,20 @@ func TestShellPreSignatureSlots(t *testing.T) {
 		}
 
 		require.NoError(t, err, "slot %+v", key)
-		assert.Equal(t, map[string]string{"a.go": fmt.Sprint(i)}, got, "slot %+v keeps its own signature", key)
+		assert.Equal(t, WorktreeSignatures{"/repo": {fileA: fmt.Sprint(i)}}, got, "slot %+v keeps its own signature", key)
 	}
+}
+
+// A CLI upgrade can land between the pre and post hooks of one command. The
+// earlier single-checkout format must then be rejected, not misread.
+func TestShellPreSignatureRejectsSingleCheckoutFormat(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	key := ShellCallKey{SessionID: shellSessionID}
+
+	path := store.shellPreSignaturePath(key)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0755))
+	require.NoError(t, os.WriteFile(path, []byte(`{"a.go":"hash-a"}`), 0600))
+
+	_, err := store.LoadShellPreSignature(key)
+	assert.Error(t, err)
 }

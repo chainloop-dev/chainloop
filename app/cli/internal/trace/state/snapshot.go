@@ -85,9 +85,14 @@ func (s *Store) shellPreSignaturePath(key ShellCallKey) string {
 	return filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(key.SessionID), name)
 }
 
-// SaveShellPreSignature stores the working-tree signature captured before an
-// agent-run shell command, so the post-command hook can diff against it.
-func (s *Store) SaveShellPreSignature(key ShellCallKey, sig map[string]string) error {
+// WorktreeSignatures holds the working-tree signatures that a shell command
+// is diffed against: checkout root → (repo-relative path → content hash). A
+// command can change files in each checkout that its session edits.
+type WorktreeSignatures map[string]map[string]string
+
+// SaveShellPreSignature stores the working-tree signatures captured before an
+// agent-run shell command, so the post-command hook can diff against them.
+func (s *Store) SaveShellPreSignature(key ShellCallKey, sig WorktreeSignatures) error {
 	path := s.shellPreSignaturePath(key)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("create snapshot dir: %w", err)
@@ -101,15 +106,16 @@ func (s *Store) SaveShellPreSignature(key ShellCallKey, sig map[string]string) e
 	return os.WriteFile(path, data, 0600)
 }
 
-// LoadShellPreSignature loads the pre-command working-tree signature of a
-// shell command.
-func (s *Store) LoadShellPreSignature(key ShellCallKey) (map[string]string, error) {
+// LoadShellPreSignature loads the pre-command working-tree signatures of a
+// shell command. A file in the earlier single-checkout format (written by an
+// older CLI just before an upgrade) does not parse, and the caller skips it.
+func (s *Store) LoadShellPreSignature(key ShellCallKey) (WorktreeSignatures, error) {
 	data, err := os.ReadFile(s.shellPreSignaturePath(key))
 	if err != nil {
 		return nil, err
 	}
 
-	var sig map[string]string
+	var sig WorktreeSignatures
 	if err := json.Unmarshal(data, &sig); err != nil {
 		return nil, fmt.Errorf("parse shell signature: %w", err)
 	}

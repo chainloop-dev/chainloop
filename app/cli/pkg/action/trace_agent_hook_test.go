@@ -720,6 +720,111 @@ func TestHandleAgentCommandTool_OverlappingCallsOfOneAgent(t *testing.T) {
 	}
 }
 
+// A session can run in one checkout and edit another one: it writes files
+// there with a file tool, and it changes more files there with shell commands
+// like `cd <other checkout> && …`. Shell hooks run in the session's
+// directory, so they must also snapshot every checkout that the session
+// edited with a file tool, and record each change in the ledger of the
+// checkout that holds the file.
+func TestHandleAgentCommandTool_OtherCheckout(t *testing.T) {
+	home := chdirToResolvedGitRepo(t)
+	other := resolvedTempGitRepo(t)
+	untouched := resolvedTempGitRepo(t)
+
+	homeStore := state.NewGitStore(filepath.Join(home, ".git"))
+	otherStore := state.NewGitStore(filepath.Join(other, ".git"))
+	untouchedStore := state.NewGitStore(filepath.Join(untouched, ".git"))
+
+	p := claude.New()
+	const sid = "f0f0e0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+
+	hook := func(event, tool, toolUseID, toolInput string, handler func(trace.Provider, zerolog.Logger) error) {
+		t.Helper()
+		withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":%q,"tool_name":%q,"tool_use_id":%q,"tool_input":%s}`,
+			sid, home, event, tool, toolUseID, toolInput))
+		require.NoError(t, handler(p, zerolog.Nop()))
+	}
+
+	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"SessionStart","source":"startup"}`, sid, home))
+	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+
+	// 1. The agent writes a file in the other checkout, twice.
+	modal := filepath.Join(other, "modal.tsx")
+	writeInput := fmt.Sprintf(`{"file_path":%q,"content":"export {}\n"}`, modal)
+	for _, id := range []string{"toolu_w1", "toolu_w2"} {
+		hook("PreToolUse", "Write", id, writeInput, HandleAgentPreToolUse)
+		require.NoError(t, os.WriteFile(modal, []byte("export {}\n"), 0600))
+		hook("PostToolUse", "Write", id, writeInput, HandleAgentPostToolUse)
+	}
+
+	rec, err := homeStore.LoadSessionRecord(sid)
+	require.NoError(t, err)
+	require.NotNil(t, rec)
+	assert.Equal(t, []string{other}, rec.Checkouts, "the other checkout is registered once on the session record")
+
+	// 2. A shell command changes files in the other checkout and in a
+	// checkout that no file tool touched.
+	bashInput := fmt.Sprintf(`{"command":"cd %s && python3 gen.py"}`, other)
+	hook("PreToolUse", "Bash", "toolu_b1", bashInput, HandleAgentPreToolUse)
+	require.NoError(t, os.WriteFile(filepath.Join(other, "init.txt"), []byte("changed\n"), 0600))
+	require.NoError(t, os.MkdirAll(filepath.Join(other, "sheet"), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(other, "sheet", "list.tsx"), []byte("a\nb\n"), 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(untouched, "w.go"), []byte("package w\n"), 0600))
+	hook("PostToolUse", "Bash", "toolu_b1", bashInput, HandleAgentPostToolUse)
+
+	otherAttr := otherStore.LoadAILineAttribution(sid)
+	assert.Contains(t, otherAttr.Files, "modal.tsx", "the file tool edit is recorded")
+	assert.Contains(t, otherAttr.Files, "init.txt", "a shell edit in the other checkout is recorded there")
+	require.Contains(t, otherAttr.Files, "sheet/list.tsx", "paths are relative to the checkout that holds the file")
+	assert.Equal(t, 2, otherAttr.Files["sheet/list.tsx"][0].End)
+
+	homeAttr := homeStore.LoadAILineAttribution(sid)
+	assert.Empty(t, homeAttr.Files, "the session's own checkout did not change")
+
+	// Accepted gap: without a file tool edit there, a checkout is not
+	// snapshotted.
+	assert.Empty(t, untouchedStore.LoadAILineAttribution(sid).Files)
+	assert.False(t, untouchedStore.SessionRecordExists(sid))
+
+	_, err = homeStore.LoadShellPreSignature(state.ShellCallKey{SessionID: sid, ToolUseID: "toolu_b1"})
+	assert.Error(t, err, "the pre-command signature is cleaned up")
+}
+
+// The checkout list lives on the session record of the session's own
+// checkout. When that record is missing (the hooks were installed partway
+// through the session), registration must not create one: creating it would
+// also copy the transcripts into that checkout.
+func TestHandleAgentFileTool_OtherCheckoutWithoutHomeRecord(t *testing.T) {
+	home := chdirToResolvedGitRepo(t)
+	other := resolvedTempGitRepo(t)
+	homeStore := state.NewGitStore(filepath.Join(home, ".git"))
+
+	p := claude.New()
+	const sid = "a0a0e0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+
+	file := filepath.Join(other, "x.go")
+	writeInput := fmt.Sprintf(`"tool_name":"Write","tool_input":{"file_path":%q,"content":"package x\n"}`, file)
+	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"PreToolUse",%s}`, sid, home, writeInput))
+	require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
+	require.NoError(t, os.WriteFile(file, []byte("package x\n"), 0600))
+	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"PostToolUse",%s}`, sid, home, writeInput))
+	require.NoError(t, HandleAgentPostToolUse(p, zerolog.Nop()))
+
+	assert.False(t, homeStore.SessionRecordExists(sid), "registration does not create the home record")
+	assert.Contains(t, state.NewGitStore(filepath.Join(other, ".git")).LoadAILineAttribution(sid).Files, "x.go")
+}
+
+// resolvedTempGitRepo creates a git repo and returns its symlink-resolved
+// root, without changing the working directory.
+func resolvedTempGitRepo(t *testing.T) string {
+	t.Helper()
+
+	resolved, err := filepath.EvalSymlinks(initTempGitRepo(t))
+	require.NoError(t, err)
+
+	return resolved
+}
+
 // A shell command that fails still changes the files it wrote before it
 // failed. Claude Code reports such a call through PostToolUseFailure, not
 // PostToolUse, so the handler must attribute the command's changes from that
