@@ -442,14 +442,13 @@ func (uc *WorkflowRunUseCase) orgBlocksReleasedVersions(ctx context.Context, run
 	return org.BlockAttestationsOnReleasedVersions, nil
 }
 
-// ValidateAttestationContract checks a bundle against the contract revision
-// pinned on its workflow run without persisting anything.
+// ValidateAttestationContract checks a bundle's signature and the contract
+// revision pinned on its workflow run without persisting anything.
 //
-// SaveAttestation runs the same check and is the authoritative one, since it
+// SaveAttestation runs the same checks and is the authoritative one, since it
 // sits on the path every attestation takes. This entry point exists for callers
 // that push the bundle to a CAS backend before calling SaveAttestation: without
-// it, an attestation rejected for violating its contract would already have left
-// a blob behind in CAS.
+// it, a rejected attestation would already have left a blob behind in CAS.
 func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, runID string, bundle []byte) error {
 	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.ValidateAttestationContract")
 	defer span.End()
@@ -464,6 +463,10 @@ func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, r
 		return fmt.Errorf("finding workflow run: %w", err)
 	} else if run == nil {
 		return NewErrNotFound("workflow run")
+	}
+
+	if err := uc.verifyAttestationToStore(ctx, run, bundle); err != nil {
+		return err
 	}
 
 	dsseEnv, err := attestation.DSSEEnvelopeFromBundleBytes(bundle)
@@ -568,29 +571,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		return nil, fmt.Errorf("extracting predicate: %w", err)
 	}
 
-	// verify attestation (only if chainloop is the signer)
-	validation, err := uc.verifyBundle(ctx, bundle)
-	if err != nil {
-		if !errors.Is(err, verifier.ErrInvalidBundle) {
-			return nil, err
-		}
-		// invalid bundle is expected for old attestations so we skip validation
-		uc.logger.Warn("received an old attestation format, not a bundle: attestation verification skipped", "error", err)
-	}
-
-	// if it's verifiable, make sure it passed
-	if validation != nil && !validation.Result {
-		// A failure caused by our own TSA trust configuration — typically an
-		// upstream authority that rotated its responder certificate ahead of the
-		// chain we pin — must not discard the evidence. The signature has already
-		// been verified against a trusted certificate, and verification is
-		// recomputed on every read, so the result self-heals once the
-		// configuration catches up.
-		if !validation.TrustConfigFault {
-			return nil, NewErrValidation(fmt.Errorf("attestation verification failed: %s", validation.FailureReason))
-		}
-		uc.logger.Warnw("msg", "accepting attestation with an unverifiable timestamp, review the configured TSA certificate chains",
-			"workflowRunID", runID.String(), "reason", validation.FailureReason)
+	if err := uc.verifyAttestationToStore(ctx, run, bundle); err != nil {
+		return nil, err
 	}
 
 	// Run some validations on the predicate
@@ -699,14 +681,90 @@ type VerificationResult struct {
 	TrustConfigFault bool
 }
 
+// verifyAttestationToStore checks the attestation signature before it is stored.
+//
+// When keyless signing is configured, the attestation MUST be signed with a
+// certificate issued by one of the configured certificate authorities to the
+// organization that owns the run. Any other signing method is rejected, since
+// the control plane has nothing to verify it against. When keyless signing is
+// not configured there is nothing to verify against, and no check runs.
+func (uc *WorkflowRunUseCase) verifyAttestationToStore(ctx context.Context, run *WorkflowRun, bundle []byte) error {
+	if !uc.signingUseCase.KeylessEnabled() {
+		return nil
+	}
+
+	opts, err := verifyOptionsForRun(run)
+	if err != nil {
+		return err
+	}
+
+	validation, err := uc.verifyBundle(ctx, bundle, opts...)
+	if err != nil {
+		if errors.Is(err, verifier.ErrInvalidBundle) {
+			return NewErrValidation(fmt.Errorf("attestation verification failed: %w", err))
+		}
+		return err
+	}
+
+	if validation == nil {
+		return NewErrValidation(errors.New("attestation verification failed: the attestation must be signed with the keyless signer of this instance, other signing methods are not allowed"))
+	}
+
+	if !validation.Result {
+		// A failure caused by our own TSA trust configuration — typically an
+		// upstream authority that rotated its responder certificate ahead of the
+		// chain we pin — must not discard the evidence. The signature has already
+		// been verified against a trusted certificate issued to the organization,
+		// and verification is recomputed on every read, so the result self-heals
+		// once the configuration catches up.
+		if !validation.TrustConfigFault {
+			return NewErrValidation(fmt.Errorf("attestation verification failed: %s", validation.FailureReason))
+		}
+		uc.logger.Warnw("msg", "accepting attestation with an unverifiable timestamp, review the configured TSA certificate chains",
+			"workflowRunID", run.ID.String(), "reason", validation.FailureReason)
+	}
+
+	return nil
+}
+
+// verifyOptionsForRun binds the verification to the organization that owns the run.
+func verifyOptionsForRun(run *WorkflowRun) ([]verifier.VerifyOption, error) {
+	if run.Workflow == nil || run.Workflow.OrgID == uuid.Nil {
+		return nil, fmt.Errorf("workflow run %s has no organization", run.ID)
+	}
+	return []verifier.VerifyOption{verifier.WithExpectedOrganization(run.Workflow.OrgID.String())}, nil
+}
+
 func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (*VerificationResult, error) {
 	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.VerifyRun")
 	defer span.End()
 
-	return uc.verifyBundle(ctx, run.Attestation.Bundle)
+	// Without keyless signing there is nothing to verify against, and a run
+	// that has no attestation yet has nothing to verify
+	if !uc.signingUseCase.KeylessEnabled() || run.Attestation == nil || len(run.Attestation.Bundle) == 0 {
+		return nil, nil
+	}
+
+	opts, err := verifyOptionsForRun(run)
+	if err != nil {
+		return nil, err
+	}
+
+	vr, err := uc.verifyBundle(ctx, run.Attestation.Bundle, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Keyless signing is enforced, so an attestation that can't be verified
+	// must not be reported as if verification did not apply
+	if vr == nil {
+		return &VerificationResult{Result: false, FailureReason: "the attestation has no verification material"}, nil
+	}
+
+	return vr, nil
 }
 
-func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte) (*VerificationResult, error) {
+func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte, opts ...verifier.VerifyOption) (*VerificationResult, error) {
 	tr, err := uc.signingUseCase.GetTrustedRoot(ctx)
 	if err != nil {
 		if IsErrNotImplemented(err) {
@@ -719,7 +777,7 @@ func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte) (
 	if err != nil {
 		return nil, fmt.Errorf("parsing roots: %w", err)
 	}
-	err = verifier.VerifyBundle(ctx, bundle, verifierRoots)
+	err = verifier.VerifyBundle(ctx, bundle, verifierRoots, opts...)
 	if err != nil {
 		// if no verification material found, it's not verifiable
 		if errors.Is(err, verifier.ErrMissingVerificationMaterial) {

@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
 	"os"
 	"testing"
@@ -112,6 +113,89 @@ func TestVerifyBundle(t *testing.T) {
 					assert.True(t, errors.Is(err, tc.expectSentinel),
 						"expected %v, got: %v", tc.expectSentinel, err)
 				}
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestVerifyBundleExpectedOrganization(t *testing.T) {
+	ca, err := os.ReadFile("testdata/ca.pub")
+	require.NoError(t, err)
+	certs, err := cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(ca))
+	require.NoError(t, err)
+	roots := &TrustedRoot{Keys: map[string][]*x509.Certificate{
+		"2a522d9652e0933d2a1237c395bc116e012f86dffff13122da59f76e0d2abe27": certs,
+	}}
+
+	// organization embedded in the signing certificate of bundle_valid.json
+	const certOrg = "18c3f782-4936-4630-ab8d-20b511366699"
+
+	cases := []struct {
+		name           string
+		bundle         string
+		opts           []VerifyOption
+		expectSentinel error
+	}{
+		{
+			name:   "matching organization",
+			bundle: "testdata/bundle_valid.json",
+			opts:   []VerifyOption{WithExpectedOrganization(certOrg)},
+		},
+		{
+			name:           "different organization",
+			bundle:         "testdata/bundle_valid.json",
+			opts:           []VerifyOption{WithExpectedOrganization("00000000-0000-0000-0000-000000000000")},
+			expectSentinel: ErrOrganizationMismatch,
+		},
+		{
+			name:   "no expected organization keeps the previous behavior",
+			bundle: "testdata/bundle_valid.json",
+		},
+		{
+			name:           "missing material is still reported as such",
+			bundle:         "testdata/bundle_valid_nomaterial.json",
+			opts:           []VerifyOption{WithExpectedOrganization(certOrg)},
+			expectSentinel: ErrMissingVerificationMaterial,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			bundleBytes, err := os.ReadFile(tc.bundle)
+			require.NoError(t, err)
+			err = VerifyBundle(context.TODO(), bundleBytes, roots, tc.opts...)
+			if tc.expectSentinel != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tc.expectSentinel)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestCheckCertOrganization(t *testing.T) {
+	const expected = "org-a"
+
+	cases := []struct {
+		name    string
+		orgs    []string
+		wantErr bool
+	}{
+		{name: "match", orgs: []string{expected}},
+		{name: "mismatch", orgs: []string{"org-b"}, wantErr: true},
+		{name: "no organization in the certificate", orgs: nil, wantErr: true},
+		{name: "several organizations are ambiguous", orgs: []string{expected, "org-b"}, wantErr: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cert := &x509.Certificate{Subject: pkix.Name{Organization: tc.orgs}}
+			err := checkCertOrganization(cert, expected)
+			if tc.wantErr {
+				assert.ErrorIs(t, err, ErrOrganizationMismatch)
 				return
 			}
 			assert.NoError(t, err)

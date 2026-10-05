@@ -136,6 +136,12 @@ func parseTSA(tsaConf *conf.TSA) (*TimestampAuthority, error) {
 	return tsa, nil
 }
 
+// KeylessEnabled tells if keyless signing is configured, in other words, if
+// there are certificate authorities to issue signing certificates.
+func (s *SigningUseCase) KeylessEnabled() bool {
+	return s != nil && s.CAs != nil
+}
+
 func (s *SigningUseCase) GetCurrentTSA() *TimestampAuthority {
 	for _, tsa := range s.TimestampAuthorities {
 		if tsa.Issuer {

@@ -46,7 +46,31 @@ var ErrInvalidBundle = errors.New("invalid bundle")
 // trusted key set). It is treated as a verification failure, never ignored.
 var ErrUnsupportedVerificationMaterial = errors.New("unsupported verification material")
 
-func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) error {
+// ErrOrganizationMismatch indicates the signing certificate was not issued to the
+// expected organization, or does not identify a single organization.
+var ErrOrganizationMismatch = errors.New("signing certificate organization mismatch")
+
+type verifyOptions struct {
+	expectedOrg string
+}
+
+type VerifyOption func(*verifyOptions)
+
+// WithExpectedOrganization requires the signing certificate to be issued to the
+// given organization. Chainloop keyless certificates carry it in the subject
+// Organization field.
+func WithExpectedOrganization(orgID string) VerifyOption {
+	return func(o *verifyOptions) {
+		o.expectedOrg = orgID
+	}
+}
+
+func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot, opts ...VerifyOption) error {
+	options := &verifyOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	if bundleBytes == nil {
 		return ErrMissingVerificationMaterial
 	}
@@ -74,6 +98,11 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		if err := verifyCertSignature(ctx, bundle, vc.Certificate(), tr); err != nil {
 			return err
 		}
+		if options.expectedOrg != "" {
+			if err := checkCertOrganization(vc.Certificate(), options.expectedOrg); err != nil {
+				return err
+			}
+		}
 	case bundle.GetVerificationMaterial().GetPublicKey() != nil:
 		// Public-key bundles are not supported at this time
 		return fmt.Errorf("%w: public key verification material", ErrUnsupportedVerificationMaterial)
@@ -89,6 +118,19 @@ func VerifyBundle(ctx context.Context, bundleBytes []byte, tr *TrustedRoot) erro
 		return fmt.Errorf("could not verify timestamps: %w", err)
 	}
 
+	return nil
+}
+
+// checkCertOrganization makes sure the certificate identifies exactly one
+// organization, and that it is the expected one.
+func checkCertOrganization(cert *x509.Certificate, expected string) error {
+	orgs := cert.Subject.Organization
+	if len(orgs) != 1 {
+		return fmt.Errorf("%w: expected a single organization, found %d", ErrOrganizationMismatch, len(orgs))
+	}
+	if orgs[0] != expected {
+		return fmt.Errorf("%w: certificate issued to %q", ErrOrganizationMismatch, orgs[0])
+	}
 	return nil
 }
 
