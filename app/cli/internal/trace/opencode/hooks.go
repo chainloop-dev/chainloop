@@ -271,6 +271,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		HookEventName string `json:"hook_event_name"`
 		ToolName      string `json:"tool_name"`
 		FilePath      string `json:"file_path"`
+		ToolUseID     string `json:"tool_use_id"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -281,6 +282,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		HookEventName: raw.HookEventName,
 		ToolName:      raw.ToolName,
 		FilePath:      raw.FilePath,
+		ToolUseID:     raw.ToolUseID,
 	}, nil
 }
 
