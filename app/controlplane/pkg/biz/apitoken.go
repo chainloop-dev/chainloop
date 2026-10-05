@@ -544,6 +544,9 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		KeyID:     token.ID,
 		KeyName:   name,
 		ExpiresAt: expiresAt,
+		// Signed so that the row can only confirm what the token was granted
+		ScopeType: scope,
+		ScopeID:   scopeID,
 	}
 
 	// Set org info if available or instance-level token scope
@@ -585,7 +588,9 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	return token, nil
 }
 
-// RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are not invalidated.
+// RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are
+// not invalidated. The new JWT signs the scope the row records, so the caller must know the row is
+// the token it means to re-sign: a row whose shape is coherent but wrong would be signed as it is.
 func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresIn time.Duration) (*APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.RegenerateJWT")
 	defer span.End()
@@ -601,10 +606,27 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 		return nil, fmt.Errorf("finding token: %w", err)
 	}
 
+	// Regenerating must never sign a row that records no scope, or one that disagrees with the
+	// token it is on.
+	if token.Scope == nil {
+		return nil, NewErrValidationStr("the token records no scope")
+	}
+
+	var rowOrgID *uuid.UUID
+	if token.OrganizationID != uuid.Nil {
+		rowOrgID = &token.OrganizationID
+	}
+
+	if err := ValidateTokenShape(token.Scope, token.ScopeID, rowOrgID, token.ProjectID, token.ProjectIDs); err != nil {
+		return nil, err
+	}
+
 	generationOpts := &apitoken.GenerateJWTOptions{
 		KeyID:     token.ID,
 		KeyName:   token.Name,
 		ExpiresAt: &expiresAt,
+		ScopeType: token.Scope,
+		ScopeID:   token.ScopeID,
 	}
 
 	// Check if this is an org-scoped or instance-level token

@@ -135,20 +135,18 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.WorkflowName = *opts.WorkflowName
 	}
 
-	if opts.ScopeID != nil && opts.ScopeType == nil {
-		return "", errors.New("scopeType is required when scopeID is set")
+	if opts.ScopeType == nil {
+		return "", errors.New("scopeType is required")
 	}
 
-	if opts.ScopeType != nil {
-		claims.ScopeType = string(*opts.ScopeType)
-		if opts.ScopeID != nil {
-			claims.ScopeID = opts.ScopeID.String()
-		}
+	claims.ScopeType = string(*opts.ScopeType)
+	if opts.ScopeID != nil {
+		claims.ScopeID = opts.ScopeID.String()
+	}
 
-		// Never sign a token whose claims contradict themselves
-		if _, _, err := claims.SignedScope(); err != nil {
-			return "", fmt.Errorf("inconsistent token scope: %w", err)
-		}
+	// Never sign a token whose claims contradict themselves
+	if _, _, err := claims.SignedScope(); err != nil {
+		return "", fmt.Errorf("inconsistent token scope: %w", err)
 	}
 
 	// optional expiration value, i.e 30 days

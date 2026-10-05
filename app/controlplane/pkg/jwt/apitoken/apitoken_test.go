@@ -139,6 +139,11 @@ func TestGenerateJWT(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "missing scope type",
+			opts:    &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID},
+			wantErr: true,
+		},
+		{
 			name: "an organization scope naming another organization",
 			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ScopeType: &orgScope, ScopeID: &product},

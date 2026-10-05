@@ -33,9 +33,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The token the service layer sees carries exactly the scope its row records. A row recording
-// none, such as one a control plane from before the scope columns wrote after the backfill ran,
-// is confined to nothing, and with no organization either it is refused.
+// The token the service layer sees carries exactly the scope its row records, once the row has
+// confirmed the claims the token was signed with.
 func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 	if !testhelpers.IntegrationTestsEnabled() {
 		t.Skip()
@@ -79,16 +78,6 @@ func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 			name:      "an instance row",
 			opts:      biz.APITokenCreateOpts{Scope: biz.ToPtr(authz.ResourceTypeInstance)},
 			wantScope: biz.ToPtr(authz.ResourceTypeInstance), wantInstanceScoped: true,
-		},
-		{
-			name:      "an organization row recording no scope is confined to nothing",
-			opts:      biz.APITokenCreateOpts{OrganizationID: &orgID},
-			wantReach: []uuid.UUID{},
-		},
-		{
-			name:    "a row with neither an organization nor a scope is refused",
-			opts:    biz.APITokenCreateOpts{},
-			wantErr: true,
 		},
 	}
 

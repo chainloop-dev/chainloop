@@ -24,6 +24,8 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 
@@ -1250,14 +1252,17 @@ func (s *apiTokenTestSuite) TestCreateAProductTokenWithItsProjects() {
 	}
 }
 
-// A product token's JWT names no product, on creation or regeneration: the row decides what the
-// token is confined to.
-func (s *apiTokenTestSuite) TestGeneratedJWTCarriesNoProductClaim() {
+// Every JWT signs the scope its row records, on creation and on regeneration, so that the row can
+// only confirm it. A product token's JWT names its product through that scope alone.
+func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 	ctx := context.Background()
 	productID := uuid.New()
 
-	claimsOf := func(raw string) jwt.MapClaims {
-		claims := jwt.MapClaims{}
+	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: randomName(), OrgID: s.org.ID, Project: s.p1.Name})
+	s.Require().NoError(err)
+
+	claimsOf := func(raw string) *apitoken.CustomClaims {
+		claims := &apitoken.CustomClaims{}
 		info, err := jwt.ParseWithClaims(raw, claims, func(_ *jwt.Token) (interface{}, error) {
 			return []byte("test"), nil
 		})
@@ -1267,18 +1272,80 @@ func (s *apiTokenTestSuite) TestGeneratedJWTCarriesNoProductClaim() {
 		return claims
 	}
 
-	token, err := s.APIToken.Create(ctx, randomName(), nil, toPtrDuration(24*time.Hour), &s.org.ID,
-		biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil))
-	s.Require().NoError(err)
+	testCases := []struct {
+		name          string
+		org           *string
+		opts          []biz.APITokenCreateOpt
+		wantScopeType authz.ResourceType
+		wantScopeID   string
+		// wantScope is the legacy "scope" claim
+		wantScope string
+	}{
+		{name: "organization", org: &s.org.ID, wantScopeType: authz.ResourceTypeOrganization, wantScopeID: s.org.ID},
+		{name: string(authz.ResourceTypeProject), org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1)}, wantScopeType: authz.ResourceTypeProject, wantScopeID: s.p1.ID.String()},
+		{name: "workflow-pinned", org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1), biz.APITokenWithWorkflow(wf)}, wantScopeType: authz.ResourceTypeProject, wantScopeID: s.p1.ID.String()},
+		{name: "product", org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil)}, wantScopeType: authz.ResourceTypeProduct, wantScopeID: productID.String()},
+		{name: "instance", wantScopeType: authz.ResourceTypeInstance, wantScope: authz.ScopeInstanceAdmin},
+	}
 
-	regenerated, err := s.APIToken.RegenerateJWT(ctx, token.ID, 48*time.Hour)
-	s.Require().NoError(err)
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			created, err := s.APIToken.Create(ctx, randomName(), nil, toPtrDuration(24*time.Hour), tc.org, tc.opts...)
+			s.Require().NoError(err)
+			regenerated, err := s.APIToken.RegenerateJWT(ctx, created.ID, 48*time.Hour)
+			s.Require().NoError(err)
+			stored, err := s.Repos.APITokenRepo.FindByID(ctx, created.ID)
+			s.Require().NoError(err)
 
-	for minted, raw := range map[string]string{"created": token.JWT, "regenerated": regenerated.JWT} {
-		claims := claimsOf(raw)
-		s.NotContains(claims, "product_id", minted)
-		s.Equal(token.ID.String(), claims["jti"], minted)
-		s.Equal(s.org.ID, claims["org_id"], minted)
+			for minted, raw := range map[string]string{"created": created.JWT, "regenerated": regenerated.JWT} {
+				claims := claimsOf(raw)
+				s.Equal(string(tc.wantScopeType), claims.ScopeType, minted)
+				s.Equal(tc.wantScopeID, claims.ScopeID, minted)
+				s.Equal(tc.wantScope, claims.Scope, minted)
+				s.NoError(stored.VerifyClaims(claims), minted)
+
+				// What changes during a token's life never goes into the JWT
+				payload := jwt.MapClaims{}
+				_, _, err := jwt.NewParser().ParseUnverified(raw, payload)
+				s.Require().NoError(err)
+				s.NotContains(payload, "project_ids", minted)
+				s.NotContains(payload, "policies", minted)
+				s.NotContains(payload, "product_id", minted)
+			}
+		})
+	}
+}
+
+// Regenerating signs the scope the row records. A row that records none, or one that disagrees
+// with the token it is on, is refused instead of being signed.
+func (s *apiTokenTestSuite) TestRegenerateJWTRefusesARowItCannotSign() {
+	ctx := context.Background()
+	orgUUID := uuid.MustParse(s.org.ID)
+
+	testCases := []struct {
+		name string
+		row  func(*ent.APITokenCreate) *ent.APITokenCreate
+	}{
+		{name: "a row recording no scope", row: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+			return c.SetOrganizationID(orgUUID)
+		}},
+		{name: "an instance scope on an organization's token", row: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+			return c.SetOrganizationID(orgUUID).SetScope(authz.ResourceTypeInstance)
+		}},
+		{name: "an organization scope on a project token", row: func(c *ent.APITokenCreate) *ent.APITokenCreate {
+			return c.SetOrganizationID(orgUUID).SetProjectID(s.p1.ID).SetScope(authz.ResourceTypeOrganization).SetScopeID(orgUUID)
+		}},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			row, err := tc.row(s.Data.DB.APIToken.Create().SetName(randomName())).Save(ctx)
+			s.Require().NoError(err)
+
+			_, err = s.APIToken.RegenerateJWT(ctx, row.ID, time.Hour)
+			s.Require().Error(err)
+			s.True(biz.IsErrValidation(err), "got %v", err)
+		})
 	}
 }
 
