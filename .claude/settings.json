@@ -50,16 +50,6 @@
           }
         ]
       }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "chainloop trace hook claude user-prompt-submit",
-            "type": "command"
-          }
-        ]
-      }
     ]
   }
 }
