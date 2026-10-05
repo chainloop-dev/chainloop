@@ -179,6 +179,10 @@ type HookInput struct {
 	// their parent's SessionID, so this is what tells concurrent agents of
 	// one session apart. Empty for the main agent.
 	AgentID string `json:"agent_id,omitempty"`
+	// ToolUseID is the agent's identifier for one tool call. Its pre and post
+	// hooks carry the same value, so it tells overlapping calls of one agent
+	// apart. Empty when the agent does not report it.
+	ToolUseID string `json:"tool_use_id,omitempty"`
 	// AgentVersion is the agent runtime version reported in the hook payload
 	// (e.g., Cursor's cursor_version). Captured at session-start so parsing
 	// can set Agent.Version even when the transcript itself doesn't carry it.

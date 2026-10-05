@@ -141,10 +141,13 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
     },
     "tool.execute.before": async (input, output) => {
       if (commandTools.includes(input.tool)) {
+        // callID pairs this hook with the tool.execute.after of the same
+        // call, so overlapping commands keep their own snapshots.
         await fire("pre-tool-use", {
           session_id: input.sessionID,
           hook_event_name: "tool.execute.before",
           tool_name: input.tool,
+          tool_use_id: input.callID,
         })
         return
       }
@@ -164,6 +167,7 @@ export const ChainloopTrace: Plugin = async ({ $, client }) => {
           session_id: input.sessionID,
           hook_event_name: "tool.execute.after",
           tool_name: input.tool,
+          tool_use_id: input.callID,
         })
         return
       }

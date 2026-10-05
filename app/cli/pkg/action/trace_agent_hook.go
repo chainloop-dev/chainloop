@@ -243,7 +243,7 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 	case provider.IsCommandTool(input.ToolName):
 		// Shell command: snapshot the whole worktree so the post hook can diff
 		// it and attribute the command's file changes to the AI.
-		captureWorktreeSnapshot(store, repoRoot, input.SessionID, input.AgentID, log)
+		captureWorktreeSnapshot(store, repoRoot, shellCallKey(input), log)
 	case provider.IsFileWritingTool(input.ToolName):
 		if input.FilePath == "" {
 			log.Debug().Str("tool", input.ToolName).Msg("pre-tool-use: file-writing tool produced no file path, skipping")
@@ -259,18 +259,24 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 	return nil
 }
 
+// shellCallKey returns the key that pairs the pre and post hooks of one shell
+// command.
+func shellCallKey(input *trace.HookInput) state.ShellCallKey {
+	return state.ShellCallKey{SessionID: input.SessionID, AgentID: input.AgentID, ToolUseID: input.ToolUseID}
+}
+
 // captureWorktreeSnapshot records the working-tree signature before a shell
 // command runs, so HandleAgentPostToolUse can diff it and attribute the files
-// the command changed. agentID is empty for the main agent. Best-effort:
-// failures are logged and never block the agent.
-func captureWorktreeSnapshot(store *state.Store, repoRoot, sessionID, agentID string, log zerolog.Logger) {
+// the command changed. Best-effort: failures are logged and never block the
+// agent.
+func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
 	sig, err := tracegit.NewGoGitClient().SnapshotWorktree(repoRoot)
 	if err != nil {
 		log.Debug().Err(err).Msg("pre-command: worktree snapshot failed")
 		return
 	}
 
-	if err := store.SaveShellPreSignature(sessionID, agentID, sig); err != nil {
+	if err := store.SaveShellPreSignature(key, sig); err != nil {
 		log.Debug().Err(err).Msg("pre-command: save worktree signature failed")
 	}
 }
@@ -476,7 +482,7 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 	if isCommand {
 		// Shell command: diff the before/after worktree snapshots and attribute
 		// every file the command changed to the AI.
-		recordCommandLineRanges(store, repoRoot, sessionID, input.AgentID, log)
+		recordCommandLineRanges(store, repoRoot, shellCallKey(input), log)
 
 		// The command may have been a `git push`, whose pre-push hook attested
 		// a session and left its link behind. Show it now: the pre-push output
@@ -531,16 +537,17 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 // command against the current worktree, and records every created/modified file
 // (whole-file range) and every deleted file as AI-attributed. Enrich later caps
 // the AI line count to each file's committed diff totals, so whole-file ranges
-// yield correct counts. agentID is empty for the main agent. Best-effort:
-// never blocks the agent.
-func recordCommandLineRanges(store *state.Store, repoRoot, sessionID, agentID string, log zerolog.Logger) {
-	before, err := store.LoadShellPreSignature(sessionID, agentID)
+// yield correct counts. Best-effort: never blocks the agent.
+func recordCommandLineRanges(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
+	sessionID := key.SessionID
+	before, err := store.LoadShellPreSignature(key)
 	if err != nil {
-		// No pre-command snapshot (missed pre hook, parallel overwrite) — skip.
+		// No pre-command snapshot (missed pre hook, or an overlapping call
+		// of an agent without tool call IDs overwrote it) — skip.
 		log.Debug().Err(err).Msg("post-command: no pre-command worktree signature")
 		return
 	}
-	defer store.DeleteShellPreSignature(sessionID, agentID)
+	defer store.DeleteShellPreSignature(key)
 
 	after, err := tracegit.NewGoGitClient().SnapshotWorktree(repoRoot)
 	if err != nil {

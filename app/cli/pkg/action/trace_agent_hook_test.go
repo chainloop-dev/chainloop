@@ -560,7 +560,7 @@ func TestHandleAgentCommandTool_AttributesShellFileChanges(t *testing.T) {
 	assert.Empty(t, attr.Files["marker"])
 
 	// The pre-command signature is cleaned up afterwards.
-	_, err := store.LoadShellPreSignature("ses-cmd", "")
+	_, err := store.LoadShellPreSignature(state.ShellCallKey{SessionID: "ses-cmd"})
 	assert.Error(t, err)
 }
 
@@ -635,7 +635,7 @@ func TestHandleAgentClaudeCodeSession(t *testing.T) {
 	assert.Equal(t, 4, genRanges[0].End) // whole 4-line generated file
 
 	// The pre-command signature is cleaned up after the Bash post hook.
-	_, err := store.LoadShellPreSignature(sid, "")
+	_, err := store.LoadShellPreSignature(state.ShellCallKey{SessionID: sid})
 	assert.Error(t, err)
 }
 
@@ -674,8 +674,49 @@ func TestHandleAgentCommandTool_ConcurrentSubagent(t *testing.T) {
 	assert.Contains(t, attr.Files, "parent.txt", "the parent's command must keep its own pre-command signature")
 
 	for _, id := range []string{"", agentID} {
-		_, err := store.LoadShellPreSignature(sid, id)
+		_, err := store.LoadShellPreSignature(state.ShellCallKey{SessionID: sid, AgentID: id})
 		assert.Error(t, err, "signature for agent %q is cleaned up", id)
+	}
+}
+
+// One agent can run shell commands that overlap (for example, a background
+// command and a foreground one). Each call carries its own tool_use_id, so
+// each must keep its own pre-command signature: the second pre hook must not
+// overwrite the first, and the first post hook must not delete the second's.
+func TestHandleAgentCommandTool_OverlappingCallsOfOneAgent(t *testing.T) {
+	root := chdirToResolvedGitRepo(t)
+	store := state.NewGitStore(filepath.Join(root, ".git"))
+	require.NoError(t, store.InitTraceDir())
+
+	p := claude.New()
+	const sid = "e0e0e0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+
+	bash := func(event, toolUseID string, handler func(trace.Provider, zerolog.Logger) error) {
+		t.Helper()
+		withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":%q,"tool_name":"Bash","tool_use_id":%q,"tool_input":{"command":"gen"}}`,
+			sid, root, event, toolUseID))
+		require.NoError(t, handler(p, zerolog.Nop()))
+	}
+
+	bash("PreToolUse", "toolu_first", HandleAgentPreToolUse)
+	require.NoError(t, os.WriteFile(filepath.Join(root, "first.txt"), []byte("first\n"), 0600))
+
+	// The second command starts after the first one wrote its file. With one
+	// slot per agent, its snapshot replaces the first one and already
+	// contains first.txt.
+	bash("PreToolUse", "toolu_second", HandleAgentPreToolUse)
+	require.NoError(t, os.WriteFile(filepath.Join(root, "second.txt"), []byte("second\n"), 0600))
+
+	bash("PostToolUse", "toolu_first", HandleAgentPostToolUse)
+	bash("PostToolUse", "toolu_second", HandleAgentPostToolUse)
+
+	attr := store.LoadAILineAttribution(sid)
+	assert.Contains(t, attr.Files, "first.txt", "the first command keeps its own pre-command signature")
+	assert.Contains(t, attr.Files, "second.txt", "the second command keeps its own pre-command signature")
+
+	for _, id := range []string{"toolu_first", "toolu_second"} {
+		_, err := store.LoadShellPreSignature(state.ShellCallKey{SessionID: sid, ToolUseID: id})
+		assert.Error(t, err, "signature for call %q is cleaned up", id)
 	}
 }
 
@@ -716,7 +757,7 @@ func TestHandleAgentCommandTool_FailedCommand(t *testing.T) {
 		assert.Contains(t, attr.Files, name, "a file written by a failed command is AI-made")
 	}
 
-	_, err := store.LoadShellPreSignature(sid, "")
+	_, err := store.LoadShellPreSignature(state.ShellCallKey{SessionID: sid})
 	assert.Error(t, err, "the pre-command signature is cleaned up")
 
 	assert.Empty(t, out, "a failed tool call gets no hook response")

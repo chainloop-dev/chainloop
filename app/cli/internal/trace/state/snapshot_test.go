@@ -16,6 +16,7 @@
 package state
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,59 +25,69 @@ import (
 
 func TestShellPreSignatureRoundTrip(t *testing.T) {
 	cases := []struct {
-		name    string
-		agentID string
+		name string
+		key  ShellCallKey
 	}{
-		{name: "main session", agentID: ""},
-		{name: "subagent", agentID: "afd65659e2015d48d"},
+		{name: "main session", key: ShellCallKey{SessionID: "sess-123"}},
+		{name: "subagent", key: ShellCallKey{SessionID: "sess-123", AgentID: "afd65659e2015d48d"}},
+		{name: "tool call", key: ShellCallKey{SessionID: "sess-123", ToolUseID: "toolu_01ABC"}},
+		{name: "subagent tool call", key: ShellCallKey{SessionID: "sess-123", AgentID: "afd65659e2015d48d", ToolUseID: "toolu_01ABC"}},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := NewGitStore(t.TempDir())
-			sessionID := "sess-123"
 			sig := map[string]string{
 				"a.go":       "hash-a",
 				"sub/b.json": "hash-b",
 			}
 
-			require.NoError(t, store.SaveShellPreSignature(sessionID, tc.agentID, sig))
+			require.NoError(t, store.SaveShellPreSignature(tc.key, sig))
 
-			loaded, err := store.LoadShellPreSignature(sessionID, tc.agentID)
+			loaded, err := store.LoadShellPreSignature(tc.key)
 			require.NoError(t, err)
 			assert.Equal(t, sig, loaded)
 
-			store.DeleteShellPreSignature(sessionID, tc.agentID)
+			store.DeleteShellPreSignature(tc.key)
 
-			_, err = store.LoadShellPreSignature(sessionID, tc.agentID)
+			_, err = store.LoadShellPreSignature(tc.key)
 			assert.Error(t, err, "signature should be gone after delete")
 		})
 	}
 }
 
-// A subagent shares its parent's session ID. Their shell commands can overlap,
-// so each agent needs its own slot or one deletes the other's signature.
-func TestShellPreSignaturePerAgent(t *testing.T) {
-	store := NewGitStore(t.TempDir())
+// Shell commands can overlap: a subagent shares its parent's session ID, and
+// one agent can run several commands at once. Each command needs its own slot,
+// or the first post hook to finish deletes a signature another command still
+// needs.
+func TestShellPreSignatureSlots(t *testing.T) {
 	const sessionID = "sess-123"
-	parent := map[string]string{"a.go": "parent"}
-	sub1 := map[string]string{"a.go": "sub1"}
-	sub2 := map[string]string{"a.go": "sub2"}
 
-	require.NoError(t, store.SaveShellPreSignature(sessionID, "", parent))
-	require.NoError(t, store.SaveShellPreSignature(sessionID, "agent-1", sub1))
-	require.NoError(t, store.SaveShellPreSignature(sessionID, "agent-2", sub2))
+	keys := []ShellCallKey{
+		{SessionID: sessionID},
+		{SessionID: sessionID, AgentID: "agent-1"},
+		{SessionID: sessionID, AgentID: "agent-2"},
+		{SessionID: sessionID, ToolUseID: "toolu_1"},
+		{SessionID: sessionID, ToolUseID: "toolu_2"},
+		{SessionID: sessionID, AgentID: "agent-1", ToolUseID: "toolu_3"},
+	}
 
-	store.DeleteShellPreSignature(sessionID, "agent-1")
+	store := NewGitStore(t.TempDir())
+	for i, key := range keys {
+		require.NoError(t, store.SaveShellPreSignature(key, map[string]string{"a.go": fmt.Sprint(i)}))
+	}
 
-	got, err := store.LoadShellPreSignature(sessionID, "")
-	require.NoError(t, err)
-	assert.Equal(t, parent, got)
+	deleted := keys[1]
+	store.DeleteShellPreSignature(deleted)
 
-	got, err = store.LoadShellPreSignature(sessionID, "agent-2")
-	require.NoError(t, err)
-	assert.Equal(t, sub2, got)
+	for i, key := range keys {
+		got, err := store.LoadShellPreSignature(key)
+		if key == deleted {
+			assert.Error(t, err, "deleted slot %+v", key)
+			continue
+		}
 
-	_, err = store.LoadShellPreSignature(sessionID, "agent-1")
-	assert.Error(t, err)
+		require.NoError(t, err, "slot %+v", key)
+		assert.Equal(t, map[string]string{"a.go": fmt.Sprint(i)}, got, "slot %+v keeps its own signature", key)
+	}
 }

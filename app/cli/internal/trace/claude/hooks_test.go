@@ -239,6 +239,7 @@ func TestReadHookInput(t *testing.T) {
 			"session_id": "abc-123",
 			"hook_event_name": "PreToolUse",
 			"tool_name": "Edit",
+			"tool_use_id": "toolu_01ABC",
 			"tool_input": {"file_path": "/some/file.go", "old_string": "foo"}
 		}`)
 		input, err := provider.ReadHookInput(r)
@@ -246,6 +247,7 @@ func TestReadHookInput(t *testing.T) {
 		assert.Equal(t, "abc-123", input.SessionID)
 		assert.Equal(t, "PreToolUse", input.HookEventName)
 		assert.Equal(t, "Edit", input.ToolName)
+		assert.Equal(t, "toolu_01ABC", input.ToolUseID)
 		assert.Equal(t, "/some/file.go", input.FilePath)
 	})
 
