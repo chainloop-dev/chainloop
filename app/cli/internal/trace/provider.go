@@ -179,6 +179,10 @@ type HookInput struct {
 	// their parent's SessionID, so this is what tells concurrent agents of
 	// one session apart. Empty for the main agent.
 	AgentID string `json:"agent_id,omitempty"`
+	// ToolUseID is the agent's identifier for one tool call. Its pre and post
+	// hooks carry the same value, so it tells overlapping calls of one agent
+	// apart. Empty when the agent does not report it.
+	ToolUseID string `json:"tool_use_id,omitempty"`
 	// AgentVersion is the agent runtime version reported in the hook payload
 	// (e.g., Cursor's cursor_version). Captured at session-start so parsing
 	// can set Agent.Version even when the transcript itself doesn't carry it.
@@ -192,6 +196,11 @@ type HookInput struct {
 	// only emit post-edit events (e.g., Cursor's afterFileEdit) populate it so
 	// consumers can reconstruct the "before" content via reverse application.
 	Edits []HookEdit `json:"-"`
+	// ToolFailed reports that the hook fires after a tool call that failed
+	// (Claude's PostToolUseFailure). The tool can still have changed files,
+	// so its changes are recorded. But the agent expects a different hook
+	// response for a failure, so nothing is written back to it.
+	ToolFailed bool `json:"-"`
 }
 
 // HookEdit represents a single old_string → new_string replacement applied to a file.

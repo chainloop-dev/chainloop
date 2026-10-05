@@ -154,10 +154,12 @@ async function sessionEvent(directory: string, type: string, sessionID: string, 
 {{SessionEndBlock}}
 }
 
-async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, args: any) {
+async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, callID: string, args: any) {
   const payload = { session_id: sessionID, hook_event_name: hookEventName, tool_name: tool }
   if (commandTools.includes(tool)) {
-    await fire(directory, hook, payload)
+    // The call ID pairs this hook with the other hook of the same call, so
+    // overlapping commands keep their own snapshots.
+    await fire(directory, hook, { ...payload, tool_use_id: callID })
     return
   }
   if (!fileWritingTools.includes(tool)) return
@@ -183,10 +185,10 @@ async function server({ directory, client }: any) {
       await sessionEvent(directory, event.type, info?.id ?? "", info?.parentID, post)
     },
     "tool.execute.before": async (input: any, output: any) => {
-      await toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, output.args)
+      await toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)
     },
     "tool.execute.after": async (input: any) => {
-      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.args)
+      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args)
     },
   }
 }
@@ -197,10 +199,10 @@ async function server({ directory, client }: any) {
 async function setup(ctx: any) {
   const directory = ctx.location.directory
   await ctx.tool.hook("execute.before", async (event: any) => {
-    await toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.input)
+    await toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.id, event.input)
   })
   await ctx.tool.hook("execute.after", async (event: any) => {
-    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.input)
+    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input)
   })
 
   // resume: false stores the message without asking the model for an answer.
@@ -331,6 +333,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		HookEventName string `json:"hook_event_name"`
 		ToolName      string `json:"tool_name"`
 		FilePath      string `json:"file_path"`
+		ToolUseID     string `json:"tool_use_id"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -353,6 +356,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		HookEventName: raw.HookEventName,
 		ToolName:      raw.ToolName,
 		FilePath:      filePath,
+		ToolUseID:     raw.ToolUseID,
 	}, nil
 }
 

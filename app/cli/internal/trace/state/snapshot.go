@@ -52,26 +52,48 @@ func (s *Store) DeleteFileSnapshot(sessionID, filePath string) {
 	_ = os.Remove(path)
 }
 
-// shellPreSignaturePath returns the path storing the pre-command working-tree
-// signature for an agent of a session:
-// <dir>/chainloop-trace/snapshots/<session>/shell-pre.json for the main agent,
-// <dir>/chainloop-trace/snapshots/<session>/shell-pre-<agent>.json for a subagent.
-func (s *Store) shellPreSignaturePath(sessionID, agentID string) string {
-	name := "shell-pre.json"
-	if agentID != "" {
-		name = "shell-pre-" + sanitizeID(agentID) + ".json"
-	}
-
-	return filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(sessionID), name)
+// ShellCallKey identifies the shell command that a pre-command signature
+// belongs to, so the post-command hook of that command finds it.
+type ShellCallKey struct {
+	SessionID string
+	// AgentID is empty for the main agent. Subagents share their parent's
+	// session ID, so this keeps their signatures apart.
+	AgentID string
+	// ToolUseID is the agent's identifier for the tool call. Empty when the
+	// agent does not report one. Then the agent has one slot, and its
+	// overlapping commands overwrite each other's signature.
+	ToolUseID string
 }
 
-// SaveShellPreSignature stores the working-tree signature captured before an
-// agent-run shell command, so the post-command hook can diff against it.
-// agentID is empty for the main agent. Subagents share their parent's session
-// ID, so each agent gets its own slot; concurrent shell calls of one agent in
-// one turn still overwrite it (see the parallel-shell limitation).
-func (s *Store) SaveShellPreSignature(sessionID, agentID string, sig map[string]string) error {
-	path := s.shellPreSignaturePath(sessionID, agentID)
+// shellPreSignaturePath returns the path storing the pre-command working-tree
+// signature of a shell command, under
+// <dir>/chainloop-trace/snapshots/<session>/:
+//   - shell-pre-call-<tool use>.json when the call has an ID;
+//   - shell-pre.json for the main agent otherwise;
+//   - shell-pre-<agent>.json for a subagent otherwise.
+//
+// A tool use ID is unique within a session, so it needs no agent qualifier.
+func (s *Store) shellPreSignaturePath(key ShellCallKey) string {
+	name := "shell-pre.json"
+	switch {
+	case key.ToolUseID != "":
+		name = "shell-pre-call-" + sanitizeID(key.ToolUseID) + ".json"
+	case key.AgentID != "":
+		name = "shell-pre-" + sanitizeID(key.AgentID) + ".json"
+	}
+
+	return filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(key.SessionID), name)
+}
+
+// WorktreeSignatures holds the working-tree signatures that a shell command
+// is diffed against: checkout root → (repo-relative path → content hash). A
+// command can change files in each checkout that its session edits.
+type WorktreeSignatures map[string]map[string]string
+
+// SaveShellPreSignature stores the working-tree signatures captured before an
+// agent-run shell command, so the post-command hook can diff against them.
+func (s *Store) SaveShellPreSignature(key ShellCallKey, sig WorktreeSignatures) error {
+	path := s.shellPreSignaturePath(key)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("create snapshot dir: %w", err)
 	}
@@ -84,15 +106,16 @@ func (s *Store) SaveShellPreSignature(sessionID, agentID string, sig map[string]
 	return os.WriteFile(path, data, 0600)
 }
 
-// LoadShellPreSignature loads the pre-command working-tree signature for an
-// agent of a session.
-func (s *Store) LoadShellPreSignature(sessionID, agentID string) (map[string]string, error) {
-	data, err := os.ReadFile(s.shellPreSignaturePath(sessionID, agentID))
+// LoadShellPreSignature loads the pre-command working-tree signatures of a
+// shell command. A file in the earlier single-checkout format (written by an
+// older CLI just before an upgrade) does not parse, and the caller skips it.
+func (s *Store) LoadShellPreSignature(key ShellCallKey) (WorktreeSignatures, error) {
+	data, err := os.ReadFile(s.shellPreSignaturePath(key))
 	if err != nil {
 		return nil, err
 	}
 
-	var sig map[string]string
+	var sig WorktreeSignatures
 	if err := json.Unmarshal(data, &sig); err != nil {
 		return nil, fmt.Errorf("parse shell signature: %w", err)
 	}
@@ -101,6 +124,6 @@ func (s *Store) LoadShellPreSignature(sessionID, agentID string) (map[string]str
 }
 
 // DeleteShellPreSignature removes the pre-command signature once processed.
-func (s *Store) DeleteShellPreSignature(sessionID, agentID string) {
-	_ = os.Remove(s.shellPreSignaturePath(sessionID, agentID))
+func (s *Store) DeleteShellPreSignature(key ShellCallKey) {
+	_ = os.Remove(s.shellPreSignaturePath(key))
 }

@@ -179,6 +179,36 @@ func TestReadHookInputParsesValidInput(t *testing.T) {
 	assert.Equal(t, "/some/file.go", input.FilePath)
 }
 
+// TestPluginSendsShellCallID pins that both entry points send the tool call ID
+// as tool_use_id on shell hooks, so that the pre and post hooks of one command
+// pair their snapshots. OpenCode 1.x names it callID, and OpenCode 2 id.
+func TestPluginSendsShellCallID(t *testing.T) {
+	repoRoot := t.TempDir()
+	require.NoError(t, New().InstallHooks(repoRoot))
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+	require.NoError(t, err)
+	content := string(data)
+
+	assert.Contains(t, content, "{ ...payload, tool_use_id: callID }")
+	// OpenCode 1.x.
+	assert.Contains(t, content, `toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)`)
+	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args)`)
+	// OpenCode 2.
+	assert.Contains(t, content, `toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.id, event.input)`)
+	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input)`)
+}
+
+// The plugin sends opencode's callID as tool_use_id on shell hooks, so that
+// the pre and post hooks of one command pair their snapshots.
+func TestReadHookInputParsesToolUseID(t *testing.T) {
+	r := bytes.NewBufferString(`{"session_id":"ses_1","hook_event_name":"tool.execute.before","tool_name":"bash","tool_use_id":"call_01"}`)
+	p := New()
+	input, err := p.ReadHookInput(r)
+	require.NoError(t, err)
+	assert.Equal(t, "call_01", input.ToolUseID)
+}
+
 func TestReadHookInputApplyPatchSingleFile(t *testing.T) {
 	// apply_patch fires one hook per file, so each invocation still carries
 	// a single file_path — this is the shape the plugin emits after the fix.

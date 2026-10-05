@@ -44,6 +44,12 @@ type SessionRecord struct {
 	// over Cwd to find the transcripts. Filled in by a later hook when the
 	// first one did not carry it. Empty when the agent does not report it.
 	TranscriptPath string `json:"transcript_path,omitempty"`
+	// Checkouts lists the roots of the other checkouts that this session
+	// edited with a file tool, sorted. Shell hooks run in the session's own
+	// checkout, and they also snapshot these checkouts, so that a command
+	// like `cd <other checkout> && …` is attributed there. Only set on the
+	// record in the session's own checkout.
+	Checkouts []string `json:"checkouts,omitempty"`
 	// Active reports whether the session is ongoing at the time of record write.
 	Active bool `json:"active"`
 	// StartedAt is the RFC3339 timestamp of when tracking began for this session.
