@@ -36,8 +36,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The token the service layer sees carries exactly the scope its row records, once the row has
-// confirmed the claims the token was signed with.
+// After the row matches the signed claims, the service layer gets a token with exactly the scope
+// that the row records.
 func TestAPITokenMiddlewareCarriesTheRowScope(t *testing.T) {
 	if !testhelpers.IntegrationTestsEnabled() {
 		t.Skip()
@@ -167,9 +167,10 @@ func signLegacy(t *testing.T, tokenID uuid.UUID, claims jwt.MapClaims) string {
 }
 
 // Organization, project, workflow-pinned and instance tokens minted before the scope claims keep
-// working, with the scope they always had: their rows went through the scope backfill and their
-// claims imply the same scope. A product token minted before the scope claims, and a row written
-// with no scope after the backfill ran, are refused.
+// working, with the scope they always had. The scope backfill gave their rows that scope, and their
+// claims imply the same scope. Both entry points refuse two cases:
+//   - a product token minted before the scope claims.
+//   - a row that a control plane wrote with no scope after the backfill ran.
 func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T) {
 	if !testhelpers.IntegrationTestsEnabled() {
 		t.Skip()
@@ -199,20 +200,21 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 
 	testCases := []struct {
 		name string
-		// row writes the columns the control plane that minted the token wrote. nil writes none,
-		// as for an instance token
+		// row sets the columns that the minting control plane wrote. A nil row sets no columns, as
+		// for an instance token.
 		row    func(*ent.APITokenCreate) *ent.APITokenCreate
 		claims jwt.MapClaims
 		header string
-		// afterBackfill writes the row once the backfill has run, as a control plane from before
-		// the scope columns does during a rolling upgrade or after a rollback
+		// afterBackfill writes the row after the backfill runs. A control plane from before the
+		// scope columns does this during a rolling upgrade or after a rollback.
 		afterBackfill bool
 
 		wantErr     string
 		wantScope   authz.ResourceType
 		wantScopeID *uuid.UUID
 		wantOrg     *uuid.UUID
-		// wantReach is what the token is confined to, nil for every project of its organization
+		// wantReach lists the projects that the token reaches. nil means every project of its
+		// organization.
 		wantReach []uuid.UUID
 	}{
 		{
@@ -346,9 +348,9 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 	}
 }
 
-// A row that disagrees with the claims its token was signed with refuses the token, at both entry
-// points, as a security event. Whatever wrote the row, it cannot widen the token, move it to
-// another resource or organization, or make it an instance token.
+// Both entry points refuse a token whose row disagrees with its signed claims, and treat it as a
+// security event. A wrong row cannot widen the token, move it to another resource or organization,
+// or make it an instance token.
 func TestAPITokenMiddlewareRefusesARowThatDisagreesWithItsClaims(t *testing.T) {
 	if !testhelpers.IntegrationTestsEnabled() {
 		t.Skip()
@@ -376,7 +378,7 @@ func TestAPITokenMiddlewareRefusesARowThatDisagreesWithItsClaims(t *testing.T) {
 	testCases := []struct {
 		name string
 		opts []biz.APITokenCreateOpt
-		// alter rewrites the row after the token was minted, nil leaves it as minted
+		// alter changes the row after the token is minted. nil leaves the row as it was minted.
 		alter   func(*ent.APITokenUpdateOne) *ent.APITokenUpdateOne
 		header  string
 		wantErr string

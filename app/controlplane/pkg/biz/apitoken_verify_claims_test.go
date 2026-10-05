@@ -28,8 +28,8 @@ import (
 // errScopeMismatch is the message of a row whose scope differs from the signed one.
 const errScopeMismatch = "scope mismatch"
 
-// The claims bind what a token was granted; its row may only confirm them. Whatever wrote a row
-// that disagrees, the token is refused rather than widened or moved.
+// The signed claims fix what a token was granted, and its row may only match them. If a row
+// disagrees, VerifyClaims refuses the token. It never widens or moves the token.
 func TestAPITokenVerifyClaims(t *testing.T) {
 	org, otherOrg := uuid.New(), uuid.New()
 	project, otherProject := uuid.New(), uuid.New()
@@ -60,8 +60,8 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 		row     *APIToken
 		claims  apitoken.CustomClaims
 		wantErr string
-		// mismatch marks a refusal that means the row was written wrongly: it must wrap
-		// ErrAPITokenClaimsMismatch so the middleware logs it as a security event
+		// mismatch marks a refusal caused by a wrong row. That error must wrap
+		// ErrAPITokenClaimsMismatch, so that the middleware logs it as a security event.
 		mismatch bool
 	}{
 		{name: "signed organization token", row: orgRow, claims: signedOrg},

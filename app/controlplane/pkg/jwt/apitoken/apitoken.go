@@ -83,8 +83,8 @@ type GenerateJWTOptions struct {
 	// Scope is the legacy instance-admin claim. The platform and control planes up to v1.112
 	// read it, so instance tokens keep carrying it.
 	Scope *string
-	// ScopeType and ScopeID are what the token is scoped to, as its row records them. ScopeType
-	// is required. ScopeID is unset only for an instance token.
+	// ScopeType and ScopeID name the token's scope, as its row records it. ScopeType is required.
+	// ScopeID is unset only for an instance token.
 	ScopeType *authz.ResourceType
 	ScopeID   *uuid.UUID
 }
@@ -170,7 +170,7 @@ type CustomClaims struct {
 	// Despite its name it is not the token's scope: that is ScopeType and ScopeID.
 	Scope string `json:"scope,omitempty"`
 	// ScopeType and ScopeID say what the token was granted. A token minted before they existed
-	// carries neither, and SignedScope works its scope out from the claims it does carry.
+	// carries neither, and SignedScope derives its scope from the claims that it does carry.
 	ScopeType string `json:"scope_type,omitempty"`
 	ScopeID   string `json:"scope_id,omitempty"`
 	jwt.RegisteredClaims
@@ -182,10 +182,10 @@ func (c *CustomClaims) HasScopeClaims() bool {
 	return c.ScopeType != ""
 }
 
-// SignedScope returns the scope the claims bind the token to. For a token minted with the
-// scope_type and scope_id claims, that is what they say. For an older token, it is the scope its
-// other claims imply (see legacyScope), so an older product token comes out as its organization.
-// Claims that contradict themselves are an error.
+// SignedScope returns the scope that the claims bind the token to. For a token with the scope_type
+// and scope_id claims, that scope is what they name. For an older token, it is the scope that its
+// other claims imply (see legacyScope). An older product token therefore gets its organization as
+// its scope. SignedScope returns an error for claims that contradict themselves.
 func (c *CustomClaims) SignedScope() (authz.ResourceType, *uuid.UUID, error) {
 	kind, id, err := c.namedScope()
 	if err != nil {
@@ -226,9 +226,10 @@ func (c *CustomClaims) namedScope() (authz.ResourceType, *uuid.UUID, error) {
 	}
 }
 
-// legacyScope is the scope the claims of a token minted before the scope_type claim imply: the
-// instance for the instance-admin claim, else its project, else its organization. It is the rule
-// biz.newTokenScope and the scope backfill migration apply to the row, so the two agree.
+// legacyScope returns the scope that the claims of an older token imply. An older token is a token
+// minted before the scope_type claim existed. Its scope is the instance for the instance-admin
+// claim, else its project, else its organization. biz.newTokenScope and the scope backfill
+// migration apply the same rule to the row, so the two agree.
 func (c *CustomClaims) legacyScope() (authz.ResourceType, *uuid.UUID, error) {
 	var kind authz.ResourceType
 	var raw string
@@ -251,14 +252,14 @@ func (c *CustomClaims) legacyScope() (authz.ResourceType, *uuid.UUID, error) {
 	return kind, &id, nil
 }
 
-// agreesWith checks that the rest of the claims fit the scope, so that the control plane and the
-// platform read the same scope from the token:
-//   - only an instance token carries the instance-admin claim, and it names no organization or
-//     project;
-//   - an organization token names its own organization and no project;
-//   - a project token names its organization and the project it is scoped to;
-//   - a product token names its organization and no project;
-//   - a workflow claim always comes with a project claim.
+// agreesWith checks that the other claims fit the scope. This makes the control plane and the
+// platform read the same scope from the token. The rules are:
+//   - Only an instance token carries the instance-admin claim. It names no organization and no
+//     project.
+//   - An organization token names its own organization and no project.
+//   - A project token names its organization and the project of its scope.
+//   - A product token names its organization and no project.
+//   - A workflow claim always comes with a project claim.
 func (c *CustomClaims) agreesWith(kind authz.ResourceType, id *uuid.UUID) error {
 	if (c.Scope == authz.ScopeInstanceAdmin) != (kind == authz.ResourceTypeInstance) {
 		return errors.New("the instance-admin claim does not agree with the scope")

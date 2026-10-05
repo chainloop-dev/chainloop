@@ -73,8 +73,8 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 			if claimsHaveAudience(genericClaims, apitoken.Audience) {
 				claims, err := apitoken.ClaimsFromMap(genericClaims)
 				if err != nil {
-					// A claim of the wrong type is not something this control plane signs. The
-					// raw token and the claims map are never logged.
+					// This control plane never signs a claim of the wrong type. The log line never
+					// includes the raw token or the claims map.
 					id, _ := genericClaims["jti"].(string)
 					logger.Errorw("msg", "[authN] API token claims do not decode", "id", id, "error", err)
 
@@ -90,7 +90,8 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
 
-				// legacy_claims counts the tokens minted before the scope claims, to plan their sunset
+				// legacy_claims marks the tokens minted before the scope claims, to plan the end of
+				// their support
 				logger.Infow("msg", "[authN] processed credentials", "id", claims.ID, "type", "API-token", "projectID", claims.ProjectID, "legacy_claims", !claims.HasScopeClaims())
 			}
 
@@ -135,7 +136,7 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
 
-			// The robot account comes from the row the claims have just confirmed
+			// The robot account comes from the row that VerifyClaims checked.
 			ctx = WithRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String(), ProviderKey: attjwtmiddleware.APITokenProviderKey})
 
 			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "legacy_claims", !claims.HasScopeClaims())
@@ -145,10 +146,10 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 	}
 }
 
-// setCurrentOrgAndAPIToken loads the token's row, checks it against the claims the token was
-// signed with, and puts the organization and the token in the context. It returns the row.
-// The claims fix the token's scope, organization, project and workflow, and the row must match
-// them. The policies, the product project list and revocation come from the row alone.
+// setCurrentOrgAndAPIToken loads the token's row and checks it against the signed claims. Then it
+// puts the organization and the token in the context, and returns the row. The claims fix the
+// token's scope, organization, project and workflow. The row must match them. The policies, the
+// product project list and the revocation come only from the row.
 func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, claims *apitoken.CustomClaims, logger *log.Helper) (context.Context, *biz.APIToken, error) {
 	if claims == nil || claims.ID == "" {
 		return nil, nil, errors.New("error retrieving the key ID from the API token")
@@ -163,8 +164,8 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	if err := token.VerifyClaims(claims); err != nil {
-		// A row should never disagree with its signed claims: something wrote it wrongly. The raw
-		// JWT is never logged.
+		// A row should never disagree with its signed claims. If it does, something wrote the row
+		// incorrectly. The log line never includes the raw JWT.
 		if errors.Is(err, biz.ErrAPITokenClaimsMismatch) {
 			logger.Errorw("msg", "[authN] API token row disagrees with its signed claims", "id", claims.ID, "error", err)
 		}
@@ -209,8 +210,9 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt, Suspended: org.Suspended})
 	}
 
-	// Every value here is read from the row. VerifyClaims has confirmed the scope, project and
-	// workflow against the signed claims; the policies, project list and system flag are row-only.
+	// Every value here comes from the row. VerifyClaims checked the scope, project and workflow
+	// against the signed claims. The policies, the project list and the system flag come only from
+	// the row.
 	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
 		ID:           token.ID.String(),
 		Name:         token.Name,

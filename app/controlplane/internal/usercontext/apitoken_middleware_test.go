@@ -40,7 +40,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Claim names, error substrings and entry point names the tests of both entry points share.
+// Claim names, error substrings and entry point names that the tests of both entry points share.
 const (
 	claimAud          = "aud"
 	claimJTI          = "jti"
@@ -60,14 +60,15 @@ const (
 	authorizationHeader = "Authorization"
 	// orgHeader names the organization an instance token acts in.
 	orgHeader = "Chainloop-Organization"
-	// testSigningKey signs the tokens the tests build. The testhelpers sign with it too.
+	// testSigningKey is the key that signs the test tokens. The testhelpers use the same key.
 	testSigningKey = "test"
-	// testIssuer is the issuer the tests' tokens name. Nothing checks it.
+	// testIssuer is the issuer in the test tokens. Nothing checks it.
 	testIssuer = "cp.chainloop"
 )
 
-// apiTokenEntryPoints run a signed API token through each entry point, naming orgName in the
-// organization header. handler runs only when the entry point accepts the token.
+// apiTokenEntryPoints holds one function per entry point. Each function runs a signed API token
+// through its entry point, with orgName in the organization header. handler runs only when the
+// entry point accepts the token.
 var apiTokenEntryPoints = map[string]func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, orgName string, handler middleware.Handler) error{
 	entryAPI: func(apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, signed, orgName string, handler middleware.Handler) error {
 		claims := jwt.MapClaims{}
@@ -105,7 +106,7 @@ type middlewareTestCase struct {
 	workflowIDClaim string
 	// tokenWorkflowID, if set, is the workflow_id stored on the DB row
 	tokenWorkflowID *uuid.UUID
-	// extraClaims are added to the JWT claims
+	// extraClaims adds claims to the JWT.
 	extraClaims jwt.MapClaims
 	// the middleware logic got skipped
 	skipped         bool
@@ -297,8 +298,7 @@ func toTimePtr(t time.Time) *time.Time {
 	return &t
 }
 
-// The scope reaches the service layer from the database row, once the row has confirmed the
-// claims the token was signed with.
+// After the row matches the signed claims, the service layer gets the scope from the database row.
 func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 	logger := log.NewHelper(log.NewStdLogger(io.Discard))
 	productID := uuid.New()
@@ -312,7 +312,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 		rowScope      *authz.ResourceType
 		rowScopeID    *uuid.UUID
 		rowProjectIDs []uuid.UUID
-		// claims the token was signed with, besides aud and jti
+		// claims are the signed claims other than aud and jti.
 		claims jwt.MapClaims
 	}{
 		{
@@ -375,8 +375,8 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 	}
 }
 
-// A row that disagrees with its signed claims is logged as a security event, with the token id
-// and never the raw token.
+// The middleware logs a row that disagrees with its signed claims as a security event. The log line
+// includes the token ID and never the raw token.
 func TestWithCurrentAPITokenAndOrgMiddlewareLogsAClaimsMismatch(t *testing.T) {
 	const signedToken = "raw.signed.token"
 	orgID := uuid.New()
@@ -414,9 +414,9 @@ type preProductClaimRemoval struct {
 	ProductID string `json:"product_id,omitempty"`
 }
 
-// A JWT minted before the product_id claim was dropped may still carry one. Both entry points
-// ignore it, whatever product it names: the signed scope claims, confirmed by the row, decide
-// what the token is confined to.
+// A JWT minted before the product_id claim was removed may still carry one. Both entry points
+// ignore that claim, whatever product it names. The signed scope claims decide what the token
+// reaches, and the row must match them.
 func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 	rowProduct, otherProduct, orgID := uuid.New(), uuid.New(), uuid.New()
 	product, organization := authz.ResourceTypeProduct, authz.ResourceTypeOrganization
@@ -486,9 +486,9 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 	}
 }
 
-// A token's row decides whether it takes the instance-admin path, which reads the organization
-// from the request header rather than from the token row; the JWT's claims must name the same scope. Both
-// entry points agree.
+// The token's row decides whether the token takes the instance-admin path. That path reads the
+// organization from the request header, not from the token row. The JWT's claims must name the same
+// scope. Both entry points behave the same.
 func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 	rowOrg := &biz.Organization{ID: uuid.NewString(), Name: "row-org"}
 	headerOrg := &biz.Organization{ID: uuid.NewString(), Name: "header-org"}

@@ -1252,8 +1252,9 @@ func (s *apiTokenTestSuite) TestCreateAProductTokenWithItsProjects() {
 	}
 }
 
-// Every JWT signs the scope its row records, on creation and on regeneration, so that the row can
-// only confirm it. A product token's JWT names its product through that scope alone.
+// Every JWT signs the scope that its row records, when the token is created and when it is
+// regenerated. The row can then only match that scope. A product token's JWT names its product only
+// through that scope.
 func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 	ctx := context.Background()
 	productID := uuid.New()
@@ -1261,7 +1262,7 @@ func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 	wf, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{Name: randomName(), OrgID: s.org.ID, Project: s.p1.Name})
 	s.Require().NoError(err)
 
-	// claimsOf verifies raw and returns its payload, as parsed and as the typed claims
+	// claimsOf verifies raw. It returns the payload twice: as parsed, and as the typed claims.
 	claimsOf := func(raw string) (jwt.MapClaims, *apitoken.CustomClaims) {
 		payload := jwt.MapClaims{}
 		info, err := jwt.ParseWithClaims(raw, payload, func(_ *jwt.Token) (interface{}, error) {
@@ -1317,8 +1318,8 @@ func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 	}
 }
 
-// Regenerating signs the scope the row records. A row that records none, or one that disagrees
-// with the token it is on, is refused instead of being signed.
+// RegenerateJWT signs the scope that the row records. It refuses, and does not sign, a row that
+// records no scope or that contradicts its other columns.
 func (s *apiTokenTestSuite) TestRegenerateJWTRefusesARowItCannotSign() {
 	ctx := context.Background()
 	orgUUID := uuid.MustParse(s.org.ID)
