@@ -108,6 +108,7 @@ At push time, the CLI reads the role and the title as it reads the kind and the 
     "uri": "https://tracker.example.com/issue/ENG-1234",
     "digest": "sha256:e4c2...", "captured_at": "2026-10-06T10:12:03Z" },
   { "kind": "image", "role": "reference", "title": "Export button mockup",
+    "description": "Where the button goes.",
     "digest": "sha256:c2a1...", "captured_at": "2026-10-06T10:31:40Z" }
 ]
 ```
@@ -121,7 +122,8 @@ At push time, the CLI reads the role and the title as it reads the kind and the 
     "chainloop.spec.session_id": "fd4e6754-3b26-4f54-9807-13c58465bb35",
     "chainloop.spec.kind": "image",
     "chainloop.spec.role": "reference",
-    "chainloop.spec.title": "Export button mockup"
+    "chainloop.spec.title": "Export button mockup",
+    "chainloop.spec.description": "Where the button goes."
   }
 }
 ```
