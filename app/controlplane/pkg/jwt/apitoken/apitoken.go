@@ -185,15 +185,15 @@ func (c *CustomClaims) HasScopeClaims() bool {
 
 // GetScope returns the scope that the claims bind the token to. For a token with the scope and
 // scope_id claims, that scope is what they name. For an older token, it is the scope that its
-// other claims imply (see legacyScope). An older product token therefore gets its organization as
-// its scope. GetScope returns an error for claims that contradict themselves.
+// other claims imply (see legacyScope). GetScope returns an error for claims that do not fit the
+// scope (see validateScope).
 func (c *CustomClaims) GetScope() (authz.ResourceType, *uuid.UUID, error) {
 	kind, id, err := c.namedScope()
 	if err != nil {
 		return "", nil, err
 	}
 
-	if err := c.agreesWith(kind, id); err != nil {
+	if err := c.validateScope(kind, id); err != nil {
 		return "", nil, err
 	}
 
@@ -253,14 +253,14 @@ func (c *CustomClaims) legacyScope() (authz.ResourceType, *uuid.UUID, error) {
 	return kind, &id, nil
 }
 
-// agreesWith checks that the other claims fit the scope. This makes the control plane and the
+// validateScope checks that the other claims fit the scope. This makes the control plane and the
 // platform read the same scope from the token. The rules are:
 //   - An instance token names no organization and no project.
 //   - An organization token names its own organization and no project.
 //   - A project token names its organization and the project of its scope.
 //   - A product token names its organization and no project.
 //   - A workflow claim always comes with a project claim.
-func (c *CustomClaims) agreesWith(kind authz.ResourceType, id *uuid.UUID) error {
+func (c *CustomClaims) validateScope(kind authz.ResourceType, id *uuid.UUID) error {
 	if c.WorkflowID != "" && c.ProjectID == "" {
 		return errors.New("a workflow claim needs a project claim")
 	}

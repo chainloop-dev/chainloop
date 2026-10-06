@@ -171,7 +171,7 @@ func signLegacy(t *testing.T, tokenID uuid.UUID, claims jwt.MapClaims) string {
 // working, with the scope they always had. The scope backfill gave their rows that scope, and their
 // claims imply the same scope. Both entry points refuse two cases, because the row does not record
 // the scope that the claims imply:
-//   - a product token minted before the scope claims. Its claims imply its organization.
+//   - a product row whose JWT names no scope. Such claims imply the organization.
 //   - a row that a control plane wrote with no scope after the backfill ran.
 func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T) {
 	if !testhelpers.IntegrationTestsEnabled() {
@@ -261,7 +261,7 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 			wantScope: authz.ResourceTypeInstance,
 		},
 		{
-			name: "product token minted before the scope claims",
+			name: "product row whose JWT names no scope",
 			row: func(c *ent.APITokenCreate) *ent.APITokenCreate {
 				return c.SetOrganizationID(orgID).SetScope(authz.ResourceTypeProduct).SetScopeID(product).SetProjectIds([]uuid.UUID{project.ID})
 			},

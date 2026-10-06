@@ -441,7 +441,7 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 		{name: "the claim names the row's product", rowScope: &product, rowScopeID: &rowProduct, signScope: true, productClaim: rowProduct},
 		{name: "the claim names another product", rowScope: &product, rowScopeID: &rowProduct, signScope: true, productClaim: otherProduct},
 		{name: "the claim is on an organization-scoped row", rowScope: &organization, rowScopeID: &orgID, productClaim: orgID},
-		{name: "a product token minted before the scope claims", rowScope: &product, rowScopeID: &rowProduct, productClaim: rowProduct, wantErr: errNotVerified},
+		{name: "a product row whose JWT names no scope", rowScope: &product, rowScopeID: &rowProduct, productClaim: rowProduct, wantErr: errNotVerified},
 		{name: "the claim is on a row that records no scope", productClaim: otherProduct, wantErr: errNotVerified},
 	}
 
