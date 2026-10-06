@@ -25,8 +25,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// errScopeMismatch is the message of a row whose scope differs from the signed one.
-const errScopeMismatch = "scope mismatch"
+const (
+	// errScopeMismatch is the message of a row whose scope differs from the signed one.
+	errScopeMismatch = "scope mismatch"
+	// errWorkflowMismatch is the message of a row whose workflow differs from the signed one.
+	errWorkflowMismatch = "workflow mismatch"
+)
 
 // The signed claims fix what a token was granted, and its row may only match them. If a row
 // disagrees, VerifyClaims refuses the token. It never widens or moves the token.
@@ -89,7 +93,10 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 		{name: "an organization row moved to another organization", row: &APIToken{OrganizationID: otherOrg, Scope: &orgKind, ScopeID: &otherOrg}, claims: legacyOrg, wantErr: errScopeMismatch, mismatch: true},
 		{name: "a product row moved to another organization", row: &APIToken{OrganizationID: otherOrg, Scope: &productKind, ScopeID: &product}, claims: signedProduct, wantErr: "organization mismatch", mismatch: true},
 		{name: "the project claim disagrees with the row's project column", row: &APIToken{OrganizationID: org, ProjectID: &otherProject, Scope: &projectKind, ScopeID: &project}, claims: signedProject, wantErr: "project mismatch", mismatch: true},
-		{name: "a workflow claim on a row with no workflow", row: projectRow, claims: signedWorkflow, wantErr: "workflow mismatch", mismatch: true},
+		{name: "a workflow claim on a row with no workflow", row: projectRow, claims: signedWorkflow, wantErr: errWorkflowMismatch, mismatch: true},
+		{name: "a workflow on the row that the signed claims do not name", row: workflowRow, claims: signedProject, wantErr: errWorkflowMismatch, mismatch: true},
+		{name: "a workflow on the row that the legacy claims do not name", row: workflowRow, claims: legacyProject, wantErr: errWorkflowMismatch, mismatch: true},
+		{name: "a project on an organization row that the claims do not name", row: &APIToken{OrganizationID: org, ProjectID: &project, Scope: &orgKind, ScopeID: &org}, claims: signedOrg, wantErr: "project mismatch", mismatch: true},
 	}
 
 	for _, tc := range testCases {

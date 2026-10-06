@@ -168,9 +168,9 @@ func (t *APIToken) IsOrgScoped() bool {
 }
 
 // VerifyClaims checks that the token's row matches the signed claims. The row must have the same
-// scope and organization. It must also have the same project and workflow when the claims name
-// them. Any difference refuses the token, so a wrong row can never widen the token or move it
-// elsewhere.
+// scope, organization, project and workflow. A project or workflow that only the row or only the
+// claims name is also a difference. Any difference refuses the token, so a wrong row can never
+// widen the token or move it elsewhere.
 //
 // A mismatch error wraps ErrAPITokenClaimsMismatch. Two expected states of older tokens get an
 // error without it:
@@ -223,15 +223,25 @@ func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
 		return fmt.Errorf("API token organization mismatch: %w", ErrAPITokenClaimsMismatch)
 	}
 
-	if claims.ProjectID != "" && (t.ProjectID == nil || t.ProjectID.String() != claims.ProjectID) {
+	if !sameClaimedID(t.ProjectID, claims.ProjectID) {
 		return fmt.Errorf("API token project mismatch: %w", ErrAPITokenClaimsMismatch)
 	}
 
-	if claims.WorkflowID != "" && (t.WorkflowID == nil || t.WorkflowID.String() != claims.WorkflowID) {
+	if !sameClaimedID(t.WorkflowID, claims.WorkflowID) {
 		return fmt.Errorf("API token workflow mismatch: %w", ErrAPITokenClaimsMismatch)
 	}
 
 	return nil
+}
+
+// sameClaimedID reports whether an optional id of the row equals its claim. An unset id equals
+// an empty claim.
+func sameClaimedID(row *uuid.UUID, claim string) bool {
+	if row == nil {
+		return claim == ""
+	}
+
+	return row.String() == claim
 }
 
 // sameScopeID reports whether two optional scope ids are equal. Two unset ids are equal.

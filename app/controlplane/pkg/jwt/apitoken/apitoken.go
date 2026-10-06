@@ -135,7 +135,7 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.WorkflowName = *opts.WorkflowName
 	}
 
-	if opts.ScopeType == nil {
+	if opts.ScopeType == nil || *opts.ScopeType == "" {
 		return "", errors.New("scopeType is required")
 	}
 

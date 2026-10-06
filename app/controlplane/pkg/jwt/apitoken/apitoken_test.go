@@ -144,6 +144,13 @@ func TestGenerateJWT(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			// An empty scope type would sign a token without the scope claims, like an older token
+			name: "an empty scope type",
+			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
+				ScopeType: toPtr(authz.ResourceType("")), ScopeID: &org},
+			wantErr: true,
+		},
+		{
 			name: "an organization scope naming another organization",
 			opts: &GenerateJWTOptions{OrgID: &org, OrgName: toPtr("org-name"), KeyName: testKeyName, KeyID: keyID,
 				ScopeType: &orgScope, ScopeID: &product},
