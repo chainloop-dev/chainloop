@@ -58,7 +58,7 @@ The header of a text spec file, and the companion file of a binary file, MAY hol
 - Done when: a ticket file with `title: "ENG-1234: Add an export button"` pushes a spec entry and a material annotation with that title.
 
 ### R-008: Title limits
-The system MUST cut a title that is longer than 120 characters, and keep the first 120. The system MUST apply the secret redaction of Spec 002 to the title of a companion file before the title goes into the evidence. A bad title MUST NOT stop the push.
+The system MUST cut a title that is longer than 120 characters, and keep the first 120. Each title MUST pass the secret redaction of Spec 002 before it goes into any evidence field. For a text file, the system MUST read the title from the redacted file, as it reads the source address. For a binary file, the system MUST redact the title of the companion file. A bad title MUST NOT stop the push.
 
 ## Constraints
 - The repository is public. The instruction text and the format are visible to all users.
@@ -147,5 +147,5 @@ None.
 | The agent gives a wrong role, for example `spec` for a background document. | The role is the agent's statement, as the kind is. The kind and the content stay in the evidence, so a reviewer can check. |
 | The agent does not set a role. | The role is optional (R-005). Consumers use their own rule from the kind. The share of sources with a role is measurable from the evidence. |
 | The agent forgets the companion file for an image. | The image has no role, and consumers use their own rule. |
-| A title holds a secret, for example a token in a pasted ticket title. | The redaction covers the header of a text file and the title of a companion file (R-008). |
+| A title holds a secret, for example a token in a pasted ticket title. | Each title passes the redaction before it goes into the evidence (R-008). |
 | A source has more than one purpose. For example, a ticket also holds the full spec. | The agent records the main purpose. The instruction says to pick the role that tells why the source is in the session. |
