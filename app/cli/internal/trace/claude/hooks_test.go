@@ -44,6 +44,7 @@ func TestInstallHooks(t *testing.T) {
 
 		// Verify command contents
 		assertHookCommand(t, hooks, "SessionStart", "chainloop trace hook claude session-start")
+		assertHookCommand(t, hooks, "UserPromptSubmit", "chainloop trace hook claude user-prompt-submit")
 		assertHookCommand(t, hooks, "PreToolUse", "chainloop trace hook claude pre-tool-use")
 		assertHookCommand(t, hooks, "PostToolUse", "chainloop trace hook claude post-tool-use")
 		// A failed tool call fires PostToolUseFailure instead of PostToolUse,
@@ -131,6 +132,9 @@ func TestInstallHooks(t *testing.T) {
 		sessionStart := hooks["SessionStart"].([]any)
 		assert.Len(t, sessionStart, 1)
 
+		promptSubmit := hooks["UserPromptSubmit"].([]any)
+		assert.Len(t, promptSubmit, 1)
+
 		preToolUse := hooks["PreToolUse"].([]any)
 		assert.Len(t, preToolUse, 1)
 
@@ -211,6 +215,7 @@ func TestUninstallHooks(t *testing.T) {
 		hooks := settings["hooks"].(map[string]any)
 		assert.Contains(t, hooks, "PostToolUse")
 		assert.NotContains(t, hooks, "SessionStart")
+		assert.NotContains(t, hooks, "UserPromptSubmit")
 		assert.NotContains(t, hooks, "PreToolUse")
 		assert.NotContains(t, hooks, "PostToolUseFailure")
 	})
@@ -353,6 +358,7 @@ func TestInstallHooksForTraceRun(t *testing.T) {
 		hooks := settings["hooks"].(map[string]any)
 
 		assert.Contains(t, hooks, "SessionStart")
+		assert.Contains(t, hooks, "UserPromptSubmit")
 		assert.Contains(t, hooks, "PreToolUse")
 		assert.Contains(t, hooks, "PostToolUse")
 		assert.Contains(t, hooks, "PostToolUseFailure")

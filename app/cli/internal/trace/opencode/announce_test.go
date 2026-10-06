@@ -79,6 +79,39 @@ func TestAnnounceSessionStart(t *testing.T) {
 	}
 }
 
+// TestAnnouncePromptSubmit pins the prompt-submit response: the plugin reads
+// instruction and posts it to the session as a context-only message, as it
+// does at session start.
+func TestAnnouncePromptSubmit(t *testing.T) {
+	const reminder = "Chainloop spec capture. Folder: /repo/.chainloop/specs/abc-123"
+
+	testCases := []struct {
+		name     string
+		reminder string
+		want     map[string]any
+	}{
+		{name: "a reminder is emitted", reminder: reminder, want: map[string]any{"instruction": reminder}},
+		{name: "nothing to say emits nothing", reminder: ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := captureStdout(t, func() {
+				require.NoError(t, New().AnnouncePromptSubmit(tc.reminder))
+			})
+
+			if tc.want == nil {
+				assert.Empty(t, out)
+				return
+			}
+
+			var got map[string]any
+			require.NoError(t, json.Unmarshal([]byte(out), &got))
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 // captureStdout runs fn and returns what it wrote to stdout.
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()

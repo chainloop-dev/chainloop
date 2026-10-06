@@ -17,6 +17,7 @@ package state
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -47,6 +48,9 @@ const (
 	// spec files, so a later push of the session does not scan an unchanged
 	// file again. It lives for the session, not for one push.
 	traceDirSpecRedactions = "spec-redactions"
+	// recordedSpecFilesName lists, inside a session's spec-redactions
+	// directory, the spec files that the last push of the session stored.
+	recordedSpecFilesName = "recorded.json"
 
 	// Per-record file extensions inside the subdirectories above.
 	commitRecordExt  = ".json"
@@ -96,8 +100,80 @@ func (s *Store) SpecRedactionDir(sessionID string) string {
 	return filepath.Join(s.traceDirPath(), traceDirSpecRedactions, SanitizeID(sessionID))
 }
 
+// RecordedSpecFiles returns the names of the spec files that the last push of
+// a session stored, in the order that push read them. A session that
+// never pushed a spec has none.
+//
+// The list lives beside the redacted copies, whose names are digests and so
+// never collide with it, and it goes with them when the session ends.
+func (s *Store) RecordedSpecFiles(sessionID string) ([]string, error) {
+	data, err := os.ReadFile(s.recordedSpecFilesPath(sessionID))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read recorded spec files: %w", err)
+	}
+
+	var names []string
+	if err := json.Unmarshal(data, &names); err != nil {
+		return nil, fmt.Errorf("parse recorded spec files: %w", err)
+	}
+
+	return names, nil
+}
+
+// SetRecordedSpecFiles replaces the list of the session with the spec files
+// that a push stored. An empty list removes it.
+//
+// The list is replaced, never merged, so there is no read before the write
+// for a concurrent push to race with. The new list goes to a temporary file
+// that is then renamed over the old one, so a reader never sees half of it.
+func (s *Store) SetRecordedSpecFiles(sessionID string, names []string) error {
+	path := s.recordedSpecFilesPath(sessionID)
+
+	if len(names) == 0 {
+		return removeIfExists(path)
+	}
+
+	data, err := json.Marshal(names)
+	if err != nil {
+		return fmt.Errorf("encode recorded spec files: %w", err)
+	}
+
+	dir := s.SpecRedactionDir(sessionID)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return fmt.Errorf("create spec redaction directory: %w", err)
+	}
+
+	tmp, err := os.CreateTemp(dir, "."+recordedSpecFilesName+"-*")
+	if err != nil {
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Store) recordedSpecFilesPath(sessionID string) string {
+	return filepath.Join(s.SpecRedactionDir(sessionID), recordedSpecFilesName)
+}
+
 // RemoveSpecRedactions drops the redacted copies of a session's spec files,
-// once the session has ended. A session with none is not an error.
+// and the list of files its pushes recorded, once the session has ended. A
+// session with none is not an error.
 func (s *Store) RemoveSpecRedactions(sessionID string) error {
 	if err := os.RemoveAll(s.SpecRedactionDir(sessionID)); err != nil {
 		return fmt.Errorf("remove spec redactions: %w", err)

@@ -144,6 +144,16 @@ type Provider interface {
 	// being discarded.
 	SupportsSessionStartInstruction() bool
 
+	// AnnouncePromptSubmit writes the prompt-submit hook response to stdout,
+	// so that reminder reaches the model's context for this turn. An empty
+	// reminder emits nothing.
+	AnnouncePromptSubmit(reminder string) error
+
+	// SupportsPromptReminder reports whether a reminder handed to
+	// AnnouncePromptSubmit reaches the model at each user prompt. An agent
+	// without it gets the session-start instruction only.
+	SupportsPromptReminder() bool
+
 	// AnnounceToUser writes a hook response to stdout so the agent puts msg
 	// in front of the user, after a shell command the agent ran. Which
 	// channel that uses is the provider's business: agents differ in whether

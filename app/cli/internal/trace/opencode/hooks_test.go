@@ -115,6 +115,41 @@ func TestPluginPostsSessionStartInstruction(t *testing.T) {
 	}
 }
 
+// TestPluginPostsPromptReminder pins how the model receives the spec capture
+// reminder at each user message: the plugin fires the user-prompt-submit hook
+// and posts its answer the way it posts the session-start instruction. Each
+// OpenCode major has its own hook for a user message.
+func TestPluginPostsPromptReminder(t *testing.T) {
+	for _, install := range []struct {
+		name string
+		fn   func(*Provider, string) error
+	}{
+		{name: "full install", fn: (*Provider).InstallHooks},
+		{name: "trace run install", fn: (*Provider).InstallHooksForTraceRun},
+	} {
+		t.Run(install.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			require.NoError(t, install.fn(New(), repoRoot))
+
+			data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+			require.NoError(t, err)
+			content := string(data)
+
+			assert.Contains(t, content, `"user-prompt-submit"`)
+			// OpenCode 1.x: chat.message runs at each message, including the
+			// ones the plugin posts, which are made only of synthetic parts.
+			assert.Contains(t, content, `"chat.message": async (input: any, output: any)`)
+			assert.Contains(t, content, "parts.every((p: any) => p?.synthetic)")
+			assert.Contains(t, content, "childSessions.has(sessionID) || reminding.has(sessionID)")
+			// OpenCode 2: the prompt hook runs at each user message. A
+			// subagent's first prompt can come before its session.created
+			// event, so the hook reads the parent from the session itself.
+			assert.Contains(t, content, "ctx.session.get({ sessionID })")
+			assert.Contains(t, content, "await promptSubmitted(directory, sessionID, post)")
+		})
+	}
+}
+
 func TestInstallHooksForTraceRunOmitsSessionEnd(t *testing.T) {
 	repoRoot := t.TempDir()
 	p := New()

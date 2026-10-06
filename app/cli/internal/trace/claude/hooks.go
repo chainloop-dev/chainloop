@@ -32,9 +32,10 @@ const (
 	settingsFile = ".claude/settings.json"
 
 	// Claude Code hook event names.
-	eventSessionStart = "SessionStart"
-	eventPreToolUse   = "PreToolUse"
-	eventPostToolUse  = "PostToolUse"
+	eventSessionStart     = "SessionStart"
+	eventUserPromptSubmit = "UserPromptSubmit"
+	eventPreToolUse       = "PreToolUse"
+	eventPostToolUse      = "PostToolUse"
 	// eventPostToolUseFailure fires instead of PostToolUse when a tool call
 	// fails. A failed shell command can still have changed files (e.g. a
 	// script that writes files and then runs a failing linter), so it runs
@@ -64,6 +65,7 @@ type hookEvent struct {
 
 var hookEvents = []hookEvent{
 	{eventSessionStart, "chainloop trace hook claude session-start", ""},
+	{eventUserPromptSubmit, "chainloop trace hook claude user-prompt-submit", ""},
 	{eventPreToolUse, "chainloop trace hook claude pre-tool-use", hookToolMatcher},
 	{eventPostToolUse, "chainloop trace hook claude post-tool-use", hookToolMatcher},
 	{eventPostToolUseFailure, "chainloop trace hook claude post-tool-use", hookToolMatcher},

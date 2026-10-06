@@ -249,6 +249,38 @@ func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
 	return json.NewEncoder(os.Stdout).Encode(resp)
 }
 
+// SupportsPromptReminder is true for Claude Code: it adds the
+// additionalContext field of a UserPromptSubmit hook response to the context
+// of the turn.
+func (p *Provider) SupportsPromptReminder() bool {
+	return true
+}
+
+// AnnouncePromptSubmit emits a UserPromptSubmit hook response that carries
+// the reminder in additionalContext only. It has no systemMessage: a banner
+// at every turn would only distract the user.
+func (p *Provider) AnnouncePromptSubmit(reminder string) error {
+	if reminder == "" {
+		return nil
+	}
+
+	type hookSpecificOutput struct {
+		HookEventName     string `json:"hookEventName"`
+		AdditionalContext string `json:"additionalContext"`
+	}
+
+	resp := struct {
+		HookSpecificOutput hookSpecificOutput `json:"hookSpecificOutput"`
+	}{
+		HookSpecificOutput: hookSpecificOutput{
+			HookEventName:     eventUserPromptSubmit,
+			AdditionalContext: reminder,
+		},
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(resp)
+}
+
 // AnnounceToUser emits a PostToolUse hook response on both of Claude Code's
 // delivery channels: systemMessage, which the client prints to the user
 // without involving the model, and additionalContext, which reaches the model

@@ -130,6 +130,7 @@ func newTraceHookClaudeCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		newTraceHookClaudeSessionStartCmd(),
+		newTraceHookClaudeUserPromptSubmitCmd(),
 		newTraceHookClaudeSessionEndCmd(),
 		newTraceHookClaudePreToolUseCmd(),
 		newTraceHookClaudePostToolUseCmd(),
@@ -149,6 +150,21 @@ func newTraceHookClaudeSessionStartCmd() *cobra.Command {
 			cleanup := InitHookLogger()
 			defer cleanup()
 			return action.HandleAgentSessionStart(claude.New(), logger)
+		},
+	}
+}
+
+func newTraceHookClaudeUserPromptSubmitCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "user-prompt-submit",
+		Short: "Remind Claude Code to capture new or changed specs at each user prompt",
+		Annotations: map[string]string{
+			"skipActionOptsInit": "true",
+		},
+		RunE: func(_ *cobra.Command, _ []string) error {
+			cleanup := InitHookLogger()
+			defer cleanup()
+			return action.HandleAgentPromptSubmit(claude.New(), logger)
 		},
 	}
 }
@@ -266,6 +282,7 @@ func newTraceHookOpenCodeCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		newTraceHookOpenCodeSessionStartCmd(),
+		newTraceHookOpenCodeUserPromptSubmitCmd(),
 		newTraceHookOpenCodeSessionEndCmd(),
 		newTraceHookOpenCodePreToolUseCmd(),
 		newTraceHookOpenCodePostToolUseCmd(),
@@ -285,6 +302,21 @@ func newTraceHookOpenCodeSessionStartCmd() *cobra.Command {
 			cleanup := InitHookLogger()
 			defer cleanup()
 			return action.HandleAgentSessionStart(opencode.New(), logger)
+		},
+	}
+}
+
+func newTraceHookOpenCodeUserPromptSubmitCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "user-prompt-submit",
+		Short: "Remind opencode to capture new or changed specs at each user prompt",
+		Annotations: map[string]string{
+			"skipActionOptsInit": "true",
+		},
+		RunE: func(_ *cobra.Command, _ []string) error {
+			cleanup := InitHookLogger()
+			defer cleanup()
+			return action.HandleAgentPromptSubmit(opencode.New(), logger)
 		},
 	}
 }

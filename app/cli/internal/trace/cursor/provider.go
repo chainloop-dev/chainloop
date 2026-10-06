@@ -123,6 +123,19 @@ func (p *Provider) SupportsSessionStartInstruction() bool {
 	return true
 }
 
+// SupportsPromptReminder is false for Cursor: it documents no channel that
+// adds context at prompt submit, so it gets the session-start instruction
+// only.
+func (p *Provider) SupportsPromptReminder() bool {
+	return false
+}
+
+// AnnouncePromptSubmit writes nothing for Cursor, which installs no
+// prompt-submit hook.
+func (p *Provider) AnnouncePromptSubmit(_ string) error {
+	return nil
+}
+
 // AnnounceToUser is unsupported for Cursor: it installs only sessionStart,
 // sessionEnd and afterFileEdit, so no hook fires after a shell command and
 // there is nowhere to deliver the message.

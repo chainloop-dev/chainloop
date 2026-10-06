@@ -57,34 +57,54 @@ function fire(directory: string, event: string, payload: Record<string, any>): P
   })
 }
 
-// startSession fires the session-start hook and returns the instruction for
-// the model that it wrote to stdout, if Chainloop has one.
-async function startSession(directory: string, sessionID: string): Promise<string> {
-  const out = await fire(directory, "session-start", { session_id: sessionID, hook_event_name: "session.created" })
+// instructionFrom fires a hook that can answer with an instruction for the
+// model, and returns the instruction it wrote to stdout, if Chainloop has one.
+async function instructionFrom(directory: string, event: string, sessionID: string, hookEventName: string): Promise<string> {
+  const out = await fire(directory, event, { session_id: sessionID, hook_event_name: hookEventName })
   if (!out.trim()) return ""
   try {
     return JSON.parse(out).instruction ?? ""
   } catch (err) {
-    console.error("chainloop-trace: could not read the session-start response: " + err)
+    console.error("chainloop-trace: could not read the " + event + " response: " + err)
     return ""
   }
 }
 
-// Post adds the session-start instruction to the session as a context-only
-// message, which the model reads without replying to it. Each OpenCode major
-// has its own API for it.
+// Post adds an instruction to the session as a context-only message, which
+// the model reads without replying to it. Each OpenCode major has its own API
+// for it.
 type Post = (sessionID: string, instruction: string) => Promise<void>
 
-async function sessionCreated(directory: string, sessionID: string, parentID: string | undefined, post: Post) {
-  const instruction = await startSession(directory, sessionID)
-  // A child session belongs to a subagent, whose parent already has the
-  // instruction.
-  if (!instruction || parentID) return
+// postInstruction posts the instruction and waits until it is stored, so a
+// turn sent right away still finds it. A failed post costs the instruction
+// only, so it is logged and never fails the caller.
+async function postInstruction(post: Post, sessionID: string, instruction: string) {
   try {
     await post(sessionID, instruction)
   } catch (err) {
     console.error("chainloop-trace: could not post the session instruction: " + err)
   }
+}
+
+async function sessionCreated(directory: string, sessionID: string, parentID: string | undefined, post: Post) {
+  const instruction = await instructionFrom(directory, "session-start", sessionID, "session.created")
+  // A child session belongs to a subagent, whose parent already has the
+  // instruction.
+  if (!instruction || parentID) return
+  await postInstruction(post, sessionID, instruction)
+}
+
+// childSessions holds the OpenCode 1.x sessions of subagents, whose parent
+// session already gets the instruction and the reminder. Session IDs are
+// unique, so one set serves every server() call.
+const childSessions = new Set<string>()
+
+// promptSubmitted runs at each user message. The user-prompt-submit hook can
+// answer with a short reminder to capture a new or changed spec, which is
+// posted ahead of the turn.
+async function promptSubmitted(directory: string, sessionID: string, post: Post) {
+  const reminder = await instructionFrom(directory, "user-prompt-submit", sessionID, "chat.message")
+  if (reminder) await postInstruction(post, sessionID, reminder)
 }
 
 async function sessionEvent(directory: string, type: string, sessionID: string, parentID: string | undefined, post: Post) {
@@ -116,12 +136,34 @@ async function server({ directory, client }: any) {
       body: { noReply: true, parts: [{ type: "text", text: instruction, synthetic: true }] },
     })
   }
+  // reminding holds the sessions that have a reminder being posted. The post
+  // is a message too, and must not ask for another reminder.
+  const reminding = new Set<string>()
+  const remind: Post = async (sessionID, reminder) => {
+    reminding.add(sessionID)
+    try {
+      await post(sessionID, reminder)
+    } finally {
+      reminding.delete(sessionID)
+    }
+  }
   return {
     // The event handler waits until the message is stored, so a first turn
     // sent right away still finds it.
     event: async ({ event }: any) => {
       const info = event.properties?.info
-      await sessionEvent(directory, event.type, info?.id ?? "", info?.parentID, post)
+      const sessionID = info?.id ?? ""
+      if (event.type === "session.created" && info?.parentID) childSessions.add(sessionID)
+      await sessionEvent(directory, event.type, sessionID, info?.parentID, post)
+    },
+    // At each user message, the plugin asks for the spec reminder. A message
+    // made only of synthetic parts is one that the plugin posted itself.
+    "chat.message": async (input: any, output: any) => {
+      const sessionID = input.sessionID
+      if (childSessions.has(sessionID) || reminding.has(sessionID)) return
+      const parts: any[] = output?.parts ?? []
+      if (parts.length > 0 && parts.every((p: any) => p?.synthetic)) return
+      await promptSubmitted(directory, sessionID, remind)
     },
     "tool.execute.before": async (input: any, output: any) => {
       await toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)
@@ -149,16 +191,36 @@ async function setup(ctx: any) {
     await ctx.session.synthetic({ sessionID, text: instruction, resume: false })
   }
 
+  // A child session belongs to a subagent, whose parent session already gets
+  // the reminder. A subagent's first prompt can come before its
+  // session.created event, so this reads the parent from the session itself.
+  // A session that cannot be read gets the reminder: a missed reminder costs
+  // more than an extra one.
+  const isSubagent = async (sessionID: string) => {
+    try {
+      return Boolean((await ctx.session.get({ sessionID }))?.parentID)
+    } catch (err) {
+      console.error("chainloop-trace: could not read session " + sessionID + ": " + err)
+      return false
+    }
+  }
+
   // Events arrive asynchronously, so a session's first prompt can come in
   // while the session is still starting. The prompt hook runs before the
   // prompt is admitted, and waits for that start, so the instruction is
-  // stored ahead of the prompt.
+  // stored ahead of the prompt. The reminder then lands ahead of the prompt
+  // too. A synthetic message does not pass through the prompt hook, so the
+  // reminder asks for no other.
   const starting = new Map<string, Promise<void>>()
   await ctx.session.hook("prompt", async (event: any) => {
-    const started = starting.get(event.sessionID)
-    if (!started) return
-    starting.delete(event.sessionID)
-    await started
+    const sessionID = event.sessionID
+    const started = starting.get(sessionID)
+    if (started) {
+      starting.delete(sessionID)
+      await started
+    }
+    if (await isSubagent(sessionID)) return
+    await promptSubmitted(directory, sessionID, post)
   })
 
   const controller = new AbortController()
