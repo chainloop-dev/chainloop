@@ -50,6 +50,7 @@ var protectedPaths = []string{
 	"/data/session/started_at",
 	"/data/session/ended_at",
 	"/data/spec/*/kind",
+	"/data/spec/*/role",
 	"/data/spec/*/captured_at",
 	"/data/spec/*/digest",
 	"/data/git_context/branch",

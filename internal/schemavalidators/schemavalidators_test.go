@@ -350,6 +350,7 @@ func TestValidateAICodingSessionSpec(t *testing.T) {
 		keyKind    = "kind"
 		keyDigest  = "digest"
 		keyURI     = "uri"
+		keyRole    = "role"
 		digest     = "sha256:3f786850e387550fdab836ed7e6dc881de23001b4a7b8f6d7e1a3d5c9b2e4f10"
 	)
 
@@ -397,6 +398,11 @@ func TestValidateAICodingSessionSpec(t *testing.T) {
 		// Kinds are open for the same reason modes are: one a newer CLI emits
 		// must not be rejected by a control plane that predates it.
 		{name: "a kind this schema version predates", spec: []any{entry(map[string]any{keyKind: "design"})}},
+		{name: "an entry with a role, a title and a description", spec: []any{
+			entry(map[string]any{keyKind: "ticket", keyRole: "task", "title": "PFM-7289: Capture the spec", "description": "The ticket that the session implements."}),
+		}},
+		// Roles are open for the same reason kinds are.
+		{name: "a role this schema version predates", spec: []any{entry(map[string]any{keyRole: "rationale"})}},
 	}
 
 	for _, tc := range accepted {
@@ -420,6 +426,9 @@ func TestValidateAICodingSessionSpec(t *testing.T) {
 		{name: "an entry with no kind", spec: []any{entry(map[string]any{keyKind: nil})}},
 		{name: "an entry with no captured_at", spec: []any{entry(map[string]any{"captured_at": nil})}},
 		{name: "a non-string kind", spec: []any{entry(map[string]any{keyKind: 3})}},
+		{name: "a non-string role", spec: []any{entry(map[string]any{keyRole: 3})}},
+		{name: "a non-string title", spec: []any{entry(map[string]any{"title": []any{"a"}})}},
+		{name: "a non-string description", spec: []any{entry(map[string]any{"description": true})}},
 		// The stored file is the whole file, so nothing is ever cut.
 		{name: "a truncated flag", spec: []any{entry(map[string]any{"truncated": true})}},
 		{name: "an unknown sibling within an entry", spec: []any{entry(map[string]any{"source": "linear"})}},

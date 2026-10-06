@@ -88,13 +88,23 @@ Resolve whatever the task points at — a ticket, a design document, an image fi
 ---
 kind: ticket
 uri: https://tracker.example.com/issue/ENG-1234
+role: task
+title: "ENG-1234: Add an export button"
+description: The ticket that this session implements.
 ---
 
 Set kind to one of ticket, document, image or text. An approved plan, or spec text that came from outside this conversation, is kind text. Set uri to the source URL or the path of a local file, or omit the uri line when the text has no other source.
 
+Set role to the purpose of the source. If a source has more than one purpose, pick the role that tells why it is in this session. Use one of these values:
+- task: the item that states the work to do.
+- spec: a document that defines what to build.
+- plan: a plan that the user approved.
+- reference: supporting material, such as a screenshot or a background document.
+Set title to a short name for the source, such as the ticket title. Set description to one or two sentences that tell what the source holds.
+
 The transcript of this session already holds the conversation, so the user's request prompt is not a spec: do not capture it. Spec text that the user pastes, such as a ticket or a design document, is a spec.
 
-An image is the one exception to writing text. If you can reach the image as a file — on disk, or at a URL you can download — copy the file itself into the folder with a copy or download command (cp, curl -o), keeping its extension and adding no frontmatter. Do not capture an image pasted into this conversation: you have no file for it.
+An image is the one exception to writing text. If you can reach the image as a file — on disk, or at a URL you can download — copy the file itself into the folder with a copy or download command (cp, curl -o), keeping its extension and adding no frontmatter. Then write the role, title and description lines in a second file next to it. Give that file the name of the image plus .meta.yaml, for example mockup.png.meta.yaml. Do not capture an image pasted into this conversation: you have no file for it.
 
 If the task changes, or a spec changes — also one that this session writes, such as a design note outside the repository — overwrite its file with the current content, or add another. If there is nothing to capture — a one-line request, a typo fix, a question, a passing remark — write nothing at all.
 

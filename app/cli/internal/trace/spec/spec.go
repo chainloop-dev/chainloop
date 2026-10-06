@@ -62,6 +62,11 @@ const (
 	// the oldest new ones, since what the session started from is the last
 	// thing worth dropping.
 	MaxEntries = 25
+
+	// MetaSuffix names the companion file of a binary file: the name of the
+	// binary file plus this suffix. It holds the role, the title and the
+	// description that a binary file has no header for.
+	MetaSuffix = ".meta.yaml"
 )
 
 // Dir returns the directory holding every session's captured specs.
@@ -156,9 +161,18 @@ func ReadAll(repoRoot, sessionID string, recorded []string) ([]Capture, []string
 
 	var warnings []string
 
+	// A companion file is never a spec of its own. It is read only for the
+	// binary file it is named for, and ignored when there is none.
+	companions := make(map[string]string)
+
 	candidates := make([]candidate, 0, len(dirEntries))
 	for _, e := range dirEntries {
 		if !isCandidate(e) {
+			continue
+		}
+
+		if base, ok := strings.CutSuffix(e.Name(), MetaSuffix); ok {
+			companions[base] = filepath.Join(dir, e.Name())
 			continue
 		}
 
@@ -214,7 +228,15 @@ func ReadAll(repoRoot, sessionID string, recorded []string) ([]Capture, []string
 		// An image, or a file that is not text, is something the agent copied
 		// in rather than wrote. Parsing it as text would only mangle it.
 		if image := isImage(c.name, doc); image || !utf8.Valid(doc) {
-			entries = append(entries, verbatimCapture(c.name, doc, c.modTime, image))
+			capture := verbatimCapture(c.name, doc, c.modTime, image)
+			if path, ok := companions[c.name]; ok {
+				// A companion file we cannot read costs its values only.
+				if meta, err := os.ReadFile(path); err == nil {
+					capture.MetaRaw = meta
+				}
+			}
+
+			entries = append(entries, capture)
 			continue
 		}
 

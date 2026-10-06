@@ -28,11 +28,31 @@ import (
 // delimiter opens and closes a frontmatter block.
 const delimiter = "---"
 
+// The limits of a title and a description, in characters. A model sometimes
+// writes a paragraph where a label is asked for, and a cut keeps a usable one.
+const (
+	MaxTitleLen       = 120
+	MaxDescriptionLen = 300
+)
+
+// Meta holds what the agent states about a source next to its kind: its
+// purpose, a short name, and what it holds. A text file carries it in its
+// header, and a binary file in a companion file.
+type Meta struct {
+	// Role is one of the aicodingsession.SpecRole* constants, or empty.
+	Role string `yaml:"role"`
+	// Title is a short name for the source, or empty.
+	Title string `yaml:"title"`
+	// Description says what the source holds, or is empty.
+	Description string `yaml:"description"`
+}
+
 // frontmatter is the header a spec document carries. It is decoded into a typed
 // struct rather than a map so an unexpected key cannot reach the evidence.
 type frontmatter struct {
 	Kind string `yaml:"kind"`
 	URI  string `yaml:"uri"`
+	Meta `yaml:",inline"`
 }
 
 // Capture is one spec document as read from the session folder: what the agent
@@ -45,6 +65,9 @@ type Capture struct {
 	Kind string
 	// URI is where the text came from, empty for a spec stated in the session.
 	URI string
+	// Meta holds the role, the title and the description of the source. For
+	// a binary file they stay empty until its companion file is redacted.
+	Meta
 	// CapturedAt is the file's modification time, RFC3339.
 	CapturedAt string
 	// Raw is the file as the agent wrote it, header included. It is what
@@ -54,6 +77,9 @@ type Capture struct {
 	// image, or any file that is not text. The agent copied it into the
 	// folder, so it has no header and nothing in it is rewritten.
 	Verbatim bool
+	// MetaRaw is the companion file of a verbatim file as the agent wrote it,
+	// or nil when there is none. It is redacted before ParseMeta reads it.
+	MetaRaw []byte
 }
 
 // verbatimCapture describes a file that is stored as it is. Its kind comes
@@ -86,6 +112,8 @@ func verbatimCapture(name string, doc []byte, modTime time.Time, image bool) Cap
 //   - Frontmatter that is not valid YAML: the body after the block is content,
 //     again with kind "text" and no URI.
 //   - A kind outside the vocabulary: normalised to "text".
+//   - A role outside the vocabulary: no role.
+//   - A title or a description over its limit: cut to the limit.
 //
 // It returns nil when nothing is left once the body is trimmed. That is the
 // common shape of a session with nothing to capture: the agent was told to
@@ -110,8 +138,40 @@ func Parse(doc []byte, capturedAt time.Time) *Capture {
 	return &Capture{
 		Kind:       aicodingsession.ResolveSpecKind(meta.Kind),
 		URI:        strings.TrimSpace(meta.URI),
+		Meta:       meta.normalize(),
 		CapturedAt: capturedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+// ParseMeta reads the companion file of a binary file. It never fails: a file
+// that is not valid YAML gives no values, and costs the binary file nothing.
+func ParseMeta(doc []byte) Meta {
+	var meta Meta
+	if err := yaml.Unmarshal(doc, &meta); err != nil {
+		return Meta{}
+	}
+
+	return meta.normalize()
+}
+
+// normalize drops a role outside the vocabulary, trims the title and the
+// description, and cuts them to their limits.
+func (m Meta) normalize() Meta {
+	return Meta{
+		Role:        aicodingsession.ResolveSpecRole(m.Role),
+		Title:       truncate(strings.TrimSpace(m.Title), MaxTitleLen),
+		Description: truncate(strings.TrimSpace(m.Description), MaxDescriptionLen),
+	}
+}
+
+// truncate keeps the first limit characters of s, so a cut never splits one.
+func truncate(s string, limit int) string {
+	runes := []rune(s)
+	if len(runes) <= limit {
+		return s
+	}
+
+	return strings.TrimSpace(string(runes[:limit]))
 }
 
 // split separates a leading frontmatter block from the body. A document with no
