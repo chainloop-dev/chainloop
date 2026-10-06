@@ -37,7 +37,7 @@ require (
 	github.com/extism/go-sdk v1.7.1
 	github.com/fsouza/fake-gcs-server v1.56.1
 	github.com/getsentry/sentry-go v0.49.0
-	github.com/go-git/go-billy/v6 v6.0.0-alpha.2
+	github.com/go-git/go-billy/v6 v6.0.0-beta.1
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5 // recommended path: https://github.com/go-git/go-git/issues/1943#issuecomment-4232656963
 	github.com/go-kratos/kratos/contrib/log/zap/v2 v2.0.0-20230823024326-a09f4d8ebba9
 	github.com/go-kratos/kratos/v2 v2.9.2
