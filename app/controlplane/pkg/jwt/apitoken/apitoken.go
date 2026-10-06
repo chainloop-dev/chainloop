@@ -16,9 +16,12 @@
 package apitoken
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -77,7 +80,10 @@ type GenerateJWTOptions struct {
 	WorkflowID   *uuid.UUID
 	WorkflowName *string
 	ExpiresAt    *time.Time
-	Scope        *string
+	// Scope and ScopeID name the token's scope, as its row records it. Scope is required.
+	// ScopeID is unset only for an instance token.
+	Scope   *authz.ResourceType
+	ScopeID *uuid.UUID
 }
 
 // GenerateJWT creates a new JWT token for the given organization and keyID
@@ -109,10 +115,6 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.OrgName = *opts.OrgName
 	}
 
-	if opts.Scope != nil {
-		claims.Scope = *opts.Scope
-	}
-
 	if opts.ProjectID != nil {
 		claims.ProjectID = opts.ProjectID.String()
 		claims.ProjectName = *opts.ProjectName
@@ -124,6 +126,27 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		}
 		claims.WorkflowID = opts.WorkflowID.String()
 		claims.WorkflowName = *opts.WorkflowName
+	}
+
+	if opts.Scope == nil {
+		return "", errors.New("scope is required")
+	}
+
+	switch *opts.Scope {
+	case authz.ResourceTypeInstance, authz.ResourceTypeOrganization, authz.ResourceTypeProject, authz.ResourceTypeProduct:
+	default:
+		return "", fmt.Errorf("invalid scope %q", *opts.Scope)
+	}
+
+	claims.Scope = string(*opts.Scope)
+	if opts.ScopeID != nil {
+		claims.ScopeID = opts.ScopeID.String()
+	}
+
+	// Refuse claims that do not fit the scope, for example a project scope without the claim of
+	// that project. GetScope runs that check.
+	if _, _, err := claims.GetScope(); err != nil {
+		return "", fmt.Errorf("inconsistent token scope: %w", err)
 	}
 
 	// optional expiration value, i.e 30 days
@@ -143,6 +166,139 @@ type CustomClaims struct {
 	ProjectName  string `json:"project_name,omitempty"`
 	WorkflowID   string `json:"workflow_id,omitempty"`
 	WorkflowName string `json:"workflow_name,omitempty"`
-	Scope        string `json:"scope,omitempty"`
+	// Scope and ScopeID say what the token was granted. Scope is the kind: instance, organization,
+	// project or product. ScopeID names the resource, and an instance scope names none.
+	//
+	// A token minted before the control plane signed its scope has no scope claim. An older
+	// instance token has the value "INSTANCE_ADMIN" in it instead. GetScope derives the scope of
+	// such a token from the claims that it does carry.
+	Scope   string `json:"scope,omitempty"`
+	ScopeID string `json:"scope_id,omitempty"`
 	jwt.RegisteredClaims
+}
+
+// HasScopeClaims reports whether the token was signed with its scope kind in the scope claim. A
+// token without it was minted before the control plane signed the scope.
+func (c *CustomClaims) HasScopeClaims() bool {
+	return c.Scope != "" && c.Scope != authz.ScopeInstanceAdmin
+}
+
+// GetScope returns the scope that the claims bind the token to. For a token with the scope and
+// scope_id claims, that scope is what they name. For an older token, it is the scope that its
+// other claims imply (see legacyScope). GetScope returns an error for claims that do not fit the
+// scope (see validateScope).
+func (c *CustomClaims) GetScope() (authz.ResourceType, *uuid.UUID, error) {
+	kind, id, err := c.namedScope()
+	if err != nil {
+		return "", nil, err
+	}
+
+	if err := c.validateScope(kind, id); err != nil {
+		return "", nil, err
+	}
+
+	return kind, id, nil
+}
+
+// namedScope is the scope the scope and scope_id claims name, else the one the claims of an older
+// token imply.
+func (c *CustomClaims) namedScope() (authz.ResourceType, *uuid.UUID, error) {
+	if !c.HasScopeClaims() {
+		return c.legacyScope()
+	}
+
+	kind := authz.ResourceType(c.Scope)
+	switch kind {
+	case authz.ResourceTypeInstance:
+		if c.ScopeID != "" {
+			return "", nil, errors.New("an instance scope names no resource")
+		}
+
+		return kind, nil, nil
+	case authz.ResourceTypeOrganization, authz.ResourceTypeProject, authz.ResourceTypeProduct:
+		id, err := uuid.Parse(c.ScopeID)
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid scope_id claim: %w", err)
+		}
+
+		return kind, &id, nil
+	default:
+		return "", nil, fmt.Errorf("unknown scope claim %q", c.Scope)
+	}
+}
+
+// legacyScope returns the scope that the claims of an older token imply. An older token is a token
+// minted before the control plane signed the scope. Its scope is the instance for the
+// instance-admin value, else its project, else its organization. biz.newTokenScope and the scope backfill
+// migration apply the same rule to the row, so the two agree.
+func (c *CustomClaims) legacyScope() (authz.ResourceType, *uuid.UUID, error) {
+	var kind authz.ResourceType
+	var raw string
+	switch {
+	case c.Scope == authz.ScopeInstanceAdmin:
+		return authz.ResourceTypeInstance, nil, nil
+	case c.ProjectID != "":
+		kind, raw = authz.ResourceTypeProject, c.ProjectID
+	case c.OrgID != "":
+		kind, raw = authz.ResourceTypeOrganization, c.OrgID
+	default:
+		return "", nil, errors.New("the claims name no scope")
+	}
+
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid %s claim: %w", kind, err)
+	}
+
+	return kind, &id, nil
+}
+
+// validateScope checks that the other claims fit the scope. This makes the control plane and the
+// platform read the same scope from the token. The rules are:
+//   - An instance token names no organization and no project.
+//   - An organization token names its own organization and no project.
+//   - A project token names its organization and the project of its scope.
+//   - A product token names its organization and no project.
+//   - A workflow claim always comes with a project claim.
+func (c *CustomClaims) validateScope(kind authz.ResourceType, id *uuid.UUID) error {
+	if c.WorkflowID != "" && c.ProjectID == "" {
+		return errors.New("a workflow claim needs a project claim")
+	}
+
+	switch kind {
+	case authz.ResourceTypeInstance:
+		if c.OrgID != "" || c.ProjectID != "" {
+			return errors.New("an instance scope names no organization or project")
+		}
+	case authz.ResourceTypeOrganization:
+		if c.OrgID != id.String() || c.ProjectID != "" {
+			return errors.New("an organization scope names its own organization and no project")
+		}
+	case authz.ResourceTypeProject:
+		if c.OrgID == "" || c.ProjectID != id.String() {
+			return errors.New("a project scope names its organization and its own project")
+		}
+	case authz.ResourceTypeProduct:
+		if c.OrgID == "" || c.ProjectID != "" {
+			return errors.New("a product scope names its organization and no project")
+		}
+	}
+
+	return nil
+}
+
+// ClaimsFromMap reads API-token claims that were parsed generically, as the API entry point
+// receives them. A claim of the wrong type is an error, not an absent claim.
+func ClaimsFromMap(m jwt.MapClaims) (*CustomClaims, error) {
+	raw, err := json.Marshal(m)
+	if err != nil {
+		return nil, fmt.Errorf("encoding claims: %w", err)
+	}
+
+	claims := &CustomClaims{}
+	if err := json.Unmarshal(raw, claims); err != nil {
+		return nil, fmt.Errorf("decoding claims: %w", err)
+	}
+
+	return claims, nil
 }

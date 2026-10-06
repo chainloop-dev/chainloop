@@ -71,23 +71,28 @@ func WithCurrentAPITokenAndOrgMiddleware(apiTokenUC *biz.APITokenUseCase, orgUC 
 
 			// We've received an API-token
 			if claimsHaveAudience(genericClaims, apitoken.Audience) {
-				var err error
-				tokenID, ok := genericClaims["jti"].(string)
-				if !ok || tokenID == "" {
+				claims, err := apitoken.ClaimsFromMap(genericClaims)
+				if err != nil {
+					// This control plane never signs a claim of the wrong type. The log line never
+					// includes the raw token or the claims map.
+					id, _ := genericClaims["jti"].(string)
+					logger.Errorw("msg", "[authN] API token claims do not decode", "id", id, "error", err)
+
 					return nil, errors.New("error mapping the API-token claims")
 				}
 
-				// Project ID is optional
-				projectID, _ := genericClaims["project_id"].(string)
+				if claims.ID == "" {
+					return nil, errors.New("error mapping the API-token claims")
+				}
 
-				workflowID, _ := genericClaims["workflow_id"].(string)
-
-				ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, projectID, workflowID)
+				ctx, _, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
 				if err != nil {
 					return nil, fmt.Errorf("error setting current org and user: %w", err)
 				}
 
-				logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "projectID", projectID)
+				// legacy_claims marks the tokens minted before the scope claims, to plan the end of
+				// their support
+				logger.Infow("msg", "[authN] processed credentials", "id", claims.ID, "type", "API-token", "projectID", claims.ProjectID, "legacy_claims", !claims.HasScopeClaims())
 			}
 
 			return handler(ctx, req)
@@ -126,81 +131,54 @@ func WithAttestationContextFromAPIToken(apiTokenUC *biz.APITokenUseCase, orgUC *
 				return nil, errors.New("error mapping the API-token claims")
 			}
 
-			ctx, err := setRobotAccountFromAPIToken(ctx, apiTokenUC, tokenID)
-			if err != nil {
-				return nil, fmt.Errorf("error extracting organization from APIToken: %w", err)
-			}
-
-			ctx, err = setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, tokenID, claims.ProjectID, claims.WorkflowID)
+			ctx, token, err := setCurrentOrgAndAPIToken(ctx, apiTokenUC, orgUC, claims, logger)
 			if err != nil {
 				return nil, fmt.Errorf("error setting current org and user: %w", err)
 			}
 
-			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token")
+			// The robot account comes from the row that VerifyClaims checked.
+			ctx = WithRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String(), ProviderKey: attjwtmiddleware.APITokenProviderKey})
+
+			logger.Infow("msg", "[authN] processed credentials", "id", tokenID, "type", "API-token", "legacy_claims", !claims.HasScopeClaims())
 
 			return handler(ctx, req)
 		}
 	}
 }
 
-func setRobotAccountFromAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, tokenID string) (context.Context, error) {
-	if tokenID == "" {
-		return nil, errors.New("error retrieving the key ID from the API token")
+// setCurrentOrgAndAPIToken loads the token's row and checks it against the signed claims. Then it
+// puts the organization and the token in the context, and returns the row. The claims fix the
+// token's scope, organization, project and workflow. The row must match them. The policies, the
+// product project list and the revocation come only from the row.
+func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, claims *apitoken.CustomClaims, logger *log.Helper) (context.Context, *biz.APIToken, error) {
+	if claims == nil || claims.ID == "" {
+		return nil, nil, errors.New("error retrieving the key ID from the API token")
 	}
 
 	// Check that the token exists and is not revoked
-	token, err := apiTokenUC.FindByID(ctx, tokenID)
+	token, err := apiTokenUC.FindByID(ctx, claims.ID)
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving the API token: %w", err)
+		return nil, nil, fmt.Errorf("error retrieving the API token: %w", err)
 	} else if token == nil {
-		return nil, errors.New("API token not found")
+		return nil, nil, errors.New("API token not found")
+	}
+
+	if err := token.VerifyClaims(claims); err != nil {
+		// A row should never disagree with its signed claims. If it does, something wrote the row
+		// incorrectly. The log line gives the reason and never includes the raw JWT. The caller
+		// learns only that the token could not be verified.
+		if errors.Is(err, biz.ErrAPITokenClaimsMismatch) {
+			logger.Errorw("msg", "[authN] API token row disagrees with its signed claims", "id", claims.ID, "error", err)
+			return nil, nil, biz.ErrAPITokenClaimsMismatch
+		}
+
+		return nil, nil, err
 	}
 
 	// Note: Expiration time does not need to be checked because that's done at the JWT
 	// verification layer, which happens before this middleware is called
 	if token.RevokedAt != nil {
-		return nil, errors.New("API token revoked")
-	}
-
-	ctx = WithRobotAccount(ctx, &RobotAccount{OrgID: token.OrganizationID.String(), ProviderKey: attjwtmiddleware.APITokenProviderKey})
-
-	return ctx, nil
-}
-
-// Set the current organization and API-Token in the context. The project and workflow claims are
-// cross-checked against the token row, never an authorization input: the row decides what the
-// token reaches.
-func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCase, orgUC *biz.OrganizationUseCase, tokenID, projectIDInClaim, workflowIDInClaim string) (context.Context, error) {
-	if tokenID == "" {
-		return nil, errors.New("error retrieving the key ID from the API token")
-	}
-
-	// Check that the token exists and is not revoked
-	token, err := apiTokenUC.FindByID(ctx, tokenID)
-	if err != nil {
-		return nil, fmt.Errorf("error retrieving the API token: %w", err)
-	} else if token == nil {
-		return nil, errors.New("API token not found")
-	}
-
-	// Make sure that the projectID that comes in the token claim matches the one in the DB
-	if projectIDInClaim != "" {
-		if token.ProjectID == nil || token.ProjectID.String() != projectIDInClaim {
-			return nil, errors.New("API token project mismatch")
-		}
-	}
-
-	// Same defense in depth for the workflow claim
-	if workflowIDInClaim != "" {
-		if token.WorkflowID == nil || token.WorkflowID.String() != workflowIDInClaim {
-			return nil, errors.New("API token workflow mismatch")
-		}
-	}
-
-	// Note: Expiration time does not need to be checked because that's done at the JWT
-	// verification layer, which happens before this middleware is called
-	if token.RevokedAt != nil {
-		return nil, errors.New("API token revoked")
+		return nil, nil, errors.New("API token revoked")
 	}
 
 	// Handle instance admin tokens
@@ -212,9 +190,9 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 			// Load organization from header
 			org, err := orgUC.FindByName(ctx, orgName)
 			if err != nil {
-				return nil, fmt.Errorf("error retrieving the organization: %w", err)
+				return nil, nil, fmt.Errorf("error retrieving the organization: %w", err)
 			} else if org == nil {
-				return nil, errors.New("organization not found")
+				return nil, nil, errors.New("organization not found")
 			}
 
 			ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt, Suspended: org.Suspended})
@@ -225,15 +203,18 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	} else {
 		org, err := orgUC.FindByID(ctx, token.OrganizationID.String())
 		if err != nil {
-			return nil, fmt.Errorf("error retrieving the organization: %w", err)
+			return nil, nil, fmt.Errorf("error retrieving the organization: %w", err)
 		} else if org == nil {
-			return nil, errors.New("organization not found")
+			return nil, nil, errors.New("organization not found")
 		}
 
 		// Set the current organization in the context
 		ctx = entities.WithCurrentOrg(ctx, &entities.Org{Name: org.Name, ID: org.ID, CreatedAt: org.CreatedAt, Suspended: org.Suspended})
 	}
 
+	// Every value here comes from the row. VerifyClaims checked the scope, project and workflow
+	// against the signed claims. The policies, the project list and the system flag come only from
+	// the row.
 	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
 		ID:           token.ID.String(),
 		Name:         token.Name,
@@ -243,19 +224,18 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 		ProjectName:  token.ProjectName,
 		WorkflowID:   token.WorkflowID,
 		WorkflowName: token.WorkflowName,
-		// Every value here comes from token.*, i.e. the database row
-		Scope:      token.Scope,
-		ScopeID:    token.ScopeID,
-		ProjectIDs: token.ProjectIDs,
-		Policies:   token.Policies,
-		IsSystem:   token.IsSystem,
+		Scope:        token.Scope,
+		ScopeID:      token.ScopeID,
+		ProjectIDs:   token.ProjectIDs,
+		Policies:     token.Policies,
+		IsSystem:     token.IsSystem,
 	})
 
 	// Set the authorization subject that will be used to check the policies
 	subjectAPIToken := authz.SubjectAPIToken{ID: token.ID.String()}
 	ctx = WithAuthzSubject(ctx, subjectAPIToken.String())
 
-	return ctx, nil
+	return ctx, token, nil
 }
 
 func WithAPITokenUsageUpdater(apiTokenUC *biz.APITokenUseCase, logger *log.Helper) middleware.Middleware {

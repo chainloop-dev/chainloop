@@ -36,8 +36,8 @@ type APIToken struct {
 	WorkflowName *string
 	// ACL policies for this token. Used for authorization checks.
 	Policies []*authz.Policy
-	// Scope and ScopeID name what the token is scoped to. They are loaded from the row, never
-	// from a claim. Every row records them; a token recording none is confined to nothing.
+	// Scope and ScopeID name the token's scope. They come from the row, after the middleware checks
+	// the row against the signed claims. The middleware refuses a row that records no scope.
 	Scope   *authz.ResourceType
 	ScopeID *uuid.UUID
 	// ProjectIDs are the projects a product token reaches, loaded from the row.
