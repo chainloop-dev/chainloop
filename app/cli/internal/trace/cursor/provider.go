@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"time"
 
@@ -55,27 +54,6 @@ func New() *Provider {
 // Name returns the agent identifier.
 func (p *Provider) Name() string {
 	return agentName
-}
-
-// DiscoverSession finds the most recent Cursor session for the given repo root.
-func (p *Provider) DiscoverSession(repoRoot string) (*trace.DiscoveredSession, error) {
-	id, path, _, err := discoverCursorSession(repoRoot)
-	if err != nil || id == "" {
-		return nil, err
-	}
-
-	return &trace.DiscoveredSession{
-		SessionID:  id,
-		SessionDir: filepath.Dir(path),
-		// Cursor does not expose a reliable "alive" signal from the transcript
-		// directory. Treat discovered sessions as potentially active.
-		IsActive: true,
-	}, nil
-}
-
-// SessionDirForRepo returns the Cursor agent-transcripts directory for the repo.
-func (p *Provider) SessionDirForRepo(repoRoot string) string {
-	return transcriptDirForRepo(repoRoot)
 }
 
 // IsFileWritingTool returns true for the synthetic "edit" tool name we set on
@@ -170,7 +148,7 @@ func (p *Provider) CleanupAfterEdit(_ *state.Store, _ *trace.HookInput) {}
 // (parse, pre-push) don't need to re-resolve.
 func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation) error {
 	sessionID := loc.SessionID
-	sourceDir := p.SessionDirForRepo(loc.Cwd)
+	sourceDir := transcriptDirForRepo(loc.Cwd)
 	if sourceDir == "" {
 		return nil
 	}

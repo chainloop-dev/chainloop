@@ -52,31 +52,6 @@ func (p *Provider) Name() string {
 	return Name
 }
 
-// DiscoverSession finds the most recent opencode session for the given repo root.
-// Returns nil, nil if no matching session is found or the opencode binary is unavailable.
-func (p *Provider) DiscoverSession(repoRoot string) (*trace.DiscoveredSession, error) {
-	session, err := discoverOpenCodeSession(repoRoot)
-	if err != nil || session == nil {
-		return nil, err
-	}
-
-	return &trace.DiscoveredSession{
-		SessionID:  session.ID,
-		SessionDir: "",
-		// opencode sessions live in a SQLite DB, not a directory; there's
-		// no reliable "alive" signal from session list alone. Treat
-		// discovered sessions as potentially active.
-		IsActive: true,
-	}, nil
-}
-
-// SessionDirForRepo returns "" for opencode — sessions are stored in a
-// SQLite database, not a per-repo directory. The method exists to satisfy
-// the interface; callers use CopySessionData for the actual data extraction.
-func (p *Provider) SessionDirForRepo(_ string) string {
-	return ""
-}
-
 // CopySessionData runs the opencode export command for the session (see
 // exportArgs) and streams the JSON output directly to the store's
 // raw/<sanitized-id>.jsonl so

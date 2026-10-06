@@ -105,3 +105,10 @@ func TestMajorVersion(t *testing.T) {
 		})
 	}
 }
+
+// quoteForSh wraps a string in single quotes for safe shell use.
+// Test data uses double quotes for JSON, so no embedded single-quote
+// escaping is needed.
+func quoteForSh(s string) string {
+	return "'" + s + "'"
+}

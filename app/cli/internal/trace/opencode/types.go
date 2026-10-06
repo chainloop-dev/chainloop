@@ -164,12 +164,3 @@ type contentV2 struct {
 	Text  string     `json:"text,omitempty"`
 	State *toolState `json:"state,omitempty"`
 }
-
-// sessionListEntry mirrors one element of `opencode session list --format json`.
-type sessionListEntry struct {
-	ID        string  `json:"id"`
-	Title     string  `json:"title"`
-	Directory string  `json:"directory"`
-	Updated   float64 `json:"updated"`
-	Created   float64 `json:"created"`
-}
