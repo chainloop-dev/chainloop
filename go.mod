@@ -3,7 +3,7 @@ module github.com/chainloop-dev/chainloop
 go 1.26.6
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.1
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2
 	buf.build/go/protovalidate v1.4.0
 	buf.build/go/protoyaml v0.7.0
 	charm.land/huh/v2 v2.0.3
