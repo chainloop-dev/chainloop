@@ -79,6 +79,14 @@ GOBIN=<scratch-dir> go install github.com/golangci/golangci-lint/v2/cmd/golangci
 
 For a Go patch upgrade, the golangci-lint bump is not required.
 
+### 5b. Regenerate Protobuf Code
+
+The protoc plugins (`protoc-gen-go`, etc.) format their output with the `go/format` of the Go toolchain that built them. A new Go minor can change how comments in generated `.pb.go` files are formatted, and the CI `Test (main-module)` job fails with "The Git repository is dirty" when the committed files do not match.
+
+1. Rebuild the codegen tools with the new Go: `make init-api-tools`.
+2. Run `make api` (the openapi step needs Docker running) and `make config`.
+3. Commit the regenerated `.pb.go` files. The changes are expected to be comment-only; investigate anything else.
+
 ### 6. Update Documentation
 
 Update the version reference in `./CLAUDE.md` under "Key Technologies":
