@@ -51,9 +51,12 @@ const (
 	claimScopeType    = "scope_type"
 	errRecordsNoScope = "records no scope"
 	// errNotVerified is all that a caller learns about a token whose row disagrees with its claims
-	errNotVerified   = "API token could not be verified"
-	entryAPI         = "API"
-	entryAttestation = "attestation"
+	errNotVerified = "API token could not be verified"
+	// errNotVerifiedAtEntry is the whole error that both entry points return for such a token. The
+	// tests compare the whole text, so that no reason can leak into it.
+	errNotVerifiedAtEntry = "error setting current org and user: " + errNotVerified
+	entryAPI              = "API"
+	entryAttestation      = "attestation"
 )
 
 const (
@@ -404,7 +407,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareLogsAClaimsMismatch(t *testing.T) {
 
 	// The caller learns only that the token could not be verified. The log line has the reason.
 	require.ErrorIs(t, err, biz.ErrAPITokenClaimsMismatch)
-	assert.NotContains(t, err.Error(), "scope mismatch")
+	require.EqualError(t, err, errNotVerifiedAtEntry)
 	assert.Contains(t, buf.String(), "disagrees with its signed claims")
 	assert.Contains(t, buf.String(), "scope mismatch")
 	assert.Contains(t, buf.String(), token.ID.String())

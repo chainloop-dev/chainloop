@@ -386,23 +386,23 @@ func TestAPITokenMiddlewareRefusesARowThatDisagreesWithItsClaims(t *testing.T) {
 		{name: "an organization token as minted", opts: orgToken},
 		{name: "a project token as minted", opts: projectToken},
 		{name: "a product token as minted", opts: productToken},
-		{name: "a project token widened to its organization", opts: projectToken, wantErr: errNotVerified,
+		{name: "a project token widened to its organization", opts: projectToken, wantErr: errNotVerifiedAtEntry,
 			alter: func(u *ent.APITokenUpdateOne) *ent.APITokenUpdateOne {
 				return u.SetScope(authz.ResourceTypeOrganization).SetScopeID(orgID)
 			}},
-		{name: "an organization token made an instance token", opts: orgToken, header: otherOrg.Name, wantErr: errNotVerified,
+		{name: "an organization token made an instance token", opts: orgToken, header: otherOrg.Name, wantErr: errNotVerifiedAtEntry,
 			alter: func(u *ent.APITokenUpdateOne) *ent.APITokenUpdateOne {
 				return u.SetScope(authz.ResourceTypeInstance).ClearScopeID()
 			}},
-		{name: "a project token moved to another project", opts: projectToken, wantErr: errNotVerified,
+		{name: "a project token moved to another project", opts: projectToken, wantErr: errNotVerifiedAtEntry,
 			alter: func(u *ent.APITokenUpdateOne) *ent.APITokenUpdateOne { return u.SetScopeID(other.ID) }},
-		{name: "an organization token moved to another organization", opts: orgToken, wantErr: errNotVerified,
+		{name: "an organization token moved to another organization", opts: orgToken, wantErr: errNotVerifiedAtEntry,
 			alter: func(u *ent.APITokenUpdateOne) *ent.APITokenUpdateOne {
 				return u.SetOrganizationID(otherOrgID).SetScopeID(otherOrgID)
 			}},
-		{name: "a product token moved to another product", opts: productToken, wantErr: errNotVerified,
+		{name: "a product token moved to another product", opts: productToken, wantErr: errNotVerifiedAtEntry,
 			alter: func(u *ent.APITokenUpdateOne) *ent.APITokenUpdateOne { return u.SetScopeID(otherProduct) }},
-		{name: "a product token moved to another organization", opts: productToken, wantErr: errNotVerified,
+		{name: "a product token moved to another organization", opts: productToken, wantErr: errNotVerifiedAtEntry,
 			alter: func(u *ent.APITokenUpdateOne) *ent.APITokenUpdateOne { return u.SetOrganizationID(otherOrgID) }},
 	}
 
@@ -416,7 +416,7 @@ func TestAPITokenMiddlewareRefusesARowThatDisagreesWithItsClaims(t *testing.T) {
 
 			for entry, got := range authenticateAtBothEntryPoints(t, tu, token.JWT, tc.header) {
 				if tc.wantErr != "" {
-					assert.ErrorContains(t, got.err, tc.wantErr, entry)
+					assert.EqualError(t, got.err, tc.wantErr, entry)
 					assert.ErrorIs(t, got.err, biz.ErrAPITokenClaimsMismatch, entry)
 					assert.Nil(t, got.token, entry)
 					continue
