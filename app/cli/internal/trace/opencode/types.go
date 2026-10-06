@@ -18,9 +18,9 @@ package opencode
 import "encoding/json"
 
 // types.go mirrors the JSON structures emitted by `opencode export <sessionID>`
-// (OpenCode 1.x), `opencode session export <sessionID>` (OpenCode 2) and
-// `opencode session list --format json`. Only the fields consumed by the
-// trace provider are modelled; unknown fields are ignored by encoding/json.
+// (OpenCode 1.x) and `opencode session export <sessionID>` (OpenCode 2). Only
+// the fields consumed by the trace provider are modelled; unknown fields are
+// ignored by encoding/json.
 
 // exportData is the top-level shape of `opencode export`:
 //
