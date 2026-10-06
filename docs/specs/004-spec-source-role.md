@@ -4,26 +4,27 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3531
 prd:
 ---
 
-# Spec 004: Role of each spec source
+# Spec 004: Role and title of each spec source
 
 ## Summary
-This spec changes the spec capture of [Spec 002](002-session-spec-capture.md) and [Spec 003](003-spec-capture-during-session.md). It does not replace them. Today each spec source has a kind: ticket, document, image, or text. The kind tells the format of a source, but not its purpose. With this change, the agent can also record a role for each source: `task`, `spec`, `plan`, or `reference`. The CLI stores the role in the session material and in the annotations of the spec material. A tool that shows the sources can then group them by purpose.
+This spec changes the spec capture of [Spec 002](002-session-spec-capture.md) and [Spec 003](003-spec-capture-during-session.md). It does not replace them. Today each spec source has a kind: ticket, document, image, or text. The kind tells the format of a source, but not its purpose. A source also has no name that a person can read. With this change, the agent can also record a role and a title for each source. The role is `task`, `spec`, `plan`, or `reference`. The title is a short name, for example the title of a ticket. The CLI stores both in the session material and in the annotations of the spec material. A tool that shows the sources can then group them by purpose and label them by title.
 
 ## Problem
 - A reader of the evidence cannot tell a spec from a background document. Both have the kind `document`.
 - A reader cannot tell an approved plan from other text. Both have the kind `text`.
 - A ticket can hold the task, and it can also be only background for the work. The kind `ticket` does not tell which.
 - A tool that shows the spec sources must guess the purpose from the kind. The guess is wrong for some sources.
+- A source has no name that a person can read. A tool must use the material name, which the CLI makes from the file name. The CLI shortens it and changes it to lower case, for example `ticket-eng-1234-comment-rca`.
 - An image or another binary file has no header, so the agent cannot record anything about it.
 
 ## Goals and Non-Goals
-- Goal: each spec source can carry its purpose, as the agent decides it.
-- Goal: the evidence holds the role next to the kind, in the spec entry and in the material annotations.
-- Goal: the agent can give a role to a binary file too.
-- Goal: sessions without roles stay valid, and earlier consumers keep working.
+- Goal: each spec source can carry its purpose and a short title, as the agent decides them.
+- Goal: the evidence holds the role and the title next to the kind, in the spec entry and in the material annotations.
+- Goal: the agent can give a role and a title to a binary file too.
+- Goal: sessions without roles or titles stay valid, and earlier consumers keep working.
 - Non-goal: a change to the kinds, or to how the CLI finds the kind.
-- Non-goal: rules in the CLI that guess a role. The agent decides the role, as it decides what a spec is (D-001 of Spec 002).
-- Non-goal: a source address or other metadata for binary files. Only the role is new.
+- Non-goal: rules in the CLI that guess a role or a title. The agent decides them, as it decides what a spec is (D-001 of Spec 002).
+- Non-goal: a source address or other metadata for binary files. Only the role and the title are new.
 - Non-goal: a change to the reminder at each user turn of Spec 003.
 
 ## Requirements
@@ -39,7 +40,7 @@ A spec source MAY have one role. The roles are:
 The header of a text spec file MAY hold a `role` field. The CLI MUST read it with no regard to letter case.
 
 ### R-003: Role of a binary file
-For an image or another binary file, the agent MAY write a companion file. Its name is the name of the binary file plus `.meta.yaml`. It holds a `role` field. The CLI MUST apply that role to the binary file. The CLI MUST NOT store the companion file as a spec material of its own. The CLI MUST ignore a companion file with no binary file next to it.
+For an image or another binary file, the agent MAY write a companion file. Its name is the name of the binary file plus `.meta.yaml`. It holds a `role` field and a `title` field. The CLI MUST apply those values to the binary file. The CLI MUST NOT store the companion file as a spec material of its own. The CLI MUST ignore a companion file with no binary file next to it.
 - Done when: the agent copies a screenshot and writes its companion file with `role: reference`. The push records one image material with the role `reference`, and no material for the companion file.
 
 ### R-004: Role in the evidence
@@ -50,22 +51,31 @@ A role that is missing, empty, or not in the vocabulary MUST give no role. The s
 - Done when: a header with `role: design` pushes a spec material with no role annotation, and the push succeeds.
 
 ### R-006: Capture instruction
-The capture instruction at session start SHOULD ask the agent to set the role of each source, with one short line for each role. It SHOULD tell the agent how to give a role to a binary file.
+The capture instruction at session start SHOULD ask the agent to set the role and the title of each source. It SHOULD give one short line for each role. It SHOULD tell the agent how to give a role and a title to a binary file.
+
+### R-007: Title
+The header of a text spec file, and the companion file of a binary file, MAY hold a `title` field. When a source has a title, the system MUST record it in the spec entry of the session material. It MUST also record it in a `chainloop.spec.title` annotation on the spec material. When the title is missing or empty, the system MUST leave out both. The system MUST NOT make a title from the content or from the file name.
+- Done when: a ticket file with `title: "ENG-1234: Add an export button"` pushes a spec entry and a material annotation with that title.
+
+### R-008: Title limits
+The system MUST cut a title that is longer than 120 characters, and keep the first 120. The system MUST apply the secret redaction of Spec 002 to the title of a companion file before the title goes into the evidence. A bad title MUST NOT stop the push.
 
 ## Constraints
 - The repository is public. The instruction text and the format are visible to all users.
-- The change to the evidence is additive. A consumer that does not know the role MUST still read the spec entries and materials.
+- The change to the evidence is additive. A consumer that does not know the role or the title MUST still read the spec entries and materials.
+- The title is text that an agent wrote. It can hold a secret, as the spec text can.
 - Only known header fields reach the evidence. A new field does not open the header to other keys.
 - The instruction at session start goes into the agent context. It must stay short.
 
 ## Proposal
-The user does nothing new. At session start, the capture instruction lists the four roles. The agent adds a role to the header of each text file that it writes:
+The user does nothing new. At session start, the capture instruction lists the four roles and asks for a short title. The agent adds a role and a title to the header of each text file that it writes:
 
 ```markdown
 ---
 kind: ticket
 uri: https://tracker.example.com/issue/ENG-1234
 role: task
+title: "ENG-1234: Add an export button"
 ---
 
 # ENG-1234: Add an export button
@@ -81,15 +91,17 @@ spec folder
 ├── approved-plan.md              kind: text, role: plan
 ├── export-mockup.png             image, stored as it is
 └── export-mockup.png.meta.yaml   role: reference
+                                  title: Export button mockup
 ```
 
-At push time, the CLI reads the role as it reads the kind and the source address. It normalizes the value, and it drops a value that is not in the vocabulary. It applies the role of a companion file to its binary file, and it does not upload the companion file. The spec entry and the material annotations then hold the role:
+At push time, the CLI reads the role and the title as it reads the kind and the source address. It normalizes the role, and it drops a role that is not in the vocabulary. It cuts a long title. It applies the values of a companion file to its binary file, after it redacts the title, and it does not upload the companion file. The spec entry and the material annotations then hold the role and the title:
 
 ```json
 "spec": [
-  { "kind": "ticket", "role": "task", "uri": "https://tracker.example.com/issue/ENG-1234",
+  { "kind": "ticket", "role": "task", "title": "ENG-1234: Add an export button",
+    "uri": "https://tracker.example.com/issue/ENG-1234",
     "digest": "sha256:e4c2...", "captured_at": "2026-10-06T10:12:03Z" },
-  { "kind": "image", "role": "reference",
+  { "kind": "image", "role": "reference", "title": "Export button mockup",
     "digest": "sha256:c2a1...", "captured_at": "2026-10-06T10:31:40Z" }
 ]
 ```
@@ -102,12 +114,13 @@ At push time, the CLI reads the role as it reads the kind and the source address
     "chainloop.material.type": "EVIDENCE",
     "chainloop.spec.session_id": "fd4e6754-3b26-4f54-9807-13c58465bb35",
     "chainloop.spec.kind": "image",
-    "chainloop.spec.role": "reference"
+    "chainloop.spec.role": "reference",
+    "chainloop.spec.title": "Export button mockup"
   }
 }
 ```
 
-A tool that shows the sources groups them by role when a source has one. For a source with no role, the tool uses its own rule from the kind. The evidence holds only what the agent stated.
+A tool that shows the sources groups them by role when a source has one, and labels them by title. For a source with no role, the tool uses its own rule from the kind. For a source with no title, it uses the material name. The evidence holds only what the agent stated.
 
 ## Decision Record
 
@@ -120,6 +133,9 @@ A tool that shows the sources groups them by role when a source has one. For a s
 | D-005 | Instruction strength | SHOULD, in the session-start instruction only | A role is useful but not necessary, and the reminder at each turn must stay short (Spec 003). Rejected: MUST, and the roles in the reminder at each turn (more tokens on each turn). | drafting |
 | D-006 | Name of the companion file | The binary file name plus `.meta.yaml`, for example `export-mockup.png.meta.yaml` | The suffix tells that the file holds metadata, not a spec. Rejected: the binary file name plus `.md`, with a header and an empty body (a reader can take it for an empty spec). | drafting |
 | D-007 | Companion file with no binary file | The CLI ignores it, with no warning | The file holds no spec content, so the push loses nothing. Rejected: a warning in the session material (noise for a case with no loss). | drafting |
+| D-008 | Name of a source | An optional title that the agent writes, next to the role | The agent knows the title of the source when it writes the file. The format already changes for the role, so a second field costs little. A tool can label a source from the session material alone. Rejected: the material name only (a short lower-case file stem). Rejected: a title that the CLI takes from the first heading (a guess that looks like a fact in the evidence). This changes the outcome of [#3528](https://github.com/chainloop-dev/chainloop/issues/3528), which closed a title field before the format had other changes. | drafting |
+| D-009 | Where the title goes | The spec entry and a `chainloop.spec.title` annotation, as for the role | A tool that reads only one material can label it. Rejected: the spec entry only. | drafting |
+| D-010 | Long title | Cut at 120 characters, and keep the first part | A model sometimes writes a full paragraph. A cut keeps a usable label. Rejected: drop a long title (the source loses its label). Rejected: no limit (long annotations and labels). | drafting |
 
 ## Open Questions
 None.
@@ -131,4 +147,5 @@ None.
 | The agent gives a wrong role, for example `spec` for a background document. | The role is the agent's statement, as the kind is. The kind and the content stay in the evidence, so a reviewer can check. |
 | The agent does not set a role. | The role is optional (R-005). Consumers use their own rule from the kind. The share of sources with a role is measurable from the evidence. |
 | The agent forgets the companion file for an image. | The image has no role, and consumers use their own rule. |
+| A title holds a secret, for example a token in a pasted ticket title. | The redaction covers the header of a text file and the title of a companion file (R-008). |
 | A source has more than one purpose. For example, a ticket also holds the full spec. | The agent records the main purpose. The instruction says to pick the role that tells why the source is in the session. |
