@@ -82,6 +82,18 @@
             "type": "string",
             "description": "What this entry was resolved from: 'ticket', 'document', 'image', or 'text' for a spec stated in the session itself. Left unconstrained so further kinds need no schema version bump; a producer normalises anything it does not recognise to 'text'."
           },
+          "role": {
+            "type": "string",
+            "description": "The purpose of this source, as the agent stated it: 'task', 'spec', 'plan', or 'reference'. Absent when the agent stated no role. Left unconstrained so further roles need no schema version bump."
+          },
+          "title": {
+            "type": "string",
+            "description": "A short name for this source, as the agent wrote it"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this source holds, or why it is in the session, in one or two sentences, as the agent wrote it"
+          },
           "uri": {
             "type": "string",
             "description": "Where the text came from, absent when the task was stated in the session itself rather than resolved from an external source"

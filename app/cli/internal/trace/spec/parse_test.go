@@ -40,6 +40,9 @@ func TestParse(t *testing.T) {
 		wantKind    string
 		wantURI     string
 		wantContent string
+		wantRole    string
+		wantTitle   string
+		wantDesc    string
 	}{
 		{
 			name:        "a full frontmatter block",
@@ -118,6 +121,51 @@ func TestParse(t *testing.T) {
 			wantKind:    aicodingsession.SpecKindImage,
 			wantContent: "what the mockup shows",
 		},
+		{
+			name:        "a role, a title and a description",
+			doc:         "---\nkind: ticket\nrole: task\ntitle: \"ENG-1234: Add an export button\"\ndescription: The ticket that the session implements.\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantRole:    aicodingsession.SpecRoleTask,
+			wantTitle:   "ENG-1234: Add an export button",
+			wantDesc:    "The ticket that the session implements.",
+			wantContent: specBody,
+		},
+		{
+			name:        "a role with case and padding",
+			doc:         "---\nrole: \" Reference \"\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindText,
+			wantRole:    aicodingsession.SpecRoleReference,
+			wantContent: specBody,
+		},
+		{
+			// A bad role costs the role only: never the kind, and never a
+			// role guessed from the kind.
+			name:        "a role outside the vocabulary",
+			doc:         "---\nkind: document\nrole: design\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindDocument,
+			wantContent: specBody,
+		},
+		{
+			name:        "a title and a description of only whitespace",
+			doc:         "---\ntitle: \"   \"\ndescription: \"\\t\"\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindText,
+			wantContent: specBody,
+		},
+		{
+			// The limit counts characters, so a cut never splits one.
+			name:        "a title over the limit is cut",
+			doc:         "---\ntitle: " + strings.Repeat("é", MaxTitleLen+5) + "\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindText,
+			wantTitle:   strings.Repeat("é", MaxTitleLen),
+			wantContent: specBody,
+		},
+		{
+			name:        "a description over the limit is cut",
+			doc:         "---\ndescription: " + strings.Repeat("a", MaxDescriptionLen+1) + "\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindText,
+			wantDesc:    strings.Repeat("a", MaxDescriptionLen),
+			wantContent: specBody,
+		},
 		{name: "an empty document", doc: "", wantNil: true},
 		{name: "frontmatter with no body", doc: "---\nkind: ticket\n---\n", wantNil: true},
 		{name: "a whitespace-only body", doc: "---\nkind: ticket\n---\n   \n\n\t\n", wantNil: true},
@@ -136,11 +184,39 @@ func TestParse(t *testing.T) {
 			require.NotNil(t, got)
 			assert.Equal(t, tc.wantKind, got.Kind)
 			assert.Equal(t, tc.wantURI, got.URI)
+			assert.Equal(t, tc.wantRole, got.Role)
+			assert.Equal(t, tc.wantTitle, got.Title)
+			assert.Equal(t, tc.wantDesc, got.Description)
 			// What follows the header is the text: split decides where the
 			// header ends, which is also what decides the kind and the URI.
 			_, body := split(tc.doc)
 			assert.Equal(t, tc.wantContent, strings.TrimSpace(body))
 			assert.Equal(t, "2026-09-16T10:12:03Z", got.CapturedAt)
+		})
+	}
+}
+
+func TestParseMeta(t *testing.T) {
+	testCases := []struct {
+		name string
+		doc  string
+		want Meta
+	}{
+		{
+			name: "every field",
+			doc:  "role: reference\ntitle: Export button mockup\ndescription: Where the button goes.\n",
+			want: Meta{Role: aicodingsession.SpecRoleReference, Title: "Export button mockup", Description: "Where the button goes."},
+		},
+		{name: "a role outside the vocabulary", doc: "role: mockup\ntitle: x\n", want: Meta{Title: "x"}},
+		{name: "a title over the limit is cut", doc: "title: " + strings.Repeat("a", MaxTitleLen+1), want: Meta{Title: strings.Repeat("a", MaxTitleLen)}},
+		// A file we cannot read costs its values, and nothing else.
+		{name: "not valid YAML", doc: "role: plan\ntitle: [unclosed\n", want: Meta{}},
+		{name: "an empty file", doc: "", want: Meta{}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, ParseMeta([]byte(tc.doc)))
 		})
 	}
 }

@@ -50,6 +50,30 @@ func TestResolveSpecKind(t *testing.T) {
 	}
 }
 
+func TestResolveSpecRole(t *testing.T) {
+	testCases := []struct {
+		name string
+		role string
+		want string
+	}{
+		{name: "a task is kept", role: SpecRoleTask, want: SpecRoleTask},
+		{name: "a spec is kept", role: SpecRoleSpec, want: SpecRoleSpec},
+		{name: "a plan is kept", role: SpecRolePlan, want: SpecRolePlan},
+		{name: "a reference is kept", role: SpecRoleReference, want: SpecRoleReference},
+		{name: "case and padding are normalised", role: "  Plan ", want: SpecRolePlan},
+		// Unlike the kind, a role is never guessed: no role is a valid state,
+		// and a consumer applies its own rule to it.
+		{name: "an unset role is no role", role: "", want: ""},
+		{name: "a role outside the vocabulary is no role", role: "design", want: ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, ResolveSpecRole(tc.role))
+		})
+	}
+}
+
 // TestSpecEntryMatchesSchema closes the loop between the struct tags here and
 // the property names in the schema. Each is tested on its own elsewhere, so a
 // field renamed on one side and not the other would otherwise only surface as a
@@ -60,8 +84,12 @@ func TestSpecEntryMatchesSchema(t *testing.T) {
 		entry SpecEntry
 	}{
 		{
-			name:  "every field populated",
-			entry: SpecEntry{Kind: SpecKindTicket, URI: "https://linear.app/chainloop/issue/PFM-7289", Digest: testSpecDigest, CapturedAt: "2026-09-16T10:12:03Z"},
+			name: "every field populated",
+			entry: SpecEntry{
+				Kind: SpecKindTicket, Role: SpecRoleTask, Title: "PFM-7289: Capture the spec",
+				Description: "The ticket that the session implements.",
+				URI:         "https://linear.app/chainloop/issue/PFM-7289", Digest: testSpecDigest, CapturedAt: "2026-09-16T10:12:03Z",
+			},
 		},
 		{
 			// What a spec written in the session itself looks like: no source

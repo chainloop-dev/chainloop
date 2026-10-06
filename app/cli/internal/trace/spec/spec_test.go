@@ -224,6 +224,43 @@ func TestReadAll(t *testing.T) {
 		assert.True(t, entries[1].Verbatim)
 	})
 
+	t.Run("a companion file goes with its binary file and is no spec of its own", func(t *testing.T) {
+		root := t.TempDir()
+		pngBytes := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\xff\xfe")
+		meta := "role: reference\ntitle: Export button mockup\n"
+		writeSpec(t, root, sessionID, "mockup.png", string(pngBytes), time.Now())
+		writeSpec(t, root, sessionID, "mockup.png"+MetaSuffix, meta, time.Now())
+
+		entries, warnings, err := ReadAll(root, sessionID, nil)
+
+		require.NoError(t, err)
+		assert.Empty(t, warnings)
+		require.Len(t, entries, 1)
+		assert.Equal(t, "mockup.png", entries[0].FileName)
+		assert.Equal(t, []byte(meta), entries[0].MetaRaw)
+		// The values are read only after the companion file is redacted.
+		assert.Empty(t, entries[0].Title)
+		assert.Empty(t, entries[0].Role)
+	})
+
+	t.Run("a companion file with no binary file next to it is ignored", func(t *testing.T) {
+		root := t.TempDir()
+		writeSpec(t, root, sessionID, "ticket.md", "the ticket", time.Now())
+		// One with no file at all, and one next to a text file, which has a
+		// header of its own.
+		writeSpec(t, root, sessionID, "gone.png"+MetaSuffix, "role: reference\n", time.Now())
+		writeSpec(t, root, sessionID, "ticket.md"+MetaSuffix, "role: task\n", time.Now())
+
+		entries, warnings, err := ReadAll(root, sessionID, nil)
+
+		require.NoError(t, err)
+		assert.Empty(t, warnings)
+		require.Len(t, entries, 1)
+		assert.Equal(t, "ticket.md", entries[0].FileName)
+		assert.Nil(t, entries[0].MetaRaw)
+		assert.Empty(t, entries[0].Role)
+	})
+
 	t.Run("an image in a text format is kept as it is too", func(t *testing.T) {
 		// An SVG is valid UTF-8, so only its type tells it apart from a spec
 		// the agent wrote. Parsing and redacting it as text could break it.

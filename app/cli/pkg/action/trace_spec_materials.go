@@ -36,9 +36,12 @@ import (
 // Annotations on each spec material, so that a policy or a reader can find
 // the spec of a session without opening the session material first.
 const (
-	specAnnotationSession = "chainloop.spec.session_id"
-	specAnnotationKind    = "chainloop.spec.kind"
-	specAnnotationURI     = "chainloop.spec.uri"
+	specAnnotationSession     = "chainloop.spec.session_id"
+	specAnnotationKind        = "chainloop.spec.kind"
+	specAnnotationURI         = "chainloop.spec.uri"
+	specAnnotationRole        = "chainloop.spec.role"
+	specAnnotationTitle       = "chainloop.spec.title"
+	specAnnotationDescription = "chainloop.spec.description"
 )
 
 // specMaterialKind is the material type each captured spec is stored as.
@@ -81,7 +84,7 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 	for i, c := range captures {
 		name := names.AllocateNamed(specMaterialName(sessionID, c.FileName))
 
-		entry, err := storeCapture(ctx, adder, redactor, filepath.Join(tmpDir, strconv.Itoa(i)), name, sessionID, c)
+		entry, err := storeCapture(ctx, adder, redactor, filepath.Join(tmpDir, strconv.Itoa(i)), name, sessionID, c, log)
 		if err != nil {
 			// The error stays in the local log. The warning goes into the
 			// uploaded evidence, and error text can carry local paths.
@@ -101,10 +104,14 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 // storeCapture redacts one capture, adds it to the attestation, and returns
 // the reference the session material records for it: everything but the text,
 // which the digest points at.
-func storeCapture(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, dir, name, sessionID string, c spec.Capture) (aicodingsession.SpecEntry, error) {
+func storeCapture(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, dir, name, sessionID string, c spec.Capture, log zerolog.Logger) (aicodingsession.SpecEntry, error) {
 	redacted, err := redactCapture(ctx, redactor, c)
 	if err != nil {
 		return aicodingsession.SpecEntry{}, err
+	}
+
+	if redacted.MetaRaw != nil {
+		redacted.Meta = redactMeta(ctx, redactor, redacted.MetaRaw, log)
 	}
 
 	digest, err := addSpecMaterial(ctx, adder, dir, name, sessionID, redacted)
@@ -113,17 +120,34 @@ func storeCapture(ctx context.Context, adder specMaterialAdder, redactor *specRe
 	}
 
 	return aicodingsession.SpecEntry{
-		Kind:       redacted.Kind,
-		URI:        redacted.URI,
-		Digest:     digest,
-		CapturedAt: redacted.CapturedAt,
+		Kind:        redacted.Kind,
+		Role:        redacted.Role,
+		Title:       redacted.Title,
+		Description: redacted.Description,
+		URI:         redacted.URI,
+		Digest:      digest,
+		CapturedAt:  redacted.CapturedAt,
 	}, nil
+}
+
+// redactMeta redacts the companion file of a binary file and reads its values.
+// A companion file that cannot be scanned gives no values: they are what could
+// not be scanned, and the binary file itself is stored as it is anyway.
+func redactMeta(ctx context.Context, redactor *specRedactor, raw []byte, log zerolog.Logger) spec.Meta {
+	doc, err := redactor.Redact(ctx, raw)
+	if err != nil {
+		log.Warn().Err(err).Msg("could not scan a spec companion file; its values are not recorded")
+		return spec.Meta{}
+	}
+
+	return spec.ParseMeta(doc)
 }
 
 // redactCapture redacts the text file a capture was read from. The redacted file
 // is what gets stored, header included, so it is the file on disk with only
-// its secrets taken out. It is parsed again for the source address that the
-// annotation and the reference carry, so that address is redacted too.
+// its secrets taken out. It is parsed again for the source address, the title
+// and the description that the annotations and the reference carry, so they
+// are redacted too.
 //
 // Redaction fails closed, as it does for the session material: a file that
 // could not be scanned is not uploaded at all.
@@ -147,6 +171,7 @@ func redactCapture(ctx context.Context, redactor *specRedactor, c spec.Capture) 
 	}
 
 	c.URI = parsed.URI
+	c.Meta = parsed.Meta
 	c.Raw = doc
 
 	return c, nil
@@ -171,8 +196,15 @@ func addSpecMaterial(ctx context.Context, adder specMaterialAdder, dir, name, se
 		specAnnotationSession: sessionID,
 		specAnnotationKind:    c.Kind,
 	}
-	if c.URI != "" {
-		annotations[specAnnotationURI] = c.URI
+	for key, value := range map[string]string{
+		specAnnotationURI:         c.URI,
+		specAnnotationRole:        c.Role,
+		specAnnotationTitle:       c.Title,
+		specAnnotationDescription: c.Description,
+	} {
+		if value != "" {
+			annotations[key] = value
+		}
 	}
 
 	return adder.AddMaterial(ctx, name, path, specMaterialKind, annotations)
