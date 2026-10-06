@@ -127,6 +127,7 @@ func (x *GenerateSigningCertResponse) GetChain() *CertificateChain {
 
 type CertificateChain struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	//
 	// The PEM-encoded certificate chain, ordered from leaf to intermediate to root as applicable.
 	Certificates  []string `protobuf:"bytes,1,rep,name=certificates,proto3" json:"certificates,omitempty"`
 	unknownFields protoimpl.UnknownFields

@@ -2037,7 +2037,7 @@ func (x *Attestation_SigningOptions) GetSigningCa() string {
 
 type Attestation_Material_KeyVal struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// NOT USED, kept for compatibility with servers that still perform server-side validation“
+	// NOT USED, kept for compatibility with servers that still perform server-side validation``
 	// TODO: remove after some time
 	//
 	// Deprecated: Marked as deprecated in attestation/v1/crafting_state.proto.
@@ -2102,7 +2102,7 @@ func (x *Attestation_Material_KeyVal) GetDigest() string {
 
 type Attestation_Material_ContainerImage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// NOT USED, kept for compatibility with servers that still perform server-side validation“
+	// NOT USED, kept for compatibility with servers that still perform server-side validation``
 	// TODO: remove after some time
 	//
 	// Deprecated: Marked as deprecated in attestation/v1/crafting_state.proto.
@@ -2222,7 +2222,7 @@ func (x *Attestation_Material_ContainerImage) GetHasLatestTag() *wrapperspb.Bool
 
 type Attestation_Material_Artifact struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// NOT USED, kept for compatibility with servers that still perform server-side validation“
+	// NOT USED, kept for compatibility with servers that still perform server-side validation``
 	// TODO: remove after some time
 	//
 	// Deprecated: Marked as deprecated in attestation/v1/crafting_state.proto.
