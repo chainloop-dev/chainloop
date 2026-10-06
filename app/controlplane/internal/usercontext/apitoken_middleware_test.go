@@ -42,14 +42,13 @@ import (
 
 // Claim names, error substrings and entry point names that the tests of both entry points share.
 const (
-	claimAud          = "aud"
-	claimJTI          = "jti"
-	claimOrgID        = "org_id"
-	claimOrgName      = "org_name"
-	claimProjectID    = "project_id"
-	claimScopeID      = "scope_id"
-	claimScope        = "scope"
-	errRecordsNoScope = "records no scope"
+	claimAud       = "aud"
+	claimJTI       = "jti"
+	claimOrgID     = "org_id"
+	claimOrgName   = "org_name"
+	claimProjectID = "project_id"
+	claimScopeID   = "scope_id"
+	claimScope     = "scope"
 	// errNotVerified is all that a caller learns about a token whose row disagrees with its claims
 	errNotVerified = "API token could not be verified"
 	// errNotVerifiedAtEntry is the whole error that both entry points return for such a token. The
@@ -442,8 +441,8 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 		{name: "the claim names the row's product", rowScope: &product, rowScopeID: &rowProduct, signScope: true, productClaim: rowProduct},
 		{name: "the claim names another product", rowScope: &product, rowScopeID: &rowProduct, signScope: true, productClaim: otherProduct},
 		{name: "the claim is on an organization-scoped row", rowScope: &organization, rowScopeID: &orgID, productClaim: orgID},
-		{name: "a product token minted before the scope claims", rowScope: &product, rowScopeID: &rowProduct, productClaim: rowProduct, wantErr: "create a new one"},
-		{name: "the claim is on a row that records no scope", productClaim: otherProduct, wantErr: errRecordsNoScope},
+		{name: "a product token minted before the scope claims", rowScope: &product, rowScopeID: &rowProduct, productClaim: rowProduct, wantErr: errNotVerified},
+		{name: "the claim is on a row that records no scope", productClaim: otherProduct, wantErr: errNotVerified},
 	}
 
 	for _, tc := range testCases {

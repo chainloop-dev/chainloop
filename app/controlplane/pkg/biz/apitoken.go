@@ -167,15 +167,11 @@ func (t *APIToken) IsOrgScoped() bool {
 	return t.scopeView().IsOrgScoped()
 }
 
-// VerifyClaims checks that the token's row matches the signed claims. The row must have the same
-// scope, organization, project and workflow. A project or workflow that only the row or only the
-// claims name is also a difference. Any difference refuses the token, so a wrong row can never
-// widen the token or move it elsewhere.
-//
-// A mismatch error wraps ErrAPITokenClaimsMismatch. Two expected states of older tokens get an
-// error without it:
-//   - a row that records no scope, when the claims name no scope either.
-//   - a product token minted before the scope claims existed. Its owner must create a new token.
+// VerifyClaims checks the token's row against its signed claims. The claims are the source of
+// truth. VerifyClaims reads the scope from them first, and then the row must have the same scope,
+// organization, project and workflow. A project or workflow that only the row or only the claims
+// name is also a difference. Any difference refuses the token, so a wrong row can never widen the
+// token or move it elsewhere. Every refusal for a difference wraps ErrAPITokenClaimsMismatch.
 func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
 	if t == nil {
 		return errors.New("API token not found")
@@ -185,31 +181,14 @@ func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
 		return errors.New("API token has no claims")
 	}
 
-	if t.Scope == nil {
-		// Claims that name a scope show that the token had a scope when it was minted. So something
-		// cleared the row's scope later. Legacy claims name no scope, and a row from before the
-		// scope columns records no scope.
-		err := errors.New("API token records no scope")
-		if claims.HasScopeClaims() {
-			err = fmt.Errorf("%w: %w", err, ErrAPITokenClaimsMismatch)
-		}
-
-		return err
-	}
-
-	// This check runs before GetScope on purpose. An older product token's claims name only its
-	// organization. GetScope reads such claims as an organization scope. The comparison below
-	// would then log a security event instead of asking for a new token.
-	if !claims.HasScopeClaims() && t.IsProductScoped() {
-		return errors.New("API token was minted before its scope was signed, create a new one")
-	}
-
+	// A token minted before the control plane signed its scope gets the scope that its other
+	// claims imply: INSTANCE_ADMIN, else its project_id, else its org_id.
 	kind, id, err := claims.GetScope()
 	if err != nil {
 		return fmt.Errorf("API token scope claims: %w: %w", err, ErrAPITokenClaimsMismatch)
 	}
 
-	if *t.Scope != kind || !sameScopeID(t.ScopeID, id) {
+	if t.Scope == nil || *t.Scope != kind || !sameScopeID(t.ScopeID, id) {
 		return fmt.Errorf("API token scope mismatch: %w", ErrAPITokenClaimsMismatch)
 	}
 

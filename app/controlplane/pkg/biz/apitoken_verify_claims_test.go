@@ -78,9 +78,10 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 		{name: "legacy workflow-pinned token", row: workflowRow, claims: legacyWorkflow},
 		{name: "legacy instance token", row: instanceRow, claims: apitoken.CustomClaims{Scope: authz.ScopeInstanceAdmin}},
 
-		{name: "a row recording no scope", row: &APIToken{OrganizationID: org}, claims: legacyOrg, wantErr: "records no scope"},
-		{name: "a signed token whose row's scope was cleared", row: &APIToken{OrganizationID: org}, claims: signedOrg, wantErr: "records no scope", mismatch: true},
-		{name: "a product token minted before the scope claims", row: productRow, claims: legacyOrg, wantErr: "create a new one"},
+		{name: "a row recording no scope", row: &APIToken{OrganizationID: org}, claims: legacyOrg, wantErr: errScopeMismatch, mismatch: true},
+		{name: "a signed token whose row's scope was cleared", row: &APIToken{OrganizationID: org}, claims: signedOrg, wantErr: errScopeMismatch, mismatch: true},
+		// Its claims imply its organization, which is not the product the row records
+		{name: "a product token minted before the scope claims", row: productRow, claims: legacyOrg, wantErr: errScopeMismatch, mismatch: true},
 		{name: "malformed scope claims", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), Scope: string(authz.ResourceTypeOrganization)}, wantErr: "scope claims", mismatch: true},
 		{name: "an instance-admin claim on an organization row", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin}, wantErr: "scope claims", mismatch: true},
 		{name: "a project row widened to its organization, signed claims", row: widenedProjectRow, claims: signedProject, wantErr: errScopeMismatch, mismatch: true},

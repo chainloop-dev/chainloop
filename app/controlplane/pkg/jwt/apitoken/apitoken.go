@@ -128,8 +128,14 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.WorkflowName = *opts.WorkflowName
 	}
 
-	if opts.Scope == nil || *opts.Scope == "" {
+	if opts.Scope == nil {
 		return "", errors.New("scope is required")
+	}
+
+	switch *opts.Scope {
+	case authz.ResourceTypeInstance, authz.ResourceTypeOrganization, authz.ResourceTypeProject, authz.ResourceTypeProduct:
+	default:
+		return "", fmt.Errorf("invalid scope %q", *opts.Scope)
 	}
 
 	claims.Scope = string(*opts.Scope)
@@ -137,12 +143,8 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 		claims.ScopeID = opts.ScopeID.String()
 	}
 
-	// The older instance-admin value would read as a token minted before the scope was signed
-	if !claims.HasScopeClaims() {
-		return "", fmt.Errorf("invalid scope %q", claims.Scope)
-	}
-
-	// Never sign a token whose claims contradict themselves
+	// Refuse claims that do not fit the scope, for example a project scope without the claim of
+	// that project. GetScope runs that check.
 	if _, _, err := claims.GetScope(); err != nil {
 		return "", fmt.Errorf("inconsistent token scope: %w", err)
 	}

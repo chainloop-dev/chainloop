@@ -17,6 +17,7 @@ package usercontext
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"testing"
@@ -168,8 +169,9 @@ func signLegacy(t *testing.T, tokenID uuid.UUID, claims jwt.MapClaims) string {
 
 // Organization, project, workflow-pinned and instance tokens minted before the scope claims keep
 // working, with the scope they always had. The scope backfill gave their rows that scope, and their
-// claims imply the same scope. Both entry points refuse two cases:
-//   - a product token minted before the scope claims.
+// claims imply the same scope. Both entry points refuse two cases, because the row does not record
+// the scope that the claims imply:
+//   - a product token minted before the scope claims. Its claims imply its organization.
 //   - a row that a control plane wrote with no scope after the backfill ran.
 func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T) {
 	if !testhelpers.IntegrationTestsEnabled() {
@@ -209,7 +211,9 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 		// scope columns does this during a rolling upgrade or after a rollback.
 		afterBackfill bool
 
-		wantErr     string
+		wantErr string
+		// mismatch marks a refusal because the row disagrees with the claims
+		mismatch    bool
 		wantScope   authz.ResourceType
 		wantScopeID *uuid.UUID
 		wantOrg     *uuid.UUID
@@ -261,8 +265,9 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 			row: func(c *ent.APITokenCreate) *ent.APITokenCreate {
 				return c.SetOrganizationID(orgID).SetScope(authz.ResourceTypeProduct).SetScopeID(product).SetProjectIds([]uuid.UUID{project.ID})
 			},
-			claims:  orgClaims,
-			wantErr: "create a new one",
+			claims:   orgClaims,
+			wantErr:  errNotVerifiedAtEntry,
+			mismatch: true,
 		},
 		{
 			name: "revoked organization token",
@@ -277,13 +282,15 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 			row:           func(c *ent.APITokenCreate) *ent.APITokenCreate { return c.SetOrganizationID(orgID) },
 			claims:        orgClaims,
 			afterBackfill: true,
-			wantErr:       errRecordsNoScope,
+			wantErr:       errNotVerifiedAtEntry,
+			mismatch:      true,
 		},
 		{
 			name:          "instance row written with no scope after the backfill",
 			claims:        instanceClaims,
 			afterBackfill: true,
-			wantErr:       errRecordsNoScope,
+			wantErr:       errNotVerifiedAtEntry,
+			mismatch:      true,
 		},
 	}
 
@@ -321,7 +328,7 @@ func TestAPITokenMiddlewareAcceptsTokensMintedBeforeTheScopeClaims(t *testing.T)
 			for entry, got := range authenticateAtBothEntryPoints(t, tu, signLegacy(t, ids[i], tc.claims), tc.header) {
 				if tc.wantErr != "" {
 					assert.ErrorContains(t, got.err, tc.wantErr, entry)
-					assert.NotErrorIs(t, got.err, biz.ErrAPITokenClaimsMismatch, entry)
+					assert.Equal(t, tc.mismatch, errors.Is(got.err, biz.ErrAPITokenClaimsMismatch), entry)
 					continue
 				}
 
