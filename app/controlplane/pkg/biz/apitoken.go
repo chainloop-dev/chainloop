@@ -37,8 +37,8 @@ import (
 
 // ErrAPITokenClaimsMismatch marks a token whose row disagrees with its signed claims, or whose
 // claims are malformed. Something wrote the row or the claims incorrectly. It is a security event,
-// not an expired or old credential.
-var ErrAPITokenClaimsMismatch = errors.New("API token claims do not match its row")
+// not an expired or old credential. The caller sees only this message, so it names no detail.
+var ErrAPITokenClaimsMismatch = errors.New("API token could not be verified")
 
 var apiTokenTracer = otelx.Tracer("chainloop-controlplane", "biz/apitoken")
 
@@ -197,14 +197,14 @@ func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
 		return err
 	}
 
-	// This check runs before SignedScope on purpose. An older product token's claims name only its
-	// organization. SignedScope reads such claims as an organization scope. The comparison below
+	// This check runs before GetScope on purpose. An older product token's claims name only its
+	// organization. GetScope reads such claims as an organization scope. The comparison below
 	// would then log a security event instead of asking for a new token.
 	if !claims.HasScopeClaims() && t.IsProductScoped() {
 		return errors.New("API token was minted before its scope was signed, create a new one")
 	}
 
-	kind, id, err := claims.SignedScope()
+	kind, id, err := claims.GetScope()
 	if err != nil {
 		return fmt.Errorf("API token scope claims: %w: %w", err, ErrAPITokenClaimsMismatch)
 	}

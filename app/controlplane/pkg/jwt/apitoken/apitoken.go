@@ -145,7 +145,7 @@ func (ra *Builder) GenerateJWT(opts *GenerateJWTOptions) (string, error) {
 	}
 
 	// Never sign a token whose claims contradict themselves
-	if _, _, err := claims.SignedScope(); err != nil {
+	if _, _, err := claims.GetScope(); err != nil {
 		return "", fmt.Errorf("inconsistent token scope: %w", err)
 	}
 
@@ -170,7 +170,7 @@ type CustomClaims struct {
 	// Despite its name it is not the token's scope: that is ScopeType and ScopeID.
 	Scope string `json:"scope,omitempty"`
 	// ScopeType and ScopeID say what the token was granted. A token minted before they existed
-	// carries neither, and SignedScope derives its scope from the claims that it does carry.
+	// carries neither, and GetScope derives its scope from the claims that it does carry.
 	ScopeType string `json:"scope_type,omitempty"`
 	ScopeID   string `json:"scope_id,omitempty"`
 	jwt.RegisteredClaims
@@ -182,11 +182,11 @@ func (c *CustomClaims) HasScopeClaims() bool {
 	return c.ScopeType != ""
 }
 
-// SignedScope returns the scope that the claims bind the token to. For a token with the scope_type
+// GetScope returns the scope that the claims bind the token to. For a token with the scope_type
 // and scope_id claims, that scope is what they name. For an older token, it is the scope that its
 // other claims imply (see legacyScope). An older product token therefore gets its organization as
-// its scope. SignedScope returns an error for claims that contradict themselves.
-func (c *CustomClaims) SignedScope() (authz.ResourceType, *uuid.UUID, error) {
+// its scope. GetScope returns an error for claims that contradict themselves.
+func (c *CustomClaims) GetScope() (authz.ResourceType, *uuid.UUID, error) {
 	kind, id, err := c.namedScope()
 	if err != nil {
 		return "", nil, err

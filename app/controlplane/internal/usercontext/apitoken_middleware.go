@@ -165,9 +165,11 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 
 	if err := token.VerifyClaims(claims); err != nil {
 		// A row should never disagree with its signed claims. If it does, something wrote the row
-		// incorrectly. The log line never includes the raw JWT.
+		// incorrectly. The log line gives the reason and never includes the raw JWT. The caller
+		// learns only that the token could not be verified.
 		if errors.Is(err, biz.ErrAPITokenClaimsMismatch) {
 			logger.Errorw("msg", "[authN] API token row disagrees with its signed claims", "id", claims.ID, "error", err)
+			return nil, nil, biz.ErrAPITokenClaimsMismatch
 		}
 
 		return nil, nil, err

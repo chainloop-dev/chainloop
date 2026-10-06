@@ -244,7 +244,7 @@ func TestGenerateJWT(t *testing.T) {
 	}
 }
 
-func TestSignedScope(t *testing.T) {
+func TestGetScope(t *testing.T) {
 	org, project, product, other := uuid.New(), uuid.New(), uuid.New(), uuid.New()
 	workflow := uuid.New()
 
@@ -289,7 +289,7 @@ func TestSignedScope(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			kind, id, err := tc.claims.SignedScope()
+			kind, id, err := tc.claims.GetScope()
 			if tc.wantErr {
 				require.Error(t, err)
 				return

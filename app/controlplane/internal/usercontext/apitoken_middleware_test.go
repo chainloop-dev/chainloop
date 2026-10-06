@@ -49,10 +49,11 @@ const (
 	claimProjectID    = "project_id"
 	claimScopeID      = "scope_id"
 	claimScopeType    = "scope_type"
-	errScopeMismatch  = "scope mismatch"
 	errRecordsNoScope = "records no scope"
-	entryAPI          = "API"
-	entryAttestation  = "attestation"
+	// errNotVerified is all that a caller learns about a token whose row disagrees with its claims
+	errNotVerified   = "API token could not be verified"
+	entryAPI         = "API"
+	entryAttestation = "attestation"
 )
 
 const (
@@ -181,7 +182,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			workflowIDClaim: matchingWorkflowID.String(),
 			tokenWorkflowID: &otherWorkflowID,
 			wantErr:         true,
-			wantErrContains: "workflow mismatch",
+			wantErrContains: errNotVerified,
 		},
 		{
 			name:            "workflow claim present but DB row has none",
@@ -190,7 +191,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			tokenExists:     true,
 			workflowIDClaim: matchingWorkflowID.String(),
 			wantErr:         true,
-			wantErrContains: "workflow mismatch",
+			wantErrContains: errNotVerified,
 		},
 		{
 			name:            "scope claims disagree with the DB row",
@@ -199,7 +200,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			tokenExists:     true,
 			extraClaims:     jwt.MapClaims{claimScopeType: "product", claimScopeID: uuid.NewString()},
 			wantErr:         true,
-			wantErrContains: errScopeMismatch,
+			wantErrContains: errNotVerified,
 		},
 		{
 			name:            "a claim of the wrong type is refused",
@@ -401,8 +402,11 @@ func TestWithCurrentAPITokenAndOrgMiddlewareLogsAClaimsMismatch(t *testing.T) {
 	_, err = WithCurrentAPITokenAndOrgMiddleware(apiTokenUC, orgUC, logger)(
 		func(context.Context, interface{}) (interface{}, error) { return nil, nil })(jwtmiddleware.NewContext(context.Background(), claims), nil)
 
-	require.Error(t, err)
+	// The caller learns only that the token could not be verified. The log line has the reason.
+	require.ErrorIs(t, err, biz.ErrAPITokenClaimsMismatch)
+	assert.NotContains(t, err.Error(), "scope mismatch")
 	assert.Contains(t, buf.String(), "disagrees with its signed claims")
+	assert.Contains(t, buf.String(), "scope mismatch")
 	assert.Contains(t, buf.String(), token.ID.String())
 	assert.NotContains(t, buf.String(), signedToken)
 }
@@ -508,8 +512,8 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 		{name: "an instance-admin token without the header has no organization", scopeClaim: authz.ScopeInstanceAdmin},
 		{name: "an organization token takes its row's organization", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
 		// The signed claims and the row must agree, and the claims must agree with themselves.
-		{name: "an instance row whose JWT names no scope is refused", header: headerOrg.Name, wantErr: "scope claims"},
-		{name: "an organization row whose JWT carries the instance-admin claim is refused", scopeClaim: authz.ScopeInstanceAdmin, rowOrg: rowOrg, header: headerOrg.Name, wantErr: "scope claims"},
+		{name: "an instance row whose JWT names no scope is refused", header: headerOrg.Name, wantErr: errNotVerified},
+		{name: "an organization row whose JWT carries the instance-admin claim is refused", scopeClaim: authz.ScopeInstanceAdmin, rowOrg: rowOrg, header: headerOrg.Name, wantErr: errNotVerified},
 	}
 
 	for _, tc := range testCases {
