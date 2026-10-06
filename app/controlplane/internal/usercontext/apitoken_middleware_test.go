@@ -48,7 +48,7 @@ const (
 	claimOrgName      = "org_name"
 	claimProjectID    = "project_id"
 	claimScopeID      = "scope_id"
-	claimScopeType    = "scope_type"
+	claimScope        = "scope"
 	errRecordsNoScope = "records no scope"
 	// errNotVerified is all that a caller learns about a token whose row disagrees with its claims
 	errNotVerified = "API token could not be verified"
@@ -201,7 +201,7 @@ func TestWithCurrentAPITokenAndOrgMiddleware(t *testing.T) {
 			receivedToken:   true,
 			audience:        apitoken.Audience,
 			tokenExists:     true,
-			extraClaims:     jwt.MapClaims{claimScopeType: "product", claimScopeID: uuid.NewString()},
+			extraClaims:     jwt.MapClaims{claimScope: "product", claimScopeID: uuid.NewString()},
 			wantErr:         true,
 			wantErrContains: errNotVerified,
 		},
@@ -325,7 +325,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			rowScope:      biz.ToPtr(authz.ResourceTypeProduct),
 			rowScopeID:    &productID,
 			rowProjectIDs: []uuid.UUID{projectA},
-			claims:        jwt.MapClaims{claimOrgID: orgID.String(), claimScopeType: "product", claimScopeID: productID.String()},
+			claims:        jwt.MapClaims{claimOrgID: orgID.String(), claimScope: "product", claimScopeID: productID.String()},
 		},
 		{
 			name:       "an organization token with legacy claims",
@@ -337,7 +337,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 		{
 			name:     "an instance token",
 			rowScope: biz.ToPtr(authz.ResourceTypeInstance),
-			claims:   jwt.MapClaims{claimOrgID: "", "scope": authz.ScopeInstanceAdmin, claimScopeType: "instance"},
+			claims:   jwt.MapClaims{claimOrgID: "", claimScope: string(authz.ResourceTypeInstance)},
 		},
 	}
 
@@ -398,7 +398,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareLogsAClaimsMismatch(t *testing.T) {
 
 	claims := jwt.MapClaims{
 		claimAud: apitoken.Audience, claimJTI: token.ID.String(), claimOrgID: orgID.String(),
-		claimScopeType: string(authz.ResourceTypeProduct), claimScopeID: uuid.NewString(),
+		claimScope: string(authz.ResourceTypeProduct), claimScopeID: uuid.NewString(),
 		"raw": signedToken,
 	}
 
@@ -465,7 +465,7 @@ func TestAPITokenMiddlewaresIgnoreAProductClaim(t *testing.T) {
 					RegisteredClaims: jwt.RegisteredClaims{ID: token.ID.String(), Issuer: testIssuer, Audience: jwt.ClaimStrings{apitoken.Audience}},
 				}
 				if tc.signScope {
-					jwtClaims.ScopeType, jwtClaims.ScopeID = string(*tc.rowScope), tc.rowScopeID.String()
+					jwtClaims.Scope, jwtClaims.ScopeID = string(*tc.rowScope), tc.rowScopeID.String()
 				}
 
 				signed, err := jwt.NewWithClaims(apitoken.SigningMethod, preProductClaimRemoval{
@@ -511,12 +511,15 @@ func TestAPITokenMiddlewaresResolveInstanceAdminTokens(t *testing.T) {
 		wantOrg *biz.Organization
 		wantErr string
 	}{
-		{name: "an instance-admin token takes the organization in the header", scopeClaim: authz.ScopeInstanceAdmin, header: headerOrg.Name, wantOrg: headerOrg},
-		{name: "an instance-admin token without the header has no organization", scopeClaim: authz.ScopeInstanceAdmin},
+		{name: "an instance token takes the organization in the header", scopeClaim: string(authz.ResourceTypeInstance), header: headerOrg.Name, wantOrg: headerOrg},
+		{name: "an instance token without the header has no organization", scopeClaim: string(authz.ResourceTypeInstance)},
+		{name: "an older instance-admin token takes the organization in the header", scopeClaim: authz.ScopeInstanceAdmin, header: headerOrg.Name, wantOrg: headerOrg},
+		{name: "an older instance-admin token without the header has no organization", scopeClaim: authz.ScopeInstanceAdmin},
 		{name: "an organization token takes its row's organization", rowOrg: rowOrg, header: headerOrg.Name, wantOrg: rowOrg},
 		// The signed claims and the row must agree, and the claims must agree with themselves.
 		{name: "an instance row whose JWT names no scope is refused", header: headerOrg.Name, wantErr: errNotVerified},
 		{name: "an organization row whose JWT carries the instance-admin claim is refused", scopeClaim: authz.ScopeInstanceAdmin, rowOrg: rowOrg, header: headerOrg.Name, wantErr: errNotVerified},
+		{name: "an organization row whose JWT names the instance scope is refused", scopeClaim: string(authz.ResourceTypeInstance), rowOrg: rowOrg, header: headerOrg.Name, wantErr: errNotVerified},
 	}
 
 	for _, tc := range testCases {

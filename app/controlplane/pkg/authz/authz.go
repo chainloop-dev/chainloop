@@ -103,7 +103,8 @@ const (
 	RoleProductViewer Role = "role:product:viewer"
 	RoleProductAdmin  Role = "role:product:admin"
 
-	// Scope for instance admin tokens
+	// ScopeInstanceAdmin is the scope claim of an instance token minted before the control plane
+	// signed the scope kind. A newer instance token has ResourceTypeInstance in that claim.
 	ScopeInstanceAdmin = "INSTANCE_ADMIN"
 )
 

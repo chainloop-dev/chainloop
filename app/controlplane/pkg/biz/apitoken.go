@@ -574,16 +574,14 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		KeyName:   name,
 		ExpiresAt: expiresAt,
 		// The JWT signs the scope. The row must then match it.
-		ScopeType: scope,
-		ScopeID:   scopeID,
+		Scope:   scope,
+		ScopeID: scopeID,
 	}
 
-	// Set org info if available or instance-level token scope
+	// An instance-level token has no organization
 	if org != nil {
 		generationOpts.OrgID = &token.OrganizationID
 		generationOpts.OrgName = &org.Name
-	} else {
-		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
 	if projectID != nil {
@@ -654,22 +652,18 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 		KeyID:     token.ID,
 		KeyName:   token.Name,
 		ExpiresAt: &expiresAt,
-		ScopeType: token.Scope,
+		Scope:     token.Scope,
 		ScopeID:   token.ScopeID,
 	}
 
-	// Check if this is an org-scoped or instance-level token
+	// An instance-level token has no organization
 	if token.OrganizationID != uuid.Nil {
-		// Org-scoped token
 		org, err := uc.orgUseCase.FindByID(ctx, token.OrganizationID.String())
 		if err != nil {
 			return nil, fmt.Errorf("finding organization: %w", err)
 		}
 		generationOpts.OrgID = &token.OrganizationID
 		generationOpts.OrgName = &org.Name
-	} else {
-		// Instance-level token
-		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
 	// Preserve project / workflow scope claims that the row carries.

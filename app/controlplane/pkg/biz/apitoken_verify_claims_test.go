@@ -49,10 +49,10 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 	productRow := &APIToken{OrganizationID: org, Scope: &productKind, ScopeID: &product, ProjectIDs: []uuid.UUID{project}}
 	instanceRow := &APIToken{Scope: &instanceKind}
 
-	signedOrg := apitoken.CustomClaims{OrgID: org.String(), ScopeType: string(authz.ResourceTypeOrganization), ScopeID: org.String()}
-	signedProject := apitoken.CustomClaims{OrgID: org.String(), ProjectID: project.String(), ScopeType: string(authz.ResourceTypeProject), ScopeID: project.String()}
-	signedWorkflow := apitoken.CustomClaims{OrgID: org.String(), ProjectID: project.String(), WorkflowID: workflow.String(), ScopeType: string(authz.ResourceTypeProject), ScopeID: project.String()}
-	signedProduct := apitoken.CustomClaims{OrgID: org.String(), ScopeType: string(authz.ResourceTypeProduct), ScopeID: product.String()}
+	signedOrg := apitoken.CustomClaims{OrgID: org.String(), Scope: string(authz.ResourceTypeOrganization), ScopeID: org.String()}
+	signedProject := apitoken.CustomClaims{OrgID: org.String(), ProjectID: project.String(), Scope: string(authz.ResourceTypeProject), ScopeID: project.String()}
+	signedWorkflow := apitoken.CustomClaims{OrgID: org.String(), ProjectID: project.String(), WorkflowID: workflow.String(), Scope: string(authz.ResourceTypeProject), ScopeID: project.String()}
+	signedProduct := apitoken.CustomClaims{OrgID: org.String(), Scope: string(authz.ResourceTypeProduct), ScopeID: product.String()}
 	legacyOrg := apitoken.CustomClaims{OrgID: org.String()}
 	legacyProject := apitoken.CustomClaims{OrgID: org.String(), ProjectID: project.String()}
 	legacyWorkflow := apitoken.CustomClaims{OrgID: org.String(), ProjectID: project.String(), WorkflowID: workflow.String()}
@@ -72,7 +72,7 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 		{name: "signed project token", row: projectRow, claims: signedProject},
 		{name: "signed workflow-pinned token", row: workflowRow, claims: signedWorkflow},
 		{name: "signed product token", row: productRow, claims: signedProduct},
-		{name: "signed instance token", row: instanceRow, claims: apitoken.CustomClaims{Scope: authz.ScopeInstanceAdmin, ScopeType: string(authz.ResourceTypeInstance)}},
+		{name: "signed instance token", row: instanceRow, claims: apitoken.CustomClaims{Scope: string(authz.ResourceTypeInstance)}},
 		{name: "legacy organization token", row: orgRow, claims: legacyOrg},
 		{name: "legacy project token", row: projectRow, claims: legacyProject},
 		{name: "legacy workflow-pinned token", row: workflowRow, claims: legacyWorkflow},
@@ -81,7 +81,7 @@ func TestAPITokenVerifyClaims(t *testing.T) {
 		{name: "a row recording no scope", row: &APIToken{OrganizationID: org}, claims: legacyOrg, wantErr: "records no scope"},
 		{name: "a signed token whose row's scope was cleared", row: &APIToken{OrganizationID: org}, claims: signedOrg, wantErr: "records no scope", mismatch: true},
 		{name: "a product token minted before the scope claims", row: productRow, claims: legacyOrg, wantErr: "create a new one"},
-		{name: "malformed scope claims", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), ScopeType: string(authz.ResourceTypeOrganization)}, wantErr: "scope claims", mismatch: true},
+		{name: "malformed scope claims", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), Scope: string(authz.ResourceTypeOrganization)}, wantErr: "scope claims", mismatch: true},
 		{name: "an instance-admin claim on an organization row", row: orgRow, claims: apitoken.CustomClaims{OrgID: org.String(), Scope: authz.ScopeInstanceAdmin}, wantErr: "scope claims", mismatch: true},
 		{name: "a project row widened to its organization, signed claims", row: widenedProjectRow, claims: signedProject, wantErr: errScopeMismatch, mismatch: true},
 		{name: "a project row widened to its organization, legacy claims", row: widenedProjectRow, claims: legacyProject, wantErr: errScopeMismatch, mismatch: true},

@@ -1278,19 +1278,17 @@ func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 	}
 
 	testCases := []struct {
-		name          string
-		org           *string
-		opts          []biz.APITokenCreateOpt
-		wantScopeType authz.ResourceType
-		wantScopeID   string
-		// wantScope is the legacy "scope" claim
-		wantScope string
+		name        string
+		org         *string
+		opts        []biz.APITokenCreateOpt
+		wantScope   authz.ResourceType
+		wantScopeID string
 	}{
-		{name: "organization", org: &s.org.ID, wantScopeType: authz.ResourceTypeOrganization, wantScopeID: s.org.ID},
-		{name: string(authz.ResourceTypeProject), org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1)}, wantScopeType: authz.ResourceTypeProject, wantScopeID: s.p1.ID.String()},
-		{name: "workflow-pinned", org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1), biz.APITokenWithWorkflow(wf)}, wantScopeType: authz.ResourceTypeProject, wantScopeID: s.p1.ID.String()},
-		{name: "product", org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil)}, wantScopeType: authz.ResourceTypeProduct, wantScopeID: productID.String()},
-		{name: "instance", wantScopeType: authz.ResourceTypeInstance, wantScope: authz.ScopeInstanceAdmin},
+		{name: "organization", org: &s.org.ID, wantScope: authz.ResourceTypeOrganization, wantScopeID: s.org.ID},
+		{name: string(authz.ResourceTypeProject), org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1)}, wantScope: authz.ResourceTypeProject, wantScopeID: s.p1.ID.String()},
+		{name: "workflow-pinned", org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1), biz.APITokenWithWorkflow(wf)}, wantScope: authz.ResourceTypeProject, wantScopeID: s.p1.ID.String()},
+		{name: "product", org: &s.org.ID, opts: []biz.APITokenCreateOpt{biz.APITokenWithScope(authz.ResourceTypeProduct, &productID), biz.APITokenWithProjectIDs(nil)}, wantScope: authz.ResourceTypeProduct, wantScopeID: productID.String()},
+		{name: "instance", wantScope: authz.ResourceTypeInstance},
 	}
 
 	for _, tc := range testCases {
@@ -1304,9 +1302,8 @@ func (s *apiTokenTestSuite) TestGeneratedJWTSignsTheTokenScope() {
 
 			for minted, raw := range map[string]string{"created": created.JWT, "regenerated": regenerated.JWT} {
 				payload, claims := claimsOf(raw)
-				s.Equal(string(tc.wantScopeType), claims.ScopeType, minted)
+				s.Equal(string(tc.wantScope), claims.Scope, minted)
 				s.Equal(tc.wantScopeID, claims.ScopeID, minted)
-				s.Equal(tc.wantScope, claims.Scope, minted)
 				s.NoError(stored.VerifyClaims(claims), minted)
 
 				// What changes during a token's life never goes into the JWT
