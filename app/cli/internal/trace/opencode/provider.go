@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -75,8 +77,9 @@ func (p *Provider) SessionDirForRepo(_ string) string {
 	return ""
 }
 
-// CopySessionData runs `opencode export <sessionID>` and streams the JSON
-// output directly to the store's raw/<sanitized-id>.jsonl so
+// CopySessionData runs the opencode export command for the session (see
+// exportArgs) and streams the JSON output directly to the store's
+// raw/<sanitized-id>.jsonl so
 // pre-push can parse it independently of opencode's own storage. stdout is
 // redirected to the destination file rather than a pipe: opencode
 // (Node.js) doesn't reliably flush stdout to pipes, causing truncation at
@@ -104,7 +107,8 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 		return fmt.Errorf("create raw session file: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "opencode", "export", sessionID)
+	//nolint:gosec // a fixed binary and subcommand with the session ID as its argument, run without a shell
+	cmd := exec.CommandContext(ctx, "opencode", exportArgs(ctx, sessionID)...)
 	cmd.Stdout = f
 	runErr := cmd.Run()
 	_ = f.Close()
@@ -114,6 +118,41 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 	}
 
 	return nil
+}
+
+// exportArgs returns the opencode arguments that print the session export.
+// OpenCode 2 moved the command from `opencode export` to `opencode session
+// export`. Each command is unknown to the other major version, so the
+// installed version picks one. If the version cannot be read, the original
+// command is used.
+func exportArgs(ctx context.Context, sessionID string) []string {
+	out, err := exec.CommandContext(ctx, "opencode", "--version").Output()
+	if err == nil && majorVersion(string(out)) >= 2 {
+		return []string{"session", "export", sessionID}
+	}
+
+	return []string{"export", sessionID}
+}
+
+// versionRe matches the first semantic version in `opencode --version`
+// output, which is "1.18.34" for OpenCode 1.x and "opencode v2.0.22" for
+// OpenCode 2.
+var versionRe = regexp.MustCompile(`(\d+)\.\d+\.\d+`)
+
+// majorVersion returns the major version in opencode --version output, or 0
+// when the output has no version.
+func majorVersion(output string) int {
+	m := versionRe.FindStringSubmatch(output)
+	if m == nil {
+		return 0
+	}
+
+	major, err := strconv.Atoi(m[1])
+	if err != nil {
+		return 0
+	}
+
+	return major
 }
 
 // CaptureFileSnapshot reads the file at input.FilePath and stores its

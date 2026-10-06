@@ -587,6 +587,52 @@ func TestHandleAgentPostToolUse_AddFileAttribution(t *testing.T) {
 	assert.Equal(t, 3, ranges[0].End)
 }
 
+// TestHandleAgentPostToolUse_OpenCode2RelativePath covers OpenCode 2, whose
+// patch tool (apply_patch in 1.x) takes paths relative to the session
+// directory. The plugin runs the hook from that directory, which can be a
+// subdirectory of the repository.
+func TestHandleAgentPostToolUse_OpenCode2RelativePath(t *testing.T) {
+	cases := []struct {
+		name       string
+		sessionDir string
+		wantKey    string
+	}{
+		{"session at the repository root", "", "updated.txt"},
+		{"session in a subdirectory", "pkg", "pkg/updated.txt"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, gitDir := initGitRepo(t)
+			store := state.NewGitStore(gitDir)
+			require.NoError(t, store.InitTraceDir())
+
+			sessionDir := filepath.Join(dir, tc.sessionDir)
+			require.NoError(t, os.MkdirAll(sessionDir, 0755))
+			target := filepath.Join(sessionDir, "updated.txt")
+			require.NoError(t, os.WriteFile(target, []byte("old line\n"), 0600))
+			t.Chdir(sessionDir)
+
+			p := opencode.New()
+
+			withStdin(t, `{"session_id":"ses-v2-rel","hook_event_name":"tool.execute.before","tool_name":"patch","file_path":"updated.txt"}`)
+			require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
+
+			require.NoError(t, os.WriteFile(target, []byte("old line\nnew line\n"), 0600))
+
+			withStdin(t, `{"session_id":"ses-v2-rel","hook_event_name":"tool.execute.after","tool_name":"patch","file_path":"updated.txt"}`)
+			require.NoError(t, HandleAgentPostToolUse(p, zerolog.Nop()))
+
+			attr := store.LoadAILineAttribution("ses-v2-rel")
+			require.Contains(t, attr.Files, tc.wantKey)
+			ranges := attr.Files[tc.wantKey]
+			require.Len(t, ranges, 1)
+			assert.Equal(t, 2, ranges[0].Start)
+			assert.Equal(t, 2, ranges[0].End)
+		})
+	}
+}
+
 func TestHandleAgentCommandTool_AttributesShellFileChanges(t *testing.T) {
 	dir, gitDir := initGitRepo(t)
 	store := state.NewGitStore(gitDir)
