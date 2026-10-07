@@ -85,6 +85,32 @@ func ResolveSpecKind(kind string) string {
 	}
 }
 
+// The roles a spec source can have. The kind is the format of a source and the
+// role is its purpose: a ticket can state the task, or be only background.
+const (
+	// SpecRoleTask is the item that states the work to do.
+	SpecRoleTask = "task"
+	// SpecRoleSpec is a document that defines what to build.
+	SpecRoleSpec = "spec"
+	// SpecRolePlan is a plan for the work that the user approved.
+	SpecRolePlan = "plan"
+	// SpecRoleReference is supporting material: a screenshot, a mockup, an
+	// example, or a background document.
+	SpecRoleReference = "reference"
+)
+
+// ResolveSpecRole maps a captured role onto the vocabulary above. Unlike the
+// kind, a role is never guessed: a value outside the vocabulary gives no role,
+// so the evidence holds only what the agent stated.
+func ResolveSpecRole(role string) string {
+	switch r := strings.ToLower(strings.TrimSpace(role)); r {
+	case SpecRoleTask, SpecRoleSpec, SpecRolePlan, SpecRoleReference:
+		return r
+	default:
+		return ""
+	}
+}
+
 // SpecEntry is one source a coding session was built from: the ticket,
 // document or prompt that set the task, resolved by the agent. It is what the
 // work gets judged against, which no amount of diff can answer on its own.
@@ -95,6 +121,14 @@ func ResolveSpecKind(kind string) string {
 type SpecEntry struct {
 	// Kind is one of the SpecKind* constants.
 	Kind string `json:"kind"`
+	// Role is one of the SpecRole* constants. Empty when the agent stated no
+	// role, or one outside the vocabulary.
+	Role string `json:"role,omitempty"`
+	// Title is a short name for the source, as the agent wrote it.
+	Title string `json:"title,omitempty"`
+	// Description says in one or two sentences what the source holds, as the
+	// agent wrote it.
+	Description string `json:"description,omitempty"`
 	// URI is where the text came from. Empty when the task was stated in the
 	// session itself and there is no external source to point at.
 	URI string `json:"uri,omitempty"`

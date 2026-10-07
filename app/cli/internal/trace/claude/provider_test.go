@@ -155,11 +155,11 @@ func TestCopySessionData(t *testing.T) {
 
 			// Claude files the transcript under the directory the session
 			// started in, not under the directory the hook runs in.
-			reportedDir := p.SessionDirForRepo(startDir)
+			reportedDir := filepath.Join(home, ".claude", "projects", encodeCWDForClaudePath(startDir))
 			writeFile(t, filepath.Join(reportedDir, sid+".jsonl"), "reported-main\n")
 			writeFile(t, filepath.Join(reportedDir, sid, "subagents", "agent-afd65659e2015d48d.jsonl"), "reported-sub\n")
 
-			cwdDir := p.SessionDirForRepo(hookCwd)
+			cwdDir := filepath.Join(home, ".claude", "projects", encodeCWDForClaudePath(hookCwd))
 			writeFile(t, filepath.Join(cwdDir, sid+".jsonl"), "cwd-main\n")
 
 			store := state.NewGitStore(t.TempDir())

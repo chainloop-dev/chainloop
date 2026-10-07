@@ -35,25 +35,29 @@ func TestSessionStartChannels(t *testing.T) {
 		provider        string
 		wantBanner      bool
 		wantInstruction bool
+		wantReminder    bool
 		why             string
 	}{
 		{
 			provider:        claude.Name,
 			wantBanner:      true,
 			wantInstruction: true,
-			why:             "Claude Code renders systemMessage to the user and feeds additionalContext to the model",
+			wantReminder:    true,
+			why:             "Claude Code renders systemMessage to the user and feeds additionalContext of SessionStart and UserPromptSubmit to the model",
 		},
 		{
 			provider:        cursor.Name,
 			wantBanner:      false,
 			wantInstruction: true,
-			why:             "Cursor's sessionStart response feeds additional_context to the model and has no field the user sees",
+			wantReminder:    false,
+			why:             "Cursor's sessionStart response feeds additional_context to the model, and Cursor documents no channel that adds context at prompt submit",
 		},
 		{
 			provider:        opencode.Name,
 			wantBanner:      false,
 			wantInstruction: true,
-			why:             "the opencode plugin posts the instruction as a context-only message and has no banner",
+			wantReminder:    true,
+			why:             "the opencode plugin posts the instruction and the reminder as context-only messages and has no banner",
 		},
 	}
 
@@ -64,6 +68,7 @@ func TestSessionStartChannels(t *testing.T) {
 
 			assert.Equal(t, tc.wantBanner, p.SupportsSessionStartBanner(), tc.why)
 			assert.Equal(t, tc.wantInstruction, p.SupportsSessionStartInstruction(), tc.why)
+			assert.Equal(t, tc.wantReminder, p.SupportsPromptReminder(), tc.why)
 		})
 	}
 }

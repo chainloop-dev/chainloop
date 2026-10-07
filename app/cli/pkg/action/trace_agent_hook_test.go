@@ -28,6 +28,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
@@ -194,6 +195,69 @@ func TestHandleAgentSessionStart(t *testing.T) {
 	t.Run("ignores empty session ID", func(t *testing.T) {
 		withStdin(t, `{"session_id":""}`)
 		assert.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+	})
+}
+
+// TestHandleAgentPromptSubmit covers R-002 of Spec 003: the reminder comes at
+// each user prompt, also in a resumed session whose folder holds files.
+func TestHandleAgentPromptSubmit(t *testing.T) {
+	const sessionID = "abc-123"
+
+	setup := func(t *testing.T) string {
+		t.Helper()
+		repoDir := initTempGitRepo(t)
+		require.NoError(t, state.NewGitStore(filepath.Join(repoDir, ".git")).InitTraceDir())
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		return repoDir
+	}
+
+	t.Run("a resumed session gets the reminder with its folder", func(t *testing.T) {
+		repoDir := setup(t)
+		dir := spec.SessionDir(repoDir, sessionID)
+		require.NoError(t, spec.EnsureDir(repoDir))
+		require.NoError(t, os.MkdirAll(dir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "ticket.md"), []byte("the ticket"), 0600))
+
+		withStdin(t, `{"session_id":"abc-123","hook_event_name":"UserPromptSubmit","prompt":"go on"}`)
+		stdout := captureStdout(t, func() {
+			require.NoError(t, HandleAgentPromptSubmit(claude.New(), zerolog.Nop()))
+		})
+
+		var got struct {
+			HookSpecificOutput struct {
+				HookEventName     string `json:"hookEventName"`
+				AdditionalContext string `json:"additionalContext"`
+			} `json:"hookSpecificOutput"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(stdout), &got))
+		assert.Equal(t, "UserPromptSubmit", got.HookSpecificOutput.HookEventName)
+		assert.Contains(t, got.HookSpecificOutput.AdditionalContext, dir)
+	})
+
+	t.Run("an agent without the channel gets nothing", func(t *testing.T) {
+		setup(t)
+
+		withStdin(t, `{"session_id":"abc-123"}`)
+		stdout := captureStdout(t, func() {
+			require.NoError(t, HandleAgentPromptSubmit(cursor.New(), zerolog.Nop()))
+		})
+
+		assert.Empty(t, stdout)
+	})
+
+	t.Run("an invalid session gets nothing", func(t *testing.T) {
+		setup(t)
+
+		withStdin(t, `{"session_id":""}`)
+		stdout := captureStdout(t, func() {
+			require.NoError(t, HandleAgentPromptSubmit(claude.New(), zerolog.Nop()))
+		})
+
+		assert.Empty(t, stdout)
 	})
 }
 
@@ -521,6 +585,52 @@ func TestHandleAgentPostToolUse_AddFileAttribution(t *testing.T) {
 	require.NotEmpty(t, ranges)
 	assert.Equal(t, 1, ranges[0].Start)
 	assert.Equal(t, 3, ranges[0].End)
+}
+
+// TestHandleAgentPostToolUse_OpenCode2RelativePath covers OpenCode 2, whose
+// patch tool (apply_patch in 1.x) takes paths relative to the session
+// directory. The plugin runs the hook from that directory, which can be a
+// subdirectory of the repository.
+func TestHandleAgentPostToolUse_OpenCode2RelativePath(t *testing.T) {
+	cases := []struct {
+		name       string
+		sessionDir string
+		wantKey    string
+	}{
+		{"session at the repository root", "", "updated.txt"},
+		{"session in a subdirectory", "pkg", "pkg/updated.txt"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, gitDir := initGitRepo(t)
+			store := state.NewGitStore(gitDir)
+			require.NoError(t, store.InitTraceDir())
+
+			sessionDir := filepath.Join(dir, tc.sessionDir)
+			require.NoError(t, os.MkdirAll(sessionDir, 0755))
+			target := filepath.Join(sessionDir, "updated.txt")
+			require.NoError(t, os.WriteFile(target, []byte("old line\n"), 0600))
+			t.Chdir(sessionDir)
+
+			p := opencode.New()
+
+			withStdin(t, `{"session_id":"ses-v2-rel","hook_event_name":"tool.execute.before","tool_name":"patch","file_path":"updated.txt"}`)
+			require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
+
+			require.NoError(t, os.WriteFile(target, []byte("old line\nnew line\n"), 0600))
+
+			withStdin(t, `{"session_id":"ses-v2-rel","hook_event_name":"tool.execute.after","tool_name":"patch","file_path":"updated.txt"}`)
+			require.NoError(t, HandleAgentPostToolUse(p, zerolog.Nop()))
+
+			attr := store.LoadAILineAttribution("ses-v2-rel")
+			require.Contains(t, attr.Files, tc.wantKey)
+			ranges := attr.Files[tc.wantKey]
+			require.Len(t, ranges, 1)
+			assert.Equal(t, 2, ranges[0].Start)
+			assert.Equal(t, 2, ranges[0].End)
+		})
+	}
 }
 
 func TestHandleAgentCommandTool_AttributesShellFileChanges(t *testing.T) {

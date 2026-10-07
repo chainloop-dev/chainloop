@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,17 +38,45 @@ func TestInstallHooksCreatesPluginFile(t *testing.T) {
 	require.NoError(t, err)
 
 	content := string(data)
-	assert.Contains(t, content, "chainloop trace hook opencode")
+	assert.Contains(t, content, `spawn("chainloop", ["trace", "hook", "opencode", event]`)
 	assert.Contains(t, content, "session.created")
 	assert.Contains(t, content, "session.deleted")
+	// OpenCode 1.x hooks.
 	assert.Contains(t, content, "tool.execute.before")
 	assert.Contains(t, content, "tool.execute.after")
-	assert.Contains(t, content, `const fileWritingTools = ["edit","write","apply_patch"]`)
+	// OpenCode 2.x hooks.
+	assert.Contains(t, content, `ctx.tool.hook("execute.before"`)
+	assert.Contains(t, content, `ctx.tool.hook("execute.after"`)
+	assert.Contains(t, content, "ctx.event.subscribe(")
+}
+
+// TestPluginDefaultExportServesBothOpenCodeMajors pins the module shape both
+// plugin loaders accept. OpenCode 2 only loads a default export with an id and
+// a setup function, and rejects anything else (PFM-7555). OpenCode 1.x reads
+// server() from the same default export. Neither loader then looks at named
+// exports.
+func TestPluginDefaultExportServesBothOpenCodeMajors(t *testing.T) {
+	repoRoot := t.TempDir()
+	p := New()
+	require.NoError(t, p.InstallHooks(repoRoot))
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+	require.NoError(t, err)
+	content := string(data)
+
+	assert.Contains(t, content, "export default {\n  id: \"chainloop-trace\",\n  server,\n  setup,\n}")
+	assert.Equal(t, 1, strings.Count(content, "export "), "the default export must be the only export")
+	// OpenCode 2 runs the plugin as an Effect when the default export has an
+	// effect key, and then never calls setup.
+	assert.NotContains(t, content, "effect:")
+	// OpenCode 2 passes no Bun shell to plugins, so the plugin must not use $.
+	assert.NotContains(t, content, "$`")
 }
 
 // TestPluginPostsSessionStartInstruction pins how the model receives the spec
 // capture instruction: the plugin reads the session-start response and posts it
-// to the session as a context-only message, which gets no model reply.
+// to the session as a context-only message, which gets no model reply. Each
+// OpenCode major posts it through its own API.
 func TestPluginPostsSessionStartInstruction(t *testing.T) {
 	for _, install := range []struct {
 		name string
@@ -64,16 +93,59 @@ func TestPluginPostsSessionStartInstruction(t *testing.T) {
 			require.NoError(t, err)
 			content := string(data)
 
-			assert.Contains(t, content, "async ({ $, client })", "the plugin needs the SDK client to post the message")
+			assert.Contains(t, content, ".instruction")
+			// OpenCode 1.x: the SDK client posts the message, and noReply
+			// stores it without a model reply.
+			assert.Contains(t, content, "server({ directory, client }", "the plugin needs the SDK client to post the message")
 			assert.Contains(t, content, "client.session.prompt(")
 			assert.Contains(t, content, "noReply: true")
+			// OpenCode 2: a synthetic message, and resume: false stores it
+			// without a model reply.
+			assert.Contains(t, content, "ctx.session.synthetic({ sessionID, text: instruction, resume: false })")
 			// The handler waits until the message is stored, so a first turn
-			// sent right away cannot reach the model without it.
-			assert.Contains(t, content, "await postInstruction(sessionID, instruction)")
-			assert.Contains(t, content, ".instruction")
+			// sent right away cannot reach the model without it. OpenCode 2
+			// delivers events asynchronously, so its prompt hook also waits for
+			// a session start still in flight.
+			assert.Contains(t, content, "await post(sessionID, instruction)")
+			assert.Contains(t, content, `ctx.session.hook("prompt"`)
 			// A child session belongs to a subagent, whose parent already has
 			// the instruction.
 			assert.Contains(t, content, "parentID")
+		})
+	}
+}
+
+// TestPluginPostsPromptReminder pins how the model receives the spec capture
+// reminder at each user message: the plugin fires the user-prompt-submit hook
+// and posts its answer the way it posts the session-start instruction. Each
+// OpenCode major has its own hook for a user message.
+func TestPluginPostsPromptReminder(t *testing.T) {
+	for _, install := range []struct {
+		name string
+		fn   func(*Provider, string) error
+	}{
+		{name: "full install", fn: (*Provider).InstallHooks},
+		{name: "trace run install", fn: (*Provider).InstallHooksForTraceRun},
+	} {
+		t.Run(install.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			require.NoError(t, install.fn(New(), repoRoot))
+
+			data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+			require.NoError(t, err)
+			content := string(data)
+
+			assert.Contains(t, content, `"user-prompt-submit"`)
+			// OpenCode 1.x: chat.message runs at each message, including the
+			// ones the plugin posts, which are made only of synthetic parts.
+			assert.Contains(t, content, `"chat.message": async (input: any, output: any)`)
+			assert.Contains(t, content, "parts.every((p: any) => p?.synthetic)")
+			assert.Contains(t, content, "childSessions.has(sessionID) || reminding.has(sessionID)")
+			// OpenCode 2: the prompt hook runs at each user message. A
+			// subagent's first prompt can come before its session.created
+			// event, so the hook reads the parent from the session itself.
+			assert.Contains(t, content, "ctx.session.get({ sessionID })")
+			assert.Contains(t, content, "await promptSubmitted(directory, sessionID, post)")
 		})
 	}
 }
@@ -91,8 +163,11 @@ func TestInstallHooksForTraceRunOmitsSessionEnd(t *testing.T) {
 	content := string(data)
 	assert.Contains(t, content, "session.created")
 	assert.NotContains(t, content, "session.deleted", "trace run must not install session.deleted; trace run drives end-of-session itself")
+	assert.NotContains(t, content, "session-end")
 	assert.Contains(t, content, "tool.execute.before")
 	assert.Contains(t, content, "tool.execute.after")
+	assert.Contains(t, content, `ctx.tool.hook("execute.before"`)
+	assert.Contains(t, content, `ctx.tool.hook("execute.after"`)
 }
 
 func TestInstallHooksIdempotent(t *testing.T) {
@@ -139,6 +214,26 @@ func TestReadHookInputParsesValidInput(t *testing.T) {
 	assert.Equal(t, "/some/file.go", input.FilePath)
 }
 
+// TestPluginSendsShellCallID pins that both entry points send the tool call ID
+// as tool_use_id on shell hooks, so that the pre and post hooks of one command
+// pair their snapshots. OpenCode 1.x names it callID, and OpenCode 2 id.
+func TestPluginSendsShellCallID(t *testing.T) {
+	repoRoot := t.TempDir()
+	require.NoError(t, New().InstallHooks(repoRoot))
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+	require.NoError(t, err)
+	content := string(data)
+
+	assert.Contains(t, content, "{ ...payload, tool_use_id: callID }")
+	// OpenCode 1.x.
+	assert.Contains(t, content, `toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)`)
+	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args)`)
+	// OpenCode 2.
+	assert.Contains(t, content, `toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.id, event.input)`)
+	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input)`)
+}
+
 // The plugin sends opencode's callID as tool_use_id on shell hooks, so that
 // the pre and post hooks of one command pair their snapshots.
 func TestReadHookInputParsesToolUseID(t *testing.T) {
@@ -161,6 +256,43 @@ func TestReadHookInputApplyPatchSingleFile(t *testing.T) {
 	assert.Equal(t, "/tmp/trace-fixture/existing.txt", input.FilePath)
 }
 
+// TestReadHookInputResolvesRelativeFilePath covers OpenCode 2, whose edit,
+// write and patch tools accept paths relative to the session directory. The
+// plugin runs the hook from that directory, so a relative path resolves
+// against the working directory. The hook handlers need an absolute path to
+// find the checkout that owns the file and to key the line ranges by a
+// repository-relative path.
+func TestReadHookInputResolvesRelativeFilePath(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	cases := []struct {
+		name     string
+		filePath string
+		want     string
+	}{
+		{"relative path", "src/main.go", filepath.Join(cwd, "src", "main.go")},
+		{"dot-relative path", "./README.md", filepath.Join(cwd, "README.md")},
+		{"absolute path is kept", "/some/file.go", "/some/file.go"},
+		{"no path", "", ""},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			payload, err := json.Marshal(map[string]string{
+				"session_id": "ses_rel", "tool_name": "write", "file_path": tc.filePath,
+			})
+			require.NoError(t, err)
+
+			input, err := New().ReadHookInput(bytes.NewReader(payload))
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, input.FilePath)
+		})
+	}
+}
+
 func TestReadHookInputHandlesMissingFields(t *testing.T) {
 	r := bytes.NewBufferString(`{"session_id":"abc-123"}`)
 	p := New()
@@ -179,22 +311,34 @@ func TestReadHookInputReturnsErrorForInvalidJSON(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestIsFileWritingTool(t *testing.T) {
-	p := New()
-	assert.True(t, p.IsFileWritingTool("edit"))
-	assert.True(t, p.IsFileWritingTool("write"))
-	assert.True(t, p.IsFileWritingTool("apply_patch"))
-	assert.False(t, p.IsFileWritingTool("read"))
-	assert.False(t, p.IsFileWritingTool("bash"))
-	assert.False(t, p.IsFileWritingTool(""))
-}
+func TestToolKinds(t *testing.T) {
+	cases := []struct {
+		tool        string
+		fileWriting bool
+		command     bool
+	}{
+		{tool: "edit", fileWriting: true},
+		{tool: "write", fileWriting: true},
+		// OpenCode 1.x name of the patch tool.
+		{tool: "apply_patch", fileWriting: true},
+		// OpenCode 2.x name of the patch tool.
+		{tool: "patch", fileWriting: true},
+		// OpenCode 1.x name of the shell tool.
+		{tool: "bash", command: true},
+		// OpenCode 2.x name of the shell tool.
+		{tool: "shell", command: true},
+		{tool: "read"},
+		{tool: "execute"},
+		{tool: ""},
+	}
 
-func TestIsCommandTool(t *testing.T) {
 	p := New()
-	assert.True(t, p.IsCommandTool("bash"))
-	assert.False(t, p.IsCommandTool("edit"))
-	assert.False(t, p.IsCommandTool("write"))
-	assert.False(t, p.IsCommandTool(""))
+	for _, tc := range cases {
+		t.Run(tc.tool, func(t *testing.T) {
+			assert.Equal(t, tc.fileWriting, p.IsFileWritingTool(tc.tool))
+			assert.Equal(t, tc.command, p.IsCommandTool(tc.tool))
+		})
+	}
 }
 
 func TestSettingsFile(t *testing.T) {
@@ -203,17 +347,18 @@ func TestSettingsFile(t *testing.T) {
 }
 
 func TestPluginTemplateHasNoUnreplacedPlaceholders(t *testing.T) {
-	repoRoot := t.TempDir()
 	p := New()
-	require.NoError(t, p.InstallHooks(repoRoot))
+	for _, install := range []func(string) error{p.InstallHooks, p.InstallHooksForTraceRun} {
+		repoRoot := t.TempDir()
+		require.NoError(t, install(repoRoot))
 
-	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
-	require.NoError(t, err)
-	assert.NotContains(t, string(data), "{{SessionEndBlock}}")
-	assert.NotContains(t, string(data), "{{FileWritingToolsArray}}")
+		data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+		require.NoError(t, err)
+		assert.NotContains(t, string(data), "{{")
+	}
 }
 
-func TestPluginTemplateFileWritingToolsMatchesGoSlice(t *testing.T) {
+func TestPluginTemplateToolArraysMatchGoSlices(t *testing.T) {
 	repoRoot := t.TempDir()
 	p := New()
 	require.NoError(t, p.InstallHooks(repoRoot))
@@ -221,23 +366,38 @@ func TestPluginTemplateFileWritingToolsMatchesGoSlice(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
 	require.NoError(t, err)
 
-	goLiteral, err := json.Marshal(fileWritingTools)
-	require.NoError(t, err)
-	assert.Contains(t, string(data), "const fileWritingTools = "+string(goLiteral))
+	cases := []struct {
+		name  string
+		tools []string
+	}{
+		{"fileWritingTools", fileWritingTools},
+		{"commandTools", commandTools},
+	}
+	for _, tc := range cases {
+		goLiteral, err := json.Marshal(tc.tools)
+		require.NoError(t, err)
+		assert.Contains(t, string(data), "const "+tc.name+" = "+string(goLiteral))
+	}
 }
 
-func TestPluginTemplateContainsBacktickShellCommand(t *testing.T) {
-	// The plugin uses Bun's $ template literal for shell commands. Verify
-	// the backticks survived the Go raw string splice so the plugin is
-	// syntactically valid TypeScript.
+// TestPluginRunsHookFromSessionDirectory covers the hook's working directory.
+// OpenCode 2 runs plugins in a shared background server whose working
+// directory is unrelated to the session, and the hook handler finds the
+// trace state from its own working directory.
+func TestPluginRunsHookFromSessionDirectory(t *testing.T) {
 	repoRoot := t.TempDir()
 	p := New()
 	require.NoError(t, p.InstallHooks(repoRoot))
 
 	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
 	require.NoError(t, err)
-	assert.Contains(t, string(data), "$`echo")
-	assert.Contains(t, string(data), "chainloop trace hook opencode")
+	content := string(data)
+
+	assert.Contains(t, content, `spawn("chainloop", ["trace", "hook", "opencode", event], { cwd: directory`)
+	// OpenCode 1.x passes the session directory to server().
+	assert.Contains(t, content, "async function server({ directory, client }: any)")
+	// OpenCode 2.x passes it as the plugin location.
+	assert.Contains(t, content, "const directory = ctx.location.directory")
 }
 
 func TestParsePatchPaths(t *testing.T) {

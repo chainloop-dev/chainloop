@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -78,7 +79,7 @@ func TestClaudeSessionForkedIntoWorktrees(t *testing.T) {
 
 			// Claude keeps the transcript under the project directory of the
 			// cwd the session was started in, i.e. the main checkout.
-			transcriptDir := p.SessionDirForRepo(mainRoot)
+			transcriptDir := claudeProjectDir(home, mainRoot)
 			require.NoError(t, os.MkdirAll(transcriptDir, 0o755))
 			transcript := filepath.Join(transcriptDir, sid+".jsonl")
 			require.NoError(t, os.WriteFile(transcript, transcriptFixture, 0600))
@@ -204,7 +205,7 @@ func TestClaudeTranscriptFoundFromWorktreeCwd(t *testing.T) {
 
 			// The transcripts live under the project directory of the
 			// directory the session started in.
-			transcriptDir := p.SessionDirForRepo(mainRoot)
+			transcriptDir := claudeProjectDir(home, mainRoot)
 			subagentsDir := filepath.Join(transcriptDir, sid, "subagents")
 			require.NoError(t, os.MkdirAll(subagentsDir, 0o755))
 			transcript := filepath.Join(transcriptDir, sid+".jsonl")
@@ -278,7 +279,8 @@ func TestClaudeTranscriptFoundFromWorktreeCwd(t *testing.T) {
 // not move the recorded cwd.
 func TestEnsureSessionTracked_BackfillsTranscriptPath(t *testing.T) {
 	const sid = "7412c0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
-	setTestHome(t, t.TempDir())
+	home := t.TempDir()
+	setTestHome(t, home)
 
 	root := chdirToResolvedGitRepo(t)
 	store := state.NewGitStore(filepath.Join(root, ".git"))
@@ -292,7 +294,7 @@ func TestEnsureSessionTracked_BackfillsTranscriptPath(t *testing.T) {
 	require.NotNil(t, rec)
 	require.Empty(t, rec.TranscriptPath)
 
-	transcript := filepath.Join(p.SessionDirForRepo("/elsewhere"), sid+".jsonl")
+	transcript := filepath.Join(claudeProjectDir(home, "/elsewhere"), sid+".jsonl")
 	otherCwd := filepath.Join(root, "sub")
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"transcript_path":%q,"cwd":%q,"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"true"}}`,
 		sid, transcript, otherCwd))
@@ -309,7 +311,8 @@ func TestEnsureSessionTracked_BackfillsTranscriptPath(t *testing.T) {
 // record, so session end fills it in too.
 func TestHandleAgentSessionEnd_BackfillsTranscriptPath(t *testing.T) {
 	const sid = "7412d0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
-	setTestHome(t, t.TempDir())
+	home := t.TempDir()
+	setTestHome(t, home)
 
 	root := chdirToResolvedGitRepo(t)
 	store := state.NewGitStore(filepath.Join(root, ".git"))
@@ -318,7 +321,7 @@ func TestHandleAgentSessionEnd_BackfillsTranscriptPath(t *testing.T) {
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"SessionStart"}`, sid, root))
 	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
 
-	transcript := filepath.Join(p.SessionDirForRepo("/elsewhere"), sid+".jsonl")
+	transcript := filepath.Join(claudeProjectDir(home, "/elsewhere"), sid+".jsonl")
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"transcript_path":%q,"cwd":%q,"hook_event_name":"SessionEnd"}`, sid, transcript, root))
 	require.NoError(t, HandleAgentSessionEnd(p, zerolog.Nop()))
 
@@ -335,6 +338,15 @@ func setTestHome(t *testing.T, dir string) {
 	t.Helper()
 	t.Setenv("HOME", dir)
 	t.Setenv("USERPROFILE", dir)
+}
+
+// claudeProjectDir returns the directory where Claude Code files the
+// transcripts of a session started in cwd: <home>/.claude/projects/ followed
+// by cwd with each path separator and dot replaced by a dash.
+func claudeProjectDir(home, cwd string) string {
+	encoded := strings.NewReplacer(string(filepath.Separator), "-", ".", "-").Replace(cwd)
+
+	return filepath.Join(home, ".claude", "projects", encoded)
 }
 
 // Only edits follow the file to its checkout. Claude's Read carries a

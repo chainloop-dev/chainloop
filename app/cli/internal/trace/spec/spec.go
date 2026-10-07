@@ -17,10 +17,11 @@
 //
 // The agent is the resolver. Chainloop fetches nothing: the session-start hook
 // hands the agent a directory, and the agent writes the text of whatever the
-// task names — a ticket, a design document, a prompt — into it, one file per
-// source. Pre-push folds those files into the session evidence and deletes
-// them. That is why there are no connectors, no credentials and no fetch
-// failures anywhere in this package.
+// task names — a ticket, a design document, an approved plan — into it, one
+// file per source. The prompt-submit hook reminds it at each turn to capture a
+// new or changed spec. Each push folds those files into the session evidence,
+// and the session end deletes them. That is why there are no connectors, no
+// credentials and no fetch failures anywhere in this package.
 //
 // The files live in the working tree rather than under .git because that is the
 // only place an agent can reliably write: writes under .git prompt or are
@@ -57,9 +58,15 @@ const (
 	gitignoreBody = "*\n"
 
 	// MaxEntries bounds the evidence document against an agent that writes a
-	// file per turn. The oldest entries are the ones kept, since what the
-	// session started from is the last thing worth dropping.
-	MaxEntries = 10
+	// file per turn. The files an earlier push recorded are kept first, then
+	// the oldest new ones, since what the session started from is the last
+	// thing worth dropping.
+	MaxEntries = 25
+
+	// MetaSuffix names the companion file of a binary file: the name of the
+	// binary file plus this suffix. It holds the role, the title and the
+	// description that a binary file has no header for.
+	MetaSuffix = ".meta.yaml"
 )
 
 // Dir returns the directory holding every session's captured specs.
@@ -118,16 +125,23 @@ func Exists(repoRoot, sessionID string) bool {
 	return slices.ContainsFunc(entries, isCandidate)
 }
 
-// ReadAll returns the specs captured for a session, oldest first, along with
-// a warning for each file it could not read and for the entries dropped for
-// exceeding MaxEntries.
+// ReadAll returns the specs captured for a session, along with a warning for
+// each file it could not read and for the entries dropped for exceeding
+// MaxEntries.
+//
+// recorded names the files that the last push of the session stored, in the
+// order that push read them. Those come first and are never the ones dropped:
+// they are never more than MaxEntries, and each push puts the files of the
+// push before it first, so a file stays on the list from one push to the next. The other files follow, oldest first. The modification time alone
+// cannot give this order: an overwrite moves a file to the end, and the ticket
+// the session started from is the file the agent is most likely to update.
 //
 // A session that captured nothing — by far the common case — yields no entries
 // and no error. Individual files that carry nothing are skipped rather than
 // recorded as empty entries. A file that cannot be read costs that file only:
 // the others are still returned. The error is kept for a folder that cannot be
 // read at all.
-func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
+func ReadAll(repoRoot, sessionID string, recorded []string) ([]Capture, []string, error) {
 	dir := SessionDir(repoRoot, sessionID)
 
 	dirEntries, err := os.ReadDir(dir)
@@ -147,9 +161,18 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 
 	var warnings []string
 
+	// A companion file is never a spec of its own. It is read only for the
+	// binary file it is named for, and ignored when there is none.
+	companions := make(map[string]string)
+
 	candidates := make([]candidate, 0, len(dirEntries))
 	for _, e := range dirEntries {
 		if !isCandidate(e) {
+			continue
+		}
+
+		if base, ok := strings.CutSuffix(e.Name(), MetaSuffix); ok {
+			companions[base] = filepath.Join(dir, e.Name())
 			continue
 		}
 
@@ -166,9 +189,27 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 		})
 	}
 
-	// Capture order is the useful order, and the name breaks ties so that two
-	// files written in the same instant still sort deterministically.
+	rank := make(map[string]int, len(recorded))
+	for i, name := range recorded {
+		if _, ok := rank[name]; !ok {
+			rank[name] = i
+		}
+	}
+
+	// Files an earlier push recorded come first, in the order they were
+	// recorded. Capture order is the useful order for the rest, and the name
+	// breaks ties so that two files written in the same instant still sort
+	// deterministically.
 	sort.Slice(candidates, func(i, j int) bool {
+		ri, iRecorded := rank[candidates[i].name]
+		rj, jRecorded := rank[candidates[j].name]
+		switch {
+		case iRecorded && jRecorded:
+			return ri < rj
+		case iRecorded != jRecorded:
+			return iRecorded
+		}
+
 		if candidates[i].modTime.Equal(candidates[j].modTime) {
 			return candidates[i].name < candidates[j].name
 		}
@@ -187,7 +228,15 @@ func ReadAll(repoRoot, sessionID string) ([]Capture, []string, error) {
 		// An image, or a file that is not text, is something the agent copied
 		// in rather than wrote. Parsing it as text would only mangle it.
 		if image := isImage(c.name, doc); image || !utf8.Valid(doc) {
-			entries = append(entries, verbatimCapture(c.name, doc, c.modTime, image))
+			capture := verbatimCapture(c.name, doc, c.modTime, image)
+			if path, ok := companions[c.name]; ok {
+				// A companion file we cannot read costs its values only.
+				if meta, err := os.ReadFile(path); err == nil {
+					capture.MetaRaw = meta
+				}
+			}
+
+			entries = append(entries, capture)
 			continue
 		}
 

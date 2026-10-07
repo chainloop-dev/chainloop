@@ -53,7 +53,7 @@ func (m SessionStartMessage) Empty() bool {
 	return m.Banner == "" && m.Instruction == ""
 }
 
-// Provider discovers and parses AI coding sessions for a specific agent.
+// Provider captures and parses AI coding sessions for a specific agent.
 //
 // Providers are stateless singletons from a registry, so the state-touching
 // methods below take a *state.Store per call rather than holding one. The store
@@ -64,15 +64,8 @@ type Provider interface {
 	// Name returns the agent identifier (e.g., "claude-code", "cursor").
 	Name() string
 
-	// DiscoverSession finds the most relevant session for the given repo root.
-	// Returns nil, nil if no matching session is found.
-	DiscoverSession(repoRoot string) (*DiscoveredSession, error)
-
 	// ParseSession parses a session and returns structured evidence.
 	ParseSession(ctx context.Context, opts *ParseOpts) (*aicodingsession.Evidence, error)
-
-	// SessionDirForRepo returns the agent's session data directory for a given repo root.
-	SessionDirForRepo(repoRoot string) string
 
 	// CopySessionData copies the agent's on-disk session artifacts into
 	// the store's raw/ directory so pre-push can parse them independently of
@@ -143,6 +136,16 @@ type Provider interface {
 	// message handed to AnnounceSessionStart reaches the model rather than
 	// being discarded.
 	SupportsSessionStartInstruction() bool
+
+	// AnnouncePromptSubmit writes the prompt-submit hook response to stdout,
+	// so that reminder reaches the model's context for this turn. An empty
+	// reminder emits nothing.
+	AnnouncePromptSubmit(reminder string) error
+
+	// SupportsPromptReminder reports whether a reminder handed to
+	// AnnouncePromptSubmit reaches the model at each user prompt. An agent
+	// without it gets the session-start instruction only.
+	SupportsPromptReminder() bool
 
 	// AnnounceToUser writes a hook response to stdout so the agent puts msg
 	// in front of the user, after a shell command the agent ran. Which
@@ -221,13 +224,6 @@ type SessionLocation struct {
 	// TranscriptPath is the transcript path the agent reported, if any.
 	// Providers that get one prefer it over Cwd.
 	TranscriptPath string
-}
-
-// DiscoveredSession represents a discovered AI coding session (agent-agnostic).
-type DiscoveredSession struct {
-	SessionID  string
-	SessionDir string
-	IsActive   bool
 }
 
 // ParseOpts configures session parsing.

@@ -13,9 +13,7 @@ This reference lists all files that must be updated when upgrading Go versions.
 ## Docker Images
 
 ### Dockerfiles (Golang)
-- `./app/artifact-cas/Dockerfile`
 - `./app/artifact-cas/Dockerfile.goreleaser`
-- `./app/controlplane/Dockerfile`
 - `./app/controlplane/Dockerfile.goreleaser`
 - `./app/cli/Dockerfile.goreleaser`
 
@@ -23,6 +21,17 @@ Update pattern in all:
 ```dockerfile
 FROM golang:X.XX.X@sha256:DIGEST AS builder
 ```
+
+## golangci-lint (Go minor upgrades)
+
+- `./.github/workflows/lint.yml` - every `version:` of `golangci/golangci-lint-action` (main module, apps, and dagger module jobs)
+- `./common.mk` - golangci-lint install version in the `init` target
+
+Keep both on the same golangci-lint version.
+
+## GitHub Actions
+
+No change needed for Go itself: `test.yml`, `lint.yml`, `release.yaml` and `codeql.yml` use `go-version-file: 'go.mod'`.
 
 ### Atlas Files (Optional)
 - `./app/controlplane/Dockerfile.migrations` - Docker image for migrations
@@ -48,17 +57,19 @@ curl -sSf https://atlasgo.sh | ATLAS_VERSION=vX.XX.X sh -s -- -y
 ### Project Documentation
 - `./CLAUDE.md` - Update "Key Technologies" section:
   ```markdown
-  - **Language**: Go X.XX.X. To know how to upgrade go version, see docs/runbooks
+  - **Language**: Go X.XX.X
   ```
 
 ## Summary
 
-**Total files to update for Go**: 13 files
+**Files to update for Go**: 5 files
 - 1 go.mod file
-- 5 Dockerfiles (Golang)
-- 5 GitHub Actions workflows
-- 1 example workflow
+- 3 Dockerfiles (Golang)
 - 1 documentation file
+
+**golangci-lint (Go minor upgrades)**: 2 files
+- 1 GitHub Actions workflow (lint.yml)
+- 1 Makefile (common.mk)
 
 **Optional Atlas upgrade**: 2 files
 - 1 Dockerfile (Atlas migrations)

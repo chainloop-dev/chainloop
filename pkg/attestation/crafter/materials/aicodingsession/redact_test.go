@@ -108,6 +108,10 @@ func TestEligible(t *testing.T) {
 		{"/data/subagents/0/id", false},
 		{"/data/subagents/0/type", false},
 		{"/data/spec/0/kind", false},
+		{"/data/spec/0/role", false},
+		// The agent writes them, so they can hold a secret like the text.
+		{"/data/spec/0/title", true},
+		{"/data/spec/0/description", true},
 		{"/data/spec/0/captured_at", false},
 		{"/data/spec/3/digest", false},
 		// A source URL is a common place for an embedded token.

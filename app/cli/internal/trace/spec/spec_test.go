@@ -145,7 +145,7 @@ func TestExists(t *testing.T) {
 
 func TestReadAll(t *testing.T) {
 	t.Run("no directory yields nothing", func(t *testing.T) {
-		entries, warnings, err := ReadAll(t.TempDir(), sessionID)
+		entries, warnings, err := ReadAll(t.TempDir(), sessionID, nil)
 
 		require.NoError(t, err)
 		assert.Empty(t, entries)
@@ -161,7 +161,7 @@ func TestReadAll(t *testing.T) {
 		writeSpec(t, root, sessionID, "zzz-doc.md", "---\nkind: document\n---\nthe design", second)
 		writeSpec(t, root, sessionID, "aaa-ticket.md", "---\nkind: ticket\nuri: https://example.com/1\n---\nthe ticket", first)
 
-		entries, warnings, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID, nil)
 
 		require.NoError(t, err)
 		require.Len(t, entries, 2)
@@ -191,7 +191,7 @@ func TestReadAll(t *testing.T) {
 		require.NoError(t, os.MkdirAll(filepath.Join(SessionDir(root, sessionID), "nested"), 0755))
 		require.NoError(t, os.WriteFile(filepath.Join(SessionDir(root, sessionID), "empty.md"), []byte("  \n"), 0600))
 
-		entries, warnings, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID, nil)
 
 		require.NoError(t, err)
 		require.Len(t, entries, 1)
@@ -208,7 +208,7 @@ func TestReadAll(t *testing.T) {
 		writeSpec(t, root, sessionID, "mockup.png", string(pngBytes), time.Now())
 		writeSpec(t, root, sessionID, "design.pdf", string(pdfBytes), time.Now().Add(time.Second))
 
-		entries, warnings, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID, nil)
 
 		require.NoError(t, err)
 		assert.Empty(t, warnings)
@@ -224,6 +224,43 @@ func TestReadAll(t *testing.T) {
 		assert.True(t, entries[1].Verbatim)
 	})
 
+	t.Run("a companion file goes with its binary file and is no spec of its own", func(t *testing.T) {
+		root := t.TempDir()
+		pngBytes := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\xff\xfe")
+		meta := "role: reference\ntitle: Export button mockup\n"
+		writeSpec(t, root, sessionID, "mockup.png", string(pngBytes), time.Now())
+		writeSpec(t, root, sessionID, "mockup.png"+MetaSuffix, meta, time.Now())
+
+		entries, warnings, err := ReadAll(root, sessionID, nil)
+
+		require.NoError(t, err)
+		assert.Empty(t, warnings)
+		require.Len(t, entries, 1)
+		assert.Equal(t, "mockup.png", entries[0].FileName)
+		assert.Equal(t, []byte(meta), entries[0].MetaRaw)
+		// The values are read only after the companion file is redacted.
+		assert.Empty(t, entries[0].Title)
+		assert.Empty(t, entries[0].Role)
+	})
+
+	t.Run("a companion file with no binary file next to it is ignored", func(t *testing.T) {
+		root := t.TempDir()
+		writeSpec(t, root, sessionID, "ticket.md", "the ticket", time.Now())
+		// One with no file at all, and one next to a text file, which has a
+		// header of its own.
+		writeSpec(t, root, sessionID, "gone.png"+MetaSuffix, "role: reference\n", time.Now())
+		writeSpec(t, root, sessionID, "ticket.md"+MetaSuffix, "role: task\n", time.Now())
+
+		entries, warnings, err := ReadAll(root, sessionID, nil)
+
+		require.NoError(t, err)
+		assert.Empty(t, warnings)
+		require.Len(t, entries, 1)
+		assert.Equal(t, "ticket.md", entries[0].FileName)
+		assert.Nil(t, entries[0].MetaRaw)
+		assert.Empty(t, entries[0].Role)
+	})
+
 	t.Run("an image in a text format is kept as it is too", func(t *testing.T) {
 		// An SVG is valid UTF-8, so only its type tells it apart from a spec
 		// the agent wrote. Parsing and redacting it as text could break it.
@@ -231,7 +268,7 @@ func TestReadAll(t *testing.T) {
 		svg := `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>`
 		writeSpec(t, root, sessionID, "logo.svg", svg, time.Now())
 
-		entries, warnings, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID, nil)
 
 		require.NoError(t, err)
 		assert.Empty(t, warnings)
@@ -253,7 +290,7 @@ func TestReadAll(t *testing.T) {
 		require.NoError(t, os.Chmod(locked, 0o000))
 		t.Cleanup(func() { _ = os.Chmod(locked, 0o600) })
 
-		entries, warnings, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID, nil)
 
 		require.NoError(t, err)
 		require.Len(t, entries, 1)
@@ -274,7 +311,7 @@ func TestReadAll(t *testing.T) {
 			writeSpec(t, root, sessionID, name, fmt.Sprintf("entry %d", i), base.Add(time.Duration(i)*time.Minute))
 		}
 
-		entries, warnings, err := ReadAll(root, sessionID)
+		entries, warnings, err := ReadAll(root, sessionID, nil)
 
 		require.NoError(t, err)
 		assert.Len(t, entries, MaxEntries)
@@ -283,6 +320,63 @@ func TestReadAll(t *testing.T) {
 		// The oldest survive, so what the session started from is never the
 		// thing that gets dropped.
 		assert.Equal(t, "entry 0", string(entries[0].Raw))
+	})
+
+	t.Run("keeps up to 25 entries", func(t *testing.T) {
+		// A reminder at each turn makes more files likely in a long session.
+		assert.Equal(t, 25, MaxEntries)
+	})
+
+	t.Run("a file an earlier push recorded is never dropped, even once overwritten", func(t *testing.T) {
+		root := t.TempDir()
+		base := time.Date(2026, 9, 16, 10, 0, 0, 0, time.UTC)
+
+		writeSpec(t, root, sessionID, "ticket.md", "the ticket", base)
+		for i := range MaxEntries {
+			name := fmt.Sprintf("spec-%02d.md", i)
+			writeSpec(t, root, sessionID, name, fmt.Sprintf("entry %d", i), base.Add(time.Duration(i+1)*time.Minute))
+		}
+		// The agent overwrites the ticket last, so by modification time it
+		// is now the newest file of all.
+		writeSpec(t, root, sessionID, "ticket.md", "the updated ticket", base.Add(time.Hour))
+
+		entries, warnings, err := ReadAll(root, sessionID, []string{"ticket.md"})
+
+		require.NoError(t, err)
+		require.Len(t, entries, MaxEntries)
+		require.Len(t, warnings, 1)
+		assert.Contains(t, warnings[0], "1 spec entries")
+
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			names = append(names, e.FileName)
+		}
+		assert.Contains(t, names, "ticket.md", "a file an earlier push recorded must stay")
+		// New files fill the places left, oldest first: the newest new file
+		// is the one that goes.
+		assert.Contains(t, names, "spec-00.md")
+		assert.NotContains(t, names, fmt.Sprintf("spec-%02d.md", MaxEntries-1))
+	})
+
+	t.Run("a recorded file that is gone frees its place", func(t *testing.T) {
+		root := t.TempDir()
+		base := time.Date(2026, 9, 16, 10, 0, 0, 0, time.UTC)
+
+		// One more file than the limit is on disk. If the missing recorded
+		// file kept a place, two files would be dropped instead of one.
+		writeSpec(t, root, sessionID, "ticket.md", "the ticket", base)
+		for i := range MaxEntries {
+			name := fmt.Sprintf("spec-%02d.md", i)
+			writeSpec(t, root, sessionID, name, fmt.Sprintf("entry %d", i), base.Add(time.Duration(i+1)*time.Minute))
+		}
+
+		entries, warnings, err := ReadAll(root, sessionID, []string{"removed.md", "ticket.md"})
+
+		require.NoError(t, err)
+		require.Len(t, entries, MaxEntries, "every place goes to a file on disk")
+		require.Len(t, warnings, 1)
+		assert.Contains(t, warnings[0], "1 spec entries")
+		assert.Equal(t, "ticket.md", entries[0].FileName)
 	})
 }
 

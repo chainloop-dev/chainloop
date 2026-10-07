@@ -18,8 +18,9 @@ package opencode
 import "encoding/json"
 
 // types.go mirrors the JSON structures emitted by `opencode export <sessionID>`
-// and `opencode session list --format json`. Only the fields consumed by the
-// trace provider are modelled; unknown fields are ignored by encoding/json.
+// (OpenCode 1.x) and `opencode session export <sessionID>` (OpenCode 2). Only
+// the fields consumed by the trace provider are modelled; unknown fields are
+// ignored by encoding/json.
 
 // exportData is the top-level shape of `opencode export`:
 //
@@ -116,11 +117,50 @@ type toolState struct {
 	Output json.RawMessage `json:"output,omitempty"`
 }
 
-// sessionListEntry mirrors one element of `opencode session list --format json`.
-type sessionListEntry struct {
-	ID        string  `json:"id"`
-	Title     string  `json:"title"`
-	Directory string  `json:"directory"`
-	Updated   float64 `json:"updated"`
-	Created   float64 `json:"created"`
+// exportDataV2 is the top-level shape of `opencode session export`, the
+// OpenCode 2 export. Messages are flat and tagged by type, and an assistant
+// message holds its text and tool calls in content:
+//
+//	{ "info": SessionInfo, "messages": [{ "type": "user" | "assistant" | ..., "content": [Content] }] }
+type exportDataV2 struct {
+	Info     sessionInfoV2 `json:"info"`
+	Messages []messageV2   `json:"messages"`
+}
+
+// sessionInfoV2 is the OpenCode 2 session metadata. It has no version and
+// no slug, and it keeps the session directory in location.
+type sessionInfoV2 struct {
+	ID     string      `json:"id"`
+	Cost   *float64    `json:"cost,omitempty"`
+	Tokens *sessTokens `json:"tokens,omitempty"`
+	Time   sessTime    `json:"time"`
+}
+
+// messageV2 is one OpenCode 2 message. Text is set on user messages; Model,
+// Cost, Tokens and Content on assistant messages.
+type messageV2 struct {
+	Type    string      `json:"type"`
+	ID      string      `json:"id"`
+	Text    string      `json:"text,omitempty"`
+	Model   *modelRef   `json:"model,omitempty"`
+	Cost    float64     `json:"cost,omitempty"`
+	Tokens  *msgTokens  `json:"tokens,omitempty"`
+	Time    *msgTime    `json:"time,omitempty"`
+	Content []contentV2 `json:"content,omitempty"`
+}
+
+// modelRef names the model of an OpenCode 2 assistant message.
+type modelRef struct {
+	ID         string `json:"id"`
+	ProviderID string `json:"providerID"`
+}
+
+// contentV2 is one item of an OpenCode 2 assistant message: "text",
+// "reasoning", or a "tool" call with its state.
+type contentV2 struct {
+	Type  string     `json:"type"`
+	ID    string     `json:"id,omitempty"`
+	Name  string     `json:"name,omitempty"`
+	Text  string     `json:"text,omitempty"`
+	State *toolState `json:"state,omitempty"`
 }

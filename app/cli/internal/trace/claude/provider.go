@@ -51,30 +51,6 @@ func (p *Provider) Name() string {
 	return Name
 }
 
-// DiscoverSession finds the most relevant Claude Code session for the given repo root.
-func (p *Provider) DiscoverSession(repoRoot string) (*trace.DiscoveredSession, error) {
-	session, err := discoverClaudeSession(repoRoot)
-	if err != nil || session == nil {
-		return nil, err
-	}
-
-	return &trace.DiscoveredSession{
-		SessionID:  session.sessionID,
-		SessionDir: filepath.Dir(session.jsonlPath),
-		IsActive:   session.isActive,
-	}, nil
-}
-
-// SessionDirForRepo returns the Claude Code project directory for a given repo root.
-func (p *Provider) SessionDirForRepo(repoRoot string) string {
-	projectsDir := claudeProjectsDir()
-	if projectsDir == "" {
-		return ""
-	}
-
-	return filepath.Join(projectsDir, encodeCWDForClaudePath(repoRoot))
-}
-
 // claudeProjectsDir returns ~/.claude/projects, or "" when the home
 // directory is unknown.
 func claudeProjectsDir() string {
@@ -243,6 +219,38 @@ func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
 		HookSpecificOutput: hookSpecificOutput{
 			HookEventName:     eventSessionStart,
 			AdditionalContext: msg.Instruction,
+		},
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(resp)
+}
+
+// SupportsPromptReminder is true for Claude Code: it adds the
+// additionalContext field of a UserPromptSubmit hook response to the context
+// of the turn.
+func (p *Provider) SupportsPromptReminder() bool {
+	return true
+}
+
+// AnnouncePromptSubmit emits a UserPromptSubmit hook response that carries
+// the reminder in additionalContext only. It has no systemMessage: a banner
+// at every turn would only distract the user.
+func (p *Provider) AnnouncePromptSubmit(reminder string) error {
+	if reminder == "" {
+		return nil
+	}
+
+	type hookSpecificOutput struct {
+		HookEventName     string `json:"hookEventName"`
+		AdditionalContext string `json:"additionalContext"`
+	}
+
+	resp := struct {
+		HookSpecificOutput hookSpecificOutput `json:"hookSpecificOutput"`
+	}{
+		HookSpecificOutput: hookSpecificOutput{
+			HookEventName:     eventUserPromptSubmit,
+			AdditionalContext: reminder,
 		},
 	}
 

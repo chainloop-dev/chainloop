@@ -18,6 +18,7 @@ package biz
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -33,6 +34,11 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
+
+// ErrAPITokenClaimsMismatch marks a token whose row disagrees with its signed claims, or whose
+// claims are malformed. Something wrote the row or the claims incorrectly. It is a security event,
+// not an expired or old credential. The caller sees only this message, so it names no detail.
+var ErrAPITokenClaimsMismatch = errors.New("API token could not be verified")
 
 var apiTokenTracer = otelx.Tracer("chainloop-controlplane", "biz/apitoken")
 
@@ -159,6 +165,71 @@ func (t *APIToken) IsInstanceScoped() bool {
 // scope is not.
 func (t *APIToken) IsOrgScoped() bool {
 	return t.scopeView().IsOrgScoped()
+}
+
+// VerifyClaims checks the token's row against its signed claims. The claims are the source of
+// truth. VerifyClaims reads the scope from them first, and then the row must have the same scope,
+// organization, project and workflow. A project or workflow that only the row or only the claims
+// name is also a difference. Any difference refuses the token, so a wrong row can never widen the
+// token or move it elsewhere. Every refusal for a difference wraps ErrAPITokenClaimsMismatch.
+func (t *APIToken) VerifyClaims(claims *apitoken.CustomClaims) error {
+	if t == nil {
+		return errors.New("API token not found")
+	}
+
+	if claims == nil {
+		return errors.New("API token has no claims")
+	}
+
+	// A token minted before the control plane signed its scope gets the scope that its other
+	// claims imply: INSTANCE_ADMIN, else its project_id, else its org_id.
+	kind, id, err := claims.GetScope()
+	if err != nil {
+		return fmt.Errorf("API token scope claims: %w: %w", err, ErrAPITokenClaimsMismatch)
+	}
+
+	if t.Scope == nil || *t.Scope != kind || !sameScopeID(t.ScopeID, id) {
+		return fmt.Errorf("API token scope mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	// An instance token has no organization, and its org_id claim is empty
+	orgID := ""
+	if t.OrganizationID != uuid.Nil {
+		orgID = t.OrganizationID.String()
+	}
+
+	if claims.OrgID != orgID {
+		return fmt.Errorf("API token organization mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	if !sameClaimedID(t.ProjectID, claims.ProjectID) {
+		return fmt.Errorf("API token project mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	if !sameClaimedID(t.WorkflowID, claims.WorkflowID) {
+		return fmt.Errorf("API token workflow mismatch: %w", ErrAPITokenClaimsMismatch)
+	}
+
+	return nil
+}
+
+// sameClaimedID reports whether an optional id of the row equals its claim. An unset id equals
+// an empty claim.
+func sameClaimedID(row *uuid.UUID, claim string) bool {
+	if row == nil {
+		return claim == ""
+	}
+
+	return row.String() == claim
+}
+
+// sameScopeID reports whether two optional scope ids are equal. Two unset ids are equal.
+func sameScopeID(a, b *uuid.UUID) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+
+	return *a == *b
 }
 
 // APITokenCreateOpts is everything the repository persists for a new token.
@@ -481,14 +552,15 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		KeyID:     token.ID,
 		KeyName:   name,
 		ExpiresAt: expiresAt,
+		// The JWT signs the scope. The row must then match it.
+		Scope:   scope,
+		ScopeID: scopeID,
 	}
 
-	// Set org info if available or instance-level token scope
+	// An instance-level token has no organization
 	if org != nil {
 		generationOpts.OrgID = &token.OrganizationID
 		generationOpts.OrgName = &org.Name
-	} else {
-		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
 	if projectID != nil {
@@ -522,7 +594,10 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	return token, nil
 }
 
-// RegenerateJWT will regenerate a new JWT for the given token. Use with caution, since old JWTs are not invalidated.
+// RegenerateJWT signs a new JWT for the given token. Use it with caution: it does not invalidate
+// old JWTs. The new JWT signs the scope that the row records. RegenerateJWT refuses a row with no
+// scope, or with a scope that contradicts its other columns. It still signs a row that is
+// consistent but wrong, so callers must be sure that it is the token they mean.
 func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID, expiresIn time.Duration) (*APIToken, error) {
 	ctx, span := otelx.Start(ctx, apiTokenTracer, "APITokenUseCase.RegenerateJWT")
 	defer span.End()
@@ -538,24 +613,36 @@ func (uc *APITokenUseCase) RegenerateJWT(ctx context.Context, tokenID uuid.UUID,
 		return nil, fmt.Errorf("finding token: %w", err)
 	}
 
+	// Never sign a row that records no scope, or a row whose scope contradicts its other columns.
+	if token.Scope == nil {
+		return nil, NewErrValidationStr("the token records no scope")
+	}
+
+	var rowOrgID *uuid.UUID
+	if token.OrganizationID != uuid.Nil {
+		rowOrgID = &token.OrganizationID
+	}
+
+	if err := ValidateTokenShape(token.Scope, token.ScopeID, rowOrgID, token.ProjectID, token.ProjectIDs); err != nil {
+		return nil, err
+	}
+
 	generationOpts := &apitoken.GenerateJWTOptions{
 		KeyID:     token.ID,
 		KeyName:   token.Name,
 		ExpiresAt: &expiresAt,
+		Scope:     token.Scope,
+		ScopeID:   token.ScopeID,
 	}
 
-	// Check if this is an org-scoped or instance-level token
+	// An instance-level token has no organization
 	if token.OrganizationID != uuid.Nil {
-		// Org-scoped token
 		org, err := uc.orgUseCase.FindByID(ctx, token.OrganizationID.String())
 		if err != nil {
 			return nil, fmt.Errorf("finding organization: %w", err)
 		}
 		generationOpts.OrgID = &token.OrganizationID
 		generationOpts.OrgName = &org.Name
-	} else {
-		// Instance-level token
-		generationOpts.Scope = ToPtr(authz.ScopeInstanceAdmin)
 	}
 
 	// Preserve project / workflow scope claims that the row carries.

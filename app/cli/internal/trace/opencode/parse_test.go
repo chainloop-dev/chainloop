@@ -197,6 +197,177 @@ func TestParseExport(t *testing.T) {
 	assert.Equal(t, "read", content2[2].(map[string]any)["name"])
 }
 
+// sampleExportV2 is a minimal export in the OpenCode 2 format, as printed by
+// `opencode session export`. Messages are flat and tagged by type, assistant
+// output is in content, and the session directory is in info.location.
+// info.time.updated is when the session record last changed (its title, set
+// seconds in), not when the session last did anything, so the session runs
+// until its idle marker.
+const sampleExportV2 = `{
+  "info": {
+    "id": "ses_v2abc",
+    "title": "Refactor auth module",
+    "projectID": "prj_1",
+    "agent": "build",
+    "location": { "directory": "/home/user/project" },
+    "model": { "id": "claude-sonnet-4-5", "providerID": "anthropic", "variant": "default" },
+    "outcome": "succeeded",
+    "cost": 0.0523,
+    "tokens": { "input": 12000, "output": 3000, "reasoning": 500, "cache": { "read": 2000, "write": 1000 } },
+    "time": { "created": 1751702400000, "updated": 1751702402000, "idle": 1751702710000 }
+  },
+  "messages": [
+    { "type": "user", "id": "msg_001", "text": "Fix the auth bug", "files": [], "agents": [], "time": { "created": 1751702400000 } },
+    {
+      "type": "assistant",
+      "id": "msg_002",
+      "agent": "build",
+      "model": { "id": "claude-sonnet-4-5", "providerID": "anthropic", "variant": "default" },
+      "cost": 0.0261,
+      "tokens": { "input": 6000, "output": 1500, "reasoning": 250, "cache": { "read": 1000, "write": 500 } },
+      "time": { "created": 1751702500000, "completed": 1751702550000 },
+      "content": [
+        { "type": "reasoning", "text": "The token check is inverted." },
+        { "type": "text", "text": "I'll fix the auth bug." },
+        {
+          "type": "tool", "id": "call_001", "name": "edit",
+          "state": { "status": "completed", "input": { "path": "src/auth.go", "oldString": "!ok", "newString": "ok" },
+            "content": [{ "type": "text", "text": "Edited src/auth.go (1 replacement)" }] },
+          "time": { "created": 1751702510000, "completed": 1751702511000 }
+        },
+        {
+          "type": "tool", "id": "call_002", "name": "read",
+          "state": { "status": "completed", "input": { "path": "src/auth.go" }, "content": [{ "type": "text", "text": "package auth" }] },
+          "time": { "created": 1751702512000, "completed": 1751702513000 }
+        },
+        {
+          "type": "tool", "id": "call_003", "name": "shell",
+          "state": { "status": "error", "input": { "command": "go test ./..." }, "error": { "type": "unknown", "message": "exit status 1" } },
+          "time": { "created": 1751702514000 }
+        }
+      ]
+    },
+    {
+      "type": "assistant",
+      "id": "msg_003",
+      "agent": "build",
+      "model": { "id": "claude-sonnet-4-5", "providerID": "anthropic", "variant": "default" },
+      "cost": 0.0262,
+      "tokens": { "input": 6000, "output": 1500, "reasoning": 250, "cache": { "read": 1000, "write": 500 } },
+      "time": { "created": 1751702600000, "completed": 1751702700000 },
+      "content": [
+        {
+          "type": "tool", "id": "call_004", "name": "edit",
+          "state": { "status": "completed", "input": { "path": "src/auth_test.go", "oldString": "a", "newString": "b" },
+            "content": [{ "type": "text", "text": "Edited src/auth_test.go (1 replacement)" }] },
+          "time": { "created": 1751702610000, "completed": 1751702611000 }
+        }
+      ]
+    },
+    { "type": "idle", "id": "msg_004", "outcome": "succeeded", "time": { "created": 1751702710000 } }
+  ]
+}`
+
+func TestParseExportV2(t *testing.T) {
+	rawDir := t.TempDir()
+	path := filepath.Join(rawDir, state.SanitizeID("ses_v2abc")+".jsonl")
+	require.NoError(t, os.WriteFile(path, []byte(sampleExportV2), 0600))
+
+	result, err := New().ParseSession(context.Background(), &trace.ParseOpts{
+		SessionDir: rawDir,
+		SessionID:  "ses_v2abc",
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, "opencode", result.Data.Agent.Name)
+	// The OpenCode 2 export carries no version.
+	assert.Empty(t, result.Data.Agent.Version)
+	assert.Equal(t, "ses_v2abc", result.Data.Session.ID)
+	assert.Equal(t, "2025-07-05T08:00:00Z", result.Data.Session.StartedAt)
+	assert.Equal(t, "2025-07-05T08:05:10Z", result.Data.Session.EndedAt)
+	assert.Equal(t, 310, result.Data.Session.DurationSeconds)
+
+	require.NotNil(t, result.Data.Model)
+	assert.Equal(t, "claude-sonnet-4-5", result.Data.Model.Primary)
+	assert.Equal(t, "anthropic", result.Data.Model.Provider)
+	assert.Equal(t, []string{"claude-sonnet-4-5"}, result.Data.Model.ModelsUsed)
+
+	require.NotNil(t, result.Data.Usage)
+	assert.Equal(t, 12000, result.Data.Usage.InputTokens)
+	assert.Equal(t, 3000, result.Data.Usage.OutputTokens)
+	assert.Equal(t, 2000, result.Data.Usage.CacheReadInputTokens)
+	assert.Equal(t, 1000, result.Data.Usage.CacheCreationInputTokens)
+	assert.InDelta(t, 0.0523, result.Data.Usage.EstimatedCostUSD, 0.0001)
+
+	// Completed tool calls only: the failed shell call does not count.
+	require.NotNil(t, result.Data.ToolsUsed)
+	assert.Equal(t, 3, result.Data.ToolsUsed.TotalInvocations)
+	assert.Equal(t, []aicodingsession.ToolSummary{
+		{ToolName: "edit", InvocationCount: 2},
+		{ToolName: "read", InvocationCount: 1},
+	}, result.Data.ToolsUsed.Summary)
+
+	// The idle marker is not a conversation message.
+	require.NotNil(t, result.Data.Conversation)
+	assert.Equal(t, 1, result.Data.Conversation.UserMessages)
+	assert.Equal(t, 2, result.Data.Conversation.AssistantMessages)
+	assert.Equal(t, 3, result.Data.Conversation.TotalMessages)
+
+	require.Contains(t, result.Data.RawSession, "main")
+	entries := result.Data.RawSession["main"]
+	require.Len(t, entries, 3)
+
+	var user trace.RawSessionEntry
+	require.NoError(t, json.Unmarshal(entries[0], &user))
+	assert.Equal(t, "user", user.Type)
+	assert.Equal(t, "msg_001", user.UUID)
+	assert.Equal(t, "2025-07-05T08:00:00Z", user.Timestamp)
+	assert.JSONEq(t, `[{"type":"text","text":"Fix the auth bug"}]`, string(user.Message.Content))
+
+	// Reasoning and the failed tool call are left out of the timeline.
+	var assistant trace.RawSessionEntry
+	require.NoError(t, json.Unmarshal(entries[1], &assistant))
+	assert.Equal(t, "assistant", assistant.Type)
+	assert.Equal(t, "claude-sonnet-4-5", assistant.Message.Model)
+	assert.JSONEq(t, `[
+		{"type":"text","text":"I'll fix the auth bug."},
+		{"type":"tool_use","id":"call_001","name":"edit","input":{"path":"src/auth.go","oldString":"!ok","newString":"ok"}},
+		{"type":"tool_use","id":"call_002","name":"read","input":{"path":"src/auth.go"}}
+	]`, string(assistant.Message.Content))
+}
+
+// TestParseExportV2EmptySession checks that the format is recognized from the
+// session info alone, before the first message exists.
+func TestParseExportV2EmptySession(t *testing.T) {
+	export := `{
+  "info": {
+    "id": "ses_v2empty",
+    "title": "Empty",
+    "projectID": "prj_1",
+    "location": { "directory": "/repo" },
+    "cost": 0,
+    "tokens": { "input": 0, "output": 0, "reasoning": 0, "cache": { "read": 0, "write": 0 } },
+    "time": { "created": 1751702400000, "updated": 1751702460000 }
+  },
+  "messages": []
+}`
+
+	rawDir := t.TempDir()
+	path := filepath.Join(rawDir, state.SanitizeID("ses_v2empty")+".jsonl")
+	require.NoError(t, os.WriteFile(path, []byte(export), 0600))
+
+	result, err := New().ParseSession(context.Background(), &trace.ParseOpts{
+		SessionDir: rawDir,
+		SessionID:  "ses_v2empty",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "ses_v2empty", result.Data.Session.ID)
+	assert.Equal(t, 60, result.Data.Session.DurationSeconds)
+	require.NotNil(t, result.Data.Conversation)
+	assert.Equal(t, 0, result.Data.Conversation.TotalMessages)
+	assert.Empty(t, result.Data.RawSession["main"])
+}
+
 func TestParseExportFallsBackToMessageTokens(t *testing.T) {
 	// When session-level tokens are absent, the parser sums per-message tokens.
 	export := `{
