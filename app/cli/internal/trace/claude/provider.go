@@ -141,7 +141,7 @@ func (p *Provider) CaptureFileSnapshot(store *state.Store, input *trace.HookInpu
 		return fmt.Errorf("read %q: %w", input.FilePath, err)
 	}
 
-	return store.SaveFileSnapshot(input.SessionID, input.FilePath, content)
+	return store.SaveFileSnapshot(fileSnapshotKey(input), content)
 }
 
 // ResolveBeforeContent returns the snapshot saved by CaptureFileSnapshot.
@@ -153,7 +153,7 @@ func (p *Provider) ResolveBeforeContent(store *state.Store, input *trace.HookInp
 		return nil
 	}
 
-	snap, err := store.LoadFileSnapshot(input.SessionID, input.FilePath)
+	snap, err := store.LoadFileSnapshot(fileSnapshotKey(input))
 	if err != nil {
 		return nil
 	}
@@ -168,7 +168,11 @@ func (p *Provider) CleanupAfterEdit(store *state.Store, input *trace.HookInput) 
 		return
 	}
 
-	store.DeleteFileSnapshot(input.SessionID, input.FilePath)
+	store.DeleteFileSnapshot(fileSnapshotKey(input))
+}
+
+func fileSnapshotKey(input *trace.HookInput) state.FileSnapshotKey {
+	return state.FileSnapshotKey{SessionID: input.SessionID, FilePath: input.FilePath, ToolUseID: input.ToolUseID}
 }
 
 // IsFileWritingTool returns true if the named tool modifies files on disk.

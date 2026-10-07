@@ -33,6 +33,8 @@ const Name = "pi"
 // the provider is registered with the shared registry.
 type Provider struct{}
 
+var _ trace.Provider = (*Provider)(nil)
+
 // New creates a Pi provider.
 func New() *Provider {
 	return &Provider{}
@@ -100,6 +102,42 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 
 func copyError(stage string) error {
 	return fmt.Errorf("copy Pi session: %s", stage)
+}
+
+// CaptureFileSnapshot saves the file content for one Pi tool call.
+func (p *Provider) CaptureFileSnapshot(store *state.Store, input *trace.HookInput) error {
+	if input == nil || input.FilePath == "" {
+		return nil
+	}
+
+	content, err := os.ReadFile(input.FilePath)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("read file before Pi edit: %w", err)
+	}
+	return store.SaveFileSnapshot(fileSnapshotKey(input), content)
+}
+
+// ResolveBeforeContent returns the snapshot paired by Pi's tool-call ID.
+func (p *Provider) ResolveBeforeContent(store *state.Store, input *trace.HookInput, _ []byte) []byte {
+	if input == nil || input.FilePath == "" {
+		return nil
+	}
+	content, err := store.LoadFileSnapshot(fileSnapshotKey(input))
+	if err != nil {
+		return nil
+	}
+	return content
+}
+
+// CleanupAfterEdit removes the snapshot for one Pi tool call.
+func (p *Provider) CleanupAfterEdit(store *state.Store, input *trace.HookInput) {
+	if input == nil || input.FilePath == "" {
+		return
+	}
+	store.DeleteFileSnapshot(fileSnapshotKey(input))
 }
 
 // ParseSession reads the copied Pi JSONL and maps its selected branch to AI

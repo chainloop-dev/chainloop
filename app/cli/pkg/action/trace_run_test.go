@@ -22,6 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -99,6 +100,41 @@ func TestCleanupTraceKeepsGitDir(t *testing.T) {
 
 	_, err := os.Stat(gitDir)
 	require.NoError(t, err, ".git must survive cleanup even with nothing left inside it")
+}
+
+func TestPiTraceRunSettingsRestore(t *testing.T) {
+	provider := pi.New()
+
+	t.Run("existing extension", func(t *testing.T) {
+		repoRoot := t.TempDir()
+		path := provider.SettingsFile(repoRoot)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		original := []byte("user extension\n")
+		require.NoError(t, os.WriteFile(path, original, 0o600))
+		require.NoError(t, os.Chmod(path, 0o640))
+
+		backups := snapshotAgentSettings([]trace.Provider{provider}, repoRoot, zerolog.Nop())
+		require.NoError(t, provider.InstallHooksForTraceRun(repoRoot))
+		restoreAgentSettings(backups, zerolog.Nop())
+
+		got, err := os.ReadFile(path)
+		require.NoError(t, err)
+		assert.Equal(t, original, got)
+		info, err := os.Stat(path)
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o640), info.Mode().Perm())
+	})
+
+	t.Run("missing extension", func(t *testing.T) {
+		repoRoot := t.TempDir()
+		path := provider.SettingsFile(repoRoot)
+		backups := snapshotAgentSettings([]trace.Provider{provider}, repoRoot, zerolog.Nop())
+		require.NoError(t, provider.InstallHooksForTraceRun(repoRoot))
+		restoreAgentSettings(backups, zerolog.Nop())
+
+		_, err := os.Stat(path)
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
 }
 
 func TestSnapshotAndRestoreAgentSettings(t *testing.T) {
