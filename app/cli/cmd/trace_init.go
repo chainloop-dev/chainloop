@@ -61,8 +61,9 @@ exists, so you need to be logged in.
 On a terminal it asks which organization and project to use, offering what
 .chainloop.yml already holds so pressing Enter keeps it. A new project can be
 named freely; the name is normalized to the lowercase, dash-separated form
-Chainloop stores. It then asks which harnesses to trace, with Claude Code
-ticked; use space to tick more. Passing --org, --project or a harness flag
+Chainloop stores. It then asks which harnesses to trace, with the ones the
+repository is already set up for ticked, or Claude Code on a first run; use
+space to tick more. Passing --org, --project or a harness flag
 (--claude, --cursor, --opencode) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
@@ -96,7 +97,7 @@ The organization, project, workflow and require-trace values are saved to
 			// repository untouched.
 			selected, err := resolveTraceProviders(newNamingPrompter(os.LookupEnv),
 				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag},
-				traceInitCanPrompt())
+				traceInitCanPrompt(), func() []string { return configuredTraceProviders(repoRoot) })
 			if err != nil {
 				return stopIfAborted(err)
 			}

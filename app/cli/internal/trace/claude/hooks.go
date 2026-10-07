@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -161,6 +162,25 @@ func (p *Provider) UninstallHooks(repoRoot string) error {
 	}
 
 	return writeJSONFile(settingsPath, settings)
+}
+
+// HooksInstalled reports whether .claude/settings.json holds any Chainloop
+// hook. User-authored hooks are ignored.
+func (p *Provider) HooksInstalled(repoRoot string) (bool, error) {
+	settings, err := readJSONFile(filepath.Join(repoRoot, settingsFile))
+	if err != nil {
+		return false, err
+	}
+
+	hooks, _ := settings["hooks"].(map[string]any)
+	for _, h := range hookEvents {
+		entries, _ := hooks[h.event].([]any)
+		if slices.ContainsFunc(entries, entryContainsChainloopHook) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // maxHookPayloadBytes caps hook payload reads to defend against runaway or
