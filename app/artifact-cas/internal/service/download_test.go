@@ -35,17 +35,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	downloadBackendType = "backend-type"
+	downloadContent     = "hello world"
+	// sha256 of downloadContent
+	downloadDigestHex = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+	downloadFileName  = "test.txt"
+)
+
 func TestDownloadServiceAuditEvents(t *testing.T) {
 	const (
-		backendType = "backend-type"
-		// sha256 of "hello world"
-		digestHex = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+		backendType = downloadBackendType
+		digestHex   = downloadDigestHex
 	)
 
 	downloaderClaims := func(sourceInternal bool) *casJWT.Claims {
 		return &casJWT.Claims{
 			Role:           casJWT.Downloader,
-			StoredSecretID: "secret-id",
+			StoredSecretID: testStoredSecretID,
 			BackendType:    backendType,
 			OrgID:          testOrgID,
 			SourceInternal: sourceInternal,
@@ -65,7 +72,7 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 	}{
 		{
 			name:       "successful download emits an event",
-			content:    "hello world",
+			content:    downloadContent,
 			claims:     downloaderClaims(false),
 			wantStatus: http.StatusOK,
 			wantEvents: 1,
@@ -79,7 +86,7 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 		},
 		{
 			name:             "staging failure is masked, sends no bytes and emits no event",
-			content:          "hello world",
+			content:          downloadContent,
 			claims:           downloaderClaims(false),
 			removeStagingDir: true,
 			wantStatus:       http.StatusInternalServerError,
@@ -87,7 +94,7 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 		},
 		{
 			name:       "internal control plane traffic emits no event",
-			content:    "hello world",
+			content:    downloadContent,
 			claims:     downloaderClaims(true),
 			wantStatus: http.StatusOK,
 		},
@@ -99,7 +106,7 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 			uploaderDownloader := mocks.NewUploaderDownloader(t)
 			provider.On("FromCredentials", mock.Anything, mock.Anything).Return(uploaderDownloader, nil)
 			uploaderDownloader.On("Describe", mock.Anything, digestHex).Return(&v1.CASResource{
-				FileName: "test.txt", Digest: digestHex, Size: int64(len(tc.content)),
+				FileName: downloadFileName, Digest: digestHex, Size: int64(len(tc.content)),
 			}, nil)
 			if !tc.removeStagingDir {
 				uploaderDownloader.On("Download", mock.Anything, mock.Anything, digestHex).Return(nil).
@@ -134,7 +141,10 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 				assert.Equal(t, tc.content, w.Body.String())
 				assert.Equal(t, strconv.Itoa(len(tc.content)), w.Header().Get("Content-Length"))
 				assert.Equal(t, "attachment; filename=test.txt", w.Header().Get("Content-Disposition"))
+				assert.Equal(t, `"sha256:`+digestHex+`"`, w.Header().Get("ETag"))
+				assert.Equal(t, "private, no-cache", w.Header().Get("Cache-Control"))
 			} else {
+				assert.Empty(t, w.Header().Get("ETag"), "a failed download must not be cached")
 				assert.NotContains(t, w.Body.String(), tc.content, "no unverified byte may reach the client")
 				assert.Contains(t, w.Body.String(), tc.wantBodyContains)
 			}
@@ -152,9 +162,139 @@ func TestDownloadServiceAuditEvents(t *testing.T) {
 			info := decodeArtifactEvent(t, audit.published[0])
 			assert.Equal(t, digestHex, info.Digest)
 			assert.Equal(t, int64(len(tc.content)), info.SizeBytes)
-			assert.Equal(t, "test.txt", info.FileName)
+			assert.Equal(t, downloadFileName, info.FileName)
 			assert.Equal(t, backendType, info.BackendType)
 			assert.False(t, info.Skipped)
+		})
+	}
+}
+
+func TestDownloadServiceConditionalRequests(t *testing.T) {
+	const (
+		backendType = downloadBackendType
+		content     = downloadContent
+		digestHex   = downloadDigestHex
+		etag        = `"sha256:` + digestHex + `"`
+	)
+
+	claims := &casJWT.Claims{
+		Role:           casJWT.Downloader,
+		StoredSecretID: testStoredSecretID,
+		BackendType:    backendType,
+		OrgID:          testOrgID,
+	}
+
+	tests := []struct {
+		name        string
+		ifNoneMatch string
+		claims      *casJWT.Claims
+		// describeErr is returned by the backend metadata call
+		describeErr error
+		// wantDownload means the backend object is copied
+		wantDownload bool
+		wantStatus   int
+		wantEvents   int
+	}{
+		{
+			name:        "matching etag answers not modified without copying the object",
+			ifNoneMatch: etag,
+			claims:      claims,
+			wantStatus:  http.StatusNotModified,
+		},
+		{
+			name:        "weak etag in a list matches",
+			ifNoneMatch: `"sha256:other", W/` + etag,
+			claims:      claims,
+			wantStatus:  http.StatusNotModified,
+		},
+		{
+			name:        "wildcard matches",
+			ifNoneMatch: "*",
+			claims:      claims,
+			wantStatus:  http.StatusNotModified,
+		},
+		{
+			name:         "unquoted digest does not match",
+			ifNoneMatch:  "sha256:" + digestHex,
+			claims:       claims,
+			wantDownload: true,
+			wantStatus:   http.StatusOK,
+			wantEvents:   1,
+		},
+		{
+			name:         "different etag downloads the object",
+			ifNoneMatch:  `"sha256:other"`,
+			claims:       claims,
+			wantDownload: true,
+			wantStatus:   http.StatusOK,
+			wantEvents:   1,
+		},
+		{
+			name:        "matching etag without a token is unauthorized",
+			ifNoneMatch: etag,
+			wantStatus:  http.StatusUnauthorized,
+		},
+		{
+			name:        "matching etag for an object missing in the backend is not found",
+			ifNoneMatch: etag,
+			claims:      claims,
+			describeErr: backend.NewErrNotFound("artifact"),
+			wantStatus:  http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := mocks.NewProvider(t)
+			if tc.claims != nil {
+				uploaderDownloader := mocks.NewUploaderDownloader(t)
+				provider.On("FromCredentials", mock.Anything, mock.Anything).Return(uploaderDownloader, nil)
+				var resource *v1.CASResource
+				if tc.describeErr == nil {
+					resource = &v1.CASResource{FileName: downloadFileName, Digest: digestHex, Size: int64(len(content))}
+				}
+				uploaderDownloader.On("Describe", mock.Anything, digestHex).Return(resource, tc.describeErr)
+				// the mock fails the test on any Download call it does not expect
+				if tc.wantDownload {
+					uploaderDownloader.On("Download", mock.Anything, mock.Anything, digestHex).Return(nil).
+						Run(func(args mock.Arguments) {
+							_, err := io.WriteString(args.Get(1).(io.Writer), content)
+							require.NoError(t, err)
+						})
+				}
+			}
+
+			audit := &fakePublisher{}
+			svc := NewDownloadService(
+				backend.Providers{backendType: provider},
+				WithLogger(log.DefaultLogger),
+				WithAuditDispatcher(newTestDispatcher(audit)),
+				WithStagingDir(t.TempDir()),
+			)
+
+			req := httptest.NewRequest(http.MethodGet, "/download/sha256:"+digestHex, nil)
+			req = mux.SetURLVars(req, map[string]string{"digest": "sha256:" + digestHex})
+			req.Header.Set("If-None-Match", tc.ifNoneMatch)
+			if tc.claims != nil {
+				req = req.WithContext(jwtMiddleware.NewContext(req.Context(), tc.claims))
+			}
+
+			w := httptest.NewRecorder()
+			svc.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.wantStatus, w.Code)
+			switch tc.wantStatus {
+			case http.StatusNotModified:
+				assert.Empty(t, w.Body.String())
+				assert.Equal(t, etag, w.Header().Get("ETag"))
+				assert.Equal(t, "private, no-cache", w.Header().Get("Cache-Control"))
+			case http.StatusOK:
+				assert.Equal(t, content, w.Body.String())
+				assert.Equal(t, etag, w.Header().Get("ETag"))
+			default:
+				assert.Empty(t, w.Header().Get("ETag"))
+			}
+			assert.Len(t, audit.published, tc.wantEvents)
 		})
 	}
 }

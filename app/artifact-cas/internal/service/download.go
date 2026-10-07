@@ -21,6 +21,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
@@ -94,6 +95,16 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The digest identifies the bytes, so a browser copy tagged with it never
+	// goes stale. The token and the object are already checked, so a browser
+	// that holds the content gets a 304 with no copy from the backend.
+	etag := strconv.Quote(wantChecksum.String())
+	if etagMatches(r.Header.Get("If-None-Match"), etag) {
+		setCacheHeaders(w, etag)
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	// Override file nane if one is provided
 	filename := r.URL.Query().Get("filename")
 	if filename == "" {
@@ -115,6 +126,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// The content is verified: announce it to the browser with its exact size
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+	setCacheHeaders(w, etag)
 
 	// A plain io.Copy lets the response writer pull the file with sendfile, so
 	// the verified bytes go kernel-to-kernel without a user-space buffer.
@@ -132,6 +144,26 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			BackendType: auth.BackendType,
 		},
 	}, auth)
+}
+
+// setCacheHeaders lets the browser keep a private copy of the content that it
+// must revalidate with the CAS before each use, so access is checked every time.
+func setCacheHeaders(w http.ResponseWriter, etag string) {
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Cache-Control", "private, no-cache")
+}
+
+// etagMatches reports whether an If-None-Match header value matches the etag.
+// It uses the weak comparison that RFC 9110 requires for If-None-Match.
+func etagMatches(ifNoneMatch, etag string) bool {
+	for candidate := range strings.SplitSeq(ifNoneMatch, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "*" || strings.TrimPrefix(candidate, "W/") == etag {
+			return true
+		}
+	}
+
+	return false
 }
 
 // writeDownloadError maps a staging or streaming failure of a download to its
