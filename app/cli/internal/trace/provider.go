@@ -17,10 +17,12 @@ package trace
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"sort"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/skill"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -183,6 +185,17 @@ type SkillTracker interface {
 	// SkillRoots returns the folders that tell where a skill came from, for a
 	// session in repoRoot.
 	SkillRoots(repoRoot string) skill.Roots
+}
+
+// SpecCopyReplacer is implemented by a provider that can find the copies of
+// spec sources in its transcript (spec issue-3556). For the sessions of a
+// provider without it, the transcript keeps its copies.
+type SpecCopyReplacer interface {
+	// ReplaceSpecCopies replaces, in each stream of the raw session, each
+	// exact copy of a source with a pointer to its material, and reports the
+	// result per finder. It updates the lines in place and never fails: a
+	// copy that does not match stays inline.
+	ReplaceSpecCopies(raw map[string][]json.RawMessage, sources pointer.Sources) pointer.Report
 }
 
 // SkillUse is one skill that a session used, with the counts of its uses.

@@ -82,7 +82,7 @@ func Redact(ctx context.Context, evidence []byte) ([]byte, *redaction.Report, er
 		return nil, nil, fmt.Errorf("initialising the secret scanner: %w", err)
 	}
 
-	redacted, report, err := redaction.New(scanner, redaction.WithPathFilter(eligible)).Redact(ctx, evidence)
+	redacted, report, err := redaction.New(scanner, redaction.WithPathFilter(eligible), redaction.WithOpaque(isMedia)).Redact(ctx, evidence)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,6 +120,29 @@ func eligible(path string) bool {
 		}
 	}
 	return true
+}
+
+// isMedia reports whether obj[key] is base64 media in the transcript.
+// Redaction does not scan it: the scan is slow, its matches are false, and a
+// rewrite breaks the media. The shapes are the ones of the transcripts the
+// CLI records, which other agents also follow:
+//   - the data of a base64 source block, {"type":"base64","data":...};
+//   - the base64 copy of a file in the metadata of a Claude Code tool result,
+//     next to its media type, {"base64":...,"type":"image/png"}.
+func isMedia(path string, obj map[string]any, key string) bool {
+	if !strings.HasPrefix(path, "/data/raw_session/") {
+		return false
+	}
+
+	switch key {
+	case "data":
+		return obj["type"] == "base64"
+	case "base64":
+		mediaType, _ := obj["type"].(string)
+		return strings.Contains(mediaType, "/")
+	}
+
+	return false
 }
 
 // matchPath compares a slash-separated path against a pattern in which "*"
