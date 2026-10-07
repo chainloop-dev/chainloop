@@ -28,6 +28,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -204,9 +205,16 @@ func commitAnnotations(c *v1.Commit) (*structpb.Struct, error) {
 	// add verification only if exists as well as its fields
 	if pv := c.GetPlatformVerification(); pv != nil {
 		annotationsRaw[subjectGitAnnotationAuthorVerificationStatus] = pv.GetStatus().String()
-		if sig := pv.GetSignatureAlgorithm(); sig != "" {
-			annotationsRaw[subjectGitAnnotationSignatureAlgorithm] = sig
-		}
+	}
+
+	// prefer the algorithm reported by the platform, and fall back to the commit signature
+	// when the platform could not be reached or does not verify commits
+	algorithm := c.GetPlatformVerification().GetSignatureAlgorithm()
+	if algorithm == "" {
+		algorithm = commitverification.DetectSignatureType(c.GetSignature())
+	}
+	if algorithm != "" {
+		annotationsRaw[subjectGitAnnotationSignatureAlgorithm] = algorithm
 	}
 
 	if remotes := c.GetRemotes(); len(remotes) > 0 {

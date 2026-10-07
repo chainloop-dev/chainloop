@@ -176,14 +176,14 @@ func (r *DaggerPipeline) verifyCommitViaGitLab(ctx context.Context, commitHash s
 		return nil
 	}
 
-	// Get CI_JOB_TOKEN for API access
-	token := os.Getenv("CI_JOB_TOKEN")
-	if token == "" && r.logger != nil {
-		r.logger.Debug().Msg("CI_JOB_TOKEN not set, using unauthenticated requests")
+	// GITLAB_TOKEN is needed for private and internal projects, the job token is not accepted
+	credentials := commitverification.GitLabCredentialsFromEnv()
+	if credentials.APIToken == "" && r.logger != nil {
+		r.logger.Debug().Msg("GITLAB_TOKEN not set, only commits of public projects can be verified")
 	}
 
 	// Call GitLab API to verify commit
-	return commitverification.VerifyGitLabCommit(ctx, baseURL, projectPath, commitHash, token, r.logger)
+	return commitverification.VerifyGitLabCommit(ctx, baseURL, projectPath, commitHash, credentials, r.logger)
 }
 
 func (r *DaggerPipeline) Report(_ []byte, _ string) error {

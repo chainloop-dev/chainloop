@@ -19,15 +19,48 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
 )
 
+const (
+	// gitlabStatusVerified is the status of a signature made with a key of the commit author
+	gitlabStatusVerified = "verified"
+	// gitlabStatusVerifiedSystem is the status of a signature made by GitLab itself, for
+	// example for commits created in the web UI or when merging a merge request
+	gitlabStatusVerifiedSystem = "verified_system"
+	// gitlabSignatureNotFound is the error message GitLab returns for an unsigned commit
+	gitlabSignatureNotFound = "Signature Not Found"
+	// maxGitLabErrorBodySize limits how much of an error response body is read
+	maxGitLabErrorBodySize = 64 * 1024
+)
+
+// GitLabCredentials holds the tokens that can authenticate calls to the GitLab API
+type GitLabCredentials struct {
+	// APIToken is a personal, project or group access token with the read_api scope.
+	// It is required to verify commits of private and internal projects.
+	APIToken string
+	// JobToken is the CI/CD job token. GitLab does not accept job tokens on the commit
+	// signature endpoint and handles the request as anonymous, which only works for public projects.
+	JobToken string
+}
+
+// GitLabCredentialsFromEnv reads the GitLab API credentials from GITLAB_TOKEN and CI_JOB_TOKEN
+func GitLabCredentialsFromEnv() GitLabCredentials {
+	return GitLabCredentials{
+		APIToken: os.Getenv("GITLAB_TOKEN"),
+		JobToken: os.Getenv("CI_JOB_TOKEN"),
+	}
+}
+
 // VerifyGitLabCommit verifies a commit signature using the GitLab API
-func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, token string, logger *zerolog.Logger) *CommitVerification {
+func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash string, credentials GitLabCredentials, logger *zerolog.Logger) *CommitVerification {
 	// URL encode the project path (e.g., "group/project" -> "group%2Fproject")
 	encodedProject := url.PathEscape(projectPath)
 
@@ -52,8 +85,11 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 	}
 
 	// Set headers
-	if token != "" {
-		req.Header.Set("JOB-TOKEN", token)
+	switch {
+	case credentials.APIToken != "":
+		req.Header.Set("PRIVATE-TOKEN", credentials.APIToken)
+	case credentials.JobToken != "":
+		req.Header.Set("JOB-TOKEN", credentials.JobToken)
 	}
 
 	// Make request
@@ -77,12 +113,30 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 			logger.Debug().Int("status", resp.StatusCode).Str("commit", commitHash).Msg("GitLab API returned non-OK status")
 		}
 
-		// 404 means the commit is unsigned (no signature data available)
+		// GitLab also answers 404 when the project or the commit is not visible to the
+		// caller, so only the "Signature Not Found" message means the commit is unsigned
 		if resp.StatusCode == http.StatusNotFound {
+			message := gitlabErrorMessage(resp.Body)
+			if strings.Contains(message, gitlabSignatureNotFound) {
+				return &CommitVerification{
+					Attempted: true,
+					Status:    VerificationStatusNotApplicable,
+					Reason:    "Commit is not signed",
+					Platform:  "gitlab",
+				}
+			}
+
+			if message == "" {
+				message = "HTTP 404"
+			}
+			reason := fmt.Sprintf("GitLab API error: %s", message)
+			if credentials.APIToken == "" {
+				reason += " (set GITLAB_TOKEN to a token with the read_api scope to verify commits of private and internal projects)"
+			}
 			return &CommitVerification{
 				Attempted: true,
-				Status:    VerificationStatusNotApplicable,
-				Reason:    "Commit is not signed",
+				Status:    VerificationStatusUnavailable,
+				Reason:    reason,
 				Platform:  "gitlab",
 			}
 		}
@@ -121,9 +175,12 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 	var keyID string
 	var signatureAlgorithm string
 
-	if signatureResponse.VerificationStatus == "verified" {
+	if signatureResponse.VerificationStatus == gitlabStatusVerified || signatureResponse.VerificationStatus == gitlabStatusVerifiedSystem {
 		status = VerificationStatusVerified
 		reason = "Commit signed and verified"
+		if signatureResponse.VerificationStatus == gitlabStatusVerifiedSystem {
+			reason = "Commit signed by GitLab and verified"
+		}
 		if signatureResponse.GPGKeyID != 0 {
 			keyID = fmt.Sprintf("%d", signatureResponse.GPGKeyID)
 		} else if signatureResponse.GPGKeyPrimaryKeyID != "" {
@@ -151,6 +208,19 @@ func VerifyGitLabCommit(ctx context.Context, baseURL, projectPath, commitHash, t
 		KeyID:              keyID,
 		SignatureAlgorithm: signatureAlgorithm,
 	}
+}
+
+// gitlabErrorMessage returns the message of a GitLab API error response, or an empty
+// string when the body is not a GitLab error
+func gitlabErrorMessage(body io.Reader) string {
+	var errorResponse struct {
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(io.LimitReader(body, maxGitLabErrorBodySize)).Decode(&errorResponse); err != nil {
+		return ""
+	}
+
+	return errorResponse.Message
 }
 
 // gitlabCommitResponse represents the GitLab API response for commit signature

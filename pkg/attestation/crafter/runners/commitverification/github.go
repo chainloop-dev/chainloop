@@ -127,7 +127,7 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 	}
 
 	// Detect signature type from the signature content
-	signatureAlgorithm := detectSignatureType(verification.Signature)
+	signatureAlgorithm := DetectSignatureType(verification.Signature)
 
 	if logger != nil {
 		logger.Debug().Int("status", int(status)).Str("reason", verification.Reason).Bool("verified", verification.Verified).Str("signature_type", signatureAlgorithm).Msg("GitHub commit verification completed")
@@ -142,12 +142,12 @@ func VerifyGitHubCommit(ctx context.Context, owner, repo, commitHash, token stri
 	}
 }
 
-// detectSignatureType inspects the signature content to determine its type
+// DetectSignatureType inspects the signature content to determine its type
 // GitHub supports GPG, SSH, and S/MIME signatures
 // Format references:
 // - Git documentation: https://git-scm.com/docs/gitformat-signature
 // - SSH format: https://blog.gitbutler.com/signing-commits-in-git-explained
-func detectSignatureType(signature string) string {
+func DetectSignatureType(signature string) string {
 	if signature == "" {
 		return ""
 	}

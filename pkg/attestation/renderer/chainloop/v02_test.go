@@ -928,3 +928,72 @@ func TestPolicyEvaluationsField(t *testing.T) {
 	assert.Equal(t, "sbom", ev.MaterialName)
 	assert.NotNil(t, ev.PolicyReference)
 }
+
+func TestCommitAnnotationsSignature(t *testing.T) {
+	const (
+		pgpSignature = "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnPO+f\n-----END PGP SIGNATURE-----\n"
+		sshSignature = "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQ==\n-----END SSH SIGNATURE-----\n"
+		sshAlgorithm = "SSH"
+	)
+
+	testCases := []struct {
+		name          string
+		commit        *api.Commit
+		wantStatus    string
+		wantSignature string
+		wantAlgorithm string
+	}{
+		{
+			name: "algorithm reported by the platform",
+			commit: &api.Commit{
+				Signature: sshSignature,
+				PlatformVerification: &api.Commit_CommitVerification{
+					Status:             api.Commit_CommitVerification_verified,
+					SignatureAlgorithm: sshAlgorithm,
+				},
+			},
+			wantStatus:    "verified",
+			wantSignature: sshSignature,
+			wantAlgorithm: sshAlgorithm,
+		},
+		{
+			name: "platform verification unavailable falls back to the commit signature",
+			commit: &api.Commit{
+				Signature: pgpSignature,
+				PlatformVerification: &api.Commit_CommitVerification{
+					Status: api.Commit_CommitVerification_unavailable,
+				},
+			},
+			wantStatus:    "unavailable",
+			wantSignature: pgpSignature,
+			wantAlgorithm: "PGP",
+		},
+		{
+			name:          "no platform verification falls back to the commit signature",
+			commit:        &api.Commit{Signature: sshSignature},
+			wantSignature: sshSignature,
+			wantAlgorithm: sshAlgorithm,
+		},
+		{
+			name: "unsigned commit",
+			commit: &api.Commit{
+				PlatformVerification: &api.Commit_CommitVerification{
+					Status: api.Commit_CommitVerification_not_applicable,
+				},
+			},
+			wantStatus: "not_applicable",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			annotations, err := commitAnnotations(tc.commit)
+			require.NoError(t, err)
+
+			fields := annotations.GetFields()
+			assert.Equal(t, tc.wantStatus, fields[subjectGitAnnotationAuthorVerificationStatus].GetStringValue())
+			assert.Equal(t, tc.wantSignature, fields[subjectGitAnnotationSignature].GetStringValue())
+			assert.Equal(t, tc.wantAlgorithm, fields[subjectGitAnnotationSignatureAlgorithm].GetStringValue())
+		})
+	}
+}

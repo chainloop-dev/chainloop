@@ -23,7 +23,8 @@
             "url": "git@cyberdyne.internal:skynet.git"
           }
         ],
-        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnPO+fCRC1aQ7uu5UhlAAAcwMQAFAxzNhnJwCso9KCMD+47FFY\n-----END PGP SIGNATURE-----\n\n"
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJnPO+fCRC1aQ7uu5UhlAAAcwMQAFAxzNhnJwCso9KCMD+47FFY\n-----END PGP SIGNATURE-----\n\n",
+        "signature.algorithm": "PGP"
       }
     },
     {
