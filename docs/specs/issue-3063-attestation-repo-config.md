@@ -5,7 +5,7 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3063
 prd:
 ---
 
-# Spec 001: Project and Organization from .chainloop.yml in Attestations
+# Spec issue-3063: Project and Organization from .chainloop.yml in Attestations
 
 ## Summary
 

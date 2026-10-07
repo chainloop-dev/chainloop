@@ -5,7 +5,7 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3495
 prd:
 ---
 
-# Spec 001: Spec capture for AI coding sessions
+# Spec issue-3495: Spec capture for AI coding sessions
 
 ## Summary
 An AI coding session record shows what the agent changed, but not what the user asked for. This spec adds the spec of the session to its evidence. At session start, the trace hook tells the agent to write each source that sets the task into a session folder. At push time, the CLI stores each file as its own material in the attestation. The session material keeps only references to these materials. Reviewers and scoring tools can then compare the change with the request.
