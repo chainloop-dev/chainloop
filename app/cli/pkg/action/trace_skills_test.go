@@ -75,7 +75,14 @@ type noSkillProvider struct {
 func makeSkill(t *testing.T, files map[string]string) string {
 	t.Helper()
 
-	dir := t.TempDir()
+	return makeSkillAt(t, t.TempDir(), files)
+}
+
+// makeSkillAt writes a skill folder at dir from a map of relative paths to
+// contents.
+func makeSkillAt(t *testing.T, dir string, files map[string]string) string {
+	t.Helper()
+
 	for rel, content := range files {
 		path := filepath.Join(dir, filepath.FromSlash(rel))
 		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))

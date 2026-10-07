@@ -36,14 +36,38 @@ import (
 // addedMaterial is one call recorded by fakeMaterialAdder, with the file read
 // back at call time: the caller is free to delete it once the add returns.
 type addedMaterial struct {
-	name, fileName, kind, content string
-	annotations                   map[string]string
+	name, fileName, kind, content, digest string
+	annotations                           map[string]string
 }
 
 type fakeMaterialAdder struct {
 	added []addedMaterial
 	// failOn names the materials whose add fails.
 	failOn map[string]bool
+	// realDigests returns the SHA-256 digest of the content, as the
+	// attestation does, instead of a digest made from the name.
+	realDigests bool
+}
+
+// byName returns the material added under name.
+func (f *fakeMaterialAdder) byName(name string) addedMaterial {
+	for _, m := range f.added {
+		if m.name == name {
+			return m
+		}
+	}
+
+	return addedMaterial{}
+}
+
+// names returns the names of the added materials, in the order of the adds.
+func (f *fakeMaterialAdder) names() []string {
+	out := make([]string, 0, len(f.added))
+	for _, m := range f.added {
+		out = append(out, m.name)
+	}
+
+	return out
 }
 
 func (f *fakeMaterialAdder) AddMaterial(_ context.Context, name, path, kind string, annotations map[string]string) (string, error) {
@@ -56,11 +80,17 @@ func (f *fakeMaterialAdder) AddMaterial(_ context.Context, name, path, kind stri
 		return "", err
 	}
 
+	digest := "sha256:" + name
+	if f.realDigests {
+		sum := sha256.Sum256(content)
+		digest = "sha256:" + hex.EncodeToString(sum[:])
+	}
+
 	f.added = append(f.added, addedMaterial{
-		name: name, fileName: filepath.Base(path), kind: kind, content: string(content), annotations: annotations,
+		name: name, fileName: filepath.Base(path), kind: kind, content: string(content), digest: digest, annotations: annotations,
 	})
 
-	return "sha256:" + name, nil
+	return digest, nil
 }
 
 // specCapture builds a capture the way the spec folder reader does: parsed from

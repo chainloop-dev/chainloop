@@ -17,12 +17,11 @@ package action
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
+	"maps"
 	"os"
 	"path/filepath"
-	"strings"
+	"slices"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
@@ -38,30 +37,6 @@ import (
 
 // steLintScript is the script of the STE test skill.
 const steLintScript = "scripts/ste-lint.py"
-
-// digestAdder records each material that the push adds, under its name, and
-// returns the real digest of its content, as the attestation would.
-type digestAdder struct {
-	added map[string]addedMaterial
-	order []string
-}
-
-func (d *digestAdder) AddMaterial(_ context.Context, name, path, kind string, annotations map[string]string) (string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-
-	if d.added == nil {
-		d.added = make(map[string]addedMaterial)
-	}
-	d.added[name] = addedMaterial{name: name, fileName: filepath.Base(path), kind: kind, content: string(content), annotations: annotations}
-	d.order = append(d.order, name)
-
-	sum := sha256.Sum256(content)
-
-	return "sha256:" + hex.EncodeToString(sum[:]), nil
-}
 
 // transcript appends Claude Code transcript records to the session file, in
 // the shape that Claude Code 2.1 writes them.
@@ -81,19 +56,6 @@ func (tr transcript) append(records ...string) {
 		_, err := f.WriteString(r + "\n")
 		require.NoError(tr.t, err)
 	}
-}
-
-// jsonString quotes s as a JSON string, without escaping < and >, as Claude
-// Code writes it.
-func jsonString(t *testing.T, s string) string {
-	t.Helper()
-
-	var b strings.Builder
-	enc := json.NewEncoder(&b)
-	enc.SetEscapeHTML(false)
-	require.NoError(t, enc.Encode(s))
-
-	return strings.TrimSuffix(b.String(), "\n")
 }
 
 // TestSkillScenario follows two skills from their use in a Claude Code session
@@ -127,18 +89,27 @@ func TestSkillScenario(t *testing.T) {
 		skill.DefinitionFile: "# Release\nCut a release.\n",
 	})
 
-	projectDir := filepath.Join(home, ".claude", "projects", strings.NewReplacer("/", "-", ".", "-").Replace(repoDir))
+	projectDir := claudeProjectDir(home, repoDir)
 	require.NoError(t, os.MkdirAll(projectDir, 0o700))
 	tr := transcript{t: t, path: filepath.Join(projectDir, sessionID+".jsonl")}
 
-	hookPayload := func(event, tool string) string {
-		payload := `{"session_id":"` + sessionID + `","hook_event_name":"` + event + `","transcript_path":` +
-			jsonString(t, tr.path) + `,"cwd":` + jsonString(t, repoDir)
-		if tool != "" {
-			payload += `,"tool_name":"` + tool + `","tool_input":{"skill":"asd-ste100"}`
-		}
+	quote := func(s string) string {
+		b, err := json.Marshal(s)
+		require.NoError(t, err)
+		return string(b)
+	}
 
-		return payload + "}"
+	// hookPayload is what Claude Code writes to the stdin of a hook.
+	hookPayload := func(event, tool string) string {
+		b, err := json.Marshal(struct {
+			SessionID      string `json:"session_id"`
+			HookEventName  string `json:"hook_event_name"`
+			TranscriptPath string `json:"transcript_path"`
+			Cwd            string `json:"cwd"`
+			ToolName       string `json:"tool_name,omitempty"`
+		}{sessionID, event, tr.path, repoDir, tool})
+		require.NoError(t, err)
+		return string(b)
 	}
 
 	provider := claude.New()
@@ -153,7 +124,7 @@ func TestSkillScenario(t *testing.T) {
 	tr.append(
 		`{"type":"assistant","uuid":"a1","parentUuid":"u1","timestamp":"2026-10-07T10:01:00.000Z","message":{"model":"claude-opus-5-5","role":"assistant","content":[{"type":"tool_use","id":"toolu_1","name":"Skill","input":{"skill":"asd-ste100","args":"the PR description"}}],"usage":{"input_tokens":10,"output_tokens":5}}}`,
 		`{"type":"user","uuid":"r1","parentUuid":"a1","timestamp":"2026-10-07T10:01:01.000Z","toolUseResult":{"success":true,"commandName":"asd-ste100"},"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"Launching skill: asd-ste100"}]}}`,
-		`{"type":"user","uuid":"m1","parentUuid":"r1","isMeta":true,"sourceToolUseID":"toolu_1","timestamp":"2026-10-07T10:01:01.000Z","message":{"role":"user","content":[{"type":"text","text":`+jsonString(t, "Base directory for this skill: "+userSkill+"\n\n# STE")+`}]}}`,
+		`{"type":"user","uuid":"m1","parentUuid":"r1","isMeta":true,"sourceToolUseID":"toolu_1","timestamp":"2026-10-07T10:01:01.000Z","message":{"role":"user","content":[{"type":"text","text":`+quote("Base directory for this skill: "+userSkill+"\n\n# STE")+`}]}}`,
 	)
 	withStdin(t, hookPayload("PostToolUse", "Skill"))
 	require.NoError(t, HandleAgentPostToolUse(provider, zerolog.Nop()))
@@ -166,7 +137,7 @@ func TestSkillScenario(t *testing.T) {
 	// prompt fires the prompt-submit hook.
 	tr.append(
 		`{"type":"user","uuid":"c1","timestamp":"2026-10-07T10:05:00.000Z","message":{"role":"user","content":"<command-message>release</command-message>\n<command-name>/release</command-name>"}}`,
-		`{"type":"user","uuid":"m2","parentUuid":"c1","isMeta":true,"timestamp":"2026-10-07T10:05:00.000Z","message":{"role":"user","content":[{"type":"text","text":`+jsonString(t, "Base directory for this skill: "+projectSkill+"\n\n# Release")+`}]}}`,
+		`{"type":"user","uuid":"m2","parentUuid":"c1","isMeta":true,"timestamp":"2026-10-07T10:05:00.000Z","message":{"role":"user","content":[{"type":"text","text":`+quote("Base directory for this skill: "+projectSkill+"\n\n# Release")+`}]}}`,
 		`{"type":"user","uuid":"u2","timestamp":"2026-10-07T10:06:00.000Z","message":{"role":"user","content":"thanks"}}`,
 	)
 	withStdin(t, hookPayload("UserPromptSubmit", ""))
@@ -184,7 +155,7 @@ func TestSkillScenario(t *testing.T) {
 		map[string][]*state.CommitRecord{sessionID: nil}, records, aicodingsession.ModeCoding, zerolog.Nop())
 	require.Len(t, sessions, 1)
 
-	adder := &digestAdder{}
+	adder := &fakeMaterialAdder{realDigests: true}
 	attested, _ := attachSessionEvidence(ctx, adder, store, sessions, zerolog.Nop())
 	require.Equal(t, []string{sessionID}, attested)
 
@@ -196,37 +167,34 @@ func TestSkillScenario(t *testing.T) {
 		"spec-0f3a6c-skill-release",
 		"spec-0f3a6c-skill-release-pkg",
 		"ai-coding-session-0f3a6c",
-	}, adder.order)
+	}, adder.names())
 
-	definition := adder.added["spec-0f3a6c-skill-asd-ste100"]
+	definition := adder.byName("spec-0f3a6c-skill-asd-ste100")
 	assert.Equal(t, "EVIDENCE", definition.kind)
 	assert.Equal(t, skill.DefinitionFile, definition.fileName)
 	assert.Contains(t, definition.content, "As it ran.", "the evidence holds the skill as it ran")
 	assert.NotContains(t, definition.content, pat, "the definition is redacted")
 	assert.Equal(t, skillContentDefinition, definition.annotations[specAnnotationSkillContent])
 
-	pkg := adder.added["spec-0f3a6c-skill-asd-ste100-pkg"]
+	pkg := adder.byName("spec-0f3a6c-skill-asd-ste100-pkg")
 	assert.Equal(t, "EVIDENCE", pkg.kind)
 	assert.Equal(t, "asd-ste100.tar.gz", pkg.fileName)
 	assert.Equal(t, skillContentPackage, pkg.annotations[specAnnotationSkillContent])
 	files := untar(t, pkg.content)
-	assert.ElementsMatch(t, []string{skill.DefinitionFile, steLintScript}, mapKeys(files), "the package holds the full folder, without .git")
+	assert.ElementsMatch(t, []string{skill.DefinitionFile, steLintScript}, slices.Collect(maps.Keys(files)), "the package holds the full folder, without .git")
 	assert.Equal(t, definition.content, files[skill.DefinitionFile])
 	assert.NotContains(t, files[steLintScript], pat, "each file of the package is redacted")
 
 	// The session material holds the skill entries, which point to the
 	// materials above, and passes the schema.
-	session := adder.added["ai-coding-session-0f3a6c"]
+	session := adder.byName("ai-coding-session-0f3a6c")
 	assert.Equal(t, "CHAINLOOP_AI_CODING_SESSION", session.kind)
 
 	var evidence aicodingsession.Evidence
 	require.NoError(t, json.Unmarshal([]byte(session.content), &evidence))
 	require.Len(t, evidence.Data.Spec, 2)
 
-	digestOf := func(name string) string {
-		sum := sha256.Sum256([]byte(adder.added[name].content))
-		return "sha256:" + hex.EncodeToString(sum[:])
-	}
+	digestOf := func(name string) string { return adder.byName(name).digest }
 
 	assert.Equal(t, aicodingsession.SpecEntry{
 		Kind: aicodingsession.SpecKindSkill, Title: "asd-ste100",
@@ -256,25 +224,4 @@ func TestSkillScenario(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal([]byte(session.content), &envelope))
 	require.NoError(t, schemavalidators.ValidateAICodingSession(envelope.Data, schemavalidators.AICodingSessionVersion0_1))
-}
-
-func makeSkillAt(t *testing.T, dir string, files map[string]string) string {
-	t.Helper()
-
-	for rel, content := range files {
-		path := filepath.Join(dir, filepath.FromSlash(rel))
-		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
-		require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
-	}
-
-	return dir
-}
-
-func mapKeys(m map[string]string) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	return keys
 }
