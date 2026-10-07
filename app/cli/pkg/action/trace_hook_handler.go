@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -817,6 +818,11 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 		// Fresh copy of session data before parsing — the session-start copy
 		// may be stale if more conversation happened between start and push.
 		copyErr := provider.CopySessionData(store, sessionLocation(sessionID, sessionCwd, transcriptPath, repoRoot))
+		if sessionCopyIsUnsafe(copyErr) {
+			log.Warn().Err(copyErr).Str("session", sessionID).
+				Msg("could not refresh the transcript of an AI session named in the pushed commits; no evidence is sent for it")
+			continue
+		}
 		if copyErr != nil {
 			log.Debug().Err(copyErr).Str("session", sessionID).Msg("could not refresh session data")
 		}
@@ -1044,6 +1050,10 @@ func drainPushStdin() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 	}
+}
+
+func sessionCopyIsUnsafe(err error) bool {
+	return errors.Is(err, trace.ErrSessionDataNotFresh)
 }
 
 // providerForSession resolves the trace.Provider that owns sessionID.
