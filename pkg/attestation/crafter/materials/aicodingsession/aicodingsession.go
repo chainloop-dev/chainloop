@@ -70,6 +70,11 @@ const (
 	SpecKindText = "text"
 )
 
+// SpecKindSkill is a skill that the agent used in the session. The CLI makes
+// these entries from the transcript, never the agent, so ResolveSpecKind does
+// not accept it: an agent that writes it in a spec file gets kind text.
+const SpecKindSkill = "skill"
+
 // ResolveSpecKind maps a captured kind onto the vocabulary above, so the
 // normalisation is written down once instead of at each producer and consumer.
 func ResolveSpecKind(kind string) string {
@@ -137,8 +142,50 @@ type SpecEntry struct {
 	Digest string `json:"digest"`
 	// CapturedAt is when the agent wrote this entry, RFC3339. It comes from the
 	// file's modification time, so it is the last write rather than the first,
-	// and it is trivially forgeable: not a trusted timestamp.
+	// and it is trivially forgeable: not a trusted timestamp. For a skill, it
+	// is the time of the first use in the transcript.
 	CapturedAt string `json:"captured_at"`
+	// Metadata holds data that depends on the kind. Only skill entries have
+	// it.
+	Metadata *SpecMetadata `json:"metadata,omitempty"`
+}
+
+// Where a skill came from. The evidence never holds the path of the skill
+// folder, because the path exposes local user data.
+const (
+	// SkillSourceProject is a skill from the repository.
+	SkillSourceProject = "project"
+	// SkillSourceUser is a skill from the user's agent configuration.
+	SkillSourceUser = "user"
+	// SkillSourceOrganization is a skill that an administrator installs for
+	// all users.
+	SkillSourceOrganization = "organization"
+	// SkillSourcePlugin is a skill from an installed plugin.
+	SkillSourcePlugin = "plugin"
+	// SkillSourceUnknown is any other skill.
+	SkillSourceUnknown = "unknown"
+)
+
+// SpecMetadata is the kind-specific data of a spec entry. The fields below are
+// those of a skill entry. A later kind can add its own fields.
+type SpecMetadata struct {
+	// Source is one of the SkillSource* constants.
+	Source string `json:"source,omitempty"`
+	// PackageDigest identifies the EVIDENCE material that holds an archive
+	// of the full skill folder, as "sha256:<hex>". Absent when the archive was
+	// not uploaded, for example because it was too large.
+	PackageDigest string `json:"package_digest,omitempty"`
+	// InvocationCount is the number of times the session used the skill. It
+	// is ByModel plus ByUser.
+	InvocationCount int `json:"invocation_count"`
+	// ByModel is the number of uses that the model started with a tool call.
+	ByModel int `json:"by_model"`
+	// ByUser is the number of uses that the user started with a slash
+	// command.
+	ByUser int `json:"by_user"`
+	// InSubagents is the number of uses, of either start, that came from
+	// subagents.
+	InSubagents int `json:"in_subagents"`
 }
 
 // Agent identifies the AI agent provider.

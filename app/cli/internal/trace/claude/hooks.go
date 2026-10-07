@@ -57,6 +57,10 @@ var commandTools = []string{"Bash"}
 // kind fired.
 var hookToolMatcher = strings.Join(append(append([]string{}, fileWritingTools...), commandTools...), "|")
 
+// postHookToolMatcher also covers the Skill tool. The skill is loaded only
+// after the call, so the post hook is the first one that can copy its folder.
+var postHookToolMatcher = hookToolMatcher + "|" + skillTool
+
 type hookEvent struct {
 	event   string
 	command string
@@ -67,7 +71,7 @@ var hookEvents = []hookEvent{
 	{eventSessionStart, "chainloop trace hook claude session-start", ""},
 	{eventUserPromptSubmit, "chainloop trace hook claude user-prompt-submit", ""},
 	{eventPreToolUse, "chainloop trace hook claude pre-tool-use", hookToolMatcher},
-	{eventPostToolUse, "chainloop trace hook claude post-tool-use", hookToolMatcher},
+	{eventPostToolUse, "chainloop trace hook claude post-tool-use", postHookToolMatcher},
 	{eventPostToolUseFailure, "chainloop trace hook claude post-tool-use", hookToolMatcher},
 	{eventSessionEnd, "chainloop trace hook claude session-end", ""},
 }

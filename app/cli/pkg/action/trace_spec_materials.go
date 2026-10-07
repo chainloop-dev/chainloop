@@ -261,18 +261,30 @@ func (r *specRedactor) Redact(ctx context.Context, doc []byte) ([]byte, error) {
 // ID>-<file name>. The allocator sanitizes it into a valid material name and
 // makes it unique within the attestation.
 func specMaterialName(sessionID, fileName string) string {
+	return specMaterialPrefix(sessionID) + materialStem(strings.TrimSuffix(fileName, filepath.Ext(fileName)), "source")
+}
+
+// specMaterialPrefix is the start of the name of each spec material of a
+// session: spec-<first 6 characters of the session ID>-.
+func specMaterialPrefix(sessionID string) string {
 	short := sessionID
 	if len(short) > 6 {
 		short = short[:6]
 	}
 
-	stem := materials.SanitizeMaterialName(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
+	return "spec-" + short + "-"
+}
+
+// materialStem sanitizes name into the part of a material name taken from it,
+// cut to maxSpecSlugLen, or returns fallback when nothing is left.
+func materialStem(name, fallback string) string {
+	stem := materials.SanitizeMaterialName(name)
 	if len(stem) > maxSpecSlugLen {
 		stem = strings.TrimRight(stem[:maxSpecSlugLen], "-")
 	}
 	if stem == "" {
-		stem = "source"
+		return fallback
 	}
 
-	return "spec-" + short + "-" + stem
+	return stem
 }

@@ -80,7 +80,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "description": "What this entry was resolved from: 'ticket', 'document', 'image', or 'text' for a spec stated in the session itself. Left unconstrained so further kinds need no schema version bump; a producer normalises anything it does not recognise to 'text'."
+            "description": "What this entry was resolved from: 'ticket', 'document', 'image', 'text' for a spec stated in the session itself, or 'skill' for a skill that the session used. Left unconstrained so further kinds need no schema version bump; a producer normalises anything it does not recognise to 'text'."
           },
           "role": {
             "type": "string",
@@ -106,7 +106,43 @@
           "captured_at": {
             "type": "string",
             "minLength": 1,
-            "description": "ISO 8601 timestamp of when the agent wrote this entry. Self-reported by the producer, not a trusted timestamp."
+            "description": "ISO 8601 timestamp of when the agent wrote this entry. For a 'skill' entry, the time of the first use in the transcript. Self-reported by the producer, not a trusted timestamp."
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Data that depends on the kind of the entry. Only 'skill' entries have it. For a skill, the digest of the entry points to the SKILL.md file.",
+            "properties": {
+              "source": {
+                "type": "string",
+                "description": "Where the skill came from: 'project', 'user', 'organization', 'plugin', or 'unknown'. Left unconstrained so further values need no schema version bump."
+              },
+              "package_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$",
+                "description": "Digest of the EVIDENCE material that holds a reproducible archive of the full skill folder. Absent when the archive was not uploaded."
+              },
+              "invocation_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of times the session used the skill: by_model plus by_user"
+              },
+              "by_model": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of uses that the model started with a tool call"
+              },
+              "by_user": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of uses that the user started with a slash command"
+              },
+              "in_subagents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Number of uses that came from subagents"
+              }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false

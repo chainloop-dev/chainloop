@@ -656,6 +656,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		sessionID string
 		evidence  *aicodingsession.Evidence
 		specs     []spec.Capture
+		skills    []sessionSkill
 	}
 	var sessions []sessionEvidence
 
@@ -708,6 +709,11 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		captures, specWarnings := readSessionSpecs(store, repoRoot, sessionID, log)
 		result.Data.Warnings = append(result.Data.Warnings, specWarnings...)
 
+		// The skills that the session used, each with the copy of its folder
+		// that a hook made when the session used it.
+		skills, skillWarnings := readSessionSkills(provider, store, parseOpts, repoRoot, log)
+		result.Data.Warnings = append(result.Data.Warnings, skillWarnings...)
+
 		// Apply repo-wide context with per-session commit overrides
 		if gitCtxErr == nil {
 			sessionCtx := *gitCtx
@@ -746,6 +752,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 			sessionID: sessionID,
 			evidence:  result,
 			specs:     captures,
+			skills:    skills,
 		})
 	}
 
@@ -802,9 +809,15 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	// replace an earlier material.
 	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
-		entries, warnings, stored := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
-		se.evidence.Data.Spec = entries
+		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID))
+		entries, warnings, stored := attachSpecs(ctx, executor, redactor, names, se.sessionID, se.specs, log)
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
+
+		// The skill entries come after the sources that the agent wrote.
+		skillEntries, skillWarnings := attachSkills(ctx, executor, redactor, names, se.sessionID, se.skills, log)
+		entries = append(entries, skillEntries...)
+		se.evidence.Data.Spec = entries
+		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, skillWarnings...)
 
 		name := evidenceName(se.sessionID)
 		if err := addSessionEvidence(ctx, executor, name, se.evidence); err != nil {
