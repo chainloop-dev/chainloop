@@ -706,6 +706,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | Name                                                                   | Description                                                                                   | Value   |
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------- |
 | `controlplane.keylessSigning.enabled`                                  | Activates or deactivates the feature                                                          | `false` |
+| `controlplane.keylessSigning.forceVerification`                        | Requires every attestation to be signed with keyless signing and verified. Set it to false to also accept attestations signed with other methods, for example cosign keys or KMS | `true`  |
 | `controlplane.keylessSigning.backends[0].issuer`                       | Whether this backend should be used to issue new certificates. Only one can be set at a time. |         |
 | `controlplane.keylessSigning.backends[0].type`                         | backend type. Only "fileCA" and "ejbcaCA" are supported                                       |         |
 | `controlplane.keylessSigning.backends[0].fileCA.cert`                  | The PEM-encoded certificate of the file based CA                                              |         |

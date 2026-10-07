@@ -26,13 +26,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"io"
 	"os"
 	"testing"
 
+	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	repoM "github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/mocks"
 	ca2 "github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
@@ -41,15 +44,24 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 // keylessSigningUseCase returns a signing use case backed by an ephemeral CA,
-// so keyless signing is enabled.
+// so keyless signing is enabled, and verification is forced (the default).
 func keylessSigningUseCase(t *testing.T) *biz.SigningUseCase {
 	t.Helper()
 	ca, err := NewTestCA()
 	require.NoError(t, err)
-	return &biz.SigningUseCase{CAs: &ca2.CertificateAuthorities{CAs: []ca2.CertificateAuthority{ca}, SignerCA: ca}}
+	return &biz.SigningUseCase{CAs: &ca2.CertificateAuthorities{CAs: []ca2.CertificateAuthority{ca}, SignerCA: ca}, ForceVerification: true}
+}
+
+// withoutForcedVerification returns a copy of the signing use case, with the
+// same certificate authorities, that does not force verification.
+func withoutForcedVerification(uc *biz.SigningUseCase) *biz.SigningUseCase {
+	optOut := *uc
+	optOut.ForceVerification = false
+	return &optOut
 }
 
 type testBundleKind int
@@ -127,15 +139,35 @@ func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 	otherOrgID := uuid.New()
 	signing := keylessSigningUseCase(t)
 
+	optOut := withoutForcedVerification(signing)
+
 	cases := []struct {
 		name   string
 		bundle []byte
+		// verification not forced
+		optOut bool
 		// signature check is expected to reject the attestation
 		wantRejected bool
 	}{
 		{
 			name:   "keyless certificate issued to the run organization",
 			bundle: newSignedTestBundle(t, signing, orgID.String(), bundleWithCert),
+		},
+		{
+			name:   "opt-out: signed without verification material is accepted",
+			bundle: newSignedTestBundle(t, signing, orgID.String(), bundleWithoutMaterial),
+			optOut: true,
+		},
+		{
+			name:   "opt-out: keyless certificate issued to another organization is accepted",
+			bundle: newSignedTestBundle(t, signing, otherOrgID.String(), bundleWithCert),
+			optOut: true,
+		},
+		{
+			name:         "opt-out: keyless certificate with a tampered signature is still rejected",
+			bundle:       newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
+			optOut:       true,
+			wantRejected: true,
 		},
 		{
 			name:         "keyless certificate issued to another organization",
@@ -161,8 +193,13 @@ func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			signingUC := signing
+			if tc.optOut {
+				signingUC = optOut
+			}
+
 			repo := repoM.NewWorkflowRunRepo(t)
-			uc, err := biz.NewWorkflowRunUseCase(&biz.WorkflowRunUseCaseOpts{WfrRepo: repo, SigningUC: signing})
+			uc, err := biz.NewWorkflowRunUseCase(&biz.WorkflowRunUseCaseOpts{WfrRepo: repo, SigningUC: signingUC})
 			require.NoError(t, err)
 
 			runID := uuid.New()
@@ -238,6 +275,18 @@ func TestVerifyRunKeyless(t *testing.T) {
 			signing: signing,
 			wantNil: true,
 		},
+		{
+			name:    "opt-out: no verification material means verification does not apply",
+			signing: withoutForcedVerification(signing),
+			bundle:  newSignedTestBundle(t, signing, orgID.String(), bundleWithoutMaterial),
+			wantNil: true,
+		},
+		{
+			name:       "opt-out: keyless certificate with a tampered signature is not verified",
+			signing:    withoutForcedVerification(signing),
+			bundle:     newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
+			wantReason: "validating the DSSE envelope",
+		},
 	}
 
 	for _, tc := range cases {
@@ -261,20 +310,44 @@ func TestVerifyRunKeyless(t *testing.T) {
 	}
 }
 
-func TestSigningUseCaseKeylessEnabled(t *testing.T) {
+func TestSigningUseCaseVerificationEnforced(t *testing.T) {
 	cases := []struct {
-		name string
-		uc   *biz.SigningUseCase
-		want bool
+		name        string
+		uc          *biz.SigningUseCase
+		wantKeyless bool
+		wantForced  bool
 	}{
-		{name: "certificate authorities configured", uc: keylessSigningUseCase(t), want: true},
-		{name: "no certificate authorities", uc: &biz.SigningUseCase{}, want: false},
-		{name: "nil use case", uc: nil, want: false},
+		{name: "certificate authorities configured, verification forced", uc: keylessSigningUseCase(t), wantKeyless: true, wantForced: true},
+		{name: "certificate authorities configured, opt-out", uc: withoutForcedVerification(keylessSigningUseCase(t)), wantKeyless: true},
+		{name: "no certificate authorities", uc: &biz.SigningUseCase{ForceVerification: true}},
+		{name: "nil use case", uc: nil},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.uc.KeylessEnabled())
+			assert.Equal(t, tc.wantKeyless, tc.uc.KeylessEnabled())
+			assert.Equal(t, tc.wantForced, tc.uc.VerificationEnforced())
+		})
+	}
+}
+
+func TestNewChainloopSigningUseCaseForceVerification(t *testing.T) {
+	cases := []struct {
+		name   string
+		config *conf.Bootstrap
+		want   bool
+	}{
+		{name: "defaults to true when unset", config: &conf.Bootstrap{}, want: true},
+		{name: "defaults to true when the attestations section has no value", config: &conf.Bootstrap{Attestations: &conf.Attestations{}}, want: true},
+		{name: "explicitly enabled", config: &conf.Bootstrap{Attestations: &conf.Attestations{ForceVerification: proto.Bool(true)}}, want: true},
+		{name: "explicitly disabled", config: &conf.Bootstrap{Attestations: &conf.Attestations{ForceVerification: proto.Bool(false)}}, want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			uc, err := biz.NewChainloopSigningUseCase(tc.config, log.NewStdLogger(io.Discard))
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, uc.ForceVerification)
 		})
 	}
 }

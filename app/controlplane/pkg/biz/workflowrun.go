@@ -683,31 +683,52 @@ type VerificationResult struct {
 
 // verifyAttestationToStore checks the attestation signature before it is stored.
 //
-// When keyless signing is configured, the attestation MUST be signed with a
-// certificate issued by one of the configured certificate authorities to the
-// organization that owns the run. Any other signing method is rejected, since
-// the control plane has nothing to verify it against. When keyless signing is
-// not configured there is nothing to verify against, and no check runs.
+// When keyless signing is configured and verification is forced (the default),
+// the attestation MUST be signed with a certificate issued by one of the
+// configured certificate authorities to the organization that owns the run.
+// Any other signing method is rejected, since the control plane has nothing to
+// verify it against.
+//
+// When verification is not forced, an attestation that carries a certificate
+// must still pass verification, but an attestation without verification
+// material, for example signed with a cosign key or KMS, is accepted.
+//
+// When keyless signing is not configured there is nothing to verify against,
+// and no check runs.
 func (uc *WorkflowRunUseCase) verifyAttestationToStore(ctx context.Context, run *WorkflowRun, bundle []byte) error {
 	if !uc.signingUseCase.KeylessEnabled() {
 		return nil
 	}
 
-	opts, err := verifyOptionsForRun(run)
-	if err != nil {
-		return err
+	enforced := uc.signingUseCase.VerificationEnforced()
+
+	var opts []verifier.VerifyOption
+	if enforced {
+		var err error
+		if opts, err = verifyOptionsForRun(run); err != nil {
+			return err
+		}
 	}
 
 	validation, err := uc.verifyBundle(ctx, bundle, opts...)
 	if err != nil {
-		if errors.Is(err, verifier.ErrInvalidBundle) {
+		if !errors.Is(err, verifier.ErrInvalidBundle) {
+			return err
+		}
+		if enforced {
 			return NewErrValidation(fmt.Errorf("attestation verification failed: %w", err))
 		}
-		return err
+		// invalid bundle is expected for old attestations so we skip validation
+		uc.logger.Warnw("msg", "received an old attestation format, not a bundle: attestation verification skipped", "error", err)
+		return nil
 	}
 
 	if validation == nil {
-		return NewErrValidation(errors.New("attestation verification failed: the attestation must be signed with the keyless signer of this instance, other signing methods are not allowed"))
+		if enforced {
+			return NewErrValidation(errors.New("attestation verification failed: the attestation must be signed with the keyless signer of this instance, other signing methods are not allowed"))
+		}
+		// not verifiable, and verification is not forced
+		return nil
 	}
 
 	if !validation.Result {
@@ -745,6 +766,12 @@ func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (
 		return nil, nil
 	}
 
+	// When verification is not forced, an attestation without verification
+	// material is reported as not applicable
+	if !uc.signingUseCase.VerificationEnforced() {
+		return uc.verifyBundle(ctx, run.Attestation.Bundle)
+	}
+
 	if len(run.Attestation.Bundle) == 0 {
 		if run.Attestation.Digest == "" {
 			return nil, nil
@@ -764,7 +791,7 @@ func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (
 		return nil, err
 	}
 
-	// Keyless signing is enforced, so an attestation that can't be verified
+	// Verification is enforced, so an attestation that can't be verified
 	// must not be reported as if verification did not apply
 	if vr == nil {
 		return &VerificationResult{Result: false, FailureReason: "the attestation has no verification material"}, nil

@@ -170,6 +170,15 @@ message Attestations {
   // control plane defaults to 1 minute.
   // In YAML configuration, use seconds with an "s" suffix, for example "60s".
   google.protobuf.Duration workflow_run_expiration_check_interval = 4 [(buf.validate.field).duration.gt = {}];
+
+  // Require every pushed attestation to be verified with keyless signing.
+  // It only applies when keyless signing is configured (certificate_authorities).
+  // When enabled, an attestation must be signed with a certificate issued by one
+  // of the configured certificate authorities to the organization that owns the
+  // workflow run, and other signing methods are rejected. Set it to false to
+  // also accept attestations signed with other methods, for example cosign keys
+  // or KMS. When unset, it defaults to true.
+  optional bool force_verification = 5;
 }
 
 message OperationAuthorizationProvider {

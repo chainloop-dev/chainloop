@@ -43,6 +43,9 @@ type SigningUseCase struct {
 	logger               *log.Helper
 	CAs                  *ca.CertificateAuthorities
 	TimestampAuthorities []*TimestampAuthority
+	// ForceVerification requires every attestation to be verified with keyless
+	// signing, when keyless signing is configured
+	ForceVerification bool
 }
 
 type TimestampAuthority struct {
@@ -64,7 +67,17 @@ func NewChainloopSigningUseCase(config *conf.Bootstrap, l log.Logger) (*SigningU
 		return nil, fmt.Errorf("failed to parse CA authorities: %w", err)
 	}
 
-	return &SigningUseCase{CAs: cas, TimestampAuthorities: tsas, logger: logger}, nil
+	// Forced verification is opt-out, so it is enabled unless it is explicitly disabled
+	forceVerification := true
+	if a := config.GetAttestations(); a != nil && a.ForceVerification != nil {
+		forceVerification = *a.ForceVerification
+	}
+
+	if cas != nil && !forceVerification {
+		logger.Warn("keyless signing verification is not forced, attestations signed with other methods are accepted")
+	}
+
+	return &SigningUseCase{CAs: cas, TimestampAuthorities: tsas, logger: logger, ForceVerification: forceVerification}, nil
 }
 
 func parseTimestamps(config *conf.Bootstrap, logger *log.Helper) ([]*TimestampAuthority, error) {
@@ -140,6 +153,12 @@ func parseTSA(tsaConf *conf.TSA) (*TimestampAuthority, error) {
 // there are certificate authorities to issue signing certificates.
 func (s *SigningUseCase) KeylessEnabled() bool {
 	return s != nil && s.CAs != nil
+}
+
+// VerificationEnforced tells if every attestation must be verified with
+// keyless signing, so other signing methods are rejected.
+func (s *SigningUseCase) VerificationEnforced() bool {
+	return s.KeylessEnabled() && s.ForceVerification
 }
 
 func (s *SigningUseCase) GetCurrentTSA() *TimestampAuthority {
