@@ -48,18 +48,17 @@ Dropped. See D-013.
 The secret redaction MUST NOT scan base64 media data that stays inline. A media material MUST be stored byte for byte.
 - Done when: a pasted image whose base64 text matches a secret pattern decodes after the push.
 
-### R-006: Failures do not block the push
-When the CLI cannot complete a replacement, the content MUST stay inline, and the push MUST continue.
+### ~~R-006: Failures do not block the push~~
+Merged into R-012. See D-016.
 
-### R-007: All agents
-The CLI SHOULD apply this to each supported agent that keeps file reads or file writes in its transcript.
+### ~~R-007: All agents~~
+Moved to Milestone 3. See D-016.
 
 ### R-008: Extensible pointer
 The pointer format MUST NOT be specific to images or files. A later version MUST be able to add a content kind with optional fields, with no change to the existing pointers. An example is a code snippet that is a range of lines of a source. A transcript view MUST ignore fields that it does not know, and MUST still link the pointer to its material.
 
-### R-009: Remove only known sources
-The CLI MUST NOT remove data from the transcript unless the data is with certainty a copy of a source in the spec list. The material MUST exist in the CAS before the CLI replaces the copy. The digest MUST match exactly. When the CLI is not sure, for example the file is gone or the file changed, the data MUST stay inline.
-- Done when: a screenshot that the agent read and then changed on disk stays inline.
+### ~~R-009: Remove only known sources~~
+Merged into R-012. See D-016.
 
 ### ~~R-010: Pasted images are spec sources~~
 Dropped. See D-014.
@@ -68,8 +67,8 @@ Dropped. See D-014.
 The agent can write a full file. The CLI MUST compute the digest of the written content. When it is equal to the source digest of a spec entry, the CLI MUST replace each copy of that content in the write. A write with other content, for example an earlier version of a spec file, stays inline. A partial edit of a file stays inline.
 - Done when: the agent writes a ticket file into the spec folder two times, and the second version is the final file. The second write holds pointers, and the first write stays inline.
 
-### R-012: Best effort, with a match report
-The replacement MUST be best effort. The CLI tries each finder on each copy, replaces the exact matches, and keeps all other copies inline with no error. In debug output, the CLI MUST report the result for each session and each finder. The report gives the number of copies that it replaced, and the number that it did not replace, with the reason. Examples of reasons are "no spec entry with this digest", "file gone", "file changed", and "partial read". The report SHOULD give the number of bytes that the replacement removed.
+### R-012: Exact matches only, best effort, with a match report
+The CLI MUST NOT remove data from the transcript unless the data is with certainty a copy of a spec source. The digest MUST match exactly. The replacement MUST be best effort. The CLI tries each finder on each copy, and replaces only the exact matches. All other copies stay inline, for example when the file is gone or changed, or when a step fails. These cases MUST NOT give an error or stop the push. In debug output, the CLI MUST report the result for each session and each finder. The report gives the number of copies that it replaced, and the number that it did not replace, with the reason. Examples of reasons are "no spec entry with this digest", "file gone", "file changed", and "partial read". The report SHOULD give the number of bytes that the replacement removed.
 - Done when: a session has 12 image reads, and 8 of the images are specs. A push in debug mode reports 16 replaced copies. It reports 8 copies that it did not replace, with the reason "no spec entry with this digest".
 
 ## Constraints
@@ -153,7 +152,7 @@ After, the image block keeps the type `image`, and its source is the pointer:
 "content": [ { "type": "chainloop.replaced", "digest": "sha256:c2a1..." } ]
 ```
 
-A later content kind adds a finder and optional fields to the pointer, for example a line range for a code snippet. The examples use the transcript format of Claude Code. Each other agent puts the same pointer in its own block shape (R-007).
+A later content kind adds a finder and optional fields to the pointer, for example a line range for a code snippet. The examples use the transcript format of Claude Code. Each other agent puts the same pointer in its own block shape (Milestone 3).
 
 A transcript view reads a pointer, finds the entry and the material with that digest, and shows the content from the CAS. For evidence from an earlier CLI, it shows the inline content as today.
 
@@ -190,6 +189,7 @@ flowchart TD
 | D-012 | Content of the pointer | Only the `chainloop.replaced` marker and the digest of the sibling material | The material and its entry in the spec list already hold the name, the size, the kind, and the role. The position of the copy tells the origin. The marker name tells any reader that Chainloop replaced the content. Rejected: a full reference with the name, size, media type, origin, kind, and version (it repeats the material). Rejected: the material name as the pointer (a label, while the digest is unique and lets a reader check the content). | owner review |
 | D-013 | Scope of the replacement | Each exact copy of a source in the spec list, for all file types, from file reads and file writes | One rule covers images and text sources, for example tickets and plans. Each pointer resolves in the session itself, and the CLI never decides on its own that content is evidence. Rejected: images only (the write copies of tickets stay, and the redaction still scans them). Rejected: also upload each other base64 media block. An example is a screenshot that the agent read but did not capture, and the agent did not choose it. | owner review |
 | D-015 | How hard the CLI tries | Best effort coverage, with an exact match for each replacement, and a match report in debug output | A copy that does not match costs only size, so the CLI must not fail or warn for it. A wrong match loses content, so each replacement needs an exact digest (D-010). The debug report shows how well the matching works in real sessions, and which finder to improve. Rejected: fail or warn on each copy that does not match (noise, because most transcript content is not a source). Rejected: no report (nobody can see the share of matches). | owner review |
+| D-016 | Fewer requirements | Merge R-006 and R-009 into R-012, and move R-007 to a milestone | R-006, R-009, and R-012 all said "replace only exact matches, keep the rest inline, never fail". One requirement says it once. Support for other agents is a delivery step, not a behavior a reviewer can check. | owner review |
 | D-014 | Pasted images | Out of scope. A later spec | The bytes of a pasted image are only in the transcript. Capturing them adds new materials and a role decision. This spec keeps to sources that the session already captured. Rejected: capture them in this spec (larger scope, and open questions on the role and the limit). | owner review |
 
 ## Open Questions
@@ -198,13 +198,13 @@ None.
 ## Milestones
 1. **Claude Code.** The CLI replaces the copies of spec sources from file reads and file writes with pointers, and the redaction skips media.
 2. **Transcript view.** The view shows each source from its pointer. This is in a different repository.
-3. **Other agents.** The same change for each other agent that keeps file reads or file writes in its transcript (R-007).
+3. **Other agents.** The same change for each other agent that keeps file reads or file writes in its transcript.
 
 ## Risks
 
 | Risk | Mitigation |
 |------|------------|
-| The file changed after the read, so the match with the spec fails. | The read stays inline (R-009). The evidence holds one more copy, but it is correct. |
+| The file changed after the read, so the match with the spec fails. | The read stays inline (R-012). The evidence holds one more copy, but it is correct. |
 | The file changed after the read, and the agent then copied the new version into the spec folder. The digest matches, but the agent saw the old version. | When the tool result records the original size, the CLI also compares it with the size of the file. A different size keeps the read inline. |
 | The agent reads a screenshot but does not capture it, so it stays inline and the evidence stays large. | The capture instruction asks the agent to capture images that the user gives (Spec 003). The share of read images with no spec entry is measurable from the evidence. |
 | Pasted images stay inline and keep the evidence large. | R-005 stops the redaction from breaking them. A later spec captures them (D-014). |
