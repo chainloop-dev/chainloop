@@ -8,7 +8,7 @@ prd:
 
 ## Summary
 
-Chainloop Trace will record the skills that an agent used in a session, and it will put each full skill into the attestation. Each used skill becomes a spec entry of the new kind `skill`. The CLI copies the skill folder when the session uses the skill. That copy includes `SKILL.md` and any scripts or other files. At push time, the CLI uploads the copy as one archive, as an EVIDENCE material, the same as other spec sources. Spec entries get a new optional `metadata` object. Its fields depend on the kind. For a skill, it holds the skill source and the use counts.
+Chainloop Trace will record the skills that an agent used in a session, and it will put each full skill into the attestation. Each used skill becomes a spec entry of the new kind `skill`. The CLI copies the skill folder when the session uses the skill. That copy includes `SKILL.md` and any scripts or other files. At push time, the CLI uploads two EVIDENCE materials, the same as other spec sources. One is the `SKILL.md` file, which a viewer shows. The other is an archive of the full folder, which a viewer offers as the download. Spec entries get a new optional `metadata` object. Its fields depend on the kind. For a skill, it holds the skill source and the use counts.
 
 This spec changes the spec capture of [Spec issue-3495](issue-3495-session-spec-capture.md) and [Spec issue-3531](issue-3531-spec-source-role.md). It does not replace them. It departs from D-001 of Spec issue-3495 for skills only. The CLI makes the skill entries. The agent does not write them. The first version supports Claude Code and OpenCode.
 
@@ -48,13 +48,18 @@ The CLI MUST copy the skill folder at the first hook event after the first use o
 
 ### R-003: Skill package material
 
-Each skill entry MUST point by digest to one EVIDENCE material that holds the skill package. The package MUST be a reproducible archive of the skill folder: sorted entries, fixed timestamps, and no owner data. The same folder content MUST give the same digest in every session. Before it makes the archive, the CLI MUST redact each text file. It MUST use the secret redaction of Spec issue-3495 (R-007). The material MUST carry the same annotations as other spec materials, with `chainloop.spec.kind` set to `skill` and `chainloop.spec.title` set to the skill name.
+Each used skill MUST give two EVIDENCE materials:
 
-- Done when: the attestation holds one archive for each used skill, and the archive holds `SKILL.md` and the other files of the folder, redacted.
+- The definition: the `SKILL.md` file of the copy. The `digest` of the skill entry MUST point to it, as for other spec sources, so that a viewer can show it.
+- The package: a reproducible archive of the full skill folder, with sorted entries, fixed timestamps, and no owner data. The `package_digest` field of the entry metadata MUST point to it. A viewer offers it as the download of the skill.
+
+The same folder content MUST give the same digests in every session. Before it makes the materials, the CLI MUST redact each text file with the secret redaction of Spec issue-3495 (R-007). The definition material and the `SKILL.md` file in the package MUST be the same bytes. Both materials MUST carry the same annotations as other spec materials, with `chainloop.spec.kind` set to `skill` and `chainloop.spec.title` set to the skill name. The annotation `chainloop.spec.skill.content` MUST tell them apart, with the value `definition` or `package`.
+
+- Done when: the attestation holds a definition and a package for each used skill. The package holds `SKILL.md` and the other files of the folder, redacted.
 
 ### R-004: Package limits
 
-The CLI MUST read only a folder that holds a `SKILL.md` file. It MUST NOT follow a link that points out of the skill folder. It MUST leave out version-control folders. When a package is larger than 5 MB, the CLI MUST NOT upload it. It MUST keep the spec entry with no digest and record a warning.
+The CLI MUST read only a folder that holds a `SKILL.md` file. It MUST NOT follow a link that points out of the skill folder. It MUST leave out version-control folders. When a package is larger than 5 MB, the CLI MUST NOT upload it. It MUST still upload the definition, leave out `package_digest`, and record a warning.
 
 - Done when: fixtures cover a link out of the folder, a `.git` folder, and a package over 5 MB. Each gives the expected package or warning.
 
@@ -116,18 +121,23 @@ The trace hooks already run on agent events. They will also find new skill uses 
     "digest": "sha256:e4c2...", "captured_at": "2026-10-07T10:12:03Z" },
   { "kind": "skill", "title": "asd-ste100",
     "digest": "sha256:ab12...", "captured_at": "2026-10-07T10:14:51Z",
-    "metadata": { "source": "user", "invocation_count": 3,
-                  "by_model": 2, "by_user": 1, "in_subagents": 1 } }
+    "metadata": { "source": "user", "package_digest": "sha256:cd34...",
+                  "invocation_count": 3, "by_model": 2, "by_user": 1,
+                  "in_subagents": 1 } }
 ]
 ```
 
 ```text
-asd-ste100.tar.gz
-├── SKILL.md
-├── references/writing-rules.md
-├── examples/before-after.md
-└── scripts/ste-lint.py
+predicate.materials
+├── spec-fd4e67-skill-asd-ste100      EVIDENCE  SKILL.md           sha256:ab12...  definition
+└── spec-fd4e67-skill-asd-ste100-pkg  EVIDENCE  asd-ste100.tar.gz  sha256:cd34...  package
+                                                ├── SKILL.md
+                                                ├── references/writing-rules.md
+                                                ├── examples/before-after.md
+                                                └── scripts/ste-lint.py
 ```
+
+A viewer shows the definition with the Markdown view that it uses for other spec sources. Its download link gets the package.
 
 **Claude Code.** A model start is a `Skill` tool call. Its input holds the skill name. A user start is a user message that holds a `<command-name>` marker, followed by a meta message that starts with `Base directory for this skill:`. That meta message tells a skill command apart from a built-in or custom command. It gives the skill folder. Claude Code also writes the meta message after a `Skill` tool call. The parser counts one use for each start, not for each meta message. The tool-use hooks will also match the `Skill` tool. Each hook reads the new transcript entries, finds new skill folders, and copies them. Subagent transcripts go through the same steps, and their counts merge into the session entry.
 
@@ -144,8 +154,9 @@ asd-ste100.tar.gz
 | D-003 | Shape of the counts | A generic `metadata` object on the spec entry, with fields that depend on the kind | Other kinds can add data later with no new top-level field. Rejected: a field named `skill`. Rejected: a separate list linked by digest. | owner |
 | D-004 | Skill content | The full skill folder, not only the text that the agent loaded | A skill can run its own scripts, and a reviewer needs that code. The attestation must not depend on the `ai-agent-config` material. Rejected: the `SKILL.md` text from the transcript (no scripts, and Claude Code removes the frontmatter). | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3541#discussion_r4205209188) |
 | D-005 | When to copy the folder | At the first hook event after the use, with a fallback at push time | The copy matches what ran, also when the files change before the push. Rejected: read the folder at push time only. | drafting |
-| D-006 | Package format | One reproducible archive for each skill | One material and one digest for each skill. The same skill version gives the same digest in all sessions. Rejected: one material for each file, which fills the attestation for a skill with many files. | drafting |
-| D-007 | Package limits | Skip a package over 5 MB with a warning, no links out of the folder, no version-control folders | A large or unsafe folder must not block the push or read files outside the skill. Rejected: no size limit. | drafting |
+| D-006 | Package format | One reproducible archive for each skill | One package material and one package digest for each skill. The same skill version gives the same digest in all sessions. Rejected: one material for each file, which fills the attestation for a skill with many files. | drafting |
+| D-007 | Package limits | Skip a package over 5 MB with a warning, no links out of the folder, no version-control folders | A large or unsafe folder must not block the push or read files outside the skill. The definition still uploads. Rejected: no size limit. | drafting |
+| D-016 | How a viewer shows a skill | `SKILL.md` as its own definition material, which the entry digest points to. The archive is the download | A viewer shows the definition with the existing Markdown view and needs no archive support. Rejected: the archive only (a viewer must unpack it to show anything). Rejected: a file list in the metadata (more data in the session material, and a viewer still needs the archive to show a file). | owner |
 | D-008 | Arguments of each call | Not recorded | Arguments are user text that can hold private data. The raw transcript already holds them. | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3541#discussion_r4205209188) |
 | D-009 | Which skills get a package | All used skills, at all levels, after secret redaction | A reviewer needs every skill that shaped the work. Rejected: project skills only. | [PR comment](https://github.com/chainloop-dev/chainloop/pull/3541#discussion_r4205209188) |
 | D-010 | Limit on skill entries | A separate limit of 25 | Many skills must not push out the task and spec sources. Rejected: one shared limit. | drafting |
