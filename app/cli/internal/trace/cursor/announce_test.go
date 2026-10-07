@@ -80,7 +80,7 @@ func TestAnnounceSessionStart(t *testing.T) {
 }
 
 // TestAnnouncePromptSubmit pins that Cursor gets no reminder: it documents no
-// channel that adds context at prompt submit (D-008 of Spec 003).
+// channel that adds context at prompt submit (D-008 of Spec issue-3515).
 func TestAnnouncePromptSubmit(t *testing.T) {
 	out := captureStdout(t, func() {
 		require.NoError(t, New().AnnouncePromptSubmit("Chainloop spec capture."))

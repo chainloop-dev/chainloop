@@ -4,10 +4,10 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3531
 prd:
 ---
 
-# Spec 004: Role, title, and description of each spec source
+# Spec issue-3531: Role, title, and description of each spec source
 
 ## Summary
-This spec changes the spec capture of [Spec 002](002-session-spec-capture.md) and [Spec 003](003-spec-capture-during-session.md). It does not replace them. Today each spec source has a kind: ticket, document, image, or text. The kind tells the format of a source, but not its purpose. A source also has no name that a person can read. With this change, the agent can also record a role, a title, and a description for each source. The role is `task`, `spec`, `plan`, or `reference`. The title is a short name, for example the title of a ticket. The description says in one or two sentences what the source holds. The CLI stores these values in the session material and in the annotations of the spec material. A tool that shows the sources can then group them by purpose, label them by title, and explain each one.
+This spec changes the spec capture of [Spec issue-3495](issue-3495-session-spec-capture.md) and [Spec issue-3515](issue-3515-spec-capture-during-session.md). It does not replace them. Today each spec source has a kind: ticket, document, image, or text. The kind tells the format of a source, but not its purpose. A source also has no name that a person can read. With this change, the agent can also record a role, a title, and a description for each source. The role is `task`, `spec`, `plan`, or `reference`. The title is a short name, for example the title of a ticket. The description says in one or two sentences what the source holds. The CLI stores these values in the session material and in the annotations of the spec material. A tool that shows the sources can then group them by purpose, label them by title, and explain each one.
 
 ## Problem
 - A reader of the evidence cannot tell a spec from a background document. Both have the kind `document`.
@@ -23,9 +23,9 @@ This spec changes the spec capture of [Spec 002](002-session-spec-capture.md) an
 - Goal: the agent can give these values to a binary file too.
 - Goal: sessions without these values stay valid, and earlier consumers keep working.
 - Non-goal: a change to the kinds, or to how the CLI finds the kind.
-- Non-goal: rules in the CLI that guess a role, a title, or a description. The agent decides them, as it decides what a spec is (D-001 of Spec 002).
+- Non-goal: rules in the CLI that guess a role, a title, or a description. The agent decides them, as it decides what a spec is (D-001 of Spec issue-3495).
 - Non-goal: a source address or other metadata for binary files. Only the role, the title, and the description are new.
-- Non-goal: a change to the reminder at each user turn of Spec 003.
+- Non-goal: a change to the reminder at each user turn of Spec issue-3515.
 
 ## Requirements
 
@@ -58,7 +58,7 @@ The header of a text spec file, and the companion file of a binary file, MAY hol
 - Done when: a ticket file with `title: "ENG-1234: Add an export button"` pushes a spec entry and a material annotation with that title.
 
 ### R-008: Title limits
-The system MUST cut a title that is longer than 120 characters, and keep the first 120. Each title MUST pass the secret redaction of Spec 002 before it goes into any evidence field. For a text file, the system MUST read the title from the redacted file, as it reads the source address. For a binary file, the system MUST redact the title of the companion file. A bad title MUST NOT stop the push.
+The system MUST cut a title that is longer than 120 characters, and keep the first 120. Each title MUST pass the secret redaction of Spec issue-3495 before it goes into any evidence field. For a text file, the system MUST read the title from the redacted file, as it reads the source address. For a binary file, the system MUST redact the title of the companion file. A bad title MUST NOT stop the push.
 
 ### R-009: Description
 The header of a text spec file, and the companion file of a binary file, MAY hold a `description` field. It says in one or two sentences what the source holds, or why it is in the session. When a source has a description, the system MUST record it in the spec entry of the session material. It MUST also record it in a `chainloop.spec.description` annotation on the spec material. When the description is missing or empty, the system MUST leave out both. The system MUST NOT make a description from the content. The rules of R-008 apply, with a limit of 300 characters.
@@ -138,7 +138,7 @@ A tool that shows the sources groups them by role when a source has one, and lab
 | D-002 | Role values | `task`, `spec`, `plan`, `reference` | Four values cover the purposes that a reviewer looks for: what to do, what to build, how, and supporting material. Rejected: only `spec`, with no role for all other sources (a reader cannot tell a task from a reference). | drafting |
 | D-003 | Role of a binary file | A companion header file that the agent writes | The agent decides the role for every source, also for an image. Rejected: the CLI sets `reference` for each image (a guess, and a mockup can be the spec). Rejected: no role for binary files. | drafting |
 | D-004 | Missing or unknown role | No role in the evidence | The evidence holds only what the agent stated. Consumers can apply their own rule. Rejected: a default role from the kind (a guess looks like a fact in the evidence). | drafting |
-| D-005 | Instruction strength | SHOULD, in the session-start instruction only | A role is useful but not necessary, and the reminder at each turn must stay short (Spec 003). Rejected: MUST, and the roles in the reminder at each turn (more tokens on each turn). | drafting |
+| D-005 | Instruction strength | SHOULD, in the session-start instruction only | A role is useful but not necessary, and the reminder at each turn must stay short (Spec issue-3515). Rejected: MUST, and the roles in the reminder at each turn (more tokens on each turn). | drafting |
 | D-006 | Name of the companion file | The binary file name plus `.meta.yaml`, for example `export-mockup.png.meta.yaml` | The suffix tells that the file holds metadata, not a spec. Rejected: the binary file name plus `.md`, with a header and an empty body (a reader can take it for an empty spec). | drafting |
 | D-007 | Companion file with no binary file | The CLI ignores it, with no warning | The file holds no spec content, so the push loses nothing. Rejected: a warning in the session material (noise for a case with no loss). | drafting |
 | D-008 | Name of a source | An optional title that the agent writes, next to the role | The agent knows the title of the source when it writes the file. The format already changes for the role, so a second field costs little. A tool can label a source from the session material alone. Rejected: the material name only (a short lower-case file stem). Rejected: a title that the CLI takes from the first heading (a guess that looks like a fact in the evidence). This changes the outcome of [#3528](https://github.com/chainloop-dev/chainloop/issues/3528), which closed a title field before the format had other changes. | drafting |
