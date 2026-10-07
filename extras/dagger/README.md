@@ -306,6 +306,27 @@ dagger call -m github.com/chainloop-dev/chainloop \
   --key env:SIGNING_KEY
 ```
 
+### Commit signature verification (from GitLab CI)
+
+To verify the signature of the attested commit with GitLab, also pass the GitLab CI context. The GitLab commit signature API does not accept the job token, so for private and internal projects pass a personal, project or group access token with the `read_api` scope in `--gitlab-token`.
+
+If your self-managed GitLab server uses a certificate from a private CA, also pass that CA certificate, for example `--gitlab-ca=$CI_SERVER_TLS_CA_FILE` when the GitLab Runner is configured with it.
+
+```sh
+dagger call -m github.com/chainloop-dev/chainloop \
+  init \
+  --token env:CHAINLOOP_TOKEN \
+  --workflow-name build \
+  --project-name my-project \
+  --gitlab-ci=$GITLAB_CI \
+  --gitlab-server-url=$CI_SERVER_URL \
+  --gitlab-project-path=$CI_PROJECT_PATH \
+  --gitlab-job-url=$CI_JOB_URL \
+  --gitlab-job-token=env:CI_JOB_TOKEN \
+  --gitlab-token=env:GITLAB_TOKEN \
+  push
+```
+
 ### Notes
 
 - All PR/MR parameters are optional - if not provided, attestations work normally without PR metadata

@@ -12,6 +12,9 @@ import (
 const (
 	chainloopVersion = "v1.118.0"
 	platformVersion  = "v1.124.2"
+	// gitlabCADir holds the custom CA of the Gitlab server. The CLI image is scratch-based,
+	// so SSL_CERT_DIR points Go at it, on top of the default ca-certificates.crt bundle
+	gitlabCADir = "/etc/ssl/gitlab"
 )
 
 var execOpts = dagger.ContainerWithExecOpts{
@@ -128,8 +131,12 @@ type ParentCIContext struct {
 	GitlabMRProjectURL string
 	// User login
 	GitlabUserLogin string
-	// Gitlab job token for API access and commit verification
+	// Gitlab job token for API access, for example to read merge request details
 	GitlabJobToken *dagger.Secret
+	// Gitlab token with the read_api scope for commit verification
+	GitlabToken *dagger.Secret
+	// Custom CA certificate of the Gitlab server
+	GitlabCA *dagger.File
 }
 
 // Initialize a new attestation
@@ -224,9 +231,16 @@ func (m *Chainloop) Init(
 	// Gitlab user login
 	// +optional
 	gitlabUserLogin string,
-	// Gitlab job token for API access and commit verification (when running in Gitlab CI)
+	// Gitlab job token for API access, for example to read merge request details (when running in Gitlab CI)
 	// +optional
 	gitlabJobToken *dagger.Secret,
+	// Gitlab personal, project or group access token with the read_api scope to verify the commit signature.
+	// Required for private and internal projects: the commit signature API does not accept job tokens
+	// +optional
+	gitlabToken *dagger.Secret,
+	// Custom CA certificate (PEM) of a self-managed Gitlab server that uses a private CA
+	// +optional
+	gitlabCA *dagger.File,
 ) (*Attestation, error) {
 	// Construct ParentCIContext from individual parameters
 	var parentCIContext *ParentCIContext
@@ -255,6 +269,8 @@ func (m *Chainloop) Init(
 			GitlabMRProjectURL:   gitlabMRProjectURL,
 			GitlabUserLogin:      gitlabUserLogin,
 			GitlabJobToken:       gitlabJobToken,
+			GitlabToken:          gitlabToken,
+			GitlabCA:             gitlabCA,
 		}
 	}
 
@@ -654,6 +670,13 @@ func cliContainer(ttl int, token *dagger.Secret, instance InstanceInfo, parentCI
 		}
 		if parentCI.GitlabJobToken != nil {
 			ctr = ctr.WithSecretVariable("CI_JOB_TOKEN", parentCI.GitlabJobToken)
+		}
+		if parentCI.GitlabToken != nil {
+			ctr = ctr.WithSecretVariable("GITLAB_TOKEN", parentCI.GitlabToken)
+		}
+		if parentCI.GitlabCA != nil {
+			ctr = ctr.WithFile(gitlabCADir+"/ca.pem", parentCI.GitlabCA).
+				WithEnvVariable("SSL_CERT_DIR", gitlabCADir)
 		}
 	}
 
