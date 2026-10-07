@@ -4,7 +4,7 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3556
 prd:
 ---
 
-# Spec issue-3556: Attachment placeholders in the AI coding session transcript
+# Spec issue-3556: Pointers to spec sources in the AI coding session transcript
 
 ## Summary
 The session material lists its sources in a spec list: each spec, skill, and image that the session captured ([Spec 002](002-session-spec-capture.md)). Each entry holds the digest of a sibling material in the same attestation. Today the transcript also holds the content of many of these sources inline. A screenshot that the agent read and captured is in the evidence three times: two base64 copies in the transcript and one material. With this change, the CLI replaces each transcript copy of a source in the spec list with a small pointer to its sibling material. The CLI also captures images that the user pastes as spec sources, so their bytes become files and their transcript copies become pointers too. Content that is not in the spec list stays inline. The secret redaction skips base64 media. The session evidence gets smaller, the redaction is faster and no longer breaks images, and the transcript view can show each source from its pointer.
@@ -17,12 +17,13 @@ The session material lists its sources in a spec list: each spec, skill, and ima
 - The bytes of a pasted image are only in the transcript. A reader cannot download the image as a file, and the spec list does not show it. D-010 of Spec 002 left this for "a later version".
 
 ## Goals and Non-Goals
-- Goal: the evidence never holds a source of the spec list both inline in the transcript and as a material, for any file type.
+- Goal: a source of the spec list is never both a material and a full file read in the transcript. The same applies to a pasted image. This is true for all file types.
 - Goal: each image that the user pastes becomes a spec source, with its own material.
 - Goal: the secret redaction does not scan base64 media, so it is faster and does not break media.
 - Goal: each replaced block keeps its position in the transcript as a pointer. A transcript view can link the pointer to the sibling material.
 - Goal: the mechanism can take other content kinds later, for example code snippets.
 - Non-goal: content that is not in the spec list. For example, a screenshot that the agent read but did not capture stays inline. The agent decides what to capture (Spec 002 D-001).
+- Non-goal: other copies of a spec source in the transcript. Examples are the text of the file write that created a spec file, and the text of a skill that the agent loaded. A later finder can replace them (R-008).
 - Non-goal: the change to the transcript view that shows the pointers. It is in a different repository. This spec defines only what the view gets.
 - Non-goal: a change to evidence that an earlier CLI pushed. That evidence keeps its inline content.
 - Non-goal: other duplicate data in the transcript, for example the rendered copies of agent attachment entries.
@@ -31,14 +32,14 @@ The session material lists its sources in a spec list: each spec, skill, and ima
 ## Requirements
 
 ### R-001: No inline copy of a spec source
-The CLI MUST NOT keep inline transcript content that is also a source in the spec list of the session. It MUST replace each copy of that content with a pointer before it records the session material. This applies to all file types: images, documents, and text.
+A full file read or a pasted image in the transcript can be a source in the spec list of the session. Then the CLI MUST replace each copy of it with a pointer. It MUST do this before it records the session material. This applies to all file types: images, documents, and text.
 - Done when: the agent reads a screenshot and a JSON file, and captures both as specs. The session material holds a pointer for each copy of both files, and no inline content of them.
 
 ### R-002: Pointer content
-A pointer MUST stay at the position of the replaced block in the transcript, with the same block type. It MUST hold only a `chainloop.replaced` marker and the digest of the sibling material. That digest MUST also be in the spec list of the session. The pointer MUST NOT repeat data that the material or the spec list already holds, for example the name, the size, or the role. A reader MUST be able to see from the marker alone that Chainloop replaced the content.
+A pointer MUST stay at the position of the replaced content in the transcript. An image block MUST keep its type. In this version, a pointer MUST hold only a `chainloop.replaced` marker and the digest of the sibling material. That digest MUST also be in the spec list of the session. The pointer MUST NOT repeat data that the material or the spec list already holds, for example the name, the size, or the role. A reader MUST be able to see from the marker alone that Chainloop replaced the content.
 
 ### R-003: Match with spec sources
-When the agent read a full file that is still on disk at push time, the CLI MUST compute the digest of the file. When the digest is equal to the source digest of an entry in the spec list, the CLI MUST replace the copies of that read. A partial read of a file, for example a range of lines, is not a copy of the source and stays inline.
+When the agent read a full file that is still on disk at push time, the CLI MUST compute the digest of the file. When the digest is equal to the source digest of an entry in the spec list, the CLI MUST replace the copies of that read. The pointer holds the digest of the material. For a text file, the material is the redacted copy, so the two digests differ. A partial read of a file, for example a range of lines, is not a copy of the source and stays inline. A text spec that the agent wrote with a header is not the file that it read. Its digest differs, and the read stays inline.
 - Done when: the agent reads a screenshot and copies it into the spec folder. The push gives one material, and both transcript copies hold its digest.
 
 ### ~~R-004: Upload of other base64 media~~
@@ -97,9 +98,9 @@ A pointer holds two fields:
 - `type`: always `chainloop.replaced`. It tells a person, a policy, or a view that Chainloop removed the content here.
 - `digest`: the digest of the sibling material. The spec list has an entry with the same digest.
 
-The material and the spec list hold the name, the size, the media type, and the role. The pointer does not repeat them. The position tells the origin. A tool result is a file that the agent read. A user message is a pasted image.
+The material and the spec list hold the name, the size, the media type, and the role. The pointer does not repeat them. The position tells the origin. A tool result is a file that the agent read. A user prompt, or a message that the user sent during a turn, is a pasted image.
 
-The CLI puts the pointer where the content was. A content block keeps its type, and only its data changes. When the transcript holds the content in a metadata field, the CLI removes that field and adds a `chainloop.replaced` field next to it. A consumer that reads the old field does not get an object where it expects text.
+The CLI puts the pointer where the content was. An image block keeps its type, and only its source changes. Text content has no block with a source, so the text becomes one pointer block. The transcript can also hold the content in a metadata field. Then the CLI removes that field, and adds a `chainloop.replaced` field with the same pointer next to it. A consumer that reads the old field does not get an object where it expects text.
 
 **A screenshot that the agent read and captured.** Before, the tool result holds the image two times:
 
@@ -123,7 +124,7 @@ After, the image block keeps the type `image`, and its source is the pointer:
     ] } ] },
   "toolUseResult": { "type": "image",
     "file": { "type": "image/png", "originalSize": 316801,
-              "chainloop.replaced": { "digest": "sha256:99c0bca3..." } } } }
+              "chainloop.replaced": { "type": "chainloop.replaced", "digest": "sha256:99c0bca3..." } } } }
 ```
 
 **A pasted image.** The text of the prompt stays:
@@ -141,7 +142,7 @@ The spec list gets an entry for it:
 { "kind": "image", "digest": "sha256:9b07...", "captured_at": "2026-10-07T21:30:11Z" }
 ```
 
-**A JSON file that the agent read and captured.** A text tool result has no block with a source. So its content becomes one pointer block:
+**A JSON file that the agent read and copied into the spec folder with no change.** Its content becomes one pointer block. The metadata copy of the text gets the same pointer:
 
 ```json
 "content": [ { "type": "chainloop.replaced", "digest": "sha256:c2a1..." } ]
@@ -201,6 +202,7 @@ flowchart TD
 | Risk | Mitigation |
 |------|------------|
 | The file changed after the read, so the match with the spec fails. | The read stays inline (R-009). The evidence holds one more copy, but it is correct. |
+| The file changed after the read, and the agent then copied the new version into the spec folder. The digest matches, but the agent saw the old version. | When the tool result records the original size, the CLI also compares it with the size of the file. A different size keeps the read inline. |
 | The agent reads a screenshot but does not capture it, so it stays inline and the evidence stays large. | The capture instruction asks the agent to capture images that the user gives (Spec 003). The share of read images with no spec entry is measurable from the evidence. |
 | A policy reads a spec file from the transcript, and now finds a pointer. | The spec material holds the same content. The policy can read the material by its digest. Text that is not a spec source stays inline (D-007). |
 | A very large transcript line, with a large image, stops the session parse before the CLI can replace the image. | The parse limit is separate from this change. The CLI can raise it or skip the media data while it reads the line. |
