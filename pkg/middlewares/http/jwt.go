@@ -35,9 +35,23 @@ const (
 // ClaimsFunc is a function that returns a jwt.Claims with the custom claims and correct type
 type ClaimsFunc func() jwt.Claims
 
-// AuthFromQueryParam is a middleware that extracts the token from the query parameter and verifies it
-func AuthFromQueryParam(keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, signingMethod jwt.SigningMethod, next nhttp.Handler) nhttp.Handler {
+// AuthFromHeaderOrQueryParam is a middleware that extracts the token from the
+// authorization header or, when that header is absent, from the "t" query
+// parameter, and verifies it. A present header always wins: a bad header is
+// rejected and never falls back to the query token.
+func AuthFromHeaderOrQueryParam(keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, signingMethod jwt.SigningMethod, next nhttp.Handler) nhttp.Handler {
 	return nhttp.HandlerFunc(func(w http.ResponseWriter, r *nhttp.Request) {
+		if r.Header.Get(authorizationKey) != "" {
+			token, ok := bearerToken(r)
+			if !ok {
+				nhttp.Error(w, "invalid authorization header", nhttp.StatusUnauthorized)
+				return
+			}
+
+			verifyJWTAndServeNext(w, r, token, keyFunc, claimsFunc, signingMethod, next)
+			return
+		}
+
 		token := r.URL.Query().Get("t")
 		if token == "" {
 			nhttp.Error(w, "missing token", nhttp.StatusUnauthorized)
@@ -68,16 +82,24 @@ func verifyJWTAndServeNext(w http.ResponseWriter, r *nhttp.Request, token string
 // AuthFromAuthorizationHeader is a middleware that extracts the token from the authorization header and verifies it
 func AuthFromAuthorizationHeader(keyFunc jwt.Keyfunc, claimsFunc ClaimsFunc, signingMethod jwt.SigningMethod, next nhttp.Handler) nhttp.Handler {
 	return nhttp.HandlerFunc(func(w http.ResponseWriter, r *nhttp.Request) {
-		auths := strings.SplitN(r.Header.Get(authorizationKey), " ", 2)
-		if len(auths) != 2 || !strings.EqualFold(auths[0], bearerWord) {
+		jwtToken, ok := bearerToken(r)
+		if !ok {
 			nhttp.Error(w, "JWT token is missing", nhttp.StatusUnauthorized)
 			return
 		}
 
-		jwtToken := auths[1]
-
 		verifyJWTAndServeNext(w, r, jwtToken, keyFunc, claimsFunc, signingMethod, next)
 	})
+}
+
+// bearerToken returns the token of a "Bearer <token>" authorization header
+func bearerToken(r *nhttp.Request) (string, bool) {
+	auths := strings.SplitN(r.Header.Get(authorizationKey), " ", 2)
+	if len(auths) != 2 || !strings.EqualFold(auths[0], bearerWord) {
+		return "", false
+	}
+
+	return auths[1], true
 }
 
 // verifyAndMarshalJWT verifies the token and returns the map claims
