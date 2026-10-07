@@ -155,12 +155,6 @@ func (s *SigningUseCase) KeylessEnabled() bool {
 	return s != nil && s.CAs != nil
 }
 
-// VerificationEnforced tells if every attestation must be verified with
-// keyless signing, so other signing methods are rejected.
-func (s *SigningUseCase) VerificationEnforced() bool {
-	return s.KeylessEnabled() && s.ForceVerification
-}
-
 func (s *SigningUseCase) GetCurrentTSA() *TimestampAuthority {
 	for _, tsa := range s.TimestampAuthorities {
 		if tsa.Issuer {

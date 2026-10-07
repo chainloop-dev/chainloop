@@ -18,11 +18,8 @@ package biz_test
 import (
 	"context"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
@@ -56,14 +53,6 @@ func keylessSigningUseCase(t *testing.T) *biz.SigningUseCase {
 	return &biz.SigningUseCase{CAs: &ca2.CertificateAuthorities{CAs: []ca2.CertificateAuthority{ca}, SignerCA: ca}, ForceVerification: true}
 }
 
-// withoutForcedVerification returns a copy of the signing use case, with the
-// same certificate authorities, that does not force verification.
-func withoutForcedVerification(uc *biz.SigningUseCase) *biz.SigningUseCase {
-	optOut := *uc
-	optOut.ForceVerification = false
-	return &optOut
-}
-
 type testBundleKind int
 
 const (
@@ -89,11 +78,9 @@ func newSignedTestBundle(t *testing.T, signing *biz.SigningUseCase, orgID string
 	payload, err := base64.StdEncoding.DecodeString(env.Payload)
 	require.NoError(t, err)
 
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	key, csr, err := createCSR()
 	require.NoError(t, err)
-	csrDER, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: "ephemeral certificate"}}, key)
-	require.NoError(t, err)
-	chain, err := signing.CreateSigningCert(context.Background(), orgID, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: csrDER}))
+	chain, err := signing.CreateSigningCert(context.Background(), orgID, csr)
 	require.NoError(t, err)
 
 	signedPayload := payload
@@ -137,69 +124,68 @@ func newSignedTestBundle(t *testing.T, signing *biz.SigningUseCase, orgID string
 func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 	orgID := uuid.New()
 	otherOrgID := uuid.New()
-	signing := keylessSigningUseCase(t)
-
-	optOut := withoutForcedVerification(signing)
+	forced := keylessSigningUseCase(t)
+	optOut := &biz.SigningUseCase{CAs: forced.CAs}
 
 	cases := []struct {
-		name   string
-		bundle []byte
-		// verification not forced
-		optOut bool
+		name    string
+		signing *biz.SigningUseCase
+		bundle  []byte
 		// signature check is expected to reject the attestation
 		wantRejected bool
 	}{
 		{
-			name:   "keyless certificate issued to the run organization",
-			bundle: newSignedTestBundle(t, signing, orgID.String(), bundleWithCert),
-		},
-		{
-			name:   "opt-out: signed without verification material is accepted",
-			bundle: newSignedTestBundle(t, signing, orgID.String(), bundleWithoutMaterial),
-			optOut: true,
-		},
-		{
-			name:   "opt-out: keyless certificate issued to another organization is accepted",
-			bundle: newSignedTestBundle(t, signing, otherOrgID.String(), bundleWithCert),
-			optOut: true,
-		},
-		{
-			name:         "opt-out: keyless certificate with a tampered signature is still rejected",
-			bundle:       newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
-			optOut:       true,
-			wantRejected: true,
+			name:    "keyless certificate issued to the run organization",
+			signing: forced,
+			bundle:  newSignedTestBundle(t, forced, orgID.String(), bundleWithCert),
 		},
 		{
 			name:         "keyless certificate issued to another organization",
-			bundle:       newSignedTestBundle(t, signing, otherOrgID.String(), bundleWithCert),
+			signing:      forced,
+			bundle:       newSignedTestBundle(t, forced, otherOrgID.String(), bundleWithCert),
 			wantRejected: true,
 		},
 		{
 			name:         "keyless certificate issued to the run organization, with a tampered signature",
-			bundle:       newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
+			signing:      forced,
+			bundle:       newSignedTestBundle(t, forced, orgID.String(), bundleWithCertTamperedSignature),
 			wantRejected: true,
 		},
 		{
 			name:         "signed without verification material",
-			bundle:       newSignedTestBundle(t, signing, orgID.String(), bundleWithoutMaterial),
+			signing:      forced,
+			bundle:       newSignedTestBundle(t, forced, orgID.String(), bundleWithoutMaterial),
 			wantRejected: true,
 		},
 		{
 			name:         "raw DSSE envelope",
-			bundle:       newSignedTestBundle(t, signing, orgID.String(), bundleRawEnvelope),
+			signing:      forced,
+			bundle:       newSignedTestBundle(t, forced, orgID.String(), bundleRawEnvelope),
+			wantRejected: true,
+		},
+		{
+			name:    "opt-out: signed without verification material is accepted",
+			signing: optOut,
+			bundle:  newSignedTestBundle(t, forced, orgID.String(), bundleWithoutMaterial),
+		},
+		{
+			name:         "opt-out: keyless certificate issued to another organization is still rejected",
+			signing:      optOut,
+			bundle:       newSignedTestBundle(t, forced, otherOrgID.String(), bundleWithCert),
+			wantRejected: true,
+		},
+		{
+			name:         "opt-out: keyless certificate with a tampered signature is still rejected",
+			signing:      optOut,
+			bundle:       newSignedTestBundle(t, forced, orgID.String(), bundleWithCertTamperedSignature),
 			wantRejected: true,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			signingUC := signing
-			if tc.optOut {
-				signingUC = optOut
-			}
-
 			repo := repoM.NewWorkflowRunRepo(t)
-			uc, err := biz.NewWorkflowRunUseCase(&biz.WorkflowRunUseCaseOpts{WfrRepo: repo, SigningUC: signingUC})
+			uc, err := biz.NewWorkflowRunUseCase(&biz.WorkflowRunUseCaseOpts{WfrRepo: repo, SigningUC: tc.signing})
 			require.NoError(t, err)
 
 			runID := uuid.New()
@@ -223,7 +209,8 @@ func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 
 func TestVerifyRunKeyless(t *testing.T) {
 	orgID := uuid.New()
-	signing := keylessSigningUseCase(t)
+	forced := keylessSigningUseCase(t)
+	optOut := &biz.SigningUseCase{CAs: forced.CAs}
 
 	cases := []struct {
 		name       string
@@ -236,55 +223,73 @@ func TestVerifyRunKeyless(t *testing.T) {
 	}{
 		{
 			name:       "keyless certificate issued to the run organization",
-			signing:    signing,
-			bundle:     newSignedTestBundle(t, signing, orgID.String(), bundleWithCert),
+			signing:    forced,
+			bundle:     newSignedTestBundle(t, forced, orgID.String(), bundleWithCert),
 			wantResult: true,
 		},
 		{
 			name:       "keyless certificate issued to another organization",
-			signing:    signing,
-			bundle:     newSignedTestBundle(t, signing, uuid.NewString(), bundleWithCert),
+			signing:    forced,
+			bundle:     newSignedTestBundle(t, forced, uuid.NewString(), bundleWithCert),
 			wantReason: "organization mismatch",
 		},
 		{
 			name:       "keyless certificate issued to the run organization, with a tampered signature",
-			signing:    signing,
-			bundle:     newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
+			signing:    forced,
+			bundle:     newSignedTestBundle(t, forced, orgID.String(), bundleWithCertTamperedSignature),
 			wantReason: "validating the DSSE envelope",
 		},
 		{
 			name:       "attestation digest recorded, but its bundle could not be retrieved",
-			signing:    signing,
+			signing:    forced,
 			digest:     "sha256:0f9b2a1c",
 			wantReason: "could not be retrieved",
 		},
 		{
-			name:       "no verification material with keyless signing enabled",
-			signing:    signing,
-			bundle:     newSignedTestBundle(t, signing, orgID.String(), bundleWithoutMaterial),
+			name:       "no verification material",
+			signing:    forced,
+			bundle:     newSignedTestBundle(t, forced, orgID.String(), bundleWithoutMaterial),
 			wantReason: "no verification material",
 		},
 		{
-			name:    "keyless signing not configured",
-			signing: &biz.SigningUseCase{},
-			bundle:  newSignedTestBundle(t, signing, orgID.String(), bundleWithoutMaterial),
-			wantNil: true,
+			name:       "raw DSSE envelope",
+			signing:    forced,
+			bundle:     newSignedTestBundle(t, forced, orgID.String(), bundleRawEnvelope),
+			wantReason: "not a valid bundle",
 		},
 		{
 			name:    "run without attestation",
-			signing: signing,
+			signing: forced,
+			wantNil: true,
+		},
+		{
+			name:    "keyless signing not configured",
+			signing: &biz.SigningUseCase{ForceVerification: true},
+			bundle:  newSignedTestBundle(t, forced, orgID.String(), bundleWithoutMaterial),
 			wantNil: true,
 		},
 		{
 			name:    "opt-out: no verification material means verification does not apply",
-			signing: withoutForcedVerification(signing),
-			bundle:  newSignedTestBundle(t, signing, orgID.String(), bundleWithoutMaterial),
+			signing: optOut,
+			bundle:  newSignedTestBundle(t, forced, orgID.String(), bundleWithoutMaterial),
 			wantNil: true,
 		},
 		{
+			name:    "opt-out: attestation bundle could not be retrieved",
+			signing: optOut,
+			digest:  "sha256:0f9b2a1c",
+			wantNil: true,
+		},
+		{
+			name:       "opt-out: keyless certificate issued to another organization is not verified",
+			signing:    optOut,
+			bundle:     newSignedTestBundle(t, forced, uuid.NewString(), bundleWithCert),
+			wantReason: "organization mismatch",
+		},
+		{
 			name:       "opt-out: keyless certificate with a tampered signature is not verified",
-			signing:    withoutForcedVerification(signing),
-			bundle:     newSignedTestBundle(t, signing, orgID.String(), bundleWithCertTamperedSignature),
+			signing:    optOut,
+			bundle:     newSignedTestBundle(t, forced, orgID.String(), bundleWithCertTamperedSignature),
 			wantReason: "validating the DSSE envelope",
 		},
 	}
@@ -310,23 +315,20 @@ func TestVerifyRunKeyless(t *testing.T) {
 	}
 }
 
-func TestSigningUseCaseVerificationEnforced(t *testing.T) {
+func TestSigningUseCaseKeylessEnabled(t *testing.T) {
 	cases := []struct {
-		name        string
-		uc          *biz.SigningUseCase
-		wantKeyless bool
-		wantForced  bool
+		name string
+		uc   *biz.SigningUseCase
+		want bool
 	}{
-		{name: "certificate authorities configured, verification forced", uc: keylessSigningUseCase(t), wantKeyless: true, wantForced: true},
-		{name: "certificate authorities configured, opt-out", uc: withoutForcedVerification(keylessSigningUseCase(t)), wantKeyless: true},
+		{name: "certificate authorities configured", uc: keylessSigningUseCase(t), want: true},
 		{name: "no certificate authorities", uc: &biz.SigningUseCase{ForceVerification: true}},
 		{name: "nil use case", uc: nil},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.wantKeyless, tc.uc.KeylessEnabled())
-			assert.Equal(t, tc.wantForced, tc.uc.VerificationEnforced())
+			assert.Equal(t, tc.want, tc.uc.KeylessEnabled())
 		})
 	}
 }
