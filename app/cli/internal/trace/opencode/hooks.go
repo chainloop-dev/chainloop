@@ -380,6 +380,17 @@ func (p *Provider) UninstallHooks(repoRoot string) error {
 	return err
 }
 
+// HooksInstalled reports whether the plugin file is present. The file is
+// entirely chainloop-owned, so its presence is the installation.
+func (p *Provider) HooksInstalled(repoRoot string) (bool, error) {
+	_, err := os.Stat(filepath.Join(repoRoot, settingsFile))
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+
+	return err == nil, err
+}
+
 // maxHookPayloadBytes caps hook payload reads to defend against runaway or
 // malformed payloads.
 const maxHookPayloadBytes = 16 * 1024 * 1024

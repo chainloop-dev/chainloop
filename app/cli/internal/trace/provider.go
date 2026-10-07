@@ -108,6 +108,11 @@ type Provider interface {
 	// UninstallHooks removes the agent's hooks from the repo.
 	UninstallHooks(repoRoot string) error
 
+	// HooksInstalled reports whether the repo already carries the agent's
+	// Chainloop hooks, so `trace init` can offer the harnesses a repository
+	// is set up for when it runs again. Hooks the user wrote do not count.
+	HooksInstalled(repoRoot string) (bool, error)
+
 	// ReadHookInput reads hook invocation input from the given reader.
 	ReadHookInput(r io.Reader) (*HookInput, error)
 

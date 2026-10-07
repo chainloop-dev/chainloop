@@ -18,6 +18,7 @@ package cmd
 import (
 	"errors"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
@@ -78,11 +79,34 @@ func traceProviderNames() []string {
 	return names
 }
 
+// configuredTraceProviders lists the harnesses whose hooks the repository
+// already carries, in the registry's order, so a re-run of init offers what an
+// earlier one set up. A harness whose configuration cannot be read counts as
+// not configured: init is how it gets repaired, so it must not stop init.
+func configuredTraceProviders(repoRoot string) []string {
+	var configured []trace.Provider
+	for _, p := range providers.All() {
+		installed, err := p.HooksInstalled(repoRoot)
+		if err != nil {
+			logger.Debug().Err(err).Str("harness", p.Name()).Msg("could not read the harness configuration")
+			continue
+		}
+
+		if installed {
+			configured = append(configured, p)
+		}
+	}
+
+	return providerNames(configured)
+}
+
 // resolveTraceProviders picks the agents whose hooks init installs. Flags win
 // and skip the question, the same way --org and --project do. Otherwise a
-// terminal session ticks them off a list with the default preselected, and a
-// non-interactive one keeps that default so scripted runs are unchanged.
-func resolveTraceProviders(p prompter, flags traceProviderFlags, interactive bool) ([]string, error) {
+// terminal session ticks them off a list with the harnesses already configured
+// preselected, or the default on a first run, and a non-interactive one keeps
+// the default so scripted runs are unchanged. configured is only called when
+// the question is asked, so the other paths read nothing from the repository.
+func resolveTraceProviders(p prompter, flags traceProviderFlags, interactive bool, configured func() []string) ([]string, error) {
 	if flags.any() {
 		return flags.names(), nil
 	}
@@ -91,7 +115,12 @@ func resolveTraceProviders(p prompter, flags traceProviderFlags, interactive boo
 		return []string{providers.DefaultProvider}, nil
 	}
 
-	chosen, err := p.MultiSelect(providersPromptTitle, traceProviderNames(), []string{providers.DefaultProvider})
+	defaults := configured()
+	if len(defaults) == 0 {
+		defaults = []string{providers.DefaultProvider}
+	}
+
+	chosen, err := p.MultiSelect(providersPromptTitle, traceProviderNames(), defaults)
 	if err != nil {
 		return nil, err
 	}

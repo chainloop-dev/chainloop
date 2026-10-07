@@ -209,3 +209,45 @@ func TestReadHookInputFallsBackToSessionID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "fallback-session", in.SessionID, "expected fallback to session_id")
 }
+
+func TestHooksInstalled(t *testing.T) {
+	testCases := []struct {
+		name     string
+		settings string
+		want     bool
+		wantErr  bool
+	}{
+		{
+			name:     "only user hooks",
+			settings: `{"version":1,"hooks":{"sessionStart":[{"command":"./my-hook.sh","timeout":10}]}}`,
+			want:     false,
+		},
+		{
+			name:     "a chainloop hook next to user hooks",
+			settings: `{"version":1,"hooks":{"sessionStart":[{"command":"./my-hook.sh"},{"command":"chainloop trace hook cursor session-start"}]}}`,
+			want:     true,
+		},
+		{
+			name:     "malformed settings",
+			settings: `{not json`,
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(repoRoot, ".cursor"), 0755))
+			require.NoError(t, os.WriteFile(filepath.Join(repoRoot, settingsFile), []byte(tc.settings), 0600))
+
+			got, err := New().HooksInstalled(repoRoot)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}

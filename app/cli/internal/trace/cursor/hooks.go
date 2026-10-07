@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -162,6 +163,25 @@ func (p *Provider) UninstallHooks(repoRoot string) error {
 	}
 
 	return writeJSONFile(settingsPath, settings)
+}
+
+// HooksInstalled reports whether .cursor/hooks.json holds any Chainloop hook.
+// User-authored hooks are ignored.
+func (p *Provider) HooksInstalled(repoRoot string) (bool, error) {
+	settings, err := readJSONFile(filepath.Join(repoRoot, settingsFile))
+	if err != nil {
+		return false, err
+	}
+
+	hooks, _ := settings["hooks"].(map[string]any)
+	for _, h := range cursorHookEvents {
+		entries, _ := hooks[h.event].([]any)
+		if slices.ContainsFunc(entries, entryContainsChainloopHook) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // cursorHookInput is the wire-level structure of a Cursor hook JSON payload.
