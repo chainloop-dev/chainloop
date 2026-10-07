@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
-	ca2 "github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
 	"github.com/sigstore/fulcio/pkg/identity"
@@ -113,24 +112,23 @@ func TestSuite(t *testing.T) {
 }
 
 func (s *signingUseCaseTestSuite) SetupTest() {
-	csr, err := createCSR()
+	_, csr, err := createCSR()
 	s.Require().NoError(err)
 	s.csr = csr
 
-	ca, err := NewTestCA()
-	s.Require().NoError(err)
-	s.uc = &biz.SigningUseCase{CAs: &ca2.CertificateAuthorities{CAs: []ca2.CertificateAuthority{ca}, SignerCA: ca}}
+	s.uc = keylessSigningUseCase(s.T())
 }
 
-func createCSR() ([]byte, error) {
+// createCSR returns a PEM-encoded certificate request and the private key it was created with
+func createCSR() (*ecdsa.PrivateKey, []byte, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		return nil, fmt.Errorf("generating cert: %w", err)
+		return nil, nil, fmt.Errorf("generating cert: %w", err)
 	}
 	csrTmpl := &x509.CertificateRequest{Subject: pkix.Name{CommonName: "ephemeral certificate"}}
 	derCSR, err := x509.CreateCertificateRequest(rand.Reader, csrTmpl, priv)
 	if err != nil {
-		return nil, fmt.Errorf("generating certificate request: %w", err)
+		return nil, nil, fmt.Errorf("generating certificate request: %w", err)
 	}
 
 	// Encode CSR to PEM
@@ -139,5 +137,5 @@ func createCSR() ([]byte, error) {
 		Bytes: derCSR,
 	})
 
-	return pemCSR, nil
+	return priv, pemCSR, nil
 }
