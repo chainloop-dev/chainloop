@@ -639,6 +639,139 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	log.Debug().Int("session_count", len(sessionCommits)).Msg("grouped commits by session")
 
+	sessions := buildSessionEvidence(ctx, store, repoRoot, gitClient, sessionCommits, sessionRecords, sessionMode, log)
+
+	if len(sessions) == 0 {
+		log.Debug().Msg("no session evidence could be generated")
+
+		return nil
+	}
+
+	// Create attestation using local state file to avoid conflicts with other attestations
+	localStatePath := store.AttestationStatePath()
+	defer func() { _ = os.Remove(localStatePath) }()
+
+	projectName, organization, workflowName := resolvePushIdentity(repoRoot, opts)
+	if projectName == "" {
+		if opts.IgnoreYAML {
+			return fmt.Errorf("no project name provided")
+		}
+
+		return fmt.Errorf("no project name found (pass via options or .chainloop.yml)")
+	}
+
+	log.Debug().Str("project", projectName).Msg("resolved project for trace push")
+
+	execOpts := []ExecutorOption{WithLocalStatePath(localStatePath), WithLogger(log)}
+	if organization != "" {
+		log.Debug().Str("forced_org", organization).Msg("forcing organization for trace push")
+		execOpts = append(execOpts, WithForcedOrganization(organization))
+	}
+	executor, err := NewAttestationExecutor(opts.ActionOpts, opts.CLIVersion, execOpts...)
+	if err != nil {
+		// Warn (not debug): a misconfiguration here means no attestation is
+		// sent at all, and the pre-push hook swallows the returned error
+		// unless require-trace is on.
+		log.Warn().Err(err).Msg("skipping trace attestation")
+
+		return err
+	}
+	defer func() { _ = executor.Close() }()
+
+	attestationID, err := executor.Init(ctx, workflowName, projectName, opts.ProjectVersion)
+	if err != nil {
+		return fmt.Errorf("attestation init: %w", err)
+	}
+
+	log.Debug().Str("attestation_id", attestationID).Msg("attestation initialized")
+
+	// Add evidence for each session: its spec materials first, so that the
+	// session material can record their digests, then the session itself.
+	attestedSessions, attestedSpecs := attachSessionEvidence(ctx, executor, store, sessions, log)
+
+	if len(attestedSessions) == 0 {
+		log.Debug().Msg("no evidence successfully added, resetting attestation")
+		_ = executor.Reset(ctx, AttestationResetTriggerCancelled, "no CHAINLOOP_AI_CODING_SESSION evidence added")
+
+		return nil
+	}
+
+	// Push attestation
+	log.Debug().Msg("pushing attestation")
+	res, err := executor.Push(ctx)
+	if err != nil {
+		return fmt.Errorf("attestation push: %w", err)
+	}
+
+	// Tell the user where each session landed. The organization comes from the
+	// control plane rather than opts.Organization, which is empty whenever the
+	// CLI's current org is used.
+	links := logAttestedSessions(log, res.UIDashboardURL, res.GetOrganization(), attestedSessions)
+
+	// Hand the links to the agent hook that runs after this push. When the
+	// push was driven by a coding agent's shell tool, the log line above is
+	// captured into that tool's output rather than shown to the user, so the
+	// hook is what actually puts the link in front of them. A failure here
+	// costs a notification, never the attestation that already succeeded.
+	//
+	// The caller tells us whether to skip, rather than us inferring it from
+	// on-disk state: the trace-run sentinel outlives a killed run, and
+	// reading it here would silently suppress every later notification in
+	// that repository.
+	if opts.SkipAgentNotification {
+		log.Debug().Msg("caller already showed the links; not recording them for an agent hook")
+	} else if err := store.SavePendingLinks(links); err != nil {
+		log.Debug().Err(err).Msg("could not record session links for the agent hook")
+	}
+
+	log.Debug().Msg("attestation pushed, wiping single-use trace state")
+
+	// A later push of each session keeps the spec files recorded here, so
+	// that the limit never drops a spec that is already in the evidence.
+	for sessionID, fileNames := range attestedSpecs {
+		recordPushedSpecs(store, sessionID, fileNames, log)
+	}
+
+	// Mark every AI commit included in this attestation as tracked so that a
+	// subsequent `git push` with no new commits short-circuits at the skip
+	// check above. Save errors are non-fatal: the attestation already went
+	// out, and at worst we re-attest the same commits on the next push.
+	for _, c := range aiCommits {
+		if c.Tracked {
+			continue
+		}
+		c.Tracked = true
+		if err := store.SaveCommitRecord(c); err != nil {
+			log.Debug().Err(err).Str("sha", c.SHA).Msg("could not mark commit record as tracked")
+		}
+	}
+
+	_ = store.WipeTraceDir()
+	if liveSHAs, err := gitClient.LocalReachableSHAs(repoRoot); err == nil {
+		if err := store.GCOrphans(liveSHAs); err != nil {
+			log.Debug().Err(err).Msg("orphan GC failed; trace state is intact but not pruned")
+		}
+	} else {
+		log.Debug().Err(err).Msg("could not enumerate local branch SHAs; skipping orphan GC")
+	}
+
+	return nil
+}
+
+// sessionEvidence is the evidence of one session before it is added to the
+// attestation. It is written out only once the attestation exists, because it
+// records the digests of the spec and skill materials added to it first.
+type sessionEvidence struct {
+	sessionID string
+	evidence  *aicodingsession.Evidence
+	specs     []spec.Capture
+	skills    []sessionSkill
+}
+
+// buildSessionEvidence parses each session of the push into its evidence,
+// with the specs and the skills that go into the attestation next to it. A
+// session that cannot be read is left out, with a warning in the log.
+func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot string, gitClient tracegit.Client, sessionCommits map[string][]*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, sessionMode string, log zerolog.Logger) []sessionEvidence {
 	// Collect repo-level context once (same for all sessions)
 	rawDir := store.RawSessionDir()
 
@@ -649,15 +782,6 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	isGenerated := gitClient.GeneratedMatcher(repoRoot)
 
-	// Build evidence for each session. It is written out only once the
-	// attestation exists, because it records the digests of the spec materials
-	// added to it first.
-	type sessionEvidence struct {
-		sessionID string
-		evidence  *aicodingsession.Evidence
-		specs     []spec.Capture
-		skills    []sessionSkill
-	}
 	var sessions []sessionEvidence
 
 	for sessionID, commits := range sessionCommits {
@@ -756,71 +880,33 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		})
 	}
 
-	if len(sessions) == 0 {
-		log.Debug().Msg("no session evidence could be generated")
+	return sessions
+}
 
-		return nil
-	}
-
-	// Create attestation using local state file to avoid conflicts with other attestations
-	localStatePath := store.AttestationStatePath()
-	defer func() { _ = os.Remove(localStatePath) }()
-
-	projectName, organization, workflowName := resolvePushIdentity(repoRoot, opts)
-	if projectName == "" {
-		if opts.IgnoreYAML {
-			return fmt.Errorf("no project name provided")
-		}
-
-		return fmt.Errorf("no project name found (pass via options or .chainloop.yml)")
-	}
-
-	log.Debug().Str("project", projectName).Msg("resolved project for trace push")
-
-	execOpts := []ExecutorOption{WithLocalStatePath(localStatePath), WithLogger(log)}
-	if organization != "" {
-		log.Debug().Str("forced_org", organization).Msg("forcing organization for trace push")
-		execOpts = append(execOpts, WithForcedOrganization(organization))
-	}
-	executor, err := NewAttestationExecutor(opts.ActionOpts, opts.CLIVersion, execOpts...)
-	if err != nil {
-		// Warn (not debug): a misconfiguration here means no attestation is
-		// sent at all, and the pre-push hook swallows the returned error
-		// unless require-trace is on.
-		log.Warn().Err(err).Msg("skipping trace attestation")
-
-		return err
-	}
-	defer func() { _ = executor.Close() }()
-
-	attestationID, err := executor.Init(ctx, workflowName, projectName, opts.ProjectVersion)
-	if err != nil {
-		return fmt.Errorf("attestation init: %w", err)
-	}
-
-	log.Debug().Str("attestation_id", attestationID).Msg("attestation initialized")
-
-	// Add evidence for each session: its spec materials first, so that the
-	// session material can record their digests, then the session itself.
-	attestedSessions := make([]string, 0, len(sessions))
-	attestedSpecs := make(map[string][]string, len(sessions))
+// attachSessionEvidence adds the materials of each session to the attestation:
+// its spec and skill materials first, so that the session material can record
+// their digests, then the session itself. It returns the sessions that were
+// added, and the spec files that each of them stored.
+func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *state.Store, sessions []sessionEvidence, log zerolog.Logger) (attestedSessions []string, attestedSpecs map[string][]string) {
+	attestedSessions = make([]string, 0, len(sessions))
+	attestedSpecs = make(map[string][]string, len(sessions))
 	// One allocator for the whole attestation: names taken from the start of
 	// a session ID can repeat across sessions, and a repeated name would
 	// replace an earlier material.
 	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
 		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID))
-		entries, warnings, stored := attachSpecs(ctx, executor, redactor, names, se.sessionID, se.specs, log)
+		entries, warnings, stored := attachSpecs(ctx, adder, redactor, names, se.sessionID, se.specs, log)
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
 
 		// The skill entries come after the sources that the agent wrote.
-		skillEntries, skillWarnings := attachSkills(ctx, executor, redactor, names, se.sessionID, se.skills, log)
+		skillEntries, skillWarnings := attachSkills(ctx, adder, redactor, names, se.sessionID, se.skills, log)
 		entries = append(entries, skillEntries...)
 		se.evidence.Data.Spec = entries
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, skillWarnings...)
 
 		name := evidenceName(se.sessionID)
-		if err := addSessionEvidence(ctx, executor, name, se.evidence); err != nil {
+		if err := addSessionEvidence(ctx, adder, name, se.evidence); err != nil {
 			// Warn, not debug: the session is left out of the attestation,
 			// and this is the only place that says why.
 			log.Warn().Err(err).Str("session", se.sessionID).Msg("could not add the evidence of an AI session; it is left out of the attestation")
@@ -831,73 +917,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		log.Debug().Str("session", se.sessionID).Str("name", name).Int("spec_entries", len(entries)).Msg("evidence added")
 	}
 
-	if len(attestedSessions) == 0 {
-		log.Debug().Msg("no evidence successfully added, resetting attestation")
-		_ = executor.Reset(ctx, AttestationResetTriggerCancelled, "no CHAINLOOP_AI_CODING_SESSION evidence added")
-
-		return nil
-	}
-
-	// Push attestation
-	log.Debug().Msg("pushing attestation")
-	res, err := executor.Push(ctx)
-	if err != nil {
-		return fmt.Errorf("attestation push: %w", err)
-	}
-
-	// Tell the user where each session landed. The organization comes from the
-	// control plane rather than opts.Organization, which is empty whenever the
-	// CLI's current org is used.
-	links := logAttestedSessions(log, res.UIDashboardURL, res.GetOrganization(), attestedSessions)
-
-	// Hand the links to the agent hook that runs after this push. When the
-	// push was driven by a coding agent's shell tool, the log line above is
-	// captured into that tool's output rather than shown to the user, so the
-	// hook is what actually puts the link in front of them. A failure here
-	// costs a notification, never the attestation that already succeeded.
-	//
-	// The caller tells us whether to skip, rather than us inferring it from
-	// on-disk state: the trace-run sentinel outlives a killed run, and
-	// reading it here would silently suppress every later notification in
-	// that repository.
-	if opts.SkipAgentNotification {
-		log.Debug().Msg("caller already showed the links; not recording them for an agent hook")
-	} else if err := store.SavePendingLinks(links); err != nil {
-		log.Debug().Err(err).Msg("could not record session links for the agent hook")
-	}
-
-	log.Debug().Msg("attestation pushed, wiping single-use trace state")
-
-	// A later push of each session keeps the spec files recorded here, so
-	// that the limit never drops a spec that is already in the evidence.
-	for sessionID, fileNames := range attestedSpecs {
-		recordPushedSpecs(store, sessionID, fileNames, log)
-	}
-
-	// Mark every AI commit included in this attestation as tracked so that a
-	// subsequent `git push` with no new commits short-circuits at the skip
-	// check above. Save errors are non-fatal: the attestation already went
-	// out, and at worst we re-attest the same commits on the next push.
-	for _, c := range aiCommits {
-		if c.Tracked {
-			continue
-		}
-		c.Tracked = true
-		if err := store.SaveCommitRecord(c); err != nil {
-			log.Debug().Err(err).Str("sha", c.SHA).Msg("could not mark commit record as tracked")
-		}
-	}
-
-	_ = store.WipeTraceDir()
-	if liveSHAs, err := gitClient.LocalReachableSHAs(repoRoot); err == nil {
-		if err := store.GCOrphans(liveSHAs); err != nil {
-			log.Debug().Err(err).Msg("orphan GC failed; trace state is intact but not pruned")
-		}
-	} else {
-		log.Debug().Err(err).Msg("could not enumerate local branch SHAs; skipping orphan GC")
-	}
-
-	return nil
+	return attestedSessions, attestedSpecs
 }
 
 // logAttestedSessions reports one line per attested session. When the
@@ -931,7 +951,7 @@ func sessionLinkMessage(url string) string {
 
 // addSessionEvidence writes one session's evidence to a temporary file and adds
 // it to the attestation.
-func addSessionEvidence(ctx context.Context, executor *AttestationExecutor, name string, evidence *aicodingsession.Evidence) error {
+func addSessionEvidence(ctx context.Context, adder specMaterialAdder, name string, evidence *aicodingsession.Evidence) error {
 	tmpFile, err := os.CreateTemp("", "chainloop-trace-*.json")
 	if err != nil {
 		return fmt.Errorf("create temp file: %w", err)
@@ -949,7 +969,7 @@ func addSessionEvidence(ctx context.Context, executor *AttestationExecutor, name
 		return fmt.Errorf("write evidence: %w", err)
 	}
 
-	_, err = executor.AddMaterial(ctx, name, tmpFile.Name(), "CHAINLOOP_AI_CODING_SESSION", nil)
+	_, err = adder.AddMaterial(ctx, name, tmpFile.Name(), "CHAINLOOP_AI_CODING_SESSION", nil)
 
 	return err
 }

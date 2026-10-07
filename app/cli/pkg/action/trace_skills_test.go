@@ -233,8 +233,8 @@ func TestAttachSkills(t *testing.T) {
 
 	t.Run("each skill gives a definition, a package and an entry", func(t *testing.T) {
 		s := stored(t, map[string]string{
-			skill.DefinitionFile:  "# STE\ntoken " + pat + "\n",
-			"scripts/ste-lint.py": "print('" + pat + "')",
+			skill.DefinitionFile: "# STE\ntoken " + pat + "\n",
+			steLintScript:        "print('" + pat + "')",
 		}, trace.SkillUse{Name: steSkillName, FirstUsedAt: "2026-10-07T10:14:51Z", ByModel: 2, ByUser: 1, InSubagents: 1})
 
 		adder := &fakeMaterialAdder{}
@@ -261,7 +261,7 @@ func TestAttachSkills(t *testing.T) {
 
 		files := untar(t, pkg.content)
 		assert.Equal(t, definition.content, files[skill.DefinitionFile], "the definition and the packaged SKILL.md are the same bytes")
-		assert.NotContains(t, files["scripts/ste-lint.py"], pat, "each text file is redacted")
+		assert.NotContains(t, files[steLintScript], pat, "each text file is redacted")
 
 		assert.Equal(t, []aicodingsession.SpecEntry{{
 			Kind:       aicodingsession.SpecKindSkill,
