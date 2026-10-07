@@ -169,13 +169,14 @@ func TestReadSessionSkills(t *testing.T) {
 		}}
 		captureSkillLoads(&skillProvider{loads: []string{dir}}, store, &trace.HookInput{SessionID: skillSessionID}, zerolog.Nop())
 
-		skills, warnings := readSessionSkills(provider, store, &trace.ParseOpts{SessionID: skillSessionID}, t.TempDir(), zerolog.Nop())
+		var logs bytes.Buffer
+		skills, warnings := readSessionSkills(provider, store, &trace.ParseOpts{SessionID: skillSessionID}, t.TempDir(), zerolog.New(&logs))
 		require.Len(t, skills, 1)
 		assert.Equal(t, steSkillName, skills[0].use.Name)
 		assert.Equal(t, []string{
 			`skill "gone" was not recorded: its folder could not be read`,
-			`skill "unknown-dir" was not recorded: the session data does not tell its folder`,
-		}, warnings)
+		}, warnings, "a skill with no folder is only in the local log")
+		assert.Contains(t, logs.String(), `"level":"warn","session":"`+skillSessionID+`","skill":"unknown-dir","message":"a skill that the session used has no skill folder, so it is not recorded"`)
 		for _, w := range warnings {
 			assert.NotContains(t, w, string(filepath.Separator)+"gone", "a warning holds no local path")
 		}

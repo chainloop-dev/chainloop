@@ -35,6 +35,7 @@ const (
 	graphSkill = "graphify"
 	tenOClock  = "2026-10-07T10:00:00Z"
 	tenOClockM = "2026-10-07T10:00:00.000Z"
+	tenOhOne   = "2026-10-07T10:01:00Z"
 )
 
 // fixtureRecord, fixtureMessage and fixtureBlock have the shape that Claude
@@ -102,14 +103,19 @@ func commandLine(t *testing.T, uuid, command, ts string) string {
 }
 
 // metaLine is the message that holds a loaded skill. toolID is empty for a
-// skill that the user loaded.
+// skill that the user loaded, and dir for a skill with no folder.
 func metaLine(t *testing.T, uuid, parent, toolID, dir, ts string) string {
 	t.Helper()
+
+	text := "Base directory for this skill: " + dir + "\n\n# The skill\n\nBody."
+	if dir == "" {
+		text = "`/simplify` Review the changed code.\n\nBody."
+	}
 
 	return mustLine(t, fixtureRecord{
 		Type: recordTypeUser, UUID: uuid, ParentUUID: parent, Timestamp: ts, IsMeta: true, SourceToolUseID: toolID,
 		Message: fixtureMessage{Role: recordTypeUser, Content: []fixtureBlock{{
-			Type: "text", Text: "Base directory for this skill: " + dir + "\n\n# The skill\n\nBody.",
+			Type: "text", Text: text,
 		}}},
 	})
 }
@@ -221,7 +227,20 @@ func TestSessionSkills(t *testing.T) {
 			),
 			want: []trace.SkillUse{
 				{Name: steSkill, Dir: steDir, FirstUsedAt: tenOClock, ByModel: 1},
-				{Name: graphSkill, Dir: graphDir, FirstUsedAt: "2026-10-07T10:01:00Z", ByUser: 1},
+				{Name: graphSkill, Dir: graphDir, FirstUsedAt: tenOhOne, ByUser: 1},
+			},
+		},
+		{
+			// A skill built into Claude Code, or a custom command, has no
+			// folder. Its use is returned without one, and is not recorded.
+			name: "a skill with no folder",
+			main: join(
+				userStart(t, "1", "simplify", "", tenOClockM),
+				modelStart(t, "2", "code-review", "", "2026-10-07T10:01:00.000Z"),
+			),
+			want: []trace.SkillUse{
+				{Name: "simplify", FirstUsedAt: tenOClock, ByUser: 1},
+				{Name: "code-review", FirstUsedAt: tenOhOne, ByModel: 1},
 			},
 		},
 		{
@@ -237,7 +256,7 @@ func TestSessionSkills(t *testing.T) {
 				"agent-a2.jsonl": modelStart(t, "s2", graphSkill, graphDir, "2026-10-07T10:09:00.000Z"),
 			},
 			want: []trace.SkillUse{
-				{Name: steSkill, Dir: steDir, FirstUsedAt: "2026-10-07T10:01:00Z", ByModel: 2, InSubagents: 1},
+				{Name: steSkill, Dir: steDir, FirstUsedAt: tenOhOne, ByModel: 2, InSubagents: 1},
 				{Name: graphSkill, Dir: graphDir, FirstUsedAt: "2026-10-07T10:09:00Z", ByModel: 1, InSubagents: 1},
 			},
 		},

@@ -111,10 +111,11 @@ func (r *skillRecord) blocks() []skillBlock {
 }
 
 // mayHoldSkillUse is a cheap test that a scan runs before it decodes a line.
-// Only the lines that start or load a skill pass it. The command marker is
-// matched without its brackets, which a JSON encoder can escape.
+// Only the lines that start or load a skill pass it: the meta messages, the
+// skill tool calls and the slash commands. The command marker is matched
+// without its brackets, which a JSON encoder can escape.
 func mayHoldSkillUse(line []byte) bool {
-	return skill.HasBaseDir(line) ||
+	return bytes.Contains(line, []byte(`"isMeta":true`)) ||
 		bytes.Contains(line, []byte(`"name":"`+skillTool+`"`)) ||
 		bytes.Contains(line, []byte("command-name"))
 }
@@ -128,13 +129,17 @@ type start struct {
 
 // transcriptSkills counts the skill uses of one transcript.
 //
-// Claude Code writes a meta message that starts with "Base directory for this
-// skill:" each time it loads a skill. A meta message that names a tool call
-// is a model start, and one whose parent is a slash command is a user start.
-// The meta message is what tells a skill command apart from a built-in or a
-// custom command, and a loaded skill apart from a failed tool call, which
-// gets no meta message. Each start counts once, also when the transcript
-// holds its meta message more than once.
+// Claude Code writes a meta message each time it loads a skill. A meta message
+// that names a skill tool call is a model start, and one whose parent is a
+// slash command is a user start. A built-in command such as /clear gets no
+// meta message, and a failed tool call loads nothing, so neither counts. Each
+// start counts once, also when the transcript holds its meta message more than
+// once.
+//
+// The meta message of a skill with a folder starts with "Base directory for
+// this skill:". A skill built into Claude Code, such as /simplify, and a
+// custom command have no folder: their use is returned with no Dir, and is
+// not recorded.
 func transcriptSkills(path string, subagent bool) (map[string]*trace.SkillUse, error) {
 	records, err := readSkillRecords(path)
 	if err != nil {
@@ -151,10 +156,7 @@ func transcriptSkills(path string, subagent bool) (map[string]*trace.SkillUse, e
 			continue
 		}
 
-		dir, ok := skill.BaseDir(r.text())
-		if !ok {
-			continue
-		}
+		dir, _ := skill.BaseDir(r.text())
 
 		s, key, byModel, ok := startOf(r, dir, toolCalls, commands)
 		if !ok || counted[key] {
@@ -169,8 +171,11 @@ func transcriptSkills(path string, subagent bool) (map[string]*trace.SkillUse, e
 
 		use, ok := uses[s.name]
 		if !ok {
-			use = &trace.SkillUse{Name: s.name, Dir: dir}
+			use = &trace.SkillUse{Name: s.name}
 			uses[s.name] = use
+		}
+		if use.Dir == "" {
+			use.Dir = dir
 		}
 		use.Record(at, byModel, subagent)
 	}
@@ -239,7 +244,7 @@ func skillStarts(records []skillRecord) (toolCalls, commands map[string]start) {
 func startOf(r *skillRecord, dir string, toolCalls, commands map[string]start) (s start, key string, byModel, ok bool) {
 	if r.SourceToolUseID != "" {
 		s, ok = toolCalls[r.SourceToolUseID]
-		if !ok {
+		if !ok && dir != "" {
 			// The tool call is not in this transcript. The meta message still
 			// tells that a skill loaded, and its folder names it.
 			s = start{name: filepath.Base(dir), timestamp: r.Timestamp}

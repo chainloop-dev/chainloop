@@ -185,7 +185,8 @@ type SkillUse struct {
 	// Name is the name that the agent used for the skill.
 	Name string
 	// Dir is the folder that the agent loaded the skill from, or "" when the
-	// session data does not tell.
+	// skill has no folder (a skill built into the agent) or the session data
+	// does not tell. A use with no folder is not recorded.
 	Dir string
 	// FirstUsedAt is the time of the first use, RFC3339.
 	FirstUsedAt string

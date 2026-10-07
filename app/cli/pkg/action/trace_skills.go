@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -120,6 +121,18 @@ func readSessionSkills(provider trace.Provider, store *state.Store, opts *trace.
 		return nil, []string{"the skills that the session used were not recorded: the session data could not be read"}
 	}
 
+	// A skill with no folder, such as a skill built into the agent, has
+	// nothing to store. It is left out with a warning in the local log only.
+	uses = slices.DeleteFunc(uses, func(use trace.SkillUse) bool {
+		if use.Dir != "" {
+			return false
+		}
+
+		log.Warn().Str("session", opts.SessionID).Str("skill", use.Name).Msg("a skill that the session used has no skill folder, so it is not recorded")
+
+		return true
+	})
+
 	if len(uses) > maxSkillEntries {
 		// The skills that the session used first are kept.
 		warnings = append(warnings, fmt.Sprintf("%d skill entries beyond the first %d were dropped", len(uses)-maxSkillEntries, maxSkillEntries))
@@ -130,11 +143,6 @@ func readSessionSkills(provider trace.Provider, store *state.Store, opts *trace.
 
 	skills := make([]sessionSkill, 0, len(uses))
 	for _, use := range uses {
-		if use.Dir == "" {
-			warnings = append(warnings, fmt.Sprintf("skill %q was not recorded: the session data does not tell its folder", use.Name))
-			continue
-		}
-
 		dst := store.SkillCopyDir(opts.SessionID, use.Dir)
 		info, err := skill.Load(dst)
 		switch {
