@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -217,6 +218,58 @@ func TestInstallRefusesToClobberBackup(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join(hooksDir, "post-commit"+hookBackupSuffix))
 	require.NoError(t, err)
 	assert.Equal(t, original, string(content))
+}
+
+// TestHookGoldenFiles compares the hook scripts Install writes against the
+// committed golden files in testdata/. The temporary hooks directory is
+// replaced by a placeholder so the files stay stable. Run with
+// UPDATE_GOLDEN=1 to regenerate them after an intentional change:
+//
+//	UPDATE_GOLDEN=1 go test ./app/cli/internal/trace/hooks/ -run TestHookGoldenFiles
+func TestHookGoldenFiles(t *testing.T) {
+	const hooksDirPlaceholder = "<hooks-dir>"
+
+	testCases := []struct {
+		hook        string
+		foreignHook bool
+		golden      string
+	}{
+		{hook: "commit-msg", golden: "testdata/commit-msg.sh"},
+		{hook: "post-commit", golden: "testdata/post-commit.sh"},
+		{hook: "post-rewrite", golden: "testdata/post-rewrite.sh"},
+		{hook: "pre-push", golden: "testdata/pre-push.sh"},
+		{hook: "pre-push", foreignHook: true, golden: "testdata/pre-push-chained.sh"},
+		{hook: "post-commit", foreignHook: true, golden: "testdata/post-commit-chained.sh"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(filepath.Base(tc.golden), func(t *testing.T) {
+			gitDir := t.TempDir()
+			hooksDir := filepath.Join(gitDir, "hooks")
+			require.NoError(t, os.MkdirAll(hooksDir, 0755))
+			if tc.foreignHook {
+				require.NoError(t, os.WriteFile(filepath.Join(hooksDir, tc.hook), []byte("#!/bin/sh\n"), 0600))
+			}
+
+			_, err := Install(gitDir, false)
+			require.NoError(t, err)
+
+			content, err := os.ReadFile(filepath.Join(hooksDir, tc.hook))
+			require.NoError(t, err)
+			generated := strings.ReplaceAll(string(content), hooksDir, hooksDirPlaceholder)
+
+			if os.Getenv("UPDATE_GOLDEN") == "1" {
+				//nolint:gosec // golden paths are fixed testdata paths from the table above
+				require.NoError(t, os.WriteFile(tc.golden, []byte(generated), 0600))
+				return
+			}
+
+			expected, err := os.ReadFile(tc.golden)
+			require.NoError(t, err, "golden file missing; run UPDATE_GOLDEN=1 to generate")
+			assert.Equal(t, string(expected), generated,
+				"generated hook does not match golden file %s; run UPDATE_GOLDEN=1 to update", tc.golden)
+		})
+	}
 }
 
 // TestHookScriptsExitStatus runs each generated hook against a fake chainloop
