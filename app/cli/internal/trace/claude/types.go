@@ -98,20 +98,3 @@ type sessionData struct {
 	modelsSeen        map[string]int
 	warnings          []string
 }
-
-// claudeSessionFile matches the JSON structure in ~/.claude/sessions/<pid>.json.
-type claudeSessionFile struct {
-	PID       int    `json:"pid"`
-	SessionID string `json:"sessionId"`
-	CWD       string `json:"cwd"`
-	StartedAt int64  `json:"startedAt"`
-}
-
-type claudeSession struct {
-	sessionID string
-	cwd       string
-	pid       int
-	isActive  bool
-	jsonlPath string
-	startedAt int64
-}

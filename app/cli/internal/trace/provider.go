@@ -53,7 +53,7 @@ func (m SessionStartMessage) Empty() bool {
 	return m.Banner == "" && m.Instruction == ""
 }
 
-// Provider discovers and parses AI coding sessions for a specific agent.
+// Provider captures and parses AI coding sessions for a specific agent.
 //
 // Providers are stateless singletons from a registry, so the state-touching
 // methods below take a *state.Store per call rather than holding one. The store
@@ -64,15 +64,8 @@ type Provider interface {
 	// Name returns the agent identifier (e.g., "claude-code", "cursor").
 	Name() string
 
-	// DiscoverSession finds the most relevant session for the given repo root.
-	// Returns nil, nil if no matching session is found.
-	DiscoverSession(repoRoot string) (*DiscoveredSession, error)
-
 	// ParseSession parses a session and returns structured evidence.
 	ParseSession(ctx context.Context, opts *ParseOpts) (*aicodingsession.Evidence, error)
-
-	// SessionDirForRepo returns the agent's session data directory for a given repo root.
-	SessionDirForRepo(repoRoot string) string
 
 	// CopySessionData copies the agent's on-disk session artifacts into
 	// the store's raw/ directory so pre-push can parse them independently of
@@ -231,13 +224,6 @@ type SessionLocation struct {
 	// TranscriptPath is the transcript path the agent reported, if any.
 	// Providers that get one prefer it over Cwd.
 	TranscriptPath string
-}
-
-// DiscoveredSession represents a discovered AI coding session (agent-agnostic).
-type DiscoveredSession struct {
-	SessionID  string
-	SessionDir string
-	IsActive   bool
 }
 
 // ParseOpts configures session parsing.
