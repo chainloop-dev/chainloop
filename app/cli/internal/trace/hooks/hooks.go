@@ -32,16 +32,20 @@ const (
 // managedHooks defines every git hook that Install creates.
 // Order matters: hooks are installed in this order.
 var managedHooks = []hookDef{
-	{"commit-msg", true},
-	{"post-commit", false},
-	{"post-rewrite", false},
-	{"pre-push", false},
+	{name: "commit-msg", passArgs: true},
+	{name: "post-commit"},
+	{name: "post-rewrite"},
+	{name: "pre-push", blocking: true},
 }
 
 type hookDef struct {
 	// name is both the git hook filename and the "chainloop trace hook git <name>" subcommand.
 	name     string
 	passArgs bool
+	// blocking makes the hook exit with chainloop's status, so a failure aborts
+	// the git operation. Only pre-push sets it: the pre-push command fails only
+	// when requireTrace is enabled.
+	blocking bool
 }
 
 // selectedHooks returns managedHooks with pre-push filtered out when
@@ -61,9 +65,10 @@ func selectedHooks(skipPrePush bool) []hookDef {
 	return out
 }
 
-// IsInstalled reports whether the managed hooks are present and carry
-// the chainloop marker. Pass skipPrePush=true to exclude pre-push from
-// the check, matching what trace run installs.
+// IsInstalled reports whether the managed hooks are present and match the
+// scripts this CLI writes. A managed script written by an older CLI reports
+// false, so the caller reinstalls it. Pass skipPrePush=true to exclude
+// pre-push from the check, matching what trace run installs.
 //
 // gitDir may point at a per-worktree gitdir; the common hooks dir is
 // resolved internally (see resolveHooksDir).
@@ -74,8 +79,13 @@ func IsInstalled(gitDir string, skipPrePush bool) bool {
 	}
 
 	for _, h := range selectedHooks(skipPrePush) {
-		content, err := os.ReadFile(filepath.Join(hooksDir, h.name))
-		if err != nil || !strings.Contains(string(content), HookMarker) {
+		hookPath := filepath.Join(hooksDir, h.name)
+		content, err := os.ReadFile(hookPath)
+		if err != nil {
+			return false
+		}
+
+		if string(content) != hookContent(h, chainTarget(hookPath+hookBackupSuffix)) {
 			return false
 		}
 	}
@@ -83,32 +93,38 @@ func IsInstalled(gitDir string, skipPrePush bool) bool {
 	return true
 }
 
-// hookContent generates a hook script for the given command.
-// When passArgs is true, "$@" is appended so the hook receives its positional arguments
-// (e.g. commit-msg receives the message file path as $1).
-func hookContent(hookCmd string, passArgs bool) string {
+// hookContent generates the hook script for h. When passArgs is true, "$@" is
+// appended so the hook receives its positional arguments (e.g. commit-msg
+// receives the message file path as $1). When backupPath is not empty, the
+// script chains to that backed-up foreign hook.
+//
+// A missing chainloop binary never fails the hook: without the command -v
+// guard sh exits 127 and git aborts. Non-blocking hooks also ignore
+// chainloop's exit status, so tracing never blocks a commit.
+func hookContent(h hookDef, backupPath string) string {
 	args := ""
-	if passArgs {
+	if h.passArgs {
 		args = ` "$@"`
 	}
 
-	// The trailing exit 0 keeps tracing from ever blocking a commit or push:
-	// without it a missing chainloop binary makes sh exit 127 and git aborts.
-	return fmt.Sprintf("#!/bin/sh\n%s\nchainloop trace hook git %s%s\nexit 0\n", HookMarker, hookCmd, args)
-}
-
-// hookContentWithChain generates a hook script that chains to a backup.
-func hookContentWithChain(hookCmd, backupPath string, passArgs bool) string {
-	args := ""
-	if passArgs {
-		args = ` "$@"`
+	cmd := fmt.Sprintf("chainloop trace hook git %s%s", h.name, args)
+	if h.blocking {
+		// Propagate chainloop's status so requireTrace can block the push.
+		cmd += " || exit $?"
 	}
 
-	// exec makes the chained hook's status the hook's status. The trailing
-	// exit 0 covers a backup that lost its executable bit, where the && list
-	// would otherwise fail the hook (see hookContent).
-	return fmt.Sprintf("#!/bin/sh\n%s\nchainloop trace hook git %s%s\n[ -x \"%s\" ] && exec \"%s\" \"$@\"\nexit 0\n",
-		HookMarker, hookCmd, args, backupPath, backupPath)
+	var b strings.Builder
+	fmt.Fprintf(&b, "#!/bin/sh\n%s\n", HookMarker)
+	fmt.Fprintf(&b, "if command -v chainloop >/dev/null 2>&1; then\n\t%s\nfi\n", cmd)
+	if backupPath != "" {
+		// exec makes the chained hook's status the hook's status. The trailing
+		// exit 0 covers a backup that lost its executable bit, where the && list
+		// would otherwise fail the hook.
+		fmt.Fprintf(&b, "[ -x \"%s\" ] && exec \"%s\" \"$@\"\n", backupPath, backupPath)
+	}
+	b.WriteString("exit 0\n")
+
+	return b.String()
 }
 
 // Install installs git hooks for trace automation. gitDir may be either
@@ -133,7 +149,7 @@ func Install(gitDir string, skipPrePush bool) (string, error) {
 		hookPath := filepath.Join(hooksDir, h.name)
 		backupPath := hookPath + hookBackupSuffix
 
-		if err := installSingleHook(hookPath, backupPath, h.name, h.passArgs); err != nil {
+		if err := installSingleHook(hookPath, backupPath, h); err != nil {
 			return "", fmt.Errorf("install %s hook: %w", h.name, err)
 		}
 	}
@@ -141,7 +157,7 @@ func Install(gitDir string, skipPrePush bool) (string, error) {
 	return hooksDir, nil
 }
 
-func installSingleHook(hookPath, backupPath, hookCmd string, passArgs bool) error {
+func installSingleHook(hookPath, backupPath string, h hookDef) error {
 	existing, err := os.ReadFile(hookPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("read existing hook: %w", err)
@@ -169,13 +185,19 @@ func installSingleHook(hookPath, backupPath, hookCmd string, passArgs bool) erro
 	}
 
 	// Preserve chaining if a backup exists (idempotent reinstall)
-	if backupExists {
-		//nolint:gosec // git only runs hooks that are executable, so 0600 would silently disable them
-		return os.WriteFile(hookPath, []byte(hookContentWithChain(hookCmd, backupPath, passArgs)), 0755)
+	//nolint:gosec // git only runs hooks that are executable, so 0600 would silently disable them
+	return os.WriteFile(hookPath, []byte(hookContent(h, chainTarget(backupPath))), 0755)
+}
+
+// chainTarget returns backupPath when a backed-up foreign hook exists there,
+// or "" when there is nothing to chain to. Lstat: a dangling symlink still
+// counts, matching what installSingleHook refuses to overwrite.
+func chainTarget(backupPath string) string {
+	if _, err := os.Lstat(backupPath); err != nil {
+		return ""
 	}
 
-	//nolint:gosec // git only runs hooks that are executable, so 0600 would silently disable them
-	return os.WriteFile(hookPath, []byte(hookContent(hookCmd, passArgs)), 0755)
+	return backupPath
 }
 
 // Uninstall removes git hooks installed by trace. gitDir semantics match

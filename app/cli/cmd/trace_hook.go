@@ -67,8 +67,7 @@ func newTraceHookGitCommitMsgCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 
 			return action.HandleCommitMsgHook(cmd.Context(), args[0], logger)
 		},
@@ -80,8 +79,7 @@ func newTraceHookGitPostCommitCmd() *cobra.Command {
 		Use:   "post-commit",
 		Short: "Handle the post-commit git hook",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandlePostCommitHook(cmd.Context(), logger)
 		},
 	}
@@ -95,25 +93,41 @@ func newTraceHookGitPostRewriteCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 
 			return action.HandlePostRewriteHook(cmd.Context(), logger)
 		},
 	}
 }
 
+// prePushHookAnnotation marks the pre-push hook command for applyPrePushPolicy.
+const prePushHookAnnotation = "prePushHook"
+
+// applyPrePushPolicy applies requireTrace to any error of the pre-push hook
+// command: setup, run and cleanup alike. The managed pre-push script
+// propagates the command's exit status to git, so only this decides whether
+// the push is blocked.
+func applyPrePushPolicy(executed *cobra.Command, err error) error {
+	if err == nil || executed == nil || executed.Annotations[prePushHookAnnotation] != trueString {
+		return err
+	}
+
+	return action.PrePushFailure(err, config.LoadRequireTraceFromYML("."), logger)
+}
+
 func newTraceHookGitPrePushCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "pre-push",
 		Short: "Handle the pre-push git hook",
+		// Any error of this command, setup included, goes through
+		// action.PrePushFailure in Execute.
+		Annotations: map[string]string{
+			prePushHookAnnotation: trueString,
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 
-			requireTrace := config.LoadRequireTraceFromYML(".")
-
-			return action.HandlePrePushHook(cmd.Context(), requireTrace, logger, action.RunTracePushOpts{
+			return action.HandlePrePushHook(cmd.Context(), logger, action.RunTracePushOpts{
 				ActionOpts: ActionOpts,
 				CLIVersion: Version,
 				Mode:       aicodingsession.ModeCoding,
@@ -147,8 +161,7 @@ func newTraceHookClaudeSessionStartCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentSessionStart(claude.New(), logger)
 		},
 	}
@@ -162,8 +175,7 @@ func newTraceHookClaudeUserPromptSubmitCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentPromptSubmit(claude.New(), logger)
 		},
 	}
@@ -177,8 +189,7 @@ func newTraceHookClaudeSessionEndCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentSessionEnd(claude.New(), logger)
 		},
 	}
@@ -192,8 +203,7 @@ func newTraceHookClaudePreToolUseCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentPreToolUse(claude.New(), logger)
 		},
 	}
@@ -207,8 +217,7 @@ func newTraceHookClaudePostToolUseCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentPostToolUse(claude.New(), logger)
 		},
 	}
@@ -237,8 +246,7 @@ func newTraceHookCursorSessionStartCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentSessionStart(cursor.New(), logger)
 		},
 	}
@@ -252,8 +260,7 @@ func newTraceHookCursorSessionEndCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentSessionEnd(cursor.New(), logger)
 		},
 	}
@@ -267,8 +274,7 @@ func newTraceHookCursorAfterFileEditCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentPostToolUse(cursor.New(), logger)
 		},
 	}
@@ -299,8 +305,7 @@ func newTraceHookOpenCodeSessionStartCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentSessionStart(opencode.New(), logger)
 		},
 	}
@@ -314,8 +319,7 @@ func newTraceHookOpenCodeUserPromptSubmitCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentPromptSubmit(opencode.New(), logger)
 		},
 	}
@@ -329,8 +333,7 @@ func newTraceHookOpenCodeSessionEndCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentSessionEnd(opencode.New(), logger)
 		},
 	}
@@ -344,8 +347,7 @@ func newTraceHookOpenCodePreToolUseCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentPreToolUse(opencode.New(), logger)
 		},
 	}
@@ -359,8 +361,7 @@ func newTraceHookOpenCodePostToolUseCmd() *cobra.Command {
 			"skipActionOptsInit": "true",
 		},
 		RunE: func(_ *cobra.Command, _ []string) error {
-			cleanup := InitHookLogger()
-			defer cleanup()
+			InitHookLogger()
 			return action.HandleAgentPostToolUse(opencode.New(), logger)
 		},
 	}

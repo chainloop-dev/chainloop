@@ -18,6 +18,7 @@ package action
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,10 +31,44 @@ import (
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
+	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPrePushFailure(t *testing.T) {
+	expired := jwtMiddleware.ErrTokenExpired.GRPCStatus().Err()
+
+	testCases := []struct {
+		name         string
+		err          error
+		requireTrace bool
+		wantErr      bool
+		wantLog      string
+	}{
+		{name: "requireTrace blocks the push", err: expired, requireTrace: true, wantErr: true},
+		{name: "auth failure warns with the fix", err: expired, wantLog: `please run \"chainloop auth login\" again`},
+		{name: "other failure warns with the cause", err: errors.New("boom"), wantLog: "boom"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := PrePushFailure(tc.err, tc.requireTrace, zerolog.New(&buf))
+
+			if tc.wantErr {
+				require.ErrorIs(t, err, tc.err)
+				assert.Empty(t, buf.String(), "the error is logged once, by main")
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Contains(t, buf.String(), `"level":"warn"`)
+			assert.Contains(t, buf.String(), tc.wantLog)
+		})
+	}
+}
 
 // Fixture names reused across the session-matching tests.
 const (

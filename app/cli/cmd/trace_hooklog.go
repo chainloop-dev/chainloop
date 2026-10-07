@@ -23,8 +23,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// hookLogFile holds the trace log file while hook commands run, so it can be
-// closed by the cleanup closure returned from InitHookLogger.
+// hookLogFile holds the trace log file opened by InitHookLogger. It stays open
+// until CloseHookLog runs at process exit, so the lines logged after the
+// command returns (main's final error line, telemetry) still reach it.
 var hookLogFile *os.File
 
 // stderrMinLevel is the minimum zerolog.Level that hook commands write to
@@ -67,6 +68,12 @@ func hookStderrWriter() *levelFilterWriter {
 	}
 }
 
+// hookStderrLogger builds the stderr-only hook logger, used when no trace log
+// file is open.
+func hookStderrLogger() zerolog.Logger {
+	return zerolog.New(hookStderrWriter()).Level(stderrMinLevel)
+}
+
 // InitHookLogger reconfigures the root logger for git/agent hook commands:
 // colorless output, all levels written to the trace state's log.txt, and
 // Warn+ (or Debug, with --debug) written to stderr. Colorless matters because
@@ -75,9 +82,9 @@ func hookStderrWriter() *levelFilterWriter {
 //
 // If trace state cannot be located or the file cannot be opened, the logger
 // falls back to colorless stderr-only output so the rest of the hook still
-// runs with consistent formatting. Returns a cleanup function that closes the
-// log file — callers should defer it at the top of a hook's RunE.
-func InitHookLogger() func() {
+// runs with consistent formatting. The log file is closed by CloseHookLog, not
+// by the hook command: main logs a failed command's error after RunE returns.
+func InitHookLogger() {
 	closeHookLogFile()
 
 	// Mirror initLogger: Info normally, Debug with --debug. Info matters —
@@ -89,19 +96,28 @@ func InitHookLogger() func() {
 		stderrMinLevel = zerolog.DebugLevel
 	}
 
-	logger = zerolog.New(hookStderrWriter()).Level(stderrMinLevel)
+	logger = hookStderrLogger()
 
 	store, _, err := state.Locate()
 	if err != nil {
-		return func() {}
+		return
 	}
 
 	if err := initHookLogFile(store); err != nil {
 		logger.Debug().Err(err).Msg("could not open hook log file")
-		return func() {}
+	}
+}
+
+// CloseHookLog closes the trace log file opened by InitHookLogger and points
+// the root logger back at stderr, so a later log line never writes to a
+// closed file. main calls it right before the process exits.
+func CloseHookLog() {
+	if hookLogFile == nil {
+		return
 	}
 
-	return closeHookLogFile
+	closeHookLogFile()
+	logger = hookStderrLogger()
 }
 
 // initHookLogFile opens the trace log file and reassigns the root logger to a

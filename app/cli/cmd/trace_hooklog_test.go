@@ -97,6 +97,35 @@ func TestInitHookLogFileFailsOnBadPath(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestCloseHookLog covers the exit path: main logs a failed hook's error after
+// RunE returns, then closes the file. Nothing logged afterwards (telemetry)
+// may write to the closed file.
+func TestCloseHookLog(t *testing.T) {
+	store := state.NewGitStore(t.TempDir())
+	require.NoError(t, store.InitTraceDir())
+	resetHookLoggerState(t)
+
+	var writeErrs []error
+	prevHandler := zerolog.ErrorHandler
+	zerolog.ErrorHandler = func(err error) { writeErrs = append(writeErrs, err) }
+	t.Cleanup(func() { zerolog.ErrorHandler = prevHandler })
+
+	require.NoError(t, initHookLogFile(store))
+	l := Logger()
+	l.Error().Msg("final error line")
+
+	CloseHookLog()
+	l = Logger()
+	l.Debug().Msg("logged after close")
+	CloseHookLog()
+
+	assert.Empty(t, writeErrs)
+	content, err := os.ReadFile(store.LogFilePath())
+	require.NoError(t, err)
+	assert.Contains(t, string(content), "final error line")
+	assert.NotContains(t, string(content), "logged after close")
+}
+
 func TestCloseHookLogFileIdempotent(_ *testing.T) {
 	// Calling close without init should not panic
 	closeHookLogFile()
