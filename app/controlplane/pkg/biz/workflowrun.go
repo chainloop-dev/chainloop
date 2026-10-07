@@ -700,7 +700,12 @@ func (uc *WorkflowRunUseCase) verifyAttestationToStore(ctx context.Context, run 
 		return nil
 	}
 
-	validation, err := uc.verifyRunBundle(ctx, run, bundle)
+	// Bind the signing certificate to the organization that owns the run
+	if run.Workflow == nil || run.Workflow.OrgID == uuid.Nil {
+		return NewErrValidation(fmt.Errorf("attestation verification failed: workflow run %s has no organization", run.ID))
+	}
+
+	validation, err := uc.verifyRunBundle(ctx, bundle, verifier.WithExpectedOrganization(run.Workflow.OrgID.String()))
 	if err != nil {
 		// only returned when verification is not forced
 		if errors.Is(err, verifier.ErrInvalidBundle) {
@@ -729,16 +734,12 @@ func (uc *WorkflowRunUseCase) verifyAttestationToStore(ctx context.Context, run 
 	return NewErrValidation(fmt.Errorf("attestation verification failed: %s", validation.FailureReason))
 }
 
-// verifyRunBundle verifies a bundle of the run, bound to the run's organization.
+// verifyRunBundle verifies a bundle and applies the enforcement policy.
 // When verification is forced, a bundle that can't be verified is reported as a
 // failed verification. Otherwise it is reported as not applicable (nil result),
 // or as an ErrInvalidBundle error for data that is not a bundle.
-func (uc *WorkflowRunUseCase) verifyRunBundle(ctx context.Context, run *WorkflowRun, bundle []byte) (*VerificationResult, error) {
-	if run.Workflow == nil || run.Workflow.OrgID == uuid.Nil {
-		return nil, fmt.Errorf("workflow run %s has no organization", run.ID)
-	}
-
-	vr, err := uc.verifyBundle(ctx, bundle, verifier.WithExpectedOrganization(run.Workflow.OrgID.String()))
+func (uc *WorkflowRunUseCase) verifyRunBundle(ctx context.Context, bundle []byte, opts ...verifier.VerifyOption) (*VerificationResult, error) {
+	vr, err := uc.verifyBundle(ctx, bundle, opts...)
 	if !uc.signingUseCase.ForceVerification {
 		return vr, err
 	}
@@ -772,7 +773,10 @@ func (uc *WorkflowRunUseCase) VerifyRun(ctx context.Context, run *WorkflowRun) (
 		return &VerificationResult{FailureReason: "the attestation bundle could not be retrieved"}, nil
 	}
 
-	return uc.verifyRunBundle(ctx, run, run.Attestation.Bundle)
+	// The organization binding is enforced at push time only. Stored runs
+	// signed with certificates that do not carry the organization, for example
+	// issued by an EJBCA profile that did not map it, must not turn into failures.
+	return uc.verifyRunBundle(ctx, run.Attestation.Bundle)
 }
 
 func (uc *WorkflowRunUseCase) verifyBundle(ctx context.Context, bundle []byte, opts ...verifier.VerifyOption) (*VerificationResult, error) {

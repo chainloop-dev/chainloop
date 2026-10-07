@@ -131,9 +131,18 @@ func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 		name    string
 		signing *biz.SigningUseCase
 		bundle  []byte
+		// the run has no organization
+		noOrg bool
 		// signature check is expected to reject the attestation
 		wantRejected bool
 	}{
+		{
+			name:         "run without organization",
+			signing:      forced,
+			bundle:       newSignedTestBundle(t, forced, orgID.String(), bundleWithCert),
+			noOrg:        true,
+			wantRejected: true,
+		},
 		{
 			name:    "keyless certificate issued to the run organization",
 			signing: forced,
@@ -191,9 +200,11 @@ func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 			runID := uuid.New()
 			// the run has no contract revision, so an attestation that passes
 			// the signature check is stopped at the contract check instead
-			repo.On("FindByID", mock.Anything, runID).Return(&biz.WorkflowRun{
-				ID: runID, Workflow: &biz.Workflow{OrgID: orgID},
-			}, nil)
+			run := &biz.WorkflowRun{ID: runID, Workflow: &biz.Workflow{OrgID: orgID}}
+			if tc.noOrg {
+				run.Workflow = nil
+			}
+			repo.On("FindByID", mock.Anything, runID).Return(run, nil)
 
 			err = uc.ValidateAttestationContract(context.Background(), runID.String(), tc.bundle)
 			require.Error(t, err)
@@ -228,10 +239,12 @@ func TestVerifyRunKeyless(t *testing.T) {
 			wantResult: true,
 		},
 		{
+			// the organization is checked at push time only, so stored runs
+			// signed before the certificate carried the organization still verify
 			name:       "keyless certificate issued to another organization",
 			signing:    forced,
 			bundle:     newSignedTestBundle(t, forced, uuid.NewString(), bundleWithCert),
-			wantReason: "organization mismatch",
+			wantResult: true,
 		},
 		{
 			name:       "keyless certificate issued to the run organization, with a tampered signature",
@@ -279,12 +292,6 @@ func TestVerifyRunKeyless(t *testing.T) {
 			signing: optOut,
 			digest:  "sha256:0f9b2a1c",
 			wantNil: true,
-		},
-		{
-			name:       "opt-out: keyless certificate issued to another organization is not verified",
-			signing:    optOut,
-			bundle:     newSignedTestBundle(t, forced, uuid.NewString(), bundleWithCert),
-			wantReason: "organization mismatch",
 		},
 		{
 			name:       "opt-out: keyless certificate with a tampered signature is not verified",
