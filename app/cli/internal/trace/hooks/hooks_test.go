@@ -16,6 +16,7 @@
 package hooks
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -160,6 +161,43 @@ func TestInstallSkipPrePush(t *testing.T) {
 		assert.True(t, IsInstalled(gitDir, true), "should be installed when only checking the trace-run subset")
 		assert.False(t, IsInstalled(gitDir, false), "default check requires pre-push and should fail")
 	})
+
+	t.Run("IsInstalled reports outdated managed scripts so they get reinstalled", func(t *testing.T) {
+		testCases := []struct {
+			name        string
+			foreignHook bool
+		}{
+			{name: "plain"},
+			{name: "chained", foreignHook: true},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				gitDir := t.TempDir()
+				hooksDir := filepath.Join(gitDir, "hooks")
+				require.NoError(t, os.MkdirAll(hooksDir, 0755))
+				if tc.foreignHook {
+					require.NoError(t, os.WriteFile(filepath.Join(hooksDir, "pre-push"), []byte("#!/bin/sh\nexit 0\n"), 0600))
+				}
+
+				_, err := Install(gitDir, false)
+				require.NoError(t, err)
+				require.True(t, IsInstalled(gitDir, false))
+
+				// A pre-push script written by an older CLI that always exits 0.
+				stale := "#!/bin/sh\n" + HookMarker + "\nchainloop trace hook git pre-push\nexit 0\n"
+				require.NoError(t, os.WriteFile(filepath.Join(hooksDir, "pre-push"), []byte(stale), 0600))
+				assert.False(t, IsInstalled(gitDir, false))
+
+				_, err = Install(gitDir, false)
+				require.NoError(t, err)
+				assert.True(t, IsInstalled(gitDir, false))
+
+				_, err = os.Stat(filepath.Join(hooksDir, "pre-push"+hookBackupSuffix))
+				assert.Equal(t, tc.foreignHook, err == nil, "backup must be kept as-is")
+			})
+		}
+	})
 }
 
 func TestInstallRefusesToClobberBackup(t *testing.T) {
@@ -181,27 +219,81 @@ func TestInstallRefusesToClobberBackup(t *testing.T) {
 	assert.Equal(t, original, string(content))
 }
 
-// TestHookScriptsExitZero runs each generated hook with an empty PATH (no
-// chainloop binary, as in GUI git clients) and asserts it still succeeds:
-// a non-zero hook aborts the user's commit.
-func TestHookScriptsExitZero(t *testing.T) {
-	gitDir := t.TempDir()
-	hooksDir := filepath.Join(gitDir, "hooks")
-	require.NoError(t, os.MkdirAll(hooksDir, 0755))
+// TestHookScriptsExitStatus runs each generated hook against a fake chainloop
+// binary, or none at all (as in GUI git clients). Only pre-push propagates a
+// chainloop failure, so requireTrace can block the push; every other hook must
+// never abort the user's commit, and a missing binary never fails any hook.
+func TestHookScriptsExitStatus(t *testing.T) {
+	testCases := []struct {
+		name          string
+		hook          string
+		chainloopExit int
+		noBinary      bool
+		foreignHook   bool
+		// foreignNoExec clears the foreign hook's executable bit, which
+		// exercises the failing `&&` list in the chained script.
+		foreignNoExec bool
+		wantErr       bool
+		wantChained   bool
+	}{
+		{name: "pre-push blocks on chainloop failure", hook: "pre-push", chainloopExit: 1, wantErr: true},
+		{name: "pre-push passes on chainloop success", hook: "pre-push", chainloopExit: 0},
+		{name: "chained pre-push blocks without running the foreign hook", hook: "pre-push", chainloopExit: 1, foreignHook: true, wantErr: true},
+		{name: "chained pre-push runs the foreign hook on success", hook: "pre-push", chainloopExit: 0, foreignHook: true, wantChained: true},
+		{name: "commit-msg ignores chainloop failure", hook: "commit-msg", chainloopExit: 1},
+		{name: "post-commit ignores chainloop failure", hook: "post-commit", chainloopExit: 1},
+		{name: "post-rewrite ignores chainloop failure", hook: "post-rewrite", chainloopExit: 1},
+		{name: "chained post-commit ignores chainloop failure", hook: "post-commit", chainloopExit: 1, foreignHook: true, wantChained: true},
+		{name: "pre-push passes without chainloop", hook: "pre-push", noBinary: true},
+		{name: "commit-msg passes without chainloop", hook: "commit-msg", noBinary: true},
+		{name: "post-commit passes without chainloop", hook: "post-commit", noBinary: true},
+		{name: "post-rewrite passes without chainloop", hook: "post-rewrite", noBinary: true},
+		{name: "chained pre-push runs the foreign hook without chainloop", hook: "pre-push", noBinary: true, foreignHook: true, wantChained: true},
+		{name: "chained post-commit passes with a non-executable foreign hook", hook: "post-commit", noBinary: true, foreignHook: true, foreignNoExec: true},
+	}
 
-	// post-commit gets a foreign hook so the chained variant is covered too,
-	// with its executable bit cleared to exercise the failing `&&` list.
-	require.NoError(t, os.WriteFile(filepath.Join(hooksDir, "post-commit"), []byte("#!/bin/sh\nexit 0\n"), 0600))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gitDir := t.TempDir()
+			hooksDir := filepath.Join(gitDir, "hooks")
+			require.NoError(t, os.MkdirAll(hooksDir, 0755))
 
-	_, err := Install(gitDir, false)
-	require.NoError(t, err)
+			marker := filepath.Join(t.TempDir(), "chained")
+			if tc.foreignHook {
+				mode := os.FileMode(0755)
+				if tc.foreignNoExec {
+					mode = 0600
+				}
+				// A redirection, not touch: PATH holds only the fake binary.
+				require.NoError(t, os.WriteFile(filepath.Join(hooksDir, tc.hook),
+					[]byte("#!/bin/sh\n: > \""+marker+"\"\n"), mode))
+			}
 
-	for _, name := range []string{"commit-msg", "post-commit", "post-rewrite", "pre-push"} {
-		//nolint:gosec // the hook path is derived from t.TempDir(), not from user input
-		cmd := exec.Command("/bin/sh", filepath.Join(hooksDir, name), "msgfile")
-		cmd.Env = []string{"PATH="}
-		out, err := cmd.CombinedOutput()
-		assert.NoError(t, err, "hook %s must exit 0 without chainloop on PATH: %s", name, out)
+			_, err := Install(gitDir, false)
+			require.NoError(t, err)
+
+			binDir := t.TempDir()
+			if !tc.noBinary {
+				//nolint:gosec // the fake binary must be executable
+				require.NoError(t, os.WriteFile(filepath.Join(binDir, "chainloop"),
+					[]byte(fmt.Sprintf("#!/bin/sh\nexit %d\n", tc.chainloopExit)), 0755))
+			}
+
+			//nolint:gosec // the hook path is derived from t.TempDir(), not from user input
+			cmd := exec.Command("/bin/sh", filepath.Join(hooksDir, tc.hook), "origin")
+			cmd.Env = []string{"PATH=" + binDir}
+			out, err := cmd.CombinedOutput()
+			if tc.wantErr {
+				var exitErr *exec.ExitError
+				require.ErrorAs(t, err, &exitErr, "hook output: %s", out)
+				assert.Equal(t, tc.chainloopExit, exitErr.ExitCode())
+			} else {
+				require.NoError(t, err, "hook output: %s", out)
+			}
+
+			_, statErr := os.Stat(marker)
+			assert.Equal(t, tc.wantChained, statErr == nil, "foreign hook ran")
+		})
 	}
 }
 

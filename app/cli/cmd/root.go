@@ -102,6 +102,7 @@ func Execute(rootCmd *cobra.Command) error {
 	// every command, including the ones that fail and so skip cobra's post-run hooks.
 	executed, err := rootCmd.ExecuteC()
 	reportCommand(executed, time.Since(processStart), err)
+	err = applyPrePushPolicy(executed, err)
 
 	if err != nil {
 		// The local file is pointing to the wrong organization, we remove it

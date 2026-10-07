@@ -526,19 +526,28 @@ type RunTracePushOpts struct {
 	CLIVersion string
 }
 
-// HandlePrePushHook handles the pre-push git hook.
-// When requireTrace is true, errors from the attestation push are
-// propagated so that the git push is blocked. When false, errors are
-// logged but never returned.
-func HandlePrePushHook(ctx context.Context, requireTrace bool, log zerolog.Logger, opts RunTracePushOpts) error {
+// HandlePrePushHook handles the pre-push git hook. The caller passes a
+// returned error through PrePushFailure.
+func HandlePrePushHook(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts) error {
 	drainPushStdin()
 
-	if err := RunTracePush(ctx, log, opts); err != nil {
-		if requireTrace {
-			return fmt.Errorf("attestation failed (--require-trace is enabled): %w", err)
-		}
+	return RunTracePush(ctx, log, opts)
+}
 
-		log.Debug().Err(err).Msg("pre-push hook failed")
+// PrePushFailure decides what a failed pre-push hook does. The managed
+// pre-push script propagates the hook's exit status to git. When
+// requireTrace is true, it returns the error so that the git push is
+// blocked. When false, it logs a warning, so the user knows why the session
+// is missing, and returns nil so the push continues.
+func PrePushFailure(err error, requireTrace bool, log zerolog.Logger) error {
+	if requireTrace {
+		return fmt.Errorf("attestation failed (--require-trace is enabled): %w", err)
+	}
+
+	if msg, ok := AuthErrorMessage(err); ok {
+		log.Warn().Msgf("AI coding session not uploaded: %s", msg)
+	} else {
+		log.Warn().Err(err).Msg("AI coding session not uploaded")
 	}
 
 	return nil

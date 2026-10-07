@@ -43,13 +43,20 @@ func main() {
 		FormatTimestamp: func(interface{}) string { return "" },
 	})
 	rootCmd := cmd.NewRootCmd(logger)
+	exitCode := 0
 	if err := cmd.Execute(rootCmd); err != nil {
 		// cmd.Logger() rather than the local logger: a hook command may have
-		// swapped the root logger for a colorless one, and this final line
-		// should match.
+		// swapped the root logger for a colorless one that also writes to the
+		// trace log file, and this final line belongs in both.
 		hookLogger := cmd.Logger()
-		msg, exitCode := errorInfo(err, hookLogger)
+		var msg string
+		msg, exitCode = errorInfo(err, hookLogger)
 		hookLogger.Error().Msg(msg)
+	}
+
+	// After the final error line, and before os.Exit, which skips defers.
+	cmd.CloseHookLog()
+	if exitCode != 0 {
 		os.Exit(exitCode)
 	}
 }
