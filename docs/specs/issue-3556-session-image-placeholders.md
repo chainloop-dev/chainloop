@@ -65,7 +65,7 @@ The CLI MUST NOT remove data from the transcript unless the data is with certain
 Dropped. See D-014.
 
 ### R-011: Match of a file write
-The agent can write a full file. The CLI MUST compute the digest of the written content. When it is equal to the source digest of an entry in the spec list, the CLI MUST replace each copy of that content in the write. A write with other content, for example an earlier version of a spec file, stays inline. A partial edit of a file stays inline.
+The agent can write a full file. The CLI MUST compute the digest of the written content. When it is equal to the source digest of a spec entry, the CLI MUST replace each copy of that content in the write. A write with other content, for example an earlier version of a spec file, stays inline. A partial edit of a file stays inline.
 - Done when: the agent writes a ticket file into the spec folder two times, and the second version is the final file. The second write holds pointers, and the first write stays inline.
 
 ### R-012: Best effort, with a match report
