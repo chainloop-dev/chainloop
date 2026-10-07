@@ -64,12 +64,13 @@ func TestInstallHooks(t *testing.T) {
 		preEntry := preEntries[0].(map[string]any)
 		assert.Equal(t, "Edit|Write|MultiEdit|Bash", preEntry["matcher"])
 
-		// PostToolUse should have matcher
+		// PostToolUse also matches Skill, to copy the folder of a loaded skill
 		postEntries := hooks["PostToolUse"].([]any)
 		postEntry := postEntries[0].(map[string]any)
-		assert.Equal(t, "Edit|Write|MultiEdit|Bash", postEntry["matcher"])
+		assert.Equal(t, "Edit|Write|MultiEdit|Bash|Skill", postEntry["matcher"])
 
-		// PostToolUseFailure should have the same matcher
+		// PostToolUseFailure keeps the edit matcher: a failed Skill call loads
+		// no skill
 		failureEntries := hooks["PostToolUseFailure"].([]any)
 		failureEntry := failureEntries[0].(map[string]any)
 		assert.Equal(t, "Edit|Write|MultiEdit|Bash", failureEntry["matcher"])

@@ -41,6 +41,8 @@ func TestResolveSpecKind(t *testing.T) {
 		// newer Chainloop, so a value outside the vocabulary is a mistake to
 		// normalise away rather than a future kind to pass through.
 		{name: "a kind outside the vocabulary is text", kind: "jira-ticket", want: SpecKindText},
+		// Only the CLI makes skill entries, so an agent cannot write one.
+		{name: "an agent-written skill is text", kind: SpecKindSkill, want: SpecKindText},
 	}
 
 	for _, tc := range testCases {
@@ -96,6 +98,25 @@ func TestSpecEntryMatchesSchema(t *testing.T) {
 			// to point at, so the field is absent rather than synthesised.
 			name:  "only what the schema requires",
 			entry: SpecEntry{Kind: SpecKindText, Digest: testSpecDigest, CapturedAt: "2026-09-16T10:12:03Z"},
+		},
+		{
+			name: "a skill with its metadata",
+			entry: SpecEntry{
+				Kind: SpecKindSkill, Title: "asd-ste100", Digest: testSpecDigest, CapturedAt: "2026-10-07T10:14:51Z",
+				Metadata: &SpecMetadata{
+					Source: SkillSourceUser, PackageDigest: testSpecDigest,
+					InvocationCount: 3, ByModel: 2, ByUser: 1, InSubagents: 1,
+				},
+			},
+		},
+		{
+			// A package over the limit is not uploaded, and a session can
+			// use a skill only from the model: zero counts stay in the output.
+			name: "a skill without a package",
+			entry: SpecEntry{
+				Kind: SpecKindSkill, Title: "graphify", Digest: testSpecDigest, CapturedAt: "2026-10-07T10:14:51Z",
+				Metadata: &SpecMetadata{Source: SkillSourceUnknown, InvocationCount: 1, ByModel: 1},
+			},
 		},
 	}
 

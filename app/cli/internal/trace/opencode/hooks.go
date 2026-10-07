@@ -25,9 +25,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/skill"
 )
 
 const (
@@ -63,6 +65,22 @@ const pluginTemplate = `import { spawn } from "node:child_process"
 
 const fileWritingTools = {{FileWritingToolsArray}}
 const commandTools = {{CommandToolsArray}}
+const skillTool = {{SkillTool}}
+
+// skillDirFrom returns the folder of the skill that a skill tool call loaded:
+// the dir field of the result metadata, or else the base directory line of
+// the result text. Each OpenCode major gives the result in its own shape, so
+// each candidate is tried in turn.
+function skillDirFrom(...results: any[]): string {
+  for (const r of results) {
+    const dir = r?.metadata?.dir
+    if (typeof dir === "string" && dir) return dir
+    const text = typeof r === "string" ? r : typeof r?.output === "string" ? r.output : ""
+    const m = /^Base directory for this skill:\s*(.+)$/m.exec(text)
+    if (m) return m[1].trim()
+  }
+  return ""
+}
 
 function filePathsFromArgs(args: any): string[] {
   if (args?.filePath) return [args.filePath]
@@ -175,8 +193,14 @@ async function sessionEvent(directory: string, type: string, sessionID: string, 
 {{SessionEndBlock}}
 }
 
-async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, callID: string, args: any) {
+async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, callID: string, args: any, skillDir = "") {
   const payload = { session_id: sessionID, hook_event_name: hookEventName, tool_name: tool }
+  if (tool === skillTool) {
+    // The skill is loaded after the call, and the result names its folder.
+    // The hook copies the folder for the evidence.
+    if (skillDir) await fire(directory, hook, { ...payload, skill_dir: skillDir })
+    return
+  }
   if (commandTools.includes(tool)) {
     // The call ID pairs this hook with the other hook of the same call, so
     // overlapping commands keep their own snapshots.
@@ -230,8 +254,8 @@ async function server({ directory, client }: any) {
     "tool.execute.before": async (input: any, output: any) => {
       await toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)
     },
-    "tool.execute.after": async (input: any) => {
-      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args)
+    "tool.execute.after": async (input: any, output: any) => {
+      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args, input.tool === skillTool ? skillDirFrom(output) : "")
     },
   }
 }
@@ -245,7 +269,7 @@ async function setup(ctx: any) {
     await toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.id, event.input)
   })
   await ctx.tool.hook("execute.after", async (event: any) => {
-    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input)
+    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input, event.tool === skillTool ? skillDirFrom(event.output, event.result, event) : "")
   })
 
   // resume: false stores the message without asking the model for an answer.
@@ -342,6 +366,7 @@ func (p *Provider) writePluginFile(repoRoot string, includeSessionEnd bool) erro
 	content := pluginTemplate
 	content = strings.Replace(content, "{{FileWritingToolsArray}}", toolsArrayLiteral(fileWritingTools), 1)
 	content = strings.Replace(content, "{{CommandToolsArray}}", toolsArrayLiteral(commandTools), 1)
+	content = strings.Replace(content, "{{SkillTool}}", strconv.Quote(skillTool), 1)
 	if includeSessionEnd {
 		content = strings.Replace(content, "{{SessionEndBlock}}", sessionDeletedHandler, 1)
 	} else {
@@ -411,6 +436,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		ToolName      string `json:"tool_name"`
 		FilePath      string `json:"file_path"`
 		ToolUseID     string `json:"tool_use_id"`
+		SkillDir      string `json:"skill_dir"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -428,12 +454,18 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		filePath = abs
 	}
 
+	// The plugin takes the skill folder from the result text when the
+	// metadata has none, and there it is a file URL. A folder that is not
+	// absolute is dropped.
+	skillDir, _ := skill.ParseDir(raw.SkillDir)
+
 	return &trace.HookInput{
 		SessionID:     raw.SessionID,
 		HookEventName: raw.HookEventName,
 		ToolName:      raw.ToolName,
 		FilePath:      filePath,
 		ToolUseID:     raw.ToolUseID,
+		SkillDir:      skillDir,
 	}, nil
 }
 

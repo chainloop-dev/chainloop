@@ -2,6 +2,22 @@ import { spawn } from "node:child_process"
 
 const fileWritingTools = ["edit","write","apply_patch","patch"]
 const commandTools = ["bash","shell"]
+const skillTool = "skill"
+
+// skillDirFrom returns the folder of the skill that a skill tool call loaded:
+// the dir field of the result metadata, or else the base directory line of
+// the result text. Each OpenCode major gives the result in its own shape, so
+// each candidate is tried in turn.
+function skillDirFrom(...results: any[]): string {
+  for (const r of results) {
+    const dir = r?.metadata?.dir
+    if (typeof dir === "string" && dir) return dir
+    const text = typeof r === "string" ? r : typeof r?.output === "string" ? r.output : ""
+    const m = /^Base directory for this skill:\s*(.+)$/m.exec(text)
+    if (m) return m[1].trim()
+  }
+  return ""
+}
 
 function filePathsFromArgs(args: any): string[] {
   if (args?.filePath) return [args.filePath]
@@ -113,8 +129,14 @@ async function sessionEvent(directory: string, type: string, sessionID: string, 
   }
 }
 
-async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, callID: string, args: any) {
+async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, callID: string, args: any, skillDir = "") {
   const payload = { session_id: sessionID, hook_event_name: hookEventName, tool_name: tool }
+  if (tool === skillTool) {
+    // The skill is loaded after the call, and the result names its folder.
+    // The hook copies the folder for the evidence.
+    if (skillDir) await fire(directory, hook, { ...payload, skill_dir: skillDir })
+    return
+  }
   if (commandTools.includes(tool)) {
     // The call ID pairs this hook with the other hook of the same call, so
     // overlapping commands keep their own snapshots.
@@ -168,8 +190,8 @@ async function server({ directory, client }: any) {
     "tool.execute.before": async (input: any, output: any) => {
       await toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)
     },
-    "tool.execute.after": async (input: any) => {
-      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args)
+    "tool.execute.after": async (input: any, output: any) => {
+      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args, input.tool === skillTool ? skillDirFrom(output) : "")
     },
   }
 }
@@ -183,7 +205,7 @@ async function setup(ctx: any) {
     await toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.id, event.input)
   })
   await ctx.tool.hook("execute.after", async (event: any) => {
-    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input)
+    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input, event.tool === skillTool ? skillDirFrom(event.output, event.result, event) : "")
   })
 
   // resume: false stores the message without asking the model for an answer.
