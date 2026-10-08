@@ -4,7 +4,7 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3543
 prd:
 ---
 
-# Spec 003: Existence cache in the Artifact CAS
+# Spec issue-3543: Existence cache in the Artifact CAS
 
 ## Summary
 When a user adds evidence that is already in storage, the Artifact CAS still asks the storage backend if the blob exists. Before it can ask, it reads the backend credentials from the secrets manager and builds a new storage client. This spec adds a cache of positive existence results to the Artifact CAS, and a short-lived cache of storage clients. A repeated `attestation add` of the same evidence then completes without a call to the secrets manager or to the storage backend.
@@ -68,7 +68,7 @@ Inside the Artifact CAS, the upload handler uses two caches.
 
 **Existence cache.** Each organization has its own namespace in the cache. The key starts with the organization ID from the signed upload token. Then come the backend type, the hashed backend secret reference, and the digest. The hash keeps the secret path out of the key. The namespace is necessary also when two organizations share storage. Without it, organization B could learn that organization A stored a file with a given digest. With it, the cache tells a tenant nothing that the tenant's own backend check does not already tell. The existence cache has its own NATS bucket, separate from the other caches. The value holds the blob size. The handler reads the cache after it checks the token and reads the first chunk. On a hit, it closes the stream as "already exists", which is the response the CLI receives today. On a miss, it continues as today. When the backend says the blob exists, or when an upload succeeds, the handler writes the entry.
 
-The existence cache uses the shared cache library that the control plane already uses for attestation and policy bundles. The Artifact CAS can have a NATS connection, which today sends only audit events. With that connection, the cache is a NATS key-value bucket that all replicas share. Without NATS, each replica has an in-memory LRU cache with expiry. The entry holds only a digest and a size, never credentials.
+The existence cache uses the shared cache library that the control plane already uses for attestation and policy bundles. The Artifact CAS can have a NATS connection, which today sends only audit events. With that connection, the cache is a NATS key-value bucket that all replicas share. Without NATS, each replica has an in-memory LRU cache with expiry. The CAS selects the store one time, at startup. The entry holds only a digest and a size, never the artifact content and never credentials. An entry is less than 200 bytes, so its size is never a problem for NATS. If a NATS read or write fails at runtime, the CAS does not use the in-memory cache. It treats the failure as a miss and checks the backend (R-008). When the bucket is full, NATS deletes its oldest entries.
 
 **Client cache.** A small in-memory cache keyed by backend type and secret reference holds the loaded storage client for a few minutes. A miss in the existence cache then needs one backend call instead of a secrets manager read plus a new client plus a backend call. Credentials can change behind the same secret reference. The short lifetime limits how long an old client stays in use. If the backend rejects the old credentials, the handler drops the client and loads it again one time.
 
