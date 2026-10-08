@@ -39,7 +39,15 @@ wrapped command exits, so a session never leaks setup into the next one.
 
 The workflow is created before the command runs. That part is best-effort: the
 session runs either way and the attestation creates the workflow if this did
-not, except with --contract, which trace run cannot honor later.`
+not, except with --contract, which trace run cannot honor later.
+
+With --export <dir>, the session is written to a local directory instead of
+being pushed as an attestation. This runs the same assembly a push does — the
+same redaction, the same spec, skill, and image materials, each stored under
+its content digest — but makes no call to the control plane and needs no
+credentials. The identity flags are not required in this mode. Use it to
+inspect the exact evidence a session would send. --no-redact turns off secret
+redaction for a trusted local run.`
 
 // newTraceRunCmd creates the `trace run` subcommand.
 func newTraceRunCmd() *cobra.Command {
@@ -48,6 +56,8 @@ func newTraceRunCmd() *cobra.Command {
 		workflowFlag string
 		versionFlag  string
 		contractFlag string
+		exportFlag   string
+		noRedactFlag bool
 		claudeFlag   bool
 		cursorFlag   bool
 		opencodeFlag bool
@@ -95,18 +105,26 @@ func newTraceRunCmd() *cobra.Command {
 				return fmt.Errorf("reading --org flag: %w", err)
 			}
 
-			// MarkFlagRequired and Changed() only check that a flag was
-			// passed, so an empty value like --workflow "" would slip
-			// through and silently fall back to the default workflow.
-			// Validate the actual values here.
-			if organization == "" {
-				return fmt.Errorf("--org is required for trace run")
+			// Export mode writes the evidence to disk and talks to no control
+			// plane, so it needs no attestation identity. The attestation path
+			// still does: MarkFlagRequired and Changed() only check that a flag
+			// was passed, so an empty value like --workflow "" would slip
+			// through and silently fall back to the default workflow. Validate
+			// the actual values here.
+			if exportFlag == "" {
+				if organization == "" {
+					return fmt.Errorf("--org is required for trace run")
+				}
+				if projectFlag == "" {
+					return fmt.Errorf("--project is required for trace run")
+				}
+				if workflowFlag == "" {
+					return fmt.Errorf("--workflow is required for trace run")
+				}
 			}
-			if projectFlag == "" {
-				return fmt.Errorf("--project is required for trace run")
-			}
-			if workflowFlag == "" {
-				return fmt.Errorf("--workflow is required for trace run")
+
+			if noRedactFlag && exportFlag == "" {
+				return fmt.Errorf("--no-redact only applies with --export")
 			}
 
 			contractName, contractRequired := config.ResolveContract(contractFlag)
@@ -124,20 +142,21 @@ func newTraceRunCmd() *cobra.Command {
 				ContractRequired: contractRequired,
 				ActionOpts:       ActionOpts,
 				CLIVersion:       Version,
+				ExportDir:        exportFlag,
+				NoRedact:         noRedactFlag,
 			})
 		},
 	}
 
-	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required; .chainloop.yml is ignored)")
-	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required; .chainloop.yml is ignored)")
+	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required unless --export; .chainloop.yml is ignored)")
+	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required unless --export; .chainloop.yml is ignored)")
 	cmd.Flags().StringVar(&versionFlag, "version", "", "chainloop project version (optional; defaults to the latest version)")
 	cmd.Flags().StringVar(&contractFlag, "contract", "", traceContractFlagDesc)
+	cmd.Flags().StringVar(&exportFlag, "export", "", "write the session evidence to this directory instead of pushing an attestation; no control plane, credentials, or network needed")
+	cmd.Flags().BoolVar(&noRedactFlag, "no-redact", false, "disable secret redaction in --export mode; for a trusted local run only, as the output can then hold secrets")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
-
-	_ = cmd.MarkFlagRequired("project")
-	_ = cmd.MarkFlagRequired("workflow")
 
 	return cmd
 }

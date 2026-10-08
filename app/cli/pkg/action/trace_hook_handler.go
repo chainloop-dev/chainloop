@@ -611,33 +611,13 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		return nil
 	}
 
-	sessionCommits := make(map[string][]*state.CommitRecord)
-	for _, c := range aiCommits {
-		for _, sid := range c.SessionIDs {
-			sessionCommits[sid] = append(sessionCommits[sid], c)
-		}
-	}
-	for _, commits := range sessionCommits {
-		sort.Slice(commits, func(i, j int) bool {
-			return commits[i].Timestamp < commits[j].Timestamp
-		})
-	}
-
 	sessionRecords, err := store.LoadAllSessionRecords()
 	if err != nil {
 		log.Debug().Err(err).Msg("could not load session records")
 	}
 
+	sessionCommits := sessionCommitGroups(aiCommits, sessionRecords, opts.AllowEmpty)
 	if len(aiCommits) == 0 {
-		for sid, rec := range sessionRecords {
-			// A session that has ended without contributing a commit to this
-			// branch has nothing new to say; attesting it on every later push
-			// republishes the same stale evidence.
-			if !rec.Active {
-				continue
-			}
-			sessionCommits[sid] = nil
-		}
 		if len(sessionCommits) == 0 {
 			log.Info().Msg("no AI coding sessions recorded, skipping attestation")
 
@@ -698,7 +678,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	// Add evidence for each session: its spec materials first, so that the
 	// session material can record their digests, then the session itself.
-	attestedSessions, attestedSpecs := attachSessionEvidence(ctx, executor, store, sessions, log)
+	attestedSessions, attestedSpecs := attachSessionEvidence(ctx, executor, store, sessions, log, false)
 
 	if len(attestedSessions) == 0 {
 		log.Debug().Msg("no evidence successfully added, resetting attestation")
@@ -767,6 +747,37 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	}
 
 	return nil
+}
+
+// sessionCommitGroups groups the AI commits by the sessions that contributed
+// to them, each group sorted oldest first. When there are no AI commits and
+// allowEmpty is set, it falls back to the active sessions, so their evidence is
+// still assembled: the `trace run` and export paths attest a session even when
+// it produced no commit. A session that has ended without a commit is left out,
+// as attesting it on every later push would republish the same stale evidence.
+func sessionCommitGroups(aiCommits []*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, allowEmpty bool) map[string][]*state.CommitRecord {
+	groups := make(map[string][]*state.CommitRecord)
+	for _, c := range aiCommits {
+		for _, sid := range c.SessionIDs {
+			groups[sid] = append(groups[sid], c)
+		}
+	}
+	for _, commits := range groups {
+		sort.Slice(commits, func(i, j int) bool {
+			return commits[i].Timestamp < commits[j].Timestamp
+		})
+	}
+
+	if len(aiCommits) == 0 && allowEmpty {
+		for sid, rec := range sessionRecords {
+			if rec == nil || !rec.Active {
+				continue
+			}
+			groups[sid] = nil
+		}
+	}
+
+	return groups
 }
 
 // sessionEvidence is the evidence of one session before it is added to the
@@ -900,7 +911,7 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 // its spec and skill materials first, so that the session material can record
 // their digests, then the session itself. It returns the sessions that were
 // added, and the spec files that each of them stored.
-func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *state.Store, sessions []sessionEvidence, log zerolog.Logger) (attestedSessions []string, attestedSpecs map[string][]string) {
+func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *state.Store, sessions []sessionEvidence, log zerolog.Logger, noRedact bool) (attestedSessions []string, attestedSpecs map[string][]string) {
 	attestedSessions = make([]string, 0, len(sessions))
 	attestedSpecs = make(map[string][]string, len(sessions))
 	// One allocator for the whole attestation: names taken from the start of
@@ -908,7 +919,7 @@ func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *
 	// replace an earlier material.
 	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
-		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID))
+		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID), noRedact)
 		entries, warnings, stored, sources := attachSpecs(ctx, adder, redactor, names, se.sessionID, se.specs, log)
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
 

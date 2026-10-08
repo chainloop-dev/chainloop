@@ -3376,6 +3376,14 @@ The workflow is created before the command runs. That part is best-effort: the
 session runs either way and the attestation creates the workflow if this did
 not, except with --contract, which trace run cannot honor later.
 
+With --export <dir>, the session is written to a local directory instead of
+being pushed as an attestation. This runs the same assembly a push does — the
+same redaction, the same spec, skill, and image materials, each stored under
+its content digest — but makes no call to the control plane and needs no
+credentials. The identity flags are not required in this mode. Use it to
+inspect the exact evidence a session would send. --no-redact turns off secret
+redaction for a trusted local run.
+
 ```
 chainloop trace run -- <command> [args...] [flags]
 ```
@@ -3386,11 +3394,13 @@ Options
 --claude            install Claude Code hooks (default when no provider flag is set)
 --contract string   workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
+--export string     write the session evidence to this directory instead of pushing an attestation; no control plane, credentials, or network needed
 -h, --help              help for run
+--no-redact         disable secret redaction in --export mode; for a trusted local run only, as the output can then hold secrets
 --opencode          install opencode hooks
---project string    chainloop project name (required; .chainloop.yml is ignored)
+--project string    chainloop project name (required unless --export; .chainloop.yml is ignored)
 --version string    chainloop project version (optional; defaults to the latest version)
---workflow string   chainloop workflow name used for trace attestations (required; .chainloop.yml is ignored)
+--workflow string   chainloop workflow name used for trace attestations (required unless --export; .chainloop.yml is ignored)
 ```
 
 Options inherited from parent commands
