@@ -43,6 +43,23 @@ func (e *SubprocessExitError) Error() string {
 	return fmt.Sprintf("%s exited with status %d", e.Command, e.ExitCode)
 }
 
+// subprocessError maps the error from running the wrapped command into the
+// value TraceRun returns: a SubprocessExitError that carries the exit code so
+// the CLI can propagate it, a wrapped error for a failure to launch, or nil on
+// success.
+func subprocessError(command string, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return &SubprocessExitError{Command: command, ExitCode: exitErr.ExitCode()}
+	}
+
+	return fmt.Errorf("run %s: %w", command, err)
+}
+
 // TraceRunOpts configures a single TraceRun invocation.
 type TraceRunOpts struct {
 	// Store owns the chainloop-trace state directory, parented by the
@@ -193,27 +210,33 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 
 	log.Debug().Strs("command", opts.Command).Msg("running wrapped command")
 
-	if err := sub.Run(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return &SubprocessExitError{Command: opts.Command[0], ExitCode: exitErr.ExitCode()}
-		}
+	runErr := sub.Run()
 
-		return fmt.Errorf("run %s: %w", opts.Command[0], err)
-	}
-
+	// Export mode writes the evidence whatever the agent's exit status was: the
+	// point is to inspect what the session produced, and a session the user
+	// interrupted (a non-zero exit) still has evidence worth reading. The push
+	// path, in contrast, attests only a clean run.
 	if opts.ExportDir != "" {
-		log.Debug().Msg("wrapped command completed; exporting session evidence to disk")
+		log.Debug().Msg("wrapped command finished; exporting session evidence to disk")
 
-		if _, err := RunTraceExport(ctx, log, RunTraceExportOpts{
+		dir, err := RunTraceExport(ctx, log, RunTraceExportOpts{
 			OutDir:   opts.ExportDir,
 			NoRedact: opts.NoRedact,
 			Mode:     aicodingsession.ModeGeneric,
-		}); err != nil {
-			return fmt.Errorf("export session evidence: %w", err)
+		})
+		switch {
+		case err != nil:
+			// An export failure must not mask the agent's own exit status.
+			log.Warn().Err(err).Msg("could not export session evidence")
+		case dir == "":
+			log.Warn().Msg("no AI coding session was recorded, so nothing was exported")
 		}
 
-		return nil
+		return subprocessError(opts.Command[0], runErr)
+	}
+
+	if runErr != nil {
+		return subprocessError(opts.Command[0], runErr)
 	}
 
 	log.Debug().Msg("wrapped command completed; attesting session")

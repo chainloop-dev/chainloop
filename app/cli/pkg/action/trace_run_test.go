@@ -16,7 +16,9 @@
 package action
 
 import (
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -27,6 +29,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestSubprocessError maps the wrapped command's result the way both the export
+// and the push paths rely on: a clean run is no error, a non-zero exit carries
+// its code so the CLI can propagate it (and `trace run --export` exports first),
+// and a launch failure is wrapped.
+func TestSubprocessError(t *testing.T) {
+	assert.NoError(t, subprocessError("claude", nil))
+
+	// A real non-zero exit, produced by running a command that fails.
+	exitErr := exec.Command("sh", "-c", "exit 7").Run()
+	require.Error(t, exitErr)
+	got := subprocessError("claude", exitErr)
+	var sub *SubprocessExitError
+	require.ErrorAs(t, got, &sub)
+	assert.Equal(t, 7, sub.ExitCode)
+	assert.Equal(t, "claude", sub.Command)
+
+	// A failure that is not an exit (e.g. the binary could not be launched) is
+	// wrapped, not turned into a SubprocessExitError.
+	launchErr := subprocessError("claude", errors.New("exec: not found"))
+	require.Error(t, launchErr)
+	assert.NotErrorAs(t, launchErr, &sub)
+}
 
 func TestTraceRunOwnsState(t *testing.T) {
 	t.Run("clean repo", func(t *testing.T) {
