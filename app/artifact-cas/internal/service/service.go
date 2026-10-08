@@ -22,10 +22,13 @@ import (
 	"syscall"
 
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/cache/casexistence"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -44,6 +47,10 @@ type commonService struct {
 	// set and writable: leaving it empty is a deployment error and transfers are
 	// refused rather than staged somewhere unintended.
 	stagingDir string
+	// existence caches the blobs known to exist in a backend, nil when disabled
+	existence cache.Cache[casexistence.Entry]
+	// clients caches the backend clients loaded for uploads, nil when disabled
+	clients *expirable.LRU[string, backend.UploaderDownloader]
 }
 
 func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {

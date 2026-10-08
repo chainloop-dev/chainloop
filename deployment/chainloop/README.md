@@ -794,6 +794,9 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.nats.host`              | NATS Host                                                                                                                                                                                                                                             | `""`              |
 | `cas.nats.port`              | NATS Port                                                                                                                                                                                                                                             | `4222`            |
 | `cas.nats.token`             | NATS Client authentication token                                                                                                                                                                                                                      | `""`              |
+| `cas.existenceCache`         | Cache of the blobs known to exist in a backend, so repeated uploads of the same content skip the backend. Shared between replicas through NATS when cas.nats is enabled, in memory otherwise.                                                          |                   |
+| `cas.existenceCache.enabled` | Enable the existence cache                                                                                                                                                                                                                            | `true`            |
+| `cas.existenceCache.ttl`     | Lifetime of a cache entry, in seconds with an "s" suffix                                                                                                                                                                                              | `86400s`          |
 | `cas.image.registry`         | Image registry                                                                                                                                                                                                                                        | `REGISTRY_NAME`   |
 | `cas.image.repository`       | Image repository                                                                                                                                                                                                                                      | `REPOSITORY_NAME` |
 | `cas.containerPorts.http`    | controlplane HTTP container port                                                                                                                                                                                                                      | `8000`            |
@@ -958,7 +961,7 @@ service_registration "kubernetes" {}` |
 
 ## License
 
-Copyright &copy; 2023-2025 The Chainloop Authors
+Copyright &copy; 2023-2026 The Chainloop Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

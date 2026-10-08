@@ -1042,6 +1042,13 @@ cas:
     port: 4222
     token: ""
 
+  ## @extra cas.existenceCache Cache of the blobs known to exist in a backend, so repeated uploads of the same content skip the backend. Shared between replicas through NATS when cas.nats is enabled, in memory otherwise.
+  ## @param cas.existenceCache.enabled Enable the existence cache
+  ## @param cas.existenceCache.ttl Lifetime of a cache entry, in seconds with an "s" suffix
+  existenceCache:
+    enabled: true
+    ttl: 86400s
+
   ## @param cas.image.registry [default: REGISTRY_NAME] Image registry
   ## @param cas.image.repository [default: REPOSITORY_NAME] Image repository
   ## @skip cas.image.tag

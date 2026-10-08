@@ -21,11 +21,15 @@
 package main
 
 import (
+	"context"
+	"time"
+
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/cache/casexistence"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
@@ -47,16 +51,53 @@ func wireApp(*conf.Bootstrap, *conf.Server, *conf.Auth, credentials.Reader, log.
 			// publish-only: the control plane owns the chainloop-audit stream configuration
 			auditor.NewPublishOnlyAuditLogPublisher,
 			service.NewAuditDispatcher,
+			newExistenceCache,
 		),
 	)
 }
 
-func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap) []service.NewOpt {
-	return []service.NewOpt{
+// backendClientTTL is how long a loaded backend client, and its credentials, is reused for uploads
+const backendClientTTL = 5 * time.Minute
+
+func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap, existence *casexistence.Cache) []service.NewOpt {
+	opts := []service.NewOpt{
 		service.WithLogger(l),
 		service.WithAuditDispatcher(audit),
 		service.WithStagingDir(bc.GetStagingDir()),
+		service.WithBackendClientCache(backendClientTTL),
 	}
+
+	if existence != nil {
+		opts = append(opts, service.WithExistenceCache(existence))
+	}
+
+	return opts
+}
+
+// newExistenceCache returns the cache of blobs known to exist in a backend,
+// nil when disabled. It is shared through NATS KV when the connection is set.
+// A NATS bucket that can not be set up falls back to memory: the cache only
+// makes uploads faster, so it must not stop the service from starting.
+func newExistenceCache(bc *conf.Bootstrap, rc *natsconn.ReloadableConnection, logger log.Logger) (*casexistence.Cache, func(), error) {
+	cfg := bc.GetExistenceCache()
+	if cfg.GetDisabled() {
+		return nil, func() {}, nil
+	}
+
+	ttl := cfg.GetTtl().AsDuration()
+	ctx, cancel := context.WithCancel(context.Background())
+	c, err := casexistence.New(ctx, rc, ttl, logger)
+	if err != nil && rc != nil {
+		log.NewHelper(logger).Warnw("msg", "existence cache: NATS KV unavailable, using memory", "error", err)
+		c, err = casexistence.New(ctx, nil, ttl, logger)
+	}
+
+	if err != nil {
+		cancel()
+		return nil, nil, err
+	}
+
+	return c, cancel, nil
 }
 
 // newNatsConfig converts the proto config to a plain natsconn.Config, nil when unset

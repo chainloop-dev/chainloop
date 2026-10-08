@@ -34,6 +34,17 @@ message Bootstrap {
   // production a dedicated emptyDir is mounted here (NOT tmpfs/RAM, and NOT the
   // /tmp secret mount). Required: when unset the service refuses to start.
   string staging_dir = 6;
+  // Cache of the blobs known to exist in a backend, so repeated uploads of the
+  // same content skip the secrets manager and the backend. Shared through NATS
+  // KV when nats_server is set, in memory otherwise. Enabled by default.
+  ExistenceCache existence_cache = 7;
+
+  message ExistenceCache {
+    // Turns the cache off
+    bool disabled = 1;
+    // Lifetime of an entry. Defaults to 24h.
+    google.protobuf.Duration ttl = 2;
+  }
 
   message NatsServer {
     // NATS server URI, e.g. "nats://localhost:4222"

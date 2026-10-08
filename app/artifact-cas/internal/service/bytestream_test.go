@@ -425,6 +425,8 @@ type bytestreamSuite struct {
 	srv        *grpc.Server
 	client     bytestream.ByteStreamClient
 	ociBackend *mocks.UploaderDownloader
+	// ociProvider builds ociBackend; tests assert how often credentials are loaded
+	ociProvider *mocks.Provider
 	// streamingBackend is the backend reachable via the "backend-streaming"
 	// metadata.
 	streamingBackend *mocks.UploaderDownloader
@@ -455,6 +457,11 @@ func (s *bytestreamSuite) TearDownSubTest() {
 }
 
 func (s *bytestreamSuite) SetupTest() {
+	s.setup()
+}
+
+// setup starts the server with the default options plus opts
+func (s *bytestreamSuite) setup(opts ...NewOpt) {
 	const backendType = "backend-type"
 	// 1 MB buffer
 	l := bufconn.Listen(1 << 20)
@@ -476,6 +483,9 @@ func (s *bytestreamSuite) SetupTest() {
 					// streaming (object-store) code paths.
 					if v := md.Get("backend-streaming"); len(v) > 0 {
 						claims.BackendType = streamingBackendType
+					}
+					if v := md.Get("org-id"); len(v) > 0 {
+						claims.OrgID = v[0]
 					}
 					if v := md.Get("source-internal"); len(v) > 0 {
 						claims.SourceInternal = true
@@ -518,7 +528,7 @@ func (s *bytestreamSuite) SetupTest() {
 		NewByteStreamService(backend.Providers{
 			backendType:          ociBackendProvider,
 			streamingBackendType: streamingBackendProvider,
-		}, WithLogger(log.DefaultLogger), WithAuditDispatcher(newTestDispatcher(s.audit)), WithStagingDir(s.stagingDir)),
+		}, append([]NewOpt{WithLogger(log.DefaultLogger), WithAuditDispatcher(newTestDispatcher(s.audit)), WithStagingDir(s.stagingDir)}, opts...)...),
 	)
 	go func() {
 		_ = server.Serve(l)
@@ -534,6 +544,7 @@ func (s *bytestreamSuite) SetupTest() {
 	s.srv = server
 	s.conn = conn
 	s.ociBackend = ociBackend
+	s.ociProvider = ociBackendProvider
 	s.streamingBackend = streamingBackend
 	s.client = bytestream.NewByteStreamClient(conn)
 	s.resource = &v1.CASResource{
