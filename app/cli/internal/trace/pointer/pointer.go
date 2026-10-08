@@ -40,6 +40,9 @@ const Marker = "chainloop.replaced"
 const (
 	FinderFileRead  = "file_read"
 	FinderFileWrite = "file_write"
+	// FinderPastedImage finds the images that the user pasted into the
+	// session (spec issue-3569).
+	FinderPastedImage = "pasted_image"
 )
 
 // Reasons for a copy that stays inline, as the match report gives them.
@@ -50,6 +53,11 @@ const (
 	ReasonPartialRead = "partial read"
 	ReasonToolError   = "tool error"
 	ReasonUnsupported = "unsupported result"
+	// ReasonInvalidImage is a pasted image whose data cannot be decoded.
+	ReasonInvalidImage = "invalid image data"
+	// ReasonMaterialNotStored is a pasted image that the push could not
+	// store as a material.
+	ReasonMaterialNotStored = "material not stored"
 )
 
 // Sources maps the digest of each spec source, as the file is on disk, to the

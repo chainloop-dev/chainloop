@@ -67,6 +67,7 @@ What the session was asked to build, and which skills it used.
 | Local spec sources read at push | A capture whose source is a local file holds only a header and a placeholder. Each push reads the file and records its current content, so the evidence follows the edits of the file. Only a regular text file of up to 1 MiB is read. Otherwise the push keeps the body that the agent wrote, or drops the capture with a warning when there is no body (spec issue-3561). | Yes | Yes | Yes | Yes |
 | Skills tracking | The evidence lists the skills that the session used, with a copy of each skill as it ran. | Yes | No | Partial | Partial |
 | Spec source pointers | Exact copies of spec sources in the transcript (full file reads and file writes) are replaced with a pointer to the spec material, so the evidence does not hold the same content two or three times (spec issue-3556). | Yes | No | No | No |
+| Pasted image pointers | Each image that the user pasted into the session is stored as an image spec entry, from the data in the transcript, with the title "Pasted image N" and no role. The inline image in the transcript is replaced with a pointer to that material. When the agent captured the same image, its entry is kept and no second entry is added (spec issue-3569). | Yes | No | No | No |
 
 Why not Yes:
 
@@ -74,6 +75,7 @@ Why not Yes:
 - **Skills tracking, Cursor:** the provider does not track skills. The evidence has no skill entries, which means "not recorded", not "no skill used".
 - **Skills tracking, OpenCode:** only the skills that the model starts with the `skill` tool are counted. Skills that the user starts, and skills used in subagents, are not.
 - **Spec source pointers, Cursor and OpenCode:** the provider has no finder for the copies in its transcript yet. For OpenCode, the rebuilt transcript holds no tool outputs, so only the write copies would apply.
+- **Pasted image pointers, Cursor and OpenCode:** the provider has no finder for pasted images yet. Each agent puts pasted images in a different block shape. The pasted images stay inline, and the agent can still capture them in the spec folder.
 
 ## Security
 
