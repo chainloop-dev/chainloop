@@ -42,7 +42,7 @@ import (
 func TestUploadAndCraftContentOverride(t *testing.T) {
 	const (
 		onDisk   = `{"original":"content that is definitely longer"}`
-		redacted = `{"original":"[REDACTED]"}`
+		redacted = `{"original":"[CHAINLOOP_TRACE_REDACTED]"}`
 	)
 
 	testCases := []struct {
@@ -294,12 +294,12 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 				require.NotNil(t, content, "a redacted session must hand back its sanitized copy")
 				assert.Equal(t, sha256Digest(string(content)), got.GetArtifact().Digest)
 				assert.NotContains(t, string(content), awsKey)
-				assert.Contains(t, string(content), "[REDACTED:aws-access-token]")
+				assert.Contains(t, string(content), "[CHAINLOOP_TRACE_REDACTED:aws-access-token]")
 
 				if stored != nil {
 					assert.Equal(t, string(stored), string(content))
 					assert.NotContains(t, string(stored), awsKey)
-					assert.Contains(t, string(stored), "[REDACTED:aws-access-token]")
+					assert.Contains(t, string(stored), "[CHAINLOOP_TRACE_REDACTED:aws-access-token]")
 				}
 			case tc.skipRedaction:
 				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedactionSkipped])

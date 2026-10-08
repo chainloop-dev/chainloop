@@ -504,8 +504,8 @@ func TestGetEvaluableContentRedactedNeverReadsDisk(t *testing.T) {
 		// Any distinguishable values work here; this test is about which source
 		// the content is read from, not about detection.
 		onDiskSecret = "the-unredacted-original"
-		inlineSecret = "[REDACTED:aws-access-token]"
-		suppliedTag  = "[REDACTED:supplied]"
+		inlineSecret = "[CHAINLOOP_TRACE_REDACTED:aws-access-token]"
+		suppliedTag  = "[CHAINLOOP_TRACE_REDACTED:supplied]"
 
 		onDisk   = `{"secret":"` + onDiskSecret + `"}`
 		inline   = `{"secret":"` + inlineSecret + `"}`
@@ -675,7 +675,7 @@ func TestGetEvaluableContentInjectsMetadata(t *testing.T) {
 		},
 	}
 
-	content, err := m.GetEvaluableContent("", []byte(`{"secret":"[REDACTED:jwt]"}`))
+	content, err := m.GetEvaluableContent("", []byte(`{"secret":"[CHAINLOOP_TRACE_REDACTED:jwt]"}`))
 	require.NoError(t, err)
 
 	var decoded struct {
@@ -686,7 +686,7 @@ func TestGetEvaluableContentInjectsMetadata(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(content, &decoded))
 
-	assert.Equal(t, "[REDACTED:jwt]", decoded.Secret)
+	assert.Equal(t, "[CHAINLOOP_TRACE_REDACTED:jwt]", decoded.Secret)
 	assert.Equal(t, AnnotationValueTrue, decoded.Metadata.Annotations[AnnotationMaterialRedacted])
 	assert.Equal(t, "2", decoded.Metadata.Annotations[AnnotationMaterialRedactionCount])
 	assert.Equal(t, "jwt", decoded.Metadata.Annotations[AnnotationMaterialRedactionRules])

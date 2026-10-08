@@ -116,7 +116,7 @@ func TestRedact(t *testing.T) {
 			wantReplacements: 1,
 			wantByRule:       map[string]int{"aws-access-token": 1},
 			mustNotContain:   []string{"FAKE-AWS-KEY-NOT-A-REAL-PATTERN"},
-			mustContain:      []string{"[REDACTED:aws-access-token]", "untouched", "run ", " now"},
+			mustContain:      []string{"[CHAINLOOP_TRACE_REDACTED:aws-access-token]", "untouched", "run ", " now"},
 		},
 		{
 			name:             "same secret across three leaves",
@@ -148,7 +148,7 @@ func TestRedact(t *testing.T) {
 			findings:         []Finding{{RuleID: "r1", Secret: "nSEC"}},
 			wantReplacements: 1,
 			mustNotContain:   []string{"before", "after"},
-			mustContain:      []string{"[REDACTED:r1]"},
+			mustContain:      []string{"[CHAINLOOP_TRACE_REDACTED:r1]"},
 		},
 		{
 			name:             "secret ending on the backslash of an escape keeps the leaf",
@@ -156,7 +156,7 @@ func TestRedact(t *testing.T) {
 			findings:         []Finding{{RuleID: "r1", Secret: `SEC\`}},
 			wantReplacements: 1,
 			wantByRule:       map[string]int{"r1": 1},
-			mustContain:      []string{`{"a":"{\"url\":\"https://h/x?sig=[REDACTED:r1]\"}"}`},
+			mustContain:      []string{`{"a":"{\"url\":\"https://h/x?sig=[CHAINLOOP_TRACE_REDACTED:r1]\"}"}`},
 		},
 		{
 			name:             "secret ending on a complete escaped backslash keeps it",
@@ -164,7 +164,7 @@ func TestRedact(t *testing.T) {
 			findings:         []Finding{{RuleID: "r1", Secret: `SEC\\`}},
 			wantReplacements: 1,
 			wantByRule:       map[string]int{"r1": 1},
-			mustContain:      []string{`{"a":"[REDACTED:r1] after"}`},
+			mustContain:      []string{`{"a":"[CHAINLOOP_TRACE_REDACTED:r1] after"}`},
 		},
 		{
 			name:     "protected path is left alone and recorded",
@@ -188,7 +188,7 @@ func TestRedact(t *testing.T) {
 			// The copy left in the protected leaf is still found on the next
 			// pass, where no eligible leaf holds it any more.
 			wantUnlocated: map[string]int{"r1": 1},
-			mustContain:   []string{`"keepme":"SEC"`, `"other":"x [REDACTED:r1]"`},
+			mustContain:   []string{`"keepme":"SEC"`, `"other":"x [CHAINLOOP_TRACE_REDACTED:r1]"`},
 		},
 		{
 			name:          "finding present nowhere is classified as an artifact",
@@ -368,7 +368,7 @@ func TestRedactOpaqueLeaves(t *testing.T) {
 		{
 			name: "secret in opaque data and in text",
 			doc:  `{"img":{"type":"base64","data":"aaSECaa"},"t":"y SEC y"}`,
-			want: `{"img":{"data":"aaSECaa","type":"base64"},"t":"y [REDACTED:r1] y"}`,
+			want: `{"img":{"data":"aaSECaa","type":"base64"},"t":"y [CHAINLOOP_TRACE_REDACTED:r1] y"}`,
 		},
 		{
 			name: "secret only in opaque data",
@@ -378,7 +378,7 @@ func TestRedactOpaqueLeaves(t *testing.T) {
 		{
 			name:        "data that is not opaque is still redacted",
 			doc:         `{"img":{"type":"url","data":"aaSECaa"}}`,
-			want:        `{"img":{"data":"aa[REDACTED:r1]aa","type":"url"}}`,
+			want:        `{"img":{"data":"aa[CHAINLOOP_TRACE_REDACTED:r1]aa","type":"url"}}`,
 			dataScanned: true,
 		},
 	}
@@ -455,9 +455,9 @@ func TestRedactText(t *testing.T) {
 		want        string
 		wantChanged bool
 	}{
-		{name: "a secret is replaced", text: "use " + secret + " now", want: "use [REDACTED:test-token] now", wantChanged: true},
+		{name: "a secret is replaced", text: "use " + secret + " now", want: "use [CHAINLOOP_TRACE_REDACTED:test-token] now", wantChanged: true},
 		{name: "text without secrets comes back unchanged", text: "nothing to see", want: "nothing to see"},
-		{name: "line breaks and quotes survive", text: "a \"quoted\"\nline " + secret, want: "a \"quoted\"\nline [REDACTED:test-token]", wantChanged: true},
+		{name: "line breaks and quotes survive", text: "a \"quoted\"\nline " + secret, want: "a \"quoted\"\nline [CHAINLOOP_TRACE_REDACTED:test-token]", wantChanged: true},
 	}
 
 	for _, tc := range testCases {

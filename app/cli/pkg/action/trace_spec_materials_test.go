@@ -188,8 +188,8 @@ func TestAttachSpecs(t *testing.T) {
 		require.Len(t, adder.added, 1)
 		// The address is scanned like the text: a token in a URL must not
 		// survive in the stored file, the annotation or the reference.
-		wantURI := "https://tracker.example.com/issue/1?token=[REDACTED:github-pat]"
-		assert.Equal(t, "---\nkind: ticket\nuri: "+wantURI+"\n---\nconfigured with the token [REDACTED:github-pat] and still a 401", adder.added[0].content)
+		wantURI := "https://tracker.example.com/issue/1?token=[CHAINLOOP_TRACE_REDACTED:github-pat]"
+		assert.Equal(t, "---\nkind: ticket\nuri: "+wantURI+"\n---\nconfigured with the token [CHAINLOOP_TRACE_REDACTED:github-pat] and still a 401", adder.added[0].content)
 		assert.Equal(t, wantURI, adder.added[0].annotations[specAnnotationURI])
 		require.Len(t, entries, 1)
 		assert.Equal(t, wantURI, entries[0].URI)
@@ -306,8 +306,8 @@ func TestAttachSpecs(t *testing.T) {
 		entries, _, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{withSecret}, zerolog.Nop())
 
 		require.Len(t, entries, 1)
-		assert.Equal(t, "token [REDACTED:github-pat] fails", entries[0].Title)
-		assert.Equal(t, "uses [REDACTED:github-pat]", entries[0].Description)
+		assert.Equal(t, "token [CHAINLOOP_TRACE_REDACTED:github-pat] fails", entries[0].Title)
+		assert.Equal(t, "uses [CHAINLOOP_TRACE_REDACTED:github-pat]", entries[0].Description)
 		assert.Equal(t, entries[0].Title, adder.added[0].annotations[specAnnotationTitle])
 		assert.Equal(t, entries[0].Description, adder.added[0].annotations[specAnnotationDescription])
 	})
@@ -328,7 +328,7 @@ func TestAttachSpecs(t *testing.T) {
 		assert.Equal(t, string(pngBytes), adder.added[0].content, "the binary file is still stored as it is")
 		require.Len(t, entries, 1)
 		assert.Equal(t, aicodingsession.SpecRoleReference, entries[0].Role)
-		assert.Equal(t, "mockup for [REDACTED:github-pat]", entries[0].Title)
+		assert.Equal(t, "mockup for [CHAINLOOP_TRACE_REDACTED:github-pat]", entries[0].Title)
 		assert.Equal(t, "Where the button goes.", entries[0].Description)
 		assert.Equal(t, aicodingsession.SpecRoleReference, adder.added[0].annotations[specAnnotationRole])
 		assert.Equal(t, entries[0].Title, adder.added[0].annotations[specAnnotationTitle])
@@ -482,6 +482,6 @@ func TestSpecRedactor(t *testing.T) {
 	t.Run("the default scanner removes secrets", func(t *testing.T) {
 		got, err := newSpecRedactor(t.TempDir()).Redact(context.Background(), []byte("the token "+pat+" fails"))
 		require.NoError(t, err)
-		assert.Equal(t, "the token [REDACTED:github-pat] fails", string(got))
+		assert.Equal(t, "the token [CHAINLOOP_TRACE_REDACTED:github-pat] fails", string(got))
 	})
 }

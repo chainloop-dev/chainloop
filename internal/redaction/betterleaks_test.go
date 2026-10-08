@@ -153,7 +153,7 @@ func TestDefaultPlaceholderIsNotDetectable(t *testing.T) {
 	for id := range cfg.Rules {
 		ruleIDs = append(ruleIDs, id)
 	}
-	// The empty rule id yields the bare "[REDACTED]" placeholder.
+	// The empty rule id yields the bare "[CHAINLOOP_TRACE_REDACTED]" placeholder.
 	ruleIDs = append(ruleIDs, "")
 
 	for _, id := range ruleIDs {
@@ -270,7 +270,7 @@ func TestRedactCredentialInURIConverges(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, report.Changed())
 	assert.NotContains(t, string(once), fakeGitHubPAT)
-	assert.Contains(t, string(once), "[REDACTED:github-pat]")
+	assert.Contains(t, string(once), "[CHAINLOOP_TRACE_REDACTED:github-pat]")
 	// Two passes: one that redacts, one that confirms nothing is left.
 	assert.Equal(t, 2, report.Passes)
 
@@ -301,29 +301,29 @@ func TestRedactJWTKeepsSurroundingText(t *testing.T) {
 			// the JWT is escaped in the leaf.
 			name: "followed by an escaped quote in a nested JSON string",
 			leaf: `{"url":"https://uploads.example.com/o/a/b?signature=` + fakeJWT + `"}`,
-			want: `{"url":"https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]"}`,
+			want: `{"url":"https://uploads.example.com/o/a/b?signature=[CHAINLOOP_TRACE_REDACTED:jwt]"}`,
 		},
 		{
 			name: "followed by an escaped newline",
 			leaf: "https://uploads.example.com/o/a/b?signature=" + fakeJWT + "\nnext line",
-			want: "https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]\nnext line",
+			want: "https://uploads.example.com/o/a/b?signature=[CHAINLOOP_TRACE_REDACTED:jwt]\nnext line",
 		},
 		{
 			name: "followed by an escaped carriage return",
 			leaf: "https://uploads.example.com/o/a/b?signature=" + fakeJWT + "\rnext line",
-			want: "https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]\rnext line",
+			want: "https://uploads.example.com/o/a/b?signature=[CHAINLOOP_TRACE_REDACTED:jwt]\rnext line",
 		},
 		{
 			name: "followed by an escaped tab",
 			leaf: "https://uploads.example.com/o/a/b?signature=" + fakeJWT + "\tnext line",
-			want: "https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]\tnext line",
+			want: "https://uploads.example.com/o/a/b?signature=[CHAINLOOP_TRACE_REDACTED:jwt]\tnext line",
 		},
 		{
 			// The literal backslash is a complete `\\` escape, which is kept in
 			// the secret: the leaf loses that one character but not its context.
 			name: "followed by a literal backslash",
 			leaf: `https://uploads.example.com/o/a/b?signature=` + fakeJWT + `\"`,
-			want: `https://uploads.example.com/o/a/b?signature=[REDACTED:jwt]"`,
+			want: `https://uploads.example.com/o/a/b?signature=[CHAINLOOP_TRACE_REDACTED:jwt]"`,
 		},
 	}
 
@@ -745,7 +745,7 @@ func TestLineSpansRoundTrip(t *testing.T) {
 func TestDocumentScannerMatchesFreshScan(t *testing.T) {
 	replaceFirst := func(text string) string {
 		i := strings.Index(text, "ghp_")
-		return text[:i] + "[REDACTED:github-pat]" + text[i+len(fakeGitHubPAT):]
+		return text[:i] + "[CHAINLOOP_TRACE_REDACTED:github-pat]" + text[i+len(fakeGitHubPAT):]
 	}
 
 	testCases := []struct {
@@ -802,7 +802,7 @@ func TestDocumentScannerRescansOnlyChangedChunks(t *testing.T) {
 	require.NoError(t, err)
 
 	i := strings.Index(text, "ghp_")
-	edited := text[:i] + "[REDACTED:github-pat]" + text[i+len(fakeGitHubPAT):]
+	edited := text[:i] + "[CHAINLOOP_TRACE_REDACTED:github-pat]" + text[i+len(fakeGitHubPAT):]
 
 	before := scanner.detector.TotalBytes.Load()
 	_, err = doc.Scan(context.Background(), edited)

@@ -207,14 +207,14 @@ func New(s Scanner, opts ...Option) *Redactor {
 // present without being able to recover it.
 func DefaultPlaceholder(ruleID string) string {
 	if ruleID == "" {
-		return "[REDACTED]"
+		return "[CHAINLOOP_TRACE_REDACTED]"
 	}
-	return "[REDACTED:" + ruleID + "]"
+	return "[CHAINLOOP_TRACE_REDACTED:" + ruleID + "]"
 }
 
 // defaultPlaceholderPattern recognises the output of DefaultPlaceholder for any
 // rule id, including ids this build has never seen.
-var defaultPlaceholderPattern = regexp.MustCompile(`^\[REDACTED(?::[^\]\s]*)?\]$`)
+var defaultPlaceholderPattern = regexp.MustCompile(`^\[CHAINLOOP_TRACE_REDACTED(?::[^\]\s]*)?\]$`)
 
 // IsDefaultPlaceholder reports whether s is a placeholder DefaultPlaceholder
 // could have produced.
