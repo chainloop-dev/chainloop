@@ -38,8 +38,8 @@ Each cache entry MUST belong to the namespace of one organization and one CAS ba
 - Done when: a digest that organization A uploaded is still checked against the backend when organization B uploads it, also on shared storage.
 - Done when: the same digest in backend A is still checked against backend B of the same organization.
 
-### ~~R-004: Bounded lifetime~~
-~~A cached existence result MUST expire after a configurable time. The default is 24 hours. An operator MUST be able to turn the cache off.~~ Replaced by R-010 (D-010).
+### R-004: Bounded lifetime
+A cached existence result MUST expire after a configurable time. The default is 24 hours. An operator MUST be able to turn the cache off.
 
 ### R-005: Same authorization as today
 A cached hit MUST NOT bypass any check that runs today. The Artifact CAS checks the upload token, its role, and its limits before it reads the cache.
@@ -56,9 +56,6 @@ If the cache is not available (for example, NATS is down), the Artifact CAS MUST
 ### R-009: Observability
 The Artifact CAS SHOULD expose metrics for cache hits and misses.
 
-### R-010: Fixed lifetime, always on
-A cached existence result MUST expire after 24 hours. The cache is always on. It has no setting in the CAS configuration or in the Helm chart.
-
 ## Constraints
 - Public repository. The design must work for self-hosted deployments with and without NATS.
 - Backend credentials are secrets. They must not leave the Artifact CAS process.
@@ -71,7 +68,7 @@ Inside the Artifact CAS, the upload handler uses two caches.
 
 **Existence cache.** Each organization has its own namespace in the cache. The key starts with the organization ID from the signed upload token. Then come the backend type, the hashed backend secret reference, and the digest. The hash keeps the secret path out of the key. The namespace is necessary also when two organizations share storage. Without it, organization B could learn that organization A stored a file with a given digest. With it, the cache tells a tenant nothing that the tenant's own backend check does not already tell. The existence cache has its own NATS bucket, separate from the other caches. The value holds the blob size. The handler reads the cache after it checks the token and reads the first chunk. On a hit, it closes the stream as "already exists", which is the response the CLI receives today. On a miss, it continues as today. When the backend says the blob exists, or when an upload succeeds, the handler writes the entry.
 
-The existence cache uses the shared cache library that the control plane already uses for attestation and policy bundles. The Artifact CAS can have a NATS connection, which today sends only audit events. With that connection, the cache is a NATS key-value bucket that all replicas share. Without NATS, each replica has an in-memory LRU cache with expiry. The CAS selects the store one time, at startup. If the NATS bucket cannot be set up at startup, the CAS uses the in-memory cache (D-011). The entry holds only a digest and a size, never the artifact content and never credentials. An entry is less than 200 bytes, so its size is never a problem for NATS. If a NATS read or write fails at runtime, the CAS does not use the in-memory cache. It treats the failure as a miss and checks the backend (R-008). When the bucket is full, NATS deletes its oldest entries.
+The existence cache uses the shared cache library that the control plane already uses for attestation and policy bundles. The Artifact CAS can have a NATS connection, which today sends only audit events. With that connection, the cache is a NATS key-value bucket that all replicas share. Without NATS, each replica has an in-memory LRU cache with expiry. The CAS selects the store one time, at startup. The entry holds only a digest and a size, never the artifact content and never credentials. An entry is less than 200 bytes, so its size is never a problem for NATS. If a NATS read or write fails at runtime, the CAS does not use the in-memory cache. It treats the failure as a miss and checks the backend (R-008). When the bucket is full, NATS deletes its oldest entries.
 
 **Client cache.** A small in-memory cache keyed by backend type and secret reference holds the loaded storage client for a few minutes. A miss in the existence cache then needs one backend call instead of a secrets manager read plus a new client plus a backend call. Credentials can change behind the same secret reference. The short lifetime limits how long an old client stays in use. If the backend rejects the old credentials, the handler drops the client and loads it again one time.
 
@@ -116,13 +113,9 @@ sequenceDiagram
 | D-007 | Default lifetime of an existence entry | 24 hours, configurable | Blobs cannot be deleted through Chainloop. The only risk is a purge outside Chainloop, and 24 hours limits it. Rejected: 7 days (a longer exposure to a purge). | drafting |
 | D-008 | Describe endpoint | Does not read the existence cache | Only the download command uses it, and the download reads the blob from the backend next. Downloads stay without a cache. | drafting |
 | D-009 | Client cache lifetime | 5 minutes, and one reload on an authentication error | A short window for rotated credentials. Rejected: 1 minute (less reuse for a small gain). | drafting |
-| D-010 | Configuration of the existence cache | None. Always on, with a fixed lifetime of 24 hours. The store is NATS KV when the CAS has a NATS connection, and memory otherwise. | The cache is safe by default and only makes uploads faster, so a setting adds surface with no clear use. Rejected: a configurable lifetime and an off switch in the CAS configuration and the Helm chart (D-007, R-004). | [PR #3562](https://github.com/chainloop-dev/chainloop/pull/3562) |
-| D-011 | NATS bucket fails at startup | Use the in-memory cache, and log a warning | The cache is optional. It must not stop the CAS from starting, for example when the NATS credentials can only publish audit events. Rejected: fail the startup, as the control plane caches do. | [PR #3562](https://github.com/chainloop-dev/chainloop/pull/3562) |
-| D-012 | Client cache key | Backend type, secret reference, and organization | One backend keeps per-organization session credentials inside its client. A client shared between organizations could sign a request with the session of another organization. Rejected: backend type and secret reference only. | [PR #3562](https://github.com/chainloop-dev/chainloop/pull/3562) |
-| D-013 | Where the client cache applies | Uploads only | Uploads are the cost this spec reduces. Downloads and Describe load the backend as before. | [PR #3562](https://github.com/chainloop-dev/chainloop/pull/3562) |
 
 ## Open Questions
-None at drafting time. D-007 to D-009 record the answers to the drafting questions. D-010 to D-013 record the changes made during the build.
+None at drafting time. D-007 to D-009 record the answers to the drafting questions.
 
 ## Milestones
 1. **Existence cache.** R-001 to R-006, R-008 and R-009. Repeated uploads skip the backend.
@@ -131,6 +124,6 @@ None at drafting time. D-007 to D-009 record the answers to the drafting questio
 ## Risks
 | Risk | Mitigation |
 |------|------------|
-| A blob is purged outside Chainloop, and the cache still says it exists. An attestation then references a missing blob. | A fixed lifetime of 24 hours (R-010). Downloads never use the cache. |
+| A blob is purged outside Chainloop, and the cache still says it exists. An attestation then references a missing blob. | Bounded lifetime, configurable per deployment, and a switch to turn the cache off. Downloads never use the cache. |
 | Rotated credentials behind the same secret reference. The client cache keeps the old client. | Short lifetime, and one reload when the backend rejects the credentials. |
 | A cache entry crosses tenants, or shows that another tenant has a file. | Each organization has its own namespace, taken from the signed token. Tests cover two organizations on shared storage (R-003). |
