@@ -187,6 +187,8 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 	const (
 		withSecrets = "./aicodingsession/testdata/session-with-secrets.json"
 		clean       = "./testdata/ai-coding-session.json"
+		// The rules that match the secrets in withSecrets.
+		withSecretsRules = "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat"
 	)
 
 	testCases := []struct {
@@ -202,7 +204,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			name:      "secrets are stripped before upload",
 			filePath:  withSecrets,
 			wantCount: "7",
-			wantRules: "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
+			wantRules: withSecretsRules,
 		},
 		{
 			// An inline backend embeds the content into the attestation itself,
@@ -211,7 +213,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			filePath:      withSecrets,
 			inlineBackend: true,
 			wantCount:     "7",
-			wantRules:     "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
+			wantRules:     withSecretsRules,
 		},
 		{
 			// Neither uploaded nor stored inline, so the sanitized copy exists
@@ -220,7 +222,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			filePath:   withSecrets,
 			skipUpload: true,
 			wantCount:  "7",
-			wantRules:  "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
+			wantRules:  withSecretsRules,
 		},
 		{
 			name:          "the opt-out is recorded in the attestation",
