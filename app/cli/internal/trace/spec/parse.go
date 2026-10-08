@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"gopkg.in/yaml.v3"
@@ -284,36 +285,27 @@ func truncate(s string, limit int) string {
 // split separates a leading frontmatter block from the body. A document with no
 // well-formed block is all body, so that a missing or unterminated header
 // cannot swallow the text it was supposed to introduce.
+// The body is always a suffix of doc.
 func split(doc string) (header, body string) {
-	header, end := frontmatterEnd(doc)
-	return header, doc[end:]
-}
-
-// frontmatterEnd returns the header of a leading frontmatter block, and the
-// offset in doc just past the line that closes it. A document with no
-// well-formed block has no header and an offset of zero.
-func frontmatterEnd(doc string) (header string, end int) {
 	rest := strings.TrimLeft(doc, "\r\n\t ")
 	if !strings.HasPrefix(rest, delimiter) {
-		return "", 0
+		return "", doc
 	}
 
 	lines := strings.Split(rest, "\n")
 	if !isDelimiter(lines[0]) {
-		return "", 0
+		return "", doc
 	}
 
 	// The first closing fence wins, so a markdown horizontal rule further down
 	// the body cannot re-split the document.
-	offset := len(doc) - len(rest) + len(lines[0]) + 1
 	for i := 1; i < len(lines); i++ {
 		if isDelimiter(lines[i]) {
-			return strings.Join(lines[1:i], "\n"), min(offset+len(lines[i])+1, len(doc))
+			return strings.Join(lines[1:i], "\n"), strings.Join(lines[i+1:], "\n")
 		}
-		offset += len(lines[i]) + 1
 	}
 
-	return "", 0
+	return "", doc
 }
 
 // isPlaceholder reports whether a body holds only the placeholder line.
@@ -325,6 +317,12 @@ func isPlaceholder(body string) bool {
 // carriage return a CRLF document leaves behind and any trailing whitespace.
 func isDelimiter(line string) bool {
 	return strings.TrimRight(line, "\r\t ") == delimiter
+}
+
+// isText reports whether a file is text that a spec can hold: valid UTF-8,
+// and not an image.
+func isText(name string, doc []byte) bool {
+	return utf8.Valid(doc) && !isImage(name, doc)
 }
 
 // isImage reports whether a spec file is an image. Content sniffing finds the

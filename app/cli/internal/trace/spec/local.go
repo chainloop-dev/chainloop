@@ -16,7 +16,6 @@
 package spec
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/url"
@@ -24,10 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
-	"gopkg.in/yaml.v3"
 )
 
 // Placeholder is the body that the agent writes for a capture whose source is
@@ -52,60 +49,49 @@ const maxLocalSourceSize = 1 << 20
 // the file cannot be used, the body the agent wrote stands, as for any other
 // capture. The placeholder alone is never recorded.
 func readText(repoRoot, name string, doc []byte, modTime time.Time) (*Capture, string) {
-	header, end := frontmatterEnd(string(doc))
-	body := string(doc[end:])
+	header, body := split(string(doc))
+	path, local := localPath(repoRoot, homeDir(), parseHeader(header).URI)
 
-	uri := headerURI(header)
-	path, local := localPath(repoRoot, homeDir(), uri)
+	var entry *Capture
+	raw := doc
 	if local {
 		if content, fileTime, ok := readLocalSource(path); ok {
-			filled := fill(doc[:end], content)
-			// An empty file gives no capture, and the fallback below decides
-			// whether that is worth a warning.
-			if entry := Parse(filled, fileTime); entry != nil {
-				entry.FileName = name
-				entry.Raw = filled
+			// The body is a suffix of the document, so what comes before
+			// it is the header block as the agent wrote it.
+			filled := fill(doc[:len(doc)-len(body)], content)
+			// An empty file gives no capture, and the fallback below
+			// decides whether that is worth a warning.
+			if entry = Parse(filled, fileTime); entry != nil {
+				raw = filled
 				entry.SourceDigest = pointer.Digest(content)
-
-				return entry, ""
 			}
 		}
 	}
 
-	if entry := Parse(doc, modTime); entry != nil {
+	if entry == nil {
+		entry = Parse(doc, modTime)
+	}
+
+	if entry != nil {
 		entry.FileName = name
-		entry.Raw = doc
+		entry.Raw = raw
 
 		return entry, ""
 	}
 
+	var reason string
 	switch {
-	case isPlaceholder(body) && local:
-		return nil, fmt.Sprintf("spec file %q was not recorded: its source file could not be read", name)
+	case local && (isPlaceholder(body) || strings.TrimSpace(body) == ""):
+		reason = "its source file could not be read"
 	case isPlaceholder(body):
-		return nil, fmt.Sprintf("spec file %q was not recorded: it holds only the placeholder, and its source is not a local file", name)
-	case local && strings.TrimSpace(body) == "":
-		return nil, fmt.Sprintf("spec file %q was not recorded: it has no content, and its source file could not be read", name)
+		reason = "it holds only the placeholder, and its source is not a local file"
+	default:
+		// A file with nothing in it and no local source is what "nothing
+		// to capture" leaves behind.
+		return nil, ""
 	}
 
-	// A file with nothing in it and no local source is what "nothing to
-	// capture" leaves behind.
-	return nil, ""
-}
-
-// headerURI returns the source that a frontmatter header names, or "" when
-// the header names none or cannot be read.
-func headerURI(header string) string {
-	if header == "" {
-		return ""
-	}
-
-	var meta frontmatter
-	if err := yaml.Unmarshal([]byte(header), &meta); err != nil {
-		return ""
-	}
-
-	return strings.TrimSpace(meta.URI)
+	return nil, fmt.Sprintf("spec file %q was not recorded: %s", name, reason)
 }
 
 // homeDir returns the home directory, or "" when it is not known.
@@ -187,7 +173,7 @@ func readLocalSource(path string) ([]byte, time.Time, bool) {
 		return nil, time.Time{}, false
 	}
 
-	if !utf8.Valid(content) || bytes.IndexByte(content, 0) >= 0 {
+	if !isText(path, content) {
 		return nil, time.Time{}, false
 	}
 

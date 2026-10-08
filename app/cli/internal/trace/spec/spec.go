@@ -41,7 +41,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 )
@@ -227,8 +226,8 @@ func ReadAll(repoRoot, sessionID string, recorded []string) ([]Capture, []string
 
 		// An image, or a file that is not text, is something the agent copied
 		// in rather than wrote. Parsing it as text would only mangle it.
-		if image := isImage(c.name, doc); image || !utf8.Valid(doc) {
-			capture := verbatimCapture(c.name, doc, c.modTime, image)
+		if !isText(c.name, doc) {
+			capture := verbatimCapture(c.name, doc, c.modTime, isImage(c.name, doc))
 			if path, ok := companions[c.name]; ok {
 				// A companion file we cannot read costs its values only.
 				if meta, err := os.ReadFile(path); err == nil {

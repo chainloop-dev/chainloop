@@ -140,7 +140,7 @@ These files are attested evidence: a partial or outdated capture is a false reco
 - The user pasted or gave a new spec: write its full text.
 - The user gave an image as a file path or a URL: copy the file.
 - The user approved a plan: write it as kind text.
-- A spec is a local text file, also one this session writes: set uri to its path, and write only this line below the frontmatter: %s Each push reads the file.
+- A spec is a local text file, also one this session writes: set uri to its path. Each push reads the file. Write only this line below the frontmatter: %s
 - A spec that is not a local file changed: overwrite its file with the current full text in the same turn. Check these files before a push.
 Do not capture the user's request prompt or a pasted image. If no case applies, do nothing and say nothing about it.`, specDir, spec.Placeholder)
 }

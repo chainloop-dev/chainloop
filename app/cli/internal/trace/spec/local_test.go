@@ -202,6 +202,14 @@ func TestReadAllLocalSource(t *testing.T) {
 			wantWarning:   true,
 		},
 		{
+			name:          "an empty file keeps the body",
+			uri:           uri("empty.md"),
+			source:        "empty.md",
+			sourceContent: "  \n",
+			body:          agentBody,
+			wantBody:      agentBody,
+		},
+		{
 			// A remote source is copied by the agent, as before.
 			name:     "a URL is not a local file",
 			uri:      uri(ticketURL),
