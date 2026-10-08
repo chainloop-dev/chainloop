@@ -245,6 +245,29 @@ func TestReplace(t *testing.T) {
 			wantReport: map[string]pointer.Result{pointer.FinderFileRead: {Skipped: map[string]int{pointer.ReasonPartialRead: 2}}},
 		},
 		{
+			// The agent read an earlier version, and the file on disk is
+			// now the spec source: the read is not a copy of it.
+			name: "read of a text file that changed since the read stays inline",
+			session: []obj{
+				readCall("r1", config, nil),
+				textResult("r1", config, `{"name": "draft"}`+"\n", 1, 2, 2),
+			},
+			check: func(t *testing.T, out []json.RawMessage) {
+				assert.Equal(t, `{"name": "draft"}`+"\n", at(t, decode(t, out[1]), keyToolUseResult, "file", keyContent))
+			},
+			wantReport: map[string]pointer.Result{pointer.FinderFileRead: {Skipped: map[string]int{pointer.ReasonFileChanged: 2}}},
+		},
+		{
+			// The image was not resized, so its bytes in the transcript are
+			// the file the agent read, and they differ from the file now.
+			name: "read of an image that changed since the read, with the same size, stays inline",
+			session: []obj{
+				readCall("r1", screenshot, nil),
+				imageResult("r1", []byte(strings.Repeat("x", len(imageBytes))), len(imageBytes)),
+			},
+			wantReport: map[string]pointer.Result{pointer.FinderFileRead: {Skipped: map[string]int{pointer.ReasonFileChanged: 2}}},
+		},
+		{
 			name: "read of a file that is gone stays inline",
 			session: []obj{
 				readCall("r1", filepath.Join(dir, "gone.png"), nil),

@@ -17,6 +17,7 @@ package claude
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -213,65 +214,9 @@ func (r *specCopies) read(c *toolCall) {
 		copies++
 	}
 
-	if c.resultBlock.bool("is_error") {
-		res.Skip(pointer.ReasonToolError, copies)
-		return
-	}
-
-	if c.input.has("offset") || c.input.has("limit") || c.input.has("pages") {
-		res.Skip(pointer.ReasonPartialRead, copies)
-		return
-	}
-
-	switch kind {
-	case resultText:
-		// The file tool cuts a long file. Only a read from the first line to
-		// the last is a copy.
-		start, okStart := file.int("startLine")
-		num, okNum := file.int("numLines")
-		total, okTotal := file.int("totalLines")
-		if !okStart || !okNum || !okTotal || start != 1 || num != total {
-			res.Skip(pointer.ReasonPartialRead, copies)
-			return
-		}
-	case "image", "pdf":
-	default:
-		res.Skip(pointer.ReasonUnsupported, copies)
-		return
-	}
-
-	path := c.input.str("file_path")
-	if !filepath.IsAbs(path) {
-		cwd := c.entry.fields.str("cwd")
-		if path == "" || cwd == "" {
-			res.Skip(pointer.ReasonFileGone, copies)
-			return
-		}
-		path = filepath.Join(cwd, path)
-	}
-
-	info, err := os.Stat(path)
-	if err != nil {
-		res.Skip(pointer.ReasonFileGone, copies)
-		return
-	}
-
-	// The file can change after the read and become a source later. When the
-	// agent recorded the size of the file it read, a different size shows that.
-	if size, ok := file.int("originalSize"); ok && int64(size) != info.Size() {
-		res.Skip(pointer.ReasonFileChanged, copies)
-		return
-	}
-
-	fd := r.digest(path)
-	if fd.err != nil {
-		res.Skip(pointer.ReasonFileGone, copies)
-		return
-	}
-
-	material, ok := r.sources[fd.digest]
-	if !ok {
-		res.Skip(pointer.ReasonNoSpecEntry, copies)
+	material, reason := r.readMatch(c, kind, file)
+	if reason != "" {
+		res.Skip(reason, copies)
 		return
 	}
 
@@ -353,6 +298,96 @@ func (r *specCopies) write(c *toolCall) {
 		c.result.set(c.result.fields, "toolUseResult", meta)
 		res.Replaced++
 	}
+}
+
+// readMatch returns the material of the spec source that a read is a full
+// copy of, or the reason why the read is not one.
+func (r *specCopies) readMatch(c *toolCall, kind string, file object) (material, reason string) {
+	if c.resultBlock.bool("is_error") {
+		return "", pointer.ReasonToolError
+	}
+
+	if c.input.has("offset") || c.input.has("limit") || c.input.has("pages") {
+		return "", pointer.ReasonPartialRead
+	}
+
+	switch kind {
+	case resultText:
+		// The file tool cuts a long file. Only a read from the first line to
+		// the last is a copy.
+		start, okStart := file.int("startLine")
+		num, okNum := file.int("numLines")
+		total, okTotal := file.int("totalLines")
+		if !okStart || !okNum || !okTotal || start != 1 || num != total {
+			return "", pointer.ReasonPartialRead
+		}
+	case "image", "pdf":
+	default:
+		return "", pointer.ReasonUnsupported
+	}
+
+	path := c.input.str("file_path")
+	if !filepath.IsAbs(path) {
+		cwd := c.entry.fields.str("cwd")
+		if path == "" || cwd == "" {
+			return "", pointer.ReasonFileGone
+		}
+		path = filepath.Join(cwd, path)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", pointer.ReasonFileGone
+	}
+
+	// The file can change after the read and become a source later. When the
+	// agent recorded the size of the file it read, a different size shows that.
+	if size, ok := file.int("originalSize"); ok && int64(size) != info.Size() {
+		return "", pointer.ReasonFileChanged
+	}
+
+	fd := r.digest(path)
+	if fd.err != nil {
+		return "", pointer.ReasonFileGone
+	}
+
+	if !readAsOnDisk(kind, file, fd.digest) {
+		return "", pointer.ReasonFileChanged
+	}
+
+	material, ok := r.sources[fd.digest]
+	if !ok {
+		return "", pointer.ReasonNoSpecEntry
+	}
+
+	return material, ""
+}
+
+// readAsOnDisk reports whether the metadata of a read shows that the agent
+// read the file as it is on disk, whose digest is digest. The metadata of a
+// text read holds the file as the agent read it, so the two must be equal.
+// The metadata of a media read holds the bytes the agent saw, which are the
+// file only when the file tool did not resize it, that is when they have the
+// original size. A resized image cannot be compared; its size was checked.
+func readAsOnDisk(kind string, file object, digest string) bool {
+	if kind == resultText {
+		content, ok := file.string("content")
+		return ok && pointer.Digest([]byte(content)) == digest
+	}
+
+	encoded, ok := file.string("base64")
+	if !ok {
+		return true
+	}
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return false
+	}
+	if size, ok := file.int("originalSize"); ok && size != len(data) {
+		return true
+	}
+
+	return pointer.Digest(data) == digest
 }
 
 // digest returns the digest of the file at path, from disk the first time.
