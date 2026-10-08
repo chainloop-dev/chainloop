@@ -205,8 +205,8 @@ type SpecCopyReplacer interface {
 // pasted images stay inline.
 type PastedImageFinder interface {
 	// PastedImages returns each distinct image that the user pasted, in each
-	// stream of the raw session, in the order of the session: the main
-	// stream first. An image pasted many times is returned one time, from
+	// stream of the raw session: the main stream first, then the subagent
+	// streams by name. An image pasted many times is returned one time, from
 	// its first paste. An image whose data cannot be decoded is left out.
 	PastedImages(raw map[string][]json.RawMessage) []PastedImage
 }

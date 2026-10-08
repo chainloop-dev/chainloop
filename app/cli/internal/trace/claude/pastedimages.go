@@ -200,7 +200,7 @@ func isUserPrompt(e *entry) bool {
 }
 
 // streamOrder returns the keys of the streams of a raw session in the order
-// of the session: the main stream first, then the subagents by name.
+// to look at them: the main stream first, then the subagents by name.
 func streamOrder(raw map[string][]json.RawMessage) []string {
 	keys := make([]string, 0, len(raw))
 	for k := range raw {
