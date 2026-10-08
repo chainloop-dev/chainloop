@@ -124,7 +124,7 @@ sequenceDiagram
     alt Readable text file under the limit
         CLI->>CLI: Body = file content, time = file modification time
     else Not readable
-        CLI->>CLI: Keep agent body, or warn when there is only the placeholder
+        CLI->>CLI: Keep agent body, or warn when there is no body or only the placeholder
     end
     CLI->>CLI: Redact and store spec material
     CLI->>CLI: Replace copies of the file content in the transcript with pointers
