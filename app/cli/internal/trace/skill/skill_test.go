@@ -100,17 +100,17 @@ func TestCopyAndPackage(t *testing.T) {
 		assert.True(t, strings.HasPrefix(info.Digest, "sha256:"))
 
 		redact := func(doc []byte) ([]byte, error) {
-			return bytes.ReplaceAll(doc, []byte("SECRET"), []byte("[REDACTED]")), nil
+			return bytes.ReplaceAll(doc, []byte("SECRET"), []byte("[CHAINLOOP_TRACE_REDACTED]")), nil
 		}
 
 		pkg, err := MakePackage(dst, redact)
 		require.NoError(t, err)
 
-		assert.Equal(t, "# Skill\nuse token [REDACTED]\n", string(pkg.Definition))
+		assert.Equal(t, "# Skill\nuse token [CHAINLOOP_TRACE_REDACTED]\n", string(pkg.Definition))
 		assert.Equal(t, map[string]string{
-			DefinitionFile:              "# Skill\nuse token [REDACTED]\n",
+			DefinitionFile:              "# Skill\nuse token [CHAINLOOP_TRACE_REDACTED]\n",
 			"references/rules.md":       "the rules",
-			"scripts/lint.py":           "print('[REDACTED]')",
+			"scripts/lint.py":           "print('[CHAINLOOP_TRACE_REDACTED]')",
 			"examples/before-after.txt": "before and after",
 		}, archiveFiles(t, pkg.Archive), "version-control folders and files are left out")
 	})

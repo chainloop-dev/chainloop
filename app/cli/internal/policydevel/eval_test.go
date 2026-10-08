@@ -301,7 +301,7 @@ func TestEvaluateReadsRedactedMaterial(t *testing.T) {
 			for _, input := range result.DebugInfo.Inputs {
 				assert.NotContains(t, string(input), fixtureGitHubPAT,
 					"the policy engine must never receive the un-redacted credential")
-				assert.Contains(t, string(input), "[REDACTED:")
+				assert.Contains(t, string(input), "[CHAINLOOP_TRACE_REDACTED:")
 			}
 		})
 	}

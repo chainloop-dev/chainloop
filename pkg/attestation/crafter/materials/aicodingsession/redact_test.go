@@ -233,7 +233,7 @@ func TestRedact(t *testing.T) {
 
 			// Surrounding prose in a redacted leaf must be preserved.
 			assert.Contains(t, string(got), "deploy this, use AWS_ACCESS_KEY_ID=")
-			assert.Contains(t, string(got), "[REDACTED:aws-access-token]")
+			assert.Contains(t, string(got), "[CHAINLOOP_TRACE_REDACTED:aws-access-token]")
 			assert.Contains(t, string(got), "and a <config> block with \\\"quoted\\\" values. Done ✅")
 		})
 	}
@@ -405,7 +405,7 @@ func TestRedactSpecText(t *testing.T) {
 			// credential, and the text around it must survive.
 			name:           "a secret in a ticket body is replaced",
 			text:           "The runner is configured with the token " + fixtureGitHubPAT + " and still gets a 401.",
-			wantText:       "The runner is configured with the token [REDACTED:github-pat] and still gets a 401.",
+			wantText:       "The runner is configured with the token [CHAINLOOP_TRACE_REDACTED:github-pat] and still gets a 401.",
 			wantChanged:    true,
 			mustNotContain: fixtureGitHubPAT,
 		},
