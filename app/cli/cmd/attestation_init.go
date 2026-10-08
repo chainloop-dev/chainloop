@@ -58,14 +58,19 @@ func newAttestationInitCmd() *cobra.Command {
 				return errors.New("workflow name is required, set it via --workflow flag")
 			}
 
-			// Load version from the repository config if not set and not using --latest-version.
-			if projectVersion == "" && !useLatestVersion {
+			// Load unresolved project metadata from the repository config.
+			if projectName == "" || (projectVersion == "" && !useLatestVersion) {
 				cfg, path, err := repositoryconfig.LoadChainloopYML(".")
 				if err != nil {
 					logger.Debug().Msgf("failed to load chainloop config: %s", err)
 				} else {
-					logger.Debug().Msgf("loaded version %s from config file %s", cfg.ProjectVersion, path)
-					projectVersion = cfg.ProjectVersion
+					logger.Debug().Msgf("loaded project metadata from config file %s", path)
+					if projectName == "" {
+						projectName = cfg.ProjectName
+					}
+					if projectVersion == "" && !useLatestVersion {
+						projectVersion = cfg.ProjectVersion
+					}
 				}
 			}
 
@@ -89,6 +94,10 @@ func newAttestationInitCmd() *cobra.Command {
 				if !slices.Contains(action.ValidCollectors, c) {
 					return fmt.Errorf("unknown collector %q, valid options: %s", c, strings.Join(action.ValidCollectors, ", "))
 				}
+			}
+
+			if projectName == "" {
+				return errors.New("project is required, set it via --project or projectName in .chainloop.yml")
 			}
 
 			return nil
@@ -168,10 +177,6 @@ func newAttestationInitCmd() *cobra.Command {
 				logger.Info().Msg("The attestation is being crafted in dry-run mode. It will not get stored once rendered")
 			}
 
-			if projectName == "" {
-				logger.Warn().Msg("DEPRECATION WARNING: --project not set, this will be required in the near future")
-			}
-
 			return output.EncodeOutput(flagOutputFormat, res, fullStatusTable)
 		}}
 
@@ -189,7 +194,6 @@ func newAttestationInitCmd() *cobra.Command {
 	cobra.CheckErr(cmd.Flags().MarkDeprecated("workflow-name", "please use --workflow instead"))
 
 	cmd.Flags().StringVar(&projectName, "project", "", "name of the project of this workflow")
-	cobra.CheckErr(cmd.MarkFlagRequired("project"))
 	cmd.Flags().StringVar(&newWorkflowcontract, "contract", "", "name of an existing contract or the path/URL to a contract file, to attach it to the auto-created workflow (it doesn't update an existing one)")
 
 	cmd.Flags().StringVar(&projectVersion, "version", "", "project version, i.e 0.1.0")
