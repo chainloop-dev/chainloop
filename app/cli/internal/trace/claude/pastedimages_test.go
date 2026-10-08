@@ -61,6 +61,22 @@ func paste(text string, pasteIDs []int, images ...obj) obj {
 	return e
 }
 
+// queuedPaste is a prompt with pasted images that the user sent while the
+// agent was busy, as Claude Code writes it: an attachment that holds the
+// prompt blocks and the paste numbers. origin is the kind of its origin.
+func queuedPaste(origin string, pasteIDs []int, images ...obj) obj {
+	prompt := make([]any, 0, 1+len(images))
+	prompt = append(prompt, obj{keyType: resultText, resultText: "look at this"})
+	for _, img := range images {
+		prompt = append(prompt, img)
+	}
+
+	return obj{keyType: "attachment", "timestamp": pastedTime, "attachment": obj{
+		keyType: "queued_command", "prompt": prompt, "imagePasteIds": pasteIDs,
+		"commandMode": "prompt", "origin": obj{"kind": origin}, "humanTurn": true,
+	}}
+}
+
 func TestPastedImages(t *testing.T) {
 	testCases := []struct {
 		name string
@@ -115,6 +131,33 @@ func TestPastedImages(t *testing.T) {
 			want: []trace.PastedImage{
 				{Data: pastedBytes, MediaType: pngType, Number: 1, Timestamp: pastedUTC},
 			},
+		},
+		{
+			name: "an image pasted while the agent was busy keeps its paste number",
+			raw: map[string][]obj{mainStream: {
+				paste("[Image #1] first", []int{1}, imageBlock(pngType, pastedBytes)),
+				queuedPaste("human", []int{2}, imageBlock("image/jpeg", otherPasted)),
+			}},
+			want: []trace.PastedImage{
+				{Data: pastedBytes, MediaType: pngType, Number: 1, Timestamp: pastedUTC},
+				{Data: otherPasted, MediaType: "image/jpeg", Number: 2, Timestamp: pastedUTC},
+			},
+		},
+		{
+			name: "a queued prompt that a human did not send is not a paste",
+			raw: map[string][]obj{mainStream: {
+				queuedPaste("task-notification", []int{1}, imageBlock(pngType, pastedBytes)),
+			}},
+		},
+		{
+			name: "another attachment with an image is not a paste",
+			raw: map[string][]obj{mainStream: {
+				func() obj {
+					e := queuedPaste("human", []int{1}, imageBlock(pngType, pastedBytes))
+					e["attachment"].(obj)[keyType] = "skill_listing"
+					return e
+				}(),
+			}},
 		},
 		{
 			name: "an image in the result of a file read is not a pasted image",
@@ -223,6 +266,22 @@ func TestReplacePastedImages(t *testing.T) {
 				paste("[Image #2]", []int{2}, imageBlock(pngType, pastedBytes)),
 			},
 			wantReport: map[string]pointer.Result{pointer.FinderPastedImage: {Replaced: 2}},
+		},
+		{
+			name: "an image pasted while the agent was busy becomes a pointer in the attachment",
+			session: []obj{
+				queuedPaste("human", []int{3}, imageBlock(pngType, pastedBytes)),
+			},
+			check: func(t *testing.T, out []json.RawMessage) {
+				e := decode(t, out[0])
+				assert.Equal(t, "look at this", at(t, e, "attachment", "prompt", 0, resultText))
+				assert.Equal(t, blockImage, at(t, e, "attachment", "prompt", 1, keyType))
+				assert.Equal(t, ptr(pastedMaterial), at(t, e, "attachment", "prompt", 1, keySource))
+				// The other fields of the attachment are kept.
+				assert.Equal(t, []any{float64(3)}, at(t, e, "attachment", "imagePasteIds"))
+				assert.Equal(t, "queued_command", at(t, e, "attachment", keyType))
+			},
+			wantReport: map[string]pointer.Result{pointer.FinderPastedImage: {Replaced: 1}},
 		},
 		{
 			// The file read finder looks at the image of the result, not
