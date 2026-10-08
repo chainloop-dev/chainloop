@@ -65,11 +65,6 @@ func (s *bytestreamSuite) withExistenceCache() {
 	s.restart(WithExistenceCache(c))
 }
 
-// withClientCache restarts the server with the backend client cache only
-func (s *bytestreamSuite) withClientCache() {
-	s.restart(WithBackendClientCache(time.Hour))
-}
-
 // R-001, R-006: a second upload of a blob that the backend reported as present
 // makes no secrets manager or backend call, and its event keeps the size.
 func (s *bytestreamSuite) TestExistenceCacheHitSkipsBackend() {
@@ -127,9 +122,9 @@ func (s *bytestreamSuite) TestExistenceCacheNotCached() {
 	resource := resourceWithDigest(data, "skynet.exe")
 
 	testCases := []struct {
-		name  string
-		setup func()
-		code  codes.Code
+		name    string
+		setup   func()
+		wantErr bool
 	}{
 		{
 			name: "not found and failed upload",
@@ -137,7 +132,7 @@ func (s *bytestreamSuite) TestExistenceCacheNotCached() {
 				s.ociBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
 				s.ociBackend.On("Upload", mock.Anything, mock.Anything, resource).Return(errors.New("boom"))
 			},
-			code: codes.Internal,
+			wantErr: true,
 		},
 		{
 			name: "found but describe fails",
@@ -145,7 +140,6 @@ func (s *bytestreamSuite) TestExistenceCacheNotCached() {
 				s.ociBackend.On("Exists", mock.Anything, resource.Digest).Return(true, nil)
 				s.ociBackend.On("Describe", mock.Anything, resource.Digest).Return(nil, errors.New("boom"))
 			},
-			code: codes.OK,
 		},
 	}
 
@@ -155,10 +149,10 @@ func (s *bytestreamSuite) TestExistenceCacheNotCached() {
 			tc.setup()
 			for range 2 {
 				_, err := s.write(s.upCtx, resource, data)
-				if tc.code == codes.OK {
-					s.Require().NoError(err)
+				if tc.wantErr {
+					assertGRPCError(s.T(), err, codes.Internal, "")
 				} else {
-					assertGRPCError(s.T(), err, tc.code, "")
+					s.Require().NoError(err)
 				}
 			}
 			s.ociBackend.AssertNumberOfCalls(s.T(), "Exists", 2)
@@ -171,23 +165,24 @@ func (s *bytestreamSuite) TestExistenceCacheTenantNamespace() {
 	testCases := []struct {
 		name      string
 		secondCtx context.Context
-		// backend the second upload must reach
-		second func() *mockedBackend
+		// backend checks the two uploads must make
+		wantOCIExists, wantStreamingExists int
 	}{
 		{
-			name:      "different organization on shared storage",
-			secondCtx: uploaderCtx("org-id", otherOrgID),
-			second:    func() *mockedBackend { return &mockedBackend{s.ociBackend, 2} },
+			name:          "different organization on shared storage",
+			secondCtx:     uploaderCtx("org-id", otherOrgID),
+			wantOCIExists: 2,
 		},
 		{
-			name:      "same organization, different backend",
-			secondCtx: uploaderCtx("backend-streaming", "true"),
-			second:    func() *mockedBackend { return &mockedBackend{s.streamingBackend, 1} },
+			name:                "same organization, different backend",
+			secondCtx:           uploaderCtx("backend-streaming", "true"),
+			wantOCIExists:       1,
+			wantStreamingExists: 1,
 		},
 		{
-			name:      "organization missing from the token",
-			secondCtx: uploaderCtx("org-id", ""),
-			second:    func() *mockedBackend { return &mockedBackend{s.ociBackend, 2} },
+			name:          "organization missing from the token",
+			secondCtx:     uploaderCtx("org-id", ""),
+			wantOCIExists: 2,
 		},
 	}
 
@@ -195,7 +190,7 @@ func (s *bytestreamSuite) TestExistenceCacheTenantNamespace() {
 		s.Run(tc.name, func() {
 			s.withExistenceCache()
 			describe := &v1.CASResource{Digest: s.resource.Digest, Size: 1}
-			for _, b := range []*mockedBackend{{s.ociBackend, 0}, {s.streamingBackend, 0}} {
+			for _, b := range []*mocks.UploaderDownloader{s.ociBackend, s.streamingBackend} {
 				b.On("Exists", mock.Anything, s.resource.Digest).Maybe().Return(true, nil)
 				b.On("Describe", mock.Anything, s.resource.Digest).Maybe().Return(describe, nil)
 			}
@@ -205,8 +200,8 @@ func (s *bytestreamSuite) TestExistenceCacheTenantNamespace() {
 			_, err = s.write(tc.secondCtx, s.resource, nil)
 			s.Require().NoError(err)
 
-			want := tc.second()
-			want.AssertNumberOfCalls(s.T(), "Exists", want.calls)
+			s.ociBackend.AssertNumberOfCalls(s.T(), "Exists", tc.wantOCIExists)
+			s.streamingBackend.AssertNumberOfCalls(s.T(), "Exists", tc.wantStreamingExists)
 		})
 	}
 }
@@ -230,7 +225,7 @@ func (s *bytestreamSuite) TestExistenceCacheFailureIsMiss() {
 
 // R-007: a cache miss on the existence check reuses the loaded backend client.
 func (s *bytestreamSuite) TestClientCacheReusesClient() {
-	s.withClientCache()
+	s.restart(WithBackendClientCache(time.Hour))
 	s.ociBackend.On("Exists", mock.Anything, mock.Anything).Return(true, nil)
 
 	for _, d := range []string{"digest-a", "digest-b"} {
@@ -247,7 +242,7 @@ func (s *bytestreamSuite) TestClientCacheReusesClient() {
 
 // D-009: an error from a reused client drops it and loads it again one time.
 func (s *bytestreamSuite) TestClientCacheReloadOnError() {
-	s.withClientCache()
+	s.restart(WithBackendClientCache(time.Hour))
 	ctx := uploaderCtx("source-internal", "true")
 	s.ociBackend.On("Exists", mock.Anything, mock.Anything).Return(true, nil).Once()
 	_, err := s.write(ctx, s.resource, nil)
@@ -262,18 +257,13 @@ func (s *bytestreamSuite) TestClientCacheReloadOnError() {
 
 // a fresh client that fails is not loaded again
 func (s *bytestreamSuite) TestClientCacheNoReloadOfFreshClient() {
-	s.withClientCache()
+	s.restart(WithBackendClientCache(time.Hour))
 	s.ociBackend.On("Exists", mock.Anything, mock.Anything).Return(false, errors.New("boom"))
 
 	_, err := s.write(s.upCtx, s.resource, nil)
 	assertGRPCError(s.T(), err, codes.Internal, "")
 	s.ociProvider.AssertNumberOfCalls(s.T(), "FromCredentials", 1)
 	s.ociBackend.AssertNumberOfCalls(s.T(), "Exists", 1)
-}
-
-type mockedBackend struct {
-	*mocks.UploaderDownloader
-	calls int
 }
 
 type failingCache struct{}

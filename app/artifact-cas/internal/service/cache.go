@@ -62,9 +62,11 @@ func WithExistenceCache(c cache.Cache[casexistence.Entry]) NewOpt {
 
 // WithBackendClientCache enables the reuse of the backend clients loaded for
 // uploads for ttl. Clients and their credentials are kept in process memory only.
+// The services built with the same option share one cache.
 func WithBackendClientCache(ttl time.Duration) NewOpt {
+	clients := expirable.NewLRU[string, backend.UploaderDownloader](maxCachedClients, nil, ttl)
 	return func(s *commonService) {
-		s.clients = expirable.NewLRU[string, backend.UploaderDownloader](maxCachedClients, nil, ttl)
+		s.clients = clients
 	}
 }
 

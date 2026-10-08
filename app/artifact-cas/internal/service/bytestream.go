@@ -169,34 +169,25 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 // its credentials may have been rotated. Returned errors are ready to be sent
 // to the client.
 func (s *ByteStreamService) backendExists(ctx context.Context, info *casJWT.Claims, digest string) (backend.UploaderDownloader, bool, error) {
-	storageBackend, cached, err := s.loadUploadBackend(ctx, info)
-	if err != nil {
-		return nil, false, s.loadBackendError(err)
-	}
-
-	exists, err := storageBackend.Exists(ctx, digest)
-	if err != nil && cached {
-		s.log.Warnw("msg", "reused backend client failed, loading it again", "digest", digest, "error", err)
-		s.dropUploadBackend(info)
-		if storageBackend, _, err = s.loadUploadBackend(ctx, info); err != nil {
-			return nil, false, s.loadBackendError(err)
+	for attempt := 0; ; attempt++ {
+		storageBackend, cached, err := s.loadUploadBackend(ctx, info)
+		if err != nil && kerrors.IsNotFound(err) {
+			return nil, false, err
+		} else if err != nil {
+			return nil, false, sl.LogAndMaskErr(err, s.log)
 		}
-		exists, err = storageBackend.Exists(ctx, digest)
-	}
 
-	if err != nil {
+		exists, err := storageBackend.Exists(ctx, digest)
+		if err == nil {
+			return storageBackend, exists, nil
+		}
+
 		s.dropUploadBackend(info)
-		return nil, false, sl.LogAndMaskErr(err, s.log)
+		if !cached || attempt > 0 {
+			return nil, false, sl.LogAndMaskErr(err, s.log)
+		}
+		s.log.Warnw("msg", "reused backend client failed, loading it again", "digest", digest, "error", err)
 	}
-
-	return storageBackend, exists, nil
-}
-
-func (s *ByteStreamService) loadBackendError(err error) error {
-	if kerrors.IsNotFound(err) {
-		return err
-	}
-	return sl.LogAndMaskErr(err, s.log)
 }
 
 // dispatchSkippedUpload emits the audit event of an upload skipped because the

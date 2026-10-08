@@ -50,12 +50,26 @@ type Cache struct {
 }
 
 // New creates an existence cache, backed by NATS KV when rc is set and by an
-// in-memory LRU otherwise. A ttl of 0 uses DefaultTTL.
+// in-memory LRU otherwise. A ttl of 0 uses DefaultTTL. A NATS bucket that can
+// not be set up falls back to memory: the cache only makes uploads faster, so
+// it must not stop its caller from starting.
 func New(ctx context.Context, rc *natsconn.ReloadableConnection, ttl time.Duration, logger log.Logger) (*Cache, error) {
 	if ttl <= 0 {
 		ttl = DefaultTTL
 	}
 
+	c, err := newCache(ctx, rc, ttl, logger)
+	if err != nil && rc != nil {
+		if logger != nil {
+			log.NewHelper(logger).Warnw("msg", "existence cache: NATS KV unavailable, using memory", "error", err)
+		}
+		c, err = newCache(ctx, nil, ttl, logger)
+	}
+
+	return c, err
+}
+
+func newCache(ctx context.Context, rc *natsconn.ReloadableConnection, ttl time.Duration, logger log.Logger) (*Cache, error) {
 	opts := []cache.Option{
 		cache.WithTTL(ttl),
 		cache.WithMaxBytes(maxBytes),
