@@ -135,10 +135,14 @@ func TestPluginShowsTraceMessages(t *testing.T) {
 			wantContains: []string{
 				// A subagent's session gets no banner: its parent showed one.
 				"if (parentID || (!res.instruction && !res.banner)) return",
-				"await postInstruction(post, sessionID, res.instruction || res.banner!, res.banner)",
+				// The banner is for the user only: the model never gets it as
+				// text, even when there is no instruction to carry it.
+				`await postInstruction(post, sessionID, res.instruction ?? "", res.banner)`,
 				// OpenCode 1.x.
 				"if (description) toast(description)",
+				"if (!instruction) return",
 			},
+			wantNotContains: []string{"res.instruction || res.banner"},
 		},
 		{
 			name: "toast is best effort",
