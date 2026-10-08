@@ -39,7 +39,7 @@ When your code goes against this spec, say so in your PR. Do not edit the spec t
 ## Requirements
 
 ### R-001: Capture of pasted images
-For each image with inline data in a user message of the transcript, the session MUST hold one spec entry of kind `image`. The CLI MUST make the entry at push time from the data in the transcript. Its material MUST hold the decoded image byte for byte. The CLI MUST NOT need a file on disk or an action of the agent. An image in the result of a file tool call is not a pasted image.
+For each distinct image content that the user pasted, the session MUST hold one spec entry of kind `image`. A pasted image is an image with inline data in a user message of the transcript. The CLI MUST make the entry at push time from the data in the transcript. Its material MUST hold the decoded image byte for byte. The CLI MUST NOT need a file on disk or an action of the agent. An image in the result of a file tool call is not a pasted image.
 - Done when: the user pastes a screenshot, and the agent does not copy it anywhere. The push gives one image material, and the spec list has one entry with its digest.
 
 ### R-002: Content of a pasted image entry
@@ -56,6 +56,10 @@ The CLI MUST replace the data of each pasted image with a pointer to its materia
 
 ### R-005: Best effort, with a match report
 The pasted image capture MUST follow R-012 of Spec issue-3556. An image that the CLI cannot decode or store stays inline, and the push continues. The debug report MUST give the pasted image finder its own line. The line gives the number of images that it replaced, and the number that stayed inline with the reason. Examples of reasons are "invalid image data" and "material not stored".
+
+### R-006: Agent support document
+The agent support document of Chainloop Trace MUST list the pointers for pasted images as a feature, in the section on specs and skills. The entry MUST tell what the feature does, and its support for each agent. It MUST change in the same PR that adds the support for an agent.
+- Done when: the document lists the feature, with Claude Code as supported and Cursor and OpenCode as not supported.
 
 ## Constraints
 - The repository is public. The pointer format and the spec list are visible to all users and to external transcript viewers.
@@ -102,6 +106,7 @@ flowchart TD
 | D-005 | Source of the image bytes | The decoded data of the image block in the transcript | The data is what the model got, and it is always there. Rejected: read the clipboard file that the agent names. It is a temporary file that can be gone at push time, and its format is specific to one agent. | drafting |
 | D-006 | Relation to Spec issue-3556 | Extend it with one capture step and one finder. Do not change its text | The team shipped Spec issue-3556, so its text is frozen. Its non-goal says that capture alone replaces pasted images. This spec records that a finder is necessary too. | drafting |
 | D-007 | Title of a pasted image entry that the CLI makes | "Pasted image N", with the paste number that the agent shows | A reader can find the image in the conversation from the same number. The title is a fixed label, not a guess about the content. An agent capture still sets its own title. Rejected: no title (a list of entries with no title is hard to read). Rejected: a title from the text of the user message (the user wrote that text as a prompt, not as a title). | drafting |
+| D-008 | Documentation of agent support | A requirement to update the agent support document of Chainloop Trace (R-006) | Users and reviewers compare the agents in that document. A feature that only one agent supports must say so. Rejected: leave the document to a later change (the document then shows wrong support). | owner review |
 
 ## Open Questions
 None.
